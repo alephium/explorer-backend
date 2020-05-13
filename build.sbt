@@ -1,5 +1,7 @@
 import Dependencies._
 
+Global / cancelable := true // Allow cancellation of forked task without killing SBT
+
 lazy val root = (project in file("."))
   .settings(
     organization := "org.alephium",
@@ -40,10 +42,30 @@ lazy val root = (project in file("."))
       "-Ywarn-unused:privates",
       "-Ywarn-value-discard"
     ),
-    wartremoverErrors in (Compile, compile) := Warts.all,
-    wartremoverErrors in (Test, test) := Warts.all,
+    wartremoverErrors in (Compile, compile) := Warts.allBut(wartsCompileExcludes: _*),
+    wartremoverErrors in (Compile, compile) := Warts.allBut(wartsCompileExcludes: _*),
+    fork := true,
     libraryDependencies ++= Seq(
+      alephiumUtil % "test" classifier "tests",
+      alephiumRpc,
+      tapirCore,
+      tapirCirce,
+      tapirAkka,
+      circeCore,
+      circeGeneric,
       scalaLogging,
-      logback
+      logback,
+      akkaTest,
+      akkaHttptest,
+      akkaStreamTest,
+      scalatest,
+      scalatestplus,
+      scalacheck
     )
   )
+
+val wartsCompileExcludes = Seq(
+  Wart.NonUnitStatements,
+  Wart.Any,
+  Wart.Nothing
+)
