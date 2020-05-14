@@ -8,6 +8,7 @@ import com.typesafe.scalalogging.StrictLogging
 
 import org.alephium.explorer.api.model.BlockEntry
 import org.alephium.explorer.service.{BlockService, Services}
+import org.alephium.explorer.sideEffect
 import org.alephium.explorer.web.{BlockServer, Servers}
 import org.alephium.util.{AVector, TimeStamp}
 
@@ -34,7 +35,7 @@ trait Application extends Services with Servers with StrictLogging {
     for {
       binding <- Http().bindAndHandle(route, "localhost", port)
     } yield {
-      bindingPromise.success(binding)
+      sideEffect(bindingPromise.success(binding))
       logger.info(s"Listening http request on $binding")
     }
 

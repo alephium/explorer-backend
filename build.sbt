@@ -65,7 +65,6 @@ lazy val root = (project in file("."))
   )
 
 val wartsCompileExcludes = Seq(
-  Wart.NonUnitStatements,
   Wart.Any,
   Wart.Nothing
 )

@@ -5,6 +5,7 @@ import scala.concurrent.{Await, ExecutionContext}
 import akka.actor.ActorSystem
 import com.typesafe.scalalogging.StrictLogging
 
+import org.alephium.explorer.sideEffect
 import org.alephium.util.Duration
 
 object Main extends App with StrictLogging {
@@ -16,7 +17,8 @@ object Main extends App with StrictLogging {
     implicit val executionContext: ExecutionContext = system.dispatcher
   }
 
-  app.start
+  sideEffect(app.start)
 
-  scala.sys.addShutdownHook(Await.result(app.stop, Duration.ofSecondsUnsafe(10).asScala))
+  sideEffect(
+    scala.sys.addShutdownHook(Await.result(app.stop, Duration.ofSecondsUnsafe(10).asScala)))
 }
