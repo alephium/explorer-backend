@@ -9,7 +9,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.alephium.explorer.api.model.BlockEntry
 import org.alephium.explorer.service.{BlockService, Services}
 import org.alephium.explorer.sideEffect
-import org.alephium.explorer.web.{BlockServer, Servers}
+import org.alephium.explorer.web.{BlockServer, DocumentationServer, Servers}
 import org.alephium.util.{AVector, TimeStamp}
 
 trait Application extends Services with Servers with StrictLogging {
@@ -28,6 +28,7 @@ trait Application extends Services with Servers with StrictLogging {
   override val blockServer: BlockServer = new BlockServer {
     override def blockService: BlockService = blockServiceImpl
   }
+  override val documentation: DocumentationServer = new DocumentationServer {}
 
   private val bindingPromise: Promise[Http.ServerBinding] = Promise()
 

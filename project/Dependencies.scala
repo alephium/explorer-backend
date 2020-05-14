@@ -18,6 +18,8 @@ object Dependencies {
   lazy val tapirCore  = "com.softwaremill.sttp.tapir" %% "tapir-core" % Version.tapir
   lazy val tapirCirce = "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % Version.tapir
   lazy val tapirAkka  = "com.softwaremill.sttp.tapir" %% "tapir-akka-http-server" % Version.tapir
+  lazy val tapirOpenapi = "com.softwaremill.sttp.tapir" %% "tapir-openapi-docs" % Version.tapir
+  lazy val tapiOpenapiCirce = "com.softwaremill.sttp.tapir" %% "tapir-openapi-circe-yaml" % Version.tapir
 
   lazy val circeCore = "io.circe"             %% "circe-core"                  % Version.circe
   lazy val circeGeneric = "io.circe" %% "circe-generic" % Version.circe
