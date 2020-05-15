@@ -12,7 +12,8 @@ object Dependencies {
   lazy val alephiumRpc  = "org.alephium" %% "rpc"  % Version.common
 
   lazy val akkaTest       = "com.typesafe.akka" %% "akka-testkit"        % Version.akka % Test
-  lazy val akkaHttptest   = "com.typesafe.akka" %% "akka-http-testkit"   % "10.1.11"    % Test
+  lazy val akkaHttptest   = "com.typesafe.akka" %% "akka-http-testkit"   % "10.1.11" % Test
+  lazy val akkaStream     = "com.typesafe.akka" %% "akka-stream-typed"   % Version.akka
   lazy val akkaStreamTest = "com.typesafe.akka" %% "akka-stream-testkit" % Version.akka % Test
 
   lazy val tapirCore        = "com.softwaremill.sttp.tapir" %% "tapir-core"               % Version.tapir
@@ -23,6 +24,8 @@ object Dependencies {
 
   lazy val circeCore    = "io.circe" %% "circe-core"    % Version.circe
   lazy val circeGeneric = "io.circe" %% "circe-generic" % Version.circe
+
+  lazy val akkaHttpCirce = "de.heikoseeberger" %% "akka-http-circe" % "1.32.0"
 
   lazy val scalatest     = "org.scalatest"              %% "scalatest"       % "3.1.1" % Test
   lazy val scalacheck    = "org.scalacheck"             %% "scalacheck"      % "1.14.3" % Test

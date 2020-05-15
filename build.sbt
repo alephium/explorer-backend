@@ -42,6 +42,7 @@ lazy val root = (project in file("."))
       "-Ywarn-unused:privates",
       "-Ywarn-value-discard"
     ),
+    Test / envVars += "ALEPHIUM_ENV" -> "test",
     wartremoverErrors in (Compile, compile) := Warts.allBut(wartsCompileExcludes: _*),
     wartremoverErrors in (Compile, compile) := Warts.allBut(wartsCompileExcludes: _*),
     fork := true,
@@ -55,10 +56,12 @@ lazy val root = (project in file("."))
       tapiOpenapiCirce,
       circeCore,
       circeGeneric,
+      akkaHttpCirce,
       scalaLogging,
       logback,
       akkaTest,
       akkaHttptest,
+      akkaStream,
       akkaStreamTest,
       scalatest,
       scalatestplus,
@@ -68,5 +71,7 @@ lazy val root = (project in file("."))
 
 val wartsCompileExcludes = Seq(
   Wart.Any,
+  Wart.ImplicitParameter,
+  Wart.StringPlusAny,
   Wart.Nothing
 )
