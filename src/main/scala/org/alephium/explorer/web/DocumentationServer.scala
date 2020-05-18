@@ -9,7 +9,7 @@ import sttp.tapir.server.akkahttp._
 
 import org.alephium.explorer.docs.Documentation
 
-trait DocumentationServer extends Server with Documentation {
+class DocumentationServer extends Server with Documentation {
 
   val route: Route =
     endpoint.get

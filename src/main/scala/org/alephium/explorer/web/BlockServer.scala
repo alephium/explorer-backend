@@ -6,9 +6,6 @@ import sttp.tapir.server.akkahttp._
 import org.alephium.explorer.api.BlockEndpoints
 import org.alephium.explorer.service.BlockService
 
-trait BlockServer extends Server with BlockEndpoints {
-
-  def blockService: BlockService
-
+class BlockServer(blockService: BlockService) extends Server with BlockEndpoints {
   val route: Route = getBlockById.toRoute(blockService.getBlockById)
 }

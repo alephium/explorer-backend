@@ -13,6 +13,9 @@
     </appender>
 
     <logger name="akka.http.impl.engine.client" level="WARN"/>
+    <logger name="slick" level="INFO"/>
+    <logger name="com.zaxxer.hikari" level="INFO"/>
+
 
     <root>
         <appender-ref ref="CONSOLE"/>

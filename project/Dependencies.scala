@@ -3,9 +3,11 @@ import sbt._
 object Version {
   lazy val common = "0.2.0-SNAPSHOT"
 
-  lazy val akka  = "2.6.5"
-  lazy val circe = "0.13.0"
-  lazy val tapir = "0.14.5"
+  lazy val akka       = "2.6.5"
+  lazy val circe      = "0.13.0"
+  lazy val tapir      = "0.14.5"
+  lazy val slick      = "3.3.2"
+  lazy val postgresql = "42.2.12"
 }
 object Dependencies {
   lazy val alephiumUtil = "org.alephium" %% "util" % Version.common
@@ -32,4 +34,10 @@ object Dependencies {
   lazy val scalatestplus = "org.scalatestplus"          %% "scalacheck-1-14" % "3.1.1.1" % Test
   lazy val scalaLogging  = "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.2"
   lazy val logback       = "ch.qos.logback"             % "logback-classic"  % "1.2.3"
+
+  lazy val slick      = "com.typesafe.slick" %% "slick"     % Version.slick
+  lazy val postgresql = "org.postgresql"     % "postgresql" % Version.postgresql
+
+  lazy val h2            = "com.h2database"     % "h2"              % "1.4.200"
+  lazy val slickHikaricp = "com.typesafe.slick" %% "slick-hikaricp" % Version.slick,
 }

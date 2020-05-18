@@ -65,7 +65,11 @@ lazy val root = (project in file("."))
       akkaStreamTest,
       scalatest,
       scalatestplus,
-      scalacheck
+      scalacheck,
+      slick,
+      slickHikaricp,
+      postgresql,
+      h2
     )
   )
 
