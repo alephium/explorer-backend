@@ -1,7 +1,7 @@
 package org.alephium.explorer.api
 
-import sttp.tapir._
-import sttp.tapir.json.circe._
+import sttp.tapir.{endpoint, path, plainBody, stringToPath, Endpoint}
+import sttp.tapir.json.circe.jsonBody
 
 import org.alephium.explorer.api.Schemas.avectorSchema
 import org.alephium.explorer.api.model.BlockEntry

@@ -3,9 +3,9 @@ package org.alephium.explorer.web
 import scala.concurrent.Future
 
 import akka.http.scaladsl.server.Route
-import sttp.tapir._
-import sttp.tapir.openapi.circe.yaml._
-import sttp.tapir.server.akkahttp._
+import sttp.tapir.{endpoint, plainBody, stringToPath}
+import sttp.tapir.openapi.circe.yaml.RichOpenAPI
+import sttp.tapir.server.akkahttp.RichAkkaHttpEndpoint
 
 import org.alephium.explorer.docs.Documentation
 

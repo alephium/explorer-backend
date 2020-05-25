@@ -1,7 +1,7 @@
 package org.alephium.explorer.web
 
 import akka.http.scaladsl.server.Route
-import sttp.tapir.server.akkahttp._
+import sttp.tapir.server.akkahttp.RichAkkaHttpEndpoint
 
 import org.alephium.explorer.api.BlockEndpoints
 import org.alephium.explorer.service.BlockService
