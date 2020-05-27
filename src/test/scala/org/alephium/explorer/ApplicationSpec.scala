@@ -10,16 +10,28 @@ import akka.testkit.SocketUtil
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
+import io.circe.syntax._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.explorer.api.model.BlockEntry
-import org.alephium.util.{AlephiumSpec, AVector, TimeStamp}
+import org.alephium.rpc.CirceUtils
+import org.alephium.util.{AlephiumSpec, AVector}
 
-class ApplicationSpec() extends AlephiumSpec with ScalatestRouteTest with ScalaFutures {
+class ApplicationSpec()
+    extends AlephiumSpec
+    with ScalatestRouteTest
+    with ScalaFutures
+    with Generators {
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
 
-  val blocks: Seq[BlockEntry] = Seq(BlockEntry("myId", TimeStamp.unsafe(0), 0, 0, 0, AVector.empty))
+  val genesis: BlockEntry = blockEntryGen.sample.get.copy(deps = AVector.empty)
+
+  val block1 = blockEntryGen.sample.get.copy(deps = AVector(genesis.hash))
+  val block2 = blockEntryGen.sample.get.copy(deps = AVector(genesis.hash))
+  val block3 = blockEntryGen.sample.get.copy(deps = AVector(genesis.hash, block1.hash, block2.hash))
+
+  val blocks: Seq[BlockEntry] = Seq(genesis, block1, block2, block3)
 
   val blockFlowPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
   val blockFlowMock = new ApplicationSpec.BlockFlowServerMock(blockFlowPort, blocks)
@@ -32,9 +44,12 @@ class ApplicationSpec() extends AlephiumSpec with ScalatestRouteTest with ScalaF
   val routes = app.route
 
   it should "get a block by its id" in {
-    val id = "myId"
-    Get(s"/blocks/$id") ~> routes ~> check {
-      responseAs[String] is """{"hash":"myId","timestamp":0,"chainFrom":0,"chainTo":0,"height":0,"deps":[]}"""
+    Get(s"/blocks/${genesis.hash}") ~> routes ~> check {
+      responseAs[String] is CirceUtils.print(genesis.asJson)
+    }
+
+    Get(s"/blocks/${block3.hash}") ~> routes ~> check {
+      responseAs[String] is CirceUtils.print(block3.asJson)
     }
   }
 
