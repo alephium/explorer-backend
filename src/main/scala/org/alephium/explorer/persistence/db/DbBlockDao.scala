@@ -9,7 +9,7 @@ import slick.jdbc.JdbcProfile
 import slick.jdbc.meta.MTable
 
 import org.alephium.explorer.{sideEffect, AnyOps}
-import org.alephium.explorer.api.model.BlockEntry
+import org.alephium.explorer.api.model.{BlockEntry, TimeInterval}
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema.{BlockDepsSchema, BlockHeaderSchema}
@@ -23,14 +23,11 @@ class DbBlockDao(val config: DatabaseConfig[JdbcProfile])(
   import config.profile.api._
 
   def get(id: String): Future[Option[BlockEntry]] = {
-    val query = for {
-      (header, blockDep) <- blockHeaders
+    val query =
+      blockHeaders
         .filter(_.hash === id)
-        .joinLeft(blockDeps)
-        .on(_.hash === _.hash)
-    } yield (header, blockDep.map(_.dep))
 
-    config.db.run(query.result).map { result =>
+    config.db.run(joinDeps(query).result).map { result =>
       result.headOption.map {
         case (blockHeader, _) =>
           blockHeader.toApi(AVector.from(result.flatMap { case (_, dep) => dep }))
@@ -45,6 +42,34 @@ class DbBlockDao(val config: DatabaseConfig[JdbcProfile])(
           .map(_ => Right(block))
     )
   }
+
+  //TODO Optimize the query so we can do the ordering directly, the problem here is that we need
+  //to groupBy the result and it screw the order of the db, so we can't use the sql `ORDER_BY`
+  //we need a slick `Query[_,(BlockHeader, Seq[BlockDep), Seq]`
+  def list(timeInterval: TimeInterval): Future[Seq[BlockEntry]] = {
+    val query =
+      blockHeaders
+        .filter(header =>
+          header.timestamp >= timeInterval.from.millis && header.timestamp <= timeInterval.to.millis)
+
+    config.db.run(joinDeps(query).result).map { result =>
+      result
+        .groupBy {
+          case (blockHeader, _) => blockHeader
+        }
+        .toSeq
+        .map {
+          case (header, deps) => header.toApi(AVector.from(deps.flatMap { case (_, dep) => dep }))
+        }
+        .sortBy(_.timestamp)
+        .reverse
+    }
+  }
+
+  private def joinDeps(headers: Query[BlockHeaders, BlockHeader, Seq]) =
+    for {
+      (header, blockDep) <- headers.joinLeft(blockDeps).on(_.hash === _.hash)
+    } yield (header, blockDep.map(_.dep))
 
   //TODO Look for something like https://flywaydb.org/ to manage schemas
   @SuppressWarnings(

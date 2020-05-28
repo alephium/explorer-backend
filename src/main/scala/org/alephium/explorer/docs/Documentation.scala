@@ -7,6 +7,7 @@ import org.alephium.explorer.api.BlockEndpoints
 
 trait Documentation extends BlockEndpoints {
   val docs: OpenAPI = List(
-    getBlockById
+    getBlockById,
+    listBlocks
   ).toOpenAPI("Alephium Explorer API", "1.0")
 }

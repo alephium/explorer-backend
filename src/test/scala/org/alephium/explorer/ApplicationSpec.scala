@@ -2,7 +2,7 @@ package org.alephium.explorer
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.{ContentTypes, StatusCodes, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
@@ -10,26 +10,29 @@ import akka.testkit.SocketUtil
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
-import io.circe.syntax._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.explorer.api.model.BlockEntry
-import org.alephium.rpc.CirceUtils
-import org.alephium.util.{AlephiumSpec, AVector}
+import org.alephium.util.{AlephiumSpec, AVector, TimeStamp}
 
 class ApplicationSpec()
     extends AlephiumSpec
     with ScalatestRouteTest
     with ScalaFutures
-    with Generators {
+    with Generators
+    with FailFastCirceSupport {
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
 
-  val genesis: BlockEntry = blockEntryGen.sample.get.copy(deps = AVector.empty)
+  val genesis: BlockEntry =
+    blockEntryGen.sample.get.copy(deps = AVector.empty, timestamp = TimeStamp.unsafe(0))
 
-  val block1 = blockEntryGen.sample.get.copy(deps = AVector(genesis.hash))
-  val block2 = blockEntryGen.sample.get.copy(deps = AVector(genesis.hash))
-  val block3 = blockEntryGen.sample.get.copy(deps = AVector(genesis.hash, block1.hash, block2.hash))
+  val block1 =
+    blockEntryGen.sample.get.copy(deps = AVector(genesis.hash), timestamp = TimeStamp.unsafe(1))
+  val block2 =
+    blockEntryGen.sample.get.copy(deps = AVector(genesis.hash), timestamp = TimeStamp.unsafe(2))
+  val block3 = blockEntryGen.sample.get
+    .copy(deps = AVector(genesis.hash, block1.hash, block2.hash), timestamp = TimeStamp.unsafe(3))
 
   val blocks: Seq[BlockEntry] = Seq(genesis, block1, block2, block3)
 
@@ -45,11 +48,30 @@ class ApplicationSpec()
 
   it should "get a block by its id" in {
     Get(s"/blocks/${genesis.hash}") ~> routes ~> check {
-      responseAs[String] is CirceUtils.print(genesis.asJson)
+      responseAs[BlockEntry] is genesis
     }
 
     Get(s"/blocks/${block3.hash}") ~> routes ~> check {
-      responseAs[String] is CirceUtils.print(block3.asJson)
+      responseAs[BlockEntry] is block3
+    }
+  }
+
+  it should "list blocks" in {
+    Get(s"/blocks?fromTs=0&toTs=3") ~> routes ~> check {
+      responseAs[Seq[BlockEntry]] is blocks.reverse
+    }
+
+    Get(s"/blocks?fromTs=4&toTs=6") ~> routes ~> check {
+      responseAs[Seq[BlockEntry]] is Seq.empty
+    }
+
+    Get(s"/blocks?fromTs=0&toTs=0") ~> routes ~> check {
+      responseAs[Seq[BlockEntry]] is Seq(genesis)
+    }
+
+    Get(s"/blocks?fromTs=1&toTs=0") ~> routes ~> check {
+      contentType shouldBe ContentTypes.`text/plain(UTF-8)`
+      status is StatusCodes.BadRequest
     }
   }
 
