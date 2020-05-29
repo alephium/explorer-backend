@@ -2,7 +2,7 @@ package org.alephium.explorer
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ContentTypes, StatusCodes, Uri}
+import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
@@ -13,6 +13,7 @@ import io.circe.generic.semiauto.deriveCodec
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
 
+import org.alephium.explorer.api.ApiError
 import org.alephium.explorer.api.model.BlockEntry
 import org.alephium.util.{AlephiumSpec, AVector, TimeStamp}
 
@@ -54,6 +55,11 @@ class ApplicationSpec()
     Get(s"/blocks/${block3.hash}") ~> routes ~> check {
       responseAs[BlockEntry] is block3
     }
+
+    Get(s"/blocks/1afd32") ~> routes ~> check {
+      status is StatusCodes.NotFound
+      responseAs[ApiError] is ApiError.NotFound("1afd32")
+    }
   }
 
   it should "list blocks" in {
@@ -70,8 +76,10 @@ class ApplicationSpec()
     }
 
     Get(s"/blocks?fromTs=1&toTs=0") ~> routes ~> check {
-      contentType shouldBe ContentTypes.`text/plain(UTF-8)`
       status is StatusCodes.BadRequest
+      responseAs[ApiError] is ApiError.BadRequest(
+        "Invalid value (expected value to pass custom validation: `fromTs` must be before `toTs`, "
+          ++ "but was '(org.alephium.util.TimeStamp@1,org.alephium.util.TimeStamp@0)')")
     }
   }
 

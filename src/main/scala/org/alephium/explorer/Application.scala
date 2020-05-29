@@ -16,11 +16,12 @@ import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.db.DbBlockDao
 import org.alephium.explorer.service.{BlockFlowSyncService, BlockService}
 import org.alephium.explorer.sideEffect
-import org.alephium.explorer.web.{BlockServer, DocumentationServer, HttpClient}
+import org.alephium.explorer.web._
 
 class Application(port: Int, blockFlowUri: Uri)(implicit system: ActorSystem,
                                                 executionContext: ExecutionContext)
-    extends StrictLogging {
+    extends StrictLogging
+    with AkkaDecodeFailureHandler {
 
   val databaseConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig[JdbcProfile]("db")
   val blockDao: BlockDao                          = new DbBlockDao(databaseConfig)
