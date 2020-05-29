@@ -10,20 +10,26 @@ import org.alephium.util.TimeStamp
 
 trait BlockEndpoints extends BaseEndoint {
 
-  private val timeIntervalQuery: EndpointInput[TimeInterval] = query[TimeStamp]("fromTs")
-    .and(query[TimeStamp]("toTs"))
-    .validate(Validator.custom({ case (from, to) => from <= to }, "`fromTs` must be before `toTs`"))
-    .map({ case (from, to) => TimeInterval(from, to) })(timeInterval =>
-      (timeInterval.from, timeInterval.to))
+  private val blocksEndpoint =
+    baseEndpoint
+      .tag("Blocks")
+      .in("blocks")
+
+  private val timeIntervalQuery: EndpointInput[TimeInterval] =
+    query[TimeStamp]("fromTs")
+      .and(query[TimeStamp]("toTs"))
+      .validate(
+        Validator.custom({ case (from, to) => from <= to }, "`fromTs` must be before `toTs`"))
+      .map({ case (from, to) => TimeInterval(from, to) })(timeInterval =>
+        (timeInterval.from, timeInterval.to))
 
   val getBlockById: Endpoint[String, ApiError, BlockEntry, Nothing] =
-    baseEndpoint.get
-      .in("blocks" / path[String]("blockID"))
+    blocksEndpoint.get
+      .in(path[String]("blockID"))
       .out(jsonBody[BlockEntry])
 
   val listBlocks: Endpoint[TimeInterval, ApiError, Seq[BlockEntry], Nothing] =
-    baseEndpoint.get
-      .in("blocks")
+    blocksEndpoint.get
       .in(timeIntervalQuery)
       .out(jsonBody[Seq[BlockEntry]])
 }
