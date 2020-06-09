@@ -7,12 +7,14 @@ import io.circe.{Codec, Encoder}
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax._
 
+import org.alephium.explorer.Hash
+import org.alephium.explorer.api.Circe.hashCodec
 import org.alephium.explorer.api.model.BlockEntry
 import org.alephium.explorer.web.HttpClient
 
 trait BlockFlowClient {
   import BlockFlowClient._
-  def getBlock(hash: String): Future[Either[String, BlockEntry]]
+  def getBlock(hash: Hash): Future[Either[String, BlockEntry]]
 
   def getChainInfo(from: Int, to: Int): Future[Either[String, ChainInfo]]
 
@@ -44,7 +46,7 @@ object BlockFlowClient {
         )
         .map(_.map(_.result))
 
-    def getBlock(hash: String): Future[Either[String, BlockEntry]] =
+    def getBlock(hash: Hash): Future[Either[String, BlockEntry]] =
       request[GetBlock, BlockEntry](GetBlock(hash))
 
     def getChainInfo(from: Int, to: Int): Future[Either[String, ChainInfo]] = {
@@ -62,7 +64,7 @@ object BlockFlowClient {
     implicit def codec[A: Codec]: Codec[Result[A]] = deriveCodec[Result[A]]
   }
 
-  final case class HashesAtHeight(headers: Seq[String])
+  final case class HashesAtHeight(headers: Seq[Hash])
   object HashesAtHeight {
     implicit val codec: Codec[HashesAtHeight] = deriveCodec[HashesAtHeight]
   }
@@ -90,7 +92,7 @@ object BlockFlowClient {
     implicit val codec: Codec[GetChainInfo] = deriveCodec[GetChainInfo]
   }
 
-  final case class GetBlock(hash: String) extends JsonRpc {
+  final case class GetBlock(hash: Hash) extends JsonRpc {
     val method: String = "get_block"
   }
   object GetBlock {

@@ -39,7 +39,7 @@ class DbBlockDao(val config: DatabaseConfig[JdbcProfile])(
     config.db
       .run(
         (blockHeaders += BlockHeader.fromApi(block)) >>
-          (blockDeps ++= block.deps.toArray.map(dep => (block.hash, dep)))
+          (blockDeps ++= block.deps.toArray.map(dep => (block.hash.toHexString, dep)))
             .map(_ => Right(block))
       )
       .recover {

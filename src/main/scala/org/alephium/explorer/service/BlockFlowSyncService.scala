@@ -5,7 +5,7 @@ import scala.util.{Failure, Success}
 
 import com.typesafe.scalalogging.StrictLogging
 
-import org.alephium.explorer.{sideEffect, AnyOps}
+import org.alephium.explorer.{sideEffect, AnyOps, Hash}
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.util.Duration
 
@@ -91,7 +91,7 @@ object BlockFlowSyncService {
       }
     }
 
-    private def syncWithHash(hash: String): Future[Unit] =
+    private def syncWithHash(hash: Hash): Future[Unit] =
       blockFlowClient.getBlock(hash).flatMap {
         case Right(block) =>
           blockDao.insert(block).map(_.left.map(logger.error(_))).map(_ => ())

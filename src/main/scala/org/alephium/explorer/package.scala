@@ -1,5 +1,7 @@
 package org.alephium
 
+import org.alephium.crypto.Keccak256
+
 package object explorer {
   @inline @specialized def sideEffect[E](effect: E): Unit = {
     val _ = effect
@@ -11,4 +13,7 @@ package object explorer {
     def ===(other: A): Boolean = self == other
     def =/=(other: A): Boolean = self != other
   }
+
+  type Hash = Keccak256
+  val Hash: Keccak256.type = Keccak256
 }

@@ -49,7 +49,7 @@ class ApplicationSpec()
 
   it should "get a block by its id" in {
     forAll(Gen.oneOf(blocks)) { block =>
-      Get(s"/blocks/${block.hash}") ~> routes ~> check {
+      Get(s"/blocks/${block.hash.toHexString}") ~> routes ~> check {
         responseAs[BlockEntry] is block
       }
     }
@@ -142,6 +142,7 @@ object ApplicationSpec {
         entity(as[JsonRpc]) {
           case GetBlock(hash) =>
             complete(Result(blocks.find(_.hash === hash).get))
+
           case GetHashesAtHeight(from, to, height) =>
             complete(Result(getHashesAtHeight(from, to, height)))
           case GetChainInfo(from, to) =>

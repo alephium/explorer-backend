@@ -50,6 +50,7 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       alephiumUtil % "test" classifier "tests",
       alephiumRpc,
+      alephiumCrypto,
       tapirCore,
       tapirCirce,
       tapirAkka,

@@ -3,15 +3,17 @@ package org.alephium.explorer
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 
+import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.BlockEntry
 import org.alephium.util.{AVector, Duration, TimeStamp}
 
 trait Generators {
 
   val timestampGen: Gen[TimeStamp] = Gen.posNum[Long].map(TimeStamp.unsafe)
+  val hashGen: Gen[Hash]           = Gen.uuid.map(uuid => Hash.hash(uuid.toString))
 
   val blockEntryGen: Gen[BlockEntry] = for {
-    hash      <- Gen.identifier
+    hash      <- hashGen
     timestamp <- timestampGen
     chainFrom <- arbitrary[Int]
     chainTo   <- arbitrary[Int]
@@ -27,7 +29,8 @@ trait Generators {
       blocks
         .foldLeft((Seq.empty[BlockEntry], 0, startTimestamp)) {
           case ((acc, height, timestamp), block) =>
-            val deps: AVector[String] = if (acc.isEmpty) AVector.empty else AVector(acc.last.hash)
+            val deps: AVector[String] =
+              if (acc.isEmpty) AVector.empty else AVector(acc.last.hash.toHexString)
             val newBlock = block.copy(height = height,
                                       deps      = deps,
                                       timestamp = timestamp,
