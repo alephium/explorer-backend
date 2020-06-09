@@ -4,6 +4,7 @@ import scala.concurrent.{Await, ExecutionContext}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
+import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -17,14 +18,20 @@ object Main extends App with StrictLogging {
   implicit val system: ActorSystem                = ActorSystem("Explorer")
   implicit val executionContext: ExecutionContext = system.dispatcher
 
-  //TODO Introduce a configuration system
-  val blockflowPort: Int = 10973
-  val port: Int          = 9000
+  val config: Config = ConfigFactory.load()
+
+  val blockflowUri: Uri = {
+    val host = config.getString("blockflow.host")
+    val port = config.getInt("blockflow.port")
+    Uri(s"http://$host:$port")
+
+  }
+  val port: Int = config.getInt("explorer.port")
 
   val databaseConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig[JdbcProfile]("db")
 
   val app: Application =
-    new Application(port, Uri(s"http://localhost:$blockflowPort"), databaseConfig)
+    new Application(port, blockflowUri, databaseConfig)
 
   sideEffect(
     scala.sys.addShutdownHook(Await.result(app.stop, Duration.ofSecondsUnsafe(10).asScala)))
