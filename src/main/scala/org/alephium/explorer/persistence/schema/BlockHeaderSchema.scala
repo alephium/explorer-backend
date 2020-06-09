@@ -4,15 +4,16 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, ProvenShape}
 
+import org.alephium.explorer.Hash
 import org.alephium.explorer.persistence.model.BlockHeader
 
-trait BlockHeaderSchema {
+trait BlockHeaderSchema extends CustomTypes {
   val config: DatabaseConfig[JdbcProfile]
 
   import config.profile.api._
 
   class BlockHeaders(tag: Tag) extends Table[BlockHeader](tag, "block_headers") {
-    def hash: Rep[String]    = column[String]("hash", O.PrimaryKey)
+    def hash: Rep[Hash]      = column[Hash]("hash", O.PrimaryKey)
     def timestamp: Rep[Long] = column[Long]("timestamp")
     def chainFrom: Rep[Int]  = column[Int]("chain_from")
     def chainTo: Rep[Int]    = column[Int]("chain_to")

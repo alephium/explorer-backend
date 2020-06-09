@@ -14,7 +14,7 @@ final case class BlockEntry(
     chainFrom: Int,
     chainTo: Int,
     height: Int,
-    deps: AVector[String]
+    deps: AVector[Hash]
 )
 
 object BlockEntry {

@@ -18,7 +18,7 @@ trait Generators {
     chainFrom <- arbitrary[Int]
     chainTo   <- arbitrary[Int]
     height    <- arbitrary[Int]
-    deps      <- Gen.listOf(Gen.alphaNumStr)
+    deps      <- Gen.listOf(hashGen)
   } yield BlockEntry(hash, timestamp, chainFrom, chainTo, height, AVector.from(deps))
 
   def chainGen(size: Int,
@@ -29,8 +29,8 @@ trait Generators {
       blocks
         .foldLeft((Seq.empty[BlockEntry], 0, startTimestamp)) {
           case ((acc, height, timestamp), block) =>
-            val deps: AVector[String] =
-              if (acc.isEmpty) AVector.empty else AVector(acc.last.hash.toHexString)
+            val deps: AVector[Hash] =
+              if (acc.isEmpty) AVector.empty else AVector(acc.last.hash)
             val newBlock = block.copy(height = height,
                                       deps      = deps,
                                       timestamp = timestamp,

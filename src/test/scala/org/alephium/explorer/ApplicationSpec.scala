@@ -54,14 +54,10 @@ class ApplicationSpec()
       }
     }
 
-    forAll(Gen.alphaNumStr) { hash =>
-      Get(s"/blocks/$hash") ~> routes ~> check {
-        if (hash == "") {
-          status is StatusCodes.BadRequest
-        } else {
-          status is StatusCodes.NotFound
-          responseAs[ApiError] is ApiError.NotFound(hash)
-        }
+    forAll(hashGen) { hash =>
+      Get(s"/blocks/${hash.toHexString}") ~> routes ~> check {
+        status is StatusCodes.NotFound
+        responseAs[ApiError] is ApiError.NotFound(hash.toHexString)
       }
     }
   }

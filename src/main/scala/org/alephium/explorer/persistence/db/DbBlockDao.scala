@@ -8,7 +8,7 @@ import slick.dbio.DBIOAction
 import slick.jdbc.JdbcProfile
 import slick.jdbc.meta.MTable
 
-import org.alephium.explorer.{sideEffect, AnyOps}
+import org.alephium.explorer.{sideEffect, AnyOps, Hash}
 import org.alephium.explorer.api.model.{BlockEntry, TimeInterval}
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockHeader
@@ -22,7 +22,7 @@ class DbBlockDao(val config: DatabaseConfig[JdbcProfile])(
     with BlockDepsSchema {
   import config.profile.api._
 
-  def get(id: String): Future[Option[BlockEntry]] = {
+  def get(id: Hash): Future[Option[BlockEntry]] = {
     val query =
       blockHeaders
         .filter(_.hash === id)
@@ -39,7 +39,7 @@ class DbBlockDao(val config: DatabaseConfig[JdbcProfile])(
     config.db
       .run(
         (blockHeaders += BlockHeader.fromApi(block)) >>
-          (blockDeps ++= block.deps.toArray.map(dep => (block.hash.toHexString, dep)))
+          (blockDeps ++= block.deps.toArray.map(dep => (block.hash, dep)))
             .map(_ => Right(block))
       )
       .recover {

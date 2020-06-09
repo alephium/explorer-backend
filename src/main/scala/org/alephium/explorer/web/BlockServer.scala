@@ -14,6 +14,7 @@ class BlockServer(blockService: BlockService)(implicit val serverOptions: AkkaHt
     extends Server
     with BlockEndpoints {
   val route: Route =
-    getBlockById.toRoute(id => blockService.getBlockById(id).map(_.toRight(ApiError.NotFound(id)))) ~
+    getBlockById.toRoute(id =>
+      blockService.getBlockById(id).map(_.toRight(ApiError.NotFound(id.toHexString)))) ~
       listBlocks.toRoute(blockService.listBlocks(_).map(Right(_)))
 }
