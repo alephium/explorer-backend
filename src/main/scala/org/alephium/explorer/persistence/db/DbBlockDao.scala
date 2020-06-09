@@ -35,13 +35,17 @@ class DbBlockDao(val config: DatabaseConfig[JdbcProfile])(
     }
   }
 
-  def insert(block: BlockEntry): Future[Either[String, BlockEntry]] = {
-    config.db.run(
-      (blockHeaders += BlockHeader.fromApi(block)) >>
-        (blockDeps ++= block.deps.toArray.map(dep => (block.hash, dep)))
-          .map(_ => Right(block))
-    )
-  }
+  def insert(block: BlockEntry): Future[Either[String, BlockEntry]] =
+    config.db
+      .run(
+        (blockHeaders += BlockHeader.fromApi(block)) >>
+          (blockDeps ++= block.deps.toArray.map(dep => (block.hash, dep)))
+            .map(_ => Right(block))
+      )
+      .recover {
+        case error =>
+          Left(s"Database error: $error")
+      }
 
   //TODO Optimize the query so we can do the ordering directly, the problem here is that we need
   //to groupBy the result and it screw the order of the db, so we can't use the sql `ORDER_BY`
@@ -64,6 +68,16 @@ class DbBlockDao(val config: DatabaseConfig[JdbcProfile])(
         .sortBy(_.timestamp)
         .reverse
     }
+  }
+
+  def maxHeight(fromGroup: Int, toGroup: Int): Future[Option[Int]] = {
+    val query =
+      blockHeaders
+        .filter(header => header.chainFrom === fromGroup && header.chainTo === toGroup)
+        .sortBy(_.height.desc)
+        .map(_.height)
+
+    config.db.run(query.result.headOption)
   }
 
   private def joinDeps(headers: Query[BlockHeaders, BlockHeader, Seq]) =

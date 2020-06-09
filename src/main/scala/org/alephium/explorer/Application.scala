@@ -14,25 +14,30 @@ import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.db.DbBlockDao
-import org.alephium.explorer.service.{BlockFlowSyncService, BlockService}
+import org.alephium.explorer.service.{BlockFlowClient, BlockFlowSyncService, BlockService}
 import org.alephium.explorer.sideEffect
 import org.alephium.explorer.web._
+import org.alephium.util.Duration
 
-class Application(port: Int, blockFlowUri: Uri)(implicit system: ActorSystem,
-                                                executionContext: ExecutionContext)
+// scalastyle:off magic.number
+class Application(port: Int, blockFlowUri: Uri, databaseConfig: DatabaseConfig[JdbcProfile])(
+    implicit system: ActorSystem,
+    executionContext: ExecutionContext)
     extends StrictLogging
     with AkkaDecodeFailureHandler {
 
-  val databaseConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig[JdbcProfile]("db")
-  val blockDao: BlockDao                          = new DbBlockDao(databaseConfig)
-  val httpClient: HttpClient                      = HttpClient(32, OverflowStrategy.dropNew)
+  val blockDao: BlockDao     = new DbBlockDao(databaseConfig)
+  val httpClient: HttpClient = HttpClient(512, OverflowStrategy.fail)
 
   //Services
-  val blockFlowSyncService: BlockFlowSyncService =
-    BlockFlowSyncService(httpClient, blockFlowUri, blockDao)
-  val blockService: BlockService = BlockService(blockDao)
+  val blockFlowClient: BlockFlowClient = BlockFlowClient.apply(httpClient, blockFlowUri)
 
-  sideEffect(blockFlowSyncService.sync())
+  val blockFlowSyncService: BlockFlowSyncService =
+    BlockFlowSyncService(groupNum   = 4,
+                         syncPeriod = Duration.unsafe(15 * 1000),
+                         blockFlowClient,
+                         blockDao)
+  val blockService: BlockService = BlockService(blockDao)
 
   //Servers
   val blockServer: BlockServer           = new BlockServer(blockService)
@@ -44,6 +49,7 @@ class Application(port: Int, blockFlowUri: Uri)(implicit system: ActorSystem,
 
   sideEffect {
     for {
+      _       <- blockFlowSyncService.start()
       binding <- Http().bindAndHandle(route, "localhost", port)
     } yield {
       sideEffect(bindingPromise.success(binding))
@@ -52,10 +58,10 @@ class Application(port: Int, blockFlowUri: Uri)(implicit system: ActorSystem,
   }
 
   def stop: Future[Unit] =
-    bindingPromise.future
-      .flatMap(_.unbind)
-      .map {
-        case _ => logger.info("Http Unbound.")
-      }
-
+    for {
+      _ <- blockFlowSyncService.stop()
+      _ <- bindingPromise.future.flatMap(_.unbind)
+    } yield {
+      logger.info("Application stopped")
+    }
 }
