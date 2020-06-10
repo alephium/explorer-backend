@@ -1,10 +1,9 @@
 package org.alephium.explorer
 
-import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.util.{AVector, Duration, TimeStamp}
 
 trait Generators {
@@ -12,13 +11,14 @@ trait Generators {
   val timestampGen: Gen[TimeStamp]   = Gen.posNum[Long].map(TimeStamp.unsafe)
   val hashGen: Gen[Hash]             = Gen.uuid.map(uuid => Hash.hash(uuid.toString))
   val groupIndexGen: Gen[GroupIndex] = Gen.posNum[Int].map(GroupIndex.unsafe(_))
+  val heightGen: Gen[Height]         = Gen.posNum[Int].map(Height.unsafe(_))
 
   val blockEntryGen: Gen[BlockEntry] = for {
     hash      <- hashGen
     timestamp <- timestampGen
     chainFrom <- groupIndexGen
     chainTo   <- groupIndexGen
-    height    <- arbitrary[Int]
+    height    <- heightGen
     deps      <- Gen.listOf(hashGen)
   } yield BlockEntry(hash, timestamp, chainFrom, chainTo, height, AVector.from(deps))
 
@@ -28,7 +28,7 @@ trait Generators {
                chainTo: GroupIndex): Gen[Seq[BlockEntry]] =
     Gen.listOfN(size, blockEntryGen).map { blocks =>
       blocks
-        .foldLeft((Seq.empty[BlockEntry], 0, startTimestamp)) {
+        .foldLeft((Seq.empty[BlockEntry], Height.zero, startTimestamp)) {
           case ((acc, height, timestamp), block) =>
             val deps: AVector[Hash] =
               if (acc.isEmpty) AVector.empty else AVector(acc.last.hash)
@@ -37,7 +37,7 @@ trait Generators {
                                       timestamp = timestamp,
                                       chainFrom = chainFrom,
                                       chainTo   = chainTo)
-            (acc :+ newBlock, height + 1, timestamp + Duration.unsafe(1))
+            (acc :+ newBlock, Height.unsafe(height.value + 1), timestamp + Duration.unsafe(1))
         } match { case (block, _, _) => block }
     }
 

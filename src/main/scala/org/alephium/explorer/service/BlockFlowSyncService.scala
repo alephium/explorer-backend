@@ -6,7 +6,7 @@ import scala.util.{Failure, Success}
 import com.typesafe.scalalogging.StrictLogging
 
 import org.alephium.explorer.{sideEffect, AnyOps, Hash}
-import org.alephium.explorer.api.model.GroupIndex
+import org.alephium.explorer.api.model.{GroupIndex, Height}
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.util.Duration
 
@@ -75,7 +75,9 @@ object BlockFlowSyncService {
         case Right(nodeHeight) =>
           blockDao.maxHeight(fromGroup, toGroup).flatMap { maybeLocalHeight =>
             logger.debug(
-              s"Syncing (${fromGroup.value}, ${toGroup.value}). Heights: local = $maybeLocalHeight, node = $nodeHeight")
+              s"Syncing (${fromGroup.value}, ${toGroup.value}). Heights: local = ${maybeLocalHeight
+                .map(_.value)
+                .getOrElse(-1)}, node = ${nodeHeight.currentHeight.value}")
             val heights = generateHeights(maybeLocalHeight, nodeHeight.currentHeight)
             Future.traverse(heights)(syncAt(fromGroup, toGroup, _)).map(_ => ())
           }
@@ -84,7 +86,7 @@ object BlockFlowSyncService {
       }
     }
 
-    private def syncAt(fromGroup: GroupIndex, toGroup: GroupIndex, height: Int): Future[Unit] = {
+    private def syncAt(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height): Future[Unit] = {
       blockFlowClient.getHashesAtHeight(fromGroup, toGroup, height).flatMap {
         case Right(hashesAtHeight) =>
           Future.traverse(hashesAtHeight.headers)(syncWithHash).map(_ => ())
@@ -99,16 +101,16 @@ object BlockFlowSyncService {
         case Left(error) => Future.successful(logger.error(error))
       }
 
-    private def generateHeights(maybeLocal: Option[Int], remote: Int): Seq[Int] =
+    private def generateHeights(maybeLocal: Option[Height], remote: Height): Seq[Height] =
       maybeLocal match {
         case Some(local) =>
           if (local === remote) {
             Seq.empty
           } else {
-            ((local + 1) to remote).toSeq
+            ((local.value + 1) to remote.value).toSeq.map(Height.unsafe)
           }
         case None =>
-          (0 to remote).toSeq
+          (0 to remote.value).toSeq.map(Height.unsafe)
       }
   }
 }

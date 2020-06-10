@@ -5,7 +5,7 @@ import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, ProvenShape}
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.GroupIndex
+import org.alephium.explorer.api.model.{GroupIndex, Height}
 import org.alephium.explorer.persistence.model.BlockHeader
 
 trait BlockHeaderSchema extends CustomTypes {
@@ -18,7 +18,7 @@ trait BlockHeaderSchema extends CustomTypes {
     def timestamp: Rep[Long]       = column[Long]("timestamp")
     def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
-    def height: Rep[Int]           = column[Int]("height")
+    def height: Rep[Height]        = column[Height]("height")
 
     def blocksTimestampIdx: Index = index("blocks_timestamp_idx", timestamp)
     def blocksHeigthIdx: Index    = index("blocks_height_idx", height)

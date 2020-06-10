@@ -9,7 +9,7 @@ import slick.jdbc.JdbcProfile
 import slick.jdbc.meta.MTable
 
 import org.alephium.explorer.{sideEffect, AnyOps, Hash}
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, TimeInterval}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, TimeInterval}
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema.{BlockDepsSchema, BlockHeaderSchema}
@@ -70,7 +70,7 @@ class DbBlockDao(val config: DatabaseConfig[JdbcProfile])(
     }
   }
 
-  def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Int]] = {
+  def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]] = {
     val query =
       blockHeaders
         .filter(header => header.chainFrom === fromGroup && header.chainTo === toGroup)

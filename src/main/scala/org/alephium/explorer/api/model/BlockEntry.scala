@@ -13,7 +13,7 @@ final case class BlockEntry(
     timestamp: TimeStamp,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
-    height: Int,
+    height: Height,
     deps: AVector[Hash]
 )
 

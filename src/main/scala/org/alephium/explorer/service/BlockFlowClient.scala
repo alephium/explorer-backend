@@ -9,7 +9,7 @@ import io.circe.syntax._
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.Circe.hashCodec
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.web.HttpClient
 
 trait BlockFlowClient {
@@ -20,7 +20,7 @@ trait BlockFlowClient {
 
   def getHashesAtHeight(from: GroupIndex,
                         to: GroupIndex,
-                        height: Int): Future[Either[String, HashesAtHeight]]
+                        height: Height): Future[Either[String, HashesAtHeight]]
 }
 
 object BlockFlowClient {
@@ -57,7 +57,7 @@ object BlockFlowClient {
 
     def getHashesAtHeight(from: GroupIndex,
                           to: GroupIndex,
-                          height: Int): Future[Either[String, HashesAtHeight]] =
+                          height: Height): Future[Either[String, HashesAtHeight]] =
       request[GetHashesAtHeight, HashesAtHeight](
         GetHashesAtHeight(from, to, height)
       )
@@ -73,7 +73,7 @@ object BlockFlowClient {
     implicit val codec: Codec[HashesAtHeight] = deriveCodec[HashesAtHeight]
   }
 
-  final case class ChainInfo(currentHeight: Int)
+  final case class ChainInfo(currentHeight: Height)
   object ChainInfo {
     implicit val codec: Codec[ChainInfo] = deriveCodec[ChainInfo]
   }
@@ -82,7 +82,7 @@ object BlockFlowClient {
     def method: String
   }
 
-  final case class GetHashesAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Int)
+  final case class GetHashesAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)
       extends JsonRpc {
     val method: String = "get_hashes_at_height"
   }

@@ -14,7 +14,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.explorer.api.ApiError
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.persistence.db.DatabaseFixture
 import org.alephium.util.{AlephiumSpec, TimeStamp}
 
@@ -119,7 +119,7 @@ object ApplicationSpec {
 
   class BlockFlowServerMock(port: Int, blocks: Seq[BlockEntry])(implicit system: ActorSystem)
       extends FailFastCirceSupport {
-    def getHashesAtHeight(from: GroupIndex, to: GroupIndex, height: Int): HashesAtHeight =
+    def getHashesAtHeight(from: GroupIndex, to: GroupIndex, height: Height): HashesAtHeight =
       HashesAtHeight(blocks.collect {
         case block if block.chainFrom === from && block.chainTo === to && block.height === height =>
           block.hash
@@ -130,7 +130,7 @@ object ApplicationSpec {
         blocks
           .collect { case block if block.chainFrom == from && block.chainTo === to => block.height }
           .maxOption
-          .getOrElse(0))
+          .getOrElse(Height.zero))
     }
 
     val routes: Route =
