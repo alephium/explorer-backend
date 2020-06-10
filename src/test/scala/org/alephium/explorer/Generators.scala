@@ -4,27 +4,28 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.BlockEntry
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex}
 import org.alephium.util.{AVector, Duration, TimeStamp}
 
 trait Generators {
 
-  val timestampGen: Gen[TimeStamp] = Gen.posNum[Long].map(TimeStamp.unsafe)
-  val hashGen: Gen[Hash]           = Gen.uuid.map(uuid => Hash.hash(uuid.toString))
+  val timestampGen: Gen[TimeStamp]   = Gen.posNum[Long].map(TimeStamp.unsafe)
+  val hashGen: Gen[Hash]             = Gen.uuid.map(uuid => Hash.hash(uuid.toString))
+  val groupIndexGen: Gen[GroupIndex] = Gen.posNum[Int].map(GroupIndex.unsafe(_))
 
   val blockEntryGen: Gen[BlockEntry] = for {
     hash      <- hashGen
     timestamp <- timestampGen
-    chainFrom <- arbitrary[Int]
-    chainTo   <- arbitrary[Int]
+    chainFrom <- groupIndexGen
+    chainTo   <- groupIndexGen
     height    <- arbitrary[Int]
     deps      <- Gen.listOf(hashGen)
   } yield BlockEntry(hash, timestamp, chainFrom, chainTo, height, AVector.from(deps))
 
   def chainGen(size: Int,
                startTimestamp: TimeStamp,
-               chainFrom: Int,
-               chainTo: Int): Gen[Seq[BlockEntry]] =
+               chainFrom: GroupIndex,
+               chainTo: GroupIndex): Gen[Seq[BlockEntry]] =
     Gen.listOfN(size, blockEntryGen).map { blocks =>
       blocks
         .foldLeft((Seq.empty[BlockEntry], 0, startTimestamp)) {
@@ -44,10 +45,10 @@ trait Generators {
                    maxChainSize: Int,
                    startTimestamp: TimeStamp): Gen[Seq[Seq[BlockEntry]]] = {
 
-    val chainIndexes: Seq[(Int, Int)] = for {
+    val chainIndexes: Seq[(GroupIndex, GroupIndex)] = for {
       i <- 0 to groupNum - 1
       j <- 0 to groupNum - 1
-    } yield (i, j)
+    } yield (GroupIndex.unsafe(i), GroupIndex.unsafe(j))
 
     Gen
       .listOfN(chainIndexes.size, Gen.choose(1, maxChainSize))

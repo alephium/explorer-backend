@@ -9,16 +9,18 @@ import io.circe.syntax._
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.Circe.hashCodec
-import org.alephium.explorer.api.model.BlockEntry
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex}
 import org.alephium.explorer.web.HttpClient
 
 trait BlockFlowClient {
   import BlockFlowClient._
   def getBlock(hash: Hash): Future[Either[String, BlockEntry]]
 
-  def getChainInfo(from: Int, to: Int): Future[Either[String, ChainInfo]]
+  def getChainInfo(from: GroupIndex, to: GroupIndex): Future[Either[String, ChainInfo]]
 
-  def getHashesAtHeight(from: Int, to: Int, height: Int): Future[Either[String, HashesAtHeight]]
+  def getHashesAtHeight(from: GroupIndex,
+                        to: GroupIndex,
+                        height: Int): Future[Either[String, HashesAtHeight]]
 }
 
 object BlockFlowClient {
@@ -49,11 +51,13 @@ object BlockFlowClient {
     def getBlock(hash: Hash): Future[Either[String, BlockEntry]] =
       request[GetBlock, BlockEntry](GetBlock(hash))
 
-    def getChainInfo(from: Int, to: Int): Future[Either[String, ChainInfo]] = {
+    def getChainInfo(from: GroupIndex, to: GroupIndex): Future[Either[String, ChainInfo]] = {
       request[GetChainInfo, ChainInfo](GetChainInfo(from, to))
     }
 
-    def getHashesAtHeight(from: Int, to: Int, height: Int): Future[Either[String, HashesAtHeight]] =
+    def getHashesAtHeight(from: GroupIndex,
+                          to: GroupIndex,
+                          height: Int): Future[Either[String, HashesAtHeight]] =
       request[GetHashesAtHeight, HashesAtHeight](
         GetHashesAtHeight(from, to, height)
       )
@@ -78,14 +82,15 @@ object BlockFlowClient {
     def method: String
   }
 
-  final case class GetHashesAtHeight(fromGroup: Int, toGroup: Int, height: Int) extends JsonRpc {
+  final case class GetHashesAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Int)
+      extends JsonRpc {
     val method: String = "get_hashes_at_height"
   }
   object GetHashesAtHeight {
     implicit val codec: Codec[GetHashesAtHeight] = deriveCodec[GetHashesAtHeight]
   }
 
-  final case class GetChainInfo(fromGroup: Int, toGroup: Int) extends JsonRpc {
+  final case class GetChainInfo(fromGroup: GroupIndex, toGroup: GroupIndex) extends JsonRpc {
     val method: String = "get_chain_info"
   }
   object GetChainInfo {

@@ -6,7 +6,7 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.explorer.{Generators, Hash}
-import org.alephium.explorer.api.model.{BlockEntry, TimeInterval}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, TimeInterval}
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.db.{DatabaseFixture, DbBlockDao}
 import org.alephium.explorer.service.BlockFlowClient.{ChainInfo, HashesAtHeight}
@@ -57,7 +57,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
       def getBlock(hash: Hash): Future[Either[String, BlockEntry]] =
         Future.successful(blocks.find(_.hash === hash).toRight(s"$hash Not Found"))
 
-      def getChainInfo(from: Int, to: Int): Future[Either[String, ChainInfo]] =
+      def getChainInfo(from: GroupIndex, to: GroupIndex): Future[Either[String, ChainInfo]] =
         Future.successful(
           Right(
             ChainInfo(
@@ -66,8 +66,8 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
                 .map(_.height)
                 .max)))
 
-      def getHashesAtHeight(from: Int,
-                            to: Int,
+      def getHashesAtHeight(from: GroupIndex,
+                            to: GroupIndex,
                             height: Int): Future[Either[String, HashesAtHeight]] =
         Future.successful(
           Right(

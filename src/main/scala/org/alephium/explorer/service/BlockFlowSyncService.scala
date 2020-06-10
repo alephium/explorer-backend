@@ -6,6 +6,7 @@ import scala.util.{Failure, Success}
 import com.typesafe.scalalogging.StrictLogging
 
 import org.alephium.explorer.{sideEffect, AnyOps, Hash}
+import org.alephium.explorer.api.model.GroupIndex
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.util.Duration
 
@@ -28,10 +29,10 @@ object BlockFlowSyncService {
       extends BlockFlowSyncService
       with StrictLogging {
 
-    private val chainIndexes: Seq[(Int, Int)] = for {
+    private val chainIndexes: Seq[(GroupIndex, GroupIndex)] = for {
       i <- 0 to groupNum - 1
       j <- 0 to groupNum - 1
-    } yield (i, j)
+    } yield (GroupIndex.unsafe(i), GroupIndex.unsafe(j))
 
     private val stopped: Promise[Unit]  = Promise()
     private val syncDone: Promise[Unit] = Promise()
@@ -69,12 +70,12 @@ object BlockFlowSyncService {
         .map(_ => ())
     }
 
-    private def syncChain(fromGroup: Int, toGroup: Int): Future[Unit] = {
+    private def syncChain(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Unit] = {
       blockFlowClient.getChainInfo(fromGroup, toGroup).flatMap {
         case Right(nodeHeight) =>
           blockDao.maxHeight(fromGroup, toGroup).flatMap { maybeLocalHeight =>
             logger.debug(
-              s"Syncing ($fromGroup, $toGroup). Heights: local = $maybeLocalHeight, node = $nodeHeight")
+              s"Syncing (${fromGroup.value}, ${toGroup.value}). Heights: local = $maybeLocalHeight, node = $nodeHeight")
             val heights = generateHeights(maybeLocalHeight, nodeHeight.currentHeight)
             Future.traverse(heights)(syncAt(fromGroup, toGroup, _)).map(_ => ())
           }
@@ -83,7 +84,7 @@ object BlockFlowSyncService {
       }
     }
 
-    private def syncAt(fromGroup: Int, toGroup: Int, height: Int): Future[Unit] = {
+    private def syncAt(fromGroup: GroupIndex, toGroup: GroupIndex, height: Int): Future[Unit] = {
       blockFlowClient.getHashesAtHeight(fromGroup, toGroup, height).flatMap {
         case Right(hashesAtHeight) =>
           Future.traverse(hashesAtHeight.headers)(syncWithHash).map(_ => ())

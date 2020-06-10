@@ -11,8 +11,8 @@ import org.alephium.util.{AVector, TimeStamp}
 final case class BlockEntry(
     hash: Hash,
     timestamp: TimeStamp,
-    chainFrom: Int,
-    chainTo: Int,
+    chainFrom: GroupIndex,
+    chainTo: GroupIndex,
     height: Int,
     deps: AVector[Hash]
 )
