@@ -12,9 +12,14 @@ import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
-import org.alephium.explorer.persistence.dao.BlockDao
+import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
 import org.alephium.explorer.persistence.db.DbBlockDao
-import org.alephium.explorer.service.{BlockFlowClient, BlockFlowSyncService, BlockService}
+import org.alephium.explorer.service.{
+  BlockFlowClient,
+  BlockFlowSyncService,
+  BlockService,
+  TransactionService
+}
 import org.alephium.explorer.sideEffect
 import org.alephium.explorer.web._
 import org.alephium.util.Duration
@@ -26,7 +31,9 @@ class Application(port: Int, blockFlowUri: Uri, databaseConfig: DatabaseConfig[J
     extends StrictLogging
     with AkkaDecodeFailureHandler {
 
-  val blockDao: BlockDao     = new DbBlockDao(databaseConfig)
+  val blockDao: BlockDao             = new DbBlockDao(databaseConfig)
+  val transactionDao: TransactionDao = TransactionDao(databaseConfig)
+
   val httpClient: HttpClient = HttpClient(512, OverflowStrategy.fail)
 
   //Services
@@ -37,15 +44,17 @@ class Application(port: Int, blockFlowUri: Uri, databaseConfig: DatabaseConfig[J
                          syncPeriod = Duration.unsafe(15 * 1000),
                          blockFlowClient,
                          blockDao)
-  val blockService: BlockService = BlockService(blockDao)
+  val blockService: BlockService             = BlockService(blockDao)
+  val transactionService: TransactionService = TransactionService(transactionDao)
 
   //Servers
-  val blockServer: BlockServer           = new BlockServer(blockService)
-  val documentation: DocumentationServer = new DocumentationServer
+  val blockServer: BlockServer             = new BlockServer(blockService)
+  val transactionServer: TransactionServer = new TransactionServer(transactionService)
+  val documentation: DocumentationServer   = new DocumentationServer
 
   private val bindingPromise: Promise[Http.ServerBinding] = Promise()
 
-  val route: Route = blockServer.route ~ documentation.route
+  val route: Route = blockServer.route ~ transactionServer.route ~ documentation.route
 
   sideEffect {
     for {

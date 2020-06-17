@@ -18,7 +18,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.explorer.api.ApiError
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.explorer.persistence.db.DatabaseFixture
 import org.alephium.util.{AlephiumSpec, TimeStamp}
 
@@ -36,6 +36,8 @@ class ApplicationSpec()
     blockFlowGen(groupNum = 4, maxChainSize = 5, startTimestamp = TimeStamp.now).sample.get
 
   val blocks: Seq[BlockEntry] = blockFlow.flatten
+
+  val transactions: Seq[Transaction] = blockFlow.flatMap(_.flatMap(_.transactions.toArray.toSeq))
 
   val localhost: InetAddress = InetAddress.getLocalHost
 
@@ -90,6 +92,21 @@ class ApplicationSpec()
         responseAs[ApiError] is ApiError.BadRequest(
           "Invalid value (expected value to pass custom validation: `fromTs` must be before `toTs`, "
             ++ s"but was '(${TimeStamp.unsafe(maxTimestamp + 1)},${TimeStamp.unsafe(to)})')")
+      }
+    }
+  }
+
+  it should "get a transaction by its id" in {
+    forAll(Gen.oneOf(transactions)) { transaction =>
+      Get(s"/transactions/${transaction.hash.toHexString}") ~> routes ~> check {
+        responseAs[Transaction] is transaction
+      }
+    }
+
+    forAll(hashGen) { hash =>
+      Get(s"/transactions/${hash.toHexString}") ~> routes ~> check {
+        status is StatusCodes.NotFound
+        responseAs[ApiError] is ApiError.NotFound(hash.toHexString)
       }
     }
   }

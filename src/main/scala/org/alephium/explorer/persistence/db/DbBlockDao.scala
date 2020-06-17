@@ -10,7 +10,7 @@ import slick.jdbc.meta.MTable
 
 import org.alephium.explorer.{sideEffect, AnyOps, Hash}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, TimeInterval}
-import org.alephium.explorer.persistence.{DBAction, DBActionR}
+import org.alephium.explorer.persistence.{DBActionR, DBRunner}
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.queries.TransactionQueries
@@ -22,14 +22,9 @@ class DbBlockDao(val config: DatabaseConfig[JdbcProfile])(
     extends BlockDao
     with BlockHeaderSchema
     with BlockDepsSchema
-    with TransactionQueries {
+    with TransactionQueries
+    with DBRunner {
   import config.profile.api._
-
-  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
-  private def run[R, E <: Effect](action: DBAction[R, E]): Future[R] =
-    config.db.run(action).recover {
-      case error => throw new RuntimeException(error)
-    }
 
   private def buildBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry] =
     for {
@@ -82,8 +77,8 @@ class DbBlockDao(val config: DatabaseConfig[JdbcProfile])(
     Array("org.wartremover.warts.JavaSerializable",
           "org.wartremover.warts.Product",
           "org.wartremover.warts.Serializable"))
-
-  private val myTables = Seq(blockHeadersTable, blockDepsTable, transactionsTable, inputsTable, outputsTable)
+  private val myTables =
+    Seq(blockHeadersTable, blockDepsTable, transactionsTable, inputsTable, outputsTable)
   private val existing = run(MTable.getTables)
   private val f = existing.flatMap { tables =>
     Future.sequence(myTables.map { myTable =>
