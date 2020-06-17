@@ -7,8 +7,8 @@ import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.explorer.{Generators, Hash}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, TimeInterval}
+import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.BlockDao
-import org.alephium.explorer.persistence.db.DatabaseFixture
 import org.alephium.explorer.service.BlockFlowClient.{ChainInfo, HashesAtHeight}
 import org.alephium.util.{AlephiumSpec, Duration, TimeStamp}
 

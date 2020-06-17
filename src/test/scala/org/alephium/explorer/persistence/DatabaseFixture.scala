@@ -1,4 +1,4 @@
-package org.alephium.explorer.persistence.db
+package org.alephium.explorer.persistence
 
 import scala.jdk.CollectionConverters._
 import scala.util.Random

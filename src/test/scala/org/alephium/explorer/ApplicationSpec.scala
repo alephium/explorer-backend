@@ -19,7 +19,7 @@ import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.explorer.api.ApiError
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, Transaction}
-import org.alephium.explorer.persistence.db.DatabaseFixture
+import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.util.{AlephiumSpec, TimeStamp}
 
 class ApplicationSpec()
