@@ -8,7 +8,7 @@ import org.scalatest.time.{Minutes, Span}
 import org.alephium.explorer.{Generators, Hash}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, TimeInterval}
 import org.alephium.explorer.persistence.dao.BlockDao
-import org.alephium.explorer.persistence.db.{DatabaseFixture, DbBlockDao}
+import org.alephium.explorer.persistence.db.DatabaseFixture
 import org.alephium.explorer.service.BlockFlowClient.{ChainInfo, HashesAtHeight}
 import org.alephium.util.{AlephiumSpec, Duration, TimeStamp}
 
@@ -44,7 +44,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
 
     val blockFlow: Seq[Seq[BlockEntry]] =
       blockFlowGen(groupNum = groupNum, maxChainSize = 20, startTimestamp = startTimestamp).sample.get
-    val blockDao: BlockDao = new DbBlockDao(databaseConfig)
+    val blockDao: BlockDao = BlockDao(databaseConfig)
 
     var blocks: Seq[BlockEntry] = blockFlow.flatMap { chain =>
       if (chain.size <= 1) {

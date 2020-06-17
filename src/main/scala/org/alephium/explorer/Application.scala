@@ -13,7 +13,6 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
-import org.alephium.explorer.persistence.db.DbBlockDao
 import org.alephium.explorer.service.{
   BlockFlowClient,
   BlockFlowSyncService,
@@ -31,7 +30,7 @@ class Application(port: Int, blockFlowUri: Uri, databaseConfig: DatabaseConfig[J
     extends StrictLogging
     with AkkaDecodeFailureHandler {
 
-  val blockDao: BlockDao             = new DbBlockDao(databaseConfig)
+  val blockDao: BlockDao             = BlockDao(databaseConfig)
   val transactionDao: TransactionDao = TransactionDao(databaseConfig)
 
   val httpClient: HttpClient = HttpClient(512, OverflowStrategy.fail)
