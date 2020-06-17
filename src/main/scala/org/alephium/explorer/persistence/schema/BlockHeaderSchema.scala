@@ -27,5 +27,5 @@ trait BlockHeaderSchema extends CustomTypes {
       (hash, timestamp, chainFrom, chainTo, height) <> ((BlockHeader.apply _).tupled, BlockHeader.unapply)
   }
 
-  val blockHeaders: TableQuery[BlockHeaders] = TableQuery[BlockHeaders]
+  val blockHeadersTable: TableQuery[BlockHeaders] = TableQuery[BlockHeaders]
 }

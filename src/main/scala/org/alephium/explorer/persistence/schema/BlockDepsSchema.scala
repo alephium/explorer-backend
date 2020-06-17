@@ -20,5 +20,5 @@ trait BlockDepsSchema extends CustomTypes {
     def * : ProvenShape[(Hash, Hash)] = (hash, dep)
   }
 
-  val blockDeps: TableQuery[BlockDeps] = TableQuery[BlockDeps]
+  val blockDepsTable: TableQuery[BlockDeps] = TableQuery[BlockDeps]
 }

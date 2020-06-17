@@ -33,13 +33,13 @@ class DbBlockDao(val config: DatabaseConfig[JdbcProfile])(
 
   private def buildBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry] =
     for {
-      deps <- blockDeps.filter(_.hash === blockHeader.hash).map(_.dep).result
+      deps <- blockDepsTable.filter(_.hash === blockHeader.hash).map(_.dep).result
       txs  <- listTransactionsAction(blockHeader.hash)
     } yield blockHeader.toApi(AVector.from(deps), AVector.from(txs))
 
   private def getBlockEntryAction(id: Hash): DBActionR[Option[BlockEntry]] =
     for {
-      headers <- blockHeaders.filter(_.hash === id).result
+      headers <- blockHeadersTable.filter(_.hash === id).result
       blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
     } yield blocks.headOption
 
@@ -48,15 +48,15 @@ class DbBlockDao(val config: DatabaseConfig[JdbcProfile])(
 
   def insert(block: BlockEntry): Future[BlockEntry] =
     run(
-      (blockHeaders += BlockHeader.fromApi(block)) >>
-        (blockDeps ++= block.deps.toArray.map(dep => (block.hash, dep))) >>
+      (blockHeadersTable += BlockHeader.fromApi(block)) >>
+        (blockDepsTable ++= block.deps.toArray.map(dep => (block.hash, dep))) >>
         DBIO.sequence(block.transactions.toIterable.map(insertTransactionQuery(_, block.hash)))
     ).map(_ => block)
 
   def list(timeInterval: TimeInterval): Future[Seq[BlockEntry]] = {
     val action =
       for {
-        headers <- blockHeaders
+        headers <- blockHeadersTable
           .filter(header =>
             header.timestamp >= timeInterval.from.millis && header.timestamp <= timeInterval.to.millis)
           .sortBy(_.timestamp.asc)
@@ -69,7 +69,7 @@ class DbBlockDao(val config: DatabaseConfig[JdbcProfile])(
 
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]] = {
     val query =
-      blockHeaders
+      blockHeadersTable
         .filter(header => header.chainFrom === fromGroup && header.chainTo === toGroup)
         .sortBy(_.height.desc)
         .map(_.height)
@@ -82,8 +82,8 @@ class DbBlockDao(val config: DatabaseConfig[JdbcProfile])(
     Array("org.wartremover.warts.JavaSerializable",
           "org.wartremover.warts.Product",
           "org.wartremover.warts.Serializable"))
-  private val myTables =
-    Seq(blockHeadersTable, blockDepsTable, transactionsTable, inputsTable, outputsTable)
+
+  private val myTables = Seq(blockHeadersTable, blockDepsTable, transactionsTable, inputsTable, outputsTable)
   private val existing = run(MTable.getTables)
   private val f = existing.flatMap { tables =>
     Future.sequence(myTables.map { myTable =>
