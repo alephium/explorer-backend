@@ -7,7 +7,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.{OverflowStrategy, QueueOfferResult}
+import akka.stream.{OverflowStrategy, QueueOfferResult, StreamTcpException}
 import akka.stream.scaladsl.{Sink, Source}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.Decoder
@@ -43,6 +43,12 @@ object HttpClient {
               .map(error => Left(s"Request failed with code $code and message: $error"))
         }
         .recover {
+          case streamException: StreamTcpException =>
+            streamException.getCause match {
+              case connectException: java.net.ConnectException =>
+                Left(s"${connectException.getMessage} (${httpRequest.uri})")
+              case _ => Left(s"Unexpected error: $streamException")
+            }
           case error =>
             Left(s"Unexpected error: $error")
         }

@@ -89,15 +89,17 @@ object BlockFlowSyncService {
     private def syncAt(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height): Future[Unit] = {
       blockFlowClient.getHashesAtHeight(fromGroup, toGroup, height).flatMap {
         case Right(hashesAtHeight) =>
-          Future.traverse(hashesAtHeight.headers)(syncWithHash).map(_ => ())
+          Future
+            .traverse(hashesAtHeight.headers)(hash => syncWithHash(fromGroup, hash))
+            .map(_ => ())
         case Left(error) => Future.successful(logger.error(error))
       }
     }
 
-    private def syncWithHash(hash: Hash): Future[Unit] =
-      blockFlowClient.getBlock(hash).flatMap {
+    private def syncWithHash(fromGroup: GroupIndex, hash: Hash): Future[Unit] =
+      blockFlowClient.getBlock(fromGroup, hash).flatMap {
         case Right(block) =>
-          blockDao.insert(block).map(_.left.map(logger.error(_))).map(_ => ())
+          blockDao.insert(block).map(_ => ())
         case Left(error) => Future.successful(logger.error(error))
       }
 

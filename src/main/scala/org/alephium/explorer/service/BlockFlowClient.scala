@@ -1,9 +1,11 @@
 package org.alephium.explorer.service
 
+import java.net.InetAddress
+
 import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, Uri}
-import io.circe.{Codec, Encoder}
+import io.circe.{Codec, Encoder, Json, JsonObject}
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax._
 
@@ -11,10 +13,11 @@ import org.alephium.explorer.Hash
 import org.alephium.explorer.api.Circe.hashCodec
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.web.HttpClient
+import org.alephium.rpc.CirceUtils._
 
 trait BlockFlowClient {
   import BlockFlowClient._
-  def getBlock(hash: Hash): Future[Either[String, BlockEntry]]
+  def getBlock(from: GroupIndex, hash: Hash): Future[Either[String, BlockEntry]]
 
   def getChainInfo(from: GroupIndex, to: GroupIndex): Future[Either[String, ChainInfo]]
 
@@ -41,15 +44,38 @@ object BlockFlowClient {
           s"""{"jsonrpc":"2.0","id": 0,"method":"${jsonRpc.method}","params":${jsonRpc.asJson}}""")
       )
 
-    private def request[P <: JsonRpc: Encoder, R: Codec](params: P): Future[Either[String, R]] =
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+    private def request[P <: JsonRpc: Encoder, R: Codec](
+        params: P,
+        uri: Uri = address): Future[Either[String, R]] = {
       httpClient
         .request[Result[R]](
-          rpcRequest(address, params)
+          rpcRequest(uri, params)
         )
         .map(_.map(_.result))
+    }
 
-    def getBlock(hash: Hash): Future[Either[String, BlockEntry]] =
-      request[GetBlock, BlockEntry](GetBlock(hash))
+    //TODO Introduce monad transformer helper for more readability
+    def getBlock(fromGroup: GroupIndex, hash: Hash): Future[Either[String, BlockEntry]] =
+      getSelfClique().flatMap {
+        case Left(error) => Future.successful(Left(error))
+        case Right(selfClique) =>
+          selfClique
+            .index(fromGroup) match {
+            case Left(error) => Future.successful(Left(error))
+            case Right(index) =>
+              selfClique.peers
+                .lift(index)
+                .flatMap(peer => peer.rpcPort.map(rpcPort => (peer.address, rpcPort))) match {
+                case None =>
+                  Future.successful(
+                    Left(s"cannot find peer for group $fromGroup (peers: ${selfClique.peers})"))
+                case Some((peerAddress, rpcPort)) =>
+                  val uri = Uri(s"http://${peerAddress.getHostAddress}:${rpcPort}")
+                  request[GetBlock, BlockEntry](GetBlock(hash), uri)
+              }
+          }
+      }
 
     def getChainInfo(from: GroupIndex, to: GroupIndex): Future[Either[String, ChainInfo]] = {
       request[GetChainInfo, ChainInfo](GetChainInfo(from, to))
@@ -60,6 +86,11 @@ object BlockFlowClient {
                           height: Height): Future[Either[String, HashesAtHeight]] =
       request[GetHashesAtHeight, HashesAtHeight](
         GetHashesAtHeight(from, to, height)
+      )
+
+    private def getSelfClique(): Future[Either[String, SelfClique]] =
+      request[GetSelfClique.type, SelfClique](
+        GetSelfClique
       )
   }
 
@@ -102,5 +133,29 @@ object BlockFlowClient {
   }
   object GetBlock {
     implicit val codec: Codec[GetBlock] = deriveCodec[GetBlock]
+  }
+
+  final case object GetSelfClique extends JsonRpc {
+    val method: String = "self_clique"
+    implicit val encoder: Encoder[GetSelfClique.type] = new Encoder[GetSelfClique.type] {
+      final def apply(selfClique: GetSelfClique.type): Json = JsonObject.empty.asJson
+    }
+  }
+
+  final case class PeerAddress(address: InetAddress, rpcPort: Option[Int], wsPort: Option[Int])
+  object PeerAddress {
+    implicit val codec: Codec[PeerAddress] = deriveCodec[PeerAddress]
+  }
+
+  final case class SelfClique(peers: Seq[PeerAddress], groupNumPerBroker: Int) {
+    def index(group: GroupIndex): Either[String, Int] =
+      if (groupNumPerBroker <= 0) {
+        Left(s"SelfClique.groupNumPerBroker ($groupNumPerBroker) cannot be less or equal to zero")
+      } else {
+        Right(group.value / groupNumPerBroker)
+      }
+  }
+  object SelfClique {
+    implicit val codec: Codec[SelfClique] = deriveCodec[SelfClique]
   }
 }

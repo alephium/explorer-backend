@@ -14,7 +14,8 @@ final case class BlockEntry(
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     height: Height,
-    deps: AVector[Hash]
+    deps: AVector[Hash],
+    transactions: AVector[Transaction]
 )
 
 object BlockEntry {

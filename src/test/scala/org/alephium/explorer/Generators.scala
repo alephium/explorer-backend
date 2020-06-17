@@ -1,9 +1,10 @@
 package org.alephium.explorer
 
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.explorer.api.model._
 import org.alephium.util.{AVector, Duration, TimeStamp}
 
 trait Generators {
@@ -13,14 +14,42 @@ trait Generators {
   val groupIndexGen: Gen[GroupIndex] = Gen.posNum[Int].map(GroupIndex.unsafe(_))
   val heightGen: Gen[Height]         = Gen.posNum[Int].map(Height.unsafe(_))
 
+  val inputGen: Gen[Input] = for {
+    shortKey    <- arbitrary[Int]
+    txHash      <- hashGen
+    outputIndex <- arbitrary[Int]
+  } yield Input(shortKey, txHash, outputIndex)
+
+  val outputGen: Gen[Output] = for {
+    value     <- arbitrary[Long]
+    pubScript <- Gen.alphaNumStr
+  } yield Output(value, pubScript)
+
+  val transactionGen: Gen[Transaction] = for {
+    id         <- hashGen
+    inputSize  <- Gen.choose(0, 10)
+    inputs     <- Gen.listOfN(inputSize, inputGen)
+    outputSize <- Gen.choose(2, 10)
+    outputs    <- Gen.listOfN(outputSize, outputGen)
+  } yield Transaction(id, AVector.from(inputs), AVector.from(outputs))
+
   val blockEntryGen: Gen[BlockEntry] = for {
-    hash      <- hashGen
-    timestamp <- timestampGen
-    chainFrom <- groupIndexGen
-    chainTo   <- groupIndexGen
-    height    <- heightGen
-    deps      <- Gen.listOf(hashGen)
-  } yield BlockEntry(hash, timestamp, chainFrom, chainTo, height, AVector.from(deps))
+    hash            <- hashGen
+    timestamp       <- timestampGen
+    chainFrom       <- groupIndexGen
+    chainTo         <- groupIndexGen
+    height          <- heightGen
+    deps            <- Gen.listOfN(5, hashGen)
+    transactionSize <- Gen.choose(1, 10)
+    transactions    <- Gen.listOfN(transactionSize, transactionGen)
+  } yield
+    BlockEntry(hash,
+               timestamp,
+               chainFrom,
+               chainTo,
+               height,
+               AVector.from(deps),
+               AVector.from(transactions))
 
   def chainGen(size: Int,
                startTimestamp: TimeStamp,

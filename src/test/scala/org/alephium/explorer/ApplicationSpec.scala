@@ -1,11 +1,15 @@
 package org.alephium.explorer
 
+import java.net.InetAddress
+
+import scala.concurrent.duration._
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.testkit.SocketUtil
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.{Decoder, DecodingFailure, HCursor, Json}
@@ -26,20 +30,23 @@ class ApplicationSpec()
     with Generators
     with FailFastCirceSupport {
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
+  implicit val defaultTimeout          = RouteTestTimeout(5.seconds)
 
   val blockFlow: Seq[Seq[BlockEntry]] =
     blockFlowGen(groupNum = 4, maxChainSize = 5, startTimestamp = TimeStamp.now).sample.get
 
   val blocks: Seq[BlockEntry] = blockFlow.flatten
 
+  val localhost: InetAddress = InetAddress.getLocalHost
+
   val blockFlowPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
-  val blockFlowMock = new ApplicationSpec.BlockFlowServerMock(blockFlowPort, blocks)
+  val blockFlowMock = new ApplicationSpec.BlockFlowServerMock(localhost, blockFlowPort, blocks)
 
   val blockflowBinding = blockFlowMock.server.futureValue
 
   val app: Application =
     new Application(SocketUtil.temporaryLocalPort(),
-                    Uri(s"http://localhost:$blockFlowPort"),
+                    Uri(s"http://${localhost.getHostAddress}:$blockFlowPort"),
                     databaseConfig)
 
   //let it sync
@@ -66,7 +73,6 @@ class ApplicationSpec()
     val timestamps   = blocks.map(_.timestamp.millis)
     val minTimestamp = timestamps.min
     val maxTimestamp = timestamps.max
-
     forAll(Gen.choose(minTimestamp, maxTimestamp)) { to =>
       Get(s"/blocks?fromTs=${minTimestamp}&toTs=${to}") ~> routes ~> check {
         //filter `blocks by the same timestamp as the query for better assertion`
@@ -106,6 +112,7 @@ object ApplicationSpec {
         case "get_hashes_at_height" => params.as[GetHashesAtHeight]
         case "get_chain_info"       => params.as[GetChainInfo]
         case "get_block"            => params.as[GetBlock]
+        case "self_clique"          => Right(GetSelfClique)
         case _                      => Left(DecodingFailure(s"$method not supported", c.history))
       }
     }
@@ -117,7 +124,8 @@ object ApplicationSpec {
       } yield jsonRpc
   }
 
-  class BlockFlowServerMock(port: Int, blocks: Seq[BlockEntry])(implicit system: ActorSystem)
+  class BlockFlowServerMock(address: InetAddress, port: Int, blocks: Seq[BlockEntry])(
+      implicit system: ActorSystem)
       extends FailFastCirceSupport {
     def getHashesAtHeight(from: GroupIndex, to: GroupIndex, height: Height): HashesAtHeight =
       HashesAtHeight(blocks.collect {
@@ -133,19 +141,22 @@ object ApplicationSpec {
           .getOrElse(Height.zero))
     }
 
+    private val peer = PeerAddress(address, Some(port), None)
+
     val routes: Route =
       post {
         entity(as[JsonRpc]) {
           case GetBlock(hash) =>
             complete(Result(blocks.find(_.hash === hash).get))
-
           case GetHashesAtHeight(from, to, height) =>
             complete(Result(getHashesAtHeight(from, to, height)))
           case GetChainInfo(from, to) =>
             complete(Result(getChainInfo(from, to)))
+          case GetSelfClique =>
+            complete(Result(SelfClique(Seq(peer, peer), 2)))
         }
       }
 
-    val server = Http().bindAndHandle(routes, "localhost", port)
+    val server = Http().bindAndHandle(routes, address.getHostAddress, port)
   }
 }

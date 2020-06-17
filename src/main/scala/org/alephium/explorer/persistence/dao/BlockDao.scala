@@ -7,7 +7,7 @@ import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, TimeInte
 
 trait BlockDao {
   def get(id: Hash): Future[Option[BlockEntry]]
-  def insert(block: BlockEntry): Future[Either[String, BlockEntry]]
+  def insert(block: BlockEntry): Future[BlockEntry]
   def list(timeInterval: TimeInterval): Future[Seq[BlockEntry]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
 }

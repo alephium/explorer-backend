@@ -54,7 +54,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
       }
     }
     val blockFlowClient: BlockFlowClient = new BlockFlowClient {
-      def getBlock(hash: Hash): Future[Either[String, BlockEntry]] =
+      def getBlock(from: GroupIndex, hash: Hash): Future[Either[String, BlockEntry]] =
         Future.successful(blocks.find(_.hash === hash).toRight(s"$hash Not Found"))
 
       def getChainInfo(from: GroupIndex, to: GroupIndex): Future[Either[String, ChainInfo]] =

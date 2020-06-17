@@ -10,64 +10,61 @@ import slick.jdbc.meta.MTable
 
 import org.alephium.explorer.{sideEffect, AnyOps, Hash}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, TimeInterval}
+import org.alephium.explorer.persistence.{DBAction, DBActionR}
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockHeader
-import org.alephium.explorer.persistence.schema.{BlockDepsSchema, BlockHeaderSchema}
+import org.alephium.explorer.persistence.queries.TransactionQueries
+import org.alephium.explorer.persistence.schema._
 import org.alephium.util.AVector
 
 class DbBlockDao(val config: DatabaseConfig[JdbcProfile])(
-    implicit executionContext: ExecutionContext)
+    implicit val executionContext: ExecutionContext)
     extends BlockDao
     with BlockHeaderSchema
-    with BlockDepsSchema {
+    with BlockDepsSchema
+    with TransactionQueries {
   import config.profile.api._
 
-  def get(id: Hash): Future[Option[BlockEntry]] = {
-    val query =
-      blockHeaders
-        .filter(_.hash === id)
-
-    config.db.run(joinDeps(query).result).map { result =>
-      result.headOption.map {
-        case (blockHeader, _) =>
-          blockHeader.toApi(AVector.from(result.flatMap { case (_, dep) => dep }))
-      }
+  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
+  private def run[R, E <: Effect](action: DBAction[R, E]): Future[R] =
+    config.db.run(action).recover {
+      case error => throw new RuntimeException(error)
     }
-  }
 
-  def insert(block: BlockEntry): Future[Either[String, BlockEntry]] =
-    config.db
-      .run(
-        (blockHeaders += BlockHeader.fromApi(block)) >>
-          (blockDeps ++= block.deps.toArray.map(dep => (block.hash, dep)))
-            .map(_ => Right(block))
-      )
-      .recover {
-        case error =>
-          Left(s"Database error: $error")
-      }
+  private def buildBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry] =
+    for {
+      deps <- blockDeps.filter(_.hash === blockHeader.hash).map(_.dep).result
+      txs  <- listTransactionsAction(blockHeader.hash)
+    } yield blockHeader.toApi(AVector.from(deps), AVector.from(txs))
 
-  //TODO Optimize the query so we can do the ordering directly, the problem here is that we need
-  //to groupBy the result and it screw the order of the db, so we can't use the sql `ORDER_BY`
-  //we need a slick `Query[_,(BlockHeader, Seq[BlockDep), Seq]`
+  private def getBlockEntryAction(id: Hash): DBActionR[Option[BlockEntry]] =
+    for {
+      headers <- blockHeaders.filter(_.hash === id).result
+      blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
+    } yield blocks.headOption
+
+  def get(id: Hash): Future[Option[BlockEntry]] =
+    run(getBlockEntryAction(id))
+
+  def insert(block: BlockEntry): Future[BlockEntry] =
+    run(
+      (blockHeaders += BlockHeader.fromApi(block)) >>
+        (blockDeps ++= block.deps.toArray.map(dep => (block.hash, dep))) >>
+        DBIO.sequence(block.transactions.toIterable.map(insertTransactionQuery(_, block.hash)))
+    ).map(_ => block)
+
   def list(timeInterval: TimeInterval): Future[Seq[BlockEntry]] = {
-    val query =
-      blockHeaders
-        .filter(header =>
-          header.timestamp >= timeInterval.from.millis && header.timestamp <= timeInterval.to.millis)
+    val action =
+      for {
+        headers <- blockHeaders
+          .filter(header =>
+            header.timestamp >= timeInterval.from.millis && header.timestamp <= timeInterval.to.millis)
+          .sortBy(_.timestamp.asc)
+          .result
+        blocks <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
+      } yield blocks
 
-    config.db.run(joinDeps(query).result).map { result =>
-      result
-        .groupBy {
-          case (blockHeader, _) => blockHeader
-        }
-        .toSeq
-        .map {
-          case (header, deps) => header.toApi(AVector.from(deps.flatMap { case (_, dep) => dep }))
-        }
-        .sortBy(_.timestamp)
-        .reverse
-    }
+    run(action)
   }
 
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]] = {
@@ -77,21 +74,17 @@ class DbBlockDao(val config: DatabaseConfig[JdbcProfile])(
         .sortBy(_.height.desc)
         .map(_.height)
 
-    config.db.run(query.result.headOption)
+    run(query.result.headOption)
   }
-
-  private def joinDeps(headers: Query[BlockHeaders, BlockHeader, Seq]) =
-    for {
-      (header, blockDep) <- headers.joinLeft(blockDeps).on(_.hash === _.hash)
-    } yield (header, blockDep.map(_.dep))
 
   //TODO Look for something like https://flywaydb.org/ to manage schemas
   @SuppressWarnings(
     Array("org.wartremover.warts.JavaSerializable",
           "org.wartremover.warts.Product",
           "org.wartremover.warts.Serializable"))
-  private val myTables = Seq(blockHeaders, blockDeps)
-  private val existing = config.db.run(MTable.getTables)
+  private val myTables =
+    Seq(blockHeadersTable, blockDepsTable, transactionsTable, inputsTable, outputsTable)
+  private val existing = run(MTable.getTables)
   private val f = existing.flatMap { tables =>
     Future.sequence(myTables.map { myTable =>
       val createIfNotExist =
@@ -100,7 +93,7 @@ class DbBlockDao(val config: DatabaseConfig[JdbcProfile])(
         } else {
           DBIOAction.successful(())
         }
-      config.db.run(createIfNotExist)
+      run(createIfNotExist)
     })
   }
   sideEffect {
