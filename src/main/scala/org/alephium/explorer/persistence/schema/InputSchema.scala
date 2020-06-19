@@ -14,9 +14,9 @@ trait InputSchema extends CustomTypes {
 
   class Inputs(tag: Tag) extends Table[InputEntity](tag, "inputs") {
     def txHash: Rep[Hash]     = column[Hash]("tx_hash")
-    def shortKey: Rep[Int]    = column[Int]("short-key")
+    def shortKey: Rep[Int]    = column[Int]("short_key")
     def txHashRef: Rep[Hash]  = column[Hash]("tx_hash_ref")
-    def outputIndex: Rep[Int] = column[Int]("output-index")
+    def outputIndex: Rep[Int] = column[Int]("output_index")
 
     def inputsTxHashIdx: Index = index("inputs_tx_hash_idx", txHash)
 

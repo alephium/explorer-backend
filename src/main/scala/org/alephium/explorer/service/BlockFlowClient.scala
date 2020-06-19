@@ -12,6 +12,7 @@ import io.circe.syntax._
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.Circe.hashCodec
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.explorer.protocol.model.BlockEntryProtocol
 import org.alephium.explorer.web.HttpClient
 import org.alephium.rpc.CirceUtils._
 
@@ -72,7 +73,7 @@ object BlockFlowClient {
                     Left(s"cannot find peer for group $fromGroup (peers: ${selfClique.peers})"))
                 case Some((peerAddress, rpcPort)) =>
                   val uri = Uri(s"http://${peerAddress.getHostAddress}:${rpcPort}")
-                  request[GetBlock, BlockEntry](GetBlock(hash), uri)
+                  request[GetBlock, BlockEntryProtocol](GetBlock(hash), uri).map(_.map(_.toApi))
               }
           }
       }

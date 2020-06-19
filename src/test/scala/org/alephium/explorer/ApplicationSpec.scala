@@ -20,6 +20,7 @@ import org.scalatest.time.{Minutes, Span}
 import org.alephium.explorer.api.ApiError
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.explorer.persistence.DatabaseFixture
+import org.alephium.explorer.protocol.model.BlockEntryProtocol
 import org.alephium.util.{AlephiumSpec, TimeStamp}
 
 class ApplicationSpec()
@@ -32,17 +33,19 @@ class ApplicationSpec()
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
   implicit val defaultTimeout          = RouteTestTimeout(5.seconds)
 
-  val blockFlow: Seq[Seq[BlockEntry]] =
+  val blockFlow: Seq[Seq[BlockEntryProtocol]] =
     blockFlowGen(groupNum = 4, maxChainSize = 5, startTimestamp = TimeStamp.now).sample.get
 
-  val blocks: Seq[BlockEntry] = blockFlow.flatten
+  val blocksProtocol: Seq[BlockEntryProtocol] = blockFlow.flatten
+  val blocks: Seq[BlockEntry]                 = blocksProtocol.map(_.toApi)
 
-  val transactions: Seq[Transaction] = blockFlow.flatMap(_.flatMap(_.transactions.toArray.toSeq))
+  val transactions: Seq[Transaction] = blocks.flatMap(_.transactions.toArray.toSeq)
 
   val localhost: InetAddress = InetAddress.getLocalHost
 
   val blockFlowPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
-  val blockFlowMock = new ApplicationSpec.BlockFlowServerMock(localhost, blockFlowPort, blocks)
+  val blockFlowMock =
+    new ApplicationSpec.BlockFlowServerMock(localhost, blockFlowPort, blocksProtocol)
 
   val blockflowBinding = blockFlowMock.server.futureValue
 
@@ -141,7 +144,7 @@ object ApplicationSpec {
       } yield jsonRpc
   }
 
-  class BlockFlowServerMock(address: InetAddress, port: Int, blocks: Seq[BlockEntry])(
+  class BlockFlowServerMock(address: InetAddress, port: Int, blocks: Seq[BlockEntryProtocol])(
       implicit system: ActorSystem)
       extends FailFastCirceSupport {
     def getHashesAtHeight(from: GroupIndex, to: GroupIndex, height: Height): HashesAtHeight =

@@ -13,14 +13,15 @@ trait OutputSchema extends CustomTypes {
   import config.profile.api._
 
   class Outputs(tag: Tag) extends Table[OutputEntity](tag, "outputs") {
-    def txHash: Rep[Hash]      = column[Hash]("tx_hash")
-    def value: Rep[Long]       = column[Long]("value")
-    def pubScript: Rep[String] = column[String]("pub_script")
+    def txHash: Rep[Hash]  = column[Hash]("tx_hash")
+    def value: Rep[Long]   = column[Long]("value")
+    def address: Rep[Hash] = column[Hash]("address")
+    def shortKey: Rep[Int] = column[Int]("short_key")
 
     def outputsTxHashIdx: Index = index("outputs_tx_hash_idx", txHash)
 
     def * : ProvenShape[OutputEntity] =
-      (txHash, value, pubScript) <> ((OutputEntity.apply _).tupled, OutputEntity.unapply)
+      (txHash, value, address, shortKey) <> ((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }
 
   val outputsTable: TableQuery[Outputs] = TableQuery[Outputs]

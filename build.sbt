@@ -14,7 +14,6 @@ lazy val root = (project in file("."))
       "-explaintypes",
       "-feature",
       "-unchecked",
-      "-Xfatal-warnings",
       "-Xlint:adapted-args",
       "-Xlint:constant",
       "-Xlint:delayedinit-select",
@@ -49,6 +48,7 @@ lazy val root = (project in file("."))
     fork := true,
     libraryDependencies ++= Seq(
       alephiumUtil % "test" classifier "tests",
+      alephiumProtocol,
       alephiumRpc,
       alephiumCrypto,
       tapirCore,

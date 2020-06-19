@@ -1,7 +1,8 @@
 import sbt._
 
 object Version {
-  lazy val common = "0.2.0-SNAPSHOT"
+  lazy val common   = "0.2.0-SNAPSHOT"
+  lazy val protocol = "0.2.0-SNAPSHOT"
 
   lazy val akka       = "2.6.5"
   lazy val circe      = "0.13.0"
@@ -10,9 +11,10 @@ object Version {
   lazy val postgresql = "42.2.12"
 }
 object Dependencies {
-  lazy val alephiumCrypto = "org.alephium" %% "crypto" % Version.common
-  lazy val alephiumUtil   = "org.alephium" %% "util"   % Version.common
-  lazy val alephiumRpc    = "org.alephium" %% "rpc"    % Version.common
+  lazy val alephiumCrypto   = "org.alephium" %% "crypto"   % Version.common
+  lazy val alephiumProtocol = "org.alephium" %% "protocol" % Version.protocol
+  lazy val alephiumUtil     = "org.alephium" %% "util"     % Version.common
+  lazy val alephiumRpc      = "org.alephium" %% "rpc"      % Version.common
 
   lazy val akkaTest       = "com.typesafe.akka" %% "akka-testkit"        % Version.akka % Test
   lazy val akkaHttptest   = "com.typesafe.akka" %% "akka-http-testkit"   % "10.1.11" % Test

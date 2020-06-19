@@ -44,6 +44,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
 
     val blockFlow: Seq[Seq[BlockEntry]] =
       blockFlowGen(groupNum = groupNum, maxChainSize = 20, startTimestamp = startTimestamp).sample.get
+        .map(_.map(_.toApi))
     val blockDao: BlockDao = BlockDao(databaseConfig)
 
     var blocks: Seq[BlockEntry] = blockFlow.flatMap { chain =>
