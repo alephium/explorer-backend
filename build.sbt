@@ -59,6 +59,7 @@ lazy val root = (project in file("."))
       circeCore,
       circeGeneric,
       akkaHttpCirce,
+      akkaHttpCors,
       scalaLogging,
       logback,
       akkaTest,

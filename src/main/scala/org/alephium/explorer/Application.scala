@@ -8,6 +8,7 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.OverflowStrategy
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -53,7 +54,7 @@ class Application(port: Int, blockFlowUri: Uri, databaseConfig: DatabaseConfig[J
 
   private val bindingPromise: Promise[Http.ServerBinding] = Promise()
 
-  val route: Route = blockServer.route ~ transactionServer.route ~ documentation.route
+  val route: Route = cors()(blockServer.route ~ transactionServer.route ~ documentation.route)
 
   sideEffect {
     for {

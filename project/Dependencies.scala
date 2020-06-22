@@ -21,6 +21,8 @@ object Dependencies {
   lazy val akkaStream     = "com.typesafe.akka" %% "akka-stream-typed"   % Version.akka
   lazy val akkaStreamTest = "com.typesafe.akka" %% "akka-stream-testkit" % Version.akka % Test
 
+  lazy val akkaHttpCors = "ch.megard" %% "akka-http-cors" % "0.4.3"
+
   lazy val tapirCore        = "com.softwaremill.sttp.tapir" %% "tapir-core"               % Version.tapir
   lazy val tapirCirce       = "com.softwaremill.sttp.tapir" %% "tapir-json-circe"         % Version.tapir
   lazy val tapirAkka        = "com.softwaremill.sttp.tapir" %% "tapir-akka-http-server"   % Version.tapir
