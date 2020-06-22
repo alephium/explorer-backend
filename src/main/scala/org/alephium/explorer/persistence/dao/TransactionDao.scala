@@ -11,7 +11,7 @@ import org.alephium.explorer.persistence.DBRunner
 import org.alephium.explorer.persistence.queries.TransactionQueries
 
 trait TransactionDao {
-  def get(hash: Hash): Future[Option[Transaction]]
+  def get(hash: Transaction.Hash): Future[Option[Transaction]]
   def getByAddress(address: Hash): Future[Seq[Transaction]]
 }
 
@@ -26,7 +26,7 @@ object TransactionDao {
       with TransactionQueries
       with DBRunner {
 
-    def get(hash: Hash): Future[Option[Transaction]] =
+    def get(hash: Transaction.Hash): Future[Option[Transaction]] =
       run(getTransactionAction(hash))
 
     def getByAddress(address: Hash): Future[Seq[Transaction]] =

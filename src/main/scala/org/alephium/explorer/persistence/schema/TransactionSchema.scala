@@ -4,8 +4,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, ProvenShape}
 
-import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.BlockEntry
+import org.alephium.explorer.api.model.{BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.TransactionEntity
 
 trait TransactionSchema extends CustomTypes {
@@ -14,7 +13,7 @@ trait TransactionSchema extends CustomTypes {
   import config.profile.api._
 
   class Transactions(tag: Tag) extends Table[TransactionEntity](tag, "transactions") {
-    def hash: Rep[Hash]                 = column[Hash]("hash", O.PrimaryKey)
+    def hash: Rep[Transaction.Hash]     = column[Transaction.Hash]("hash", O.PrimaryKey)
     def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash")
 
     def transactionsBlockHashIdx: Index = index("transactions_block_hash_idx", blockHash)

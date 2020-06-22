@@ -33,7 +33,7 @@ trait TransactionQueries extends TransactionSchema with InputSchema with OutputS
       .result
       .flatMap(hashes => DBIOAction.sequence(hashes.map(getKnownTransactionAction)))
 
-  def getTransactionAction(txHash: Hash): DBActionR[Option[Transaction]] =
+  def getTransactionAction(txHash: Transaction.Hash): DBActionR[Option[Transaction]] =
     transactionsTable.filter(_.hash === txHash).result.headOption.flatMap {
       case None     => DBIOAction.successful(None)
       case Some(tx) => getKnownTransactionAction(tx.hash).map(Some.apply)
@@ -46,7 +46,7 @@ trait TransactionQueries extends TransactionSchema with InputSchema with OutputS
     } yield txs
   }
 
-  private def getKnownTransactionAction(txHash: Hash): DBActionR[Transaction] =
+  private def getKnownTransactionAction(txHash: Transaction.Hash): DBActionR[Transaction] =
     for {
       ins  <- inputsTable.filter(_.txHash === txHash).result
       outs <- outputsTable.filter(_.txHash === txHash).result

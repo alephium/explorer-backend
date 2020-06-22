@@ -12,17 +12,18 @@ import org.alephium.util.{AVector, Duration, TimeStamp}
 
 trait Generators {
 
-  val timestampGen: Gen[TimeStamp]            = Gen.posNum[Long].map(TimeStamp.unsafe)
-  val hashGen: Gen[Hash]                      = Gen.uuid.map(uuid => Hash.hash(uuid.toString))
-  val blockEntryHashGen: Gen[BlockEntry.Hash] = hashGen.map(new BlockEntry.Hash(_))
-  val groupIndexGen: Gen[GroupIndex]          = Gen.posNum[Int].map(GroupIndex.unsafe(_))
-  val heightGen: Gen[Height]                  = Gen.posNum[Int].map(Height.unsafe(_))
-  val publicKeyGen: Gen[ED25519PublicKey]     = Gen.oneOf(Seq(ED25519PublicKey.generate))
-  val pubScriptGen: Gen[PubScript]            = publicKeyGen.map(PubScript.build(PayTo.PKH, _))
+  val timestampGen: Gen[TimeStamp]              = Gen.posNum[Long].map(TimeStamp.unsafe)
+  val hashGen: Gen[Hash]                        = Gen.uuid.map(uuid => Hash.hash(uuid.toString))
+  val blockEntryHashGen: Gen[BlockEntry.Hash]   = hashGen.map(new BlockEntry.Hash(_))
+  val transactionHashGen: Gen[Transaction.Hash] = hashGen.map(new Transaction.Hash(_))
+  val groupIndexGen: Gen[GroupIndex]            = Gen.posNum[Int].map(GroupIndex.unsafe(_))
+  val heightGen: Gen[Height]                    = Gen.posNum[Int].map(Height.unsafe(_))
+  val publicKeyGen: Gen[ED25519PublicKey]       = Gen.oneOf(Seq(ED25519PublicKey.generate))
+  val pubScriptGen: Gen[PubScript]              = publicKeyGen.map(PubScript.build(PayTo.PKH, _))
 
   val inputProtocolGen: Gen[InputProtocol] = for {
     shortKey    <- arbitrary[Int]
-    txHash      <- hashGen
+    txHash      <- transactionHashGen
     outputIndex <- arbitrary[Int]
   } yield InputProtocol(shortKey, txHash, outputIndex)
 
@@ -36,12 +37,12 @@ trait Generators {
   val outputGen: Gen[Output] = outputProtocolGen.map(_.toApi)
 
   val transactionProtocolGen: Gen[TransactionProtocol] = for {
-    id         <- hashGen
+    hash       <- transactionHashGen
     inputSize  <- Gen.choose(0, 10)
     inputs     <- Gen.listOfN(inputSize, inputProtocolGen)
     outputSize <- Gen.choose(2, 10)
     outputs    <- Gen.listOfN(outputSize, outputProtocolGen)
-  } yield TransactionProtocol(id, AVector.from(inputs), AVector.from(outputs))
+  } yield TransactionProtocol(hash, AVector.from(inputs), AVector.from(outputs))
 
   val transactionGen: Gen[Transaction] = transactionProtocolGen.map(_.toApi)
 

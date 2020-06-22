@@ -15,8 +15,11 @@ class TransactionServer(transactionService: TransactionService)(
     extends Server
     with TransactionEndpoints
     with AddressesEndpoints {
-  val route: Route = getTransactionById.toRoute(id =>
-    transactionService.getTransaction(id).map(_.toRight(ApiError.NotFound(id.toHexString)))) ~
+  val route: Route = getTransactionById.toRoute(
+    hash =>
+      transactionService
+        .getTransaction(hash)
+        .map(_.toRight(ApiError.NotFound(hash.value.toHexString)))) ~
     getTransactionsByAddress.toRoute(address =>
       transactionService.getTransactionsByAddress(address).map(Right.apply))
 }

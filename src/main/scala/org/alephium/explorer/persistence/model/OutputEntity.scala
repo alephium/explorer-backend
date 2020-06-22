@@ -1,11 +1,11 @@
 package org.alephium.explorer.persistence.model
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.Output
+import org.alephium.explorer.api.model.{Output, Transaction}
 import org.alephium.util.DjbHash
 
 final case class OutputEntity(
-    txHash: Hash,
+    txHash: Transaction.Hash,
     value: Long,
     address: Hash,
     shortKey: Int
@@ -18,7 +18,7 @@ final case class OutputEntity(
 }
 
 object OutputEntity {
-  def fromApi(output: Output, txHash: Hash): OutputEntity =
+  def fromApi(output: Output, txHash: Transaction.Hash): OutputEntity =
     OutputEntity(
       txHash,
       output.value,

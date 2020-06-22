@@ -4,7 +4,7 @@ import sttp.tapir.{Codec, DecodeResult, Validator}
 import sttp.tapir.CodecFormat.TextPlain
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.BlockEntry
+import org.alephium.explorer.api.model.{BlockEntry, Transaction}
 import org.alephium.util.{Hex, TimeStamp}
 
 object Codecs {
@@ -21,4 +21,7 @@ object Codecs {
 
   implicit val blockHashCodec: Codec[String, BlockEntry.Hash, TextPlain] =
     hashCodec.map(new BlockEntry.Hash(_))(_.value)
+
+  implicit val transactionHashCodec: Codec[String, Transaction.Hash, TextPlain] =
+    hashCodec.map(new Transaction.Hash(_))(_.value)
 }

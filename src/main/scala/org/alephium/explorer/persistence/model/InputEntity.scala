@@ -1,12 +1,11 @@
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.Input
+import org.alephium.explorer.api.model.{Input, Transaction}
 
 final case class InputEntity(
-    txHash: Hash,
+    txHash: Transaction.Hash,
     shortKey: Int,
-    txHashRef: Hash,
+    txHashRef: Transaction.Hash,
     outputIndex: Int
 ) {
   lazy val toApi: Input =
@@ -18,7 +17,7 @@ final case class InputEntity(
 }
 
 object InputEntity {
-  def fromApi(input: Input, txHash: Hash): InputEntity =
+  def fromApi(input: Input, txHash: Transaction.Hash): InputEntity =
     InputEntity(
       txHash,
       input.shortKey,

@@ -7,7 +7,7 @@ import org.alephium.explorer.api.model.Transaction
 import org.alephium.explorer.persistence.dao.TransactionDao
 
 trait TransactionService {
-  def getTransaction(transactionId: Hash): Future[Option[Transaction]]
+  def getTransaction(transactionHash: Transaction.Hash): Future[Option[Transaction]]
   def getTransactionsByAddress(address: Hash): Future[Seq[Transaction]]
 }
 
@@ -16,8 +16,8 @@ object TransactionService {
     new Impl(transactionDao)
 
   private class Impl(transactionDao: TransactionDao) extends TransactionService {
-    def getTransaction(transactionId: Hash): Future[Option[Transaction]] =
-      transactionDao.get(transactionId)
+    def getTransaction(transactionHash: Transaction.Hash): Future[Option[Transaction]] =
+      transactionDao.get(transactionHash)
 
     def getTransactionsByAddress(address: Hash): Future[Seq[Transaction]] =
       transactionDao.getByAddress(address)

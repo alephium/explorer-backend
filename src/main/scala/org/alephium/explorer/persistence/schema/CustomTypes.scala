@@ -6,7 +6,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.{JdbcProfile, JdbcType}
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.util.Hex
 
 trait CustomTypes extends JdbcProfile {
@@ -24,6 +24,12 @@ trait CustomTypes extends JdbcProfile {
   implicit val blockEntryHashType: JdbcType[BlockEntry.Hash] =
     buildHashTypes(
       new BlockEntry.Hash(_),
+      _.value
+    )
+
+  implicit val transactionHashType: JdbcType[Transaction.Hash] =
+    buildHashTypes(
+      new Transaction.Hash(_),
       _.value
     )
 

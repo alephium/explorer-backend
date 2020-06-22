@@ -105,7 +105,7 @@ class ApplicationSpec()
 
   it should "get a transaction by its id" in {
     forAll(Gen.oneOf(transactions)) { transaction =>
-      Get(s"/transactions/${transaction.hash.toHexString}") ~> routes ~> check {
+      Get(s"/transactions/${transaction.hash.value.toHexString}") ~> routes ~> check {
         responseAs[Transaction] is transaction
       }
     }

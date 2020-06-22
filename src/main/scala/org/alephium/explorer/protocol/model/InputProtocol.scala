@@ -3,13 +3,11 @@ package org.alephium.explorer.protocol.model
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 
-import org.alephium.explorer.Hash
-import org.alephium.explorer.api.Circe.hashCodec
-import org.alephium.explorer.api.model.Input
+import org.alephium.explorer.api.model.{Input, Transaction}
 
 final case class InputProtocol(
     shortKey: Int,
-    txHash: Hash,
+    txHash: Transaction.Hash,
     outputIndex: Int
 ) {
   lazy val toApi: Input =

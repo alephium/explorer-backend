@@ -1,9 +1,8 @@
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.BlockEntry
+import org.alephium.explorer.api.model.{BlockEntry, Transaction}
 
 final case class TransactionEntity(
-    hash: Hash,
+    hash: Transaction.Hash,
     blockHash: BlockEntry.Hash
 )
