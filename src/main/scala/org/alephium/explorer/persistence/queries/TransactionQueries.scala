@@ -38,6 +38,13 @@ trait TransactionQueries extends TransactionSchema with InputSchema with OutputS
       case Some(tx) => getKnownTransactionAction(tx.hash).map(Some.apply)
     }
 
+  def getTransactionsByAddress(address: Hash): DBActionR[Seq[Transaction]] = {
+    for {
+      txHashes <- outputsTable.filter(_.address === address).map(_.txHash).distinct.result
+      txs      <- DBIOAction.sequence(txHashes.map(getKnownTransactionAction))
+    } yield txs
+  }
+
   private def getKnownTransactionAction(txHash: Hash): DBActionR[Transaction] =
     for {
       ins  <- inputsTable.filter(_.txHash === txHash).result

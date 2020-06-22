@@ -41,6 +41,10 @@ class ApplicationSpec()
 
   val transactions: Seq[Transaction] = blocks.flatMap(_.transactions.toArray.toSeq)
 
+  val addresses: Seq[Hash] = blocks
+    .flatMap(_.transactions.flatMap(_.outputs.map(_.address)).toArray)
+    .distinct
+
   val localhost: InetAddress = InetAddress.getLocalHost
 
   val blockFlowPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
@@ -110,6 +114,19 @@ class ApplicationSpec()
       Get(s"/transactions/${hash.toHexString}") ~> routes ~> check {
         status is StatusCodes.NotFound
         responseAs[ApiError] is ApiError.NotFound(hash.toHexString)
+      }
+    }
+  }
+
+  it should "get all address' transactions" in {
+    forAll(Gen.oneOf(addresses)) { address =>
+      Get(s"/addresses/${address.toHexString}/transactions") ~> routes ~> check {
+        val expectedTransactions =
+          transactions.filter(_.outputs.toArray.toSeq.exists(_.address == address))
+        val res = responseAs[Seq[Transaction]]
+
+        res.size is expectedTransactions.size
+        expectedTransactions.foreach(transaction => res.contains(transaction) is true)
       }
     }
   }
