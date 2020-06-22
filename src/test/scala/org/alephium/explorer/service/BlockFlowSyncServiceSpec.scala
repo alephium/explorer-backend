@@ -5,7 +5,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.explorer.{Generators, Hash}
+import org.alephium.explorer.Generators
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, TimeInterval}
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.BlockDao
@@ -55,7 +55,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
       }
     }
     val blockFlowClient: BlockFlowClient = new BlockFlowClient {
-      def getBlock(from: GroupIndex, hash: Hash): Future[Either[String, BlockEntry]] =
+      def getBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntry]] =
         Future.successful(blocks.find(_.hash === hash).toRight(s"$hash Not Found"))
 
       def getChainInfo(from: GroupIndex, to: GroupIndex): Future[Either[String, ChainInfo]] =

@@ -65,7 +65,7 @@ class ApplicationSpec()
 
   it should "get a block by its id" in {
     forAll(Gen.oneOf(blocks)) { block =>
-      Get(s"/blocks/${block.hash.toHexString}") ~> routes ~> check {
+      Get(s"/blocks/${block.hash.value.toHexString}") ~> routes ~> check {
         responseAs[BlockEntry] is block
       }
     }

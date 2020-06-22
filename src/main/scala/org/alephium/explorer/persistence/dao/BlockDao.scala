@@ -8,7 +8,7 @@ import slick.dbio.DBIOAction
 import slick.jdbc.JdbcProfile
 import slick.jdbc.meta.MTable
 
-import org.alephium.explorer.{sideEffect, AnyOps, Hash}
+import org.alephium.explorer.{sideEffect, AnyOps}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, TimeInterval}
 import org.alephium.explorer.persistence.{DBActionR, DBRunner}
 import org.alephium.explorer.persistence.model.BlockHeader
@@ -17,7 +17,7 @@ import org.alephium.explorer.persistence.schema._
 import org.alephium.util.AVector
 
 trait BlockDao {
-  def get(id: Hash): Future[Option[BlockEntry]]
+  def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]]
   def insert(block: BlockEntry): Future[BlockEntry]
   def list(timeInterval: TimeInterval): Future[Seq[BlockEntry]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
@@ -43,14 +43,14 @@ object BlockDao {
         txs  <- listTransactionsAction(blockHeader.hash)
       } yield blockHeader.toApi(AVector.from(deps), AVector.from(txs))
 
-    private def getBlockEntryAction(id: Hash): DBActionR[Option[BlockEntry]] =
+    private def getBlockEntryAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry]] =
       for {
-        headers <- blockHeadersTable.filter(_.hash === id).result
+        headers <- blockHeadersTable.filter(_.hash === hash).result
         blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
       } yield blocks.headOption
 
-    def get(id: Hash): Future[Option[BlockEntry]] =
-      run(getBlockEntryAction(id))
+    def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]] =
+      run(getBlockEntryAction(hash))
 
     def insert(block: BlockEntry): Future[BlockEntry] =
       run(

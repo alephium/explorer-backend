@@ -6,7 +6,7 @@ import scala.util.{Failure, Success}
 import com.typesafe.scalalogging.StrictLogging
 
 import org.alephium.explorer.{sideEffect, AnyOps, Hash}
-import org.alephium.explorer.api.model.{GroupIndex, Height}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.util.Duration
 
@@ -96,7 +96,7 @@ object BlockFlowSyncService {
       }
     }
 
-    private def syncWithHash(fromGroup: GroupIndex, hash: Hash): Future[Unit] =
+    private def syncWithHash(fromGroup: GroupIndex, hash: BlockEntry.Hash): Future[Unit] =
       blockFlowClient.getBlock(fromGroup, hash).flatMap {
         case Right(block) =>
           blockDao.insert(block).map(_ => ())

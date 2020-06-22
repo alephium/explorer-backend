@@ -7,8 +7,8 @@ import org.alephium.explorer.api.{AddressesEndpoints, BlockEndpoints, Transactio
 
 trait Documentation extends BlockEndpoints with TransactionEndpoints with AddressesEndpoints {
   val docs: OpenAPI = List(
-    getBlockById,
     listBlocks,
+    getBlockByHash,
     getTransactionById,
     getTransactionsByAddress
   ).toOpenAPI("Alephium Explorer API", "1.0")

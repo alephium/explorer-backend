@@ -4,7 +4,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.{JdbcProfile, JdbcType}
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{GroupIndex, Height}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.util.Hex
 
 trait CustomTypes extends JdbcProfile {
@@ -15,6 +15,12 @@ trait CustomTypes extends JdbcProfile {
     _.toHexString,
     raw => Hash.unsafe(Hex.unsafe(raw))
   )
+
+  implicit val blockEntryHashType: JdbcType[BlockEntry.Hash] =
+    MappedJdbcType.base[BlockEntry.Hash, String](
+      _.value.toHexString,
+      raw => BlockEntry.Hash.unsafe(raw)
+    )
 
   implicit val groupIndexType: JdbcType[GroupIndex] = MappedJdbcType.base[GroupIndex, Int](
     _.value,

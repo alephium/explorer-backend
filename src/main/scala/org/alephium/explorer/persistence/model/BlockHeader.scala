@@ -1,17 +1,16 @@
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.util.{AVector, TimeStamp}
 
 final case class BlockHeader(
-    hash: Hash,
+    hash: BlockEntry.Hash,
     timestamp: Long,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     height: Height
 ) {
-  def toApi(deps: AVector[Hash], transactions: AVector[Transaction]): BlockEntry =
+  def toApi(deps: AVector[BlockEntry.Hash], transactions: AVector[Transaction]): BlockEntry =
     BlockEntry(hash, TimeStamp.unsafe(timestamp), chainFrom, chainTo, height, deps, transactions)
 }
 

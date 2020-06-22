@@ -18,7 +18,7 @@ import org.alephium.rpc.CirceUtils._
 
 trait BlockFlowClient {
   import BlockFlowClient._
-  def getBlock(from: GroupIndex, hash: Hash): Future[Either[String, BlockEntry]]
+  def getBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntry]]
 
   def getChainInfo(from: GroupIndex, to: GroupIndex): Future[Either[String, ChainInfo]]
 
@@ -57,7 +57,7 @@ object BlockFlowClient {
     }
 
     //TODO Introduce monad transformer helper for more readability
-    def getBlock(fromGroup: GroupIndex, hash: Hash): Future[Either[String, BlockEntry]] =
+    def getBlock(fromGroup: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntry]] =
       getSelfClique().flatMap {
         case Left(error) => Future.successful(Left(error))
         case Right(selfClique) =>
@@ -100,7 +100,7 @@ object BlockFlowClient {
     implicit def codec[A: Codec]: Codec[Result[A]] = deriveCodec[Result[A]]
   }
 
-  final case class HashesAtHeight(headers: Seq[Hash])
+  final case class HashesAtHeight(headers: Seq[BlockEntry.Hash])
   object HashesAtHeight {
     implicit val codec: Codec[HashesAtHeight] = deriveCodec[HashesAtHeight]
   }
@@ -129,7 +129,7 @@ object BlockFlowClient {
     implicit val codec: Codec[GetChainInfo] = deriveCodec[GetChainInfo]
   }
 
-  final case class GetBlock(hash: Hash) extends JsonRpc {
+  final case class GetBlock(hash: BlockEntry.Hash) extends JsonRpc {
     val method: String = "get_block"
   }
   object GetBlock {

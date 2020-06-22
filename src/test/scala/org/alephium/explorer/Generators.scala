@@ -12,12 +12,13 @@ import org.alephium.util.{AVector, Duration, TimeStamp}
 
 trait Generators {
 
-  val timestampGen: Gen[TimeStamp]        = Gen.posNum[Long].map(TimeStamp.unsafe)
-  val hashGen: Gen[Hash]                  = Gen.uuid.map(uuid => Hash.hash(uuid.toString))
-  val groupIndexGen: Gen[GroupIndex]      = Gen.posNum[Int].map(GroupIndex.unsafe(_))
-  val heightGen: Gen[Height]              = Gen.posNum[Int].map(Height.unsafe(_))
-  val publicKeyGen: Gen[ED25519PublicKey] = Gen.oneOf(Seq(ED25519PublicKey.generate))
-  val pubScriptGen: Gen[PubScript]        = publicKeyGen.map(PubScript.build(PayTo.PKH, _))
+  val timestampGen: Gen[TimeStamp]            = Gen.posNum[Long].map(TimeStamp.unsafe)
+  val hashGen: Gen[Hash]                      = Gen.uuid.map(uuid => Hash.hash(uuid.toString))
+  val blockEntryHashGen: Gen[BlockEntry.Hash] = hashGen.map(new BlockEntry.Hash(_))
+  val groupIndexGen: Gen[GroupIndex]          = Gen.posNum[Int].map(GroupIndex.unsafe(_))
+  val heightGen: Gen[Height]                  = Gen.posNum[Int].map(Height.unsafe(_))
+  val publicKeyGen: Gen[ED25519PublicKey]     = Gen.oneOf(Seq(ED25519PublicKey.generate))
+  val pubScriptGen: Gen[PubScript]            = publicKeyGen.map(PubScript.build(PayTo.PKH, _))
 
   val inputProtocolGen: Gen[InputProtocol] = for {
     shortKey    <- arbitrary[Int]
@@ -45,12 +46,12 @@ trait Generators {
   val transactionGen: Gen[Transaction] = transactionProtocolGen.map(_.toApi)
 
   val blockEntryProtocolGen: Gen[BlockEntryProtocol] = for {
-    hash            <- hashGen
+    hash            <- blockEntryHashGen
     timestamp       <- timestampGen
     chainFrom       <- groupIndexGen
     chainTo         <- groupIndexGen
     height          <- heightGen
-    deps            <- Gen.listOfN(5, hashGen)
+    deps            <- Gen.listOfN(5, blockEntryHashGen)
     transactionSize <- Gen.choose(1, 10)
     transactions    <- Gen.listOfN(transactionSize, transactionProtocolGen)
   } yield
@@ -72,7 +73,7 @@ trait Generators {
       blocks
         .foldLeft((Seq.empty[BlockEntryProtocol], Height.zero, startTimestamp)) {
           case ((acc, height, timestamp), block) =>
-            val deps: AVector[Hash] =
+            val deps: AVector[BlockEntry.Hash] =
               if (acc.isEmpty) AVector.empty else AVector(acc.last.hash)
             val newBlock = block.copy(height = height,
                                       deps      = deps,

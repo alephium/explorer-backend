@@ -7,7 +7,7 @@ import slick.dbio.DBIOAction
 import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.Transaction
+import org.alephium.explorer.api.model.{BlockEntry, Transaction}
 import org.alephium.explorer.persistence.{DBActionR, DBActionW}
 import org.alephium.explorer.persistence.model.{InputEntity, OutputEntity, TransactionEntity}
 import org.alephium.explorer.persistence.schema.{InputSchema, OutputSchema, TransactionSchema}
@@ -19,13 +19,14 @@ trait TransactionQueries extends TransactionSchema with InputSchema with OutputS
   val config: DatabaseConfig[JdbcProfile]
   import config.profile.api._
 
-  def insertTransactionQuery(transaction: Transaction, blockHash: Hash): DBActionW[Transaction] =
+  def insertTransactionQuery(transaction: Transaction,
+                             blockHash: BlockEntry.Hash): DBActionW[Transaction] =
     ((transactionsTable += TransactionEntity(transaction.hash, blockHash)) >>
       (inputsTable ++= transaction.inputs.map(InputEntity.fromApi(_, transaction.hash)).toArray) >>
       (outputsTable ++= transaction.outputs.map(OutputEntity.fromApi(_, transaction.hash)).toArray))
       .map(_ => transaction)
 
-  def listTransactionsAction(blockHash: Hash): DBActionR[Seq[Transaction]] =
+  def listTransactionsAction(blockHash: BlockEntry.Hash): DBActionR[Seq[Transaction]] =
     transactionsTable
       .filter(_.blockHash === blockHash)
       .map(_.hash)

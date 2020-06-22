@@ -3,7 +3,6 @@ package org.alephium.explorer.api
 import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
 
-import org.alephium.explorer.Hash
 import org.alephium.explorer.api.Codecs._
 import org.alephium.explorer.api.Schemas._
 import org.alephium.explorer.api.model.{BlockEntry, TimeInterval}
@@ -24,9 +23,9 @@ trait BlockEndpoints extends BaseEndoint {
       .map({ case (from, to) => TimeInterval(from, to) })(timeInterval =>
         (timeInterval.from, timeInterval.to))
 
-  val getBlockById: Endpoint[Hash, ApiError, BlockEntry, Nothing] =
+  val getBlockByHash: Endpoint[BlockEntry.Hash, ApiError, BlockEntry, Nothing] =
     blocksEndpoint.get
-      .in(path[Hash]("blockID"))
+      .in(path[BlockEntry.Hash]("blockHash"))
       .out(jsonBody[BlockEntry])
 
   val listBlocks: Endpoint[TimeInterval, ApiError, Seq[BlockEntry], Nothing] =
