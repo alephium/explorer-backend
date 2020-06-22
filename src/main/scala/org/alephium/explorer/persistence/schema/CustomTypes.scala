@@ -1,5 +1,7 @@
 package org.alephium.explorer.persistence.schema
 
+import scala.reflect.ClassTag
+
 import slick.basic.DatabaseConfig
 import slick.jdbc.{JdbcProfile, JdbcType}
 
@@ -11,15 +13,18 @@ trait CustomTypes extends JdbcProfile {
   val config: DatabaseConfig[JdbcProfile]
   import config.profile.api._
 
-  implicit val hashType: JdbcType[Hash] = MappedJdbcType.base[Hash, String](
-    _.toHexString,
-    raw => Hash.unsafe(Hex.unsafe(raw))
-  )
+  private def buildHashTypes[H: ClassTag](from: Hash => H, to: H => Hash): JdbcType[H] =
+    MappedJdbcType.base[H, String](
+      to(_).toHexString,
+      raw => from((Hash.unsafe(Hex.unsafe(raw))))
+    )
+
+  implicit val hashType: JdbcType[Hash] = buildHashTypes(identity, identity)
 
   implicit val blockEntryHashType: JdbcType[BlockEntry.Hash] =
-    MappedJdbcType.base[BlockEntry.Hash, String](
-      _.value.toHexString,
-      raw => BlockEntry.Hash.unsafe(raw)
+    buildHashTypes(
+      new BlockEntry.Hash(_),
+      _.value
     )
 
   implicit val groupIndexType: JdbcType[GroupIndex] = MappedJdbcType.base[GroupIndex, Int](

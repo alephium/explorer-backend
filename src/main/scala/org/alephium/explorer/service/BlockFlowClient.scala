@@ -9,8 +9,6 @@ import io.circe.{Codec, Encoder, Json, JsonObject}
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax._
 
-import org.alephium.explorer.Hash
-import org.alephium.explorer.api.Circe.hashCodec
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.protocol.model.BlockEntryProtocol
 import org.alephium.explorer.web.HttpClient

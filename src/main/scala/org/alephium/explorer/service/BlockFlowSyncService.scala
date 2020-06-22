@@ -5,7 +5,7 @@ import scala.util.{Failure, Success}
 
 import com.typesafe.scalalogging.StrictLogging
 
-import org.alephium.explorer.{sideEffect, AnyOps, Hash}
+import org.alephium.explorer.{sideEffect, AnyOps}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.util.Duration

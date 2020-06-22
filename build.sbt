@@ -14,6 +14,7 @@ lazy val root = (project in file("."))
       "-explaintypes",
       "-feature",
       "-unchecked",
+      "-Xfatal-warnings",
       "-Xlint:adapted-args",
       "-Xlint:constant",
       "-Xlint:delayedinit-select",
