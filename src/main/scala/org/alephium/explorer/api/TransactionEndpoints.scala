@@ -16,6 +16,7 @@ trait TransactionEndpoints extends BaseEndoint {
 
   val getTransactionById: Endpoint[Transaction.Hash, ApiError, Transaction, Nothing] =
     transactionsEndpoint.get
-      .in(path[Transaction.Hash]("transactionID"))
+      .in(path[Transaction.Hash]("transaction_hash"))
       .out(jsonBody[Transaction])
+      .description("Get a transaction with hash")
 }

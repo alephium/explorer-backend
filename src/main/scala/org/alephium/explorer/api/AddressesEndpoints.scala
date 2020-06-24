@@ -20,4 +20,5 @@ trait AddressesEndpoints extends BaseEndoint {
       .in(path[Hash]("address"))
       .in("transactions")
       .out(jsonBody[Seq[Transaction]])
+      .description("List transactions of a given address")
 }

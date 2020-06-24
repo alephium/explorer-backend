@@ -25,11 +25,13 @@ trait BlockEndpoints extends BaseEndoint {
 
   val getBlockByHash: Endpoint[BlockEntry.Hash, ApiError, BlockEntry, Nothing] =
     blocksEndpoint.get
-      .in(path[BlockEntry.Hash]("blockHash"))
+      .in(path[BlockEntry.Hash]("block_hash"))
       .out(jsonBody[BlockEntry])
+      .description("Get a block with hash")
 
   val listBlocks: Endpoint[TimeInterval, ApiError, Seq[BlockEntry], Nothing] =
     blocksEndpoint.get
       .in(timeIntervalQuery)
       .out(jsonBody[Seq[BlockEntry]])
+      .description("List blocks within time interval")
 }
