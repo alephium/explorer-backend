@@ -1,21 +1,23 @@
 package org.alephium.explorer.web
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.reflect.{classTag, ClassTag}
 import scala.util.{Failure, Success}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
+import akka.http.scaladsl.model.{ContentTypes, HttpRequest, HttpResponse}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.{OverflowStrategy, QueueOfferResult, StreamTcpException}
 import akka.stream.scaladsl.{Sink, Source}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
-import io.circe.Decoder
+import io.circe.{Decoder, Json}
 
 import org.alephium.explorer.sideEffect
+import org.alephium.rpc.CirceUtils
 
 trait HttpClient {
-  def request[A: Decoder](httpRequest: HttpRequest): Future[Either[String, A]]
+  def request[A: Decoder: ClassTag](httpRequest: HttpRequest): Future[Either[String, A]]
 }
 
 object HttpClient {
@@ -30,17 +32,24 @@ object HttpClient {
   ) extends HttpClient
       with FailFastCirceSupport {
 
-    def request[A: Decoder](httpRequest: HttpRequest): Future[Either[String, A]] =
+    def request[A: Decoder: ClassTag](httpRequest: HttpRequest): Future[Either[String, A]] =
       requestResponse(httpRequest)
         .flatMap {
           case HttpResponse(code, _, entity, _) if code.isSuccess =>
-            Unmarshal(entity)
-              .to[Either[io.circe.Error, A]]
-              .map(_.left.map(_.getMessage))
-          case HttpResponse(code, _, entity, _) =>
-            Unmarshal(entity)
-              .to[String]
-              .map(error => Left(s"Request failed with code $code and message: $error"))
+            entity.getContentType match {
+              case ContentTypes.`application/json` =>
+                Unmarshal(entity).to[Either[io.circe.Error, Json]].map {
+                  case Left(error) => Left(s"Cannot decode entity as json: ${error.getMessage}")
+                  case Right(json) =>
+                    json.as[A].left.map { error =>
+                      s"Cannot decode json: ${CirceUtils.print(json)} as a ${classTag[A]}. Error: $error"
+                    }
+                }
+              case other =>
+                Future.successful(Left(s"$other content type not supported"))
+            }
+          case HttpResponse(code, _, _, _) =>
+            Future.successful(Left(s"$httpRequest failed with code $code"))
         }
         .recover {
           case streamException: StreamTcpException =>
