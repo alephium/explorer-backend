@@ -99,7 +99,7 @@ object BlockFlowSyncService {
     private def syncWithHash(fromGroup: GroupIndex, hash: BlockEntry.Hash): Future[Unit] =
       blockFlowClient.getBlock(fromGroup, hash).flatMap {
         case Right(block) =>
-          blockDao.insert(block).map(_ => ())
+          blockDao.insert(block)
         case Left(error) => Future.successful(logger.error(error))
       }
 

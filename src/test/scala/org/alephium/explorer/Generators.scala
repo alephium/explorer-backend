@@ -7,8 +7,7 @@ import org.alephium.crypto.ED25519PublicKey
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.protocol.model._
-import org.alephium.protocol.script.{PayTo, PubScript}
-import org.alephium.util.{AVector, Duration, TimeStamp}
+import org.alephium.util.{AVector, Base58, Duration, TimeStamp}
 
 trait Generators {
 
@@ -19,20 +18,25 @@ trait Generators {
   val groupIndexGen: Gen[GroupIndex]            = Gen.posNum[Int].map(GroupIndex.unsafe(_))
   val heightGen: Gen[Height]                    = Gen.posNum[Int].map(Height.unsafe(_))
   val publicKeyGen: Gen[ED25519PublicKey]       = Gen.oneOf(Seq(ED25519PublicKey.generate))
-  val pubScriptGen: Gen[PubScript]              = publicKeyGen.map(PubScript.build(PayTo.PKH, _))
+  val addressGen: Gen[Address]                  = hashGen.map(hash => Address.unsafe(Base58.encode(hash.bytes)))
+
+  val outputRefProtocolGen: Gen[OutputProtocol.Ref] = for {
+    scriptHint <- arbitrary[Int]
+    key        <- hashGen
+  } yield OutputProtocol.Ref(scriptHint, key)
 
   val inputProtocolGen: Gen[InputProtocol] = for {
-    shortKey    <- arbitrary[Int]
-    txHash      <- transactionHashGen
-    outputIndex <- arbitrary[Int]
-  } yield InputProtocol(shortKey, txHash, outputIndex)
+    outputRef    <- outputRefProtocolGen
+    unlockScript <- Gen.identifier
+  } yield InputProtocol(outputRef, unlockScript)
 
   val inputGen: Gen[Input] = inputProtocolGen.map(_.toApi)
 
   val outputProtocolGen: Gen[OutputProtocol] = for {
-    value     <- arbitrary[Long]
-    pubScript <- pubScriptGen
-  } yield OutputProtocol(pubScript, value)
+    amount        <- arbitrary[Long]
+    createdHeight <- arbitrary[Int]
+    address       <- addressGen
+  } yield OutputProtocol(amount, createdHeight, address)
 
   val outputGen: Gen[Output] = outputProtocolGen.map(_.toApi)
 

@@ -6,8 +6,7 @@ import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
 import slick.jdbc.JdbcProfile
 
-import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{BlockEntry, Transaction}
+import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
 import org.alephium.explorer.persistence.{DBActionR, DBActionW}
 import org.alephium.explorer.persistence.model.{InputEntity, OutputEntity, TransactionEntity}
 import org.alephium.explorer.persistence.schema.{InputSchema, OutputSchema, TransactionSchema}
@@ -39,7 +38,7 @@ trait TransactionQueries extends TransactionSchema with InputSchema with OutputS
       case Some(tx) => getKnownTransactionAction(tx.hash).map(Some.apply)
     }
 
-  def getTransactionsByAddress(address: Hash): DBActionR[Seq[Transaction]] = {
+  def getTransactionsByAddress(address: Address): DBActionR[Seq[Transaction]] = {
     for {
       txHashes <- outputsTable.filter(_.address === address).map(_.txHash).distinct.result
       txs      <- DBIOAction.sequence(txHashes.map(getKnownTransactionAction))

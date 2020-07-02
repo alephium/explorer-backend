@@ -7,7 +7,7 @@ import org.alephium.explorer.api.Codecs._
 import org.alephium.explorer.api.Schemas._
 import org.alephium.explorer.api.model.Transaction
 
-trait TransactionEndpoints extends BaseEndoint {
+trait TransactionEndpoints extends BaseEndpoint {
 
   private val transactionsEndpoint =
     baseEndpoint

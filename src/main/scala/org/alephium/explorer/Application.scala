@@ -14,20 +14,17 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
-import org.alephium.explorer.service.{
-  BlockFlowClient,
-  BlockFlowSyncService,
-  BlockService,
-  TransactionService
-}
+import org.alephium.explorer.service._
 import org.alephium.explorer.sideEffect
 import org.alephium.explorer.web._
 import org.alephium.util.Duration
 
 // scalastyle:off magic.number
-class Application(port: Int, blockFlowUri: Uri, databaseConfig: DatabaseConfig[JdbcProfile])(
-    implicit system: ActorSystem,
-    executionContext: ExecutionContext)
+class Application(port: Int,
+                  blockFlowUri: Uri,
+                  groupNum: Int,
+                  databaseConfig: DatabaseConfig[JdbcProfile])(implicit system: ActorSystem,
+                                                               executionContext: ExecutionContext)
     extends StrictLogging
     with AkkaDecodeFailureHandler {
 
@@ -40,7 +37,7 @@ class Application(port: Int, blockFlowUri: Uri, databaseConfig: DatabaseConfig[J
   val blockFlowClient: BlockFlowClient = BlockFlowClient.apply(httpClient, blockFlowUri)
 
   val blockFlowSyncService: BlockFlowSyncService =
-    BlockFlowSyncService(groupNum   = 4,
+    BlockFlowSyncService(groupNum   = groupNum,
                          syncPeriod = Duration.unsafe(15 * 1000),
                          blockFlowClient,
                          blockDao)

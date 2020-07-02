@@ -18,7 +18,7 @@ import org.alephium.util.AVector
 
 trait BlockDao {
   def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]]
-  def insert(block: BlockEntry): Future[BlockEntry]
+  def insert(block: BlockEntry): Future[Unit]
   def list(timeInterval: TimeInterval): Future[Seq[BlockEntry]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
 }
@@ -52,12 +52,12 @@ object BlockDao {
     def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]] =
       run(getBlockEntryAction(hash))
 
-    def insert(block: BlockEntry): Future[BlockEntry] =
+    def insert(block: BlockEntry): Future[Unit] =
       run(
         (blockHeadersTable += BlockHeader.fromApi(block)) >>
           (blockDepsTable ++= block.deps.toArray.map(dep => (block.hash, dep))) >>
           DBIO.sequence(block.transactions.toIterable.map(insertTransactionQuery(_, block.hash)))
-      ).map(_ => block)
+      ).map(_ => ())
 
     def list(timeInterval: TimeInterval): Future[Seq[BlockEntry]] = {
       val action =

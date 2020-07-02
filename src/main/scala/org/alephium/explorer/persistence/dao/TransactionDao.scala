@@ -5,14 +5,13 @@ import scala.concurrent.{ExecutionContext, Future}
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
-import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.Transaction
+import org.alephium.explorer.api.model.{Address, Transaction}
 import org.alephium.explorer.persistence.DBRunner
 import org.alephium.explorer.persistence.queries.TransactionQueries
 
 trait TransactionDao {
   def get(hash: Transaction.Hash): Future[Option[Transaction]]
-  def getByAddress(address: Hash): Future[Seq[Transaction]]
+  def getByAddress(address: Address): Future[Seq[Transaction]]
 }
 
 object TransactionDao {
@@ -29,7 +28,7 @@ object TransactionDao {
     def get(hash: Transaction.Hash): Future[Option[Transaction]] =
       run(getTransactionAction(hash))
 
-    def getByAddress(address: Hash): Future[Seq[Transaction]] =
+    def getByAddress(address: Address): Future[Seq[Transaction]] =
       run(getTransactionsByAddress(address))
   }
 }

@@ -7,10 +7,17 @@ import org.alephium.explorer.Hash
 import org.alephium.explorer.api.Circe.hashCodec
 
 final case class Output(
-    address: Hash,
-    value: Long
+    amount: Long,
+    createdHeight: Int,
+    address: Address
 )
 
 object Output {
+  final case class Ref(scriptHint: Int, key: Hash)
+
+  object Ref {
+    implicit val codec: Codec[Ref] = deriveCodec[Ref]
+  }
+
   implicit val codec: Codec[Output] = deriveCodec[Output]
 }

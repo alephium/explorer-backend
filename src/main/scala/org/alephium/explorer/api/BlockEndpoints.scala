@@ -8,7 +8,7 @@ import org.alephium.explorer.api.Schemas._
 import org.alephium.explorer.api.model.{BlockEntry, TimeInterval}
 import org.alephium.util.TimeStamp
 
-trait BlockEndpoints extends BaseEndoint {
+trait BlockEndpoints extends BaseEndpoint {
 
   private val blocksEndpoint =
     baseEndpoint

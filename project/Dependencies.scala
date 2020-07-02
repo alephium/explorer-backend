@@ -44,5 +44,5 @@ object Dependencies {
   lazy val postgresql = "org.postgresql"     % "postgresql" % Version.postgresql
 
   lazy val h2            = "com.h2database"     % "h2"              % "1.4.200"
-  lazy val slickHikaricp = "com.typesafe.slick" %% "slick-hikaricp" % Version.slick,
+  lazy val slickHikaricp = "com.typesafe.slick" %% "slick-hikaricp" % Version.slick
 }

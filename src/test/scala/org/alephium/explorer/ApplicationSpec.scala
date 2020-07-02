@@ -18,7 +18,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.explorer.api.ApiError
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, Transaction}
+import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.protocol.model.BlockEntryProtocol
 import org.alephium.util.{AlephiumSpec, TimeStamp}
@@ -33,15 +33,16 @@ class ApplicationSpec()
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
   implicit val defaultTimeout          = RouteTestTimeout(5.seconds)
 
+  val groupNum: Int = 4
   val blockFlow: Seq[Seq[BlockEntryProtocol]] =
-    blockFlowGen(groupNum = 4, maxChainSize = 5, startTimestamp = TimeStamp.now).sample.get
+    blockFlowGen(groupNum = groupNum, maxChainSize = 5, startTimestamp = TimeStamp.now).sample.get
 
   val blocksProtocol: Seq[BlockEntryProtocol] = blockFlow.flatten
   val blocks: Seq[BlockEntry]                 = blocksProtocol.map(_.toApi)
 
   val transactions: Seq[Transaction] = blocks.flatMap(_.transactions.toArray.toSeq)
 
-  val addresses: Seq[Hash] = blocks
+  val addresses: Seq[Address] = blocks
     .flatMap(_.transactions.flatMap(_.outputs.map(_.address)).toArray)
     .distinct
 
@@ -56,6 +57,7 @@ class ApplicationSpec()
   val app: Application =
     new Application(SocketUtil.temporaryLocalPort(),
                     Uri(s"http://${localhost.getHostAddress}:$blockFlowPort"),
+                    groupNum,
                     databaseConfig)
 
   //let it sync
@@ -120,7 +122,7 @@ class ApplicationSpec()
 
   it should "get all address' transactions" in {
     forAll(Gen.oneOf(addresses)) { address =>
-      Get(s"/addresses/${address.toHexString}/transactions") ~> routes ~> check {
+      Get(s"/addresses/${address}/transactions") ~> routes ~> check {
         val expectedTransactions =
           transactions.filter(_.outputs.toArray.toSeq.exists(_.address == address))
         val res = responseAs[Seq[Transaction]]

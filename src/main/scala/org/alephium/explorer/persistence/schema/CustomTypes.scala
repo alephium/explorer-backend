@@ -6,7 +6,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.{JdbcProfile, JdbcType}
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, Transaction}
+import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.util.Hex
 
 trait CustomTypes extends JdbcProfile {
@@ -41,5 +41,10 @@ trait CustomTypes extends JdbcProfile {
   implicit val heightType: JdbcType[Height] = MappedJdbcType.base[Height, Int](
     _.value,
     int => Height.unsafe(int)
+  )
+
+  implicit val addressType: JdbcType[Address] = MappedJdbcType.base[Address, String](
+    _.value,
+    string => Address.unsafe(string)
   )
 }

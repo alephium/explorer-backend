@@ -1,19 +1,18 @@
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Output, Transaction}
-import org.alephium.util.DjbHash
+import org.alephium.explorer.api.model.{Address, Output, Transaction}
 
 final case class OutputEntity(
     txHash: Transaction.Hash,
-    value: Long,
-    address: Hash,
-    shortKey: Int
+    amount: Long,
+    createdHeight: Int,
+    address: Address
 ) {
   lazy val toApi: Output =
     Output(
-      address,
-      value
+      amount,
+      createdHeight,
+      address
     )
 }
 
@@ -21,8 +20,8 @@ object OutputEntity {
   def fromApi(output: Output, txHash: Transaction.Hash): OutputEntity =
     OutputEntity(
       txHash,
-      output.value,
-      output.address,
-      DjbHash.intHash(output.address.bytes)
+      output.amount,
+      output.createdHeight,
+      output.address
     )
 }

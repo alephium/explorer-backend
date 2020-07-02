@@ -6,7 +6,7 @@ import sttp.tapir.json.circe.jsonBody
 
 import org.alephium.explorer.api.ApiError
 
-trait BaseEndoint {
+trait BaseEndpoint {
 
   val baseEndpoint = endpoint.errorOut(
     oneOf[ApiError](
