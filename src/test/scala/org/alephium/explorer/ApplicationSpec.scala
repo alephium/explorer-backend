@@ -20,6 +20,7 @@ import org.scalatest.time.{Minutes, Span}
 import org.alephium.explorer.api.ApiError
 import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.explorer.persistence.DatabaseFixture
+import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.protocol.model.BlockEntryProtocol
 import org.alephium.util.{AlephiumSpec, TimeStamp}
 
@@ -38,7 +39,9 @@ class ApplicationSpec()
     blockFlowGen(groupNum = groupNum, maxChainSize = 5, startTimestamp = TimeStamp.now).sample.get
 
   val blocksProtocol: Seq[BlockEntryProtocol] = blockFlow.flatten
-  val blocks: Seq[BlockEntry]                 = blocksProtocol.map(_.toApi)
+  val blockEntities: Seq[BlockEntity]         = blocksProtocol.map(_.toEntity)
+
+  val blocks: Seq[BlockEntry] = blockEntitiesToBlockEntries(Seq(blockEntities)).flatten
 
   val transactions: Seq[Transaction] = blocks.flatMap(_.transactions.toArray.toSeq)
 

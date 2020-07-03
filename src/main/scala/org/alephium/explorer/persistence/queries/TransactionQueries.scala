@@ -8,7 +8,7 @@ import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
 import org.alephium.explorer.persistence.{DBActionR, DBActionW}
-import org.alephium.explorer.persistence.model.{InputEntity, OutputEntity, TransactionEntity}
+import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema.{InputSchema, OutputSchema, TransactionSchema}
 import org.alephium.util.AVector
 
@@ -18,12 +18,11 @@ trait TransactionQueries extends TransactionSchema with InputSchema with OutputS
   val config: DatabaseConfig[JdbcProfile]
   import config.profile.api._
 
-  def insertTransactionQuery(transaction: Transaction,
-                             blockHash: BlockEntry.Hash): DBActionW[Transaction] =
-    ((transactionsTable += TransactionEntity(transaction.hash, blockHash)) >>
-      (inputsTable ++= transaction.inputs.map(InputEntity.fromApi(_, transaction.hash)).toArray) >>
-      (outputsTable ++= transaction.outputs.map(OutputEntity.fromApi(_, transaction.hash)).toArray))
-      .map(_ => transaction)
+  def insertTransactionFromBlockQuery(blockEntity: BlockEntity): DBActionW[Unit] =
+    ((transactionsTable ++= blockEntity.transactions.toArray) >>
+      (inputsTable ++= blockEntity.inputs.toArray) >>
+      (outputsTable ++= blockEntity.outputs.toArray))
+      .map(_ => ())
 
   def listTransactionsAction(blockHash: BlockEntry.Hash): DBActionR[Seq[Transaction]] =
     transactionsTable
@@ -47,7 +46,19 @@ trait TransactionQueries extends TransactionSchema with InputSchema with OutputS
 
   private def getKnownTransactionAction(txHash: Transaction.Hash): DBActionR[Transaction] =
     for {
-      ins  <- inputsTable.filter(_.txHash === txHash).result
-      outs <- outputsTable.filter(_.txHash === txHash).result
-    } yield Transaction(txHash, AVector.from(ins.map(_.toApi)), AVector.from(outs.map(_.toApi)))
+      ins        <- inputsTable.filter(_.txHash === txHash).result
+      outs       <- outputsTable.filter(_.txHash === txHash).result
+      insOutsRef <- DBIOAction.sequence(ins.map(getOutputFromInput))
+    } yield
+      Transaction(txHash,
+                  AVector.from(insOutsRef.map { case (in, out) => in.toApi(out) }),
+                  AVector.from(outs.map(_.toApi)))
+
+  private def getOutputFromInput(
+      input: InputEntity): DBActionR[(InputEntity, Option[OutputEntity])] =
+    outputsTable
+      .filter(_.outputRefKey === input.key)
+      .result
+      .headOption
+      .map(output => (input, output))
 }

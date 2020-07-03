@@ -11,14 +11,14 @@ import slick.jdbc.meta.MTable
 import org.alephium.explorer.{sideEffect, AnyOps}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, TimeInterval}
 import org.alephium.explorer.persistence.{DBActionR, DBRunner}
-import org.alephium.explorer.persistence.model.BlockHeader
+import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema._
 import org.alephium.util.AVector
 
 trait BlockDao {
   def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]]
-  def insert(block: BlockEntry): Future[Unit]
+  def insert(block: BlockEntity): Future[Unit]
   def list(timeInterval: TimeInterval): Future[Seq[BlockEntry]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
 }
@@ -52,11 +52,11 @@ object BlockDao {
     def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]] =
       run(getBlockEntryAction(hash))
 
-    def insert(block: BlockEntry): Future[Unit] =
+    def insert(block: BlockEntity): Future[Unit] =
       run(
-        (blockHeadersTable += BlockHeader.fromApi(block)) >>
+        (blockHeadersTable += BlockHeader.fromEntity(block)) >>
           (blockDepsTable ++= block.deps.toArray.map(dep => (block.hash, dep))) >>
-          DBIO.sequence(block.transactions.toIterable.map(insertTransactionQuery(_, block.hash)))
+          insertTransactionFromBlockQuery(block)
       ).map(_ => ())
 
     def list(timeInterval: TimeInterval): Future[Seq[BlockEntry]] = {

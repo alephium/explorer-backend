@@ -5,7 +5,10 @@ import io.circe.generic.semiauto.deriveCodec
 
 final case class Input(
     outputRef: Output.Ref,
-    unlockScript: String
+    unlockScript: String,
+    txHashRef: Option[Transaction.Hash],
+    address: Option[Address],
+    amount: Option[Long]
 )
 
 object Input {

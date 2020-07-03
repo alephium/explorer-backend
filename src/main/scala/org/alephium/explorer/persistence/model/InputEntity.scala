@@ -9,19 +9,12 @@ final case class InputEntity(
     key: Hash,
     unlockScript: String
 ) {
-  lazy val toApi: Input =
+  def toApi(outputRef: Option[OutputEntity]): Input =
     Input(
       Output.Ref(scriptHint, key),
-      unlockScript
-    )
-}
-
-object InputEntity {
-  def fromApi(input: Input, txHash: Transaction.Hash): InputEntity =
-    InputEntity(
-      txHash,
-      input.outputRef.scriptHint,
-      input.outputRef.key,
-      input.unlockScript
+      unlockScript,
+      outputRef.map(_.txHash),
+      outputRef.map(_.address),
+      outputRef.map(_.amount)
     )
 }

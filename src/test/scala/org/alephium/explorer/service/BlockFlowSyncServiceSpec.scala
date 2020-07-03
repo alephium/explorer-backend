@@ -9,6 +9,7 @@ import org.alephium.explorer.Generators
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, TimeInterval}
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.BlockDao
+import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service.BlockFlowClient.{ChainInfo, HashesAtHeight}
 import org.alephium.util.{AlephiumSpec, Duration, TimeStamp}
 
@@ -42,10 +43,16 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
     val startTimestamp: TimeStamp = TimeStamp.now
     val endTimestamp: TimeStamp   = startTimestamp.plusMinutesUnsafe(10)
 
+    val blockFlowEntity: Seq[Seq[BlockEntity]] = blockFlowGen(
+      groupNum       = groupNum,
+      maxChainSize   = 20,
+      startTimestamp = startTimestamp).sample.get.map(_.map(_.toEntity))
     val blockFlow: Seq[Seq[BlockEntry]] =
-      blockFlowGen(groupNum = groupNum, maxChainSize = 20, startTimestamp = startTimestamp).sample.get
-        .map(_.map(_.toApi))
+      blockEntitiesToBlockEntries(blockFlowEntity)
+
     val blockDao: BlockDao = BlockDao(databaseConfig)
+
+    val blockEntities = blockFlowEntity.flatten
 
     var blocks: Seq[BlockEntry] = blockFlow.flatMap { chain =>
       if (chain.size <= 1) {
@@ -55,8 +62,8 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
       }
     }
     val blockFlowClient: BlockFlowClient = new BlockFlowClient {
-      def getBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntry]] =
-        Future.successful(blocks.find(_.hash === hash).toRight(s"$hash Not Found"))
+      def getBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]] =
+        Future.successful(blockEntities.find(_.hash === hash).toRight(s"$hash Not Found"))
 
       def getChainInfo(from: GroupIndex, to: GroupIndex): Future[Either[String, ChainInfo]] =
         Future.successful(

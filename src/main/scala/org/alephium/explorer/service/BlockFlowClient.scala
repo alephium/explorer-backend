@@ -10,13 +10,14 @@ import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax._
 
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.protocol.model.BlockEntryProtocol
 import org.alephium.explorer.web.HttpClient
 import org.alephium.rpc.CirceUtils._
 
 trait BlockFlowClient {
   import BlockFlowClient._
-  def getBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntry]]
+  def getBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]]
 
   def getChainInfo(from: GroupIndex, to: GroupIndex): Future[Either[String, ChainInfo]]
 
@@ -55,7 +56,8 @@ object BlockFlowClient {
     }
 
     //TODO Introduce monad transformer helper for more readability
-    def getBlock(fromGroup: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntry]] =
+    def getBlock(fromGroup: GroupIndex,
+                 hash: BlockEntry.Hash): Future[Either[String, BlockEntity]] =
       getSelfClique().flatMap {
         case Left(error) => Future.successful(Left(error))
         case Right(selfClique) =>
@@ -71,7 +73,7 @@ object BlockFlowClient {
                     Left(s"cannot find peer for group $fromGroup (peers: ${selfClique.peers})"))
                 case Some((peerAddress, rpcPort)) =>
                   val uri = Uri(s"http://${peerAddress.getHostAddress}:${rpcPort}")
-                  request[GetBlock, BlockEntryProtocol](GetBlock(hash), uri).map(_.map(_.toApi))
+                  request[GetBlock, BlockEntryProtocol](GetBlock(hash), uri).map(_.map(_.toEntity))
               }
           }
       }

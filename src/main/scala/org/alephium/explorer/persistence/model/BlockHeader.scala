@@ -15,12 +15,12 @@ final case class BlockHeader(
 }
 
 object BlockHeader {
-  def fromApi(blockEntry: BlockEntry): BlockHeader =
+  def fromEntity(blockEntity: BlockEntity): BlockHeader =
     BlockHeader(
-      blockEntry.hash,
-      blockEntry.timestamp.millis,
-      blockEntry.chainFrom,
-      blockEntry.chainTo,
-      blockEntry.height
+      blockEntity.hash,
+      blockEntity.timestamp.millis,
+      blockEntity.chainFrom,
+      blockEntity.chainTo,
+      blockEntity.height
     )
 }

@@ -5,20 +5,24 @@ import io.circe.generic.semiauto.deriveCodec
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.Circe.hashCodec
-import org.alephium.explorer.api.model.{Address, Output}
+import org.alephium.explorer.api.model.{Address, Output, Transaction}
+import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.rpc.CirceUtils._
 import org.alephium.serde._
+import org.alephium.util.Bytes
 
 final case class OutputProtocol(
     amount: Long,
     createdHeight: Int,
     address: Address
 ) {
-  lazy val toApi: Output = {
-    Output(
+  def toEntity(txHash: Transaction.Hash, index: Int): OutputEntity = {
+    OutputEntity(
+      txHash,
       amount,
       createdHeight,
-      address
+      address,
+      Hash.hash(txHash.value.bytes ++ Bytes.toBytes(index))
     )
   }
 }

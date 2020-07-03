@@ -3,7 +3,8 @@ package org.alephium.explorer.protocol.model
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 
-import org.alephium.explorer.api.model.Transaction
+import org.alephium.explorer.api.model.{BlockEntry, Transaction}
+import org.alephium.explorer.persistence.model.TransactionEntity
 import org.alephium.rpc.CirceUtils.avectorCodec
 import org.alephium.util.AVector
 
@@ -12,11 +13,10 @@ final case class TransactionProtocol(
     inputs: AVector[InputProtocol],
     outputs: AVector[OutputProtocol]
 ) {
-  lazy val toApi: Transaction =
-    Transaction(
+  def toEntity(blockHash: BlockEntry.Hash): TransactionEntity =
+    TransactionEntity(
       hash,
-      inputs.map(_.toApi),
-      outputs.map(_.toApi)
+      blockHash
     )
 }
 

@@ -6,6 +6,7 @@ import org.scalacheck.Gen
 import org.alephium.crypto.ED25519PublicKey
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.protocol.model._
 import org.alephium.util.{AVector, Base58, Duration, TimeStamp}
 
@@ -30,15 +31,11 @@ trait Generators {
     unlockScript <- Gen.identifier
   } yield InputProtocol(outputRef, unlockScript)
 
-  val inputGen: Gen[Input] = inputProtocolGen.map(_.toApi)
-
   val outputProtocolGen: Gen[OutputProtocol] = for {
     amount        <- arbitrary[Long]
     createdHeight <- arbitrary[Int]
     address       <- addressGen
   } yield OutputProtocol(amount, createdHeight, address)
-
-  val outputGen: Gen[Output] = outputProtocolGen.map(_.toApi)
 
   val transactionProtocolGen: Gen[TransactionProtocol] = for {
     hash       <- transactionHashGen
@@ -47,8 +44,6 @@ trait Generators {
     outputSize <- Gen.choose(2, 10)
     outputs    <- Gen.listOfN(outputSize, outputProtocolGen)
   } yield TransactionProtocol(hash, AVector.from(inputs), AVector.from(outputs))
-
-  val transactionGen: Gen[Transaction] = transactionProtocolGen.map(_.toApi)
 
   val blockEntryProtocolGen: Gen[BlockEntryProtocol] = for {
     hash            <- blockEntryHashGen
@@ -67,8 +62,6 @@ trait Generators {
                        height,
                        AVector.from(deps),
                        AVector.from(transactions))
-
-  val blockEntryGen: Gen[BlockEntry] = blockEntryProtocolGen.map(_.toApi)
 
   def chainGen(size: Int,
                startTimestamp: TimeStamp,
@@ -106,4 +99,30 @@ trait Generators {
       })
   }
 
+  def blockEntitiesToBlockEntries(blocks: Seq[Seq[BlockEntity]]): Seq[Seq[BlockEntry]] = {
+    val outputs: Seq[OutputEntity] = blocks.toArray.toIndexedSeq
+      .flatMap(_.toArray.toIndexedSeq.flatMap(_.outputs.toArray.toIndexedSeq))
+
+    blocks.map(_.map { block =>
+      val transactions =
+        block.transactions.map { tx =>
+          Transaction(
+            tx.hash,
+            block.inputs
+              .filter(_.txHash === tx.hash)
+              .map(input => input.toApi(outputs.find(_.outputRefKey === input.key))),
+            block.outputs.filter(_.txHash === tx.hash).map(_.toApi)
+          )
+        }
+      BlockEntry(
+        block.hash,
+        block.timestamp,
+        block.chainFrom,
+        block.chainTo,
+        block.height,
+        block.deps,
+        transactions
+      )
+    })
+  }
 }
