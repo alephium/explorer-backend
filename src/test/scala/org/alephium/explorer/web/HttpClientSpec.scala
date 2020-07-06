@@ -3,7 +3,7 @@ package org.alephium.explorer.web
 import scala.concurrent.ExecutionContext
 
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
+import akka.http.scaladsl.model.{HttpEntity, HttpMethods, HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.OverflowStrategy
@@ -31,7 +31,17 @@ class HttpClientSpec extends AlephiumActorSpec("HttpClientSpec") with ScalaFutur
 
     client
       .request[Int](HttpRequest(uri = s"http://localhost:${port}"))
-      .futureValue is Left("Int")
+      .futureValue is Left(
+      """Cannot decode json: {"foo":"foo","bar":1} as a Int. Error: DecodingFailure(Int, List())""")
+
+    client
+      .request[Foo](HttpRequest(uri = s"http://localhost:${port}/nojson"))
+      .futureValue is Left("none/none content type not supported")
+
+    client
+      .request[Foo](HttpRequest(uri = s"http://localhost:${port}/badcode"))
+      .futureValue is Left(
+      s"HttpRequest(HttpMethod(GET),http://localhost:${port}/badcode,List(),HttpEntity.Strict(none/none,0 bytes total),HttpProtocol(HTTP/1.1)) failed with code 404 Not Found")
   }
 
   trait Fixture extends FailFastCirceSupport {
@@ -40,8 +50,14 @@ class HttpClientSpec extends AlephiumActorSpec("HttpClientSpec") with ScalaFutur
     val foo                = Foo("foo", 1)
     val client: HttpClient = HttpClient(bufferSize = 32, OverflowStrategy.dropTail)
     val routes: Route =
-      get(complete(foo)) ~
-        post((complete(foo)))
+      pathSingleSlash {
+        get(complete(foo)) ~
+          post((complete(foo)))
+      } ~ path("nojson") {
+        get(complete(HttpResponse(StatusCodes.OK, entity = HttpEntity.Empty)))
+      } ~ path("badcode") {
+        get(complete(HttpResponse(StatusCodes.NotFound)))
+      }
 
     val port   = SocketUtil.temporaryLocalPort(SocketUtil.Both)
     val server = Http().bindAndHandle(routes, "localhost", port)

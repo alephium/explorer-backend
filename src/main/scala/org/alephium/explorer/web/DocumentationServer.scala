@@ -5,11 +5,13 @@ import scala.concurrent.Future
 import akka.http.scaladsl.server.Route
 import sttp.tapir.{endpoint, plainBody, stringToPath}
 import sttp.tapir.openapi.circe.yaml.RichOpenAPI
-import sttp.tapir.server.akkahttp.RichAkkaHttpEndpoint
+import sttp.tapir.server.akkahttp.{AkkaHttpServerOptions, RichAkkaHttpEndpoint}
 
 import org.alephium.explorer.docs.Documentation
 
-class DocumentationServer extends Server with Documentation {
+class DocumentationServer(implicit val serverOptions: AkkaHttpServerOptions)
+    extends Server
+    with Documentation {
 
   val route: Route =
     endpoint.get

@@ -8,41 +8,54 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.OverflowStrategy
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
-import org.alephium.explorer.persistence.dao.BlockDao
-import org.alephium.explorer.persistence.db.DbBlockDao
-import org.alephium.explorer.service.{BlockFlowSyncService, BlockService}
+import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
+import org.alephium.explorer.service._
 import org.alephium.explorer.sideEffect
-import org.alephium.explorer.web.{BlockServer, DocumentationServer, HttpClient}
+import org.alephium.explorer.web._
+import org.alephium.util.Duration
 
-class Application(port: Int, blockFlowUri: Uri)(implicit system: ActorSystem,
-                                                executionContext: ExecutionContext)
-    extends StrictLogging {
+// scalastyle:off magic.number
+class Application(port: Int,
+                  blockFlowUri: Uri,
+                  groupNum: Int,
+                  databaseConfig: DatabaseConfig[JdbcProfile])(implicit system: ActorSystem,
+                                                               executionContext: ExecutionContext)
+    extends StrictLogging
+    with AkkaDecodeFailureHandler {
 
-  val databaseConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig[JdbcProfile]("db")
-  val blockDao: BlockDao                          = new DbBlockDao(databaseConfig)
-  val httpClient: HttpClient                      = HttpClient(32, OverflowStrategy.dropNew)
+  val blockDao: BlockDao             = BlockDao(databaseConfig)
+  val transactionDao: TransactionDao = TransactionDao(databaseConfig)
+
+  val httpClient: HttpClient = HttpClient(512, OverflowStrategy.fail)
 
   //Services
-  val blockFlowSyncService: BlockFlowSyncService =
-    BlockFlowSyncService(httpClient, blockFlowUri, blockDao)
-  val blockService: BlockService = BlockService(blockDao)
+  val blockFlowClient: BlockFlowClient = BlockFlowClient.apply(httpClient, blockFlowUri)
 
-  sideEffect(blockFlowSyncService.sync())
+  val blockFlowSyncService: BlockFlowSyncService =
+    BlockFlowSyncService(groupNum   = groupNum,
+                         syncPeriod = Duration.unsafe(15 * 1000),
+                         blockFlowClient,
+                         blockDao)
+  val blockService: BlockService             = BlockService(blockDao)
+  val transactionService: TransactionService = TransactionService(transactionDao)
 
   //Servers
-  val blockServer: BlockServer           = new BlockServer(blockService)
-  val documentation: DocumentationServer = new DocumentationServer
+  val blockServer: BlockServer             = new BlockServer(blockService)
+  val transactionServer: TransactionServer = new TransactionServer(transactionService)
+  val documentation: DocumentationServer   = new DocumentationServer
 
   private val bindingPromise: Promise[Http.ServerBinding] = Promise()
 
-  val route: Route = blockServer.route ~ documentation.route
+  val route: Route = cors()(blockServer.route ~ transactionServer.route ~ documentation.route)
 
   sideEffect {
     for {
+      _       <- blockFlowSyncService.start()
       binding <- Http().bindAndHandle(route, "localhost", port)
     } yield {
       sideEffect(bindingPromise.success(binding))
@@ -51,10 +64,10 @@ class Application(port: Int, blockFlowUri: Uri)(implicit system: ActorSystem,
   }
 
   def stop: Future[Unit] =
-    bindingPromise.future
-      .flatMap(_.unbind)
-      .map {
-        case _ => logger.info("Http Unbound.")
-      }
-
+    for {
+      _ <- blockFlowSyncService.stop()
+      _ <- bindingPromise.future.flatMap(_.unbind)
+    } yield {
+      logger.info("Application stopped")
+    }
 }

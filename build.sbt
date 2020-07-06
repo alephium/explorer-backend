@@ -43,12 +43,15 @@ lazy val root = (project in file("."))
       "-Ywarn-value-discard"
     ),
     Test / envVars += "ALEPHIUM_ENV" -> "test",
+    scalastyleConfig in Test := baseDirectory.value / "scalastyle-test-config.xml",
     wartremoverErrors in (Compile, compile) := Warts.allBut(wartsCompileExcludes: _*),
-    wartremoverErrors in (Compile, compile) := Warts.allBut(wartsCompileExcludes: _*),
+    wartremoverErrors in (Test, compile) := Warts.allBut(wartsTestExcludes: _*),
     fork := true,
     libraryDependencies ++= Seq(
       alephiumUtil % "test" classifier "tests",
+      alephiumProtocol,
       alephiumRpc,
+      alephiumCrypto,
       tapirCore,
       tapirCirce,
       tapirAkka,
@@ -57,6 +60,7 @@ lazy val root = (project in file("."))
       circeCore,
       circeGeneric,
       akkaHttpCirce,
+      akkaHttpCors,
       scalaLogging,
       logback,
       akkaTest,
@@ -78,4 +82,11 @@ val wartsCompileExcludes = Seq(
   Wart.ImplicitParameter,
   Wart.StringPlusAny,
   Wart.Nothing
+)
+val wartsTestExcludes = wartsCompileExcludes ++ Seq(
+  Wart.PublicInference,
+  Wart.OptionPartial,
+  Wart.NonUnitStatements,
+  Wart.TraversableOps,
+  Wart.Equals
 )

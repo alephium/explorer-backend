@@ -8,21 +8,16 @@ import org.alephium.explorer.HashCompanion
 import org.alephium.rpc.CirceUtils.{avectorCodec, timestampCodec}
 import org.alephium.util.{AVector, TimeStamp}
 
-final case class BlockEntry(
-    hash: BlockEntry.Hash,
+final case class Transaction(
+    hash: Transaction.Hash,
     timestamp: TimeStamp,
-    chainFrom: GroupIndex,
-    chainTo: GroupIndex,
-    height: Height,
-    deps: AVector[BlockEntry.Hash],
-    transactions: AVector[Transaction]
+    inputs: AVector[Input],
+    outputs: AVector[Output]
 )
 
-object BlockEntry {
-
+object Transaction {
   final class Hash(val value: explorer.Hash) extends AnyVal
+  object Hash                                extends HashCompanion[Hash](new Hash(_), _.value)
 
-  object Hash extends HashCompanion[Hash](new Hash(_), _.value)
-
-  implicit val codec: Codec[BlockEntry] = deriveCodec[BlockEntry]
+  implicit val codec: Codec[Transaction] = deriveCodec[Transaction]
 }
