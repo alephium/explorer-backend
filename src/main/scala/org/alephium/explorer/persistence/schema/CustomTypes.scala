@@ -7,7 +7,7 @@ import slick.jdbc.{JdbcProfile, JdbcType}
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
-import org.alephium.util.Hex
+import org.alephium.util.{Hex, TimeStamp}
 
 trait CustomTypes extends JdbcProfile {
   val config: DatabaseConfig[JdbcProfile]
@@ -46,5 +46,10 @@ trait CustomTypes extends JdbcProfile {
   implicit val addressType: JdbcType[Address] = MappedJdbcType.base[Address, String](
     _.value,
     string => Address.unsafe(string)
+  )
+
+  implicit val timestampType: JdbcType[TimeStamp] = MappedJdbcType.base[TimeStamp, Long](
+    _.millis,
+    long => TimeStamp.unsafe(long)
   )
 }

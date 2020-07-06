@@ -108,6 +108,7 @@ trait Generators {
         block.transactions.map { tx =>
           Transaction(
             tx.hash,
+            block.timestamp,
             block.inputs
               .filter(_.txHash === tx.hash)
               .map(input => input.toApi(outputs.find(_.outputRefKey === input.key))),

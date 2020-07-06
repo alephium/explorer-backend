@@ -25,10 +25,10 @@ final case class BlockEntryProtocol(
       chainTo,
       height,
       deps,
-      transactions.map(_.toEntity(hash)),
+      transactions.map(_.toEntity(hash, timestamp)),
       transactions.flatMap(tx => tx.inputs.map(_.toEntity(tx.hash))),
       transactions.flatMap(tx =>
-        tx.outputs.mapWithIndex { case (out, index) => out.toEntity(tx.hash, index) })
+        tx.outputs.mapWithIndex { case (out, index) => out.toEntity(tx.hash, index, timestamp) })
     )
 }
 

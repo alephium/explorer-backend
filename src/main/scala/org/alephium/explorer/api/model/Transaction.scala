@@ -5,11 +5,12 @@ import io.circe.generic.semiauto.deriveCodec
 
 import org.alephium.explorer
 import org.alephium.explorer.HashCompanion
-import org.alephium.rpc.CirceUtils.avectorCodec
-import org.alephium.util.AVector
+import org.alephium.rpc.CirceUtils.{avectorCodec, timestampCodec}
+import org.alephium.util.{AVector, TimeStamp}
 
 final case class Transaction(
     hash: Transaction.Hash,
+    timestamp: TimeStamp,
     inputs: AVector[Input],
     outputs: AVector[Output]
 )

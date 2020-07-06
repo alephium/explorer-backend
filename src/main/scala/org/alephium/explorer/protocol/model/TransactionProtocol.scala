@@ -6,17 +6,18 @@ import io.circe.generic.semiauto.deriveCodec
 import org.alephium.explorer.api.model.{BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.TransactionEntity
 import org.alephium.rpc.CirceUtils.avectorCodec
-import org.alephium.util.AVector
+import org.alephium.util.{AVector, TimeStamp}
 
 final case class TransactionProtocol(
     hash: Transaction.Hash,
     inputs: AVector[InputProtocol],
     outputs: AVector[OutputProtocol]
 ) {
-  def toEntity(blockHash: BlockEntry.Hash): TransactionEntity =
+  def toEntity(blockHash: BlockEntry.Hash, timestamp: TimeStamp): TransactionEntity =
     TransactionEntity(
       hash,
-      blockHash
+      blockHash,
+      timestamp
     )
 }
 
