@@ -5,7 +5,7 @@ Global / cancelable := true // Allow cancellation of forked task without killing
 lazy val root = (project in file("."))
   .settings(
     organization := "org.alephium",
-    version := "0.1.0",
+    version := "0.1.1-SNAPSHOT",
     scalaVersion := "2.13.2",
     scalacOptions ++= Seq(
       "-deprecation",
