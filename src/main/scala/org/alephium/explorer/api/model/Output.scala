@@ -9,7 +9,8 @@ import org.alephium.explorer.api.Circe.hashCodec
 final case class Output(
     amount: Long,
     createdHeight: Int,
-    address: Address
+    address: Address,
+    spent: Option[Transaction.Hash]
 )
 
 object Output {

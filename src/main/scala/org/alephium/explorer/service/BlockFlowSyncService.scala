@@ -67,7 +67,7 @@ object BlockFlowSyncService {
           case (fromGroup, toGroup) =>
             syncChain(fromGroup, toGroup)
         }
-        .map(_ => ())
+        .flatMap(_ => blockDao.updateSpent())
     }
 
     private def syncChain(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Unit] = {

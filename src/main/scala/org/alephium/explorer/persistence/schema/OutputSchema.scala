@@ -15,17 +15,18 @@ trait OutputSchema extends CustomTypes {
   import config.profile.api._
 
   class Outputs(tag: Tag) extends Table[OutputEntity](tag, "outputs") {
-    def txHash: Rep[Transaction.Hash] = column[Transaction.Hash]("tx_hash")
-    def amount: Rep[Long]             = column[Long]("amount")
-    def createdHeight: Rep[Int]       = column[Int]("created_height")
-    def address: Rep[Address]         = column[Address]("address")
-    def outputRefKey: Rep[Hash]       = column[Hash]("output_ref")
-    def timestamp: Rep[TimeStamp]     = column[TimeStamp]("timestamp")
+    def txHash: Rep[Transaction.Hash]        = column[Transaction.Hash]("tx_hash")
+    def amount: Rep[Long]                    = column[Long]("amount")
+    def createdHeight: Rep[Int]              = column[Int]("created_height")
+    def address: Rep[Address]                = column[Address]("address")
+    def outputRefKey: Rep[Hash]              = column[Hash]("output_ref")
+    def timestamp: Rep[TimeStamp]            = column[TimeStamp]("timestamp")
+    def spent: Rep[Option[Transaction.Hash]] = column[Option[Transaction.Hash]]("spent")
 
     def outputsTxHashIdx: Index = index("outputs_tx_hash_idx", txHash)
 
     def * : ProvenShape[OutputEntity] =
-      (txHash, amount, createdHeight, address, outputRefKey, timestamp) <> ((OutputEntity.apply _).tupled, OutputEntity.unapply)
+      (txHash, amount, createdHeight, address, outputRefKey, timestamp, spent) <> ((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }
 
   val outputsTable: TableQuery[Outputs] = TableQuery[Outputs]

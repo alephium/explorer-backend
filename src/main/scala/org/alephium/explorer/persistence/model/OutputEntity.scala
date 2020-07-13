@@ -10,12 +10,14 @@ final case class OutputEntity(
     createdHeight: Int,
     address: Address,
     outputRefKey: Hash,
-    timestamp: TimeStamp
+    timestamp: TimeStamp,
+    spent: Option[Transaction.Hash]
 ) {
   lazy val toApi: Output =
     Output(
       amount,
       createdHeight,
-      address
+      address,
+      spent
     )
 }
