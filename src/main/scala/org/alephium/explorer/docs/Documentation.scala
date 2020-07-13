@@ -10,6 +10,7 @@ trait Documentation extends BlockEndpoints with TransactionEndpoints with Addres
     listBlocks,
     getBlockByHash,
     getTransactionById,
+    getAddressInfo,
     getTransactionsByAddress
   ).toOpenAPI("Alephium Explorer API", "1.0")
 }

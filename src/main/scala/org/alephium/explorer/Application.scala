@@ -46,12 +46,14 @@ class Application(port: Int,
 
   //Servers
   val blockServer: BlockServer             = new BlockServer(blockService)
+  val addressServer: AddressServer         = new AddressServer(transactionService)
   val transactionServer: TransactionServer = new TransactionServer(transactionService)
   val documentation: DocumentationServer   = new DocumentationServer
 
   private val bindingPromise: Promise[Http.ServerBinding] = Promise()
 
-  val route: Route = cors()(blockServer.route ~ transactionServer.route ~ documentation.route)
+  val route: Route =
+    cors()(blockServer.route ~ addressServer.route ~ transactionServer.route ~ documentation.route)
 
   sideEffect {
     for {

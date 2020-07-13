@@ -5,7 +5,7 @@ import sttp.tapir.json.circe.jsonBody
 
 import org.alephium.explorer.api.Codecs._
 import org.alephium.explorer.api.Schemas._
-import org.alephium.explorer.api.model.{Address, Transaction}
+import org.alephium.explorer.api.model.{Address, AddressInfo, Transaction}
 
 trait AddressesEndpoints extends BaseEndpoint {
 
@@ -13,6 +13,12 @@ trait AddressesEndpoints extends BaseEndpoint {
     baseEndpoint
       .tag("Addressess")
       .in("addresses")
+
+  val getAddressInfo: Endpoint[Address, ApiError, AddressInfo, Nothing] =
+    addressesEndpoint.get
+      .in(path[Address]("address"))
+      .out(jsonBody[AddressInfo])
+      .description("Get address informations")
 
   val getTransactionsByAddress: Endpoint[Address, ApiError, Seq[Transaction], Nothing] =
     addressesEndpoint.get

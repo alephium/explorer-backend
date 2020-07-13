@@ -32,7 +32,7 @@ trait Generators {
   } yield InputProtocol(outputRef, unlockScript)
 
   val outputProtocolGen: Gen[OutputProtocol] = for {
-    amount        <- arbitrary[Long]
+    amount        <- Gen.choose[Long](1, 10000000)
     createdHeight <- arbitrary[Int]
     address       <- addressGen
   } yield OutputProtocol(amount, createdHeight, address)

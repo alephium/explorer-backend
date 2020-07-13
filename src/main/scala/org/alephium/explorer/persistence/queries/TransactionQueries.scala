@@ -91,4 +91,11 @@ trait TransactionQueries extends TransactionSchema with InputSchema with OutputS
         })
       }
   }.flatMap(_.map(_.sum))
+
+  def getBalanceAction(address: Address): DBActionR[Long] =
+    outputsTable
+      .filter(out => out.address === address && out.spent.isEmpty)
+      .map(_.amount)
+      .result
+      .map(_.sum)
 }
