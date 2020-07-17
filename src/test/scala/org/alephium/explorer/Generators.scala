@@ -12,32 +12,32 @@ import org.alephium.util.{AVector, Base58, Duration, TimeStamp}
 
 trait Generators {
 
-  val timestampGen: Gen[TimeStamp]              = Gen.posNum[Long].map(TimeStamp.unsafe)
-  val hashGen: Gen[Hash]                        = Gen.uuid.map(uuid => Hash.hash(uuid.toString))
-  val blockEntryHashGen: Gen[BlockEntry.Hash]   = hashGen.map(new BlockEntry.Hash(_))
-  val transactionHashGen: Gen[Transaction.Hash] = hashGen.map(new Transaction.Hash(_))
-  val groupIndexGen: Gen[GroupIndex]            = Gen.posNum[Int].map(GroupIndex.unsafe(_))
-  val heightGen: Gen[Height]                    = Gen.posNum[Int].map(Height.unsafe(_))
-  val publicKeyGen: Gen[ED25519PublicKey]       = Gen.oneOf(Seq(ED25519PublicKey.generate))
-  val addressGen: Gen[Address]                  = hashGen.map(hash => Address.unsafe(Base58.encode(hash.bytes)))
+  lazy val timestampGen: Gen[TimeStamp]              = Gen.posNum[Long].map(TimeStamp.unsafe)
+  lazy val hashGen: Gen[Hash]                        = Gen.uuid.map(uuid => Hash.hash(uuid.toString))
+  lazy val blockEntryHashGen: Gen[BlockEntry.Hash]   = hashGen.map(new BlockEntry.Hash(_))
+  lazy val transactionHashGen: Gen[Transaction.Hash] = hashGen.map(new Transaction.Hash(_))
+  lazy val groupIndexGen: Gen[GroupIndex]            = Gen.posNum[Int].map(GroupIndex.unsafe(_))
+  lazy val heightGen: Gen[Height]                    = Gen.posNum[Int].map(Height.unsafe(_))
+  lazy val publicKeyGen: Gen[ED25519PublicKey]       = Gen.oneOf(Seq(ED25519PublicKey.generate))
+  lazy val addressGen: Gen[Address]                  = hashGen.map(hash => Address.unsafe(Base58.encode(hash.bytes)))
 
-  val outputRefProtocolGen: Gen[OutputProtocol.Ref] = for {
+  lazy val outputRefProtocolGen: Gen[OutputProtocol.Ref] = for {
     scriptHint <- arbitrary[Int]
     key        <- hashGen
   } yield OutputProtocol.Ref(scriptHint, key)
 
-  val inputProtocolGen: Gen[InputProtocol] = for {
+  lazy val inputProtocolGen: Gen[InputProtocol] = for {
     outputRef    <- outputRefProtocolGen
     unlockScript <- Gen.identifier
   } yield InputProtocol(outputRef, unlockScript)
 
-  val outputProtocolGen: Gen[OutputProtocol] = for {
+  lazy val outputProtocolGen: Gen[OutputProtocol] = for {
     amount        <- Gen.choose[Long](1, 10000000)
     createdHeight <- arbitrary[Int]
     address       <- addressGen
   } yield OutputProtocol(amount, createdHeight, address)
 
-  val transactionProtocolGen: Gen[TransactionProtocol] = for {
+  lazy val transactionProtocolGen: Gen[TransactionProtocol] = for {
     hash       <- transactionHashGen
     inputSize  <- Gen.choose(0, 10)
     inputs     <- Gen.listOfN(inputSize, inputProtocolGen)
@@ -45,7 +45,7 @@ trait Generators {
     outputs    <- Gen.listOfN(outputSize, outputProtocolGen)
   } yield TransactionProtocol(hash, AVector.from(inputs), AVector.from(outputs))
 
-  val blockEntryProtocolGen: Gen[BlockEntryProtocol] = for {
+  lazy val blockEntryProtocolGen: Gen[BlockEntryProtocol] = for {
     hash            <- blockEntryHashGen
     timestamp       <- timestampGen
     chainFrom       <- groupIndexGen
