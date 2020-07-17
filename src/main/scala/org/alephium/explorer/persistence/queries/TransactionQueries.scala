@@ -7,7 +7,7 @@ import slick.dbio.DBIOAction
 import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
-import org.alephium.explorer.persistence.{DBActionR, DBActionW}
+import org.alephium.explorer.persistence.{DBActionR, DBActionRW, DBActionW}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema.{InputSchema, OutputSchema, TransactionSchema}
 import org.alephium.util.{AVector, TimeStamp}
@@ -73,4 +73,29 @@ trait TransactionQueries extends TransactionSchema with InputSchema with OutputS
       .result
       .headOption
       .map(output => (input, output))
+
+  def updateSpentAction(): DBActionRW[Int] = {
+    outputsTable
+      .filter(_.spent.isEmpty)
+      .join(inputsTable)
+      .on(_.outputRefKey === _.key)
+      .map { case (out, in) => (out, in.txHash) }
+      .result
+      .map { res =>
+        DBIOAction.sequence(res.map {
+          case (out, txHash) =>
+            outputsTable
+              .filter(_.outputRefKey === out.outputRefKey)
+              .map(_.spent)
+              .update(Some(txHash))
+        })
+      }
+  }.flatMap(_.map(_.sum))
+
+  def getBalanceAction(address: Address): DBActionR[Long] =
+    outputsTable
+      .filter(out => out.address === address && out.spent.isEmpty)
+      .map(_.amount)
+      .result
+      .map(_.sum)
 }

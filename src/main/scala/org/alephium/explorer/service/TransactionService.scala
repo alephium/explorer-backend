@@ -8,6 +8,7 @@ import org.alephium.explorer.persistence.dao.TransactionDao
 trait TransactionService {
   def getTransaction(transactionHash: Transaction.Hash): Future[Option[Transaction]]
   def getTransactionsByAddress(address: Address): Future[Seq[Transaction]]
+  def getBalance(address: Address): Future[Long]
 }
 
 object TransactionService {
@@ -20,5 +21,8 @@ object TransactionService {
 
     def getTransactionsByAddress(address: Address): Future[Seq[Transaction]] =
       transactionDao.getByAddress(address)
+
+    def getBalance(address: Address): Future[Long] =
+      transactionDao.getBalance(address)
   }
 }

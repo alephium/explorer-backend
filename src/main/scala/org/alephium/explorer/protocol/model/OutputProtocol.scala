@@ -23,7 +23,8 @@ final case class OutputProtocol(
       createdHeight,
       address,
       Hash.hash(txHash.value.bytes ++ Bytes.toBytes(index)),
-      timestamp
+      timestamp,
+      spent = None
     )
   }
 }

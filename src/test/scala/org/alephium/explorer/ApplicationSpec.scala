@@ -18,7 +18,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.explorer.api.ApiError
-import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
+import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.protocol.model.BlockEntryProtocol
@@ -119,6 +119,29 @@ class ApplicationSpec()
       Get(s"/transactions/${hash.toHexString}") ~> routes ~> check {
         status is StatusCodes.NotFound
         responseAs[ApiError] is ApiError.NotFound(hash.toHexString)
+      }
+    }
+  }
+
+  it should "get address' info" in {
+    forAll(Gen.oneOf(addresses)) { address =>
+      Get(s"/addresses/${address}") ~> routes ~> check {
+        val expectedTransactions =
+          transactions.filter(_.outputs.toArray.toSeq.exists(_.address == address))
+        val expectedBalance =
+          expectedTransactions
+            .map(
+              _.outputs.toArray.toIndexedSeq
+                .filter(out => out.spent.isEmpty && out.address == address)
+                .map(_.amount)
+                .sum)
+            .sum
+
+        val res = responseAs[AddressInfo]
+
+        res.balance is expectedBalance
+        res.transactions.size is expectedTransactions.size
+        expectedTransactions.foreach(transaction => res.transactions.contains(transaction) is true)
       }
     }
   }

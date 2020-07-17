@@ -3,6 +3,7 @@ package org.alephium.explorer.persistence.dao
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 
+import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
 import slick.jdbc.JdbcProfile
@@ -21,6 +22,7 @@ trait BlockDao {
   def insert(block: BlockEntity): Future[Unit]
   def list(timeInterval: TimeInterval): Future[Seq[BlockEntry]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
+  def updateSpent(): Future[Unit]
 }
 
 object BlockDao {
@@ -34,7 +36,8 @@ object BlockDao {
       with BlockHeaderSchema
       with BlockDepsSchema
       with TransactionQueries
-      with DBRunner {
+      with DBRunner
+      with StrictLogging {
     import config.profile.api._
 
     private def buildBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry] =
@@ -105,5 +108,9 @@ object BlockDao {
     sideEffect {
       Await.result(f, Duration.Inf)
     }
+    def updateSpent(): Future[Unit] =
+      run(updateSpentAction()).map { nbOfUpdates =>
+        logger.debug(s"$nbOfUpdates spent's output updated")
+      }
   }
 }
