@@ -18,12 +18,13 @@ trait BlockHeaderSchema extends CustomTypes {
     def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
     def height: Rep[Height]        = column[Height]("height")
+    def mainChain: Rep[Boolean]    = column[Boolean]("main_chain")
 
     def blocksTimestampIdx: Index = index("blocks_timestamp_idx", timestamp)
     def blocksHeigthIdx: Index    = index("blocks_height_idx", height)
 
     def * : ProvenShape[BlockHeader] =
-      (hash, timestamp, chainFrom, chainTo, height) <> ((BlockHeader.apply _).tupled, BlockHeader.unapply)
+      (hash, timestamp, chainFrom, chainTo, height, mainChain) <> ((BlockHeader.apply _).tupled, BlockHeader.unapply)
   }
 
   val blockHeadersTable: TableQuery[BlockHeaders] = TableQuery[BlockHeaders]

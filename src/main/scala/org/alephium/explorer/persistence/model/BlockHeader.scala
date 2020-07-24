@@ -8,10 +8,18 @@ final case class BlockHeader(
     timestamp: Long,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
-    height: Height
+    height: Height,
+    mainChain: Boolean
 ) {
   def toApi(deps: AVector[BlockEntry.Hash], transactions: AVector[Transaction]): BlockEntry =
-    BlockEntry(hash, TimeStamp.unsafe(timestamp), chainFrom, chainTo, height, deps, transactions)
+    BlockEntry(hash,
+               TimeStamp.unsafe(timestamp),
+               chainFrom,
+               chainTo,
+               height,
+               deps,
+               transactions,
+               mainChain)
 }
 
 object BlockHeader {
@@ -21,6 +29,7 @@ object BlockHeader {
       blockEntity.timestamp.millis,
       blockEntity.chainFrom,
       blockEntity.chainTo,
-      blockEntity.height
+      blockEntity.height,
+      blockEntity.mainChain
     )
 }

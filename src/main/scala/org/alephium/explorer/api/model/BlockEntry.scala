@@ -15,12 +15,24 @@ final case class BlockEntry(
     chainTo: GroupIndex,
     height: Height,
     deps: AVector[BlockEntry.Hash],
-    transactions: AVector[Transaction]
-)
+    transactions: AVector[Transaction],
+    mainChain: Boolean
+) {
+  def parent(groupNum: Int): Option[BlockEntry.Hash] =
+    if (isGenesis) {
+      None
+    } else {
+      deps.takeRight(groupNum).get(chainTo.value)
+    }
+
+  lazy val isGenesis: Boolean = height === Height.zero
+}
 
 object BlockEntry {
 
-  final class Hash(val value: explorer.Hash) extends AnyVal
+  final class Hash(val value: explorer.Hash) extends AnyVal {
+    override def toString(): String = value.toHexString
+  }
 
   object Hash extends HashCompanion[Hash](new Hash(_), _.value)
 

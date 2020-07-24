@@ -24,6 +24,23 @@ trait BlockFlowClient {
   def getHashesAtHeight(from: GroupIndex,
                         to: GroupIndex,
                         height: Height): Future[Either[String, HashesAtHeight]]
+
+  def getBlocksAtHeight(from: GroupIndex, to: GroupIndex, height: Height)(
+      implicit executionContext: ExecutionContext): Future[Either[Seq[String], Seq[BlockEntity]]] =
+    getHashesAtHeight(from, to, height).flatMap {
+      case Right(hashesAtHeight) =>
+        Future
+          .sequence(hashesAtHeight.headers.map(hash => getBlock(from, hash)))
+          .map { blocksEither =>
+            val (errors, blocks) = blocksEither.partitionMap(identity)
+            if (errors.nonEmpty) {
+              Left(errors)
+            } else {
+              Right(blocks)
+            }
+          }
+      case Left(error) => Future.successful(Left(Seq(error)))
+    }
 }
 
 object BlockFlowClient {

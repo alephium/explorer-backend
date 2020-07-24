@@ -12,5 +12,15 @@ final case class BlockEntity(
     deps: AVector[BlockEntry.Hash],
     transactions: AVector[TransactionEntity],
     inputs: AVector[InputEntity],
-    outputs: AVector[OutputEntity]
-)
+    outputs: AVector[OutputEntity],
+    mainChain: Boolean
+) {
+  def parent(groupNum: Int): Option[BlockEntry.Hash] =
+    if (isGenesis) {
+      None
+    } else {
+      deps.takeRight(groupNum).get(chainTo.value)
+    }
+
+  lazy val isGenesis: Boolean = height === Height.zero
+}

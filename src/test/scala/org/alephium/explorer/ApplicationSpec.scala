@@ -14,7 +14,7 @@ import akka.testkit.SocketUtil
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.{Decoder, DecodingFailure, HCursor, Json}
 import org.scalacheck.Gen
-import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.explorer.api.ApiError
@@ -30,7 +30,8 @@ class ApplicationSpec()
     with ScalaFutures
     with DatabaseFixture
     with Generators
-    with FailFastCirceSupport {
+    with FailFastCirceSupport
+    with Eventually {
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
   implicit val defaultTimeout          = RouteTestTimeout(5.seconds)
 
@@ -63,15 +64,16 @@ class ApplicationSpec()
                     groupNum,
                     databaseConfig)
 
-  //let it sync
-  Thread.sleep(2000)
+  //let it sync once
+  eventually(app.blockFlowSyncService.stop.futureValue) is ()
 
   val routes = app.route
 
   it should "get a block by its id" in {
     forAll(Gen.oneOf(blocks)) { block =>
       Get(s"/blocks/${block.hash.value.toHexString}") ~> routes ~> check {
-        responseAs[BlockEntry] is block
+        val blockResult = responseAs[BlockEntry]
+        blockResult is block.copy(mainChain = blockResult.mainChain)
       }
     }
 
@@ -92,9 +94,9 @@ class ApplicationSpec()
         //filter `blocks by the same timestamp as the query for better assertion`
         val expectedBlocks = blocks.filter(block =>
           block.timestamp.millis >= minTimestamp && block.timestamp.millis <= to)
-        val res = responseAs[Seq[BlockEntry]]
+        val res = responseAs[Seq[BlockEntry]].map(_.hash)
         expectedBlocks.size is res.size
-        expectedBlocks.foreach(block => res.contains(block) is true)
+        expectedBlocks.foreach(block => res.contains(block.hash) is true)
       }
     }
 

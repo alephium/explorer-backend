@@ -2,7 +2,9 @@ package org.alephium.explorer.api.model
 
 import io.circe.{Codec, Decoder, Encoder}
 
-final class Height(val value: Int) extends AnyVal
+final class Height(val value: Int) extends AnyVal {
+  override def toString(): String = value.toString
+}
 
 object Height {
   def unsafe(value: Int): Height = new Height(value)

@@ -13,6 +13,7 @@ import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service.BlockFlowClient.{ChainInfo, HashesAtHeight}
 import org.alephium.util.{AlephiumSpec, Duration, TimeStamp}
 
+@SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
 class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Eventually {
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
 
@@ -26,9 +27,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
 
     eventually(checkBlocks(blocks))
 
-    blocks = blockFlow.flatten
-
-    eventually(checkBlocks(blocks))
+    eventually(checkMainChain(mainChain))
 
     blockFlowSyncService.stop().futureValue is ()
 
@@ -40,27 +39,72 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
 
     val groupNum: Int = 4
 
-    val startTimestamp: TimeStamp = TimeStamp.now
-    val endTimestamp: TimeStamp   = startTimestamp.plusMinutesUnsafe(10)
+    def blockEntity(parent: Option[BlockEntity],
+                    chainFrom: GroupIndex = GroupIndex.unsafe(0),
+                    chainTo: GroupIndex   = GroupIndex.unsafe(0)): BlockEntity =
+      blockEntityGen(groupNum, chainFrom, chainTo, parent).sample.get
 
-    val blockFlowEntity: Seq[Seq[BlockEntity]] = blockFlowGen(
-      groupNum       = groupNum,
-      maxChainSize   = 20,
-      startTimestamp = startTimestamp).sample.get.map(_.map(_.toEntity))
-    val blockFlow: Seq[Seq[BlockEntry]] =
+    //                    +---+                            +---+   +---+  +---+
+    //                 +->+ 2 |                         +--> 9 +-->+ 11+->+ 13|
+    //  +---+   +---+  |  ----+                  +---+  |  +---+   +---+  +---+
+    //  | 0 +-->+ 1 +--+                      +->+ 6 +--+  +---+   +---+
+    //  +---+   +---+  |  ----+  +---+  +---+ |  +---+  +--> 10+-->+ 12|
+    //                 +->+ 3 +->+ 4 +->+ 5 +-+            +---+   +---+
+    //                    +---+  +---+  +---+ |
+    //                                        |  +---+     +---+   +---+
+    //                                        +->+ 7 +---->+ 8 +-->+ 14 |
+    //                                           +---+     +---+   +---+
+    //    0       1        2       3       4       5         6       7      8
+
+    val block0  = blockEntity(None)
+    val block1  = blockEntity(Some(block0))
+    val block2  = blockEntity(Some(block1))
+    val block3  = blockEntity(Some(block1))
+    val block4  = blockEntity(Some(block3))
+    val block5  = blockEntity(Some(block4))
+    val block6  = blockEntity(Some(block5))
+    val block7  = blockEntity(Some(block5))
+    val block8  = blockEntity(Some(block7))
+    val block9  = blockEntity(Some(block6))
+    val block10 = blockEntity(Some(block6))
+    val block11 = blockEntity(Some(block9))
+    val block12 = blockEntity(Some(block10))
+    val block13 = blockEntity(Some(block11))
+    val block14 = blockEntity(Some(block8))
+
+    val mainChain = Seq(
+      block0.hash,
+      block1.hash,
+      block3.hash,
+      block4.hash,
+      block5.hash,
+      block6.hash,
+      block9.hash,
+      block11.hash,
+      block13.hash
+    )
+
+    // format: off
+    var chainOToO = Seq(block0, block1, block2, block3, block4, block5, block6, block7, block8, block9, block10, block11, block12, block13, block14)
+    // format: on
+
+    val chains = chainIndexesGen(groupNum).map {
+      case (from, to) =>
+        Seq(blockEntity(None, from, to))
+    }.tail
+
+    def blockFlowEntity: Seq[Seq[BlockEntity]] =
+      chains :+ chainOToO
+
+    def blockFlow: Seq[Seq[BlockEntry]] =
       blockEntitiesToBlockEntries(blockFlowEntity)
 
     val blockDao: BlockDao = BlockDao(databaseConfig)
 
-    val blockEntities = blockFlowEntity.flatten
+    def blockEntities = blockFlowEntity.flatten
 
-    var blocks: Seq[BlockEntry] = blockFlow.flatMap { chain =>
-      if (chain.size <= 1) {
-        chain
-      } else {
-        chain.splitAt(chain.size / 2)._1
-      }
-    }
+    def blocks: Seq[BlockEntry] = blockFlow.flatten
+
     val blockFlowClient: BlockFlowClient = new BlockFlowClient {
       def getBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]] =
         Future.successful(blockEntities.find(_.hash === hash).toRight(s"$hash Not Found"))
@@ -88,9 +132,20 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
 
     def checkBlocks(blocksToCheck: Seq[BlockEntry]) =
       blockDao
-        .list(TimeInterval(startTimestamp, endTimestamp))
+        .list(TimeInterval(TimeStamp.unsafe(0), TimeStamp.unsafe(Long.MaxValue)))
         .futureValue
-        .toSet is blocksToCheck.toSet
+        .map(_.hash)
+        .toSet is blocksToCheck.map(_.hash).toSet
+
+    def checkMainChain(mainChain: Seq[BlockEntry.Hash]) =
+      blockDao
+        .list(TimeInterval(TimeStamp.unsafe(0), TimeStamp.unsafe(Long.MaxValue)))
+        .futureValue
+        .filter(block =>
+          block.mainChain && block.chainFrom === GroupIndex
+            .unsafe(0) && block.chainTo === GroupIndex.unsafe(0))
+        .map(_.hash)
+        .toSet is mainChain.toSet
   }
   // scalastyle:on scalatest-matcher
 }

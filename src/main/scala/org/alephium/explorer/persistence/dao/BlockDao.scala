@@ -19,10 +19,14 @@ import org.alephium.util.AVector
 
 trait BlockDao {
   def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]]
+  def getAtHeight(fromGroup: GroupIndex,
+                  toGroup: GroupIndex,
+                  height: Height): Future[Seq[BlockEntry]]
   def insert(block: BlockEntity): Future[Unit]
   def list(timeInterval: TimeInterval): Future[Seq[BlockEntry]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
   def updateSpent(): Future[Unit]
+  def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Int]
 }
 
 object BlockDao {
@@ -55,6 +59,19 @@ object BlockDao {
     def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]] =
       run(getBlockEntryAction(hash))
 
+    def getAtHeight(fromGroup: GroupIndex,
+                    toGroup: GroupIndex,
+                    height: Height): Future[Seq[BlockEntry]] =
+      run(
+        for {
+          headers <- blockHeadersTable
+            .filter(header =>
+              header.height === height && header.chainFrom === fromGroup && header.chainTo === toGroup)
+            .result
+          blocks <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
+        } yield blocks
+      )
+
     def insert(block: BlockEntity): Future[Unit] =
       run(
         (blockHeadersTable += BlockHeader.fromEntity(block)) >>
@@ -80,10 +97,10 @@ object BlockDao {
       val query =
         blockHeadersTable
           .filter(header => header.chainFrom === fromGroup && header.chainTo === toGroup)
-          .sortBy(_.height.desc)
           .map(_.height)
+          .max
 
-      run(query.result.headOption)
+      run(query.result)
     }
 
     //TODO Look for something like https://flywaydb.org/ to manage schemas
@@ -112,5 +129,16 @@ object BlockDao {
       run(updateSpentAction()).map { nbOfUpdates =>
         logger.debug(s"$nbOfUpdates spent's output updated")
       }
+
+    def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Int] = {
+      val query =
+        blockHeadersTable
+          .filter(_.hash === hash)
+          .map(_.mainChain)
+          .update(isMainChain)
+
+      run(query)
+    }
+
   }
 }

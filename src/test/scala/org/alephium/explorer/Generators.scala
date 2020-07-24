@@ -13,13 +13,19 @@ import org.alephium.util.{AVector, Base58, Duration, TimeStamp}
 trait Generators {
 
   lazy val timestampGen: Gen[TimeStamp]              = Gen.posNum[Long].map(TimeStamp.unsafe)
-  lazy val hashGen: Gen[Hash]                        = Gen.uuid.map(uuid => Hash.hash(uuid.toString))
+  lazy val hashGen: Gen[Hash]                        = Gen.const(()).map(_ => Hash.generate)
   lazy val blockEntryHashGen: Gen[BlockEntry.Hash]   = hashGen.map(new BlockEntry.Hash(_))
   lazy val transactionHashGen: Gen[Transaction.Hash] = hashGen.map(new Transaction.Hash(_))
   lazy val groupIndexGen: Gen[GroupIndex]            = Gen.posNum[Int].map(GroupIndex.unsafe(_))
   lazy val heightGen: Gen[Height]                    = Gen.posNum[Int].map(Height.unsafe(_))
   lazy val publicKeyGen: Gen[ED25519PublicKey]       = Gen.oneOf(Seq(ED25519PublicKey.generate))
   lazy val addressGen: Gen[Address]                  = hashGen.map(hash => Address.unsafe(Base58.encode(hash.bytes)))
+
+  def chainIndexesGen(groupNum: Int): Seq[(GroupIndex, GroupIndex)] =
+    for {
+      i <- 0 to groupNum - 1
+      j <- 0 to groupNum - 1
+    } yield (GroupIndex.unsafe(i), GroupIndex.unsafe(j))
 
   lazy val outputRefProtocolGen: Gen[OutputProtocol.Ref] = for {
     scriptHint <- arbitrary[Int]
@@ -63,16 +69,29 @@ trait Generators {
                        AVector.from(deps),
                        AVector.from(transactions))
 
+  def blockEntityGen(groupNum: Int,
+                     chainFrom: GroupIndex,
+                     chainTo: GroupIndex,
+                     parent: Option[BlockEntity]): Gen[BlockEntity] =
+    blockEntryProtocolGen.map { entry =>
+      val deps   = parent.map(p => Seq.fill(2 * groupNum - 1)(p.hash)).getOrElse(Seq.empty)
+      val height = Height.unsafe(parent.map(_.height.value + 1).getOrElse(0))
+      entry
+        .copy(chainFrom = chainFrom, chainTo = chainTo, height = height, deps = AVector.from(deps))
+        .toEntity
+    }
+
   def chainGen(size: Int,
                startTimestamp: TimeStamp,
                chainFrom: GroupIndex,
-               chainTo: GroupIndex): Gen[Seq[BlockEntryProtocol]] =
+               chainTo: GroupIndex,
+               groupNum: Int): Gen[Seq[BlockEntryProtocol]] =
     Gen.listOfN(size, blockEntryProtocolGen).map { blocks =>
       blocks
         .foldLeft((Seq.empty[BlockEntryProtocol], Height.zero, startTimestamp)) {
           case ((acc, height, timestamp), block) =>
             val deps: AVector[BlockEntry.Hash] =
-              if (acc.isEmpty) AVector.empty else AVector(acc.last.hash)
+              if (acc.isEmpty) AVector.empty else AVector.tabulate(groupNum)(_ => acc.last.hash)
             val newBlock = block.copy(height = height,
                                       deps      = deps,
                                       timestamp = timestamp,
@@ -85,17 +104,12 @@ trait Generators {
   def blockFlowGen(groupNum: Int,
                    maxChainSize: Int,
                    startTimestamp: TimeStamp): Gen[Seq[Seq[BlockEntryProtocol]]] = {
-
-    val chainIndexes: Seq[(GroupIndex, GroupIndex)] = for {
-      i <- 0 to groupNum - 1
-      j <- 0 to groupNum - 1
-    } yield (GroupIndex.unsafe(i), GroupIndex.unsafe(j))
-
+    val indexes = chainIndexesGen(groupNum)
     Gen
-      .listOfN(chainIndexes.size, Gen.choose(1, maxChainSize))
-      .map(_.zip(chainIndexes).map {
+      .listOfN(indexes.size, Gen.choose(1, maxChainSize))
+      .map(_.zip(indexes).map {
         case (size, (from, to)) =>
-          chainGen(size, startTimestamp, from, to).sample.get
+          chainGen(size, startTimestamp, from, to, groupNum).sample.get
       })
   }
 
@@ -122,7 +136,8 @@ trait Generators {
         block.chainTo,
         block.height,
         block.deps,
-        transactions
+        transactions,
+        mainChain = true
       )
     })
   }
