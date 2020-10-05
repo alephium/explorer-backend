@@ -1,0 +1,35 @@
+dist: bionic
+language: scala
+
+notifications:
+  slack:
+    rooms:
+      - secure: "aTZQ9L1yJX+jwoB+pBtlpPX4SAJsTAhCi9n25rZ8PwmMIbbFCtiYKJrX/utpskybKq4oTXcpSSPfYF28/39XQH7EAkHguEE2ncMnp59QGyOMyPvN6WXADKWXHGXDQrezlJYzn5BrJCvKo84EUdZgrr0RRBX5ln7cAKSZYjUCQzyshXvKH3yBaGYcs0XPTN6sERXBgin+b0FQhI6QXxuJGfj1gBLOZC/N+JvIP54jHGsKItYgyels4RMpOZJC37Wo9bOxZwtatrPyT8VgHNCJcgbzRu3CbUNyzYMWtlKoe9lrG5c4EWfDvKTBTF32fmmwL3fJz8I0aQKBIrRTGKY82IC4rLYgzdS7O8S0aRpbcBS/olfnjcca1yh8psZnpKMZ16P9DbwwEo12n2qjeUEEqNGLmoX2EOj8Dt9pL6q5YytmaDpnAwh0Gsy/F+iKqDUAfIy9bPvqwPRmjs0sCpj3WTCadwyajcduueGxMh+wZLBYtqsY0NRnzaCaSum0RTwOw3y7mFDceSS9eu0r7FsahFJ9NNrOjj9iwcsQFx87gU7aRl9kG7KkClkYEIuorKgqiButi6ZYaa52vF3z84dIGOmxIpIK7GSSlzrKIQkawfCfobiUSP5nTDRSoG+0CLvcTKcgJxPa4hg5MUnjGH+9hVjfsN6CaSrWPtSFkay6z0o="
+    on_success: always
+    on_failure: always
+
+scala:
+  - 2.13.3
+
+jdk:
+  - openjdk11
+
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot
+    - $HOME/.coursier
+
+jobs:
+  include:
+    - stage: test
+      script:
+        - ps aux | grep haveged
+        - sbt test
+
+branches:
+  only:
+  - master
+
+stages:
+  - test
