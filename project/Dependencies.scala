@@ -19,7 +19,7 @@ import sbt._
 object Version {
   lazy val common = "0.3.1-SNAPSHOT"
 
-  lazy val akka       = "2.6.5"
+  lazy val akka       = "2.6.8"
   lazy val circe      = "0.13.0"
   lazy val tapir      = "0.14.5"
   lazy val slick      = "3.3.2"
@@ -31,7 +31,7 @@ object Dependencies {
   lazy val alephiumRpc    = "org.alephium" %% "rpc"    % Version.common
 
   lazy val akkaTest       = "com.typesafe.akka" %% "akka-testkit"        % Version.akka % Test
-  lazy val akkaHttptest   = "com.typesafe.akka" %% "akka-http-testkit"   % "10.1.11" % Test
+  lazy val akkaHttptest   = "com.typesafe.akka" %% "akka-http-testkit"   % "10.1.12" % Test
   lazy val akkaStream     = "com.typesafe.akka" %% "akka-stream-typed"   % Version.akka
   lazy val akkaStreamTest = "com.typesafe.akka" %% "akka-stream-testkit" % Version.akka % Test
 
