@@ -38,7 +38,7 @@ final case class OutputProtocol(
       amount,
       createdHeight,
       address,
-      Hash.hash(txHash.value.bytes ++ Bytes.toBytes(index)),
+      Hash.hash(txHash.value.bytes ++ Bytes.from(index)),
       timestamp,
       spent = None
     )
