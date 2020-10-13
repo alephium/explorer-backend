@@ -1,11 +1,26 @@
 import Dependencies._
+import sbtrelease.ReleaseStateTransformations._
 
 Global / cancelable := true // Allow cancellation of forked task without killing SBT
 
+val releaseSettings =
+  releaseProcess := Seq[ReleaseStep](
+    checkSnapshotDependencies,
+    inquireVersions,
+    releaseStepCommandAndRemaining("clean"),
+    releaseStepCommandAndRemaining("test"),
+    setReleaseVersion,
+    commitReleaseVersion,
+    tagRelease,
+    setNextVersion,
+    commitNextVersion,
+    pushChanges
+  )
+
 lazy val root = (project in file("."))
+  .settings(releaseSettings: _*)
   .settings(
     organization := "org.alephium",
-    version := "0.3.1-SNAPSHOT",
     scalaVersion := "2.13.2",
     scalacOptions ++= Seq(
       "-deprecation",
