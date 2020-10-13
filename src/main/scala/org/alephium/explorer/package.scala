@@ -16,7 +16,7 @@
 
 package org.alephium
 
-import org.alephium.crypto.Keccak256
+import org.alephium.crypto.Blake2b
 
 package object explorer {
   @inline @specialized def sideEffect[E](effect: E): Unit = {
@@ -30,6 +30,6 @@ package object explorer {
     def =/=(other: A): Boolean = self != other
   }
 
-  type Hash = Keccak256
-  val Hash: Keccak256.type = Keccak256
+  type Hash = Blake2b
+  val Hash: Blake2b.type = Blake2b
 }
