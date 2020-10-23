@@ -20,6 +20,7 @@ val releaseSettings =
 lazy val root = (project in file("."))
   .settings(releaseSettings: _*)
   .settings(
+    name := "explorer-backend",
     organization := "org.alephium",
     scalaVersion := "2.13.2",
     scalacOptions ++= Seq(
@@ -90,7 +91,7 @@ lazy val root = (project in file("."))
       postgresql,
       h2
     )
-  )
+  ).enablePlugins(JavaAppPackaging)
 
 val wartsCompileExcludes = Seq(
   Wart.Any,
