@@ -25,8 +25,11 @@ final class Height(val value: Int) extends AnyVal {
 object Height {
   def unsafe(value: Int): Height = new Height(value)
   def from(value: Int): Either[String, Height] =
-    if (value < 0) Left(s"height cannot be negative ($value)")
-    else Right(Height.unsafe(value))
+    if (value < 0) {
+      Left(s"height cannot be negative ($value)")
+    } else {
+      Right(Height.unsafe(value))
+    }
 
   val zero: Height = Height.unsafe(0)
 
