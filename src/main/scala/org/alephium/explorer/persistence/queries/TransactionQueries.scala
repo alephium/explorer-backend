@@ -26,7 +26,7 @@ import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
 import org.alephium.explorer.persistence.{DBActionR, DBActionRW, DBActionW}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema.{InputSchema, OutputSchema, TransactionSchema}
-import org.alephium.util.{AVector, TimeStamp}
+import org.alephium.util.{AVector, TimeStamp, U256}
 
 trait TransactionQueries extends TransactionSchema with InputSchema with OutputSchema {
 
@@ -108,10 +108,10 @@ trait TransactionQueries extends TransactionSchema with InputSchema with OutputS
       }
   }.flatMap(_.map(_.sum))
 
-  def getBalanceAction(address: Address): DBActionR[Long] =
+  def getBalanceAction(address: Address): DBActionR[U256] =
     outputsTable
       .filter(out => out.address === address && out.spent.isEmpty)
       .map(_.amount)
       .result
-      .map(_.sum)
+      .map(_.fold(U256.Zero)(_ addUnsafe _))
 }

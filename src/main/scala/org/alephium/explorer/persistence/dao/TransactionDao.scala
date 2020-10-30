@@ -24,11 +24,12 @@ import slick.jdbc.JdbcProfile
 import org.alephium.explorer.api.model.{Address, Transaction}
 import org.alephium.explorer.persistence.DBRunner
 import org.alephium.explorer.persistence.queries.TransactionQueries
+import org.alephium.util.U256
 
 trait TransactionDao {
   def get(hash: Transaction.Hash): Future[Option[Transaction]]
   def getByAddress(address: Address): Future[Seq[Transaction]]
-  def getBalance(address: Address): Future[Long]
+  def getBalance(address: Address): Future[U256]
 }
 
 object TransactionDao {
@@ -48,7 +49,7 @@ object TransactionDao {
     def getByAddress(address: Address): Future[Seq[Transaction]] =
       run(getTransactionsByAddress(address))
 
-    def getBalance(address: Address): Future[Long] =
+    def getBalance(address: Address): Future[U256] =
       run(getBalanceAction(address))
   }
 }

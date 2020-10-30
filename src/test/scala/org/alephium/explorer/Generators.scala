@@ -24,7 +24,7 @@ import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.protocol.model._
-import org.alephium.util.{AVector, Base58, Duration, TimeStamp}
+import org.alephium.util.{AVector, Base58, Duration, TimeStamp, U256}
 
 trait Generators {
 
@@ -54,7 +54,7 @@ trait Generators {
   } yield InputProtocol(outputRef, unlockScript)
 
   lazy val outputProtocolGen: Gen[OutputProtocol] = for {
-    amount        <- Gen.choose[Long](1, 10000000)
+    amount        <- Gen.choose[Long](1, 10000000).map(U256.unsafe)
     createdHeight <- arbitrary[Int]
     address       <- addressGen
   } yield OutputProtocol(amount, createdHeight, address)

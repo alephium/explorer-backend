@@ -38,7 +38,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.protocol.model.BlockEntryProtocol
-import org.alephium.util.{AlephiumSpec, TimeStamp}
+import org.alephium.util.{AlephiumSpec, TimeStamp, U256}
 
 class ApplicationSpec()
     extends AlephiumSpec
@@ -152,8 +152,8 @@ class ApplicationSpec()
               _.outputs.toArray.toIndexedSeq
                 .filter(out => out.spent.isEmpty && out.address == address)
                 .map(_.amount)
-                .sum)
-            .sum
+                .fold(U256.Zero)(_ addUnsafe _))
+            .fold(U256.Zero)(_ addUnsafe _)
 
         val res = responseAs[AddressInfo]
 

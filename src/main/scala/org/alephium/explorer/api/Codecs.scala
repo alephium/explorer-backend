@@ -22,9 +22,9 @@ import sttp.tapir.{Codec, DecodeResult, Validator}
 import sttp.tapir.CodecFormat.TextPlain
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.Circe.{hashCodec => circeHashCodec}
+import org.alephium.explorer.api.Circe.{hashCodec => circeHashCodec, u256Codec => circeU256Codec}
 import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
-import org.alephium.util.TimeStamp
+import org.alephium.util.{TimeStamp, U256}
 
 object Codecs {
   implicit val timestampCodec: Codec[String, TimeStamp, TextPlain] =
@@ -35,6 +35,9 @@ object Codecs {
 
   implicit val addressCodec: Codec[String, Address, TextPlain] =
     fromCirce[Address]
+
+  implicit val u256TapirCodec: Codec[String, U256, TextPlain] =
+    fromCirce[U256]
 
   implicit val blockHashCodec: Codec[String, BlockEntry.Hash, TextPlain] =
     hashCodec.map(new BlockEntry.Hash(_))(_.value)

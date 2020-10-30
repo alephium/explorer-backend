@@ -20,10 +20,11 @@ import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.Circe.hashCodec
+import org.alephium.explorer.api.Circe.{hashCodec, u256Codec}
+import org.alephium.util.U256
 
 final case class Output(
-    amount: Long,
+    amount: U256,
     createdHeight: Int,
     address: Address,
     spent: Option[Transaction.Hash]
