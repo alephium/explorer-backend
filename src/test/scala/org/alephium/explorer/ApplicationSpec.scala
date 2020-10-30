@@ -178,7 +178,13 @@ class ApplicationSpec()
   }
 
   it should "generate the documentation" in {
-    Get("openapi.yaml") ~> routes ~> check {
+    Get("/docs") ~> routes ~> check {
+      status is StatusCodes.PermanentRedirect
+    }
+    Get("/docs/openapi.yaml") ~> routes ~> check {
+      status is StatusCodes.OK
+    }
+    Get("/docs/index.html?url=/docs/openapi.yaml") ~> routes ~> check {
       status is StatusCodes.OK
     }
   }
