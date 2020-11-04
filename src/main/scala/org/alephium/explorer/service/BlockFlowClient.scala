@@ -19,8 +19,9 @@ package org.alephium.explorer.service
 import java.net.InetAddress
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.ClassTag
 
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, Uri}
+import akka.http.scaladsl.model.{HttpMethods, HttpRequest, Uri}
 import io.circe.{Codec, Encoder, Json, JsonObject}
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax._
@@ -68,24 +69,17 @@ object BlockFlowClient {
       implicit executionContext: ExecutionContext)
       extends BlockFlowClient {
 
-    private def rpcRequest[P <: JsonRpc: Encoder](uri: Uri, jsonRpc: P): HttpRequest =
-      HttpRequest(
-        HttpMethods.POST,
-        uri = uri,
-        entity = HttpEntity(
-          ContentTypes.`application/json`,
-          s"""{"jsonrpc":"2.0","id": 0,"method":"${jsonRpc.method}","params":${jsonRpc.asJson}}""")
-      )
-
     @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    private def request[P <: JsonRpc: Encoder, R: Codec](
-        params: P,
+    private def request[P <: RestRequest: Encoder, R: Codec: ClassTag](
+        restRequest: P,
         uri: Uri = address): Future[Either[String, R]] = {
       httpClient
-        .request[Result[R]](
-          rpcRequest(uri, params)
+        .request[R](
+          HttpRequest(
+            HttpMethods.GET,
+            uri = Uri(uri.toString ++ restRequest.endpoint)
+          )
         )
-        .map(_.map(_.result))
     }
 
     //TODO Introduce monad transformer helper for more readability
@@ -100,12 +94,12 @@ object BlockFlowClient {
             case Right(index) =>
               selfClique.peers
                 .lift(index)
-                .flatMap(peer => peer.rpcPort.map(rpcPort => (peer.address, rpcPort))) match {
+                .flatMap(peer => peer.restPort.map(restPort => (peer.address, restPort))) match {
                 case None =>
                   Future.successful(
                     Left(s"cannot find peer for group $fromGroup (peers: ${selfClique.peers})"))
-                case Some((peerAddress, rpcPort)) =>
-                  val uri = Uri(s"http://${peerAddress.getHostAddress}:${rpcPort}")
+                case Some((peerAddress, restPort)) =>
+                  val uri = Uri(s"http://${peerAddress.getHostAddress}:${restPort}")
                   request[GetBlock, BlockEntryProtocol](GetBlock(hash), uri).map(_.map(_.toEntity))
               }
           }
@@ -128,11 +122,6 @@ object BlockFlowClient {
       )
   }
 
-  final case class Result[A: Codec](result: A)
-  object Result {
-    implicit def codec[A: Codec]: Codec[Result[A]] = deriveCodec[Result[A]]
-  }
-
   final case class HashesAtHeight(headers: Seq[BlockEntry.Hash])
   object HashesAtHeight {
     implicit val codec: Codec[HashesAtHeight] = deriveCodec[HashesAtHeight]
@@ -143,40 +132,40 @@ object BlockFlowClient {
     implicit val codec: Codec[ChainInfo] = deriveCodec[ChainInfo]
   }
 
-  sealed trait JsonRpc {
-    def method: String
+  sealed trait RestRequest {
+    def endpoint: String
   }
 
   final case class GetHashesAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)
-      extends JsonRpc {
-    val method: String = "get_hashes_at_height"
+      extends RestRequest {
+    val endpoint: String = s"/hashes?fromGroup=$fromGroup&toGroup=$toGroup&height=$height"
   }
   object GetHashesAtHeight {
     implicit val codec: Codec[GetHashesAtHeight] = deriveCodec[GetHashesAtHeight]
   }
 
-  final case class GetChainInfo(fromGroup: GroupIndex, toGroup: GroupIndex) extends JsonRpc {
-    val method: String = "get_chain_info"
+  final case class GetChainInfo(fromGroup: GroupIndex, toGroup: GroupIndex) extends RestRequest {
+    val endpoint: String = s"/chains?fromGroup=$fromGroup&toGroup=$toGroup"
   }
   object GetChainInfo {
     implicit val codec: Codec[GetChainInfo] = deriveCodec[GetChainInfo]
   }
 
-  final case class GetBlock(hash: BlockEntry.Hash) extends JsonRpc {
-    val method: String = "get_block"
+  final case class GetBlock(hash: BlockEntry.Hash) extends RestRequest {
+    val endpoint: String = s"/blocks/$hash"
   }
   object GetBlock {
     implicit val codec: Codec[GetBlock] = deriveCodec[GetBlock]
   }
 
-  final case object GetSelfClique extends JsonRpc {
-    val method: String = "self_clique"
+  final case object GetSelfClique extends RestRequest {
+    val endpoint: String = "/infos/self-clique"
     implicit val encoder: Encoder[GetSelfClique.type] = new Encoder[GetSelfClique.type] {
       final def apply(selfClique: GetSelfClique.type): Json = JsonObject.empty.asJson
     }
   }
 
-  final case class PeerAddress(address: InetAddress, rpcPort: Option[Int], wsPort: Option[Int])
+  final case class PeerAddress(address: InetAddress, restPort: Option[Int], wsPort: Option[Int])
   object PeerAddress {
     implicit val codec: Codec[PeerAddress] = deriveCodec[PeerAddress]
   }

@@ -18,7 +18,9 @@ package org.alephium.explorer.api.model
 
 import io.circe.{Codec, Decoder, Encoder}
 
-final class GroupIndex(val value: Int) extends AnyVal
+final class GroupIndex(val value: Int) extends AnyVal {
+  override def toString(): String = value.toString
+}
 
 object GroupIndex {
   def unsafe(value: Int): GroupIndex = new GroupIndex(value)

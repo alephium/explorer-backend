@@ -28,7 +28,6 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.testkit.SocketUtil
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
-import io.circe.{Decoder, DecodingFailure, HCursor, Json}
 import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
@@ -38,7 +37,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.protocol.model.BlockEntryProtocol
-import org.alephium.util.{AlephiumSpec, TimeStamp, U256}
+import org.alephium.util.{AlephiumSpec, Hex, TimeStamp, U256}
 
 class ApplicationSpec()
     extends AlephiumSpec
@@ -195,24 +194,6 @@ class ApplicationSpec()
 object ApplicationSpec {
   import org.alephium.explorer.service.BlockFlowClient._
 
-  implicit val jsonRpcDecoder: Decoder[JsonRpc] = new Decoder[JsonRpc] {
-    def decode(c: HCursor, method: String, params: Json): Decoder.Result[JsonRpc] = {
-      method match {
-        case "get_hashes_at_height" => params.as[GetHashesAtHeight]
-        case "get_chain_info"       => params.as[GetChainInfo]
-        case "get_block"            => params.as[GetBlock]
-        case "self_clique"          => Right(GetSelfClique)
-        case _                      => Left(DecodingFailure(s"$method not supported", c.history))
-      }
-    }
-    final def apply(c: HCursor): Decoder.Result[JsonRpc] =
-      for {
-        method  <- c.downField("method").as[String]
-        params  <- c.downField("params").as[Json]
-        jsonRpc <- decode(c, method, params)
-      } yield jsonRpc
-  }
-
   class BlockFlowServerMock(address: InetAddress, port: Int, blocks: Seq[BlockEntryProtocol])(
       implicit system: ActorSystem)
       extends FailFastCirceSupport {
@@ -231,20 +212,37 @@ object ApplicationSpec {
     }
 
     private val peer = PeerAddress(address, Some(port), None)
-
+    val HashSegment  = Segment.map(raw => Hash.unsafe(Hex.unsafe(raw)))
     val routes: Route =
-      post {
-        entity(as[JsonRpc]) {
-          case GetBlock(hash) =>
-            complete(Result(blocks.find(_.hash === hash).get))
-          case GetHashesAtHeight(from, to, height) =>
-            complete(Result(getHashesAtHeight(from, to, height)))
-          case GetChainInfo(from, to) =>
-            complete(Result(getChainInfo(from, to)))
-          case GetSelfClique =>
-            complete(Result(SelfClique(Seq(peer, peer), 2)))
+      path("blocks" / HashSegment) { hash =>
+        get { complete(blocks.find(_.hash === (new BlockEntry.Hash(hash))).get) }
+      } ~
+        path("hashes") {
+          parameters("fromGroup".as[Int]) { from =>
+            parameters("toGroup".as[Int]) { to =>
+              parameters("height".as[Int]) { height =>
+                get {
+                  complete(
+                    getHashesAtHeight(GroupIndex.unsafe(from),
+                                      GroupIndex.unsafe(to),
+                                      Height.unsafe(height)))
+                }
+              }
+            }
+          }
+        } ~
+        path("chains") {
+          parameters("fromGroup".as[Int]) { from =>
+            parameters("toGroup".as[Int]) { to =>
+              get {
+                complete(getChainInfo(GroupIndex.unsafe(from), GroupIndex.unsafe(to)))
+              }
+            }
+          }
+        } ~
+        path("infos" / "self-clique") {
+          complete(SelfClique(Seq(peer, peer), 2))
         }
-      }
 
     val server = Http().bindAndHandle(routes, address.getHostAddress, port)
   }
