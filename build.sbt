@@ -91,7 +91,8 @@ lazy val root = (project in file("."))
       postgresql,
       h2
     )
-  ).enablePlugins(JavaAppPackaging)
+  )
+  .enablePlugins(JavaAppPackaging)
 
 val wartsCompileExcludes = Seq(
   Wart.Any,
