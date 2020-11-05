@@ -16,7 +16,11 @@
 
 package org.alephium
 
+import java.math.BigDecimal
+
 import org.alephium.crypto.Blake2b
+import org.alephium.protocol.ALF
+import org.alephium.util.U256
 
 package object explorer {
   @inline @specialized def sideEffect[E](effect: E): Unit = {
@@ -32,4 +36,7 @@ package object explorer {
 
   type Hash = Blake2b
   val Hash: Blake2b.type = Blake2b
+
+  def alfCoinConvertion(u256: U256): BigDecimal =
+    new BigDecimal(u256.toBigInt).divide(new BigDecimal(ALF.CoinInOneALF.toBigInt))
 }

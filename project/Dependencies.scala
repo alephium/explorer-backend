@@ -26,9 +26,10 @@ object Version {
   lazy val postgresql = "42.2.12"
 }
 object Dependencies {
-  lazy val alephiumCrypto = "org.alephium" %% "crypto" % Version.common
-  lazy val alephiumUtil   = "org.alephium" %% "util"   % Version.common
-  lazy val alephiumRpc    = "org.alephium" %% "rpc"    % Version.common
+  lazy val alephiumCrypto   = "org.alephium" %% "crypto"   % Version.common
+  lazy val alephiumProtocol = "org.alephium" %% "protocol" % Version.common
+  lazy val alephiumUtil     = "org.alephium" %% "util"     % Version.common
+  lazy val alephiumRpc      = "org.alephium" %% "rpc"      % Version.common
 
   lazy val akkaTest       = "com.typesafe.akka" %% "akka-testkit"        % Version.akka % Test
   lazy val akkaHttptest   = "com.typesafe.akka" %% "akka-http-testkit"   % "10.1.12" % Test

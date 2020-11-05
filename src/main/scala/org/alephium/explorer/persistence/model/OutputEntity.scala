@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.Hash
+import org.alephium.explorer.{alfCoinConvertion, Hash}
 import org.alephium.explorer.api.model.{Address, Output, Transaction}
 import org.alephium.util.{TimeStamp, U256}
 
@@ -31,7 +31,7 @@ final case class OutputEntity(
 ) {
   lazy val toApi: Output =
     Output(
-      amount,
+      alfCoinConvertion(amount),
       createdHeight,
       address,
       spent
