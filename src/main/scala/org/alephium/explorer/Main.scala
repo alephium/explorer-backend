@@ -45,11 +45,12 @@ object Main extends App with StrictLogging {
   val groupNum: Int = config.getInt("blockflow.groupNum")
 
   val port: Int = config.getInt("explorer.port")
+  val host: String = config.getString("explorer.host")
 
   val databaseConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig[JdbcProfile]("db")
 
   val app: Application =
-    new Application(port, blockflowUri, groupNum, databaseConfig)
+    new Application(host, port, blockflowUri, groupNum, databaseConfig)
 
   sideEffect(
     scala.sys.addShutdownHook(Await.result(app.stop, Duration.ofSecondsUnsafe(10).asScala)))
