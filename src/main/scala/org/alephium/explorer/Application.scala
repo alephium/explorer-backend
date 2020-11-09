@@ -36,7 +36,8 @@ import org.alephium.explorer.web._
 import org.alephium.util.Duration
 
 // scalastyle:off magic.number
-class Application(port: Int,
+class Application(host: String,
+                  port: Int,
                   blockFlowUri: Uri,
                   groupNum: Int,
                   databaseConfig: DatabaseConfig[JdbcProfile])(implicit system: ActorSystem,
@@ -74,7 +75,7 @@ class Application(port: Int,
   sideEffect {
     for {
       _       <- blockFlowSyncService.start()
-      binding <- Http().bindAndHandle(route, "localhost", port)
+      binding <- Http().bindAndHandle(route, host, port)
     } yield {
       sideEffect(bindingPromise.success(binding))
       logger.info(s"Listening http request on $binding")
