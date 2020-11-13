@@ -216,10 +216,10 @@ object ApplicationSpec {
     private val peer = PeerAddress(address, Some(port), None)
     val HashSegment  = Segment.map(raw => Hash.unsafe(Hex.unsafe(raw)))
     val routes: Route =
-      path("blocks" / HashSegment) { hash =>
+      path("blockflow" / "blocks" / HashSegment) { hash =>
         get { complete(blocks.find(_.hash === (new BlockEntry.Hash(hash))).get) }
       } ~
-        path("hashes") {
+        path("blockflow" / "hashes") {
           parameters("fromGroup".as[Int]) { from =>
             parameters("toGroup".as[Int]) { to =>
               parameters("height".as[Int]) { height =>
@@ -233,7 +233,7 @@ object ApplicationSpec {
             }
           }
         } ~
-        path("chains") {
+        path("blockflow" / "chains") {
           parameters("fromGroup".as[Int]) { from =>
             parameters("toGroup".as[Int]) { to =>
               get {

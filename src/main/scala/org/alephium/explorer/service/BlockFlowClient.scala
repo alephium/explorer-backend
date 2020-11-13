@@ -138,21 +138,21 @@ object BlockFlowClient {
 
   final case class GetHashesAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)
       extends RestRequest {
-    val endpoint: String = s"/hashes?fromGroup=$fromGroup&toGroup=$toGroup&height=$height"
+    val endpoint: String = s"/blockflow/hashes?fromGroup=$fromGroup&toGroup=$toGroup&height=$height"
   }
   object GetHashesAtHeight {
     implicit val codec: Codec[GetHashesAtHeight] = deriveCodec[GetHashesAtHeight]
   }
 
   final case class GetChainInfo(fromGroup: GroupIndex, toGroup: GroupIndex) extends RestRequest {
-    val endpoint: String = s"/chains?fromGroup=$fromGroup&toGroup=$toGroup"
+    val endpoint: String = s"/blockflow/chains?fromGroup=$fromGroup&toGroup=$toGroup"
   }
   object GetChainInfo {
     implicit val codec: Codec[GetChainInfo] = deriveCodec[GetChainInfo]
   }
 
   final case class GetBlock(hash: BlockEntry.Hash) extends RestRequest {
-    val endpoint: String = s"/blocks/$hash"
+    val endpoint: String = s"/blockflow/blocks/$hash"
   }
   object GetBlock {
     implicit val codec: Codec[GetBlock] = deriveCodec[GetBlock]
