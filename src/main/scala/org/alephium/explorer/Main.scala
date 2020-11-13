@@ -44,7 +44,7 @@ object Main extends App with StrictLogging {
 
   val groupNum: Int = config.getInt("blockflow.groupNum")
 
-  val port: Int = config.getInt("explorer.port")
+  val port: Int    = config.getInt("explorer.port")
   val host: String = config.getString("explorer.host")
 
   val databaseConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig[JdbcProfile]("db")

@@ -74,7 +74,8 @@ class ApplicationSpec()
   val blockflowBinding = blockFlowMock.server.futureValue
 
   val app: Application =
-    new Application(SocketUtil.temporaryLocalPort(),
+    new Application(localhost.getHostAddress,
+                    SocketUtil.temporaryLocalPort(),
                     Uri(s"http://${localhost.getHostAddress}:$blockFlowPort"),
                     groupNum,
                     databaseConfig)
