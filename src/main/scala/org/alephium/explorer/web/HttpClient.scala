@@ -29,8 +29,8 @@ import akka.stream.scaladsl.{Sink, Source}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.{Decoder, Json}
 
+import org.alephium.api.CirceUtils
 import org.alephium.explorer.sideEffect
-import org.alephium.rpc.CirceUtils
 
 trait HttpClient {
   def request[A: Decoder: ClassTag](httpRequest: HttpRequest): Future[Either[String, A]]

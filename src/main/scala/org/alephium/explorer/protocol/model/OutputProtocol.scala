@@ -19,11 +19,11 @@ package org.alephium.explorer.protocol.model
 import io.circe.{Codec, Decoder, Encoder}
 import io.circe.generic.semiauto.deriveCodec
 
+import org.alephium.api.CirceUtils._
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.Circe.{hashCodec, u256Codec}
 import org.alephium.explorer.api.model.{Address, Output, Transaction}
 import org.alephium.explorer.persistence.model.OutputEntity
-import org.alephium.rpc.CirceUtils._
 import org.alephium.serde._
 import org.alephium.util.{Bytes, TimeStamp, U256}
 

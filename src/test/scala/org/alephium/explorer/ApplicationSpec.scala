@@ -32,12 +32,13 @@ import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
+import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.api.ApiError
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.protocol.model.BlockEntryProtocol
-import org.alephium.util.{AlephiumSpec, Hex, TimeStamp}
+import org.alephium.util.{Hex, TimeStamp}
 
 class ApplicationSpec()
     extends AlephiumSpec

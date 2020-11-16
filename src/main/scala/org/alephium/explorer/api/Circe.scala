@@ -18,8 +18,8 @@ package org.alephium.explorer.api
 
 import io.circe.{Codec, Decoder, Encoder, Json}
 
+import org.alephium.api.CirceUtils.byteStringDecoder
 import org.alephium.explorer.Hash
-import org.alephium.rpc.CirceUtils.byteStringDecoder
 import org.alephium.util.U256
 
 object Circe {
