@@ -21,13 +21,13 @@ import scala.concurrent.{ExecutionContext, Future}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.explorer.Generators
+import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, TimeInterval}
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service.BlockFlowClient.{ChainInfo, HashesAtHeight}
-import org.alephium.util.{AlephiumSpec, Duration, TimeStamp}
+import org.alephium.util.{Duration, TimeStamp}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
 class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Eventually {

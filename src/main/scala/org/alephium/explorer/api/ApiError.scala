@@ -19,7 +19,7 @@ package org.alephium.explorer.api
 import io.circe.{Decoder, DecodingFailure, Encoder, HCursor, Json}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import sttp.model.StatusCode
-import sttp.tapir.Schema
+import sttp.tapir.{FieldName, Schema}
 import sttp.tapir.SchemaType.{SObjectInfo, SProduct}
 
 sealed trait ApiError {
@@ -30,7 +30,7 @@ sealed trait ApiError {
 object ApiError {
 
   private val apiErrorSchemaFields =
-    List("status" -> Schema.schemaForInt, "detail" -> Schema.schemaForString)
+    List(FieldName("status") -> Schema.schemaForInt, FieldName("detail") -> Schema.schemaForString)
 
   private def encodeApiError[A <: ApiError]: Encoder[A] = new Encoder[A] {
     final def apply(apiError: A): Json = Json.obj(
@@ -54,7 +54,7 @@ object ApiError {
     implicit val decoder: Decoder[NotFound] = deriveDecoder
     implicit val schema: Schema[NotFound] = Schema(
       SProduct(SObjectInfo("NotFound"),
-               apiErrorSchemaFields :+ ("resourceId" -> Schema.schemaForString)))
+               apiErrorSchemaFields :+ (FieldName("resourceId") -> Schema.schemaForString)))
   }
 
   final case class BadRequest(val detail: String) extends ApiError {

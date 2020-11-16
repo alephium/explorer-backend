@@ -17,19 +17,19 @@
 import sbt._
 
 object Version {
-  lazy val common = "0.4.1-SNAPSHOT"
+  lazy val common = "0.4.2"
 
   lazy val akka       = "2.6.8"
   lazy val circe      = "0.13.0"
-  lazy val tapir      = "0.14.5"
+  lazy val tapir      = "0.16.5"
   lazy val slick      = "3.3.2"
   lazy val postgresql = "42.2.12"
 }
 object Dependencies {
-  lazy val alephiumCrypto   = "org.alephium" %% "crypto"   % Version.common
-  lazy val alephiumProtocol = "org.alephium" %% "protocol" % Version.common
-  lazy val alephiumUtil     = "org.alephium" %% "util"     % Version.common
-  lazy val alephiumRpc      = "org.alephium" %% "rpc"      % Version.common
+  lazy val alephiumCrypto   = "org.alephium" %% "alephium-crypto"   % Version.common
+  lazy val alephiumProtocol = "org.alephium" %% "alephium-protocol" % Version.common
+  lazy val alephiumUtil     = "org.alephium" %% "alephium-util"     % Version.common
+  lazy val alephiumApi      = "org.alephium" %% "alephium-api"      % Version.common
 
   lazy val akkaTest       = "com.typesafe.akka" %% "akka-testkit"        % Version.akka % Test
   lazy val akkaHttptest   = "com.typesafe.akka" %% "akka-http-testkit"   % "10.1.12" % Test

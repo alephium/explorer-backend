@@ -64,9 +64,9 @@ lazy val root = (project in file("."))
     wartremoverErrors in (Test, compile) := Warts.allBut(wartsTestExcludes: _*),
     fork := true,
     libraryDependencies ++= Seq(
-      alephiumUtil % "test" classifier "tests",
+      alephiumUtil,
       alephiumProtocol,
-      alephiumRpc,
+      alephiumApi,
       alephiumCrypto,
       tapirCore,
       tapirCirce,
@@ -104,7 +104,9 @@ val wartsCompileExcludes = Seq(
 val wartsTestExcludes = wartsCompileExcludes ++ Seq(
   Wart.PublicInference,
   Wart.OptionPartial,
+  Wart.Overloading,
   Wart.NonUnitStatements,
   Wart.TraversableOps,
+  Wart.Throw,
   Wart.Equals
 )

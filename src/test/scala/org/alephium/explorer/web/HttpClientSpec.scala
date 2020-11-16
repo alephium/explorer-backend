@@ -30,7 +30,7 @@ import io.circe.generic.semiauto.deriveCodec
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.util.AlephiumActorSpec
+import org.alephium.explorer.AlephiumActorSpec
 
 class HttpClientSpec extends AlephiumActorSpec("HttpClientSpec") with ScalaFutures {
   import HttpClientSpec._
