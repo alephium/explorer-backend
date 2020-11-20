@@ -24,7 +24,6 @@ import org.alephium.explorer.api.Circe.hashCodec
 
 final case class Output(
     amount: java.math.BigDecimal,
-    createdHeight: Int,
     address: Address,
     spent: Option[Transaction.Hash]
 )

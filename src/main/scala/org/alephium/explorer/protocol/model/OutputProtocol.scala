@@ -29,14 +29,12 @@ import org.alephium.util.{Bytes, TimeStamp, U256}
 
 final case class OutputProtocol(
     amount: U256,
-    createdHeight: Int,
     address: Address
 ) {
   def toEntity(txHash: Transaction.Hash, index: Int, timestamp: TimeStamp): OutputEntity = {
     OutputEntity(
       txHash,
       amount,
-      createdHeight,
       address,
       Hash.hash(txHash.value.bytes ++ Bytes.from(index)),
       timestamp,

@@ -33,7 +33,6 @@ trait OutputSchema extends CustomTypes {
   class Outputs(tag: Tag) extends Table[OutputEntity](tag, "outputs") {
     def txHash: Rep[Transaction.Hash]        = column[Transaction.Hash]("tx_hash")
     def amount: Rep[U256]                    = column[U256]("amount")
-    def createdHeight: Rep[Int]              = column[Int]("created_height")
     def address: Rep[Address]                = column[Address]("address")
     def outputRefKey: Rep[Hash]              = column[Hash]("output_ref")
     def timestamp: Rep[TimeStamp]            = column[TimeStamp]("timestamp")
@@ -42,7 +41,7 @@ trait OutputSchema extends CustomTypes {
     def outputsTxHashIdx: Index = index("outputs_tx_hash_idx", txHash)
 
     def * : ProvenShape[OutputEntity] =
-      (txHash, amount, createdHeight, address, outputRefKey, timestamp, spent) <> ((OutputEntity.apply _).tupled, OutputEntity.unapply)
+      (txHash, amount, address, outputRefKey, timestamp, spent) <> ((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }
 
   val outputsTable: TableQuery[Outputs] = TableQuery[Outputs]

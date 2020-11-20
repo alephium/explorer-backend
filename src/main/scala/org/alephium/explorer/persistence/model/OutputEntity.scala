@@ -23,7 +23,6 @@ import org.alephium.util.{TimeStamp, U256}
 final case class OutputEntity(
     txHash: Transaction.Hash,
     amount: U256,
-    createdHeight: Int,
     address: Address,
     outputRefKey: Hash,
     timestamp: TimeStamp,
@@ -32,7 +31,6 @@ final case class OutputEntity(
   lazy val toApi: Output =
     Output(
       alfCoinConvertion(amount),
-      createdHeight,
       address,
       spent
     )

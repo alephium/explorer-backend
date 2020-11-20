@@ -54,10 +54,9 @@ trait Generators {
   } yield InputProtocol(outputRef, unlockScript)
 
   lazy val outputProtocolGen: Gen[OutputProtocol] = for {
-    amount        <- Gen.choose[Long](1, 10000000).map(U256.unsafe)
-    createdHeight <- arbitrary[Int]
-    address       <- addressGen
-  } yield OutputProtocol(amount, createdHeight, address)
+    amount  <- Gen.choose[Long](1, 10000000).map(U256.unsafe)
+    address <- addressGen
+  } yield OutputProtocol(amount, address)
 
   lazy val transactionProtocolGen: Gen[TransactionProtocol] = for {
     hash       <- transactionHashGen
