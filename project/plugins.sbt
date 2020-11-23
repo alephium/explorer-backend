@@ -1,3 +1,5 @@
+addSbtPlugin("com.eed3si9n"      % "sbt-assembly"           % "0.15.0")
+addSbtPlugin("com.dwijnand"      % "sbt-dynver"             % "4.1.1")
 addSbtPlugin("com.geirsson"      % "sbt-scalafmt"           % "1.4.0")
 addSbtPlugin("com.github.gseitz" % "sbt-release"            % "1.0.13")
 addSbtPlugin("com.typesafe.sbt"  % "sbt-native-packager"    % "1.6.1")

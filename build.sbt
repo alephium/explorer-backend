@@ -23,6 +23,9 @@ lazy val root = (project in file("."))
     name := "explorer-backend",
     organization := "org.alephium",
     scalaVersion := "2.13.2",
+    mainClass in assembly := Some("org.alephium.explorer.Main"),
+    assemblyJarName in assembly := s"explorer-backend-${version.value}.jar",
+    test in assembly := {},
     scalacOptions ++= Seq(
       "-deprecation",
       "-encoding",
