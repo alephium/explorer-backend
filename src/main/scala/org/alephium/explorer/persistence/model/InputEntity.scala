@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.{alfCoinConvertion, Hash}
+import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{Input, Output, Transaction}
 
 final case class InputEntity(
@@ -31,6 +31,6 @@ final case class InputEntity(
       unlockScript,
       outputRef.map(_.txHash),
       outputRef.map(_.address),
-      outputRef.map(ref => alfCoinConvertion(ref.amount))
+      outputRef.map(ref => ref.amount)
     )
 }

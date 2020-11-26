@@ -23,7 +23,7 @@ import slick.lifted.{Index, ProvenShape}
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{Address, Transaction}
 import org.alephium.explorer.persistence.model.OutputEntity
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.util.TimeStamp
 
 trait OutputSchema extends CustomTypes {
   val config: DatabaseConfig[JdbcProfile]
@@ -32,7 +32,7 @@ trait OutputSchema extends CustomTypes {
 
   class Outputs(tag: Tag) extends Table[OutputEntity](tag, "outputs") {
     def txHash: Rep[Transaction.Hash]        = column[Transaction.Hash]("tx_hash")
-    def amount: Rep[U256]                    = column[U256]("amount")
+    def amount: Rep[Double]                  = column[Double]("amount")
     def address: Rep[Address]                = column[Address]("address")
     def outputRefKey: Rep[Hash]              = column[Hash]("output_ref")
     def timestamp: Rep[TimeStamp]            = column[TimeStamp]("timestamp")

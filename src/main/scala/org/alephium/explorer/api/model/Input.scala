@@ -24,7 +24,7 @@ final case class Input(
     unlockScript: String,
     txHashRef: Option[Transaction.Hash],
     address: Option[Address],
-    amount: Option[java.math.BigDecimal]
+    amount: Option[Double]
 )
 
 object Input {

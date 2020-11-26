@@ -153,8 +153,8 @@ class ApplicationSpec()
               _.outputs.toArray.toIndexedSeq
                 .filter(out => out.spent.isEmpty && out.address == address)
                 .map(_.amount)
-                .fold(java.math.BigDecimal.ZERO)(_ add _))
-            .fold(java.math.BigDecimal.ZERO)(_ add _)
+                .sum)
+            .sum
 
         val res = responseAs[AddressInfo]
 

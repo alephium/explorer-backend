@@ -22,7 +22,6 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import sttp.tapir.server.akkahttp.{AkkaHttpServerOptions, RichAkkaHttpEndpoint}
 
-import org.alephium.explorer.alfCoinConvertion
 import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model.AddressInfo
 import org.alephium.explorer.service.TransactionService
@@ -49,6 +48,6 @@ class AddressServer(transactionService: TransactionService)(
             transactions <- transactionService.getTransactionsByAddress(
               address,
               txLimit.getOrElse(defautUtxoLimit))
-          } yield Right(AddressInfo(alfCoinConvertion(balance), transactions))
+          } yield Right(AddressInfo(balance, transactions))
       }
 }
