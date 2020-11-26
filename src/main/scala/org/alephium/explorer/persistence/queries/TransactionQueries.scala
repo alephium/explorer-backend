@@ -57,9 +57,9 @@ trait TransactionQueries extends TransactionSchema with InputSchema with OutputS
     for {
       txHashes <- outputsTable
         .filter(_.address === address)
-        .sortBy(_.timestamp.asc)
         .map(out => (out.txHash, out.timestamp))
         .distinct
+        .sortBy { case (_, timestamp) => timestamp.asc }
         .result
       txs <- DBIOAction.sequence(txHashes.map {
         case (txHash, timestamp) => getKnownTransactionAction(txHash, timestamp)
