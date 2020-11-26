@@ -21,10 +21,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
 import akka.stream.OverflowStrategy
-import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -42,8 +39,7 @@ class Application(host: String,
                   groupNum: Int,
                   databaseConfig: DatabaseConfig[JdbcProfile])(implicit system: ActorSystem,
                                                                executionContext: ExecutionContext)
-    extends StrictLogging
-    with AkkaDecodeFailureHandler {
+    extends StrictLogging {
 
   val blockDao: BlockDao             = BlockDao(databaseConfig)
   val transactionDao: TransactionDao = TransactionDao(databaseConfig)
@@ -61,21 +57,14 @@ class Application(host: String,
   val blockService: BlockService             = BlockService(blockDao)
   val transactionService: TransactionService = TransactionService(transactionDao)
 
-  //Servers
-  val blockServer: BlockServer             = new BlockServer(blockService)
-  val addressServer: AddressServer         = new AddressServer(transactionService)
-  val transactionServer: TransactionServer = new TransactionServer(transactionService)
-  val documentation: DocumentationServer   = new DocumentationServer
+  val server: AppServer = new AppServer(blockService, transactionService)
 
   private val bindingPromise: Promise[Http.ServerBinding] = Promise()
-
-  val route: Route =
-    cors()(blockServer.route ~ addressServer.route ~ transactionServer.route ~ documentation.route)
 
   sideEffect {
     for {
       _       <- blockFlowSyncService.start()
-      binding <- Http().bindAndHandle(route, host, port)
+      binding <- Http().bindAndHandle(server.route, host, port)
     } yield {
       sideEffect(bindingPromise.success(binding))
       logger.info(s"Listening http request on $binding")

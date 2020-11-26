@@ -84,7 +84,7 @@ class ApplicationSpec()
   //let it sync once
   eventually(app.blockFlowSyncService.stop.futureValue) is ()
 
-  val routes = app.route
+  val routes = app.server.route
 
   it should "get a block by its id" in {
     forAll(Gen.oneOf(blocks)) { block =>
