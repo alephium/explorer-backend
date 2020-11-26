@@ -24,8 +24,8 @@ import slick.dbio.DBIOAction
 import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, BlockEntry, Input, Output, Transaction}
-import org.alephium.explorer.persistence.{DBActionR, DBActionRW, DBActionW}
+import org.alephium.explorer.api.model._
+import org.alephium.explorer.persistence.{DBActionR, DBActionW}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema.{InputSchema, OutputSchema, TransactionSchema}
 import org.alephium.util.{AVector, TimeStamp}
@@ -116,8 +116,10 @@ trait TransactionQueries
 
   private val getOutputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
     outputsTable
-      .filter(_.txHash === txHash)
-      .map(output => (output.amount, output.address, output.spent))
+      .joinLeft(inputsTable)
+      .on(_.outputRefKey === _.key)
+      .filter(_._1.txHash === txHash)
+      .map { case (output, input) => (output.amount, output.address, input.map(_.txHash)) }
   }
 
   private val toApiOutput = (Output.apply _).tupled
@@ -133,24 +135,6 @@ trait TransactionQueries
                   AVector.from(ins.map(toApiInput)),
                   AVector.from(outs.map(toApiOutput)))
     }
-
-  def updateSpentAction(): DBActionRW[Int] = {
-    outputsTable
-      .filter(_.spent.isEmpty)
-      .join(inputsTable)
-      .on(_.outputRefKey === _.key)
-      .map { case (out, in) => (out, in.txHash) }
-      .result
-      .map { res =>
-        DBIOAction.sequence(res.map {
-          case (out, txHash) =>
-            outputsTable
-              .filter(_.outputRefKey === out.outputRefKey)
-              .map(_.spent)
-              .update(Some(txHash))
-        })
-      }
-  }.flatMap(_.map(_.sum))
 
   private val getBalanceQuery = Compiled { address: Rep[Address] =>
     outputsTable

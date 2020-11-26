@@ -103,7 +103,7 @@ trait Generators {
                groupNum: Int): Gen[Seq[BlockEntryProtocol]] =
     Gen.listOfN(size, blockEntryProtocolGen).map { blocks =>
       blocks
-        .foldLeft((Seq.empty[BlockEntryProtocol], Height.zero, startTimestamp)) {
+        .foldLeft((Seq.empty[BlockEntryProtocol], Height.genesis, startTimestamp)) {
           case ((acc, height, timestamp), block) =>
             val deps: AVector[BlockEntry.Hash] =
               if (acc.isEmpty) AVector.empty else AVector.tabulate(groupNum)(_ => acc.last.hash)
@@ -141,7 +141,7 @@ trait Generators {
             block.inputs
               .filter(_.txHash === tx.hash)
               .map(input => input.toApi(outputs.find(_.outputRefKey === input.key))),
-            block.outputs.filter(_.txHash === tx.hash).map(_.toApi)
+            block.outputs.filter(_.txHash === tx.hash).map(_.toApi(None))
           )
         }
       BlockEntry(

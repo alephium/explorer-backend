@@ -22,6 +22,7 @@ import io.circe.generic.semiauto.deriveCodec
 import org.alephium.api.CirceUtils.{avectorCodec, timestampCodec}
 import org.alephium.explorer
 import org.alephium.explorer.HashCompanion
+import org.alephium.explorer.service.FlowEntity
 import org.alephium.util.{AVector, TimeStamp}
 
 final case class BlockEntry(
@@ -33,16 +34,7 @@ final case class BlockEntry(
     deps: AVector[BlockEntry.Hash],
     transactions: AVector[Transaction],
     mainChain: Boolean
-) {
-  def parent(groupNum: Int): Option[BlockEntry.Hash] =
-    if (isGenesis) {
-      None
-    } else {
-      deps.takeRight(groupNum).get(chainTo.value)
-    }
-
-  lazy val isGenesis: Boolean = height === Height.zero
-}
+) extends FlowEntity
 
 object BlockEntry {
 

@@ -41,8 +41,7 @@ trait BlockDao {
   def insert(block: BlockEntity): Future[Unit]
   def list(timeInterval: TimeInterval): Future[Seq[BlockEntry]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
-  def updateSpent(): Future[Unit]
-  def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Int]
+  def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit]
 }
 
 object BlockDao {
@@ -141,20 +140,21 @@ object BlockDao {
     sideEffect {
       Await.result(f, Duration.Inf)
     }
-    def updateSpent(): Future[Unit] =
-      run(updateSpentAction()).map { nbOfUpdates =>
-        logger.debug(s"$nbOfUpdates spent's output updated")
-      }
 
-    def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Int] = {
+    def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit] = {
       val query =
-        blockHeadersTable
-          .filter(_.hash === hash)
-          .map(_.mainChain)
-          .update(isMainChain)
+        for {
+          _ <- blockHeadersTable
+            .filter(_.hash === hash)
+            .map(_.mainChain)
+            .update(isMainChain)
+          _ <- outputsTable
+            .filter(_.blockHash === hash)
+            .map(_.mainChain)
+            .update(isMainChain)
+        } yield ()
 
       run(query)
     }
-
   }
 }

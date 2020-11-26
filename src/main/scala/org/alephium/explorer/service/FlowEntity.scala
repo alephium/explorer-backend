@@ -14,29 +14,25 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.api.model
+package org.alephium.explorer.service
 
-import io.circe.{Codec, Decoder, Encoder}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.util.{AVector, TimeStamp}
 
-import org.alephium.protocol.ALF
+trait FlowEntity {
+  def hash: BlockEntry.Hash
+  def timestamp: TimeStamp
+  def chainFrom: GroupIndex
+  def chainTo: GroupIndex
+  def height: Height
+  def deps: AVector[BlockEntry.Hash]
 
-final class Height(val value: Int) extends AnyVal {
-  override def toString(): String = value.toString
-}
-
-object Height {
-  def unsafe(value: Int): Height = new Height(value)
-  def from(value: Int): Either[String, Height] =
-    if (value < 0) {
-      Left(s"height cannot be negative ($value)")
+  def parent(groupNum: Int): Option[BlockEntry.Hash] =
+    if (isGenesis) {
+      None
     } else {
-      Right(Height.unsafe(value))
+      deps.takeRight(groupNum).get(chainTo.value)
     }
 
-  val genesis: Height = Height.unsafe(ALF.GenesisHeight)
-
-  implicit val codec: Codec[Height] =
-    Codec.from(Decoder.decodeInt.emap(from), Encoder.encodeInt.contramap(_.value))
-
-  implicit val ordering: Ordering[Height] = Ordering.by[Height, Int](_.value)
+  def isGenesis: Boolean = height === Height.genesis
 }

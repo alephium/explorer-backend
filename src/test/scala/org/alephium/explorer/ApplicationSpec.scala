@@ -210,7 +210,7 @@ object ApplicationSpec {
         blocks
           .collect { case block if block.chainFrom == from && block.chainTo === to => block.height }
           .maxOption
-          .getOrElse(Height.zero))
+          .getOrElse(Height.genesis))
     }
 
     private val peer = PeerAddress(address, Some(port), None)
