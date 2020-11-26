@@ -18,17 +18,23 @@ package org.alephium.explorer.persistence.queries
 
 import scala.concurrent.ExecutionContext
 
+import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
 import slick.jdbc.JdbcProfile
 
-import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
+import org.alephium.explorer.Hash
+import org.alephium.explorer.api.model.{Address, BlockEntry, Input, Output, Transaction}
 import org.alephium.explorer.persistence.{DBActionR, DBActionRW, DBActionW}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema.{InputSchema, OutputSchema, TransactionSchema}
 import org.alephium.util.{AVector, TimeStamp}
 
-trait TransactionQueries extends TransactionSchema with InputSchema with OutputSchema {
+trait TransactionQueries
+    extends TransactionSchema
+    with InputSchema
+    with OutputSchema
+    with StrictLogging {
 
   implicit def executionContext: ExecutionContext
   val config: DatabaseConfig[JdbcProfile]
@@ -40,56 +46,93 @@ trait TransactionQueries extends TransactionSchema with InputSchema with OutputS
       (outputsTable ++= blockEntity.outputs.toArray))
       .map(_ => ())
 
-  def listTransactionsAction(blockHash: BlockEntry.Hash): DBActionR[Seq[Transaction]] =
+  private val listTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
     transactionsTable
       .filter(_.blockHash === blockHash)
       .sortBy(_.timestamp.asc)
-      .result
-      .flatMap(hashes => DBIOAction.sequence(hashes.map(getKnownTransactionFromEntityAction)))
+      .map(tx => (tx.hash, tx.timestamp))
+  }
+
+  def listTransactionsAction(blockHash: BlockEntry.Hash): DBActionR[Seq[Transaction]] =
+    for {
+      txEntities <- listTransactionsQuery(blockHash).result
+      txs <- DBIOAction.sequence(
+        txEntities.map(pair => getKnownTransactionAction(pair._1, pair._2)))
+    } yield txs
+
+  private val getTimestampQuery = Compiled { txHash: Rep[Transaction.Hash] =>
+    transactionsTable.filter(_.hash === txHash).map(_.timestamp)
+  }
 
   def getTransactionAction(txHash: Transaction.Hash): DBActionR[Option[Transaction]] =
-    transactionsTable.filter(_.hash === txHash).result.headOption.flatMap {
-      case None     => DBIOAction.successful(None)
-      case Some(tx) => getKnownTransactionFromEntityAction(tx).map(Some.apply)
+    getTimestampQuery(txHash).result.headOption.flatMap {
+      case None            => DBIOAction.successful(None)
+      case Some(timestamp) => getKnownTransactionAction(txHash, timestamp).map(Some.apply)
     }
+
+  private val getTxHashesQuery = Compiled { (address: Rep[Address], txLimit: ConstColumn[Long]) =>
+    outputsTable
+      .filter(_.address === address)
+      .map(out => (out.txHash, out.timestamp))
+      .distinct
+      .sortBy { case (_, timestamp) => timestamp.asc }
+      .take(txLimit)
+  }
 
   def getTransactionsByAddress(address: Address, txLimit: Int): DBActionR[Seq[Transaction]] = {
     for {
-      txHashes <- outputsTable
-        .filter(_.address === address)
-        .map(out => (out.txHash, out.timestamp))
-        .distinct
-        .sortBy { case (_, timestamp) => timestamp.asc }
-        .take(txLimit)
-        .result
+      txHashes <- getTxHashesQuery(address -> txLimit.toLong).result
       txs <- DBIOAction.sequence(txHashes.map {
         case (txHash, timestamp) => getKnownTransactionAction(txHash, timestamp)
       })
     } yield txs
   }
 
-  private def getKnownTransactionFromEntityAction(tx: TransactionEntity): DBActionR[Transaction] =
-    getKnownTransactionAction(tx.hash, tx.timestamp)
+  private val getInputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
+    inputsTable
+      .joinLeft(outputsTable)
+      .on(_.key === _.outputRefKey)
+      .filter(_._1.txHash === txHash)
+      .map {
+        case (input, outputOpt) =>
+          (input.scriptHint,
+           input.key,
+           input.unlockScript,
+           outputOpt.map(_.txHash),
+           outputOpt.map(_.address),
+           outputOpt.map(_.amount))
+      }
+  }
+
+  private val toApiInput = {
+    (scriptHint: Int,
+     key: Hash,
+     unlockScript: String,
+     txHashOpt: Option[Transaction.Hash],
+     addressOpt: Option[Address],
+     amountOpt: Option[Double]) =>
+      Input(Output.Ref(scriptHint, key), unlockScript, txHashOpt, addressOpt, amountOpt)
+  }.tupled
+
+  private val getOutputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
+    outputsTable
+      .filter(_.txHash === txHash)
+      .map(output => (output.amount, output.address, output.spent))
+  }
+
+  private val toApiOutput = (Output.apply _).tupled
 
   private def getKnownTransactionAction(txHash: Transaction.Hash,
                                         timestamp: TimeStamp): DBActionR[Transaction] =
     for {
-      ins        <- inputsTable.filter(_.txHash === txHash).result
-      outs       <- outputsTable.filter(_.txHash === txHash).result
-      insOutsRef <- DBIOAction.sequence(ins.map(getOutputFromInput))
-    } yield
+      ins  <- getInputsQuery(txHash).result
+      outs <- getOutputsQuery(txHash).result
+    } yield {
       Transaction(txHash,
                   timestamp,
-                  AVector.from(insOutsRef.map { case (in, out) => in.toApi(out) }),
-                  AVector.from(outs.map(_.toApi)))
-
-  private def getOutputFromInput(
-      input: InputEntity): DBActionR[(InputEntity, Option[OutputEntity])] =
-    outputsTable
-      .filter(_.outputRefKey === input.key)
-      .result
-      .headOption
-      .map(output => (input, output))
+                  AVector.from(ins.map(toApiInput)),
+                  AVector.from(outs.map(toApiOutput)))
+    }
 
   def updateSpentAction(): DBActionRW[Int] = {
     outputsTable
@@ -109,11 +152,20 @@ trait TransactionQueries extends TransactionSchema with InputSchema with OutputS
       }
   }.flatMap(_.map(_.sum))
 
-  def getBalanceAction(address: Address): DBActionR[Double] =
+  private val getBalanceQuery = Compiled { address: Rep[Address] =>
     outputsTable
-      .filter(out => out.address === address && out.spent.isEmpty)
-      .map(_.amount)
+      .joinLeft(inputsTable)
+      .on(_.outputRefKey === _.key)
+      .filter(_._1.address === address)
+      .filter(_._2.isEmpty)
+      .map(_._1.amount)
       .sum
-      .result
-      .map(_.getOrElse(0.0))
+  }
+
+  def getBalanceAction(address: Address): DBActionR[Double] =
+    getBalanceQuery(address).result.map(_.getOrElse(0.0))
+
+  def debugShow(query: slickProfile.ProfileAction[_, _, _]) = {
+    println(s"${query.statements.mkString}")
+  }
 }
