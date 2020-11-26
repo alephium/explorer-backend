@@ -53,13 +53,14 @@ trait TransactionQueries extends TransactionSchema with InputSchema with OutputS
       case Some(tx) => getKnownTransactionFromEntityAction(tx).map(Some.apply)
     }
 
-  def getTransactionsByAddress(address: Address): DBActionR[Seq[Transaction]] = {
+  def getTransactionsByAddress(address: Address, txLimit: Int): DBActionR[Seq[Transaction]] = {
     for {
       txHashes <- outputsTable
         .filter(_.address === address)
         .map(out => (out.txHash, out.timestamp))
         .distinct
         .sortBy { case (_, timestamp) => timestamp.asc }
+        .take(txLimit)
         .result
       txs <- DBIOAction.sequence(txHashes.map {
         case (txHash, timestamp) => getKnownTransactionAction(txHash, timestamp)
