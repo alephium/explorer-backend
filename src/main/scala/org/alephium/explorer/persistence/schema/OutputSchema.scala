@@ -35,7 +35,7 @@ trait OutputSchema extends CustomTypes {
     def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash")
     def amount: Rep[Double]             = column[Double]("amount")
     def address: Rep[Address]           = column[Address]("address")
-    def outputRefKey: Rep[Hash]         = column[Hash]("output_ref")
+    def outputRefKey: Rep[Hash]         = column[Hash]("output_ref", O.PrimaryKey)
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
     def mainChain: Rep[Boolean]         = column[Boolean]("main_chain")
 

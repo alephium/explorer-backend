@@ -30,7 +30,7 @@ trait TransactionSchema extends CustomTypes {
   import config.profile.api._
 
   class Transactions(tag: Tag) extends Table[TransactionEntity](tag, "transactions") {
-    def hash: Rep[Transaction.Hash]     = column[Transaction.Hash]("hash")
+    def hash: Rep[Transaction.Hash]     = column[Transaction.Hash]("hash", O.PrimaryKey)
     def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash")
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
 

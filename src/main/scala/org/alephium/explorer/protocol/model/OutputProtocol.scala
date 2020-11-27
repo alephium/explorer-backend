@@ -24,8 +24,9 @@ import org.alephium.explorer.{alfCoinConvertion, Hash}
 import org.alephium.explorer.api.Circe.{hashCodec, u256Codec}
 import org.alephium.explorer.api.model.{Address, BlockEntry, Output, Transaction}
 import org.alephium.explorer.persistence.model.OutputEntity
+import org.alephium.protocol.model.TxOutputRef
 import org.alephium.serde._
-import org.alephium.util.{Bytes, TimeStamp, U256}
+import org.alephium.util.{TimeStamp, U256}
 
 final case class OutputProtocol(
     amount: U256,
@@ -41,7 +42,7 @@ final case class OutputProtocol(
       txHash,
       alfCoinConvertion(amount),
       address,
-      Hash.hash(txHash.value.bytes ++ Bytes.from(index)),
+      TxOutputRef.key(txHash.value, index),
       timestamp,
       mainChain
     )

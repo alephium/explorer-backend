@@ -18,7 +18,7 @@ package org.alephium.explorer.persistence.schema
 
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
-import slick.lifted.{Index, ProvenShape}
+import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.Transaction
@@ -34,6 +34,8 @@ trait InputSchema extends CustomTypes {
     def scriptHint: Rep[Int]          = column[Int]("script_hint")
     def key: Rep[Hash]                = column[Hash]("key")
     def unlockScript: Rep[String]     = column[String]("unlock_script")
+
+    def pk: PrimaryKey = primaryKey("pk", (txHash, key))
 
     def inputsTxHashIdx: Index = index("inputs_tx_hash_idx", txHash)
 

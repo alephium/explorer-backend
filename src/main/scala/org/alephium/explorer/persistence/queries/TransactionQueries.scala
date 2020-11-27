@@ -28,7 +28,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DBActionR, DBActionW}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema.{InputSchema, OutputSchema, TransactionSchema}
-import org.alephium.util.{AVector, TimeStamp}
+import org.alephium.util.TimeStamp
 
 trait TransactionQueries
     extends TransactionSchema
@@ -40,11 +40,13 @@ trait TransactionQueries
   val config: DatabaseConfig[JdbcProfile]
   import config.profile.api._
 
-  def insertTransactionFromBlockQuery(blockEntity: BlockEntity): DBActionW[Unit] =
-    ((transactionsTable ++= blockEntity.transactions.toArray) >>
-      (inputsTable ++= blockEntity.inputs.toArray) >>
-      (outputsTable ++= blockEntity.outputs.toArray))
-      .map(_ => ())
+  def insertTransactionFromBlockQuery(blockEntity: BlockEntity): DBActionW[Unit] = {
+    for {
+      _ <- DBIOAction.sequence(blockEntity.transactions.map(transactionsTable.insertOrUpdate))
+      _ <- DBIOAction.sequence(blockEntity.inputs.map(inputsTable.insertOrUpdate))
+      _ <- DBIOAction.sequence(blockEntity.outputs.map(outputsTable.insertOrUpdate))
+    } yield ()
+  }
 
   private val listTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
     transactionsTable
@@ -130,10 +132,7 @@ trait TransactionQueries
       ins  <- getInputsQuery(txHash).result
       outs <- getOutputsQuery(txHash).result
     } yield {
-      Transaction(txHash,
-                  timestamp,
-                  AVector.from(ins.map(toApiInput)),
-                  AVector.from(outs.map(toApiOutput)))
+      Transaction(txHash, timestamp, ins.map(toApiInput), outs.map(toApiOutput))
     }
 
   private val getBalanceQuery = Compiled { address: Rep[Address] =>
