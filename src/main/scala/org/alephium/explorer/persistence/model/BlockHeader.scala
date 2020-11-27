@@ -21,14 +21,13 @@ import org.alephium.util.TimeStamp
 
 final case class BlockHeader(
     hash: BlockEntry.Hash,
-    deps: BlockEntry.Deps,
     timestamp: Long,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     height: Height,
     mainChain: Boolean
 ) {
-  def toApi(transactions: Seq[Transaction]): BlockEntry =
+  def toApi(deps: Seq[BlockEntry.Hash], transactions: Seq[Transaction]): BlockEntry =
     BlockEntry(hash,
                TimeStamp.unsafe(timestamp),
                chainFrom,
@@ -43,7 +42,6 @@ object BlockHeader {
   def fromEntity(blockEntity: BlockEntity): BlockHeader =
     BlockHeader(
       blockEntity.hash,
-      blockEntity.deps,
       blockEntity.timestamp.millis,
       blockEntity.chainFrom,
       blockEntity.chainTo,

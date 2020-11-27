@@ -40,7 +40,7 @@ final case class BlockEntryProtocol(
       chainFrom,
       chainTo,
       height,
-      BlockEntry.Deps(deps),
+      deps,
       transactions.map(_.toEntity(hash, timestamp)),
       transactions.flatMap(tx => tx.inputs.map(_.toEntity(hash, tx.hash, false))),
       transactions.flatMap(tx =>

@@ -18,12 +18,9 @@ package org.alephium.explorer.persistence.schema
 
 import scala.reflect.ClassTag
 
-import io.circe.parser.decode
-import io.circe.syntax._
 import slick.basic.DatabaseConfig
 import slick.jdbc.{JdbcProfile, JdbcType}
 
-import org.alephium.api.CirceUtils
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.util.{Hex, TimeStamp, U256}
@@ -44,15 +41,6 @@ trait CustomTypes extends JdbcProfile {
     buildHashTypes(
       new BlockEntry.Hash(_),
       _.value
-    )
-
-  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
-  implicit val blockDepsType: JdbcType[BlockEntry.Deps] =
-    MappedJdbcType.base[BlockEntry.Deps, String](
-      deps => CirceUtils.print(deps.value.asJson),
-      rawJson =>
-        decode[BlockEntry.Deps](rawJson)
-          .getOrElse(throw new RuntimeException(s"Cannot decode $rawJson for block deps"))
     )
 
   implicit val transactionHashType: JdbcType[Transaction.Hash] =

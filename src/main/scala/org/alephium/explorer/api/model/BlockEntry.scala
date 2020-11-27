@@ -16,10 +16,9 @@
 
 package org.alephium.explorer.api.model
 
-import io.circe.{Codec, Decoder, Encoder}
+import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 
-import org.alephium.api.CirceUtils
 import org.alephium.api.CirceUtils.timestampCodec
 import org.alephium.explorer
 import org.alephium.explorer.HashCompanion
@@ -32,7 +31,7 @@ final case class BlockEntry(
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     height: Height,
-    deps: BlockEntry.Deps,
+    deps: Seq[BlockEntry.Hash],
     transactions: Seq[Transaction],
     mainChain: Boolean
 ) extends FlowEntity
@@ -43,16 +42,6 @@ object BlockEntry {
     override def toString(): String = value.toHexString
   }
   object Hash extends HashCompanion[Hash](new Hash(_), _.value)
-
-  final case class Deps(value: Seq[Hash]) extends AnyVal
-  object Deps {
-    val encoder: Encoder[Array[Hash]] = CirceUtils.arrayEncoder[Hash]
-    val decoder: Decoder[Array[Hash]] = CirceUtils.arrayDecoder[Hash]
-
-    // Circe's derived codec is buggy !
-    implicit val codec: Codec[Deps] =
-      Codec.from(decoder.map(deps => Deps(deps.toSeq)), encoder.contramap(_.value.toArray))
-  }
 
   implicit val codec: Codec[BlockEntry] = deriveCodec[BlockEntry]
 }

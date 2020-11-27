@@ -25,14 +25,14 @@ trait FlowEntity {
   def chainFrom: GroupIndex
   def chainTo: GroupIndex
   def height: Height
-  def deps: BlockEntry.Deps
+  def deps: Seq[BlockEntry.Hash]
   def mainChain: Boolean
 
   def parent(groupNum: Int): Option[BlockEntry.Hash] =
     if (isGenesis) {
       None
     } else {
-      Some(deps.value.takeRight(groupNum).apply(chainTo.value))
+      Some(deps.takeRight(groupNum).apply(chainTo.value))
     }
 
   def isGenesis: Boolean = height === Height.genesis

@@ -30,7 +30,6 @@ trait BlockHeaderSchema extends CustomTypes {
 
   class BlockHeaders(tag: Tag) extends Table[BlockHeader](tag, "block_headers") {
     def hash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("hash", O.PrimaryKey)
-    def deps: Rep[BlockEntry.Deps] = column[BlockEntry.Deps]("dep")
     def timestamp: Rep[Long]       = column[Long]("timestamp")
     def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
@@ -41,7 +40,7 @@ trait BlockHeaderSchema extends CustomTypes {
     def heightIdx: Index    = index("blocks_height_idx", height)
 
     def * : ProvenShape[BlockHeader] =
-      (hash, deps, timestamp, chainFrom, chainTo, height, mainChain) <> ((BlockHeader.apply _).tupled, BlockHeader.unapply)
+      (hash, timestamp, chainFrom, chainTo, height, mainChain) <> ((BlockHeader.apply _).tupled, BlockHeader.unapply)
   }
 
   val blockHeadersTable: TableQuery[BlockHeaders] = TableQuery[BlockHeaders]
