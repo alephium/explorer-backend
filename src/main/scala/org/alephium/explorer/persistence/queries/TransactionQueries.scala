@@ -93,12 +93,12 @@ trait TransactionQueries
   private val getInputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
     inputsTable
       .joinLeft(outputsTable)
-      .on(_.key === _.outputRefKey)
+      .on(_.outputRefKey === _.key)
       .filter(_._1.txHash === txHash)
       .map {
         case (input, outputOpt) =>
           (input.scriptHint,
-           input.key,
+           input.outputRefKey,
            input.unlockScript,
            outputOpt.map(_.txHash),
            outputOpt.map(_.address),
@@ -119,7 +119,7 @@ trait TransactionQueries
   private val getOutputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
     outputsTable
       .joinLeft(inputsTable)
-      .on(_.outputRefKey === _.key)
+      .on(_.key === _.outputRefKey)
       .filter(_._1.txHash === txHash)
       .map { case (output, input) => (output.amount, output.address, input.map(_.txHash)) }
   }
@@ -138,7 +138,7 @@ trait TransactionQueries
   private val getBalanceQuery = Compiled { address: Rep[Address] =>
     outputsTable
       .joinLeft(inputsTable)
-      .on(_.outputRefKey === _.key)
+      .on(_.key === _.outputRefKey)
       .filter(_._1.address === address)
       .filter(_._2.isEmpty)
       .map(_._1.amount)

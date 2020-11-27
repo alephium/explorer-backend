@@ -25,7 +25,7 @@ final case class OutputEntity(
     txHash: Transaction.Hash,
     amount: Double,
     address: Address,
-    outputRefKey: Hash,
+    key: Hash,
     timestamp: TimeStamp,
     mainChain: Boolean
 ) {

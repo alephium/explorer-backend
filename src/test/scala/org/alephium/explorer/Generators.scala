@@ -133,7 +133,7 @@ trait Generators {
             block.timestamp,
             block.inputs
               .filter(_.txHash === tx.hash)
-              .map(input => input.toApi(outputs.find(_.outputRefKey === input.key))),
+              .map(input => input.toApi(outputs.find(_.key === input.outputRefKey))),
             block.outputs.filter(_.txHash === tx.hash).map(_.toApi(None))
           )
         }

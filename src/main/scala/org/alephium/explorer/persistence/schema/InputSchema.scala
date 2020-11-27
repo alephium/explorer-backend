@@ -32,15 +32,15 @@ trait InputSchema extends CustomTypes {
   class Inputs(tag: Tag) extends Table[InputEntity](tag, "inputs") {
     def txHash: Rep[Transaction.Hash] = column[Transaction.Hash]("tx_hash")
     def scriptHint: Rep[Int]          = column[Int]("script_hint")
-    def key: Rep[Hash]                = column[Hash]("key")
+    def outputRefKey: Rep[Hash]       = column[Hash]("key")
     def unlockScript: Rep[String]     = column[String]("unlock_script")
 
-    def pk: PrimaryKey = primaryKey("pk", (txHash, key))
+    def pk: PrimaryKey = primaryKey("pk", (txHash, outputRefKey))
 
     def inputsTxHashIdx: Index = index("inputs_tx_hash_idx", txHash)
 
     def * : ProvenShape[InputEntity] =
-      (txHash, scriptHint, key, unlockScript) <> ((InputEntity.apply _).tupled, InputEntity.unapply)
+      (txHash, scriptHint, outputRefKey, unlockScript) <> ((InputEntity.apply _).tupled, InputEntity.unapply)
   }
 
   val inputsTable: TableQuery[Inputs] = TableQuery[Inputs]

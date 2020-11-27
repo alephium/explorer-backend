@@ -35,14 +35,14 @@ trait OutputSchema extends CustomTypes {
     def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash")
     def amount: Rep[Double]             = column[Double]("amount")
     def address: Rep[Address]           = column[Address]("address")
-    def outputRefKey: Rep[Hash]         = column[Hash]("output_ref", O.PrimaryKey)
+    def key: Rep[Hash]                  = column[Hash]("key", O.PrimaryKey)
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
     def mainChain: Rep[Boolean]         = column[Boolean]("main_chain")
 
     def outputsTxHashIdx: Index = index("outputs_tx_hash_idx", txHash)
 
     def * : ProvenShape[OutputEntity] =
-      (blockHash, txHash, amount, address, outputRefKey, timestamp, mainChain) <> ((OutputEntity.apply _).tupled, OutputEntity.unapply)
+      (blockHash, txHash, amount, address, key, timestamp, mainChain) <> ((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }
 
   val outputsTable: TableQuery[Outputs] = TableQuery[Outputs]
