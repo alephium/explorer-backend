@@ -122,8 +122,7 @@ trait Generators {
   }
 
   def blockEntitiesToBlockEntries(blocks: Seq[Seq[BlockEntity]]): Seq[Seq[BlockEntry]] = {
-    val outputs: Seq[OutputEntity] = blocks.toArray.toIndexedSeq
-      .flatMap(_.toArray.toIndexedSeq.flatMap(_.outputs.toArray.toIndexedSeq))
+    val outputs: Seq[OutputEntity] = blocks.flatMap(_.flatMap(_.outputs))
 
     blocks.map(_.map { block =>
       val transactions =

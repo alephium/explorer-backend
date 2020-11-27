@@ -26,6 +26,7 @@ trait FlowEntity {
   def chainTo: GroupIndex
   def height: Height
   def deps: BlockEntry.Deps
+  def mainChain: Boolean
 
   def parent(groupNum: Int): Option[BlockEntry.Hash] =
     if (isGenesis) {

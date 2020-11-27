@@ -60,6 +60,9 @@ class TransactionServiceSpec
     val txLimit = 5
 
     Future.sequence(blocks.map(blockDao.insert)).futureValue
+    Future
+      .sequence(blocks.map(block => blockDao.updateMainChainStatus(block.hash, true)))
+      .futureValue
 
     transactionService.getTransactionsByAddress(address, txLimit).futureValue.size is txLimit
   }

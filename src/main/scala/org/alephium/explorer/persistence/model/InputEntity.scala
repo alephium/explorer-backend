@@ -17,13 +17,15 @@
 package org.alephium.explorer.persistence.model
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Input, Output, Transaction}
+import org.alephium.explorer.api.model.{BlockEntry, Input, Output, Transaction}
 
 final case class InputEntity(
+    bockHash: BlockEntry.Hash,
     txHash: Transaction.Hash,
     scriptHint: Int,
     outputRefKey: Hash,
-    unlockScript: String
+    unlockScript: String,
+    mainChain: Boolean
 ) {
   def toApi(outputRef: Option[OutputEntity]): Input =
     Input(

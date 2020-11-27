@@ -60,7 +60,7 @@ class ApplicationSpec()
 
   val blocks: Seq[BlockEntry] = blockEntitiesToBlockEntries(Seq(blockEntities)).flatten
 
-  val transactions: Seq[Transaction] = blocks.flatMap(_.transactions.toArray.toSeq)
+  val transactions: Seq[Transaction] = blocks.flatMap(_.transactions)
 
   val addresses: Seq[Address] = blocks
     .flatMap(_.transactions.flatMap(_.outputs.map(_.address)))
@@ -146,11 +146,11 @@ class ApplicationSpec()
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address}") ~> routes ~> check {
         val expectedTransactions =
-          transactions.filter(_.outputs.toArray.toSeq.exists(_.address == address))
+          transactions.filter(_.outputs.exists(_.address == address))
         val expectedBalance =
           expectedTransactions
             .map(
-              _.outputs.toArray.toIndexedSeq
+              _.outputs
                 .filter(out => out.spent.isEmpty && out.address == address)
                 .map(_.amount)
                 .sum)
@@ -169,7 +169,7 @@ class ApplicationSpec()
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address}/transactions") ~> routes ~> check {
         val expectedTransactions =
-          transactions.filter(_.outputs.toArray.toSeq.exists(_.address == address))
+          transactions.filter(_.outputs.exists(_.address == address))
         val res = responseAs[Seq[Transaction]]
 
         res.size is expectedTransactions.size

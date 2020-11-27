@@ -18,7 +18,7 @@ package org.alephium.explorer.persistence.schema
 
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
-import slick.lifted.{Index, ProvenShape}
+import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
@@ -35,11 +35,15 @@ trait OutputSchema extends CustomTypes {
     def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash")
     def amount: Rep[Double]             = column[Double]("amount")
     def address: Rep[Address]           = column[Address]("address")
-    def key: Rep[Hash]                  = column[Hash]("key", O.PrimaryKey)
+    def key: Rep[Hash]                  = column[Hash]("key")
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
     def mainChain: Rep[Boolean]         = column[Boolean]("main_chain")
 
+    def pk: PrimaryKey = primaryKey("outputs_pk", (key, blockHash))
+
+    def blockHashIdx: Index     = index("outputs_block_hash_idx", blockHash)
     def outputsTxHashIdx: Index = index("outputs_tx_hash_idx", txHash)
+    def addressIdx: Index       = index("outputs_address_idx", address)
 
     def * : ProvenShape[OutputEntity] =
       (blockHash, txHash, amount, address, key, timestamp, mainChain) <> ((OutputEntity.apply _).tupled, OutputEntity.unapply)

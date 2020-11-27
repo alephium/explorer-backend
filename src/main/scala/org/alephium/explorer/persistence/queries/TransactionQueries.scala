@@ -74,7 +74,7 @@ trait TransactionQueries
 
   private val getTxHashesQuery = Compiled { (address: Rep[Address], txLimit: ConstColumn[Long]) =>
     outputsTable
-      .filter(_.address === address)
+      .filter(output => output.mainChain && output.address === address)
       .map(out => (out.txHash, out.timestamp))
       .distinct
       .sortBy { case (_, timestamp) => timestamp.asc }
@@ -92,9 +92,9 @@ trait TransactionQueries
 
   private val getInputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
     inputsTable
-      .joinLeft(outputsTable)
+      .filter(input => input.mainChain && input.txHash === txHash)
+      .joinLeft(outputsTable.filter(_.mainChain))
       .on(_.outputRefKey === _.key)
-      .filter(_._1.txHash === txHash)
       .map {
         case (input, outputOpt) =>
           (input.scriptHint,
@@ -118,10 +118,11 @@ trait TransactionQueries
 
   private val getOutputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
     outputsTable
+      .filter(output => output.mainChain && output.txHash === txHash)
+      .map(output => (output.key, output.address, output.amount))
       .joinLeft(inputsTable)
-      .on(_.key === _.outputRefKey)
-      .filter(_._1.txHash === txHash)
-      .map { case (output, input) => (output.amount, output.address, input.map(_.txHash)) }
+      .on(_._1 === _.outputRefKey)
+      .map { case (output, input) => (output._3, output._2, input.map(_.txHash)) }
   }
 
   private val toApiOutput = (Output.apply _).tupled
@@ -137,11 +138,12 @@ trait TransactionQueries
 
   private val getBalanceQuery = Compiled { address: Rep[Address] =>
     outputsTable
-      .joinLeft(inputsTable)
-      .on(_.key === _.outputRefKey)
-      .filter(_._1.address === address)
+      .filter(output => output.mainChain && output.address === address)
+      .map(output => (output.key, output.amount))
+      .joinLeft(inputsTable.filter(_.mainChain))
+      .on(_._1 === _.outputRefKey)
       .filter(_._2.isEmpty)
-      .map(_._1.amount)
+      .map(_._1._2)
       .sum
   }
 
