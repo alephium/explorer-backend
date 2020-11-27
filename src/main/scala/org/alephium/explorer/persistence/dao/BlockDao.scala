@@ -52,7 +52,6 @@ object BlockDao {
       implicit val executionContext: ExecutionContext)
       extends BlockDao
       with BlockHeaderSchema
-      with BlockDepsSchema
       with TransactionQueries
       with DBRunner
       with StrictLogging {
@@ -60,9 +59,8 @@ object BlockDao {
 
     private def buildBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry] =
       for {
-        deps <- blockDepsTable.filter(_.hash === blockHeader.hash).map(_.dep).result
-        txs  <- listTransactionsAction(blockHeader.hash)
-      } yield blockHeader.toApi(deps, txs)
+        txs <- listTransactionsAction(blockHeader.hash)
+      } yield blockHeader.toApi(txs)
 
     private def getBlockEntryAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry]] =
       for {
@@ -89,7 +87,6 @@ object BlockDao {
     def insert(block: BlockEntity): Future[Unit] =
       run(
         (blockHeadersTable += BlockHeader.fromEntity(block)) >>
-          (blockDepsTable ++= block.deps.toArray.map(dep => (block.hash, dep))) >>
           insertTransactionFromBlockQuery(block)
       ).map(_ => ())
 
@@ -123,7 +120,7 @@ object BlockDao {
             "org.wartremover.warts.Product",
             "org.wartremover.warts.Serializable"))
     private val myTables =
-      Seq(blockHeadersTable, blockDepsTable, transactionsTable, inputsTable, outputsTable)
+      Seq(blockHeadersTable, transactionsTable, inputsTable, outputsTable)
     private val existing = run(MTable.getTables)
     private val f = existing.flatMap { tables =>
       Future.sequence(myTables.map { myTable =>

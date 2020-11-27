@@ -26,7 +26,7 @@ final case class BlockEntity(
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     height: Height,
-    deps: Seq[BlockEntry.Hash],
+    deps: BlockEntry.Deps,
     transactions: Seq[TransactionEntity],
     inputs: Seq[InputEntity],
     outputs: Seq[OutputEntity],

@@ -31,7 +31,7 @@ final case class BlockEntry(
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     height: Height,
-    deps: Seq[BlockEntry.Hash],
+    deps: BlockEntry.Deps,
     transactions: Seq[Transaction],
     mainChain: Boolean
 ) extends FlowEntity
@@ -41,8 +41,12 @@ object BlockEntry {
   final class Hash(val value: explorer.Hash) extends AnyVal {
     override def toString(): String = value.toHexString
   }
-
   object Hash extends HashCompanion[Hash](new Hash(_), _.value)
+
+  final case class Deps(value: Seq[Hash]) extends AnyVal
+  object Deps {
+    implicit val codec: Codec[Deps] = deriveCodec[Deps]
+  }
 
   implicit val codec: Codec[BlockEntry] = deriveCodec[BlockEntry]
 }
