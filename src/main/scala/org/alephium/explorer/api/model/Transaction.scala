@@ -19,16 +19,16 @@ package org.alephium.explorer.api.model
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 
-import org.alephium.api.CirceUtils.{avectorCodec, timestampCodec}
+import org.alephium.api.CirceUtils.timestampCodec
 import org.alephium.explorer
 import org.alephium.explorer.HashCompanion
-import org.alephium.util.{AVector, TimeStamp}
+import org.alephium.util.TimeStamp
 
 final case class Transaction(
     hash: Transaction.Hash,
     timestamp: TimeStamp,
-    inputs: AVector[Input],
-    outputs: AVector[Output]
+    inputs: Seq[Input],
+    outputs: Seq[Output]
 )
 
 object Transaction {

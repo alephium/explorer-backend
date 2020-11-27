@@ -19,11 +19,11 @@ package org.alephium.explorer.api.model
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 
-import org.alephium.api.CirceUtils.{avectorCodec, timestampCodec}
+import org.alephium.api.CirceUtils.timestampCodec
 import org.alephium.explorer
 import org.alephium.explorer.HashCompanion
 import org.alephium.explorer.service.FlowEntity
-import org.alephium.util.{AVector, TimeStamp}
+import org.alephium.util.TimeStamp
 
 final case class BlockEntry(
     hash: BlockEntry.Hash,
@@ -31,8 +31,8 @@ final case class BlockEntry(
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     height: Height,
-    deps: AVector[BlockEntry.Hash],
-    transactions: AVector[Transaction],
+    deps: Seq[BlockEntry.Hash],
+    transactions: Seq[Transaction],
     mainChain: Boolean
 ) extends FlowEntity
 

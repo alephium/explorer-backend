@@ -17,7 +17,7 @@
 package org.alephium.explorer.service
 
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
-import org.alephium.util.{AVector, TimeStamp}
+import org.alephium.util.TimeStamp
 
 trait FlowEntity {
   def hash: BlockEntry.Hash
@@ -25,13 +25,13 @@ trait FlowEntity {
   def chainFrom: GroupIndex
   def chainTo: GroupIndex
   def height: Height
-  def deps: AVector[BlockEntry.Hash]
+  def deps: Seq[BlockEntry.Hash]
 
   def parent(groupNum: Int): Option[BlockEntry.Hash] =
     if (isGenesis) {
       None
     } else {
-      deps.takeRight(groupNum).get(chainTo.value)
+      Some(deps.takeRight(groupNum).apply(chainTo.value))
     }
 
   def isGenesis: Boolean = height === Height.genesis

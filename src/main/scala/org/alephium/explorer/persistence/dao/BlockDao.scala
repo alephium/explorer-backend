@@ -31,7 +31,6 @@ import org.alephium.explorer.persistence.{DBActionR, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema._
-import org.alephium.util.AVector
 
 trait BlockDao {
   def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]]
@@ -63,7 +62,7 @@ object BlockDao {
       for {
         deps <- blockDepsTable.filter(_.hash === blockHeader.hash).map(_.dep).result
         txs  <- listTransactionsAction(blockHeader.hash)
-      } yield blockHeader.toApi(AVector.from(deps), AVector.from(txs))
+      } yield blockHeader.toApi(deps, txs)
 
     private def getBlockEntryAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry]] =
       for {

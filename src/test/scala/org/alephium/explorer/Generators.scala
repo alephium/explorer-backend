@@ -24,7 +24,7 @@ import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.protocol.model._
-import org.alephium.util.{AVector, Base58, Duration, TimeStamp, U256}
+import org.alephium.util.{Base58, Duration, TimeStamp, U256}
 
 trait Generators {
 
@@ -64,7 +64,7 @@ trait Generators {
     inputs     <- Gen.listOfN(inputSize, inputProtocolGen)
     outputSize <- Gen.choose(2, 10)
     outputs    <- Gen.listOfN(outputSize, outputProtocolGen)
-  } yield TransactionProtocol(hash, AVector.from(inputs), AVector.from(outputs))
+  } yield TransactionProtocol(hash, inputs, outputs)
 
   lazy val blockEntryProtocolGen: Gen[BlockEntryProtocol] = for {
     hash            <- blockEntryHashGen
@@ -75,14 +75,7 @@ trait Generators {
     deps            <- Gen.listOfN(5, blockEntryHashGen)
     transactionSize <- Gen.choose(1, 10)
     transactions    <- Gen.listOfN(transactionSize, transactionProtocolGen)
-  } yield
-    BlockEntryProtocol(hash,
-                       timestamp,
-                       chainFrom,
-                       chainTo,
-                       height,
-                       AVector.from(deps),
-                       AVector.from(transactions))
+  } yield BlockEntryProtocol(hash, timestamp, chainFrom, chainTo, height, deps, transactions)
 
   def blockEntityGen(groupNum: Int,
                      chainFrom: GroupIndex,
@@ -92,7 +85,7 @@ trait Generators {
       val deps   = parent.map(p => Seq.fill(2 * groupNum - 1)(p.hash)).getOrElse(Seq.empty)
       val height = Height.unsafe(parent.map(_.height.value + 1).getOrElse(0))
       entry
-        .copy(chainFrom = chainFrom, chainTo = chainTo, height = height, deps = AVector.from(deps))
+        .copy(chainFrom = chainFrom, chainTo = chainTo, height = height, deps = deps)
         .toEntity
     }
 
@@ -105,8 +98,8 @@ trait Generators {
       blocks
         .foldLeft((Seq.empty[BlockEntryProtocol], Height.genesis, startTimestamp)) {
           case ((acc, height, timestamp), block) =>
-            val deps: AVector[BlockEntry.Hash] =
-              if (acc.isEmpty) AVector.empty else AVector.tabulate(groupNum)(_ => acc.last.hash)
+            val deps: Seq[BlockEntry.Hash] =
+              if (acc.isEmpty) Seq.empty else Seq.tabulate(groupNum)(_ => acc.last.hash)
             val newBlock = block.copy(height = height,
                                       deps      = deps,
                                       timestamp = timestamp,

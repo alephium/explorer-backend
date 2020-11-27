@@ -63,7 +63,7 @@ class ApplicationSpec()
   val transactions: Seq[Transaction] = blocks.flatMap(_.transactions.toArray.toSeq)
 
   val addresses: Seq[Address] = blocks
-    .flatMap(_.transactions.flatMap(_.outputs.map(_.address)).toArray)
+    .flatMap(_.transactions.flatMap(_.outputs.map(_.address)))
     .distinct
 
   val localhost: InetAddress = InetAddress.getLocalHost
