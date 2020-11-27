@@ -22,33 +22,26 @@ import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.{alfCoinConvertion, AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.GroupIndex
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
+import org.alephium.protocol.ALF
+import org.alephium.util.U256
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
 class TransactionServiceSpec
     extends AlephiumSpec
-    with DatabaseFixture
     with Generators
     with ScalaFutures
     with Eventually {
 
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
-
-  val blockDao: BlockDao                     = BlockDao(databaseConfig)
-  val transactionDao: TransactionDao         = TransactionDao(databaseConfig)
-  val transactionService: TransactionService = TransactionService(transactionDao)
-
-  it should "limit the number of transactions in address details" in {
-
-    val transactionService: TransactionService = TransactionService(transactionDao)
+  it should "limit the number of transactions in address details" in new Fixture {
 
     val address = addressGen.sample.get
 
-    val groupIndex = GroupIndex.unsafe(0)
     val blocks = Gen
       .listOfN(20, blockEntityGen(0, groupIndex, groupIndex, None))
       .map(_.map { block =>
@@ -65,5 +58,43 @@ class TransactionServiceSpec
       .futureValue
 
     transactionService.getTransactionsByAddress(address, txLimit).futureValue.size is txLimit
+  }
+
+  it should "handle huge alf number" in new Fixture {
+
+    val u256Amount     = ALF.MaxALFValue.mulUnsafe(ALF.MaxALFValue)
+    val amount: Double = alfCoinConvertion(u256Amount)
+
+    val block = blockEntityGen(0, groupIndex, groupIndex, None)
+      .map { block =>
+        block.copy(
+          outputs   = block.outputs.take(1).map(_.copy(amount = amount, mainChain = true)),
+          inputs    = block.inputs.map(_.copy(mainChain = true)),
+          mainChain = true
+        )
+      }
+      .sample
+      .get
+
+    block.mainChain is true
+    block.outputs.head.amount is amount
+
+    blockDao.insert(block).futureValue
+
+    val fetchedAmout =
+      blockDao.get(block.hash).futureValue.get.transactions.flatMap(_.outputs.map(_.amount)).head
+    fetchedAmout is amount
+
+    val fetchedU256 = U256.unsafe(
+      (BigDecimal(fetchedAmout) * BigDecimal(ALF.CoinInOneALF.toBigInt)).bigDecimal.toBigInteger)
+    fetchedU256 is u256Amount
+  }
+
+  trait Fixture extends DatabaseFixture {
+    val blockDao: BlockDao                     = BlockDao(databaseConfig)
+    val transactionDao: TransactionDao         = TransactionDao(databaseConfig)
+    val transactionService: TransactionService = TransactionService(transactionDao)
+
+    val groupIndex = GroupIndex.unsafe(0)
   }
 }
