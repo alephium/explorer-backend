@@ -41,9 +41,10 @@ trait OutputSchema extends CustomTypes {
 
     def pk: PrimaryKey = primaryKey("outputs_pk", (key, blockHash))
 
-    def blockHashIdx: Index     = index("outputs_block_hash_idx", blockHash)
-    def outputsTxHashIdx: Index = index("outputs_tx_hash_idx", txHash)
-    def addressIdx: Index       = index("outputs_address_idx", address)
+    def keyIdx: Index       = index("outputs_key_idx", key)
+    def blockHashIdx: Index = index("outputs_block_hash_idx", blockHash)
+    def txHashIdx: Index    = index("outputs_tx_hash_idx", txHash)
+    def addressIdx: Index   = index("outputs_address_idx", address)
 
     def * : ProvenShape[OutputEntity] =
       (blockHash, txHash, amount, address, key, timestamp, mainChain) <> ((OutputEntity.apply _).tupled, OutputEntity.unapply)
