@@ -86,8 +86,10 @@ object BlockDao {
 
     def insert(block: BlockEntity): Future[Unit] =
       run(
-        (blockHeadersTable += BlockHeader.fromEntity(block)) >>
-          insertTransactionFromBlockQuery(block)
+        for {
+          _ <- blockHeadersTable.insertOrUpdate(BlockHeader.fromEntity(block))
+          _ <- insertTransactionFromBlockQuery(block)
+        } yield ()
       ).map(_ => ())
 
     def list(timeInterval: TimeInterval): Future[Seq[BlockEntry]] = {
