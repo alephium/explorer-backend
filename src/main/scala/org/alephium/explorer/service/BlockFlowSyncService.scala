@@ -102,6 +102,7 @@ object BlockFlowSyncService {
       }
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
     private def syncAt(
         fromGroup: GroupIndex,
         toGroup: GroupIndex,

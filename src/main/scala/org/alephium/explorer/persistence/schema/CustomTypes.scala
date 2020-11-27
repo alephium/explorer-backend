@@ -46,6 +46,7 @@ trait CustomTypes extends JdbcProfile {
       _.value
     )
 
+  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   implicit val blockDepsType: JdbcType[BlockEntry.Deps] =
     MappedJdbcType.base[BlockEntry.Deps, String](
       deps => CirceUtils.print(deps.value.asJson),

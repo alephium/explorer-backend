@@ -148,7 +148,8 @@ trait TransactionQueries
   def getBalanceAction(address: Address): DBActionR[Double] =
     getBalanceQuery(address).result.map(_.getOrElse(0.0))
 
-  def debugShow(query: slickProfile.ProfileAction[_, _, _]) = {
-    println(s"${query.statements.mkString}")
+  // switch logger.trace when we can disable debugging mode
+  protected def debugShow(query: slickProfile.ProfileAction[_, _, _]) = {
+    print(s"${query.statements.mkString}\n")
   }
 }
