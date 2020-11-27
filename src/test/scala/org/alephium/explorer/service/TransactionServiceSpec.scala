@@ -68,18 +68,16 @@ class TransactionServiceSpec
     val block = blockEntityGen(0, groupIndex, groupIndex, None)
       .map { block =>
         block.copy(
-          outputs   = block.outputs.take(1).map(_.copy(amount = amount, mainChain = true)),
-          inputs    = block.inputs.map(_.copy(mainChain = true)),
-          mainChain = true
+          outputs = block.outputs.take(1).map(_.copy(amount = amount))
         )
       }
       .sample
       .get
 
-    block.mainChain is true
     block.outputs.head.amount is amount
 
     blockDao.insert(block).futureValue
+    blockDao.updateMainChainStatus(block.hash, true).futureValue
 
     val fetchedAmout =
       blockDao.get(block.hash).futureValue.get.transactions.flatMap(_.outputs.map(_.amount)).head

@@ -48,16 +48,20 @@ class AddressServerSpec()
 
     val server = new AddressServer(transactionService)
 
-    forAll(addressGen, Gen.chooseNum[Int](-10, 50)) {
+    forAll(addressGen, Gen.chooseNum[Int](-10, 120)) {
       case (address, txLimit) =>
         Get(s"/addresses/${address}?tx-limit=$txLimit") ~> server.route ~> check {
-          if (txLimit > 0) {
-            status is StatusCodes.OK
-            testLimit is txLimit
-          } else {
+          if (txLimit <= 0) {
             status is StatusCodes.BadRequest
             responseAs[ApiError.BadRequest] is ApiError.BadRequest(
               s"Invalid value for: query parameter tx-limit (expected value to be greater than or equal to 1, but was $txLimit)")
+          } else if (txLimit > 100) {
+            status is StatusCodes.BadRequest
+            responseAs[ApiError.BadRequest] is ApiError.BadRequest(
+              s"Invalid value for: query parameter tx-limit (expected value to be less than or equal to 100, but was $txLimit)")
+          } else {
+            status is StatusCodes.OK
+            testLimit is txLimit
           }
         }
 

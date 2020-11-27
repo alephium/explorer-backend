@@ -62,6 +62,13 @@ trait TransactionQueries
         txEntities.map(pair => getKnownTransactionAction(pair._1, pair._2)))
     } yield txs
 
+  private val countTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
+    transactionsTable.filter(_.blockHash === blockHash).length
+  }
+
+  def countTransactionsAction(blockHash: BlockEntry.Hash): DBActionR[Int] =
+    countTransactionsQuery(blockHash).result
+
   private val getTimestampQuery = Compiled { txHash: Rep[Transaction.Hash] =>
     transactionsTable.filter(_.hash === txHash).map(_.timestamp)
   }

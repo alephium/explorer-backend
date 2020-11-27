@@ -31,7 +31,9 @@ trait AddressesEndpoints extends BaseEndpoint {
       .in("addresses")
 
   private val txLimit =
-    query[Option[Int]]("tx-limit").validate(Validator.optionElement(Validator.min(1)))
+    query[Option[Int]]("tx-limit")
+      .validate(Validator.optionElement(Validator.min(1)))
+      .validate(Validator.optionElement(Validator.max(100)))
 
   val getAddressInfo: Endpoint[(Address, Option[Int]), ApiError, AddressInfo, Nothing] =
     addressesEndpoint.get
