@@ -45,9 +45,9 @@ trait BlockEndpoints extends BaseEndpoint {
       .out(jsonBody[BlockEntry])
       .description("Get a block with hash")
 
-  val listBlocks: Endpoint[TimeInterval, ApiError, Seq[BlockEntry], Nothing] =
+  val listBlocks: Endpoint[TimeInterval, ApiError, Seq[BlockEntry.Lite], Nothing] =
     blocksEndpoint.get
       .in(timeIntervalQuery)
-      .out(jsonBody[Seq[BlockEntry]])
+      .out(jsonBody[Seq[BlockEntry.Lite]])
       .description("List blocks within time interval")
 }

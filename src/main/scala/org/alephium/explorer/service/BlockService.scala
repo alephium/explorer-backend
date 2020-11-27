@@ -23,7 +23,7 @@ import org.alephium.explorer.persistence.dao.BlockDao
 
 trait BlockService {
   def getBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry]]
-  def listBlocks(timeInterval: TimeInterval): Future[Seq[BlockEntry]]
+  def listBlocks(timeInterval: TimeInterval): Future[Seq[BlockEntry.Lite]]
 }
 
 object BlockService {
@@ -34,7 +34,7 @@ object BlockService {
     def getBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry]] =
       blockDao.get(hash)
 
-    def listBlocks(timeInterval: TimeInterval): Future[Seq[BlockEntry]] =
+    def listBlocks(timeInterval: TimeInterval): Future[Seq[BlockEntry.Lite]] =
       blockDao.listMainChain(timeInterval)
   }
 }

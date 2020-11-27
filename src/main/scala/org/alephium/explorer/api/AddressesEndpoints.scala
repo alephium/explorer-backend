@@ -23,6 +23,7 @@ import org.alephium.explorer.api.Codecs._
 import org.alephium.explorer.api.Schemas._
 import org.alephium.explorer.api.model.{Address, AddressInfo, Transaction}
 
+// scalastyle:off magic.number
 trait AddressesEndpoints extends BaseEndpoint {
 
   private val addressesEndpoint =

@@ -111,7 +111,7 @@ class ApplicationSpec()
         //filter `blocks by the same timestamp as the query for better assertion`
         val expectedBlocks = blocks.filter(block =>
           block.timestamp.millis >= minTimestamp && block.timestamp.millis <= to)
-        val res = responseAs[Seq[BlockEntry]].map(_.hash)
+        val res = responseAs[Seq[BlockEntry.Lite]].map(_.hash)
         expectedBlocks.size is res.size
         expectedBlocks.foreach(block => res.contains(block.hash) is true)
       }

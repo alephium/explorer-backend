@@ -36,6 +36,15 @@ final case class BlockHeader(
                deps,
                transactions,
                mainChain)
+
+  def toLiteApi(txNumber: Int): BlockEntry.Lite =
+    BlockEntry.Lite(hash,
+                    TimeStamp.unsafe(timestamp),
+                    chainFrom,
+                    chainTo,
+                    height,
+                    txNumber,
+                    mainChain)
 }
 
 object BlockHeader {
