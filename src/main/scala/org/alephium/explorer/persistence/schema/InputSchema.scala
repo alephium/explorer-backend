@@ -18,10 +18,10 @@ package org.alephium.explorer.persistence.schema
 
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
-import slick.lifted.{Index, ProvenShape}
+import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.Transaction
+import org.alephium.explorer.api.model.{BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.InputEntity
 
 trait InputSchema extends CustomTypes {
@@ -30,15 +30,22 @@ trait InputSchema extends CustomTypes {
   import config.profile.api._
 
   class Inputs(tag: Tag) extends Table[InputEntity](tag, "inputs") {
-    def txHash: Rep[Transaction.Hash] = column[Transaction.Hash]("tx_hash")
-    def scriptHint: Rep[Int]          = column[Int]("script_hint")
-    def key: Rep[Hash]                = column[Hash]("key")
-    def unlockScript: Rep[String]     = column[String]("unlock_script")
+    def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash")
+    def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash")
+    def scriptHint: Rep[Int]            = column[Int]("script_hint")
+    def outputRefKey: Rep[Hash]         = column[Hash]("output_ref_key")
+    def unlockScript: Rep[String]       = column[String]("unlock_script")
+    def mainChain: Rep[Boolean]         = column[Boolean]("main_chain")
 
+    def pk: PrimaryKey = primaryKey("inputs_pk", (outputRefKey, txHash, blockHash))
+
+    def blockHashIdx: Index    = index("inputs_block_hash_idx", blockHash)
     def inputsTxHashIdx: Index = index("inputs_tx_hash_idx", txHash)
+    def outputRefKeyIdx: Index = index("inputs_output_ref_key_idx", outputRefKey)
 
     def * : ProvenShape[InputEntity] =
-      (txHash, scriptHint, key, unlockScript) <> ((InputEntity.apply _).tupled, InputEntity.unapply)
+      (blockHash, txHash, scriptHint, outputRefKey, unlockScript, mainChain) <>
+        ((InputEntity.apply _).tupled, InputEntity.unapply)
   }
 
   val inputsTable: TableQuery[Inputs] = TableQuery[Inputs]

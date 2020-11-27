@@ -35,6 +35,6 @@ object BlockService {
       blockDao.get(hash)
 
     def listBlocks(timeInterval: TimeInterval): Future[Seq[BlockEntry]] =
-      blockDao.list(timeInterval)
+      blockDao.listMainChain(timeInterval)
   }
 }

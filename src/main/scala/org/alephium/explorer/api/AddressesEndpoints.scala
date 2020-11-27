@@ -30,16 +30,22 @@ trait AddressesEndpoints extends BaseEndpoint {
       .tag("Addressess")
       .in("addresses")
 
-  val getAddressInfo: Endpoint[Address, ApiError, AddressInfo, Nothing] =
+  private val txLimit =
+    query[Option[Int]]("tx-limit").validate(Validator.optionElement(Validator.min(1)))
+
+  val getAddressInfo: Endpoint[(Address, Option[Int]), ApiError, AddressInfo, Nothing] =
     addressesEndpoint.get
       .in(path[Address]("address"))
+      .in(txLimit)
       .out(jsonBody[AddressInfo])
       .description("Get address informations")
 
-  val getTransactionsByAddress: Endpoint[Address, ApiError, Seq[Transaction], Nothing] =
+  val getTransactionsByAddress
+    : Endpoint[(Address, Option[Int]), ApiError, Seq[Transaction], Nothing] =
     addressesEndpoint.get
       .in(path[Address]("address"))
       .in("transactions")
+      .in(txLimit)
       .out(jsonBody[Seq[Transaction]])
       .description("List transactions of a given address")
 }

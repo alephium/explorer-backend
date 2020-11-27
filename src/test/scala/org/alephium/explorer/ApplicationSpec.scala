@@ -60,10 +60,10 @@ class ApplicationSpec()
 
   val blocks: Seq[BlockEntry] = blockEntitiesToBlockEntries(Seq(blockEntities)).flatten
 
-  val transactions: Seq[Transaction] = blocks.flatMap(_.transactions.toArray.toSeq)
+  val transactions: Seq[Transaction] = blocks.flatMap(_.transactions)
 
   val addresses: Seq[Address] = blocks
-    .flatMap(_.transactions.flatMap(_.outputs.map(_.address)).toArray)
+    .flatMap(_.transactions.flatMap(_.outputs.map(_.address)))
     .distinct
 
   val localhost: InetAddress = InetAddress.getLocalHost
@@ -84,7 +84,7 @@ class ApplicationSpec()
   //let it sync once
   eventually(app.blockFlowSyncService.stop.futureValue) is ()
 
-  val routes = app.route
+  val routes = app.server.route
 
   it should "get a block by its id" in {
     forAll(Gen.oneOf(blocks)) { block =>
@@ -146,15 +146,15 @@ class ApplicationSpec()
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address}") ~> routes ~> check {
         val expectedTransactions =
-          transactions.filter(_.outputs.toArray.toSeq.exists(_.address == address))
+          transactions.filter(_.outputs.exists(_.address == address))
         val expectedBalance =
           expectedTransactions
             .map(
-              _.outputs.toArray.toIndexedSeq
+              _.outputs
                 .filter(out => out.spent.isEmpty && out.address == address)
                 .map(_.amount)
-                .fold(java.math.BigDecimal.ZERO)(_ add _))
-            .fold(java.math.BigDecimal.ZERO)(_ add _)
+                .sum)
+            .sum
 
         val res = responseAs[AddressInfo]
 
@@ -169,7 +169,7 @@ class ApplicationSpec()
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address}/transactions") ~> routes ~> check {
         val expectedTransactions =
-          transactions.filter(_.outputs.toArray.toSeq.exists(_.address == address))
+          transactions.filter(_.outputs.exists(_.address == address))
         val res = responseAs[Seq[Transaction]]
 
         res.size is expectedTransactions.size
@@ -210,7 +210,7 @@ object ApplicationSpec {
         blocks
           .collect { case block if block.chainFrom == from && block.chainTo === to => block.height }
           .maxOption
-          .getOrElse(Height.zero))
+          .getOrElse(Height.genesis))
     }
 
     private val peer = PeerAddress(address, Some(port), None)

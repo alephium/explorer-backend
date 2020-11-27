@@ -19,10 +19,10 @@ package org.alephium.explorer.protocol.model
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 
-import org.alephium.api.CirceUtils.{avectorCodec, timestampCodec}
+import org.alephium.api.CirceUtils.timestampCodec
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
-import org.alephium.util.{AVector, TimeStamp}
+import org.alephium.util.TimeStamp
 
 final case class BlockEntryProtocol(
     hash: BlockEntry.Hash,
@@ -30,8 +30,8 @@ final case class BlockEntryProtocol(
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     height: Height,
-    deps: AVector[BlockEntry.Hash],
-    transactions: AVector[TransactionProtocol]
+    deps: Seq[BlockEntry.Hash],
+    transactions: Seq[TransactionProtocol]
 ) {
   lazy val toEntity: BlockEntity =
     BlockEntity(
@@ -42,9 +42,11 @@ final case class BlockEntryProtocol(
       height,
       deps,
       transactions.map(_.toEntity(hash, timestamp)),
-      transactions.flatMap(tx => tx.inputs.map(_.toEntity(tx.hash))),
+      transactions.flatMap(tx => tx.inputs.map(_.toEntity(hash, tx.hash, false))),
       transactions.flatMap(tx =>
-        tx.outputs.mapWithIndex { case (out, index) => out.toEntity(tx.hash, index, timestamp) }),
+        tx.outputs.zipWithIndex.map {
+          case (out, index) => out.toEntity(hash, tx.hash, index, timestamp, false)
+      }),
       mainChain = false
     )
 }

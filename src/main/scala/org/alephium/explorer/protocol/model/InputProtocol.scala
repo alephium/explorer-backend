@@ -19,19 +19,23 @@ package org.alephium.explorer.protocol.model
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 
-import org.alephium.explorer.api.model.Transaction
+import org.alephium.explorer.api.model.{BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.InputEntity
 
 final case class InputProtocol(
     outputRef: OutputProtocol.Ref,
     unlockScript: String
 ) {
-  def toEntity(txHash: Transaction.Hash): InputEntity =
+  def toEntity(blockHash: BlockEntry.Hash,
+               txHash: Transaction.Hash,
+               mainChain: Boolean): InputEntity =
     InputEntity(
+      blockHash,
       txHash,
       outputRef.scriptHint,
       outputRef.key,
-      unlockScript
+      unlockScript,
+      mainChain
     )
 }
 

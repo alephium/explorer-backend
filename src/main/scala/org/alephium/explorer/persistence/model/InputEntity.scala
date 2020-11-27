@@ -16,21 +16,23 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.{alfCoinConvertion, Hash}
-import org.alephium.explorer.api.model.{Input, Output, Transaction}
+import org.alephium.explorer.Hash
+import org.alephium.explorer.api.model.{BlockEntry, Input, Output, Transaction}
 
 final case class InputEntity(
+    bockHash: BlockEntry.Hash,
     txHash: Transaction.Hash,
     scriptHint: Int,
-    key: Hash,
-    unlockScript: String
+    outputRefKey: Hash,
+    unlockScript: String,
+    mainChain: Boolean
 ) {
   def toApi(outputRef: Option[OutputEntity]): Input =
     Input(
-      Output.Ref(scriptHint, key),
+      Output.Ref(scriptHint, outputRefKey),
       unlockScript,
       outputRef.map(_.txHash),
       outputRef.map(_.address),
-      outputRef.map(ref => alfCoinConvertion(ref.amount))
+      outputRef.map(ref => ref.amount)
     )
 }

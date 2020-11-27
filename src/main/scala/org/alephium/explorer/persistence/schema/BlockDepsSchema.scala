@@ -31,7 +31,8 @@ trait BlockDepsSchema extends CustomTypes {
     def hash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("hash")
     def dep: Rep[BlockEntry.Hash]  = column[BlockEntry.Hash]("dep")
 
-    def hashIdx: Index = index("hash_idx", hash)
+    def hashIdx: Index = index("deps_hash_idx", hash)
+    def depIdx: Index  = index("deps_dep_idx", dep)
 
     def * : ProvenShape[(BlockEntry.Hash, BlockEntry.Hash)] = (hash, dep)
   }

@@ -19,15 +19,14 @@ package org.alephium.explorer.protocol.model
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 
-import org.alephium.api.CirceUtils.avectorCodec
 import org.alephium.explorer.api.model.{BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.TransactionEntity
-import org.alephium.util.{AVector, TimeStamp}
+import org.alephium.util.TimeStamp
 
 final case class TransactionProtocol(
     hash: Transaction.Hash,
-    inputs: AVector[InputProtocol],
-    outputs: AVector[OutputProtocol]
+    inputs: Seq[InputProtocol],
+    outputs: Seq[OutputProtocol]
 ) {
   def toEntity(blockHash: BlockEntry.Hash, timestamp: TimeStamp): TransactionEntity =
     TransactionEntity(

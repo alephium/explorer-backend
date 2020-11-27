@@ -36,8 +36,8 @@ trait BlockHeaderSchema extends CustomTypes {
     def height: Rep[Height]        = column[Height]("height")
     def mainChain: Rep[Boolean]    = column[Boolean]("main_chain")
 
-    def blocksTimestampIdx: Index = index("blocks_timestamp_idx", timestamp)
-    def blocksHeigthIdx: Index    = index("blocks_height_idx", height)
+    def timestampIdx: Index = index("blocks_timestamp_idx", timestamp)
+    def heightIdx: Index    = index("blocks_height_idx", height)
 
     def * : ProvenShape[BlockHeader] =
       (hash, timestamp, chainFrom, chainTo, height, mainChain) <> ((BlockHeader.apply _).tupled, BlockHeader.unapply)

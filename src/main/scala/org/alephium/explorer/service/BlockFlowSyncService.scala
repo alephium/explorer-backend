@@ -84,7 +84,7 @@ object BlockFlowSyncService {
           case (fromGroup, toGroup) =>
             syncChain(fromGroup, toGroup)
         }
-        .flatMap(_ => blockDao.updateSpent())
+        .map(sideEffect)
     }
 
     private def syncChain(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Unit] = {
@@ -102,26 +102,26 @@ object BlockFlowSyncService {
       }
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
     private def syncAt(
         fromGroup: GroupIndex,
         toGroup: GroupIndex,
         height: Height
     ): Future[Unit] = {
       blockFlowClient.getBlocksAtHeight(fromGroup, toGroup, height).flatMap {
-        case Right(blocks) =>
-          val maybeBestHash = blocks.headOption.map(_.hash)
+        case Right(blocks) if blocks.nonEmpty =>
+          val bestBlock = blocks.head
           for {
-            _ <- syncBlocks(blocks, maybeBestHash)
-            _ <- updateMainChain(blocks, maybeBestHash)
+            _ <- syncBlocks(blocks)
+            _ <- updateMainChainForBlock(bestBlock)
           } yield ()
+        case Right(_)     => Future.successful(())
         case Left(errors) => Future.successful(errors.foreach(logger.error(_)))
       }
     }
 
-    private def syncBlocks(blocks: Seq[BlockEntity],
-                           maybeBestHash: Option[BlockEntry.Hash]): Future[Unit] =
-      foldFutures[BlockEntity](blocks)(block =>
-        syncBlock(block.copy(mainChain = maybeBestHash.contains(block.hash))))
+    private def syncBlocks(blocks: Seq[BlockEntity]): Future[Unit] =
+      foldFutures[BlockEntity](blocks)(block => syncBlock(block))
 
     private def syncBlock(block: BlockEntity): Future[Unit] = {
       blockDao.insert(block).flatMap { _ =>
@@ -146,53 +146,42 @@ object BlockFlowSyncService {
       }
     }
 
-    private def getParent(blockEntry: BlockEntry): Future[Option[BlockEntry]] =
-      blockEntry.parent(groupNum) match {
-        case None             => Future.successful(None)
-        case Some(parentHash) => blockDao.get(parentHash)
-      }
-
-    private def updateMainChain(blocks: Seq[BlockEntity],
-                                maybeBestHash: Option[BlockEntry.Hash]): Future[Unit] =
-      (for {
-        bestHash  <- maybeBestHash
-        bestBlock <- blocks.find(_.hash === bestHash)
-      } yield bestBlock) match {
-        case None => Future.successful(())
-        case Some(bestBlock) =>
-          if (bestBlock.height === Height.zero) { // genesis
-            Future.successful(())
-          } else {
-            bestBlock.parent(groupNum) match {
-              case None         => Future.successful(())
-              case Some(parent) => updateMainChainForHash(parent)
-            }
-          }
-      }
-
-    private def updateMainChainForHash(hash: BlockEntry.Hash): Future[Unit] = {
-      blockDao.get(hash).flatMap {
-        case None        => Future.successful(())
-        case Some(block) => updateMainChainForBlock(block)
+    private def updateMainChainForHash(mainHash: BlockEntry.Hash): Future[Unit] = {
+      blockDao.get(mainHash).flatMap {
+        case Some(block) if !block.mainChain => updateMainChainForBlock(block)
+        case _                               => Future.successful(())
       }
     }
 
-    private def updateMainChainForBlock(newMain: BlockEntry): Future[Unit] = {
-      blockDao.getAtHeight(newMain.chainFrom, newMain.chainTo, newMain.height).flatMap { blocks =>
-        blocks.find(_.mainChain) match {
-          case Some(currentMain) =>
-            if (currentMain =/= newMain) {
-              for {
-                _      <- blockDao.updateMainChainStatus(newMain.hash, true)
-                _      <- blockDao.updateMainChainStatus(currentMain.hash, false)
-                parent <- getParent(newMain)
-                _      <- parent.map(updateMainChainForBlock).getOrElse(Future.successful(()))
-              } yield ()
-            } else {
-              //no fork
-              Future.successful(())
-            }
-          case None => Future.successful(())
+    private def updateMainChainForBlock(newMain: FlowEntity): Future[Unit] = {
+      require(!newMain.mainChain)
+      for {
+        blocksAtHeight <- blockDao.getAtHeight(newMain.chainFrom, newMain.chainTo, newMain.height)
+        _              <- updateMainChainForHeight(newMain, blocksAtHeight)
+        _              <- updateMainChainForParent(newMain)
+      } yield ()
+    }
+
+    private def updateMainChainForHeight(newMain: FlowEntity,
+                                         blocksAtHeight: Seq[BlockEntry]): Future[Unit] = {
+      blocksAtHeight.find(_.mainChain) match {
+        case Some(currentMain) =>
+          for {
+            _ <- blockDao.updateMainChainStatus(currentMain.hash, false)
+            _ <- blockDao.updateMainChainStatus(newMain.hash, true)
+          } yield ()
+        case None =>
+          blockDao.updateMainChainStatus(newMain.hash, true)
+      }
+    }
+
+    private def updateMainChainForParent(newMain: FlowEntity): Future[Unit] = {
+      if (newMain.height === Height.genesis) { // genesis
+        Future.successful(())
+      } else {
+        newMain.parent(groupNum) match {
+          case Some(parent) => updateMainChainForHash(parent)
+          case None         => Future.successful(())
         }
       }
     }

@@ -20,25 +20,31 @@ import io.circe.{Codec, Decoder, Encoder}
 import io.circe.generic.semiauto.deriveCodec
 
 import org.alephium.api.CirceUtils._
-import org.alephium.explorer.Hash
+import org.alephium.explorer.{alfCoinConvertion, Hash}
 import org.alephium.explorer.api.Circe.{hashCodec, u256Codec}
-import org.alephium.explorer.api.model.{Address, Output, Transaction}
+import org.alephium.explorer.api.model.{Address, BlockEntry, Output, Transaction}
 import org.alephium.explorer.persistence.model.OutputEntity
+import org.alephium.protocol.model.TxOutputRef
 import org.alephium.serde._
-import org.alephium.util.{Bytes, TimeStamp, U256}
+import org.alephium.util.{TimeStamp, U256}
 
 final case class OutputProtocol(
     amount: U256,
     address: Address
 ) {
-  def toEntity(txHash: Transaction.Hash, index: Int, timestamp: TimeStamp): OutputEntity = {
+  def toEntity(blockHash: BlockEntry.Hash,
+               txHash: Transaction.Hash,
+               index: Int,
+               timestamp: TimeStamp,
+               mainChain: Boolean): OutputEntity = {
     OutputEntity(
+      blockHash,
       txHash,
-      amount,
+      alfCoinConvertion(amount),
       address,
-      Hash.hash(txHash.value.bytes ++ Bytes.from(index)),
+      TxOutputRef.key(txHash.value, index),
       timestamp,
-      spent = None
+      mainChain
     )
   }
 }

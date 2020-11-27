@@ -31,7 +31,6 @@ import org.alephium.explorer.persistence.{DBActionR, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema._
-import org.alephium.util.AVector
 
 trait BlockDao {
   def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]]
@@ -39,10 +38,10 @@ trait BlockDao {
                   toGroup: GroupIndex,
                   height: Height): Future[Seq[BlockEntry]]
   def insert(block: BlockEntity): Future[Unit]
-  def list(timeInterval: TimeInterval): Future[Seq[BlockEntry]]
+  def listMainChain(timeInterval: TimeInterval): Future[Seq[BlockEntry]]
+  def listIncludingForks(timeInterval: TimeInterval): Future[Seq[BlockEntry]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
-  def updateSpent(): Future[Unit]
-  def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Int]
+  def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit]
 }
 
 object BlockDao {
@@ -60,11 +59,15 @@ object BlockDao {
       with StrictLogging {
     import config.profile.api._
 
+    private val blockDepsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
+      blockDepsTable.filter(_.hash === blockHash).map(_.dep)
+    }
+
     private def buildBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry] =
       for {
-        deps <- blockDepsTable.filter(_.hash === blockHeader.hash).map(_.dep).result
+        deps <- blockDepsQuery(blockHeader.hash).result
         txs  <- listTransactionsAction(blockHeader.hash)
-      } yield blockHeader.toApi(AVector.from(deps), AVector.from(txs))
+      } yield blockHeader.toApi(deps, txs)
 
     private def getBlockEntryAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry]] =
       for {
@@ -90,12 +93,28 @@ object BlockDao {
 
     def insert(block: BlockEntity): Future[Unit] =
       run(
-        (blockHeadersTable += BlockHeader.fromEntity(block)) >>
-          (blockDepsTable ++= block.deps.toArray.map(dep => (block.hash, dep))) >>
-          insertTransactionFromBlockQuery(block)
+        (for {
+          _ <- blockHeadersTable.insertOrUpdate(BlockHeader.fromEntity(block)).filter(_ > 0)
+          _ <- DBIOAction.sequence(block.deps.map(dep => blockDepsTable += (block.hash -> dep)))
+          _ <- insertTransactionFromBlockQuery(block)
+        } yield ()).transactionally
       ).map(_ => ())
 
-    def list(timeInterval: TimeInterval): Future[Seq[BlockEntry]] = {
+    def listMainChain(timeInterval: TimeInterval): Future[Seq[BlockEntry]] = {
+      val action =
+        for {
+          headers <- blockHeadersTable
+            .filter(header =>
+              header.timestamp >= timeInterval.from.millis && header.timestamp <= timeInterval.to.millis && header.mainChain)
+            .sortBy(_.timestamp.asc)
+            .result
+          blocks <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
+        } yield blocks
+
+      run(action)
+    }
+
+    def listIncludingForks(timeInterval: TimeInterval): Future[Seq[BlockEntry]] = {
       val action =
         for {
           headers <- blockHeadersTable
@@ -141,20 +160,25 @@ object BlockDao {
     sideEffect {
       Await.result(f, Duration.Inf)
     }
-    def updateSpent(): Future[Unit] =
-      run(updateSpentAction()).map { nbOfUpdates =>
-        logger.debug(s"$nbOfUpdates spent's output updated")
-      }
 
-    def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Int] = {
+    def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit] = {
       val query =
-        blockHeadersTable
-          .filter(_.hash === hash)
-          .map(_.mainChain)
-          .update(isMainChain)
+        for {
+          _ <- blockHeadersTable
+            .filter(_.hash === hash)
+            .map(_.mainChain)
+            .update(isMainChain)
+          _ <- outputsTable
+            .filter(_.blockHash === hash)
+            .map(_.mainChain)
+            .update(isMainChain)
+          _ <- inputsTable
+            .filter(_.blockHash === hash)
+            .map(_.mainChain)
+            .update(isMainChain)
+        } yield ()
 
-      run(query)
+      run(query.transactionally)
     }
-
   }
 }

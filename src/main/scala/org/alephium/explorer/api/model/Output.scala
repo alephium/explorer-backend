@@ -23,7 +23,7 @@ import org.alephium.explorer.Hash
 import org.alephium.explorer.api.Circe.hashCodec
 
 final case class Output(
-    amount: java.math.BigDecimal,
+    amount: Double,
     address: Address,
     spent: Option[Transaction.Hash]
 )

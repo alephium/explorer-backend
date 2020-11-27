@@ -16,22 +16,18 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.{alfCoinConvertion, Hash}
-import org.alephium.explorer.api.model.{Address, Output, Transaction}
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.explorer.Hash
+import org.alephium.explorer.api.model.{Address, BlockEntry, Output, Transaction}
+import org.alephium.util.TimeStamp
 
 final case class OutputEntity(
+    blockHash: BlockEntry.Hash,
     txHash: Transaction.Hash,
-    amount: U256,
+    amount: Double,
     address: Address,
-    outputRefKey: Hash,
+    key: Hash,
     timestamp: TimeStamp,
-    spent: Option[Transaction.Hash]
+    mainChain: Boolean
 ) {
-  lazy val toApi: Output =
-    Output(
-      alfCoinConvertion(amount),
-      address,
-      spent
-    )
+  def toApi(spent: Option[Transaction.Hash]): Output = Output(amount, address, spent)
 }

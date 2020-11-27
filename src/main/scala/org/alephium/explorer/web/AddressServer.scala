@@ -22,7 +22,6 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import sttp.tapir.server.akkahttp.{AkkaHttpServerOptions, RichAkkaHttpEndpoint}
 
-import org.alephium.explorer.alfCoinConvertion
 import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model.AddressInfo
 import org.alephium.explorer.service.TransactionService
@@ -32,12 +31,23 @@ class AddressServer(transactionService: TransactionService)(
     executionContext: ExecutionContext)
     extends Server
     with AddressesEndpoints {
+
+  private val defautUtxoLimit = 20
+
   val route: Route =
-    getTransactionsByAddress.toRoute(address =>
-      transactionService.getTransactionsByAddress(address).map(Right.apply)) ~
-      getAddressInfo.toRoute(address =>
-        for {
-          balance      <- transactionService.getBalance(address)
-          transactions <- transactionService.getTransactionsByAddress(address)
-        } yield Right(AddressInfo(alfCoinConvertion(balance), transactions)))
+    getTransactionsByAddress.toRoute {
+      case (address, txLimit) =>
+        transactionService
+          .getTransactionsByAddress(address, txLimit.getOrElse(defautUtxoLimit))
+          .map(Right.apply)
+    } ~
+      getAddressInfo.toRoute {
+        case (address, txLimit) =>
+          for {
+            balance <- transactionService.getBalance(address)
+            transactions <- transactionService.getTransactionsByAddress(
+              address,
+              txLimit.getOrElse(defautUtxoLimit))
+          } yield Right(AddressInfo(balance, transactions))
+      }
 }
