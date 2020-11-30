@@ -44,4 +44,17 @@ object BlockEntry {
   object Hash extends HashCompanion[Hash](new Hash(_), _.value)
 
   implicit val codec: Codec[BlockEntry] = deriveCodec[BlockEntry]
+
+  final case class Lite(
+      hash: BlockEntry.Hash,
+      timestamp: TimeStamp,
+      chainFrom: GroupIndex,
+      chainTo: GroupIndex,
+      height: Height,
+      txNumber: Int,
+      mainChain: Boolean
+  )
+  object Lite {
+    implicit val codec: Codec[Lite] = deriveCodec[Lite]
+  }
 }

@@ -44,8 +44,8 @@ trait InputSchema extends CustomTypes {
     def outputRefKeyIdx: Index = index("inputs_output_ref_key_idx", outputRefKey)
 
     def * : ProvenShape[InputEntity] =
-      (blockHash, txHash, scriptHint, outputRefKey, unlockScript, mainChain) <>
-        ((InputEntity.apply _).tupled, InputEntity.unapply)
+      (blockHash, txHash, scriptHint, outputRefKey, unlockScript, mainChain)
+        .<>((InputEntity.apply _).tupled, InputEntity.unapply)
   }
 
   val inputsTable: TableQuery[Inputs] = TableQuery[Inputs]

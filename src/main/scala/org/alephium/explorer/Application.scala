@@ -74,7 +74,7 @@ class Application(host: String,
   def stop: Future[Unit] =
     for {
       _ <- blockFlowSyncService.stop()
-      _ <- bindingPromise.future.flatMap(_.unbind)
+      _ <- bindingPromise.future.flatMap(_.unbind())
     } yield {
       logger.info("Application stopped")
     }

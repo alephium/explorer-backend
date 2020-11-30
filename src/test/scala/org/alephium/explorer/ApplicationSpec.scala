@@ -53,7 +53,7 @@ class ApplicationSpec()
 
   val groupNum: Int = 4
   val blockFlow: Seq[Seq[BlockEntryProtocol]] =
-    blockFlowGen(groupNum = groupNum, maxChainSize = 5, startTimestamp = TimeStamp.now).sample.get
+    blockFlowGen(groupNum = groupNum, maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
 
   val blocksProtocol: Seq[BlockEntryProtocol] = blockFlow.flatten
   val blockEntities: Seq[BlockEntity]         = blocksProtocol.map(_.toEntity)
@@ -82,7 +82,7 @@ class ApplicationSpec()
                     databaseConfig)
 
   //let it sync once
-  eventually(app.blockFlowSyncService.stop.futureValue) is ()
+  eventually(app.blockFlowSyncService.stop().futureValue) is ()
 
   val routes = app.server.route
 
@@ -111,7 +111,7 @@ class ApplicationSpec()
         //filter `blocks by the same timestamp as the query for better assertion`
         val expectedBlocks = blocks.filter(block =>
           block.timestamp.millis >= minTimestamp && block.timestamp.millis <= to)
-        val res = responseAs[Seq[BlockEntry]].map(_.hash)
+        val res = responseAs[Seq[BlockEntry.Lite]].map(_.hash)
         expectedBlocks.size is res.size
         expectedBlocks.foreach(block => res.contains(block.hash) is true)
       }
@@ -123,6 +123,18 @@ class ApplicationSpec()
         responseAs[ApiError] is ApiError.BadRequest(
           "Invalid value (expected value to pass custom validation: `fromTs` must be before `toTs`, "
             ++ s"but was '(${TimeStamp.unsafe(maxTimestamp + 1)},${TimeStamp.unsafe(to)})')")
+      }
+    }
+
+    val maxTimeInterval = 10 * 60 * 1000
+
+    forAll(Gen.choose(minTimestamp, maxTimestamp)) { from =>
+      val to = from + maxTimeInterval + 1
+      Get(s"/blocks?fromTs=${from}&toTs=${to}") ~> routes ~> check {
+        status is StatusCodes.BadRequest
+        responseAs[ApiError] is ApiError.BadRequest(
+          s"Invalid value (expected value to pass custom validation: maximum interval is 10min, "
+            ++ s"but was '(${TimeStamp.unsafe(from)},${TimeStamp.unsafe(to)})')")
       }
     }
   }

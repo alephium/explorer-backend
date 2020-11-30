@@ -40,7 +40,8 @@ trait BlockHeaderSchema extends CustomTypes {
     def heightIdx: Index    = index("blocks_height_idx", height)
 
     def * : ProvenShape[BlockHeader] =
-      (hash, timestamp, chainFrom, chainTo, height, mainChain) <> ((BlockHeader.apply _).tupled, BlockHeader.unapply)
+      (hash, timestamp, chainFrom, chainTo, height, mainChain)
+        .<>((BlockHeader.apply _).tupled, BlockHeader.unapply)
   }
 
   val blockHeadersTable: TableQuery[BlockHeaders] = TableQuery[BlockHeaders]

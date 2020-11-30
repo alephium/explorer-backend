@@ -38,8 +38,8 @@ trait BlockDao {
                   toGroup: GroupIndex,
                   height: Height): Future[Seq[BlockEntry]]
   def insert(block: BlockEntity): Future[Unit]
-  def listMainChain(timeInterval: TimeInterval): Future[Seq[BlockEntry]]
-  def listIncludingForks(timeInterval: TimeInterval): Future[Seq[BlockEntry]]
+  def listMainChain(timeInterval: TimeInterval): Future[Seq[BlockEntry.Lite]]
+  def listIncludingForks(timeInterval: TimeInterval): Future[Seq[BlockEntry.Lite]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
   def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit]
 }
@@ -68,6 +68,11 @@ object BlockDao {
         deps <- blockDepsQuery(blockHeader.hash).result
         txs  <- listTransactionsAction(blockHeader.hash)
       } yield blockHeader.toApi(deps, txs)
+
+    private def buildLiteBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry.Lite] =
+      for {
+        number <- countTransactionsAction(blockHeader.hash)
+      } yield blockHeader.toLiteApi(number)
 
     private def getBlockEntryAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry]] =
       for {
@@ -100,7 +105,7 @@ object BlockDao {
         } yield ()).transactionally
       ).map(_ => ())
 
-    def listMainChain(timeInterval: TimeInterval): Future[Seq[BlockEntry]] = {
+    def listMainChain(timeInterval: TimeInterval): Future[Seq[BlockEntry.Lite]] = {
       val action =
         for {
           headers <- blockHeadersTable
@@ -108,13 +113,13 @@ object BlockDao {
               header.timestamp >= timeInterval.from.millis && header.timestamp <= timeInterval.to.millis && header.mainChain)
             .sortBy(_.timestamp.asc)
             .result
-          blocks <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
+          blocks <- DBIOAction.sequence(headers.map(buildLiteBlockEntryAction))
         } yield blocks
 
       run(action)
     }
 
-    def listIncludingForks(timeInterval: TimeInterval): Future[Seq[BlockEntry]] = {
+    def listIncludingForks(timeInterval: TimeInterval): Future[Seq[BlockEntry.Lite]] = {
       val action =
         for {
           headers <- blockHeadersTable
@@ -122,7 +127,7 @@ object BlockDao {
               header.timestamp >= timeInterval.from.millis && header.timestamp <= timeInterval.to.millis)
             .sortBy(_.timestamp.asc)
             .result
-          blocks <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
+          blocks <- DBIOAction.sequence(headers.map(buildLiteBlockEntryAction))
         } yield blocks
 
       run(action)

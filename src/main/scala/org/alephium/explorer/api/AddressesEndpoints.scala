@@ -23,6 +23,7 @@ import org.alephium.explorer.api.Codecs._
 import org.alephium.explorer.api.Schemas._
 import org.alephium.explorer.api.model.{Address, AddressInfo, Transaction}
 
+// scalastyle:off magic.number
 trait AddressesEndpoints extends BaseEndpoint {
 
   private val addressesEndpoint =
@@ -31,7 +32,9 @@ trait AddressesEndpoints extends BaseEndpoint {
       .in("addresses")
 
   private val txLimit =
-    query[Option[Int]]("tx-limit").validate(Validator.optionElement(Validator.min(1)))
+    query[Option[Int]]("tx-limit")
+      .validate(Validator.optionElement(Validator.min(1)))
+      .validate(Validator.optionElement(Validator.max(100)))
 
   val getAddressInfo: Endpoint[(Address, Option[Int]), ApiError, AddressInfo, Nothing] =
     addressesEndpoint.get
