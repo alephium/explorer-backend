@@ -53,7 +53,7 @@ class ApplicationSpec()
 
   val groupNum: Int = 4
   val blockFlow: Seq[Seq[BlockEntryProtocol]] =
-    blockFlowGen(groupNum = groupNum, maxChainSize = 5, startTimestamp = TimeStamp.now).sample.get
+    blockFlowGen(groupNum = groupNum, maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
 
   val blocksProtocol: Seq[BlockEntryProtocol] = blockFlow.flatten
   val blockEntities: Seq[BlockEntity]         = blocksProtocol.map(_.toEntity)
@@ -82,7 +82,7 @@ class ApplicationSpec()
                     databaseConfig)
 
   //let it sync once
-  eventually(app.blockFlowSyncService.stop.futureValue) is ()
+  eventually(app.blockFlowSyncService.stop().futureValue) is ()
 
   val routes = app.server.route
 

@@ -22,7 +22,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "explorer-backend",
     organization := "org.alephium",
-    scalaVersion := "2.13.2",
+    scalaVersion := "2.13.3",
     scalacOptions ++= Seq(
       "-deprecation",
       "-encoding",
@@ -30,6 +30,7 @@ lazy val root = (project in file("."))
       "-explaintypes",
       "-feature",
       "-unchecked",
+      "-Xsource:3.1",
       "-Xfatal-warnings",
       "-Xlint:adapted-args",
       "-Xlint:constant",
@@ -38,7 +39,6 @@ lazy val root = (project in file("."))
       "-Xlint:inaccessible",
       "-Xlint:infer-any",
       "-Xlint:missing-interpolator",
-      "-Xlint:nullary-override",
       "-Xlint:nullary-unit",
       "-Xlint:option-implicit",
       "-Xlint:package-object-classes",

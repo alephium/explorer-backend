@@ -47,7 +47,8 @@ trait OutputSchema extends CustomTypes {
     def addressIdx: Index   = index("outputs_address_idx", address)
 
     def * : ProvenShape[OutputEntity] =
-      (blockHash, txHash, amount, address, key, timestamp, mainChain) <> ((OutputEntity.apply _).tupled, OutputEntity.unapply)
+      (blockHash, txHash, amount, address, key, timestamp, mainChain)
+        .<>((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }
 
   val outputsTable: TableQuery[Outputs] = TableQuery[Outputs]

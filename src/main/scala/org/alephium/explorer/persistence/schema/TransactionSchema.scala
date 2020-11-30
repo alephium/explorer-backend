@@ -40,7 +40,7 @@ trait TransactionSchema extends CustomTypes {
     def blockHashIdx: Index = index("txs_block_hash_idx", blockHash)
 
     def * : ProvenShape[TransactionEntity] =
-      (hash, blockHash, timestamp) <> ((TransactionEntity.apply _).tupled, TransactionEntity.unapply)
+      (hash, blockHash, timestamp).<>((TransactionEntity.apply _).tupled, TransactionEntity.unapply)
   }
 
   val transactionsTable: TableQuery[Transactions] = TableQuery[Transactions]
