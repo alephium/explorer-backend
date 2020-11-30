@@ -125,6 +125,18 @@ class ApplicationSpec()
             ++ s"but was '(${TimeStamp.unsafe(maxTimestamp + 1)},${TimeStamp.unsafe(to)})')")
       }
     }
+
+    val maxTimeInterval = 10 * 60 * 1000
+
+    forAll(Gen.choose(minTimestamp, maxTimestamp)) { from =>
+      val to = from + maxTimeInterval + 1
+      Get(s"/blocks?fromTs=${from}&toTs=${to}") ~> routes ~> check {
+        status is StatusCodes.BadRequest
+        responseAs[ApiError] is ApiError.BadRequest(
+          s"Invalid value (expected value to pass custom validation: maximum interval is 10min, "
+            ++ s"but was '(${TimeStamp.unsafe(from)},${TimeStamp.unsafe(to)})')")
+      }
+    }
   }
 
   it should "get a transaction by its id" in {

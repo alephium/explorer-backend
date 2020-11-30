@@ -18,4 +18,21 @@ package org.alephium.explorer.api.model
 
 import org.alephium.util.TimeStamp
 
-final case class TimeInterval(from: TimeStamp, to: TimeStamp)
+final case class TimeInterval private (from: TimeStamp, to: TimeStamp)
+
+object TimeInterval {
+
+  def isValid(from: TimeStamp, to: TimeStamp): Boolean = {
+    from <= to
+  }
+
+  def validate(from: TimeStamp, to: TimeStamp): Option[TimeInterval] = {
+    Option.when(isValid(from, to)) {
+      TimeInterval(from, to)
+    }
+  }
+
+  def unsafe(from: TimeStamp, to: TimeStamp): TimeInterval = {
+    TimeInterval(from, to)
+  }
+}
