@@ -19,8 +19,8 @@ package org.alephium.explorer.api
 import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
 
-import org.alephium.explorer.api.Codecs._
-import org.alephium.explorer.api.Schemas._
+import org.alephium.explorer.api.Codecs.addressTapirCodec
+import org.alephium.explorer.api.Schemas.hashSchema
 import org.alephium.explorer.api.model.{Address, AddressInfo, Transaction}
 
 // scalastyle:off magic.number

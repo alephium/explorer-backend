@@ -122,7 +122,7 @@ class ApplicationSpec()
     val minTimestamp = timestamps.min
     val maxTimestamp = timestamps.max
     forAll(Gen.choose(minTimestamp, maxTimestamp)) { to =>
-      Get(s"/blocks?fromTs=${minTimestamp}&toTs=${to}") ~> routes ~> check {
+      Get(s"/blocks?from-ts=${minTimestamp}&to-ts=${to}") ~> routes ~> check {
         //filter `blocks by the same timestamp as the query for better assertion`
         val expectedBlocks = blocks.filter(block =>
           block.timestamp.millis >= minTimestamp && block.timestamp.millis <= to)
@@ -133,10 +133,10 @@ class ApplicationSpec()
     }
 
     forAll(Gen.choose(minTimestamp, maxTimestamp)) { to =>
-      Get(s"/blocks?fromTs=${maxTimestamp + 1}&toTs=${to}") ~> routes ~> check {
+      Get(s"/blocks?from-ts=${maxTimestamp + 1}&to-ts=${to}") ~> routes ~> check {
         status is StatusCodes.BadRequest
         responseAs[ApiError] is ApiError.BadRequest(
-          "Invalid value (expected value to pass custom validation: `fromTs` must be before `toTs`, "
+          "Invalid value (expected value to pass custom validation: `from-ts` must be before `to-ts`, "
             ++ s"but was '(${TimeStamp.unsafe(maxTimestamp + 1)},${TimeStamp.unsafe(to)})')")
       }
     }
@@ -145,7 +145,7 @@ class ApplicationSpec()
 
     forAll(Gen.choose(minTimestamp, maxTimestamp)) { from =>
       val to = from + maxTimeInterval + 1
-      Get(s"/blocks?fromTs=${from}&toTs=${to}") ~> routes ~> check {
+      Get(s"/blocks?from-ts=${from}&to-ts=${to}") ~> routes ~> check {
         status is StatusCodes.BadRequest
         responseAs[ApiError] is ApiError.BadRequest(
           s"Invalid value (expected value to pass custom validation: maximum interval is 10min, "

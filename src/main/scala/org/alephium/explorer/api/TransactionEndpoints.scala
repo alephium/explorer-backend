@@ -19,8 +19,8 @@ package org.alephium.explorer.api
 import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
 
-import org.alephium.explorer.api.Codecs._
-import org.alephium.explorer.api.Schemas._
+import org.alephium.explorer.api.Codecs.transactionHashTapirCodec
+import org.alephium.explorer.api.Schemas.hashSchema
 import org.alephium.explorer.api.model.Transaction
 
 trait TransactionEndpoints extends BaseEndpoint {
@@ -32,7 +32,7 @@ trait TransactionEndpoints extends BaseEndpoint {
 
   val getTransactionById: Endpoint[Transaction.Hash, ApiError, Transaction, Nothing] =
     transactionsEndpoint.get
-      .in(path[Transaction.Hash]("transaction_hash"))
+      .in(path[Transaction.Hash]("transaction-hash"))
       .out(jsonBody[Transaction])
       .description("Get a transaction with hash")
 }

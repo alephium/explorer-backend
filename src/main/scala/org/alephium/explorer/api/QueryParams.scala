@@ -18,7 +18,7 @@ package org.alephium.explorer.api
 
 import sttp.tapir._
 
-import org.alephium.explorer.api.Codecs._
+import org.alephium.explorer.api.Codecs.timestampTapirCodec
 import org.alephium.explorer.api.model.TimeInterval
 import org.alephium.util.{Duration, TimeStamp}
 
@@ -26,14 +26,16 @@ trait QueryParams {
 
   val maxTimeInterval: Duration = Duration.ofMinutes(10).getOrElse(Duration.unsafe(0))
 
+  private def tsQuery(name: String) = query[TimeStamp](name).description("Unix epoch timestamp")
+
   val timeIntervalQuery: EndpointInput[TimeInterval] =
-    query[TimeStamp]("fromTs")
-      .and(query[TimeStamp]("toTs"))
+    tsQuery("from-ts")
+      .and(tsQuery("to-ts"))
       .validate(
         Validator.custom({
           case (from, to) =>
             TimeInterval.isValid(from, to)
-        }, "`fromTs` must be before `toTs`")
+        }, "`from-ts` must be before `to-ts`")
       )
       .validate(
         Validator.custom({

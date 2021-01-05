@@ -19,8 +19,8 @@ package org.alephium.explorer.api
 import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
 
-import org.alephium.explorer.api.Codecs._
-import org.alephium.explorer.api.Schemas._
+import org.alephium.explorer.api.Codecs.blockEntryHashTapirCodec
+import org.alephium.explorer.api.Schemas.{blockHashSchema, hashSchema}
 import org.alephium.explorer.api.model.{BlockEntry, TimeInterval}
 
 trait BlockEndpoints extends BaseEndpoint with QueryParams {
@@ -32,7 +32,7 @@ trait BlockEndpoints extends BaseEndpoint with QueryParams {
 
   val getBlockByHash: Endpoint[BlockEntry.Hash, ApiError, BlockEntry, Nothing] =
     blocksEndpoint.get
-      .in(path[BlockEntry.Hash]("block_hash"))
+      .in(path[BlockEntry.Hash]("block-hash"))
       .out(jsonBody[BlockEntry])
       .description("Get a block with hash")
 

@@ -27,14 +27,14 @@ import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
 import org.alephium.util.{TimeStamp}
 
 object Codecs {
-  implicit val timestampTapirCodec: Codec[String, TimeStamp, TextPlain] =
-    Codec.long.validate(Validator.min(0L)).map(TimeStamp.unsafe(_))(_.millis)
-
-  implicit val hashTapirCodec: Codec[String, Hash, TextPlain] =
+  private val hashTapirCodec: Codec[String, Hash, TextPlain] =
     fromCirce[Hash]
 
-  implicit val blockHashTapirCodec: Codec[String, BlockHash, TextPlain] =
+  private val blockHashTapirCodec: Codec[String, BlockHash, TextPlain] =
     fromCirce[BlockHash]
+
+  implicit val timestampTapirCodec: Codec[String, TimeStamp, TextPlain] =
+    Codec.long.validate(Validator.min(0L)).map(TimeStamp.unsafe(_))(_.millis)
 
   implicit val addressTapirCodec: Codec[String, Address, TextPlain] =
     fromCirce[Address]
