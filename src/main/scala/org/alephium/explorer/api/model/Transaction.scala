@@ -22,6 +22,7 @@ import io.circe.generic.semiauto.deriveCodec
 import org.alephium.api.CirceUtils.timestampCodec
 import org.alephium.explorer
 import org.alephium.explorer.HashCompanion
+import org.alephium.explorer.api.Circe.hashCodec
 import org.alephium.util.TimeStamp
 
 final case class Transaction(
@@ -33,7 +34,7 @@ final case class Transaction(
 
 object Transaction {
   final class Hash(val value: explorer.Hash) extends AnyVal
-  object Hash                                extends HashCompanion[Hash](new Hash(_), _.value)
+  object Hash                                extends HashCompanion[explorer.Hash, Hash](explorer.Hash)(new Hash(_), _.value)
 
   implicit val codec: Codec[Transaction] = deriveCodec[Transaction]
 }

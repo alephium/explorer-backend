@@ -116,7 +116,7 @@ trait TransactionQueries
   private val toApiInput = {
     (scriptHint: Int,
      key: Hash,
-     unlockScript: String,
+     unlockScript: Option[String],
      txHashOpt: Option[Transaction.Hash],
      addressOpt: Option[Address],
      amountOpt: Option[Double]) =>

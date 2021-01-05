@@ -30,12 +30,12 @@ trait InputSchema extends CustomTypes {
   import config.profile.api._
 
   class Inputs(tag: Tag) extends Table[InputEntity](tag, "inputs") {
-    def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash")
-    def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash")
-    def scriptHint: Rep[Int]            = column[Int]("script_hint")
-    def outputRefKey: Rep[Hash]         = column[Hash]("output_ref_key")
-    def unlockScript: Rep[String]       = column[String]("unlock_script")
-    def mainChain: Rep[Boolean]         = column[Boolean]("main_chain")
+    def blockHash: Rep[BlockEntry.Hash]   = column[BlockEntry.Hash]("block_hash")
+    def txHash: Rep[Transaction.Hash]     = column[Transaction.Hash]("tx_hash")
+    def scriptHint: Rep[Int]              = column[Int]("script_hint")
+    def outputRefKey: Rep[Hash]           = column[Hash]("output_ref_key")
+    def unlockScript: Rep[Option[String]] = column[Option[String]]("unlock_script")
+    def mainChain: Rep[Boolean]           = column[Boolean]("main_chain")
 
     def pk: PrimaryKey = primaryKey("inputs_pk", (outputRefKey, txHash, blockHash))
 

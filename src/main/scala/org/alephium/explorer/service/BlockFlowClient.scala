@@ -16,38 +16,44 @@
 
 package org.alephium.explorer.service
 
-import java.net.InetAddress
-
 import scala.concurrent.{ExecutionContext, Future}
-import scala.reflect.ClassTag
+import scala.language.implicitConversions
 
-import akka.http.scaladsl.model.{HttpMethods, HttpRequest, Uri}
-import io.circe.{Codec, Encoder, Json, JsonObject}
-import io.circe.generic.semiauto.deriveCodec
-import io.circe.syntax._
+import akka.actor.ActorSystem
+import akka.http.scaladsl.model.Uri
+import sttp.client._
+import sttp.client.akkahttp.AkkaHttpBackend
+import sttp.tapir.DecodeResult
+import sttp.tapir.client.sttp._
 
-import org.alephium.api.CirceUtils._
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.api
+import org.alephium.api.Endpoints
+import org.alephium.api.model.{ChainInfo, HashesAtHeight, SelfClique}
+import org.alephium.explorer.{alfCoinConvertion, Hash}
+import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.protocol.model.BlockEntryProtocol
-import org.alephium.explorer.web.HttpClient
+import org.alephium.protocol.config.GroupConfig
+import org.alephium.protocol.model.{GroupIndex => ProtocolGroupIndex, NetworkType, TxOutputRef}
+import org.alephium.util.{Duration, Hex, TimeStamp}
 
 trait BlockFlowClient {
-  import BlockFlowClient._
-  def getBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]]
+  def fetchBlock(fromGroup: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]]
 
-  def getChainInfo(from: GroupIndex, to: GroupIndex): Future[Either[String, ChainInfo]]
+  def fetchChainInfo(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Either[String, ChainInfo]]
 
-  def getHashesAtHeight(from: GroupIndex,
-                        to: GroupIndex,
-                        height: Height): Future[Either[String, HashesAtHeight]]
+  def fetchHashesAtHeight(fromGroup: GroupIndex,
+                          toGroup: GroupIndex,
+                          height: Height): Future[Either[String, HashesAtHeight]]
 
-  def getBlocksAtHeight(from: GroupIndex, to: GroupIndex, height: Height)(
+  def fetchBlocksAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
       implicit executionContext: ExecutionContext): Future[Either[Seq[String], Seq[BlockEntity]]] =
-    getHashesAtHeight(from, to, height).flatMap {
+    fetchHashesAtHeight(fromGroup, toGroup, height).flatMap {
       case Right(hashesAtHeight) =>
         Future
-          .sequence(hashesAtHeight.headers.map(hash => getBlock(from, hash)))
+          .sequence(
+            hashesAtHeight.headers
+              .map(hash => fetchBlock(fromGroup, new BlockEntry.Hash(hash)))
+              .toSeq)
           .map { blocksEither =>
             val (errors, blocks) = blocksEither.partitionMap(identity)
             if (errors.nonEmpty) {
@@ -61,124 +67,147 @@ trait BlockFlowClient {
 }
 
 object BlockFlowClient {
-  def apply(httpClient: HttpClient, address: Uri)(
-      implicit executionContext: ExecutionContext): BlockFlowClient =
-    new Impl(httpClient, address)
+  def apply(address: Uri, groupNum: Int, _networkType: NetworkType, blockflowFetchMaxAge: Duration)(
+      implicit executionContext: ExecutionContext,
+      actorSystem: ActorSystem): BlockFlowClient =
+    new Impl(address, groupNum, _networkType, blockflowFetchMaxAge)
 
-  private class Impl(httpClient: HttpClient, address: Uri)(
-      implicit executionContext: ExecutionContext)
-      extends BlockFlowClient {
+  private class Impl(address: Uri,
+                     groupNum: Int,
+                     _networkType: NetworkType,
+                     val blockflowFetchMaxAge: Duration)(
+      implicit executionContext: ExecutionContext,
+      actorSystem: ActorSystem)
+      extends BlockFlowClient
+      with Endpoints {
 
-    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    private def request[P <: RestRequest: Encoder, R: Codec: ClassTag](
-        restRequest: P,
-        uri: Uri = address): Future[Either[String, R]] = {
-      httpClient
-        .request[R](
-          HttpRequest(
-            HttpMethods.GET,
-            uri = Uri(uri.toString ++ restRequest.endpoint)
-          )
-        )
-    }
+    implicit lazy val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
+    implicit def networkType: NetworkType      = _networkType
 
+    private implicit def groupIndexConversion(x: GroupIndex): ProtocolGroupIndex =
+      ProtocolGroupIndex.unsafe(x.value)
+
+    private val backend = AkkaHttpBackend.usingActorSystem(actorSystem)
+
+    @SuppressWarnings(Array("org.wartremover.warts.ToString"))
     //TODO Introduce monad transformer helper for more readability
-    def getBlock(fromGroup: GroupIndex,
-                 hash: BlockEntry.Hash): Future[Either[String, BlockEntity]] =
-      getSelfClique().flatMap {
+    def fetchBlock(fromGroup: GroupIndex,
+                   hash: BlockEntry.Hash): Future[Either[String, BlockEntity]] =
+      fetchSelfClique().flatMap {
         case Left(error) => Future.successful(Left(error))
         case Right(selfClique) =>
-          selfClique
-            .index(fromGroup) match {
+          selfCliqueIndex(selfClique, fromGroup) match {
             case Left(error) => Future.successful(Left(error))
             case Right(index) =>
               selfClique.peers
-                .lift(index)
-                .flatMap(peer => peer.restPort.map(restPort => (peer.address, restPort))) match {
+                .get(index)
+                .map(peer => (peer.address, peer.restPort)) match {
                 case None =>
                   Future.successful(
                     Left(s"cannot find peer for group $fromGroup (peers: ${selfClique.peers})"))
                 case Some((peerAddress, restPort)) =>
-                  val uri = Uri(s"http://${peerAddress.getHostAddress}:${restPort}")
-                  request[GetBlock, BlockEntryProtocol](GetBlock(hash), uri).map(_.map(_.toEntity))
+                  val uri = s"http://${peerAddress.getHostAddress}:${restPort}"
+                  backend
+                    .send(getBlock.toSttpRequest(uri"${uri}").apply(hash.value))
+                    .map(_.body match {
+                      //TODO improve error management, here the decoding failure comes if the `networkType` is different from the blockflow server
+                      case e: DecodeResult.Failure => Left(e.toString)
+                      case DecodeResult.Value(res) =>
+                        res.map(blockProtocolToEntity).left.map(_.message)
+                    })
               }
           }
       }
 
-    def getChainInfo(from: GroupIndex, to: GroupIndex): Future[Either[String, ChainInfo]] = {
-      request[GetChainInfo, ChainInfo](GetChainInfo(from, to))
+    def fetchChainInfo(fromGroup: GroupIndex,
+                       toGroup: GroupIndex): Future[Either[String, ChainInfo]] = {
+      backend
+        .send(
+          getChainInfo.toSttpRequestUnsafe(uri"${address.toString}").apply((fromGroup, toGroup)))
+        .map(_.body.left.map(_.message))
     }
 
-    def getHashesAtHeight(from: GroupIndex,
-                          to: GroupIndex,
-                          height: Height): Future[Either[String, HashesAtHeight]] =
-      request[GetHashesAtHeight, HashesAtHeight](
-        GetHashesAtHeight(from, to, height)
-      )
+    def fetchHashesAtHeight(fromGroup: GroupIndex,
+                            toGroup: GroupIndex,
+                            height: Height): Future[Either[String, HashesAtHeight]] =
+      backend
+        .send(
+          getHashesAtHeight
+            .toSttpRequestUnsafe(uri"${address.toString}")
+            .apply((fromGroup, toGroup, height.value)))
+        .map(_.body.left.map(_.message))
 
-    private def getSelfClique(): Future[Either[String, SelfClique]] =
-      request[GetSelfClique.type, SelfClique](
-        GetSelfClique
-      )
-  }
-
-  final case class HashesAtHeight(headers: Seq[BlockEntry.Hash])
-  object HashesAtHeight {
-    implicit val codec: Codec[HashesAtHeight] = deriveCodec[HashesAtHeight]
+    private def fetchSelfClique(): Future[Either[String, SelfClique]] =
+      backend
+        .send(getSelfClique.toSttpRequestUnsafe(uri"${address.toString}").apply(()))
+        .map(_.body.left.map(_.message))
   }
 
-  final case class ChainInfo(currentHeight: Height)
-  object ChainInfo {
-    implicit val codec: Codec[ChainInfo] = deriveCodec[ChainInfo]
+  def blockProtocolToEntity(block: api.model.BlockEntry): BlockEntity = {
+    val hash         = new BlockEntry.Hash(block.hash)
+    val transactions = block.transactions.map(_.toSeq).getOrElse(Seq.empty)
+    BlockEntity(
+      hash,
+      block.timestamp,
+      GroupIndex.unsafe(block.chainFrom),
+      GroupIndex.unsafe(block.chainTo),
+      Height.unsafe(block.height),
+      block.deps.map(new BlockEntry.Hash(_)).toSeq,
+      transactions.map(txToEntity(_, hash, block.timestamp)),
+      transactions.flatMap(tx => tx.inputs.toSeq.map(inputToEntity(_, hash, tx.id, false))),
+      transactions.flatMap(tx =>
+        tx.outputs.toSeq.zipWithIndex.map {
+          case (out, index) => outputToEntity(out, hash, tx.id, index, block.timestamp, false)
+      }),
+      mainChain = false
+    )
   }
 
-  sealed trait RestRequest {
-    def endpoint: String
+  private def txToEntity(tx: api.model.Tx,
+                         blockHash: BlockEntry.Hash,
+                         timestamp: TimeStamp): TransactionEntity =
+    TransactionEntity(
+      new Transaction.Hash(tx.id),
+      blockHash,
+      timestamp
+    )
+
+  private def inputToEntity(input: api.model.Input,
+                            blockHash: BlockEntry.Hash,
+                            txId: Hash,
+                            mainChain: Boolean): InputEntity =
+    InputEntity(
+      blockHash,
+      new Transaction.Hash(txId),
+      input.outputRef.scriptHint,
+      input.outputRef.key,
+      input.unlockScript.map(Hex.toHexString),
+      mainChain
+    )
+
+  private def outputToEntity(output: api.model.Output,
+                             blockHash: BlockEntry.Hash,
+                             txId: Hash,
+                             index: Int,
+                             timestamp: TimeStamp,
+                             mainChain: Boolean): OutputEntity = {
+    OutputEntity(
+      blockHash,
+      new Transaction.Hash(txId),
+      alfCoinConvertion(output.amount),
+      new Address(output.address.toBase58),
+      TxOutputRef.key(txId, index),
+      timestamp,
+      mainChain
+    )
   }
 
-  final case class GetHashesAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)
-      extends RestRequest {
-    val endpoint: String = s"/blockflow/hashes?fromGroup=$fromGroup&toGroup=$toGroup&height=$height"
-  }
-  object GetHashesAtHeight {
-    implicit val codec: Codec[GetHashesAtHeight] = deriveCodec[GetHashesAtHeight]
-  }
-
-  final case class GetChainInfo(fromGroup: GroupIndex, toGroup: GroupIndex) extends RestRequest {
-    val endpoint: String = s"/blockflow/chains?fromGroup=$fromGroup&toGroup=$toGroup"
-  }
-  object GetChainInfo {
-    implicit val codec: Codec[GetChainInfo] = deriveCodec[GetChainInfo]
-  }
-
-  final case class GetBlock(hash: BlockEntry.Hash) extends RestRequest {
-    val endpoint: String = s"/blockflow/blocks/$hash"
-  }
-  object GetBlock {
-    implicit val codec: Codec[GetBlock] = deriveCodec[GetBlock]
-  }
-
-  final case object GetSelfClique extends RestRequest {
-    val endpoint: String = "/infos/self-clique"
-    implicit val encoder: Encoder[GetSelfClique.type] = new Encoder[GetSelfClique.type] {
-      final def apply(selfClique: GetSelfClique.type): Json = JsonObject.empty.asJson
+  private def selfCliqueIndex(selfClique: SelfClique, group: GroupIndex): Either[String, Int] = {
+    if (selfClique.groupNumPerBroker <= 0) {
+      Left(
+        s"SelfClique.groupNumPerBroker ($selfClique.groupNumPerBroker) cannot be less or equal to zero")
+    } else {
+      Right(group.value / selfClique.groupNumPerBroker)
     }
-  }
-
-  final case class PeerAddress(address: InetAddress, restPort: Option[Int], wsPort: Option[Int])
-  object PeerAddress {
-    implicit val codec: Codec[PeerAddress] = deriveCodec[PeerAddress]
-  }
-
-  final case class SelfClique(peers: Seq[PeerAddress], groupNumPerBroker: Int) {
-    def index(group: GroupIndex): Either[String, Int] =
-      if (groupNumPerBroker <= 0) {
-        Left(s"SelfClique.groupNumPerBroker ($groupNumPerBroker) cannot be less or equal to zero")
-      } else {
-        Right(group.value / groupNumPerBroker)
-      }
-  }
-  object SelfClique {
-    implicit val codec: Codec[SelfClique] = deriveCodec[SelfClique]
   }
 }

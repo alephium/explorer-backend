@@ -88,14 +88,14 @@ object BlockFlowSyncService {
     }
 
     private def syncChain(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Unit] = {
-      blockFlowClient.getChainInfo(fromGroup, toGroup).flatMap {
+      blockFlowClient.fetchChainInfo(fromGroup, toGroup).flatMap {
         case Right(nodeHeight) =>
           blockDao.maxHeight(fromGroup, toGroup).flatMap { maybeLocalHeight =>
             logger.debug(
               s"Syncing (${fromGroup.value}, ${toGroup.value}). Heights: local = ${maybeLocalHeight
                 .map(_.value)
-                .getOrElse(-1)}, node = ${nodeHeight.currentHeight.value}")
-            val heights = generateHeights(maybeLocalHeight, nodeHeight.currentHeight)
+                .getOrElse(-1)}, node = ${nodeHeight.currentHeight}")
+            val heights = generateHeights(maybeLocalHeight, Height.unsafe(nodeHeight.currentHeight))
             foldFutures(heights)(height => syncAt(fromGroup, toGroup, height))
           }
         case Left(error) => Future.successful(logger.error(error))
@@ -108,7 +108,7 @@ object BlockFlowSyncService {
         toGroup: GroupIndex,
         height: Height
     ): Future[Unit] = {
-      blockFlowClient.getBlocksAtHeight(fromGroup, toGroup, height).flatMap {
+      blockFlowClient.fetchBlocksAtHeight(fromGroup, toGroup, height).flatMap {
         case Right(blocks) if blocks.nonEmpty =>
           val bestBlock = blocks.head
           for {
@@ -135,7 +135,7 @@ object BlockFlowSyncService {
             case Some(parent) =>
               blockDao.get(parent).flatMap {
                 case None =>
-                  blockFlowClient.getBlock(block.chainFrom, parent).flatMap {
+                  blockFlowClient.fetchBlock(block.chainFrom, parent).flatMap {
                     case Left(error)   => Future.successful(logger.error(error))
                     case Right(parent) => syncBlock(parent)
                   }

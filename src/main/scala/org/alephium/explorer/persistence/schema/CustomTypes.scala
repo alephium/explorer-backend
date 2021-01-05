@@ -21,9 +21,9 @@ import scala.reflect.ClassTag
 import slick.basic.DatabaseConfig
 import slick.jdbc.{JdbcProfile, JdbcType}
 
-import org.alephium.explorer.Hash
+import org.alephium.explorer.{BlockHash, Hash}
 import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
-import org.alephium.util.{Hex, TimeStamp, U256}
+import org.alephium.util.{Hex, TimeStamp}
 
 trait CustomTypes extends JdbcProfile {
   val config: DatabaseConfig[JdbcProfile]
@@ -35,10 +35,17 @@ trait CustomTypes extends JdbcProfile {
       raw => from((Hash.unsafe(Hex.unsafe(raw))))
     )
 
+  private def buildBlockHashTypes[H: ClassTag](from: BlockHash => H,
+                                               to: H           => BlockHash): JdbcType[H] =
+    MappedJdbcType.base[H, String](
+      to(_).toHexString,
+      raw => from((BlockHash.unsafe(Hex.unsafe(raw))))
+    )
+
   implicit val hashType: JdbcType[Hash] = buildHashTypes(identity, identity)
 
   implicit val blockEntryHashType: JdbcType[BlockEntry.Hash] =
-    buildHashTypes(
+    buildBlockHashTypes(
       new BlockEntry.Hash(_),
       _.value
     )
@@ -67,10 +74,5 @@ trait CustomTypes extends JdbcProfile {
   implicit val timestampType: JdbcType[TimeStamp] = MappedJdbcType.base[TimeStamp, Long](
     _.millis,
     long => TimeStamp.unsafe(long)
-  )
-
-  implicit val u256Type: JdbcType[U256] = MappedJdbcType.base[U256, Array[Byte]](
-    u256  => u256.toBytes.toArray,
-    bytes => U256.unsafe(akka.util.ByteString(bytes))
   )
 }

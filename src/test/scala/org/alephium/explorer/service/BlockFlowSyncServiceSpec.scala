@@ -21,13 +21,13 @@ import scala.concurrent.{ExecutionContext, Future}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
+import org.alephium.api.model.{ChainInfo, HashesAtHeight}
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, TimeInterval}
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockEntity
-import org.alephium.explorer.service.BlockFlowClient.{ChainInfo, HashesAtHeight}
-import org.alephium.util.{Duration, TimeStamp}
+import org.alephium.util.{AVector, Duration, TimeStamp}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
 class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Eventually {
@@ -52,8 +52,6 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
 
   trait Fixture extends DatabaseFixture with Generators {
     implicit val executionContext: ExecutionContext = ExecutionContext.global
-
-    val groupNum: Int = 4
 
     def blockEntity(parent: Option[BlockEntity],
                     chainFrom: GroupIndex = GroupIndex.unsafe(0),
@@ -104,7 +102,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
     var chainOToO = Seq(block0, block1, block2, block3, block4, block5, block6, block7, block8, block9, block10, block11, block12, block13, block14)
     // format: on
 
-    val chains = chainIndexesGen(groupNum).map {
+    val chains = chainIndexes.map {
       case (from, to) =>
         Seq(blockEntity(None, from, to))
     }.tail
@@ -122,28 +120,28 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
     def blocks: Seq[BlockEntry] = blockFlow.flatten
 
     val blockFlowClient: BlockFlowClient = new BlockFlowClient {
-      def getBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]] =
+      def fetchBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]] =
         Future.successful(blockEntities.find(_.hash === hash).toRight(s"$hash Not Found"))
 
-      def getChainInfo(from: GroupIndex, to: GroupIndex): Future[Either[String, ChainInfo]] =
+      def fetchChainInfo(from: GroupIndex, to: GroupIndex): Future[Either[String, ChainInfo]] =
         Future.successful(
           Right(
             ChainInfo(
               blocks
                 .filter(block => block.chainFrom === from && block.chainTo === to)
-                .map(_.height)
+                .map(_.height.value)
                 .max)))
 
-      def getHashesAtHeight(from: GroupIndex,
-                            to: GroupIndex,
-                            height: Height): Future[Either[String, HashesAtHeight]] =
+      def fetchHashesAtHeight(from: GroupIndex,
+                              to: GroupIndex,
+                              height: Height): Future[Either[String, HashesAtHeight]] =
         Future.successful(
           Right(
             HashesAtHeight(
-              blocks
+              AVector.from(blocks
                 .filter(block =>
                   block.chainFrom === from && block.chainTo === to && block.height === height)
-                .map(_.hash))))
+                .map(_.hash.value)))))
     }
 
     def checkBlocks(blocksToCheck: Seq[BlockEntry]) = {

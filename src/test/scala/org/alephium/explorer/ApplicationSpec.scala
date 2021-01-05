@@ -32,13 +32,17 @@ import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
+import org.alephium.api.ApiModelCodec
+import org.alephium.api.model
+import org.alephium.api.model.{ChainInfo, HashesAtHeight, PeerAddress, SelfClique}
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.api.ApiError
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.model.BlockEntity
-import org.alephium.explorer.protocol.model.BlockEntryProtocol
-import org.alephium.util.{Hex, TimeStamp}
+import org.alephium.explorer.service.BlockFlowClient
+import org.alephium.protocol.model.{CliqueId, NetworkType}
+import org.alephium.util.{AVector, Duration, Hex, TimeStamp}
 
 class ApplicationSpec()
     extends AlephiumSpec
@@ -51,12 +55,15 @@ class ApplicationSpec()
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
   implicit val defaultTimeout          = RouteTestTimeout(5.seconds)
 
-  val groupNum: Int = 4
-  val blockFlow: Seq[Seq[BlockEntryProtocol]] =
-    blockFlowGen(groupNum = groupNum, maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
+  val blockflowFetchMaxAge: Duration = Duration.ofMinutesUnsafe(30)
 
-  val blocksProtocol: Seq[BlockEntryProtocol] = blockFlow.flatten
-  val blockEntities: Seq[BlockEntity]         = blocksProtocol.map(_.toEntity)
+  val txLimit = 20
+
+  val blockFlow: Seq[Seq[model.BlockEntry]] =
+    blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
+
+  val blocksProtocol: Seq[model.BlockEntry] = blockFlow.flatten
+  val blockEntities: Seq[BlockEntity]       = blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
 
   val blocks: Seq[BlockEntry] = blockEntitiesToBlockEntries(Seq(blockEntities)).flatten
 
@@ -70,16 +77,24 @@ class ApplicationSpec()
 
   val blockFlowPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
   val blockFlowMock =
-    new ApplicationSpec.BlockFlowServerMock(localhost, blockFlowPort, blocksProtocol)
+    new ApplicationSpec.BlockFlowServerMock(localhost,
+                                            blockFlowPort,
+                                            blocksProtocol,
+                                            networkType,
+                                            blockflowFetchMaxAge)
 
   val blockflowBinding = blockFlowMock.server.futureValue
 
   val app: Application =
-    new Application(localhost.getHostAddress,
-                    SocketUtil.temporaryLocalPort(),
-                    Uri(s"http://${localhost.getHostAddress}:$blockFlowPort"),
-                    groupNum,
-                    databaseConfig)
+    new Application(
+      localhost.getHostAddress,
+      SocketUtil.temporaryLocalPort(),
+      Uri(s"http://${localhost.getHostAddress}:$blockFlowPort"),
+      groupNum,
+      blockflowFetchMaxAge,
+      networkType,
+      databaseConfig
+    )
 
   //let it sync once
   eventually(app.blockFlowSyncService.stop().futureValue) is ()
@@ -158,7 +173,9 @@ class ApplicationSpec()
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address}") ~> routes ~> check {
         val expectedTransactions =
-          transactions.filter(_.outputs.exists(_.address == address))
+          transactions
+            .filter(_.outputs.exists(_.address == address))
+            .sorted(Ordering.by((_: Transaction).timestamp))
         val expectedBalance =
           expectedTransactions
             .map(
@@ -170,9 +187,11 @@ class ApplicationSpec()
 
         val res = responseAs[AddressInfo]
 
+        res.transactions.size is expectedTransactions.take(txLimit).size
         res.balance is expectedBalance
-        res.transactions.size is expectedTransactions.size
-        expectedTransactions.foreach(transaction => res.transactions.contains(transaction) is true)
+        expectedTransactions
+          .take(txLimit)
+          .foreach(transaction => res.transactions.contains(transaction) is true)
       }
     }
   }
@@ -181,7 +200,7 @@ class ApplicationSpec()
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address}/transactions") ~> routes ~> check {
         val expectedTransactions =
-          transactions.filter(_.outputs.exists(_.address == address))
+          transactions.filter(_.outputs.exists(_.address == address)).take(txLimit)
         val res = responseAs[Seq[Transaction]]
 
         res.size is expectedTransactions.size
@@ -206,30 +225,40 @@ class ApplicationSpec()
 }
 
 object ApplicationSpec {
-  import org.alephium.explorer.service.BlockFlowClient._
 
-  class BlockFlowServerMock(address: InetAddress, port: Int, blocks: Seq[BlockEntryProtocol])(
-      implicit system: ActorSystem)
-      extends FailFastCirceSupport {
-    def getHashesAtHeight(from: GroupIndex, to: GroupIndex, height: Height): HashesAtHeight =
-      HashesAtHeight(blocks.collect {
-        case block if block.chainFrom === from && block.chainTo === to && block.height === height =>
+  class BlockFlowServerMock(address: InetAddress,
+                            port: Int,
+                            blocks: Seq[model.BlockEntry],
+                            _networkType: NetworkType,
+                            val blockflowFetchMaxAge: Duration)(implicit system: ActorSystem)
+      extends ApiModelCodec
+      with FailFastCirceSupport {
+
+    implicit def networkType: NetworkType = _networkType
+    val cliqueId                          = CliqueId.generate
+    def fetchHashesAtHeight(from: GroupIndex, to: GroupIndex, height: Height): HashesAtHeight =
+      HashesAtHeight(AVector.from(blocks.collect {
+        case block
+            if block.chainFrom === from.value && block.chainTo === to.value && block.height === height.value =>
           block.hash
-      })
+      }))
 
     def getChainInfo(from: GroupIndex, to: GroupIndex): ChainInfo = {
       ChainInfo(
         blocks
-          .collect { case block if block.chainFrom == from && block.chainTo === to => block.height }
+          .collect {
+            case block if block.chainFrom == from.value && block.chainTo === to.value =>
+              block.height
+          }
           .maxOption
-          .getOrElse(Height.genesis))
+          .getOrElse(Height.genesis.value))
     }
 
-    private val peer = PeerAddress(address, Some(port), None)
-    val HashSegment  = Segment.map(raw => Hash.unsafe(Hex.unsafe(raw)))
+    private val peer = PeerAddress(address, port, 0)
+    val HashSegment  = Segment.map(raw => BlockHash.unsafe(Hex.unsafe(raw)))
     val routes: Route =
       path("blockflow" / "blocks" / HashSegment) { hash =>
-        get { complete(blocks.find(_.hash === (new BlockEntry.Hash(hash))).get) }
+        get { complete(blocks.find(_.hash === hash).get) }
       } ~
         path("blockflow" / "hashes") {
           parameters("fromGroup".as[Int]) { from =>
@@ -237,9 +266,9 @@ object ApplicationSpec {
               parameters("height".as[Int]) { height =>
                 get {
                   complete(
-                    getHashesAtHeight(GroupIndex.unsafe(from),
-                                      GroupIndex.unsafe(to),
-                                      Height.unsafe(height)))
+                    fetchHashesAtHeight(GroupIndex.unsafe(from),
+                                        GroupIndex.unsafe(to),
+                                        Height.unsafe(height)))
                 }
               }
             }
@@ -255,7 +284,7 @@ object ApplicationSpec {
           }
         } ~
         path("infos" / "self-clique") {
-          complete(SelfClique(Seq(peer, peer), 2))
+          complete(SelfClique(cliqueId, AVector(peer, peer), 2))
         }
 
     val server = Http().bindAndHandle(routes, address.getHostAddress, port)

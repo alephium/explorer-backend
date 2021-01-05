@@ -21,7 +21,6 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri
-import akka.stream.OverflowStrategy
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -29,7 +28,7 @@ import slick.jdbc.JdbcProfile
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
 import org.alephium.explorer.service._
 import org.alephium.explorer.sideEffect
-import org.alephium.explorer.web._
+import org.alephium.protocol.model.NetworkType
 import org.alephium.util.Duration
 
 // scalastyle:off magic.number
@@ -37,6 +36,8 @@ class Application(host: String,
                   port: Int,
                   blockFlowUri: Uri,
                   groupNum: Int,
+                  blockflowFetchMaxAge: Duration,
+                  networkType: NetworkType,
                   databaseConfig: DatabaseConfig[JdbcProfile])(implicit system: ActorSystem,
                                                                executionContext: ExecutionContext)
     extends StrictLogging {
@@ -44,10 +45,9 @@ class Application(host: String,
   val blockDao: BlockDao             = BlockDao(databaseConfig)
   val transactionDao: TransactionDao = TransactionDao(databaseConfig)
 
-  val httpClient: HttpClient = HttpClient(512, OverflowStrategy.fail)
-
   //Services
-  val blockFlowClient: BlockFlowClient = BlockFlowClient.apply(httpClient, blockFlowUri)
+  val blockFlowClient: BlockFlowClient =
+    BlockFlowClient.apply(blockFlowUri, groupNum, networkType, blockflowFetchMaxAge)
 
   val blockFlowSyncService: BlockFlowSyncService =
     BlockFlowSyncService(groupNum   = groupNum,

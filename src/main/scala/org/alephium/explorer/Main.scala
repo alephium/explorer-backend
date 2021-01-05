@@ -26,8 +26,10 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.sideEffect
+import org.alephium.protocol.model.NetworkType
 import org.alephium.util.Duration
 
+@SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
 object Main extends App with StrictLogging {
 
   logger.info("Starting Application")
@@ -43,6 +45,10 @@ object Main extends App with StrictLogging {
   }
 
   val groupNum: Int = config.getInt("blockflow.groupNum")
+  val blockflowFetchMaxAge: Duration =
+    Duration.from(config.getDuration("blockflow.blockflow-fetch-max-age")).get
+  val networkType: NetworkType =
+    NetworkType.fromName(config.getString("blockflow.network-type")).get
 
   val port: Int    = config.getInt("explorer.port")
   val host: String = config.getString("explorer.host")
@@ -50,7 +56,13 @@ object Main extends App with StrictLogging {
   val databaseConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig[JdbcProfile]("db")
 
   val app: Application =
-    new Application(host, port, blockflowUri, groupNum, databaseConfig)
+    new Application(host,
+                    port,
+                    blockflowUri,
+                    groupNum,
+                    blockflowFetchMaxAge,
+                    networkType,
+                    databaseConfig)
 
   sideEffect(
     scala.sys.addShutdownHook(Await.result(app.stop, Duration.ofSecondsUnsafe(10).asScala)))

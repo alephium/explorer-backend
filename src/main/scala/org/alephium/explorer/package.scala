@@ -16,7 +16,7 @@
 
 package org.alephium
 
-import org.alephium.crypto.Blake2b
+import org.alephium.crypto.{Blake2b, Blake3}
 import org.alephium.protocol.ALF
 import org.alephium.util.U256
 
@@ -34,6 +34,9 @@ package object explorer {
 
   type Hash = Blake2b
   val Hash: Blake2b.type = Blake2b
+
+  type BlockHash = Blake3
+  val BlockHash: Blake3.type = Blake3
 
   def alfCoinConvertion(u256: U256): Double =
     (BigDecimal(u256.toBigInt) / BigDecimal(ALF.CoinInOneALF.toBigInt)).toDouble

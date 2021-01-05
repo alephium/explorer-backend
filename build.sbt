@@ -74,6 +74,8 @@ lazy val root = (project in file("."))
       tapirOpenapi,
       tapiOpenapiCirce,
       tapirSwaggerUi,
+      tapirClient,
+      sttpAkkaBackend,
       circeCore,
       circeGeneric,
       akkaHttpCirce,

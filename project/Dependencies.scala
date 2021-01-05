@@ -17,13 +17,14 @@
 import sbt._
 
 object Version {
-  lazy val common = "0.5.0"
+  lazy val common = "0.6.0"
 
   lazy val akka       = "2.6.8"
   lazy val circe      = "0.13.0"
-  lazy val tapir      = "0.16.5"
+  lazy val tapir      = "0.16.16"
   lazy val slick      = "3.3.2"
   lazy val postgresql = "42.2.12"
+  lazy val sttp       = "2.2.5"
 }
 object Dependencies {
   lazy val alephiumCrypto   = "org.alephium" %% "alephium-crypto"   % Version.common
@@ -38,12 +39,14 @@ object Dependencies {
 
   lazy val akkaHttpCors = "ch.megard" %% "akka-http-cors" % "0.4.3"
 
-  lazy val tapirCore        = "com.softwaremill.sttp.tapir" %% "tapir-core"                 % Version.tapir
-  lazy val tapirCirce       = "com.softwaremill.sttp.tapir" %% "tapir-json-circe"           % Version.tapir
-  lazy val tapirAkka        = "com.softwaremill.sttp.tapir" %% "tapir-akka-http-server"     % Version.tapir
-  lazy val tapirOpenapi     = "com.softwaremill.sttp.tapir" %% "tapir-openapi-docs"         % Version.tapir
-  lazy val tapiOpenapiCirce = "com.softwaremill.sttp.tapir" %% "tapir-openapi-circe-yaml"   % Version.tapir
-  lazy val tapirSwaggerUi   = "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-akka-http" % Version.tapir
+  lazy val tapirCore        = "com.softwaremill.sttp.tapir"  %% "tapir-core"                 % Version.tapir
+  lazy val tapirCirce       = "com.softwaremill.sttp.tapir"  %% "tapir-json-circe"           % Version.tapir
+  lazy val tapirAkka        = "com.softwaremill.sttp.tapir"  %% "tapir-akka-http-server"     % Version.tapir
+  lazy val tapirOpenapi     = "com.softwaremill.sttp.tapir"  %% "tapir-openapi-docs"         % Version.tapir
+  lazy val tapiOpenapiCirce = "com.softwaremill.sttp.tapir"  %% "tapir-openapi-circe-yaml"   % Version.tapir
+  lazy val tapirSwaggerUi   = "com.softwaremill.sttp.tapir"  %% "tapir-swagger-ui-akka-http" % Version.tapir
+  lazy val tapirClient      = "com.softwaremill.sttp.tapir"  %% "tapir-sttp-client"          % Version.tapir
+  lazy val sttpAkkaBackend  = "com.softwaremill.sttp.client" %% "akka-http-backend"          % Version.sttp
 
   lazy val circeCore    = "io.circe" %% "circe-core"    % Version.circe
   lazy val circeGeneric = "io.circe" %% "circe-generic" % Version.circe

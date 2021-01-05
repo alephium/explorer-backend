@@ -21,7 +21,7 @@ import io.circe.generic.semiauto.deriveCodec
 
 final case class Input(
     outputRef: Output.Ref,
-    unlockScript: String,
+    unlockScript: Option[String],
     txHashRef: Option[Transaction.Hash], // input can be genesis input
     address: Option[Address],
     amount: Option[Double]

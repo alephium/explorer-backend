@@ -24,7 +24,7 @@ final case class InputEntity(
     txHash: Transaction.Hash,
     scriptHint: Int,
     outputRefKey: Hash,
-    unlockScript: String,
+    unlockScript: Option[String],
     mainChain: Boolean
 ) {
   def toApi(outputRef: Option[OutputEntity]): Input =

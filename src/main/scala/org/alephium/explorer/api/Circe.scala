@@ -19,7 +19,7 @@ package org.alephium.explorer.api
 import io.circe.{Codec, Decoder, Encoder, Json}
 
 import org.alephium.api.CirceUtils.byteStringDecoder
-import org.alephium.explorer.Hash
+import org.alephium.explorer.{BlockHash, Hash}
 import org.alephium.util.U256
 
 object Circe {
@@ -27,6 +27,11 @@ object Circe {
   implicit val hashDecoder: Decoder[Hash] =
     byteStringDecoder.emap(Hash.from(_).toRight("cannot decode hash"))
   implicit val hashCodec: Codec[Hash] = Codec.from(hashDecoder, hashEncoder)
+
+  implicit val blockHashEncoder: Encoder[BlockHash] = hash => Json.fromString(hash.toHexString)
+  implicit val blockHashDecoder: Decoder[BlockHash] =
+    byteStringDecoder.emap(BlockHash.from(_).toRight("cannot decode block hash"))
+  implicit val blockHashCodec: Codec[BlockHash] = Codec.from(blockHashDecoder, blockHashEncoder)
 
   implicit val u256Encoder: Encoder[U256] = Encoder.encodeJavaBigInteger.contramap[U256](_.toBigInt)
   implicit val u256Decoder: Decoder[U256] = Decoder.decodeJavaBigInteger.emap { u256 =>
