@@ -79,28 +79,77 @@ trait TransactionQueries
       case Some(timestamp) => getKnownTransactionAction(txHash, timestamp).map(Some.apply)
     }
 
-  private val getTxHashesQuery = Compiled { (address: Rep[Address], txLimit: ConstColumn[Long]) =>
-    outputsTable
-      .filter(output => output.mainChain && output.address === address)
+  private val mainInputs  = inputsTable.filter(_.mainChain)
+  private val mainOutputs = outputsTable.filter(_.mainChain)
+
+  private val getTxHashesQuery = Compiled { (address: Rep[Address], _: ConstColumn[Long]) =>
+    mainOutputs
+      .filter(_.address === address)
       .map(out => (out.txHash, out.timestamp))
       .distinct
       .sortBy { case (_, timestamp) => timestamp.asc }
       .take(txLimit)
   }
 
+  private def inputsFromTxs(txHashes: Query[Rep[Transaction.Hash], Transaction.Hash, Seq]) = {
+    txHashes
+      .join(mainInputs)
+      .on(_ === _.txHash)
+      .joinLeft(mainOutputs)
+      .on {
+        case ((_, input), outputs) =>
+          input.outputRefKey === outputs.key
+      }
+      .map {
+        case ((txHash, input), outputOpt) =>
+          (txHash,
+           (input.scriptHint,
+            input.outputRefKey,
+            input.unlockScript,
+            outputOpt.map(_.txHash),
+            outputOpt.map(_.address),
+            outputOpt.map(_.amount)))
+      }
+  }
+
+  private def outputsFromTxs(txHashes: Query[Rep[Transaction.Hash], Transaction.Hash, Seq]) = {
+    txHashes
+      .join(mainOutputs)
+      .on(_ === _.txHash)
+      .joinLeft(mainInputs)
+      .on {
+        case ((_, out), inputs) =>
+          out.key === inputs.outputRefKey
+      }
+      .map {
+        case ((txHash, output), input) =>
+          (txHash, (output.amount, output.address, input.map(_.txHash)))
+      }
+  }
+
   def getTransactionsByAddress(address: Address, txLimit: Int): DBActionR[Seq[Transaction]] = {
+    val txHashesTsQuery = getTxHashesQuery(address -> txLimit.toLong)
+    val txHashesQuery   = txHashesTsQuery.extract.map(_._1)
     for {
-      txHashes <- getTxHashesQuery(address -> txLimit.toLong).result
-      txs <- DBIOAction.sequence(txHashes.map {
-        case (txHash, timestamp) => getKnownTransactionAction(txHash, timestamp)
-      })
-    } yield txs
+      txHashesTs <- txHashesTsQuery.result
+      ins        <- inputsFromTxs(txHashesQuery).result
+      ous        <- outputsFromTxs(txHashesQuery).result
+    } yield {
+      val insByTx = ins.groupBy(_._1).view.mapValues(_.map { case (_, in) => toApiInput(in) })
+      val ousByTx = ous.groupBy(_._1).view.mapValues(_.map { case (_, o)  => toApiOutput(o) })
+      txHashesTs.map {
+        case (tx, ts) =>
+          val ins = insByTx.get(tx).getOrElse(Seq.empty)
+          val ous = ousByTx.get(tx).getOrElse(Seq.empty)
+          Transaction(tx, ts, ins, ous)
+      }.toSeq
+    }
   }
 
   private val getInputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
-    inputsTable
-      .filter(input => input.mainChain && input.txHash === txHash)
-      .joinLeft(outputsTable.filter(_.mainChain))
+    mainInputs
+      .filter(_.txHash === txHash)
+      .joinLeft(mainOutputs)
       .on(_.outputRefKey === _.key)
       .map {
         case (input, outputOpt) =>
@@ -113,16 +162,6 @@ trait TransactionQueries
       }
   }
 
-  private val toApiInput = {
-    (scriptHint: Int,
-     key: Hash,
-     unlockScript: Option[String],
-     txHashOpt: Option[Transaction.Hash],
-     addressOpt: Option[Address],
-     amountOpt: Option[Double]) =>
-      Input(Output.Ref(scriptHint, key), unlockScript, txHashOpt, addressOpt, amountOpt)
-  }.tupled
-
   private val getOutputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
     outputsTable
       .filter(output => output.mainChain && output.txHash === txHash)
@@ -131,8 +170,6 @@ trait TransactionQueries
       .on(_._1 === _.outputRefKey)
       .map { case (output, input) => (output._3, output._2, input.map(_.txHash)) }
   }
-
-  private val toApiOutput = (Output.apply _).tupled
 
   private def getKnownTransactionAction(txHash: Transaction.Hash,
                                         timestamp: TimeStamp): DBActionR[Transaction] =
@@ -156,6 +193,18 @@ trait TransactionQueries
 
   def getBalanceAction(address: Address): DBActionR[Double] =
     getBalanceQuery(address).result.map(_.getOrElse(0.0))
+
+  private val toApiInput = {
+    (scriptHint: Int,
+     key: Hash,
+     unlockScript: Option[String],
+     txHashOpt: Option[Transaction.Hash],
+     addressOpt: Option[Address],
+     amountOpt: Option[Double]) =>
+      Input(Output.Ref(scriptHint, key), unlockScript, txHashOpt, addressOpt, amountOpt)
+  }.tupled
+
+  private val toApiOutput = (Output.apply _).tupled
 
   // switch logger.trace when we can disable debugging mode
   protected def debugShow(query: slickProfile.ProfileAction[_, _, _]) = {
