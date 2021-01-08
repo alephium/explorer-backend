@@ -82,7 +82,7 @@ trait TransactionQueries
   private val mainInputs  = inputsTable.filter(_.mainChain)
   private val mainOutputs = outputsTable.filter(_.mainChain)
 
-  private val getTxHashesQuery = Compiled { (address: Rep[Address], _: ConstColumn[Long]) =>
+  private val getTxHashesQuery = Compiled { (address: Rep[Address], txLimit: ConstColumn[Long]) =>
     mainOutputs
       .filter(_.address === address)
       .map(out => (out.txHash, out.timestamp))
@@ -91,17 +91,22 @@ trait TransactionQueries
       .take(txLimit)
   }
 
-  private def inputsFromTxs(txHashes: Query[Rep[Transaction.Hash], Transaction.Hash, Seq]) = {
-    txHashes
+  private val inputsFromTxs = Compiled { (address: Rep[Address], txLimit: ConstColumn[Long]) =>
+    mainOutputs
+      .filter(_.address === address)
+      .map(out => (out.txHash, out.timestamp))
+      .distinct
+      .sortBy { case (_, timestamp) => timestamp.asc }
+      .take(txLimit)
       .join(mainInputs)
-      .on(_ === _.txHash)
+      .on(_._1 === _.txHash)
       .joinLeft(mainOutputs)
       .on {
         case ((_, input), outputs) =>
           input.outputRefKey === outputs.key
       }
       .map {
-        case ((txHash, input), outputOpt) =>
+        case (((txHash, _), input), outputOpt) =>
           (txHash,
            (input.scriptHint,
             input.outputRefKey,
@@ -112,37 +117,41 @@ trait TransactionQueries
       }
   }
 
-  private def outputsFromTxs(txHashes: Query[Rep[Transaction.Hash], Transaction.Hash, Seq]) = {
-    txHashes
+  private val outputsFromTxs = Compiled { (address: Rep[Address], txLimit: ConstColumn[Long]) =>
+    mainOutputs
+      .filter(_.address === address)
+      .map(out => (out.txHash, out.timestamp))
+      .distinct
+      .sortBy { case (_, timestamp) => timestamp.asc }
+      .take(txLimit)
       .join(mainOutputs)
-      .on(_ === _.txHash)
+      .on(_._1 === _.txHash)
       .joinLeft(mainInputs)
       .on {
         case ((_, out), inputs) =>
           out.key === inputs.outputRefKey
       }
       .map {
-        case ((txHash, output), input) =>
+        case (((txHash, _), output), input) =>
           (txHash, (output.amount, output.address, input.map(_.txHash)))
       }
   }
 
-  def getTransactionsByAddress(address: Address, txLimit: Int): DBActionR[Seq[Transaction]] = {
-    val txHashesTsQuery = getTxHashesQuery(address -> txLimit.toLong)
-    val txHashesQuery   = txHashesTsQuery.extract.map(_._1)
+  def getTransactionsByAddress(address: Address, txLimit: Long): DBActionR[Seq[Transaction]] = {
+    val txHashesTsQuery = getTxHashesQuery(address -> txLimit)
     for {
       txHashesTs <- txHashesTsQuery.result
-      ins        <- inputsFromTxs(txHashesQuery).result
-      ous        <- outputsFromTxs(txHashesQuery).result
+      ins        <- inputsFromTxs(address -> txLimit).result
+      ous        <- outputsFromTxs(address -> txLimit).result
     } yield {
       val insByTx = ins.groupBy(_._1).view.mapValues(_.map { case (_, in) => toApiInput(in) })
       val ousByTx = ous.groupBy(_._1).view.mapValues(_.map { case (_, o)  => toApiOutput(o) })
       txHashesTs.map {
         case (tx, ts) =>
-          val ins = insByTx.get(tx).getOrElse(Seq.empty)
-          val ous = ousByTx.get(tx).getOrElse(Seq.empty)
+          val ins = insByTx.getOrElse(tx, Seq.empty)
+          val ous = ousByTx.getOrElse(tx, Seq.empty)
           Transaction(tx, ts, ins, ous)
-      }.toSeq
+      }
     }
   }
 

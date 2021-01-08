@@ -46,7 +46,7 @@ object TransactionDao {
       run(getTransactionAction(hash))
 
     def getByAddress(address: Address, txLimit: Int): Future[Seq[Transaction]] =
-      run(getTransactionsByAddress(address, txLimit))
+      run(getTransactionsByAddress(address, txLimit.toLong))
 
     def getBalance(address: Address): Future[Double] =
       run(getBalanceAction(address))
