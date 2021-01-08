@@ -51,7 +51,6 @@ trait TransactionQueries
   private val listTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
     transactionsTable
       .filter(_.blockHash === blockHash)
-      .sortBy(_.timestamp.asc)
       .map(tx => (tx.hash, tx.timestamp))
   }
 
@@ -87,7 +86,7 @@ trait TransactionQueries
       .filter(_.address === address)
       .map(out => (out.txHash, out.timestamp))
       .distinct
-      .sortBy { case (_, timestamp) => timestamp.asc }
+      .sortBy { case (_, timestamp) => timestamp.desc }
       .take(txLimit)
   }
 
@@ -96,7 +95,7 @@ trait TransactionQueries
       .filter(_.address === address)
       .map(out => (out.txHash, out.timestamp))
       .distinct
-      .sortBy { case (_, timestamp) => timestamp.asc }
+      .sortBy { case (_, timestamp) => timestamp.desc }
       .take(txLimit)
       .join(mainInputs)
       .on(_._1 === _.txHash)
@@ -122,7 +121,7 @@ trait TransactionQueries
       .filter(_.address === address)
       .map(out => (out.txHash, out.timestamp))
       .distinct
-      .sortBy { case (_, timestamp) => timestamp.asc }
+      .sortBy { case (_, timestamp) => timestamp.desc }
       .take(txLimit)
       .join(mainOutputs)
       .on(_._1 === _.txHash)
