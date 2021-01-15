@@ -34,7 +34,7 @@ import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.api.ApiModelCodec
 import org.alephium.api.model
-import org.alephium.api.model.{ChainInfo, HashesAtHeight, PeerAddress, SelfClique}
+import org.alephium.api.model.{ChainInfo, HashesAtHeight, Network, PeerAddress, SelfClique}
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.api.ApiError
 import org.alephium.explorer.api.model._
@@ -257,9 +257,12 @@ object ApplicationSpec {
     private val peer = PeerAddress(address, port, 0)
     val HashSegment  = Segment.map(raw => BlockHash.unsafe(Hex.unsafe(raw)))
     val routes: Route =
-      path("blockflow" / "blocks" / HashSegment) { hash =>
-        get { complete(blocks.find(_.hash === hash).get) }
+      path("infos" / "network") {
+        get { complete(Network(networkType)) }
       } ~
+        path("blockflow" / "blocks" / HashSegment) { hash =>
+          get { complete(blocks.find(_.hash === hash).get) }
+        } ~
         path("blockflow" / "hashes") {
           parameters("fromGroup".as[Int]) { from =>
             parameters("toGroup".as[Int]) { to =>

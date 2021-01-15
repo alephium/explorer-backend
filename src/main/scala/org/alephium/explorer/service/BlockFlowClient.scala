@@ -28,7 +28,7 @@ import sttp.tapir.client.sttp._
 
 import org.alephium.api
 import org.alephium.api.Endpoints
-import org.alephium.api.model.{ChainInfo, HashesAtHeight, SelfClique}
+import org.alephium.api.model.{ChainInfo, HashesAtHeight, Network, SelfClique}
 import org.alephium.explorer.{alfCoinConvertion, Hash}
 import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.explorer.persistence.model._
@@ -44,6 +44,8 @@ trait BlockFlowClient {
   def fetchHashesAtHeight(fromGroup: GroupIndex,
                           toGroup: GroupIndex,
                           height: Height): Future[Either[String, HashesAtHeight]]
+
+  def fetchNetwork(): Future[Either[String, Network]]
 
   def fetchBlocksAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
       implicit executionContext: ExecutionContext): Future[Either[Seq[String], Seq[BlockEntity]]] =
@@ -135,6 +137,11 @@ object BlockFlowClient {
           getHashesAtHeight
             .toSttpRequestUnsafe(uri"${address.toString}")
             .apply((fromGroup, toGroup, height.value)))
+        .map(_.body.left.map(_.message))
+
+    def fetchNetwork(): Future[Either[String, Network]] =
+      backend
+        .send(getNetwork.toSttpRequestUnsafe(uri"${address.toString}").apply(()))
         .map(_.body.left.map(_.message))
 
     private def fetchSelfClique(): Future[Either[String, SelfClique]] =

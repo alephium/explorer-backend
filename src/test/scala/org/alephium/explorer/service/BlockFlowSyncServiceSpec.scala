@@ -21,12 +21,13 @@ import scala.concurrent.{ExecutionContext, Future}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.api.model.{ChainInfo, HashesAtHeight}
+import org.alephium.api.model.{ChainInfo, HashesAtHeight, Network}
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, TimeInterval}
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockEntity
+import org.alephium.protocol.model.{NetworkType}
 import org.alephium.util.{AVector, Duration, TimeStamp}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
@@ -142,6 +143,13 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
                 .filter(block =>
                   block.chainFrom === from && block.chainTo === to && block.height === height)
                 .map(_.hash.value)))))
+
+      def fetchNetwork(): Future[Either[String, Network]] =
+        Future.successful(
+          Right(
+            Network(NetworkType.Devnet)
+          )
+        )
     }
 
     def checkBlocks(blocksToCheck: Seq[BlockEntry]) = {

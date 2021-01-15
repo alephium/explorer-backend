@@ -25,6 +25,7 @@ import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
+import org.alephium.api.model.Network
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
 import org.alephium.explorer.service._
 import org.alephium.explorer.sideEffect
@@ -63,6 +64,8 @@ class Application(host: String,
 
   sideEffect {
     for {
+      network <- blockFlowClient.fetchNetwork()
+      _       <- validateNetwork(network)
       _       <- blockFlowSyncService.start()
       binding <- Http().bindAndHandle(server.route, host, port)
     } yield {
@@ -78,4 +81,20 @@ class Application(host: String,
     } yield {
       logger.info("Application stopped")
     }
+
+  def validateNetwork(network: Either[String, Network]): Future[Unit] = {
+    network match {
+      case Right(network) =>
+        if (network.networkType =/= networkType) {
+          logger.error(
+            s"Network type mismatch: ${network.networkType} (remote) vs $networkType (local)")
+          sys.exit(1)
+        } else {
+          Future.successful(())
+        }
+      case Left(err) =>
+        logger.error(s"Impossible to fetch network type: $err")
+        sys.exit(1)
+    }
+  }
 }
