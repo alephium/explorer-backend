@@ -21,7 +21,7 @@ jobs:
           version=$(echo ${GITHUB_REF/refs\/tags\//} | cut -c 2-)
           echo ::set-output name=VERSION::$version
         shell: bash
-      - run: ./make assembly
+      - run: sbt assembly
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -39,6 +39,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: target/universal/explorer-backend-${{ steps.get_version.outputs.VERSION }}.zip
-          asset_name: explorer-backend-${{ steps.get_version.outputs.VERSION }}.zip
-          asset_content_type: application/zip
+          asset_path: target/scala-2.13/explorer-backend-${{ steps.get_version.outputs.VERSION }}.jar
+          asset_name: explorer-backend-${{ steps.get_version.outputs.VERSION }}.jar
+          asset_content_type: application/java-archive
