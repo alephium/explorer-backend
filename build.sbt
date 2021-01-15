@@ -47,6 +47,9 @@ lazy val root = (project in file("."))
     wartremoverErrors in (Compile, compile) := Warts.allBut(wartsCompileExcludes: _*),
     wartremoverErrors in (Test, compile) := Warts.allBut(wartsTestExcludes: _*),
     fork := true,
+    mainClass in assembly := Some("org.alephium.explorer.Main"),
+    assemblyJarName in assembly := s"explorer-backend-${version.value}.jar",
+    test in assembly := {},
     libraryDependencies ++= Seq(
       alephiumUtil,
       alephiumProtocol,
