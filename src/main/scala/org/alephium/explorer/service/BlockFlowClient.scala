@@ -139,12 +139,7 @@ object BlockFlowClient {
             .apply((fromGroup, toGroup, height.value)))
         .map(_.body.left.map(_.message))
 
-    def fetchNetwork(): Future[Either[String, Network]] =
-      backend
-        .send(getNetwork.toSttpRequestUnsafe(uri"${address.toString}").apply(()))
-        .map(_.body.left.map(_.message))
-
-    private def fetchSelfClique(): Future[Either[String, SelfClique]] =
+    def fetchSelfClique(): Future[Either[String, SelfClique]] =
       backend
         .send(getSelfClique.toSttpRequestUnsafe(uri"${address.toString}").apply(()))
         .map(_.body.left.map(_.message))
