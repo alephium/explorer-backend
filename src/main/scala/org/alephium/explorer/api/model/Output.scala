@@ -19,12 +19,15 @@ package org.alephium.explorer.api.model
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 
+import org.alephium.api.CirceUtils.timestampCodec
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.Circe.hashCodec
+import org.alephium.util.TimeStamp
 
 final case class Output(
     amount: Double,
     address: Address,
+    lockTime: Option[TimeStamp],
     spent: Option[Transaction.Hash]
 )
 
