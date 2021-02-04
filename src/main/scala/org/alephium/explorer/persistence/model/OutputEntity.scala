@@ -27,7 +27,8 @@ final case class OutputEntity(
     address: Address,
     key: Hash,
     timestamp: TimeStamp,
-    mainChain: Boolean
+    mainChain: Boolean,
+    lockTime: Option[TimeStamp]
 ) {
-  def toApi(spent: Option[Transaction.Hash]): Output = Output(amount, address, spent)
+  def toApi(spent: Option[Transaction.Hash]): Output = Output(amount, address, lockTime, spent)
 }

@@ -25,7 +25,7 @@ import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
-import org.alephium.api.model.Network
+import org.alephium.api.model.SelfClique
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
 import org.alephium.explorer.service._
 import org.alephium.explorer.sideEffect
@@ -64,10 +64,10 @@ class Application(host: String,
 
   sideEffect {
     for {
-      network <- blockFlowClient.fetchNetwork()
-      _       <- validateNetwork(network)
-      _       <- blockFlowSyncService.start()
-      binding <- Http().bindAndHandle(server.route, host, port)
+      selfClique <- blockFlowClient.fetchSelfClique()
+      _          <- validateSelfClique(selfClique)
+      _          <- blockFlowSyncService.start()
+      binding    <- Http().bindAndHandle(server.route, host, port)
     } yield {
       sideEffect(bindingPromise.success(binding))
       logger.info(s"Listening http request on $binding")
@@ -82,12 +82,12 @@ class Application(host: String,
       logger.info("Application stopped")
     }
 
-  def validateNetwork(network: Either[String, Network]): Future[Unit] = {
-    network match {
-      case Right(network) =>
-        if (network.networkType =/= networkType) {
+  def validateSelfClique(response: Either[String, SelfClique]): Future[Unit] = {
+    response match {
+      case Right(selfClique) =>
+        if (selfClique.networkType =/= networkType) {
           logger.error(
-            s"Network type mismatch: ${network.networkType} (remote) vs $networkType (local)")
+            s"Network type mismatch: ${selfClique.networkType} (remote) vs $networkType (local)")
           sys.exit(1)
         } else {
           Future.successful(())

@@ -132,7 +132,7 @@ trait TransactionQueries
       }
       .map {
         case (((txHash, _), output), input) =>
-          (txHash, (output.amount, output.address, input.map(_.txHash)))
+          (txHash, (output.amount, output.address, output.lockTime, input.map(_.txHash)))
       }
   }
 
@@ -173,10 +173,10 @@ trait TransactionQueries
   private val getOutputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
     outputsTable
       .filter(output => output.mainChain && output.txHash === txHash)
-      .map(output => (output.key, output.address, output.amount))
+      .map(output => (output.key, output.address, output.amount, output.lockTime))
       .joinLeft(inputsTable)
       .on(_._1 === _.outputRefKey)
-      .map { case (output, input) => (output._3, output._2, input.map(_.txHash)) }
+      .map { case (output, input) => (output._3, output._2, output._4, input.map(_.txHash)) }
   }
 
   private def getKnownTransactionAction(txHash: Transaction.Hash,
