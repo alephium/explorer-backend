@@ -77,7 +77,8 @@ class ApplicationSpec()
 
   val blockFlowPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
   val blockFlowMock =
-    new ApplicationSpec.BlockFlowServerMock(localhost,
+    new ApplicationSpec.BlockFlowServerMock(groupNum,
+                                            localhost,
                                             blockFlowPort,
                                             blocksProtocol,
                                             networkType,
@@ -226,7 +227,8 @@ class ApplicationSpec()
 
 object ApplicationSpec {
 
-  class BlockFlowServerMock(address: InetAddress,
+  class BlockFlowServerMock(groupNum: Int,
+                            address: InetAddress,
                             port: Int,
                             blocks: Seq[model.BlockEntry],
                             _networkType: NetworkType,
@@ -284,7 +286,8 @@ object ApplicationSpec {
           }
         } ~
         path("infos" / "self-clique") {
-          complete(SelfClique(cliqueId, networkType, 18, AVector(peer, peer), true, 1, 2))
+          complete(
+            SelfClique(cliqueId, networkType, 18, AVector.fill(groupNum)(peer), true, 1, groupNum))
         }
 
     val server = Http().bindAndHandle(routes, address.getHostAddress, port)
