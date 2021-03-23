@@ -101,14 +101,14 @@ object BlockFlowClient {
           selfCliqueIndex(selfClique, fromGroup) match {
             case Left(error) => Future.successful(Left(error))
             case Right(index) =>
-              selfClique.peers
+              selfClique.nodes
                 .get(index)
-                .map(peer => (peer.address, peer.restPort)) match {
+                .map(node => (node.address, node.restPort)) match {
                 case None =>
                   Future.successful(
-                    Left(s"cannot find peer for group $fromGroup (peers: ${selfClique.peers})"))
-                case Some((peerAddress, restPort)) =>
-                  val uri = s"http://${peerAddress.getHostAddress}:${restPort}"
+                    Left(s"cannot find node for group $fromGroup (nodes: ${selfClique.nodes})"))
+                case Some((nodeAddress, restPort)) =>
+                  val uri = s"http://${nodeAddress.getHostAddress}:${restPort}"
                   backend
                     .send(getBlock.toSttpRequest(uri"${uri}").apply(hash.value))
                     .map(_.body match {
