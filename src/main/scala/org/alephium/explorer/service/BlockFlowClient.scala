@@ -33,7 +33,7 @@ import org.alephium.explorer.{alfCoinConvertion, Hash}
 import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.explorer.persistence.model._
 import org.alephium.protocol.config.GroupConfig
-import org.alephium.protocol.model.{GroupIndex => ProtocolGroupIndex, NetworkType, TxOutputRef}
+import org.alephium.protocol.model.{GroupIndex => ProtocolGroupIndex, _}
 import org.alephium.util.{Duration, Hex, TimeStamp}
 
 trait BlockFlowClient {
@@ -125,7 +125,9 @@ object BlockFlowClient {
                        toGroup: GroupIndex): Future[Either[String, ChainInfo]] = {
       backend
         .send(
-          getChainInfo.toSttpRequestUnsafe(uri"${address.toString}").apply((fromGroup, toGroup)))
+          getChainInfo
+            .toSttpRequestUnsafe(uri"${address.toString}")
+            .apply(ChainIndex(fromGroup, toGroup)))
         .map(_.body.left.map(_.message))
     }
 
@@ -136,7 +138,7 @@ object BlockFlowClient {
         .send(
           getHashesAtHeight
             .toSttpRequestUnsafe(uri"${address.toString}")
-            .apply((fromGroup, toGroup, height.value)))
+            .apply((ChainIndex(fromGroup, toGroup), height.value)))
         .map(_.body.left.map(_.message))
 
     def fetchSelfClique(): Future[Either[String, SelfClique]] =
