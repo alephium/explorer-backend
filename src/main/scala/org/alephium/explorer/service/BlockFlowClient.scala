@@ -33,7 +33,7 @@ import org.alephium.explorer.{alfCoinConvertion, Hash}
 import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.explorer.persistence.model._
 import org.alephium.protocol.config.GroupConfig
-import org.alephium.protocol.model.{GroupIndex => ProtocolGroupIndex, NetworkType, TxOutputRef}
+import org.alephium.protocol.model.{GroupIndex => ProtocolGroupIndex, _}
 import org.alephium.util.{Duration, Hex, TimeStamp}
 
 trait BlockFlowClient {
@@ -101,14 +101,14 @@ object BlockFlowClient {
           selfCliqueIndex(selfClique, fromGroup) match {
             case Left(error) => Future.successful(Left(error))
             case Right(index) =>
-              selfClique.peers
+              selfClique.nodes
                 .get(index)
-                .map(peer => (peer.address, peer.restPort)) match {
+                .map(node => (node.address, node.restPort)) match {
                 case None =>
                   Future.successful(
-                    Left(s"cannot find peer for group $fromGroup (peers: ${selfClique.peers})"))
-                case Some((peerAddress, restPort)) =>
-                  val uri = s"http://${peerAddress.getHostAddress}:${restPort}"
+                    Left(s"cannot find node for group $fromGroup (nodes: ${selfClique.nodes})"))
+                case Some((nodeAddress, restPort)) =>
+                  val uri = s"http://${nodeAddress.getHostAddress}:${restPort}"
                   backend
                     .send(getBlock.toSttpRequest(uri"${uri}").apply(hash.value))
                     .map(_.body match {
@@ -125,7 +125,9 @@ object BlockFlowClient {
                        toGroup: GroupIndex): Future[Either[String, ChainInfo]] = {
       backend
         .send(
-          getChainInfo.toSttpRequestUnsafe(uri"${address.toString}").apply((fromGroup, toGroup)))
+          getChainInfo
+            .toSttpRequestUnsafe(uri"${address.toString}")
+            .apply(ChainIndex(fromGroup, toGroup)))
         .map(_.body.left.map(_.message))
     }
 
@@ -136,7 +138,7 @@ object BlockFlowClient {
         .send(
           getHashesAtHeight
             .toSttpRequestUnsafe(uri"${address.toString}")
-            .apply((fromGroup, toGroup, height.value)))
+            .apply((ChainIndex(fromGroup, toGroup), height.value)))
         .map(_.body.left.map(_.message))
 
     def fetchSelfClique(): Future[Either[String, SelfClique]] =
