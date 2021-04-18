@@ -115,7 +115,7 @@ object BlockFlowClient {
                       //TODO improve error management, here the decoding failure comes if the `networkType` is different from the blockflow server
                       case e: DecodeResult.Failure => Left(e.toString)
                       case DecodeResult.Value(res) =>
-                        res.map(blockProtocolToEntity).left.map(_.message)
+                        res.map(blockProtocolToEntity).left.map(_.detail)
                     })
               }
           }
@@ -128,7 +128,7 @@ object BlockFlowClient {
           getChainInfo
             .toSttpRequestUnsafe(uri"${address.toString}")
             .apply(ChainIndex(fromGroup, toGroup)))
-        .map(_.body.left.map(_.message))
+        .map(_.body.left.map(_.detail))
     }
 
     def fetchHashesAtHeight(fromGroup: GroupIndex,
@@ -139,12 +139,12 @@ object BlockFlowClient {
           getHashesAtHeight
             .toSttpRequestUnsafe(uri"${address.toString}")
             .apply((ChainIndex(fromGroup, toGroup), height.value)))
-        .map(_.body.left.map(_.message))
+        .map(_.body.left.map(_.detail))
 
     def fetchSelfClique(): Future[Either[String, SelfClique]] =
       backend
         .send(getSelfClique.toSttpRequestUnsafe(uri"${address.toString}").apply(()))
-        .map(_.body.left.map(_.message))
+        .map(_.body.left.map(_.detail))
   }
 
   def blockProtocolToEntity(block: api.model.BlockEntry): BlockEntity = {

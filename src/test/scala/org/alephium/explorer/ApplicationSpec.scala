@@ -73,7 +73,7 @@ class ApplicationSpec()
     .flatMap(_.transactions.flatMap(_.outputs.map(_.address)))
     .distinct
 
-  val localhost: InetAddress = InetAddress.getLocalHost
+  val localhost: InetAddress = InetAddress.getByName("127.0.0.1")
 
   val blockFlowPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
   val blockFlowMock =
