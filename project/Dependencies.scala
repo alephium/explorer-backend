@@ -17,7 +17,7 @@
 import sbt._
 
 object Version {
-  lazy val common = "0.7.2"
+  lazy val common = "0.7.3"
 
   lazy val akka       = "2.6.8"
   lazy val circe      = "0.13.0"
@@ -26,6 +26,7 @@ object Version {
   lazy val postgresql = "42.2.12"
   lazy val sttp       = "2.2.5"
 }
+
 object Dependencies {
   lazy val alephiumCrypto   = "org.alephium" %% "alephium-crypto"   % Version.common
   lazy val alephiumProtocol = "org.alephium" %% "alephium-protocol" % Version.common
