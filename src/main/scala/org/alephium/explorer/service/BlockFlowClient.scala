@@ -29,7 +29,7 @@ import sttp.tapir.client.sttp._
 import org.alephium.api
 import org.alephium.api.Endpoints
 import org.alephium.api.model.{ChainInfo, HashesAtHeight, SelfClique}
-import org.alephium.explorer.{alfCoinConvertion, Hash}
+import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.explorer.persistence.model._
 import org.alephium.protocol.config.GroupConfig
@@ -198,7 +198,7 @@ object BlockFlowClient {
     OutputEntity(
       blockHash,
       new Transaction.Hash(txId),
-      alfCoinConvertion(output.amount),
+      output.amount,
       new Address(output.address.toBase58),
       TxOutputRef.key(txId, index),
       timestamp,

@@ -19,8 +19,10 @@ package org.alephium.explorer.api
 import sttp.tapir.Schema
 
 import org.alephium.explorer.{BlockHash, Hash}
+import org.alephium.util.U256
 
 object Schemas {
+  implicit val u256Schema: Schema[U256]           = Schema(Schema.schemaForString.schemaType)
   implicit val hashSchema: Schema[Hash]           = Schema(Schema.schemaForString.schemaType)
   implicit val blockHashSchema: Schema[BlockHash] = Schema(Schema.schemaForString.schemaType)
 }

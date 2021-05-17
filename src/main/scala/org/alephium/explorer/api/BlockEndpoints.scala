@@ -20,7 +20,7 @@ import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
 
 import org.alephium.explorer.api.Codecs.blockEntryHashTapirCodec
-import org.alephium.explorer.api.Schemas.{blockHashSchema, hashSchema}
+import org.alephium.explorer.api.Schemas.{blockHashSchema, hashSchema, u256Schema}
 import org.alephium.explorer.api.model.{BlockEntry, TimeInterval}
 
 trait BlockEndpoints extends BaseEndpoint with QueryParams {

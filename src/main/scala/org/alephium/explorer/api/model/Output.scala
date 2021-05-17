@@ -21,11 +21,11 @@ import io.circe.generic.semiauto.deriveCodec
 
 import org.alephium.api.CirceUtils.timestampCodec
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.Circe.hashCodec
-import org.alephium.util.TimeStamp
+import org.alephium.explorer.api.Circe.{hashCodec, u256Codec}
+import org.alephium.util.{TimeStamp, U256}
 
 final case class Output(
-    amount: Double,
+    amount: U256,
     address: Address,
     lockTime: Option[TimeStamp],
     spent: Option[Transaction.Hash]

@@ -24,7 +24,7 @@ import sttp.tapir.CodecFormat.TextPlain
 import org.alephium.explorer.{BlockHash, Hash}
 import org.alephium.explorer.api.Circe._
 import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
-import org.alephium.util.{TimeStamp}
+import org.alephium.util.TimeStamp
 
 object Codecs {
   private val hashTapirCodec: Codec[String, Hash, TextPlain] =

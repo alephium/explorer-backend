@@ -42,7 +42,7 @@ import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.protocol.model.{CliqueId, NetworkType}
-import org.alephium.util.{AVector, Duration, Hex, TimeStamp}
+import org.alephium.util.{AVector, Duration, Hex, TimeStamp, U256}
 
 class ApplicationSpec()
     extends AlephiumSpec
@@ -183,8 +183,8 @@ class ApplicationSpec()
               _.outputs
                 .filter(out => out.spent.isEmpty && out.address == address)
                 .map(_.amount)
-                .sum)
-            .sum
+                .fold(U256.Zero)(_ addUnsafe _))
+            .fold(U256.Zero)(_ addUnsafe _)
 
         val res = responseAs[AddressInfo]
 

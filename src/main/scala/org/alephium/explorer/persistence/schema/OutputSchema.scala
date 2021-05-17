@@ -23,7 +23,7 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.OutputEntity
-import org.alephium.util.TimeStamp
+import org.alephium.util.{TimeStamp, U256}
 
 trait OutputSchema extends CustomTypes {
   val config: DatabaseConfig[JdbcProfile]
@@ -31,9 +31,10 @@ trait OutputSchema extends CustomTypes {
   import config.profile.api._
 
   class Outputs(tag: Tag) extends Table[OutputEntity](tag, "outputs") {
-    def blockHash: Rep[BlockEntry.Hash]  = column[BlockEntry.Hash]("block_hash")
-    def txHash: Rep[Transaction.Hash]    = column[Transaction.Hash]("tx_hash")
-    def amount: Rep[Double]              = column[Double]("amount")
+    def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash")
+    def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash")
+    def amount: Rep[U256] =
+      column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
     def address: Rep[Address]            = column[Address]("address")
     def key: Rep[Hash]                   = column[Hash]("key")
     def timestamp: Rep[TimeStamp]        = column[TimeStamp]("timestamp")

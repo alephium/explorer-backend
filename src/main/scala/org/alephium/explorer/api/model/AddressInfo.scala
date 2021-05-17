@@ -19,7 +19,10 @@ package org.alephium.explorer.api.model
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 
-final case class AddressInfo(balance: Double, transactions: Seq[Transaction])
+import org.alephium.explorer.api.Circe.u256Codec
+import org.alephium.util.U256
+
+final case class AddressInfo(balance: U256, transactions: Seq[Transaction])
 
 object AddressInfo {
   implicit val codec: Codec[AddressInfo] = deriveCodec[AddressInfo]

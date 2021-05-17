@@ -28,7 +28,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DBActionR, DBActionW}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema.{InputSchema, OutputSchema, TransactionSchema}
-import org.alephium.util.TimeStamp
+import org.alephium.util.{TimeStamp, U256}
 
 trait TransactionQueries
     extends TransactionSchema
@@ -199,8 +199,8 @@ trait TransactionQueries
       .sum
   }
 
-  def getBalanceAction(address: Address): DBActionR[Double] =
-    getBalanceQuery(address).result.map(_.getOrElse(0.0))
+  def getBalanceAction(address: Address): DBActionR[U256] =
+    getBalanceQuery(address).result.map(_.getOrElse(U256.Zero))
 
   private val toApiInput = {
     (scriptHint: Int,
@@ -208,7 +208,7 @@ trait TransactionQueries
      unlockScript: Option[String],
      txHashOpt: Option[Transaction.Hash],
      addressOpt: Option[Address],
-     amountOpt: Option[Double]) =>
+     amountOpt: Option[U256]) =>
       Input(Output.Ref(scriptHint, key), unlockScript, txHashOpt, addressOpt, amountOpt)
   }.tupled
 

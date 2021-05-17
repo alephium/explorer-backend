@@ -27,6 +27,7 @@ import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.ApiError
 import org.alephium.explorer.api.model.{Address, Transaction}
 import org.alephium.explorer.service.TransactionService
+import org.alephium.util.U256
 
 @SuppressWarnings(Array("org.wartremover.warts.Var"))
 class AddressServerSpec()
@@ -79,7 +80,7 @@ class AddressServerSpec()
       override def getTransactionsByAddress(address: Address,
                                             txLimit: Int): Future[Seq[Transaction]] =
         Future.successful(Seq.empty)
-      override def getBalance(address: Address): Future[Double] = Future.successful(0.0)
+      override def getBalance(address: Address): Future[U256] = Future.successful(U256.Zero)
     }
   }
 }

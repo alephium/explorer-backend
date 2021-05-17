@@ -22,12 +22,11 @@ import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.explorer.{alfCoinConvertion, AlephiumSpec, Generators}
+import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.GroupIndex
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
 import org.alephium.protocol.ALF
-import org.alephium.util.U256
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
 class TransactionServiceSpec
@@ -62,8 +61,7 @@ class TransactionServiceSpec
 
   it should "handle huge alf number" in new Fixture {
 
-    val u256Amount     = ALF.MaxALFValue.mulUnsafe(ALF.MaxALFValue)
-    val amount: Double = alfCoinConvertion(u256Amount)
+    val amount = ALF.MaxALFValue.mulUnsafe(ALF.MaxALFValue)
 
     val block = blockEntityGen(0, groupIndex, groupIndex, None)
       .map { block =>
@@ -82,10 +80,6 @@ class TransactionServiceSpec
     val fetchedAmout =
       blockDao.get(block.hash).futureValue.get.transactions.flatMap(_.outputs.map(_.amount)).head
     fetchedAmout is amount
-
-    val fetchedU256 = U256.unsafe(
-      (BigDecimal(fetchedAmout) * BigDecimal(ALF.CoinInOneALF.toBigInt)).bigDecimal.toBigInteger)
-    fetchedU256 is u256Amount
   }
 
   trait Fixture extends DatabaseFixture {

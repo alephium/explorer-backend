@@ -17,8 +17,6 @@
 package org.alephium
 
 import org.alephium.crypto.{Blake2b, Blake3}
-import org.alephium.protocol.ALF
-import org.alephium.util.U256
 
 package object explorer {
   @inline @specialized def sideEffect[E](effect: E): Unit = {
@@ -37,7 +35,4 @@ package object explorer {
 
   type BlockHash = Blake3
   val BlockHash: Blake3.type = Blake3
-
-  def alfCoinConvertion(u256: U256): Double =
-    (BigDecimal(u256.toBigInt) / BigDecimal(ALF.CoinInOneALF.toBigInt)).toDouble
 }

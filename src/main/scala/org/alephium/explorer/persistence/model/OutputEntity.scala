@@ -18,12 +18,12 @@ package org.alephium.explorer.persistence.model
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{Address, BlockEntry, Output, Transaction}
-import org.alephium.util.TimeStamp
+import org.alephium.util.{TimeStamp, U256}
 
 final case class OutputEntity(
     blockHash: BlockEntry.Hash,
     txHash: Transaction.Hash,
-    amount: Double,
+    amount: U256,
     address: Address,
     key: Hash,
     timestamp: TimeStamp,

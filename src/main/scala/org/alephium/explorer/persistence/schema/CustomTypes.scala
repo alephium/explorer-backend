@@ -21,9 +21,9 @@ import scala.reflect.ClassTag
 import slick.basic.DatabaseConfig
 import slick.jdbc.{JdbcProfile, JdbcType}
 
-import org.alephium.explorer.{BlockHash, Hash}
+import org.alephium.explorer._
 import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
-import org.alephium.util.{Hex, TimeStamp}
+import org.alephium.util.{Hex, TimeStamp, U256}
 
 trait CustomTypes extends JdbcProfile {
   val config: DatabaseConfig[JdbcProfile]
@@ -74,5 +74,10 @@ trait CustomTypes extends JdbcProfile {
   implicit val timestampType: JdbcType[TimeStamp] = MappedJdbcType.base[TimeStamp, Long](
     _.millis,
     long => TimeStamp.unsafe(long)
+  )
+
+  implicit val u256Type: JdbcType[U256] = MappedJdbcType.base[U256, BigDecimal](
+    u256       => BigDecimal(u256.v),
+    bigDecimal => U256.unsafe(bigDecimal.toBigInt.bigInteger)
   )
 }
