@@ -20,7 +20,7 @@ import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
 
 import org.alephium.explorer.api.Codecs.transactionHashTapirCodec
-import org.alephium.explorer.api.Schemas.{hashSchema, u256Schema}
+import org.alephium.explorer.api.Schemas.{blockHashSchema, hashSchema, u256Schema}
 import org.alephium.explorer.api.model.Transaction
 
 trait TransactionEndpoints extends BaseEndpoint {

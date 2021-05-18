@@ -159,6 +159,7 @@ trait Generators {
         block.transactions.map { tx =>
           Transaction(
             tx.hash,
+            block.hash,
             block.timestamp,
             block.inputs
               .filter(_.txHash === tx.hash)

@@ -27,6 +27,7 @@ import org.alephium.util.TimeStamp
 
 final case class Transaction(
     hash: Transaction.Hash,
+    blockHash: BlockEntry.Hash,
     timestamp: TimeStamp,
     inputs: Seq[Input],
     outputs: Seq[Output]

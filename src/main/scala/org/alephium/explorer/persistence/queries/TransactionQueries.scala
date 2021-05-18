@@ -58,7 +58,7 @@ trait TransactionQueries
     for {
       txEntities <- listTransactionsQuery(blockHash).result
       txs <- DBIOAction.sequence(
-        txEntities.map(pair => getKnownTransactionAction(pair._1, pair._2)))
+        txEntities.map(pair => getKnownTransactionAction(pair._1, blockHash, pair._2)))
     } yield txs
 
   private val countTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
@@ -68,14 +68,15 @@ trait TransactionQueries
   def countTransactionsAction(blockHash: BlockEntry.Hash): DBActionR[Int] =
     countTransactionsQuery(blockHash).result
 
-  private val getTimestampQuery = Compiled { txHash: Rep[Transaction.Hash] =>
-    transactionsTable.filter(_.hash === txHash).map(_.timestamp)
+  private val getTransactionQuery = Compiled { txHash: Rep[Transaction.Hash] =>
+    transactionsTable.filter(_.hash === txHash).map(tx => (tx.blockHash, tx.timestamp))
   }
 
   def getTransactionAction(txHash: Transaction.Hash): DBActionR[Option[Transaction]] =
-    getTimestampQuery(txHash).result.headOption.flatMap {
-      case None            => DBIOAction.successful(None)
-      case Some(timestamp) => getKnownTransactionAction(txHash, timestamp).map(Some.apply)
+    getTransactionQuery(txHash).result.headOption.flatMap {
+      case None => DBIOAction.successful(None)
+      case Some((blockHash, timestamp)) =>
+        getKnownTransactionAction(txHash, blockHash, timestamp).map(Some.apply)
     }
 
   private val mainInputs  = inputsTable.filter(_.mainChain)
@@ -84,9 +85,9 @@ trait TransactionQueries
   private val getTxHashesQuery = Compiled { (address: Rep[Address], txLimit: ConstColumn[Long]) =>
     mainOutputs
       .filter(_.address === address)
-      .map(out => (out.txHash, out.timestamp))
+      .map(out => (out.txHash, out.blockHash, out.timestamp))
       .distinct
-      .sortBy { case (_, timestamp) => timestamp.desc }
+      .sortBy { case (_, _, timestamp) => timestamp.desc }
       .take(txLimit)
   }
 
@@ -146,10 +147,10 @@ trait TransactionQueries
       val insByTx = ins.groupBy(_._1).view.mapValues(_.map { case (_, in) => toApiInput(in) })
       val ousByTx = ous.groupBy(_._1).view.mapValues(_.map { case (_, o)  => toApiOutput(o) })
       txHashesTs.map {
-        case (tx, ts) =>
+        case (tx, bh, ts) =>
           val ins = insByTx.getOrElse(tx, Seq.empty)
           val ous = ousByTx.getOrElse(tx, Seq.empty)
-          Transaction(tx, ts, ins, ous)
+          Transaction(tx, bh, ts, ins, ous)
       }
     }
   }
@@ -180,12 +181,13 @@ trait TransactionQueries
   }
 
   private def getKnownTransactionAction(txHash: Transaction.Hash,
+                                        blockHash: BlockEntry.Hash,
                                         timestamp: TimeStamp): DBActionR[Transaction] =
     for {
       ins  <- getInputsQuery(txHash).result
       outs <- getOutputsQuery(txHash).result
     } yield {
-      Transaction(txHash, timestamp, ins.map(toApiInput), outs.map(toApiOutput))
+      Transaction(txHash, blockHash, timestamp, ins.map(toApiInput), outs.map(toApiOutput))
     }
 
   private val getBalanceQuery = Compiled { address: Rep[Address] =>
