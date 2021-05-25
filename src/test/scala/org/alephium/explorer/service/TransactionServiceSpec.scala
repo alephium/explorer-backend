@@ -23,10 +23,12 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
-import org.alephium.explorer.api.model.GroupIndex
+import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
+import org.alephium.explorer.persistence.model._
 import org.alephium.protocol.ALF
+import org.alephium.util.{TimeStamp, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
 class TransactionServiceSpec
@@ -37,6 +39,7 @@ class TransactionServiceSpec
 
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
+
   it should "limit the number of transactions in address details" in new Fixture {
 
     val address = addressGen.sample.get
@@ -82,6 +85,96 @@ class TransactionServiceSpec
     fetchedAmout is amount
   }
 
+  it should "get all transactions for an address even when outputs don't contain that address" in new Fixture {
+
+    val address0 = addressGen.sample.get
+    val address1 = addressGen.sample.get
+
+    val ts0        = TimeStamp.unsafe(0)
+    val blockHash0 = blockEntryHashGen.sample.get
+
+    val tx0 = TransactionEntity(
+      transactionHashGen.sample.get,
+      blockHash0,
+      ts0
+    )
+
+    val output0 =
+      OutputEntity(blockHash0, tx0.hash, U256.One, address0, hashGen.sample.get, ts0, true, None)
+
+    val block0 = BlockEntity(
+      hash         = blockHash0,
+      timestamp    = ts0,
+      chainFrom    = groupIndex,
+      chainTo      = groupIndex,
+      height       = Height.unsafe(0),
+      deps         = Seq.empty,
+      transactions = Seq(tx0),
+      inputs       = Seq.empty,
+      outputs      = Seq(output0),
+      true
+    )
+
+    val ts1        = TimeStamp.unsafe(1)
+    val blockHash1 = blockEntryHashGen.sample.get
+    val tx1 = TransactionEntity(
+      transactionHashGen.sample.get,
+      blockHash1,
+      ts1
+    )
+    val input1 = InputEntity(blockHash1,
+                             tx1.hash,
+                             timestamp    = ts1,
+                             scriptHint   = 0,
+                             outputRefKey = output0.key,
+                             None,
+                             true)
+    val output1 = OutputEntity(blockHash1,
+                               tx1.hash,
+                               U256.One,
+                               address1,
+                               hashGen.sample.get,
+                               timestamp = ts1,
+                               true,
+                               None)
+
+    val block1 = BlockEntity(
+      hash         = blockHash1,
+      timestamp    = ts1,
+      chainFrom    = groupIndex,
+      chainTo      = groupIndex,
+      height       = Height.unsafe(1),
+      deps         = Seq.empty,
+      transactions = Seq(tx1),
+      inputs       = Seq(input1),
+      outputs      = Seq(output1),
+      true
+    )
+
+    val blocks = Seq(block0, block1)
+
+    Future.sequence(blocks.map(blockDao.insert)).futureValue
+
+    val t0 = Transaction(
+      tx0.hash,
+      blockHash0,
+      ts0,
+      Seq.empty,
+      Seq(Output(U256.One, address0, None, Some(tx1.hash)))
+    )
+
+    val t1 = Transaction(
+      tx1.hash,
+      blockHash1,
+      ts1,
+      Seq(Input(Output.Ref(0, output0.key), None, Some(tx0.hash), Some(address0), Some(U256.One))),
+      Seq(Output(U256.One, address1, None, None))
+    )
+
+    val res = transactionService.getTransactionsByAddress(address0, 5).futureValue
+
+    res is Seq(t1, t0)
+  }
   trait Fixture extends DatabaseFixture {
     val blockDao: BlockDao                     = BlockDao(databaseConfig)
     val transactionDao: TransactionDao         = TransactionDao(databaseConfig)

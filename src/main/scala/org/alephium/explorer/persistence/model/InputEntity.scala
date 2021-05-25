@@ -18,10 +18,12 @@ package org.alephium.explorer.persistence.model
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{BlockEntry, Input, Output, Transaction}
+import org.alephium.util.TimeStamp
 
 final case class InputEntity(
     bockHash: BlockEntry.Hash,
     txHash: Transaction.Hash,
+    timestamp: TimeStamp,
     scriptHint: Int,
     outputRefKey: Hash,
     unlockScript: Option[String],

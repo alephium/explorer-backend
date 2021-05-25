@@ -83,21 +83,36 @@ trait TransactionQueries
   private val mainOutputs = outputsTable.filter(_.mainChain)
 
   private val getTxHashesQuery = Compiled { (address: Rep[Address], txLimit: ConstColumn[Long]) =>
-    mainOutputs
-      .filter(_.address === address)
-      .map(out => (out.txHash, out.blockHash, out.timestamp))
-      .distinct
+    mainInputs
+      .join(mainOutputs)
+      .on(_.outputRefKey === _.key)
+      .filter(_._2.address === address)
+      .map { case (input, _) => (input.txHash, input.blockHash, input.timestamp) }
+      .union(
+        mainOutputs
+          .filter(_.address === address)
+          .map(out => (out.txHash, out.blockHash, out.timestamp))
+      )
       .sortBy { case (_, _, timestamp) => timestamp.desc }
       .take(txLimit)
   }
 
-  private val inputsFromTxs = Compiled { (address: Rep[Address], txLimit: ConstColumn[Long]) =>
-    mainOutputs
-      .filter(_.address === address)
-      .map(out => (out.txHash, out.timestamp))
-      .distinct
+  private def buildTxHashesQuery(address: Rep[Address], txLimit: ConstColumn[Long]) =
+    mainInputs
+      .join(mainOutputs)
+      .on(_.outputRefKey === _.key)
+      .filter(_._2.address === address)
+      .map { case (input, _) => (input.txHash, input.timestamp) }
+      .union(
+        mainOutputs
+          .filter(_.address === address)
+          .map(out => (out.txHash, out.timestamp))
+      )
       .sortBy { case (_, timestamp) => timestamp.desc }
       .take(txLimit)
+
+  private val inputsFromTxs = Compiled { (address: Rep[Address], txLimit: ConstColumn[Long]) =>
+    buildTxHashesQuery(address, txLimit)
       .join(mainInputs)
       .on(_._1 === _.txHash)
       .joinLeft(mainOutputs)
@@ -118,12 +133,7 @@ trait TransactionQueries
   }
 
   private val outputsFromTxs = Compiled { (address: Rep[Address], txLimit: ConstColumn[Long]) =>
-    mainOutputs
-      .filter(_.address === address)
-      .map(out => (out.txHash, out.timestamp))
-      .distinct
-      .sortBy { case (_, timestamp) => timestamp.desc }
-      .take(txLimit)
+    buildTxHashesQuery(address, txLimit)
       .join(mainOutputs)
       .on(_._1 === _.txHash)
       .joinLeft(mainInputs)

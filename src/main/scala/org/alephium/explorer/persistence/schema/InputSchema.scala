@@ -23,6 +23,7 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.InputEntity
+import org.alephium.util.TimeStamp
 
 trait InputSchema extends CustomTypes {
   val config: DatabaseConfig[JdbcProfile]
@@ -32,6 +33,7 @@ trait InputSchema extends CustomTypes {
   class Inputs(tag: Tag) extends Table[InputEntity](tag, "inputs") {
     def blockHash: Rep[BlockEntry.Hash]   = column[BlockEntry.Hash]("block_hash")
     def txHash: Rep[Transaction.Hash]     = column[Transaction.Hash]("tx_hash")
+    def timestamp: Rep[TimeStamp]         = column[TimeStamp]("timestamp")
     def scriptHint: Rep[Int]              = column[Int]("script_hint")
     def outputRefKey: Rep[Hash]           = column[Hash]("output_ref_key")
     def unlockScript: Rep[Option[String]] = column[Option[String]]("unlock_script")
@@ -44,7 +46,7 @@ trait InputSchema extends CustomTypes {
     def outputRefKeyIdx: Index = index("inputs_output_ref_key_idx", outputRefKey)
 
     def * : ProvenShape[InputEntity] =
-      (blockHash, txHash, scriptHint, outputRefKey, unlockScript, mainChain)
+      (blockHash, txHash, timestamp, scriptHint, outputRefKey, unlockScript, mainChain)
         .<>((InputEntity.apply _).tupled, InputEntity.unapply)
   }
 
