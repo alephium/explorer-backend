@@ -19,6 +19,7 @@ package org.alephium.explorer
 import java.net.InetAddress
 
 import scala.concurrent.duration._
+import scala.io.Source
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -41,6 +42,7 @@ import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.json.Json
+import org.alephium.json.Json._
 import org.alephium.protocol.model.{CliqueId, NetworkType}
 import org.alephium.util.{AVector, Duration, Hex, TimeStamp, U256}
 
@@ -222,6 +224,24 @@ class ApplicationSpec()
     }
     Get("/docs/openapi.json") ~> routes ~> check {
       status is StatusCodes.OK
+      val expectedOpenapi =
+        read[ujson.Value](
+          Source
+            .fromFile(Main.getClass.getResource("/openapi.json").getPath, "UTF-8")
+            .getLines()
+            .toSeq
+            .mkString("\n")
+        )
+
+      val openapi =
+        read[ujson.Value](
+          response.entity
+            .toStrict(Duration.ofMinutesUnsafe(1).asScala)
+            .futureValue
+            .getData
+            .utf8String)
+
+      openapi is expectedOpenapi
     }
     Get("/docs/index.html?url=/docs/openapi.json") ~> routes ~> check {
       status is StatusCodes.OK
