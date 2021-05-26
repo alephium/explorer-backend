@@ -20,13 +20,18 @@ import scala.concurrent.ExecutionContext
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import sttp.tapir.server.akkahttp.{AkkaHttpServerOptions, RichAkkaHttpEndpoint}
+import sttp.tapir.server.akkahttp.AkkaHttpServerInterpreter.toRoute
+import sttp.tapir.server.akkahttp.AkkaHttpServerOptions
 
 import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model.AddressInfo
 import org.alephium.explorer.service.TransactionService
+import org.alephium.protocol.model.NetworkType
+import org.alephium.util.Duration
 
-class AddressServer(transactionService: TransactionService)(
+class AddressServer(transactionService: TransactionService,
+                    val networkType: NetworkType,
+                    val blockflowFetchMaxAge: Duration)(
     implicit val serverOptions: AkkaHttpServerOptions,
     executionContext: ExecutionContext)
     extends Server
@@ -35,13 +40,13 @@ class AddressServer(transactionService: TransactionService)(
   private val defautUtxoLimit = 20
 
   val route: Route =
-    getTransactionsByAddress.toRoute {
+    toRoute(getTransactionsByAddress) {
       case (address, txLimit) =>
         transactionService
           .getTransactionsByAddress(address, txLimit.getOrElse(defautUtxoLimit))
           .map(Right.apply)
     } ~
-      getAddressInfo.toRoute {
+      toRoute(getAddressInfo) {
         case (address, txLimit) =>
           for {
             balance <- transactionService.getBalance(address)

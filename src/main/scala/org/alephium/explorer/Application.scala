@@ -58,7 +58,8 @@ class Application(host: String,
   val blockService: BlockService             = BlockService(blockDao)
   val transactionService: TransactionService = TransactionService(transactionDao)
 
-  val server: AppServer = new AppServer(blockService, transactionService)
+  val server: AppServer =
+    new AppServer(blockService, transactionService, networkType, blockflowFetchMaxAge)
 
   private val bindingPromise: Promise[Http.ServerBinding] = Promise()
 
@@ -67,7 +68,7 @@ class Application(host: String,
       selfClique <- blockFlowClient.fetchSelfClique()
       _          <- validateSelfClique(selfClique)
       _          <- blockFlowSyncService.start()
-      binding    <- Http().bindAndHandle(server.route, host, port)
+      binding    <- Http().newServerAt(host, port).bindFlow(server.route)
     } yield {
       sideEffect(bindingPromise.success(binding))
       logger.info(s"Listening http request on $binding")

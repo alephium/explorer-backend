@@ -17,15 +17,18 @@
 package org.alephium.explorer.web
 
 import akka.http.scaladsl.server.Route
-import sttp.tapir.openapi.circe.yaml.RichOpenAPI
 import sttp.tapir.server.akkahttp.AkkaHttpServerOptions
 import sttp.tapir.swagger.akkahttp.SwaggerAkka
 
+import org.alephium.api.OpenAPIWriters.openApiJson
 import org.alephium.explorer.docs.Documentation
+import org.alephium.protocol.model.NetworkType
+import org.alephium.util.Duration
 
-class DocumentationServer(implicit val serverOptions: AkkaHttpServerOptions)
+class DocumentationServer(val networkType: NetworkType, val blockflowFetchMaxAge: Duration)(
+    implicit val serverOptions: AkkaHttpServerOptions)
     extends Server
     with Documentation {
 
-  val route: Route = new SwaggerAkka(docs.toYaml, yamlName = "openapi.yaml").routes
+  val route: Route = new SwaggerAkka(openApiJson(docs), yamlName = "openapi.json").routes
 }

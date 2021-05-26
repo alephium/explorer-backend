@@ -34,14 +34,24 @@ trait QueryParams {
       .validate(
         Validator.custom({
           case (from, to) =>
-            TimeInterval.isValid(from, to)
-        }, "`from-ts` must be before `to-ts`")
+            if (from > to) {
+              List(ValidationError.Custom((from, to), "`from-ts` must be before `to-ts`"))
+            } else {
+              List.empty
+            }
+        })
       )
       .validate(
         Validator.custom({
           case (from, to) =>
-            scala.math.abs(to.millis - from.millis) <= maxTimeInterval.millis
-        }, s"maximum interval is ${maxTimeInterval.toMinutes}min")
+            val interval = scala.math.abs(to.millis - from.millis)
+            if (interval > maxTimeInterval.millis) {
+              List(ValidationError.Custom(interval,
+                                          s"maximum interval is ${maxTimeInterval.millis}ms"))
+            } else {
+              List.empty
+            }
+        })
       )
       .map({ case (from, to) => TimeInterval.unsafe(from, to) })(timeInterval =>
         (timeInterval.from, timeInterval.to))

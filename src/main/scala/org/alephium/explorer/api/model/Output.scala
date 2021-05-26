@@ -16,12 +16,10 @@
 
 package org.alephium.explorer.api.model
 
-import io.circe.Codec
-import io.circe.generic.semiauto.deriveCodec
-
-import org.alephium.api.CirceUtils.timestampCodec
+import org.alephium.api.UtilJson._
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.Circe.{hashCodec, u256Codec}
+import org.alephium.explorer.api.Json.{hashReadWriter, u256ReadWriter}
+import org.alephium.json.Json._
 import org.alephium.util.{TimeStamp, U256}
 
 final case class Output(
@@ -35,8 +33,8 @@ object Output {
   final case class Ref(scriptHint: Int, key: Hash)
 
   object Ref {
-    implicit val codec: Codec[Ref] = deriveCodec[Ref]
+    implicit val readWriter: ReadWriter[Ref] = macroRW
   }
 
-  implicit val codec: Codec[Output] = deriveCodec[Output]
+  implicit val readWriter: ReadWriter[Output] = macroRW
 }

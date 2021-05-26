@@ -16,8 +16,9 @@
 
 package org.alephium.explorer.api.model
 
-import io.circe.{Codec, Decoder, Encoder}
+import upickle.core.Abort
 
+import org.alephium.json.Json._
 import org.alephium.protocol.ALF
 
 final class Height(val value: Int) extends AnyVal {
@@ -35,8 +36,14 @@ object Height {
 
   val genesis: Height = Height.unsafe(ALF.GenesisHeight)
 
-  implicit val codec: Codec[Height] =
-    Codec.from(Decoder.decodeInt.emap(from), Encoder.encodeInt.contramap(_.value))
+  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
+  implicit val readWriter: ReadWriter[Height] =
+    readwriter[Int].bimap[Height](_.value,
+                                  int =>
+                                    from(int) match {
+                                      case Right(height) => height
+                                      case Left(error)   => throw new Abort(error)
+                                  })
 
   implicit val ordering: Ordering[Height] = Ordering.by[Height, Int](_.value)
 }

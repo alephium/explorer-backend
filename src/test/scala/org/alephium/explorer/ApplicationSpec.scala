@@ -27,20 +27,20 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.testkit.SocketUtil
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
+import de.heikoseeberger.akkahttpupickle.UpickleCustomizationSupport
 import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.api.ApiModelCodec
+import org.alephium.api.{ApiError, ApiModelCodec}
 import org.alephium.api.model
 import org.alephium.api.model.{ChainInfo, HashesAtHeight, PeerAddress, SelfClique}
 import org.alephium.explorer.AlephiumSpec
-import org.alephium.explorer.api.ApiError
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service.BlockFlowClient
+import org.alephium.json.Json
 import org.alephium.protocol.model.{CliqueId, NetworkType}
 import org.alephium.util.{AVector, Duration, Hex, TimeStamp, U256}
 
@@ -50,8 +50,12 @@ class ApplicationSpec()
     with ScalaFutures
     with DatabaseFixture
     with Generators
-    with FailFastCirceSupport
-    with Eventually {
+    with Eventually
+    with UpickleCustomizationSupport {
+
+  override type Api = Json.type
+  override def api: Api = Json
+
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
   implicit val defaultTimeout          = RouteTestTimeout(5.seconds)
 
@@ -113,7 +117,7 @@ class ApplicationSpec()
     forAll(hashGen) { hash =>
       Get(s"/blocks/${hash.toHexString}") ~> routes ~> check {
         status is StatusCodes.NotFound
-        responseAs[ApiError] is ApiError.NotFound(hash.toHexString)
+        responseAs[ApiError.NotFound] is ApiError.NotFound(hash.toHexString)
       }
     }
   }
@@ -136,7 +140,7 @@ class ApplicationSpec()
     forAll(Gen.choose(minTimestamp, maxTimestamp)) { to =>
       Get(s"/blocks?from-ts=${maxTimestamp + 1}&to-ts=${to}") ~> routes ~> check {
         status is StatusCodes.BadRequest
-        responseAs[ApiError] is ApiError.BadRequest(
+        responseAs[ApiError.BadRequest] is ApiError.BadRequest(
           "Invalid value (expected value to pass custom validation: `from-ts` must be before `to-ts`, "
             ++ s"but was '(${TimeStamp.unsafe(maxTimestamp + 1)},${TimeStamp.unsafe(to)})')")
       }
@@ -148,9 +152,9 @@ class ApplicationSpec()
       val to = from + maxTimeInterval + 1
       Get(s"/blocks?from-ts=${from}&to-ts=${to}") ~> routes ~> check {
         status is StatusCodes.BadRequest
-        responseAs[ApiError] is ApiError.BadRequest(
-          s"Invalid value (expected value to pass custom validation: maximum interval is 10min, "
-            ++ s"but was '(${TimeStamp.unsafe(from)},${TimeStamp.unsafe(to)})')")
+        responseAs[ApiError.BadRequest] is ApiError.BadRequest(
+          s"Invalid value (expected value to pass custom validation: maximum interval is 600000ms, "
+            ++ s"but was '${scala.math.abs(to - from)}')")
       }
     }
   }
@@ -165,7 +169,7 @@ class ApplicationSpec()
     forAll(hashGen) { hash =>
       Get(s"/transactions/${hash.toHexString}") ~> routes ~> check {
         status is StatusCodes.NotFound
-        responseAs[ApiError] is ApiError.NotFound(hash.toHexString)
+        responseAs[ApiError.NotFound] is ApiError.NotFound(hash.toHexString)
       }
     }
   }
@@ -214,10 +218,10 @@ class ApplicationSpec()
     Get("/docs") ~> routes ~> check {
       status is StatusCodes.PermanentRedirect
     }
-    Get("/docs/openapi.yaml") ~> routes ~> check {
+    Get("/docs/openapi.json") ~> routes ~> check {
       status is StatusCodes.OK
     }
-    Get("/docs/index.html?url=/docs/openapi.yaml") ~> routes ~> check {
+    Get("/docs/index.html?url=/docs/openapi.json") ~> routes ~> check {
       status is StatusCodes.OK
     }
   }
@@ -234,7 +238,10 @@ object ApplicationSpec {
                             _networkType: NetworkType,
                             val blockflowFetchMaxAge: Duration)(implicit system: ActorSystem)
       extends ApiModelCodec
-      with FailFastCirceSupport {
+      with UpickleCustomizationSupport {
+
+    override type Api = Json.type
+    override def api: Api = Json
 
     implicit def networkType: NetworkType = _networkType
     val cliqueId                          = CliqueId.generate
@@ -290,6 +297,6 @@ object ApplicationSpec {
             SelfClique(cliqueId, networkType, 18, AVector.fill(groupNum)(peer), true, 1, groupNum))
         }
 
-    val server = Http().bindAndHandle(routes, address.getHostAddress, port)
+    val server = Http().newServerAt(address.getHostAddress, port).bindFlow(routes)
   }
 }

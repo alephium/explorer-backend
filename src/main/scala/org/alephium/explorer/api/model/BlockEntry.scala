@@ -16,14 +16,12 @@
 
 package org.alephium.explorer.api.model
 
-import io.circe.Codec
-import io.circe.generic.semiauto.deriveCodec
-
-import org.alephium.api.CirceUtils.timestampCodec
+import org.alephium.api.UtilJson._
 import org.alephium.explorer.BlockHash
 import org.alephium.explorer.HashCompanion
-import org.alephium.explorer.api.Circe.blockHashCodec
+import org.alephium.explorer.api.Json.blockHashReadWriter
 import org.alephium.explorer.service.FlowEntity
+import org.alephium.json.Json._
 import org.alephium.util.TimeStamp
 
 final case class BlockEntry(
@@ -44,7 +42,7 @@ object BlockEntry {
   }
   object Hash extends HashCompanion[BlockHash, Hash](BlockHash)(new Hash(_), _.value)
 
-  implicit val codec: Codec[BlockEntry] = deriveCodec[BlockEntry]
+  implicit val codec: ReadWriter[BlockEntry] = macroRW
 
   final case class Lite(
       hash: BlockEntry.Hash,
@@ -56,6 +54,6 @@ object BlockEntry {
       mainChain: Boolean
   )
   object Lite {
-    implicit val codec: Codec[Lite] = deriveCodec[Lite]
+    implicit val codec: ReadWriter[Lite] = macroRW
   }
 }

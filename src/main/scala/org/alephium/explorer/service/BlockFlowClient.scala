@@ -21,9 +21,8 @@ import scala.language.implicitConversions
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
-import sttp.client._
-import sttp.client.akkahttp.AkkaHttpBackend
-import sttp.tapir.DecodeResult
+import sttp.client3._
+import sttp.client3.akkahttp.AkkaHttpBackend
 import sttp.tapir.client.sttp._
 
 import org.alephium.api
@@ -81,7 +80,8 @@ object BlockFlowClient {
       implicit executionContext: ExecutionContext,
       actorSystem: ActorSystem)
       extends BlockFlowClient
-      with Endpoints {
+      with Endpoints
+      with SttpClientInterpreter {
 
     implicit lazy val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
     implicit def networkType: NetworkType      = _networkType
@@ -90,6 +90,15 @@ object BlockFlowClient {
       ProtocolGroupIndex.unsafe(x.value)
 
     private val backend = AkkaHttpBackend.usingActorSystem(actorSystem)
+
+    private def send[A, B](
+        endpoint: BaseEndpoint[A, B],
+        uri: Uri,
+        a: A
+    ): Future[Either[String, B]] =
+      backend
+        .send(toRequestThrowDecodeFailures(endpoint, Some(uri"${uri.toString}")).apply(a))
+        .map(_.body.left.map(_.detail))
 
     @SuppressWarnings(Array("org.wartremover.warts.ToString"))
     //TODO Introduce monad transformer helper for more readability
@@ -109,42 +118,23 @@ object BlockFlowClient {
                     Left(s"cannot find node for group $fromGroup (nodes: ${selfClique.nodes})"))
                 case Some((nodeAddress, restPort)) =>
                   val uri = s"http://${nodeAddress.getHostAddress}:${restPort}"
-                  backend
-                    .send(getBlock.toSttpRequest(uri"${uri}").apply(hash.value))
-                    .map(_.body match {
-                      //TODO improve error management, here the decoding failure comes if the `networkType` is different from the blockflow server
-                      case e: DecodeResult.Failure => Left(e.toString)
-                      case DecodeResult.Value(res) =>
-                        res.map(blockProtocolToEntity).left.map(_.detail)
-                    })
+                  send(getBlock, uri, hash.value).map(_.map(blockProtocolToEntity))
               }
           }
       }
 
     def fetchChainInfo(fromGroup: GroupIndex,
                        toGroup: GroupIndex): Future[Either[String, ChainInfo]] = {
-      backend
-        .send(
-          getChainInfo
-            .toSttpRequestUnsafe(uri"${address.toString}")
-            .apply(ChainIndex(fromGroup, toGroup)))
-        .map(_.body.left.map(_.detail))
+      send(getChainInfo, address, ChainIndex(fromGroup, toGroup))
     }
 
     def fetchHashesAtHeight(fromGroup: GroupIndex,
                             toGroup: GroupIndex,
                             height: Height): Future[Either[String, HashesAtHeight]] =
-      backend
-        .send(
-          getHashesAtHeight
-            .toSttpRequestUnsafe(uri"${address.toString}")
-            .apply((ChainIndex(fromGroup, toGroup), height.value)))
-        .map(_.body.left.map(_.detail))
+      send(getHashesAtHeight, address, (ChainIndex(fromGroup, toGroup), height.value))
 
     def fetchSelfClique(): Future[Either[String, SelfClique]] =
-      backend
-        .send(getSelfClique.toSttpRequestUnsafe(uri"${address.toString}").apply(()))
-        .map(_.body.left.map(_.detail))
+      send(getSelfClique, address, ())
   }
 
   def blockProtocolToEntity(block: api.model.BlockEntry): BlockEntity = {
