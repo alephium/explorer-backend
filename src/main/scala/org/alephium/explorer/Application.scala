@@ -63,7 +63,7 @@ class Application(host: String,
 
   private val bindingPromise: Promise[Http.ServerBinding] = Promise()
 
-  sideEffect {
+  def start: Future[Unit] = {
     for {
       selfClique <- blockFlowClient.fetchSelfClique()
       _          <- validateSelfClique(selfClique)

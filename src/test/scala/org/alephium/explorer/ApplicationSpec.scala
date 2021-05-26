@@ -101,6 +101,8 @@ class ApplicationSpec()
       databaseConfig
     )
 
+  app.start.futureValue
+
   //let it sync once
   eventually(app.blockFlowSyncService.stop().futureValue) is ()
 

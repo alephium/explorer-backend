@@ -17,6 +17,7 @@
 package org.alephium.explorer
 
 import scala.concurrent.{Await, ExecutionContext}
+import scala.util.{Failure, Success}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
@@ -63,6 +64,13 @@ object Main extends App with StrictLogging {
                     blockflowFetchMaxAge,
                     networkType,
                     databaseConfig)
+
+  app.start.onComplete {
+    case Success(_) => ()
+    case Failure(e) =>
+      logger.error("Fatal error during initialization.", e)
+      sys.exit(1)
+  }
 
   sideEffect(
     scala.sys.addShutdownHook(Await.result(app.stop, Duration.ofSecondsUnsafe(10).asScala)))
