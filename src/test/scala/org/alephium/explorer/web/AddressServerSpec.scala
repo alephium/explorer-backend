@@ -20,14 +20,16 @@ import scala.concurrent.Future
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
+import de.heikoseeberger.akkahttpupickle.UpickleCustomizationSupport
 import org.scalacheck.Gen
 
+import org.alephium.api.ApiError
 import org.alephium.explorer.{AlephiumSpec, Generators}
-import org.alephium.explorer.api.ApiError
 import org.alephium.explorer.api.model.{Address, Transaction}
 import org.alephium.explorer.service.TransactionService
-import org.alephium.util.U256
+import org.alephium.json.Json
+import org.alephium.protocol.model.NetworkType
+import org.alephium.util.{Duration, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var"))
 class AddressServerSpec()
@@ -35,7 +37,10 @@ class AddressServerSpec()
     with AkkaDecodeFailureHandler
     with Generators
     with ScalatestRouteTest
-    with FailFastCirceSupport {
+    with UpickleCustomizationSupport {
+  override type Api = Json.type
+
+  override def api: Api = Json
 
   it should "validate and forward `txLimit` query param " in new Fixture {
     var testLimit = 0
@@ -47,7 +52,7 @@ class AddressServerSpec()
       }
     }
 
-    val server = new AddressServer(transactionService)
+    val server = new AddressServer(transactionService, NetworkType.Devnet, Duration.zero)
 
     forAll(addressGen, Gen.chooseNum[Int](-10, 120)) {
       case (address, txLimit) =>

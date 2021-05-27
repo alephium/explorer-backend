@@ -24,7 +24,6 @@ package object explorer {
     () //Return unit to prevent warning due to discarding value
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.Equals"))
   implicit final class AnyOps[A](val self: A) extends AnyVal {
     def ===(other: A): Boolean = self == other
     def =/=(other: A): Boolean = self != other

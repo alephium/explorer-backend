@@ -17,10 +17,10 @@
 package org.alephium.explorer.api
 
 import sttp.tapir._
-import sttp.tapir.json.circe.jsonBody
+import sttp.tapir.generic.auto._
 
+import org.alephium.api.{alfJsonBody => jsonBody, BaseEndpoint}
 import org.alephium.explorer.api.Codecs.blockEntryHashTapirCodec
-import org.alephium.explorer.api.Schemas.{blockHashSchema, hashSchema, u256Schema}
 import org.alephium.explorer.api.model.{BlockEntry, TimeInterval}
 
 trait BlockEndpoints extends BaseEndpoint with QueryParams {
@@ -30,13 +30,13 @@ trait BlockEndpoints extends BaseEndpoint with QueryParams {
       .tag("Blocks")
       .in("blocks")
 
-  val getBlockByHash: Endpoint[BlockEntry.Hash, ApiError, BlockEntry, Nothing] =
+  val getBlockByHash: BaseEndpoint[BlockEntry.Hash, BlockEntry] =
     blocksEndpoint.get
       .in(path[BlockEntry.Hash]("block-hash"))
       .out(jsonBody[BlockEntry])
       .description("Get a block with hash")
 
-  val listBlocks: Endpoint[TimeInterval, ApiError, Seq[BlockEntry.Lite], Nothing] =
+  val listBlocks: BaseEndpoint[TimeInterval, Seq[BlockEntry.Lite]] =
     blocksEndpoint.get
       .in(timeIntervalQuery)
       .out(jsonBody[Seq[BlockEntry.Lite]])

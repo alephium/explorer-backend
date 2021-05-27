@@ -16,8 +16,9 @@
 
 package org.alephium.explorer.api.model
 
-import io.circe.{Codec, Decoder, Encoder}
+import upickle.core.Abort
 
+import org.alephium.json.Json._
 import org.alephium.util.Base58
 
 final class Address(val value: String) extends AnyVal {
@@ -27,16 +28,17 @@ final class Address(val value: String) extends AnyVal {
 object Address {
   def unsafe(value: String): Address = new Address(value)
 
-  implicit val encoder: Encoder[Address] =
-    Encoder.encodeString.contramap[Address](_.value)
+  implicit val writer: Writer[Address] =
+    StringWriter.comap[Address](_.value)
 
-  implicit val decoder: Decoder[Address] =
-    Decoder.decodeString.emap {
+  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
+  implicit val reader: Reader[Address] =
+    StringReader.map {
       Base58
         .decode(_)
         .map(bs => Address.unsafe(Base58.encode(bs)))
-        .toRight(s"cannot decode to base58")
+        .getOrElse(throw new Abort(s"cannot decode to base58"))
     }
 
-  implicit val codec: Codec[Address] = Codec.from(decoder, encoder)
+  implicit val readWriter: ReadWriter[Address] = ReadWriter.join(reader, writer)
 }

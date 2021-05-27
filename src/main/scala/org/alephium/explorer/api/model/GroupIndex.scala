@@ -16,7 +16,9 @@
 
 package org.alephium.explorer.api.model
 
-import io.circe.{Codec, Decoder, Encoder}
+import upickle.core.Abort
+
+import org.alephium.json.Json._
 
 final class GroupIndex(val value: Int) extends AnyVal {
   override def toString(): String = value.toString
@@ -31,6 +33,12 @@ object GroupIndex {
       Right(GroupIndex.unsafe(value))
     }
 
-  implicit val codec: Codec[GroupIndex] =
-    Codec.from(Decoder.decodeInt.emap(from), Encoder.encodeInt.contramap(_.value))
+  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
+  implicit val readWriter: ReadWriter[GroupIndex] =
+    readwriter[Int].bimap[GroupIndex](_.value,
+                                      int =>
+                                        from(int) match {
+                                          case Right(groupIndex) => groupIndex
+                                          case Left(error)       => throw new Abort(error)
+                                      })
 }

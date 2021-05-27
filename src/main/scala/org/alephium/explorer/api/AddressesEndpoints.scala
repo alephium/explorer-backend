@@ -17,10 +17,10 @@
 package org.alephium.explorer.api
 
 import sttp.tapir._
-import sttp.tapir.json.circe.jsonBody
+import sttp.tapir.generic.auto._
 
-import org.alephium.explorer.api.Codecs.addressTapirCodec
-import org.alephium.explorer.api.Schemas.{blockHashSchema, hashSchema, u256Schema}
+import org.alephium.api.{alfJsonBody => jsonBody, BaseEndpoint}
+import org.alephium.explorer.api.Codecs
 import org.alephium.explorer.api.model.{Address, AddressInfo, Transaction}
 
 // scalastyle:off magic.number
@@ -33,20 +33,19 @@ trait AddressesEndpoints extends BaseEndpoint {
 
   private val txLimit =
     query[Option[Int]]("tx-limit")
-      .validate(Validator.optionElement(Validator.min(1)))
-      .validate(Validator.optionElement(Validator.max(100)))
+      .validate(Validator.min(1).asOptionElement)
+      .validate(Validator.max(100).asOptionElement)
 
-  val getAddressInfo: Endpoint[(Address, Option[Int]), ApiError, AddressInfo, Nothing] =
+  val getAddressInfo: BaseEndpoint[(Address, Option[Int]), AddressInfo] =
     addressesEndpoint.get
-      .in(path[Address]("address"))
+      .in(path[Address]("address")(Codecs.addressTapirCodec))
       .in(txLimit)
       .out(jsonBody[AddressInfo])
       .description("Get address informations")
 
-  val getTransactionsByAddress
-    : Endpoint[(Address, Option[Int]), ApiError, Seq[Transaction], Nothing] =
+  val getTransactionsByAddress: BaseEndpoint[(Address, Option[Int]), Seq[Transaction]] =
     addressesEndpoint.get
-      .in(path[Address]("address"))
+      .in(path[Address]("address")(Codecs.addressTapirCodec))
       .in("transactions")
       .in(txLimit)
       .out(jsonBody[Seq[Transaction]])

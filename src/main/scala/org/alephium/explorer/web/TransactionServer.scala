@@ -19,17 +19,23 @@ package org.alephium.explorer.web
 import scala.concurrent.ExecutionContext
 
 import akka.http.scaladsl.server.Route
-import sttp.tapir.server.akkahttp.{AkkaHttpServerOptions, RichAkkaHttpEndpoint}
+import sttp.tapir.server.akkahttp.AkkaHttpServerInterpreter.toRoute
+import sttp.tapir.server.akkahttp.AkkaHttpServerOptions
 
-import org.alephium.explorer.api.{ApiError, TransactionEndpoints}
+import org.alephium.api.ApiError
+import org.alephium.explorer.api.TransactionEndpoints
 import org.alephium.explorer.service.TransactionService
+import org.alephium.protocol.model.NetworkType
+import org.alephium.util.Duration
 
-class TransactionServer(transactionService: TransactionService)(
+class TransactionServer(transactionService: TransactionService,
+                        val networkType: NetworkType,
+                        val blockflowFetchMaxAge: Duration)(
     implicit val serverOptions: AkkaHttpServerOptions,
     executionContext: ExecutionContext)
     extends Server
     with TransactionEndpoints {
-  val route: Route = getTransactionById.toRoute(
+  val route: Route = toRoute(getTransactionById)(
     hash =>
       transactionService
         .getTransaction(hash)

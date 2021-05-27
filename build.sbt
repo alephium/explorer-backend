@@ -55,17 +55,16 @@ lazy val root = (project in file("."))
       alephiumProtocol,
       alephiumApi,
       alephiumCrypto,
+      alephiumJson,
       tapirCore,
-      tapirCirce,
       tapirAkka,
       tapirOpenapi,
-      tapiOpenapiCirce,
+      tapirOpenapiModel,
       tapirSwaggerUi,
       tapirClient,
       sttpAkkaBackend,
-      circeCore,
-      circeGeneric,
-      akkaHttpCirce,
+      akkaHttpJson,
+      upickle,
       akkaHttpCors,
       scalaLogging,
       logback,
@@ -88,6 +87,10 @@ val wartsCompileExcludes = Seq(
   Wart.Any,
   Wart.ImplicitParameter,
   Wart.StringPlusAny,
+  Wart.Null, // for upickle macroRW
+  Wart.Equals, // for upickle macroRW
+  Wart.ToString, // for upickle macroRW
+  Wart.Var, // for upickle macroRW
   Wart.Nothing
 )
 val wartsTestExcludes = wartsCompileExcludes ++ Seq(

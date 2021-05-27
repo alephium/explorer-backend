@@ -16,28 +16,29 @@
 
 package org.alephium.explorer.api
 
-import io.circe
-import io.circe.syntax._
+import scala.util.{Failure, Success, Try}
+
 import sttp.tapir.{Codec, DecodeResult, Validator}
 import sttp.tapir.CodecFormat.TextPlain
 
 import org.alephium.explorer.{BlockHash, Hash}
-import org.alephium.explorer.api.Circe._
+import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
+import org.alephium.json.Json._
 import org.alephium.util.TimeStamp
 
 object Codecs {
   private val hashTapirCodec: Codec[String, Hash, TextPlain] =
-    fromCirce[Hash]
+    fromJson[Hash]
 
   private val blockHashTapirCodec: Codec[String, BlockHash, TextPlain] =
-    fromCirce[BlockHash]
+    fromJson[BlockHash]
 
   implicit val timestampTapirCodec: Codec[String, TimeStamp, TextPlain] =
     Codec.long.validate(Validator.min(0L)).map(TimeStamp.unsafe(_))(_.millis)
 
   implicit val addressTapirCodec: Codec[String, Address, TextPlain] =
-    fromCirce[Address]
+    fromJson[Address]
 
   implicit val blockEntryHashTapirCodec: Codec[String, BlockEntry.Hash, TextPlain] =
     blockHashTapirCodec.map(new BlockEntry.Hash(_))(_.value)
@@ -45,13 +46,17 @@ object Codecs {
   implicit val transactionHashTapirCodec: Codec[String, Transaction.Hash, TextPlain] =
     hashTapirCodec.map(new Transaction.Hash(_))(_.value)
 
-  private def fromCirce[A: circe.Codec]: Codec[String, A, TextPlain] =
+  def fromJson[A: ReadWriter]: Codec[String, A, TextPlain] =
     Codec.string.mapDecode[A] { raw =>
-      raw.asJson.as[A] match {
-        case Right(a) => DecodeResult.Value(a)
-        case Left(error) =>
+      Try(read[A](ujson.Str(raw))) match {
+        case Success(a) => DecodeResult.Value(a)
+        case Failure(error) =>
           DecodeResult.Error(raw, new IllegalArgumentException(error.getMessage))
       }
-    }(_.asJson.toString)
-
+    } { a =>
+      writeJs(a) match {
+        case ujson.Str(str) => str
+        case other          => write(other)
+      }
+    }
 }

@@ -25,17 +25,24 @@ import com.typesafe.scalalogging.StrictLogging
 
 import org.alephium.explorer.service._
 import org.alephium.explorer.web._
+import org.alephium.protocol.model.NetworkType
+import org.alephium.util.Duration
 
 // scalastyle:off magic.number
-class AppServer(blockService: BlockService, transactionService: TransactionService)(
-    implicit executionContext: ExecutionContext)
+class AppServer(blockService: BlockService,
+                transactionService: TransactionService,
+                networkType: NetworkType,
+                blockFlowFetchMaxAge: Duration)(implicit executionContext: ExecutionContext)
     extends StrictLogging
     with AkkaDecodeFailureHandler {
 
-  val blockServer: BlockServer             = new BlockServer(blockService)
-  val addressServer: AddressServer         = new AddressServer(transactionService)
-  val transactionServer: TransactionServer = new TransactionServer(transactionService)
-  val documentation: DocumentationServer   = new DocumentationServer
+  val blockServer: BlockServer = new BlockServer(blockService, networkType, blockFlowFetchMaxAge)
+  val addressServer: AddressServer =
+    new AddressServer(transactionService, networkType, blockFlowFetchMaxAge)
+  val transactionServer: TransactionServer =
+    new TransactionServer(transactionService, networkType, blockFlowFetchMaxAge)
+  val documentation: DocumentationServer =
+    new DocumentationServer(networkType, blockFlowFetchMaxAge)
 
   val route: Route =
     cors()(blockServer.route ~ addressServer.route ~ transactionServer.route ~ documentation.route)

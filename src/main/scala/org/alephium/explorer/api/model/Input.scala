@@ -16,10 +16,8 @@
 
 package org.alephium.explorer.api.model
 
-import io.circe.Codec
-import io.circe.generic.semiauto.deriveCodec
-
-import org.alephium.explorer.api.Circe.u256Codec
+import org.alephium.explorer.api.Json.u256ReadWriter
+import org.alephium.json.Json._
 import org.alephium.util.U256
 
 final case class Input(
@@ -31,5 +29,5 @@ final case class Input(
 )
 
 object Input {
-  implicit val codec: Codec[Input] = deriveCodec[Input]
+  implicit val readWriter: ReadWriter[Input] = macroRW
 }
