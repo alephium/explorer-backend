@@ -32,7 +32,7 @@ trait BlockFlowSyncService {
   def stop(): Future[Unit]
 }
 
-@SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+@SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Var"))
 object BlockFlowSyncService {
   def apply(groupNum: Int,
             syncPeriod: Duration,
@@ -78,7 +78,12 @@ object BlockFlowSyncService {
             logger.error("Failure while syncing", e)
         }
 
+    private var blocksToSync = 0.0
+    private var progress     = 0.0
+
     private def syncOnce(): Future[Unit] = {
+      blocksToSync = 0.0
+      progress     = 0.0
       Future
         .traverse(chainIndexes) {
           case (fromGroup, toGroup) =>
@@ -86,6 +91,8 @@ object BlockFlowSyncService {
         }
         .map(sideEffect)
     }
+
+    private def cursorUp(n: Int): String = s"\u001B[${n}A"
 
     private def syncChain(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Unit] = {
       blockFlowClient.fetchChainInfo(fromGroup, toGroup).flatMap {
@@ -96,7 +103,14 @@ object BlockFlowSyncService {
                 .map(_.value)
                 .getOrElse(-1)}, node = ${nodeHeight.currentHeight}")
             val heights = generateHeights(maybeLocalHeight, Height.unsafe(nodeHeight.currentHeight))
-            foldFutures(heights)(height => syncAt(fromGroup, toGroup, height))
+            blocksToSync = blocksToSync + heights.size
+            foldFutures(heights) { height =>
+              syncAt(fromGroup, toGroup, height).map { _ =>
+                progress = progress + 1.0
+                logger.debug(
+                  s"Syncing ${blocksToSync.toInt} blocks: ${(progress / blocksToSync * 100.0).toInt}%${cursorUp(1)}")
+              }
+            }
           }
         case Left(error) => Future.successful(logger.error(error))
       }
