@@ -30,5 +30,6 @@ class DocumentationServer(val networkType: NetworkType, val blockflowFetchMaxAge
     extends Server
     with Documentation {
 
-  val route: Route = new SwaggerAkka(openApiJson(docs), yamlName = "openapi.json").routes
+  val route: Route =
+    new SwaggerAkka(openApiJson(docs), yamlName = "explorer-backend-openapi.json").routes
 }

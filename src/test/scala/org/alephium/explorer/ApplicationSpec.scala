@@ -222,12 +222,12 @@ class ApplicationSpec()
     Get("/docs") ~> routes ~> check {
       status is StatusCodes.PermanentRedirect
     }
-    Get("/docs/openapi.json") ~> routes ~> check {
+    Get("/docs/explorer-backend-openapi.json") ~> routes ~> check {
       status is StatusCodes.OK
       val expectedOpenapi =
         read[ujson.Value](
           Source
-            .fromFile(Main.getClass.getResource("/openapi.json").getPath, "UTF-8")
+            .fromFile(Main.getClass.getResource("/explorer-backend-openapi.json").getPath, "UTF-8")
             .getLines()
             .toSeq
             .mkString("\n")
@@ -243,7 +243,7 @@ class ApplicationSpec()
 
       openapi is expectedOpenapi
     }
-    Get("/docs/index.html?url=/docs/openapi.json") ~> routes ~> check {
+    Get("/docs/index.html?url=/docs/explorer-backend-openapi.json") ~> routes ~> check {
       status is StatusCodes.OK
     }
   }
