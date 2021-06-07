@@ -79,11 +79,11 @@ object BlockFlowSyncService {
         }
 
     private var blocksToSync = 0.0
-    private var progress     = 0.0
+    private var downloaded   = 0.0
 
     private def syncOnce(): Future[Unit] = {
       blocksToSync = 0.0
-      progress     = 0.0
+      downloaded   = 0.0
       Future
         .traverse(chainIndexes) {
           case (fromGroup, toGroup) =>
@@ -92,23 +92,25 @@ object BlockFlowSyncService {
         .map(sideEffect)
     }
 
-    private def cursorUp(n: Int): String = s"\u001B[${n}A"
-
     private def syncChain(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Unit] = {
       blockFlowClient.fetchChainInfo(fromGroup, toGroup).flatMap {
         case Right(nodeHeight) =>
           blockDao.maxHeight(fromGroup, toGroup).flatMap { maybeLocalHeight =>
             logger.debug(
-              s"Syncing (${fromGroup.value}, ${toGroup.value}). Heights: local = ${maybeLocalHeight
+              s"Syncing chain ${fromGroup.value} -> ${toGroup.value}. Heights: local = ${maybeLocalHeight
                 .map(_.value)
-                .getOrElse(-1)}, node = ${nodeHeight.currentHeight}")
+                .getOrElse(-1)}, remote = ${nodeHeight.currentHeight}")
             val heights = generateHeights(maybeLocalHeight, Height.unsafe(nodeHeight.currentHeight))
             blocksToSync = blocksToSync + heights.size
             foldFutures(heights) { height =>
               syncAt(fromGroup, toGroup, height).map { _ =>
-                progress = progress + 1.0
-                logger.debug(
-                  s"Syncing ${blocksToSync.toInt} blocks: ${(progress / blocksToSync * 100.0).toInt}%${cursorUp(1)}")
+                synchronized {
+                  downloaded = downloaded + 1.0
+                  if (downloaded % 100 == 0 || downloaded == blocksToSync) {
+                    logger.debug(
+                      s"Syncing ${blocksToSync.toInt} blocks, got ${downloaded.toInt}, progress ${(downloaded / blocksToSync * 100.0).toInt}%")
+                  }
+                }
               }
             }
           }
