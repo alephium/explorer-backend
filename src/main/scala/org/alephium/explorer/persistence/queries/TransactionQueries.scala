@@ -48,6 +48,10 @@ trait TransactionQueries
     } yield ()
   }
 
+  def insertAllTransactionFromBlockQuerys(blockEntities: Seq[BlockEntity]): DBActionW[Unit] = {
+    DBIOAction.sequence(blockEntities.map(insertTransactionFromBlockQuery)).map(_ => ())
+  }
+
   private val listTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
     transactionsTable
       .filter(_.blockHash === blockHash)

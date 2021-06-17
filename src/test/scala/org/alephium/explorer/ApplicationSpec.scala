@@ -18,6 +18,7 @@ package org.alephium.explorer
 
 import java.net.InetAddress
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.io.Source
 
@@ -35,7 +36,7 @@ import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.api.{ApiError, ApiModelCodec}
 import org.alephium.api.model
-import org.alephium.api.model.{ChainInfo, HashesAtHeight, PeerAddress, SelfClique}
+import org.alephium.api.model.{ChainInfo, FetchResponse, HashesAtHeight, PeerAddress, SelfClique}
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
@@ -65,10 +66,10 @@ class ApplicationSpec()
 
   val txLimit = 20
 
-  val blockFlow: Seq[Seq[model.BlockEntry]] =
+  val blockflow: Seq[Seq[model.BlockEntry]] =
     blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
 
-  val blocksProtocol: Seq[model.BlockEntry] = blockFlow.flatten
+  val blocksProtocol: Seq[model.BlockEntry] = blockflow.flatten
   val blockEntities: Seq[BlockEntity]       = blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
 
   val blocks: Seq[BlockEntry] = blockEntitiesToBlockEntries(Seq(blockEntities)).flatten
@@ -86,7 +87,7 @@ class ApplicationSpec()
     new ApplicationSpec.BlockFlowServerMock(groupNum,
                                             localhost,
                                             blockFlowPort,
-                                            blocksProtocol,
+                                            blockflow,
                                             networkType,
                                             blockflowFetchMaxAge)
 
@@ -256,11 +257,13 @@ object ApplicationSpec {
   class BlockFlowServerMock(groupNum: Int,
                             address: InetAddress,
                             port: Int,
-                            blocks: Seq[model.BlockEntry],
+                            blockflow: Seq[Seq[model.BlockEntry]],
                             _networkType: NetworkType,
                             val blockflowFetchMaxAge: Duration)(implicit system: ActorSystem)
       extends ApiModelCodec
       with UpickleCustomizationSupport {
+
+    val blocks = blockflow.flatten
 
     override type Api = Json.type
     override def api: Api = Json
@@ -272,7 +275,7 @@ object ApplicationSpec {
         case block
             if block.chainFrom === from.value && block.chainTo === to.value && block.height === height.value =>
           block.hash
-      }))
+      }.toSeq))
 
     def getChainInfo(from: GroupIndex, to: GroupIndex): ChainInfo = {
       ChainInfo(
@@ -288,9 +291,29 @@ object ApplicationSpec {
     private val peer = PeerAddress(address, port, 0, 0)
     val HashSegment  = Segment.map(raw => BlockHash.unsafe(Hex.unsafe(raw)))
     val routes: Route =
-      path("blockflow" / "blocks" / HashSegment) { hash =>
-        get { complete(blocks.find(_.hash === hash).get) }
+      path("blockflow") {
+        parameters("fromTs".as[Long]) { fromTs =>
+          parameters("toTs".as[Long]) { toTs =>
+            get {
+              complete(
+                Future.successful(
+                  FetchResponse(
+                    AVector.from(
+                      blockflow
+                        .map(
+                          _.filter(b =>
+                            b.timestamp >= TimeStamp.unsafe(fromTs) && b.timestamp <= TimeStamp
+                              .unsafe(toTs))
+                        )
+                        .map(AVector.from(_)))))
+              )
+            }
+          }
+        }
       } ~
+        path("blockflow" / "blocks" / HashSegment) { hash =>
+          get { complete(blocks.find(_.hash === hash).get) }
+        } ~
         path("blockflow" / "hashes") {
           parameters("fromGroup".as[Int]) { from =>
             parameters("toGroup".as[Int]) { to =>
@@ -315,8 +338,7 @@ object ApplicationSpec {
           }
         } ~
         path("infos" / "self-clique") {
-          complete(
-            SelfClique(cliqueId, networkType, 18, AVector.fill(groupNum)(peer), true, 1, groupNum))
+          complete(SelfClique(cliqueId, networkType, 18, AVector(peer), true, groupNum, groupNum))
         }
 
     val server = Http().newServerAt(address.getHostAddress, port).bindFlow(routes)

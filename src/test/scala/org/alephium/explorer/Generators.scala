@@ -103,19 +103,21 @@ trait Generators {
                              chainTo.value,
                              height.value,
                              AVector.from(deps.map(_.value)),
-                             Some(AVector.from(transactions)))
+                             AVector.from(transactions))
 
   def blockEntityGen(groupNum: Int,
                      chainFrom: GroupIndex,
                      chainTo: GroupIndex,
                      parent: Option[BlockEntity]): Gen[BlockEntity] =
     blockEntryProtocolGen.map { entry =>
-      val deps   = parent.map(p => Seq.fill(2 * groupNum - 1)(p.hash)).getOrElse(Seq.empty)
-      val height = Height.unsafe(parent.map(_.height.value + 1).getOrElse(0))
+      val deps      = parent.map(p => Seq.fill(2 * groupNum - 1)(p.hash)).getOrElse(Seq.empty)
+      val height    = Height.unsafe(parent.map(_.height.value + 1).getOrElse(0))
+      val timestamp = parent.map(_.timestamp.plusSecondsUnsafe(1)).getOrElse(TimeStamp.zero)
       BlockFlowClient.blockProtocolToEntity(
         entry
           .copy(chainFrom = chainFrom.value,
                 chainTo   = chainTo.value,
+                timestamp = timestamp,
                 height    = height.value,
                 deps      = AVector.from(deps.map(_.value))))
 

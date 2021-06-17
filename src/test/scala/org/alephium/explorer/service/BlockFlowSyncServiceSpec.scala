@@ -18,6 +18,7 @@ package org.alephium.explorer.service
 
 import scala.concurrent.{ExecutionContext, Future}
 
+import akka.http.scaladsl.model.Uri
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
@@ -34,15 +35,40 @@ import org.alephium.util.{AVector, Duration, TimeStamp}
 class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Eventually {
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
 
+  it should "build timestamp range" in new Fixture {
+    def t(l: Long)            = TimeStamp.unsafe(l)
+    def s(l: Long)            = Duration.ofMillisUnsafe(l)
+    def r(l1: Long, l2: Long) = (t(l1), t(l2))
+
+    BlockFlowSyncService.buildTimestampRange(t(0), t(5), s(1)) is
+      Seq(r(0, 1), r(2, 3), r(4, 5))
+
+    BlockFlowSyncService.buildTimestampRange(t(0), t(5), s(2)) is
+      Seq(r(0, 2), r(3, 5))
+
+    BlockFlowSyncService.buildTimestampRange(t(0), t(6), s(2)) is
+      Seq(r(0, 2), r(3, 5), r(6, 6))
+
+    BlockFlowSyncService.buildTimestampRange(t(0), t(7), s(2)) is
+      Seq(r(0, 2), r(3, 5), r(6, 7))
+
+    BlockFlowSyncService.buildTimestampRange(t(1), t(1), s(1)) is
+      Seq.empty
+
+    BlockFlowSyncService.buildTimestampRange(t(1), t(0), s(1)) is
+      Seq.empty
+
+    BlockFlowSyncService.buildTimestampRange(t(0), t(1), s(0)) is
+      Seq.empty
+  }
+
   it should "start/sync/stop" in new Fixture {
     val blockFlowSyncService =
-      BlockFlowSyncService(groupNum, syncPeriod = Duration.unsafe(2000), blockFlowClient, blockDao)
+      BlockFlowSyncService(groupNum, syncPeriod = Duration.unsafe(100), blockFlowClient, blockDao)
 
     checkBlocks(Seq.empty)
 
-    blockFlowSyncService.start().futureValue is ()
-
-    eventually(checkBlocks(blocks))
+    blockFlowSyncService.start(Seq("")).futureValue is ()
 
     eventually(checkMainChain(mainChain))
 
@@ -100,7 +126,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
     )
 
     // format: off
-    var chainOToO = Seq(block0, block1, block2, block3, block4, block5, block6, block7, block8, block9, block10, block11, block12, block13, block14)
+    val chainOToO = Seq(block0, block1, block2, block3, block4, block5, block6, block7, block8, block9, block10, block11, block12, block13, block14)
     // format: on
 
     val chains = chainIndexes.map {
@@ -123,6 +149,18 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
     val blockFlowClient: BlockFlowClient = new BlockFlowClient {
       def fetchBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]] =
         Future.successful(blockEntities.find(_.hash === hash).toRight(s"$hash Not Found"))
+
+      def fetchBlocks(fromTs: TimeStamp,
+                      toTs: TimeStamp,
+                      uri: Uri): Future[Either[String, Seq[Seq[BlockEntity]]]] =
+        Future.successful(
+          Right(
+            blockEntities
+              .filter(b => b.timestamp >= fromTs && b.timestamp < toTs)
+              .groupBy(b => (b.chainFrom, b.chainTo))
+              .toSeq
+              .map(_._2)
+              .map(_.distinctBy(_.height).sortBy(_.height))))
 
       def fetchChainInfo(from: GroupIndex, to: GroupIndex): Future[Either[String, ChainInfo]] =
         Future.successful(
@@ -158,8 +196,9 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
           TimeInterval.unsafe(TimeStamp.unsafe(0), TimeStamp.unsafe(Long.MaxValue)))
         .futureValue
         .map(_.hash)
-        .toSet
-      result is blocksToCheck.map(_.hash).toSet
+
+      result.size is blocksToCheck.size
+      result.toSet is blocksToCheck.map(_.hash).toSet
     }
 
     def checkMainChain(mainChain: Seq[BlockEntry.Hash]) = {

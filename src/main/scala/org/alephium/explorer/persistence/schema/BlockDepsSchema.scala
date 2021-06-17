@@ -27,14 +27,16 @@ trait BlockDepsSchema extends CustomTypes {
 
   import config.profile.api._
 
-  class BlockDeps(tag: Tag) extends Table[(BlockEntry.Hash, BlockEntry.Hash)](tag, "block_deps") {
+  class BlockDeps(tag: Tag)
+      extends Table[(BlockEntry.Hash, BlockEntry.Hash, Int)](tag, "block_deps") {
     def hash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("hash")
     def dep: Rep[BlockEntry.Hash]  = column[BlockEntry.Hash]("dep")
+    def order: Rep[Int]            = column[Int]("order")
 
     def hashIdx: Index = index("deps_hash_idx", hash)
     def depIdx: Index  = index("deps_dep_idx", dep)
 
-    def * : ProvenShape[(BlockEntry.Hash, BlockEntry.Hash)] = (hash, dep)
+    def * : ProvenShape[(BlockEntry.Hash, BlockEntry.Hash, Int)] = (hash, dep, order)
   }
 
   val blockDepsTable: TableQuery[BlockDeps] = TableQuery[BlockDeps]

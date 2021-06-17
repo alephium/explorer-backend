@@ -44,6 +44,10 @@ trait BlockFlowClient {
                           toGroup: GroupIndex,
                           height: Height): Future[Either[String, HashesAtHeight]]
 
+  def fetchBlocks(fromTs: TimeStamp,
+                  toTs: TimeStamp,
+                  uri: Uri): Future[Either[String, Seq[Seq[BlockEntity]]]]
+
   def fetchBlocksAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
       implicit executionContext: ExecutionContext): Future[Either[Seq[String], Seq[BlockEntity]]] =
     fetchHashesAtHeight(fromGroup, toGroup, height).flatMap {
@@ -133,13 +137,20 @@ object BlockFlowClient {
                             height: Height): Future[Either[String, HashesAtHeight]] =
       send(getHashesAtHeight, address, (ChainIndex(fromGroup, toGroup), height.value))
 
+    def fetchBlocks(fromTs: TimeStamp,
+                    toTs: TimeStamp,
+                    uri: Uri): Future[Either[String, Seq[Seq[BlockEntity]]]] = {
+      send(getBlockflow, uri, api.model.TimeInterval(fromTs, toTs))
+        .map(_.map(_.blocks.map(_.map(blockProtocolToEntity).toSeq).toSeq))
+    }
+
     def fetchSelfClique(): Future[Either[String, SelfClique]] =
       send(getSelfClique, address, ())
   }
 
   def blockProtocolToEntity(block: api.model.BlockEntry): BlockEntity = {
     val hash         = new BlockEntry.Hash(block.hash)
-    val transactions = block.transactions.map(_.toSeq).getOrElse(Seq.empty)
+    val transactions = block.transactions.toSeq
     BlockEntity(
       hash,
       block.timestamp,

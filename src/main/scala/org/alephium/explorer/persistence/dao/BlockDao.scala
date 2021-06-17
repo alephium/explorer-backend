@@ -27,7 +27,7 @@ import slick.jdbc.meta.MTable
 
 import org.alephium.explorer.{sideEffect, AnyOps}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, TimeInterval}
-import org.alephium.explorer.persistence.{DBActionR, DBRunner}
+import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema._
@@ -38,9 +38,14 @@ trait BlockDao {
                   toGroup: GroupIndex,
                   height: Height): Future[Seq[BlockEntry]]
   def insert(block: BlockEntity): Future[Unit]
+  def insertAll(blocks: Seq[BlockEntity]): Future[Unit]
   def listMainChain(timeInterval: TimeInterval): Future[Seq[BlockEntry.Lite]]
   def listIncludingForks(timeInterval: TimeInterval): Future[Seq[BlockEntry.Lite]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
+  def updateMainChain(hash: BlockEntry.Hash,
+                      chainFrom: GroupIndex,
+                      chainTo: GroupIndex,
+                      groupNum: Int): Future[Option[BlockEntry.Hash]]
   def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit]
 }
 
@@ -60,7 +65,7 @@ object BlockDao {
     import config.profile.api._
 
     private val blockDepsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
-      blockDepsTable.filter(_.hash === blockHash).map(_.dep)
+      blockDepsTable.filter(_.hash === blockHash).sortBy(_.order).map(_.dep)
     }
 
     private def buildBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry] =
@@ -83,27 +88,38 @@ object BlockDao {
     def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]] =
       run(getBlockEntryAction(hash))
 
+    private def getAtHeightAction(fromGroup: GroupIndex,
+                                  toGroup: GroupIndex,
+                                  height: Height): DBActionR[Seq[BlockEntry]] =
+      for {
+        headers <- blockHeadersTable
+          .filter(header =>
+            header.height === height && header.chainFrom === fromGroup && header.chainTo === toGroup)
+          .result
+        blocks <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
+      } yield blocks
+
     def getAtHeight(fromGroup: GroupIndex,
                     toGroup: GroupIndex,
                     height: Height): Future[Seq[BlockEntry]] =
-      run(
-        for {
-          headers <- blockHeadersTable
-            .filter(header =>
-              header.height === height && header.chainFrom === fromGroup && header.chainTo === toGroup)
-            .result
-          blocks <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
-        } yield blocks
-      )
+      run(getAtHeightAction(fromGroup, toGroup, height))
 
-    def insert(block: BlockEntity): Future[Unit] =
-      run(
-        (for {
-          _ <- blockHeadersTable.insertOrUpdate(BlockHeader.fromEntity(block)).filter(_ > 0)
-          _ <- DBIOAction.sequence(block.deps.map(dep => blockDepsTable += (block.hash -> dep)))
-          _ <- insertTransactionFromBlockQuery(block)
-        } yield ()).transactionally
-      ).map(_ => ())
+    def insertAction(block: BlockEntity): DBActionRWT[Unit] =
+      (for {
+        _ <- blockHeadersTable.insertOrUpdate(BlockHeader.fromEntity(block)).filter(_ > 0)
+        _ <- DBIOAction.sequence(block.deps.zipWithIndex.map {
+          case (dep, i) => blockDepsTable += ((block.hash, dep, i))
+        })
+        _ <- insertTransactionFromBlockQuery(block)
+      } yield ()).transactionally
+
+    def insert(block: BlockEntity): Future[Unit] = {
+      run(insertAction(block))
+    }
+
+    def insertAll(blocks: Seq[BlockEntity]): Future[Unit] = {
+      run(DBIOAction.sequence(blocks.map(insertAction))).map(_ => ())
+    }
 
     def listMainChain(timeInterval: TimeInterval): Future[Seq[BlockEntry.Lite]] = {
       val action =
@@ -143,6 +159,68 @@ object BlockDao {
       run(query.result)
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+    private def updateMainChainAction(hash: BlockEntry.Hash,
+                                      chainFrom: GroupIndex,
+                                      chainTo: GroupIndex,
+                                      groupNum: Int): DBActionRWT[Option[BlockEntry.Hash]] = {
+      getBlockEntryAction(hash)
+        .flatMap {
+          case Some(block) if !block.mainChain =>
+            assert(block.chainFrom == chainFrom && block.chainTo == chainTo)
+            (for {
+              blocks <- getAtHeightAction(block.chainFrom, block.chainTo, block.height)
+              _ <- DBIOAction.sequence(
+                blocks
+                  .map(_.hash)
+                  .filterNot(_ === block.hash)
+                  .map(updateMainChainStatusAction(_, false)))
+              _ <- updateMainChainStatusAction(hash, true)
+            } yield {
+              block.parent(groupNum).map(Right(_))
+            })
+          case None => DBIOAction.successful(Some(Left(hash)))
+          case _    => DBIOAction.successful(None)
+        }
+        .flatMap {
+          case Some(Right(parent)) => updateMainChainAction(parent, chainFrom, chainTo, groupNum)
+          case Some(Left(missing)) => DBIOAction.successful(Some(missing))
+          case None                => DBIOAction.successful(None)
+        }
+    }
+
+    def updateMainChain(hash: BlockEntry.Hash,
+                        chainFrom: GroupIndex,
+                        chainTo: GroupIndex,
+                        groupNum: Int): Future[Option[BlockEntry.Hash]] = {
+      run(updateMainChainAction(hash, chainFrom, chainTo, groupNum))
+    }
+
+    private def updateMainChainStatusAction(hash: BlockEntry.Hash,
+                                            isMainChain: Boolean): DBActionRWT[Unit] = {
+      val query =
+        for {
+          _ <- blockHeadersTable
+            .filter(_.hash === hash)
+            .map(_.mainChain)
+            .update(isMainChain)
+          _ <- outputsTable
+            .filter(_.blockHash === hash)
+            .map(_.mainChain)
+            .update(isMainChain)
+          _ <- inputsTable
+            .filter(_.blockHash === hash)
+            .map(_.mainChain)
+            .update(isMainChain)
+        } yield ()
+
+      query.transactionally
+    }
+
+    def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit] = {
+      run(updateMainChainStatusAction(hash, isMainChain))
+    }
+
     //TODO Look for something like https://flywaydb.org/ to manage schemas
     @SuppressWarnings(
       Array("org.wartremover.warts.JavaSerializable",
@@ -164,26 +242,6 @@ object BlockDao {
     }
     sideEffect {
       Await.result(f, Duration.Inf)
-    }
-
-    def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit] = {
-      val query =
-        for {
-          _ <- blockHeadersTable
-            .filter(_.hash === hash)
-            .map(_.mainChain)
-            .update(isMainChain)
-          _ <- outputsTable
-            .filter(_.blockHash === hash)
-            .map(_.mainChain)
-            .update(isMainChain)
-          _ <- inputsTable
-            .filter(_.blockHash === hash)
-            .map(_.mainChain)
-            .update(isMainChain)
-        } yield ()
-
-      run(query.transactionally)
     }
   }
 }
