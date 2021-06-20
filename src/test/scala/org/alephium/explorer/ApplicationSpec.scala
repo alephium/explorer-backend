@@ -285,7 +285,7 @@ object ApplicationSpec {
           .getOrElse(Height.genesis.value))
     }
 
-    private val peer = PeerAddress(address, port, 0)
+    private val peer = PeerAddress(address, port, 0, 0)
     val HashSegment  = Segment.map(raw => BlockHash.unsafe(Hex.unsafe(raw)))
     val routes: Route =
       path("blockflow" / "blocks" / HashSegment) { hash =>
