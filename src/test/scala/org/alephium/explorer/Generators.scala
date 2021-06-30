@@ -75,7 +75,7 @@ trait Generators {
     for {
       amount  <- amountGen
       address <- addressProtocolGen
-    } yield protocolApi.Output(amount, address, None)
+    } yield protocolApi.Output(amount, address, AVector.empty)
 
   def transactionProtocolGen: Gen[protocolApi.Tx] =
     for {
