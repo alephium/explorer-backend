@@ -25,7 +25,7 @@ import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
-import org.alephium.api.model.SelfClique
+import org.alephium.api.model.{PeerAddress, SelfClique}
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
 import org.alephium.explorer.service._
 import org.alephium.explorer.sideEffect
@@ -63,11 +63,18 @@ class Application(host: String,
 
   private val bindingPromise: Promise[Http.ServerBinding] = Promise()
 
+  private def urisFromPeers(peers: Seq[PeerAddress]): Seq[Uri] = {
+    peers.map { peer =>
+      s"http://${peer.address.getHostAddress}:${peer.restPort}"
+    }
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   def start: Future[Unit] = {
     for {
       selfClique <- blockFlowClient.fetchSelfClique()
       _          <- validateSelfClique(selfClique)
-      _          <- blockFlowSyncService.start()
+      _          <- blockFlowSyncService.start(urisFromPeers(selfClique.toOption.get.nodes.toSeq))
       binding    <- Http().newServerAt(host, port).bindFlow(server.route)
     } yield {
       sideEffect(bindingPromise.success(binding))
