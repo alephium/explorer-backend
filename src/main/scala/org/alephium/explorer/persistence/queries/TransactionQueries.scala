@@ -103,59 +103,38 @@ trait TransactionQueries
         .take(limit)
   }
 
-  private def buildTxHashesQuery(address: Rep[Address],
-                                 toDrop: ConstColumn[Long],
-                                 limit: ConstColumn[Long]) =
+  private def inputsFromTxs(txHashes: Seq[Transaction.Hash]) = {
     mainInputs
-      .join(mainOutputs)
-      .on(_.outputRefKey === _.key)
-      .filter(_._2.address === address)
-      .map { case (input, _) => (input.txHash, input.timestamp) }
-      .union(
-        mainOutputs
-          .filter(_.address === address)
-          .map(out => (out.txHash, out.timestamp))
-      )
-      .sortBy { case (txHash, timestamp) => (timestamp.desc, txHash) }
-      .drop(toDrop)
-      .take(limit)
-
-  private val inputsFromTxs = Compiled {
-    (address: Rep[Address], toDrop: ConstColumn[Long], limit: ConstColumn[Long]) =>
-      buildTxHashesQuery(address, toDrop, limit)
-        .join(mainInputs)
-        .on(_._1 === _.txHash)
-        .joinLeft(mainOutputs)
-        .on {
-          case ((_, input), outputs) =>
-            input.outputRefKey === outputs.key
-        }
-        .map {
-          case (((txHash, _), input), outputOpt) =>
-            (txHash,
-             (input.scriptHint,
-              input.outputRefKey,
-              input.unlockScript,
-              outputOpt.map(_.txHash),
-              outputOpt.map(_.address),
-              outputOpt.map(_.amount)))
-        }
+      .filter(_.txHash inSet txHashes)
+      .joinLeft(mainOutputs)
+      .on {
+        case (input, outputs) =>
+          input.outputRefKey === outputs.key
+      }
+      .map {
+        case (input, outputOpt) =>
+          (input.txHash,
+           (input.scriptHint,
+            input.outputRefKey,
+            input.unlockScript,
+            outputOpt.map(_.txHash),
+            outputOpt.map(_.address),
+            outputOpt.map(_.amount)))
+      }
   }
 
-  private val outputsFromTxs = Compiled {
-    (address: Rep[Address], toDrop: ConstColumn[Long], limit: ConstColumn[Long]) =>
-      buildTxHashesQuery(address, toDrop, limit)
-        .join(mainOutputs)
-        .on(_._1 === _.txHash)
-        .joinLeft(mainInputs)
-        .on {
-          case ((_, out), inputs) =>
-            out.key === inputs.outputRefKey
-        }
-        .map {
-          case (((txHash, _), output), input) =>
-            (txHash, (output.amount, output.address, output.lockTime, input.map(_.txHash)))
-        }
+  private def outputsFromTxs(txHashes: Seq[Transaction.Hash]) = {
+    mainOutputs
+      .filter(_.txHash inSet txHashes)
+      .joinLeft(mainInputs)
+      .on {
+        case (out, inputs) =>
+          out.key === inputs.outputRefKey
+      }
+      .map {
+        case (output, input) =>
+          (output.txHash, (output.amount, output.address, output.lockTime, input.map(_.txHash)))
+      }
   }
 
   def getTransactionsByAddress(address: Address,
@@ -166,8 +145,9 @@ trait TransactionQueries
     val txHashesTsQuery = getTxHashesQuery((address, toDrop, limit))
     for {
       txHashesTs <- txHashesTsQuery.result
-      ins        <- inputsFromTxs((address, toDrop, limit)).result
-      ous        <- outputsFromTxs((address, toDrop, limit)).result
+      txHashes = txHashesTs.map(_._1)
+      ins <- inputsFromTxs(txHashes).result
+      ous <- outputsFromTxs(txHashes).result
     } yield {
       val insByTx = ins.groupBy(_._1).view.mapValues(_.map { case (_, in) => toApiInput(in) })
       val ousByTx = ous.groupBy(_._1).view.mapValues(_.map { case (_, o)  => toApiOutput(o) })
