@@ -170,7 +170,7 @@ class TransactionServiceSpec
       tx1.hash,
       blockHash1,
       ts1,
-      Seq(Input(Output.Ref(0, output0.key), None, Some(tx0.hash), Some(address0), Some(U256.One))),
+      Seq(Input(Output.Ref(0, output0.key), None, tx0.hash, address0, U256.One)),
       Seq(Output(U256.One, address1, None, None))
     )
 

@@ -29,12 +29,12 @@ final case class InputEntity(
     unlockScript: Option[String],
     mainChain: Boolean
 ) {
-  def toApi(outputRef: Option[OutputEntity]): Input =
+  def toApi(outputRef: OutputEntity): Input =
     Input(
       Output.Ref(scriptHint, outputRefKey),
       unlockScript,
-      outputRef.map(_.txHash),
-      outputRef.map(_.address),
-      outputRef.map(ref => ref.amount)
+      outputRef.txHash,
+      outputRef.address,
+      outputRef.amount
     )
 }

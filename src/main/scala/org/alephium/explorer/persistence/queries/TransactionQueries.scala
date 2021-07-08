@@ -163,16 +163,16 @@ trait TransactionQueries
   private val getInputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
     mainInputs
       .filter(_.txHash === txHash)
-      .joinLeft(mainOutputs)
+      .join(mainOutputs)
       .on(_.outputRefKey === _.key)
       .map {
-        case (input, outputOpt) =>
+        case (input, output) =>
           (input.scriptHint,
            input.outputRefKey,
            input.unlockScript,
-           outputOpt.map(_.txHash),
-           outputOpt.map(_.address),
-           outputOpt.map(_.amount))
+           output.txHash,
+           output.address,
+           output.amount)
       }
   }
 
@@ -213,10 +213,10 @@ trait TransactionQueries
     (scriptHint: Int,
      key: Hash,
      unlockScript: Option[String],
-     txHashOpt: Option[Transaction.Hash],
-     addressOpt: Option[Address],
-     amountOpt: Option[U256]) =>
-      Input(Output.Ref(scriptHint, key), unlockScript, txHashOpt, addressOpt, amountOpt)
+     txHash: Transaction.Hash,
+     address: Address,
+     amount: U256) =>
+      Input(Output.Ref(scriptHint, key), unlockScript, txHash, address, amount)
   }.tupled
 
   private val toApiOutput = (Output.apply _).tupled

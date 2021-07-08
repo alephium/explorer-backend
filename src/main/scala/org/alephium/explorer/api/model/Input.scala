@@ -23,9 +23,9 @@ import org.alephium.util.U256
 final case class Input(
     outputRef: Output.Ref,
     unlockScript: Option[String],
-    txHashRef: Option[Transaction.Hash], // input can be genesis input
-    address: Option[Address],
-    amount: Option[U256]
+    txHashRef: Transaction.Hash,
+    address: Address,
+    amount: U256
 )
 
 object Input {

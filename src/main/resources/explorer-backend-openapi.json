@@ -724,7 +724,10 @@
       },
       "Input": {
         "required": [
-          "outputRef"
+          "outputRef",
+          "txHashRef",
+          "address",
+          "amount"
         ],
         "type": "object",
         "properties": {
