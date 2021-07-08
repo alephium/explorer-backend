@@ -18,13 +18,13 @@ package org.alephium.explorer.service
 
 import scala.concurrent.Future
 
-import org.alephium.explorer.api.model.{Address, Transaction}
+import org.alephium.explorer.api.model.{Address, Pagination, Transaction}
 import org.alephium.explorer.persistence.dao.TransactionDao
 import org.alephium.util.U256
 
 trait TransactionService {
   def getTransaction(transactionHash: Transaction.Hash): Future[Option[Transaction]]
-  def getTransactionsByAddress(address: Address, txLimit: Int): Future[Seq[Transaction]]
+  def getTransactionsByAddress(address: Address, pagination: Pagination): Future[Seq[Transaction]]
   def getBalance(address: Address): Future[U256]
 }
 
@@ -36,8 +36,9 @@ object TransactionService {
     def getTransaction(transactionHash: Transaction.Hash): Future[Option[Transaction]] =
       transactionDao.get(transactionHash)
 
-    def getTransactionsByAddress(address: Address, txLimit: Int): Future[Seq[Transaction]] =
-      transactionDao.getByAddress(address, txLimit)
+    def getTransactionsByAddress(address: Address,
+                                 pagination: Pagination): Future[Seq[Transaction]] =
+      transactionDao.getByAddress(address, pagination)
 
     def getBalance(address: Address): Future[U256] =
       transactionDao.getBalance(address)

@@ -26,7 +26,7 @@ import slick.jdbc.JdbcProfile
 import slick.jdbc.meta.MTable
 
 import org.alephium.explorer.{sideEffect, AnyOps}
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, TimeInterval}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, Pagination, TimeInterval}
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.TransactionQueries
@@ -39,7 +39,7 @@ trait BlockDao {
                   height: Height): Future[Seq[BlockEntry]]
   def insert(block: BlockEntity): Future[Unit]
   def insertAll(blocks: Seq[BlockEntity]): Future[Unit]
-  def listMainChain(timeInterval: TimeInterval): Future[Seq[BlockEntry.Lite]]
+  def listMainChain(pagination: Pagination): Future[Seq[BlockEntry.Lite]]
   def listIncludingForks(timeInterval: TimeInterval): Future[Seq[BlockEntry.Lite]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
   def updateMainChain(hash: BlockEntry.Hash,
@@ -121,13 +121,14 @@ object BlockDao {
       run(DBIOAction.sequence(blocks.map(insertAction))).map(_ => ())
     }
 
-    def listMainChain(timeInterval: TimeInterval): Future[Seq[BlockEntry.Lite]] = {
+    def listMainChain(pagination: Pagination): Future[Seq[BlockEntry.Lite]] = {
       val action =
         for {
           headers <- blockHeadersTable
-            .filter(header =>
-              header.timestamp >= timeInterval.from.millis && header.timestamp <= timeInterval.to.millis && header.mainChain)
-            .sortBy(_.timestamp.asc)
+            .filter(_.mainChain)
+            .sortBy(b => (b.timestamp.desc, b.hash))
+            .drop(pagination.offset * pagination.limit)
+            .take(pagination.limit)
             .result
           blocks <- DBIOAction.sequence(headers.map(buildLiteBlockEntryAction))
         } yield blocks
@@ -141,7 +142,7 @@ object BlockDao {
           headers <- blockHeadersTable
             .filter(header =>
               header.timestamp >= timeInterval.from.millis && header.timestamp <= timeInterval.to.millis)
-            .sortBy(_.timestamp.asc)
+            .sortBy(b => (b.timestamp.desc, b.hash))
             .result
           blocks <- DBIOAction.sequence(headers.map(buildLiteBlockEntryAction))
         } yield blocks

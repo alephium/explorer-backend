@@ -19,7 +19,7 @@ package org.alephium.explorer.api
 import sttp.tapir._
 
 import org.alephium.explorer.api.Codecs.timestampTapirCodec
-import org.alephium.explorer.api.model.TimeInterval
+import org.alephium.explorer.api.model.{Pagination, TimeInterval}
 import org.alephium.util.{Duration, TimeStamp}
 
 trait QueryParams {
@@ -55,4 +55,24 @@ trait QueryParams {
       )
       .map({ case (from, to) => TimeInterval.unsafe(from, to) })(timeInterval =>
         (timeInterval.from, timeInterval.to))
+
+  val pagination: EndpointInput[Pagination] =
+    query[Option[Int]]("page")
+      .description("Page number")
+      .map({
+        case Some(offset) => offset
+        case None         => Pagination.defaultPage
+      })(Some(_))
+      .validate(Validator.min(1))
+      .and(
+        query[Option[Int]]("limit")
+          .description("Number per page")
+          .map({
+            case Some(limit) => limit
+            case None        => Pagination.defaultLimit
+          })(Some(_))
+          .validate(Validator.min(0))
+          .validate(Validator.max(Pagination.maxLimit)))
+      .map({ case (offset, limit) => Pagination.unsafe(offset - 1, limit) })(p =>
+        (p.offset, p.limit))
 }

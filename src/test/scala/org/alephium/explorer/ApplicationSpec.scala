@@ -128,39 +128,63 @@ class ApplicationSpec()
   }
 
   it should "list blocks" in {
-    val timestamps   = blocks.map(_.timestamp.millis)
-    val minTimestamp = timestamps.min
-    val maxTimestamp = timestamps.max
-    forAll(Gen.choose(minTimestamp, maxTimestamp)) { to =>
-      Get(s"/blocks?from-ts=${minTimestamp}&to-ts=${to}") ~> routes ~> check {
-        //filter `blocks by the same timestamp as the query for better assertion`
-        val expectedBlocks = blocks.filter(block =>
-          block.timestamp.millis >= minTimestamp && block.timestamp.millis <= to)
-        val res = responseAs[Seq[BlockEntry.Lite]].map(_.hash)
-        expectedBlocks.size is res.size
-        expectedBlocks.foreach(block => res.contains(block.hash) is true)
-      }
+    forAll(Gen.choose(1, 3), Gen.choose(2, 4)) {
+      case (page, limit) =>
+        Get(s"/blocks?page=$page&limit=$limit") ~> routes ~> check {
+          val offset = page - 1
+          //filter `blocks by the same timestamp as the query for better assertion`
+          val expectedBlocks = blocks.sortBy(_.timestamp).reverse.drop(offset * limit).take(limit)
+          val res            = responseAs[Seq[BlockEntry.Lite]].map(_.hash)
+          expectedBlocks.size is res.size
+        }
     }
 
-    forAll(Gen.choose(minTimestamp, maxTimestamp)) { to =>
-      Get(s"/blocks?from-ts=${maxTimestamp + 1}&to-ts=${to}") ~> routes ~> check {
-        status is StatusCodes.BadRequest
-        responseAs[ApiError.BadRequest] is ApiError.BadRequest(
-          "Invalid value (expected value to pass custom validation: `from-ts` must be before `to-ts`, "
-            ++ s"but was '(${TimeStamp.unsafe(maxTimestamp + 1)},${TimeStamp.unsafe(to)})')")
-      }
+    Get(s"/blocks") ~> routes ~> check {
+      val res = responseAs[Seq[BlockEntry.Lite]].map(_.hash)
+      res.size is scala.math.min(Pagination.defaultLimit, blocks.size)
     }
 
-    val maxTimeInterval = 10 * 60 * 1000
+    Get(s"/blocks?limit=${blocks.size}") ~> routes ~> check {
+      val res = responseAs[Seq[BlockEntry.Lite]].map(_.hash)
+      res.size is blocks.size
+      blocks.foreach(block => res.contains(block.hash) is true)
+    }
 
-    forAll(Gen.choose(minTimestamp, maxTimestamp)) { from =>
-      val to = from + maxTimeInterval + 1
-      Get(s"/blocks?from-ts=${from}&to-ts=${to}") ~> routes ~> check {
-        status is StatusCodes.BadRequest
-        responseAs[ApiError.BadRequest] is ApiError.BadRequest(
-          s"Invalid value (expected value to pass custom validation: maximum interval is 600000ms, "
-            ++ s"but was '${scala.math.abs(to - from)}')")
-      }
+    var blocksPage1: Seq[BlockEntry.Hash] = Seq.empty
+    Get(s"/blocks?page=1&limit=${blocks.size / 2 + 1}") ~> routes ~> check {
+      blocksPage1 = responseAs[Seq[BlockEntry.Lite]].map(_.hash)
+    }
+
+    Get(s"/blocks?page=2&limit=${blocks.size / 2 + 1}") ~> routes ~> check {
+      val res = responseAs[Seq[BlockEntry.Lite]].map(_.hash)
+
+      val allBlocks = blocksPage1 ++ res
+
+      allBlocks.size is blocks.size
+      allBlocks.distinct.size is allBlocks.size
+
+      blocks.foreach(block => allBlocks.contains(block.hash) is true)
+    }
+
+    Get(s"/blocks?page=0") ~> routes ~> check {
+      status is StatusCodes.BadRequest
+      responseAs[ApiError.BadRequest] is ApiError.BadRequest(
+        "Invalid value for: query parameter page (expected value to be greater than or equal to 1, but was 0)"
+      )
+    }
+
+    Get(s"/blocks?limit=-1") ~> routes ~> check {
+      status is StatusCodes.BadRequest
+      responseAs[ApiError.BadRequest] is ApiError.BadRequest(
+        "Invalid value for: query parameter limit (expected value to be greater than or equal to 0, but was -1)"
+      )
+    }
+
+    Get(s"/blocks?limit=-1&page=0") ~> routes ~> check {
+      status is StatusCodes.BadRequest
+      responseAs[ApiError.BadRequest] is ApiError.BadRequest(
+        "Invalid value for: query parameter page (expected value to be greater than or equal to 1, but was 0)"
+      )
     }
   }
 

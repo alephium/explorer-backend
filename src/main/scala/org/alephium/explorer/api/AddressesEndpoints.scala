@@ -21,33 +21,28 @@ import sttp.tapir.generic.auto._
 
 import org.alephium.api.{alfJsonBody => jsonBody, BaseEndpoint}
 import org.alephium.explorer.api.Codecs
-import org.alephium.explorer.api.model.{Address, AddressInfo, Transaction}
+import org.alephium.explorer.api.model.{Address, AddressInfo, Pagination, Transaction}
 
 // scalastyle:off magic.number
-trait AddressesEndpoints extends BaseEndpoint {
+trait AddressesEndpoints extends BaseEndpoint with QueryParams {
 
   private val addressesEndpoint =
     baseEndpoint
       .tag("Addressess")
       .in("addresses")
 
-  private val txLimit =
-    query[Option[Int]]("tx-limit")
-      .validate(Validator.min(1).asOptionElement)
-      .validate(Validator.max(100).asOptionElement)
-
-  val getAddressInfo: BaseEndpoint[(Address, Option[Int]), AddressInfo] =
+  val getAddressInfo: BaseEndpoint[(Address, Pagination), AddressInfo] =
     addressesEndpoint.get
       .in(path[Address]("address")(Codecs.addressTapirCodec))
-      .in(txLimit)
+      .in(pagination)
       .out(jsonBody[AddressInfo])
       .description("Get address informations")
 
-  val getTransactionsByAddress: BaseEndpoint[(Address, Option[Int]), Seq[Transaction]] =
+  val getTransactionsByAddress: BaseEndpoint[(Address, Pagination), Seq[Transaction]] =
     addressesEndpoint.get
       .in(path[Address]("address")(Codecs.addressTapirCodec))
       .in("transactions")
-      .in(txLimit)
+      .in(pagination)
       .out(jsonBody[Seq[Transaction]])
       .description("List transactions of a given address")
 }

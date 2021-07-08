@@ -24,7 +24,7 @@ import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.api.model.{ChainInfo, HashesAtHeight, SelfClique}
 import org.alephium.explorer.{AlephiumSpec, Generators}
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, TimeInterval}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, Pagination, TimeInterval}
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockEntity
@@ -203,7 +203,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
 
     def checkMainChain(mainChain: Seq[BlockEntry.Hash]) = {
       val result = blockDao
-        .listMainChain(TimeInterval.unsafe(TimeStamp.unsafe(0), TimeStamp.unsafe(Long.MaxValue)))
+        .listMainChain(Pagination.unsafe(0, blocks.size))
         .futureValue
         .filter(block =>
           block.chainFrom == GroupIndex.unsafe(0) && block.chainTo == GroupIndex.unsafe(0))

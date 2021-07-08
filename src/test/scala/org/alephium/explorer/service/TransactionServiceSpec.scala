@@ -59,7 +59,10 @@ class TransactionServiceSpec
       .sequence(blocks.map(block => blockDao.updateMainChainStatus(block.hash, true)))
       .futureValue
 
-    transactionService.getTransactionsByAddress(address, txLimit).futureValue.size is txLimit
+    transactionService
+      .getTransactionsByAddress(address, Pagination.unsafe(0, txLimit))
+      .futureValue
+      .size is txLimit
   }
 
   it should "handle huge alf number" in new Fixture {
@@ -171,7 +174,8 @@ class TransactionServiceSpec
       Seq(Output(U256.One, address1, None, None))
     )
 
-    val res = transactionService.getTransactionsByAddress(address0, 5).futureValue
+    val res =
+      transactionService.getTransactionsByAddress(address0, Pagination.unsafe(0, 5)).futureValue
 
     res is Seq(t1, t0)
   }

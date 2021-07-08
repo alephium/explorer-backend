@@ -37,22 +37,18 @@ class AddressServer(transactionService: TransactionService,
     extends Server
     with AddressesEndpoints {
 
-  private val defautUtxoLimit = 20
-
   val route: Route =
     toRoute(getTransactionsByAddress) {
-      case (address, txLimit) =>
+      case (address, pagination) =>
         transactionService
-          .getTransactionsByAddress(address, txLimit.getOrElse(defautUtxoLimit))
+          .getTransactionsByAddress(address, pagination)
           .map(Right.apply)
     } ~
       toRoute(getAddressInfo) {
-        case (address, txLimit) =>
+        case (address, pagination) =>
           for {
-            balance <- transactionService.getBalance(address)
-            transactions <- transactionService.getTransactionsByAddress(
-              address,
-              txLimit.getOrElse(defautUtxoLimit))
+            balance      <- transactionService.getBalance(address)
+            transactions <- transactionService.getTransactionsByAddress(address, pagination)
           } yield Right(AddressInfo(balance, transactions))
       }
 }

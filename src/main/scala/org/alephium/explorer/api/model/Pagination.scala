@@ -14,27 +14,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.service
+package org.alephium.explorer.api.model
 
-import scala.concurrent.Future
+final case class Pagination private (offset: Int, limit: Int)
 
-import org.alephium.explorer.api.model.{BlockEntry, Pagination}
-import org.alephium.explorer.persistence.dao.BlockDao
+object Pagination {
 
-trait BlockService {
-  def getBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry]]
-  def listBlocks(pagination: Pagination): Future[Seq[BlockEntry.Lite]]
-}
+  val defaultPage: Int  = 1
+  val defaultLimit: Int = 20
+  val maxLimit: Int     = 100
 
-object BlockService {
-  def apply(blockDAO: BlockDao): BlockService =
-    new Impl(blockDAO)
-
-  private class Impl(blockDao: BlockDao) extends BlockService {
-    def getBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry]] =
-      blockDao.get(hash)
-
-    def listBlocks(pagination: Pagination): Future[Seq[BlockEntry.Lite]] =
-      blockDao.listMainChain(pagination)
+  def unsafe(offset: Int, limit: Int): Pagination = {
+    Pagination(offset, limit)
   }
 }

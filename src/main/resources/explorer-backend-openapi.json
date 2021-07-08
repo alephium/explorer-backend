@@ -14,25 +14,24 @@
         "operationId": "getBlocks",
         "parameters": [
           {
-            "name": "from-ts",
+            "name": "page",
             "in": "query",
-            "description": "Unix epoch timestamp",
-            "required": true,
+            "description": "Page number",
+            "required": false,
             "schema": {
               "type": "integer",
-              "format": "int64",
-              "minimum": "0"
+              "minimum": "1"
             }
           },
           {
-            "name": "to-ts",
+            "name": "limit",
             "in": "query",
-            "description": "Unix epoch timestamp",
-            "required": true,
+            "description": "Number per page",
+            "required": false,
             "schema": {
               "type": "integer",
-              "format": "int64",
-              "minimum": "0"
+              "minimum": "0",
+              "maximum": "100"
             }
           }
         ],
@@ -330,12 +329,23 @@
             }
           },
           {
-            "name": "tx-limit",
+            "name": "page",
             "in": "query",
+            "description": "Page number",
             "required": false,
             "schema": {
               "type": "integer",
-              "minimum": "1",
+              "minimum": "1"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": "0",
               "maximum": "100"
             }
           }
@@ -437,12 +447,23 @@
             }
           },
           {
-            "name": "tx-limit",
+            "name": "page",
             "in": "query",
+            "description": "Page number",
             "required": false,
             "schema": {
               "type": "integer",
-              "minimum": "1",
+              "minimum": "1"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": "0",
               "maximum": "100"
             }
           }

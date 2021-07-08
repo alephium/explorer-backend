@@ -25,7 +25,7 @@ import org.scalacheck.Gen
 
 import org.alephium.api.ApiError
 import org.alephium.explorer.{AlephiumSpec, Generators}
-import org.alephium.explorer.api.model.{Address, Transaction}
+import org.alephium.explorer.api.model.{Address, Pagination, Transaction}
 import org.alephium.explorer.service.TransactionService
 import org.alephium.json.Json
 import org.alephium.protocol.model.NetworkType
@@ -46,8 +46,8 @@ class AddressServerSpec()
     var testLimit = 0
     val transactionService = new EmptyTransactionService {
       override def getTransactionsByAddress(address: Address,
-                                            txLimit: Int): Future[Seq[Transaction]] = {
-        testLimit = txLimit
+                                            pagination: Pagination): Future[Seq[Transaction]] = {
+        testLimit = pagination.limit
         Future.successful(Seq.empty)
       }
     }
@@ -56,15 +56,15 @@ class AddressServerSpec()
 
     forAll(addressGen, Gen.chooseNum[Int](-10, 120)) {
       case (address, txLimit) =>
-        Get(s"/addresses/${address}?tx-limit=$txLimit") ~> server.route ~> check {
-          if (txLimit <= 0) {
+        Get(s"/addresses/${address}?limit=$txLimit") ~> server.route ~> check {
+          if (txLimit < 0) {
             status is StatusCodes.BadRequest
             responseAs[ApiError.BadRequest] is ApiError.BadRequest(
-              s"Invalid value for: query parameter tx-limit (expected value to be greater than or equal to 1, but was $txLimit)")
+              s"Invalid value for: query parameter limit (expected value to be greater than or equal to 0, but was $txLimit)")
           } else if (txLimit > 100) {
             status is StatusCodes.BadRequest
             responseAs[ApiError.BadRequest] is ApiError.BadRequest(
-              s"Invalid value for: query parameter tx-limit (expected value to be less than or equal to 100, but was $txLimit)")
+              s"Invalid value for: query parameter limit (expected value to be less than or equal to 100, but was $txLimit)")
           } else {
             status is StatusCodes.OK
             testLimit is txLimit
@@ -83,7 +83,7 @@ class AddressServerSpec()
       override def getTransaction(transactionHash: Transaction.Hash): Future[Option[Transaction]] =
         Future.successful(None)
       override def getTransactionsByAddress(address: Address,
-                                            txLimit: Int): Future[Seq[Transaction]] =
+                                            pagination: Pagination): Future[Seq[Transaction]] =
         Future.successful(Seq.empty)
       override def getBalance(address: Address): Future[U256] = Future.successful(U256.Zero)
     }
