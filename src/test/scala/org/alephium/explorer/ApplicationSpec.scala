@@ -370,7 +370,8 @@ object ApplicationSpec {
           }
         } ~
         path("infos" / "self-clique") {
-          complete(SelfClique(cliqueId, networkType, 18, AVector(peer), true, groupNum, groupNum))
+          complete(
+            SelfClique(cliqueId, networkType, 18, AVector(peer), true, true, groupNum, groupNum))
         }
 
     val server = Http().newServerAt(address.getHostAddress, port).bindFlow(routes)

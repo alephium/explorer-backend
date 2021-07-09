@@ -185,7 +185,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
       def fetchSelfClique(): Future[Either[String, SelfClique]] =
         Future.successful(
           Right(
-            SelfClique(CliqueId.generate, NetworkType.Devnet, 18, AVector.empty, true, 1, 2)
+            SelfClique(CliqueId.generate, NetworkType.Devnet, 18, AVector.empty, true, true, 1, 2)
           )
         )
     }

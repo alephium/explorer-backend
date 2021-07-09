@@ -22,7 +22,7 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.api.model.{BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.TransactionEntity
-import org.alephium.util.TimeStamp
+import org.alephium.util.{TimeStamp, U256}
 
 trait TransactionSchema extends CustomTypes {
   val config: DatabaseConfig[JdbcProfile]
@@ -33,6 +33,9 @@ trait TransactionSchema extends CustomTypes {
     def hash: Rep[Transaction.Hash]     = column[Transaction.Hash]("hash")
     def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash")
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
+    def startGas: Rep[Int]              = column[Int]("start-gas")
+    def gasPrice: Rep[U256] =
+      column[U256]("gas-price", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
 
     def pk: PrimaryKey = primaryKey("txs_pk", (hash, blockHash))
 
@@ -40,7 +43,8 @@ trait TransactionSchema extends CustomTypes {
     def blockHashIdx: Index = index("txs_block_hash_idx", blockHash)
 
     def * : ProvenShape[TransactionEntity] =
-      (hash, blockHash, timestamp).<>((TransactionEntity.apply _).tupled, TransactionEntity.unapply)
+      (hash, blockHash, timestamp, startGas, gasPrice)
+        .<>((TransactionEntity.apply _).tupled, TransactionEntity.unapply)
   }
 
   val transactionsTable: TableQuery[Transactions] = TableQuery[Transactions]

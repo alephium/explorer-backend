@@ -171,7 +171,9 @@ trait Generators {
             block.inputs
               .filter(_.txHash === tx.hash)
               .map(input => input.toApi(outputs.head)), //TODO Fix when we have a valid blockchain generator
-            block.outputs.filter(_.txHash === tx.hash).map(_.toApi(None))
+            block.outputs.filter(_.txHash === tx.hash).map(_.toApi(None)),
+            tx.startGas,
+            tx.gasPrice
           )
         }
       BlockEntry(

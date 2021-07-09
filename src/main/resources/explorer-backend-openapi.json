@@ -695,7 +695,9 @@
         "required": [
           "hash",
           "blockHash",
-          "timestamp"
+          "timestamp",
+          "startGas",
+          "gasPrice"
         ],
         "type": "object",
         "properties": {
@@ -719,6 +721,13 @@
             "items": {
               "$ref": "#/components/schemas/Output"
             }
+          },
+          "startGas": {
+            "type": "integer"
+          },
+          "gasPrice": {
+            "type": "integer",
+            "format": "uint256"
           }
         }
       },

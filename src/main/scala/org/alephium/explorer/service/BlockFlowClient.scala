@@ -175,7 +175,9 @@ object BlockFlowClient {
     TransactionEntity(
       new Transaction.Hash(tx.id),
       blockHash,
-      timestamp
+      timestamp,
+      tx.startGas,
+      tx.gasPrice
     )
 
   private def inputToEntity(input: api.model.Input,
