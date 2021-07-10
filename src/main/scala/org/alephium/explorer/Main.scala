@@ -34,6 +34,8 @@ import org.alephium.util.Duration
 object Main extends App with StrictLogging {
 
   logger.info("Starting Application")
+  logger.info(s"Build info: ${BuildInfo}")
+
   implicit val system: ActorSystem                = ActorSystem("Explorer")
   implicit val executionContext: ExecutionContext = system.dispatcher
 
