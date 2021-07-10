@@ -79,9 +79,41 @@ lazy val root = (project in file("."))
       slickHikaricp,
       postgresql,
       h2
-    )
+    ),
+    docker / dockerfile := {
+      val appSource = stage.value
+      val appTarget = "/app"
+
+      new Dockerfile {
+        from("adoptopenjdk/openjdk11:jre")
+        expose(9090)
+        workDir(appTarget)
+        entryPoint(s"$appTarget/bin/${executableScriptName.value}")
+        copy(appSource, appTarget)
+      }
+    },
+    docker / imageNames := {
+      val baseImageName = "alephium/explorer-backend"
+      val versionTag    = version.value.replace('+', '_')
+      Seq(
+        Some(ImageName(baseImageName + ":" + versionTag)),
+        git.gitHeadCommit.value.map { commitId =>
+          ImageName(baseImageName + ":" + commitId)
+        }
+      ).flatten
+    },
+    buildInfoKeys := Seq[BuildInfoKey](
+      name,
+      scalaVersion,
+      sbtVersion,
+      BuildInfoKey("commitId"       -> git.gitHeadCommit.value.getOrElse("missing-git-commit")),
+      BuildInfoKey("branch"         -> git.gitCurrentBranch.value),
+      BuildInfoKey("releaseVersion" -> version.value)
+    ),
+    buildInfoPackage := "org.alephium.explorer",
+    buildInfoUsePackageAsPath := true
   )
-  .enablePlugins(JavaAppPackaging)
+  .enablePlugins(JavaAppPackaging, sbtdocker.DockerPlugin, BuildInfoPlugin)
 
 val wartsCompileExcludes = Seq(
   Wart.Any,
