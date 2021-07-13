@@ -52,21 +52,6 @@ trait TransactionQueries
     DBIOAction.sequence(blockEntities.map(insertTransactionFromBlockQuery)).map(_ => ())
   }
 
-  private val listTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
-    transactionsTable
-      .filter(_.blockHash === blockHash)
-      .map(tx => (tx.hash, tx.timestamp, tx.startGas, tx.gasPrice))
-  }
-
-  def listTransactionsAction(blockHash: BlockEntry.Hash): DBActionR[Seq[Transaction]] =
-    for {
-      txEntities <- listTransactionsQuery(blockHash).result
-      txs <- DBIOAction.sequence(txEntities.map {
-        case (hash, ts, startGas, gasPrice) =>
-          getKnownTransactionAction(hash, blockHash, ts, startGas, gasPrice)
-      })
-    } yield txs
-
   private val countTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
     transactionsTable.filter(_.blockHash === blockHash).length
   }
@@ -90,7 +75,13 @@ trait TransactionQueries
   private val mainInputs  = inputsTable.filter(_.mainChain)
   private val mainOutputs = outputsTable.filter(_.mainChain)
 
-  private val getTxHashesQuery = Compiled {
+  private val getTxHashesByBlockHashQuery = Compiled { (blockHash: Rep[BlockEntry.Hash]) =>
+    transactionsTable
+      .filter(_.blockHash === blockHash)
+      .map(tx => (tx.hash, tx.blockHash, tx.timestamp))
+  }
+
+  private val getTxHashesByAddressQuery = Compiled {
     (address: Rep[Address], toDrop: ConstColumn[Long], limit: ConstColumn[Long]) =>
       mainInputs
         .join(mainOutputs)
@@ -141,15 +132,28 @@ trait TransactionQueries
       }
   }
 
+  def getTransactionsByBlockHash(blockHash: BlockEntry.Hash): DBActionR[Seq[Transaction]] = {
+    for {
+      txHashesTs <- getTxHashesByBlockHashQuery(blockHash).result
+      txs        <- getTransactions(txHashesTs)
+    } yield txs
+  }
+
   def getTransactionsByAddress(address: Address,
                                pagination: Pagination): DBActionR[Seq[Transaction]] = {
-    val offset          = pagination.offset.toLong
-    val limit           = pagination.limit.toLong
-    val toDrop          = offset * limit
-    val txHashesTsQuery = getTxHashesQuery((address, toDrop, limit))
+    val offset = pagination.offset.toLong
+    val limit  = pagination.limit.toLong
+    val toDrop = offset * limit
     for {
-      txHashesTs <- txHashesTsQuery.result
-      txHashes = txHashesTs.map(_._1)
+      txHashesTs <- getTxHashesByAddressQuery((address, toDrop, limit)).result
+      txs        <- getTransactions(txHashesTs)
+    } yield txs
+  }
+
+  def getTransactions(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp)])
+    : DBActionR[Seq[Transaction]] = {
+    val txHashes = txHashesTs.map(_._1)
+    for {
       ins <- inputsFromTxs(txHashes).result
       ous <- outputsFromTxs(txHashes).result
       gas <- gasFromTxs(txHashes).result

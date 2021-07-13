@@ -71,7 +71,7 @@ object BlockDao {
     private def buildBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry] =
       for {
         deps <- blockDepsQuery(blockHeader.hash).result
-        txs  <- listTransactionsAction(blockHeader.hash)
+        txs  <- getTransactionsByBlockHash(blockHeader.hash)
       } yield blockHeader.toApi(deps, txs)
 
     private def buildLiteBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry.Lite] =
