@@ -95,11 +95,15 @@ class TransactionServiceSpec
 
     val ts0        = TimeStamp.unsafe(0)
     val blockHash0 = blockEntryHashGen.sample.get
+    val startGas   = Gen.posNum[Int].sample.get
+    val gasPrice   = amountGen.sample.get
 
     val tx0 = TransactionEntity(
       transactionHashGen.sample.get,
       blockHash0,
-      ts0
+      ts0,
+      startGas,
+      gasPrice
     )
 
     val output0 =
@@ -120,10 +124,14 @@ class TransactionServiceSpec
 
     val ts1        = TimeStamp.unsafe(1)
     val blockHash1 = blockEntryHashGen.sample.get
+    val startGas1  = Gen.posNum[Int].sample.get
+    val gasPrice1  = amountGen.sample.get
     val tx1 = TransactionEntity(
       transactionHashGen.sample.get,
       blockHash1,
-      ts1
+      ts1,
+      startGas1,
+      gasPrice1
     )
     val input1 = InputEntity(blockHash1,
                              tx1.hash,
@@ -163,15 +171,19 @@ class TransactionServiceSpec
       blockHash0,
       ts0,
       Seq.empty,
-      Seq(Output(U256.One, address0, None, Some(tx1.hash)))
+      Seq(Output(U256.One, address0, None, Some(tx1.hash))),
+      startGas,
+      gasPrice
     )
 
     val t1 = Transaction(
       tx1.hash,
       blockHash1,
       ts1,
-      Seq(Input(Output.Ref(0, output0.key), None, Some(tx0.hash), Some(address0), Some(U256.One))),
-      Seq(Output(U256.One, address1, None, None))
+      Seq(Input(Output.Ref(0, output0.key), None, tx0.hash, address0, U256.One)),
+      Seq(Output(U256.One, address1, None, None)),
+      startGas1,
+      gasPrice1
     )
 
     val res =

@@ -175,23 +175,30 @@ object BlockFlowClient {
     TransactionEntity(
       new Transaction.Hash(tx.id),
       blockHash,
-      timestamp
+      timestamp,
+      tx.startGas,
+      tx.gasPrice
     )
 
   private def inputToEntity(input: api.model.Input,
                             blockHash: BlockEntry.Hash,
                             txId: Hash,
                             timestamp: TimeStamp,
-                            mainChain: Boolean): InputEntity =
+                            mainChain: Boolean): InputEntity = {
+    val unlockScript = input match {
+      case asset: api.model.Input.Asset => Some(Hex.toHexString(asset.unlockScript))
+      case _: api.model.Input.Contract  => None
+    }
     InputEntity(
       blockHash,
       new Transaction.Hash(txId),
       timestamp,
       input.outputRef.scriptHint,
       input.outputRef.key,
-      input.unlockScript.map(Hex.toHexString),
+      unlockScript,
       mainChain
     )
+  }
 
   private def outputToEntity(output: api.model.Output,
                              blockHash: BlockEntry.Hash,
@@ -199,6 +206,10 @@ object BlockFlowClient {
                              index: Int,
                              timestamp: TimeStamp,
                              mainChain: Boolean): OutputEntity = {
+    val lockTime = output match {
+      case asset: api.model.Output.Asset if asset.lockTime.millis > 0 => Some(asset.lockTime)
+      case _                                                          => None
+    }
     OutputEntity(
       blockHash,
       new Transaction.Hash(txId),
@@ -207,7 +218,7 @@ object BlockFlowClient {
       TxOutputRef.key(txId, index),
       timestamp,
       mainChain,
-      output.lockTime.filter(_.millis > 0)
+      lockTime
     )
   }
 

@@ -115,7 +115,13 @@ class ApplicationSpec()
     forAll(Gen.oneOf(blocks)) { block =>
       Get(s"/blocks/${block.hash.value.toHexString}") ~> routes ~> check {
         val blockResult = responseAs[BlockEntry]
-        blockResult is block.copy(mainChain = blockResult.mainChain)
+        blockResult.hash is block.hash
+        blockResult.timestamp is block.timestamp
+        blockResult.chainFrom is block.chainFrom
+        blockResult.chainTo is block.chainTo
+        blockResult.height is block.height
+        blockResult.deps is block.deps
+        //TODO Validate transactions when we have a valid blockchain generator
       }
     }
 
@@ -191,7 +197,8 @@ class ApplicationSpec()
   it should "get a transaction by its id" in {
     forAll(Gen.oneOf(transactions)) { transaction =>
       Get(s"/transactions/${transaction.hash.value.toHexString}") ~> routes ~> check {
-        responseAs[Transaction] is transaction
+        //TODO Validate full transaction when we have a valid blockchain generator
+        responseAs[Transaction].hash is transaction.hash
       }
     }
 
@@ -225,7 +232,7 @@ class ApplicationSpec()
         res.balance is expectedBalance
         expectedTransactions
           .take(txLimit)
-          .foreach(transaction => res.transactions.contains(transaction) is true)
+          .foreach(transaction => res.transactions.map(_.hash).contains(transaction.hash) is true)
       }
     }
   }
@@ -238,7 +245,8 @@ class ApplicationSpec()
         val res = responseAs[Seq[Transaction]]
 
         res.size is expectedTransactions.size
-        expectedTransactions.foreach(transaction => res.contains(transaction) is true)
+        expectedTransactions.foreach(transaction =>
+          res.map(_.hash).contains(transaction.hash) is true)
       }
     }
   }
@@ -362,7 +370,8 @@ object ApplicationSpec {
           }
         } ~
         path("infos" / "self-clique") {
-          complete(SelfClique(cliqueId, networkType, 18, AVector(peer), true, groupNum, groupNum))
+          complete(
+            SelfClique(cliqueId, networkType, 18, AVector(peer), true, true, groupNum, groupNum))
         }
 
     val server = Http().newServerAt(address.getHostAddress, port).bindFlow(routes)

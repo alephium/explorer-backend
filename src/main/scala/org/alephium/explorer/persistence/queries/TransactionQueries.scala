@@ -55,14 +55,16 @@ trait TransactionQueries
   private val listTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
     transactionsTable
       .filter(_.blockHash === blockHash)
-      .map(tx => (tx.hash, tx.timestamp))
+      .map(tx => (tx.hash, tx.timestamp, tx.startGas, tx.gasPrice))
   }
 
   def listTransactionsAction(blockHash: BlockEntry.Hash): DBActionR[Seq[Transaction]] =
     for {
       txEntities <- listTransactionsQuery(blockHash).result
-      txs <- DBIOAction.sequence(
-        txEntities.map(pair => getKnownTransactionAction(pair._1, blockHash, pair._2)))
+      txs <- DBIOAction.sequence(txEntities.map {
+        case (hash, ts, startGas, gasPrice) =>
+          getKnownTransactionAction(hash, blockHash, ts, startGas, gasPrice)
+      })
     } yield txs
 
   private val countTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
@@ -73,14 +75,16 @@ trait TransactionQueries
     countTransactionsQuery(blockHash).result
 
   private val getTransactionQuery = Compiled { txHash: Rep[Transaction.Hash] =>
-    transactionsTable.filter(_.hash === txHash).map(tx => (tx.blockHash, tx.timestamp))
+    transactionsTable
+      .filter(_.hash === txHash)
+      .map(tx => (tx.blockHash, tx.timestamp, tx.startGas, tx.gasPrice))
   }
 
   def getTransactionAction(txHash: Transaction.Hash): DBActionR[Option[Transaction]] =
     getTransactionQuery(txHash).result.headOption.flatMap {
       case None => DBIOAction.successful(None)
-      case Some((blockHash, timestamp)) =>
-        getKnownTransactionAction(txHash, blockHash, timestamp).map(Some.apply)
+      case Some((blockHash, timestamp, startGas, gasPrice)) =>
+        getKnownTransactionAction(txHash, blockHash, timestamp, startGas, gasPrice).map(Some.apply)
     }
 
   private val mainInputs  = inputsTable.filter(_.mainChain)
@@ -106,20 +110,20 @@ trait TransactionQueries
   private def inputsFromTxs(txHashes: Seq[Transaction.Hash]) = {
     mainInputs
       .filter(_.txHash inSet txHashes)
-      .joinLeft(mainOutputs)
+      .join(mainOutputs)
       .on {
         case (input, outputs) =>
           input.outputRefKey === outputs.key
       }
       .map {
-        case (input, outputOpt) =>
+        case (input, output) =>
           (input.txHash,
            (input.scriptHint,
             input.outputRefKey,
             input.unlockScript,
-            outputOpt.map(_.txHash),
-            outputOpt.map(_.address),
-            outputOpt.map(_.amount)))
+            output.txHash,
+            output.address,
+            output.amount))
       }
   }
 
@@ -148,31 +152,39 @@ trait TransactionQueries
       txHashes = txHashesTs.map(_._1)
       ins <- inputsFromTxs(txHashes).result
       ous <- outputsFromTxs(txHashes).result
+      gas <- gasFromTxs(txHashes).result
     } yield {
-      val insByTx = ins.groupBy(_._1).view.mapValues(_.map { case (_, in) => toApiInput(in) })
-      val ousByTx = ous.groupBy(_._1).view.mapValues(_.map { case (_, o)  => toApiOutput(o) })
+      val insByTx = ins.groupBy(_._1).view.mapValues(_.map { case (_, in)   => toApiInput(in) })
+      val ousByTx = ous.groupBy(_._1).view.mapValues(_.map { case (_, o)    => toApiOutput(o) })
+      val gasByTx = gas.groupBy(_._1).view.mapValues(_.map { case (_, s, g) => (s, g) })
       txHashesTs.map {
         case (tx, bh, ts) =>
-          val ins = insByTx.getOrElse(tx, Seq.empty)
-          val ous = ousByTx.getOrElse(tx, Seq.empty)
-          Transaction(tx, bh, ts, ins, ous)
+          val ins                  = insByTx.getOrElse(tx, Seq.empty)
+          val ous                  = ousByTx.getOrElse(tx, Seq.empty)
+          val gas                  = gasByTx.getOrElse(tx, Seq.empty)
+          val (startGas, gasPrice) = gas.headOption.getOrElse((0, U256.Zero))
+          Transaction(tx, bh, ts, ins, ous, startGas, gasPrice)
       }
     }
+  }
+
+  private def gasFromTxs(txHashes: Seq[Transaction.Hash]) = {
+    transactionsTable.filter(_.hash inSet txHashes).map(tx => (tx.hash, tx.startGas, tx.gasPrice))
   }
 
   private val getInputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
     mainInputs
       .filter(_.txHash === txHash)
-      .joinLeft(mainOutputs)
+      .join(mainOutputs)
       .on(_.outputRefKey === _.key)
       .map {
-        case (input, outputOpt) =>
+        case (input, output) =>
           (input.scriptHint,
            input.outputRefKey,
            input.unlockScript,
-           outputOpt.map(_.txHash),
-           outputOpt.map(_.address),
-           outputOpt.map(_.amount))
+           output.txHash,
+           output.address,
+           output.amount)
       }
   }
 
@@ -187,12 +199,20 @@ trait TransactionQueries
 
   private def getKnownTransactionAction(txHash: Transaction.Hash,
                                         blockHash: BlockEntry.Hash,
-                                        timestamp: TimeStamp): DBActionR[Transaction] =
+                                        timestamp: TimeStamp,
+                                        startGas: Int,
+                                        gasPrice: U256): DBActionR[Transaction] =
     for {
       ins  <- getInputsQuery(txHash).result
       outs <- getOutputsQuery(txHash).result
     } yield {
-      Transaction(txHash, blockHash, timestamp, ins.map(toApiInput), outs.map(toApiOutput))
+      Transaction(txHash,
+                  blockHash,
+                  timestamp,
+                  ins.map(toApiInput),
+                  outs.map(toApiOutput),
+                  startGas,
+                  gasPrice)
     }
 
   private val getBalanceQuery = Compiled { address: Rep[Address] =>
@@ -213,10 +233,10 @@ trait TransactionQueries
     (scriptHint: Int,
      key: Hash,
      unlockScript: Option[String],
-     txHashOpt: Option[Transaction.Hash],
-     addressOpt: Option[Address],
-     amountOpt: Option[U256]) =>
-      Input(Output.Ref(scriptHint, key), unlockScript, txHashOpt, addressOpt, amountOpt)
+     txHash: Transaction.Hash,
+     address: Address,
+     amount: U256) =>
+      Input(Output.Ref(scriptHint, key), unlockScript, txHash, address, amount)
   }.tupled
 
   private val toApiOutput = (Output.apply _).tupled

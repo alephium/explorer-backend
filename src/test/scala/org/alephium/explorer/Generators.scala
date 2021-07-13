@@ -16,6 +16,7 @@
 
 package org.alephium.explorer
 
+import akka.util.ByteString
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 
@@ -68,14 +69,15 @@ trait Generators {
 
   lazy val inputProtocolGen: Gen[protocolApi.Input] = for {
     outputRef    <- outputRefProtocolGen
-    unlockScript <- Gen.option(hashGen.map(_.bytes))
-  } yield protocolApi.Input(outputRef, unlockScript)
+    unlockScript <- hashGen.map(_.bytes)
+  } yield protocolApi.Input.Asset(outputRef, unlockScript)
 
   def outputProtocolGen: Gen[protocolApi.Output] =
     for {
-      amount  <- amountGen
-      address <- addressProtocolGen
-    } yield protocolApi.Output(amount, address, AVector.empty)
+      amount   <- amountGen
+      lockTime <- timestampGen
+      address  <- addressProtocolGen
+    } yield protocolApi.Output.Asset(amount, address, AVector.empty, lockTime, ByteString.empty)
 
   def transactionProtocolGen: Gen[protocolApi.Tx] =
     for {
@@ -84,7 +86,10 @@ trait Generators {
       inputs     <- Gen.listOfN(inputSize, inputProtocolGen)
       outputSize <- Gen.choose(2, 10)
       outputs    <- Gen.listOfN(outputSize, outputProtocolGen)
-    } yield protocolApi.Tx(hash.value, AVector.from(inputs), AVector.from(outputs))
+      startGas   <- Gen.posNum[Int]
+      gasPrice   <- Gen.posNum[Long].map(U256.unsafe)
+    } yield
+      protocolApi.Tx(hash.value, AVector.from(inputs), AVector.from(outputs), startGas, gasPrice)
 
   def blockEntryProtocolGen: Gen[protocolApi.BlockEntry] =
     for {
@@ -165,8 +170,10 @@ trait Generators {
             block.timestamp,
             block.inputs
               .filter(_.txHash === tx.hash)
-              .map(input => input.toApi(outputs.find(_.key === input.outputRefKey))),
-            block.outputs.filter(_.txHash === tx.hash).map(_.toApi(None))
+              .map(input => input.toApi(outputs.head)), //TODO Fix when we have a valid blockchain generator
+            block.outputs.filter(_.txHash === tx.hash).map(_.toApi(None)),
+            tx.startGas,
+            tx.gasPrice
           )
         }
       BlockEntry(

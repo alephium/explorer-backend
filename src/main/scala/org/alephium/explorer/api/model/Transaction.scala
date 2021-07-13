@@ -19,16 +19,18 @@ package org.alephium.explorer.api.model
 import org.alephium.api.UtilJson.{timestampReader, timestampWriter}
 import org.alephium.explorer
 import org.alephium.explorer.HashCompanion
-import org.alephium.explorer.api.Json.hashReadWriter
+import org.alephium.explorer.api.Json.{hashReadWriter, u256ReadWriter}
 import org.alephium.json.Json._
-import org.alephium.util.TimeStamp
+import org.alephium.util.{TimeStamp, U256}
 
 final case class Transaction(
     hash: Transaction.Hash,
     blockHash: BlockEntry.Hash,
     timestamp: TimeStamp,
     inputs: Seq[Input],
-    outputs: Seq[Output]
+    outputs: Seq[Output],
+    startGas: Int,
+    gasPrice: U256
 )
 
 object Transaction {
