@@ -120,7 +120,7 @@ class ApplicationSpec()
         blockResult.chainFrom is block.chainFrom
         blockResult.chainTo is block.chainTo
         blockResult.height is block.height
-        //TODO Validate transactions when we have a valid blockchain generator
+        blockResult.txNumber is block.transactions.size
       }
     }
 
@@ -128,6 +128,17 @@ class ApplicationSpec()
       Get(s"/blocks/${hash.toHexString}") ~> routes ~> check {
         status is StatusCodes.NotFound
         responseAs[ApiError.NotFound] is ApiError.NotFound(hash.toHexString)
+      }
+    }
+  }
+
+  it should "get block's transactions" in {
+    forAll(Gen.oneOf(blocks)) { block =>
+      Get(s"/blocks/${block.hash.value.toHexString}/transactions") ~> routes ~> check {
+        val txs = responseAs[Seq[Transaction]]
+        txs.size > 0 is true
+        txs.size is block.transactions.size
+        txs.foreach(tx => block.transactions.contains(tx))
       }
     }
   }

@@ -141,7 +141,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BlockEntry"
+                  "$ref": "#/components/schemas/Lite"
                 }
               }
             }
@@ -642,49 +642,6 @@
           },
           "txNumber": {
             "type": "integer"
-          },
-          "mainChain": {
-            "type": "boolean"
-          }
-        }
-      },
-      "BlockEntry": {
-        "required": [
-          "hash",
-          "timestamp",
-          "chainFrom",
-          "chainTo",
-          "height",
-          "mainChain"
-        ],
-        "type": "object",
-        "properties": {
-          "hash": {
-            "type": "string"
-          },
-          "timestamp": {
-            "type": "integer"
-          },
-          "chainFrom": {
-            "type": "integer"
-          },
-          "chainTo": {
-            "type": "integer"
-          },
-          "height": {
-            "type": "integer"
-          },
-          "deps": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "transactions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Transaction"
-            }
           },
           "mainChain": {
             "type": "boolean"

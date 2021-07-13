@@ -39,5 +39,6 @@ class BlockServer(blockService: BlockService,
   val route: Route =
     toRoute(getBlockByHash)(hash =>
       blockService.getBlockByHash(hash).map(_.toRight(ApiError.NotFound(hash.value.toHexString)))) ~
+      toRoute(getBlockTransactions)(hash => blockService.getBlockTransactions(hash).map(Right(_))) ~
       toRoute(listBlocks)(blockService.listBlocks(_).map(Right(_)))
 }

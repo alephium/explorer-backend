@@ -18,11 +18,12 @@ package org.alephium.explorer.service
 
 import scala.concurrent.Future
 
-import org.alephium.explorer.api.model.{BlockEntry, Pagination}
+import org.alephium.explorer.api.model.{BlockEntry, Pagination, Transaction}
 import org.alephium.explorer.persistence.dao.BlockDao
 
 trait BlockService {
   def getBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]]
+  def getBlockTransactions(hash: BlockEntry.Hash): Future[Seq[Transaction]]
   def listBlocks(pagination: Pagination): Future[Seq[BlockEntry.Lite]]
 }
 
@@ -33,6 +34,9 @@ object BlockService {
   private class Impl(blockDao: BlockDao) extends BlockService {
     def getBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]] =
       blockDao.getLite(hash)
+
+    def getBlockTransactions(hash: BlockEntry.Hash): Future[Seq[Transaction]] =
+      blockDao.getTransactions(hash)
 
     def listBlocks(pagination: Pagination): Future[Seq[BlockEntry.Lite]] =
       blockDao.listMainChain(pagination)
