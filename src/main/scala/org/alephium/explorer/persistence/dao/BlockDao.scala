@@ -34,6 +34,7 @@ import org.alephium.explorer.persistence.schema._
 
 trait BlockDao {
   def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]]
+  def getLite(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]]
   def getAtHeight(fromGroup: GroupIndex,
                   toGroup: GroupIndex,
                   height: Height): Future[Seq[BlockEntry]]
@@ -79,11 +80,20 @@ object BlockDao {
         number <- countTransactionsAction(blockHeader.hash)
       } yield blockHeader.toLiteApi(number)
 
+    private def getBlockEntryLiteAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry.Lite]] =
+      for {
+        headers <- blockHeadersTable.filter(_.hash === hash).result
+        blocks  <- DBIOAction.sequence(headers.map(buildLiteBlockEntryAction))
+      } yield blocks.headOption
+
     private def getBlockEntryAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry]] =
       for {
         headers <- blockHeadersTable.filter(_.hash === hash).result
         blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
       } yield blocks.headOption
+
+    def getLite(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]] =
+      run(getBlockEntryLiteAction(hash))
 
     def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]] =
       run(getBlockEntryAction(hash))
