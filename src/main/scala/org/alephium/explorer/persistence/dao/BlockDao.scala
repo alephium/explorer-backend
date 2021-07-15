@@ -84,8 +84,11 @@ object BlockDao {
     private def getBlockEntryLiteAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry.Lite]] =
       for {
         headers <- blockHeadersTable.filter(_.hash === hash).result
-        blocks  <- DBIOAction.sequence(headers.map(buildLiteBlockEntryAction))
-      } yield blocks.headOption
+        blockOpt <- headers.headOption match {
+          case None         => DBIOAction.successful(None)
+          case Some(header) => buildLiteBlockEntryAction(header).map(Option.apply)
+        }
+      } yield blockOpt
 
     private def getBlockEntryAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry]] =
       for {
