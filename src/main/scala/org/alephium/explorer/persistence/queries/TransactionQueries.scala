@@ -81,6 +81,7 @@ trait TransactionQueries
   private val getTxHashesByBlockHashQuery = Compiled { (blockHash: Rep[BlockEntry.Hash]) =>
     transactionsTable
       .filter(_.blockHash === blockHash)
+      .sortBy(_.txIndex)
       .map(tx => (tx.hash, tx.blockHash, tx.timestamp))
   }
 
@@ -88,6 +89,7 @@ trait TransactionQueries
     (blockHash: Rep[BlockEntry.Hash], toDrop: ConstColumn[Long], limit: ConstColumn[Long]) =>
       transactionsTable
         .filter(_.blockHash === blockHash)
+        .sortBy(_.txIndex)
         .map(tx => (tx.hash, tx.blockHash, tx.timestamp))
         .drop(toDrop)
         .take(limit)
