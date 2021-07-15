@@ -114,14 +114,13 @@ class ApplicationSpec()
   it should "get a block by its id" in {
     forAll(Gen.oneOf(blocks)) { block =>
       Get(s"/blocks/${block.hash.value.toHexString}") ~> routes ~> check {
-        val blockResult = responseAs[BlockEntry]
+        val blockResult = responseAs[BlockEntry.Lite]
         blockResult.hash is block.hash
         blockResult.timestamp is block.timestamp
         blockResult.chainFrom is block.chainFrom
         blockResult.chainTo is block.chainTo
         blockResult.height is block.height
-        blockResult.deps is block.deps
-        //TODO Validate transactions when we have a valid blockchain generator
+        blockResult.txNumber is block.transactions.size
       }
     }
 
@@ -133,6 +132,17 @@ class ApplicationSpec()
     }
   }
 
+  it should "get block's transactions" in {
+    forAll(Gen.oneOf(blocks)) { block =>
+      Get(s"/blocks/${block.hash.value.toHexString}/transactions") ~> routes ~> check {
+        val txs = responseAs[Seq[Transaction]]
+        txs.size > 0 is true
+        txs.size is block.transactions.size
+        txs.foreach(tx => block.transactions.contains(tx))
+      }
+    }
+  }
+
   it should "list blocks" in {
     forAll(Gen.choose(1, 3), Gen.choose(2, 4)) {
       case (page, limit) =>
@@ -140,29 +150,31 @@ class ApplicationSpec()
           val offset = page - 1
           //filter `blocks by the same timestamp as the query for better assertion`
           val expectedBlocks = blocks.sortBy(_.timestamp).reverse.drop(offset * limit).take(limit)
-          val res            = responseAs[Seq[BlockEntry.Lite]].map(_.hash)
-          expectedBlocks.size is res.size
+          val res            = responseAs[ListBlocks]
+          val hashes         = res.blocks.map(_.hash)
+          expectedBlocks.size is hashes.size
+          res.total is blocks.size
         }
     }
 
     Get(s"/blocks") ~> routes ~> check {
-      val res = responseAs[Seq[BlockEntry.Lite]].map(_.hash)
+      val res = responseAs[ListBlocks].blocks.map(_.hash)
       res.size is scala.math.min(Pagination.defaultLimit, blocks.size)
     }
 
     Get(s"/blocks?limit=${blocks.size}") ~> routes ~> check {
-      val res = responseAs[Seq[BlockEntry.Lite]].map(_.hash)
+      val res = responseAs[ListBlocks].blocks.map(_.hash)
       res.size is blocks.size
       blocks.foreach(block => res.contains(block.hash) is true)
     }
 
     var blocksPage1: Seq[BlockEntry.Hash] = Seq.empty
     Get(s"/blocks?page=1&limit=${blocks.size / 2 + 1}") ~> routes ~> check {
-      blocksPage1 = responseAs[Seq[BlockEntry.Lite]].map(_.hash)
+      blocksPage1 = responseAs[ListBlocks].blocks.map(_.hash)
     }
 
     Get(s"/blocks?page=2&limit=${blocks.size / 2 + 1}") ~> routes ~> check {
-      val res = responseAs[Seq[BlockEntry.Lite]].map(_.hash)
+      val res = responseAs[ListBlocks].blocks.map(_.hash)
 
       val allBlocks = blocksPage1 ++ res
 
@@ -228,11 +240,8 @@ class ApplicationSpec()
 
         val res = responseAs[AddressInfo]
 
-        res.transactions.size is expectedTransactions.take(txLimit).size
+        res.txNumber is expectedTransactions.size
         res.balance is expectedBalance
-        expectedTransactions
-          .take(txLimit)
-          .foreach(transaction => res.transactions.map(_.hash).contains(transaction.hash) is true)
       }
     }
   }

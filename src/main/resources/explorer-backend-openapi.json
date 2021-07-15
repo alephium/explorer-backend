@@ -41,10 +41,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Lite"
-                  }
+                  "$ref": "#/components/schemas/ListBlocks"
                 }
               }
             }
@@ -141,7 +138,128 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BlockEntry"
+                  "$ref": "#/components/schemas/Lite"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blocks/{block-hash}/transactions": {
+      "get": {
+        "tags": [
+          "Blocks"
+        ],
+        "description": "Get block's transactions",
+        "operationId": "getBlocksBlock-hashTransactions",
+        "parameters": [
+          {
+            "name": "block-hash",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": "1"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": "0",
+              "maximum": "100"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Transaction"
+                  }
                 }
               }
             }
@@ -326,27 +444,6 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "description": "Page number",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": "1"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "Number per page",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": "0",
-              "maximum": "100"
             }
           }
         ],
@@ -613,6 +710,23 @@
           }
         }
       },
+      "ListBlocks": {
+        "required": [
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Lite"
+            }
+          }
+        }
+      },
       "Lite": {
         "required": [
           "hash",
@@ -642,49 +756,6 @@
           },
           "txNumber": {
             "type": "integer"
-          },
-          "mainChain": {
-            "type": "boolean"
-          }
-        }
-      },
-      "BlockEntry": {
-        "required": [
-          "hash",
-          "timestamp",
-          "chainFrom",
-          "chainTo",
-          "height",
-          "mainChain"
-        ],
-        "type": "object",
-        "properties": {
-          "hash": {
-            "type": "string"
-          },
-          "timestamp": {
-            "type": "integer"
-          },
-          "chainFrom": {
-            "type": "integer"
-          },
-          "chainTo": {
-            "type": "integer"
-          },
-          "height": {
-            "type": "integer"
-          },
-          "deps": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "transactions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Transaction"
-            }
           },
           "mainChain": {
             "type": "boolean"
@@ -797,7 +868,8 @@
       },
       "AddressInfo": {
         "required": [
-          "balance"
+          "balance",
+          "txNumber"
         ],
         "type": "object",
         "properties": {
@@ -805,11 +877,8 @@
             "type": "integer",
             "format": "uint256"
           },
-          "transactions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Transaction"
-            }
+          "txNumber": {
+            "type": "integer"
           }
         }
       }

@@ -52,12 +52,15 @@ trait TransactionQueries
     DBIOAction.sequence(blockEntities.map(insertTransactionFromBlockQuery)).map(_ => ())
   }
 
-  private val countTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
+  private val countBlockHashTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
     transactionsTable.filter(_.blockHash === blockHash).length
   }
 
-  def countTransactionsAction(blockHash: BlockEntry.Hash): DBActionR[Int] =
-    countTransactionsQuery(blockHash).result
+  def countBlockHashTransactions(blockHash: BlockEntry.Hash): DBActionR[Int] =
+    countBlockHashTransactionsQuery(blockHash).result
+
+  def countAddressTransactions(address: Address): DBActionR[Int] =
+    getTxNumberByAddressQuery(address).result
 
   private val getTransactionQuery = Compiled { txHash: Rep[Transaction.Hash] =>
     transactionsTable
@@ -78,7 +81,32 @@ trait TransactionQueries
   private val getTxHashesByBlockHashQuery = Compiled { (blockHash: Rep[BlockEntry.Hash]) =>
     transactionsTable
       .filter(_.blockHash === blockHash)
+      .sortBy(_.txIndex)
       .map(tx => (tx.hash, tx.blockHash, tx.timestamp))
+  }
+
+  private val getTxHashesByBlockHashWithPaginationQuery = Compiled {
+    (blockHash: Rep[BlockEntry.Hash], toDrop: ConstColumn[Long], limit: ConstColumn[Long]) =>
+      transactionsTable
+        .filter(_.blockHash === blockHash)
+        .sortBy(_.txIndex)
+        .map(tx => (tx.hash, tx.blockHash, tx.timestamp))
+        .drop(toDrop)
+        .take(limit)
+  }
+
+  private val getTxNumberByAddressQuery = Compiled { (address: Rep[Address]) =>
+    mainInputs
+      .join(mainOutputs)
+      .on(_.outputRefKey === _.key)
+      .filter(_._2.address === address)
+      .map { case (input, _) => input.txHash }
+      .union(
+        mainOutputs
+          .filter(_.address === address)
+          .map(out => out.txHash)
+      )
+      .length
   }
 
   private val getTxHashesByAddressQuery = Compiled {
@@ -87,13 +115,18 @@ trait TransactionQueries
         .join(mainOutputs)
         .on(_.outputRefKey === _.key)
         .filter(_._2.address === address)
-        .map { case (input, _) => (input.txHash, input.blockHash, input.timestamp) }
+        .map { case (input, _) => input.txHash }
+        .join(transactionsTable)
+        .on(_ === _.hash)
         .union(
           mainOutputs
             .filter(_.address === address)
-            .map(out => (out.txHash, out.blockHash, out.timestamp))
+            .map(out => out.txHash)
+            .join(transactionsTable)
+            .on(_ === _.hash)
         )
-        .sortBy { case (txHash, _, timestamp) => (timestamp.desc, txHash) }
+        .sortBy { case (_, tx) => (tx.timestamp.desc, tx.txIndex) }
+        .map { case (_, tx) => (tx.hash, tx.blockHash, tx.timestamp) }
         .drop(toDrop)
         .take(limit)
   }
@@ -135,6 +168,18 @@ trait TransactionQueries
   def getTransactionsByBlockHash(blockHash: BlockEntry.Hash): DBActionR[Seq[Transaction]] = {
     for {
       txHashesTs <- getTxHashesByBlockHashQuery(blockHash).result
+      txs        <- getTransactions(txHashesTs)
+    } yield txs
+  }
+
+  def getTransactionsByBlockHashWithPagination(
+      blockHash: BlockEntry.Hash,
+      pagination: Pagination): DBActionR[Seq[Transaction]] = {
+    val offset = pagination.offset.toLong
+    val limit  = pagination.limit.toLong
+    val toDrop = offset * limit
+    for {
+      txHashesTs <- getTxHashesByBlockHashWithPaginationQuery((blockHash, toDrop, limit)).result
       txs        <- getTransactions(txHashesTs)
     } yield txs
   }

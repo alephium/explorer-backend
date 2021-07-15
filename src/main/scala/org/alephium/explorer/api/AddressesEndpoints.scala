@@ -31,10 +31,9 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .tag("Addressess")
       .in("addresses")
 
-  val getAddressInfo: BaseEndpoint[(Address, Pagination), AddressInfo] =
+  val getAddressInfo: BaseEndpoint[Address, AddressInfo] =
     addressesEndpoint.get
       .in(path[Address]("address")(Codecs.addressTapirCodec))
-      .in(pagination)
       .out(jsonBody[AddressInfo])
       .description("Get address informations")
 

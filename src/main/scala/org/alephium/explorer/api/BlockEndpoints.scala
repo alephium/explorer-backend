@@ -21,7 +21,7 @@ import sttp.tapir.generic.auto._
 
 import org.alephium.api.{alfJsonBody => jsonBody, BaseEndpoint}
 import org.alephium.explorer.api.Codecs.blockEntryHashTapirCodec
-import org.alephium.explorer.api.model.{BlockEntry, Pagination}
+import org.alephium.explorer.api.model.{BlockEntry, ListBlocks, Pagination, Transaction}
 
 trait BlockEndpoints extends BaseEndpoint with QueryParams {
 
@@ -30,15 +30,23 @@ trait BlockEndpoints extends BaseEndpoint with QueryParams {
       .tag("Blocks")
       .in("blocks")
 
-  val getBlockByHash: BaseEndpoint[BlockEntry.Hash, BlockEntry] =
+  val getBlockByHash: BaseEndpoint[BlockEntry.Hash, BlockEntry.Lite] =
     blocksEndpoint.get
       .in(path[BlockEntry.Hash]("block-hash"))
-      .out(jsonBody[BlockEntry])
+      .out(jsonBody[BlockEntry.Lite])
       .description("Get a block with hash")
 
-  val listBlocks: BaseEndpoint[Pagination, Seq[BlockEntry.Lite]] =
+  val getBlockTransactions: BaseEndpoint[(BlockEntry.Hash, Pagination), Seq[Transaction]] =
+    blocksEndpoint.get
+      .in(path[BlockEntry.Hash]("block-hash"))
+      .in("transactions")
+      .in(pagination)
+      .out(jsonBody[Seq[Transaction]])
+      .description("Get block's transactions")
+
+  val listBlocks: BaseEndpoint[Pagination, ListBlocks] =
     blocksEndpoint.get
       .in(pagination)
-      .out(jsonBody[Seq[BlockEntry.Lite]])
+      .out(jsonBody[ListBlocks])
       .description("List blocks within time interval")
 }

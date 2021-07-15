@@ -25,6 +25,7 @@ trait Documentation extends BlockEndpoints with TransactionEndpoints with Addres
   val docs: OpenAPI = toOpenAPI(List(
                                   listBlocks,
                                   getBlockByHash,
+                                  getBlockTransactions,
                                   getTransactionById,
                                   getAddressInfo,
                                   getTransactionsByAddress

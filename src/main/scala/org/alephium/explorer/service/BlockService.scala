@@ -16,25 +16,35 @@
 
 package org.alephium.explorer.service
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-import org.alephium.explorer.api.model.{BlockEntry, Pagination}
+import org.alephium.explorer.api.model.{BlockEntry, ListBlocks, Pagination, Transaction}
 import org.alephium.explorer.persistence.dao.BlockDao
 
 trait BlockService {
-  def getBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry]]
-  def listBlocks(pagination: Pagination): Future[Seq[BlockEntry.Lite]]
+  def getLiteBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]]
+  def getBlockTransactions(hash: BlockEntry.Hash, pagination: Pagination): Future[Seq[Transaction]]
+  def listBlocks(pagination: Pagination): Future[ListBlocks]
 }
 
 object BlockService {
-  def apply(blockDAO: BlockDao): BlockService =
+  def apply(blockDAO: BlockDao)(implicit executionContext: ExecutionContext): BlockService =
     new Impl(blockDAO)
 
-  private class Impl(blockDao: BlockDao) extends BlockService {
-    def getBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry]] =
-      blockDao.get(hash)
+  private class Impl(blockDao: BlockDao)(implicit executionContext: ExecutionContext)
+      extends BlockService {
+    def getLiteBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]] =
+      blockDao.getLite(hash)
 
-    def listBlocks(pagination: Pagination): Future[Seq[BlockEntry.Lite]] =
-      blockDao.listMainChain(pagination)
+    def getBlockTransactions(hash: BlockEntry.Hash,
+                             pagination: Pagination): Future[Seq[Transaction]] =
+      blockDao.getTransactions(hash, pagination)
+
+    def listBlocks(pagination: Pagination): Future[ListBlocks] = {
+      blockDao.listMainChain(pagination).map {
+        case (blocks, total) =>
+          ListBlocks(total, blocks)
+      }
+    }
   }
 }

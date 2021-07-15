@@ -103,7 +103,8 @@ class TransactionServiceSpec
       blockHash0,
       ts0,
       startGas,
-      gasPrice
+      gasPrice,
+      0
     )
 
     val output0 =
@@ -131,7 +132,8 @@ class TransactionServiceSpec
       blockHash1,
       ts1,
       startGas1,
-      gasPrice1
+      gasPrice1,
+      0
     )
     val input1 = InputEntity(blockHash1,
                              tx1.hash,

@@ -14,16 +14,12 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.model
+package org.alephium.explorer.api.model
 
-import org.alephium.explorer.api.model.{BlockEntry, Transaction}
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.json.Json._
 
-final case class TransactionEntity(
-    hash: Transaction.Hash,
-    blockHash: BlockEntry.Hash,
-    timestamp: TimeStamp,
-    startGas: Int,
-    gasPrice: U256,
-    index: Int
-)
+final case class ListBlocks(total: Int, blocks: Seq[BlockEntry.Lite])
+
+object ListBlocks {
+  implicit val readWriter: ReadWriter[ListBlocks] = macroRW
+}

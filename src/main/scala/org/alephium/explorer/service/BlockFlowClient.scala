@@ -158,7 +158,9 @@ object BlockFlowClient {
       GroupIndex.unsafe(block.chainTo),
       Height.unsafe(block.height),
       block.deps.map(new BlockEntry.Hash(_)).toSeq,
-      transactions.map(txToEntity(_, hash, block.timestamp)),
+      transactions.zipWithIndex.map {
+        case (tx, index) => txToEntity(tx, hash, block.timestamp, index)
+      },
       transactions.flatMap(tx =>
         tx.inputs.toSeq.map(inputToEntity(_, hash, tx.id, block.timestamp, false))),
       transactions.flatMap(tx =>
@@ -171,13 +173,15 @@ object BlockFlowClient {
 
   private def txToEntity(tx: api.model.Tx,
                          blockHash: BlockEntry.Hash,
-                         timestamp: TimeStamp): TransactionEntity =
+                         timestamp: TimeStamp,
+                         index: Int): TransactionEntity =
     TransactionEntity(
       new Transaction.Hash(tx.id),
       blockHash,
       timestamp,
       tx.startGas,
-      tx.gasPrice
+      tx.gasPrice,
+      index
     )
 
   private def inputToEntity(input: api.model.Input,
