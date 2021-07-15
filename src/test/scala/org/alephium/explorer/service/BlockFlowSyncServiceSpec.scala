@@ -205,6 +205,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
       val result = blockDao
         .listMainChain(Pagination.unsafe(0, blocks.size))
         .futureValue
+        ._1
         .filter(block =>
           block.chainFrom == GroupIndex.unsafe(0) && block.chainTo == GroupIndex.unsafe(0))
         .map(_.hash)

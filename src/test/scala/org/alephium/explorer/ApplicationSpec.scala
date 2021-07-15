@@ -150,29 +150,31 @@ class ApplicationSpec()
           val offset = page - 1
           //filter `blocks by the same timestamp as the query for better assertion`
           val expectedBlocks = blocks.sortBy(_.timestamp).reverse.drop(offset * limit).take(limit)
-          val res            = responseAs[Seq[BlockEntry.Lite]].map(_.hash)
-          expectedBlocks.size is res.size
+          val res            = responseAs[ListBlocks]
+          val hashes         = res.blocks.map(_.hash)
+          expectedBlocks.size is hashes.size
+          res.total is blocks.size
         }
     }
 
     Get(s"/blocks") ~> routes ~> check {
-      val res = responseAs[Seq[BlockEntry.Lite]].map(_.hash)
+      val res = responseAs[ListBlocks].blocks.map(_.hash)
       res.size is scala.math.min(Pagination.defaultLimit, blocks.size)
     }
 
     Get(s"/blocks?limit=${blocks.size}") ~> routes ~> check {
-      val res = responseAs[Seq[BlockEntry.Lite]].map(_.hash)
+      val res = responseAs[ListBlocks].blocks.map(_.hash)
       res.size is blocks.size
       blocks.foreach(block => res.contains(block.hash) is true)
     }
 
     var blocksPage1: Seq[BlockEntry.Hash] = Seq.empty
     Get(s"/blocks?page=1&limit=${blocks.size / 2 + 1}") ~> routes ~> check {
-      blocksPage1 = responseAs[Seq[BlockEntry.Lite]].map(_.hash)
+      blocksPage1 = responseAs[ListBlocks].blocks.map(_.hash)
     }
 
     Get(s"/blocks?page=2&limit=${blocks.size / 2 + 1}") ~> routes ~> check {
-      val res = responseAs[Seq[BlockEntry.Lite]].map(_.hash)
+      val res = responseAs[ListBlocks].blocks.map(_.hash)
 
       val allBlocks = blocksPage1 ++ res
 

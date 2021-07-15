@@ -41,10 +41,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Lite"
-                  }
+                  "$ref": "#/components/schemas/ListBlocks"
                 }
               }
             }
@@ -710,6 +707,23 @@
         "properties": {
           "detail": {
             "type": "string"
+          }
+        }
+      },
+      "ListBlocks": {
+        "required": [
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Lite"
+            }
           }
         }
       },

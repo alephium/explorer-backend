@@ -41,7 +41,7 @@ trait BlockDao {
                   height: Height): Future[Seq[BlockEntry]]
   def insert(block: BlockEntity): Future[Unit]
   def insertAll(blocks: Seq[BlockEntity]): Future[Unit]
-  def listMainChain(pagination: Pagination): Future[Seq[BlockEntry.Lite]]
+  def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)]
   def listIncludingForks(timeInterval: TimeInterval): Future[Seq[BlockEntry.Lite]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
   def updateMainChain(hash: BlockEntry.Hash,
@@ -135,17 +135,18 @@ object BlockDao {
       run(DBIOAction.sequence(blocks.map(insertAction))).map(_ => ())
     }
 
-    def listMainChain(pagination: Pagination): Future[Seq[BlockEntry.Lite]] = {
+    def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)] = {
+      val mainChain = blockHeadersTable.filter(_.mainChain)
       val action =
         for {
-          headers <- blockHeadersTable
-            .filter(_.mainChain)
+          headers <- mainChain
             .sortBy(b => (b.timestamp.desc, b.hash))
             .drop(pagination.offset * pagination.limit)
             .take(pagination.limit)
             .result
           blocks <- DBIOAction.sequence(headers.map(buildLiteBlockEntryAction))
-        } yield blocks
+          total  <- mainChain.length.result
+        } yield (blocks, total)
 
       run(action)
     }
