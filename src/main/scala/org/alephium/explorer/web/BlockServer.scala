@@ -37,8 +37,11 @@ class BlockServer(blockService: BlockService,
     extends Server
     with BlockEndpoints {
   val route: Route =
-    toRoute(getBlockByHash)(hash =>
-      blockService.getBlockByHash(hash).map(_.toRight(ApiError.NotFound(hash.value.toHexString)))) ~
+    toRoute(getBlockByHash)(
+      hash =>
+        blockService
+          .getLiteBlockByHash(hash)
+          .map(_.toRight(ApiError.NotFound(hash.value.toHexString)))) ~
       toRoute(getBlockTransactions) {
         case (hash, pagination) => blockService.getBlockTransactions(hash, pagination).map(Right(_))
       } ~
