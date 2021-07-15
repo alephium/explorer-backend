@@ -36,7 +36,7 @@ trait TransactionSchema extends CustomTypes {
     def startGas: Rep[Int]              = column[Int]("start-gas")
     def gasPrice: Rep[U256] =
       column[U256]("gas-price", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
-    def order: Rep[Int] = column[Int]("order")
+    def txIndex: Rep[Int] = column[Int]("index")
 
     def pk: PrimaryKey = primaryKey("txs_pk", (hash, blockHash))
 
@@ -45,7 +45,7 @@ trait TransactionSchema extends CustomTypes {
     def blockHashIdx: Index = index("txs_block_hash_idx", blockHash)
 
     def * : ProvenShape[TransactionEntity] =
-      (hash, blockHash, timestamp, startGas, gasPrice, order)
+      (hash, blockHash, timestamp, startGas, gasPrice, txIndex)
         .<>((TransactionEntity.apply _).tupled, TransactionEntity.unapply)
   }
 

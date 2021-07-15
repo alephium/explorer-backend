@@ -121,7 +121,7 @@ trait TransactionQueries
         )
         .join(transactionsTable)
         .on(_ === _.hash)
-        .sortBy { case (_, tx) => (tx.timestamp.desc, tx.order) }
+        .sortBy { case (_, tx) => (tx.timestamp.desc, tx.txIndex) }
         .map { case (_, tx) => (tx.hash, tx.blockHash, tx.timestamp) }
         .drop(toDrop)
         .take(limit)
