@@ -36,10 +36,11 @@ trait BlockEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[BlockEntry.Lite])
       .description("Get a block with hash")
 
-  val getBlockTransactions: BaseEndpoint[BlockEntry.Hash, Seq[Transaction]] =
+  val getBlockTransactions: BaseEndpoint[(BlockEntry.Hash, Pagination), Seq[Transaction]] =
     blocksEndpoint.get
       .in(path[BlockEntry.Hash]("block-hash"))
       .in("transactions")
+      .in(pagination)
       .out(jsonBody[Seq[Transaction]])
       .description("Get block's transactions")
 

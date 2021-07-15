@@ -230,6 +230,27 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": "1"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": "0",
+              "maximum": "100"
+            }
           }
         ],
         "responses": {

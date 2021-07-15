@@ -84,6 +84,15 @@ trait TransactionQueries
       .map(tx => (tx.hash, tx.blockHash, tx.timestamp))
   }
 
+  private val getTxHashesByBlockHashWithPaginationQuery = Compiled {
+    (blockHash: Rep[BlockEntry.Hash], toDrop: ConstColumn[Long], limit: ConstColumn[Long]) =>
+      transactionsTable
+        .filter(_.blockHash === blockHash)
+        .map(tx => (tx.hash, tx.blockHash, tx.timestamp))
+        .drop(toDrop)
+        .take(limit)
+  }
+
   private val getTxNumberByAddressQuery = Compiled { (address: Rep[Address]) =>
     mainInputs
       .join(mainOutputs)
@@ -152,6 +161,18 @@ trait TransactionQueries
   def getTransactionsByBlockHash(blockHash: BlockEntry.Hash): DBActionR[Seq[Transaction]] = {
     for {
       txHashesTs <- getTxHashesByBlockHashQuery(blockHash).result
+      txs        <- getTransactions(txHashesTs)
+    } yield txs
+  }
+
+  def getTransactionsByBlockHashWithPagination(
+      blockHash: BlockEntry.Hash,
+      pagination: Pagination): DBActionR[Seq[Transaction]] = {
+    val offset = pagination.offset.toLong
+    val limit  = pagination.limit.toLong
+    val toDrop = offset * limit
+    for {
+      txHashesTs <- getTxHashesByBlockHashWithPaginationQuery((blockHash, toDrop, limit)).result
       txs        <- getTransactions(txHashesTs)
     } yield txs
   }

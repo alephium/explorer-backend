@@ -23,7 +23,7 @@ import org.alephium.explorer.persistence.dao.BlockDao
 
 trait BlockService {
   def getBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]]
-  def getBlockTransactions(hash: BlockEntry.Hash): Future[Seq[Transaction]]
+  def getBlockTransactions(hash: BlockEntry.Hash, pagination: Pagination): Future[Seq[Transaction]]
   def listBlocks(pagination: Pagination): Future[Seq[BlockEntry.Lite]]
 }
 
@@ -35,8 +35,9 @@ object BlockService {
     def getBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]] =
       blockDao.getLite(hash)
 
-    def getBlockTransactions(hash: BlockEntry.Hash): Future[Seq[Transaction]] =
-      blockDao.getTransactions(hash)
+    def getBlockTransactions(hash: BlockEntry.Hash,
+                             pagination: Pagination): Future[Seq[Transaction]] =
+      blockDao.getTransactions(hash, pagination)
 
     def listBlocks(pagination: Pagination): Future[Seq[BlockEntry.Lite]] =
       blockDao.listMainChain(pagination)

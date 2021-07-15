@@ -35,7 +35,7 @@ import org.alephium.explorer.persistence.schema._
 trait BlockDao {
   def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]]
   def getLite(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]]
-  def getTransactions(hash: BlockEntry.Hash): Future[Seq[Transaction]]
+  def getTransactions(hash: BlockEntry.Hash, pagination: Pagination): Future[Seq[Transaction]]
   def getAtHeight(fromGroup: GroupIndex,
                   toGroup: GroupIndex,
                   height: Height): Future[Seq[BlockEntry]]
@@ -96,8 +96,8 @@ object BlockDao {
     def getLite(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]] =
       run(getBlockEntryLiteAction(hash))
 
-    def getTransactions(hash: BlockEntry.Hash): Future[Seq[Transaction]] =
-      run(getTransactionsByBlockHash(hash))
+    def getTransactions(hash: BlockEntry.Hash, pagination: Pagination): Future[Seq[Transaction]] =
+      run(getTransactionsByBlockHashWithPagination(hash, pagination))
 
     def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]] =
       run(getBlockEntryAction(hash))
