@@ -98,11 +98,11 @@ trait TransactionQueries
       .join(mainOutputs)
       .on(_.outputRefKey === _.key)
       .filter(_._2.address === address)
-      .map { case (input, _) => (input.txHash, input.blockHash, input.timestamp) }
+      .map { case (input, _) => input.txHash }
       .union(
         mainOutputs
           .filter(_.address === address)
-          .map(out => (out.txHash, out.blockHash, out.timestamp))
+          .map(out => out.txHash)
       )
       .length
   }
