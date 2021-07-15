@@ -114,13 +114,15 @@ trait TransactionQueries
         .on(_.outputRefKey === _.key)
         .filter(_._2.address === address)
         .map { case (input, _) => input.txHash }
+        .join(transactionsTable)
+        .on(_ === _.hash)
         .union(
           mainOutputs
             .filter(_.address === address)
             .map(out => out.txHash)
+            .join(transactionsTable)
+            .on(_ === _.hash)
         )
-        .join(transactionsTable)
-        .on(_ === _.hash)
         .sortBy { case (_, tx) => (tx.timestamp.desc, tx.txIndex) }
         .map { case (_, tx) => (tx.hash, tx.blockHash, tx.timestamp) }
         .drop(toDrop)
