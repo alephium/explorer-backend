@@ -52,12 +52,15 @@ trait TransactionQueries
     DBIOAction.sequence(blockEntities.map(insertTransactionFromBlockQuery)).map(_ => ())
   }
 
-  private val countTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
+  private val countBlockHashTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
     transactionsTable.filter(_.blockHash === blockHash).length
   }
 
-  def countTransactionsAction(blockHash: BlockEntry.Hash): DBActionR[Int] =
-    countTransactionsQuery(blockHash).result
+  def countBlockHashTransactions(blockHash: BlockEntry.Hash): DBActionR[Int] =
+    countBlockHashTransactionsQuery(blockHash).result
+
+  def countAddressTransactions(address: Address): DBActionR[Int] =
+    getTxNumberByAddressQuery(address).result
 
   private val getTransactionQuery = Compiled { txHash: Rep[Transaction.Hash] =>
     transactionsTable
@@ -79,6 +82,20 @@ trait TransactionQueries
     transactionsTable
       .filter(_.blockHash === blockHash)
       .map(tx => (tx.hash, tx.blockHash, tx.timestamp))
+  }
+
+  private val getTxNumberByAddressQuery = Compiled { (address: Rep[Address]) =>
+    mainInputs
+      .join(mainOutputs)
+      .on(_.outputRefKey === _.key)
+      .filter(_._2.address === address)
+      .map { case (input, _) => (input.txHash, input.blockHash, input.timestamp) }
+      .union(
+        mainOutputs
+          .filter(_.address === address)
+          .map(out => (out.txHash, out.blockHash, out.timestamp))
+      )
+      .length
   }
 
   private val getTxHashesByAddressQuery = Compiled {

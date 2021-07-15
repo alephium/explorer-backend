@@ -45,10 +45,10 @@ class AddressServer(transactionService: TransactionService,
           .map(Right.apply)
     } ~
       toRoute(getAddressInfo) {
-        case (address, pagination) =>
+        case (address) =>
           for {
-            balance      <- transactionService.getBalance(address)
-            transactions <- transactionService.getTransactionsByAddress(address, pagination)
-          } yield Right(AddressInfo(balance, transactions))
+            balance  <- transactionService.getBalance(address)
+            txNumber <- transactionService.getTransactionsNumberByAddress(address)
+          } yield Right(AddressInfo(balance, txNumber))
       }
 }

@@ -215,6 +215,106 @@
         }
       }
     },
+    "/blocks/{block-hash}/transactions": {
+      "get": {
+        "tags": [
+          "Blocks"
+        ],
+        "description": "Get block's transactions",
+        "operationId": "getBlocksBlock-hashTransactions",
+        "parameters": [
+          {
+            "name": "block-hash",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Transaction"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/transactions/{transaction-hash}": {
       "get": {
         "tags": [
@@ -326,27 +426,6 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "description": "Page number",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": "1"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "Number per page",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": "0",
-              "maximum": "100"
             }
           }
         ],
@@ -754,7 +833,8 @@
       },
       "AddressInfo": {
         "required": [
-          "balance"
+          "balance",
+          "txNumber"
         ],
         "type": "object",
         "properties": {
@@ -762,11 +842,8 @@
             "type": "integer",
             "format": "uint256"
           },
-          "transactions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Transaction"
-            }
+          "txNumber": {
+            "type": "integer"
           }
         }
       }

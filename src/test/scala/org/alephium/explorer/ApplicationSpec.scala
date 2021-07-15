@@ -238,11 +238,8 @@ class ApplicationSpec()
 
         val res = responseAs[AddressInfo]
 
-        res.transactions.size is expectedTransactions.take(txLimit).size
+        res.txNumber is expectedTransactions.size
         res.balance is expectedBalance
-        expectedTransactions
-          .take(txLimit)
-          .foreach(transaction => res.transactions.map(_.hash).contains(transaction.hash) is true)
       }
     }
   }

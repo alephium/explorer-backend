@@ -56,7 +56,7 @@ class AddressServerSpec()
 
     forAll(addressGen, Gen.chooseNum[Int](-10, 120)) {
       case (address, txLimit) =>
-        Get(s"/addresses/${address}?limit=$txLimit") ~> server.route ~> check {
+        Get(s"/addresses/${address}/transactions?limit=$txLimit") ~> server.route ~> check {
           if (txLimit < 0) {
             status is StatusCodes.BadRequest
             responseAs[ApiError.BadRequest] is ApiError.BadRequest(
@@ -71,7 +71,7 @@ class AddressServerSpec()
           }
         }
 
-        Get(s"/addresses/${address}") ~> server.route ~> check {
+        Get(s"/addresses/${address}/transactions") ~> server.route ~> check {
           testLimit is 20 //default txLimit
         }
     }
@@ -85,6 +85,10 @@ class AddressServerSpec()
       override def getTransactionsByAddress(address: Address,
                                             pagination: Pagination): Future[Seq[Transaction]] =
         Future.successful(Seq.empty)
+
+      override def getTransactionsNumberByAddress(address: Address): Future[Int] =
+        Future.successful(0)
+
       override def getBalance(address: Address): Future[U256] = Future.successful(U256.Zero)
     }
   }
