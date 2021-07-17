@@ -21,6 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
+import slick.jdbc.meta.MTable
 
 import org.alephium.explorer.persistence.DBRunner
 
@@ -39,18 +40,8 @@ object HealthCheckDao {
       with DBRunner
       with StrictLogging {
 
-    import config.profile.api._
-
     def healthCheck(): Future[Unit] = {
-      dbVersion().map { version =>
-        logger.info(s"Postgres version: $version")
-        ()
-      }
-    }
-
-    private def dbVersion(): Future[String] = {
-      val query = sql"SELECT VERSION()".as[String].head
-      run(query)
+      run(MTable.getTables).map(_ => ())
     }
   }
 }

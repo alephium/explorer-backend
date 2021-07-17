@@ -26,7 +26,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
 import org.alephium.api.model.{PeerAddress, SelfClique}
-import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao, HealthCheckDao}
+import org.alephium.explorer.persistence.dao.{BlockDao, HealthCheckDao, TransactionDao}
 import org.alephium.explorer.service._
 import org.alephium.explorer.sideEffect
 import org.alephium.protocol.model.NetworkType
@@ -74,6 +74,7 @@ class Application(host: String,
   def start: Future[Unit] = {
     for {
       _          <- healthCheckDao.healthCheck()
+      _          <- blockDao.createTables()
       selfClique <- blockFlowClient.fetchSelfClique()
       _          <- validateSelfClique(selfClique)
       _          <- blockFlowSyncService.start(urisFromPeers(selfClique.toOption.get.nodes.toSeq))
