@@ -199,5 +199,7 @@ class TransactionServiceSpec
     val transactionService: TransactionService = TransactionService(transactionDao)
 
     val groupIndex = GroupIndex.unsafe(0)
+
+    blockDao.createTables().futureValue
   }
 }

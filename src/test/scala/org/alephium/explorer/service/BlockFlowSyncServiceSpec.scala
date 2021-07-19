@@ -141,6 +141,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
       blockEntitiesToBlockEntries(blockFlowEntity)
 
     val blockDao: BlockDao = BlockDao(databaseConfig)
+    blockDao.createTables().futureValue
 
     def blockEntities = blockFlowEntity.flatten
 

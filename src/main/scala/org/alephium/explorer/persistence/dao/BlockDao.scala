@@ -16,8 +16,7 @@
 
 package org.alephium.explorer.persistence.dao
 
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.concurrent.duration.Duration
+import scala.concurrent.{ExecutionContext, Future}
 
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
@@ -25,7 +24,7 @@ import slick.dbio.DBIOAction
 import slick.jdbc.JdbcProfile
 import slick.jdbc.meta.MTable
 
-import org.alephium.explorer.{sideEffect, AnyOps}
+import org.alephium.explorer.AnyOps
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
@@ -49,6 +48,7 @@ trait BlockDao {
                       chainTo: GroupIndex,
                       groupNum: Int): Future[Option[BlockEntry.Hash]]
   def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit]
+  def createTables(): Future[Unit]
 }
 
 object BlockDao {
@@ -240,27 +240,28 @@ object BlockDao {
       run(updateMainChainStatusAction(hash, isMainChain))
     }
 
-    //TODO Look for something like https://flywaydb.org/ to manage schemas
-    @SuppressWarnings(
-      Array("org.wartremover.warts.JavaSerializable",
-            "org.wartremover.warts.Product",
-            "org.wartremover.warts.Serializable"))
-    private val myTables =
-      Seq(blockHeadersTable, blockDepsTable, transactionsTable, inputsTable, outputsTable)
-    private val existing = run(MTable.getTables)
-    private val f = existing.flatMap { tables =>
-      Future.sequence(myTables.map { myTable =>
-        val createIfNotExist =
-          if (!tables.exists(_.name.name === myTable.baseTableRow.tableName)) {
-            myTable.schema.create
-          } else {
-            DBIOAction.successful(())
-          }
-        run(createIfNotExist)
-      })
-    }
-    sideEffect {
-      Await.result(f, Duration.Inf)
+    def createTables(): Future[Unit] = {
+      //TODO Look for something like https://flywaydb.org/ to manage schemas
+      @SuppressWarnings(
+        Array("org.wartremover.warts.JavaSerializable",
+              "org.wartremover.warts.Product",
+              "org.wartremover.warts.Serializable"))
+      val allTables =
+        Seq(blockHeadersTable, blockDepsTable, transactionsTable, inputsTable, outputsTable)
+      val existingTables = run(MTable.getTables)
+      existingTables
+        .flatMap { tables =>
+          Future.sequence(allTables.map { table =>
+            val createIfNotExist =
+              if (!tables.exists(_.name.name === table.baseTableRow.tableName)) {
+                table.schema.create
+              } else {
+                DBIOAction.successful(())
+              }
+            run(createIfNotExist)
+          })
+        }
+        .map(_ => ())
     }
   }
 }
