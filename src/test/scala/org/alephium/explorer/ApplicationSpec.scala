@@ -47,7 +47,7 @@ import org.alephium.json.Json._
 import org.alephium.protocol.model.{CliqueId, NetworkType}
 import org.alephium.util.{AVector, Duration, Hex, TimeStamp, U256}
 
-class ApplicationSpec()
+trait ApplicationSpec
     extends AlephiumSpec
     with ScalatestRouteTest
     with ScalaFutures
@@ -93,25 +93,32 @@ class ApplicationSpec()
 
   val blockflowBinding = blockFlowMock.server.futureValue
 
-  val app: Application =
-    new Application(
-      localhost.getHostAddress,
-      SocketUtil.temporaryLocalPort(),
-      Uri(s"http://${localhost.getHostAddress}:$blockFlowPort"),
-      groupNum,
-      blockflowFetchMaxAge,
-      networkType,
-      databaseConfig
-    )
+  def createApp(readOnly: Boolean): Application = new Application(
+    localhost.getHostAddress,
+    SocketUtil.temporaryLocalPort(),
+    readOnly,
+    Uri(s"http://${localhost.getHostAddress}:$blockFlowPort"),
+    groupNum,
+    blockflowFetchMaxAge,
+    networkType,
+    databaseConfig
+  )
 
-  app.start.futureValue
+  def initApp(app: Application): Unit = {
+    app.start.futureValue
+    //let it sync once
+    eventually(app.blockFlowSyncService.stop().futureValue) is ()
+    ()
+  }
 
-  //let it sync once
-  eventually(app.blockFlowSyncService.stop().futureValue) is ()
+  def stopApp(app: Application): Future[Unit] = app.stop
 
+  def app: Application
   val routes = app.server.route
 
   it should "get a block by its id" in {
+    initApp(app)
+
     forAll(Gen.oneOf(blocks)) { block =>
       Get(s"/blocks/${block.hash.value.toHexString}") ~> routes ~> check {
         val blockResult = responseAs[BlockEntry.Lite]
@@ -289,8 +296,6 @@ class ApplicationSpec()
       status is StatusCodes.OK
     }
   }
-
-  app.stop
 }
 
 object ApplicationSpec {
@@ -385,4 +390,26 @@ object ApplicationSpec {
 
     val server = Http().newServerAt(address.getHostAddress, port).bindFlow(routes)
   }
+}
+
+class ReadOnlyApplicationSpec extends ApplicationSpec {
+  override def initApp(app: Application): Unit = {
+    val rwApp: Application = createApp(false)
+    super.initApp(rwApp)
+    stopApp(rwApp).futureValue
+    app.start.futureValue
+  }
+
+  override lazy val app: Application = createApp(true)
+
+  it should "not have started blockFlowSyncService" in {
+    whenReady(app.blockFlowSyncService.stop().failed) { exception =>
+      exception is a[IllegalStateException]
+    }
+  }
+
+}
+
+class ReadWriteApplicationSpec extends ApplicationSpec {
+  override lazy val app: Application = createApp(false)
 }

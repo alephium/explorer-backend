@@ -35,6 +35,7 @@ import org.alephium.util.Duration
 // scalastyle:off magic.number
 class Application(host: String,
                   port: Int,
+                  readOnly: Boolean,
                   blockFlowUri: Uri,
                   groupNum: Int,
                   blockflowFetchMaxAge: Duration,
@@ -71,14 +72,20 @@ class Application(host: String,
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-  def start: Future[Unit] = {
+  private def startSyncService(): Future[Unit] = {
     for {
-      _          <- healthCheckDao.healthCheck()
-      _          <- blockDao.createTables()
       selfClique <- blockFlowClient.fetchSelfClique()
       _          <- validateSelfClique(selfClique)
       _          <- blockFlowSyncService.start(urisFromPeers(selfClique.toOption.get.nodes.toSeq))
-      binding    <- Http().newServerAt(host, port).bindFlow(server.route)
+    } yield ()
+  }
+
+  def start: Future[Unit] = {
+    for {
+      _       <- healthCheckDao.healthCheck()
+      _       <- blockDao.createTables()
+      _       <- if (readOnly) Future.successful(()) else startSyncService()
+      binding <- Http().newServerAt(host, port).bindFlow(server.route)
     } yield {
       sideEffect(bindingPromise.success(binding))
       logger.info(s"Listening http request on $binding")
@@ -87,7 +94,7 @@ class Application(host: String,
 
   def stop: Future[Unit] =
     for {
-      _ <- blockFlowSyncService.stop()
+      _ <- if (!readOnly) blockFlowSyncService.stop() else Future.successful(())
       _ <- bindingPromise.future.flatMap(_.unbind())
     } yield {
       logger.info("Application stopped")

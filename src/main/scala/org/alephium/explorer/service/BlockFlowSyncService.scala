@@ -77,20 +77,26 @@ object BlockFlowSyncService {
     private val stopped: Promise[Unit]  = Promise()
     private val syncDone: Promise[Unit] = Promise()
 
-    private var initDone = false
+    private var initDone    = false
+    private var startedOnce = false
 
     var nodeUris: Seq[Uri] = Seq.empty
 
     def start(newUris: Seq[Uri]): Future[Unit] = {
       Future.successful {
-        nodeUris = newUris
+        startedOnce = true
+        nodeUris    = newUris
         sync()
       }
     }
 
     def stop(): Future[Unit] = {
-      sideEffect(if (!stopped.isCompleted) stopped.success(()))
-      syncDone.future
+      if (!startedOnce) {
+        syncDone.failure(new IllegalStateException).future
+      } else {
+        sideEffect(if (!stopped.isCompleted) stopped.success(()))
+        syncDone.future
+      }
     }
 
     @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
