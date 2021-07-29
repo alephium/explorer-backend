@@ -18,6 +18,7 @@ package org.alephium.explorer.persistence.dao
 
 import scala.concurrent.ExecutionContext
 
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
@@ -37,21 +38,10 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
-  trait Fixture extends InputSchema with OutputSchema with DatabaseFixture with DBRunner {
-    override val config = databaseConfig
-    val blockDao        = BlockDao(databaseConfig)
-    val blockflow: Seq[Seq[model.BlockEntry]] =
-      blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
-    val blocksProtocol: Seq[model.BlockEntry] = blockflow.flatten
-    val blockEntities: Seq[BlockEntity]       = blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
-    blockDao.createTables().futureValue
-
-  }
-
   it should "updateMainChainStatus correctly" in new Fixture {
     import config.profile.api._
     forAll(Gen.oneOf(blockEntities)) { block =>
-      forAll(Gen.oneOf(Seq(true, false))) { mainChainInput =>
+      forAll(arbitrary[Boolean]) { mainChainInput =>
         blockDao.insert(block).futureValue
         blockDao.updateMainChainStatus(block.hash, mainChainInput).futureValue
 
@@ -70,5 +60,15 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
         (inputs ++ outputs).foreach(isMainChain => isMainChain is mainChainInput)
       }
     }
+  }
+
+  trait Fixture extends InputSchema with OutputSchema with DatabaseFixture with DBRunner {
+    override val config = databaseConfig
+    val blockDao        = BlockDao(databaseConfig)
+    val blockflow: Seq[Seq[model.BlockEntry]] =
+      blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
+    val blocksProtocol: Seq[model.BlockEntry] = blockflow.flatten
+    val blockEntities: Seq[BlockEntity]       = blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
+    blockDao.createTables().futureValue
   }
 }
