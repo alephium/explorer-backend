@@ -53,14 +53,16 @@ object Main extends App with StrictLogging {
   val networkType: NetworkType =
     NetworkType.fromName(config.getString("blockflow.network-type")).get
 
-  val port: Int    = config.getInt("explorer.port")
-  val host: String = config.getString("explorer.host")
+  val port: Int         = config.getInt("explorer.port")
+  val host: String      = config.getString("explorer.host")
+  val readOnly: Boolean = config.getBoolean("explorer.readOnly")
 
   val databaseConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig[JdbcProfile]("db")
 
   val app: Application =
     new Application(host,
                     port,
+                    readOnly,
                     blockflowUri,
                     groupNum,
                     blockflowFetchMaxAge,

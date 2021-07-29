@@ -23,6 +23,7 @@ import org.scalactic.Equality
 import org.scalactic.source.Position
 import org.scalatest.Assertion
 import org.scalatest.flatspec.AnyFlatSpecLike
+import org.scalatest.matchers.dsl.ResultOfATypeInvocation
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
@@ -32,7 +33,8 @@ trait AlephiumSpec extends AnyFlatSpecLike with ScalaCheckDrivenPropertyChecks w
   // scalastyle:off no.should
   implicit class IsOps[A: Equality](left: A)(implicit pos: Position) {
     // scalastyle:off scalatest-matcher
-    def is(right: A): Assertion = left shouldEqual right
+    def is(right: A): Assertion                          = left shouldEqual right
+    def is(right: ResultOfATypeInvocation[_]): Assertion = left shouldBe right
     // scalastyle:on scalatest-matcher
   }
 }
