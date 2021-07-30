@@ -40,8 +40,8 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
 
   it should "updateMainChainStatus correctly" in new Fixture {
     import config.profile.api._
-    forAll(Gen.oneOf(blockEntities)) { block =>
-      forAll(arbitrary[Boolean]) { mainChainInput =>
+    forAll(Gen.oneOf(blockEntities), arbitrary[Boolean]) {
+      case (block, mainChainInput) =>
         blockDao.insert(block).futureValue
         blockDao.updateMainChainStatus(block.hash, mainChainInput).futureValue
 
@@ -58,7 +58,6 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
         inputs.size is block.inputs.size
         outputs.size is block.outputs.size
         (inputs ++ outputs).foreach(isMainChain => isMainChain is mainChainInput)
-      }
     }
   }
 
