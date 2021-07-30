@@ -26,11 +26,15 @@ import org.scalatest.time.{Minutes, Span}
 import org.alephium.api.model
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.Generators
+import org.alephium.explorer.api.model.BlockEntry
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.DBRunner
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.persistence.schema.BlockDepsSchema
+import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.explorer.persistence.schema.InputSchema
 import org.alephium.explorer.persistence.schema.OutputSchema
+import org.alephium.explorer.persistence.schema.TransactionSchema
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.util.TimeStamp
 
@@ -61,7 +65,43 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
     }
   }
 
-  trait Fixture extends InputSchema with OutputSchema with DatabaseFixture with DBRunner {
+  it should "not insert a block twice" in new Fixture {
+    import config.profile.api._
+    forAll(Gen.oneOf(blockEntities)) { block =>
+      blockDao.insert(block).futureValue
+      blockDao.insert(block).futureValue
+
+      val blockheadersQuery                = blockHeadersTable.filter(_.hash === block.hash).map(_.hash).result
+      val headerHash: Seq[BlockEntry.Hash] = run(blockheadersQuery).futureValue
+      headerHash.size is 1
+      headerHash.foreach(_.is(block.hash))
+
+      val inputQuery        = inputsTable.filter(_.blockHash === block.hash).result
+      val outputQuery       = outputsTable.filter(_.blockHash === block.hash).result
+      val blockDepsQuery    = blockDepsTable.filter(_.hash === block.hash).map(_.dep).result
+      val transactionsQuery = transactionsTable.filter(_.blockHash === block.hash).result
+      val queries           = Seq(inputQuery, outputQuery, blockDepsQuery, transactionsQuery)
+      val dbInputs          = Seq(block.inputs, block.outputs, block.deps, block.transactions)
+
+      def checkDuplicates[T](dbInput: Seq[T], dbOutput: Seq[T]) = {
+        dbOutput.size is dbInput.size
+        dbOutput.foreach(output => dbInput.contains(output) is true)
+      }
+
+      dbInputs
+        .zip(queries)
+        .foreach { case (dbInput, query) => checkDuplicates(dbInput, run(query).futureValue) }
+    }
+  }
+
+  trait Fixture
+      extends InputSchema
+      with OutputSchema
+      with BlockHeaderSchema
+      with BlockDepsSchema
+      with TransactionSchema
+      with DatabaseFixture
+      with DBRunner {
     override val config = databaseConfig
     val blockDao        = BlockDao(databaseConfig)
     val blockflow: Seq[Seq[model.BlockEntry]] =
