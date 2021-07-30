@@ -45,7 +45,7 @@ class TransactionServiceSpec
     val address = addressGen.sample.get
 
     val blocks = Gen
-      .listOfN(20, blockEntityGen(0, groupIndex, groupIndex, None))
+      .listOfN(20, blockEntityGen(groupIndex, groupIndex, None))
       .map(_.map { block =>
         block.copy(outputs = block.outputs.map(_.copy(address = address)))
       })
@@ -69,7 +69,7 @@ class TransactionServiceSpec
 
     val amount = ALF.MaxALFValue.mulUnsafe(ALF.MaxALFValue)
 
-    val block = blockEntityGen(0, groupIndex, groupIndex, None)
+    val block = blockEntityGen(groupIndex, groupIndex, None)
       .map { block =>
         block.copy(
           outputs = block.outputs.take(1).map(_.copy(amount = amount))

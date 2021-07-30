@@ -83,7 +83,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
     def blockEntity(parent: Option[BlockEntity],
                     chainFrom: GroupIndex = GroupIndex.unsafe(0),
                     chainTo: GroupIndex   = GroupIndex.unsafe(0)): BlockEntity =
-      blockEntityGen(groupNum, chainFrom, chainTo, parent).sample.get
+      blockEntityGen(chainFrom, chainTo, parent).sample.get
 
     //                    +---+                            +---+   +---+  +---+
     //                 +->+ 2 |                         +--> 9 +-->+ 11+->+ 13|
