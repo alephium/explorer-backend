@@ -75,6 +75,7 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
       val headerHash: Seq[BlockEntry.Hash] = run(blockheadersQuery).futureValue
       headerHash.size is 1
       headerHash.foreach(_.is(block.hash))
+      block.transactions.nonEmpty is true
 
       val inputQuery        = inputsTable.filter(_.blockHash === block.hash).result
       val outputQuery       = outputsTable.filter(_.blockHash === block.hash).result
