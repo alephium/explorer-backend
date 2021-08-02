@@ -42,41 +42,41 @@ trait CustomTypes extends JdbcProfile {
       raw => from((BlockHash.unsafe(Hex.unsafe(raw))))
     )
 
-  implicit val hashType: JdbcType[Hash] = buildHashTypes(identity, identity)
+  implicit lazy val hashType: JdbcType[Hash] = buildHashTypes(identity, identity)
 
-  implicit val blockEntryHashType: JdbcType[BlockEntry.Hash] =
+  implicit lazy val blockEntryHashType: JdbcType[BlockEntry.Hash] =
     buildBlockHashTypes(
       new BlockEntry.Hash(_),
       _.value
     )
 
-  implicit val transactionHashType: JdbcType[Transaction.Hash] =
+  implicit lazy val transactionHashType: JdbcType[Transaction.Hash] =
     buildHashTypes(
       new Transaction.Hash(_),
       _.value
     )
 
-  implicit val groupIndexType: JdbcType[GroupIndex] = MappedJdbcType.base[GroupIndex, Int](
+  implicit lazy val groupIndexType: JdbcType[GroupIndex] = MappedJdbcType.base[GroupIndex, Int](
     _.value,
     int => GroupIndex.unsafe(int)
   )
 
-  implicit val heightType: JdbcType[Height] = MappedJdbcType.base[Height, Int](
+  implicit lazy val heightType: JdbcType[Height] = MappedJdbcType.base[Height, Int](
     _.value,
     int => Height.unsafe(int)
   )
 
-  implicit val addressType: JdbcType[Address] = MappedJdbcType.base[Address, String](
+  implicit lazy val addressType: JdbcType[Address] = MappedJdbcType.base[Address, String](
     _.value,
     string => Address.unsafe(string)
   )
 
-  implicit val timestampType: JdbcType[TimeStamp] = MappedJdbcType.base[TimeStamp, Long](
+  implicit lazy val timestampType: JdbcType[TimeStamp] = MappedJdbcType.base[TimeStamp, Long](
     _.millis,
     long => TimeStamp.unsafe(long)
   )
 
-  implicit val u256Type: JdbcType[U256] = MappedJdbcType.base[U256, BigDecimal](
+  implicit lazy val u256Type: JdbcType[U256] = MappedJdbcType.base[U256, BigDecimal](
     u256       => BigDecimal(u256.v),
     bigDecimal => U256.unsafe(bigDecimal.toBigInt.bigInteger)
   )
