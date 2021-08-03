@@ -45,6 +45,8 @@ trait Generators {
   lazy val heightGen: Gen[Height]                    = Gen.posNum[Int].map(Height.unsafe(_))
   lazy val addressGen: Gen[Address]                  = hashGen.map(hash => Address.unsafe(Base58.encode(hash.bytes)))
 
+  private def parentIndex(chainTo: GroupIndex) = groupNum - 1 + chainTo.value
+
   lazy val addressProtocolGen: Gen[protocol.Address] =
     for {
       group <- Gen.choose(0, groupConfig.groups - 1)
@@ -98,7 +100,7 @@ trait Generators {
       chainFrom       <- groupIndexGen
       chainTo         <- groupIndexGen
       height          <- heightGen
-      deps            <- Gen.listOfN(5, blockEntryHashGen)
+      deps            <- Gen.listOfN(2 * groupNum - 1, blockEntryHashGen)
       transactionSize <- Gen.choose(1, 10)
       transactions    <- Gen.listOfN(transactionSize, transactionProtocolGen)
     } yield
@@ -110,12 +112,13 @@ trait Generators {
                              AVector.from(deps.map(_.value)),
                              AVector.from(transactions))
 
-  def blockEntityGen(groupNum: Int,
-                     chainFrom: GroupIndex,
+  def blockEntityGen(chainFrom: GroupIndex,
                      chainTo: GroupIndex,
                      parent: Option[BlockEntity]): Gen[BlockEntity] =
     blockEntryProtocolGen.map { entry =>
-      val deps      = parent.map(p => Seq.fill(2 * groupNum - 1)(p.hash)).getOrElse(Seq.empty)
+      val deps = parent
+        .map(p => entry.deps.replace(parentIndex(chainTo), p.hash.value))
+        .getOrElse(AVector.empty)
       val height    = Height.unsafe(parent.map(_.height.value + 1).getOrElse(0))
       val timestamp = parent.map(_.timestamp.plusSecondsUnsafe(1)).getOrElse(TimeStamp.zero)
       BlockFlowClient.blockProtocolToEntity(
@@ -124,7 +127,7 @@ trait Generators {
                 chainTo   = chainTo.value,
                 timestamp = timestamp,
                 height    = height.value,
-                deps      = AVector.from(deps.map(_.value))))
+                deps      = deps))
 
     }
 
@@ -136,10 +139,14 @@ trait Generators {
       blocks
         .foldLeft((Seq.empty[protocolApi.BlockEntry], Height.genesis, startTimestamp)) {
           case ((acc, height, timestamp), block) =>
-            val deps: Seq[BlockHash] =
-              if (acc.isEmpty) Seq.empty else Seq.tabulate(groupConfig.groups)(_ => acc.last.hash)
+            val deps: AVector[BlockHash] =
+              if (acc.isEmpty) {
+                AVector.empty
+              } else {
+                block.deps.replace(parentIndex(chainTo), acc.last.hash)
+              }
             val newBlock = block.copy(height = height.value,
-                                      deps      = AVector.from(deps),
+                                      deps      = deps,
                                       timestamp = timestamp,
                                       chainFrom = chainFrom.value,
                                       chainTo   = chainTo.value)

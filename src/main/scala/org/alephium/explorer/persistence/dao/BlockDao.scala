@@ -125,7 +125,7 @@ object BlockDao {
       (for {
         _ <- blockHeadersTable.insertOrUpdate(BlockHeader.fromEntity(block)).filter(_ > 0)
         _ <- DBIOAction.sequence(block.deps.zipWithIndex.map {
-          case (dep, i) => blockDepsTable += ((block.hash, dep, i))
+          case (dep, i) => blockDepsTable.insertOrUpdate((block.hash, dep, i))
         })
         _ <- insertTransactionFromBlockQuery(block)
       } yield ()).transactionally

@@ -18,7 +18,7 @@ package org.alephium.explorer.persistence.schema
 
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
-import slick.lifted.{Index, ProvenShape}
+import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.api.model.BlockEntry
 
@@ -33,6 +33,7 @@ trait BlockDepsSchema extends CustomTypes {
     def dep: Rep[BlockEntry.Hash]  = column[BlockEntry.Hash]("dep")
     def order: Rep[Int]            = column[Int]("order")
 
+    def pk: PrimaryKey = primaryKey("hash_deps_pk", (hash, dep))
     def hashIdx: Index = index("deps_hash_idx", hash)
     def depIdx: Index  = index("deps_dep_idx", dep)
 
