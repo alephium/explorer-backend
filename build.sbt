@@ -2,54 +2,68 @@ import Dependencies._
 
 Global / cancelable := true // Allow cancellation of forked task without killing SBT
 
+def mainProject(id: String): Project = {
+  Project(id, file(id))
+    .settings(commonSettings: _*)
+    .settings(
+      name := s"explorer-backend-$id",
+      scalastyleConfig in Compile := root.base / "scalastyle-config.xml",
+      scalastyleConfig in Test := root.base / "scalastyle-test-config.xml"
+    )
+    .enablePlugins(JavaAppPackaging, sbtdocker.DockerPlugin, BuildInfoPlugin)
+}
+
+val commonSettings = Seq(
+  name := "explorer-backend",
+  organization := "org.alephium",
+  scalaVersion := "2.13.3",
+  scalacOptions ++= Seq(
+    "-deprecation",
+    "-encoding",
+    "utf-8",
+    "-explaintypes",
+    "-feature",
+    "-unchecked",
+    "-Xsource:3.1",
+    "-Xfatal-warnings",
+    "-Xlint:adapted-args",
+    "-Xlint:constant",
+    "-Xlint:delayedinit-select",
+    "-Xlint:doc-detached",
+    "-Xlint:inaccessible",
+    "-Xlint:infer-any",
+    "-Xlint:missing-interpolator",
+    "-Xlint:nullary-unit",
+    "-Xlint:option-implicit",
+    "-Xlint:package-object-classes",
+    "-Xlint:poly-implicit-overload",
+    "-Xlint:private-shadow",
+    "-Xlint:stars-align",
+    "-Xlint:type-parameter-shadow",
+    "-Xlint:nonlocal-return",
+    "-Ywarn-dead-code",
+    "-Ywarn-extra-implicit",
+    "-Ywarn-numeric-widen",
+    "-Ywarn-unused:implicits",
+    "-Ywarn-unused:imports",
+    "-Ywarn-unused:locals",
+    "-Ywarn-unused:params",
+    "-Ywarn-unused:patvars",
+    "-Ywarn-unused:privates",
+    "-Ywarn-value-discard"
+  ),
+  Test / envVars += "ALEPHIUM_ENV" -> "test",
+  wartremoverErrors in (Compile, compile) := Warts.allBut(wartsCompileExcludes: _*),
+  wartremoverErrors in (Test, compile) := Warts.allBut(wartsTestExcludes: _*),
+  fork := true,
+)
+
 lazy val root = (project in file("."))
+  .settings(commonSettings: _*)
+  .aggregate(app, tools)
+
+lazy val app = mainProject("app")
   .settings(
-    name := "explorer-backend",
-    organization := "org.alephium",
-    scalaVersion := "2.13.3",
-    scalacOptions ++= Seq(
-      "-deprecation",
-      "-encoding",
-      "utf-8",
-      "-explaintypes",
-      "-feature",
-      "-unchecked",
-      "-Xsource:3.1",
-      "-Xfatal-warnings",
-      "-Xlint:adapted-args",
-      "-Xlint:constant",
-      "-Xlint:delayedinit-select",
-      "-Xlint:doc-detached",
-      "-Xlint:inaccessible",
-      "-Xlint:infer-any",
-      "-Xlint:missing-interpolator",
-      "-Xlint:nullary-unit",
-      "-Xlint:option-implicit",
-      "-Xlint:package-object-classes",
-      "-Xlint:poly-implicit-overload",
-      "-Xlint:private-shadow",
-      "-Xlint:stars-align",
-      "-Xlint:type-parameter-shadow",
-      "-Xlint:nonlocal-return",
-      "-Ywarn-dead-code",
-      "-Ywarn-extra-implicit",
-      "-Ywarn-numeric-widen",
-      "-Ywarn-unused:implicits",
-      "-Ywarn-unused:imports",
-      "-Ywarn-unused:locals",
-      "-Ywarn-unused:params",
-      "-Ywarn-unused:patvars",
-      "-Ywarn-unused:privates",
-      "-Ywarn-value-discard"
-    ),
-    Test / envVars += "ALEPHIUM_ENV" -> "test",
-    scalastyleConfig in Test := baseDirectory.value / "scalastyle-test-config.xml",
-    wartremoverErrors in (Compile, compile) := Warts.allBut(wartsCompileExcludes: _*),
-    wartremoverErrors in (Test, compile) := Warts.allBut(wartsTestExcludes: _*),
-    fork := true,
-    mainClass in assembly := Some("org.alephium.explorer.Main"),
-    assemblyJarName in assembly := s"explorer-backend-${version.value}.jar",
-    test in assembly := {},
     libraryDependencies ++= Seq(
       alephiumUtil,
       alephiumProtocol,
@@ -79,7 +93,11 @@ lazy val root = (project in file("."))
       slickHikaricp,
       postgresql,
       h2
-    ),
+    ))
+  .settings(
+    mainClass in assembly := Some("org.alephium.explorer.Main"),
+    assemblyJarName in assembly := s"explorer-backend-${version.value}.jar",
+    test in assembly := {},
     docker / dockerfile := {
       val appSource = stage.value
       val appTarget = "/app"
@@ -110,7 +128,10 @@ lazy val root = (project in file("."))
     buildInfoPackage := "org.alephium.explorer",
     buildInfoUsePackageAsPath := true
   )
-  .enablePlugins(JavaAppPackaging, sbtdocker.DockerPlugin, BuildInfoPlugin)
+
+lazy val tools = mainProject("tools")
+  .dependsOn(app)
+  .settings(libraryDependencies ++= Seq(alephiumProtocol, alephiumApi, alephiumCrypto, logback))
 
 val wartsCompileExcludes = Seq(
   Wart.Any,
@@ -122,6 +143,7 @@ val wartsCompileExcludes = Seq(
   Wart.Var, // for upickle macroRW
   Wart.Nothing
 )
+
 val wartsTestExcludes = wartsCompileExcludes ++ Seq(
   Wart.PublicInference,
   Wart.OptionPartial,
