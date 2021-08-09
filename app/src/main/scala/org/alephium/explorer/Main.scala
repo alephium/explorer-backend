@@ -61,6 +61,13 @@ object Main extends App with StrictLogging {
       None
     }
 
+  val blockflowApiKey: Option[ApiKey] =
+    if (config.hasPath("blockflow.api-key")) {
+      Some(ApiKey.from(config.getString("blockflow.api-key")).toOption.get)
+    } else {
+      None
+    }
+
   val port: Int         = config.getInt("explorer.port")
   val host: String      = config.getString("explorer.host")
   val readOnly: Boolean = config.getBoolean("explorer.readOnly")

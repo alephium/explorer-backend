@@ -40,6 +40,7 @@ class Application(host: String,
                   groupNum: Int,
                   blockflowFetchMaxAge: Duration,
                   chainId: ChainId,
+                  networkType: NetworkType,
                   databaseConfig: DatabaseConfig[JdbcProfile],
                   maybeBlockFlowApiKey: Option[ApiKey])(implicit system: ActorSystem,
                                                         executionContext: ExecutionContext)
