@@ -101,7 +101,8 @@ trait ApplicationSpec
     groupNum,
     blockflowFetchMaxAge,
     networkType,
-    databaseConfig
+    databaseConfig,
+    None
   )
 
   def initApp(app: Application): Unit = {

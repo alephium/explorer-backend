@@ -23,7 +23,7 @@ import org.alephium.util.Duration
 
 object OpenApiUpdate extends App {
   new Documentation {
-    private val json                            = openApiJson(docs)
+    private val json                            = openApiJson(docs, dropAuth = false)
     override val blockflowFetchMaxAge: Duration = Duration.zero
 
     implicit override val networkType: NetworkType = NetworkType.Testnet

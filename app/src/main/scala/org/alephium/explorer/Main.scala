@@ -26,6 +26,7 @@ import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
+import org.alephium.api.model.ApiKey
 import org.alephium.explorer.sideEffect
 import org.alephium.protocol.model.NetworkType
 import org.alephium.util.Duration
@@ -53,6 +54,13 @@ object Main extends App with StrictLogging {
   val networkType: NetworkType =
     NetworkType.fromName(config.getString("blockflow.network-type")).get
 
+  val blockflowApiKey: Option[ApiKey] =
+    if (config.hasPath("blockflow.api-key")) {
+      Some(ApiKey.from(config.getString("blockflow.api-key")).toOption.get)
+    } else {
+      None
+    }
+
   val port: Int         = config.getInt("explorer.port")
   val host: String      = config.getString("explorer.host")
   val readOnly: Boolean = config.getBoolean("explorer.readOnly")
@@ -67,7 +75,8 @@ object Main extends App with StrictLogging {
                     groupNum,
                     blockflowFetchMaxAge,
                     networkType,
-                    databaseConfig)
+                    databaseConfig,
+                    blockflowApiKey)
 
   app.start.onComplete {
     case Success(_) => ()

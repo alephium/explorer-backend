@@ -33,8 +33,7 @@ class AppServer(blockService: BlockService,
                 transactionService: TransactionService,
                 networkType: NetworkType,
                 blockFlowFetchMaxAge: Duration)(implicit executionContext: ExecutionContext)
-    extends StrictLogging
-    with AkkaDecodeFailureHandler {
+    extends StrictLogging {
 
   val blockServer: BlockServer = new BlockServer(blockService, networkType, blockFlowFetchMaxAge)
   val addressServer: AddressServer =

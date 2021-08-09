@@ -19,8 +19,7 @@
             "description": "Page number",
             "required": false,
             "schema": {
-              "type": "integer",
-              "minimum": "1"
+              "type": "integer"
             }
           },
           {
@@ -29,15 +28,12 @@
             "description": "Number per page",
             "required": false,
             "schema": {
-              "type": "integer",
-              "minimum": "0",
-              "maximum": "100"
+              "type": "integer"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -134,7 +130,6 @@
         ],
         "responses": {
           "200": {
-            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -234,8 +229,7 @@
             "description": "Page number",
             "required": false,
             "schema": {
-              "type": "integer",
-              "minimum": "1"
+              "type": "integer"
             }
           },
           {
@@ -244,15 +238,12 @@
             "description": "Number per page",
             "required": false,
             "schema": {
-              "type": "integer",
-              "minimum": "0",
-              "maximum": "100"
+              "type": "integer"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -352,7 +343,6 @@
         ],
         "responses": {
           "200": {
-            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -449,7 +439,6 @@
         ],
         "responses": {
           "200": {
-            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -549,8 +538,7 @@
             "description": "Page number",
             "required": false,
             "schema": {
-              "type": "integer",
-              "minimum": "1"
+              "type": "integer"
             }
           },
           {
@@ -559,15 +547,12 @@
             "description": "Number per page",
             "required": false,
             "schema": {
-              "type": "integer",
-              "minimum": "0",
-              "maximum": "100"
+              "type": "integer"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "",
             "content": {
               "application/json": {
                 "schema": {
@@ -651,6 +636,22 @@
   },
   "components": {
     "schemas": {
+      "AddressInfo": {
+        "required": [
+          "balance",
+          "txNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "balance": {
+            "type": "integer",
+            "format": "uint256"
+          },
+          "txNumber": {
+            "type": "integer"
+          }
+        }
+      },
       "BadRequest": {
         "required": [
           "detail"
@@ -662,44 +663,34 @@
           }
         }
       },
-      "InternalServerError": {
+      "Input": {
         "required": [
-          "detail"
+          "outputRef",
+          "txHashRef",
+          "address",
+          "amount"
         ],
         "type": "object",
         "properties": {
-          "detail": {
-            "type": "string"
-          }
-        }
-      },
-      "NotFound": {
-        "required": [
-          "detail",
-          "resource"
-        ],
-        "type": "object",
-        "properties": {
-          "detail": {
+          "outputRef": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "unlockScript": {
             "type": "string"
           },
-          "resource": {
-            "type": "integer"
-          }
-        }
-      },
-      "ServiceUnavailable": {
-        "required": [
-          "detail"
-        ],
-        "type": "object",
-        "properties": {
-          "detail": {
+          "txHashRef": {
             "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "uint256"
           }
         }
       },
-      "Unauthorized": {
+      "InternalServerError": {
         "required": [
           "detail"
         ],
@@ -743,7 +734,8 @@
             "type": "string"
           },
           "timestamp": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int64"
           },
           "chainFrom": {
             "type": "integer"
@@ -759,6 +751,70 @@
           },
           "mainChain": {
             "type": "boolean"
+          }
+        }
+      },
+      "NotFound": {
+        "required": [
+          "detail",
+          "resource"
+        ],
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string"
+          },
+          "resource": {
+            "type": "string"
+          }
+        }
+      },
+      "Output": {
+        "required": [
+          "amount",
+          "address"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "format": "uint256"
+          },
+          "address": {
+            "type": "string"
+          },
+          "lockTime": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "spent": {
+            "type": "string"
+          }
+        }
+      },
+      "Ref": {
+        "required": [
+          "scriptHint",
+          "key"
+        ],
+        "type": "object",
+        "properties": {
+          "scriptHint": {
+            "type": "integer"
+          },
+          "key": {
+            "type": "string"
+          }
+        }
+      },
+      "ServiceUnavailable": {
+        "required": [
+          "detail"
+        ],
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string"
           }
         }
       },
@@ -779,7 +835,8 @@
             "type": "string"
           },
           "timestamp": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int64"
           },
           "inputs": {
             "type": "array",
@@ -802,83 +859,14 @@
           }
         }
       },
-      "Input": {
+      "Unauthorized": {
         "required": [
-          "outputRef",
-          "txHashRef",
-          "address",
-          "amount"
+          "detail"
         ],
         "type": "object",
         "properties": {
-          "outputRef": {
-            "$ref": "#/components/schemas/Ref"
-          },
-          "unlockScript": {
+          "detail": {
             "type": "string"
-          },
-          "txHashRef": {
-            "type": "string"
-          },
-          "address": {
-            "type": "string"
-          },
-          "amount": {
-            "type": "integer",
-            "format": "uint256"
-          }
-        }
-      },
-      "Ref": {
-        "required": [
-          "scriptHint",
-          "key"
-        ],
-        "type": "object",
-        "properties": {
-          "scriptHint": {
-            "type": "integer"
-          },
-          "key": {
-            "type": "string"
-          }
-        }
-      },
-      "Output": {
-        "required": [
-          "amount",
-          "address"
-        ],
-        "type": "object",
-        "properties": {
-          "amount": {
-            "type": "integer",
-            "format": "uint256"
-          },
-          "address": {
-            "type": "string"
-          },
-          "lockTime": {
-            "type": "integer"
-          },
-          "spent": {
-            "type": "string"
-          }
-        }
-      },
-      "AddressInfo": {
-        "required": [
-          "balance",
-          "txNumber"
-        ],
-        "type": "object",
-        "properties": {
-          "balance": {
-            "type": "integer",
-            "format": "uint256"
-          },
-          "txNumber": {
-            "type": "integer"
           }
         }
       }

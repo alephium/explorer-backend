@@ -19,11 +19,8 @@ package org.alephium.explorer.service
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import sttp.client3._
-import sttp.client3.akkahttp.AkkaHttpBackend
-import sttp.tapir.client.sttp._
 
 import org.alephium.api
 import org.alephium.api.Endpoints
@@ -31,6 +28,7 @@ import org.alephium.api.model.{ChainInfo, HashesAtHeight, SelfClique}
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.explorer.persistence.model._
+import org.alephium.http.EndpointSender
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.{GroupIndex => ProtocolGroupIndex, _}
 import org.alephium.util.{Duration, Hex, TimeStamp}
@@ -72,20 +70,24 @@ trait BlockFlowClient {
 }
 
 object BlockFlowClient {
-  def apply(address: Uri, groupNum: Int, _networkType: NetworkType, blockflowFetchMaxAge: Duration)(
-      implicit executionContext: ExecutionContext,
-      actorSystem: ActorSystem): BlockFlowClient =
-    new Impl(address, groupNum, _networkType, blockflowFetchMaxAge)
+  def apply(address: Uri,
+            groupNum: Int,
+            _networkType: NetworkType,
+            blockflowFetchMaxAge: Duration,
+            maybeApiKey: Option[api.model.ApiKey])(
+      implicit executionContext: ExecutionContext
+  ): BlockFlowClient =
+    new Impl(address, groupNum, _networkType, blockflowFetchMaxAge, maybeApiKey)
 
   private class Impl(address: Uri,
                      groupNum: Int,
                      _networkType: NetworkType,
-                     val blockflowFetchMaxAge: Duration)(
-      implicit executionContext: ExecutionContext,
-      actorSystem: ActorSystem)
-      extends BlockFlowClient
+                     val blockflowFetchMaxAge: Duration,
+                     val maybeApiKey: Option[api.model.ApiKey])(
+      implicit executionContext: ExecutionContext
+  ) extends BlockFlowClient
       with Endpoints
-      with SttpClientInterpreter {
+      with EndpointSender {
 
     implicit lazy val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
     implicit def networkType: NetworkType      = _networkType
@@ -93,16 +95,13 @@ object BlockFlowClient {
     private implicit def groupIndexConversion(x: GroupIndex): ProtocolGroupIndex =
       ProtocolGroupIndex.unsafe(x.value)
 
-    private val backend = AkkaHttpBackend.usingActorSystem(actorSystem)
-
-    private def send[A, B](
+    private def _send[A, B](
         endpoint: BaseEndpoint[A, B],
         uri: Uri,
         a: A
     ): Future[Either[String, B]] =
-      backend
-        .send(toRequestThrowDecodeFailures(endpoint, Some(uri"${uri.toString}")).apply(a))
-        .map(_.body.left.map(_.detail))
+      send(endpoint, a, uri"${uri.toString}")
+        .map(_.left.map(_.detail))
 
     @SuppressWarnings(Array("org.wartremover.warts.ToString"))
     //TODO Introduce monad transformer helper for more readability
@@ -122,30 +121,30 @@ object BlockFlowClient {
                     Left(s"cannot find node for group $fromGroup (nodes: ${selfClique.nodes})"))
                 case Some((nodeAddress, restPort)) =>
                   val uri = s"http://${nodeAddress.getHostAddress}:${restPort}"
-                  send(getBlock, uri, hash.value).map(_.map(blockProtocolToEntity))
+                  _send(getBlock, uri, hash.value).map(_.map(blockProtocolToEntity))
               }
           }
       }
 
     def fetchChainInfo(fromGroup: GroupIndex,
                        toGroup: GroupIndex): Future[Either[String, ChainInfo]] = {
-      send(getChainInfo, address, ChainIndex(fromGroup, toGroup))
+      _send(getChainInfo, address, ChainIndex(fromGroup, toGroup))
     }
 
     def fetchHashesAtHeight(fromGroup: GroupIndex,
                             toGroup: GroupIndex,
                             height: Height): Future[Either[String, HashesAtHeight]] =
-      send(getHashesAtHeight, address, (ChainIndex(fromGroup, toGroup), height.value))
+      _send(getHashesAtHeight, address, (ChainIndex(fromGroup, toGroup), height.value))
 
     def fetchBlocks(fromTs: TimeStamp,
                     toTs: TimeStamp,
                     uri: Uri): Future[Either[String, Seq[Seq[BlockEntity]]]] = {
-      send(getBlockflow, uri, api.model.TimeInterval(fromTs, toTs))
+      _send(getBlockflow, uri, api.model.TimeInterval(fromTs, toTs))
         .map(_.map(_.blocks.map(_.map(blockProtocolToEntity).toSeq).toSeq))
     }
 
     def fetchSelfClique(): Future[Either[String, SelfClique]] =
-      send(getSelfClique, address, ())
+      _send(getSelfClique, address, ())
   }
 
   def blockProtocolToEntity(block: api.model.BlockEntry): BlockEntity = {
@@ -197,7 +196,7 @@ object BlockFlowClient {
       blockHash,
       new Transaction.Hash(txId),
       timestamp,
-      input.outputRef.scriptHint,
+      input.outputRef.hint,
       input.outputRef.key,
       unlockScript,
       mainChain

@@ -20,8 +20,6 @@ import scala.concurrent.ExecutionContext
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import sttp.tapir.server.akkahttp.AkkaHttpServerInterpreter.toRoute
-import sttp.tapir.server.akkahttp.AkkaHttpServerOptions
 
 import org.alephium.api.ApiError
 import org.alephium.explorer.api.BlockEndpoints
@@ -31,9 +29,7 @@ import org.alephium.util.Duration
 
 class BlockServer(blockService: BlockService,
                   val networkType: NetworkType,
-                  val blockflowFetchMaxAge: Duration)(
-    implicit val serverOptions: AkkaHttpServerOptions,
-    executionContext: ExecutionContext)
+                  val blockflowFetchMaxAge: Duration)(implicit executionContext: ExecutionContext)
     extends Server
     with BlockEndpoints {
   val route: Route =

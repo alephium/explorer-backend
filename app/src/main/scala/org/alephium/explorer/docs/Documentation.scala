@@ -16,12 +16,16 @@
 
 package org.alephium.explorer.docs
 
-import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter.toOpenAPI
+import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
 import sttp.tapir.openapi.OpenAPI
 
 import org.alephium.explorer.api.{AddressesEndpoints, BlockEndpoints, TransactionEndpoints}
 
-trait Documentation extends BlockEndpoints with TransactionEndpoints with AddressesEndpoints {
+trait Documentation
+    extends BlockEndpoints
+    with TransactionEndpoints
+    with AddressesEndpoints
+    with OpenAPIDocsInterpreter {
   val docs: OpenAPI = toOpenAPI(List(
                                   listBlocks,
                                   getBlockByHash,

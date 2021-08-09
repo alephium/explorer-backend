@@ -17,14 +17,15 @@
 package org.alephium.explorer.api
 
 import sttp.tapir.Schema
+import sttp.tapir.SchemaType.{SInteger, SString}
 
 import org.alephium.explorer.{BlockHash, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.util.U256
 
 object Schemas {
-  implicit val u256Schema: Schema[U256]           = Schema(Schema.schemaForString.schemaType)
-  implicit val hashSchema: Schema[Hash]           = Schema(Schema.schemaForString.schemaType)
-  implicit val blockHashSchema: Schema[BlockHash] = Schema(Schema.schemaForString.schemaType)
-  implicit val addressSchema: Schema[Address]     = Schema(Schema.schemaForString.schemaType)
+  implicit val u256Schema: Schema[U256]           = Schema(SInteger()).format("uint256")
+  implicit val hashSchema: Schema[Hash]           = Schema(SString())
+  implicit val blockHashSchema: Schema[BlockHash] = Schema(SString())
+  implicit val addressSchema: Schema[Address]     = Schema(SString())
 }

@@ -70,6 +70,7 @@ lazy val app = mainProject("app")
       alephiumApi,
       alephiumCrypto,
       alephiumJson,
+      alephiumHttp,
       tapirCore,
       tapirAkka,
       tapirOpenapi,

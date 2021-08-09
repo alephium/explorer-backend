@@ -17,9 +17,9 @@
 package org.alephium.explorer.web
 
 import akka.http.scaladsl.server.Route
-import sttp.tapir.server.akkahttp.AkkaHttpServerOptions
+import sttp.tapir.server.akkahttp.{AkkaHttpServerInterpreter, AkkaHttpServerOptions}
 
-trait Server {
-  implicit def serverOptions: AkkaHttpServerOptions
+trait Server extends AkkaHttpServerInterpreter with AkkaDecodeFailureHandler {
+  override def akkaHttpServerOptions: AkkaHttpServerOptions = serverOptions
   def route: Route
 }

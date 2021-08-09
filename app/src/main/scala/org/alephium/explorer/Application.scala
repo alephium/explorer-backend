@@ -25,7 +25,7 @@ import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
-import org.alephium.api.model.{PeerAddress, SelfClique}
+import org.alephium.api.model.{ApiKey, PeerAddress, SelfClique}
 import org.alephium.explorer.persistence.dao.{BlockDao, HealthCheckDao, TransactionDao}
 import org.alephium.explorer.service._
 import org.alephium.explorer.sideEffect
@@ -40,8 +40,9 @@ class Application(host: String,
                   groupNum: Int,
                   blockflowFetchMaxAge: Duration,
                   networkType: NetworkType,
-                  databaseConfig: DatabaseConfig[JdbcProfile])(implicit system: ActorSystem,
-                                                               executionContext: ExecutionContext)
+                  databaseConfig: DatabaseConfig[JdbcProfile],
+                  maybeBlockFlowApiKey: Option[ApiKey])(implicit system: ActorSystem,
+                                                        executionContext: ExecutionContext)
     extends StrictLogging {
 
   val blockDao: BlockDao             = BlockDao(databaseConfig)
@@ -50,7 +51,11 @@ class Application(host: String,
 
   //Services
   val blockFlowClient: BlockFlowClient =
-    BlockFlowClient.apply(blockFlowUri, groupNum, networkType, blockflowFetchMaxAge)
+    BlockFlowClient.apply(blockFlowUri,
+                          groupNum,
+                          networkType,
+                          blockflowFetchMaxAge,
+                          maybeBlockFlowApiKey)
 
   val blockFlowSyncService: BlockFlowSyncService =
     BlockFlowSyncService(groupNum   = groupNum,
