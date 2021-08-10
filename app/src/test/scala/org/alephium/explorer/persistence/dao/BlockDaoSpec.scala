@@ -27,7 +27,7 @@ import org.alephium.api.model
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.Generators
 import org.alephium.explorer.api.model.BlockEntry
-import org.alephium.explorer.persistence.DatabaseFixture
+import org.alephium.explorer.persistence.{DatabaseFixture, DBInitializer}
 import org.alephium.explorer.persistence.DBRunner
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema.BlockDepsSchema
@@ -103,12 +103,14 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
       with TransactionSchema
       with DatabaseFixture
       with DBRunner {
-    override val config = databaseConfig
-    val blockDao        = BlockDao(databaseConfig)
+    override val config              = databaseConfig
+    val dbInitializer: DBInitializer = DBInitializer(databaseConfig)
+    val blockDao                     = BlockDao(databaseConfig)
     val blockflow: Seq[Seq[model.BlockEntry]] =
       blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
     val blocksProtocol: Seq[model.BlockEntry] = blockflow.flatten
     val blockEntities: Seq[BlockEntity]       = blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
-    blockDao.createTables().futureValue
+
+    dbInitializer.createTables().futureValue
   }
 }
