@@ -14,26 +14,15 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.api
+package org.alephium.explorer.persistence.model
 
-import sttp.tapir._
-import sttp.tapir.generic.auto._
+import org.alephium.explorer.api.model.{GroupIndex, Transaction, UTransaction}
+import org.alephium.util.U256
 
-import org.alephium.api.{alfJsonBody => jsonBody}
-import org.alephium.explorer.api.BaseEndpoint
-import org.alephium.explorer.api.Codecs.transactionHashTapirCodec
-import org.alephium.explorer.api.model.{Transaction, TransactionLike}
-
-trait TransactionEndpoints extends BaseEndpoint {
-
-  private val transactionsEndpoint =
-    baseEndpoint
-      .tag("Transactions")
-      .in("transactions")
-
-  val getTransactionById: BaseEndpoint[Transaction.Hash, TransactionLike] =
-    transactionsEndpoint.get
-      .in(path[Transaction.Hash]("transaction-hash"))
-      .out(jsonBody[TransactionLike])
-      .description("Get a transaction with hash")
-}
+final case class UTransactionEntity(
+    hash: Transaction.Hash,
+    chainFrom: GroupIndex,
+    chainTo: GroupIndex,
+    startGas: Int,
+    gasPrice: U256
+)

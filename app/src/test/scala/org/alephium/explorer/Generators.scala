@@ -35,6 +35,7 @@ trait Generators {
   lazy val groupNum: Int                     = Gen.choose(2, 4).sample.get
   implicit lazy val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
 
+  lazy val u256Gen: Gen[U256]                        = Gen.posNum[Long].map(U256.unsafe)
   lazy val timestampGen: Gen[TimeStamp]              = Gen.posNum[Long].map(TimeStamp.unsafe)
   lazy val hashGen: Gen[Hash]                        = Gen.const(()).map(_ => Hash.generate)
   lazy val blockHashGen: Gen[BlockHash]              = Gen.const(()).map(_ => BlockHash.generate)
@@ -43,6 +44,24 @@ trait Generators {
   lazy val groupIndexGen: Gen[GroupIndex]            = Gen.posNum[Int].map(GroupIndex.unsafe(_))
   lazy val heightGen: Gen[Height]                    = Gen.posNum[Int].map(Height.unsafe(_))
   lazy val addressGen: Gen[Address]                  = hashGen.map(hash => Address.unsafe(Base58.encode(hash.bytes)))
+
+  lazy val transactionGen: Gen[Transaction] =
+    for {
+      hash      <- transactionHashGen
+      blockHash <- blockEntryHashGen
+      timestamp <- timestampGen
+      startGas  <- Gen.posNum[Int]
+      gasPrice  <- u256Gen
+    } yield Transaction(hash, blockHash, timestamp, Seq.empty, Seq.empty, startGas, gasPrice)
+
+  lazy val utransactionGen: Gen[UTransaction] =
+    for {
+      hash      <- transactionHashGen
+      chainFrom <- groupIndexGen
+      chainTo   <- groupIndexGen
+      startGas  <- Gen.posNum[Int]
+      gasPrice  <- u256Gen
+    } yield UTransaction(hash, chainFrom, chainTo, Seq.empty, Seq.empty, startGas, gasPrice)
 
   private def parentIndex(chainTo: GroupIndex) = groupNum - 1 + chainTo.value
 
