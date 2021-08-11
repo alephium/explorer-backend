@@ -30,7 +30,9 @@ object OpenApiUpdate extends App {
 
     import java.io.PrintWriter
     new PrintWriter("../app/src/main/resources/explorer-backend-openapi.json") {
-      write(json); close
+      write(json)
+      write('\n')
+      close
     }
   }
 }
