@@ -24,12 +24,10 @@ import akka.http.scaladsl.server.Route
 import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model.AddressInfo
 import org.alephium.explorer.service.TransactionService
-import org.alephium.protocol.model.NetworkType
 import org.alephium.util.Duration
 
-class AddressServer(transactionService: TransactionService,
-                    val networkType: NetworkType,
-                    val blockflowFetchMaxAge: Duration)(implicit executionContext: ExecutionContext)
+class AddressServer(transactionService: TransactionService, val blockflowFetchMaxAge: Duration)(
+    implicit executionContext: ExecutionContext)
     extends Server
     with AddressesEndpoints {
 

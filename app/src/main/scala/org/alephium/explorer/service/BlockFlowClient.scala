@@ -72,16 +72,14 @@ trait BlockFlowClient {
 object BlockFlowClient {
   def apply(address: Uri,
             groupNum: Int,
-            _networkType: NetworkType,
             blockflowFetchMaxAge: Duration,
             maybeApiKey: Option[api.model.ApiKey])(
       implicit executionContext: ExecutionContext
   ): BlockFlowClient =
-    new Impl(address, groupNum, _networkType, blockflowFetchMaxAge, maybeApiKey)
+    new Impl(address, groupNum, blockflowFetchMaxAge, maybeApiKey)
 
   private class Impl(address: Uri,
                      groupNum: Int,
-                     _networkType: NetworkType,
                      val blockflowFetchMaxAge: Duration,
                      val maybeApiKey: Option[api.model.ApiKey])(
       implicit executionContext: ExecutionContext
@@ -90,7 +88,6 @@ object BlockFlowClient {
       with EndpointSender {
 
     implicit lazy val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
-    implicit def networkType: NetworkType      = _networkType
 
     private implicit def groupIndexConversion(x: GroupIndex): ProtocolGroupIndex =
       ProtocolGroupIndex.unsafe(x.value)

@@ -28,7 +28,7 @@ import slick.jdbc.JdbcProfile
 
 import org.alephium.api.model.ApiKey
 import org.alephium.explorer.sideEffect
-import org.alephium.protocol.model.NetworkType
+import org.alephium.protocol.model.ChainId
 import org.alephium.util.Duration
 
 @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
@@ -51,8 +51,8 @@ object Main extends App with StrictLogging {
   val groupNum: Int = config.getInt("blockflow.groupNum")
   val blockflowFetchMaxAge: Duration =
     Duration.from(config.getDuration("blockflow.blockflow-fetch-max-age")).get
-  val networkType: NetworkType =
-    NetworkType.fromName(config.getString("blockflow.network-type")).get
+  val chainId: ChainId =
+    ChainId.from(config.getInt("blockflow.chain-id")).get
 
   val blockflowApiKey: Option[ApiKey] =
     if (config.hasPath("blockflow.api-key")) {
@@ -74,7 +74,7 @@ object Main extends App with StrictLogging {
                     blockflowUri,
                     groupNum,
                     blockflowFetchMaxAge,
-                    networkType,
+                    chainId,
                     databaseConfig,
                     blockflowApiKey)
 

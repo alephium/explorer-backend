@@ -24,12 +24,10 @@ import akka.http.scaladsl.server.Route
 import org.alephium.api.ApiError
 import org.alephium.explorer.api.BlockEndpoints
 import org.alephium.explorer.service.BlockService
-import org.alephium.protocol.model.NetworkType
 import org.alephium.util.Duration
 
-class BlockServer(blockService: BlockService,
-                  val networkType: NetworkType,
-                  val blockflowFetchMaxAge: Duration)(implicit executionContext: ExecutionContext)
+class BlockServer(blockService: BlockService, val blockflowFetchMaxAge: Duration)(
+    implicit executionContext: ExecutionContext)
     extends Server
     with BlockEndpoints {
   val route: Route =

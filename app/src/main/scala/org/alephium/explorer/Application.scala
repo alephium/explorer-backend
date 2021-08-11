@@ -29,7 +29,7 @@ import org.alephium.api.model.{ApiKey, PeerAddress, SelfClique}
 import org.alephium.explorer.persistence.dao.{BlockDao, HealthCheckDao, TransactionDao}
 import org.alephium.explorer.service._
 import org.alephium.explorer.sideEffect
-import org.alephium.protocol.model.NetworkType
+import org.alephium.protocol.model.ChainId
 import org.alephium.util.Duration
 
 // scalastyle:off magic.number
@@ -39,7 +39,7 @@ class Application(host: String,
                   blockFlowUri: Uri,
                   groupNum: Int,
                   blockflowFetchMaxAge: Duration,
-                  networkType: NetworkType,
+                  chainId: ChainId,
                   databaseConfig: DatabaseConfig[JdbcProfile],
                   maybeBlockFlowApiKey: Option[ApiKey])(implicit system: ActorSystem,
                                                         executionContext: ExecutionContext)
@@ -51,11 +51,7 @@ class Application(host: String,
 
   //Services
   val blockFlowClient: BlockFlowClient =
-    BlockFlowClient.apply(blockFlowUri,
-                          groupNum,
-                          networkType,
-                          blockflowFetchMaxAge,
-                          maybeBlockFlowApiKey)
+    BlockFlowClient.apply(blockFlowUri, groupNum, blockflowFetchMaxAge, maybeBlockFlowApiKey)
 
   val blockFlowSyncService: BlockFlowSyncService =
     BlockFlowSyncService(groupNum   = groupNum,
@@ -66,7 +62,7 @@ class Application(host: String,
   val transactionService: TransactionService = TransactionService(transactionDao)
 
   val server: AppServer =
-    new AppServer(blockService, transactionService, networkType, blockflowFetchMaxAge)
+    new AppServer(blockService, transactionService, blockflowFetchMaxAge)
 
   private val bindingPromise: Promise[Http.ServerBinding] = Promise()
 
@@ -108,9 +104,8 @@ class Application(host: String,
   def validateSelfClique(response: Either[String, SelfClique]): Future[Unit] = {
     response match {
       case Right(selfClique) =>
-        if (selfClique.networkType =/= networkType) {
-          logger.error(
-            s"Network type mismatch: ${selfClique.networkType} (remote) vs $networkType (local)")
+        if (selfClique.chainId =/= chainId) {
+          logger.error(s"Chain id mismatch: ${selfClique.chainId} (remote) vs $chainId (local)")
           sys.exit(1)
         } else {
           Future.successful(())

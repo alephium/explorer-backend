@@ -21,12 +21,9 @@ import sttp.tapir.swagger.akkahttp.SwaggerAkka
 
 import org.alephium.api.OpenAPIWriters.openApiJson
 import org.alephium.explorer.docs.Documentation
-import org.alephium.protocol.model.NetworkType
 import org.alephium.util.Duration
 
-class DocumentationServer(val networkType: NetworkType, val blockflowFetchMaxAge: Duration)
-    extends Server
-    with Documentation {
+class DocumentationServer(val blockflowFetchMaxAge: Duration) extends Server with Documentation {
 
   val route: Route =
     new SwaggerAkka(openApiJson(docs, dropAuth = false), yamlName = "explorer-backend-openapi.json").routes
