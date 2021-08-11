@@ -24,7 +24,7 @@ import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.api.model.{ChainInfo, HashesAtHeight, SelfClique}
 import org.alephium.explorer.{AlephiumSpec, Generators}
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, Pagination, TimeInterval}
+import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DatabaseFixture, DBInitializer}
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
@@ -198,6 +198,8 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
                        2)
           )
         )
+      def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UTransaction]]] =
+        Future.successful(Right(Seq.empty))
     }
 
     def checkBlocks(blocksToCheck: Seq[BlockEntry]) = {

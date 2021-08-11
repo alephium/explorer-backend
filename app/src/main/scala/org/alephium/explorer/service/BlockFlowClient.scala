@@ -28,11 +28,11 @@ import org.alephium.api
 import org.alephium.api.Endpoints
 import org.alephium.api.model.{ChainInfo, HashesAtHeight, SelfClique}
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
+import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.http.EndpointSender
+import org.alephium.protocol
 import org.alephium.protocol.config.GroupConfig
-import org.alephium.protocol.model.{GroupIndex => ProtocolGroupIndex, _}
 import org.alephium.util.{Duration, Hex, TimeStamp}
 
 trait BlockFlowClient {
@@ -69,6 +69,8 @@ trait BlockFlowClient {
     }
 
   def fetchSelfClique(): Future[Either[String, SelfClique]]
+
+  def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UTransaction]]]
 }
 
 object BlockFlowClient {
@@ -91,8 +93,8 @@ object BlockFlowClient {
 
     implicit lazy val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
 
-    private implicit def groupIndexConversion(x: GroupIndex): ProtocolGroupIndex =
-      ProtocolGroupIndex.unsafe(x.value)
+    private implicit def groupIndexConversion(x: GroupIndex): protocol.model.GroupIndex =
+      protocol.model.GroupIndex.unsafe(x.value)
 
     private def _send[A, B](
         endpoint: BaseEndpoint[A, B],
@@ -119,13 +121,15 @@ object BlockFlowClient {
 
     def fetchChainInfo(fromGroup: GroupIndex,
                        toGroup: GroupIndex): Future[Either[String, ChainInfo]] = {
-      _send(getChainInfo, address, ChainIndex(fromGroup, toGroup))
+      _send(getChainInfo, address, protocol.model.ChainIndex(fromGroup, toGroup))
     }
 
     def fetchHashesAtHeight(fromGroup: GroupIndex,
                             toGroup: GroupIndex,
                             height: Height): Future[Either[String, HashesAtHeight]] =
-      _send(getHashesAtHeight, address, (ChainIndex(fromGroup, toGroup), height.value))
+      _send(getHashesAtHeight,
+            address,
+            (protocol.model.ChainIndex(fromGroup, toGroup), height.value))
 
     def fetchBlocks(fromTs: TimeStamp,
                     toTs: TimeStamp,
@@ -133,6 +137,18 @@ object BlockFlowClient {
       _send(getBlockflow, uri, api.model.TimeInterval(fromTs, toTs))
         .map(_.map(_.blocks.map(_.map(blockProtocolToEntity).toSeq).toSeq))
     }
+
+    def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UTransaction]]] =
+      _send(listUnconfirmedTransactions, uri, ())
+        .map(_.map { utxs =>
+          utxs.flatMap { utx =>
+            utx.unconfirmedTransactions.map { tx =>
+              val inputs  = tx.inputs.map(inputToUInput).toSeq
+              val outputs = tx.outputs.map(outputToUOutput).toSeq
+              txToUTx(tx, utx.fromGroup, utx.toGroup, inputs, outputs)
+            }
+          }.toSeq
+        })
 
     def fetchSelfClique(): Future[Either[String, SelfClique]] =
       _send(getSelfClique, address, ())
@@ -171,6 +187,21 @@ object BlockFlowClient {
     )
   }
 
+  private def txToUTx(tx: api.model.Tx,
+                      chainFrom: Int,
+                      chainTo: Int,
+                      inputs: Seq[UInput],
+                      outputs: Seq[UOutput]): UTransaction =
+    UTransaction(
+      new Transaction.Hash(tx.id),
+      GroupIndex.unsafe(chainFrom),
+      GroupIndex.unsafe(chainTo),
+      inputs,
+      outputs,
+      tx.startGas,
+      tx.gasPrice
+    )
+
   private def txToEntity(tx: api.model.Tx,
                          blockHash: BlockEntry.Hash,
                          timestamp: TimeStamp,
@@ -183,6 +214,17 @@ object BlockFlowClient {
       tx.gasPrice,
       index
     )
+
+  private def inputToUInput(input: api.model.Input): UInput = {
+    val unlockScript = input match {
+      case asset: api.model.Input.Asset => Some(Hex.toHexString(asset.unlockScript))
+      case _: api.model.Input.Contract  => None
+    }
+    UInput(
+      Output.Ref(input.outputRef.scriptHint, input.outputRef.key),
+      unlockScript
+    )
+  }
 
   private def inputToEntity(input: api.model.Input,
                             blockHash: BlockEntry.Hash,
@@ -204,6 +246,18 @@ object BlockFlowClient {
     )
   }
 
+  private def outputToUOutput(output: api.model.Output): UOutput = {
+    val lockTime = output match {
+      case asset: api.model.Output.Asset if asset.lockTime.millis > 0 => Some(asset.lockTime)
+      case _                                                          => None
+    }
+    UOutput(
+      output.amount,
+      new Address(output.address.toBase58),
+      lockTime
+    )
+  }
+
   private def outputToEntity(output: api.model.Output,
                              blockHash: BlockEntry.Hash,
                              txId: Hash,
@@ -219,7 +273,7 @@ object BlockFlowClient {
       new Transaction.Hash(txId),
       output.amount,
       new Address(output.address.toBase58),
-      TxOutputRef.key(txId, index),
+      protocol.model.TxOutputRef.key(txId, index),
       timestamp,
       mainChain,
       lockTime
