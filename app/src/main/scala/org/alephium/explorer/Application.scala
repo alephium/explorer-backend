@@ -51,6 +51,7 @@ class Application(host: String,
 
   val blockDao: BlockDao               = BlockDao(databaseConfig)
   val transactionDao: TransactionDao   = TransactionDao(databaseConfig)
+  val utransactionDao: UTransactionDao = UTransactionDao(databaseConfig)
   val healthCheckDao: HealthCheckDao   = HealthCheckDao(databaseConfig)
 
   //Services
@@ -62,6 +63,9 @@ class Application(host: String,
                          syncPeriod = Duration.unsafe(15 * 1000),
                          blockFlowClient,
                          blockDao)
+
+  val mempoolSyncService: MempoolSyncService =
+    MempoolSyncService(syncPeriod = Duration.unsafe(15 * 1000), blockFlowClient, utransactionDao)
   val blockService: BlockService             = BlockService(blockDao)
   val transactionService: TransactionService = TransactionService(transactionDao)
 
@@ -81,7 +85,9 @@ class Application(host: String,
     for {
       selfClique <- blockFlowClient.fetchSelfClique()
       _          <- validateSelfClique(selfClique)
-      _          <- blockFlowSyncService.start(urisFromPeers(selfClique.toOption.get.nodes.toSeq))
+      peers = urisFromPeers(selfClique.toOption.get.nodes.toSeq)
+      _ <- blockFlowSyncService.start(peers)
+      _ <- mempoolSyncService.start(peers)
     } yield ()
   }
 
