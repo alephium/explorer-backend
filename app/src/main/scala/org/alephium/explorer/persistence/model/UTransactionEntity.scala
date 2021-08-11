@@ -26,3 +26,31 @@ final case class UTransactionEntity(
     startGas: Int,
     gasPrice: U256
 )
+
+object UTransactionEntity {
+  def from(utx: UTransaction): (UTransactionEntity, Seq[UInputEntity], Seq[UOutputEntity]) = {
+    (UTransactionEntity(
+       utx.hash,
+       utx.chainFrom,
+       utx.chainTo,
+       utx.startGas,
+       utx.gasPrice
+     ),
+     utx.inputs.map { input =>
+       UInputEntity(
+         utx.hash,
+         input.outputRef.scriptHint,
+         input.outputRef.key,
+         input.unlockScript
+       )
+     }.toSeq,
+     utx.outputs.map { output =>
+       UOutputEntity(
+         utx.hash,
+         output.amount,
+         output.address,
+         output.lockTime
+       )
+     }.toSeq)
+  }
+}
