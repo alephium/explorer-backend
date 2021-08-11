@@ -67,7 +67,7 @@ class Application(host: String,
   val mempoolSyncService: MempoolSyncService =
     MempoolSyncService(syncPeriod = Duration.unsafe(15 * 1000), blockFlowClient, utransactionDao)
   val blockService: BlockService             = BlockService(blockDao)
-  val transactionService: TransactionService = TransactionService(transactionDao)
+  val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
 
   val server: AppServer =
     new AppServer(blockService, transactionService, blockflowFetchMaxAge)
