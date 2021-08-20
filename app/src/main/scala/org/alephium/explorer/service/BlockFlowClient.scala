@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.service
 
+import java.net.InetAddress
+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 
@@ -109,17 +111,9 @@ object BlockFlowClient {
         case Right(selfClique) =>
           selfCliqueIndex(selfClique, fromGroup) match {
             case Left(error) => Future.successful(Left(error))
-            case Right(index) =>
-              selfClique.nodes
-                .get(index)
-                .map(node => (node.address, node.restPort)) match {
-                case None =>
-                  Future.successful(
-                    Left(s"cannot find node for group $fromGroup (nodes: ${selfClique.nodes})"))
-                case Some((nodeAddress, restPort)) =>
-                  val uri = s"http://${nodeAddress.getHostAddress}:${restPort}"
-                  _send(getBlock, uri, hash.value).map(_.map(blockProtocolToEntity))
-              }
+            case Right((nodeAddress, restPort)) =>
+              val uri = s"http://${nodeAddress.getHostAddress}:${restPort}"
+              _send(getBlock, uri, hash.value).map(_.map(blockProtocolToEntity))
           }
       }
 
@@ -142,6 +136,16 @@ object BlockFlowClient {
 
     def fetchSelfClique(): Future[Either[String, SelfClique]] =
       _send(getSelfClique, address, ())
+
+    private def selfCliqueIndex(selfClique: SelfClique,
+                                group: GroupIndex): Either[String, (InetAddress, Int)] = {
+      if (selfClique.groupNumPerBroker <= 0) {
+        Left(
+          s"SelfClique.groupNumPerBroker ($selfClique.groupNumPerBroker) cannot be less or equal to zero")
+      } else {
+        Right(selfClique.peer(group)).map(node => (node.address, node.restPort))
+      }
+    }
   }
 
   def blockProtocolToEntity(block: api.model.BlockEntry): BlockEntity = {
@@ -220,14 +224,5 @@ object BlockFlowClient {
       mainChain,
       lockTime
     )
-  }
-
-  private def selfCliqueIndex(selfClique: SelfClique, group: GroupIndex): Either[String, Int] = {
-    if (selfClique.groupNumPerBroker <= 0) {
-      Left(
-        s"SelfClique.groupNumPerBroker ($selfClique.groupNumPerBroker) cannot be less or equal to zero")
-    } else {
-      Right(group.value / selfClique.groupNumPerBroker)
-    }
   }
 }
