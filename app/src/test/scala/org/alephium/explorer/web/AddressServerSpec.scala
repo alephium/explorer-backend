@@ -28,7 +28,6 @@ import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.{Address, Pagination, Transaction}
 import org.alephium.explorer.service.TransactionService
 import org.alephium.json.Json
-import org.alephium.protocol.model.NetworkType
 import org.alephium.util.{Duration, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var"))
@@ -52,7 +51,7 @@ class AddressServerSpec()
       }
     }
 
-    val server = new AddressServer(transactionService, NetworkType.Devnet, Duration.zero)
+    val server = new AddressServer(transactionService, Duration.zero)
 
     forAll(addressGen, Gen.chooseNum[Int](-10, 120)) {
       case (address, txLimit) =>

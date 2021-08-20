@@ -18,19 +18,18 @@ package org.alephium.tools
 
 import org.alephium.api.OpenAPIWriters.openApiJson
 import org.alephium.explorer.docs.Documentation
-import org.alephium.protocol.model.NetworkType
 import org.alephium.util.Duration
 
 object OpenApiUpdate extends App {
   new Documentation {
-    private val json                            = openApiJson(docs)
+    private val json                            = openApiJson(docs, dropAuth = false)
     override val blockflowFetchMaxAge: Duration = Duration.zero
-
-    implicit override val networkType: NetworkType = NetworkType.Testnet
 
     import java.io.PrintWriter
     new PrintWriter("../app/src/main/resources/explorer-backend-openapi.json") {
-      write(json); close
+      write(json)
+      write('\n')
+      close
     }
   }
 }

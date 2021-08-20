@@ -44,7 +44,7 @@ import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.json.Json
 import org.alephium.json.Json._
-import org.alephium.protocol.model.{CliqueId, NetworkType}
+import org.alephium.protocol.model.{ChainId, CliqueId}
 import org.alephium.util.{AVector, Duration, Hex, TimeStamp, U256}
 
 trait ApplicationSpec
@@ -61,6 +61,8 @@ trait ApplicationSpec
 
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
   implicit val defaultTimeout          = RouteTestTimeout(5.seconds)
+
+  val chainId: ChainId = ChainId.AlephiumDevNet
 
   val blockflowFetchMaxAge: Duration = Duration.ofMinutesUnsafe(30)
 
@@ -88,7 +90,7 @@ trait ApplicationSpec
                                             localhost,
                                             blockFlowPort,
                                             blockflow,
-                                            networkType,
+                                            chainId,
                                             blockflowFetchMaxAge)
 
   val blockflowBinding = blockFlowMock.server.futureValue
@@ -100,8 +102,9 @@ trait ApplicationSpec
     Uri(s"http://${localhost.getHostAddress}:$blockFlowPort"),
     groupNum,
     blockflowFetchMaxAge,
-    networkType,
-    databaseConfig
+    chainId,
+    databaseConfig,
+    None
   )
 
   def initApp(app: Application): Unit = {
@@ -304,7 +307,7 @@ object ApplicationSpec {
                             address: InetAddress,
                             port: Int,
                             blockflow: Seq[Seq[model.BlockEntry]],
-                            _networkType: NetworkType,
+                            chainId: ChainId,
                             val blockflowFetchMaxAge: Duration)(implicit system: ActorSystem)
       extends ApiModelCodec
       with UpickleCustomizationSupport {
@@ -314,8 +317,7 @@ object ApplicationSpec {
     override type Api = Json.type
     override def api: Api = Json
 
-    implicit def networkType: NetworkType = _networkType
-    val cliqueId                          = CliqueId.generate
+    val cliqueId = CliqueId.generate
     def fetchHashesAtHeight(from: GroupIndex, to: GroupIndex, height: Height): HashesAtHeight =
       HashesAtHeight(AVector.from(blocks.collect {
         case block
@@ -384,8 +386,7 @@ object ApplicationSpec {
           }
         } ~
         path("infos" / "self-clique") {
-          complete(
-            SelfClique(cliqueId, networkType, 18, AVector(peer), true, true, groupNum, groupNum))
+          complete(SelfClique(cliqueId, chainId, 18, AVector(peer), true, true, groupNum, groupNum))
         }
 
     val server = Http().newServerAt(address.getHostAddress, port).bindFlow(routes)

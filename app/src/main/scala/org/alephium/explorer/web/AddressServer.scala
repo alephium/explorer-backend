@@ -20,20 +20,14 @@ import scala.concurrent.ExecutionContext
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import sttp.tapir.server.akkahttp.AkkaHttpServerInterpreter.toRoute
-import sttp.tapir.server.akkahttp.AkkaHttpServerOptions
 
 import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model.AddressInfo
 import org.alephium.explorer.service.TransactionService
-import org.alephium.protocol.model.NetworkType
 import org.alephium.util.Duration
 
-class AddressServer(transactionService: TransactionService,
-                    val networkType: NetworkType,
-                    val blockflowFetchMaxAge: Duration)(
-    implicit val serverOptions: AkkaHttpServerOptions,
-    executionContext: ExecutionContext)
+class AddressServer(transactionService: TransactionService, val blockflowFetchMaxAge: Duration)(
+    implicit executionContext: ExecutionContext)
     extends Server
     with AddressesEndpoints {
 

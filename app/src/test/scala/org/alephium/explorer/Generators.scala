@@ -33,7 +33,6 @@ import org.alephium.util.{AVector, Base58, Duration, Number, TimeStamp, U256}
 trait Generators {
 
   lazy val groupNum: Int                     = Gen.choose(2, 4).sample.get
-  lazy val networkType: protocol.NetworkType = protocol.NetworkType.Devnet
   implicit lazy val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
 
   lazy val timestampGen: Gen[TimeStamp]              = Gen.posNum[Long].map(TimeStamp.unsafe)
@@ -53,7 +52,7 @@ trait Generators {
     } yield {
       val groupIndex     = protocol.GroupIndex.unsafe(group)
       val (_, publicKey) = groupIndex.generateKey
-      protocol.Address.p2pkh(networkType, publicKey)
+      protocol.Address.p2pkh(publicKey)
     }
 
   lazy val amountGen: Gen[U256] = Gen.choose(1000L, Number.quadrillion).map(ALF.nanoAlf)

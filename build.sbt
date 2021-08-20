@@ -55,7 +55,7 @@ val commonSettings = Seq(
   Test / envVars += "ALEPHIUM_ENV" -> "test",
   wartremoverErrors in (Compile, compile) := Warts.allBut(wartsCompileExcludes: _*),
   wartremoverErrors in (Test, compile) := Warts.allBut(wartsTestExcludes: _*),
-  fork := true,
+  fork := true
 )
 
 lazy val root = (project in file("."))
@@ -70,6 +70,7 @@ lazy val app = mainProject("app")
       alephiumApi,
       alephiumCrypto,
       alephiumJson,
+      alephiumHttp,
       tapirCore,
       tapirAkka,
       tapirOpenapi,
@@ -126,7 +127,14 @@ lazy val app = mainProject("app")
       BuildInfoKey("releaseVersion" -> version.value)
     ),
     buildInfoPackage := "org.alephium.explorer",
-    buildInfoUsePackageAsPath := true
+    buildInfoUsePackageAsPath := true,
+    assemblyMergeStrategy in assembly := {
+      case PathList("META-INF", "io.netty.versions.properties", xs @ _*) =>
+        MergeStrategy.first
+      case "module-info.class" =>
+        MergeStrategy.discard
+      case other => (assemblyMergeStrategy in assembly).value(other)
+    }
   )
 
 lazy val tools = mainProject("tools")
