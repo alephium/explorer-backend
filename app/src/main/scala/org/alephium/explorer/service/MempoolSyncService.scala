@@ -22,7 +22,7 @@ import scala.util.{Failure, Success}
 import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.StrictLogging
 
-import org.alephium.explorer.persistence.dao.UTransactionDao
+import org.alephium.explorer.persistence.dao.UnconfirmedTxDao
 import org.alephium.explorer.sideEffect
 import org.alephium.util.Duration
 
@@ -36,13 +36,13 @@ trait MempoolSyncService {
 }
 
 object MempoolSyncService {
-  def apply(syncPeriod: Duration, blockFlowClient: BlockFlowClient, utxDao: UTransactionDao)(
+  def apply(syncPeriod: Duration, blockFlowClient: BlockFlowClient, utxDao: UnconfirmedTxDao)(
       implicit executionContext: ExecutionContext): MempoolSyncService =
     new Impl(syncPeriod, blockFlowClient, utxDao)
 
   private class Impl(syncPeriod: Duration,
                      blockFlowClient: BlockFlowClient,
-                     utxDao: UTransactionDao)(implicit executionContext: ExecutionContext)
+                     utxDao: UnconfirmedTxDao)(implicit executionContext: ExecutionContext)
       extends MempoolSyncService
       with StrictLogging {
 

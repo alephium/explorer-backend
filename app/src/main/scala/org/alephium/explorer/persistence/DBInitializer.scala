@@ -35,7 +35,7 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
     with TransactionSchema
     with InputSchema
     with OutputSchema
-    with UTransactionSchema
+    with UnconfirmedTxSchema
     with UInputSchema
     with UOutputSchema
     with DBRunner
@@ -54,7 +54,7 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
           transactionsTable,
           inputsTable,
           outputsTable,
-          utransactionsTable,
+          unconfirmedTxsTable,
           uinputsTable,
           uoutputsTable)
     val existingTables = run(MTable.getTables)

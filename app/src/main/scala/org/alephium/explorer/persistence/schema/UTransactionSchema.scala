@@ -21,15 +21,15 @@ import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, ProvenShape}
 
 import org.alephium.explorer.api.model.{GroupIndex, Transaction}
-import org.alephium.explorer.persistence.model.UTransactionEntity
+import org.alephium.explorer.persistence.model.UnconfirmedTxEntity
 import org.alephium.util.U256
 
-trait UTransactionSchema extends CustomTypes {
+trait UnconfirmedTxSchema extends CustomTypes {
   val config: DatabaseConfig[JdbcProfile]
 
   import config.profile.api._
 
-  class UTransactions(tag: Tag) extends Table[UTransactionEntity](tag, "utransactions") {
+  class UnconfirmedTxs(tag: Tag) extends Table[UnconfirmedTxEntity](tag, "utransactions") {
     def hash: Rep[Transaction.Hash] = column[Transaction.Hash]("hash", O.PrimaryKey)
     def chainFrom: Rep[GroupIndex]  = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]    = column[GroupIndex]("chain_to")
@@ -39,10 +39,10 @@ trait UTransactionSchema extends CustomTypes {
 
     def hashIdx: Index = index("utxs_hash_idx", hash)
 
-    def * : ProvenShape[UTransactionEntity] =
+    def * : ProvenShape[UnconfirmedTxEntity] =
       (hash, chainFrom, chainTo, startGas, gasPrice)
-        .<>((UTransactionEntity.apply _).tupled, UTransactionEntity.unapply)
+        .<>((UnconfirmedTxEntity.apply _).tupled, UnconfirmedTxEntity.unapply)
   }
 
-  val utransactionsTable: TableQuery[UTransactions] = TableQuery[UTransactions]
+  val unconfirmedTxsTable: TableQuery[UnconfirmedTxs] = TableQuery[UnconfirmedTxs]
 }

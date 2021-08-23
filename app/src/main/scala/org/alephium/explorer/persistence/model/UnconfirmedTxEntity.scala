@@ -16,10 +16,10 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.api.model.{GroupIndex, Transaction, UTransaction}
+import org.alephium.explorer.api.model.{GroupIndex, Transaction, UnconfirmedTx}
 import org.alephium.util.U256
 
-final case class UTransactionEntity(
+final case class UnconfirmedTxEntity(
     hash: Transaction.Hash,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
@@ -27,9 +27,9 @@ final case class UTransactionEntity(
     gasPrice: U256
 )
 
-object UTransactionEntity {
-  def from(utx: UTransaction): (UTransactionEntity, Seq[UInputEntity], Seq[UOutputEntity]) = {
-    (UTransactionEntity(
+object UnconfirmedTxEntity {
+  def from(utx: UnconfirmedTx): (UnconfirmedTxEntity, Seq[UInputEntity], Seq[UOutputEntity]) = {
+    (UnconfirmedTxEntity(
        utx.hash,
        utx.chainFrom,
        utx.chainTo,

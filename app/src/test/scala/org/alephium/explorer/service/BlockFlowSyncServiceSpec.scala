@@ -195,7 +195,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
                        2)
           )
         )
-      def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UTransaction]]] =
+      def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UnconfirmedTx]]] =
         Future.successful(Right(Seq.empty))
     }
 

@@ -865,7 +865,7 @@
             "$ref": "#/components/schemas/Transaction"
           },
           {
-            "$ref": "#/components/schemas/UTransaction"
+            "$ref": "#/components/schemas/UnconfirmedTx"
           }
         ]
       },
@@ -903,7 +903,18 @@
           }
         }
       },
-      "UTransaction": {
+      "Unauthorized": {
+        "required": [
+          "detail"
+        ],
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "UnconfirmedTx": {
         "required": [
           "hash",
           "chainFrom",
@@ -940,17 +951,6 @@
           "gasPrice": {
             "type": "integer",
             "format": "uint256"
-          }
-        }
-      },
-      "Unauthorized": {
-        "required": [
-          "detail"
-        ],
-        "type": "object",
-        "properties": {
-          "detail": {
-            "type": "string"
           }
         }
       }

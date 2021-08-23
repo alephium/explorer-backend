@@ -31,7 +31,7 @@ sealed trait TransactionLike {
 
 object TransactionLike {
   implicit val txTemplateRW: ReadWriter[TransactionLike] =
-    ReadWriter.merge(Transaction.txRW, UTransaction.utxRW)
+    ReadWriter.merge(Transaction.txRW, UnconfirmedTx.utxRW)
 }
 
 @upickle.implicits.key("confirmed")
@@ -52,7 +52,7 @@ object Transaction {
 }
 
 @upickle.implicits.key("unconfirmed")
-final case class UTransaction(
+final case class UnconfirmedTx(
     hash: Transaction.Hash,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
@@ -62,6 +62,6 @@ final case class UTransaction(
     gasPrice: U256
 ) extends TransactionLike
 
-object UTransaction {
-  implicit val utxRW: ReadWriter[UTransaction] = macroRW
+object UnconfirmedTx {
+  implicit val utxRW: ReadWriter[UnconfirmedTx] = macroRW
 }

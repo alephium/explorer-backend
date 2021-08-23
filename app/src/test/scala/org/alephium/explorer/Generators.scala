@@ -66,7 +66,7 @@ trait Generators {
       gasPrice  <- u256Gen
     } yield Transaction(hash, blockHash, timestamp, Seq.empty, Seq.empty, startGas, gasPrice)
 
-  lazy val utransactionGen: Gen[UTransaction] =
+  lazy val utransactionGen: Gen[UnconfirmedTx] =
     for {
       hash      <- transactionHashGen
       chainFrom <- groupIndexGen
@@ -75,7 +75,7 @@ trait Generators {
       outputs   <- Gen.listOfN(3, uoutputGen)
       startGas  <- Gen.posNum[Int]
       gasPrice  <- u256Gen
-    } yield UTransaction(hash, chainFrom, chainTo, inputs, outputs, startGas, gasPrice)
+    } yield UnconfirmedTx(hash, chainFrom, chainTo, inputs, outputs, startGas, gasPrice)
 
   private def parentIndex(chainTo: GroupIndex) = groupNum - 1 + chainTo.value
 

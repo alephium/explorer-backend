@@ -25,9 +25,9 @@ import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.api.model.{ChainInfo, HashesAtHeight, SelfClique}
 import org.alephium.explorer.{AlephiumSpec, Generators}
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, UTransaction}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, UnconfirmedTx}
 import org.alephium.explorer.persistence.DatabaseFixture
-import org.alephium.explorer.persistence.dao.UTransactionDao
+import org.alephium.explorer.persistence.dao.UnconfirmedTxDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.util.{Duration, TimeStamp}
 
@@ -73,12 +73,12 @@ class MempoolSyncServiceSpec
   trait Fixture extends DatabaseFixture with Generators {
     implicit val executionContext: ExecutionContext = ExecutionContext.global
 
-    val utxDao: UTransactionDao = UTransactionDao(databaseConfig)
+    val utxDao: UnconfirmedTxDao = UnconfirmedTxDao(databaseConfig)
 
-    var unconfirmedTransactions: Seq[UTransaction] = Seq.empty
+    var unconfirmedTransactions: Seq[UnconfirmedTx] = Seq.empty
 
     val blockFlowClient: BlockFlowClient = new BlockFlowClient {
-      def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UTransaction]]] =
+      def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UnconfirmedTx]]] =
         Future.successful(Right(unconfirmedTransactions))
       def fetchBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]] =
         ???

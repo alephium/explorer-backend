@@ -27,37 +27,37 @@ import org.alephium.explorer.persistence.{DBActionW, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 
-trait UTransactionDao {
-  def get(hash: Transaction.Hash): Future[Option[UTransaction]]
-  def insertMany(utxs: Seq[UTransaction]): Future[Unit]
+trait UnconfirmedTxDao {
+  def get(hash: Transaction.Hash): Future[Option[UnconfirmedTx]]
+  def insertMany(utxs: Seq[UnconfirmedTx]): Future[Unit]
   def listHashes(): Future[Seq[Transaction.Hash]]
   def removeMany(txs: Seq[Transaction.Hash]): Future[Unit]
   def removeAndInsertMany(toRemove: Seq[Transaction.Hash],
-                          toInsert: Seq[UTransaction]): Future[Unit]
+                          toInsert: Seq[UnconfirmedTx]): Future[Unit]
 }
 
-object UTransactionDao {
+object UnconfirmedTxDao {
   def apply(config: DatabaseConfig[JdbcProfile])(
-      implicit executionContext: ExecutionContext): UTransactionDao =
+      implicit executionContext: ExecutionContext): UnconfirmedTxDao =
     new Impl(config)
 
   private class Impl(val config: DatabaseConfig[JdbcProfile])(
       implicit val executionContext: ExecutionContext)
-      extends UTransactionDao
-      with UTransactionSchema
+      extends UnconfirmedTxDao
+      with UnconfirmedTxSchema
       with UInputSchema
       with UOutputSchema
       with DBRunner {
     import config.profile.api._
 
-    def get(hash: Transaction.Hash): Future[Option[UTransaction]] = {
+    def get(hash: Transaction.Hash): Future[Option[UnconfirmedTx]] = {
       run(for {
-        maybeTx <- utransactionsTable.filter(_.hash === hash).result.headOption
+        maybeTx <- unconfirmedTxsTable.filter(_.hash === hash).result.headOption
         inputs  <- uinputsTable.filter(_.txHash === hash).result
         outputs <- uoutputsTable.filter(_.txHash === hash).result
       } yield {
         maybeTx.map { tx =>
-          UTransaction(
+          UnconfirmedTx(
             tx.hash,
             tx.chainFrom,
             tx.chainTo,
@@ -70,29 +70,29 @@ object UTransactionDao {
       })
     }
 
-    private def insertManyAction(utxs: Seq[UTransaction]): DBActionW[Unit] = {
-      val entities = utxs.map(UTransactionEntity.from)
+    private def insertManyAction(utxs: Seq[UnconfirmedTx]): DBActionW[Unit] = {
+      val entities = utxs.map(UnconfirmedTxEntity.from)
       val txs      = entities.map { case (tx, _, _) => tx }
       val inputs   = entities.flatMap { case (_, in, _) => in }
       val outputs  = entities.flatMap { case (_, _, out) => out }
       for {
-        _ <- DBIOAction.sequence(txs.map(utransactionsTable.insertOrUpdate))
+        _ <- DBIOAction.sequence(txs.map(unconfirmedTxsTable.insertOrUpdate))
         _ <- DBIOAction.sequence(inputs.map(uinputsTable.insertOrUpdate))
         _ <- DBIOAction.sequence(outputs.map(uoutputsTable.insertOrUpdate))
       } yield ()
     }
 
-    def insertMany(utxs: Seq[UTransaction]): Future[Unit] = {
+    def insertMany(utxs: Seq[UnconfirmedTx]): Future[Unit] = {
       run(insertManyAction(utxs))
     }
 
     def listHashes(): Future[Seq[Transaction.Hash]] = {
-      run(utransactionsTable.map(_.hash).result)
+      run(unconfirmedTxsTable.map(_.hash).result)
     }
 
     private def removeManyAction(txs: Seq[Transaction.Hash]): DBActionW[Unit] = {
       for {
-        _ <- utransactionsTable.filter(_.hash inSet txs).delete
+        _ <- unconfirmedTxsTable.filter(_.hash inSet txs).delete
         _ <- uoutputsTable.filter(_.txHash inSet txs).delete
         _ <- uinputsTable.filter(_.txHash inSet txs).delete
       } yield ()
@@ -103,7 +103,7 @@ object UTransactionDao {
     }
 
     def removeAndInsertMany(toRemove: Seq[Transaction.Hash],
-                            toInsert: Seq[UTransaction]): Future[Unit] = {
+                            toInsert: Seq[UnconfirmedTx]): Future[Unit] = {
       run((for {
         _ <- removeManyAction(toRemove)
         _ <- insertManyAction(toInsert)

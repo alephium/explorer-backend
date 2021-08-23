@@ -29,7 +29,7 @@ import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.DBRunner
 import org.alephium.explorer.persistence.schema._
 
-class UTransactionDaoSpec extends AlephiumSpec with ScalaFutures with Generators with Eventually {
+class UnconfirmedTxDaoSpec extends AlephiumSpec with ScalaFutures with Generators with Eventually {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
@@ -39,7 +39,7 @@ class UTransactionDaoSpec extends AlephiumSpec with ScalaFutures with Generators
       utxDao.insertMany(txs).futureValue
 
       txs.foreach { tx =>
-        val dbTx = run(utransactionsTable.filter(_.hash === tx.hash).result).futureValue
+        val dbTx = run(unconfirmedTxsTable.filter(_.hash === tx.hash).result).futureValue
         dbTx.size is 1
         dbTx.head.hash is tx.hash
         dbTx.head.chainFrom is tx.chainFrom
@@ -87,12 +87,12 @@ class UTransactionDaoSpec extends AlephiumSpec with ScalaFutures with Generators
   }
 
   trait Fixture
-      extends UTransactionSchema
+      extends UnconfirmedTxSchema
       with UInputSchema
       with UOutputSchema
       with DatabaseFixture
       with DBRunner {
     override val config = databaseConfig
-    val utxDao          = UTransactionDao(databaseConfig)
+    val utxDao          = UnconfirmedTxDao(databaseConfig)
   }
 }

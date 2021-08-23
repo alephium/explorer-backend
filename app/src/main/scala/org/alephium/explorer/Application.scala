@@ -48,10 +48,10 @@ class Application(host: String,
 
   val dbInitializer: DBInitializer = DBInitializer(databaseConfig)
 
-  val blockDao: BlockDao               = BlockDao(databaseConfig)
-  val transactionDao: TransactionDao   = TransactionDao(databaseConfig)
-  val utransactionDao: UTransactionDao = UTransactionDao(databaseConfig)
-  val healthCheckDao: HealthCheckDao   = HealthCheckDao(databaseConfig)
+  val blockDao: BlockDao                = BlockDao(databaseConfig)
+  val transactionDao: TransactionDao    = TransactionDao(databaseConfig)
+  val utransactionDao: UnconfirmedTxDao = UnconfirmedTxDao(databaseConfig)
+  val healthCheckDao: HealthCheckDao    = HealthCheckDao(databaseConfig)
 
   //Services
   val blockFlowClient: BlockFlowClient =

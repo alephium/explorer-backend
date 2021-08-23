@@ -73,7 +73,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
-  it should "UTransaction" in {
+  it should "UnconfirmedTx" in {
     forAll(utransactionGen) { utx =>
       val expected = s"""
      |{
