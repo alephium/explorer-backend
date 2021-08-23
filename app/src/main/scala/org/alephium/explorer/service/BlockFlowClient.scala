@@ -221,7 +221,7 @@ object BlockFlowClient {
       case _: api.model.Input.Contract  => None
     }
     UInput(
-      Output.Ref(input.outputRef.scriptHint, input.outputRef.key),
+      Output.Ref(input.outputRef.hint, input.outputRef.key),
       unlockScript
     )
   }
