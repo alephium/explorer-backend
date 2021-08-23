@@ -21,23 +21,41 @@ import org.alephium.json.Json._
 
 class ApiModelSpec() extends AlephiumSpec with Generators {
 
-  def check[A: ReadWriter](a: A, json: String) = {
-    write(a) is json
-    read[A](json) is a
+  def check[T: Reader: Writer](data: T, jsonRaw: String) = {
+    write(data) is jsonRaw.filterNot(_.isWhitespace)
+    read[T](jsonRaw) is data
   }
 
   it should "Transaction" in {
     forAll(transactionGen) { tx =>
-      val expected =
-        s"""{"type":"confirmed","hash":"${tx.hash.value.toHexString}","blockHash":"${tx.blockHash}","timestamp":${tx.timestamp.millis},"inputs":[],"outputs":[],"startGas":${tx.startGas},"gasPrice":"${tx.gasPrice}"}"""
+      val expected = s"""
+       |{
+       |  "type": "confirmed",
+       |  "hash": "${tx.hash.value.toHexString}",
+       |  "blockHash": "${tx.blockHash}",
+       |  "timestamp": ${tx.timestamp.millis},
+       |  "inputs": [],
+       |  "outputs": [],
+       |  "startGas": ${tx.startGas},
+       |  "gasPrice": "${tx.gasPrice}"
+       |}""".stripMargin
       check(tx, expected)
     }
   }
 
   it should "UTransaction" in {
     forAll(utransactionGen) { utx =>
-      val expected =
-        s"""{"type":"unconfirmed","hash":"${utx.hash.value.toHexString}","chainFrom":${utx.chainFrom.value},"chainTo":${utx.chainTo.value},"inputs":[],"outputs":[],"startGas":${utx.startGas},"gasPrice":"${utx.gasPrice}"}"""
+      val expected = s"""
+     |{
+     |  "type": "unconfirmed",
+     |  "hash": "${utx.hash.value.toHexString}",
+     |  "chainFrom": ${utx.chainFrom.value},
+     |  "chainTo": ${utx.chainTo.value},
+     |  "inputs": [],
+     |  "outputs": [],
+     |  "startGas": ${utx.startGas},
+     |  "gasPrice": "${utx.gasPrice}"
+     |}""".stripMargin
       check(utx, expected)
     }
   }
