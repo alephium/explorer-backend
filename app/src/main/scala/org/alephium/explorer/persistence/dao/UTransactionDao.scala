@@ -23,7 +23,7 @@ import slick.dbio.DBIOAction
 import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.DBRunner
+import org.alephium.explorer.persistence.{DBActionW, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 
@@ -32,6 +32,8 @@ trait UTransactionDao {
   def insertMany(utxs: Seq[UTransaction]): Future[Unit]
   def listHashes(): Future[Seq[Transaction.Hash]]
   def removeMany(txs: Seq[Transaction.Hash]): Future[Unit]
+  def removeAndInsertMany(toRemove: Seq[Transaction.Hash],
+                          toInsert: Seq[UTransaction]): Future[Unit]
 }
 
 object UTransactionDao {
@@ -68,28 +70,44 @@ object UTransactionDao {
       })
     }
 
-    def insertMany(utxs: Seq[UTransaction]): Future[Unit] = {
+    private def insertManyAction(utxs: Seq[UTransaction]): DBActionW[Unit] = {
       val entities = utxs.map(UTransactionEntity.from)
       val txs      = entities.map { case (tx, _, _) => tx }
       val inputs   = entities.flatMap { case (_, in, _) => in }
       val outputs  = entities.flatMap { case (_, _, out) => out }
-      run(for {
+      for {
         _ <- DBIOAction.sequence(txs.map(utransactionsTable.insertOrUpdate))
         _ <- DBIOAction.sequence(inputs.map(uinputsTable.insertOrUpdate))
         _ <- DBIOAction.sequence(outputs.map(uoutputsTable.insertOrUpdate))
-      } yield ())
+      } yield ()
+    }
+
+    def insertMany(utxs: Seq[UTransaction]): Future[Unit] = {
+      run(insertManyAction(utxs))
     }
 
     def listHashes(): Future[Seq[Transaction.Hash]] = {
       run(utransactionsTable.map(_.hash).result)
     }
 
-    def removeMany(txs: Seq[Transaction.Hash]): Future[Unit] = {
-      run(for {
+    private def removeManyAction(txs: Seq[Transaction.Hash]): DBActionW[Unit] = {
+      for {
         _ <- utransactionsTable.filter(_.hash inSet txs).delete
         _ <- uoutputsTable.filter(_.txHash inSet txs).delete
         _ <- uinputsTable.filter(_.txHash inSet txs).delete
-      } yield ())
+      } yield ()
+    }
+
+    def removeMany(txs: Seq[Transaction.Hash]): Future[Unit] = {
+      run(removeManyAction(txs))
+    }
+
+    def removeAndInsertMany(toRemove: Seq[Transaction.Hash],
+                            toInsert: Seq[UTransaction]): Future[Unit] = {
+      run((for {
+        _ <- removeManyAction(toRemove)
+        _ <- insertManyAction(toInsert)
+      } yield ()).transactionally)
     }
   }
 }
