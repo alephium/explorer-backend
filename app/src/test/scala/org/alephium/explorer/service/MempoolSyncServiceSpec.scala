@@ -26,7 +26,7 @@ import org.scalatest.time.{Minutes, Span}
 import org.alephium.api.model.{ChainInfo, HashesAtHeight, SelfClique}
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, UTransaction}
-import org.alephium.explorer.persistence.{DatabaseFixture, DBInitializer}
+import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.UTransactionDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.util.{Duration, TimeStamp}
@@ -72,9 +72,6 @@ class MempoolSyncServiceSpec
 
   trait Fixture extends DatabaseFixture with Generators {
     implicit val executionContext: ExecutionContext = ExecutionContext.global
-
-    val dbInitializer: DBInitializer = DBInitializer(databaseConfig)
-    dbInitializer.createTables().futureValue
 
     val utxDao: UTransactionDao = UTransactionDao(databaseConfig)
 

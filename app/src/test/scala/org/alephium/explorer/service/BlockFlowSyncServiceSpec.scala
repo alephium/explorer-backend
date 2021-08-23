@@ -25,7 +25,7 @@ import org.scalatest.time.{Minutes, Span}
 import org.alephium.api.model.{ChainInfo, HashesAtHeight, SelfClique}
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.{DatabaseFixture, DBInitializer}
+import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.protocol.model.{ChainId, CliqueId}
@@ -139,9 +139,6 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
 
     def blockFlow: Seq[Seq[BlockEntry]] =
       blockEntitiesToBlockEntries(blockFlowEntity)
-
-    val dbInitializer: DBInitializer = DBInitializer(databaseConfig)
-    dbInitializer.createTables().futureValue
 
     val blockDao: BlockDao = BlockDao(databaseConfig)
 

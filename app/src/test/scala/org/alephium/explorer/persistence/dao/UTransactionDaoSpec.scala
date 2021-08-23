@@ -25,7 +25,7 @@ import org.scalatest.time.{Minutes, Span}
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.Generators
 import org.alephium.explorer.api.model.Transaction
-import org.alephium.explorer.persistence.{DatabaseFixture, DBInitializer}
+import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.DBRunner
 import org.alephium.explorer.persistence.schema._
 
@@ -94,8 +94,5 @@ class UTransactionDaoSpec extends AlephiumSpec with ScalaFutures with Generators
       with DBRunner {
     override val config = databaseConfig
     val utxDao          = UTransactionDao(databaseConfig)
-
-    val dbInitializer: DBInitializer = DBInitializer(databaseConfig)
-    dbInitializer.createTables().futureValue
   }
 }

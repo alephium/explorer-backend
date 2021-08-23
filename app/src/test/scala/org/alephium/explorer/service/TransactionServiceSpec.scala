@@ -24,7 +24,7 @@ import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.{DatabaseFixture, DBInitializer}
+import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao, UTransactionDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.protocol.ALF
@@ -203,14 +203,11 @@ class TransactionServiceSpec
   }
 
   trait Fixture extends DatabaseFixture {
-    val dbInitializer: DBInitializer           = new DBInitializer(databaseConfig)
     val blockDao: BlockDao                     = BlockDao(databaseConfig)
     val transactionDao: TransactionDao         = TransactionDao(databaseConfig)
     val utransactionDao: UTransactionDao       = UTransactionDao(databaseConfig)
     val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
 
     val groupIndex = GroupIndex.unsafe(0)
-
-    dbInitializer.createTables().futureValue
   }
 }
