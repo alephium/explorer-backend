@@ -43,6 +43,36 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
+  it should "Output.Ref" in {
+    forAll(outputRefGen) { outputRef =>
+      val expected = s"""
+     |{
+     |  "scriptHint": ${outputRef.scriptHint},
+     |  "key": "${outputRef.key.toHexString}"
+     |}""".stripMargin
+      check(outputRef, expected)
+    }
+  }
+
+  it should "UInput" in {
+    forAll(uinputGen) { uinput =>
+      val expected = uinput.unlockScript match {
+        case None =>
+          s"""
+          |{
+          |  "outputRef": ${write(uinput.outputRef)}
+          |}""".stripMargin
+        case Some(unlockScript) =>
+          s"""
+          |{
+          |  "outputRef": ${write(uinput.outputRef)},
+          |  "unlockScript": "${unlockScript}"
+          |}""".stripMargin
+      }
+      check(uinput, expected)
+    }
+  }
+
   it should "UTransaction" in {
     forAll(utransactionGen) { utx =>
       val expected = s"""
@@ -51,8 +81,8 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
      |  "hash": "${utx.hash.value.toHexString}",
      |  "chainFrom": ${utx.chainFrom.value},
      |  "chainTo": ${utx.chainTo.value},
-     |  "inputs": [],
-     |  "outputs": [],
+     |  "inputs": ${write(utx.inputs)},
+     |  "outputs": ${write(utx.outputs)},
      |  "startGas": ${utx.startGas},
      |  "gasPrice": "${utx.gasPrice}"
      |}""".stripMargin

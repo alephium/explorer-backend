@@ -18,7 +18,7 @@ package org.alephium.explorer.persistence.schema
 
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
-import slick.lifted.{Index, ProvenShape}
+import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.api.model.{Address, Transaction}
 import org.alephium.explorer.persistence.model.UOutputEntity
@@ -35,6 +35,8 @@ trait UOutputSchema extends CustomTypes {
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
     def address: Rep[Address]            = column[Address]("address")
     def lockTime: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("lock_time")
+
+    def pk: PrimaryKey = primaryKey("uoutputs_pk", (txHash, address))
 
     def txHashIdx: Index = index("uoutputs_tx_hash_idx", txHash)
 

@@ -21,10 +21,11 @@ import org.alephium.explorer.api.Json.u256ReadWriter
 import org.alephium.json.Json._
 import org.alephium.util.{TimeStamp, U256}
 
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 final case class UOutput(
     amount: U256,
     address: Address,
-    lockTime: Option[TimeStamp]
+    lockTime: Option[TimeStamp] = None
 )
 
 object UOutput {
