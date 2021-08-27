@@ -40,7 +40,7 @@ object BlockEntry {
   final class Hash(val value: BlockHash) extends AnyVal {
     override def toString(): String = value.toHexString
   }
-  object Hash extends HashCompanion[BlockHash, Hash](BlockHash)(new Hash(_), _.value)
+  object Hash extends HashCompanion[BlockHash, Hash](new Hash(_), _.value)
 
   implicit val codec: ReadWriter[BlockEntry] = macroRW
 

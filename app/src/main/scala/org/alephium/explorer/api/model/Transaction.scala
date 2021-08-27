@@ -46,7 +46,7 @@ final case class Transaction(
 ) extends TransactionLike
 object Transaction {
   final class Hash(val value: explorer.Hash) extends AnyVal
-  object Hash                                extends HashCompanion[explorer.Hash, Hash](explorer.Hash)(new Hash(_), _.value)
+  object Hash                                extends HashCompanion[explorer.Hash, Hash](new Hash(_), _.value)
 
   implicit val txRW: ReadWriter[Transaction] = macroRW
 }

@@ -18,14 +18,13 @@ package org.alephium.explorer.api
 
 import scala.util.{Failure, Success, Try}
 
-import sttp.tapir.{Codec, DecodeResult, Validator}
+import sttp.tapir.{Codec, DecodeResult}
 import sttp.tapir.CodecFormat.TextPlain
 
 import org.alephium.explorer.{BlockHash, Hash}
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
 import org.alephium.json.Json._
-import org.alephium.util.TimeStamp
 
 object Codecs {
   private val hashTapirCodec: Codec[String, Hash, TextPlain] =
@@ -33,9 +32,6 @@ object Codecs {
 
   private val blockHashTapirCodec: Codec[String, BlockHash, TextPlain] =
     fromJson[BlockHash]
-
-  implicit val timestampTapirCodec: Codec[String, TimeStamp, TextPlain] =
-    Codec.long.validate(Validator.min(0L)).map(TimeStamp.unsafe(_))(_.millis)
 
   implicit val addressTapirCodec: Codec[String, Address, TextPlain] =
     fromJson[Address]

@@ -18,43 +18,9 @@ package org.alephium.explorer.api
 
 import sttp.tapir._
 
-import org.alephium.explorer.api.Codecs.timestampTapirCodec
-import org.alephium.explorer.api.model.{Pagination, TimeInterval}
-import org.alephium.util.{Duration, TimeStamp}
+import org.alephium.explorer.api.model.Pagination
 
 trait QueryParams {
-
-  val maxTimeInterval: Duration = Duration.ofMinutes(10).getOrElse(Duration.unsafe(0))
-
-  private def tsQuery(name: String) = query[TimeStamp](name).description("Unix epoch timestamp")
-
-  val timeIntervalQuery: EndpointInput[TimeInterval] =
-    tsQuery("from-ts")
-      .and(tsQuery("to-ts"))
-      .validate(
-        Validator.custom({
-          case (from, to) =>
-            if (from > to) {
-              List(ValidationError.Custom((from, to), "`from-ts` must be before `to-ts`"))
-            } else {
-              List.empty
-            }
-        })
-      )
-      .validate(
-        Validator.custom({
-          case (from, to) =>
-            val interval = scala.math.abs(to.millis - from.millis)
-            if (interval > maxTimeInterval.millis) {
-              List(ValidationError.Custom(interval,
-                                          s"maximum interval is ${maxTimeInterval.millis}ms"))
-            } else {
-              List.empty
-            }
-        })
-      )
-      .map({ case (from, to) => TimeInterval.unsafe(from, to) })(timeInterval =>
-        (timeInterval.from, timeInterval.to))
 
   val pagination: EndpointInput[Pagination] =
     query[Option[Int]]("page")
