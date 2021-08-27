@@ -304,14 +304,17 @@ trait ApplicationSpec
 
 object ApplicationSpec {
 
-  class BlockFlowServerMock(groupNum: Int,
+  class BlockFlowServerMock(_groupNum: Int,
                             address: InetAddress,
                             port: Int,
                             blockflow: Seq[Seq[model.BlockEntry]],
                             networkId: NetworkId,
                             val blockflowFetchMaxAge: Duration)(implicit system: ActorSystem)
       extends ApiModelCodec
+      with Generators
       with UpickleCustomizationSupport {
+
+    override lazy val groupNum = _groupNum
 
     val blocks = blockflow.flatten
 
@@ -387,8 +390,11 @@ object ApplicationSpec {
           }
         } ~
         path("transactions" / "unconfirmed") {
+          val txs  = Gen.listOfN(5, transactionProtocolGen).sample.get
+          val from = groupIndexGen.sample.get.value
+          val to   = groupIndexGen.sample.get.value
           complete(
-            Seq.empty[model.UnconfirmedTransactions]
+            Seq(model.UnconfirmedTransactions(from, to, AVector.from(txs)))
           )
         } ~
         path("infos" / "self-clique") {

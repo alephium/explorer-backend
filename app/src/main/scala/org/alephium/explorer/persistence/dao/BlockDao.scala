@@ -29,6 +29,7 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema._
+import org.alephium.util.TimeStamp
 
 trait BlockDao {
   def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]]
@@ -40,7 +41,7 @@ trait BlockDao {
   def insert(block: BlockEntity): Future[Unit]
   def insertAll(blocks: Seq[BlockEntity]): Future[Unit]
   def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)]
-  def listIncludingForks(timeInterval: TimeInterval): Future[Seq[BlockEntry.Lite]]
+  def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntry.Lite]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
   def updateMainChain(hash: BlockEntry.Hash,
                       chainFrom: GroupIndex,
@@ -152,12 +153,11 @@ object BlockDao {
       run(action)
     }
 
-    def listIncludingForks(timeInterval: TimeInterval): Future[Seq[BlockEntry.Lite]] = {
+    def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntry.Lite]] = {
       val action =
         for {
           headers <- blockHeadersTable
-            .filter(header =>
-              header.timestamp >= timeInterval.from.millis && header.timestamp <= timeInterval.to.millis)
+            .filter(header => header.timestamp >= from.millis && header.timestamp <= to.millis)
             .sortBy(b => (b.timestamp.desc, b.hash))
             .result
           blocks <- DBIOAction.sequence(headers.map(buildLiteBlockEntryAction))

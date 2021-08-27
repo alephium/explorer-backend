@@ -16,21 +16,11 @@
 
 package org.alephium.explorer
 
-import org.alephium.crypto.HashSchema
 import org.alephium.json.Json._
 import org.alephium.serde.RandomBytes
-import org.alephium.util.Hex
 
-abstract class HashCompanion[A <: RandomBytes, H](hashAlgo: HashSchema[A])(
-    fromHash: A => H,
-    toHash: H   => A)(implicit aReadWriter: ReadWriter[A]) {
-  def unsafe(value: String): H = fromHash(hashAlgo.unsafe(Hex.unsafe(value)))
-  def from(value: String): Either[String, H] =
-    Hex
-      .from(value)
-      .flatMap(hashAlgo.from)
-      .toRight(s"Cannot decode hash: $value")
-      .map(fromHash(_))
+abstract class HashCompanion[A <: RandomBytes, H](fromHash: A => H, toHash: H => A)(
+    implicit aReadWriter: ReadWriter[A]) {
 
   implicit val codec: ReadWriter[H] =
     ReadWriter.join(aReadWriter.map(fromHash), aReadWriter.comap(toHash))
