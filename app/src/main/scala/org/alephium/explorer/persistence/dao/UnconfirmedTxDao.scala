@@ -63,7 +63,7 @@ object UnconfirmedTxDao {
             tx.chainTo,
             inputs.map(_.toApi),
             outputs.map(_.toApi),
-            tx.startGas,
+            tx.gasAmount,
             tx.gasPrice
           )
         }

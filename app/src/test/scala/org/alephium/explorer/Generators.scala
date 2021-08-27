@@ -62,9 +62,9 @@ trait Generators {
       hash      <- transactionHashGen
       blockHash <- blockEntryHashGen
       timestamp <- timestampGen
-      startGas  <- Gen.posNum[Int]
+      gasAmount <- Gen.posNum[Int]
       gasPrice  <- u256Gen
-    } yield Transaction(hash, blockHash, timestamp, Seq.empty, Seq.empty, startGas, gasPrice)
+    } yield Transaction(hash, blockHash, timestamp, Seq.empty, Seq.empty, gasAmount, gasPrice)
 
   lazy val utransactionGen: Gen[UnconfirmedTx] =
     for {
@@ -73,9 +73,9 @@ trait Generators {
       chainTo   <- groupIndexGen
       inputs    <- Gen.listOfN(3, uinputGen)
       outputs   <- Gen.listOfN(3, uoutputGen)
-      startGas  <- Gen.posNum[Int]
+      gasAmount <- Gen.posNum[Int]
       gasPrice  <- u256Gen
-    } yield UnconfirmedTx(hash, chainFrom, chainTo, inputs, outputs, startGas, gasPrice)
+    } yield UnconfirmedTx(hash, chainFrom, chainTo, inputs, outputs, gasAmount, gasPrice)
 
   private def parentIndex(chainTo: GroupIndex) = groupNum - 1 + chainTo.value
 
@@ -125,10 +125,10 @@ trait Generators {
       inputs     <- Gen.listOfN(inputSize, inputProtocolGen)
       outputSize <- Gen.choose(2, 10)
       outputs    <- Gen.listOfN(outputSize, outputProtocolGen)
-      startGas   <- Gen.posNum[Int]
+      gasAmount  <- Gen.posNum[Int]
       gasPrice   <- Gen.posNum[Long].map(U256.unsafe)
     } yield
-      protocolApi.Tx(hash.value, AVector.from(inputs), AVector.from(outputs), startGas, gasPrice)
+      protocolApi.Tx(hash.value, AVector.from(inputs), AVector.from(outputs), gasAmount, gasPrice)
 
   def blockEntryProtocolGen: Gen[protocolApi.BlockEntry] =
     for {
@@ -216,7 +216,7 @@ trait Generators {
               .filter(_.txHash === tx.hash)
               .map(input => input.toApi(outputs.head)), //TODO Fix when we have a valid blockchain generator
             block.outputs.filter(_.txHash === tx.hash).map(_.toApi(None)),
-            tx.startGas,
+            tx.gasAmount,
             tx.gasPrice
           )
         }

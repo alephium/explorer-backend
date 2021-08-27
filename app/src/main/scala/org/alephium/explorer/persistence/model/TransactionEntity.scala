@@ -23,7 +23,7 @@ final case class TransactionEntity(
     hash: Transaction.Hash,
     blockHash: BlockEntry.Hash,
     timestamp: TimeStamp,
-    startGas: Int,
+    gasAmount: Int,
     gasPrice: U256,
     index: Int
 )

@@ -36,7 +36,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
        |  "timestamp": ${tx.timestamp.millis},
        |  "inputs": [],
        |  "outputs": [],
-       |  "startGas": ${tx.startGas},
+       |  "gasAmount": ${tx.gasAmount},
        |  "gasPrice": "${tx.gasPrice}"
        |}""".stripMargin
       check(tx, expected)
@@ -83,7 +83,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
      |  "chainTo": ${utx.chainTo.value},
      |  "inputs": ${write(utx.inputs)},
      |  "outputs": ${write(utx.outputs)},
-     |  "startGas": ${utx.startGas},
+     |  "gasAmount": ${utx.gasAmount},
      |  "gasPrice": "${utx.gasPrice}"
      |}""".stripMargin
       check(utx, expected)

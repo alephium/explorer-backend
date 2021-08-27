@@ -23,7 +23,7 @@ final case class UnconfirmedTxEntity(
     hash: Transaction.Hash,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
-    startGas: Int,
+    gasAmount: Int,
     gasPrice: U256
 )
 
@@ -33,7 +33,7 @@ object UnconfirmedTxEntity {
        utx.hash,
        utx.chainFrom,
        utx.chainTo,
-       utx.startGas,
+       utx.gasAmount,
        utx.gasPrice
      ),
      utx.inputs.map { input =>

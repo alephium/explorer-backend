@@ -95,14 +95,14 @@ class TransactionServiceSpec
 
     val ts0        = TimeStamp.unsafe(0)
     val blockHash0 = blockEntryHashGen.sample.get
-    val startGas   = Gen.posNum[Int].sample.get
+    val gasAmount  = Gen.posNum[Int].sample.get
     val gasPrice   = amountGen.sample.get
 
     val tx0 = TransactionEntity(
       transactionHashGen.sample.get,
       blockHash0,
       ts0,
-      startGas,
+      gasAmount,
       gasPrice,
       0
     )
@@ -125,13 +125,13 @@ class TransactionServiceSpec
 
     val ts1        = TimeStamp.unsafe(1)
     val blockHash1 = blockEntryHashGen.sample.get
-    val startGas1  = Gen.posNum[Int].sample.get
+    val gasAmount1 = Gen.posNum[Int].sample.get
     val gasPrice1  = amountGen.sample.get
     val tx1 = TransactionEntity(
       transactionHashGen.sample.get,
       blockHash1,
       ts1,
-      startGas1,
+      gasAmount1,
       gasPrice1,
       0
     )
@@ -174,7 +174,7 @@ class TransactionServiceSpec
       ts0,
       Seq.empty,
       Seq(Output(U256.One, address0, None, Some(tx1.hash))),
-      startGas,
+      gasAmount,
       gasPrice
     )
 
@@ -184,7 +184,7 @@ class TransactionServiceSpec
       ts1,
       Seq(Input(Output.Ref(0, output0.key), None, tx0.hash, address0, U256.One)),
       Seq(Output(U256.One, address1, None, None)),
-      startGas1,
+      gasAmount1,
       gasPrice1
     )
 

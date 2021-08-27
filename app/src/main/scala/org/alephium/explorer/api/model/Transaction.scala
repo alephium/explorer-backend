@@ -25,7 +25,7 @@ import org.alephium.util.{TimeStamp, U256}
 
 sealed trait TransactionLike {
   def hash: Transaction.Hash
-  def startGas: Int
+  def gasAmount: Int
   def gasPrice: U256
 }
 
@@ -41,7 +41,7 @@ final case class Transaction(
     timestamp: TimeStamp,
     inputs: Seq[Input],
     outputs: Seq[Output],
-    startGas: Int,
+    gasAmount: Int,
     gasPrice: U256
 ) extends TransactionLike
 object Transaction {
@@ -58,7 +58,7 @@ final case class UnconfirmedTx(
     chainTo: GroupIndex,
     inputs: Seq[UInput],
     outputs: Seq[UOutput],
-    startGas: Int,
+    gasAmount: Int,
     gasPrice: U256
 ) extends TransactionLike
 

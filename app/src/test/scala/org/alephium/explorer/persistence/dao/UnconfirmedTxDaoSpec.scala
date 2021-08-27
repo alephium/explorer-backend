@@ -44,7 +44,7 @@ class UnconfirmedTxDaoSpec extends AlephiumSpec with ScalaFutures with Generator
         dbTx.head.hash is tx.hash
         dbTx.head.chainFrom is tx.chainFrom
         dbTx.head.chainTo is tx.chainTo
-        dbTx.head.startGas is tx.startGas
+        dbTx.head.gasAmount is tx.gasAmount
         dbTx.head.gasPrice is tx.gasPrice
 
         val inputs = run(uinputsTable.filter(_.txHash === tx.hash).result).futureValue

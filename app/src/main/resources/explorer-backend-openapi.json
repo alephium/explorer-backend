@@ -823,7 +823,7 @@
           "hash",
           "blockHash",
           "timestamp",
-          "startGas",
+          "gasAmount",
           "gasPrice"
         ],
         "type": "object",
@@ -850,7 +850,7 @@
               "$ref": "#/components/schemas/Output"
             }
           },
-          "startGas": {
+          "gasAmount": {
             "type": "integer"
           },
           "gasPrice": {
@@ -919,7 +919,7 @@
           "hash",
           "chainFrom",
           "chainTo",
-          "startGas",
+          "gasAmount",
           "gasPrice"
         ],
         "type": "object",
@@ -945,7 +945,7 @@
               "$ref": "#/components/schemas/UOutput"
             }
           },
-          "startGas": {
+          "gasAmount": {
             "type": "integer"
           },
           "gasPrice": {

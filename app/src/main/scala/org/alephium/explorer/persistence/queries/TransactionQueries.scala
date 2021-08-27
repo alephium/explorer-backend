@@ -65,14 +65,14 @@ trait TransactionQueries
   private val getTransactionQuery = Compiled { txHash: Rep[Transaction.Hash] =>
     transactionsTable
       .filter(_.hash === txHash)
-      .map(tx => (tx.blockHash, tx.timestamp, tx.startGas, tx.gasPrice))
+      .map(tx => (tx.blockHash, tx.timestamp, tx.gasAmount, tx.gasPrice))
   }
 
   def getTransactionAction(txHash: Transaction.Hash): DBActionR[Option[Transaction]] =
     getTransactionQuery(txHash).result.headOption.flatMap {
       case None => DBIOAction.successful(None)
-      case Some((blockHash, timestamp, startGas, gasPrice)) =>
-        getKnownTransactionAction(txHash, blockHash, timestamp, startGas, gasPrice).map(Some.apply)
+      case Some((blockHash, timestamp, gasAmount, gasPrice)) =>
+        getKnownTransactionAction(txHash, blockHash, timestamp, gasAmount, gasPrice).map(Some.apply)
     }
 
   private val mainInputs  = inputsTable.filter(_.mainChain)
@@ -208,17 +208,17 @@ trait TransactionQueries
       val gasByTx = gas.groupBy(_._1).view.mapValues(_.map { case (_, s, g) => (s, g) })
       txHashesTs.map {
         case (tx, bh, ts) =>
-          val ins                  = insByTx.getOrElse(tx, Seq.empty)
-          val ous                  = ousByTx.getOrElse(tx, Seq.empty)
-          val gas                  = gasByTx.getOrElse(tx, Seq.empty)
-          val (startGas, gasPrice) = gas.headOption.getOrElse((0, U256.Zero))
-          Transaction(tx, bh, ts, ins, ous, startGas, gasPrice)
+          val ins                   = insByTx.getOrElse(tx, Seq.empty)
+          val ous                   = ousByTx.getOrElse(tx, Seq.empty)
+          val gas                   = gasByTx.getOrElse(tx, Seq.empty)
+          val (gasAmount, gasPrice) = gas.headOption.getOrElse((0, U256.Zero))
+          Transaction(tx, bh, ts, ins, ous, gasAmount, gasPrice)
       }
     }
   }
 
   private def gasFromTxs(txHashes: Seq[Transaction.Hash]) = {
-    transactionsTable.filter(_.hash inSet txHashes).map(tx => (tx.hash, tx.startGas, tx.gasPrice))
+    transactionsTable.filter(_.hash inSet txHashes).map(tx => (tx.hash, tx.gasAmount, tx.gasPrice))
   }
 
   private val getInputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
@@ -249,7 +249,7 @@ trait TransactionQueries
   private def getKnownTransactionAction(txHash: Transaction.Hash,
                                         blockHash: BlockEntry.Hash,
                                         timestamp: TimeStamp,
-                                        startGas: Int,
+                                        gasAmount: Int,
                                         gasPrice: U256): DBActionR[Transaction] =
     for {
       ins  <- getInputsQuery(txHash).result
@@ -260,7 +260,7 @@ trait TransactionQueries
                   timestamp,
                   ins.map(toApiInput),
                   outs.map(toApiOutput),
-                  startGas,
+                  gasAmount,
                   gasPrice)
     }
 

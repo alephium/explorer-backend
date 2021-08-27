@@ -198,7 +198,7 @@ object BlockFlowClient {
       GroupIndex.unsafe(chainTo),
       inputs,
       outputs,
-      tx.startGas,
+      tx.gasAmount,
       tx.gasPrice
     )
 
@@ -210,7 +210,7 @@ object BlockFlowClient {
       new Transaction.Hash(tx.id),
       blockHash,
       timestamp,
-      tx.startGas,
+      tx.gasAmount,
       tx.gasPrice,
       index
     )

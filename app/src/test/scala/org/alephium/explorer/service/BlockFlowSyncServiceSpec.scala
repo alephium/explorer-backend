@@ -28,7 +28,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
-import org.alephium.protocol.model.{ChainId, CliqueId}
+import org.alephium.protocol.model.{CliqueId, NetworkId}
 import org.alephium.util.{AVector, Duration, TimeStamp}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
@@ -186,7 +186,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
         Future.successful(
           Right(
             SelfClique(CliqueId.generate,
-                       ChainId.AlephiumDevNet,
+                       NetworkId.AlephiumDevNet,
                        18,
                        AVector.empty,
                        true,

@@ -44,7 +44,7 @@ import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.json.Json
 import org.alephium.json.Json._
-import org.alephium.protocol.model.{ChainId, CliqueId}
+import org.alephium.protocol.model.{CliqueId, NetworkId}
 import org.alephium.util.{AVector, Duration, Hex, TimeStamp, U256}
 
 trait ApplicationSpec
@@ -62,7 +62,7 @@ trait ApplicationSpec
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
   implicit val defaultTimeout          = RouteTestTimeout(5.seconds)
 
-  val chainId: ChainId = ChainId.AlephiumDevNet
+  val networkId: NetworkId = NetworkId.AlephiumDevNet
 
   val blockflowFetchMaxAge: Duration = Duration.ofMinutesUnsafe(30)
 
@@ -90,7 +90,7 @@ trait ApplicationSpec
                                             localhost,
                                             blockFlowPort,
                                             blockflow,
-                                            chainId,
+                                            networkId,
                                             blockflowFetchMaxAge)
 
   val blockflowBinding = blockFlowMock.server.futureValue
@@ -102,7 +102,7 @@ trait ApplicationSpec
     Uri(s"http://${localhost.getHostAddress}:$blockFlowPort"),
     groupNum,
     blockflowFetchMaxAge,
-    chainId,
+    networkId,
     databaseConfig,
     None
   )
@@ -308,7 +308,7 @@ object ApplicationSpec {
                             address: InetAddress,
                             port: Int,
                             blockflow: Seq[Seq[model.BlockEntry]],
-                            chainId: ChainId,
+                            networkId: NetworkId,
                             val blockflowFetchMaxAge: Duration)(implicit system: ActorSystem)
       extends ApiModelCodec
       with UpickleCustomizationSupport {
@@ -392,7 +392,8 @@ object ApplicationSpec {
           )
         } ~
         path("infos" / "self-clique") {
-          complete(SelfClique(cliqueId, chainId, 18, AVector(peer), true, true, groupNum, groupNum))
+          complete(
+            SelfClique(cliqueId, networkId, 18, AVector(peer), true, true, groupNum, groupNum))
         }
 
     val server = Http().newServerAt(address.getHostAddress, port).bindFlow(routes)

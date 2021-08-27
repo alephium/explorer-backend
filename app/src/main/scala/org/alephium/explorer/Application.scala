@@ -30,7 +30,7 @@ import org.alephium.explorer.persistence.DBInitializer
 import org.alephium.explorer.persistence.dao._
 import org.alephium.explorer.service._
 import org.alephium.explorer.sideEffect
-import org.alephium.protocol.model.ChainId
+import org.alephium.protocol.model.NetworkId
 import org.alephium.util.Duration
 
 // scalastyle:off magic.number
@@ -40,7 +40,7 @@ class Application(host: String,
                   blockFlowUri: Uri,
                   groupNum: Int,
                   blockflowFetchMaxAge: Duration,
-                  chainId: ChainId,
+                  networkId: NetworkId,
                   databaseConfig: DatabaseConfig[JdbcProfile],
                   maybeBlockFlowApiKey: Option[ApiKey])(implicit system: ActorSystem,
                                                         executionContext: ExecutionContext)
@@ -113,8 +113,8 @@ class Application(host: String,
   def validateSelfClique(response: Either[String, SelfClique]): Future[Unit] = {
     response match {
       case Right(selfClique) =>
-        if (selfClique.chainId =/= chainId) {
-          logger.error(s"Chain id mismatch: ${selfClique.chainId} (remote) vs $chainId (local)")
+        if (selfClique.networkId =/= networkId) {
+          logger.error(s"Chain id mismatch: ${selfClique.networkId} (remote) vs $networkId (local)")
           sys.exit(1)
         } else {
           Future.successful(())

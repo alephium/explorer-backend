@@ -33,14 +33,14 @@ trait UnconfirmedTxSchema extends CustomTypes {
     def hash: Rep[Transaction.Hash] = column[Transaction.Hash]("hash", O.PrimaryKey)
     def chainFrom: Rep[GroupIndex]  = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]    = column[GroupIndex]("chain_to")
-    def startGas: Rep[Int]          = column[Int]("start-gas")
+    def gasAmount: Rep[Int]         = column[Int]("gas-amount")
     def gasPrice: Rep[U256] =
       column[U256]("gas-price", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
 
     def hashIdx: Index = index("utxs_hash_idx", hash)
 
     def * : ProvenShape[UnconfirmedTxEntity] =
-      (hash, chainFrom, chainTo, startGas, gasPrice)
+      (hash, chainFrom, chainTo, gasAmount, gasPrice)
         .<>((UnconfirmedTxEntity.apply _).tupled, UnconfirmedTxEntity.unapply)
   }
 
