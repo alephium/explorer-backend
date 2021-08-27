@@ -25,7 +25,7 @@ import org.scalatest.time.{Minutes, Span}
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
-import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
+import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao, UnconfirmedTxDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.protocol.ALF
 import org.alephium.util.{TimeStamp, U256}
@@ -193,13 +193,21 @@ class TransactionServiceSpec
 
     res is Seq(t1, t0)
   }
+
+  it should "fall back on unconfirmed tx" in new Fixture {
+    val utx = utransactionGen.sample.get
+
+    transactionService.getTransaction(utx.hash).futureValue is None
+    utransactionDao.insertMany(Seq(utx)).futureValue
+    transactionService.getTransaction(utx.hash).futureValue is Some(utx)
+  }
+
   trait Fixture extends DatabaseFixture {
     val blockDao: BlockDao                     = BlockDao(databaseConfig)
     val transactionDao: TransactionDao         = TransactionDao(databaseConfig)
-    val transactionService: TransactionService = TransactionService(transactionDao)
+    val utransactionDao: UnconfirmedTxDao      = UnconfirmedTxDao(databaseConfig)
+    val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
 
     val groupIndex = GroupIndex.unsafe(0)
-
-    blockDao.createTables().futureValue
   }
 }

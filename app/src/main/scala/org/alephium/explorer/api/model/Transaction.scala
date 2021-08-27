@@ -23,6 +23,18 @@ import org.alephium.explorer.api.Json.{hashReadWriter, u256ReadWriter}
 import org.alephium.json.Json._
 import org.alephium.util.{TimeStamp, U256}
 
+sealed trait TransactionLike {
+  def hash: Transaction.Hash
+  def startGas: Int
+  def gasPrice: U256
+}
+
+object TransactionLike {
+  implicit val txTemplateRW: ReadWriter[TransactionLike] =
+    ReadWriter.merge(Transaction.txRW, UnconfirmedTx.utxRW)
+}
+
+@upickle.implicits.key("confirmed")
 final case class Transaction(
     hash: Transaction.Hash,
     blockHash: BlockEntry.Hash,
@@ -31,11 +43,25 @@ final case class Transaction(
     outputs: Seq[Output],
     startGas: Int,
     gasPrice: U256
-)
-
+) extends TransactionLike
 object Transaction {
   final class Hash(val value: explorer.Hash) extends AnyVal
   object Hash                                extends HashCompanion[explorer.Hash, Hash](explorer.Hash)(new Hash(_), _.value)
 
-  implicit val readWriter: ReadWriter[Transaction] = macroRW
+  implicit val txRW: ReadWriter[Transaction] = macroRW
+}
+
+@upickle.implicits.key("unconfirmed")
+final case class UnconfirmedTx(
+    hash: Transaction.Hash,
+    chainFrom: GroupIndex,
+    chainTo: GroupIndex,
+    inputs: Seq[UInput],
+    outputs: Seq[UOutput],
+    startGas: Int,
+    gasPrice: U256
+) extends TransactionLike
+
+object UnconfirmedTx {
+  implicit val utxRW: ReadWriter[UnconfirmedTx] = macroRW
 }

@@ -109,6 +109,5 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
       blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
     val blocksProtocol: Seq[model.BlockEntry] = blockflow.flatten
     val blockEntities: Seq[BlockEntity]       = blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
-    blockDao.createTables().futureValue
   }
 }

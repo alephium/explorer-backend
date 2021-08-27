@@ -28,13 +28,14 @@ import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.protocol.{model => protocol}
 import org.alephium.protocol.ALF
 import org.alephium.protocol.config.GroupConfig
-import org.alephium.util.{AVector, Base58, Duration, Number, TimeStamp, U256}
+import org.alephium.util.{AVector, Base58, Duration, Hex, Number, TimeStamp, U256}
 
 trait Generators {
 
   lazy val groupNum: Int                     = Gen.choose(2, 4).sample.get
   implicit lazy val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
 
+  lazy val u256Gen: Gen[U256]                        = Gen.posNum[Long].map(U256.unsafe)
   lazy val timestampGen: Gen[TimeStamp]              = Gen.posNum[Long].map(TimeStamp.unsafe)
   lazy val hashGen: Gen[Hash]                        = Gen.const(()).map(_ => Hash.generate)
   lazy val blockHashGen: Gen[BlockHash]              = Gen.const(()).map(_ => BlockHash.generate)
@@ -43,6 +44,38 @@ trait Generators {
   lazy val groupIndexGen: Gen[GroupIndex]            = Gen.posNum[Int].map(GroupIndex.unsafe(_))
   lazy val heightGen: Gen[Height]                    = Gen.posNum[Int].map(Height.unsafe(_))
   lazy val addressGen: Gen[Address]                  = hashGen.map(hash => Address.unsafe(Base58.encode(hash.bytes)))
+
+  lazy val uinputGen: Gen[UInput] = for {
+    outputRef    <- outputRefGen
+    unlockScript <- Gen.option(hashGen.map(_.bytes))
+  } yield UInput(outputRef, unlockScript.map(Hex.toHexString(_)))
+
+  def uoutputGen: Gen[UOutput] =
+    for {
+      amount   <- amountGen
+      address  <- addressGen
+      lockTime <- Gen.option(timestampGen)
+    } yield UOutput(amount, address, lockTime)
+
+  lazy val transactionGen: Gen[Transaction] =
+    for {
+      hash      <- transactionHashGen
+      blockHash <- blockEntryHashGen
+      timestamp <- timestampGen
+      startGas  <- Gen.posNum[Int]
+      gasPrice  <- u256Gen
+    } yield Transaction(hash, blockHash, timestamp, Seq.empty, Seq.empty, startGas, gasPrice)
+
+  lazy val utransactionGen: Gen[UnconfirmedTx] =
+    for {
+      hash      <- transactionHashGen
+      chainFrom <- groupIndexGen
+      chainTo   <- groupIndexGen
+      inputs    <- Gen.listOfN(3, uinputGen)
+      outputs   <- Gen.listOfN(3, uoutputGen)
+      startGas  <- Gen.posNum[Int]
+      gasPrice  <- u256Gen
+    } yield UnconfirmedTx(hash, chainFrom, chainTo, inputs, outputs, startGas, gasPrice)
 
   private def parentIndex(chainTo: GroupIndex) = groupNum - 1 + chainTo.value
 
@@ -62,6 +95,11 @@ trait Generators {
       i <- 0 to groupConfig.groups - 1
       j <- 0 to groupConfig.groups - 1
     } yield (GroupIndex.unsafe(i), GroupIndex.unsafe(j))
+
+  lazy val outputRefGen: Gen[Output.Ref] = for {
+    hint <- arbitrary[Int]
+    key  <- hashGen
+  } yield Output.Ref(hint, key)
 
   lazy val outputRefProtocolGen: Gen[protocolApi.OutputRef] = for {
     scriptHint <- arbitrary[Int]

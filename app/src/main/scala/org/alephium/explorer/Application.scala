@@ -26,7 +26,8 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
 import org.alephium.api.model.{ApiKey, PeerAddress, SelfClique}
-import org.alephium.explorer.persistence.dao.{BlockDao, HealthCheckDao, TransactionDao}
+import org.alephium.explorer.persistence.DBInitializer
+import org.alephium.explorer.persistence.dao._
 import org.alephium.explorer.service._
 import org.alephium.explorer.sideEffect
 import org.alephium.protocol.model.ChainId
@@ -45,9 +46,12 @@ class Application(host: String,
                                                         executionContext: ExecutionContext)
     extends StrictLogging {
 
-  val blockDao: BlockDao             = BlockDao(databaseConfig)
-  val transactionDao: TransactionDao = TransactionDao(databaseConfig)
-  val healthCheckDao: HealthCheckDao = HealthCheckDao(databaseConfig)
+  val dbInitializer: DBInitializer = DBInitializer(databaseConfig)
+
+  val blockDao: BlockDao                = BlockDao(databaseConfig)
+  val transactionDao: TransactionDao    = TransactionDao(databaseConfig)
+  val utransactionDao: UnconfirmedTxDao = UnconfirmedTxDao(databaseConfig)
+  val healthCheckDao: HealthCheckDao    = HealthCheckDao(databaseConfig)
 
   //Services
   val blockFlowClient: BlockFlowClient =
@@ -58,8 +62,11 @@ class Application(host: String,
                          syncPeriod = Duration.unsafe(15 * 1000),
                          blockFlowClient,
                          blockDao)
+
+  val mempoolSyncService: MempoolSyncService =
+    MempoolSyncService(syncPeriod = Duration.unsafe(15 * 1000), blockFlowClient, utransactionDao)
   val blockService: BlockService             = BlockService(blockDao)
-  val transactionService: TransactionService = TransactionService(transactionDao)
+  val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
 
   val server: AppServer =
     new AppServer(blockService, transactionService, blockflowFetchMaxAge)
@@ -77,14 +84,16 @@ class Application(host: String,
     for {
       selfClique <- blockFlowClient.fetchSelfClique()
       _          <- validateSelfClique(selfClique)
-      _          <- blockFlowSyncService.start(urisFromPeers(selfClique.toOption.get.nodes.toSeq))
+      peers = urisFromPeers(selfClique.toOption.get.nodes.toSeq)
+      _ <- blockFlowSyncService.start(peers)
+      _ <- mempoolSyncService.start(peers)
     } yield ()
   }
 
   def start: Future[Unit] = {
     for {
       _       <- healthCheckDao.healthCheck()
-      _       <- blockDao.createTables()
+      _       <- dbInitializer.createTables()
       _       <- if (readOnly) Future.successful(()) else startSyncService()
       binding <- Http().newServerAt(host, port).bindFlow(server.route)
     } yield {

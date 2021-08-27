@@ -16,26 +16,32 @@
 
 package org.alephium.explorer.service
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-import org.alephium.explorer.api.model.{Address, Pagination, Transaction}
-import org.alephium.explorer.persistence.dao.TransactionDao
+import org.alephium.explorer.api.model.{Address, Pagination, Transaction, TransactionLike}
+import org.alephium.explorer.persistence.dao.{TransactionDao, UnconfirmedTxDao}
 import org.alephium.util.U256
 
 trait TransactionService {
-  def getTransaction(transactionHash: Transaction.Hash): Future[Option[Transaction]]
+  def getTransaction(transactionHash: Transaction.Hash): Future[Option[TransactionLike]]
   def getTransactionsByAddress(address: Address, pagination: Pagination): Future[Seq[Transaction]]
   def getTransactionsNumberByAddress(address: Address): Future[Int]
   def getBalance(address: Address): Future[U256]
 }
 
 object TransactionService {
-  def apply(transactionDao: TransactionDao): TransactionService =
-    new Impl(transactionDao)
+  def apply(transactionDao: TransactionDao, utransactionDao: UnconfirmedTxDao)(
+      implicit executionContext: ExecutionContext): TransactionService =
+    new Impl(transactionDao, utransactionDao)
 
-  private class Impl(transactionDao: TransactionDao) extends TransactionService {
-    def getTransaction(transactionHash: Transaction.Hash): Future[Option[Transaction]] =
-      transactionDao.get(transactionHash)
+  private class Impl(transactionDao: TransactionDao, utransactionDao: UnconfirmedTxDao)(
+      implicit executionContext: ExecutionContext)
+      extends TransactionService {
+    def getTransaction(transactionHash: Transaction.Hash): Future[Option[TransactionLike]] =
+      transactionDao.get(transactionHash).flatMap {
+        case None     => utransactionDao.get(transactionHash)
+        case Some(tx) => Future.successful(Some(tx))
+      }
 
     def getTransactionsByAddress(address: Address,
                                  pagination: Pagination): Future[Seq[Transaction]] =

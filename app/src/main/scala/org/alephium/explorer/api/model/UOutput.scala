@@ -14,26 +14,20 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.api
+package org.alephium.explorer.api.model
 
-import sttp.tapir._
-import sttp.tapir.generic.auto._
+import org.alephium.api.UtilJson._
+import org.alephium.explorer.api.Json.u256ReadWriter
+import org.alephium.json.Json._
+import org.alephium.util.{TimeStamp, U256}
 
-import org.alephium.api.{alfJsonBody => jsonBody}
-import org.alephium.explorer.api.BaseEndpoint
-import org.alephium.explorer.api.Codecs.transactionHashTapirCodec
-import org.alephium.explorer.api.model.{Transaction, TransactionLike}
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+final case class UOutput(
+    amount: U256,
+    address: Address,
+    lockTime: Option[TimeStamp] = None
+)
 
-trait TransactionEndpoints extends BaseEndpoint {
-
-  private val transactionsEndpoint =
-    baseEndpoint
-      .tag("Transactions")
-      .in("transactions")
-
-  val getTransactionById: BaseEndpoint[Transaction.Hash, TransactionLike] =
-    transactionsEndpoint.get
-      .in(path[Transaction.Hash]("transaction-hash"))
-      .out(jsonBody[TransactionLike])
-      .description("Get a transaction with hash")
+object UOutput {
+  implicit val readWriter: ReadWriter[UOutput] = macroRW
 }

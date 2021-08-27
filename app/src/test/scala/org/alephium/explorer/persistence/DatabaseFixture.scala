@@ -16,12 +16,15 @@
 
 package org.alephium.explorer.persistence
 
+import scala.concurrent.{Await, ExecutionContext}
 import scala.jdk.CollectionConverters._
 import scala.util.Random
 
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
+
+import org.alephium.util.Duration
 
 trait DatabaseFixture {
 
@@ -34,4 +37,8 @@ trait DatabaseFixture {
 
   val databaseConfig: DatabaseConfig[JdbcProfile] =
     DatabaseConfig.forConfig[JdbcProfile]("db", config)
+
+  val dbInitializer: DBInitializer = new DBInitializer(databaseConfig)(ExecutionContext.global)
+
+  Await.result(dbInitializer.createTables(), Duration.ofSecondsUnsafe(10).asScala)
 }

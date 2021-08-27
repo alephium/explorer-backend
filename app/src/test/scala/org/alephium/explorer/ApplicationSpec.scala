@@ -111,6 +111,7 @@ trait ApplicationSpec
     app.start.futureValue
     //let it sync once
     eventually(app.blockFlowSyncService.stop().futureValue) is ()
+    eventually(app.mempoolSyncService.stop().futureValue) is ()
     ()
   }
 
@@ -385,6 +386,11 @@ object ApplicationSpec {
             }
           }
         } ~
+        path("transactions" / "unconfirmed") {
+          complete(
+            Seq.empty[model.UnconfirmedTransactions]
+          )
+        } ~
         path("infos" / "self-clique") {
           complete(SelfClique(cliqueId, chainId, 18, AVector(peer), true, true, groupNum, groupNum))
         }
@@ -403,8 +409,11 @@ class ReadOnlyApplicationSpec extends ApplicationSpec {
 
   override lazy val app: Application = createApp(true)
 
-  it should "not have started blockFlowSyncService" in {
+  it should "not have started syncing services" in {
     whenReady(app.blockFlowSyncService.stop().failed) { exception =>
+      exception is a[IllegalStateException]
+    }
+    whenReady(app.mempoolSyncService.stop().failed) { exception =>
       exception is a[IllegalStateException]
     }
   }
