@@ -122,11 +122,11 @@ object BlockDao {
 
     def insertAction(block: BlockEntity): DBActionRWT[Unit] =
       (for {
-        _ <- blockHeadersTable.insertOrUpdate(BlockHeader.fromEntity(block)).filter(_ > 0)
         _ <- DBIOAction.sequence(block.deps.zipWithIndex.map {
           case (dep, i) => blockDepsTable.insertOrUpdate((block.hash, dep, i))
         })
         _ <- insertTransactionFromBlockQuery(block)
+        _ <- blockHeadersTable.insertOrUpdate(BlockHeader.fromEntity(block)).filter(_ > 0)
       } yield ()).transactionally
 
     def insert(block: BlockEntity): Future[Unit] = {
