@@ -644,7 +644,7 @@
         "type": "object",
         "properties": {
           "balance": {
-            "type": "integer",
+            "type": "string",
             "format": "uint256"
           },
           "txNumber": {
@@ -685,7 +685,7 @@
             "type": "string"
           },
           "amount": {
-            "type": "integer",
+            "type": "string",
             "format": "uint256"
           }
         }
@@ -777,7 +777,7 @@
         "type": "object",
         "properties": {
           "amount": {
-            "type": "integer",
+            "type": "string",
             "format": "uint256"
           },
           "address": {
@@ -854,7 +854,7 @@
             "type": "integer"
           },
           "gasPrice": {
-            "type": "integer",
+            "type": "string",
             "format": "uint256"
           }
         }
@@ -891,7 +891,7 @@
         "type": "object",
         "properties": {
           "amount": {
-            "type": "integer",
+            "type": "string",
             "format": "uint256"
           },
           "address": {
@@ -949,7 +949,7 @@
             "type": "integer"
           },
           "gasPrice": {
-            "type": "integer",
+            "type": "string",
             "format": "uint256"
           }
         }

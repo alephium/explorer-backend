@@ -116,7 +116,12 @@ trait Generators {
       amount   <- amountGen
       lockTime <- timestampGen
       address  <- addressProtocolGen
-    } yield protocolApi.Output.Asset(amount, address, AVector.empty, lockTime, ByteString.empty)
+    } yield
+      protocolApi.Output.Asset(protocolApi.Amount(amount),
+                               address,
+                               AVector.empty,
+                               lockTime,
+                               ByteString.empty)
 
   def transactionProtocolGen: Gen[protocolApi.Tx] =
     for {

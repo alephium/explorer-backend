@@ -74,15 +74,15 @@ trait BlockFlowClient {
 }
 
 object BlockFlowClient {
-  def apply(address: Uri,
+  def apply(uri: Uri,
             groupNum: Int,
             blockflowFetchMaxAge: Duration,
             maybeApiKey: Option[api.model.ApiKey])(
       implicit executionContext: ExecutionContext
   ): BlockFlowClient =
-    new Impl(address, groupNum, blockflowFetchMaxAge, maybeApiKey)
+    new Impl(uri, groupNum, blockflowFetchMaxAge, maybeApiKey)
 
-  private class Impl(address: Uri,
+  private class Impl(uri: Uri,
                      groupNum: Int,
                      val blockflowFetchMaxAge: Duration,
                      val maybeApiKey: Option[api.model.ApiKey])(
@@ -121,15 +121,13 @@ object BlockFlowClient {
 
     def fetchChainInfo(fromGroup: GroupIndex,
                        toGroup: GroupIndex): Future[Either[String, ChainInfo]] = {
-      _send(getChainInfo, address, protocol.model.ChainIndex(fromGroup, toGroup))
+      _send(getChainInfo, uri, protocol.model.ChainIndex(fromGroup, toGroup))
     }
 
     def fetchHashesAtHeight(fromGroup: GroupIndex,
                             toGroup: GroupIndex,
                             height: Height): Future[Either[String, HashesAtHeight]] =
-      _send(getHashesAtHeight,
-            address,
-            (protocol.model.ChainIndex(fromGroup, toGroup), height.value))
+      _send(getHashesAtHeight, uri, (protocol.model.ChainIndex(fromGroup, toGroup), height.value))
 
     def fetchBlocks(fromTs: TimeStamp,
                     toTs: TimeStamp,
@@ -151,7 +149,7 @@ object BlockFlowClient {
         })
 
     def fetchSelfClique(): Future[Either[String, SelfClique]] =
-      _send(getSelfClique, address, ())
+      _send(getSelfClique, uri, ())
 
     private def selfCliqueIndex(selfClique: SelfClique,
                                 group: GroupIndex): Either[String, (InetAddress, Int)] = {
@@ -252,7 +250,7 @@ object BlockFlowClient {
       case _                                                          => None
     }
     UOutput(
-      output.amount,
+      output.amount.value,
       new Address(output.address.toBase58),
       lockTime
     )
@@ -271,7 +269,7 @@ object BlockFlowClient {
     OutputEntity(
       blockHash,
       new Transaction.Hash(txId),
-      output.amount,
+      output.amount.value,
       new Address(output.address.toBase58),
       protocol.model.TxOutputRef.key(txId, index),
       timestamp,
