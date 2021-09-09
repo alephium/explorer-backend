@@ -380,7 +380,7 @@ object ApplicationSpec {
             }
           }
         } ~
-        path("blockflow" / "chains") {
+        path("blockflow" / "chain-info") {
           parameters("fromGroup".as[Int]) { from =>
             parameters("toGroup".as[Int]) { to =>
               get {
