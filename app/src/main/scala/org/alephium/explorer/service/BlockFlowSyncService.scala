@@ -80,6 +80,12 @@ object BlockFlowSyncService {
     private var initDone    = false
     private var startedOnce = false
 
+    // scalastyle:off magic.number
+    private val defaultStep     = Duration.ofMinutesUnsafe(30L)
+    private val defaultBackStep = Duration.ofSecondsUnsafe(10L)
+    private val initialBackStep = Duration.ofMinutesUnsafe(30L)
+    // scalastyle:on magic.number
+
     var nodeUris: Seq[Uri] = Seq.empty
 
     def start(newUris: Seq[Uri]): Future[Unit] = {
@@ -106,13 +112,13 @@ object BlockFlowSyncService {
            if (initialized) {
              logger.debug("Init done")
              initDone = true
-             syncOnce()
+             syncOnce(defaultStep, initialBackStep)
            } else {
              Future.successful(())
            }
          }
        } else {
-         syncOnce()
+         syncOnce(defaultStep, defaultBackStep)
        }).onComplete {
         case Success(_) =>
           continue()
@@ -130,12 +136,12 @@ object BlockFlowSyncService {
       }
     }
 
-    private def syncOnce(): Future[Unit] = {
+    private def syncOnce(step: Duration, backStep: Duration): Future[Unit] = {
       logger.debug("Start syncing")
       val startedAt  = TimeStamp.now()
       var downloaded = 0
 
-      getTimeStampRange()
+      getTimeStampRange(step, backStep)
         .flatMap {
           case (ranges, nbOfBlocksToDownloads) =>
             logger.debug(s"Downloading $nbOfBlocksToDownloads blocks")
@@ -205,7 +211,9 @@ object BlockFlowSyncService {
         .map(_.contains(true))
     }
 
-    private def getTimeStampRange(): Future[(Seq[(TimeStamp, TimeStamp)], Int)] = {
+    private def getTimeStampRange(
+        step: Duration,
+        backStep: Duration): Future[(Seq[(TimeStamp, TimeStamp)], Int)] = {
       for {
         localTs  <- getLocalMaxTimestamp()
         remoteTs <- getRemoteMaxTimestamp()
@@ -222,10 +230,7 @@ object BlockFlowSyncService {
             logger.error("max remote ts can't be before local one")
             sys.exit(0)
           } else {
-            // scalastyle:off magic.number
-            val step = Duration.ofMinutesUnsafe(30L)
-            // scalastyle:on magic.number
-            (buildTimestampRange(localTs.minusUnsafe(step), remoteTs, step),
+            (buildTimestampRange(localTs.minusUnsafe(backStep), remoteTs, step),
              remoteNbOfBlocks - localNbOfBlocks)
           }
         }) match {
