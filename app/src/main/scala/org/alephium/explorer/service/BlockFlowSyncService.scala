@@ -83,9 +83,9 @@ object BlockFlowSyncService {
     var nodeUris: Seq[Uri] = Seq.empty
 
     def start(newUris: Seq[Uri]): Future[Unit] = {
+      startedOnce = true
+      nodeUris    = newUris
       Future.successful {
-        startedOnce = true
-        nodeUris    = newUris
         sync()
       }
     }
@@ -225,9 +225,9 @@ object BlockFlowSyncService {
             // scalastyle:off magic.number
             val step = Duration.ofMinutesUnsafe(30L)
             // scalastyle:on magic.number
-            (buildTimestampRange(localTs, remoteTs, step), remoteNbOfBlocks - localNbOfBlocks)
+            (buildTimestampRange(localTs.minusUnsafe(step), remoteTs, step),
+             remoteNbOfBlocks - localNbOfBlocks)
           }
-
         }) match {
           case None      => (Seq.empty, 0)
           case Some(res) => res
