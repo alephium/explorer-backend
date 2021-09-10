@@ -97,7 +97,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
     //                                           +---+     +---+   +---+
     //    0       1        2       3       4       5         6       7      8
 
-    val block0  = blockEntity(None)
+    val block0  = blockEntity(None).copy(timestamp = TimeStamp.now())
     val block1  = blockEntity(Some(block0))
     val block2  = blockEntity(Some(block1))
     val block3  = blockEntity(Some(block1))
