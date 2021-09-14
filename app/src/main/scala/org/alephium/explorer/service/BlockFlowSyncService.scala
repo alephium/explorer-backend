@@ -55,7 +55,7 @@ trait BlockFlowSyncService {
 }
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.TraversableOps"))
-object BlockFlowSyncService {
+object BlockFlowSyncService extends StrictLogging {
   def apply(groupNum: Int,
             syncPeriod: Duration,
             blockFlowClient: BlockFlowClient,
@@ -66,8 +66,7 @@ object BlockFlowSyncService {
                      syncPeriod: Duration,
                      blockFlowClient: BlockFlowClient,
                      blockDao: BlockDao)(implicit executionContext: ExecutionContext)
-      extends BlockFlowSyncService
-      with StrictLogging {
+      extends BlockFlowSyncService {
 
     private val chainIndexes: Seq[(GroupIndex, GroupIndex)] = for {
       i <- 0 to groupNum - 1
@@ -79,6 +78,12 @@ object BlockFlowSyncService {
 
     private var initDone    = false
     private var startedOnce = false
+
+    // scalastyle:off magic.number
+    private val defaultStep     = Duration.ofMinutesUnsafe(30L)
+    private val defaultBackStep = Duration.ofSecondsUnsafe(10L)
+    private val initialBackStep = Duration.ofMinutesUnsafe(30L)
+    // scalastyle:on magic.number
 
     var nodeUris: Seq[Uri] = Seq.empty
 
@@ -106,13 +111,13 @@ object BlockFlowSyncService {
            if (initialized) {
              logger.debug("Init done")
              initDone = true
-             syncOnce()
+             syncOnce(defaultStep, initialBackStep)
            } else {
              Future.successful(())
            }
          }
        } else {
-         syncOnce()
+         syncOnce(defaultStep, defaultBackStep)
        }).onComplete {
         case Success(_) =>
           continue()
@@ -130,12 +135,12 @@ object BlockFlowSyncService {
       }
     }
 
-    private def syncOnce(): Future[Unit] = {
+    private def syncOnce(step: Duration, backStep: Duration): Future[Unit] = {
       logger.debug("Start syncing")
       val startedAt  = TimeStamp.now()
       var downloaded = 0
 
-      getTimeStampRange()
+      getTimeStampRange(step, backStep)
         .flatMap {
           case (ranges, nbOfBlocksToDownloads) =>
             logger.debug(s"Downloading $nbOfBlocksToDownloads blocks")
@@ -205,34 +210,10 @@ object BlockFlowSyncService {
         .map(_.contains(true))
     }
 
-    private def getTimeStampRange(): Future[(Seq[(TimeStamp, TimeStamp)], Int)] = {
-      for {
-        localTs  <- getLocalMaxTimestamp()
-        remoteTs <- getRemoteMaxTimestamp()
-      } yield {
-        (for {
-          (localTs, localNbOfBlocks) <- localTs.map {
-            case (ts, nb) => (ts.plusMillisUnsafe(1), nb)
-          }
-          (remoteTs, remoteNbOfBlocks) <- remoteTs.map {
-            case (ts, nb) => (ts.plusMillisUnsafe(1), nb)
-          }
-        } yield {
-          if (remoteTs.isBefore(localTs)) {
-            logger.error("max remote ts can't be before local one")
-            sys.exit(0)
-          } else {
-            // scalastyle:off magic.number
-            val step = Duration.ofMinutesUnsafe(30L)
-            // scalastyle:on magic.number
-            (buildTimestampRange(localTs.minusUnsafe(step), remoteTs, step),
-             remoteNbOfBlocks - localNbOfBlocks)
-          }
-        }) match {
-          case None      => (Seq.empty, 0)
-          case Some(res) => res
-        }
-      }
+    private def getTimeStampRange(
+        step: Duration,
+        backStep: Duration): Future[(Seq[(TimeStamp, TimeStamp)], Int)] = {
+      fetchAndBuildTimeStampRange(step, backStep, getLocalMaxTimestamp(), getRemoteMaxTimestamp())
     }
 
     private def getLocalMaxTimestamp(): Future[Option[(TimeStamp, Int)]] = {
@@ -384,6 +365,38 @@ object BlockFlowSyncService {
       Seq.empty
     } else {
       rec(localTs, Seq.empty)
+    }
+  }
+
+  def fetchAndBuildTimeStampRange(
+      step: Duration,
+      backStep: Duration,
+      fetchLocalTs:  => Future[Option[(TimeStamp, Int)]],
+      fetchRemoteTs: => Future[Option[(TimeStamp, Int)]]
+  )(implicit executionContext: ExecutionContext): Future[(Seq[(TimeStamp, TimeStamp)], Int)] = {
+    for {
+      localTs  <- fetchLocalTs
+      remoteTs <- fetchRemoteTs
+    } yield {
+      (for {
+        (localTs, localNbOfBlocks) <- localTs.map {
+          case (ts, nb) => (ts.plusMillisUnsafe(1), nb)
+        }
+        (remoteTs, remoteNbOfBlocks) <- remoteTs.map {
+          case (ts, nb) => (ts.plusMillisUnsafe(1), nb)
+        }
+      } yield {
+        if (remoteTs.isBefore(localTs)) {
+          logger.error("max remote ts can't be before local one")
+          sys.exit(0)
+        } else {
+          (buildTimestampRange(localTs.minusUnsafe(backStep), remoteTs, step),
+           remoteNbOfBlocks - localNbOfBlocks)
+        }
+      }) match {
+        case None      => (Seq.empty, 0)
+        case Some(res) => res
+      }
     }
   }
 }

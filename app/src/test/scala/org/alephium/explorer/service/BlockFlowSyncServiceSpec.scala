@@ -36,9 +36,6 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
 
   it should "build timestamp range" in new Fixture {
-    def t(l: Long)            = TimeStamp.unsafe(l)
-    def s(l: Long)            = Duration.ofMillisUnsafe(l)
-    def r(l1: Long, l2: Long) = (t(l1), t(l2))
 
     BlockFlowSyncService.buildTimestampRange(t(0), t(5), s(1)) is
       Seq(r(0, 1), r(2, 3), r(4, 5))
@@ -62,6 +59,23 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
       Seq.empty
   }
 
+  it should "fetch and build timestamp range" in new Fixture {
+
+    def th(ts: TimeStamp, height: Int) = Future.successful(Option((ts, height)))
+
+    BlockFlowSyncService
+      .fetchAndBuildTimeStampRange(s(10), s(5), th(t(20), 5), th(t(40), 8))
+      .futureValue is ((Seq(r(16, 26), r(27, 37), r(38, 41)), 3))
+
+    BlockFlowSyncService
+      .fetchAndBuildTimeStampRange(s(10), s(5), Future.successful(None), th(t(40), 8))
+      .futureValue is ((Seq.empty, 0))
+
+    BlockFlowSyncService
+      .fetchAndBuildTimeStampRange(s(10), s(5), th(t(20), 5), Future.successful(None))
+      .futureValue is ((Seq.empty, 0))
+  }
+
   it should "start/sync/stop" in new Fixture {
     val blockFlowSyncService =
       BlockFlowSyncService(groupNum, syncPeriod = Duration.unsafe(100), blockFlowClient, blockDao)
@@ -78,6 +92,11 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
   }
 
   trait Fixture extends DatabaseFixture with Generators {
+
+    def t(l: Long)            = TimeStamp.unsafe(l)
+    def s(l: Long)            = Duration.ofMillisUnsafe(l)
+    def r(l1: Long, l2: Long) = (t(l1), t(l2))
+
     implicit val executionContext: ExecutionContext = ExecutionContext.global
 
     def blockEntity(parent: Option[BlockEntity],
