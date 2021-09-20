@@ -19,7 +19,13 @@ package org.alephium.explorer.web
 import akka.http.scaladsl.server.Route
 import sttp.tapir.server.akkahttp.{AkkaHttpServerInterpreter, AkkaHttpServerOptions}
 
+import org.alephium.explorer.Metrics
+
 trait Server extends AkkaHttpServerInterpreter with AkkaDecodeFailureHandler {
-  override def akkaHttpServerOptions: AkkaHttpServerOptions = serverOptions
+  override def akkaHttpServerOptions: AkkaHttpServerOptions =
+    AkkaHttpServerOptions.customInterceptors(
+      decodeFailureHandler = decodeFailureHandler,
+      metricsInterceptor   = Some(Metrics.prometheus.metricsInterceptor())
+    )
   def route: Route
 }

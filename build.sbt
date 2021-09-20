@@ -93,7 +93,9 @@ lazy val app = mainProject("app")
       slick,
       slickHikaricp,
       postgresql,
-      h2
+      h2,
+      prometheusSimpleClient,
+      tapirPrometheusMetrics,
     ))
   .settings(
     mainClass in assembly := Some("org.alephium.explorer.Main"),
