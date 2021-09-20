@@ -65,6 +65,7 @@ object Dependencies {
   lazy val h2            = "com.h2database"     % "h2"              % "1.4.200"
   lazy val slickHikaricp = "com.typesafe.slick" %% "slick-hikaricp" % Version.slick
 
-  lazy val prometheusSimpleClient = "io.prometheus"               % "simpleclient"              % Version.prometheus
-  lazy val tapirPrometheusMetrics = "com.softwaremill.sttp.tapir" %% "tapir-prometheus-metrics" % Version.tapir
+  lazy val prometheusSimpleClient        = "io.prometheus"               % "simpleclient"              % Version.prometheus
+  lazy val prometheusSimpleClientHotspot = "io.prometheus"               % "simpleclient_hotspot"      % Version.prometheus
+  lazy val tapirPrometheusMetrics        = "com.softwaremill.sttp.tapir" %% "tapir-prometheus-metrics" % Version.tapir
 }

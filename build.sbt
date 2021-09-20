@@ -95,6 +95,7 @@ lazy val app = mainProject("app")
       postgresql,
       h2,
       prometheusSimpleClient,
+      prometheusSimpleClientHotspot,
       tapirPrometheusMetrics,
     ))
   .settings(

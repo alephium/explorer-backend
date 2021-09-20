@@ -23,6 +23,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.StrictLogging
+import io.prometheus.client.hotspot.DefaultExports
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
@@ -36,6 +37,8 @@ object Main extends App with StrictLogging {
 
   logger.info("Starting Application")
   logger.info(s"Build info: ${BuildInfo}")
+
+  DefaultExports.initialize()
 
   implicit val system: ActorSystem                = ActorSystem("Explorer")
   implicit val executionContext: ExecutionContext = system.dispatcher
