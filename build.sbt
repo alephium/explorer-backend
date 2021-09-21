@@ -97,6 +97,8 @@ lazy val app = mainProject("app")
       prometheusSimpleClient,
       prometheusSimpleClientHotspot,
       tapirPrometheusMetrics,
+      micrometerCore,
+      micrometerPrometheus,
     ))
   .settings(
     mainClass in assembly := Some("org.alephium.explorer.Main"),
