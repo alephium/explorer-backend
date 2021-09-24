@@ -20,20 +20,20 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.model.Uri
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Minutes, Span}
+import org.scalatest.time.{Seconds, Span}
 
 import org.alephium.api.model.{ChainInfo, HashesAtHeight, SelfClique}
-import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.{AlephiumSpec, BlockHash, Generators}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.protocol.model.{CliqueId, NetworkId}
-import org.alephium.util.{AVector, Duration, TimeStamp}
+import org.alephium.util.{AVector, Duration, Hex, TimeStamp}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
 class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Eventually {
-  override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
+  override implicit val patienceConfig = PatienceConfig(timeout = Span(50, Seconds))
 
   it should "build timestamp range" in new Fixture {
 
@@ -78,12 +78,43 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
 
   it should "start/sync/stop" in new Fixture {
     val blockFlowSyncService =
-      BlockFlowSyncService(groupNum, syncPeriod = Duration.unsafe(100), blockFlowClient, blockDao)
+      BlockFlowSyncService(groupNum, syncPeriod = Duration.unsafe(1000), blockFlowClient, blockDao)
 
     checkBlocks(Seq.empty)
 
     blockFlowSyncService.start(Seq("")).futureValue is ()
 
+    chainOToO = Seq(block0, block1, block2)
+    eventually(checkMainChain(Seq(block0.hash, block1.hash, block2.hash)))
+
+    chainOToO = Seq(block0, block1, block3, block4)
+    eventually(checkMainChain(Seq(block0.hash, block1.hash, block3.hash, block4.hash)))
+
+    chainOToO = Seq(block0, block1, block3, block4, block5, block7, block8, block14)
+    eventually(
+      checkMainChain(
+        Seq(block0.hash,
+            block1.hash,
+            block3.hash,
+            block4.hash,
+            block5.hash,
+            block7.hash,
+            block8.hash,
+            block14.hash)))
+
+    chainOToO = Seq(block0, block1, block3, block4, block5, block6, block10, block12)
+    eventually(
+      checkMainChain(
+        Seq(block0.hash,
+            block1.hash,
+            block3.hash,
+            block4.hash,
+            block5.hash,
+            block6.hash,
+            block10.hash,
+            block12.hash)))
+
+    chainOToO = Seq(block0, block1, block3, block4, block5, block6, block9, block11, block13)
     eventually(checkMainChain(mainChain))
 
     blockFlowSyncService.stop().futureValue is ()
@@ -116,21 +147,39 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
     //                                           +---+     +---+   +---+
     //    0       1        2       3       4       5         6       7      8
 
-    val block0  = blockEntity(None).copy(timestamp = TimeStamp.now())
-    val block1  = blockEntity(Some(block0))
-    val block2  = blockEntity(Some(block1))
-    val block3  = blockEntity(Some(block1))
-    val block4  = blockEntity(Some(block3))
-    val block5  = blockEntity(Some(block4))
-    val block6  = blockEntity(Some(block5))
-    val block7  = blockEntity(Some(block5))
-    val block8  = blockEntity(Some(block7))
-    val block9  = blockEntity(Some(block6))
+    def h(str: String) = new BlockEntry.Hash(BlockHash.unsafe(Hex.unsafe(str)))
+
+    val block0 = blockEntity(None)
+      .copy(timestamp = TimeStamp.now())
+      .copy(hash = h("0000000000000000000000000000000000000000000000000000000000000000"))
+    val block1 = blockEntity(Some(block0))
+      .copy(hash = h("1111111111111111111111111111111111111111111111111111111111111111"))
+    val block2 = blockEntity(Some(block1))
+      .copy(hash = h("2222222222222222222222222222222222222222222222222222222222222222"))
+    val block3 = blockEntity(Some(block1))
+      .copy(hash = h("3333333333333333333333333333333333333333333333333333333333333333"))
+    val block4 = blockEntity(Some(block3))
+      .copy(hash = h("4444444444444444444444444444444444444444444444444444444444444444"))
+    val block5 = blockEntity(Some(block4))
+      .copy(hash = h("5555555555555555555555555555555555555555555555555555555555555555"))
+    val block6 = blockEntity(Some(block5))
+      .copy(hash = h("6666666666666666666666666666666666666666666666666666666666666666"))
+    val block7 = blockEntity(Some(block5))
+      .copy(hash = h("7777777777777777777777777777777777777777777777777777777777777777"))
+    val block8 = blockEntity(Some(block7))
+      .copy(hash = h("8888888888888888888888888888888888888888888888888888888888888888"))
+    val block9 = blockEntity(Some(block6))
+      .copy(hash = h("9999999999999999999999999999999999999999999999999999999999999999"))
     val block10 = blockEntity(Some(block6))
+      .copy(hash = h("1010101010101010101010101010101010101010101010101010101010101010"))
     val block11 = blockEntity(Some(block9))
+      .copy(hash = h("1101101101101101101101101101101101101101101101101101101101101100"))
     val block12 = blockEntity(Some(block10))
+      .copy(hash = h("1212121212121212121212121212121212121212121212121212121212121212"))
     val block13 = blockEntity(Some(block11))
+      .copy(hash = h("1313131313131313131313131313131313131313131313131313131313131313"))
     val block14 = blockEntity(Some(block8))
+      .copy(hash = h("1414141414141414141414141414141414141414141414141414141414141414"))
 
     val mainChain = Seq(
       block0.hash,
@@ -145,7 +194,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
     )
 
     // format: off
-    val chainOToO = Seq(block0, block1, block2, block3, block4, block5, block6, block7, block8, block9, block10, block11, block12, block13, block14)
+    var chainOToO = Seq(block0, block1, block2, block3, block4, block5, block6, block7, block8, block9, block10, block11, block12, block13, block14)
     // format: on
 
     val chains = chainIndexes.map {

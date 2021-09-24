@@ -162,7 +162,7 @@ trait Generators {
         .map(p => entry.deps.replace(parentIndex(chainTo), p.hash.value))
         .getOrElse(AVector.empty)
       val height    = Height.unsafe(parent.map(_.height.value + 1).getOrElse(0))
-      val timestamp = parent.map(_.timestamp.plusSecondsUnsafe(1)).getOrElse(TimeStamp.zero)
+      val timestamp = parent.map(_.timestamp.plusHoursUnsafe(1)).getOrElse(TimeStamp.zero)
       BlockFlowClient.blockProtocolToEntity(
         entry
           .copy(chainFrom = chainFrom.value,

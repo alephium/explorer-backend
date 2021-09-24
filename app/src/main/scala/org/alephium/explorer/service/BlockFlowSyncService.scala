@@ -175,10 +175,8 @@ object BlockFlowSyncService extends StrictLogging {
           Future
             .sequence(multiChain.map { blocks =>
               if (blocks.nonEmpty) {
-                val (blocksToInsert, bestBlock) = prepareBlocksForInsertion(blocks)
                 for {
-                  _ <- blockDao.insertAll(blocksToInsert)
-                  _ <- updateMainChain(bestBlock.hash, bestBlock.chainFrom, bestBlock.chainTo)
+                  _ <- foldFutures(blocks)(insert)
                 } yield (blocks.size)
               } else {
                 Future.successful(0)
@@ -281,11 +279,10 @@ object BlockFlowSyncService extends StrictLogging {
         .fetchBlocksAtHeight(fromGroup, toGroup, height)
         .flatMap {
           case Right(blocks) if blocks.nonEmpty =>
-            val bestBlock = blocks.last
+            val bestBlock = blocks.head // First block is the main chain one
             for {
-              _ <- blockDao.insertAll(blocks)
-              _ <- updateMainChain(bestBlock.hash, bestBlock.chainFrom, bestBlock.chainTo)
-            } yield Some(blocks)
+              _ <- insert(bestBlock)
+            } yield Some(Seq(bestBlock))
           case Right(_) => Future.successful(None)
           case Left(errors) =>
             errors.foreach(logger.error(_))
@@ -298,45 +295,44 @@ object BlockFlowSyncService extends StrictLogging {
                                 chainTo: GroupIndex): Future[Unit] = {
       blockDao.updateMainChain(hash, chainFrom, chainTo, groupNum).flatMap {
         case None          => Future.successful(())
-        case Some(missing) => handleMissingMainChainBlock(missing, chainFrom, chainTo)
+        case Some(missing) => handleMissingMainChainBlock(missing, chainFrom)
+      }
+    }
+
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+    private def insert(block: BlockEntity): Future[Unit] = {
+      (block.parent(groupNum) match {
+        case Some(parent) =>
+          //We make sure the parent is inserted before inserting the block
+          blockDao
+            .get(parent)
+            .flatMap {
+              case None =>
+                handleMissingMainChainBlock(parent, block.chainFrom)
+              case Some(parentBlock) if !parentBlock.mainChain =>
+                logger.debug(s"Parent $parent exist but is not mainChain")
+                assert(
+                  block.chainFrom == parentBlock.chainFrom && block.chainTo == parentBlock.chainTo)
+                updateMainChain(parentBlock.hash, block.chainFrom, block.chainTo)
+              case Some(_) => Future.successful(())
+            }
+        case None if block.height.value == 0 => Future.successful(())
+        case None                            => Future.successful(logger.error(s"${block.hash} doesn't have a parent"))
+      }).flatMap { _ =>
+        for {
+          _ <- blockDao.insert(block)
+          _ <- blockDao.updateMainChain(block.hash, block.chainFrom, block.chainTo, groupNum)
+        } yield (())
       }
     }
 
     private def handleMissingMainChainBlock(missing: BlockEntry.Hash,
-                                            chainFrom: GroupIndex,
-                                            chainTo: GroupIndex): Future[Unit] = {
+                                            chainFrom: GroupIndex): Future[Unit] = {
       logger.debug(s"Downloading missing block $missing")
       blockFlowClient.fetchBlock(chainFrom, missing).flatMap {
         case Left(error) => Future.successful(logger.error(error))
         case Right(block) =>
-          assert(block.chainFrom == chainFrom && block.chainTo == chainTo)
-          blockDao.insert(block).flatMap(_ => updateMainChain(block.hash, chainFrom, chainTo))
-      }
-    }
-
-    private def prepareBlocksForInsertion(
-        blocks: Seq[BlockEntity]): (Seq[BlockEntity], BlockEntity) = {
-      assert(blocks.nonEmpty)
-
-      @tailrec
-      def isContinuous(bs: Seq[BlockEntity]): Boolean = {
-        if (bs.length <= 1) {
-          true
-        } else {
-          if (bs.head.parent(groupNum) == Some(bs.tail.head.hash)) {
-            isContinuous(bs.tail)
-          } else {
-            logger.debug("Blocks aren't continuous, can't insert it as a main chain")
-            false
-          }
-        }
-      }
-
-      if (isContinuous(blocks.reverse)) {
-        (blocks.map(_.updateMainChain(true)), blocks.head)
-      } else {
-        // contains reorg, play it safe. mainChain already set at false
-        (blocks, blocks.last)
+          insert(block)
       }
     }
 
