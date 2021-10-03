@@ -113,8 +113,7 @@ object BlockFlowClient {
         case Right(selfClique) =>
           selfCliqueIndex(selfClique, fromGroup) match {
             case Left(error) => Future.successful(Left(error))
-            case Right((nodeAddress, restPort)) =>
-              val uri = s"http://${nodeAddress.getHostAddress}:${restPort}"
+            case Right(_) =>
               _send(getBlock, uri, hash.value).map(_.map(blockProtocolToEntity))
           }
       }
