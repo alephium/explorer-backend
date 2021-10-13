@@ -30,7 +30,10 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.protocol.ALF
 import org.alephium.util.{TimeStamp, U256}
 
-@SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
+@SuppressWarnings(
+  Array("org.wartremover.warts.Var",
+        "org.wartremover.warts.DefaultArguments",
+        "org.wartremover.warts.AsInstanceOf"))
 class TransactionServiceSpec
     extends AlephiumSpec
     with Generators
@@ -104,7 +107,8 @@ class TransactionServiceSpec
       ts0,
       gasAmount,
       gasPrice,
-      0
+      0,
+      true
     )
 
     val output0 =
@@ -133,7 +137,8 @@ class TransactionServiceSpec
       ts1,
       gasAmount1,
       gasPrice1,
-      0
+      0,
+      true
     )
     val input1 = InputEntity(blockHash1,
                              tx1.hash,
@@ -192,6 +197,71 @@ class TransactionServiceSpec
       transactionService.getTransactionsByAddress(address0, Pagination.unsafe(0, 5)).futureValue
 
     res is Seq(t1, t0)
+  }
+
+  it should "get only main chain transaction for an address in case of tx in two blocks (in case of reorg)" in new Fixture {
+
+    forAll(blockEntryHashGen, blockEntryHashGen) {
+      case (blockHash0, blockHash1) =>
+        val address0 = addressGen.sample.get
+
+        val ts0 = TimeStamp.unsafe(0)
+
+        val tx = TransactionEntity(
+          transactionHashGen.sample.get,
+          blockHash0,
+          ts0,
+          Gen.posNum[Int].sample.get,
+          amountGen.sample.get,
+          0,
+          true
+        )
+
+        val output0 =
+          OutputEntity(blockHash0, tx.hash, U256.One, address0, hashGen.sample.get, ts0, true, None)
+
+        val block0 = BlockEntity(
+          hash         = blockHash0,
+          timestamp    = ts0,
+          chainFrom    = groupIndex,
+          chainTo      = groupIndex,
+          height       = Height.unsafe(0),
+          deps         = Seq.empty,
+          transactions = Seq(tx),
+          inputs       = Seq.empty,
+          outputs      = Seq(output0),
+          true
+        )
+
+        val ts1 = TimeStamp.unsafe(1)
+        val block1 = block0.copy(
+          hash      = blockHash1,
+          timestamp = ts1,
+          transactions = block0.transactions.map(
+            _.copy(blockHash = blockHash1, timestamp = ts1, mainChain = false)),
+          inputs =
+            block0.inputs.map(_.copy(blockHash = blockHash1, timestamp = ts1, mainChain = false)),
+          outputs =
+            block0.outputs.map(_.copy(blockHash = blockHash1, timestamp = ts1, mainChain = false)),
+          mainChain = false
+        )
+
+        val blocks = Seq(block0, block1)
+
+        Future.sequence(blocks.map(blockDao.insert)).futureValue
+
+        transactionService
+          .getTransactionsByAddress(address0, Pagination.unsafe(0, 5))
+          .futureValue
+          .size is 1 // was 2 in fb7127f
+
+        transactionService
+          .getTransaction(tx.hash)
+          .futureValue
+          .get
+          .asInstanceOf[Transaction]
+          .blockHash is blockHash0 // was sometime blockHash1 in fb7127f
+    }
   }
 
   it should "fall back on unconfirmed tx" in new Fixture {

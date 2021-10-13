@@ -21,7 +21,7 @@ import org.alephium.explorer.api.model.{BlockEntry, Input, Output, Transaction}
 import org.alephium.util.TimeStamp
 
 final case class InputEntity(
-    bockHash: BlockEntry.Hash,
+    blockHash: BlockEntry.Hash,
     txHash: Transaction.Hash,
     timestamp: TimeStamp,
     scriptHint: Int,

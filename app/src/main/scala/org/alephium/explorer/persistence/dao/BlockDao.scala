@@ -217,6 +217,10 @@ object BlockDao {
                                             isMainChain: Boolean): DBActionRWT[Unit] = {
       val query =
         for {
+          _ <- transactionsTable
+            .filter(_.blockHash === hash)
+            .map(_.mainChain)
+            .update(isMainChain)
           _ <- outputsTable
             .filter(_.blockHash === hash)
             .map(_.mainChain)

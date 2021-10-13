@@ -40,6 +40,10 @@ trait TransactionQueries
   val config: DatabaseConfig[JdbcProfile]
   import config.profile.api._
 
+  private val mainTransactions = transactionsTable.filter(_.mainChain)
+  private val mainInputs       = inputsTable.filter(_.mainChain)
+  private val mainOutputs      = outputsTable.filter(_.mainChain)
+
   def insertTransactionFromBlockQuery(blockEntity: BlockEntity): DBActionW[Unit] = {
     for {
       _ <- DBIOAction.sequence(blockEntity.transactions.map(transactionsTable.insertOrUpdate))
@@ -63,7 +67,7 @@ trait TransactionQueries
     getTxNumberByAddressQuery(address).result
 
   private val getTransactionQuery = Compiled { txHash: Rep[Transaction.Hash] =>
-    transactionsTable
+    mainTransactions
       .filter(_.hash === txHash)
       .map(tx => (tx.blockHash, tx.timestamp, tx.gasAmount, tx.gasPrice))
   }
@@ -74,9 +78,6 @@ trait TransactionQueries
       case Some((blockHash, timestamp, gasAmount, gasPrice)) =>
         getKnownTransactionAction(txHash, blockHash, timestamp, gasAmount, gasPrice).map(Some.apply)
     }
-
-  private val mainInputs  = inputsTable.filter(_.mainChain)
-  private val mainOutputs = outputsTable.filter(_.mainChain)
 
   private val getTxHashesByBlockHashQuery = Compiled { (blockHash: Rep[BlockEntry.Hash]) =>
     transactionsTable
@@ -116,13 +117,13 @@ trait TransactionQueries
         .on(_.outputRefKey === _.key)
         .filter(_._2.address === address)
         .map { case (input, _) => input.txHash }
-        .join(transactionsTable)
+        .join(mainTransactions)
         .on(_ === _.hash)
         .union(
           mainOutputs
             .filter(_.address === address)
             .map(out => out.txHash)
-            .join(transactionsTable)
+            .join(mainTransactions)
             .on(_ === _.hash)
         )
         .sortBy { case (_, tx) => (tx.timestamp.desc, tx.txIndex) }
@@ -218,7 +219,7 @@ trait TransactionQueries
   }
 
   private def gasFromTxs(txHashes: Seq[Transaction.Hash]) = {
-    transactionsTable.filter(_.hash inSet txHashes).map(tx => (tx.hash, tx.gasAmount, tx.gasPrice))
+    mainTransactions.filter(_.hash inSet txHashes).map(tx => (tx.hash, tx.gasAmount, tx.gasPrice))
   }
 
   private val getInputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>

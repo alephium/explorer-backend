@@ -34,9 +34,10 @@ final case class BlockEntity(
 ) extends FlowEntity {
   def updateMainChain(newMainChain: Boolean): BlockEntity = {
     this.copy(
-      mainChain = newMainChain,
-      inputs    = inputs.map(_.copy(mainChain = newMainChain)),
-      outputs   = outputs.map(_.copy(mainChain = newMainChain))
+      mainChain    = newMainChain,
+      transactions = transactions.map(_.copy(mainChain = newMainChain)),
+      inputs       = inputs.map(_.copy(mainChain = newMainChain)),
+      outputs      = outputs.map(_.copy(mainChain = newMainChain))
     )
   }
 

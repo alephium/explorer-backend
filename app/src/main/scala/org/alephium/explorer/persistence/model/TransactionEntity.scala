@@ -25,5 +25,6 @@ final case class TransactionEntity(
     timestamp: TimeStamp,
     gasAmount: Int,
     gasPrice: U256,
-    index: Int
+    index: Int,
+    mainChain: Boolean
 )

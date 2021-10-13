@@ -164,6 +164,7 @@ object BlockFlowClient {
 
   def blockProtocolToEntity(block: api.model.BlockEntry): BlockEntity = {
     val hash         = new BlockEntry.Hash(block.hash)
+    val mainChain    = false
     val transactions = block.transactions.toSeq
     BlockEntity(
       hash,
@@ -173,15 +174,15 @@ object BlockFlowClient {
       Height.unsafe(block.height),
       block.deps.map(new BlockEntry.Hash(_)).toSeq,
       transactions.zipWithIndex.map {
-        case (tx, index) => txToEntity(tx, hash, block.timestamp, index)
+        case (tx, index) => txToEntity(tx, hash, block.timestamp, index, mainChain)
       },
       transactions.flatMap(tx =>
-        tx.inputs.toSeq.map(inputToEntity(_, hash, tx.id, block.timestamp, false))),
+        tx.inputs.toSeq.map(inputToEntity(_, hash, tx.id, block.timestamp, mainChain))),
       transactions.flatMap(tx =>
         tx.outputs.toSeq.zipWithIndex.map {
-          case (out, index) => outputToEntity(out, hash, tx.id, index, block.timestamp, false)
+          case (out, index) => outputToEntity(out, hash, tx.id, index, block.timestamp, mainChain)
       }),
-      mainChain = false
+      mainChain = mainChain
     )
   }
 
@@ -203,14 +204,16 @@ object BlockFlowClient {
   private def txToEntity(tx: api.model.Tx,
                          blockHash: BlockEntry.Hash,
                          timestamp: TimeStamp,
-                         index: Int): TransactionEntity =
+                         index: Int,
+                         mainChain: Boolean): TransactionEntity =
     TransactionEntity(
       new Transaction.Hash(tx.id),
       blockHash,
       timestamp,
       tx.gasAmount,
       tx.gasPrice,
-      index
+      index,
+      mainChain
     )
 
   private def inputToUInput(input: api.model.Input): UInput = {
