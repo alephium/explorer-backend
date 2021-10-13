@@ -20,9 +20,10 @@ import org.alephium.explorer.api.Json.u256ReadWriter
 import org.alephium.json.Json._
 import org.alephium.util.U256
 
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 final case class Input(
     outputRef: Output.Ref,
-    unlockScript: Option[String],
+    unlockScript: Option[String] = None,
     txHashRef: Transaction.Hash,
     address: Address,
     amount: U256

@@ -54,6 +54,33 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
+  it should "Output" in {
+    forAll(outputGen) { output =>
+      val expected = s"""
+     |{
+     |  "amount": "${output.amount}",
+     |  "address": "${output.address}"
+     |  ${output.lockTime.map(lockTime => s""","lockTime": ${lockTime.millis}""").getOrElse("")}
+     |  ${output.spent.map(spent => s""","spent": "${spent.value.toHexString}"""").getOrElse("")}
+     |}""".stripMargin
+      check(output, expected)
+    }
+  }
+
+  it should "Input" in {
+    forAll(inputGen) { input =>
+      val expected = s"""
+     |{
+     |  "outputRef": ${write(input.outputRef)},
+     |  ${input.unlockScript.map(script => s""""unlockScript": "${script}",""").getOrElse("")}
+     |  "txHashRef": "${input.txHashRef.value.toHexString}",
+     |  "address": "${input.address}",
+     |  "amount": "${input.amount}"
+     |}""".stripMargin
+      check(input, expected)
+    }
+  }
+
   it should "UInput" in {
     forAll(uinputGen) { uinput =>
       val expected = uinput.unlockScript match {

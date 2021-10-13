@@ -45,10 +45,26 @@ trait Generators {
   lazy val heightGen: Gen[Height]                    = Gen.posNum[Int].map(Height.unsafe(_))
   lazy val addressGen: Gen[Address]                  = hashGen.map(hash => Address.unsafe(Base58.encode(hash.bytes)))
 
+  lazy val inputGen: Gen[Input] = for {
+    outputRef    <- outputRefGen
+    unlockScript <- Gen.option(hashGen.map(_.bytes))
+    txHashRef    <- transactionHashGen
+    address      <- addressGen
+    amount       <- amountGen
+  } yield Input(outputRef, unlockScript.map(Hex.toHexString(_)), txHashRef, address, amount)
+
   lazy val uinputGen: Gen[UInput] = for {
     outputRef    <- outputRefGen
     unlockScript <- Gen.option(hashGen.map(_.bytes))
   } yield UInput(outputRef, unlockScript.map(Hex.toHexString(_)))
+
+  lazy val outputGen: Gen[Output] =
+    for {
+      amount   <- amountGen
+      address  <- addressGen
+      lockTime <- Gen.option(timestampGen)
+      spent    <- Gen.option(transactionHashGen)
+    } yield Output(amount, address, lockTime, spent)
 
   def uoutputGen: Gen[UOutput] =
     for {
