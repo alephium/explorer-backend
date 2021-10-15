@@ -24,6 +24,8 @@ object Version {
   lazy val slick      = "3.3.2"
   lazy val postgresql = "42.2.12"
   lazy val sttp       = "3.3.11"
+  lazy val prometheus = "0.10.0"
+  lazy val micrometer = "1.7.4"
 }
 
 object Dependencies {
@@ -63,4 +65,10 @@ object Dependencies {
 
   lazy val h2            = "com.h2database"     % "h2"              % "1.4.200"
   lazy val slickHikaricp = "com.typesafe.slick" %% "slick-hikaricp" % Version.slick
+
+  lazy val prometheusSimpleClient        = "io.prometheus"               % "simpleclient"                   % Version.prometheus
+  lazy val prometheusSimpleClientHotspot = "io.prometheus"               % "simpleclient_hotspot"           % Version.prometheus
+  lazy val tapirPrometheusMetrics        = "com.softwaremill.sttp.tapir" %% "tapir-prometheus-metrics"      % Version.tapir
+  lazy val micrometerCore                = "io.micrometer"               % "micrometer-core"                % Version.micrometer
+  lazy val micrometerPrometheus          = "io.micrometer"               % "micrometer-registry-prometheus" % Version.micrometer
 }

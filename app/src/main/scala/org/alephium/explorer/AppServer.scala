@@ -42,5 +42,6 @@ class AppServer(blockService: BlockService,
     new DocumentationServer(blockFlowFetchMaxAge)
 
   val route: Route =
-    cors()(blockServer.route ~ addressServer.route ~ transactionServer.route ~ documentation.route)
+    cors()(
+      blockServer.route ~ addressServer.route ~ transactionServer.route ~ documentation.route ~ Metrics.route)
 }

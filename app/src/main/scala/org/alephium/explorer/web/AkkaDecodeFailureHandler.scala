@@ -16,13 +16,12 @@
 
 package org.alephium.explorer.web
 
-import sttp.tapir.server.akkahttp.AkkaHttpServerOptions
+import sttp.tapir.server.interceptor.decodefailure.{
+  DecodeFailureHandler => TapirDecodeFailureHandler
+}
 
 import org.alephium.api.DecodeFailureHandler
 
 trait AkkaDecodeFailureHandler extends DecodeFailureHandler {
-  val serverOptions: AkkaHttpServerOptions =
-    AkkaHttpServerOptions.customInterceptors(
-      decodeFailureHandler = myDecodeFailureHandler
-    )
+  val decodeFailureHandler: TapirDecodeFailureHandler = myDecodeFailureHandler
 }
