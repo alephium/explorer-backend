@@ -14,30 +14,21 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.docs
+package org.alephium.explorer.web
 
-import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
-import sttp.tapir.openapi.OpenAPI
+import scala.concurrent.Future
 
-import org.alephium.explorer.api._
+import akka.http.scaladsl.server.Route
 
-trait Documentation
-    extends BlockEndpoints
-    with TransactionEndpoints
-    with AddressesEndpoints
-    with InfosEndpoints
-    with OpenAPIDocsInterpreter {
-  val docs: OpenAPI = toOpenAPI(
-    List(
-      listBlocks,
-      getBlockByHash,
-      getBlockTransactions,
-      getTransactionById,
-      getAddressInfo,
-      getTransactionsByAddress,
-      getInfos
-    ),
-    "Alephium Explorer API",
-    "1.0"
-  )
+import org.alephium.explorer.BuildInfo
+import org.alephium.explorer.api.InfosEndpoints
+import org.alephium.explorer.api.model.ExplorerInfo
+import org.alephium.util.Duration
+
+class InfosServer(val blockflowFetchMaxAge: Duration) extends Server with InfosEndpoints {
+
+  val route: Route =
+    toRoute(getInfos) { _ =>
+      Future.successful(Right(ExplorerInfo(BuildInfo.releaseVersion, BuildInfo.commitId)))
+    }
 }

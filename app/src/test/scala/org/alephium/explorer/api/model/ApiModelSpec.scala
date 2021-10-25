@@ -116,4 +116,13 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
       check(utx, expected)
     }
   }
+
+  it should "ExplorerInfo" in {
+    val expected = s"""
+     |{
+     |  "releaseVersion": "1.2.3",
+     |  "commit": "b96f64ff"
+     |}""".stripMargin
+    check(ExplorerInfo("1.2.3", "b96f64ff"), expected)
+  }
 }

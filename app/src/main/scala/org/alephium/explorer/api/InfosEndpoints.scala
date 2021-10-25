@@ -14,30 +14,25 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.docs
+package org.alephium.explorer.api
 
-import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
-import sttp.tapir.openapi.OpenAPI
+import sttp.tapir._
+import sttp.tapir.generic.auto._
 
-import org.alephium.explorer.api._
+import org.alephium.api.{alphJsonBody => jsonBody}
+import org.alephium.explorer.api.BaseEndpoint
+import org.alephium.explorer.api.model.ExplorerInfo
 
-trait Documentation
-    extends BlockEndpoints
-    with TransactionEndpoints
-    with AddressesEndpoints
-    with InfosEndpoints
-    with OpenAPIDocsInterpreter {
-  val docs: OpenAPI = toOpenAPI(
-    List(
-      listBlocks,
-      getBlockByHash,
-      getBlockTransactions,
-      getTransactionById,
-      getAddressInfo,
-      getTransactionsByAddress,
-      getInfos
-    ),
-    "Alephium Explorer API",
-    "1.0"
-  )
+// scalastyle:off magic.number
+trait InfosEndpoints extends BaseEndpoint {
+
+  private val addressesEndpoint =
+    baseEndpoint
+      .tag("Infos")
+      .in("infos")
+
+  val getInfos: BaseEndpoint[Unit, ExplorerInfo] =
+    addressesEndpoint.get
+      .out(jsonBody[ExplorerInfo])
+      .description("Get explorer informations")
 }

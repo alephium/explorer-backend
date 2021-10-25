@@ -38,10 +38,11 @@ class AppServer(blockService: BlockService,
     new AddressServer(transactionService, blockFlowFetchMaxAge)
   val transactionServer: TransactionServer =
     new TransactionServer(transactionService, blockFlowFetchMaxAge)
+  val infosServer: InfosServer = new InfosServer(blockFlowFetchMaxAge)
   val documentation: DocumentationServer =
     new DocumentationServer(blockFlowFetchMaxAge)
 
   val route: Route =
     cors()(
-      blockServer.route ~ addressServer.route ~ transactionServer.route ~ documentation.route ~ Metrics.route)
+      blockServer.route ~ addressServer.route ~ transactionServer.route ~ infosServer.route ~ documentation.route ~ Metrics.route)
 }
