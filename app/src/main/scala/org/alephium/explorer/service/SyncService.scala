@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.service
 
+import java.util.{Timer, TimerTask}
+
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
@@ -35,6 +37,9 @@ trait SyncService extends StrictLogging {
   private val syncDone: Promise[Unit] = Promise()
   private var startedOnce             = false
   private var initDone                = false
+
+  private val isDaemon     = true
+  private val timer: Timer = new Timer(isDaemon)
 
   def start(): Future[Unit] = {
     startedOnce = true
@@ -76,10 +81,13 @@ trait SyncService extends StrictLogging {
       if (stopped.isCompleted) {
         syncDone.success(())
       } else {
-        Thread.sleep(syncPeriod.millis)
-        sync()
+        timer.schedule(syncTimerTask(), syncPeriod.millis)
       }
     }
+  }
+
+  private def syncTimerTask(): TimerTask = new TimerTask {
+    override def run(): Unit = sync()
   }
 }
 
