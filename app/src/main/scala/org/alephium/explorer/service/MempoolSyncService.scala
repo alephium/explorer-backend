@@ -16,80 +16,32 @@
 
 package org.alephium.explorer.service
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success}
+import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.StrictLogging
 
 import org.alephium.explorer.persistence.dao.UnconfirmedTxDao
-import org.alephium.explorer.sideEffect
 import org.alephium.util.Duration
 
 /*
  * Syncing mempool
  */
 
-trait MempoolSyncService {
-  def start(newUris: Seq[Uri]): Future[Unit]
-  def stop(): Future[Unit]
-}
+trait MempoolSyncService extends SyncService.BlockFlow
 
 object MempoolSyncService {
   def apply(syncPeriod: Duration, blockFlowClient: BlockFlowClient, utxDao: UnconfirmedTxDao)(
       implicit executionContext: ExecutionContext): MempoolSyncService =
     new Impl(syncPeriod, blockFlowClient, utxDao)
 
-  private class Impl(syncPeriod: Duration,
+  private class Impl(val syncPeriod: Duration,
                      blockFlowClient: BlockFlowClient,
-                     utxDao: UnconfirmedTxDao)(implicit executionContext: ExecutionContext)
+                     utxDao: UnconfirmedTxDao)(implicit val executionContext: ExecutionContext)
       extends MempoolSyncService
       with StrictLogging {
 
-    private val stopped: Promise[Unit]  = Promise()
-    private val syncDone: Promise[Unit] = Promise()
-
-    private var startedOnce = false
-
-    var nodeUris: Seq[Uri] = Seq.empty
-
-    def start(newUris: Seq[Uri]): Future[Unit] = {
-      Future.successful {
-        startedOnce = true
-        nodeUris    = newUris
-        sync()
-      }
-    }
-
-    def stop(): Future[Unit] = {
-      if (!startedOnce) {
-        syncDone.failure(new IllegalStateException).future
-      } else {
-        sideEffect(if (!stopped.isCompleted) stopped.success(()))
-        syncDone.future
-      }
-    }
-
-    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
-    private def sync(): Unit = {
-      syncOnce().onComplete {
-        case Success(_) =>
-          continue()
-        case Failure(e) =>
-          logger.error("Failure while syncing", e)
-          continue()
-      }
-      def continue() = {
-        if (stopped.isCompleted) {
-          syncDone.success(())
-        } else {
-          Thread.sleep(syncPeriod.millis)
-          sync()
-        }
-      }
-    }
-
-    private def syncOnce(): Future[Unit] = {
+    override def syncOnce(): Future[Unit] = {
       logger.debug("Syncing mempol")
       Future.sequence(nodeUris.map(syncMempool)).map { _ =>
         logger.debug("Mempool synced")

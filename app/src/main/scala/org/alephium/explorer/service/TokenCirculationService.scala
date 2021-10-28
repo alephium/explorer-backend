@@ -16,8 +16,7 @@
 
 package org.alephium.explorer.service
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success}
+import scala.concurrent.{ExecutionContext, Future}
 
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
@@ -28,21 +27,16 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model.TokenCirculationEntity
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema.{BlockHeaderSchema, TokenCirculationSchema}
-import org.alephium.explorer.sideEffect
 import org.alephium.util.{Duration, TimeStamp, U256}
 
-trait TokenCirculationService {
-  def start(): Future[Unit]
-  def stop(): Future[Unit]
-  def syncOnce(): Future[Unit]
-}
+trait TokenCirculationService extends SyncService
 
 object TokenCirculationService {
   def apply(syncPeriod: Duration, config: DatabaseConfig[JdbcProfile])(
       implicit executionContext: ExecutionContext): TokenCirculationService =
     new Impl(syncPeriod, config)
 
-  private class Impl(syncPeriod: Duration, val config: DatabaseConfig[JdbcProfile])(
+  private class Impl(val syncPeriod: Duration, val config: DatabaseConfig[JdbcProfile])(
       implicit val executionContext: ExecutionContext)
       extends TokenCirculationService
       with TransactionQueries
@@ -51,46 +45,6 @@ object TokenCirculationService {
       with DBRunner
       with StrictLogging {
     import config.profile.api._
-
-    private val stopped: Promise[Unit]  = Promise()
-    private val syncDone: Promise[Unit] = Promise()
-
-    private var startedOnce = false
-
-    def start(): Future[Unit] = {
-      Future.successful {
-        startedOnce = true
-        sync()
-      }
-    }
-
-    def stop(): Future[Unit] = {
-      if (!startedOnce) {
-        syncDone.failure(new IllegalStateException).future
-      } else {
-        sideEffect(if (!stopped.isCompleted) stopped.success(()))
-        syncDone.future
-      }
-    }
-
-    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
-    private def sync(): Unit = {
-      syncOnce().onComplete {
-        case Success(_) =>
-          continue()
-        case Failure(e) =>
-          logger.error("Failure while syncing", e)
-          continue()
-      }
-      def continue() = {
-        if (stopped.isCompleted) {
-          syncDone.success(())
-        } else {
-          Thread.sleep(syncPeriod.millis)
-          sync()
-        }
-      }
-    }
 
     def syncOnce(): Future[Unit] = {
       logger.debug("Computing token circulation")
