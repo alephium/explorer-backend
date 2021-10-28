@@ -63,6 +63,10 @@ class Application(
 
   val mempoolSyncService: MempoolSyncService =
     MempoolSyncService(syncPeriod = syncPeriod, blockFlowClient, utransactionDao)
+
+  val tokenCirculationService: TokenCirculationService =
+    TokenCirculationService(syncPeriod = Duration.ofDaysUnsafe(1), databaseConfig)
+
   val blockService: BlockService             = BlockService(blockDao)
   val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
 
@@ -85,6 +89,7 @@ class Application(
       peers = urisFromPeers(selfClique.toOption.get.nodes.toSeq)
       _ <- blockFlowSyncService.start(peers)
       _ <- mempoolSyncService.start(peers)
+      _ <- tokenCirculationService.start()
     } yield ()
   }
 
