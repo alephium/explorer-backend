@@ -16,19 +16,28 @@
 
 package org.alephium.explorer.web
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 
 import org.alephium.explorer.BuildInfo
 import org.alephium.explorer.api.InfosEndpoints
 import org.alephium.explorer.api.model.ExplorerInfo
+import org.alephium.explorer.service.TokenCirculationService
 import org.alephium.util.Duration
 
-class InfosServer(val blockflowFetchMaxAge: Duration) extends Server with InfosEndpoints {
+class InfosServer(
+    val blockflowFetchMaxAge: Duration,
+    tokenCirculationService: TokenCirculationService)(implicit executionContext: ExecutionContext)
+    extends Server
+    with InfosEndpoints {
 
   val route: Route =
     toRoute(getInfos) { _ =>
       Future.successful(Right(ExplorerInfo(BuildInfo.releaseVersion, BuildInfo.commitId)))
-    }
+    } ~
+      toRoute(getTokenCirculation) { pagination =>
+        tokenCirculationService.listTokenCirculation(pagination).map(Right(_))
+      }
 }

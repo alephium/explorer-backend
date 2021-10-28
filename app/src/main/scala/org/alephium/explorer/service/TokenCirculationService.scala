@@ -22,14 +22,16 @@ import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
-import org.alephium.explorer.api.model.Height
+import org.alephium.explorer.api.model.{Height, Pagination, TokenCirculation}
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model.TokenCirculationEntity
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema.{BlockHeaderSchema, TokenCirculationSchema}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
-trait TokenCirculationService extends SyncService
+trait TokenCirculationService extends SyncService {
+  def listTokenCirculation(pagination: Pagination): Future[Seq[TokenCirculation]]
+}
 
 object TokenCirculationService {
   def apply(syncPeriod: Duration, config: DatabaseConfig[JdbcProfile])(
@@ -51,6 +53,24 @@ object TokenCirculationService {
       updateTokenCirculation().map { _ =>
         logger.debug("Token circulation updated")
       }
+    }
+
+    def listTokenCirculation(pagination: Pagination): Future[Seq[TokenCirculation]] = {
+      val offset = pagination.offset.toLong
+      val limit  = pagination.limit.toLong
+      val toDrop = offset * limit
+      run(
+        tokenCirculationTable
+          .sortBy { _.timestamp.desc }
+          .drop(toDrop)
+          .take(limit)
+          .result
+      ).map(_.map { entity =>
+        TokenCirculation(
+          entity.timestamp,
+          entity.amount
+        )
+      })
     }
 
     private val mainInputs       = inputsTable.filter(_.mainChain)

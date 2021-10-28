@@ -16,13 +16,16 @@
 
 package org.alephium.explorer.web
 
+import scala.concurrent.{ExecutionContext, Future}
+
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpupickle.UpickleCustomizationSupport
 
 import org.alephium.explorer.{AlephiumSpec, BuildInfo}
-import org.alephium.explorer.api.model.ExplorerInfo
+import org.alephium.explorer.api.model.{ExplorerInfo, Pagination, TokenCirculation}
+import org.alephium.explorer.service.TokenCirculationService
 import org.alephium.json.Json
-import org.alephium.util.Duration
+import org.alephium.util.{Duration, TimeStamp, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var"))
 class InfosServerSpec()
@@ -34,14 +37,34 @@ class InfosServerSpec()
 
   override def api: Api = Json
 
-  it should "return the explorer infos" in {
-    val server = new InfosServer(Duration.zero)
-
+  it should "return the explorer infos" in new Fixture {
     Get(s"/infos") ~> server.route ~> check {
       responseAs[ExplorerInfo] is ExplorerInfo(
         BuildInfo.releaseVersion,
         BuildInfo.commitId
       )
     }
+  }
+
+  it should "return the token circulation infos" in new Fixture {
+    Get(s"/infos/token-circulation") ~> server.route ~> check {
+      responseAs[Seq[TokenCirculation]] is Seq(TokenCirculation(TimeStamp.zero, U256.One))
+    }
+  }
+
+  trait Fixture {
+    val tokenCirculationService = new TokenCirculationService {
+      def listTokenCirculation(pagination: Pagination): Future[Seq[TokenCirculation]] =
+        Future.successful(
+          Seq(
+            TokenCirculation(TimeStamp.zero, U256.One)
+          ))
+      implicit def executionContext: ExecutionContext = ???
+      def syncOnce(): Future[Unit]                    = ???
+      def syncPeriod: Duration                        = ???
+
+    }
+
+    val server = new InfosServer(Duration.zero, tokenCirculationService)
   }
 }

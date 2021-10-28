@@ -14,31 +14,18 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.docs
+package org.alephium.explorer.api.model
 
-import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
-import sttp.tapir.openapi.OpenAPI
+import org.alephium.api.UtilJson._
+import org.alephium.explorer.api.Json.u256ReadWriter
+import org.alephium.json.Json._
+import org.alephium.util.{TimeStamp, U256}
 
-import org.alephium.explorer.api._
+final case class TokenCirculation(
+    timestamp: TimeStamp,
+    amount: U256
+)
 
-trait Documentation
-    extends BlockEndpoints
-    with TransactionEndpoints
-    with AddressesEndpoints
-    with InfosEndpoints
-    with OpenAPIDocsInterpreter {
-  val docs: OpenAPI = toOpenAPI(
-    List(
-      listBlocks,
-      getBlockByHash,
-      getBlockTransactions,
-      getTransactionById,
-      getAddressInfo,
-      getTransactionsByAddress,
-      getInfos,
-      getTokenCirculation
-    ),
-    "Alephium Explorer API",
-    "1.0"
-  )
+object TokenCirculation {
+  implicit val readWriter: ReadWriter[TokenCirculation] = macroRW
 }

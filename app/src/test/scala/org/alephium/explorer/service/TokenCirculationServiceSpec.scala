@@ -133,6 +133,17 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
       eventually {
         val tokenCirculation = run(tokenCirculationTable.result).futureValue
         tokenCirculation.head.amount is amount
+
+        tokenCirculationService
+          .listTokenCirculation(Pagination.unsafe(0, Pagination.defaultLimit))
+          .futureValue
+          .map(_.amount) is Seq(amount)
+        tokenCirculationService
+          .listTokenCirculation(Pagination.unsafe(0, 0))
+          .futureValue is Seq.empty
+        tokenCirculationService
+          .listTokenCirculation(Pagination.unsafe(1, Pagination.defaultLimit))
+          .futureValue is Seq.empty
       }
 
       databaseConfig.db.close

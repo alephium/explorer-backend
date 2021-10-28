@@ -71,7 +71,7 @@ class Application(
   val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
 
   val server: AppServer =
-    new AppServer(blockService, transactionService, blockflowFetchMaxAge)
+    new AppServer(blockService, transactionService, tokenCirculationService, blockflowFetchMaxAge)
 
   private val bindingPromise: Promise[Http.ServerBinding] = Promise()
 
