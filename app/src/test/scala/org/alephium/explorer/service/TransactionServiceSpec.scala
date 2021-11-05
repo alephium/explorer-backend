@@ -259,7 +259,7 @@ class TransactionServiceSpec
           .getTransaction(tx.hash)
           .futureValue
           .get
-          .asInstanceOf[Transaction]
+          .asInstanceOf[ConfirmedTx]
           .blockHash is blockHash0 // was sometime blockHash1 in fb7127f
     }
   }

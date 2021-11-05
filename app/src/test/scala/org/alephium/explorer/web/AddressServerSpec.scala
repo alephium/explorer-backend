@@ -25,7 +25,7 @@ import org.scalacheck.Gen
 
 import org.alephium.api.ApiError
 import org.alephium.explorer.{AlephiumSpec, Generators}
-import org.alephium.explorer.api.model.{Address, Pagination, Transaction}
+import org.alephium.explorer.api.model.{Address, Pagination, Transaction, TransactionLike}
 import org.alephium.explorer.service.TransactionService
 import org.alephium.json.Json
 import org.alephium.util.{Duration, U256}
@@ -79,7 +79,8 @@ class AddressServerSpec()
   trait Fixture {
 
     trait EmptyTransactionService extends TransactionService {
-      override def getTransaction(transactionHash: Transaction.Hash): Future[Option[Transaction]] =
+      override def getTransaction(
+          transactionHash: Transaction.Hash): Future[Option[TransactionLike]] =
         Future.successful(None)
       override def getTransactionsByAddress(address: Address,
                                             pagination: Pagination): Future[Seq[Transaction]] =

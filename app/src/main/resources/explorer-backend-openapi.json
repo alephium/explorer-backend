@@ -663,6 +663,51 @@
           }
         }
       },
+      "ConfirmedTx": {
+        "required": [
+          "hash",
+          "blockHash",
+          "timestamp",
+          "gasAmount",
+          "gasPrice",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "hash": {
+            "type": "string"
+          },
+          "blockHash": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Input"
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Output"
+            }
+          },
+          "gasAmount": {
+            "type": "integer"
+          },
+          "gasPrice": {
+            "type": "string",
+            "format": "uint256"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
       "Input": {
         "required": [
           "outputRef",
@@ -862,12 +907,15 @@
       "TransactionLike": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/Transaction"
+            "$ref": "#/components/schemas/ConfirmedTx"
           },
           {
             "$ref": "#/components/schemas/UnconfirmedTx"
           }
-        ]
+        ],
+        "discriminator": {
+          "propertyName": "type"
+        }
       },
       "UInput": {
         "required": [
@@ -920,7 +968,8 @@
           "chainFrom",
           "chainTo",
           "gasAmount",
-          "gasPrice"
+          "gasPrice",
+          "type"
         ],
         "type": "object",
         "properties": {
@@ -951,6 +1000,9 @@
           "gasPrice": {
             "type": "string",
             "format": "uint256"
+          },
+          "type": {
+            "type": "string"
           }
         }
       }

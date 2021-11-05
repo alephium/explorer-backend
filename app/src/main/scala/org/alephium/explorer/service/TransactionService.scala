@@ -18,7 +18,13 @@ package org.alephium.explorer.service
 
 import scala.concurrent.{ExecutionContext, Future}
 
-import org.alephium.explorer.api.model.{Address, Pagination, Transaction, TransactionLike}
+import org.alephium.explorer.api.model.{
+  Address,
+  ConfirmedTx,
+  Pagination,
+  Transaction,
+  TransactionLike
+}
 import org.alephium.explorer.persistence.dao.{TransactionDao, UnconfirmedTxDao}
 import org.alephium.util.U256
 
@@ -40,7 +46,7 @@ object TransactionService {
     def getTransaction(transactionHash: Transaction.Hash): Future[Option[TransactionLike]] =
       transactionDao.get(transactionHash).flatMap {
         case None     => utransactionDao.get(transactionHash)
-        case Some(tx) => Future.successful(Some(tx))
+        case Some(tx) => Future.successful(Some(ConfirmedTx.from(tx)))
       }
 
     def getTransactionsByAddress(address: Address,
