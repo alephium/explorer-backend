@@ -64,9 +64,10 @@ object Main extends App with StrictLogging {
       None
     }
 
-  val port: Int         = config.getInt("explorer.port")
-  val host: String      = config.getString("explorer.host")
-  val readOnly: Boolean = config.getBoolean("explorer.readOnly")
+  val port: Int            = config.getInt("explorer.port")
+  val host: String         = config.getString("explorer.host")
+  val readOnly: Boolean    = config.getBoolean("explorer.readOnly")
+  val syncPeriod: Duration = Duration.from(config.getDuration("explorer.syncPeriod")).get
 
   val databaseConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig[JdbcProfile]("db")
 
@@ -79,7 +80,8 @@ object Main extends App with StrictLogging {
                     blockflowFetchMaxAge,
                     networkId,
                     databaseConfig,
-                    blockflowApiKey)
+                    blockflowApiKey,
+                    syncPeriod)
 
   app.start.onComplete {
     case Success(_) => ()

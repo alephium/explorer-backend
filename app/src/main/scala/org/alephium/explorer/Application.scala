@@ -34,16 +34,17 @@ import org.alephium.protocol.model.NetworkId
 import org.alephium.util.Duration
 
 // scalastyle:off magic.number
-class Application(host: String,
-                  port: Int,
-                  readOnly: Boolean,
-                  blockFlowUri: Uri,
-                  groupNum: Int,
-                  blockflowFetchMaxAge: Duration,
-                  networkId: NetworkId,
-                  databaseConfig: DatabaseConfig[JdbcProfile],
-                  maybeBlockFlowApiKey: Option[ApiKey])(implicit system: ActorSystem,
-                                                        executionContext: ExecutionContext)
+class Application(
+    host: String,
+    port: Int,
+    readOnly: Boolean,
+    blockFlowUri: Uri,
+    groupNum: Int,
+    blockflowFetchMaxAge: Duration,
+    networkId: NetworkId,
+    databaseConfig: DatabaseConfig[JdbcProfile],
+    maybeBlockFlowApiKey: Option[ApiKey],
+    syncPeriod: Duration)(implicit system: ActorSystem, executionContext: ExecutionContext)
     extends StrictLogging {
 
   val dbInitializer: DBInitializer = DBInitializer(databaseConfig)
@@ -58,13 +59,10 @@ class Application(host: String,
     BlockFlowClient.apply(blockFlowUri, groupNum, blockflowFetchMaxAge, maybeBlockFlowApiKey)
 
   val blockFlowSyncService: BlockFlowSyncService =
-    BlockFlowSyncService(groupNum   = groupNum,
-                         syncPeriod = Duration.unsafe(15 * 1000),
-                         blockFlowClient,
-                         blockDao)
+    BlockFlowSyncService(groupNum = groupNum, syncPeriod = syncPeriod, blockFlowClient, blockDao)
 
   val mempoolSyncService: MempoolSyncService =
-    MempoolSyncService(syncPeriod = Duration.unsafe(15 * 1000), blockFlowClient, utransactionDao)
+    MempoolSyncService(syncPeriod = syncPeriod, blockFlowClient, utransactionDao)
   val blockService: BlockService             = BlockService(blockDao)
   val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
 

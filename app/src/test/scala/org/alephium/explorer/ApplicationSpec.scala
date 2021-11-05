@@ -104,7 +104,8 @@ trait ApplicationSpec
     blockflowFetchMaxAge,
     networkId,
     databaseConfig,
-    None
+    None,
+    Duration.ofSecondsUnsafe(5)
   )
 
   def initApp(app: Application): Unit = {
