@@ -19,7 +19,7 @@ package org.alephium.explorer.api
 import sttp.tapir._
 import sttp.tapir.generic.auto._
 
-import org.alephium.api.{alfJsonBody => jsonBody}
+import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.api.Codecs.blockEntryHashTapirCodec
 import org.alephium.explorer.api.model.{BlockEntry, ListBlocks, Pagination, Transaction}
