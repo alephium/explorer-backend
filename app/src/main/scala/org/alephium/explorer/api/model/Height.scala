@@ -19,7 +19,7 @@ package org.alephium.explorer.api.model
 import upickle.core.Abort
 
 import org.alephium.json.Json._
-import org.alephium.protocol.ALF
+import org.alephium.protocol.ALPH
 
 final class Height(val value: Int) extends AnyVal {
   override def toString(): String = value.toString
@@ -34,7 +34,7 @@ object Height {
       Right(Height.unsafe(value))
     }
 
-  val genesis: Height = Height.unsafe(ALF.GenesisHeight)
+  val genesis: Height = Height.unsafe(ALPH.GenesisHeight)
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   implicit val readWriter: ReadWriter[Height] =

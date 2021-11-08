@@ -27,7 +27,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao, UnconfirmedTxDao}
 import org.alephium.explorer.persistence.model._
-import org.alephium.protocol.ALF
+import org.alephium.protocol.ALPH
 import org.alephium.util.{TimeStamp, U256}
 
 @SuppressWarnings(
@@ -68,9 +68,9 @@ class TransactionServiceSpec
       .size is txLimit
   }
 
-  it should "handle huge alf number" in new Fixture {
+  it should "handle huge alph number" in new Fixture {
 
-    val amount = ALF.MaxALFValue.mulUnsafe(ALF.MaxALFValue)
+    val amount = ALPH.MaxALPHValue.mulUnsafe(ALPH.MaxALPHValue)
 
     val block = blockEntityGen(groupIndex, groupIndex, None)
       .map { block =>

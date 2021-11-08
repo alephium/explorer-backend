@@ -26,7 +26,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.protocol.{model => protocol}
-import org.alephium.protocol.ALF
+import org.alephium.protocol.ALPH
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.util.{AVector, Base58, Duration, Hex, Number, TimeStamp, U256}
 
@@ -104,7 +104,7 @@ trait Generators {
       protocol.Address.p2pkh(publicKey)
     }
 
-  lazy val amountGen: Gen[U256] = Gen.choose(1000L, Number.quadrillion).map(ALF.nanoAlf)
+  lazy val amountGen: Gen[U256] = Gen.choose(1000L, Number.quadrillion).map(ALPH.nanoAlph)
 
   lazy val chainIndexes: Seq[(GroupIndex, GroupIndex)] =
     for {
