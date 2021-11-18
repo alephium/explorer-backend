@@ -36,6 +36,7 @@ import org.alephium.util.{Duration, TimeStamp, U256}
 
 trait TokenCirculationService extends SyncService {
   def listTokenCirculation(pagination: Pagination): Future[Seq[TokenCirculation]]
+  def getLatestTokenCirculation(): Future[Option[TokenCirculation]]
 }
 
 object TokenCirculationService {
@@ -70,6 +71,20 @@ object TokenCirculationService {
           .drop(toDrop)
           .take(limit)
           .result
+      ).map(_.map { entity =>
+        TokenCirculation(
+          entity.timestamp,
+          entity.amount
+        )
+      })
+    }
+
+    def getLatestTokenCirculation(): Future[Option[TokenCirculation]] = {
+      run(
+        tokenCirculationTable
+          .sortBy { _.timestamp.desc }
+          .result
+          .headOption
       ).map(_.map { entity =>
         TokenCirculation(
           entity.timestamp,

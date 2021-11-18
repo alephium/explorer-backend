@@ -59,6 +59,11 @@ class InfosServerSpec()
           Seq(
             TokenCirculation(TimeStamp.zero, U256.One)
           ))
+      def getLatestTokenCirculation(): Future[Option[TokenCirculation]] =
+        Future.successful(
+          Some(
+            TokenCirculation(TimeStamp.zero, U256.One)
+          ))
       implicit def executionContext: ExecutionContext = ???
       def syncOnce(): Future[Unit]                    = ???
       def syncPeriod: Duration                        = ???

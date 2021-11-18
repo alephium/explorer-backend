@@ -21,6 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 
+import org.alephium.api.ApiError.InternalServerError
 import org.alephium.explorer.BuildInfo
 import org.alephium.explorer.api.InfosEndpoints
 import org.alephium.explorer.api.model.ExplorerInfo
@@ -37,7 +38,12 @@ class InfosServer(
     toRoute(getInfos) { _ =>
       Future.successful(Right(ExplorerInfo(BuildInfo.releaseVersion, BuildInfo.commitId)))
     } ~
-      toRoute(getTokenCirculation) { pagination =>
+      toRoute(listTokenCirculation) { pagination =>
         tokenCirculationService.listTokenCirculation(pagination).map(Right(_))
+      } ~
+      toRoute(getTokenCirculation) { _ =>
+        tokenCirculationService
+          .getLatestTokenCirculation()
+          .map(_.toRight(InternalServerError("Cannot find token circulation")))
       }
 }

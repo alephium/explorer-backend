@@ -36,10 +36,16 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ExplorerInfo])
       .description("Get explorer informations")
 
-  val getTokenCirculation: BaseEndpoint[Pagination, Seq[TokenCirculation]] =
+  val listTokenCirculation: BaseEndpoint[Pagination, Seq[TokenCirculation]] =
     infosEndpoint.get
       .in("token-circulation")
       .in(pagination)
       .out(jsonBody[Seq[TokenCirculation]])
       .description("Get token circulation list")
+
+  val getTokenCirculation: BaseEndpoint[Unit, TokenCirculation] =
+    infosEndpoint.get
+      .in("latest-token-circulation")
+      .out(jsonBody[TokenCirculation])
+      .description("Get the latest token circulation value")
 }
