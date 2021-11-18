@@ -16,6 +16,8 @@
 
 package org.alephium
 
+import scala.concurrent.{ExecutionContext, Future}
+
 import org.alephium.crypto.{Blake2b, Blake3}
 
 package object explorer {
@@ -34,4 +36,10 @@ package object explorer {
 
   type BlockHash = Blake3
   val BlockHash: Blake3.type = Blake3
+
+  def foldFutures[A](seqA: Seq[A])(f: A => Future[Unit])(
+      implicit executionContext: ExecutionContext): Future[Unit] =
+    seqA.foldLeft(Future.successful(())) {
+      case (acc, a) => acc.flatMap(_ => f(a))
+    }
 }

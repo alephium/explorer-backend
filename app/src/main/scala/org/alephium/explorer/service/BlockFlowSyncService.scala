@@ -23,6 +23,7 @@ import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.StrictLogging
 
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.util.{Duration, TimeStamp}
@@ -286,11 +287,6 @@ object BlockFlowSyncService extends StrictLogging {
           insert(block)
       }
     }
-
-    private def foldFutures[A](seqA: Seq[A])(f: A => Future[Unit]): Future[Unit] =
-      seqA.foldLeft(Future.successful(())) {
-        case (acc, a) => acc.flatMap(_ => f(a))
-      }
   }
 
   def buildTimestampRange(localTs: TimeStamp,
