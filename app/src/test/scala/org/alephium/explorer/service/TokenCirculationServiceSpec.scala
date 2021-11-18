@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.service
 
+import java.time.Instant
+
 import scala.concurrent.ExecutionContext
 
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
@@ -27,12 +29,44 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
 class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Eventually {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(50, Seconds))
+
+  it should "Build days range" in {
+    val launchTime = ALPH.LaunchTimestamp //2021-11-08T11:20:06+00:00
+    def ts(str: String): TimeStamp = {
+      TimeStamp.unsafe(Instant.parse(str).toEpochMilli)
+    }
+
+    TokenCirculationService.buildDaysRange(
+      launchTime,
+      launchTime.plusUnsafe(Duration.ofHoursUnsafe(8))
+    ) is
+      Seq.empty
+
+    TokenCirculationService.buildDaysRange(
+      launchTime,
+      launchTime.plusUnsafe(Duration.ofDaysUnsafe(1))
+    ) is
+      Seq(
+        ts("2021-11-08T23:59:59.999Z")
+      )
+
+    TokenCirculationService.buildDaysRange(
+      launchTime,
+      launchTime.plusUnsafe(Duration.ofDaysUnsafe(3))
+    ) is
+      Seq(
+        ts("2021-11-08T23:59:59.999Z"),
+        ts("2021-11-09T23:59:59.999Z"),
+        ts("2021-11-10T23:59:59.999Z")
+      )
+  }
 
   it should "Token circulation - only genesis - no lock" in new Fixture {
     override val genesisLocked = false
@@ -135,14 +169,11 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
         tokenCirculation.head.amount is amount
 
         tokenCirculationService
-          .listTokenCirculation(Pagination.unsafe(0, Pagination.defaultLimit))
+          .listTokenCirculation(Pagination.unsafe(0, 1))
           .futureValue
           .map(_.amount) is Seq(amount)
         tokenCirculationService
           .listTokenCirculation(Pagination.unsafe(0, 0))
-          .futureValue is Seq.empty
-        tokenCirculationService
-          .listTokenCirculation(Pagination.unsafe(1, Pagination.defaultLimit))
           .futureValue is Seq.empty
       }
 

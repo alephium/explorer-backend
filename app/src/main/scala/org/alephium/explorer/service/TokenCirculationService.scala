@@ -16,6 +16,9 @@
 
 package org.alephium.explorer.service
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+
 import scala.concurrent.{ExecutionContext, Future}
 
 import com.typesafe.scalalogging.StrictLogging
@@ -23,10 +26,12 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.api.model.{Height, Pagination, TokenCirculation}
+import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model.TokenCirculationEntity
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema.{BlockHeaderSchema, TokenCirculationSchema}
+import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 trait TokenCirculationService extends SyncService {
@@ -77,7 +82,7 @@ object TokenCirculationService {
     private val mainOutputs      = outputsTable.filter(_.mainChain)
     private val mainTransactions = transactionsTable.filter(_.mainChain)
 
-    private def genesisLockedToken(ts: TimeStamp) = {
+    private def genesisLockedToken(lockTime: TimeStamp) = {
       mainOutputs
         .join(
           mainTransactions
@@ -85,32 +90,79 @@ object TokenCirculationService {
             .on(_.blockHash === _.hash)
         )
         .on(_.txHash === _._1.hash)
-        .filter { case (output, _) => output.lockTime.map(_ >= ts).getOrElse(false) }
+        .filter { case (output, _) => output.lockTime.map(_ > lockTime).getOrElse(false) }
         .map { case (output, _) => output.amount }
         .sum
     }
 
-    private val unspentTokens =
+    private def unspentTokens(at: TimeStamp) = {
       mainOutputs
+        .filter(_.timestamp <= at)
         .joinLeft(mainInputs)
         .on(_.key === _.outputRefKey)
         .filter { case (_, inputOpt) => inputOpt.isEmpty }
         .map { case (output, _) => output.amount }
         .sum
+    }
 
-    private def computeTokenCirculation(lockTime: TimeStamp): DBActionR[U256] = {
+    private def computeTokenCirculation(at: TimeStamp, lockTime: TimeStamp): DBActionR[U256] = {
       for {
-        unspent       <- unspentTokens.result
+        unspent       <- unspentTokens(at).result
         genesisLocked <- genesisLockedToken(lockTime).result
       } yield (unspent.getOrElse(U256.Zero).subUnsafe(genesisLocked.getOrElse(U256.Zero)))
     }
 
     private def updateTokenCirculation(): Future[Unit] = {
       val now = TimeStamp.now()
+      getLatestTimestamp()
+        .flatMap {
+          case None           => initGenesisTokenCirculation()
+          case Some(latestTs) => Future.successful(latestTs)
+        }
+        .flatMap { latestTs =>
+          val days = buildDaysRange(latestTs, now)
+          foldFutures(days) { day =>
+            run(for {
+              tokens <- computeTokenCirculation(day, day)
+              _      <- tokenCirculationTable += TokenCirculationEntity(day, tokens)
+            } yield (()))
+          }
+        }
+    }
+
+    private def initGenesisTokenCirculation(): Future[TimeStamp] = {
       run(for {
-        tokens <- computeTokenCirculation(now)
-        _      <- tokenCirculationTable += TokenCirculationEntity(now, tokens)
-      } yield (()))
+        tokens <- computeTokenCirculation(ALPH.GenesisTimestamp, ALPH.LaunchTimestamp)
+        _      <- tokenCirculationTable += TokenCirculationEntity(ALPH.LaunchTimestamp, tokens)
+      } yield (ALPH.LaunchTimestamp))
+    }
+
+    private def getLatestTimestamp(): Future[Option[TimeStamp]] = {
+      run(
+        tokenCirculationTable
+          .sortBy { _.timestamp.desc }
+          .map(_.timestamp)
+          .result
+          .headOption
+      )
+    }
+  }
+
+  private[service] def buildDaysRange(from: TimeStamp, until: TimeStamp): Seq[TimeStamp] = {
+    val fromDay  = Instant.ofEpochMilli(from.millis).truncatedTo(ChronoUnit.DAYS)
+    val untilDay = Instant.ofEpochMilli(until.millis).truncatedTo(ChronoUnit.DAYS)
+
+    val nbOfDays = fromDay.until(untilDay, ChronoUnit.DAYS)
+
+    if (nbOfDays <= 0) {
+      Seq.empty
+    } else {
+      (1L to nbOfDays).map { day =>
+        TimeStamp
+          .unsafe(fromDay.toEpochMilli)
+          .plusUnsafe(Duration.ofDaysUnsafe(day))
+          .minusUnsafe(Duration.ofMillisUnsafe(1))
+      }
     }
   }
 }
