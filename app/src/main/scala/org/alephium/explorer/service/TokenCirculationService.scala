@@ -1,4 +1,4 @@
-// Copyright 2018 The Alephium Authors
+// Copyright 2018 The Alephium Authorsjava.time.temporal.ChronoUnit
 // This file is part of the alephium project.
 //
 // The library is free software: you can redistribute it and/or modify
@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.service
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import scala.concurrent.{ExecutionContext, Future}
 
 import com.typesafe.scalalogging.StrictLogging
@@ -27,6 +29,7 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model.TokenCirculationEntity
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema.{BlockHeaderSchema, TokenCirculationSchema}
+import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 trait TokenCirculationService extends SyncService {
@@ -105,12 +108,60 @@ object TokenCirculationService {
       } yield (unspent.getOrElse(U256.Zero).subUnsafe(genesisLocked.getOrElse(U256.Zero)))
     }
 
+    private def getLatestTimestamp(): Future[Option[TimeStamp]] = {
+      run(
+        tokenCirculationTable
+          .sortBy { _.timestamp.desc }
+          .map(_.timestamp)
+          .result
+          .headOption
+      )
+    }
+
     private def updateTokenCirculation(): Future[Unit] = {
       val now = TimeStamp.now()
-      run(for {
-        tokens <- computeTokenCirculation(now)
-        _      <- tokenCirculationTable += TokenCirculationEntity(now, tokens)
-      } yield (()))
+      getLatestTimestamp().flatMap { latestTsOpt =>
+        //TODO init genesis case compute from ALPH launch
+        val latestDayI = Instant
+          .ofEpochMilli(latestTsOpt.getOrElse(ALPH.LaunchTimestamp).millis)
+          .truncatedTo(ChronoUnit.DAYS)
+        val currentDayI = Instant.ofEpochMilli(now.millis).truncatedTo(ChronoUnit.DAYS)
+        val daysuntil   = latestDayI.until(currentDayI, ChronoUnit.DAYS)
+        if (daysuntil == 0) {
+          //noop
+          Future.successful(())
+        } else {
+          val days = (1L to daysuntil).map { i =>
+            latestDayI.plus(i, ChronoUnit.DAYS)
+          }
+          days.foreach { day =>
+            println(day)
+          }
+          val latestDay = TimeStamp.unsafe(
+            Instant
+              .ofEpochMilli(latestTsOpt.getOrElse(ALPH.LaunchTimestamp).millis)
+              .truncatedTo(ChronoUnit.DAYS)
+              .toEpochMilli)
+          val currentDay = TimeStamp.unsafe(
+            Instant.ofEpochMilli(now.millis).truncatedTo(ChronoUnit.DAYS).toEpochMilli)
+
+          def rec(day: TimeStamp, until: TimeStamp): Future[Unit] = {
+            if (until.isBefore(day)) {
+              Future.successful(())
+            } else {
+              run(for {
+                tokens <- computeTokenCirculation(day)
+                _      <- tokenCirculationTable += TokenCirculationEntity(day, tokens)
+              } yield (()))
+            }
+          }
+          rec(latestDay, currentDay)
+        }
+      }
     }
   }
+    def foldFutures[A](seqA: Seq[A])(f: A => Future[Unit]): Future[Unit] =
+      seqA.foldLeft(Future.successful(())) {
+        case (acc, a) => acc.flatMap(_ => f(a))
+      }
 }
