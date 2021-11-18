@@ -18,7 +18,7 @@ package org.alephium.explorer.persistence.schema
 
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
-import slick.lifted.ProvenShape
+import slick.lifted.{Index, ProvenShape}
 
 import org.alephium.explorer.persistence.model.TokenCirculationEntity
 import org.alephium.util.{TimeStamp, U256}
@@ -33,6 +33,9 @@ trait TokenCirculationSchema extends CustomTypes {
     def timestamp: Rep[TimeStamp] = column[TimeStamp]("timestamp")
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
+
+    def timestampIdx: Index = index("token_circulation_timestamp_idx", timestamp)
+
     def * : ProvenShape[TokenCirculationEntity] =
       (timestamp, amount)
         .<>((TokenCirculationEntity.apply _).tupled, TokenCirculationEntity.unapply)
