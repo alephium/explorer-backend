@@ -50,6 +50,12 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
       Seq.empty
 
     TokenCirculationService.buildDaysRange(
+      launchTime.plusUnsafe(Duration.ofHoursUnsafe(8)),
+      launchTime
+    ) is
+      Seq.empty
+
+    TokenCirculationService.buildDaysRange(
       launchTime,
       launchTime.plusUnsafe(Duration.ofDaysUnsafe(1))
     ) is
@@ -66,15 +72,23 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
         ts("2021-11-09T23:59:59.999Z"),
         ts("2021-11-10T23:59:59.999Z")
       )
+
+    TokenCirculationService.buildDaysRange(
+      launchTime,
+      ts("2021-11-11T10:39:53.100Z")
+    ) is
+      Seq(
+        ts("2021-11-08T23:59:59.999Z"),
+        ts("2021-11-09T23:59:59.999Z"),
+        ts("2021-11-10T23:59:59.999Z")
+      )
   }
 
   it should "Token circulation - only genesis - no lock" in new Fixture {
     override val genesisLocked = false
 
     test(genesisBlock) {
-      genesisBlock.outputs
-        .map(_.amount)
-        .fold(U256.Zero)(_ addUnsafe _)
+      Seq(blockAmount(genesisBlock))
     }
   }
 
@@ -82,15 +96,18 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
     override val genesisLocked = true
 
     test(genesisBlock) {
-      U256.Zero
+      Seq(U256.Zero)
     }
   }
 
   it should "Token circulation - block 1 not locked" in new Fixture {
     override val genesisLocked = false
 
-    test(genesisBlock, block1) {
-      blockAmount(genesisBlock).addUnsafe(blockAmount(block1))
+    test(genesisBlock, block1, block2) {
+      Seq(
+        blockAmount(genesisBlock).addUnsafe(blockAmount(block1)),
+        blockAmount(genesisBlock)
+      )
     }
   }
 
@@ -98,24 +115,26 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
     override val genesisLocked = false
     override val block1Locked  = true
 
-    test(genesisBlock, block1) {
-      blockAmount(genesisBlock).addUnsafe(blockAmount(block1))
+    test(genesisBlock, block1, block2) {
+      Seq(blockAmount(genesisBlock).addUnsafe(blockAmount(block1)), blockAmount(genesisBlock))
     }
   }
 
   it should "Token circulation - some output spent" in new Fixture {
     override val genesisLocked = false
 
-    test(genesisBlock, block1, block2) {
-      blockAmount(genesisBlock).addUnsafe(blockAmount(block2))
+    test(genesisBlock, block1, block2, block3) {
+      Seq(blockAmount(genesisBlock).addUnsafe(blockAmount(block2)),
+          blockAmount(genesisBlock).addUnsafe(blockAmount(block1)),
+          blockAmount(genesisBlock))
     }
   }
 
   it should "Token circulation - genesis locked - some output spent" in new Fixture {
     override val genesisLocked = true
 
-    test(genesisBlock, block1, block2) {
-      blockAmount(block2)
+    test(genesisBlock, block1, block2, block3) {
+      Seq(blockAmount(block2), blockAmount(block1), U256.Zero)
     }
   }
 
@@ -131,32 +150,48 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
     lazy val blockDao: BlockDao = BlockDao(databaseConfig)
 
     lazy val tokenCirculationService: TokenCirculationService =
-      TokenCirculationService(syncPeriod = Duration.unsafe(30 * 1000), databaseConfig)
+      TokenCirculationService(syncPeriod = Duration.unsafe(30 * 1000), databaseConfig, groupNum = 1)
 
     lazy val genesisBlock = {
       val lockTime =
         if (genesisLocked) Some(TimeStamp.now().plusUnsafe(Duration.ofHoursUnsafe(1))) else None
       val block = blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), None).sample.get
-      block.copy(outputs = block.outputs.map(_.copy(lockTime = lockTime)))
+      block.copy(
+        outputs = block.outputs.map(_.copy(timestamp = block.timestamp, lockTime = lockTime)))
     }
 
     lazy val block1 = {
       val lockTime =
-        if (block1Locked) Some(TimeStamp.now().plusUnsafe(Duration.ofHoursUnsafe(1))) else None
+        if (block1Locked) Some(TimeStamp.now().plusUnsafe(Duration.ofHoursUnsafe(2))) else None
+      val timestamp = ALPH.LaunchTimestamp.plusHoursUnsafe(1)
       val block =
         blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(genesisBlock)).sample.get
-      block.copy(outputs = block.outputs.map(_.copy(lockTime = lockTime)))
+      block.copy(timestamp = timestamp,
+                 outputs   = block.outputs.map(_.copy(timestamp = timestamp, lockTime = lockTime)),
+                 inputs    = block.inputs.map(_.copy(timestamp = timestamp)))
     }
 
     lazy val block2 = {
       val block =
         blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block1)).sample.get
-      val txHash = transactionHashGen.sample.get
-      block.copy(inputs = block1.outputs.map(out =>
-        InputEntity(block.hash, txHash, block.timestamp, 0, out.key, None, false)))
+      val txHash    = transactionHashGen.sample.get
+      val timestamp = block.timestamp.plusHoursUnsafe(24)
+      block.copy(
+        timestamp = timestamp,
+        inputs = block1.outputs.map(out =>
+          InputEntity(block.hash, txHash, timestamp, 0, out.key, None, false)),
+        outputs = block.outputs.map(_.copy(timestamp = timestamp))
+      )
     }
 
-    def test(blocks: BlockEntity*)(amount: U256) = {
+    lazy val block3 = {
+      val block =
+        blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block2)).sample.get
+      val timestamp = block.timestamp.plusHoursUnsafe(24)
+      block.copy(timestamp = timestamp, outputs = block.outputs.map(_.copy(timestamp = timestamp)))
+    }
+
+    def test(blocks: BlockEntity*)(amounts: Seq[U256]) = {
       blockDao.insertAll(Seq.from(blocks)).futureValue
       blocks.foreach { block =>
         blockDao.updateMainChainStatus(block.hash, true).futureValue
@@ -165,13 +200,13 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
       tokenCirculationService.syncOnce().futureValue is ()
 
       eventually {
-        val tokenCirculation = run(tokenCirculationTable.result).futureValue
-        tokenCirculation.head.amount is amount
+        val tokenCirculation = run(tokenCirculationTable.result).futureValue.reverse
+        tokenCirculation.map(_.amount) is amounts
 
         tokenCirculationService
           .listTokenCirculation(Pagination.unsafe(0, 1))
           .futureValue
-          .map(_.amount) is Seq(amount)
+          .map(_.amount) is Seq(amounts.head)
         tokenCirculationService
           .listTokenCirculation(Pagination.unsafe(0, 0))
           .futureValue is Seq.empty
@@ -179,7 +214,7 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
         tokenCirculationService
           .getLatestTokenCirculation()
           .futureValue
-          .map(_.amount) is Some(amount)
+          .map(_.amount) is Some(amounts.head)
       }
 
       databaseConfig.db.close

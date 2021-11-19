@@ -23,9 +23,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
+import slick.dbio.DBIOAction
 import slick.jdbc.JdbcProfile
 
-import org.alephium.explorer.api.model.{Height, Pagination, TokenCirculation}
+import org.alephium.explorer.api.model.{GroupIndex, Height, Pagination, TokenCirculation}
 import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model.TokenCirculationEntity
@@ -40,12 +41,13 @@ trait TokenCirculationService extends SyncService {
 }
 
 object TokenCirculationService {
-  def apply(syncPeriod: Duration, config: DatabaseConfig[JdbcProfile])(
+  def apply(syncPeriod: Duration, config: DatabaseConfig[JdbcProfile], groupNum: Int)(
       implicit executionContext: ExecutionContext): TokenCirculationService =
-    new Impl(syncPeriod, config)
+    new Impl(syncPeriod, config, groupNum)
 
-  private class Impl(val syncPeriod: Duration, val config: DatabaseConfig[JdbcProfile])(
-      implicit val executionContext: ExecutionContext)
+  private class Impl(val syncPeriod: Duration,
+                     val config: DatabaseConfig[JdbcProfile],
+                     groupNum: Int)(implicit val executionContext: ExecutionContext)
       extends TokenCirculationService
       with TransactionQueries
       with BlockHeaderSchema
@@ -53,6 +55,14 @@ object TokenCirculationService {
       with DBRunner
       with StrictLogging {
     import config.profile.api._
+
+    private val launchDay =
+      Instant.ofEpochMilli(ALPH.LaunchTimestamp.millis).truncatedTo(ChronoUnit.DAYS)
+
+    private val chainIndexes: Seq[(GroupIndex, GroupIndex)] = for {
+      i <- 0 to groupNum - 1
+      j <- 0 to groupNum - 1
+    } yield (GroupIndex.unsafe(i), GroupIndex.unsafe(j))
 
     def syncOnce(): Future[Unit] = {
       logger.debug("Computing token circulation")
@@ -113,11 +123,40 @@ object TokenCirculationService {
     private def unspentTokens(at: TimeStamp) = {
       mainOutputs
         .filter(_.timestamp <= at)
-        .joinLeft(mainInputs)
+        .joinLeft(mainInputs.filter(_.timestamp <= at))
         .on(_.key === _.outputRefKey)
         .filter { case (_, inputOpt) => inputOpt.isEmpty }
         .map { case (output, _) => output.amount }
         .sum
+    }
+
+    @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
+    private def findMinimumLatestBlockTime(): Future[Option[TimeStamp]] = {
+      run(
+        DBIOAction.sequence(
+          chainIndexes.map {
+            case (from, to) =>
+              blockHeadersTable
+                .filter(header => header.chainFrom === from && header.chainTo === to)
+                .sortBy(_.timestamp.desc)
+                .map(_.timestamp)
+                .result
+                .headOption
+          }
+        )
+      ).map { timestampsOpt =>
+        if (timestampsOpt.contains(None)) {
+          None
+        } else {
+          val min                   = timestampsOpt.flatten.min
+          val mininumLatestBlockDay = Instant.ofEpochMilli(min).truncatedTo(ChronoUnit.DAYS)
+          if (mininumLatestBlockDay == launchDay) {
+            None
+          } else {
+            Some(TimeStamp.unsafe(min))
+          }
+        }
+      }
     }
 
     private def computeTokenCirculation(at: TimeStamp, lockTime: TimeStamp): DBActionR[U256] = {
@@ -128,28 +167,36 @@ object TokenCirculationService {
     }
 
     private def updateTokenCirculation(): Future[Unit] = {
-      val now = TimeStamp.now()
-      getLatestTimestamp()
-        .flatMap {
-          case None           => initGenesisTokenCirculation()
-          case Some(latestTs) => Future.successful(latestTs)
-        }
-        .flatMap { latestTs =>
-          val days = buildDaysRange(latestTs, now)
-          foldFutures(days) { day =>
-            run(for {
-              tokens <- computeTokenCirculation(day, day)
-              _      <- tokenCirculationTable += TokenCirculationEntity(day, tokens)
-            } yield (()))
-          }
-        }
+      findMinimumLatestBlockTime().flatMap {
+        case None =>
+          Future.successful(())
+        case Some(mininumLatestBlockTime) =>
+          getLatestTimestamp()
+            .flatMap {
+              case None           => initGenesisTokenCirculation()
+              case Some(latestTs) => Future.successful(latestTs)
+            }
+            .flatMap { latestTs =>
+              val days = buildDaysRange(latestTs, mininumLatestBlockTime)
+              foldFutures(days) { day =>
+                run(for {
+                  tokens <- computeTokenCirculation(day, day)
+                  _      <- insert(TokenCirculationEntity(day, tokens))
+                } yield (()))
+              }
+            }
+      }
     }
 
     private def initGenesisTokenCirculation(): Future[TimeStamp] = {
       run(for {
         tokens <- computeTokenCirculation(ALPH.GenesisTimestamp, ALPH.LaunchTimestamp)
-        _      <- tokenCirculationTable += TokenCirculationEntity(ALPH.LaunchTimestamp, tokens)
+        _      <- insert(TokenCirculationEntity(ALPH.LaunchTimestamp, tokens))
       } yield (ALPH.LaunchTimestamp))
+    }
+
+    private def insert(tokenCirculation: TokenCirculationEntity) = {
+      tokenCirculationTable.insertOrUpdate(tokenCirculation)
     }
 
     private def getLatestTimestamp(): Future[Option[TimeStamp]] = {

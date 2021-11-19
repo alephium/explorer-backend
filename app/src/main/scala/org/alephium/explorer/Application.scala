@@ -65,7 +65,7 @@ class Application(
     MempoolSyncService(syncPeriod = syncPeriod, blockFlowClient, utransactionDao)
 
   val tokenCirculationService: TokenCirculationService =
-    TokenCirculationService(syncPeriod = Duration.ofDaysUnsafe(1), databaseConfig)
+    TokenCirculationService(syncPeriod = Duration.ofMinutesUnsafe(1), databaseConfig, groupNum)
 
   val blockService: BlockService             = BlockService(blockDao)
   val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
