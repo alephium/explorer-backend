@@ -26,7 +26,7 @@ import org.alephium.explorer.BuildInfo
 import org.alephium.explorer.api.InfosEndpoints
 import org.alephium.explorer.api.model.ExplorerInfo
 import org.alephium.explorer.service.TokenSupplyService
-import org.alephium.util.Duration
+import org.alephium.util.{Duration, U256}
 
 class InfosServer(val blockflowFetchMaxAge: Duration, tokenSupplyService: TokenSupplyService)(
     implicit executionContext: ExecutionContext)
@@ -44,5 +44,11 @@ class InfosServer(val blockflowFetchMaxAge: Duration, tokenSupplyService: TokenS
         tokenSupplyService
           .getLatestTokenSupply()
           .map(_.toRight(InternalServerError("Cannot find token supply")))
+      } ~
+      toRoute(getTotalSupply) { _ =>
+        tokenSupplyService
+          .getLatestTokenSupply()
+          .map(supply => Right(supply.map(_.total).getOrElse(U256.Zero)))
       }
+
 }

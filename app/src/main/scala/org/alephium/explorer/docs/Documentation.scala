@@ -37,6 +37,7 @@ trait Documentation
       getTransactionsByAddress,
       getInfos,
       getTokenSupply,
+      getTotalSupply,
       listTokenSupply
     ),
     "Alephium Explorer API",
