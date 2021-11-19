@@ -23,7 +23,9 @@ import org.alephium.util.{TimeStamp, U256}
 
 final case class TokenSupply(
     timestamp: TimeStamp,
-    amount: U256
+    total: U256,
+    circulating: U256,
+    maximum: U256
 )
 
 object TokenSupply {

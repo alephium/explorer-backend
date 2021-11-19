@@ -201,12 +201,12 @@ class TokenSupplyServiceSpec extends AlephiumSpec with ScalaFutures with Eventua
 
       eventually {
         val tokenSupply = run(tokenSupplyTable.result).futureValue.reverse
-        tokenSupply.map(_.amount) is amounts
+        tokenSupply.map(_.circulating) is amounts
 
         tokenSupplyService
           .listTokenSupply(Pagination.unsafe(0, 1))
           .futureValue
-          .map(_.amount) is Seq(amounts.head)
+          .map(_.circulating) is Seq(amounts.head)
         tokenSupplyService
           .listTokenSupply(Pagination.unsafe(0, 0))
           .futureValue is Seq.empty
@@ -214,7 +214,7 @@ class TokenSupplyServiceSpec extends AlephiumSpec with ScalaFutures with Eventua
         tokenSupplyService
           .getLatestTokenSupply()
           .futureValue
-          .map(_.amount) is Some(amounts.head)
+          .map(_.circulating) is Some(amounts.head)
       }
 
       databaseConfig.db.close

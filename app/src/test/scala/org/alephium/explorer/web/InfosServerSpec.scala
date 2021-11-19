@@ -48,21 +48,22 @@ class InfosServerSpec()
 
   it should "return the token supply infos" in new Fixture {
     Get(s"/infos/token-supply") ~> server.route ~> check {
-      responseAs[Seq[TokenSupply]] is Seq(TokenSupply(TimeStamp.zero, U256.One))
+      responseAs[Seq[TokenSupply]] is Seq(tokenSupply)
     }
   }
 
   trait Fixture {
+    val tokenSupply = TokenSupply(TimeStamp.zero, U256.One, U256.One, U256.One)
     val tokenSupplyService = new TokenSupplyService {
       def listTokenSupply(pagination: Pagination): Future[Seq[TokenSupply]] =
         Future.successful(
           Seq(
-            TokenSupply(TimeStamp.zero, U256.One)
+            tokenSupply
           ))
       def getLatestTokenSupply(): Future[Option[TokenSupply]] =
         Future.successful(
           Some(
-            TokenSupply(TimeStamp.zero, U256.One)
+            tokenSupply
           ))
       implicit def executionContext: ExecutionContext = ???
       def syncOnce(): Future[Unit]                    = ???

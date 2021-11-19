@@ -1117,7 +1117,9 @@
       "TokenSupply": {
         "required": [
           "timestamp",
-          "amount"
+          "total",
+          "circulating",
+          "maximum"
         ],
         "type": "object",
         "properties": {
@@ -1125,7 +1127,15 @@
             "type": "integer",
             "format": "int64"
           },
-          "amount": {
+          "total": {
+            "type": "string",
+            "format": "uint256"
+          },
+          "circulating": {
+            "type": "string",
+            "format": "uint256"
+          },
+          "maximum": {
             "type": "string",
             "format": "uint256"
           }

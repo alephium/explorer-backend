@@ -30,11 +30,13 @@ trait TokenSupplySchema extends CustomTypes {
 
   class TokenSupplies(tag: Tag) extends Table[TokenSupplyEntity](tag, "token_supply") {
     def timestamp: Rep[TimeStamp] = column[TimeStamp]("timestamp", O.PrimaryKey)
-    def amount: Rep[U256] =
-      column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
+    def total: Rep[U256] =
+      column[U256]("total", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
+    def circulating: Rep[U256] =
+      column[U256]("circulating", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
 
     def * : ProvenShape[TokenSupplyEntity] =
-      (timestamp, amount)
+      (timestamp, total, circulating)
         .<>((TokenSupplyEntity.apply _).tupled, TokenSupplyEntity.unapply)
   }
 

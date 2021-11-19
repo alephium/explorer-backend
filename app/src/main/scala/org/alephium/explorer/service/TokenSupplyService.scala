@@ -84,7 +84,9 @@ object TokenSupplyService {
       ).map(_.map { entity =>
         TokenSupply(
           entity.timestamp,
-          entity.amount
+          entity.total,
+          entity.circulating,
+          ALPH.MaxALPHValue
         )
       })
     }
@@ -98,7 +100,9 @@ object TokenSupplyService {
       ).map(_.map { entity =>
         TokenSupply(
           entity.timestamp,
-          entity.amount
+          entity.total,
+          entity.circulating,
+          ALPH.MaxALPHValue
         )
       })
     }
@@ -159,11 +163,14 @@ object TokenSupplyService {
       }
     }
 
-    private def computeTokenSupply(at: TimeStamp, lockTime: TimeStamp): DBActionR[U256] = {
+    private def computeTokenSupply(at: TimeStamp, lockTime: TimeStamp): DBActionR[(U256, U256)] = {
       for {
         unspent       <- unspentTokens(at).result
         genesisLocked <- genesisLockedToken(lockTime).result
-      } yield (unspent.getOrElse(U256.Zero).subUnsafe(genesisLocked.getOrElse(U256.Zero)))
+      } yield {
+        val total = unspent.getOrElse(U256.Zero)
+        (total, total.subUnsafe(genesisLocked.getOrElse(U256.Zero)))
+      }
     }
 
     private def updateTokenSupply(): Future[Unit] = {
@@ -180,8 +187,8 @@ object TokenSupplyService {
               val days = buildDaysRange(latestTs, mininumLatestBlockTime)
               foldFutures(days) { day =>
                 run(for {
-                  tokens <- computeTokenSupply(day, day)
-                  _      <- insert(TokenSupplyEntity(day, tokens))
+                  (total, circulating) <- computeTokenSupply(day, day)
+                  _                    <- insert(TokenSupplyEntity(day, total, circulating))
                 } yield (()))
               }
             }
@@ -190,8 +197,8 @@ object TokenSupplyService {
 
     private def initGenesisTokenSupply(): Future[TimeStamp] = {
       run(for {
-        tokens <- computeTokenSupply(ALPH.GenesisTimestamp, ALPH.LaunchTimestamp)
-        _      <- insert(TokenSupplyEntity(ALPH.LaunchTimestamp, tokens))
+        (total, circulating) <- computeTokenSupply(ALPH.GenesisTimestamp, ALPH.LaunchTimestamp)
+        _                    <- insert(TokenSupplyEntity(ALPH.LaunchTimestamp, total, circulating))
       } yield (ALPH.LaunchTimestamp))
     }
 
