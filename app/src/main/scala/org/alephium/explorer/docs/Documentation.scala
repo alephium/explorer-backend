@@ -36,8 +36,8 @@ trait Documentation
       getAddressInfo,
       getTransactionsByAddress,
       getInfos,
-      getTokenCirculation,
-      listTokenCirculation
+      getTokenSupply,
+      listTokenSupply
     ),
     "Alephium Explorer API",
     "1.0"

@@ -20,24 +20,23 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 import slick.lifted.ProvenShape
 
-import org.alephium.explorer.persistence.model.TokenCirculationEntity
+import org.alephium.explorer.persistence.model.TokenSupplyEntity
 import org.alephium.util.{TimeStamp, U256}
 
-trait TokenCirculationSchema extends CustomTypes {
+trait TokenSupplySchema extends CustomTypes {
   val config: DatabaseConfig[JdbcProfile]
 
   import config.profile.api._
 
-  class TokenCirculations(tag: Tag)
-      extends Table[TokenCirculationEntity](tag, "token_circulation") {
+  class TokenSupplies(tag: Tag) extends Table[TokenSupplyEntity](tag, "token_supply") {
     def timestamp: Rep[TimeStamp] = column[TimeStamp]("timestamp", O.PrimaryKey)
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
 
-    def * : ProvenShape[TokenCirculationEntity] =
+    def * : ProvenShape[TokenSupplyEntity] =
       (timestamp, amount)
-        .<>((TokenCirculationEntity.apply _).tupled, TokenCirculationEntity.unapply)
+        .<>((TokenSupplyEntity.apply _).tupled, TokenSupplyEntity.unapply)
   }
 
-  val tokenCirculationTable: TableQuery[TokenCirculations] = TableQuery[TokenCirculations]
+  val tokenSupplyTable: TableQuery[TokenSupplies] = TableQuery[TokenSupplies]
 }

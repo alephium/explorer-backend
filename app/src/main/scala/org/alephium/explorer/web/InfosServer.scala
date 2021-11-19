@@ -25,12 +25,11 @@ import org.alephium.api.ApiError.InternalServerError
 import org.alephium.explorer.BuildInfo
 import org.alephium.explorer.api.InfosEndpoints
 import org.alephium.explorer.api.model.ExplorerInfo
-import org.alephium.explorer.service.TokenCirculationService
+import org.alephium.explorer.service.TokenSupplyService
 import org.alephium.util.Duration
 
-class InfosServer(
-    val blockflowFetchMaxAge: Duration,
-    tokenCirculationService: TokenCirculationService)(implicit executionContext: ExecutionContext)
+class InfosServer(val blockflowFetchMaxAge: Duration, tokenSupplyService: TokenSupplyService)(
+    implicit executionContext: ExecutionContext)
     extends Server
     with InfosEndpoints {
 
@@ -38,12 +37,12 @@ class InfosServer(
     toRoute(getInfos) { _ =>
       Future.successful(Right(ExplorerInfo(BuildInfo.releaseVersion, BuildInfo.commitId)))
     } ~
-      toRoute(listTokenCirculation) { pagination =>
-        tokenCirculationService.listTokenCirculation(pagination).map(Right(_))
+      toRoute(listTokenSupply) { pagination =>
+        tokenSupplyService.listTokenSupply(pagination).map(Right(_))
       } ~
-      toRoute(getTokenCirculation) { _ =>
-        tokenCirculationService
-          .getLatestTokenCirculation()
-          .map(_.toRight(InternalServerError("Cannot find token circulation")))
+      toRoute(getTokenSupply) { _ =>
+        tokenSupplyService
+          .getLatestTokenSupply()
+          .map(_.toRight(InternalServerError("Cannot find token supply")))
       }
 }

@@ -33,7 +33,7 @@ import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
-class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Eventually {
+class TokenSupplyServiceSpec extends AlephiumSpec with ScalaFutures with Eventually {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(50, Seconds))
 
@@ -43,19 +43,19 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
       TimeStamp.unsafe(Instant.parse(str).toEpochMilli)
     }
 
-    TokenCirculationService.buildDaysRange(
+    TokenSupplyService.buildDaysRange(
       launchTime,
       launchTime.plusUnsafe(Duration.ofHoursUnsafe(8))
     ) is
       Seq.empty
 
-    TokenCirculationService.buildDaysRange(
+    TokenSupplyService.buildDaysRange(
       launchTime.plusUnsafe(Duration.ofHoursUnsafe(8)),
       launchTime
     ) is
       Seq.empty
 
-    TokenCirculationService.buildDaysRange(
+    TokenSupplyService.buildDaysRange(
       launchTime,
       launchTime.plusUnsafe(Duration.ofDaysUnsafe(1))
     ) is
@@ -63,7 +63,7 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
         ts("2021-11-08T23:59:59.999Z")
       )
 
-    TokenCirculationService.buildDaysRange(
+    TokenSupplyService.buildDaysRange(
       launchTime,
       launchTime.plusUnsafe(Duration.ofDaysUnsafe(3))
     ) is
@@ -73,7 +73,7 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
         ts("2021-11-10T23:59:59.999Z")
       )
 
-    TokenCirculationService.buildDaysRange(
+    TokenSupplyService.buildDaysRange(
       launchTime,
       ts("2021-11-11T10:39:53.100Z")
     ) is
@@ -84,7 +84,7 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
       )
   }
 
-  it should "Token circulation - only genesis - no lock" in new Fixture {
+  it should "Token supply - only genesis - no lock" in new Fixture {
     override val genesisLocked = false
 
     test(genesisBlock) {
@@ -92,7 +92,7 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
     }
   }
 
-  it should "Token circulation - only genesis - locked" in new Fixture {
+  it should "Token supply - only genesis - locked" in new Fixture {
     override val genesisLocked = true
 
     test(genesisBlock) {
@@ -100,7 +100,7 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
     }
   }
 
-  it should "Token circulation - block 1 not locked" in new Fixture {
+  it should "Token supply - block 1 not locked" in new Fixture {
     override val genesisLocked = false
 
     test(genesisBlock, block1, block2) {
@@ -111,7 +111,7 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
     }
   }
 
-  it should "Token circulation - block 1 locked" in new Fixture {
+  it should "Token supply - block 1 locked" in new Fixture {
     override val genesisLocked = false
     override val block1Locked  = true
 
@@ -120,7 +120,7 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
     }
   }
 
-  it should "Token circulation - some output spent" in new Fixture {
+  it should "Token supply - some output spent" in new Fixture {
     override val genesisLocked = false
 
     test(genesisBlock, block1, block2, block3) {
@@ -130,7 +130,7 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
     }
   }
 
-  it should "Token circulation - genesis locked - some output spent" in new Fixture {
+  it should "Token supply - genesis locked - some output spent" in new Fixture {
     override val genesisLocked = true
 
     test(genesisBlock, block1, block2, block3) {
@@ -138,7 +138,7 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
     }
   }
 
-  trait Fixture extends TokenCirculationSchema with DatabaseFixture with DBRunner with Generators {
+  trait Fixture extends TokenSupplySchema with DatabaseFixture with DBRunner with Generators {
     override val config = databaseConfig
     import config.profile.api._
 
@@ -149,8 +149,8 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
 
     lazy val blockDao: BlockDao = BlockDao(databaseConfig)
 
-    lazy val tokenCirculationService: TokenCirculationService =
-      TokenCirculationService(syncPeriod = Duration.unsafe(30 * 1000), databaseConfig, groupNum = 1)
+    lazy val tokenSupplyService: TokenSupplyService =
+      TokenSupplyService(syncPeriod = Duration.unsafe(30 * 1000), databaseConfig, groupNum = 1)
 
     lazy val genesisBlock = {
       val lockTime =
@@ -197,22 +197,22 @@ class TokenCirculationServiceSpec extends AlephiumSpec with ScalaFutures with Ev
         blockDao.updateMainChainStatus(block.hash, true).futureValue
       }
 
-      tokenCirculationService.syncOnce().futureValue is ()
+      tokenSupplyService.syncOnce().futureValue is ()
 
       eventually {
-        val tokenCirculation = run(tokenCirculationTable.result).futureValue.reverse
-        tokenCirculation.map(_.amount) is amounts
+        val tokenSupply = run(tokenSupplyTable.result).futureValue.reverse
+        tokenSupply.map(_.amount) is amounts
 
-        tokenCirculationService
-          .listTokenCirculation(Pagination.unsafe(0, 1))
+        tokenSupplyService
+          .listTokenSupply(Pagination.unsafe(0, 1))
           .futureValue
           .map(_.amount) is Seq(amounts.head)
-        tokenCirculationService
-          .listTokenCirculation(Pagination.unsafe(0, 0))
+        tokenSupplyService
+          .listTokenSupply(Pagination.unsafe(0, 0))
           .futureValue is Seq.empty
 
-        tokenCirculationService
-          .getLatestTokenCirculation()
+        tokenSupplyService
+          .getLatestTokenSupply()
           .futureValue
           .map(_.amount) is Some(amounts.head)
       }

@@ -14,11 +14,18 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.model
+package org.alephium.explorer.api.model
 
+import org.alephium.api.UtilJson._
+import org.alephium.explorer.api.Json.u256ReadWriter
+import org.alephium.json.Json._
 import org.alephium.util.{TimeStamp, U256}
 
-final case class TokenCirculationEntity(
+final case class TokenSupply(
     timestamp: TimeStamp,
     amount: U256
 )
+
+object TokenSupply {
+  implicit val readWriter: ReadWriter[TokenSupply] = macroRW
+}

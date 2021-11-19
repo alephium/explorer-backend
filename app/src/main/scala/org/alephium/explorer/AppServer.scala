@@ -30,7 +30,7 @@ import org.alephium.util.Duration
 // scalastyle:off magic.number
 class AppServer(blockService: BlockService,
                 transactionService: TransactionService,
-                tokenCirculationService: TokenCirculationService,
+                tokenSupplyService: TokenSupplyService,
                 blockFlowFetchMaxAge: Duration)(implicit executionContext: ExecutionContext)
     extends StrictLogging {
 
@@ -39,7 +39,7 @@ class AppServer(blockService: BlockService,
     new AddressServer(transactionService, blockFlowFetchMaxAge)
   val transactionServer: TransactionServer =
     new TransactionServer(transactionService, blockFlowFetchMaxAge)
-  val infosServer: InfosServer = new InfosServer(blockFlowFetchMaxAge, tokenCirculationService)
+  val infosServer: InfosServer = new InfosServer(blockFlowFetchMaxAge, tokenSupplyService)
   val documentation: DocumentationServer =
     new DocumentationServer(blockFlowFetchMaxAge)
 

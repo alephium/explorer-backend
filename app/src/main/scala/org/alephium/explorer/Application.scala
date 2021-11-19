@@ -64,14 +64,14 @@ class Application(
   val mempoolSyncService: MempoolSyncService =
     MempoolSyncService(syncPeriod = syncPeriod, blockFlowClient, utransactionDao)
 
-  val tokenCirculationService: TokenCirculationService =
-    TokenCirculationService(syncPeriod = Duration.ofMinutesUnsafe(1), databaseConfig, groupNum)
+  val tokenSupplyService: TokenSupplyService =
+    TokenSupplyService(syncPeriod = Duration.ofMinutesUnsafe(1), databaseConfig, groupNum)
 
   val blockService: BlockService             = BlockService(blockDao)
   val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
 
   val server: AppServer =
-    new AppServer(blockService, transactionService, tokenCirculationService, blockflowFetchMaxAge)
+    new AppServer(blockService, transactionService, tokenSupplyService, blockflowFetchMaxAge)
 
   private val bindingPromise: Promise[Http.ServerBinding] = Promise()
 
@@ -89,7 +89,7 @@ class Application(
       peers = urisFromPeers(selfClique.toOption.get.nodes.toSeq)
       _ <- blockFlowSyncService.start(peers)
       _ <- mempoolSyncService.start(peers)
-      _ <- tokenCirculationService.start()
+      _ <- tokenSupplyService.start()
     } yield ()
   }
 

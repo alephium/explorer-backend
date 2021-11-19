@@ -26,32 +26,32 @@ import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
 import slick.jdbc.JdbcProfile
 
-import org.alephium.explorer.api.model.{GroupIndex, Height, Pagination, TokenCirculation}
+import org.alephium.explorer.api.model.{GroupIndex, Height, Pagination, TokenSupply}
 import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence._
-import org.alephium.explorer.persistence.model.TokenCirculationEntity
+import org.alephium.explorer.persistence.model.TokenSupplyEntity
 import org.alephium.explorer.persistence.queries.TransactionQueries
-import org.alephium.explorer.persistence.schema.{BlockHeaderSchema, TokenCirculationSchema}
+import org.alephium.explorer.persistence.schema.{BlockHeaderSchema, TokenSupplySchema}
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
-trait TokenCirculationService extends SyncService {
-  def listTokenCirculation(pagination: Pagination): Future[Seq[TokenCirculation]]
-  def getLatestTokenCirculation(): Future[Option[TokenCirculation]]
+trait TokenSupplyService extends SyncService {
+  def listTokenSupply(pagination: Pagination): Future[Seq[TokenSupply]]
+  def getLatestTokenSupply(): Future[Option[TokenSupply]]
 }
 
-object TokenCirculationService {
+object TokenSupplyService {
   def apply(syncPeriod: Duration, config: DatabaseConfig[JdbcProfile], groupNum: Int)(
-      implicit executionContext: ExecutionContext): TokenCirculationService =
+      implicit executionContext: ExecutionContext): TokenSupplyService =
     new Impl(syncPeriod, config, groupNum)
 
   private class Impl(val syncPeriod: Duration,
                      val config: DatabaseConfig[JdbcProfile],
                      groupNum: Int)(implicit val executionContext: ExecutionContext)
-      extends TokenCirculationService
+      extends TokenSupplyService
       with TransactionQueries
       with BlockHeaderSchema
-      with TokenCirculationSchema
+      with TokenSupplySchema
       with DBRunner
       with StrictLogging {
     import config.profile.api._
@@ -65,38 +65,38 @@ object TokenCirculationService {
     } yield (GroupIndex.unsafe(i), GroupIndex.unsafe(j))
 
     def syncOnce(): Future[Unit] = {
-      logger.debug("Computing token circulation")
-      updateTokenCirculation().map { _ =>
-        logger.debug("Token circulation updated")
+      logger.debug("Computing token supply")
+      updateTokenSupply().map { _ =>
+        logger.debug("Token supply updated")
       }
     }
 
-    def listTokenCirculation(pagination: Pagination): Future[Seq[TokenCirculation]] = {
+    def listTokenSupply(pagination: Pagination): Future[Seq[TokenSupply]] = {
       val offset = pagination.offset.toLong
       val limit  = pagination.limit.toLong
       val toDrop = offset * limit
       run(
-        tokenCirculationTable
+        tokenSupplyTable
           .sortBy { _.timestamp.desc }
           .drop(toDrop)
           .take(limit)
           .result
       ).map(_.map { entity =>
-        TokenCirculation(
+        TokenSupply(
           entity.timestamp,
           entity.amount
         )
       })
     }
 
-    def getLatestTokenCirculation(): Future[Option[TokenCirculation]] = {
+    def getLatestTokenSupply(): Future[Option[TokenSupply]] = {
       run(
-        tokenCirculationTable
+        tokenSupplyTable
           .sortBy { _.timestamp.desc }
           .result
           .headOption
       ).map(_.map { entity =>
-        TokenCirculation(
+        TokenSupply(
           entity.timestamp,
           entity.amount
         )
@@ -159,49 +159,49 @@ object TokenCirculationService {
       }
     }
 
-    private def computeTokenCirculation(at: TimeStamp, lockTime: TimeStamp): DBActionR[U256] = {
+    private def computeTokenSupply(at: TimeStamp, lockTime: TimeStamp): DBActionR[U256] = {
       for {
         unspent       <- unspentTokens(at).result
         genesisLocked <- genesisLockedToken(lockTime).result
       } yield (unspent.getOrElse(U256.Zero).subUnsafe(genesisLocked.getOrElse(U256.Zero)))
     }
 
-    private def updateTokenCirculation(): Future[Unit] = {
+    private def updateTokenSupply(): Future[Unit] = {
       findMinimumLatestBlockTime().flatMap {
         case None =>
           Future.successful(())
         case Some(mininumLatestBlockTime) =>
           getLatestTimestamp()
             .flatMap {
-              case None           => initGenesisTokenCirculation()
+              case None           => initGenesisTokenSupply()
               case Some(latestTs) => Future.successful(latestTs)
             }
             .flatMap { latestTs =>
               val days = buildDaysRange(latestTs, mininumLatestBlockTime)
               foldFutures(days) { day =>
                 run(for {
-                  tokens <- computeTokenCirculation(day, day)
-                  _      <- insert(TokenCirculationEntity(day, tokens))
+                  tokens <- computeTokenSupply(day, day)
+                  _      <- insert(TokenSupplyEntity(day, tokens))
                 } yield (()))
               }
             }
       }
     }
 
-    private def initGenesisTokenCirculation(): Future[TimeStamp] = {
+    private def initGenesisTokenSupply(): Future[TimeStamp] = {
       run(for {
-        tokens <- computeTokenCirculation(ALPH.GenesisTimestamp, ALPH.LaunchTimestamp)
-        _      <- insert(TokenCirculationEntity(ALPH.LaunchTimestamp, tokens))
+        tokens <- computeTokenSupply(ALPH.GenesisTimestamp, ALPH.LaunchTimestamp)
+        _      <- insert(TokenSupplyEntity(ALPH.LaunchTimestamp, tokens))
       } yield (ALPH.LaunchTimestamp))
     }
 
-    private def insert(tokenCirculation: TokenCirculationEntity) = {
-      tokenCirculationTable.insertOrUpdate(tokenCirculation)
+    private def insert(tokenSupply: TokenSupplyEntity) = {
+      tokenSupplyTable.insertOrUpdate(tokenSupply)
     }
 
     private def getLatestTimestamp(): Future[Option[TimeStamp]] = {
       run(
-        tokenCirculationTable
+        tokenSupplyTable
           .sortBy { _.timestamp.desc }
           .map(_.timestamp)
           .result

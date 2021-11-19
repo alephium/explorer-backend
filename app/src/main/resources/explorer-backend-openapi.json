@@ -719,19 +719,19 @@
         }
       }
     },
-    "/infos/latest-token-circulation": {
+    "/infos/latest-token-supply": {
       "get": {
         "tags": [
           "Infos"
         ],
-        "description": "Get the latest token circulation value",
-        "operationId": "getInfosLatest-token-circulation",
+        "description": "Get the latest token supply value",
+        "operationId": "getInfosLatest-token-supply",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TokenCirculation"
+                  "$ref": "#/components/schemas/TokenSupply"
                 }
               }
             }
@@ -805,13 +805,13 @@
         }
       }
     },
-    "/infos/token-circulation": {
+    "/infos/token-supply": {
       "get": {
         "tags": [
           "Infos"
         ],
-        "description": "Get token circulation list",
-        "operationId": "getInfosToken-circulation",
+        "description": "Get token supply list",
+        "operationId": "getInfosToken-supply",
         "parameters": [
           {
             "name": "page",
@@ -839,7 +839,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/TokenCirculation"
+                    "$ref": "#/components/schemas/TokenSupply"
                   }
                 }
               }
@@ -1114,7 +1114,7 @@
           }
         }
       },
-      "TokenCirculation": {
+      "TokenSupply": {
         "required": [
           "timestamp",
           "amount"

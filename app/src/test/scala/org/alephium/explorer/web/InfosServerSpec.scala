@@ -22,8 +22,8 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpupickle.UpickleCustomizationSupport
 
 import org.alephium.explorer.{AlephiumSpec, BuildInfo}
-import org.alephium.explorer.api.model.{ExplorerInfo, Pagination, TokenCirculation}
-import org.alephium.explorer.service.TokenCirculationService
+import org.alephium.explorer.api.model.{ExplorerInfo, Pagination, TokenSupply}
+import org.alephium.explorer.service.TokenSupplyService
 import org.alephium.json.Json
 import org.alephium.util.{Duration, TimeStamp, U256}
 
@@ -46,23 +46,23 @@ class InfosServerSpec()
     }
   }
 
-  it should "return the token circulation infos" in new Fixture {
-    Get(s"/infos/token-circulation") ~> server.route ~> check {
-      responseAs[Seq[TokenCirculation]] is Seq(TokenCirculation(TimeStamp.zero, U256.One))
+  it should "return the token supply infos" in new Fixture {
+    Get(s"/infos/token-supply") ~> server.route ~> check {
+      responseAs[Seq[TokenSupply]] is Seq(TokenSupply(TimeStamp.zero, U256.One))
     }
   }
 
   trait Fixture {
-    val tokenCirculationService = new TokenCirculationService {
-      def listTokenCirculation(pagination: Pagination): Future[Seq[TokenCirculation]] =
+    val tokenSupplyService = new TokenSupplyService {
+      def listTokenSupply(pagination: Pagination): Future[Seq[TokenSupply]] =
         Future.successful(
           Seq(
-            TokenCirculation(TimeStamp.zero, U256.One)
+            TokenSupply(TimeStamp.zero, U256.One)
           ))
-      def getLatestTokenCirculation(): Future[Option[TokenCirculation]] =
+      def getLatestTokenSupply(): Future[Option[TokenSupply]] =
         Future.successful(
           Some(
-            TokenCirculation(TimeStamp.zero, U256.One)
+            TokenSupply(TimeStamp.zero, U256.One)
           ))
       implicit def executionContext: ExecutionContext = ???
       def syncOnce(): Future[Unit]                    = ???
@@ -70,6 +70,6 @@ class InfosServerSpec()
 
     }
 
-    val server = new InfosServer(Duration.zero, tokenCirculationService)
+    val server = new InfosServer(Duration.zero, tokenSupplyService)
   }
 }

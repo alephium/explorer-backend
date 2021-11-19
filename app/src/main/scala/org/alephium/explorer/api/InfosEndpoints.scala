@@ -21,7 +21,7 @@ import sttp.tapir.generic.auto._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.explorer.api.BaseEndpoint
-import org.alephium.explorer.api.model.{ExplorerInfo, Pagination, TokenCirculation}
+import org.alephium.explorer.api.model.{ExplorerInfo, Pagination, TokenSupply}
 
 // scalastyle:off magic.number
 trait InfosEndpoints extends BaseEndpoint with QueryParams {
@@ -36,16 +36,16 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ExplorerInfo])
       .description("Get explorer informations")
 
-  val listTokenCirculation: BaseEndpoint[Pagination, Seq[TokenCirculation]] =
+  val listTokenSupply: BaseEndpoint[Pagination, Seq[TokenSupply]] =
     infosEndpoint.get
-      .in("token-circulation")
+      .in("token-supply")
       .in(pagination)
-      .out(jsonBody[Seq[TokenCirculation]])
-      .description("Get token circulation list")
+      .out(jsonBody[Seq[TokenSupply]])
+      .description("Get token supply list")
 
-  val getTokenCirculation: BaseEndpoint[Unit, TokenCirculation] =
+  val getTokenSupply: BaseEndpoint[Unit, TokenSupply] =
     infosEndpoint.get
-      .in("latest-token-circulation")
-      .out(jsonBody[TokenCirculation])
-      .description("Get the latest token circulation value")
+      .in("latest-token-supply")
+      .out(jsonBody[TokenSupply])
+      .description("Get the latest token supply value")
 }
