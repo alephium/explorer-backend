@@ -719,13 +719,122 @@
         }
       }
     },
-    "/infos/latest-token-supply": {
+    "/infos/supply": {
       "get": {
         "tags": [
           "Infos"
         ],
-        "description": "Get the latest token supply value",
-        "operationId": "getInfosLatest-token-supply",
+        "description": "Get token supply list",
+        "operationId": "getInfosSupply",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number per page",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TokenSupply"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/infos/supply/current": {
+      "get": {
+        "tags": [
+          "Infos"
+        ],
+        "description": "Get the current token supply value",
+        "operationId": "getInfosSupplyCurrent",
         "responses": {
           "200": {
             "content": {
@@ -805,42 +914,19 @@
         }
       }
     },
-    "/infos/token-supply": {
+    "/infos/supply/total": {
       "get": {
         "tags": [
           "Infos"
         ],
-        "description": "Get token supply list",
-        "operationId": "getInfosToken-supply",
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "description": "Page number",
-            "required": false,
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "Number per page",
-            "required": false,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
+        "description": "Get the total supply value",
+        "operationId": "getInfosSupplyTotal",
         "responses": {
           "200": {
             "content": {
-              "application/json": {
+              "text/plain": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TokenSupply"
-                  }
+                  "type": "string"
                 }
               }
             }

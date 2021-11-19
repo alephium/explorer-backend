@@ -32,27 +32,30 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
       .tag("Infos")
       .in("infos")
 
+  private val supplyEndpoint =
+    infosEndpoint
+      .in("supply")
+
   val getInfos: BaseEndpoint[Unit, ExplorerInfo] =
     infosEndpoint.get
       .out(jsonBody[ExplorerInfo])
       .description("Get explorer informations")
 
   val listTokenSupply: BaseEndpoint[Pagination, Seq[TokenSupply]] =
-    infosEndpoint.get
-      .in("token-supply")
+    supplyEndpoint.get
       .in(pagination)
       .out(jsonBody[Seq[TokenSupply]])
       .description("Get token supply list")
 
   val getTokenSupply: BaseEndpoint[Unit, TokenSupply] =
-    infosEndpoint.get
-      .in("latest-token-supply")
+    supplyEndpoint.get
+      .in("current")
       .out(jsonBody[TokenSupply])
-      .description("Get the latest token supply value")
+      .description("Get the current token supply value")
 
   val getTotalSupply: BaseEndpoint[Unit, U256] =
-    infosEndpoint.get
-      .in("total-token-supply")
+    supplyEndpoint.get
+      .in("total")
       .out(plainBody[U256])
       .description("Get the total supply value")
 }

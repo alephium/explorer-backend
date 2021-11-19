@@ -20,6 +20,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpupickle.UpickleCustomizationSupport
+import org.scalatest.concurrent.ScalaFutures
 
 import org.alephium.explorer.{AlephiumSpec, BuildInfo}
 import org.alephium.explorer.api.model.{ExplorerInfo, Pagination, TokenSupply}
@@ -31,6 +32,7 @@ import org.alephium.util.{Duration, TimeStamp, U256}
 class InfosServerSpec()
     extends AlephiumSpec
     with AkkaDecodeFailureHandler
+    with ScalaFutures
     with ScalatestRouteTest
     with UpickleCustomizationSupport {
   override type Api = Json.type
@@ -46,9 +48,26 @@ class InfosServerSpec()
     }
   }
 
-  it should "return the token supply infos" in new Fixture {
-    Get(s"/infos/token-supply") ~> server.route ~> check {
+  it should "return the token supply list" in new Fixture {
+    Get(s"/infos/supply") ~> server.route ~> check {
       responseAs[Seq[TokenSupply]] is Seq(tokenSupply)
+    }
+  }
+
+  it should "return the token current supply" in new Fixture {
+    Get(s"/infos/supply/current") ~> server.route ~> check {
+      responseAs[TokenSupply] is tokenSupply
+    }
+  }
+
+  it should "return the total token supply" in new Fixture {
+    Get(s"/infos/supply/total") ~> server.route ~> check {
+      val total = response.entity
+        .toStrict(Duration.ofSecondsUnsafe(5).asScala)
+        .map(_.data.utf8String)
+        .futureValue
+
+      total is "1"
     }
   }
 
