@@ -26,7 +26,8 @@ import org.alephium.explorer.{AlephiumSpec, BuildInfo}
 import org.alephium.explorer.api.model.{ExplorerInfo, Pagination, TokenSupply}
 import org.alephium.explorer.service.TokenSupplyService
 import org.alephium.json.Json
-import org.alephium.util.{Duration, TimeStamp, U256}
+import org.alephium.protocol.ALPH
+import org.alephium.util.{Duration, TimeStamp}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var"))
 class InfosServerSpec()
@@ -55,13 +56,18 @@ class InfosServerSpec()
   }
 
   it should "return the token current supply" in new Fixture {
-    Get(s"/infos/supply/current") ~> server.route ~> check {
-      responseAs[TokenSupply] is tokenSupply
+    Get(s"/infos/supply/circulating-alph") ~> server.route ~> check {
+      val circulating = response.entity
+        .toStrict(Duration.ofSecondsUnsafe(5).asScala)
+        .map(_.data.utf8String)
+        .futureValue
+
+      circulating is "2"
     }
   }
 
   it should "return the total token supply" in new Fixture {
-    Get(s"/infos/supply/total") ~> server.route ~> check {
+    Get(s"/infos/supply/total-alph") ~> server.route ~> check {
       val total = response.entity
         .toStrict(Duration.ofSecondsUnsafe(5).asScala)
         .map(_.data.utf8String)
@@ -72,7 +78,7 @@ class InfosServerSpec()
   }
 
   trait Fixture {
-    val tokenSupply = TokenSupply(TimeStamp.zero, U256.One, U256.One, U256.One)
+    val tokenSupply = TokenSupply(TimeStamp.zero, ALPH.alph(1), ALPH.alph(2), ALPH.alph(3))
     val tokenSupplyService = new TokenSupplyService {
       def listTokenSupply(pagination: Pagination): Future[Seq[TokenSupply]] =
         Future.successful(

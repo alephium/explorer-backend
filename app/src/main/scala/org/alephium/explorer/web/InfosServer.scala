@@ -16,16 +16,18 @@
 
 package org.alephium.explorer.web
 
+import java.math.BigDecimal
+
 import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 
-import org.alephium.api.ApiError.InternalServerError
 import org.alephium.explorer.BuildInfo
 import org.alephium.explorer.api.InfosEndpoints
 import org.alephium.explorer.api.model.ExplorerInfo
 import org.alephium.explorer.service.TokenSupplyService
+import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, U256}
 
 class InfosServer(val blockflowFetchMaxAge: Duration, tokenSupplyService: TokenSupplyService)(
@@ -40,15 +42,23 @@ class InfosServer(val blockflowFetchMaxAge: Duration, tokenSupplyService: TokenS
       toRoute(listTokenSupply) { pagination =>
         tokenSupplyService.listTokenSupply(pagination).map(Right(_))
       } ~
-      toRoute(getTokenSupply) { _ =>
+      toRoute(getCirculatingSupply) { _ =>
         tokenSupplyService
           .getLatestTokenSupply()
-          .map(_.toRight(InternalServerError("Cannot find token supply")))
+          .map { supply =>
+            val circulating = supply.map(_.circulating).getOrElse(U256.Zero)
+            Right(toALPH(circulating))
+          }
       } ~
       toRoute(getTotalSupply) { _ =>
         tokenSupplyService
           .getLatestTokenSupply()
-          .map(supply => Right(supply.map(_.total).getOrElse(U256.Zero)))
+          .map { supply =>
+            val total = supply.map(_.total).getOrElse(U256.Zero)
+            Right(toALPH(total))
+          }
       }
 
+  private def toALPH(u256: U256): BigDecimal =
+    new BigDecimal(u256.v).divide(new BigDecimal(ALPH.oneAlph.v))
 }

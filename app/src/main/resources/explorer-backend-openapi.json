@@ -828,19 +828,19 @@
         }
       }
     },
-    "/infos/supply/current": {
+    "/infos/supply/total-alph": {
       "get": {
         "tags": [
           "Infos"
         ],
-        "description": "Get the current token supply value",
-        "operationId": "getInfosSupplyCurrent",
+        "description": "Get the ALPH total supply",
+        "operationId": "getInfosSupplyTotal-alph",
         "responses": {
           "200": {
             "content": {
-              "application/json": {
+              "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/TokenSupply"
+                  "type": "string"
                 }
               }
             }
@@ -914,13 +914,13 @@
         }
       }
     },
-    "/infos/supply/total": {
+    "/infos/supply/circulating-alph": {
       "get": {
         "tags": [
           "Infos"
         ],
-        "description": "Get the total supply value",
-        "operationId": "getInfosSupplyTotal",
+        "description": "Get the ALPH circulating supply",
+        "operationId": "getInfosSupplyCirculating-alph",
         "responses": {
           "200": {
             "content": {

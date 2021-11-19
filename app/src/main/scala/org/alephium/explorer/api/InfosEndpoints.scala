@@ -16,13 +16,14 @@
 
 package org.alephium.explorer.api
 
+import java.math.BigDecimal
+
 import sttp.tapir._
 import sttp.tapir.generic.auto._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.api.model.{ExplorerInfo, Pagination, TokenSupply}
-import org.alephium.util.U256
 
 // scalastyle:off magic.number
 trait InfosEndpoints extends BaseEndpoint with QueryParams {
@@ -47,15 +48,15 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[Seq[TokenSupply]])
       .description("Get token supply list")
 
-  val getTokenSupply: BaseEndpoint[Unit, TokenSupply] =
+  val getCirculatingSupply: BaseEndpoint[Unit, BigDecimal] =
     supplyEndpoint.get
-      .in("current")
-      .out(jsonBody[TokenSupply])
-      .description("Get the current token supply value")
+      .in("circulating-alph")
+      .out(plainBody[BigDecimal])
+      .description("Get the ALPH circulating supply")
 
-  val getTotalSupply: BaseEndpoint[Unit, U256] =
+  val getTotalSupply: BaseEndpoint[Unit, BigDecimal] =
     supplyEndpoint.get
-      .in("total")
-      .out(plainBody[U256])
-      .description("Get the total supply value")
+      .in("total-alph")
+      .out(plainBody[BigDecimal])
+      .description("Get the ALPH total supply")
 }
