@@ -14,33 +14,12 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.docs
+package org.alephium.explorer.api.model
 
-import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
-import sttp.tapir.openapi.OpenAPI
+import org.alephium.json.Json._
 
-import org.alephium.explorer.api._
+final case class ExplorerInfo(releaseVersion: String, commit: String)
 
-trait Documentation
-    extends BlockEndpoints
-    with TransactionEndpoints
-    with AddressesEndpoints
-    with InfosEndpoints
-    with OpenAPIDocsInterpreter {
-  val docs: OpenAPI = toOpenAPI(
-    List(
-      listBlocks,
-      getBlockByHash,
-      getBlockTransactions,
-      getTransactionById,
-      getAddressInfo,
-      getTransactionsByAddress,
-      getInfos,
-      listTokenSupply,
-      getTotalSupply,
-      getCirculatingSupply
-    ),
-    "Alephium Explorer API",
-    "1.0"
-  )
+object ExplorerInfo {
+  implicit val readWriter: ReadWriter[ExplorerInfo] = macroRW
 }

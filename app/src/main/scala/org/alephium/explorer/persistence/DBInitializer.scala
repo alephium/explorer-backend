@@ -38,6 +38,7 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
     with UnconfirmedTxSchema
     with UInputSchema
     with UOutputSchema
+    with TokenSupplySchema
     with DBRunner
     with StrictLogging {
   import config.profile.api._
@@ -56,7 +57,8 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
           outputsTable,
           unconfirmedTxsTable,
           uinputsTable,
-          uoutputsTable)
+          uoutputsTable,
+          tokenSupplyTable)
     val existingTables = run(MTable.getTables)
     existingTables
       .flatMap { tables =>

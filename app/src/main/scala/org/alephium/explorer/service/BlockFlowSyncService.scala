@@ -17,16 +17,15 @@
 package org.alephium.explorer.service
 
 import scala.annotation.tailrec
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success}
+import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.StrictLogging
 
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockEntity
-import org.alephium.explorer.sideEffect
 import org.alephium.util.{Duration, TimeStamp}
 
 /*
@@ -49,10 +48,7 @@ import org.alephium.util.{Duration, TimeStamp}
  * sure we have the right one in DB.
  */
 
-trait BlockFlowSyncService {
-  def start(newUris: Seq[Uri]): Future[Unit]
-  def stop(): Future[Unit]
-}
+trait BlockFlowSyncService extends SyncService.BlockFlow
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.TraversableOps"))
 object BlockFlowSyncService extends StrictLogging {
@@ -63,9 +59,9 @@ object BlockFlowSyncService extends StrictLogging {
     new Impl(groupNum, syncPeriod, blockFlowClient, blockDao)
 
   private class Impl(groupNum: Int,
-                     syncPeriod: Duration,
+                     val syncPeriod: Duration,
                      blockFlowClient: BlockFlowClient,
-                     blockDao: BlockDao)(implicit executionContext: ExecutionContext)
+                     blockDao: BlockDao)(implicit val executionContext: ExecutionContext)
       extends BlockFlowSyncService {
 
     private val chainIndexes: Seq[(GroupIndex, GroupIndex)] = for {
@@ -73,69 +69,25 @@ object BlockFlowSyncService extends StrictLogging {
       j <- 0 to groupNum - 1
     } yield (GroupIndex.unsafe(i), GroupIndex.unsafe(j))
 
-    private val stopped: Promise[Unit]  = Promise()
-    private val syncDone: Promise[Unit] = Promise()
-
-    private var initDone    = false
-    private var startedOnce = false
-
     // scalastyle:off magic.number
     private val defaultStep     = Duration.ofMinutesUnsafe(30L)
     private val defaultBackStep = Duration.ofSecondsUnsafe(10L)
     private val initialBackStep = Duration.ofMinutesUnsafe(30L)
+
+    private var initialBackStepDone = false
     // scalastyle:on magic.number
 
-    var nodeUris: Seq[Uri] = Seq.empty
-
-    def start(newUris: Seq[Uri]): Future[Unit] = {
-      startedOnce = true
-      nodeUris    = newUris
-      Future.successful {
-        sync()
-      }
-    }
-
-    def stop(): Future[Unit] = {
-      if (!startedOnce) {
-        syncDone.failure(new IllegalStateException).future
+    override def syncOnce(): Future[Unit] = {
+      if (initialBackStepDone) {
+        syncOnceWith(defaultStep, defaultBackStep)
       } else {
-        sideEffect(if (!stopped.isCompleted) stopped.success(()))
-        syncDone.future
-      }
-    }
-
-    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
-    private def sync(): Unit = {
-      (if (!initDone) {
-         init().flatMap { initialized =>
-           if (initialized) {
-             logger.debug("Init done")
-             initDone = true
-             syncOnce(defaultStep, initialBackStep)
-           } else {
-             Future.successful(())
-           }
-         }
-       } else {
-         syncOnce(defaultStep, defaultBackStep)
-       }).onComplete {
-        case Success(_) =>
-          continue()
-        case Failure(e) =>
-          logger.error("Failure while syncing", e)
-          continue()
-      }
-      def continue() = {
-        if (stopped.isCompleted) {
-          syncDone.success(())
-        } else {
-          Thread.sleep(syncPeriod.millis)
-          sync()
+        syncOnceWith(defaultStep, initialBackStep).map { _ =>
+          initialBackStepDone = true
         }
       }
     }
 
-    private def syncOnce(step: Duration, backStep: Duration): Future[Unit] = {
+    private def syncOnceWith(step: Duration, backStep: Duration): Future[Unit] = {
       logger.debug("Start syncing")
       val startedAt  = TimeStamp.now()
       var downloaded = 0
@@ -190,7 +142,7 @@ object BlockFlowSyncService extends StrictLogging {
     }
 
     //We need at least one TimeStamp other than a genesis one
-    private def init(): Future[Boolean] = {
+    override def init(): Future[Boolean] = {
       Future
         .traverse(chainIndexes) {
           case (fromGroup, toGroup) =>
@@ -335,11 +287,6 @@ object BlockFlowSyncService extends StrictLogging {
           insert(block)
       }
     }
-
-    private def foldFutures[A](seqA: Seq[A])(f: A => Future[Unit]): Future[Unit] =
-      seqA.foldLeft(Future.successful(())) {
-        case (acc, a) => acc.flatMap(_ => f(a))
-      }
   }
 
   def buildTimestampRange(localTs: TimeStamp,
