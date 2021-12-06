@@ -148,7 +148,8 @@ trait TransactionQueries
             input.unlockScript,
             output.txHash,
             output.address,
-            output.amount))
+            output.amount,
+            input.order))
       }
   }
 
@@ -210,7 +211,16 @@ trait TransactionQueries
       ous <- outputsFromTxs(txHashes).result
       gas <- gasFromTxs(txHashes).result
     } yield {
-      val insByTx = ins.groupBy(_._1).view.mapValues(_.map { case (_, in) => toApiInput(in) })
+      val insByTx = ins.groupBy(_._1).view.mapValues { values =>
+        values
+          .sortBy {
+            case (_, (_, _, _, _, _, _, index)) => index
+          }
+          .map {
+            case (_, (hint, outputRefKey, unlockScript, txHash, address, amount, _)) =>
+              toApiInput((hint, outputRefKey, unlockScript, txHash, address, amount))
+          }
+      }
       val ousByTx = ous.groupBy(_._1).view.mapValues { values =>
         values
           .sortBy {
@@ -242,6 +252,7 @@ trait TransactionQueries
       .filter(_.txHash === txHash)
       .join(mainOutputs)
       .on(_.outputRefKey === _.key)
+      .sortBy(_._1.order)
       .map {
         case (input, output) =>
           (input.hint,

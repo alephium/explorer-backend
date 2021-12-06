@@ -146,7 +146,8 @@ class TransactionServiceSpec
                              hint         = 0,
                              outputRefKey = output0.key,
                              None,
-                             true)
+                             true,
+                             0)
     val output1 = OutputEntity(blockHash1,
                                tx1.hash,
                                U256.One,
@@ -320,6 +321,12 @@ class TransactionServiceSpec
           .sortBy(_.index)
           .map(_.key)
       }
+  }
+
+  it should "preserve inputs order" in new Fixture {
+    //TODO Test this please
+    //We need to generate a coherent blockflow, otherwise the queries can't match the inputs with outputs
+
   }
 
   trait Fixture extends DatabaseFixture {

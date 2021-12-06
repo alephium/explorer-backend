@@ -177,7 +177,9 @@ object BlockFlowClient {
         case (tx, index) => txToEntity(tx, hash, block.timestamp, index, mainChain)
       },
       transactions.flatMap(tx =>
-        tx.inputs.toSeq.map(inputToEntity(_, hash, tx.id, block.timestamp, mainChain))),
+        tx.inputs.toSeq.zipWithIndex.map {
+          case (in, index) => inputToEntity(in, hash, tx.id, block.timestamp, mainChain, index)
+      }),
       transactions.flatMap(tx =>
         tx.outputs.toSeq.zipWithIndex.map {
           case (out, index) => outputToEntity(out, hash, tx.id, index, block.timestamp, mainChain)
@@ -231,7 +233,8 @@ object BlockFlowClient {
                             blockHash: BlockEntry.Hash,
                             txId: Hash,
                             timestamp: TimeStamp,
-                            mainChain: Boolean): InputEntity = {
+                            mainChain: Boolean,
+                            index: Int): InputEntity = {
     val unlockScript = input match {
       case asset: api.model.Input.Asset => Some(Hex.toHexString(asset.unlockScript))
       case _: api.model.Input.Contract  => None
@@ -243,7 +246,8 @@ object BlockFlowClient {
       input.outputRef.hint,
       input.outputRef.key,
       unlockScript,
-      mainChain
+      mainChain,
+      index
     )
   }
 
