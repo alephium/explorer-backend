@@ -16,7 +16,9 @@
 
 package org.alephium.explorer.api.model
 
-final case class Pagination private (offset: Int, limit: Int)
+final case class Pagination private (offset: Int, limit: Int, _reverse: Option[Boolean] = None) {
+  def reverse: Boolean = _reverse.exists(identity)
+}
 
 object Pagination {
 
@@ -25,6 +27,6 @@ object Pagination {
   val maxLimit: Int     = 100
 
   def unsafe(offset: Int, limit: Int): Pagination = {
-    Pagination(offset, limit)
+    Pagination(offset, limit, None)
   }
 }

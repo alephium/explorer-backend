@@ -137,17 +137,30 @@ object BlockDao {
       run(DBIOAction.sequence(blocks.map(insertAction))).map(_ => ())
     }
 
+    def listMainChainHeaders(mainChain: Query[BlockHeaders, BlockHeader, Seq],
+                             pagination: Pagination): DBActionR[Seq[BlockHeader]] = {
+      if (pagination.reverse) {
+        mainChain
+          .sortBy(b => (b.timestamp.desc, b.hash))
+          .drop(pagination.offset * pagination.limit)
+          .take(pagination.limit)
+          .result
+      } else {
+        mainChain
+          .sortBy(b => (b.timestamp, b.hash.desc))
+          .drop(pagination.offset * pagination.limit)
+          .take(pagination.limit)
+          .result
+      }
+    }
+
     def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)] = {
       val mainChain = blockHeadersTable.filter(_.mainChain)
       val action =
         for {
-          headers <- mainChain
-            .sortBy(b => (b.timestamp.desc, b.hash))
-            .drop(pagination.offset * pagination.limit)
-            .take(pagination.limit)
-            .result
-          blocks <- DBIOAction.sequence(headers.map(buildLiteBlockEntryAction))
-          total  <- mainChain.length.result
+          headers <- listMainChainHeaders(mainChain, pagination)
+          blocks  <- DBIOAction.sequence(headers.map(buildLiteBlockEntryAction))
+          total   <- mainChain.length.result
         } yield (blocks, total)
 
       run(action)
