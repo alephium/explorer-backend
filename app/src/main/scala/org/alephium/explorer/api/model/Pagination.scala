@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.api.model
 
-final case class Pagination private (offset: Int, limit: Int)
+final case class Pagination private (offset: Int, limit: Int, reverse: Boolean)
 
 object Pagination {
 
@@ -24,7 +24,8 @@ object Pagination {
   val defaultLimit: Int = 20
   val maxLimit: Int     = 100
 
-  def unsafe(offset: Int, limit: Int): Pagination = {
-    Pagination(offset, limit)
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def unsafe(offset: Int, limit: Int, reverse: Boolean = false): Pagination = {
+    Pagination(offset, limit, reverse)
   }
 }

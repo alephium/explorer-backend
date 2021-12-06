@@ -185,15 +185,22 @@ trait ApplicationSpec
       blocksPage1 = responseAs[ListBlocks].blocks.map(_.hash)
     }
 
+    var allBlocks: Seq[BlockEntry.Hash] = Seq.empty
     Get(s"/blocks?page=2&limit=${blocks.size / 2 + 1}") ~> routes ~> check {
       val res = responseAs[ListBlocks].blocks.map(_.hash)
 
-      val allBlocks = blocksPage1 ++ res
+      allBlocks = blocksPage1 ++ res
 
       allBlocks.size is blocks.size
       allBlocks.distinct.size is allBlocks.size
 
       blocks.foreach(block => allBlocks.contains(block.hash) is true)
+    }
+
+    Get(s"/blocks?limit=${blocks.size}&reverse=true") ~> routes ~> check {
+      val res = responseAs[ListBlocks].blocks.map(_.hash)
+
+      res is allBlocks.reverse
     }
 
     Get(s"/blocks?page=0") ~> routes ~> check {
