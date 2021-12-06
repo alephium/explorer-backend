@@ -27,7 +27,8 @@ final case class Output(
     amount: U256,
     address: Address,
     lockTime: Option[TimeStamp]     = None,
-    spent: Option[Transaction.Hash] = None
+    spent: Option[Transaction.Hash] = None,
+    key: Hash
 )
 
 object Output {

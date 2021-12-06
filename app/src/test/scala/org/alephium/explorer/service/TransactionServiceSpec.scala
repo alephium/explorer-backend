@@ -178,7 +178,7 @@ class TransactionServiceSpec
       blockHash0,
       ts0,
       Seq.empty,
-      Seq(Output(U256.One, address0, None, Some(tx1.hash))),
+      Seq(Output(U256.One, address0, None, Some(tx1.hash), output0.key)),
       gasAmount,
       gasPrice
     )
@@ -188,7 +188,7 @@ class TransactionServiceSpec
       blockHash1,
       ts1,
       Seq(Input(Output.Ref(0, output0.key), None, tx0.hash, address0, U256.One)),
-      Seq(Output(U256.One, address1, None, None)),
+      Seq(Output(U256.One, address1, None, None, output1.key)),
       gasAmount1,
       gasPrice1
     )

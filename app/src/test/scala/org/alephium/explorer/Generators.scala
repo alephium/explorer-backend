@@ -64,7 +64,8 @@ trait Generators {
       address  <- addressGen
       lockTime <- Gen.option(timestampGen)
       spent    <- Gen.option(transactionHashGen)
-    } yield Output(amount, address, lockTime, spent)
+      key      <- hashGen
+    } yield Output(amount, address, lockTime, spent, key)
 
   def uoutputGen: Gen[UOutput] =
     for {

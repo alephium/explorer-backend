@@ -1154,7 +1154,8 @@
       "Output": {
         "required": [
           "amount",
-          "address"
+          "address",
+          "key"
         ],
         "type": "object",
         "properties": {
@@ -1170,6 +1171,9 @@
             "format": "int64"
           },
           "spent": {
+            "type": "string"
+          },
+          "key": {
             "type": "string"
           }
         }
