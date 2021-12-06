@@ -277,7 +277,8 @@ object BlockFlowClient {
       protocol.model.TxOutputRef.key(txId, index),
       timestamp,
       mainChain,
-      lockTime
+      lockTime,
+      index
     )
   }
 }

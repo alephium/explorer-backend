@@ -163,7 +163,12 @@ trait TransactionQueries
       .map {
         case (output, input) =>
           (output.txHash,
-           (output.amount, output.address, output.lockTime, input.map(_.txHash), output.key))
+           (output.amount,
+            output.address,
+            output.lockTime,
+            input.map(_.txHash),
+            output.key,
+            output.order))
       }
   }
 
@@ -205,8 +210,17 @@ trait TransactionQueries
       ous <- outputsFromTxs(txHashes).result
       gas <- gasFromTxs(txHashes).result
     } yield {
-      val insByTx = ins.groupBy(_._1).view.mapValues(_.map { case (_, in)   => toApiInput(in) })
-      val ousByTx = ous.groupBy(_._1).view.mapValues(_.map { case (_, o)    => toApiOutput(o) })
+      val insByTx = ins.groupBy(_._1).view.mapValues(_.map { case (_, in) => toApiInput(in) })
+      val ousByTx = ous.groupBy(_._1).view.mapValues { values =>
+        values
+          .sortBy {
+            case (_, (_, _, _, _, _, index)) => index
+          }
+          .map {
+            case (_, (amount, address, lockTime, spent, key, _)) =>
+              toApiOutput((amount, address, lockTime, spent, key))
+          }
+      }
       val gasByTx = gas.groupBy(_._1).view.mapValues(_.map { case (_, s, g) => (s, g) })
       txHashesTs.map {
         case (tx, bh, ts) =>
@@ -242,6 +256,7 @@ trait TransactionQueries
   private val getOutputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
     outputsTable
       .filter(output => output.mainChain && output.txHash === txHash)
+      .sortBy(_.order)
       .map(output => (output.key, output.address, output.amount, output.lockTime))
       .joinLeft(inputsTable)
       .on(_._1 === _.outputRefKey)

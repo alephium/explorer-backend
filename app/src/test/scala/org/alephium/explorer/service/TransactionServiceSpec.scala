@@ -112,7 +112,7 @@ class TransactionServiceSpec
     )
 
     val output0 =
-      OutputEntity(blockHash0, tx0.hash, U256.One, address0, hashGen.sample.get, ts0, true, None)
+      OutputEntity(blockHash0, tx0.hash, U256.One, address0, hashGen.sample.get, ts0, true, None, 0)
 
     val block0 = BlockEntity(
       hash         = blockHash0,
@@ -154,7 +154,8 @@ class TransactionServiceSpec
                                hashGen.sample.get,
                                timestamp = ts1,
                                true,
-                               None)
+                               None,
+                               0)
 
     val block1 = BlockEntity(
       hash         = blockHash1,
@@ -218,7 +219,15 @@ class TransactionServiceSpec
         )
 
         val output0 =
-          OutputEntity(blockHash0, tx.hash, U256.One, address0, hashGen.sample.get, ts0, true, None)
+          OutputEntity(blockHash0,
+                       tx.hash,
+                       U256.One,
+                       address0,
+                       hashGen.sample.get,
+                       ts0,
+                       true,
+                       None,
+                       0)
 
         val block0 = BlockEntity(
           hash         = blockHash0,
@@ -270,6 +279,47 @@ class TransactionServiceSpec
     transactionService.getTransaction(utx.hash).futureValue is None
     utransactionDao.insertMany(Seq(utx)).futureValue
     transactionService.getTransaction(utx.hash).futureValue is Some(utx)
+  }
+
+  it should "preserve outputs order" in new Fixture {
+
+    val address = addressGen.sample.get
+
+    val blocks = Gen
+      .listOfN(20, blockEntityGen(groupIndex, groupIndex, None))
+      .map(_.map { block =>
+        block.copy(outputs = block.outputs.map(_.copy(address = address)))
+      })
+      .sample
+      .get
+
+    val outputs = blocks.flatMap(_.outputs)
+
+    Future.sequence(blocks.map(blockDao.insert)).futureValue
+    Future
+      .sequence(blocks.map(block => blockDao.updateMainChainStatus(block.hash, true)))
+      .futureValue
+
+    blocks.foreach { block =>
+      block.transactions.map { tx =>
+        val transaction =
+          transactionService.getTransaction(tx.hash).futureValue.get.asInstanceOf[Transaction]
+        transaction.outputs.map(_.key) is block.outputs
+          .filter(_.txHash == tx.hash)
+          .sortBy(_.index)
+          .map(_.key)
+      }
+    }
+
+    transactionService
+      .getTransactionsByAddress(address, Pagination.unsafe(0, Int.MaxValue))
+      .futureValue
+      .map { transaction =>
+        transaction.outputs.map(_.key) is outputs
+          .filter(_.txHash == transaction.hash)
+          .sortBy(_.index)
+          .map(_.key)
+      }
   }
 
   trait Fixture extends DatabaseFixture {
