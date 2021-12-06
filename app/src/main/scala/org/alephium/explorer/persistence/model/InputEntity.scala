@@ -24,14 +24,14 @@ final case class InputEntity(
     blockHash: BlockEntry.Hash,
     txHash: Transaction.Hash,
     timestamp: TimeStamp,
-    scriptHint: Int,
+    hint: Int,
     outputRefKey: Hash,
     unlockScript: Option[String],
     mainChain: Boolean
 ) {
   def toApi(outputRef: OutputEntity): Input =
     Input(
-      Output.Ref(scriptHint, outputRefKey),
+      Output.Ref(hint, outputRefKey),
       unlockScript,
       outputRef.txHash,
       outputRef.address,

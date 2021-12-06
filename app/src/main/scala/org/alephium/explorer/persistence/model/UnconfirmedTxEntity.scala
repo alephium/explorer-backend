@@ -39,7 +39,7 @@ object UnconfirmedTxEntity {
      utx.inputs.map { input =>
        UInputEntity(
          utx.hash,
-         input.outputRef.scriptHint,
+         input.outputRef.hint,
          input.outputRef.key,
          input.unlockScript
        )

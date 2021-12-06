@@ -1176,12 +1176,12 @@
       },
       "Ref": {
         "required": [
-          "scriptHint",
+          "hint",
           "key"
         ],
         "type": "object",
         "properties": {
-          "scriptHint": {
+          "hint": {
             "type": "integer"
           },
           "key": {

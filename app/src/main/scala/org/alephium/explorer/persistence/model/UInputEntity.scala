@@ -21,12 +21,12 @@ import org.alephium.explorer.api.model.{Output, Transaction, UInput}
 
 final case class UInputEntity(
     txHash: Transaction.Hash,
-    scriptHint: Int,
+    hint: Int,
     outputRefKey: Hash,
     unlockScript: Option[String]
 ) {
   lazy val toApi: UInput = UInput(
-    Output.Ref(scriptHint, outputRefKey),
+    Output.Ref(hint, outputRefKey),
     unlockScript
   )
 }

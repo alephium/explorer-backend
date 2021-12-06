@@ -47,7 +47,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     forAll(outputRefGen) { outputRef =>
       val expected = s"""
      |{
-     |  "scriptHint": ${outputRef.scriptHint},
+     |  "hint": ${outputRef.hint},
      |  "key": "${outputRef.key.toHexString}"
      |}""".stripMargin
       check(outputRef, expected)

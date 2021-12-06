@@ -31,7 +31,7 @@ final case class Output(
 )
 
 object Output {
-  final case class Ref(scriptHint: Int, key: Hash)
+  final case class Ref(hint: Int, key: Hash)
 
   object Ref {
     implicit val readWriter: ReadWriter[Ref] = macroRW

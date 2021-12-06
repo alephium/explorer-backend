@@ -118,9 +118,9 @@ trait Generators {
   } yield Output.Ref(hint, key)
 
   lazy val outputRefProtocolGen: Gen[protocolApi.OutputRef] = for {
-    scriptHint <- arbitrary[Int]
-    key        <- hashGen
-  } yield protocolApi.OutputRef(scriptHint, key)
+    hint <- arbitrary[Int]
+    key  <- hashGen
+  } yield protocolApi.OutputRef(hint, key)
 
   lazy val inputProtocolGen: Gen[protocolApi.Input] = for {
     outputRef    <- outputRefProtocolGen

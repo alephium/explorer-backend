@@ -143,7 +143,7 @@ trait TransactionQueries
       .map {
         case (input, output) =>
           (input.txHash,
-           (input.scriptHint,
+           (input.hint,
             input.outputRefKey,
             input.unlockScript,
             output.txHash,
@@ -229,7 +229,7 @@ trait TransactionQueries
       .on(_.outputRefKey === _.key)
       .map {
         case (input, output) =>
-          (input.scriptHint,
+          (input.hint,
            input.outputRefKey,
            input.unlockScript,
            output.txHash,
@@ -280,13 +280,13 @@ trait TransactionQueries
     getBalanceQuery(address).result.map(_.getOrElse(U256.Zero))
 
   private val toApiInput = {
-    (scriptHint: Int,
+    (hint: Int,
      key: Hash,
      unlockScript: Option[String],
      txHash: Transaction.Hash,
      address: Address,
      amount: U256) =>
-      Input(Output.Ref(scriptHint, key), unlockScript, txHash, address, amount)
+      Input(Output.Ref(hint, key), unlockScript, txHash, address, amount)
   }.tupled
 
   private val toApiOutput = (Output.apply _).tupled

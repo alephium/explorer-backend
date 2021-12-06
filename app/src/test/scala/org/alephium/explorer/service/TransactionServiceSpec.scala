@@ -143,7 +143,7 @@ class TransactionServiceSpec
     val input1 = InputEntity(blockHash1,
                              tx1.hash,
                              timestamp    = ts1,
-                             scriptHint   = 0,
+                             hint         = 0,
                              outputRefKey = output0.key,
                              None,
                              true)
