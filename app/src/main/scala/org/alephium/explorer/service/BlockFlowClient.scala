@@ -33,6 +33,8 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.http.EndpointSender
 import org.alephium.protocol
 import org.alephium.protocol.config.GroupConfig
+import org.alephium.protocol.model.Hint
+import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.{Duration, Hex, TimeStamp}
 
 trait BlockFlowClient {
@@ -273,12 +275,16 @@ object BlockFlowClient {
       case asset: api.model.Output.Asset if asset.lockTime.millis > 0 => Some(asset.lockTime)
       case _                                                          => None
     }
+    val hint = output.address.lockupScript match {
+      case asset: LockupScript.Asset  => Hint.ofAsset(asset.scriptHint)
+      case contract: LockupScript.P2C => Hint.ofContract(contract.scriptHint)
+    }
     OutputEntity(
       blockHash,
       new Transaction.Hash(txId),
       output.amount.value,
       new Address(output.address.toBase58),
-      output.address.lockupScript.scriptHint.value,
+      hint.value,
       protocol.model.TxOutputRef.key(txId, index),
       timestamp,
       mainChain,
