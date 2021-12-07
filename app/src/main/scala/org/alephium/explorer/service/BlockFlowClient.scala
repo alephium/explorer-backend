@@ -282,10 +282,10 @@ object BlockFlowClient {
     OutputEntity(
       blockHash,
       new Transaction.Hash(txId),
-      output.amount.value,
-      new Address(output.address.toBase58),
       hint.value,
       protocol.model.TxOutputRef.key(txId, index),
+      output.amount.value,
+      new Address(output.address.toBase58),
       timestamp,
       mainChain,
       lockTime,

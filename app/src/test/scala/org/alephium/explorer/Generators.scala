@@ -66,7 +66,7 @@ trait Generators {
       spent    <- Gen.option(transactionHashGen)
       hint = 0
       key <- hashGen
-    } yield Output(amount, address, lockTime, spent, hint, key)
+    } yield Output(hint, key, amount, address, lockTime, spent)
 
   def uoutputGen: Gen[UOutput] =
     for {

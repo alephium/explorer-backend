@@ -1189,13 +1189,19 @@
       },
       "Output": {
         "required": [
-          "amount",
-          "address",
           "hint",
-          "key"
+          "key",
+          "amount",
+          "address"
         ],
         "type": "object",
         "properties": {
+          "hint": {
+            "type": "integer"
+          },
+          "key": {
+            "type": "string"
+          },
           "amount": {
             "type": "string",
             "format": "uint256"
@@ -1208,12 +1214,6 @@
             "format": "int64"
           },
           "spent": {
-            "type": "string"
-          },
-          "hint": {
-            "type": "integer"
-          },
-          "key": {
             "type": "string"
           }
         }

@@ -164,12 +164,12 @@ trait TransactionQueries
       .map {
         case (output, input) =>
           (output.txHash,
-           (output.amount,
+           (output.hint,
+            output.key,
+            output.amount,
             output.address,
             output.lockTime,
-            input.map(_.txHash),
-            output.hint,
-            output.key),
+            input.map(_.txHash)),
            output.order)
       }
   }
@@ -273,12 +273,12 @@ trait TransactionQueries
       .on(_.key === _.outputRefKey)
       .map {
         case (output, input) =>
-          (output.amount,
+          (output.hint,
+           output.key,
+           output.amount,
            output.address,
            output.lockTime,
-           input.map(_.txHash),
-           output.hint,
-           output.key)
+           input.map(_.txHash))
       }
   }
 

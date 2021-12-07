@@ -23,15 +23,15 @@ import org.alephium.util.{TimeStamp, U256}
 final case class OutputEntity(
     blockHash: BlockEntry.Hash,
     txHash: Transaction.Hash,
-    amount: U256,
-    address: Address,
     hint: Int,
     key: Hash,
+    amount: U256,
+    address: Address,
     timestamp: TimeStamp,
     mainChain: Boolean,
     lockTime: Option[TimeStamp],
     order: Int
 ) {
   def toApi(spent: Option[Transaction.Hash]): Output =
-    Output(amount, address, lockTime, spent, hint, key)
+    Output(hint, key, amount, address, lockTime, spent)
 }

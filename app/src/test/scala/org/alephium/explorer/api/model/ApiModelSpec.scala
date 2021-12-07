@@ -58,12 +58,12 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     forAll(outputGen) { output =>
       val expected = s"""
      |{
+     |  "hint": ${output.hint},
+     |  "key": "${output.key.toHexString}",
      |  "amount": "${output.amount}",
      |  "address": "${output.address}"
      |  ${output.lockTime.map(lockTime => s""","lockTime": ${lockTime.millis}""").getOrElse("")}
-     |  ${output.spent.map(spent => s""","spent": "${spent.value.toHexString}"""").getOrElse("")},
-     |  "hint": ${output.hint},
-     |  "key": "${output.key.toHexString}"
+     |  ${output.spent.map(spent => s""","spent": "${spent.value.toHexString}"""").getOrElse("")}
      |}""".stripMargin
       check(output, expected)
     }

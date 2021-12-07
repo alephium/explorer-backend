@@ -114,10 +114,10 @@ class TransactionServiceSpec
     val output0 =
       OutputEntity(blockHash0,
                    tx0.hash,
-                   U256.One,
-                   address0,
                    0,
                    hashGen.sample.get,
+                   U256.One,
+                   address0,
                    ts0,
                    true,
                    None,
@@ -159,10 +159,10 @@ class TransactionServiceSpec
                              0)
     val output1 = OutputEntity(blockHash1,
                                tx1.hash,
-                               U256.One,
-                               address1,
                                0,
                                hashGen.sample.get,
+                               U256.One,
+                               address1,
                                timestamp = ts1,
                                true,
                                None,
@@ -190,7 +190,7 @@ class TransactionServiceSpec
       blockHash0,
       ts0,
       Seq.empty,
-      Seq(Output(U256.One, address0, None, Some(tx1.hash), output0.hint, output0.key)),
+      Seq(Output(output0.hint, output0.key, U256.One, address0, None, Some(tx1.hash))),
       gasAmount,
       gasPrice
     )
@@ -200,7 +200,7 @@ class TransactionServiceSpec
       blockHash1,
       ts1,
       Seq(Input(Output.Ref(0, output0.key), None, tx0.hash, address0, U256.One)),
-      Seq(Output(U256.One, address1, None, None, output1.hint, output1.key)),
+      Seq(Output(output1.hint, output1.key, U256.One, address1, None, None)),
       gasAmount1,
       gasPrice1
     )
@@ -232,10 +232,10 @@ class TransactionServiceSpec
         val output0 =
           OutputEntity(blockHash0,
                        tx.hash,
-                       U256.One,
-                       address0,
                        0,
                        hashGen.sample.get,
+                       U256.One,
+                       address0,
                        ts0,
                        true,
                        None,
