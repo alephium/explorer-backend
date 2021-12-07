@@ -318,7 +318,7 @@ class TransactionServiceSpec
           transactionService.getTransaction(tx.hash).futureValue.get.asInstanceOf[Transaction]
         transaction.outputs.map(_.key) is block.outputs
           .filter(_.txHash == tx.hash)
-          .sortBy(_.index)
+          .sortBy(_.order)
           .map(_.key)
       }
     }
@@ -329,7 +329,7 @@ class TransactionServiceSpec
       .map { transaction =>
         transaction.outputs.map(_.key) is outputs
           .filter(_.txHash == transaction.hash)
-          .sortBy(_.index)
+          .sortBy(_.order)
           .map(_.key)
       }
   }
