@@ -148,8 +148,8 @@ trait TransactionQueries
             input.unlockScript,
             output.txHash,
             output.address,
-            output.amount,
-            input.order))
+            output.amount),
+           input.order)
       }
   }
 
@@ -168,8 +168,9 @@ trait TransactionQueries
             output.address,
             output.lockTime,
             input.map(_.txHash),
-            output.key,
-            output.order))
+            output.hint,
+            output.key),
+           output.order)
       }
   }
 
@@ -214,21 +215,21 @@ trait TransactionQueries
       val insByTx = ins.groupBy(_._1).view.mapValues { values =>
         values
           .sortBy {
-            case (_, (_, _, _, _, _, _, index)) => index
+            case (_, _, index) => index
           }
           .map {
-            case (_, (hint, outputRefKey, unlockScript, txHash, address, amount, _)) =>
-              toApiInput((hint, outputRefKey, unlockScript, txHash, address, amount))
+            case (_, input, _) =>
+              toApiInput(input)
           }
       }
       val ousByTx = ous.groupBy(_._1).view.mapValues { values =>
         values
           .sortBy {
-            case (_, (_, _, _, _, _, index)) => index
+            case (_, _, index) => index
           }
           .map {
-            case (_, (amount, address, lockTime, spent, key, _)) =>
-              toApiOutput((amount, address, lockTime, spent, key))
+            case (_, out, _) =>
+              toApiOutput(out)
           }
       }
       val gasByTx = gas.groupBy(_._1).view.mapValues(_.map { case (_, s, g) => (s, g) })
@@ -268,12 +269,16 @@ trait TransactionQueries
     outputsTable
       .filter(output => output.mainChain && output.txHash === txHash)
       .sortBy(_.order)
-      .map(output => (output.key, output.address, output.amount, output.lockTime))
       .joinLeft(inputsTable)
-      .on(_._1 === _.outputRefKey)
+      .on(_.key === _.outputRefKey)
       .map {
-        case ((key, address, amount, lockTime), input) =>
-          (amount, address, lockTime, input.map(_.txHash), key)
+        case (output, input) =>
+          (output.amount,
+           output.address,
+           output.lockTime,
+           input.map(_.txHash),
+           output.hint,
+           output.key)
       }
   }
 

@@ -1191,6 +1191,7 @@
         "required": [
           "amount",
           "address",
+          "hint",
           "key"
         ],
         "type": "object",
@@ -1208,6 +1209,9 @@
           },
           "spent": {
             "type": "string"
+          },
+          "hint": {
+            "type": "integer"
           },
           "key": {
             "type": "string"

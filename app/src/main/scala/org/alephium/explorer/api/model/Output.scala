@@ -28,6 +28,7 @@ final case class Output(
     address: Address,
     lockTime: Option[TimeStamp]     = None,
     spent: Option[Transaction.Hash] = None,
+    hint: Int,
     key: Hash
 )
 

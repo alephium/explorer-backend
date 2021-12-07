@@ -112,7 +112,16 @@ class TransactionServiceSpec
     )
 
     val output0 =
-      OutputEntity(blockHash0, tx0.hash, U256.One, address0, hashGen.sample.get, ts0, true, None, 0)
+      OutputEntity(blockHash0,
+                   tx0.hash,
+                   U256.One,
+                   address0,
+                   0,
+                   hashGen.sample.get,
+                   ts0,
+                   true,
+                   None,
+                   0)
 
     val block0 = BlockEntity(
       hash         = blockHash0,
@@ -152,6 +161,7 @@ class TransactionServiceSpec
                                tx1.hash,
                                U256.One,
                                address1,
+                               0,
                                hashGen.sample.get,
                                timestamp = ts1,
                                true,
@@ -180,7 +190,7 @@ class TransactionServiceSpec
       blockHash0,
       ts0,
       Seq.empty,
-      Seq(Output(U256.One, address0, None, Some(tx1.hash), output0.key)),
+      Seq(Output(U256.One, address0, None, Some(tx1.hash), output0.hint, output0.key)),
       gasAmount,
       gasPrice
     )
@@ -190,7 +200,7 @@ class TransactionServiceSpec
       blockHash1,
       ts1,
       Seq(Input(Output.Ref(0, output0.key), None, tx0.hash, address0, U256.One)),
-      Seq(Output(U256.One, address1, None, None, output1.key)),
+      Seq(Output(U256.One, address1, None, None, output1.hint, output1.key)),
       gasAmount1,
       gasPrice1
     )
@@ -224,6 +234,7 @@ class TransactionServiceSpec
                        tx.hash,
                        U256.One,
                        address0,
+                       0,
                        hashGen.sample.get,
                        ts0,
                        true,

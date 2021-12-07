@@ -41,6 +41,7 @@ trait OutputSchema extends CustomTypes {
     def mainChain: Rep[Boolean]          = column[Boolean]("main_chain")
     def lockTime: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("lock_time")
     def order: Rep[Int]                  = column[Int]("order")
+    def hint: Rep[Int]                   = column[Int]("hint")
 
     def pk: PrimaryKey = primaryKey("outputs_pk", (key, blockHash))
 
@@ -51,7 +52,7 @@ trait OutputSchema extends CustomTypes {
     def timestampIdx: Index = index("outputs_timestamp_idx", timestamp)
 
     def * : ProvenShape[OutputEntity] =
-      (blockHash, txHash, amount, address, key, timestamp, mainChain, lockTime, order)
+      (blockHash, txHash, amount, address, hint, key, timestamp, mainChain, lockTime, order)
         .<>((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }
 

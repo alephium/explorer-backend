@@ -278,6 +278,7 @@ object BlockFlowClient {
       new Transaction.Hash(txId),
       output.amount.value,
       new Address(output.address.toBase58),
+      output.address.lockupScript.scriptHint.value,
       protocol.model.TxOutputRef.key(txId, index),
       timestamp,
       mainChain,

@@ -25,11 +25,13 @@ final case class OutputEntity(
     txHash: Transaction.Hash,
     amount: U256,
     address: Address,
+    hint: Int,
     key: Hash,
     timestamp: TimeStamp,
     mainChain: Boolean,
     lockTime: Option[TimeStamp],
     index: Int
 ) {
-  def toApi(spent: Option[Transaction.Hash]): Output = Output(amount, address, lockTime, spent, key)
+  def toApi(spent: Option[Transaction.Hash]): Output =
+    Output(amount, address, lockTime, spent, hint, key)
 }
