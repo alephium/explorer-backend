@@ -39,6 +39,12 @@ trait QueryParams {
           })(Some(_))
           .validate(Validator.min(0))
           .validate(Validator.max(Pagination.maxLimit)))
-      .map({ case (offset, limit) => Pagination.unsafe(offset - 1, limit) })(p =>
-        (p.offset, p.limit))
+      .and(query[Option[Boolean]]("reverse")
+        .description("Reverse pagination")
+        .map({
+          case Some(reverse) => reverse
+          case None          => false
+        })(Some(_)))
+      .map({ case (offset, limit, reverse) => Pagination.unsafe(offset - 1, limit, reverse) })(p =>
+        (p.offset, p.limit, p.reverse))
 }

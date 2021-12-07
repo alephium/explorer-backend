@@ -31,14 +31,14 @@ trait InputSchema extends CustomTypes {
   import config.profile.api._
 
   class Inputs(tag: Tag) extends Table[InputEntity](tag, "inputs") {
-    def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash")
-    def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash")
-    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
-    //TODO Rename column field when we release a version that have to dump data.
-    def hint: Rep[Int]                    = column[Int]("script_hint")
+    def blockHash: Rep[BlockEntry.Hash]   = column[BlockEntry.Hash]("block_hash")
+    def txHash: Rep[Transaction.Hash]     = column[Transaction.Hash]("tx_hash")
+    def timestamp: Rep[TimeStamp]         = column[TimeStamp]("timestamp")
+    def hint: Rep[Int]                    = column[Int]("hint")
     def outputRefKey: Rep[Hash]           = column[Hash]("output_ref_key")
     def unlockScript: Rep[Option[String]] = column[Option[String]]("unlock_script")
     def mainChain: Rep[Boolean]           = column[Boolean]("main_chain")
+    def order: Rep[Int]                   = column[Int]("order")
 
     def pk: PrimaryKey = primaryKey("inputs_pk", (outputRefKey, txHash, blockHash))
 
@@ -47,7 +47,7 @@ trait InputSchema extends CustomTypes {
     def outputRefKeyIdx: Index = index("inputs_output_ref_key_idx", outputRefKey)
 
     def * : ProvenShape[InputEntity] =
-      (blockHash, txHash, timestamp, hint, outputRefKey, unlockScript, mainChain)
+      (blockHash, txHash, timestamp, hint, outputRefKey, unlockScript, mainChain, order)
         .<>((InputEntity.apply _).tupled, InputEntity.unapply)
   }
 

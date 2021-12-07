@@ -24,6 +24,8 @@ import org.alephium.util.{TimeStamp, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 final case class Output(
+    hint: Int,
+    key: Hash,
     amount: U256,
     address: Address,
     lockTime: Option[TimeStamp]     = None,

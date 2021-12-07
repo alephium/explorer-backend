@@ -33,6 +33,8 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.http.EndpointSender
 import org.alephium.protocol
 import org.alephium.protocol.config.GroupConfig
+import org.alephium.protocol.model.Hint
+import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.{Duration, Hex, TimeStamp}
 
 trait BlockFlowClient {
@@ -177,7 +179,9 @@ object BlockFlowClient {
         case (tx, index) => txToEntity(tx, hash, block.timestamp, index, mainChain)
       },
       transactions.flatMap(tx =>
-        tx.inputs.toSeq.map(inputToEntity(_, hash, tx.id, block.timestamp, mainChain))),
+        tx.inputs.toSeq.zipWithIndex.map {
+          case (in, index) => inputToEntity(in, hash, tx.id, block.timestamp, mainChain, index)
+      }),
       transactions.flatMap(tx =>
         tx.outputs.toSeq.zipWithIndex.map {
           case (out, index) => outputToEntity(out, hash, tx.id, index, block.timestamp, mainChain)
@@ -231,7 +235,8 @@ object BlockFlowClient {
                             blockHash: BlockEntry.Hash,
                             txId: Hash,
                             timestamp: TimeStamp,
-                            mainChain: Boolean): InputEntity = {
+                            mainChain: Boolean,
+                            index: Int): InputEntity = {
     val unlockScript = input match {
       case asset: api.model.Input.Asset => Some(Hex.toHexString(asset.unlockScript))
       case _: api.model.Input.Contract  => None
@@ -243,7 +248,8 @@ object BlockFlowClient {
       input.outputRef.hint,
       input.outputRef.key,
       unlockScript,
-      mainChain
+      mainChain,
+      index
     )
   }
 
@@ -269,15 +275,21 @@ object BlockFlowClient {
       case asset: api.model.Output.Asset if asset.lockTime.millis > 0 => Some(asset.lockTime)
       case _                                                          => None
     }
+    val hint = output.address.lockupScript match {
+      case asset: LockupScript.Asset  => Hint.ofAsset(asset.scriptHint)
+      case contract: LockupScript.P2C => Hint.ofContract(contract.scriptHint)
+    }
     OutputEntity(
       blockHash,
       new Transaction.Hash(txId),
+      hint.value,
+      protocol.model.TxOutputRef.key(txId, index),
       output.amount.value,
       new Address(output.address.toBase58),
-      protocol.model.TxOutputRef.key(txId, index),
       timestamp,
       mainChain,
-      lockTime
+      lockTime,
+      index
     )
   }
 }

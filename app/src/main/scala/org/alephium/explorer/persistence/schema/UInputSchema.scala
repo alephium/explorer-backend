@@ -30,9 +30,8 @@ trait UInputSchema extends CustomTypes {
   import config.profile.api._
 
   class UInputs(tag: Tag) extends Table[UInputEntity](tag, "uinputs") {
-    def txHash: Rep[Transaction.Hash] = column[Transaction.Hash]("tx_hash")
-    //TODO Rename column field when we release a version that have to dump data.
-    def hint: Rep[Int]                    = column[Int]("script_hint")
+    def txHash: Rep[Transaction.Hash]     = column[Transaction.Hash]("tx_hash")
+    def hint: Rep[Int]                    = column[Int]("hint")
     def outputRefKey: Rep[Hash]           = column[Hash]("output_ref_key")
     def unlockScript: Rep[Option[String]] = column[Option[String]]("unlock_script")
 

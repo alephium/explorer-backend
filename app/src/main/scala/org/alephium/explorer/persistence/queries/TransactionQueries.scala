@@ -148,7 +148,8 @@ trait TransactionQueries
             input.unlockScript,
             output.txHash,
             output.address,
-            output.amount))
+            output.amount),
+           input.order)
       }
   }
 
@@ -162,7 +163,14 @@ trait TransactionQueries
       }
       .map {
         case (output, input) =>
-          (output.txHash, (output.amount, output.address, output.lockTime, input.map(_.txHash)))
+          (output.txHash,
+           (output.hint,
+            output.key,
+            output.amount,
+            output.address,
+            output.lockTime,
+            input.map(_.txHash)),
+           output.order)
       }
   }
 
@@ -204,8 +212,26 @@ trait TransactionQueries
       ous <- outputsFromTxs(txHashes).result
       gas <- gasFromTxs(txHashes).result
     } yield {
-      val insByTx = ins.groupBy(_._1).view.mapValues(_.map { case (_, in)   => toApiInput(in) })
-      val ousByTx = ous.groupBy(_._1).view.mapValues(_.map { case (_, o)    => toApiOutput(o) })
+      val insByTx = ins.groupBy(_._1).view.mapValues { values =>
+        values
+          .sortBy {
+            case (_, _, index) => index
+          }
+          .map {
+            case (_, input, _) =>
+              toApiInput(input)
+          }
+      }
+      val ousByTx = ous.groupBy(_._1).view.mapValues { values =>
+        values
+          .sortBy {
+            case (_, _, index) => index
+          }
+          .map {
+            case (_, out, _) =>
+              toApiOutput(out)
+          }
+      }
       val gasByTx = gas.groupBy(_._1).view.mapValues(_.map { case (_, s, g) => (s, g) })
       txHashesTs.map {
         case (tx, bh, ts) =>
@@ -227,6 +253,7 @@ trait TransactionQueries
       .filter(_.txHash === txHash)
       .join(mainOutputs)
       .on(_.outputRefKey === _.key)
+      .sortBy(_._1.order)
       .map {
         case (input, output) =>
           (input.hint,
@@ -241,10 +268,18 @@ trait TransactionQueries
   private val getOutputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
     outputsTable
       .filter(output => output.mainChain && output.txHash === txHash)
-      .map(output => (output.key, output.address, output.amount, output.lockTime))
+      .sortBy(_.order)
       .joinLeft(inputsTable)
-      .on(_._1 === _.outputRefKey)
-      .map { case (output, input) => (output._3, output._2, output._4, input.map(_.txHash)) }
+      .on(_.key === _.outputRefKey)
+      .map {
+        case (output, input) =>
+          (output.hint,
+           output.key,
+           output.amount,
+           output.address,
+           output.lockTime,
+           input.map(_.txHash))
+      }
   }
 
   private def getKnownTransactionAction(txHash: Transaction.Hash,

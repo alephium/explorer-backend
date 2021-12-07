@@ -112,7 +112,16 @@ class TransactionServiceSpec
     )
 
     val output0 =
-      OutputEntity(blockHash0, tx0.hash, U256.One, address0, hashGen.sample.get, ts0, true, None)
+      OutputEntity(blockHash0,
+                   tx0.hash,
+                   0,
+                   hashGen.sample.get,
+                   U256.One,
+                   address0,
+                   ts0,
+                   true,
+                   None,
+                   0)
 
     val block0 = BlockEntity(
       hash         = blockHash0,
@@ -146,15 +155,18 @@ class TransactionServiceSpec
                              hint         = 0,
                              outputRefKey = output0.key,
                              None,
-                             true)
+                             true,
+                             0)
     val output1 = OutputEntity(blockHash1,
                                tx1.hash,
+                               0,
+                               hashGen.sample.get,
                                U256.One,
                                address1,
-                               hashGen.sample.get,
                                timestamp = ts1,
                                true,
-                               None)
+                               None,
+                               0)
 
     val block1 = BlockEntity(
       hash         = blockHash1,
@@ -178,7 +190,7 @@ class TransactionServiceSpec
       blockHash0,
       ts0,
       Seq.empty,
-      Seq(Output(U256.One, address0, None, Some(tx1.hash))),
+      Seq(Output(output0.hint, output0.key, U256.One, address0, None, Some(tx1.hash))),
       gasAmount,
       gasPrice
     )
@@ -188,7 +200,7 @@ class TransactionServiceSpec
       blockHash1,
       ts1,
       Seq(Input(Output.Ref(0, output0.key), None, tx0.hash, address0, U256.One)),
-      Seq(Output(U256.One, address1, None, None)),
+      Seq(Output(output1.hint, output1.key, U256.One, address1, None, None)),
       gasAmount1,
       gasPrice1
     )
@@ -218,7 +230,16 @@ class TransactionServiceSpec
         )
 
         val output0 =
-          OutputEntity(blockHash0, tx.hash, U256.One, address0, hashGen.sample.get, ts0, true, None)
+          OutputEntity(blockHash0,
+                       tx.hash,
+                       0,
+                       hashGen.sample.get,
+                       U256.One,
+                       address0,
+                       ts0,
+                       true,
+                       None,
+                       0)
 
         val block0 = BlockEntity(
           hash         = blockHash0,
@@ -270,6 +291,53 @@ class TransactionServiceSpec
     transactionService.getTransaction(utx.hash).futureValue is None
     utransactionDao.insertMany(Seq(utx)).futureValue
     transactionService.getTransaction(utx.hash).futureValue is Some(utx)
+  }
+
+  it should "preserve outputs order" in new Fixture {
+
+    val address = addressGen.sample.get
+
+    val blocks = Gen
+      .listOfN(20, blockEntityGen(groupIndex, groupIndex, None))
+      .map(_.map { block =>
+        block.copy(outputs = block.outputs.map(_.copy(address = address)))
+      })
+      .sample
+      .get
+
+    val outputs = blocks.flatMap(_.outputs)
+
+    Future.sequence(blocks.map(blockDao.insert)).futureValue
+    Future
+      .sequence(blocks.map(block => blockDao.updateMainChainStatus(block.hash, true)))
+      .futureValue
+
+    blocks.foreach { block =>
+      block.transactions.map { tx =>
+        val transaction =
+          transactionService.getTransaction(tx.hash).futureValue.get.asInstanceOf[Transaction]
+        transaction.outputs.map(_.key) is block.outputs
+          .filter(_.txHash == tx.hash)
+          .sortBy(_.order)
+          .map(_.key)
+      }
+    }
+
+    transactionService
+      .getTransactionsByAddress(address, Pagination.unsafe(0, Int.MaxValue))
+      .futureValue
+      .map { transaction =>
+        transaction.outputs.map(_.key) is outputs
+          .filter(_.txHash == transaction.hash)
+          .sortBy(_.order)
+          .map(_.key)
+      }
+  }
+
+  it should "preserve inputs order" in new Fixture {
+    //TODO Test this please
+    //We need to generate a coherent blockflow, otherwise the queries can't match the inputs with outputs
+
   }
 
   trait Fixture extends DatabaseFixture {
