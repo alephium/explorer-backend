@@ -6,47 +6,26 @@
 
 You need to have [Postgresql][postgresql] and [sbt][sbt] installed in your system.
 
-For macOS that uses [Homebrew][homebrew], you can install them with:
-
-```shell
-brew install postgresql sbt
-```
-
 ### 2. Create the database
 
-Start the `postgresql` service:
-
-For macOS:
-
-```shell
-brew services start postgresql
-```
-
-Login to the PostgreSQL shell with the default `postgres` user:
-
-```shell
-psql postgres
-```
-
-Ensure that the `postgres` role exists, and if not, create it.
-
-List all roles:
-
-```shell
-postgres=# \du
-```
-
-Create `postgres` role:
-
-```shell
-postgres=# CREATE ROLE postgres WITH LOGIN;
-```
-
-Then, create the database:
-
-```shell
-postgres=# CREATE DATABASE explorer;
-```
+1. Start the `postgresql` service.
+2. Login to the PostgreSQL shell with the default `postgres` user:
+   ```shell
+   psql postgres
+   ```
+3. Ensure that the `postgres` role exists, and if not, create it.  
+   List all roles:
+   ```shell
+   postgres=# \du
+   ```
+   Create `postgres` role:
+   ```shell
+   postgres=# CREATE ROLE postgres WITH LOGIN;
+   ```
+4. Then, create the database:
+   ```shell
+   postgres=# CREATE DATABASE explorer;
+   ```
 
 ### 3. Start the server
 
