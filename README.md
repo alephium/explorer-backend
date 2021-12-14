@@ -11,7 +11,7 @@ You need to have [Postgresql][postgresql] and [sbt][sbt] installed in your syste
 1. Start the `postgresql` service.
 2. Login to the PostgreSQL shell with the default `postgres` user:
    ```shell
-   psql postgres
+   psql postgres # or `psql -U postgres` depending on your OS
    ```
 3. Ensure that the `postgres` role exists, and if not, create it.  
    List all roles:
