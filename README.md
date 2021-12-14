@@ -77,7 +77,10 @@ sbt benchmark/jmh:run
 
 The tests are using the Postgresql database and the default `postgres` table.
 
+```shell
+sbt test
+```
+
 [postgresql]: https://www.postgresql.org/
 [sbt]: https://www.scala-sbt.org/
-[homebrew]: https://brew.sh/
 [bytea]: https://www.postgresql.org/docs/9.0/datatype-binary.html
