@@ -41,8 +41,8 @@ class AddressServer(transactionService: TransactionService, val blockflowFetchMa
       toRoute(getAddressInfo) {
         case (address) =>
           for {
-            balance  <- transactionService.getBalance(address)
-            txNumber <- transactionService.getTransactionsNumberByAddress(address)
-          } yield Right(AddressInfo(balance, txNumber))
+            (balance, locked) <- transactionService.getBalance(address)
+            txNumber          <- transactionService.getTransactionsNumberByAddress(address)
+          } yield Right(AddressInfo(balance, locked, txNumber))
       }
 }

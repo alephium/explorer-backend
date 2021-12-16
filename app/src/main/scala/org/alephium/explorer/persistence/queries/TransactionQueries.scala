@@ -303,16 +303,28 @@ trait TransactionQueries
   private val getBalanceQuery = Compiled { address: Rep[Address] =>
     outputsTable
       .filter(output => output.mainChain && output.address === address)
-      .map(output => (output.key, output.amount))
+      .map(output => (output.key, output.amount, output.lockTime))
       .joinLeft(inputsTable.filter(_.mainChain))
       .on(_._1 === _.outputRefKey)
       .filter(_._2.isEmpty)
-      .map(_._1._2)
-      .sum
+      .map { case ((_, amount, lockTime), _) => (amount, lockTime) }
   }
 
-  def getBalanceAction(address: Address): DBActionR[U256] =
-    getBalanceQuery(address).result.map(_.getOrElse(U256.Zero))
+  def getBalanceAction(address: Address): DBActionR[(U256, U256)] = {
+    getBalanceQuery(address).result.map { outputs =>
+      val now = TimeStamp.now()
+      outputs.foldLeft((U256.Zero, U256.Zero)) {
+        case ((total, locked), (amount, lockTime)) =>
+          val newTotal = total.addUnsafe(amount)
+          val newLocked = if (lockTime.map(_.isBefore(now)).getOrElse(true)) {
+            locked
+          } else {
+            locked.addUnsafe(amount)
+          }
+          (newTotal, newLocked)
+      }
+    }
+  }
 
   private val toApiInput = {
     (hint: Int,

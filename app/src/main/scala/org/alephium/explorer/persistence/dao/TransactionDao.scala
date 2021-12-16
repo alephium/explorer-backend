@@ -30,7 +30,7 @@ trait TransactionDao {
   def get(hash: Transaction.Hash): Future[Option[Transaction]]
   def getByAddress(address: Address, pagination: Pagination): Future[Seq[Transaction]]
   def getNumberByAddress(address: Address): Future[Int]
-  def getBalance(address: Address): Future[U256]
+  def getBalance(address: Address): Future[(U256, U256)]
 }
 
 object TransactionDao {
@@ -53,7 +53,7 @@ object TransactionDao {
     def getNumberByAddress(address: Address): Future[Int] =
       run(countAddressTransactions(address))
 
-    def getBalance(address: Address): Future[U256] =
+    def getBalance(address: Address): Future[(U256, U256)] =
       run(getBalanceAction(address))
   }
 }

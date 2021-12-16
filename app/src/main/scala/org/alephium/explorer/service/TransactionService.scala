@@ -26,7 +26,7 @@ trait TransactionService {
   def getTransaction(transactionHash: Transaction.Hash): Future[Option[TransactionLike]]
   def getTransactionsByAddress(address: Address, pagination: Pagination): Future[Seq[Transaction]]
   def getTransactionsNumberByAddress(address: Address): Future[Int]
-  def getBalance(address: Address): Future[U256]
+  def getBalance(address: Address): Future[(U256, U256)]
 }
 
 object TransactionService {
@@ -50,7 +50,7 @@ object TransactionService {
     def getTransactionsNumberByAddress(address: Address): Future[Int] =
       transactionDao.getNumberByAddress(address)
 
-    def getBalance(address: Address): Future[U256] =
+    def getBalance(address: Address): Future[(U256, U256)] =
       transactionDao.getBalance(address)
   }
 }

@@ -1042,11 +1042,16 @@
       "AddressInfo": {
         "required": [
           "balance",
+          "lockedBalance",
           "txNumber"
         ],
         "type": "object",
         "properties": {
           "balance": {
+            "type": "string",
+            "format": "uint256"
+          },
+          "lockedBalance": {
             "type": "string",
             "format": "uint256"
           },

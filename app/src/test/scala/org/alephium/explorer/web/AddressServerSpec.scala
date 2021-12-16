@@ -88,7 +88,8 @@ class AddressServerSpec()
       override def getTransactionsNumberByAddress(address: Address): Future[Int] =
         Future.successful(0)
 
-      override def getBalance(address: Address): Future[U256] = Future.successful(U256.Zero)
+      override def getBalance(address: Address): Future[(U256, U256)] =
+        Future.successful((U256.Zero, U256.Zero))
     }
   }
 }
