@@ -29,7 +29,8 @@ trait BlockHeaderSchema extends CustomTypes {
   import config.profile.api._
 
   class BlockHeaders(tag: Tag) extends Table[BlockHeader](tag, "block_headers") {
-    def hash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("hash", O.PrimaryKey)
+    def hash: Rep[BlockEntry.Hash] =
+      column[BlockEntry.Hash]("hash", O.PrimaryKey, O.SqlType("BYTEA"))
     def timestamp: Rep[Long]       = column[Long]("timestamp")
     def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
