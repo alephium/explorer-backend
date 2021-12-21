@@ -29,8 +29,8 @@ trait BlockDepsSchema extends CustomTypes {
 
   class BlockDeps(tag: Tag)
       extends Table[(BlockEntry.Hash, BlockEntry.Hash, Int)](tag, "block_deps") {
-    def hash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("hash")
-    def dep: Rep[BlockEntry.Hash]  = column[BlockEntry.Hash]("dep")
+    def hash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("hash", O.SqlType("BYTEA"))
+    def dep: Rep[BlockEntry.Hash]  = column[BlockEntry.Hash]("dep", O.SqlType("BYTEA"))
     def order: Rep[Int]            = column[Int]("order")
 
     def pk: PrimaryKey = primaryKey("hash_deps_pk", (hash, dep))

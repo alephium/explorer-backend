@@ -18,28 +18,29 @@ package org.alephium.explorer.persistence.schema
 
 import scala.reflect.ClassTag
 
+import akka.util.ByteString
 import slick.basic.DatabaseConfig
 import slick.jdbc.{JdbcProfile, JdbcType}
 
 import org.alephium.explorer._
 import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
-import org.alephium.util.{Hex, TimeStamp, U256}
+import org.alephium.util.{TimeStamp, U256}
 
 trait CustomTypes extends JdbcProfile {
   val config: DatabaseConfig[JdbcProfile]
   import config.profile.api._
 
   private def buildHashTypes[H: ClassTag](from: Hash => H, to: H => Hash): JdbcType[H] =
-    MappedJdbcType.base[H, String](
-      to(_).toHexString,
-      raw => from((Hash.unsafe(Hex.unsafe(raw))))
+    MappedJdbcType.base[H, Array[Byte]](
+      to(_).bytes.toArray,
+      raw => from(Hash.unsafe(ByteString.fromArrayUnsafe(raw)))
     )
 
   private def buildBlockHashTypes[H: ClassTag](from: BlockHash => H,
                                                to: H           => BlockHash): JdbcType[H] =
-    MappedJdbcType.base[H, String](
-      to(_).toHexString,
-      raw => from((BlockHash.unsafe(Hex.unsafe(raw))))
+    MappedJdbcType.base[H, Array[Byte]](
+      to(_).bytes.toArray,
+      raw => from(BlockHash.unsafe(ByteString.fromArrayUnsafe(raw)))
     )
 
   implicit lazy val hashType: JdbcType[Hash] = buildHashTypes(identity, identity)

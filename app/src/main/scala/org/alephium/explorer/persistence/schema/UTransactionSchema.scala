@@ -30,10 +30,11 @@ trait UnconfirmedTxSchema extends CustomTypes {
   import config.profile.api._
 
   class UnconfirmedTxs(tag: Tag) extends Table[UnconfirmedTxEntity](tag, "utransactions") {
-    def hash: Rep[Transaction.Hash] = column[Transaction.Hash]("hash", O.PrimaryKey)
-    def chainFrom: Rep[GroupIndex]  = column[GroupIndex]("chain_from")
-    def chainTo: Rep[GroupIndex]    = column[GroupIndex]("chain_to")
-    def gasAmount: Rep[Int]         = column[Int]("gas-amount")
+    def hash: Rep[Transaction.Hash] =
+      column[Transaction.Hash]("hash", O.PrimaryKey, O.SqlType("BYTEA"))
+    def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
+    def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
+    def gasAmount: Rep[Int]        = column[Int]("gas-amount")
     def gasPrice: Rep[U256] =
       column[U256]("gas-price", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
 

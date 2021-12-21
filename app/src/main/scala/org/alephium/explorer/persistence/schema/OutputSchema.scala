@@ -31,10 +31,10 @@ trait OutputSchema extends CustomTypes {
   import config.profile.api._
 
   class Outputs(tag: Tag) extends Table[OutputEntity](tag, "outputs") {
-    def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash")
-    def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash")
+    def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
+    def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
     def hint: Rep[Int]                  = column[Int]("hint")
-    def key: Rep[Hash]                  = column[Hash]("key")
+    def key: Rep[Hash]                  = column[Hash]("key", O.SqlType("BYTEA"))
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
     def address: Rep[Address]            = column[Address]("address")

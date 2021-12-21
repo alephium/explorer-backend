@@ -30,7 +30,7 @@ trait UOutputSchema extends CustomTypes {
   import config.profile.api._
 
   class UOutputs(tag: Tag) extends Table[UOutputEntity](tag, "uoutputs") {
-    def txHash: Rep[Transaction.Hash] = column[Transaction.Hash]("tx_hash")
+    def txHash: Rep[Transaction.Hash] = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
     def address: Rep[Address]            = column[Address]("address")

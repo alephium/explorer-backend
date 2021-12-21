@@ -31,11 +31,11 @@ trait InputSchema extends CustomTypes {
   import config.profile.api._
 
   class Inputs(tag: Tag) extends Table[InputEntity](tag, "inputs") {
-    def blockHash: Rep[BlockEntry.Hash]   = column[BlockEntry.Hash]("block_hash")
-    def txHash: Rep[Transaction.Hash]     = column[Transaction.Hash]("tx_hash")
+    def blockHash: Rep[BlockEntry.Hash]   = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
+    def txHash: Rep[Transaction.Hash]     = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
     def timestamp: Rep[TimeStamp]         = column[TimeStamp]("timestamp")
     def hint: Rep[Int]                    = column[Int]("hint")
-    def outputRefKey: Rep[Hash]           = column[Hash]("output_ref_key")
+    def outputRefKey: Rep[Hash]           = column[Hash]("output_ref_key", O.SqlType("BYTEA"))
     def unlockScript: Rep[Option[String]] = column[Option[String]]("unlock_script")
     def mainChain: Rep[Boolean]           = column[Boolean]("main_chain")
     def order: Rep[Int]                   = column[Int]("order")
