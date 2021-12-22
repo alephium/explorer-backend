@@ -16,6 +16,9 @@
 
 package org.alephium.explorer.persistence.model
 
+import akka.util.ByteString
+
+import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.util.TimeStamp
 
@@ -25,7 +28,12 @@ final case class BlockHeader(
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     height: Height,
-    mainChain: Boolean
+    mainChain: Boolean,
+    nonce: ByteString,
+    version: Byte,
+    depStateHash: Hash,
+    txsHash: Hash,
+    target: ByteString
 ) {
   def toApi(deps: Seq[BlockEntry.Hash], transactions: Seq[Transaction]): BlockEntry =
     BlockEntry(hash,
@@ -55,6 +63,11 @@ object BlockHeader {
       blockEntity.chainFrom,
       blockEntity.chainTo,
       blockEntity.height,
-      blockEntity.mainChain
+      blockEntity.mainChain,
+      blockEntity.nonce,
+      blockEntity.version,
+      blockEntity.depStateHash,
+      blockEntity.txsHash,
+      blockEntity.target
     )
 }

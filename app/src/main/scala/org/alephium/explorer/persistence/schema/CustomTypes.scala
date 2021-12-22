@@ -81,4 +81,10 @@ trait CustomTypes extends JdbcProfile {
     u256       => BigDecimal(u256.v),
     bigDecimal => U256.unsafe(bigDecimal.toBigInt.bigInteger)
   )
+
+  implicit lazy val bytestringType: JdbcType[ByteString] =
+    MappedJdbcType.base[ByteString, Array[Byte]](
+      _.toArray,
+      bytes => ByteString.fromArrayUnsafe(bytes)
+    )
 }
