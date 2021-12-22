@@ -44,6 +44,7 @@ trait Generators {
   lazy val groupIndexGen: Gen[GroupIndex]            = Gen.posNum[Int].map(GroupIndex.unsafe(_))
   lazy val heightGen: Gen[Height]                    = Gen.posNum[Int].map(Height.unsafe(_))
   lazy val addressGen: Gen[Address]                  = hashGen.map(hash => Address.unsafe(Base58.encode(hash.bytes)))
+  lazy val bytesGen: Gen[ByteString]                 = hashGen.map(_.bytes)
 
   lazy val inputGen: Gen[Input] = for {
     outputRef    <- outputRefGen
@@ -163,14 +164,26 @@ trait Generators {
       deps            <- Gen.listOfN(2 * groupNum - 1, blockEntryHashGen)
       transactionSize <- Gen.choose(1, 10)
       transactions    <- Gen.listOfN(transactionSize, transactionProtocolGen)
+      nonce           <- bytesGen
+      version         <- Gen.posNum[Byte]
+      depStateHash    <- hashGen
+      txsHash         <- hashGen
+      target          <- bytesGen
     } yield
-      protocolApi.BlockEntry(hash.value,
-                             timestamp,
-                             chainFrom.value,
-                             chainTo.value,
-                             height.value,
-                             AVector.from(deps.map(_.value)),
-                             AVector.from(transactions))
+      protocolApi.BlockEntry(
+        hash.value,
+        timestamp,
+        chainFrom.value,
+        chainTo.value,
+        height.value,
+        AVector.from(deps.map(_.value)),
+        AVector.from(transactions),
+        nonce,
+        version,
+        depStateHash,
+        txsHash,
+        target
+      )
 
   def blockEntityGen(chainFrom: GroupIndex,
                      chainTo: GroupIndex,
