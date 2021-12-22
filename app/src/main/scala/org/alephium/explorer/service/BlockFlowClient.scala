@@ -186,7 +186,12 @@ object BlockFlowClient {
         tx.outputs.toSeq.zipWithIndex.map {
           case (out, index) => outputToEntity(out, hash, tx.id, index, block.timestamp, mainChain)
       }),
-      mainChain = mainChain
+      mainChain = mainChain,
+      block.nonce,
+      block.version,
+      block.depStateHash,
+      block.txsHash,
+      block.target
     )
   }
 
