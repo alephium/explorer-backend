@@ -16,6 +16,8 @@
 
 package org.alephium.explorer
 
+import java.math.BigInteger
+
 import akka.util.ByteString
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
@@ -168,8 +170,12 @@ trait Generators {
       version         <- Gen.posNum[Byte]
       depStateHash    <- hashGen
       txsHash         <- hashGen
-      target          <- bytesGen
-    } yield
+    } yield {
+      //From `alephium` repo
+      val numZerosAtLeastInHash = 37
+      val target = protocol.Target.unsafe(
+        BigInteger.ONE.shiftLeft(256 - numZerosAtLeastInHash).subtract(BigInteger.ONE))
+
       protocolApi.BlockEntry(
         hash.value,
         timestamp,
@@ -182,8 +188,9 @@ trait Generators {
         version,
         depStateHash,
         txsHash,
-        target
+        target.bits
       )
+    }
 
   def blockEntityGen(chainFrom: GroupIndex,
                      chainTo: GroupIndex,
@@ -264,7 +271,8 @@ trait Generators {
         block.height,
         block.deps,
         transactions,
-        mainChain = true
+        mainChain = true,
+        BigInteger.ZERO
       )
     })
   }

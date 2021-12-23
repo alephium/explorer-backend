@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.persistence.schema
 
+import java.math.BigInteger
+
 import akka.util.ByteString
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -43,6 +45,8 @@ trait BlockHeaderSchema extends CustomTypes {
     def depStateHash: Rep[Hash]    = column[Hash]("dep_state_hash")
     def txsHash: Rep[Hash]         = column[Hash]("txs_hash")
     def target: Rep[ByteString]    = column[ByteString]("target")
+    def hashrate: Rep[BigInteger] =
+      column[BigInteger]("hashrate", O.SqlType("DECIMAL(80,0)")) //TODO How much decimal we need? this one is the same as for U256
 
     def timestampIdx: Index = index("blocks_timestamp_idx", timestamp)
     def heightIdx: Index    = index("blocks_height_idx", height)
@@ -58,7 +62,8 @@ trait BlockHeaderSchema extends CustomTypes {
        version,
        depStateHash,
        txsHash,
-       target)
+       target,
+       hashrate)
         .<>((BlockHeader.apply _).tupled, BlockHeader.unapply)
   }
 
