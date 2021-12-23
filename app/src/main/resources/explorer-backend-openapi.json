@@ -1149,7 +1149,8 @@
           "chainTo",
           "height",
           "txNumber",
-          "mainChain"
+          "mainChain",
+          "hashRate"
         ],
         "type": "object",
         "properties": {
@@ -1174,6 +1175,10 @@
           },
           "mainChain": {
             "type": "boolean"
+          },
+          "hashRate": {
+            "type": "string",
+            "format": "bigint"
           }
         }
       },
