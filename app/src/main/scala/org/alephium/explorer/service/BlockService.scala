@@ -18,13 +18,15 @@ package org.alephium.explorer.service
 
 import scala.concurrent.{ExecutionContext, Future}
 
-import org.alephium.explorer.api.model.{BlockEntry, ListBlocks, Pagination, Transaction}
+import org.alephium.explorer.api.model.{BlockEntry, HashRate, ListBlocks, Pagination, Transaction}
 import org.alephium.explorer.persistence.dao.BlockDao
+import org.alephium.util.{Duration, TimeStamp}
 
 trait BlockService {
   def getLiteBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]]
   def getBlockTransactions(hash: BlockEntry.Hash, pagination: Pagination): Future[Seq[Transaction]]
   def listBlocks(pagination: Pagination): Future[ListBlocks]
+  def getHashRates(from: TimeStamp, to: TimeStamp, interval: Duration): Future[Seq[HashRate]]
 }
 
 object BlockService {
@@ -45,6 +47,10 @@ object BlockService {
         case (blocks, total) =>
           ListBlocks(total, blocks)
       }
+    }
+
+    def getHashRates(from: TimeStamp, to: TimeStamp, interval: Duration): Future[Seq[HashRate]] = {
+      blockDao.getHashRates(from, to, interval)
     }
   }
 }

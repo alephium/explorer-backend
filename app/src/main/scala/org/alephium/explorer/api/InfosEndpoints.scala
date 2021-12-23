@@ -22,8 +22,9 @@ import sttp.tapir._
 import sttp.tapir.generic.auto._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
+import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.BaseEndpoint
-import org.alephium.explorer.api.model.{ExplorerInfo, Pagination, TokenSupply}
+import org.alephium.explorer.api.model.{ExplorerInfo, HashRate, Pagination, TokenSupply}
 
 // scalastyle:off magic.number
 trait InfosEndpoints extends BaseEndpoint with QueryParams {
@@ -36,6 +37,10 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
   private val supplyEndpoint =
     infosEndpoint
       .in("supply")
+
+  private val hashRateEndpoint =
+    infosEndpoint
+      .in("hashrate")
 
   val getInfos: BaseEndpoint[Unit, ExplorerInfo] =
     infosEndpoint.get
@@ -58,5 +63,12 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
     supplyEndpoint.get
       .in("total-alph")
       .out(plainBody[BigDecimal])
+      .description("Get the ALPH total supply")
+
+  val getHashRate: BaseEndpoint[(TimeInterval, Long), Seq[HashRate]] =
+    hashRateEndpoint.get
+      .in(timeIntervalQuery)
+      .in(query[Long]("interval").description("Time interval in millisecond"))
+      .out(jsonBody[Seq[HashRate]])
       .description("Get the ALPH total supply")
 }

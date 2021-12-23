@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.persistence.dao
 
+import java.math.BigInteger
+
 import scala.concurrent.{ExecutionContext, Future}
 
 import com.typesafe.scalalogging.StrictLogging
@@ -29,7 +31,7 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema._
-import org.alephium.util.TimeStamp
+import org.alephium.util.{Duration, TimeStamp}
 
 trait BlockDao {
   def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]]
@@ -48,6 +50,7 @@ trait BlockDao {
                       chainTo: GroupIndex,
                       groupNum: Int): Future[Option[BlockEntry.Hash]]
   def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit]
+  def getHashRates(from: TimeStamp, to: TimeStamp, interval: Duration): Future[Seq[HashRate]]
 }
 
 object BlockDao {
@@ -252,6 +255,43 @@ object BlockDao {
 
     def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit] = {
       run(updateMainChainStatusAction(hash, isMainChain))
+    }
+    @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
+    def getHashRates(from: TimeStamp, to: TimeStamp, interval: Duration): Future[Seq[HashRate]] = {
+      run(
+        blockHeadersTable
+          .map(header => (header.timestamp, header.hashrate))
+          .filter { case (timestamp, _) => timestamp >= from.millis && timestamp <= to.millis }
+          .sortBy { case (timestamp, _) => timestamp }
+          .result).map { tsHashrates =>
+        if (tsHashrates.nonEmpty) {
+          val startingTs = (tsHashrates.head match { case (timestamp, _) => timestamp }) + interval.millis
+
+          val res = tsHashrates.foldLeft(
+            (startingTs, Seq.empty, Seq.empty): (Long, Seq[BigInteger], Seq[(Long, BigInteger)])) {
+            case ((ts, rates, result), (timestamp, hashrate)) =>
+              if (timestamp <= ts) {
+                (ts, rates :+ hashrate, result)
+              } else {
+                if (rates.nonEmpty) {
+                  (ts + interval.millis,
+                   Seq.empty,
+                   result :+ ((ts,
+                               rates.fold(BigInteger.ZERO)(_ add _) divide (BigInteger.valueOf(
+                                 rates.size.toLong)))))
+                } else {
+                  (ts + interval.millis, Seq.empty, result)
+                }
+              }
+          }
+
+          res._3.map {
+            case (timestamp, hashrate) => HashRate(TimeStamp.unsafe(timestamp), hashrate)
+          }
+        } else {
+          Seq.empty
+        }
+      }
     }
   }
 }

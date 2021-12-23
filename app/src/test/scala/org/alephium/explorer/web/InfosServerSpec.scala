@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.web
 
+import java.math.BigInteger
+
 import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
@@ -23,8 +25,8 @@ import de.heikoseeberger.akkahttpupickle.UpickleCustomizationSupport
 import org.scalatest.concurrent.ScalaFutures
 
 import org.alephium.explorer.{AlephiumSpec, BuildInfo}
-import org.alephium.explorer.api.model.{ExplorerInfo, Pagination, TokenSupply}
-import org.alephium.explorer.service.TokenSupplyService
+import org.alephium.explorer.api.model._
+import org.alephium.explorer.service.{BlockService, TokenSupplyService}
 import org.alephium.json.Json
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp}
@@ -96,6 +98,22 @@ class InfosServerSpec()
 
     }
 
-    val server = new InfosServer(Duration.zero, tokenSupplyService)
+    val blockService = new BlockService {
+      def getLiteBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]] = ???
+      def getBlockTransactions(hash: BlockEntry.Hash,
+                               pagination: Pagination): Future[Seq[Transaction]] = ???
+      def listBlocks(pagination: Pagination): Future[ListBlocks]                 = ???
+      def getHashRates(from: TimeStamp,
+                       to: TimeStamp,
+                       interval: Duration): Future[Seq[HashRate]] = {
+        Future.successful(
+          Seq(
+            HashRate(TimeStamp.zero, BigInteger.ZERO)
+          )
+        )
+      }
+    }
+
+    val server = new InfosServer(Duration.zero, tokenSupplyService, blockService)
   }
 }
