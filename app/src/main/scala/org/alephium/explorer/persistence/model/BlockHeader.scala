@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.persistence.model
 
+import java.math.BigInteger
+
 import akka.util.ByteString
 
 import org.alephium.explorer.Hash
@@ -33,7 +35,8 @@ final case class BlockHeader(
     version: Byte,
     depStateHash: Hash,
     txsHash: Hash,
-    target: ByteString
+    target: ByteString,
+    hashrate: BigInteger
 ) {
   def toApi(deps: Seq[BlockEntry.Hash], transactions: Seq[Transaction]): BlockEntry =
     BlockEntry(hash,
@@ -68,6 +71,7 @@ object BlockHeader {
       blockEntity.version,
       blockEntity.depStateHash,
       blockEntity.txsHash,
-      blockEntity.target
+      blockEntity.target,
+      blockEntity.hashrate
     )
 }

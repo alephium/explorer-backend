@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.persistence.model
 
+import java.math.BigInteger
+
 import akka.util.ByteString
 
 import org.alephium.explorer.Hash
@@ -38,7 +40,8 @@ final case class BlockEntity(
     version: Byte,
     depStateHash: Hash,
     txsHash: Hash,
-    target: ByteString
+    target: ByteString,
+    hashrate: BigInteger
 ) extends FlowEntity {
   def updateMainChain(newMainChain: Boolean): BlockEntity = {
     this.copy(

@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.service
 
+import java.math.BigInteger
+
 import scala.concurrent.{ExecutionContext, Future}
 
 import org.scalacheck.Gen
@@ -348,7 +350,8 @@ class TransactionServiceSpec
         version      = 1.toByte,
         depStateHash = hashGen.sample.get,
         txsHash      = hashGen.sample.get,
-        target       = bytesGen.sample.get
+        target       = bytesGen.sample.get,
+        hashrate     = BigInteger.ZERO
       )
 
   }
