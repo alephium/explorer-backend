@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.web
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.server.Route
 
@@ -31,7 +31,5 @@ class TransactionServer(transactionService: TransactionService, val blockflowFet
     with TransactionEndpoints {
   val route: Route = toRoute(getTransactionById)(
     hash =>
-      transactionService
-        .getTransaction(hash)
-        .map(_.toRight(ApiError.NotFound(hash.value.toHexString))))
+        Future.successful(Left(ApiError.NotFound(hash.value.toHexString))))
 }

@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.web
 
+import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 
 import akka.http.scaladsl.server.Directives._
@@ -32,12 +33,9 @@ class BlockServer(blockService: BlockService, val blockflowFetchMaxAge: Duration
     with BlockEndpoints {
   val route: Route =
     toRoute(getBlockByHash)(
-      hash =>
-        blockService
-          .getLiteBlockByHash(hash)
-          .map(_.toRight(ApiError.NotFound(hash.value.toHexString)))) ~
+      hash => Future.successful(Left(ApiError.NotFound(hash.value.toHexString)))) ~
       toRoute(getBlockTransactions) {
-        case (hash, pagination) => blockService.getBlockTransactions(hash, pagination).map(Right(_))
+        case (hash, pagination) => Future.successful(Left(ApiError.BadRequest(s"Wrong hash ${hash.value.toHexString}")))
       } ~
-      toRoute(listBlocks)(blockService.listBlocks(_).map(Right(_)))
+      toRoute(listBlocks)(_=>Future.successful(Left(ApiError.BadRequest(s"Cannot list all blocks"))))
 }

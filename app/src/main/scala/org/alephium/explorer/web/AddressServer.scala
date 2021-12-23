@@ -16,11 +16,12 @@
 
 package org.alephium.explorer.web
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 
+import org.alephium.api.ApiError
 import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model.AddressInfo
 import org.alephium.explorer.service.TransactionService
@@ -34,15 +35,10 @@ class AddressServer(transactionService: TransactionService, val blockflowFetchMa
   val route: Route =
     toRoute(getTransactionsByAddress) {
       case (address, pagination) =>
-        transactionService
-          .getTransactionsByAddress(address, pagination)
-          .map(Right.apply)
+        Future.successful(Left(ApiError.NotFound(address.toString)))
     } ~
       toRoute(getAddressInfo) {
         case (address) =>
-          for {
-            (balance, locked) <- transactionService.getBalance(address)
-            txNumber          <- transactionService.getTransactionsNumberByAddress(address)
-          } yield Right(AddressInfo(balance, locked, txNumber))
+        Future.successful(Left(ApiError.BadRequest(s"Crap ${address.toString}")))
       }
 }
