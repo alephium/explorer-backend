@@ -17,8 +17,7 @@
 package org.alephium.explorer.benchmark.postgres.table
 
 import slick.jdbc.PostgresProfile.api._
-import slick.lifted.Index
-import slick.lifted.ProvenShape
+import slick.lifted.{Index, ProvenShape}
 
 object TableVarchar {
   val tableQuery: TableQuery[TableVarchar] = TableQuery[TableVarchar]

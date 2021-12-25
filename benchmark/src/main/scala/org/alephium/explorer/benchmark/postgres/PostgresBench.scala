@@ -27,8 +27,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.Hash
 import org.alephium.explorer.benchmark.CurrentThreadExecutionContext.self
 import org.alephium.explorer.benchmark.postgres.Config._
-import org.alephium.explorer.benchmark.postgres.table.TableBytea
-import org.alephium.explorer.benchmark.postgres.table.TableVarchar
+import org.alephium.explorer.benchmark.postgres.table.{TableBytea, TableVarchar}
 
 //Default config
 object Config {

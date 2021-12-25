@@ -17,9 +17,7 @@
 package org.alephium.explorer.benchmark.postgres
 
 import com.typesafe.scalalogging.StrictLogging
-import org.openjdk.jmh.annotations.Level
-import org.openjdk.jmh.annotations.Setup
-import org.openjdk.jmh.annotations.TearDown
+import org.openjdk.jmh.annotations.{Level, Setup, TearDown}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.benchmark.CurrentThreadExecutionContext.self
