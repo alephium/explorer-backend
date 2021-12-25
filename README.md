@@ -18,7 +18,7 @@ SQL use the Postgres function `decode` which converts it to `bytea`.
 ```sql
 select *
 from "utransactions"
-where "hash" decode('f25f43b7fb13b1ec5f1a2d3acd1bebb9d27143cdc4586725162b9d88301b9bd7', 'hex');
+where "hash" = decode('f25f43b7fb13b1ec5f1a2d3acd1bebb9d27143cdc4586725162b9d88301b9bd7', 'hex');
 ```
 
 ### H2
