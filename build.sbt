@@ -169,12 +169,14 @@ val wartsTestExcludes = wartsCompileExcludes ++ Seq(
 
 lazy val benchmark = mainProject("benchmark")
   .enablePlugins(JmhPlugin)
-  .dependsOn(app)
+  .dependsOn(app % "test->test;compile->compile")
   .settings(
     libraryDependencies ++= Seq(
       scalaLogging,
       logback,
       scalatest,
+      scalatestplus,
+      scalacheck,
       slick,
       slickHikaricp,
       postgresql
