@@ -39,6 +39,7 @@ object PostgresConnection extends StrictLogging {
     * @return An instance of [[PostgresConnection]]
     */
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  // scalastyle:off magic.number
   def apply[T <: Table[_]](
       dbName: String,
       table: TableQuery[T],
@@ -55,6 +56,7 @@ object PostgresConnection extends StrictLogging {
       )
     ).runDropAndCreateTableBlocking()
   }
+  // scalastyle:off magic.number
 
   //builds DatabaseConfig
   def createConfig(dbName: String, host: String, port: Int): DatabaseConfig[JdbcProfile] =
