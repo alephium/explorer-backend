@@ -89,6 +89,10 @@ class VarcharReadBenchState(testDataCount: Int)
 
 /**
   * Implements all JMH functions executing benchmarks on Postgres.
+  *
+  * Prerequisite: The following databases should exists
+  *               - 'bytea-vs-varchar-read-benchmark' - For read benchmarks
+  *               - 'bytea-vs-varchar-write-benchmark' - For write benchmarks
   */
 @Fork(value        = 1, warmups = 0)
 @Warmup(iterations = 0)
