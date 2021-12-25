@@ -60,7 +60,7 @@ val commonSettings = Seq(
 
 lazy val root = (project in file("."))
   .settings(commonSettings: _*)
-  .aggregate(app, tools)
+  .aggregate(app, tools, benchmark)
 
 lazy val app = mainProject("app")
   .settings(
@@ -166,3 +166,17 @@ val wartsTestExcludes = wartsCompileExcludes ++ Seq(
   Wart.Throw,
   Wart.Equals
 )
+
+lazy val benchmark = mainProject("benchmark")
+  .enablePlugins(JmhPlugin)
+  .dependsOn(app)
+  .settings(
+    libraryDependencies ++= Seq(
+      scalaLogging,
+      logback,
+      scalatest,
+      slick,
+      slickHikaricp,
+      postgresql
+    )
+  )
