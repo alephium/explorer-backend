@@ -62,7 +62,7 @@ object TestKit {
         state.connection.run(state.table.result).futureValue
       }.getCause.getCause shouldBe a[RejectedExecutionException]
       ()
-      //scalastyle:on scalatest-matcher>
+      //scalastyle:on scalatest-matcher
     }
   }
 }
