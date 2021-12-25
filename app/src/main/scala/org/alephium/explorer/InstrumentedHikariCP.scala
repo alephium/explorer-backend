@@ -18,6 +18,8 @@ package org.alephium.explorer
 
 import java.sql.Driver
 
+import scala.util.Try
+
 import com.typesafe.config.Config
 import com.zaxxer.hikari.metrics.prometheus.PrometheusMetricsTrackerFactory
 import io.micrometer.core.instrument.Clock
@@ -33,11 +35,14 @@ object InstrumentedHikariCP extends JdbcDataSourceFactory {
                          classLoader: ClassLoader): JdbcDataSource = {
     val hikariCPDataSource = HikariCPJdbcDataSource.forConfig(c, driver, name, classLoader)
     hikariCPDataSource.ds.setMetricsTrackerFactory(new PrometheusMetricsTrackerFactory())
-    val databaseName = c.getString("name")
-    val pgMetrics    = new PostgreSQLDatabaseMetrics(hikariCPDataSource.ds, databaseName)
-    val registry =
-      new PrometheusMeterRegistry(PrometheusConfig.DEFAULT, Metrics.defaultRegistry, Clock.SYSTEM)
-    pgMetrics.bindTo(registry)
+    //enable metric only if the flag `enableDatabaseMetrics` enabled or missing
+    if (Try(c.getBoolean("enableDatabaseMetrics")).getOrElse(true)) {
+      val databaseName = c.getString("name")
+      val pgMetrics    = new PostgreSQLDatabaseMetrics(hikariCPDataSource.ds, databaseName)
+      val registry =
+        new PrometheusMeterRegistry(PrometheusConfig.DEFAULT, Metrics.defaultRegistry, Clock.SYSTEM)
+      pgMetrics.bindTo(registry)
+    }
     hikariCPDataSource
   }
 }
