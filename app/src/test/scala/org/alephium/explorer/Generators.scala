@@ -164,13 +164,20 @@ trait Generators {
       transactionSize <- Gen.choose(1, 10)
       transactions    <- Gen.listOfN(transactionSize, transactionProtocolGen)
     } yield
-      protocolApi.BlockEntry(hash.value,
-                             timestamp,
-                             chainFrom.value,
-                             chainTo.value,
-                             height.value,
-                             AVector.from(deps.map(_.value)),
-                             AVector.from(transactions))
+      protocolApi.BlockEntry(
+        hash.value,
+        timestamp,
+        chainFrom.value,
+        chainTo.value,
+        height.value,
+        AVector.from(deps.map(_.value)),
+        AVector.from(transactions),
+        nonce        = ByteString(1),
+        version      = 0,
+        depStateHash = Hash.zero,
+        txsHash      = Hash.zero,
+        target       = ByteString(1, 2, 3, 4)
+      )
 
   def blockEntityGen(chainFrom: GroupIndex,
                      chainTo: GroupIndex,
