@@ -18,7 +18,7 @@ package org.alephium.explorer.persistence.schema
 
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
-import slick.lifted.{Index, ProvenShape}
+import slick.lifted.ProvenShape
 
 import org.alephium.explorer.api.model.{GroupIndex, Transaction}
 import org.alephium.explorer.persistence.model.UnconfirmedTxEntity
@@ -37,8 +37,6 @@ trait UnconfirmedTxSchema extends CustomTypes {
     def gasAmount: Rep[Int]        = column[Int]("gas-amount")
     def gasPrice: Rep[U256] =
       column[U256]("gas-price", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
-
-    def hashIdx: Index = index("utxs_hash_idx", hash)
 
     def * : ProvenShape[UnconfirmedTxEntity] =
       (hash, chainFrom, chainTo, gasAmount, gasPrice)
