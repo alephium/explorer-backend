@@ -19,6 +19,7 @@ package org.alephium.explorer.persistence.schema
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, ProvenShape}
+import slick.sql.SqlAction
 
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.persistence.model.BlockHeader
@@ -28,14 +29,15 @@ trait BlockHeaderSchema extends CustomTypes {
 
   import config.profile.api._
 
-  class BlockHeaders(tag: Tag) extends Table[BlockHeader](tag, "block_headers") {
+  //Uppercase names because H2 is case-sensitive when executing raw SQL queries
+  class BlockHeaders(tag: Tag) extends Table[BlockHeader](tag, "BLOCK_HEADERS") {
     def hash: Rep[BlockEntry.Hash] =
-      column[BlockEntry.Hash]("hash", O.PrimaryKey, O.SqlType("BYTEA"))
-    def timestamp: Rep[Long]       = column[Long]("timestamp")
-    def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
-    def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
-    def height: Rep[Height]        = column[Height]("height")
-    def mainChain: Rep[Boolean]    = column[Boolean]("main_chain")
+      column[BlockEntry.Hash]("HASH", O.PrimaryKey, O.SqlType("BYTEA"))
+    def timestamp: Rep[Long]       = column[Long]("TIMESTAMP")
+    def chainFrom: Rep[GroupIndex] = column[GroupIndex]("CHAIN_FROM")
+    def chainTo: Rep[GroupIndex]   = column[GroupIndex]("CHAIN_TO")
+    def height: Rep[Height]        = column[Height]("HEIGHT")
+    def mainChain: Rep[Boolean]    = column[Boolean]("MAIN_CHAIN")
 
     def timestampIdx: Index = index("blocks_timestamp_idx", timestamp)
     def heightIdx: Index    = index("blocks_height_idx", height)
@@ -43,6 +45,19 @@ trait BlockHeaderSchema extends CustomTypes {
     def * : ProvenShape[BlockHeader] =
       (hash, timestamp, chainFrom, chainTo, height, mainChain)
         .<>((BlockHeader.apply _).tupled, BlockHeader.unapply)
+  }
+
+  /**
+    * Builds index for all columns of this table so that
+    * index scan is enough for the query to return results.
+    *
+    * @see Issue <a href="">#123</a>.
+    */
+  def createBlockHeadersFullIndexSQL(): SqlAction[Int, NoStream, Effect] = {
+    sqlu"""
+      create unique index if not exists block_headers_full_index
+          on block_headers (main_chain asc, timestamp desc, hash asc, chain_from asc, chain_to asc, height asc);
+      """
   }
 
   val blockHeadersTable: TableQuery[BlockHeaders] = TableQuery[BlockHeaders]
