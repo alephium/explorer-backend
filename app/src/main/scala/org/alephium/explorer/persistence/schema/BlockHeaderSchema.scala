@@ -51,7 +51,7 @@ trait BlockHeaderSchema extends CustomTypes {
     * Builds index for all columns of this table so that
     * index scan is enough for the query to return results.
     *
-    * @see Issue <a href="">#123</a>.
+    * @see PR <a href="https://github.com/alephium/explorer-backend/pull/112">#112</a>.
     */
   def createBlockHeadersFullIndexSQL(): SqlAction[Int, NoStream, Effect] = {
     sqlu"""
