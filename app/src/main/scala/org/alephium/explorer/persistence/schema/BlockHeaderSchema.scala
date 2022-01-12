@@ -29,15 +29,14 @@ trait BlockHeaderSchema extends CustomTypes {
 
   import config.profile.api._
 
-  //Uppercase names because H2 is case-sensitive when executing raw SQL queries
-  class BlockHeaders(tag: Tag) extends Table[BlockHeader](tag, "BLOCK_HEADERS") {
+  class BlockHeaders(tag: Tag) extends Table[BlockHeader](tag, "block_headers") {
     def hash: Rep[BlockEntry.Hash] =
-      column[BlockEntry.Hash]("HASH", O.PrimaryKey, O.SqlType("BYTEA"))
-    def timestamp: Rep[Long]       = column[Long]("TIMESTAMP")
-    def chainFrom: Rep[GroupIndex] = column[GroupIndex]("CHAIN_FROM")
-    def chainTo: Rep[GroupIndex]   = column[GroupIndex]("CHAIN_TO")
-    def height: Rep[Height]        = column[Height]("HEIGHT")
-    def mainChain: Rep[Boolean]    = column[Boolean]("MAIN_CHAIN")
+      column[BlockEntry.Hash]("hash", O.PrimaryKey, O.SqlType("bytea"))
+    def timestamp: Rep[Long]       = column[Long]("timestamp")
+    def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
+    def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
+    def height: Rep[Height]        = column[Height]("height")
+    def mainChain: Rep[Boolean]    = column[Boolean]("main_chain")
 
     def timestampIdx: Index = index("blocks_timestamp_idx", timestamp)
     def heightIdx: Index    = index("blocks_height_idx", height)
