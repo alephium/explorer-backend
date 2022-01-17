@@ -22,6 +22,7 @@ import akka.util.ByteString
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, ProvenShape}
+import slick.sql.SqlAction
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
@@ -34,7 +35,7 @@ trait BlockHeaderSchema extends CustomTypes {
 
   class BlockHeaders(tag: Tag) extends Table[BlockHeader](tag, "block_headers") {
     def hash: Rep[BlockEntry.Hash] =
-      column[BlockEntry.Hash]("hash", O.PrimaryKey, O.SqlType("BYTEA"))
+      column[BlockEntry.Hash]("hash", O.PrimaryKey, O.SqlType("bytea"))
     def timestamp: Rep[Long]       = column[Long]("timestamp")
     def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
@@ -65,6 +66,19 @@ trait BlockHeaderSchema extends CustomTypes {
        target,
        hashrate)
         .<>((BlockHeader.apply _).tupled, BlockHeader.unapply)
+  }
+
+  /**
+    * Builds index for all columns of this table so that
+    * index scan is enough for the query to return results.
+    *
+    * @see PR <a href="https://github.com/alephium/explorer-backend/pull/112">#112</a>.
+    */
+  def createBlockHeadersFullIndexSQL(): SqlAction[Int, NoStream, Effect] = {
+    sqlu"""
+      create unique index if not exists block_headers_full_index
+          on block_headers (main_chain asc, timestamp desc, hash asc, chain_from asc, chain_to asc, height asc);
+      """
   }
 
   val blockHeadersTable: TableQuery[BlockHeaders] = TableQuery[BlockHeaders]

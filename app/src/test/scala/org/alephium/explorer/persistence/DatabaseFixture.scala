@@ -31,7 +31,8 @@ trait DatabaseFixture {
   private val config = ConfigFactory
     .parseMap(
       Map(
-        ("db.db.url", s"jdbc:h2:mem:${Random.nextString(5)};DB_CLOSE_DELAY=-1")
+        ("db.db.url",
+         s"jdbc:h2:mem:${Random.nextString(5)};DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE")
       ).view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava)
     .withFallback(ConfigFactory.load())
 

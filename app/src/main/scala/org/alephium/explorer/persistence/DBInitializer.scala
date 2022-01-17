@@ -72,6 +72,9 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
           run(createIfNotExist)
         })
       }
+      .flatMap { _ =>
+        run(createBlockHeadersFullIndexSQL())
+      }
       .map(_ => ())
   }
 }
