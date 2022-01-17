@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.persistence.schema
 
+import java.math.BigInteger
+
 import scala.reflect.ClassTag
 
 import akka.util.ByteString
@@ -81,4 +83,16 @@ trait CustomTypes extends JdbcProfile {
     u256       => BigDecimal(u256.v),
     bigDecimal => U256.unsafe(bigDecimal.toBigInt.bigInteger)
   )
+
+  implicit lazy val bigIntegerType: JdbcType[BigInteger] =
+    MappedJdbcType.base[BigInteger, BigDecimal](
+      bigInteger => BigDecimal(bigInteger),
+      bigDecimal => bigDecimal.toBigInt.bigInteger
+    )
+
+  implicit lazy val bytestringType: JdbcType[ByteString] =
+    MappedJdbcType.base[ByteString, Array[Byte]](
+      _.toArray,
+      bytes => ByteString.fromArrayUnsafe(bytes)
+    )
 }

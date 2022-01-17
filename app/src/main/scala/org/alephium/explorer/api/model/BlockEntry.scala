@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.api.model
 
+import java.math.BigInteger
+
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.BlockHash
 import org.alephium.explorer.HashCompanion
@@ -32,7 +34,8 @@ final case class BlockEntry(
     height: Height,
     deps: Seq[BlockEntry.Hash],
     transactions: Seq[Transaction],
-    mainChain: Boolean
+    mainChain: Boolean,
+    hashRate: BigInteger
 ) extends FlowEntity
 
 object BlockEntry {
@@ -51,7 +54,8 @@ object BlockEntry {
       chainTo: GroupIndex,
       height: Height,
       txNumber: Int,
-      mainChain: Boolean
+      mainChain: Boolean,
+      hashRate: BigInteger
   )
   object Lite {
     implicit val codec: ReadWriter[Lite] = macroRW

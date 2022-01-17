@@ -16,6 +16,11 @@
 
 package org.alephium.explorer.persistence.model
 
+import java.math.BigInteger
+
+import akka.util.ByteString
+
+import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.util.TimeStamp
 
@@ -25,7 +30,13 @@ final case class BlockHeader(
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     height: Height,
-    mainChain: Boolean
+    mainChain: Boolean,
+    nonce: ByteString,
+    version: Byte,
+    depStateHash: Hash,
+    txsHash: Hash,
+    target: ByteString,
+    hashrate: BigInteger
 ) {
   def toApi(deps: Seq[BlockEntry.Hash], transactions: Seq[Transaction]): BlockEntry =
     BlockEntry(hash,
@@ -35,7 +46,8 @@ final case class BlockHeader(
                height,
                deps,
                transactions,
-               mainChain)
+               mainChain,
+               hashrate)
 
   def toLiteApi(txNumber: Int): BlockEntry.Lite =
     BlockEntry.Lite(hash,
@@ -44,7 +56,8 @@ final case class BlockHeader(
                     chainTo,
                     height,
                     txNumber,
-                    mainChain)
+                    mainChain,
+                    hashrate)
 }
 
 object BlockHeader {
@@ -55,6 +68,12 @@ object BlockHeader {
       blockEntity.chainFrom,
       blockEntity.chainTo,
       blockEntity.height,
-      blockEntity.mainChain
+      blockEntity.mainChain,
+      blockEntity.nonce,
+      blockEntity.version,
+      blockEntity.depStateHash,
+      blockEntity.txsHash,
+      blockEntity.target,
+      blockEntity.hashrate
     )
 }

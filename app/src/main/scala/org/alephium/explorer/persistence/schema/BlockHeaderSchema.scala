@@ -16,11 +16,15 @@
 
 package org.alephium.explorer.persistence.schema
 
+import java.math.BigInteger
+
+import akka.util.ByteString
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, ProvenShape}
 import slick.sql.SqlAction
 
+import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.persistence.model.BlockHeader
 
@@ -37,12 +41,30 @@ trait BlockHeaderSchema extends CustomTypes {
     def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
     def height: Rep[Height]        = column[Height]("height")
     def mainChain: Rep[Boolean]    = column[Boolean]("main_chain")
+    def nonce: Rep[ByteString]     = column[ByteString]("nonce")
+    def version: Rep[Byte]         = column[Byte]("version")
+    def depStateHash: Rep[Hash]    = column[Hash]("dep_state_hash")
+    def txsHash: Rep[Hash]         = column[Hash]("txs_hash")
+    def target: Rep[ByteString]    = column[ByteString]("target")
+    def hashrate: Rep[BigInteger] =
+      column[BigInteger]("hashrate", O.SqlType("DECIMAL(80,0)")) //TODO How much decimal we need? this one is the same as for U256
 
     def timestampIdx: Index = index("blocks_timestamp_idx", timestamp)
     def heightIdx: Index    = index("blocks_height_idx", height)
 
     def * : ProvenShape[BlockHeader] =
-      (hash, timestamp, chainFrom, chainTo, height, mainChain)
+      (hash,
+       timestamp,
+       chainFrom,
+       chainTo,
+       height,
+       mainChain,
+       nonce,
+       version,
+       depStateHash,
+       txsHash,
+       target,
+       hashrate)
         .<>((BlockHeader.apply _).tupled, BlockHeader.unapply)
   }
 

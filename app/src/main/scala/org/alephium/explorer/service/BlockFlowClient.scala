@@ -16,12 +16,14 @@
 
 package org.alephium.explorer.service
 
+import java.math.BigInteger
 import java.net.InetAddress
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 
 import akka.http.scaladsl.model.Uri
+import akka.util.ByteString
 import sttp.client3._
 
 import org.alephium.api
@@ -33,7 +35,8 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.http.EndpointSender
 import org.alephium.protocol
 import org.alephium.protocol.config.GroupConfig
-import org.alephium.protocol.model.Hint
+import org.alephium.protocol.mining.HashRate
+import org.alephium.protocol.model.{Hint, Target}
 import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.{Duration, Hex, TimeStamp}
 
@@ -164,7 +167,8 @@ object BlockFlowClient {
     }
   }
 
-  def blockProtocolToEntity(block: api.model.BlockEntry): BlockEntity = {
+  def blockProtocolToEntity(block: api.model.BlockEntry)(
+      implicit groupConfig: GroupConfig): BlockEntity = {
     val hash         = new BlockEntry.Hash(block.hash)
     val mainChain    = false
     val transactions = block.transactions.toSeq
@@ -186,7 +190,13 @@ object BlockFlowClient {
         tx.outputs.toSeq.zipWithIndex.map {
           case (out, index) => outputToEntity(out, hash, tx.id, index, block.timestamp, mainChain)
       }),
-      mainChain = mainChain
+      mainChain = mainChain,
+      block.nonce,
+      block.version,
+      block.depStateHash,
+      block.txsHash,
+      block.target,
+      computeHashRate(block.target)
     )
   }
 
@@ -292,4 +302,11 @@ object BlockFlowClient {
       index
     )
   }
+  // scalastyle:off magic.number
+  def computeHashRate(targetBytes: ByteString)(implicit groupConfig: GroupConfig): BigInteger = {
+    val target          = Target.unsafe(targetBytes)
+    val blockTargetTime = Duration.ofSecondsUnsafe(64) //TODO add this to config
+    HashRate.from(target, blockTargetTime).value
+  }
+  // scalastyle:on magic.number
 }
