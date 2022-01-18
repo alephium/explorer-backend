@@ -29,7 +29,7 @@ trait UtilsEndpoints extends BaseEndpoint with QueryParams {
       .in("utils")
 
   val sanityCheck: BaseEndpoint[Unit, Unit] =
-    utilsEndpoint.post
+    utilsEndpoint.put
       .in("sanity-check")
       .description("Perform a sanity check")
 }
