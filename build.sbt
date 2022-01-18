@@ -60,7 +60,7 @@ val commonSettings = Seq(
 
 lazy val root = (project in file("."))
   .settings(commonSettings: _*)
-  .aggregate(app, tools)
+  .aggregate(app, tools, benchmark)
 
 lazy val app = mainProject("app")
   .settings(
@@ -145,6 +145,22 @@ lazy val app = mainProject("app")
 lazy val tools = mainProject("tools")
   .dependsOn(app)
   .settings(libraryDependencies ++= Seq(alephiumProtocol, alephiumApi, alephiumCrypto, logback))
+
+lazy val benchmark = mainProject("benchmark")
+  .enablePlugins(JmhPlugin)
+  .dependsOn(app % "test->test;compile->compile")
+  .settings(
+    libraryDependencies ++= Seq(
+      scalaLogging,
+      logback,
+      scalatest,
+      scalatestplus,
+      scalacheck,
+      slick,
+      slickHikaricp,
+      postgresql
+    )
+  )
 
 val wartsCompileExcludes = Seq(
   Wart.Any,
