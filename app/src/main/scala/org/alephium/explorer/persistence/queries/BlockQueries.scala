@@ -127,4 +127,14 @@ trait BlockQueries
     query.transactionally
   }
 
+  def buildBlockEntryWithoutTxsAction(blockHeader: BlockHeader): DBActionR[BlockEntry] =
+    for {
+      deps <- blockDepsQuery(blockHeader.hash).result
+    } yield blockHeader.toApi(deps, Seq.empty)
+
+  def getBlockEntryWithoutTxsAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry]] =
+    for {
+      headers <- blockHeadersTable.filter(_.hash === hash).result
+      blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryWithoutTxsAction))
+    } yield blocks.headOption
 }

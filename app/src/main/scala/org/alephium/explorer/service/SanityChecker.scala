@@ -82,7 +82,10 @@ class SanityChecker(
                   }
               }
           })
-          .map(_ => running = false)
+          .map { _ =>
+            running = false
+            logger.info(s"Sanity Check done")
+          }
       }
     }
   }
@@ -114,10 +117,10 @@ class SanityChecker(
                                     chainTo: GroupIndex,
                                     groupNum: Int): DBActionRWT[Option[BlockEntry.Hash]] = {
     i = i + 1
-    if (i % 1000 == 0) {
+    if (i % 10000 == 0) {
       logger.debug(s"Checked $i blocks , progress ${(i.toFloat / totalNbOfBlocks * 100.0).toInt}%")
     }
-    getBlockEntryAction(hash)
+    getBlockEntryWithoutTxsAction(hash)
       .flatMap {
         case Some(block) if !block.mainChain =>
           logger.debug(s"Updating block ${block.hash} which should be on the mainChain")
