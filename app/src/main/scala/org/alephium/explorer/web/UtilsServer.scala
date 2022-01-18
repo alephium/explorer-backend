@@ -14,35 +14,24 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.docs
+package org.alephium.explorer.web
 
-import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
-import sttp.tapir.openapi.OpenAPI
+import scala.concurrent.Future
 
-import org.alephium.explorer.api._
+import akka.http.scaladsl.server.Route
 
-trait Documentation
-    extends BlockEndpoints
-    with TransactionEndpoints
-    with AddressesEndpoints
-    with InfosEndpoints
-    with UtilsEndpoints
-    with OpenAPIDocsInterpreter {
-  val docs: OpenAPI = toOpenAPI(
-    List(
-      listBlocks,
-      getBlockByHash,
-      getBlockTransactions,
-      getTransactionById,
-      getAddressInfo,
-      getTransactionsByAddress,
-      getInfos,
-      listTokenSupply,
-      getTotalSupply,
-      getCirculatingSupply,
-      sanityCheck
-    ),
-    "Alephium Explorer API",
-    "1.0"
-  )
+import org.alephium.explorer.api.UtilsEndpoints
+import org.alephium.explorer.service.SanityChecker
+import org.alephium.explorer.sideEffect
+import org.alephium.util.Duration
+
+class UtilsServer(val blockflowFetchMaxAge: Duration, sanityChecker: SanityChecker)
+    extends Server
+    with UtilsEndpoints {
+
+  val route: Route =
+    toRoute(sanityCheck) { _ =>
+      sideEffect(sanityChecker.check())
+      Future.successful(Right(()))
+    }
 }

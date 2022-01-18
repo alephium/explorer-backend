@@ -14,35 +14,22 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.docs
+package org.alephium.explorer.api
 
-import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
-import sttp.tapir.openapi.OpenAPI
+import sttp.tapir._
 
-import org.alephium.explorer.api._
+import org.alephium.explorer.api.BaseEndpoint
 
-trait Documentation
-    extends BlockEndpoints
-    with TransactionEndpoints
-    with AddressesEndpoints
-    with InfosEndpoints
-    with UtilsEndpoints
-    with OpenAPIDocsInterpreter {
-  val docs: OpenAPI = toOpenAPI(
-    List(
-      listBlocks,
-      getBlockByHash,
-      getBlockTransactions,
-      getTransactionById,
-      getAddressInfo,
-      getTransactionsByAddress,
-      getInfos,
-      listTokenSupply,
-      getTotalSupply,
-      getCirculatingSupply,
-      sanityCheck
-    ),
-    "Alephium Explorer API",
-    "1.0"
-  )
+// scalastyle:off magic.number
+trait UtilsEndpoints extends BaseEndpoint with QueryParams {
+
+  private val utilsEndpoint =
+    baseEndpoint
+      .tag("Utils")
+      .in("utils")
+
+  val sanityCheck: BaseEndpoint[Unit, Unit] =
+    utilsEndpoint.put
+      .in("sanity-check")
+      .description("Perform a sanity check")
 }
