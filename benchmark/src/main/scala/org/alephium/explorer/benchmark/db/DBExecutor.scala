@@ -35,8 +35,6 @@ object DBExecutor extends StrictLogging {
     * @param name Target database name
     * @param host Target database host
     * @param port Target database port
-    *
-    * @return A [[DBExecutor]] instance
     */
   def forPostgres(name: String, host: String, port: Int): DBExecutor = {
     logger.info(s"Connecting to database: '$name'")
@@ -51,6 +49,8 @@ object DBExecutor extends StrictLogging {
                |    name           = $name
                |    host           = $host
                |    port           = $port
+               |    user           = "postgres"
+               |    password       = "postgres"
                |    url            = "jdbc:postgresql://$host:$port/$name"
                |  }
                |}

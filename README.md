@@ -29,6 +29,15 @@ You can run using the h2 embedded database with the following command:
 
 ## Benchmark
 
+### Create benchmark database
+
+The benchmark database (set
+via [dbName](/benchmark/src/main/scala/org/alephium/explorer/benchmark/db/BenchmarkSettings.scala)) should exist.
+
+```sql
+CREATE DATABASE benchmarks;
+```
+
 ### Set benchmark duration
 
 Update the `time` value in the following annotation
@@ -44,6 +53,5 @@ run duration
 Execute the following sbt commands to run JMH benchmarks
 
 ```
-project benchmark
-jmh:run
+sbt benchmark/jmh:run
 ```
