@@ -50,7 +50,6 @@ object DBExecutor extends StrictLogging {
                |    host           = $host
                |    port           = $port
                |    user           = "postgres"
-               |    password       = "postgres"
                |    url            = "jdbc:postgresql://$host:$port/$name"
                |  }
                |}
