@@ -23,7 +23,6 @@ import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
 import slick.jdbc.JdbcProfile
 
-import org.alephium.explorer.AnyOps
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex}
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.dao.BlockDao
@@ -122,22 +121,17 @@ class SanityChecker(
     }
     getBlockEntryWithoutTxsAction(hash)
       .flatMap {
-        case Some(block) if !block.mainChain =>
-          logger.debug(s"Updating block ${block.hash} which should be on the mainChain")
+        case Some(block)  =>
           assert(block.chainFrom == chainFrom && block.chainTo == chainTo)
           (for {
             blocks <- getAtHeightAction(block.chainFrom, block.chainTo, block.height)
-            _ <- DBIOAction.sequence(
-              blocks
-                .map(_.hash)
-                .filterNot(_ === block.hash)
-                .map(updateMainChainStatusAction(_, false)))
-            _ <- updateMainChainStatusAction(hash, true)
           } yield {
+            if(blocks.map(_.mainChain).filter(_ == true).size > 1){
+              logger.error(s"ERRRRRRRRROR block ${block}")
+            }
             block.parent(groupNum).map(Right(_))
           })
         case None        => DBIOAction.successful(Some(Left(hash)))
-        case Some(block) => DBIOAction.successful(block.parent(groupNum).map(Right(_)))
       }
       .flatMap {
         case Some(Right(parent)) => updateMainChainAction(parent, chainFrom, chainTo, groupNum)
