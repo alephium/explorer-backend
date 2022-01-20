@@ -81,4 +81,19 @@ class DBBenchmark {
     val _ =
       state.db.runNow(state.tableByteaQuery.filter(_.hash === state.next).result, requestTimeout)
   }
+
+  @Benchmark
+  def readWithMainChainIndex(state: BlockHeaderWithMainChainReadState): Unit = {
+    import state.config.profile.api._
+    val _ =
+      state.db.runNow(state.blockHeadersTable.filter(_.mainChain).length.result, requestTimeout)
+  }
+
+  @Benchmark
+  def readWithoutMainChainIndex(state: BlockHeaderWithoutMainChainReadState): Unit = {
+    import state.config.profile.api._
+    val _ =
+      state.db.runNow(state.blockHeadersTable.filter(_.mainChain).length.result, requestTimeout)
+  }
+
 }

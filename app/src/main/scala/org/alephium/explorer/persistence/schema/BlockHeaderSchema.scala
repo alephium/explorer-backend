@@ -51,6 +51,7 @@ trait BlockHeaderSchema extends CustomTypes {
 
     def timestampIdx: Index = index("blocks_timestamp_idx", timestamp)
     def heightIdx: Index    = index("blocks_height_idx", height)
+    def mainChainIdx: Index = index("blocks_main_chain_idx", mainChain)
 
     def * : ProvenShape[BlockHeader] =
       (hash,
