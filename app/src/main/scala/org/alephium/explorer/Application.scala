@@ -70,8 +70,15 @@ class Application(
   val blockService: BlockService             = BlockService(blockDao)
   val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
 
+  val sanityChecker: SanityChecker =
+    new SanityChecker(groupNum, blockFlowClient, blockDao, databaseConfig)
+
   val server: AppServer =
-    new AppServer(blockService, transactionService, tokenSupplyService, blockflowFetchMaxAge)
+    new AppServer(blockService,
+                  transactionService,
+                  tokenSupplyService,
+                  sanityChecker,
+                  blockflowFetchMaxAge)
 
   private val bindingPromise: Promise[Http.ServerBinding] = Promise()
 

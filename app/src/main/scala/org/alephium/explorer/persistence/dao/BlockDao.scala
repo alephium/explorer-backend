@@ -27,7 +27,7 @@ import org.alephium.explorer.AnyOps
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries.TransactionQueries
+import org.alephium.explorer.persistence.queries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.util.TimeStamp
 
@@ -60,40 +60,11 @@ object BlockDao {
       extends BlockDao
       with BlockHeaderSchema
       with BlockDepsSchema
+      with BlockQueries
       with TransactionQueries
       with DBRunner
       with StrictLogging {
     import config.profile.api._
-
-    private val blockDepsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
-      blockDepsTable.filter(_.hash === blockHash).sortBy(_.order).map(_.dep)
-    }
-
-    private def buildBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry] =
-      for {
-        deps <- blockDepsQuery(blockHeader.hash).result
-        txs  <- getTransactionsByBlockHash(blockHeader.hash)
-      } yield blockHeader.toApi(deps, txs)
-
-    private def buildLiteBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry.Lite] =
-      for {
-        number <- countBlockHashTransactions(blockHeader.hash)
-      } yield blockHeader.toLiteApi(number)
-
-    private def getBlockEntryLiteAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry.Lite]] =
-      for {
-        headers <- blockHeadersTable.filter(_.hash === hash).result
-        blockOpt <- headers.headOption match {
-          case None         => DBIOAction.successful(None)
-          case Some(header) => buildLiteBlockEntryAction(header).map(Option.apply)
-        }
-      } yield blockOpt
-
-    private def getBlockEntryAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry]] =
-      for {
-        headers <- blockHeadersTable.filter(_.hash === hash).result
-        blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
-      } yield blocks.headOption
 
     def getLite(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]] =
       run(getBlockEntryLiteAction(hash))
@@ -104,30 +75,10 @@ object BlockDao {
     def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]] =
       run(getBlockEntryAction(hash))
 
-    private def getAtHeightAction(fromGroup: GroupIndex,
-                                  toGroup: GroupIndex,
-                                  height: Height): DBActionR[Seq[BlockEntry]] =
-      for {
-        headers <- blockHeadersTable
-          .filter(header =>
-            header.height === height && header.chainFrom === fromGroup && header.chainTo === toGroup)
-          .result
-        blocks <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
-      } yield blocks
-
     def getAtHeight(fromGroup: GroupIndex,
                     toGroup: GroupIndex,
                     height: Height): Future[Seq[BlockEntry]] =
       run(getAtHeightAction(fromGroup, toGroup, height))
-
-    def insertAction(block: BlockEntity): DBActionRWT[Unit] =
-      (for {
-        _ <- DBIOAction.sequence(block.deps.zipWithIndex.map {
-          case (dep, i) => blockDepsTable.insertOrUpdate((block.hash, dep, i))
-        })
-        _ <- insertTransactionFromBlockQuery(block)
-        _ <- blockHeadersTable.insertOrUpdate(BlockHeader.fromEntity(block)).filter(_ > 0)
-      } yield ()).transactionally
 
     def insert(block: BlockEntity): Future[Unit] = {
       run(insertAction(block))
@@ -135,22 +86,6 @@ object BlockDao {
 
     def insertAll(blocks: Seq[BlockEntity]): Future[Unit] = {
       run(DBIOAction.sequence(blocks.map(insertAction))).map(_ => ())
-    }
-
-    def listMainChainHeaders(mainChain: Query[BlockHeaders, BlockHeader, Seq],
-                             pagination: Pagination): DBActionR[Seq[BlockHeader]] = {
-      val sorted = if (pagination.reverse) {
-        mainChain
-          .sortBy(b => (b.timestamp, b.hash.desc))
-      } else {
-        mainChain
-          .sortBy(b => (b.timestamp.desc, b.hash))
-      }
-
-      sorted
-        .drop(pagination.offset * pagination.limit)
-        .take(pagination.limit)
-        .result
     }
 
     def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)] = {
@@ -223,31 +158,6 @@ object BlockDao {
                         chainTo: GroupIndex,
                         groupNum: Int): Future[Option[BlockEntry.Hash]] = {
       run(updateMainChainAction(hash, chainFrom, chainTo, groupNum))
-    }
-
-    private def updateMainChainStatusAction(hash: BlockEntry.Hash,
-                                            isMainChain: Boolean): DBActionRWT[Unit] = {
-      val query =
-        for {
-          _ <- transactionsTable
-            .filter(_.blockHash === hash)
-            .map(_.mainChain)
-            .update(isMainChain)
-          _ <- outputsTable
-            .filter(_.blockHash === hash)
-            .map(_.mainChain)
-            .update(isMainChain)
-          _ <- inputsTable
-            .filter(_.blockHash === hash)
-            .map(_.mainChain)
-            .update(isMainChain)
-          _ <- blockHeadersTable
-            .filter(_.hash === hash)
-            .map(_.mainChain)
-            .update(isMainChain)
-        } yield ()
-
-      query.transactionally
     }
 
     def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit] = {
