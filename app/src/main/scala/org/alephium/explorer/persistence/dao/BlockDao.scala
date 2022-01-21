@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.dao
 
+import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future}
 
 import com.typesafe.scalalogging.StrictLogging
@@ -29,6 +30,8 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.protocol.config.GroupConfig
+import org.alephium.protocol.model.ChainIndex
 import org.alephium.util.TimeStamp
 
 trait BlockDao {
@@ -48,24 +51,31 @@ trait BlockDao {
                       chainTo: GroupIndex,
                       groupNum: Int): Future[Option[BlockEntry.Hash]]
   def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit]
+  def latestBlocks(): Future[Seq[(ChainIndex, LatestBlock)]]
+  def updateLatestBlock(block: BlockEntity): Future[Unit]
 }
 
 object BlockDao {
-  def apply(config: DatabaseConfig[JdbcProfile])(
+  def apply(groupNum: Int, config: DatabaseConfig[JdbcProfile])(
       implicit executionContext: ExecutionContext): BlockDao =
-    new Impl(config)
-
-  class Impl(val config: DatabaseConfig[JdbcProfile])(
+    new Impl(groupNum, config)
+  @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
+  class Impl(groupNum: Int, val config: DatabaseConfig[JdbcProfile])(
       implicit val executionContext: ExecutionContext)
       extends BlockDao
       with CustomTypes
       with BlockHeaderSchema
       with BlockDepsSchema
       with BlockQueries
+      with LatestBlockSchema
       with TransactionQueries
       with DBRunner
       with StrictLogging {
     import config.profile.api._
+
+    private implicit val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
+
+    private val cachedLatestBlocks: TrieMap[ChainIndex, LatestBlock] = TrieMap.empty
 
     def getLite(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]] =
       run(getBlockEntryLiteAction(hash))
@@ -163,6 +173,28 @@ object BlockDao {
 
     def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit] = {
       run(updateMainChainStatusAction(hash, isMainChain))
+    }
+
+    def latestBlocks(): Future[Seq[(ChainIndex, LatestBlock)]] = {
+      if (cachedLatestBlocks.size == groupConfig.chainNum) {
+        Future.successful(cachedLatestBlocks.toSeq)
+      } else {
+        //Getting data from DB
+        //We don't update the cache as the read-write app will eventually get his cache updated,
+        //while the read-only app have to check the db.
+        run(latestBlocksTable.result).map(_.map { block =>
+          val chainIndex = ChainIndex.unsafe(block.chainFrom.value, block.chainTo.value)
+          (chainIndex, block)
+        })
+      }
+    }
+
+    def updateLatestBlock(block: BlockEntity): Future[Unit] = {
+      val chainIndex  = ChainIndex.unsafe(block.chainFrom.value, block.chainTo.value)
+      val latestBlock = LatestBlock.fromEntity(block)
+      run(latestBlocksTable.insertOrUpdate(latestBlock)).map { _ =>
+        cachedLatestBlocks.update(chainIndex, latestBlock)
+      }
     }
   }
 }

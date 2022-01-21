@@ -49,7 +49,7 @@ class Application(
 
   val dbInitializer: DBInitializer = DBInitializer(databaseConfig)
 
-  val blockDao: BlockDao                = BlockDao(databaseConfig)
+  val blockDao: BlockDao                = BlockDao(groupNum, databaseConfig)
   val transactionDao: TransactionDao    = TransactionDao(databaseConfig)
   val utransactionDao: UnconfirmedTxDao = UnconfirmedTxDao(databaseConfig)
   val healthCheckDao: HealthCheckDao    = HealthCheckDao(databaseConfig)

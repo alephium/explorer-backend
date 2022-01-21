@@ -147,7 +147,7 @@ class TokenSupplyServiceSpec extends AlephiumSpec with ScalaFutures with Eventua
     val genesisLocked: Boolean
     val block1Locked: Boolean = false
 
-    lazy val blockDao: BlockDao = BlockDao(databaseConfig)
+    lazy val blockDao: BlockDao = BlockDao(groupNum, databaseConfig)
 
     lazy val tokenSupplyService: TokenSupplyService =
       TokenSupplyService(syncPeriod = Duration.unsafe(30 * 1000), databaseConfig, groupNum = 1)

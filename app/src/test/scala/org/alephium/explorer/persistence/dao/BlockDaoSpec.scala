@@ -104,7 +104,7 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
       with DatabaseFixture
       with DBRunner {
     override val config = databaseConfig
-    val blockDao        = BlockDao(databaseConfig)
+    val blockDao        = BlockDao(groupNum, databaseConfig)
     val blockflow: Seq[Seq[model.BlockEntry]] =
       blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
     val blocksProtocol: Seq[model.BlockEntry] = blockflow.flatten
