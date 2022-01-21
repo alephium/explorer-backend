@@ -26,3 +26,32 @@ where "hash" = decode('f25f43b7fb13b1ec5f1a2d3acd1bebb9d27143cdc4586725162b9d883
 You can run using the h2 embedded database with the following command:
 
     sbt '; set javaOptions += "-Dconfig.resource=application-h2.conf" ; run'
+
+## Benchmark
+
+### Create benchmark database
+
+The benchmark database (set
+via [dbName](/benchmark/src/main/scala/org/alephium/explorer/benchmark/db/BenchmarkSettings.scala)) should exist.
+
+```sql
+CREATE DATABASE benchmarks;
+```
+
+### Set benchmark duration
+
+Update the `time` value in the following annotation
+in [DBBenchmark](/benchmark/src/main/scala/org/alephium/explorer/benchmark/db/DBBenchmark.scala) to set the benchmark
+run duration
+
+```scala
+@Measurement(iterations = 1, time = 1, timeUnit = TimeUnit.MINUTES)
+```
+
+### Executing benchmarks
+
+Execute the following sbt commands to run JMH benchmarks
+
+```
+sbt benchmark/jmh:run
+```
