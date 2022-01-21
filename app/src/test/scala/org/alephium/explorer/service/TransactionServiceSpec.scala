@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.service
 
+import java.math.BigInteger
+
 import scala.concurrent.{ExecutionContext, Future}
 
 import org.scalacheck.Gen
@@ -123,17 +125,11 @@ class TransactionServiceSpec
                    None,
                    0)
 
-    val block0 = BlockEntity(
+    val block0 = defaultBlockEntity.copy(
       hash         = blockHash0,
       timestamp    = ts0,
-      chainFrom    = groupIndex,
-      chainTo      = groupIndex,
-      height       = Height.unsafe(0),
-      deps         = Seq.empty,
       transactions = Seq(tx0),
-      inputs       = Seq.empty,
-      outputs      = Seq(output0),
-      true
+      outputs      = Seq(output0)
     )
 
     val ts1        = TimeStamp.unsafe(1)
@@ -168,17 +164,13 @@ class TransactionServiceSpec
                                None,
                                0)
 
-    val block1 = BlockEntity(
+    val block1 = defaultBlockEntity.copy(
       hash         = blockHash1,
       timestamp    = ts1,
-      chainFrom    = groupIndex,
-      chainTo      = groupIndex,
       height       = Height.unsafe(1),
-      deps         = Seq.empty,
       transactions = Seq(tx1),
       inputs       = Seq(input1),
-      outputs      = Seq(output1),
-      true
+      outputs      = Seq(output1)
     )
 
     val blocks = Seq(block0, block1)
@@ -241,17 +233,11 @@ class TransactionServiceSpec
                        None,
                        0)
 
-        val block0 = BlockEntity(
+        val block0 = defaultBlockEntity.copy(
           hash         = blockHash0,
           timestamp    = ts0,
-          chainFrom    = groupIndex,
-          chainTo      = groupIndex,
-          height       = Height.unsafe(0),
-          deps         = Seq.empty,
           transactions = Seq(tx),
-          inputs       = Seq.empty,
-          outputs      = Seq(output0),
-          true
+          outputs      = Seq(output0)
         )
 
         val ts1 = TimeStamp.unsafe(1)
@@ -347,5 +333,26 @@ class TransactionServiceSpec
     val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
 
     val groupIndex = GroupIndex.unsafe(0)
+
+    val defaultBlockEntity: BlockEntity =
+      BlockEntity(
+        hash         = blockEntryHashGen.sample.get,
+        timestamp    = TimeStamp.unsafe(0),
+        chainFrom    = groupIndex,
+        chainTo      = groupIndex,
+        height       = Height.unsafe(0),
+        deps         = Seq.empty,
+        transactions = Seq.empty,
+        inputs       = Seq.empty,
+        outputs      = Seq.empty,
+        true,
+        nonce        = bytesGen.sample.get,
+        version      = 1.toByte,
+        depStateHash = hashGen.sample.get,
+        txsHash      = hashGen.sample.get,
+        target       = bytesGen.sample.get,
+        hashrate     = BigInteger.ZERO
+      )
+
   }
 }

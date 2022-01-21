@@ -16,6 +16,11 @@
 
 package org.alephium.explorer.persistence.model
 
+import java.math.BigInteger
+
+import akka.util.ByteString
+
+import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.service.FlowEntity
 import org.alephium.util.TimeStamp
@@ -30,7 +35,13 @@ final case class BlockEntity(
     transactions: Seq[TransactionEntity],
     inputs: Seq[InputEntity],
     outputs: Seq[OutputEntity],
-    mainChain: Boolean
+    mainChain: Boolean,
+    nonce: ByteString,
+    version: Byte,
+    depStateHash: Hash,
+    txsHash: Hash,
+    target: ByteString,
+    hashrate: BigInteger
 ) extends FlowEntity {
   def updateMainChain(newMainChain: Boolean): BlockEntity = {
     this.copy(

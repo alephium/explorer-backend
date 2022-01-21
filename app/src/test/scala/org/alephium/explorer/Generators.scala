@@ -16,6 +16,8 @@
 
 package org.alephium.explorer
 
+import java.math.BigInteger
+
 import akka.util.ByteString
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
@@ -44,6 +46,7 @@ trait Generators {
   lazy val groupIndexGen: Gen[GroupIndex]            = Gen.posNum[Int].map(GroupIndex.unsafe(_))
   lazy val heightGen: Gen[Height]                    = Gen.posNum[Int].map(Height.unsafe(_))
   lazy val addressGen: Gen[Address]                  = hashGen.map(hash => Address.unsafe(Base58.encode(hash.bytes)))
+  lazy val bytesGen: Gen[ByteString]                 = hashGen.map(_.bytes)
 
   lazy val inputGen: Gen[Input] = for {
     outputRef    <- outputRefGen
@@ -163,7 +166,16 @@ trait Generators {
       deps            <- Gen.listOfN(2 * groupNum - 1, blockEntryHashGen)
       transactionSize <- Gen.choose(1, 10)
       transactions    <- Gen.listOfN(transactionSize, transactionProtocolGen)
-    } yield
+      nonce           <- bytesGen
+      version         <- Gen.posNum[Byte]
+      depStateHash    <- hashGen
+      txsHash         <- hashGen
+    } yield {
+      //From `alephium` repo
+      val numZerosAtLeastInHash = 37
+      val target = protocol.Target.unsafe(
+        BigInteger.ONE.shiftLeft(256 - numZerosAtLeastInHash).subtract(BigInteger.ONE))
+
       protocolApi.BlockEntry(
         hash.value,
         timestamp,
@@ -172,12 +184,13 @@ trait Generators {
         height.value,
         AVector.from(deps.map(_.value)),
         AVector.from(transactions),
-        nonce        = ByteString(1),
-        version      = 0,
-        depStateHash = Hash.zero,
-        txsHash      = Hash.zero,
-        target       = ByteString(1, 2, 3, 4)
+        nonce,
+        version,
+        depStateHash,
+        txsHash,
+        target.bits
       )
+    }
 
   def blockEntityGen(chainFrom: GroupIndex,
                      chainTo: GroupIndex,
@@ -258,7 +271,8 @@ trait Generators {
         block.height,
         block.deps,
         transactions,
-        mainChain = true
+        mainChain = true,
+        BigInteger.ZERO
       )
     })
   }
