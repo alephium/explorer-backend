@@ -23,8 +23,8 @@ import de.heikoseeberger.akkahttpupickle.UpickleCustomizationSupport
 import org.scalatest.concurrent.ScalaFutures
 
 import org.alephium.explorer.{AlephiumSpec, BuildInfo}
-import org.alephium.explorer.api.model.{ExplorerInfo, Pagination, TokenSupply}
-import org.alephium.explorer.service.TokenSupplyService
+import org.alephium.explorer.api.model._
+import org.alephium.explorer.service.{BlockService, TokenSupplyService}
 import org.alephium.json.Json
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp}
@@ -46,6 +46,12 @@ class InfosServerSpec()
         BuildInfo.releaseVersion,
         BuildInfo.commitId
       )
+    }
+  }
+
+  it should "return chains heights" in new Fixture {
+    Get(s"/infos/heights") ~> server.route ~> check {
+      responseAs[Seq[ChainHeight]] is Seq(chainHeight)
     }
   }
 
@@ -96,6 +102,15 @@ class InfosServerSpec()
 
     }
 
-    val server = new InfosServer(Duration.zero, tokenSupplyService)
+    val chainHeight = ChainHeight(0, 0, Height.unsafe(1))
+    val blockService = new BlockService {
+      def getLiteBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]] = ???
+      def getBlockTransactions(hash: BlockEntry.Hash,
+                               pagination: Pagination): Future[Seq[Transaction]] = ???
+      def listBlocks(pagination: Pagination): Future[ListBlocks]                 = ???
+      def listMaxHeights(): Future[Seq[ChainHeight]]                             = Future.successful(Seq(chainHeight))
+    }
+
+    val server = new InfosServer(Duration.zero, tokenSupplyService, blockService)
   }
 }
