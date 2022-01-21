@@ -14,36 +14,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.docs
+package org.alephium.explorer.api.model
 
-import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
-import sttp.tapir.openapi.OpenAPI
+import org.alephium.json.Json._
 
-import org.alephium.explorer.api._
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+final case class ChainHeight(
+    chainFrom: Int,
+    chainTo: Int,
+    height: Height
+)
 
-trait Documentation
-    extends BlockEndpoints
-    with TransactionEndpoints
-    with AddressesEndpoints
-    with InfosEndpoints
-    with UtilsEndpoints
-    with OpenAPIDocsInterpreter {
-  val docs: OpenAPI = toOpenAPI(
-    List(
-      listBlocks,
-      getBlockByHash,
-      getBlockTransactions,
-      getTransactionById,
-      getAddressInfo,
-      getTransactionsByAddress,
-      getInfos,
-      getHeights,
-      listTokenSupply,
-      getTotalSupply,
-      getCirculatingSupply,
-      sanityCheck
-    ),
-    "Alephium Explorer API",
-    "1.0"
-  )
+object ChainHeight {
+  implicit val readWriter: ReadWriter[ChainHeight] = macroRW
 }
