@@ -129,6 +129,7 @@ object BlockFlowSyncService extends StrictLogging {
               if (blocks.nonEmpty) {
                 for {
                   _ <- foldFutures(blocks)(insert)
+                  _ <- blockDao.updateLatestBlock(blocks.last)
                 } yield (blocks.size)
               } else {
                 Future.successful(0)

@@ -28,7 +28,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
-import org.alephium.protocol.model.{CliqueId, NetworkId}
+import org.alephium.protocol.model.{ChainIndex, CliqueId, NetworkId}
 import org.alephium.util.{AVector, Duration, Hex, TimeStamp}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
@@ -87,8 +87,12 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
     chainOToO = Seq(block0, block1, block2)
     eventually(checkMainChain(Seq(block0.hash, block1.hash, block2.hash)))
 
+    checkLatestHeight(2)
+
     chainOToO = Seq(block0, block1, block3, block4)
     eventually(checkMainChain(Seq(block0.hash, block1.hash, block3.hash, block4.hash)))
+
+    checkLatestHeight(3)
 
     chainOToO = Seq(block0, block1, block3, block4, block5, block7, block8, block14)
     eventually(
@@ -101,6 +105,8 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
             block7.hash,
             block8.hash,
             block14.hash)))
+
+    checkLatestHeight(7)
 
     chainOToO = Seq(block0, block1, block3, block4, block5, block6, block10, block12)
     eventually(
@@ -116,6 +122,8 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
 
     chainOToO = Seq(block0, block1, block3, block4, block5, block6, block9, block11, block13)
     eventually(checkMainChain(mainChain))
+
+    checkLatestHeight(8)
 
     blockFlowSyncService.stop().futureValue is ()
 
@@ -208,7 +216,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
     def blockFlow: Seq[Seq[BlockEntry]] =
       blockEntitiesToBlockEntries(blockFlowEntity)
 
-    val blockDao: BlockDao = BlockDao(databaseConfig)
+    val blockDao: BlockDao = BlockDao(groupNum, databaseConfig)
 
     def blockEntities = blockFlowEntity.flatten
 
@@ -287,6 +295,17 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
         .map(_.hash)
         .toSet
       result is mainChain.toSet
+    }
+
+    def checkLatestHeight(height: Int) = {
+      blockDao
+        .latestBlocks()
+        .futureValue
+        .find { case (chainIndex, _) => chainIndex == ChainIndex.unsafe(0, 0) }
+        .get
+        ._2
+        .height
+        .value is height
     }
   }
   // scalastyle:on scalatest-matcher

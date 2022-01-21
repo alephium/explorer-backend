@@ -38,6 +38,7 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
     with UnconfirmedTxSchema
     with UInputSchema
     with UOutputSchema
+    with LatestBlockSchema
     with TokenSupplySchema
     with DBRunner
     with StrictLogging {
@@ -48,15 +49,18 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
           "org.wartremover.warts.Product",
           "org.wartremover.warts.Serializable"))
   private val allTables =
-    Seq(blockHeadersTable,
-        blockDepsTable,
-        transactionsTable,
-        inputsTable,
-        outputsTable,
-        unconfirmedTxsTable,
-        uinputsTable,
-        uoutputsTable,
-        tokenSupplyTable)
+    Seq(
+      blockHeadersTable,
+      blockDepsTable,
+      transactionsTable,
+      inputsTable,
+      outputsTable,
+      unconfirmedTxsTable,
+      uinputsTable,
+      uoutputsTable,
+      latestBlocksTable,
+      tokenSupplyTable
+    )
 
   def createTables(): Future[Unit] = {
     //TODO Look for something like https://flywaydb.org/ to manage schemas
