@@ -27,6 +27,7 @@ import slick.sql.SqlAction
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.persistence.model.BlockHeader
+import org.alephium.util.TimeStamp
 
 trait BlockHeaderSchema extends CustomTypes {
   val config: DatabaseConfig[JdbcProfile]
@@ -36,7 +37,7 @@ trait BlockHeaderSchema extends CustomTypes {
   class BlockHeaders(tag: Tag) extends Table[BlockHeader](tag, "block_headers") {
     def hash: Rep[BlockEntry.Hash] =
       column[BlockEntry.Hash]("hash", O.PrimaryKey, O.SqlType("bytea"))
-    def timestamp: Rep[Long]       = column[Long]("timestamp")
+    def timestamp: Rep[TimeStamp]  = column[TimeStamp]("timestamp")
     def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
     def height: Rep[Height]        = column[Height]("height")

@@ -26,7 +26,7 @@ import org.alephium.util.TimeStamp
 
 final case class BlockHeader(
     hash: BlockEntry.Hash,
-    timestamp: Long,
+    timestamp: TimeStamp,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     height: Height,
@@ -39,32 +39,17 @@ final case class BlockHeader(
     hashrate: BigInteger
 ) {
   def toApi(deps: Seq[BlockEntry.Hash], transactions: Seq[Transaction]): BlockEntry =
-    BlockEntry(hash,
-               TimeStamp.unsafe(timestamp),
-               chainFrom,
-               chainTo,
-               height,
-               deps,
-               transactions,
-               mainChain,
-               hashrate)
+    BlockEntry(hash, timestamp, chainFrom, chainTo, height, deps, transactions, mainChain, hashrate)
 
   def toLiteApi(txNumber: Int): BlockEntry.Lite =
-    BlockEntry.Lite(hash,
-                    TimeStamp.unsafe(timestamp),
-                    chainFrom,
-                    chainTo,
-                    height,
-                    txNumber,
-                    mainChain,
-                    hashrate)
+    BlockEntry.Lite(hash, timestamp, chainFrom, chainTo, height, txNumber, mainChain, hashrate)
 }
 
 object BlockHeader {
   def fromEntity(blockEntity: BlockEntity): BlockHeader =
     BlockHeader(
       blockEntity.hash,
-      blockEntity.timestamp.millis,
+      blockEntity.timestamp,
       blockEntity.chainFrom,
       blockEntity.chainTo,
       blockEntity.height,
