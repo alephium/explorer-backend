@@ -64,7 +64,7 @@ class BlockHeaderMainChainReadState(dropMainChainIndex: Boolean,
     val query =
       blockHeadersTable.schema.dropIfExists
         .andThen(blockHeadersTable.schema.create)
-        .andThen(createBlockHeadersFullIndexSQL())
+        .andThen(createBlockHeadersIndexesSQL())
         .andThen {
           //drop main_chain if dropMainChainIndex is true
           if (dropMainChainIndex) {
