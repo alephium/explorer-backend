@@ -69,17 +69,36 @@ trait BlockHeaderSchema extends CustomTypes {
   }
 
   /**
-    * Builds index for all columns of this table so that
-    * index scan is enough for the query to return results.
+    * Indexes all columns of this table so that `INDEX ONLY SCAN`
+    * is enough for queries to return results.
     *
     * @see PR <a href="https://github.com/alephium/explorer-backend/pull/112">#112</a>.
     */
-  def createBlockHeadersFullIndexSQL(): SqlAction[Int, NoStream, Effect] = {
+  private def fullIndexSQL(): SqlAction[Int, NoStream, Effect] =
     sqlu"""
       create unique index if not exists block_headers_full_index
           on block_headers (main_chain asc, timestamp desc, hash asc, chain_from asc, chain_to asc, height asc);
       """
-  }
+
+  /**
+    * Builds partial index for column `main_chain` when `true` for performant
+    * [[org.alephium.explorer.persistence.dao.BlockDao.listMainChain]] queries.
+    *
+    * @see PR <a href="https://github.com/alephium/explorer-backend/pull/116">#116</a> for benchmarks
+    */
+  private def mainChainIndexSQL(): SqlAction[Int, NoStream, Effect] =
+    if (config.profile == slick.jdbc.H2Profile) {
+      //h2 doesn't support partial indexes
+      sqlu"create index if not exists blocks_main_chain_idx on block_headers (main_chain)"
+    } else {
+      sqlu"create index if not exists blocks_main_chain_idx on block_headers (main_chain) where main_chain = true;"
+    }
+
+  /**
+    * Joins all indexes created via raw SQL
+    */
+  def createBlockHeadersIndexesSQL(): DBIO[Unit] =
+    DBIO.seq(fullIndexSQL(), mainChainIndexSQL())
 
   val blockHeadersTable: TableQuery[BlockHeaders] = TableQuery[BlockHeaders]
 }
