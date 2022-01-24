@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.benchmark.db
+package org.alephium.explorer.benchmark.db.state
 
 import java.util.concurrent.RejectedExecutionException
 
@@ -23,6 +23,7 @@ import scala.concurrent.duration._
 import org.scalatest.concurrent.ScalaFutures
 
 import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.benchmark.db.DBExecutor
 import org.alephium.explorer.benchmark.db.util.TestUtils._
 
 /**

@@ -14,12 +14,14 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.benchmark.db
+package org.alephium.explorer.benchmark.db.state
 
 import com.typesafe.scalalogging.StrictLogging
 import org.openjdk.jmh.annotations.{Level, Setup, TearDown}
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
+
+import org.alephium.explorer.benchmark.db.DBExecutor
 
 /**
   * Base implementation for JMH states, for benchmarking write queries to the target database.

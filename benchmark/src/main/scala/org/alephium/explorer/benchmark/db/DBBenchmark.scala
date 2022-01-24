@@ -20,133 +20,8 @@ import java.util.concurrent.TimeUnit
 
 import org.openjdk.jmh.annotations._
 
-import org.alephium.explorer.Hash
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
-import org.alephium.explorer.benchmark.db.table.{TableByteSchema, TableVarcharSchema}
-
-/**
-  * JMH state for benchmarking writes to [[TableByteSchema]].
-  */
-@State(Scope.Thread)
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-class ByteaWriteState(val db: DBExecutor)
-    extends WriteBenchmarkState[Array[Byte]](db)
-    with TableByteSchema {
-
-  import config.profile.api._
-
-  //Overload: default constructor required by JMH. Uses Postgres as target DB.
-  def this() = {
-    this(DBExecutor.forPostgres(dbName, dbHost, dbPort))
-  }
-
-  def generateData(): Array[Byte] =
-    Hash.generate.bytes.toArray
-
-  def beforeAll(): Unit =
-    db.runNow(
-      //action = create a fresh table
-      action  = tableByteaQuery.schema.dropIfExists.andThen(tableByteaQuery.schema.create),
-      timeout = requestTimeout
-    )
-}
-
-/**
-  * JMH state for benchmarking writes to [[TableVarcharSchema]].
-  */
-@State(Scope.Thread)
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-class VarcharWriteState(val db: DBExecutor)
-    extends WriteBenchmarkState[String](db)
-    with TableVarcharSchema {
-
-  import config.profile.api._
-
-  //Overload: default constructor required by JMH. Uses Postgres as target DB.
-  def this() = {
-    this(DBExecutor.forPostgres(dbName, dbHost, dbPort))
-  }
-
-  def generateData(): String =
-    Hash.generate.toHexString
-
-  def beforeAll(): Unit =
-    db.runNow(
-      //action = create a fresh table
-      action  = tableVarcharQuery.schema.dropIfExists.andThen(tableVarcharQuery.schema.create),
-      timeout = requestTimeout
-    )
-}
-
-/**
-  * JMH state for benchmarking reads to [[TableByteSchema]].
-  *
-  * @param testDataCount total number of rows to generate in [[TableByteSchema]]
-  */
-@State(Scope.Thread)
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-class ByteaReadState(testDataCount: Int, val db: DBExecutor)
-    extends ReadBenchmarkState[Array[Byte]](testDataCount = testDataCount, db = db)
-    with TableByteSchema {
-
-  import config.profile.api._
-
-  //Overload: default constructor required by JMH. Uses Postgres as target DB.
-  def this() = {
-    this(testDataCount = readDataCount, db = DBExecutor.forPostgres(dbName, dbHost, dbPort))
-  }
-
-  def generateData(): Array[Byte] =
-    Hash.generate.bytes.toArray
-
-  def persist(data: Array[Array[Byte]]): Unit = {
-    //create a fresh table and insert the data
-    val query =
-      tableByteaQuery.schema.dropIfExists
-        .andThen(tableByteaQuery.schema.create)
-        .andThen(tableByteaQuery ++= data)
-
-    val _ = db.runNow(
-      action  = query,
-      timeout = batchWriteTimeout //set this according to the value of testDataCount
-    )
-  }
-}
-
-/**
-  * JMH state for benchmarking reads to [[TableByteSchema]].
-  *
-  * @param testDataCount total number of rows to generate in [[TableByteSchema]]
-  */
-@State(Scope.Thread)
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-class VarcharReadState(testDataCount: Int, val db: DBExecutor)
-    extends ReadBenchmarkState[String](testDataCount = testDataCount, db = db)
-    with TableVarcharSchema {
-
-  import config.profile.api._
-
-  //Overload: default constructor required by JMH. Uses Postgres as target DB.
-  def this() = {
-    this(testDataCount = readDataCount, db = DBExecutor.forPostgres(dbName, dbHost, dbPort))
-  }
-
-  def generateData(): String =
-    Hash.generate.toHexString
-
-  def persist(data: Array[String]): Unit = {
-    //create a fresh table and insert the data
-    val query =
-      tableVarcharQuery.schema.dropIfExists
-        .andThen(tableVarcharQuery.schema.create)
-        .andThen(tableVarcharQuery ++= data)
-
-    val _ = db.runNow(
-      action  = query,
-      timeout = batchWriteTimeout
-    )
-  }
-}
+import org.alephium.explorer.benchmark.db.state._
 
 /**
   * Implements all JMH functions executing benchmarks on Postgres.
@@ -162,7 +37,7 @@ class VarcharReadState(testDataCount: Int, val db: DBExecutor)
 class DBBenchmark {
 
   /**
-    * Benchmarks writes to `varchar` column type in [[TableVarcharSchema]]
+    * Benchmarks writes to `varchar` column type in [[org.alephium.explorer.benchmark.db.table.TableVarcharSchema]]
     *
     * @param state State of current iteration
     */
@@ -173,7 +48,7 @@ class DBBenchmark {
   }
 
   /**
-    * Benchmarks writes to `bytea` column type in [[TableByteSchema]]
+    * Benchmarks writes to `bytea` column type in [[org.alephium.explorer.benchmark.db.table.TableByteSchema]]
     *
     * @param state State of current iteration
     */
@@ -184,7 +59,7 @@ class DBBenchmark {
   }
 
   /**
-    * Benchmarks reads to `varchar` column type in [[TableVarcharSchema]].
+    * Benchmarks reads to `varchar` column type in [[org.alephium.explorer.benchmark.db.table.TableVarcharSchema]].
     *
     * @param state State of current iteration
     */
@@ -196,7 +71,7 @@ class DBBenchmark {
   }
 
   /**
-    * Benchmarks reads to `bytea` column type in [[TableByteSchema]].
+    * Benchmarks reads to `bytea` column type in [[org.alephium.explorer.benchmark.db.table.TableByteSchema]].
     *
     * @param state State of current iteration
     */
@@ -206,5 +81,4 @@ class DBBenchmark {
     val _ =
       state.db.runNow(state.tableByteaQuery.filter(_.hash === state.next).result, requestTimeout)
   }
-
 }
