@@ -269,7 +269,7 @@ trait TransactionQueries
     outputsTable
       .filter(output => output.mainChain && output.txHash === txHash)
       .sortBy(_.order)
-      .joinLeft(inputsTable)
+      .joinLeft(mainInputs)
       .on(_.key === _.outputRefKey)
       .map {
         case (output, input) =>
@@ -304,7 +304,7 @@ trait TransactionQueries
     outputsTable
       .filter(output => output.mainChain && output.address === address)
       .map(output => (output.key, output.amount, output.lockTime))
-      .joinLeft(inputsTable.filter(_.mainChain))
+      .joinLeft(mainInputs)
       .on(_._1 === _.outputRefKey)
       .filter(_._2.isEmpty)
       .map { case ((_, amount, lockTime), _) => (amount, lockTime) }
