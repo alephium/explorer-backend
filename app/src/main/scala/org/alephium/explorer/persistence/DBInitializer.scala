@@ -73,9 +73,13 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
         })
       }
       .flatMap { _ =>
-        run(createBlockHeadersIndexesSQL())
+        run(for {
+          _ <- createBlockHeadersIndexesSQL()
+          _ <- createTransactionMainChainIndex()
+          _ <- createInputMainChainIndex()
+          _ <- createOutputMainChainIndex()
+        } yield ())
       }
-      .map(_ => ())
   }
 }
 

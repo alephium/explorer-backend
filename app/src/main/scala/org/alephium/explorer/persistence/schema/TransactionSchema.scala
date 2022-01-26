@@ -16,20 +16,19 @@
 
 package org.alephium.explorer.persistence.schema
 
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
+import slick.sql.SqlAction
 
 import org.alephium.explorer.api.model.{BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.TransactionEntity
 import org.alephium.util.{TimeStamp, U256}
 
-trait TransactionSchema extends CustomTypes {
-  val config: DatabaseConfig[JdbcProfile]
-
+trait TransactionSchema extends Schema with CustomTypes {
   import config.profile.api._
 
-  class Transactions(tag: Tag) extends Table[TransactionEntity](tag, "transactions") {
+  private val tableName = "transactions"
+
+  class Transactions(tag: Tag) extends Table[TransactionEntity](tag, tableName) {
     def hash: Rep[Transaction.Hash]     = column[Transaction.Hash]("hash", O.SqlType("BYTEA"))
     def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
@@ -49,6 +48,9 @@ trait TransactionSchema extends CustomTypes {
       (hash, blockHash, timestamp, gasAmount, gasPrice, txIndex, mainChain)
         .<>((TransactionEntity.apply _).tupled, TransactionEntity.unapply)
   }
+
+  def createTransactionMainChainIndex(): SqlAction[Int, NoStream, Effect] =
+    mainChainIndex(tableName)
 
   val transactionsTable: TableQuery[Transactions] = TableQuery[Transactions]
 }
