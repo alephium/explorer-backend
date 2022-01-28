@@ -269,7 +269,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
 
     def checkBlocks(blocksToCheck: Seq[BlockEntry]) = {
       val result = blockDao
-        .listIncludingForks(TimeStamp.unsafe(0), TimeStamp.unsafe(Long.MaxValue))
+        .listIncludingForks(TimeStamp.unsafe(0), timestampMaxValue)
         .futureValue
         .map(_.hash)
 

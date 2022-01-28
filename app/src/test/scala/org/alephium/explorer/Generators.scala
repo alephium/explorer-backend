@@ -37,8 +37,12 @@ trait Generators {
   lazy val groupNum: Int                     = Gen.choose(2, 4).sample.get
   implicit lazy val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
 
-  lazy val u256Gen: Gen[U256]                        = Gen.posNum[Long].map(U256.unsafe)
-  lazy val timestampGen: Gen[TimeStamp]              = Gen.posNum[Long].map(TimeStamp.unsafe)
+  //java.sql.timestamp is out of range with Long.MaxValue
+  lazy val timestampMaxValue: TimeStamp = TimeStamp.unsafe(253370764800000L) //Jan 01 9999 00:00:00
+
+  lazy val u256Gen: Gen[U256] = Gen.posNum[Long].map(U256.unsafe)
+  lazy val timestampGen: Gen[TimeStamp] =
+    Gen.choose[Long](0, timestampMaxValue.millis).map(TimeStamp.unsafe)
   lazy val hashGen: Gen[Hash]                        = Gen.const(()).map(_ => Hash.generate)
   lazy val blockHashGen: Gen[BlockHash]              = Gen.const(()).map(_ => BlockHash.generate)
   lazy val blockEntryHashGen: Gen[BlockEntry.Hash]   = blockHashGen.map(new BlockEntry.Hash(_))
