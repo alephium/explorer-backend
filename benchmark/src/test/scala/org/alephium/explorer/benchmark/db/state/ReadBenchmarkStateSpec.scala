@@ -52,7 +52,7 @@ class ReadBenchmarkStateSpec extends AlephiumSpec with ScalaFutures {
       }
 
     doTest[Array[Byte], ByteaReadState](
-      new ByteaReadState(testDataCount, DBExecutor.forH2()),
+      new ByteaReadState(testDataCount, DBExecutor.forTest()),
       state => {
         import state.config.profile.api._
         state.db.runNow(state.tableByteaQuery.result, 1.second)
@@ -60,7 +60,7 @@ class ReadBenchmarkStateSpec extends AlephiumSpec with ScalaFutures {
     )
 
     doTest[String, VarcharReadState](
-      new VarcharReadState(testDataCount, DBExecutor.forH2()),
+      new VarcharReadState(testDataCount, DBExecutor.forTest()),
       state => {
         import state.config.profile.api._
         state.db.runNow(state.tableVarcharQuery.result, 1.second)
@@ -86,8 +86,8 @@ class ReadBenchmarkStateSpec extends AlephiumSpec with ScalaFutures {
         ()
       }
 
-    doTest(new ByteaReadState(testDataCount, DBExecutor.forH2()))
-    doTest(new VarcharReadState(testDataCount, DBExecutor.forH2()))
+    doTest(new ByteaReadState(testDataCount, DBExecutor.forTest()))
+    doTest(new VarcharReadState(testDataCount, DBExecutor.forTest()))
   }
 
   it should "afterAll - terminate connection" in {
@@ -104,7 +104,7 @@ class ReadBenchmarkStateSpec extends AlephiumSpec with ScalaFutures {
         ()
       }
 
-    doTest(new ByteaReadState(testDataCount, DBExecutor.forH2()))
-    doTest(new VarcharReadState(testDataCount, DBExecutor.forH2()))
+    doTest(new ByteaReadState(testDataCount, DBExecutor.forTest()))
+    doTest(new VarcharReadState(testDataCount, DBExecutor.forTest()))
   }
 }

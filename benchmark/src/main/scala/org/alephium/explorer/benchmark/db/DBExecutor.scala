@@ -18,7 +18,6 @@ package org.alephium.explorer.benchmark.db
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.Random
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
@@ -60,20 +59,23 @@ object DBExecutor extends StrictLogging {
     new DBExecutor(config)
   }
 
-  /**
-    * Builds a [[DBExecutor]] instance for in-memory H2.
-    */
-  def forH2(): DBExecutor = {
+  def forTest(): DBExecutor = {
     val config =
       DatabaseConfig.forConfig[JdbcProfile](
         path = "db",
         config = ConfigFactory.parseString(
           // format: off
           s"""db = {
-               |  profile = "slick.jdbc.H2Profile$$"
+               |  profile = "slick.jdbc.PostgresProfile$$"
                |  db {
-               |    connectionPool = "HikariCP"
-               |    url            = "jdbc:h2:mem:${Random.nextString(5)};DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE"
+               |    connectionPool = disabled
+               |    driver         = "org.postgresql.Driver"
+               |    name           = postgres
+               |    host           = localhost
+               |    port           = 5432
+               |    user           = "postgres"
+               |    password       = "postgres"
+               |    url            = "jdbc:postgresql://localhost:5432/postgres"
                |  }
                |}
                |""".stripMargin
