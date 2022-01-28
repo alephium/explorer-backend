@@ -65,6 +65,36 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     total is ALPH.alph(1)
   }
 
+  it should "output's spent info should only take the input from the main chain " in new Fixture {
+    import databaseConfig.profile.api._
+
+    val tx1 = transactionGen.sample.get
+    val tx2 = transactionGen.sample.get
+
+    val txEntity1 = TransactionEntity(
+      tx1.hash,
+      tx1.blockHash,
+      tx1.timestamp,
+      tx1.gasAmount,
+      tx1.gasPrice,
+      0,
+      true
+    )
+
+    val output1 =
+      output(address, ALPH.alph(1), None).copy(txHash = tx1.hash, blockHash = tx1.blockHash)
+    val input1 = input(output1.hint, output1.key).copy(txHash = tx2.hash, blockHash = tx2.blockHash)
+    val input2 = input(output1.hint, output1.key).copy(txHash = tx2.hash).copy(mainChain = false)
+
+    run(queries.outputsTable += output1).futureValue
+    run(queries.inputsTable ++= Seq(input1, input2)).futureValue
+    run(queries.transactionsTable ++= Seq(txEntity1)).futureValue
+
+    val tx = run(queries.getTransactionAction(tx1.hash)).futureValue.get
+
+    tx.outputs.size is 1 // was 2 in v1.4.1
+  }
+
   trait Fixture extends DatabaseFixture with DBRunner with Generators {
     val config: DatabaseConfig[JdbcProfile] = databaseConfig
 
