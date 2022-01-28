@@ -58,6 +58,7 @@ object BlockDao {
   class Impl(val config: DatabaseConfig[JdbcProfile])(
       implicit val executionContext: ExecutionContext)
       extends BlockDao
+      with CustomTypes
       with BlockHeaderSchema
       with BlockDepsSchema
       with BlockQueries
@@ -104,7 +105,7 @@ object BlockDao {
       val action =
         for {
           headers <- blockHeadersTable
-            .filter(header => header.timestamp >= from.millis && header.timestamp <= to.millis)
+            .filter(header => header.timestamp >= from && header.timestamp <= to)
             .sortBy(b => (b.timestamp.desc, b.hash))
             .result
           blocks <- DBIOAction.sequence(headers.map(buildLiteBlockEntryAction))

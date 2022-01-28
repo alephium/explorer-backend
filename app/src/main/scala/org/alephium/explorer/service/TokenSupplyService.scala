@@ -153,11 +153,11 @@ object TokenSupplyService {
           None
         } else {
           val min                   = timestampsOpt.flatten.min
-          val mininumLatestBlockDay = Instant.ofEpochMilli(min).truncatedTo(ChronoUnit.DAYS)
+          val mininumLatestBlockDay = Instant.ofEpochMilli(min.millis).truncatedTo(ChronoUnit.DAYS)
           if (mininumLatestBlockDay == launchDay) {
             None
           } else {
-            Some(TimeStamp.unsafe(min))
+            Some(min)
           }
         }
       }
