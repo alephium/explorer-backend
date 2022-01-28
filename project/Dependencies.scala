@@ -63,7 +63,6 @@ object Dependencies {
   lazy val slick      = "com.typesafe.slick" %% "slick"     % Version.slick
   lazy val postgresql = "org.postgresql"     % "postgresql" % Version.postgresql
 
-  lazy val h2            = "com.h2database"     % "h2"              % "1.4.200"
   lazy val slickHikaricp = "com.typesafe.slick" %% "slick-hikaricp" % Version.slick
 
   lazy val prometheusSimpleClient        = "io.prometheus"               % "simpleclient"                   % Version.prometheus

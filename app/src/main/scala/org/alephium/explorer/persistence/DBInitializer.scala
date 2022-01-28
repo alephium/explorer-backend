@@ -43,22 +43,23 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
     with StrictLogging {
   import config.profile.api._
 
+  @SuppressWarnings(
+    Array("org.wartremover.warts.JavaSerializable",
+          "org.wartremover.warts.Product",
+          "org.wartremover.warts.Serializable"))
+  private val allTables =
+    Seq(blockHeadersTable,
+        blockDepsTable,
+        transactionsTable,
+        inputsTable,
+        outputsTable,
+        unconfirmedTxsTable,
+        uinputsTable,
+        uoutputsTable,
+        tokenSupplyTable)
+
   def createTables(): Future[Unit] = {
     //TODO Look for something like https://flywaydb.org/ to manage schemas
-    @SuppressWarnings(
-      Array("org.wartremover.warts.JavaSerializable",
-            "org.wartremover.warts.Product",
-            "org.wartremover.warts.Serializable"))
-    val allTables =
-      Seq(blockHeadersTable,
-          blockDepsTable,
-          transactionsTable,
-          inputsTable,
-          outputsTable,
-          unconfirmedTxsTable,
-          uinputsTable,
-          uoutputsTable,
-          tokenSupplyTable)
     val existingTables = run(MTable.getTables)
     existingTables
       .flatMap { tables =>
@@ -80,6 +81,16 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
           _ <- createOutputMainChainIndex()
         } yield ())
       }
+  }
+
+  def dropTables(): Future[Unit] = {
+    val query = allTables
+      .map { table =>
+        val name = table.baseTableRow.tableName
+        s"DROP TABLE IF EXISTS $name;"
+      }
+      .mkString("\n")
+    run(sqlu"#$query").map(_ => ())
   }
 }
 

@@ -42,7 +42,7 @@ class WriteBenchmarkStateSpec extends AlephiumSpec {
       }
 
     doTest[ByteaWriteState](
-      new ByteaWriteState(DBExecutor.forH2()),
+      new ByteaWriteState(DBExecutor.forTest()),
       state => {
         import state.config.profile.api._
         state.db.runNow(state.tableByteaQuery.length.result, 1.second)
@@ -50,7 +50,7 @@ class WriteBenchmarkStateSpec extends AlephiumSpec {
     )
 
     doTest[VarcharWriteState](
-      new VarcharWriteState(DBExecutor.forH2()),
+      new VarcharWriteState(DBExecutor.forTest()),
       state => {
         import state.config.profile.api._
         state.db.runNow(state.tableVarcharQuery.length.result, 1.second)
@@ -59,7 +59,7 @@ class WriteBenchmarkStateSpec extends AlephiumSpec {
   }
 
   it should "beforeEach - generate data incrementally" in {
-    using(new VarcharWriteState(DBExecutor.forH2())) { state =>
+    using(new VarcharWriteState(DBExecutor.forTest())) { state =>
       //invoking next before setNext should return null
       //Option is not used here to avoid the cost of unnecessary
       //memory allocation for accurate benchmarking results

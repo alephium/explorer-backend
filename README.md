@@ -1,8 +1,14 @@
 # Alephium explorer backend
 
-Test are using H2 datbase, so no need to initialize anything.
-
 ## Testing
+
+Tests are using Postgresql database and the default `postgres` table.
+
+Run the tests with:
+
+```
+sbt test
+```
 
 ## Running
 
@@ -20,13 +26,6 @@ select *
 from "utransactions"
 where "hash" = decode('f25f43b7fb13b1ec5f1a2d3acd1bebb9d27143cdc4586725162b9d88301b9bd7', 'hex');
 ```
-
-### H2
-
-You can run using the h2 embedded database with the following command:
-
-    sbt '; set javaOptions += "-Dconfig.resource=application-h2.conf" ; run'
-
 ## Benchmark
 
 ### Create benchmark database

@@ -268,9 +268,9 @@ trait TransactionQueries
   private val getOutputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
     outputsTable
       .filter(output => output.mainChain && output.txHash === txHash)
-      .sortBy(_.order)
       .joinLeft(mainInputs)
       .on(_.key === _.outputRefKey)
+      .sortBy(_._1.order)
       .map {
         case (output, input) =>
           (output.hint,

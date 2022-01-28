@@ -26,10 +26,5 @@ trait Schema {
   import config.profile.api._
 
   def mainChainIndex(tableName: String): SqlAction[Int, NoStream, Effect] =
-    if (config.profile == slick.jdbc.H2Profile) {
-      //h2 doesn't support partial indexes
-      sqlu"create index if not exists #${tableName}_main_chain_idx on #${tableName} (main_chain)"
-    } else {
-      sqlu"create index if not exists #${tableName}_main_chain_idx on #${tableName} (main_chain) where main_chain = true;"
-    }
+    sqlu"create index if not exists #${tableName}_main_chain_idx on #${tableName} (main_chain) where main_chain = true;"
 }
