@@ -18,7 +18,6 @@ package org.alephium.explorer.persistence
 
 import scala.concurrent.{Await, ExecutionContext}
 import scala.jdk.CollectionConverters._
-import scala.util.Random
 
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import slick.basic.DatabaseConfig
@@ -31,8 +30,7 @@ trait DatabaseFixture {
   private val config = ConfigFactory
     .parseMap(
       Map(
-        ("db.db.url",
-         s"jdbc:h2:mem:${Random.nextString(5)};DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE")
+        ("db.db.url", s"jdbc:postgresql://localhost:5432/postgres")
       ).view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava)
     .withFallback(ConfigFactory.load())
 
@@ -41,5 +39,6 @@ trait DatabaseFixture {
 
   val dbInitializer: DBInitializer = new DBInitializer(databaseConfig)(ExecutionContext.global)
 
+  Await.result(dbInitializer.dropTables(), Duration.ofSecondsUnsafe(10).asScala)
   Await.result(dbInitializer.createTables(), Duration.ofSecondsUnsafe(10).asScala)
 }
