@@ -87,12 +87,7 @@ trait BlockHeaderSchema extends CustomTypes {
     * @see PR <a href="https://github.com/alephium/explorer-backend/pull/116">#116</a> for benchmarks
     */
   private def mainChainIndexSQL(): SqlAction[Int, NoStream, Effect] =
-    if (config.profile == slick.jdbc.H2Profile) {
-      //h2 doesn't support partial indexes
-      sqlu"create index if not exists blocks_main_chain_idx on block_headers (main_chain)"
-    } else {
-      sqlu"create index if not exists blocks_main_chain_idx on block_headers (main_chain) where main_chain = true;"
-    }
+    sqlu"create index if not exists blocks_main_chain_idx on block_headers (main_chain) where main_chain = true;"
 
   /**
     * Joins all indexes created via raw SQL
