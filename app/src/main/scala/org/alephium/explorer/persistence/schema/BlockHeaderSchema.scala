@@ -19,24 +19,23 @@ package org.alephium.explorer.persistence.schema
 import java.math.BigInteger
 
 import akka.util.ByteString
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, ProvenShape}
 import slick.sql.SqlAction
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.persistence.model.BlockHeader
+import org.alephium.util.TimeStamp
 
-trait BlockHeaderSchema extends CustomTypes {
-  val config: DatabaseConfig[JdbcProfile]
-
+trait BlockHeaderSchema extends Schema with CustomTypes {
   import config.profile.api._
 
-  class BlockHeaders(tag: Tag) extends Table[BlockHeader](tag, "block_headers") {
+  private val tableName = "block_headers"
+
+  class BlockHeaders(tag: Tag) extends Table[BlockHeader](tag, tableName) {
     def hash: Rep[BlockEntry.Hash] =
       column[BlockEntry.Hash]("hash", O.PrimaryKey, O.SqlType("bytea"))
-    def timestamp: Rep[Long]       = column[Long]("timestamp")
+    def timestamp: Rep[TimeStamp]  = column[TimeStamp]("timestamp")
     def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
     def height: Rep[Height]        = column[Height]("height")
@@ -77,7 +76,7 @@ trait BlockHeaderSchema extends CustomTypes {
   private def fullIndexSQL(): SqlAction[Int, NoStream, Effect] =
     sqlu"""
       create unique index if not exists block_headers_full_index
-          on block_headers (main_chain asc, timestamp desc, hash asc, chain_from asc, chain_to asc, height asc);
+          on #${tableName} (main_chain asc, timestamp desc, hash asc, chain_from asc, chain_to asc, height asc);
       """
 
   /**
@@ -87,7 +86,7 @@ trait BlockHeaderSchema extends CustomTypes {
     * @see PR <a href="https://github.com/alephium/explorer-backend/pull/116">#116</a> for benchmarks
     */
   private def mainChainIndexSQL(): SqlAction[Int, NoStream, Effect] =
-    sqlu"create index if not exists blocks_main_chain_idx on block_headers (main_chain) where main_chain = true;"
+    mainChainIndex(tableName)
 
   /**
     * Joins all indexes created via raw SQL

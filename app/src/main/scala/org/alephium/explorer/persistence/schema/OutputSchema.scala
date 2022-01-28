@@ -16,21 +16,20 @@
 
 package org.alephium.explorer.persistence.schema
 
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
+import slick.sql.SqlAction
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.util.{TimeStamp, U256}
 
-trait OutputSchema extends CustomTypes {
-  val config: DatabaseConfig[JdbcProfile]
-
+trait OutputSchema extends Schema with CustomTypes {
   import config.profile.api._
 
-  class Outputs(tag: Tag) extends Table[OutputEntity](tag, "outputs") {
+  private val tableName = "outputs"
+
+  class Outputs(tag: Tag) extends Table[OutputEntity](tag, tableName) {
     def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
     def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
     def hint: Rep[Int]                  = column[Int]("hint")
@@ -55,6 +54,9 @@ trait OutputSchema extends CustomTypes {
       (blockHash, txHash, hint, key, amount, address, timestamp, mainChain, lockTime, order)
         .<>((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }
+
+  def createOutputMainChainIndex(): SqlAction[Int, NoStream, Effect] =
+    mainChainIndex(tableName)
 
   val outputsTable: TableQuery[Outputs] = TableQuery[Outputs]
 }

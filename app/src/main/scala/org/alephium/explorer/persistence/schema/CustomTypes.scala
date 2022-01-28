@@ -74,10 +74,11 @@ trait CustomTypes extends JdbcProfile {
     string => Address.unsafe(string)
   )
 
-  implicit lazy val timestampType: JdbcType[TimeStamp] = MappedJdbcType.base[TimeStamp, Long](
-    _.millis,
-    long => TimeStamp.unsafe(long)
-  )
+  implicit lazy val timestampType: JdbcType[TimeStamp] =
+    MappedJdbcType.base[TimeStamp, java.sql.Timestamp](
+      ts    => new java.sql.Timestamp(ts.millis),
+      sqlTs => TimeStamp.unsafe(sqlTs.getTime)
+    )
 
   implicit lazy val u256Type: JdbcType[U256] = MappedJdbcType.base[U256, BigDecimal](
     u256       => BigDecimal(u256.v),

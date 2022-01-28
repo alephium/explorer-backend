@@ -16,21 +16,20 @@
 
 package org.alephium.explorer.persistence.schema
 
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
+import slick.sql.SqlAction
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.InputEntity
 import org.alephium.util.TimeStamp
 
-trait InputSchema extends CustomTypes {
-  val config: DatabaseConfig[JdbcProfile]
-
+trait InputSchema extends Schema with CustomTypes {
   import config.profile.api._
 
-  class Inputs(tag: Tag) extends Table[InputEntity](tag, "inputs") {
+  private val tableName = "inputs"
+
+  class Inputs(tag: Tag) extends Table[InputEntity](tag, tableName) {
     def blockHash: Rep[BlockEntry.Hash]   = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
     def txHash: Rep[Transaction.Hash]     = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
     def timestamp: Rep[TimeStamp]         = column[TimeStamp]("timestamp")
@@ -50,6 +49,9 @@ trait InputSchema extends CustomTypes {
       (blockHash, txHash, timestamp, hint, outputRefKey, unlockScript, mainChain, order)
         .<>((InputEntity.apply _).tupled, InputEntity.unapply)
   }
+
+  def createInputMainChainIndex(): SqlAction[Int, NoStream, Effect] =
+    mainChainIndex(tableName)
 
   val inputsTable: TableQuery[Inputs] = TableQuery[Inputs]
 }

@@ -30,6 +30,7 @@ import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.DBExecutor
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
+import org.alephium.util.TimeStamp
 
 /**
   * JMH state for benchmarking reads to [[BlockHeaderSchema]] when
@@ -46,7 +47,7 @@ class BlockHeaderMainChainReadState(dropMainChainIndex: Boolean,
   def generateData(): BlockHeader =
     BlockHeader(
       hash         = new BlockEntry.Hash(BlockHash.generate),
-      timestamp    = System.nanoTime(),
+      timestamp    = TimeStamp.now(),
       chainFrom    = GroupIndex.unsafe(1),
       chainTo      = GroupIndex.unsafe(16),
       height       = Height.genesis,
