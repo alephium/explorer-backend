@@ -19,8 +19,8 @@ package org.alephium.explorer.benchmark.db.state
 import org.openjdk.jmh.annotations.{Scope, State}
 
 import org.alephium.explorer.Hash
+import org.alephium.explorer.benchmark.db.{DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
-import org.alephium.explorer.benchmark.db.DBExecutor
 import org.alephium.explorer.benchmark.db.table.TableVarcharSchema
 
 /**
@@ -36,7 +36,7 @@ class VarcharWriteState(val db: DBExecutor)
 
   //Overload: default constructor required by JMH. Uses Postgres as target DB.
   def this() = {
-    this(DBExecutor.forPostgres(dbName, dbHost, dbPort))
+    this(DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.HikariCP))
   }
 
   def generateData(): String =
