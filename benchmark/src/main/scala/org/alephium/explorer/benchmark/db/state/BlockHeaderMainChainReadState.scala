@@ -44,7 +44,7 @@ class BlockHeaderMainChainReadState(dropMainChainIndex: Boolean,
 
   import config.profile.api._
 
-  def generateData(): BlockHeader =
+  def generateData(currentCacheSize: Int): BlockHeader =
     BlockHeader(
       hash         = new BlockEntry.Hash(BlockHash.generate),
       timestamp    = TimeStamp.now(),

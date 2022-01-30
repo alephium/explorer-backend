@@ -41,7 +41,7 @@ class ByteaReadState(testDataCount: Int, val db: DBExecutor)
     this(readDataCount, DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.HikariCP))
   }
 
-  def generateData(): Array[Byte] =
+  def generateData(currentCacheSize: Int): Array[Byte] =
     Hash.generate.bytes.toArray
 
   def persist(data: Array[Array[Byte]]): Unit = {

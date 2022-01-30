@@ -73,7 +73,7 @@ abstract class ReadBenchmarkState[D: ClassTag](val testDataCount: Int, db: DBExe
     new Array[D](testDataCount)
 
   /** Generates random data of type [[D]] */
-  def generateData(): D
+  def generateData(currentCacheSize: Int): D
 
   /** Invoked once during [[beforeAll]]. It should persist the input data to the target database. */
   def persist(data: Array[D]): Unit
@@ -84,7 +84,7 @@ abstract class ReadBenchmarkState[D: ClassTag](val testDataCount: Int, db: DBExe
     logger.info(s"Generating test data of size $testDataCount")
 
     for (index <- 0 until testDataCount)
-      cache(index) = generateData()
+      cache(index) = generateData(index)
 
     persist(cache)
 
@@ -100,6 +100,10 @@ abstract class ReadBenchmarkState[D: ClassTag](val testDataCount: Int, db: DBExe
       //set the next data to query required by benchmark
       _next = cache(nextIndex)
       nextIndex += 1
+      //Logs how much data from the cache is read
+      if (nextIndex % (cache.length / 100) == 0) {
+        logger.info(s"Read progress: $nextIndex/${cache.length}")
+      }
     } catch {
       case exception: ArrayIndexOutOfBoundsException =>
         if (nextIndex == 0) {

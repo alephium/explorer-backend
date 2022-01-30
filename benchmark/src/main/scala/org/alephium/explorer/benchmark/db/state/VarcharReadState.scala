@@ -41,7 +41,7 @@ class VarcharReadState(testDataCount: Int, val db: DBExecutor)
     this(readDataCount, DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.HikariCP))
   }
 
-  def generateData(): String =
+  def generateData(currentCacheSize: Int): String =
     Hash.generate.toHexString
 
   def persist(data: Array[String]): Unit = {
