@@ -18,6 +18,8 @@ package org.alephium.explorer.benchmark.db
 
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.Await
+
 import org.openjdk.jmh.annotations._
 
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
@@ -96,4 +98,50 @@ class DBBenchmark {
       state.db.runNow(state.blockHeadersTable.filter(_.mainChain).length.result, requestTimeout)
   }
 
+  /**
+    * CONNECTION POOL = DISABLED
+    *
+    * The following benchmarks listMainChain's forward & reverse queries with connection pool disabled
+    */
+  @Benchmark
+  def listBlocks_Forward_DisabledCP_Typed(state: ListBlocks_Forward_DisabledCP_ReadState): Unit = {
+    val _ =
+      Await.result(state.dao.listMainChain(state.next), requestTimeout)
+  }
+
+  @Benchmark
+  def listBlocks_Reverse_DisabledCP_Typed(state: ListBlocks_Reverse_DisabledCP_ReadState): Unit = {
+    val _ =
+      Await.result(state.dao.listMainChain(state.next), requestTimeout)
+  }
+
+  @Benchmark
+  def listBlocks_Forward_DisabledCP_SQL(state: ListBlocks_Forward_DisabledCP_ReadState): Unit = {
+    val _ =
+      Await.result(state.dao.listMainChainSQL(state.next), requestTimeout)
+  }
+
+  @Benchmark
+  def listBlocks_Reverse_DisabledCP_SQL(state: ListBlocks_Reverse_DisabledCP_ReadState): Unit = {
+    val _ =
+      Await.result(state.dao.listMainChainSQL(state.next), requestTimeout)
+  }
+
+  /**
+    * CONNECTION POOL = HIKARI
+    *
+    * Benchmarks listMainChain forward & reverse queries with [[DBConnectionPool.HikariCP]] as
+    * the connection pool
+    */
+  @Benchmark
+  def listBlocks_Forward_HikariCP_Typed(state: ListBlocks_Forward_HikariCP_ReadState): Unit = {
+    val _ =
+      Await.result(state.dao.listMainChain(state.next), requestTimeout)
+  }
+
+  @Benchmark
+  def listBlocks_Forward_HikariCP_SQL(state: ListBlocks_Forward_HikariCP_ReadState): Unit = {
+    val _ =
+      Await.result(state.dao.listMainChainSQL(state.next), requestTimeout)
+  }
 }

@@ -100,6 +100,7 @@ trait Generators {
       gasPrice  <- u256Gen
     } yield UnconfirmedTx(hash, chainFrom, chainTo, inputs, outputs, gasAmount, gasPrice)
 
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def transactionEntityGen(
       blockHash: Gen[BlockEntry.Hash] = blockEntryHashGen): Gen[TransactionEntity] =
     for {

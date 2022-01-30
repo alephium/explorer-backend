@@ -23,6 +23,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
+import slick.lifted.AbstractTable
 
 import org.alephium.explorer.persistence.DBAction
 
@@ -87,6 +88,9 @@ class DBExecutor private (val config: DatabaseConfig[JdbcProfile]) extends Stric
     */
   def runNow[R, E <: Effect](action: DBAction[R, E], timeout: FiniteDuration): R =
     Await.result[R](config.db.run(action), timeout)
+
+  def dropTableIfExists[T <: AbstractTable[_]](table: TableQuery[T]): Int =
+    runNow(sqlu"DROP TABLE IF EXISTS #${table.baseTableRow.tableName}", 5.seconds)
 
   /**
     * Closes DB connection
