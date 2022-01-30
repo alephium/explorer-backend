@@ -22,7 +22,7 @@ import scala.reflect.ClassTag
 
 import akka.util.ByteString
 import slick.basic.DatabaseConfig
-import slick.jdbc.{JdbcProfile, JdbcType}
+import slick.jdbc.{GetResult, JdbcProfile, JdbcType, PositionedResult}
 
 import org.alephium.explorer._
 import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
@@ -96,4 +96,28 @@ trait CustomTypes extends JdbcProfile {
       _.toArray,
       bytes => ByteString.fromArrayUnsafe(bytes)
     )
+
+  /**
+   * [[GetResult]] types
+   */
+
+  implicit lazy val blockEntryHashGetResult: GetResult[BlockEntry.Hash] =
+    (result: PositionedResult) =>
+      new BlockEntry.Hash(new BlockHash(ByteString.fromArrayUnsafe(result.nextBytes())))
+
+  implicit lazy val groupIndexGetResult: GetResult[GroupIndex] =
+    (result: PositionedResult) =>
+      GroupIndex.unsafe(result.nextInt())
+
+  implicit lazy val heightGetResult: GetResult[Height] =
+    (result: PositionedResult) =>
+      Height.unsafe(result.nextInt())
+
+  implicit lazy val timestampGetResult: GetResult[TimeStamp] =
+    (result: PositionedResult) =>
+      TimeStamp.unsafe(result.nextTimestamp().getTime)
+
+  implicit lazy val bigIntegerGetResult: GetResult[BigInteger] =
+    (result: PositionedResult) =>
+      result.nextBigDecimal().toBigInt.bigInteger
 }

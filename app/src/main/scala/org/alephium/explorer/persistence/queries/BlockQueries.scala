@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.persistence.queries
 
+import java.math.BigInteger
+
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
@@ -24,8 +26,8 @@ import slick.jdbc.JdbcProfile
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.util.TimeStamp
 
 trait BlockQueries
     extends BlockHeaderSchema
@@ -101,6 +103,83 @@ trait BlockQueries
       .take(pagination.limit)
       .result
   }
+
+  /**
+    * Order by query for [[blockHeadersTable]]
+    *
+    * @param prefix If non-empty adds the prefix with dot to all columns.
+    */
+  private def orderBySQLString(prefix: String, pagination: Pagination): String = {
+    val queryPrefix =
+      if (prefix.isEmpty) {
+        ""
+      } else {
+        prefix + "."
+      }
+
+    if (pagination.reverse) {
+      s"order by ${queryPrefix}timestamp, ${queryPrefix}hash desc"
+    } else {
+      s"order by ${queryPrefix}timestamp desc, ${queryPrefix}hash"
+    }
+  }
+
+  /**
+    * Fetches all main_chain [[blockHeadersTable]] rows and number of transactions in
+    * [[transactionsTable]] for the blocks.
+    */
+  def listMainChainHeadersWithTxnNumberSQL(
+      pagination: Pagination): DBActionRWT[Vector[BlockEntry.Lite]] = {
+    val block_headers = blockHeadersTable.baseTableRow.tableName
+    val transactions  = transactionsTable.baseTableRow.tableName
+
+    val query =
+      sql"""
+           |select blocks.*,
+           |       count(#$transactions.hash) as tx_number
+           |from (select hash,
+           |             timestamp,
+           |             chain_from,
+           |             chain_to,
+           |             height,
+           |             hashrate
+           |      from #$block_headers
+           |      where main_chain = true
+           |      #${orderBySQLString("", pagination)}
+           |      limit ${pagination.limit} offset ${pagination.limit * pagination.offset}) as blocks
+           |         left outer join #$transactions on #$transactions.block_hash = blocks.hash
+           |group by blocks.hash,
+           |         blocks.timestamp,
+           |         blocks.chain_from,
+           |         blocks.chain_to,
+           |         blocks.height,
+           |         blocks.hashrate
+           |#${orderBySQLString("blocks", pagination)}
+           |
+           |""".stripMargin
+        .as[(BlockEntry.Hash, TimeStamp, GroupIndex, GroupIndex, Height, BigInteger, Int)]
+
+    //FIXME - Instead of returning a tuple above it should parse rows into BlockEntry.Lite directly.
+    query map { result =>
+      result map {
+        case (hash, timestamp, chainFrom, chainTo, height, hashRate, txNumber) =>
+          BlockEntry.Lite(
+            hash      = hash,
+            timestamp = timestamp,
+            chainFrom = chainFrom,
+            chainTo   = chainTo,
+            height    = height,
+            txNumber  = txNumber,
+            mainChain = true,
+            hashRate  = hashRate
+          )
+      }
+    }
+  }
+
+  /** Counts main_chain Blocks */
+  def countMainChain(): Rep[Int] =
+    blockHeadersTable.filter(_.mainChain).length
 
   def updateMainChainStatusAction(hash: BlockEntry.Hash,
                                   isMainChain: Boolean): DBActionRWT[Unit] = {
