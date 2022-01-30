@@ -26,7 +26,7 @@ import org.alephium.api.{model => protocolApi}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.service.BlockFlowClient
-import org.alephium.protocol.{ALPH, model => protocol}
+import org.alephium.protocol.{model => protocol, ALPH}
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.util.{AVector, Base58, Duration, Hex, Number, TimeStamp, U256}
 
