@@ -74,6 +74,7 @@ trait CustomTypes extends JdbcProfile {
     string => Address.unsafe(string)
   )
 
+
   implicit lazy val timestampGetResult: GetResult[TimeStamp] = GetResult.GetTimestamp.andThen {
     sqlTs =>
       TimeStamp.unsafe(sqlTs.toLocalDateTime().toInstant(java.time.ZoneOffset.UTC).toEpochMilli)
@@ -100,4 +101,24 @@ trait CustomTypes extends JdbcProfile {
       _.toArray,
       bytes => ByteString.fromArrayUnsafe(bytes)
     )
+
+  implicit val hashGetResult: GetResult[BlockEntry.Hash] = GetResult[BlockEntry.Hash]
+  implicit val groupIndexGetResult: GetResult[GroupIndex] = GetResult[GroupIndex]
+  implicit val heightGetResult: GetResult[Height] = GetResult[Height]
+  implicit val bigIntegerGetResult: GetResult[BigInteger] = GetResult[BigInteger]
+
+  implicit lazy val blockEntryLiteGetResult :GetResult[BlockEntry.Lite] =  GetResult.createGetTuple7[BlockEntry.Hash, TimeStamp, GroupIndex, GroupIndex, Height, BigInteger, Int].andThen {
+    case (hash, timestamp, chainFrom, chainTo, height, hashRate, txNumber) =>
+          BlockEntry.Lite(
+            hash      = hash,
+            timestamp = timestamp,
+            chainFrom = chainFrom,
+            chainTo   = chainTo,
+            height    = height,
+            txNumber  = txNumber,
+            mainChain = true,
+            hashRate  = hashRate
+          )
+      }
+
 }

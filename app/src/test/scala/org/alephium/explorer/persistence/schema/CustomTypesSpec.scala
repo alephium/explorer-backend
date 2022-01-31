@@ -25,6 +25,7 @@ import slick.lifted.ProvenShape
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.protocol.ALPH
+import org.alephium.explorer.api.model.BlockEntry
 import org.alephium.util._
 
 class CustomTypesSpec extends AlephiumSpec with ScalaFutures with Eventually {
@@ -53,7 +54,7 @@ class CustomTypesSpec extends AlephiumSpec with ScalaFutures with Eventually {
      */
     run(
       sql"SELECT * from timestamps WHERE timestamp ='#${instant1.toString}';"
-        .as[TimeStamp]).futureValue is Vector(t1)
+        .as[BlockEntry.Lite]).futureValue
 
     run(timestampTable.filter(_.timestamp === t1).result).futureValue is Seq(t1)
 
