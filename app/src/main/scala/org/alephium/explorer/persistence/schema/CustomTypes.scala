@@ -22,7 +22,7 @@ import scala.reflect.ClassTag
 
 import akka.util.ByteString
 import slick.basic.DatabaseConfig
-import slick.jdbc.{JdbcProfile, JdbcType}
+import slick.jdbc.{GetResult, JdbcProfile, JdbcType}
 
 import org.alephium.explorer._
 import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
@@ -74,12 +74,16 @@ trait CustomTypes extends JdbcProfile {
     string => Address.unsafe(string)
   )
 
-  implicit lazy val timestampType: JdbcType[TimeStamp] =
-    MappedJdbcType.base[TimeStamp, java.sql.Timestamp](
-      ts    => new java.sql.Timestamp(ts.millis),
-      sqlTs => TimeStamp.unsafe(sqlTs.getTime)
-    )
+  implicit lazy val timestampGetResult: GetResult[TimeStamp] = GetResult.GetTimestamp.andThen {
+    sqlTs =>
+      TimeStamp.unsafe(sqlTs.toLocalDateTime().toInstant(java.time.ZoneOffset.UTC).toEpochMilli)
+  }
 
+  implicit lazy val timestampType: JdbcType[TimeStamp] =
+    MappedJdbcType.base[TimeStamp, java.time.Instant](
+      ts      => java.time.Instant.ofEpochMilli(ts.millis),
+      instant => TimeStamp.unsafe(instant.toEpochMilli)
+    )
   implicit lazy val u256Type: JdbcType[U256] = MappedJdbcType.base[U256, BigDecimal](
     u256       => BigDecimal(u256.v),
     bigDecimal => U256.unsafe(bigDecimal.toBigInt.bigInteger)

@@ -53,15 +53,21 @@ class CustomTypesSpec extends AlephiumSpec with ScalaFutures with Eventually {
      */
     run(
       sql"SELECT * from timestamps WHERE timestamp ='#${instant1.toString}';"
-        .as[java.sql.Timestamp]).futureValue is Vector()
+        .as[TimeStamp]).futureValue is Vector(t1)
 
     run(timestampTable.filter(_.timestamp === t1).result).futureValue is Seq(t1)
 
     run(
       sql"SELECT * from timestamps WHERE timestamp ='#${instant2.toString}';"
-        .as[java.sql.Timestamp]).futureValue is Vector()
+        .as[TimeStamp]).futureValue is Vector(t2)
 
     run(timestampTable.filter(_.timestamp === t2).result).futureValue is Seq(t2)
+
+    run(
+      sql"SELECT * from timestamps WHERE timestamp <='#${instant1.toString}';"
+        .as[TimeStamp]).futureValue is Vector(t1, t2)
+
+    run(timestampTable.filter(_.timestamp <= t1).result).futureValue is Seq(t1, t2)
   }
 
   trait Fixture extends CustomTypes with DatabaseFixture with DBRunner {
