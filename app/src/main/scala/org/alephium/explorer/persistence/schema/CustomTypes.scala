@@ -22,7 +22,7 @@ import scala.reflect.ClassTag
 
 import akka.util.ByteString
 import slick.basic.DatabaseConfig
-import slick.jdbc.{GetResult, JdbcProfile, JdbcType}
+import slick.jdbc.{GetResult, JdbcProfile, JdbcType, PositionedResult}
 
 import org.alephium.explorer._
 import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
@@ -74,10 +74,10 @@ trait CustomTypes extends JdbcProfile {
     string => Address.unsafe(string)
   )
 
-  implicit lazy val timestampGetResult: GetResult[TimeStamp] = GetResult.GetTimestamp.andThen {
-    sqlTs =>
-      TimeStamp.unsafe(sqlTs.toLocalDateTime().toInstant(java.time.ZoneOffset.UTC).toEpochMilli)
-  }
+  implicit lazy val timestampGetResult: GetResult[TimeStamp] =
+    (result: PositionedResult) =>
+      TimeStamp.unsafe(
+        result.nextTimestamp().toLocalDateTime().toInstant(java.time.ZoneOffset.UTC).toEpochMilli)
 
   implicit lazy val timestampType: JdbcType[TimeStamp] =
     MappedJdbcType.base[TimeStamp, java.time.Instant](
