@@ -16,8 +16,6 @@
 
 package org.alephium.explorer.persistence.queries
 
-import java.math.BigInteger
-
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
@@ -27,7 +25,6 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
-import org.alephium.util.TimeStamp
 
 trait BlockQueries
     extends BlockHeaderSchema
@@ -133,8 +130,7 @@ trait BlockQueries
     val block_headers = blockHeadersTable.baseTableRow.tableName
     val transactions  = transactionsTable.baseTableRow.tableName
 
-    val query =
-      sql"""
+    sql"""
            |select blocks.*,
            |       count(#$transactions.hash) as tx_number
            |from (select hash,
@@ -157,24 +153,7 @@ trait BlockQueries
            |#${orderBySQLString("blocks", pagination)}
            |
            |""".stripMargin
-        .as[(BlockEntry.Hash, TimeStamp, GroupIndex, GroupIndex, Height, BigInteger, Int)]
-
-    //FIXME - Instead of returning a tuple above it should parse rows into BlockEntry.Lite directly.
-    query map { result =>
-      result map {
-        case (hash, timestamp, chainFrom, chainTo, height, hashRate, txNumber) =>
-          BlockEntry.Lite(
-            hash      = hash,
-            timestamp = timestamp,
-            chainFrom = chainFrom,
-            chainTo   = chainTo,
-            height    = height,
-            txNumber  = txNumber,
-            mainChain = true,
-            hashRate  = hashRate
-          )
-      }
-    }
+      .as[BlockEntry.Lite]
   }
 
   /** Counts main_chain Blocks */

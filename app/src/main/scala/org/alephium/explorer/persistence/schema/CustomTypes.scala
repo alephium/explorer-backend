@@ -115,4 +115,23 @@ trait CustomTypes extends JdbcProfile {
 
   implicit lazy val bigIntegerGetResult: GetResult[BigInteger] =
     (result: PositionedResult) => result.nextBigDecimal().toBigInt.bigInteger
+
+  /**
+    * BlockEntry.Lite when `main_chain = true`.
+    *
+    * @note The order in which the query returns the column values matters.
+    *       For example: Getting (`.<<`) `chainTo` before `chainFrom` when
+    *       `chainFrom` is before `chainTo` in the query result would compile
+    *       but would result in incorrect data.
+    */
+  implicit val mainChainBlockEntryListGetResult: GetResult[BlockEntry.Lite] =
+    (result: PositionedResult) =>
+      BlockEntry.Lite(hash      = result.<<,
+                      timestamp = result.<<,
+                      chainFrom = result.<<,
+                      chainTo   = result.<<,
+                      height    = result.<<,
+                      hashRate  = result.<<,
+                      txNumber  = result.<<,
+                      mainChain = true)
 }
