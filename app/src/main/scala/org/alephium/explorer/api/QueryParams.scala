@@ -18,9 +18,12 @@ package org.alephium.explorer.api
 
 import sttp.tapir._
 
+import org.alephium.api.TapirCodecs
+import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.model.Pagination
+import org.alephium.util.TimeStamp
 
-trait QueryParams {
+trait QueryParams extends TapirCodecs {
 
   val pagination: EndpointInput[Pagination] =
     query[Option[Int]]("page")
@@ -47,4 +50,18 @@ trait QueryParams {
         })(Some(_)))
       .map({ case (offset, limit, reverse) => Pagination.unsafe(offset - 1, limit, reverse) })(p =>
         (p.offset, p.limit, p.reverse))
+
+  val timeIntervalQuery: EndpointInput[TimeInterval] =
+    query[TimeStamp]("fromTs")
+      .and(query[TimeStamp]("toTs"))
+      .map({ case (from, to) => TimeInterval(from, to) })(timeInterval =>
+        (timeInterval.from, timeInterval.to))
+      .validate(Validator.custom { timeInterval =>
+        if (timeInterval.from > timeInterval.to) {
+          List(ValidationError.Custom(timeInterval, s"`fromTs` must be before `toTs`"))
+        } else {
+          List.empty
+        }
+      })
+
 }
