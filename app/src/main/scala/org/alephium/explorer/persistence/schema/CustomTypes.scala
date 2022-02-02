@@ -124,7 +124,7 @@ trait CustomTypes extends JdbcProfile {
     *       `chainFrom` is before `chainTo` in the query result would compile
     *       but would result in incorrect data.
     */
-  implicit val mainChainBlockEntryListGetResult: GetResult[BlockEntry.Lite] =
+  val mainChainBlockEntryListGetResult: GetResult[BlockEntry.Lite] =
     (result: PositionedResult) =>
       BlockEntry.Lite(hash      = result.<<,
                       timestamp = result.<<,

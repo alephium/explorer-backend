@@ -153,7 +153,7 @@ trait BlockQueries
            |#${orderBySQLString("blocks", pagination)}
            |
            |""".stripMargin
-      .as[BlockEntry.Lite]
+      .as[BlockEntry.Lite](mainChainBlockEntryListGetResult)
   }
 
   /** Counts main_chain Blocks */
