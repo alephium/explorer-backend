@@ -280,4 +280,33 @@ trait Generators {
       )
     })
   }
+
+  def blockHeaderWithHashrate(timestamp: TimeStamp, hashrate: Double): Gen[BlockHeader] = {
+    for {
+      hash         <- blockEntryHashGen
+      from         <- groupIndexGen
+      to           <- groupIndexGen
+      height       <- heightGen
+      nonce        <- bytesGen
+      version      <- Gen.posNum[Byte]
+      depStateHash <- hashGen
+      txsHash      <- hashGen
+      target       <- bytesGen
+    } yield {
+      BlockHeader(
+        hash,
+        timestamp,
+        from,
+        to,
+        height,
+        true,
+        nonce,
+        version,
+        depStateHash,
+        txsHash,
+        target,
+        BigDecimal(hashrate).toBigInt.bigInteger
+      )
+    }
+  }
 }

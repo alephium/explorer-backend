@@ -14,38 +14,24 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.docs
+package org.alephium.explorer.web
 
-import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
-import sttp.tapir.openapi.OpenAPI
+import scala.concurrent.ExecutionContext
 
-import org.alephium.explorer.api._
+import akka.http.scaladsl.server.Route
 
-trait Documentation
-    extends BlockEndpoints
-    with TransactionEndpoints
-    with AddressesEndpoints
-    with InfosEndpoints
-    with ChartsEndpoints
-    with UtilsEndpoints
-    with OpenAPIDocsInterpreter {
-  val docs: OpenAPI = toOpenAPI(
-    List(
-      listBlocks,
-      getBlockByHash,
-      getBlockTransactions,
-      getTransactionById,
-      getAddressInfo,
-      getTransactionsByAddress,
-      getInfos,
-      getHeights,
-      listTokenSupply,
-      getTotalSupply,
-      getCirculatingSupply,
-      getHashrates,
-      sanityCheck
-    ),
-    "Alephium Explorer API",
-    "1.0"
-  )
+import org.alephium.explorer.api.ChartsEndpoints
+import org.alephium.explorer.service.HashrateService
+import org.alephium.util.Duration
+
+class ChartsServer(val blockflowFetchMaxAge: Duration, hashrateService: HashrateService)(
+    implicit executionContext: ExecutionContext)
+    extends Server
+    with ChartsEndpoints {
+
+  val route: Route =
+    toRoute(getHashrates) {
+      case (timeInterval, interval) =>
+        hashrateService.get(timeInterval.from, timeInterval.to, interval).map(Right(_))
+    }
 }
