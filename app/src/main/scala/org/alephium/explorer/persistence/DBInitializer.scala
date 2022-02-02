@@ -40,6 +40,7 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
     with UOutputSchema
     with LatestBlockSchema
     with TokenSupplySchema
+    with HashrateSchema
     with DBRunner
     with StrictLogging {
   import config.profile.api._
@@ -59,6 +60,7 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
       uinputsTable,
       uoutputsTable,
       latestBlocksTable,
+      hashrateTable,
       tokenSupplyTable
     )
 
@@ -77,14 +79,17 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
           run(createIfNotExist)
         })
       }
-      .flatMap { _ =>
-        run(for {
-          _ <- createBlockHeadersIndexesSQL()
-          _ <- createTransactionMainChainIndex()
-          _ <- createInputMainChainIndex()
-          _ <- createOutputMainChainIndex()
-        } yield ())
-      }
+      .flatMap(_ => createIndexes())
+  }
+
+  private def createIndexes(): Future[Unit] = {
+    run(for {
+      _ <- createBlockHeadersIndexesSQL()
+      _ <- createTransactionMainChainIndex()
+      _ <- createInputMainChainIndex()
+      _ <- createOutputMainChainIndex()
+      _ <- createHashrateIntervalTypeIndex()
+    } yield ())
   }
 
   def dropTables(): Future[Unit] = {

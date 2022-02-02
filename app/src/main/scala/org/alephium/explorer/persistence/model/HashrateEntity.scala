@@ -14,19 +14,12 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer
+package org.alephium.explorer.persistence.model
 
-import slick.dbio.{DBIOAction, Effect, NoStream, Streaming}
+import org.alephium.util.TimeStamp
 
-package object persistence {
-
-  type DBAction[A, E <: Effect] = DBIOAction[A, NoStream, E]
-  type DBActionR[A]             = DBIOAction[A, NoStream, Effect.Read]
-  type DBActionW[A]             = DBIOAction[A, NoStream, Effect.Write]
-  type DBActionRW[A]            = DBIOAction[A, NoStream, Effect.Read with Effect.Write]
-  type DBActionRWT[A] =
-    DBIOAction[A, NoStream, Effect.Read with Effect.Write with Effect.Transactional]
-
-  type DBActionS[A, E <: Effect] = DBIOAction[Vector[A], Streaming[A], E]
-  type DBActionSR[A]             = DBIOAction[Vector[A], Streaming[A], Effect.Read]
-}
+final case class HashrateEntity(
+    timestamp: TimeStamp,
+    value: BigDecimal,
+    intervalType: Int //10 min: 0, hourly: 1, daily: 2
+)
