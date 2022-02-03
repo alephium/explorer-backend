@@ -235,6 +235,7 @@ object BlockFlowSyncService extends StrictLogging {
             val bestBlock = blocks.head // First block is the main chain one
             for {
               _ <- insert(bestBlock)
+              _ <- blockDao.updateLatestBlock(bestBlock)
             } yield Some(Seq(bestBlock))
           case Right(_) => Future.successful(None)
           case Left(errors) =>

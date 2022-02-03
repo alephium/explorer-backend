@@ -81,6 +81,7 @@ lazy val app = mainProject("app")
       akkaHttpJson,
       upickle,
       akkaHttpCors,
+      caffeine,
       scalaLogging,
       logback,
       akkaTest,

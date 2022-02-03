@@ -16,9 +16,12 @@
 
 package org.alephium.explorer.persistence.dao
 
-import scala.collection.concurrent.TrieMap
+import scala.compat.java8.FutureConverters
+import scala.compat.java8.FutureConverters._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters._
 
+import com.github.benmanes.caffeine.cache._
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
@@ -75,7 +78,24 @@ object BlockDao {
 
     private implicit val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
 
-    private val cachedLatestBlocks: TrieMap[ChainIndex, LatestBlock] = TrieMap.empty
+    private val chainIndexes: java.lang.Iterable[ChainIndex] = (for {
+      i <- 0 to groupNum - 1
+      j <- 0 to groupNum - 1
+    } yield (ChainIndex.unsafe(i, j))).asJava
+
+    @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+    private val asyncLoader: AsyncCacheLoader[ChainIndex, LatestBlock] = {
+      case (key, _) =>
+        run(
+          getLatestBlock(GroupIndex.unsafe(key.from.value), GroupIndex.unsafe(key.to.value))
+        ).map(_.get).toJava.toCompletableFuture
+    }
+
+    private val cachedLatestBlocks: AsyncLoadingCache[ChainIndex, LatestBlock] = Caffeine
+      .newBuilder()
+      .maximumSize(groupConfig.chainNum.toLong)
+      .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
+      .buildAsync(asyncLoader)
 
     def getLite(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]] =
       run(getBlockEntryLiteAction(hash))
@@ -176,24 +196,21 @@ object BlockDao {
     }
 
     def latestBlocks(): Future[Seq[(ChainIndex, LatestBlock)]] = {
-      if (cachedLatestBlocks.size == groupConfig.chainNum) {
-        Future.successful(cachedLatestBlocks.toSeq)
-      } else {
-        //Getting data from DB
-        //We don't update the cache as the read-write app will eventually get his cache updated,
-        //while the read-only app have to check the db.
-        run(latestBlocksTable.result).map(_.map { block =>
-          val chainIndex = ChainIndex.unsafe(block.chainFrom.value, block.chainTo.value)
-          (chainIndex, block)
-        })
-      }
+      FutureConverters
+        .toScala {
+          cachedLatestBlocks.getAll(chainIndexes)
+        }
+        .map(_.asScala.toSeq)
     }
 
     def updateLatestBlock(block: BlockEntity): Future[Unit] = {
       val chainIndex  = ChainIndex.unsafe(block.chainFrom.value, block.chainTo.value)
       val latestBlock = LatestBlock.fromEntity(block)
       run(latestBlocksTable.insertOrUpdate(latestBlock)).map { _ =>
-        cachedLatestBlocks.update(chainIndex, latestBlock)
+        cachedLatestBlocks.put(
+          chainIndex,
+          Future.successful(latestBlock).toJava.toCompletableFuture
+        )
       }
     }
   }

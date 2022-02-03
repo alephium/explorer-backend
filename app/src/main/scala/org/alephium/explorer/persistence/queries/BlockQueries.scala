@@ -30,6 +30,7 @@ import org.alephium.explorer.persistence.schema._
 trait BlockQueries
     extends BlockHeaderSchema
     with BlockDepsSchema
+    with LatestBlockSchema
     with TransactionQueries
     with StrictLogging {
 
@@ -137,4 +138,13 @@ trait BlockQueries
       headers <- blockHeadersTable.filter(_.hash === hash).result
       blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryWithoutTxsAction))
     } yield blocks.headOption
+
+  def getLatestBlock(chainFrom: GroupIndex, chainTo: GroupIndex): DBActionR[Option[LatestBlock]] = {
+    latestBlocksTable
+      .filter { block =>
+        block.chainFrom === chainFrom && block.chainTo === chainTo
+      }
+      .result
+      .headOption
+  }
 }
