@@ -19,12 +19,12 @@ package org.alephium.explorer.api.model
 import org.alephium.json.Json._
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-final case class ChainHeight(
+final case class PerChainValue(
     chainFrom: Int,
     chainTo: Int,
-    height: Height
+    value: Int
 )
 
-object ChainHeight {
-  implicit val readWriter: ReadWriter[ChainHeight] = macroRW
+object PerChainValue {
+  implicit val readWriter: ReadWriter[PerChainValue] = macroRW
 }

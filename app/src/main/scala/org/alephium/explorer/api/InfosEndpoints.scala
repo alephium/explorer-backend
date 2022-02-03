@@ -23,7 +23,7 @@ import sttp.tapir.generic.auto._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.explorer.api.BaseEndpoint
-import org.alephium.explorer.api.model.{ChainHeight, ExplorerInfo, Pagination, TokenSupply}
+import org.alephium.explorer.api.model.{ExplorerInfo, Pagination, PerChainValue, TokenSupply}
 
 // scalastyle:off magic.number
 trait InfosEndpoints extends BaseEndpoint with QueryParams {
@@ -60,9 +60,9 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
       .out(plainBody[BigDecimal])
       .description("Get the ALPH total supply")
 
-  val getHeights: BaseEndpoint[Unit, Seq[ChainHeight]] =
+  val getHeights: BaseEndpoint[Unit, Seq[PerChainValue]] =
     infosEndpoint.get
       .in("heights")
-      .out(jsonBody[Seq[ChainHeight]])
+      .out(jsonBody[Seq[PerChainValue]])
       .description("List latest height for each chain")
 }

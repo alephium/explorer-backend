@@ -760,7 +760,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/ChainHeight"
+                    "$ref": "#/components/schemas/PerChainValue"
                   }
                 }
               }
@@ -1240,25 +1240,6 @@
           }
         }
       },
-      "ChainHeight": {
-        "required": [
-          "chainFrom",
-          "chainTo",
-          "height"
-        ],
-        "type": "object",
-        "properties": {
-          "chainFrom": {
-            "type": "integer"
-          },
-          "chainTo": {
-            "type": "integer"
-          },
-          "height": {
-            "type": "integer"
-          }
-        }
-      },
       "ExplorerInfo": {
         "required": [
           "releaseVersion",
@@ -1413,6 +1394,25 @@
           },
           "spent": {
             "type": "string"
+          }
+        }
+      },
+      "PerChainValue": {
+        "required": [
+          "chainFrom",
+          "chainTo",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "chainFrom": {
+            "type": "integer"
+          },
+          "chainTo": {
+            "type": "integer"
+          },
+          "value": {
+            "type": "integer"
           }
         }
       },
