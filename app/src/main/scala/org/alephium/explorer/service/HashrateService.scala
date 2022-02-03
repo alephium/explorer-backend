@@ -50,7 +50,7 @@ object HashrateService {
       with StrictLogging {
     import config.profile.api._
 
-    private val stepBack: Duration = Duration.ofDaysUnsafe(7)
+    private val stepBack: Duration = Duration.ofDaysUnsafe(3)
 
     def syncOnce(): Future[Unit] = {
       logger.debug("Updating hashrates")

@@ -760,7 +760,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/ChainHeight"
+                    "$ref": "#/components/schemas/PerChainValue"
                   }
                 }
               }
@@ -1256,7 +1256,7 @@
         "operationId": "putUtilsSanity-check",
         "responses": {
           "200": {
-            
+
           },
           "400": {
             "description": "BadRequest",
@@ -1362,7 +1362,7 @@
           }
         }
       },
-      "ChainHeight": {
+      "PerChainValue": {
         "required": [
           "chainFrom",
           "chainTo",

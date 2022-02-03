@@ -25,7 +25,7 @@ import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.{DBActionR, DBActionW}
+import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema.{InputSchema, OutputSchema, TransactionSchema}
 import org.alephium.util.{TimeStamp, U256}
@@ -325,6 +325,18 @@ trait TransactionQueries
       }
     }
   }
+
+  //TODO query is quite fast, but we could optimize by storing the chain index info
+  //in the transactions table to avoid the join
+  val countTransactions:DBActionSR[(Int,Int,Int)] = sql"""
+    SELECT
+    block_headers.chain_from, block_headers.chain_to, COUNT(*)
+    FROM transactions, block_headers
+    WHERE transactions.block_hash = block_headers.hash
+    AND transactions.main_chain = true
+    AND block_headers.main_chain = true
+    GROUP BY block_headers.chain_from, block_headers.chain_to;
+  """.as[(Int,Int,Int)]
 
   private val toApiInput = {
     (hint: Int,

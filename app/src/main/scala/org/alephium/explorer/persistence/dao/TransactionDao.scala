@@ -31,6 +31,7 @@ trait TransactionDao {
   def getByAddress(address: Address, pagination: Pagination): Future[Seq[Transaction]]
   def getNumberByAddress(address: Address): Future[Int]
   def getBalance(address: Address): Future[(U256, U256)]
+  def getTotalNumber(): Future[Vector[(Int,Int,Int)]]
 }
 
 object TransactionDao {
@@ -55,5 +56,9 @@ object TransactionDao {
 
     def getBalance(address: Address): Future[(U256, U256)] =
       run(getBalanceAction(address))
+
+  def getTotalNumber(): Future[Vector[(Int,Int,Int)]] = {
+    run(countTransactions)
   }
+      }
 }

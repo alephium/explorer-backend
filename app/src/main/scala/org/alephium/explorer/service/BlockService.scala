@@ -25,7 +25,7 @@ trait BlockService {
   def getLiteBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]]
   def getBlockTransactions(hash: BlockEntry.Hash, pagination: Pagination): Future[Seq[Transaction]]
   def listBlocks(pagination: Pagination): Future[ListBlocks]
-  def listMaxHeights(): Future[Seq[ChainHeight]]
+  def listMaxHeights(): Future[Seq[PerChainValue]]
 }
 
 object BlockService {
@@ -48,12 +48,12 @@ object BlockService {
       }
     }
 
-    def listMaxHeights(): Future[Seq[ChainHeight]] = {
+    def listMaxHeights(): Future[Seq[PerChainValue]] = {
       blockDao
         .latestBlocks()
         .map(_.map {
           case (chainIndex, block) =>
-            ChainHeight(chainIndex.from.value, chainIndex.to.value, block.height)
+            PerChainValue(chainIndex.from.value, chainIndex.to.value, block.height.value)
         })
     }
   }

@@ -24,10 +24,10 @@ import org.scalatest.concurrent.ScalaFutures
 
 import org.alephium.explorer.{AlephiumSpec, BuildInfo}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.service.{BlockService, TokenSupplyService}
+import org.alephium.explorer.service._
 import org.alephium.json.Json
 import org.alephium.protocol.ALPH
-import org.alephium.util.{Duration, TimeStamp}
+import org.alephium.util.{Duration, TimeStamp,U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var"))
 class InfosServerSpec()
@@ -51,7 +51,7 @@ class InfosServerSpec()
 
   it should "return chains heights" in new Fixture {
     Get(s"/infos/heights") ~> server.route ~> check {
-      responseAs[Seq[ChainHeight]] is Seq(chainHeight)
+      responseAs[Seq[PerChainValue]] is Seq(chainHeight)
     }
   }
 
@@ -102,15 +102,22 @@ class InfosServerSpec()
 
     }
 
-    val chainHeight = ChainHeight(0, 0, Height.unsafe(1))
+    val chainHeight = PerChainValue(0, 0, 1)
     val blockService = new BlockService {
       def getLiteBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]] = ???
       def getBlockTransactions(hash: BlockEntry.Hash,
                                pagination: Pagination): Future[Seq[Transaction]] = ???
       def listBlocks(pagination: Pagination): Future[ListBlocks]                 = ???
-      def listMaxHeights(): Future[Seq[ChainHeight]]                             = Future.successful(Seq(chainHeight))
+      def listMaxHeights(): Future[Seq[PerChainValue]]                             = Future.successful(Seq(chainHeight))
     }
 
-    val server = new InfosServer(Duration.zero, tokenSupplyService, blockService)
+val transactionService= new TransactionService {
+  def getTransaction(transactionHash: Transaction.Hash): Future[Option[TransactionLike]] = ???
+  def getTransactionsByAddress(address: Address, pagination: Pagination): Future[Seq[Transaction]] = ???
+  def getTransactionsNumberByAddress(address: Address): Future[Int] = ???
+  def getBalance(address: Address): Future[(U256, U256)] = ???
+  def getTotalNumber(): Future[Vector[(Int,Int,Int)]] = ???
+}
+    val server = new InfosServer(Duration.zero, tokenSupplyService, blockService, transactionService)
   }
 }
