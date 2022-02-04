@@ -35,6 +35,7 @@ final case class BlockHeader(
     version: Byte,
     depStateHash: Hash,
     txsHash: Hash,
+    txsCount: Int,
     target: ByteString,
     hashrate: BigInteger
 ) {
@@ -58,6 +59,7 @@ object BlockHeader {
       blockEntity.version,
       blockEntity.depStateHash,
       blockEntity.txsHash,
+      blockEntity.transactions.size,
       blockEntity.target,
       blockEntity.hashrate
     )
