@@ -101,7 +101,7 @@ trait HashrateQueries extends CustomTypes {
       from,
       """
         DATE_TRUNC('DAY', timestamp) +
-        ((CEILING((EXTRACT(HOUR FROM timestamp) + EXTRACT(MINUTE FROM timestamp)/24 + EXTRACT(SECOND FROM timestamp)/60/24) / 24)) * INTERVAL '1 DAY')
+        ((CEILING((EXTRACT(HOUR FROM timestamp)*60 + EXTRACT(MINUTE FROM timestamp) + EXTRACT(SECOND FROM timestamp)/60)/60/24)) * INTERVAL '1 DAY')
       """
     )
   }

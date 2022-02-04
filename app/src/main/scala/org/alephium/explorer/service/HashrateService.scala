@@ -16,6 +16,9 @@
 
 package org.alephium.explorer.service
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+
 import scala.concurrent.{ExecutionContext, Future}
 
 import com.typesafe.scalalogging.StrictLogging
@@ -36,6 +39,10 @@ trait HashrateService extends SyncService {
 
 object HashrateService {
 
+  val tenMinStepBack: Duration = Duration.ofHoursUnsafe(2)
+  val hourlyStepBack: Duration = Duration.ofHoursUnsafe(2)
+  val dailyStepBack: Duration  = Duration.ofDaysUnsafe(1)
+
   def apply(syncPeriod: Duration, config: DatabaseConfig[JdbcProfile])(
       implicit executionContext: ExecutionContext): HashrateService =
     new Impl(syncPeriod, config)
@@ -49,8 +56,6 @@ object HashrateService {
       with DBRunner
       with StrictLogging {
     import config.profile.api._
-
-    private val stepBack: Duration = Duration.ofDaysUnsafe(7)
 
     def syncOnce(): Future[Unit] = {
       logger.debug("Updating hashrates")
@@ -70,18 +75,15 @@ object HashrateService {
 
     private def updateHashrates(): Future[Unit] = {
       run(
-        findLatestHashrate()
-          .map {
-            case Some(hashrate) => hashrate.timestamp.minusUnsafe(stepBack)
-            case None           => ALPH.LaunchTimestamp
-          }
-          .flatMap { timestamp =>
-            for {
-              _ <- update1OMinutes(timestamp)
-              _ <- updateHourly(timestamp)
-              _ <- updateDaily(timestamp)
-            } yield ()
-          })
+        for {
+          tenMinTs <- findLatestHashrateAndStepBack(0, compute10MinStepBack)
+          hourlyTs <- findLatestHashrateAndStepBack(1, computeHourlyStepBack)
+          dailyTs  <- findLatestHashrateAndStepBack(2, computeDailyStepBack)
+          _        <- update1OMinutes(tenMinTs)
+          _        <- updateHourly(hourlyTs)
+          _        <- updateDaily(dailyTs)
+        } yield ()
+      )
     }
 
     private def update1OMinutes(from: TimeStamp) = {
@@ -108,11 +110,52 @@ object HashrateService {
       }
     }
 
-    private def findLatestHashrate(): DBActionR[Option[HashrateEntity]] = {
+    private def findLatestHashrate(intervalType: Int): DBActionR[Option[HashrateEntity]] = {
       hashrateTable
+        .filter(_.intervalType === intervalType)
         .sortBy(_.timestamp.desc)
         .result
         .headOption
     }
+
+    private def findLatestHashrateAndStepBack(
+        intervalType: Int,
+        computeStepBack: TimeStamp => TimeStamp): DBActionR[TimeStamp] = {
+      findLatestHashrate(intervalType).map(
+        _.map(h => computeStepBack(h.timestamp)).getOrElse(ALPH.LaunchTimestamp))
+    }
+  }
+
+  /*
+   * We truncate to a round value and add 1 millisecond to be sure
+   * to recompute a complete time interval and not step back in the middle of it.
+   */
+
+  def compute10MinStepBack(timestamp: TimeStamp): TimeStamp = {
+    truncatedToHour(timestamp.minusUnsafe(tenMinStepBack)).plusMillisUnsafe(1)
+  }
+
+  def computeHourlyStepBack(timestamp: TimeStamp): TimeStamp = {
+    truncatedToHour(timestamp.minusUnsafe(hourlyStepBack)).plusMillisUnsafe(1)
+  }
+
+  def computeDailyStepBack(timestamp: TimeStamp): TimeStamp = {
+    truncatedToDay(timestamp.minusUnsafe(dailyStepBack)).plusMillisUnsafe(1)
+  }
+
+  private def mapInstant(timestamp: TimeStamp)(f: Instant => Instant): TimeStamp = {
+    val instant = Instant.ofEpochMilli(timestamp.millis)
+    TimeStamp
+      .unsafe(
+        f(instant).toEpochMilli
+      )
+  }
+
+  private def truncatedToHour(timestamp: TimeStamp): TimeStamp = {
+    mapInstant(timestamp)(_.truncatedTo(ChronoUnit.HOURS))
+  }
+
+  private def truncatedToDay(timestamp: TimeStamp): TimeStamp = {
+    mapInstant(timestamp)(_.truncatedTo(ChronoUnit.DAYS))
   }
 }

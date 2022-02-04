@@ -23,8 +23,8 @@ import scala.concurrent.ExecutionContext
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.explorer.api.model.Hashrate
 import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.api.model.Hashrate
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.queries.HashrateQueries
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
@@ -110,6 +110,7 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
       b("2022-01-08T00:00:00.000Z", 4),
       //
       b("2022-01-08T00:00:00.001Z", 10),
+      b("2022-01-08T23:59:00.001Z", 30),
       //
       b("2022-01-09T12:00:00.000Z", 100)
     )
@@ -121,7 +122,7 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
     ).futureValue.sortBy(_._1) is
       Vector(
         v("2022-01-08T00:00:00.000Z", 3),
-        v("2022-01-09T00:00:00.000Z", 10),
+        v("2022-01-09T00:00:00.000Z", 20),
         v("2022-01-10T00:00:00.000Z", 100)
       )
     run(
@@ -132,13 +133,15 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
       )
   }
 
-  it should "sync and return correct hashrates" in new Fixture {
+  it should "sync, update and return correct hashrates" in new Fixture {
     import config.profile.api._
 
     val blocks = Seq(
+      b("2022-01-06T23:45:35.300Z", 1),
       b("2022-01-07T12:00:10.000Z", 2),
       b("2022-01-07T12:05:00.000Z", 4),
-      b("2022-01-08T00:00:00.000Z", 12)
+      b("2022-01-08T00:00:00.000Z", 12),
+      b("2022-01-08T00:03:10.123Z", 100)
     )
 
     run(blockHeadersTable ++= blocks).futureValue
@@ -149,18 +152,88 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
 
     hashrateService.get(from, to, 0).futureValue is
       Vector(
+        hr("2022-01-06T23:50:00.000Z", 1),
         hr("2022-01-07T12:10:00.000Z", 3),
-        hr("2022-01-08T00:00:00.000Z", 12)
+        hr("2022-01-08T00:00:00.000Z", 12),
+        hr("2022-01-08T00:10:00.000Z", 100)
       )
 
     hashrateService.get(from, to, 1).futureValue is Vector(
+      hr("2022-01-07T00:00:00.000Z", 1),
       hr("2022-01-07T13:00:00.000Z", 3),
-      hr("2022-01-08T00:00:00.000Z", 12)
+      hr("2022-01-08T00:00:00.000Z", 12),
+      hr("2022-01-08T01:00:00.000Z", 100)
     )
 
     hashrateService.get(from, to, 2).futureValue is Vector(
-      hr("2022-01-08T00:00:00.000Z", 6)
+      hr("2022-01-07T00:00:00.000Z", 1),
+      hr("2022-01-08T00:00:00.000Z", 6),
+      hr("2022-01-09T00:00:00.000Z", 100)
     )
+
+    val newBlocks = Seq(
+      b("2022-01-08T01:25:00.000Z", 10),
+      b("2022-01-08T20:38:00.000Z", 4)
+    )
+
+    run(blockHeadersTable ++= newBlocks).futureValue
+
+    hashrateService.syncOnce().futureValue
+
+    hashrateService.get(from, to, 0).futureValue is
+      Vector(
+        hr("2022-01-06T23:50:00.000Z", 1),
+        hr("2022-01-07T12:10:00.000Z", 3),
+        hr("2022-01-08T00:00:00.000Z", 12),
+        hr("2022-01-08T00:10:00.000Z", 100),
+        hr("2022-01-08T01:30:00.000Z", 10),
+        hr("2022-01-08T20:40:00.000Z", 4)
+      )
+
+    hashrateService.get(from, to, 1).futureValue is Vector(
+      hr("2022-01-07T00:00:00.000Z", 1),
+      hr("2022-01-07T13:00:00.000Z", 3),
+      hr("2022-01-08T00:00:00.000Z", 12),
+      hr("2022-01-08T01:00:00.000Z", 100),
+      hr("2022-01-08T02:00:00.000Z", 10),
+      hr("2022-01-08T21:00:00.000Z", 4)
+    )
+
+    hashrateService.get(from, to, 2).futureValue is Vector(
+      hr("2022-01-07T00:00:00.000Z", 1),
+      hr("2022-01-08T00:00:00.000Z", 6),
+      hr("2022-01-09T00:00:00.000Z", 38)
+    )
+  }
+
+  it should "correctly step back" in new Fixture {
+    {
+      val timestamp = ts("2022-01-08T12:21:34.321Z")
+
+      HashrateService.compute10MinStepBack(timestamp) is ts("2022-01-08T10:00:00.001Z")
+
+      HashrateService.computeHourlyStepBack(timestamp) is ts("2022-01-08T10:00:00.001Z")
+
+      HashrateService.computeDailyStepBack(timestamp) is ts("2022-01-07T00:00:00.001Z")
+    }
+    {
+      val timestamp = ts("2022-01-08T00:00:00.000Z")
+
+      HashrateService.compute10MinStepBack(timestamp) is ts("2022-01-07T22:00:00.001Z")
+
+      HashrateService.computeHourlyStepBack(timestamp) is ts("2022-01-07T22:00:00.001Z")
+
+      HashrateService.computeDailyStepBack(timestamp) is ts("2022-01-07T00:00:00.001Z")
+    }
+    {
+      val timestamp = ts("2022-01-08T23:59:59.999Z")
+
+      HashrateService.compute10MinStepBack(timestamp) is ts("2022-01-08T21:00:00.001Z")
+
+      HashrateService.computeHourlyStepBack(timestamp) is ts("2022-01-08T21:00:00.001Z")
+
+      HashrateService.computeDailyStepBack(timestamp) is ts("2022-01-07T00:00:00.001Z")
+    }
   }
 
   trait Fixture
