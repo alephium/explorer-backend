@@ -20,7 +20,7 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 import slick.sql.SqlAction
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{BlockEntry, Transaction}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Transaction}
 import org.alephium.explorer.persistence.model.InputEntity
 import org.alephium.util.TimeStamp
 
@@ -33,6 +33,8 @@ trait InputSchema extends Schema with CustomTypes {
     def blockHash: Rep[BlockEntry.Hash]   = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
     def txHash: Rep[Transaction.Hash]     = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
     def timestamp: Rep[TimeStamp]         = column[TimeStamp]("timestamp")
+    def chainFrom: Rep[GroupIndex]        = column[GroupIndex]("chain_from")
+    def chainTo: Rep[GroupIndex]          = column[GroupIndex]("chain_to")
     def hint: Rep[Int]                    = column[Int]("hint")
     def outputRefKey: Rep[Hash]           = column[Hash]("output_ref_key", O.SqlType("BYTEA"))
     def unlockScript: Rep[Option[String]] = column[Option[String]]("unlock_script")
@@ -44,9 +46,21 @@ trait InputSchema extends Schema with CustomTypes {
     def blockHashIdx: Index    = index("inputs_block_hash_idx", blockHash)
     def inputsTxHashIdx: Index = index("inputs_tx_hash_idx", txHash)
     def outputRefKeyIdx: Index = index("inputs_output_ref_key_idx", outputRefKey)
+    def timestampIdx: Index    = index("inputs_timestamp_idx", timestamp)
+    def chainFromIdx: Index    = index("inputs_chain_from_idx", chainFrom)
+    def chainToIdx: Index      = index("inputs_chain_to_idx", chainTo)
 
     def * : ProvenShape[InputEntity] =
-      (blockHash, txHash, timestamp, hint, outputRefKey, unlockScript, mainChain, order)
+      (blockHash,
+       txHash,
+       timestamp,
+       chainFrom,
+       chainTo,
+       hint,
+       outputRefKey,
+       unlockScript,
+       mainChain,
+       order)
         .<>((InputEntity.apply _).tupled, InputEntity.unapply)
   }
 

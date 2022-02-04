@@ -20,7 +20,7 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 import slick.sql.SqlAction
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
+import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Transaction}
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.util.{TimeStamp, U256}
 
@@ -32,12 +32,14 @@ trait OutputSchema extends Schema with CustomTypes {
   class Outputs(tag: Tag) extends Table[OutputEntity](tag, tableName) {
     def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
     def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
+    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
+    def chainFrom: Rep[GroupIndex]      = column[GroupIndex]("chain_from")
+    def chainTo: Rep[GroupIndex]        = column[GroupIndex]("chain_to")
     def hint: Rep[Int]                  = column[Int]("hint")
     def key: Rep[Hash]                  = column[Hash]("key", O.SqlType("BYTEA"))
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
     def address: Rep[Address]            = column[Address]("address")
-    def timestamp: Rep[TimeStamp]        = column[TimeStamp]("timestamp")
     def mainChain: Rep[Boolean]          = column[Boolean]("main_chain")
     def lockTime: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("lock_time")
     def order: Rep[Int]                  = column[Int]("order")
@@ -49,9 +51,22 @@ trait OutputSchema extends Schema with CustomTypes {
     def txHashIdx: Index    = index("outputs_tx_hash_idx", txHash)
     def addressIdx: Index   = index("outputs_address_idx", address)
     def timestampIdx: Index = index("outputs_timestamp_idx", timestamp)
+    def chainFromIdx: Index = index("outputs_chain_from_idx", chainFrom)
+    def chainToIdx: Index   = index("outputs_chain_to_idx", chainTo)
 
     def * : ProvenShape[OutputEntity] =
-      (blockHash, txHash, hint, key, amount, address, timestamp, mainChain, lockTime, order)
+      (blockHash,
+       txHash,
+       timestamp,
+       chainFrom,
+       chainTo,
+       hint,
+       key,
+       amount,
+       address,
+       mainChain,
+       lockTime,
+       order)
         .<>((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }
 

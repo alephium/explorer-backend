@@ -172,6 +172,8 @@ object BlockFlowClient {
     val hash         = new BlockEntry.Hash(block.hash)
     val mainChain    = false
     val transactions = block.transactions.toSeq
+    val chainFrom    = block.chainFrom
+    val chainTo      = block.chainTo
     BlockEntity(
       hash,
       block.timestamp,
@@ -180,15 +182,18 @@ object BlockFlowClient {
       Height.unsafe(block.height),
       block.deps.map(new BlockEntry.Hash(_)).toSeq,
       transactions.zipWithIndex.map {
-        case (tx, index) => txToEntity(tx, hash, block.timestamp, index, mainChain)
+        case (tx, index) =>
+          txToEntity(tx, hash, block.timestamp, index, mainChain, chainFrom, chainTo)
       },
       transactions.flatMap(tx =>
         tx.inputs.toSeq.zipWithIndex.map {
-          case (in, index) => inputToEntity(in, hash, tx.id, block.timestamp, mainChain, index)
+          case (in, index) =>
+            inputToEntity(in, hash, tx.id, block.timestamp, mainChain, index, chainFrom, chainTo)
       }),
       transactions.flatMap(tx =>
         tx.outputs.toSeq.zipWithIndex.map {
-          case (out, index) => outputToEntity(out, hash, tx.id, index, block.timestamp, mainChain)
+          case (out, index) =>
+            outputToEntity(out, hash, tx.id, index, block.timestamp, mainChain, chainFrom, chainTo)
       }),
       mainChain = mainChain,
       block.nonce,
@@ -219,11 +224,15 @@ object BlockFlowClient {
                          blockHash: BlockEntry.Hash,
                          timestamp: TimeStamp,
                          index: Int,
-                         mainChain: Boolean): TransactionEntity =
+                         mainChain: Boolean,
+                         chainFrom: Int,
+                         chainTo: Int): TransactionEntity =
     TransactionEntity(
       new Transaction.Hash(tx.id),
       blockHash,
       timestamp,
+      GroupIndex.unsafe(chainFrom),
+      GroupIndex.unsafe(chainTo),
       tx.gasAmount,
       tx.gasPrice,
       index,
@@ -246,7 +255,9 @@ object BlockFlowClient {
                             txId: Hash,
                             timestamp: TimeStamp,
                             mainChain: Boolean,
-                            index: Int): InputEntity = {
+                            index: Int,
+                            chainFrom: Int,
+                            chainTo: Int): InputEntity = {
     val unlockScript = input match {
       case asset: api.model.Input.Asset => Some(Hex.toHexString(asset.unlockScript))
       case _: api.model.Input.Contract  => None
@@ -255,6 +266,8 @@ object BlockFlowClient {
       blockHash,
       new Transaction.Hash(txId),
       timestamp,
+      GroupIndex.unsafe(chainFrom),
+      GroupIndex.unsafe(chainTo),
       input.outputRef.hint,
       input.outputRef.key,
       unlockScript,
@@ -280,7 +293,9 @@ object BlockFlowClient {
                              txId: Hash,
                              index: Int,
                              timestamp: TimeStamp,
-                             mainChain: Boolean): OutputEntity = {
+                             mainChain: Boolean,
+                             chainFrom: Int,
+                             chainTo: Int): OutputEntity = {
     val lockTime = output match {
       case asset: api.model.Output.Asset if asset.lockTime.millis > 0 => Some(asset.lockTime)
       case _                                                          => None
@@ -292,11 +307,13 @@ object BlockFlowClient {
     OutputEntity(
       blockHash,
       new Transaction.Hash(txId),
+      timestamp,
+      GroupIndex.unsafe(chainFrom),
+      GroupIndex.unsafe(chainTo),
       hint.value,
       protocol.model.TxOutputRef.key(txId, index),
       output.amount.value,
       new Address(output.address.toBase58),
-      timestamp,
       mainChain,
       lockTime,
       index

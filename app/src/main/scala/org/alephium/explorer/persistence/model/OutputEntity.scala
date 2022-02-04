@@ -17,17 +17,19 @@
 package org.alephium.explorer.persistence.model
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, BlockEntry, Output, Transaction}
+import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Output, Transaction}
 import org.alephium.util.{TimeStamp, U256}
 
 final case class OutputEntity(
     blockHash: BlockEntry.Hash,
     txHash: Transaction.Hash,
+    timestamp: TimeStamp,
+    chainFrom: GroupIndex,
+    chainTo: GroupIndex,
     hint: Int,
     key: Hash,
     amount: U256,
     address: Address,
-    timestamp: TimeStamp,
     mainChain: Boolean,
     lockTime: Option[TimeStamp],
     order: Int
