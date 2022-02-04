@@ -188,12 +188,12 @@ object BlockFlowClient {
       transactions.flatMap(tx =>
         tx.inputs.toSeq.zipWithIndex.map {
           case (in, index) =>
-            inputToEntity(in, hash, tx.id, block.timestamp, mainChain, index, chainFrom, chainTo)
+            inputToEntity(in, hash, tx.id, block.timestamp, mainChain, index)
       }),
       transactions.flatMap(tx =>
         tx.outputs.toSeq.zipWithIndex.map {
           case (out, index) =>
-            outputToEntity(out, hash, tx.id, index, block.timestamp, mainChain, chainFrom, chainTo)
+            outputToEntity(out, hash, tx.id, index, block.timestamp, mainChain)
       }),
       mainChain = mainChain,
       block.nonce,
@@ -255,9 +255,7 @@ object BlockFlowClient {
                             txId: Hash,
                             timestamp: TimeStamp,
                             mainChain: Boolean,
-                            index: Int,
-                            chainFrom: Int,
-                            chainTo: Int): InputEntity = {
+                            index: Int): InputEntity = {
     val unlockScript = input match {
       case asset: api.model.Input.Asset => Some(Hex.toHexString(asset.unlockScript))
       case _: api.model.Input.Contract  => None
@@ -266,8 +264,6 @@ object BlockFlowClient {
       blockHash,
       new Transaction.Hash(txId),
       timestamp,
-      GroupIndex.unsafe(chainFrom),
-      GroupIndex.unsafe(chainTo),
       input.outputRef.hint,
       input.outputRef.key,
       unlockScript,
@@ -293,9 +289,7 @@ object BlockFlowClient {
                              txId: Hash,
                              index: Int,
                              timestamp: TimeStamp,
-                             mainChain: Boolean,
-                             chainFrom: Int,
-                             chainTo: Int): OutputEntity = {
+                             mainChain: Boolean): OutputEntity = {
     val lockTime = output match {
       case asset: api.model.Output.Asset if asset.lockTime.millis > 0 => Some(asset.lockTime)
       case _                                                          => None
@@ -308,8 +302,6 @@ object BlockFlowClient {
       blockHash,
       new Transaction.Hash(txId),
       timestamp,
-      GroupIndex.unsafe(chainFrom),
-      GroupIndex.unsafe(chainTo),
       hint.value,
       protocol.model.TxOutputRef.key(txId, index),
       output.amount.value,

@@ -17,15 +17,13 @@
 package org.alephium.explorer.persistence.model
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Input, Output, Transaction}
+import org.alephium.explorer.api.model.{BlockEntry, Input, Output, Transaction}
 import org.alephium.util.TimeStamp
 
 final case class InputEntity(
     blockHash: BlockEntry.Hash,
     txHash: Transaction.Hash,
     timestamp: TimeStamp,
-    chainFrom: GroupIndex,
-    chainTo: GroupIndex,
     hint: Int,
     outputRefKey: Hash,
     unlockScript: Option[String],
