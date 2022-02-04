@@ -42,8 +42,8 @@ final case class BlockHeader(
   def toApi(deps: Seq[BlockEntry.Hash], transactions: Seq[Transaction]): BlockEntry =
     BlockEntry(hash, timestamp, chainFrom, chainTo, height, deps, transactions, mainChain, hashrate)
 
-  def toLiteApi(txNumber: Int): BlockEntry.Lite =
-    BlockEntry.Lite(hash, timestamp, chainFrom, chainTo, height, txNumber, mainChain, hashrate)
+  lazy val toLiteApi: BlockEntry.Lite =
+    BlockEntry.Lite(hash, timestamp, chainFrom, chainTo, height, txsCount, mainChain, hashrate)
 }
 
 object BlockHeader {

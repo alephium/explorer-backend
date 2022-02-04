@@ -46,19 +46,10 @@ trait BlockQueries
       txs  <- getTransactionsByBlockHash(blockHeader.hash)
     } yield blockHeader.toApi(deps, txs)
 
-  def buildLiteBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry.Lite] =
-    for {
-      number <- countBlockHashTransactions(blockHeader.hash)
-    } yield blockHeader.toLiteApi(number)
-
   def getBlockEntryLiteAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry.Lite]] =
     for {
-      headers <- blockHeadersTable.filter(_.hash === hash).result
-      blockOpt <- headers.headOption match {
-        case None         => DBIOAction.successful(None)
-        case Some(header) => buildLiteBlockEntryAction(header).map(Option.apply)
-      }
-    } yield blockOpt
+      header <- blockHeadersTable.filter(_.hash === hash).result.headOption
+    } yield header.map(_.toLiteApi)
 
   def getBlockEntryAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry]] =
     for {
