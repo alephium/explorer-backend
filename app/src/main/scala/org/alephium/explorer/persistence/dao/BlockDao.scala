@@ -16,10 +16,9 @@
 
 package org.alephium.explorer.persistence.dao
 
-import scala.compat.java8.FutureConverters
-import scala.compat.java8.FutureConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
+import scala.jdk.FutureConverters._
 
 import com.github.benmanes.caffeine.cache._
 import com.typesafe.scalalogging.StrictLogging
@@ -88,7 +87,7 @@ object BlockDao {
       case (key, _) =>
         run(
           getLatestBlock(GroupIndex.unsafe(key.from.value), GroupIndex.unsafe(key.to.value))
-        ).map(_.get).toJava.toCompletableFuture
+        ).map(_.get).asJava.toCompletableFuture
     }
 
     private val cachedLatestBlocks: AsyncLoadingCache[ChainIndex, LatestBlock] = Caffeine
@@ -196,10 +195,9 @@ object BlockDao {
     }
 
     def latestBlocks(): Future[Seq[(ChainIndex, LatestBlock)]] = {
-      FutureConverters
-        .toScala {
-          cachedLatestBlocks.getAll(chainIndexes)
-        }
+      cachedLatestBlocks
+        .getAll(chainIndexes)
+        .asScala
         .map(_.asScala.toSeq)
     }
 
@@ -209,7 +207,7 @@ object BlockDao {
       run(latestBlocksTable.insertOrUpdate(latestBlock)).map { _ =>
         cachedLatestBlocks.put(
           chainIndex,
-          Future.successful(latestBlock).toJava.toCompletableFuture
+          Future.successful(latestBlock).asJava.toCompletableFuture
         )
       }
     }
