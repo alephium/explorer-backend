@@ -23,6 +23,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
+import slick.lifted.AbstractTable
 
 import org.alephium.explorer.persistence.DBAction
 
@@ -35,56 +36,40 @@ object DBExecutor extends StrictLogging {
     * @param host Target database host
     * @param port Target database port
     */
-  def forPostgres(name: String, host: String, port: Int): DBExecutor = {
+  def apply(name: String, host: String, port: Int, connectionPool: DBConnectionPool): DBExecutor = {
     logger.info(s"Connecting to database: '$name'")
     val config =
       DatabaseConfig.forConfig[JdbcProfile](
         path = "db",
         config = ConfigFactory.parseString(
           s"""db = {
-               |  profile = "slick.jdbc.PostgresProfile$$"
-               |  db {
-               |    connectionPool = "HikariCP"
-               |    name           = $name
-               |    host           = $host
-               |    port           = $port
-               |    user           = "postgres"
-               |    url            = "jdbc:postgresql://$host:$port/$name"
-               |  }
-               |}
-               |""".stripMargin
+             |  profile = "slick.jdbc.PostgresProfile$$"
+             |  db {
+             |    connectionPool = $connectionPool
+             |    name           = $name
+             |    host           = $host
+             |    port           = $port
+             |    user           = "postgres"
+             |    password       = "postgres"
+             |    url            = "jdbc:postgresql://$host:$port/$name"
+             |  }
+             |}
+             |""".stripMargin
         )
       )
 
     new DBExecutor(config)
   }
 
-  def forTest(): DBExecutor = {
-    val config =
-      DatabaseConfig.forConfig[JdbcProfile](
-        path = "db",
-        config = ConfigFactory.parseString(
-          // format: off
-          s"""db = {
-               |  profile = "slick.jdbc.PostgresProfile$$"
-               |  db {
-               |    connectionPool = disabled
-               |    driver         = "org.postgresql.Driver"
-               |    name           = postgres
-               |    host           = localhost
-               |    port           = 5432
-               |    user           = "postgres"
-               |    password       = "postgres"
-               |    url            = "jdbc:postgresql://localhost:5432/postgres"
-               |  }
-               |}
-               |""".stripMargin
-          // format: on
-        )
-      )
-
-    new DBExecutor(config)
-  }
+  // scalastyle:off magic.number
+  def forTest(): DBExecutor =
+    DBExecutor(
+      name           = "postgres",
+      host           = "localhost",
+      port           = 5432,
+      connectionPool = DBConnectionPool.Disabled
+    )
+  // scalastyle:on magic.number
 }
 
 /**
@@ -104,6 +89,9 @@ class DBExecutor private (val config: DatabaseConfig[JdbcProfile]) extends Stric
     */
   def runNow[R, E <: Effect](action: DBAction[R, E], timeout: FiniteDuration): R =
     Await.result[R](config.db.run(action), timeout)
+
+  def dropTableIfExists[T <: AbstractTable[_]](table: TableQuery[T]): Int =
+    runNow(sqlu"DROP TABLE IF EXISTS #${table.baseTableRow.tableName}", 5.seconds)
 
   /**
     * Closes DB connection

@@ -24,7 +24,6 @@ import slick.jdbc.JdbcProfile
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries._
 import org.alephium.explorer.persistence.schema._
 
 trait BlockQueries
@@ -92,6 +91,99 @@ trait BlockQueries
       .take(pagination.limit)
       .result
   }
+
+  /**
+    * Order by query for [[blockHeadersTable]]
+    *
+    * @param prefix If non-empty adds the prefix with dot to all columns.
+    */
+  private def orderBySQLString(prefix: String, reverse: Boolean): String = {
+    val columnPrefix =
+      if (prefix.isEmpty) {
+        prefix
+      } else {
+        prefix + "."
+      }
+
+    if (reverse) {
+      s"order by ${columnPrefix}timestamp, ${columnPrefix}hash desc"
+    } else {
+      s"order by ${columnPrefix}timestamp desc, ${columnPrefix}hash"
+    }
+  }
+
+  /** Reverse order by without prefix */
+  private val LIST_BLOCKS_ORDER_BY_REVERSE: String =
+    orderBySQLString(prefix = "", reverse = true)
+
+  /** Forward order by without prefix */
+  private val LIST_BLOCKS_ORDER_BY_FORWARD: String =
+    orderBySQLString(prefix = "", reverse = false)
+
+  /** Reverse order by with "blocks" as column prefix */
+  private val LIST_BLOCKS_ORDER_BY_PREFIXED_REVERSE: String =
+    orderBySQLString(prefix = "blocks", reverse = true)
+
+  /** Forward order by with "blocks" as column prefix */
+  private val LIST_BLOCKS_ORDER_BY_PREFIXED_FORWARD: String =
+    orderBySQLString(prefix = "blocks", reverse = false)
+
+  /**
+    * Fetches all main_chain [[blockHeadersTable]] rows and number of transactions in
+    * [[transactionsTable]] for the blocks.
+    */
+  def listMainChainHeadersWithTxnNumberSQL(
+      pagination: Pagination): DBActionRWT[Vector[BlockEntry.Lite]] = {
+    val block_headers = blockHeadersTable.baseTableRow.tableName //block_headers table name
+    val transactions  = transactionsTable.baseTableRow.tableName //transactions table name
+
+    //order by for inner query
+    val innerOrderBy =
+      if (pagination.reverse) {
+        LIST_BLOCKS_ORDER_BY_REVERSE
+      } else {
+        LIST_BLOCKS_ORDER_BY_FORWARD
+      }
+
+    //order by for outer query
+    val outerOrderBy =
+      if (pagination.reverse) {
+        LIST_BLOCKS_ORDER_BY_PREFIXED_REVERSE
+      } else {
+        LIST_BLOCKS_ORDER_BY_PREFIXED_FORWARD
+      }
+
+    sql"""
+           |select blocks.*,
+           |       count(#$transactions.hash) as tx_number
+           |from (select hash,
+           |             timestamp,
+           |             chain_from,
+           |             chain_to,
+           |             height,
+           |             main_chain,
+           |             hashrate
+           |      from #$block_headers
+           |      where main_chain = true
+           |      #$innerOrderBy
+           |      limit ${pagination.limit} offset ${pagination.limit * pagination.offset}) as blocks
+           |         left outer join #$transactions on #$transactions.block_hash = blocks.hash
+           |group by blocks.hash,
+           |         blocks.timestamp,
+           |         blocks.chain_from,
+           |         blocks.chain_to,
+           |         blocks.height,
+           |         blocks.main_chain,
+           |         blocks.hashrate
+           |#$outerOrderBy
+           |
+           |""".stripMargin
+      .as[BlockEntry.Lite](blockEntryListGetResult)
+  }
+
+  /** Counts main_chain Blocks */
+  def countMainChain(): Rep[Int] =
+    blockHeadersTable.filter(_.mainChain).length
 
   def updateMainChainStatusAction(hash: BlockEntry.Hash,
                                   isMainChain: Boolean): DBActionRWT[Unit] = {

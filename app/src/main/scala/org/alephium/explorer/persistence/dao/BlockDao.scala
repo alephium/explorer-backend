@@ -41,6 +41,7 @@ trait BlockDao {
   def insert(block: BlockEntity): Future[Unit]
   def insertAll(blocks: Seq[BlockEntity]): Future[Unit]
   def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)]
+  def listMainChainSQL(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)]
   def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntry.Lite]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
   def updateMainChain(hash: BlockEntry.Hash,
@@ -98,6 +99,13 @@ object BlockDao {
         } yield (headers.map(_.toLiteApi), total)
 
       run(action)
+    }
+
+    /** SQL version of [[listMainChain]] */
+    def listMainChainSQL(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)] = {
+      val blockEntries = run(listMainChainHeadersWithTxnNumberSQL(pagination))
+      val count        = run(countMainChain().result)
+      blockEntries.zip(count)
     }
 
     def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntry.Lite]] = {
