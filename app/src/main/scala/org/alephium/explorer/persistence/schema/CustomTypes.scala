@@ -25,7 +25,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.{GetResult, JdbcProfile, JdbcType, PositionedResult}
 
 import org.alephium.explorer._
-import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
+import org.alephium.explorer.api.model._
 import org.alephium.util.{TimeStamp, U256}
 
 trait CustomTypes extends JdbcProfile {
@@ -100,4 +100,39 @@ trait CustomTypes extends JdbcProfile {
       _.toArray,
       bytes => ByteString.fromArrayUnsafe(bytes)
     )
+
+  /**
+    * [[GetResult]] types
+    */
+  implicit lazy val blockEntryHashGetResult: GetResult[BlockEntry.Hash] =
+    (result: PositionedResult) =>
+      new BlockEntry.Hash(new BlockHash(ByteString.fromArrayUnsafe(result.nextBytes())))
+
+  implicit lazy val groupIndexGetResult: GetResult[GroupIndex] =
+    (result: PositionedResult) => GroupIndex.unsafe(result.nextInt())
+
+  implicit lazy val heightGetResult: GetResult[Height] =
+    (result: PositionedResult) => Height.unsafe(result.nextInt())
+
+  implicit lazy val bigIntegerGetResult: GetResult[BigInteger] =
+    (result: PositionedResult) => result.nextBigDecimal().toBigInt.bigInteger
+
+  /**
+    * [[GetResult]] type for [[BlockEntry.Lite]]
+    *
+    * @note The order in which the query returns the column values matters.
+    *       For example: Getting (`.<<`) `chainTo` before `chainFrom` when
+    *       `chainFrom` is before `chainTo` in the query result would compile
+    *       but would result in incorrect data.
+    */
+  val blockEntryListGetResult: GetResult[BlockEntry.Lite] =
+    (result: PositionedResult) =>
+      BlockEntry.Lite(hash      = result.<<,
+                      timestamp = result.<<,
+                      chainFrom = result.<<,
+                      chainTo   = result.<<,
+                      height    = result.<<,
+                      mainChain = result.<<,
+                      hashRate  = result.<<,
+                      txNumber  = result.<<)
 }
