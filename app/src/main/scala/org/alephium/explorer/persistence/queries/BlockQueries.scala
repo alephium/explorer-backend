@@ -106,20 +106,36 @@ trait BlockQueries
     *
     * @param prefix If non-empty adds the prefix with dot to all columns.
     */
-  private def orderBySQLString(prefix: String, pagination: Pagination): String = {
-    val queryPrefix =
+  private def orderBySQLString(prefix: String, reverse: Boolean): String = {
+    val columnPrefix =
       if (prefix.isEmpty) {
-        ""
+        prefix
       } else {
         prefix + "."
       }
 
-    if (pagination.reverse) {
-      s"order by ${queryPrefix}timestamp, ${queryPrefix}hash desc"
+    if (reverse) {
+      s"order by ${columnPrefix}timestamp, ${columnPrefix}hash desc"
     } else {
-      s"order by ${queryPrefix}timestamp desc, ${queryPrefix}hash"
+      s"order by ${columnPrefix}timestamp desc, ${columnPrefix}hash"
     }
   }
+
+  /** Reverse order by without prefix */
+  private val LIST_BLOCKS_ORDER_BY_REVERSE: String =
+    orderBySQLString(prefix = "", reverse = true)
+
+  /** Forward order by without prefix */
+  private val LIST_BLOCKS_ORDER_BY_FORWARD: String =
+    orderBySQLString(prefix = "", reverse = false)
+
+  /** Reverse order by with "blocks" as column prefix */
+  private val LIST_BLOCKS_ORDER_BY_PREFIXED_REVERSE: String =
+    orderBySQLString(prefix = "blocks", reverse = true)
+
+  /** Forward order by with "blocks" as column prefix */
+  private val LIST_BLOCKS_ORDER_BY_PREFIXED_FORWARD: String =
+    orderBySQLString(prefix = "blocks", reverse = false)
 
   /**
     * Fetches all main_chain [[blockHeadersTable]] rows and number of transactions in
@@ -127,8 +143,24 @@ trait BlockQueries
     */
   def listMainChainHeadersWithTxnNumberSQL(
       pagination: Pagination): DBActionRWT[Vector[BlockEntry.Lite]] = {
-    val block_headers = blockHeadersTable.baseTableRow.tableName
-    val transactions  = transactionsTable.baseTableRow.tableName
+    val block_headers = blockHeadersTable.baseTableRow.tableName //block_headers table name
+    val transactions  = transactionsTable.baseTableRow.tableName //transactions table name
+
+    //order by for inner query
+    val innerOrderBy =
+      if (pagination.reverse) {
+        LIST_BLOCKS_ORDER_BY_REVERSE
+      } else {
+        LIST_BLOCKS_ORDER_BY_FORWARD
+      }
+
+    //order by for outer query
+    val outerOrderBy =
+      if (pagination.reverse) {
+        LIST_BLOCKS_ORDER_BY_PREFIXED_REVERSE
+      } else {
+        LIST_BLOCKS_ORDER_BY_PREFIXED_FORWARD
+      }
 
     sql"""
            |select blocks.*,
@@ -141,7 +173,7 @@ trait BlockQueries
            |             hashrate
            |      from #$block_headers
            |      where main_chain = true
-           |      #${orderBySQLString("", pagination)}
+           |      #$innerOrderBy
            |      limit ${pagination.limit} offset ${pagination.limit * pagination.offset}) as blocks
            |         left outer join #$transactions on #$transactions.block_hash = blocks.hash
            |group by blocks.hash,
@@ -150,7 +182,7 @@ trait BlockQueries
            |         blocks.chain_to,
            |         blocks.height,
            |         blocks.hashrate
-           |#${orderBySQLString("blocks", pagination)}
+           |#$outerOrderBy
            |
            |""".stripMargin
       .as[BlockEntry.Lite](mainChainBlockEntryListGetResult)
