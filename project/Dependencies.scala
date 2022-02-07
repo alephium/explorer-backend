@@ -54,6 +54,8 @@ object Dependencies {
   lazy val akkaHttpJson = "de.heikoseeberger" %% "akka-http-upickle" % "1.36.0"
   lazy val `upickle`    = "com.lihaoyi"       %% "upickle"           % "1.3.8"
 
+  lazy val caffeine = "com.github.ben-manes.caffeine" % "caffeine" % "3.0.5"
+
   lazy val scalatest     = "org.scalatest"              %% "scalatest"       % "3.1.1" % Test
   lazy val scalacheck    = "org.scalacheck"             %% "scalacheck"      % "1.14.3" % Test
   lazy val scalatestplus = "org.scalatestplus"          %% "scalacheck-1-14" % "3.1.1.1" % Test

@@ -17,7 +17,10 @@
 package org.alephium.explorer.persistence.dao
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters._
+import scala.jdk.FutureConverters._
 
+import com.github.benmanes.caffeine.cache._
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
@@ -29,6 +32,8 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.protocol.config.GroupConfig
+import org.alephium.protocol.model.ChainIndex
 import org.alephium.util.TimeStamp
 
 trait BlockDao {
@@ -49,24 +54,48 @@ trait BlockDao {
                       chainTo: GroupIndex,
                       groupNum: Int): Future[Option[BlockEntry.Hash]]
   def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit]
+  def latestBlocks(): Future[Seq[(ChainIndex, LatestBlock)]]
+  def updateLatestBlock(block: BlockEntity): Future[Unit]
 }
 
 object BlockDao {
-  def apply(config: DatabaseConfig[JdbcProfile])(
+  def apply(groupNum: Int, config: DatabaseConfig[JdbcProfile])(
       implicit executionContext: ExecutionContext): BlockDao =
-    new Impl(config)
-
-  class Impl(val config: DatabaseConfig[JdbcProfile])(
+    new Impl(groupNum, config)
+  @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
+  class Impl(groupNum: Int, val config: DatabaseConfig[JdbcProfile])(
       implicit val executionContext: ExecutionContext)
       extends BlockDao
       with CustomTypes
       with BlockHeaderSchema
       with BlockDepsSchema
       with BlockQueries
+      with LatestBlockSchema
       with TransactionQueries
       with DBRunner
       with StrictLogging {
     import config.profile.api._
+
+    private implicit val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
+
+    private val chainIndexes: java.lang.Iterable[ChainIndex] = (for {
+      i <- 0 to groupNum - 1
+      j <- 0 to groupNum - 1
+    } yield (ChainIndex.unsafe(i, j))).asJava
+
+    @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+    private val asyncLoader: AsyncCacheLoader[ChainIndex, LatestBlock] = {
+      case (key, _) =>
+        run(
+          getLatestBlock(GroupIndex.unsafe(key.from.value), GroupIndex.unsafe(key.to.value))
+        ).map(_.get).asJava.toCompletableFuture
+    }
+
+    private val cachedLatestBlocks: AsyncLoadingCache[ChainIndex, LatestBlock] = Caffeine
+      .newBuilder()
+      .maximumSize(groupConfig.chainNum.toLong)
+      .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
+      .buildAsync(asyncLoader)
 
     def getLite(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]] =
       run(getBlockEntryLiteAction(hash))
@@ -169,6 +198,24 @@ object BlockDao {
 
     def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit] = {
       run(updateMainChainStatusAction(hash, isMainChain))
+    }
+
+    def latestBlocks(): Future[Seq[(ChainIndex, LatestBlock)]] = {
+      cachedLatestBlocks
+        .getAll(chainIndexes)
+        .asScala
+        .map(_.asScala.toSeq)
+    }
+
+    def updateLatestBlock(block: BlockEntity): Future[Unit] = {
+      val chainIndex  = ChainIndex.unsafe(block.chainFrom.value, block.chainTo.value)
+      val latestBlock = LatestBlock.fromEntity(block)
+      run(latestBlocksTable.insertOrUpdate(latestBlock)).map { _ =>
+        cachedLatestBlocks.put(
+          chainIndex,
+          Future.successful(latestBlock).asJava.toCompletableFuture
+        )
+      }
     }
   }
 }

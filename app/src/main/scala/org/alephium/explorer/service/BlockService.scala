@@ -18,13 +18,14 @@ package org.alephium.explorer.service
 
 import scala.concurrent.{ExecutionContext, Future}
 
-import org.alephium.explorer.api.model.{BlockEntry, ListBlocks, Pagination, Transaction}
+import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.dao.BlockDao
 
 trait BlockService {
   def getLiteBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]]
   def getBlockTransactions(hash: BlockEntry.Hash, pagination: Pagination): Future[Seq[Transaction]]
   def listBlocks(pagination: Pagination): Future[ListBlocks]
+  def listMaxHeights(): Future[Seq[PerChainValue]]
 }
 
 object BlockService {
@@ -45,6 +46,15 @@ object BlockService {
         case (blocks, total) =>
           ListBlocks(total, blocks)
       }
+    }
+
+    def listMaxHeights(): Future[Seq[PerChainValue]] = {
+      blockDao
+        .latestBlocks()
+        .map(_.map {
+          case (chainIndex, block) =>
+            PerChainValue(chainIndex.from.value, chainIndex.to.value, block.height.value)
+        })
     }
   }
 }

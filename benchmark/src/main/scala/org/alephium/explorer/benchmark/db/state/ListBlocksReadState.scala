@@ -49,7 +49,7 @@ class ListBlocksReadState(reverse: Boolean,
   import config.profile.api._
 
   val dao: BlockDao =
-    BlockDao(config)(db.config.db.ioExecutionContext)
+    BlockDao(4, config)(db.config.db.ioExecutionContext)
 
   /**
     * Generates a [[Pagination]] instance for each page to query.
@@ -65,8 +65,8 @@ class ListBlocksReadState(reverse: Boolean,
     BlockHeader(
       hash         = new BlockEntry.Hash(BlockHash.generate),
       timestamp    = TimeStamp.now(),
-      chainFrom    = GroupIndex.unsafe(1),
-      chainTo      = GroupIndex.unsafe(16),
+      chainFrom    = GroupIndex.unsafe(0),
+      chainTo      = GroupIndex.unsafe(3),
       height       = Height.genesis,
       mainChain    = Random.nextBoolean(),
       nonce        = ByteString.emptyByteString,
@@ -85,7 +85,7 @@ class ListBlocksReadState(reverse: Boolean,
         blockHash = header.hash,
         timestamp = header.timestamp,
         chainFrom = GroupIndex.unsafe(1),
-        chainTo   = GroupIndex.unsafe(16),
+        chainTo   = GroupIndex.unsafe(3),
         gasAmount = 0,
         gasPrice  = U256.unsafe(0),
         index     = 0,

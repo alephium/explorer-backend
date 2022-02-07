@@ -14,36 +14,35 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.docs
+package org.alephium.explorer.persistence.model
 
-import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
-import sttp.tapir.openapi.OpenAPI
+import java.math.BigInteger
 
-import org.alephium.explorer.api._
+import akka.util.ByteString
 
-trait Documentation
-    extends BlockEndpoints
-    with TransactionEndpoints
-    with AddressesEndpoints
-    with InfosEndpoints
-    with UtilsEndpoints
-    with OpenAPIDocsInterpreter {
-  val docs: OpenAPI = toOpenAPI(
-    List(
-      listBlocks,
-      getBlockByHash,
-      getBlockTransactions,
-      getTransactionById,
-      getAddressInfo,
-      getTransactionsByAddress,
-      getInfos,
-      getHeights,
-      listTokenSupply,
-      getTotalSupply,
-      getCirculatingSupply,
-      sanityCheck
-    ),
-    "Alephium Explorer API",
-    "1.0"
-  )
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.util.TimeStamp
+
+final case class LatestBlock(
+    hash: BlockEntry.Hash,
+    timestamp: TimeStamp,
+    chainFrom: GroupIndex,
+    chainTo: GroupIndex,
+    height: Height,
+    target: ByteString,
+    hashrate: BigInteger
+)
+
+object LatestBlock {
+  def fromEntity(block: BlockEntity): LatestBlock = {
+    LatestBlock(
+      block.hash,
+      block.timestamp,
+      block.chainFrom,
+      block.chainTo,
+      block.height,
+      block.target,
+      block.hashrate
+    )
+  }
 }
