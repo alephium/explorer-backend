@@ -23,11 +23,11 @@ import org.alephium.util.{TimeStamp, U256}
 final case class OutputEntity(
     blockHash: BlockEntry.Hash,
     txHash: Transaction.Hash,
+    timestamp: TimeStamp,
     hint: Int,
     key: Hash,
     amount: U256,
     address: Address,
-    timestamp: TimeStamp,
     mainChain: Boolean,
     lockTime: Option[TimeStamp],
     order: Int

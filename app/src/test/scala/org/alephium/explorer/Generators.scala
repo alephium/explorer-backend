@@ -107,6 +107,8 @@ trait Generators {
       hash      <- transactionHashGen
       blockHash <- blockHash
       timestamp <- timestampGen
+      chainFrom <- groupIndexGen
+      chainTo   <- groupIndexGen
       gasAmount <- Gen.posNum[Int]
       gasPrice  <- u256Gen
       index     <- Gen.posNum[Int]
@@ -116,6 +118,8 @@ trait Generators {
         hash      = hash,
         blockHash = blockHash,
         timestamp = timestamp,
+        chainFrom = chainFrom,
+        chainTo   = chainTo,
         gasAmount = gasAmount,
         gasPrice  = gasPrice,
         index     = index,
@@ -138,6 +142,7 @@ trait Generators {
       version      <- Gen.posNum[Byte]
       depStateHash <- hashGen
       txsHash      <- hashGen
+      txsCount     <- Gen.posNum[Int]
       nonce        <- bytesGen
       target       <- bytesGen
       hashrate     <- arbitrary[Long].map(BigInteger.valueOf)
@@ -154,6 +159,7 @@ trait Generators {
         version      = version,
         depStateHash = depStateHash,
         txsHash      = txsHash,
+        txsCount     = txsCount,
         target       = target,
         hashrate     = hashrate
       )

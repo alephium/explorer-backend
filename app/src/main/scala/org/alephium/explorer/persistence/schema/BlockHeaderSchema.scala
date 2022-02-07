@@ -44,6 +44,7 @@ trait BlockHeaderSchema extends Schema with CustomTypes {
     def version: Rep[Byte]         = column[Byte]("version")
     def depStateHash: Rep[Hash]    = column[Hash]("dep_state_hash")
     def txsHash: Rep[Hash]         = column[Hash]("txs_hash")
+    def txsCount: Rep[Int]         = column[Int]("txs_count")
     def target: Rep[ByteString]    = column[ByteString]("target")
     def hashrate: Rep[BigInteger] =
       column[BigInteger]("hashrate", O.SqlType("DECIMAL(80,0)")) //TODO How much decimal we need? this one is the same as for U256
@@ -62,6 +63,7 @@ trait BlockHeaderSchema extends Schema with CustomTypes {
        version,
        depStateHash,
        txsHash,
+       txsCount,
        target,
        hashrate)
         .<>((BlockHeader.apply _).tupled, BlockHeader.unapply)

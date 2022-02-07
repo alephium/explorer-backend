@@ -45,19 +45,10 @@ trait BlockQueries
       txs  <- getTransactionsByBlockHash(blockHeader.hash)
     } yield blockHeader.toApi(deps, txs)
 
-  def buildLiteBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry.Lite] =
-    for {
-      number <- countBlockHashTransactions(blockHeader.hash)
-    } yield blockHeader.toLiteApi(number)
-
   def getBlockEntryLiteAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry.Lite]] =
     for {
-      headers <- blockHeadersTable.filter(_.hash === hash).result
-      blockOpt <- headers.headOption match {
-        case None         => DBIOAction.successful(None)
-        case Some(header) => buildLiteBlockEntryAction(header).map(Option.apply)
-      }
-    } yield blockOpt
+      header <- blockHeadersTable.filter(_.hash === hash).result.headOption
+    } yield header.map(_.toLiteApi)
 
   def getBlockEntryAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry]] =
     for {
@@ -129,63 +120,34 @@ trait BlockQueries
   private val LIST_BLOCKS_ORDER_BY_FORWARD: String =
     orderBySQLString(prefix = "", reverse = false)
 
-  /** Reverse order by with "blocks" as column prefix */
-  private val LIST_BLOCKS_ORDER_BY_PREFIXED_REVERSE: String =
-    orderBySQLString(prefix = "blocks", reverse = true)
-
-  /** Forward order by with "blocks" as column prefix */
-  private val LIST_BLOCKS_ORDER_BY_PREFIXED_FORWARD: String =
-    orderBySQLString(prefix = "blocks", reverse = false)
-
   /**
-    * Fetches all main_chain [[blockHeadersTable]] rows and number of transactions in
-    * [[transactionsTable]] for the blocks.
+    * Fetches all main_chain [[blockHeadersTable]] rows
     */
   def listMainChainHeadersWithTxnNumberSQL(
       pagination: Pagination): DBActionRWT[Vector[BlockEntry.Lite]] = {
     val block_headers = blockHeadersTable.baseTableRow.tableName //block_headers table name
-    val transactions  = transactionsTable.baseTableRow.tableName //transactions table name
 
     //order by for inner query
-    val innerOrderBy =
+    val orderBy =
       if (pagination.reverse) {
         LIST_BLOCKS_ORDER_BY_REVERSE
       } else {
         LIST_BLOCKS_ORDER_BY_FORWARD
       }
 
-    //order by for outer query
-    val outerOrderBy =
-      if (pagination.reverse) {
-        LIST_BLOCKS_ORDER_BY_PREFIXED_REVERSE
-      } else {
-        LIST_BLOCKS_ORDER_BY_PREFIXED_FORWARD
-      }
-
     sql"""
-           |select blocks.*,
-           |       count(#$transactions.hash) as tx_number
-           |from (select hash,
-           |             timestamp,
-           |             chain_from,
-           |             chain_to,
-           |             height,
-           |             main_chain,
-           |             hashrate
-           |      from #$block_headers
-           |      where main_chain = true
-           |      #$innerOrderBy
-           |      limit ${pagination.limit} offset ${pagination.limit * pagination.offset}) as blocks
-           |         left outer join #$transactions on #$transactions.block_hash = blocks.hash
-           |group by blocks.hash,
-           |         blocks.timestamp,
-           |         blocks.chain_from,
-           |         blocks.chain_to,
-           |         blocks.height,
-           |         blocks.main_chain,
-           |         blocks.hashrate
-           |#$outerOrderBy
-           |
+           |select hash,
+           |       timestamp,
+           |       chain_from,
+           |       chain_to,
+           |       height,
+           |       main_chain,
+           |       hashrate,
+           |       txs_count
+           |from #$block_headers
+           |where main_chain = true
+           |#$orderBy
+           |limit ${pagination.limit} offset ${pagination.limit * pagination.offset}
            |""".stripMargin
       .as[BlockEntry.Lite](blockEntryListGetResult)
   }

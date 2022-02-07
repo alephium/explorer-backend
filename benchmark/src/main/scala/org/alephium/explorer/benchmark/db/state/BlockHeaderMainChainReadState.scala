@@ -56,6 +56,7 @@ class BlockHeaderMainChainReadState(dropMainChainIndex: Boolean,
       version      = 0,
       depStateHash = Blake2b.generate,
       txsHash      = Blake2b.generate,
+      txsCount     = Random.nextInt(),
       target       = ByteString.emptyByteString,
       hashrate     = BigInteger.ONE
     )

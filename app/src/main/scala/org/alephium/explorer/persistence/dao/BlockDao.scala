@@ -95,9 +95,8 @@ object BlockDao {
       val action =
         for {
           headers <- listMainChainHeaders(mainChain, pagination)
-          blocks  <- DBIOAction.sequence(headers.map(buildLiteBlockEntryAction))
           total   <- mainChain.length.result
-        } yield (blocks, total)
+        } yield (headers.map(_.toLiteApi), total)
 
       run(action)
     }
@@ -116,8 +115,7 @@ object BlockDao {
             .filter(header => header.timestamp >= from && header.timestamp <= to)
             .sortBy(b => (b.timestamp.desc, b.hash))
             .result
-          blocks <- DBIOAction.sequence(headers.map(buildLiteBlockEntryAction))
-        } yield blocks
+        } yield headers.map(_.toLiteApi)
 
       run(action)
     }
