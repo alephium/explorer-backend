@@ -170,6 +170,7 @@ trait BlockQueries
            |             chain_from,
            |             chain_to,
            |             height,
+           |             main_chain,
            |             hashrate
            |      from #$block_headers
            |      where main_chain = true
@@ -181,11 +182,12 @@ trait BlockQueries
            |         blocks.chain_from,
            |         blocks.chain_to,
            |         blocks.height,
+           |         blocks.main_chain,
            |         blocks.hashrate
            |#$outerOrderBy
            |
            |""".stripMargin
-      .as[BlockEntry.Lite](mainChainBlockEntryListGetResult)
+      .as[BlockEntry.Lite](blockEntryListGetResult)
   }
 
   /** Counts main_chain Blocks */

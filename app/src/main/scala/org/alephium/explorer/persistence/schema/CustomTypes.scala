@@ -117,21 +117,21 @@ trait CustomTypes extends JdbcProfile {
     (result: PositionedResult) => result.nextBigDecimal().toBigInt.bigInteger
 
   /**
-    * BlockEntry.Lite when `main_chain = true`.
+    * [[GetResult]] type for [[BlockEntry.Lite]]
     *
     * @note The order in which the query returns the column values matters.
     *       For example: Getting (`.<<`) `chainTo` before `chainFrom` when
     *       `chainFrom` is before `chainTo` in the query result would compile
     *       but would result in incorrect data.
     */
-  val mainChainBlockEntryListGetResult: GetResult[BlockEntry.Lite] =
+  val blockEntryListGetResult: GetResult[BlockEntry.Lite] =
     (result: PositionedResult) =>
       BlockEntry.Lite(hash      = result.<<,
                       timestamp = result.<<,
                       chainFrom = result.<<,
                       chainTo   = result.<<,
                       height    = result.<<,
+                      mainChain = result.<<,
                       hashRate  = result.<<,
-                      txNumber  = result.<<,
-                      mainChain = true)
+                      txNumber  = result.<<)
 }
