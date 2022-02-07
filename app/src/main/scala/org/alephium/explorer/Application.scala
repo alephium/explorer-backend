@@ -64,6 +64,9 @@ class Application(
   val mempoolSyncService: MempoolSyncService =
     MempoolSyncService(syncPeriod = syncPeriod, blockFlowClient, utransactionDao)
 
+  val hashrateService: HashrateService =
+    HashrateService(syncPeriod = Duration.ofMinutesUnsafe(1), databaseConfig)
+
   val tokenSupplyService: TokenSupplyService =
     TokenSupplyService(syncPeriod = Duration.ofMinutesUnsafe(1), databaseConfig, groupNum)
 
@@ -77,6 +80,7 @@ class Application(
     new AppServer(blockService,
                   transactionService,
                   tokenSupplyService,
+                  hashrateService,
                   sanityChecker,
                   blockflowFetchMaxAge)
 
@@ -97,6 +101,7 @@ class Application(
       _ <- blockFlowSyncService.start(peers)
       _ <- mempoolSyncService.start(peers)
       _ <- tokenSupplyService.start()
+      _ <- hashrateService.start()
     } yield ()
   }
 

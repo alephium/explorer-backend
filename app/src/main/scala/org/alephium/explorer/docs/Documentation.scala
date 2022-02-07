@@ -26,6 +26,7 @@ trait Documentation
     with TransactionEndpoints
     with AddressesEndpoints
     with InfosEndpoints
+    with ChartsEndpoints
     with UtilsEndpoints
     with OpenAPIDocsInterpreter {
   val docs: OpenAPI = toOpenAPI(
@@ -41,6 +42,7 @@ trait Documentation
       listTokenSupply,
       getTotalSupply,
       getCirculatingSupply,
+      getHashrates,
       sanityCheck
     ),
     "Alephium Explorer API",

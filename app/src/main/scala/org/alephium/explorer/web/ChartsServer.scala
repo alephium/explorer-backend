@@ -14,19 +14,24 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer
+package org.alephium.explorer.web
 
-import slick.dbio.{DBIOAction, Effect, NoStream, Streaming}
+import scala.concurrent.ExecutionContext
 
-package object persistence {
+import akka.http.scaladsl.server.Route
 
-  type DBAction[A, E <: Effect] = DBIOAction[A, NoStream, E]
-  type DBActionR[A]             = DBIOAction[A, NoStream, Effect.Read]
-  type DBActionW[A]             = DBIOAction[A, NoStream, Effect.Write]
-  type DBActionRW[A]            = DBIOAction[A, NoStream, Effect.Read with Effect.Write]
-  type DBActionRWT[A] =
-    DBIOAction[A, NoStream, Effect.Read with Effect.Write with Effect.Transactional]
+import org.alephium.explorer.api.ChartsEndpoints
+import org.alephium.explorer.service.HashrateService
+import org.alephium.util.Duration
 
-  type DBActionS[A, E <: Effect] = DBIOAction[Vector[A], Streaming[A], E]
-  type DBActionSR[A]             = DBIOAction[Vector[A], Streaming[A], Effect.Read]
+class ChartsServer(val blockflowFetchMaxAge: Duration, hashrateService: HashrateService)(
+    implicit executionContext: ExecutionContext)
+    extends Server
+    with ChartsEndpoints {
+
+  val route: Route =
+    toRoute(getHashrates) {
+      case (timeInterval, interval) =>
+        hashrateService.get(timeInterval.from, timeInterval.to, interval).map(Right(_))
+    }
 }
