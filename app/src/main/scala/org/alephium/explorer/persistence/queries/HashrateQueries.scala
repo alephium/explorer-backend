@@ -19,7 +19,6 @@ package org.alephium.explorer.persistence.queries
 import java.time._
 
 import slick.basic.DatabaseConfig
-import slick.dbio.DBIOAction
 import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.persistence._
@@ -30,27 +29,6 @@ trait HashrateQueries extends CustomTypes {
   val config: DatabaseConfig[JdbcProfile]
 
   import config.profile.api._
-
-  def insert(values: Seq[(TimeStamp, BigDecimal)], intervalType: Int): DBActionW[Int] = {
-    if (values.nonEmpty) {
-      val sqlValues = values
-        .map {
-          case (timestamp, hashrate) =>
-            val instant = java.time.Instant.ofEpochMilli(timestamp.millis)
-            s"('${instant.toString}', $hashrate, $intervalType)"
-        }
-        .mkString(",")
-
-      sqlu"""
-          INSERT INTO hashrates (timestamp, value, interval_type)
-          VALUES #$sqlValues
-          ON CONFLICT (timestamp, interval_type) DO UPDATE
-          SET value = EXCLUDED.value
-        """
-    } else {
-      DBIOAction.successful(0)
-    }
-  }
 
   def getHashratesQuery(from: TimeStamp,
                         to: TimeStamp,
@@ -68,6 +46,22 @@ trait HashrateQueries extends CustomTypes {
       """.as[(TimeStamp, BigDecimal)]
   }
 
+  def computeHashratesAndInsert(from: TimeStamp, intervalType: Int): DBActionW[Int] = {
+    val hashrates = (intervalType match {
+      case 0 => compute10MinutesHashrateRawString(from)
+      case 1 => computeHourlyHashrateRawString(from)
+      case 2 => computeDailyHashrateRawString(from)
+      case _ => "()"
+    })
+
+    sqlu"""
+      INSERT INTO hashrates (timestamp, value, interval_type)
+      (#$hashrates)
+      ON CONFLICT (timestamp, interval_type) DO UPDATE
+      SET value = EXCLUDED.value
+    """
+  }
+
   /*
    * The following 3 queries are averaging the hashrates from the block_header table over different time intervals.
    * An hashrate at a given time is always part of it's above time interval point.
@@ -82,41 +76,58 @@ trait HashrateQueries extends CustomTypes {
    * round to above 10 minutes: ceiling(26.09 / 10) * 10 = 30
    * result: 8:30
    */
-  def compute10MinutesHashrate(from: TimeStamp): DBActionSR[(TimeStamp, BigDecimal)] = {
-    computeHashrate(
+  private def compute10MinutesHashrateRawString(from: TimeStamp): String = {
+    computeHashrateRawString(
       from,
-      "DATE_TRUNC('HOUR', timestamp) + ((CEILING((EXTRACT(MINUTE FROM timestamp) + EXTRACT(SECOND FROM timestamp)/60)/10)*10) * INTERVAL '1 MINUTE')"
+      "DATE_TRUNC('HOUR', timestamp) + ((CEILING((EXTRACT(MINUTE FROM timestamp) + EXTRACT(SECOND FROM timestamp)/60)/10)*10) * INTERVAL '1 MINUTE')",
+      0
+    )
+  }
+
+  def compute10MinutesHashrate(from: TimeStamp): DBActionSR[(TimeStamp, BigDecimal)] = {
+    sql"#${compute10MinutesHashrateRawString(from)};".as[(TimeStamp, BigDecimal)]
+  }
+
+  private def computeHourlyHashrateRawString(from: TimeStamp): String = {
+    computeHashrateRawString(
+      from,
+      "DATE_TRUNC('HOUR', timestamp) + ((CEILING((EXTRACT(MINUTE FROM timestamp) + EXTRACT(SECOND FROM timestamp)/60) / 60)) * INTERVAL '1 HOUR')",
+      1
     )
   }
 
   def computeHourlyHashrate(from: TimeStamp): DBActionSR[(TimeStamp, BigDecimal)] = {
-    computeHashrate(
-      from,
-      "DATE_TRUNC('HOUR', timestamp) + ((CEILING((EXTRACT(MINUTE FROM timestamp) + EXTRACT(SECOND FROM timestamp)/60) / 60)) * INTERVAL '1 HOUR')"
-    )
+    sql"#${computeHourlyHashrateRawString(from)};".as[(TimeStamp, BigDecimal)]
   }
 
-  def computeDailyHashrate(from: TimeStamp): DBActionSR[(TimeStamp, BigDecimal)] = {
-    computeHashrate(
+  private def computeDailyHashrateRawString(from: TimeStamp): String = {
+    computeHashrateRawString(
       from,
       """
         DATE_TRUNC('DAY', timestamp) +
         ((CEILING((EXTRACT(HOUR FROM timestamp)*60 + EXTRACT(MINUTE FROM timestamp) + EXTRACT(SECOND FROM timestamp)/60)/60/24)) * INTERVAL '1 DAY')
-      """
+      """,
+      2
     )
   }
 
-  private def computeHashrate(from: TimeStamp,
-                              dateGroup: String): DBActionSR[(TimeStamp, BigDecimal)] = {
+  def computeDailyHashrate(from: TimeStamp): DBActionSR[(TimeStamp, BigDecimal)] = {
+    sql"#${computeDailyHashrateRawString(from)};".as[(TimeStamp, BigDecimal)]
+  }
+
+  private def computeHashrateRawString(from: TimeStamp,
+                                       dateGroup: String,
+                                       intervalType: Int): String = {
     val instant = Instant.ofEpochMilli(from.millis)
-    sql"""
+    s"""
         SELECT
-        #$dateGroup as date,
-        AVG(hashrate)
+        $dateGroup as date,
+        AVG(hashrate),
+        $intervalType
         FROM block_headers
-        WHERE timestamp >= '#${instant.toString}'
+        WHERE timestamp >= '${instant.toString}'
         AND main_chain = true
-        GROUP BY date;
-      """.as[(TimeStamp, BigDecimal)]
+        GROUP BY date
+      """
   }
 }

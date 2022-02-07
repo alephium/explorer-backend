@@ -79,35 +79,11 @@ object HashrateService {
           tenMinTs <- findLatestHashrateAndStepBack(0, compute10MinStepBack)
           hourlyTs <- findLatestHashrateAndStepBack(1, computeHourlyStepBack)
           dailyTs  <- findLatestHashrateAndStepBack(2, computeDailyStepBack)
-          _        <- update1OMinutes(tenMinTs)
-          _        <- updateHourly(hourlyTs)
-          _        <- updateDaily(dailyTs)
+          _        <- computeHashratesAndInsert(tenMinTs, 0)
+          _        <- computeHashratesAndInsert(hourlyTs, 1)
+          _        <- computeHashratesAndInsert(dailyTs, 2)
         } yield ()
       )
-    }
-
-    private def update1OMinutes(from: TimeStamp) = {
-      updateInterval(from, 0, compute10MinutesHashrate)
-    }
-
-    private def updateHourly(from: TimeStamp) = {
-      updateInterval(from, 1, computeHourlyHashrate)
-    }
-
-    private def updateDaily(from: TimeStamp) = {
-      updateInterval(from, 2, computeDailyHashrate)
-    }
-
-    private def updateInterval(from: TimeStamp,
-                               interval: Int,
-                               select: TimeStamp => DBActionSR[(TimeStamp, BigDecimal)]) = {
-      select(from).flatMap { hashrates =>
-        val values = hashrates.map {
-          case (timestamp, hashrate) =>
-            (timestamp, hashrate)
-        }
-        insert(values, interval)
-      }
     }
 
     private def findLatestHashrate(intervalType: Int): DBActionR[Option[HashrateEntity]] = {
