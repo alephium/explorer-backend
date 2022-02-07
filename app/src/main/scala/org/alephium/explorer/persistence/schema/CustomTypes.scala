@@ -22,10 +22,10 @@ import scala.reflect.ClassTag
 
 import akka.util.ByteString
 import slick.basic.DatabaseConfig
-import slick.jdbc.{JdbcProfile, JdbcType}
+import slick.jdbc.{GetResult, JdbcProfile, JdbcType, PositionedResult}
 
 import org.alephium.explorer._
-import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
+import org.alephium.explorer.api.model._
 import org.alephium.util.{TimeStamp, U256}
 
 trait CustomTypes extends JdbcProfile {
@@ -74,12 +74,16 @@ trait CustomTypes extends JdbcProfile {
     string => Address.unsafe(string)
   )
 
-  implicit lazy val timestampType: JdbcType[TimeStamp] =
-    MappedJdbcType.base[TimeStamp, java.sql.Timestamp](
-      ts    => new java.sql.Timestamp(ts.millis),
-      sqlTs => TimeStamp.unsafe(sqlTs.getTime)
-    )
+  implicit lazy val timestampGetResult: GetResult[TimeStamp] =
+    (result: PositionedResult) =>
+      TimeStamp.unsafe(
+        result.nextTimestamp().toLocalDateTime().toInstant(java.time.ZoneOffset.UTC).toEpochMilli)
 
+  implicit lazy val timestampType: JdbcType[TimeStamp] =
+    MappedJdbcType.base[TimeStamp, java.time.Instant](
+      ts      => java.time.Instant.ofEpochMilli(ts.millis),
+      instant => TimeStamp.unsafe(instant.toEpochMilli)
+    )
   implicit lazy val u256Type: JdbcType[U256] = MappedJdbcType.base[U256, BigDecimal](
     u256       => BigDecimal(u256.v),
     bigDecimal => U256.unsafe(bigDecimal.toBigInt.bigInteger)
@@ -96,4 +100,39 @@ trait CustomTypes extends JdbcProfile {
       _.toArray,
       bytes => ByteString.fromArrayUnsafe(bytes)
     )
+
+  /**
+    * [[GetResult]] types
+    */
+  implicit lazy val blockEntryHashGetResult: GetResult[BlockEntry.Hash] =
+    (result: PositionedResult) =>
+      new BlockEntry.Hash(new BlockHash(ByteString.fromArrayUnsafe(result.nextBytes())))
+
+  implicit lazy val groupIndexGetResult: GetResult[GroupIndex] =
+    (result: PositionedResult) => GroupIndex.unsafe(result.nextInt())
+
+  implicit lazy val heightGetResult: GetResult[Height] =
+    (result: PositionedResult) => Height.unsafe(result.nextInt())
+
+  implicit lazy val bigIntegerGetResult: GetResult[BigInteger] =
+    (result: PositionedResult) => result.nextBigDecimal().toBigInt.bigInteger
+
+  /**
+    * [[GetResult]] type for [[BlockEntry.Lite]]
+    *
+    * @note The order in which the query returns the column values matters.
+    *       For example: Getting (`.<<`) `chainTo` before `chainFrom` when
+    *       `chainFrom` is before `chainTo` in the query result would compile
+    *       but would result in incorrect data.
+    */
+  val blockEntryListGetResult: GetResult[BlockEntry.Lite] =
+    (result: PositionedResult) =>
+      BlockEntry.Lite(hash      = result.<<,
+                      timestamp = result.<<,
+                      chainFrom = result.<<,
+                      chainTo   = result.<<,
+                      height    = result.<<,
+                      mainChain = result.<<,
+                      hashRate  = result.<<,
+                      txNumber  = result.<<)
 }

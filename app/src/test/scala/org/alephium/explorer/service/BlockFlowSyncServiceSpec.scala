@@ -298,14 +298,16 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
     }
 
     def checkLatestHeight(height: Int) = {
-      blockDao
-        .latestBlocks()
-        .futureValue
-        .find { case (chainIndex, _) => chainIndex == ChainIndex.unsafe(0, 0) }
-        .get
-        ._2
-        .height
-        .value is height
+      eventually {
+        blockDao
+          .latestBlocks()
+          .futureValue
+          .find { case (chainIndex, _) => chainIndex == ChainIndex.unsafe(0, 0) }
+          .get
+          ._2
+          .height
+          .value is height
+      }
     }
   }
   // scalastyle:on scalatest-matcher

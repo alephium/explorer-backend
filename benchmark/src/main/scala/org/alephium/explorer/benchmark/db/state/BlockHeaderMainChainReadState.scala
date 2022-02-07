@@ -26,8 +26,8 @@ import org.openjdk.jmh.annotations.{Scope, State}
 import org.alephium.crypto.Blake2b
 import org.alephium.explorer.BlockHash
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.explorer.benchmark.db.{DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
-import org.alephium.explorer.benchmark.db.DBExecutor
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.util.TimeStamp
@@ -44,7 +44,7 @@ class BlockHeaderMainChainReadState(dropMainChainIndex: Boolean,
 
   import config.profile.api._
 
-  def generateData(): BlockHeader =
+  def generateData(currentCacheSize: Int): BlockHeader =
     BlockHeader(
       hash         = new BlockEntry.Hash(BlockHash.generate),
       timestamp    = TimeStamp.now(),
@@ -56,6 +56,7 @@ class BlockHeaderMainChainReadState(dropMainChainIndex: Boolean,
       version      = 0,
       depStateHash = Blake2b.generate,
       txsHash      = Blake2b.generate,
+      txsCount     = Random.nextInt(),
       target       = ByteString.emptyByteString,
       hashrate     = BigInteger.ONE
     )
@@ -93,7 +94,7 @@ class BlockHeaderWithoutMainChainReadState(testDataCount: Int, override val db: 
                                           testDataCount      = testDataCount,
                                           db                 = db) {
   def this() = {
-    this(testDataCount = readDataCount, db = DBExecutor.forPostgres(dbName, dbHost, dbPort))
+    this(readDataCount, DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.HikariCP))
   }
 }
 
@@ -107,6 +108,6 @@ class BlockHeaderWithMainChainReadState(testDataCount: Int, override val db: DBE
                                           testDataCount      = testDataCount,
                                           db                 = db) {
   def this() = {
-    this(testDataCount = readDataCount, db = DBExecutor.forPostgres(dbName, dbHost, dbPort))
+    this(readDataCount, DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.HikariCP))
   }
 }

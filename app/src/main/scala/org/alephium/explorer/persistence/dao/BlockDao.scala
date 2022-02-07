@@ -46,6 +46,7 @@ trait BlockDao {
   def insert(block: BlockEntity): Future[Unit]
   def insertAll(blocks: Seq[BlockEntity]): Future[Unit]
   def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)]
+  def listMainChainSQL(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)]
   def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntry.Lite]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
   def updateMainChain(hash: BlockEntry.Hash,
@@ -123,11 +124,17 @@ object BlockDao {
       val action =
         for {
           headers <- listMainChainHeaders(mainChain, pagination)
-          blocks  <- DBIOAction.sequence(headers.map(buildLiteBlockEntryAction))
           total   <- mainChain.length.result
-        } yield (blocks, total)
+        } yield (headers.map(_.toLiteApi), total)
 
       run(action)
+    }
+
+    /** SQL version of [[listMainChain]] */
+    def listMainChainSQL(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)] = {
+      val blockEntries = run(listMainChainHeadersWithTxnNumberSQL(pagination))
+      val count        = run(countMainChain().result)
+      blockEntries.zip(count)
     }
 
     def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntry.Lite]] = {
@@ -137,8 +144,7 @@ object BlockDao {
             .filter(header => header.timestamp >= from && header.timestamp <= to)
             .sortBy(b => (b.timestamp.desc, b.hash))
             .result
-          blocks <- DBIOAction.sequence(headers.map(buildLiteBlockEntryAction))
-        } yield blocks
+        } yield headers.map(_.toLiteApi)
 
       run(action)
     }

@@ -19,16 +19,14 @@ package org.alephium.explorer
 import java.math.BigInteger
 
 import akka.util.ByteString
+import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
-import org.scalacheck.Gen
 
 import org.alephium.api.{model => protocolApi}
-import org.alephium.explorer.{BlockHash, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.service.BlockFlowClient
-import org.alephium.protocol.{model => protocol}
-import org.alephium.protocol.ALPH
+import org.alephium.protocol.{model => protocol, ALPH}
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.util.{AVector, Base58, Duration, Hex, Number, TimeStamp, U256}
 
@@ -101,6 +99,70 @@ trait Generators {
       gasAmount <- Gen.posNum[Int]
       gasPrice  <- u256Gen
     } yield UnconfirmedTx(hash, chainFrom, chainTo, inputs, outputs, gasAmount, gasPrice)
+
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def transactionEntityGen(
+      blockHash: Gen[BlockEntry.Hash] = blockEntryHashGen): Gen[TransactionEntity] =
+    for {
+      hash      <- transactionHashGen
+      blockHash <- blockHash
+      timestamp <- timestampGen
+      chainFrom <- groupIndexGen
+      chainTo   <- groupIndexGen
+      gasAmount <- Gen.posNum[Int]
+      gasPrice  <- u256Gen
+      index     <- Gen.posNum[Int]
+      mainChain <- Arbitrary.arbitrary[Boolean]
+    } yield
+      TransactionEntity(
+        hash      = hash,
+        blockHash = blockHash,
+        timestamp = timestamp,
+        chainFrom = chainFrom,
+        chainTo   = chainTo,
+        gasAmount = gasAmount,
+        gasPrice  = gasPrice,
+        index     = index,
+        mainChain = mainChain
+      )
+
+  lazy val blockHeaderTransactionEntityGen: Gen[(BlockHeader, List[TransactionEntity])] =
+    for {
+      blockHeader <- blockHeaderGen
+      transaction <- Gen.listOf(transactionEntityGen(Gen.const(blockHeader.hash)))
+    } yield (blockHeader, transaction)
+
+  lazy val blockHeaderGen: Gen[BlockHeader] =
+    for {
+      hash         <- blockHashGen
+      timestamp    <- timestampGen
+      chainFrom    <- groupIndexGen
+      chainTo      <- groupIndexGen
+      height       <- heightGen
+      version      <- Gen.posNum[Byte]
+      depStateHash <- hashGen
+      txsHash      <- hashGen
+      txsCount     <- Gen.posNum[Int]
+      nonce        <- bytesGen
+      target       <- bytesGen
+      hashrate     <- arbitrary[Long].map(BigInteger.valueOf)
+      mainChain    <- Arbitrary.arbitrary[Boolean]
+    } yield
+      BlockHeader(
+        hash         = new BlockEntry.Hash(hash),
+        timestamp    = timestamp,
+        chainFrom    = GroupIndex.unsafe(chainFrom.value),
+        chainTo      = GroupIndex.unsafe(chainTo.value),
+        height       = Height.unsafe(height.value),
+        mainChain    = mainChain,
+        nonce        = nonce,
+        version      = version,
+        depStateHash = depStateHash,
+        txsHash      = txsHash,
+        txsCount     = txsCount,
+        target       = target,
+        hashrate     = hashrate
+      )
 
   private def parentIndex(chainTo: GroupIndex) = groupNum - 1 + chainTo.value
 

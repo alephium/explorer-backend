@@ -172,6 +172,8 @@ object BlockFlowClient {
     val hash         = new BlockEntry.Hash(block.hash)
     val mainChain    = false
     val transactions = block.transactions.toSeq
+    val chainFrom    = block.chainFrom
+    val chainTo      = block.chainTo
     BlockEntity(
       hash,
       block.timestamp,
@@ -180,15 +182,18 @@ object BlockFlowClient {
       Height.unsafe(block.height),
       block.deps.map(new BlockEntry.Hash(_)).toSeq,
       transactions.zipWithIndex.map {
-        case (tx, index) => txToEntity(tx, hash, block.timestamp, index, mainChain)
+        case (tx, index) =>
+          txToEntity(tx, hash, block.timestamp, index, mainChain, chainFrom, chainTo)
       },
       transactions.flatMap(tx =>
         tx.inputs.toSeq.zipWithIndex.map {
-          case (in, index) => inputToEntity(in, hash, tx.id, block.timestamp, mainChain, index)
+          case (in, index) =>
+            inputToEntity(in, hash, tx.id, block.timestamp, mainChain, index)
       }),
       transactions.flatMap(tx =>
         tx.outputs.toSeq.zipWithIndex.map {
-          case (out, index) => outputToEntity(out, hash, tx.id, index, block.timestamp, mainChain)
+          case (out, index) =>
+            outputToEntity(out, hash, tx.id, index, block.timestamp, mainChain)
       }),
       mainChain = mainChain,
       block.nonce,
@@ -219,11 +224,15 @@ object BlockFlowClient {
                          blockHash: BlockEntry.Hash,
                          timestamp: TimeStamp,
                          index: Int,
-                         mainChain: Boolean): TransactionEntity =
+                         mainChain: Boolean,
+                         chainFrom: Int,
+                         chainTo: Int): TransactionEntity =
     TransactionEntity(
       new Transaction.Hash(tx.id),
       blockHash,
       timestamp,
+      GroupIndex.unsafe(chainFrom),
+      GroupIndex.unsafe(chainTo),
       tx.gasAmount,
       tx.gasPrice,
       index,
@@ -292,11 +301,11 @@ object BlockFlowClient {
     OutputEntity(
       blockHash,
       new Transaction.Hash(txId),
+      timestamp,
       hint.value,
       protocol.model.TxOutputRef.key(txId, index),
       output.amount.value,
       new Address(output.address.toBase58),
-      timestamp,
       mainChain,
       lockTime,
       index

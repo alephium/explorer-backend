@@ -75,6 +75,8 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
       tx1.hash,
       tx1.blockHash,
       tx1.timestamp,
+      chainFrom,
+      chainTo,
       tx1.gasAmount,
       tx1.gasPrice,
       0,
@@ -107,15 +109,18 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val address = addressGen.sample.get
     val now     = TimeStamp.now()
 
+    val chainFrom = GroupIndex.unsafe(0)
+    val chainTo   = GroupIndex.unsafe(0)
+
     def output(address: Address, amount: U256, lockTime: Option[TimeStamp]): OutputEntity =
       OutputEntity(
         blockEntryHashGen.sample.get,
         transactionHashGen.sample.get,
+        now,
         0,
         hashGen.sample.get,
         amount,
         address,
-        now,
         true,
         lockTime,
         0

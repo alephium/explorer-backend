@@ -24,17 +24,11 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.api.model
-import org.alephium.explorer.AlephiumSpec
-import org.alephium.explorer.Generators
-import org.alephium.explorer.api.model.BlockEntry
-import org.alephium.explorer.persistence.DatabaseFixture
-import org.alephium.explorer.persistence.DBRunner
+import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.api.model.{BlockEntry, Pagination}
+import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.schema.BlockDepsSchema
-import org.alephium.explorer.persistence.schema.BlockHeaderSchema
-import org.alephium.explorer.persistence.schema.InputSchema
-import org.alephium.explorer.persistence.schema.OutputSchema
-import org.alephium.explorer.persistence.schema.TransactionSchema
+import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.util.TimeStamp
 
@@ -92,6 +86,37 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
       dbInputs
         .zip(queries)
         .foreach { case (dbInput, query) => checkDuplicates(dbInput, run(query).futureValue) }
+    }
+  }
+
+  it should "list block headers via SQL and typed should return same result" in new Fixture {
+    val blocksCount = 30 //number of blocks to create
+
+    forAll(Gen.listOfN(blocksCount, blockHeaderTransactionEntityGen),
+           Gen.choose(0, blocksCount),
+           Gen.choose(0, blocksCount),
+           arbitrary[Boolean]) {
+      case (blocks, pageNum, pageLimit, reverse) =>
+        import config.profile.api._
+
+        //clear test data
+        run(blockHeadersTable.delete).futureValue
+        run(transactionsTable.delete).futureValue
+
+        //create test data
+        run(blockHeadersTable ++= blocks.map(_._1)).futureValue
+        run(transactionsTable ++= blocks.flatten(_._2)).futureValue
+
+        //Assert results returned by typed and SQL query are the same
+        def runAssert(page: Pagination) = {
+          val sqlResult   = blockDao.listMainChainSQL(page).futureValue
+          val typedResult = blockDao.listMainChain(page).futureValue
+          sqlResult is typedResult
+        }
+
+        runAssert(Pagination.unsafe(0, pageLimit, reverse)) //First page test
+        runAssert(Pagination.unsafe(pageNum, pageLimit, reverse)) //Random page test
+        runAssert(Pagination.unsafe(blocks.size, pageLimit, reverse)) //Last page test
     }
   }
 

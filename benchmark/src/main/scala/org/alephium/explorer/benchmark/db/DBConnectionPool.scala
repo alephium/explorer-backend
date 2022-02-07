@@ -14,24 +14,18 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.model
+package org.alephium.explorer.benchmark.db
 
-import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, BlockEntry, Output, Transaction}
-import org.alephium.util.{TimeStamp, U256}
+sealed trait DBConnectionPool
+case object DBConnectionPool {
 
-final case class OutputEntity(
-    blockHash: BlockEntry.Hash,
-    txHash: Transaction.Hash,
-    timestamp: TimeStamp,
-    hint: Int,
-    key: Hash,
-    amount: U256,
-    address: Address,
-    mainChain: Boolean,
-    lockTime: Option[TimeStamp],
-    order: Int
-) {
-  def toApi(spent: Option[Transaction.Hash]): Output =
-    Output(hint, key, amount, address, lockTime, spent)
+  /** Uses HikariCP for connection-pooling */
+  case object HikariCP extends DBConnectionPool {
+    override def toString: String = this.productPrefix
+  }
+
+  /** Disables connection-pooling */
+  case object Disabled extends DBConnectionPool {
+    override def toString: String = this.productPrefix.toLowerCase
+  }
 }
