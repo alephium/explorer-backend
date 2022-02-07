@@ -353,6 +353,7 @@ trait Generators {
       version      <- Gen.posNum[Byte]
       depStateHash <- hashGen
       txsHash      <- hashGen
+      txsCount     <- Gen.posNum[Int]
       target       <- bytesGen
     } yield {
       BlockHeader(
@@ -366,6 +367,7 @@ trait Generators {
         version,
         depStateHash,
         txsHash,
+        txsCount,
         target,
         BigDecimal(hashrate).toBigInt.bigInteger
       )
