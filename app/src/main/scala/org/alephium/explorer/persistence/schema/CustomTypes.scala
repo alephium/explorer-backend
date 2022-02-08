@@ -102,7 +102,7 @@ trait CustomTypes extends JdbcProfile {
     )
 
   /**
-    * [[GetResult]] types
+    * GetResult types
     */
   implicit lazy val blockEntryHashGetResult: GetResult[BlockEntry.Hash] =
     (result: PositionedResult) =>
@@ -118,7 +118,7 @@ trait CustomTypes extends JdbcProfile {
     (result: PositionedResult) => result.nextBigDecimal().toBigInt.bigInteger
 
   /**
-    * [[GetResult]] type for [[BlockEntry.Lite]]
+    * GetResult type for BlockEntry.Lite
     *
     * @note The order in which the query returns the column values matters.
     *       For example: Getting (`.<<`) `chainTo` before `chainFrom` when
