@@ -31,7 +31,10 @@ trait BlockQueries
     with BlockDepsSchema
     with LatestBlockSchema
     with TransactionQueries
+    with CustomTypes
     with StrictLogging {
+
+  val block_headers = blockHeadersTable.baseTableRow.tableName //block_headers table name
 
   val config: DatabaseConfig[JdbcProfile]
   import config.profile.api._
@@ -56,6 +59,16 @@ trait BlockQueries
       headers <- blockHeadersTable.filter(_.hash === hash).result
       blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
     } yield blocks.headOption
+
+  def getBlockHeaderAction(hash: BlockEntry.Hash): DBActionR[Option[BlockHeader]] = {
+    sql"""
+       |SELECT *
+       |FROM #$block_headers
+       |WHERE hash = decode('#${hash.toString}', 'hex')
+       |""".stripMargin
+      .as[BlockHeader](blockHeaderGetResult)
+      .headOption
+  }
 
   def getAtHeightAction(fromGroup: GroupIndex,
                         toGroup: GroupIndex,
@@ -126,7 +139,6 @@ trait BlockQueries
     */
   def listMainChainHeadersWithTxnNumberSQL(
       pagination: Pagination): DBActionRWT[Vector[BlockEntry.Lite]] = {
-    val block_headers = blockHeadersTable.baseTableRow.tableName //block_headers table name
 
     //order by for inner query
     val orderBy =

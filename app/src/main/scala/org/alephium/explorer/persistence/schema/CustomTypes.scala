@@ -26,6 +26,7 @@ import slick.jdbc.{GetResult, JdbcProfile, JdbcType, PositionedResult}
 
 import org.alephium.explorer._
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.util.{TimeStamp, U256}
 
 trait CustomTypes extends JdbcProfile {
@@ -108,6 +109,12 @@ trait CustomTypes extends JdbcProfile {
     (result: PositionedResult) =>
       new BlockEntry.Hash(new BlockHash(ByteString.fromArrayUnsafe(result.nextBytes())))
 
+  implicit lazy val optionBlockEntryHashGetResult: GetResult[Option[BlockEntry.Hash]] =
+    (result: PositionedResult) =>
+      result
+        .nextBytesOption()
+        .map(bytes => new BlockEntry.Hash(new BlockHash(ByteString.fromArrayUnsafe(bytes))))
+
   implicit lazy val groupIndexGetResult: GetResult[GroupIndex] =
     (result: PositionedResult) => GroupIndex.unsafe(result.nextInt())
 
@@ -116,6 +123,12 @@ trait CustomTypes extends JdbcProfile {
 
   implicit lazy val bigIntegerGetResult: GetResult[BigInteger] =
     (result: PositionedResult) => result.nextBigDecimal().toBigInt.bigInteger
+
+  implicit lazy val bytestringGetResult: GetResult[ByteString] =
+    (result: PositionedResult) => ByteString.fromArrayUnsafe(result.nextBytes())
+
+  implicit lazy val hashGetResult: GetResult[Hash] =
+    (result: PositionedResult) => Hash.unsafe(ByteString.fromArrayUnsafe(result.nextBytes()))
 
   /**
     * GetResult type for BlockEntry.Lite
@@ -135,4 +148,23 @@ trait CustomTypes extends JdbcProfile {
                       mainChain = result.<<,
                       hashRate  = result.<<,
                       txNumber  = result.<<)
+
+  val blockHeaderGetResult: GetResult[BlockHeader] =
+    (result: PositionedResult) =>
+      BlockHeader(
+        hash         = result.<<,
+        timestamp    = result.<<,
+        chainFrom    = result.<<,
+        chainTo      = result.<<,
+        height       = result.<<,
+        mainChain    = result.<<,
+        nonce        = result.<<,
+        version      = result.<<,
+        depStateHash = result.<<,
+        txsHash      = result.<<,
+        txsCount     = result.<<,
+        target       = result.<<,
+        hashrate     = result.<<,
+        parent       = result.<<?
+    )
 }

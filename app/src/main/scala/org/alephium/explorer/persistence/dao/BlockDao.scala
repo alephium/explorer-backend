@@ -164,7 +164,7 @@ object BlockDao {
                                       chainFrom: GroupIndex,
                                       chainTo: GroupIndex,
                                       groupNum: Int): DBActionRWT[Option[BlockEntry.Hash]] = {
-      getBlockEntryAction(hash)
+      getBlockHeaderAction(hash)
         .flatMap {
           case Some(block) if !block.mainChain =>
             assert(block.chainFrom == chainFrom && block.chainTo == chainTo)
@@ -177,7 +177,7 @@ object BlockDao {
                   .map(updateMainChainStatusAction(_, false)))
               _ <- updateMainChainStatusAction(hash, true)
             } yield {
-              block.parent(groupNum).map(Right(_))
+              block.parent.map(Right(_))
             })
           case None => DBIOAction.successful(Some(Left(hash)))
           case _    => DBIOAction.successful(None)
