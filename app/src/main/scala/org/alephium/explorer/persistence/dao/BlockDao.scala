@@ -56,6 +56,7 @@ trait BlockDao {
   def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit]
   def latestBlocks(): Future[Seq[(ChainIndex, LatestBlock)]]
   def updateLatestBlock(block: BlockEntity): Future[Unit]
+  def getAddressForInput(input:InputEntity): Future[Option[Address]]
 }
 
 object BlockDao {
@@ -217,5 +218,21 @@ object BlockDao {
         )
       }
     }
+  def getAddressForInput(input:InputEntity): Future[Option[Address]] = {
+    run(
+    outputsTable.filter{out =>
+      out.key === input.outputRefKey
+    }.map(_.address).result.headOption).flatMap {
+      case None =>
+        println("Cannot find output")
+        get(input.blockHash).map { block =>
+          println(s"${Console.RED}${Console.BOLD}*** input ***\n\t${Console.RESET}${input}")
+          println(s"${Console.RED}${Console.BOLD}*** block ***\n\t${Console.RESET}${block}")
+          None
+        }
+
+     case Some(address) => Future.successful(Some(address))
+    }
+  }
   }
 }
