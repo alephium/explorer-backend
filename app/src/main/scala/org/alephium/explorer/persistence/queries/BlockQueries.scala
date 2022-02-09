@@ -68,13 +68,13 @@ trait BlockQueries
       blocks <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
     } yield blocks
 
-  def insertAction(block: BlockEntity): DBActionRWT[Unit] =
+  def insertAction(block: BlockEntity, groupNum: Int): DBActionRWT[Unit] =
     (for {
       _ <- DBIOAction.sequence(block.deps.zipWithIndex.map {
         case (dep, i) => blockDepsTable.insertOrUpdate((block.hash, dep, i))
       })
       _ <- insertTransactionFromBlockQuery(block)
-      _ <- blockHeadersTable.insertOrUpdate(BlockHeader.fromEntity(block)).filter(_ > 0)
+      _ <- blockHeadersTable.insertOrUpdate(BlockHeader.fromEntity(block, groupNum)).filter(_ > 0)
     } yield ()).transactionally
 
   def listMainChainHeaders(mainChain: Query[BlockHeaders, BlockHeader, Seq],

@@ -58,7 +58,8 @@ class BlockHeaderMainChainReadState(dropMainChainIndex: Boolean,
       txsHash      = Blake2b.generate,
       txsCount     = Random.nextInt(),
       target       = ByteString.emptyByteString,
-      hashrate     = BigInteger.ONE
+      hashrate     = BigInteger.ONE,
+      parent       = Some(new BlockEntry.Hash(BlockHash.generate))
     )
 
   def persist(data: Array[BlockHeader]): Unit = {

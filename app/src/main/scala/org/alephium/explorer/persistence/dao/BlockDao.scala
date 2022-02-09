@@ -112,11 +112,11 @@ object BlockDao {
       run(getAtHeightAction(fromGroup, toGroup, height))
 
     def insert(block: BlockEntity): Future[Unit] = {
-      run(insertAction(block))
+      run(insertAction(block, groupNum))
     }
 
     def insertAll(blocks: Seq[BlockEntity]): Future[Unit] = {
-      run(DBIOAction.sequence(blocks.map(insertAction))).map(_ => ())
+      run(DBIOAction.sequence(blocks.map(b => insertAction(b, groupNum)))).map(_ => ())
     }
 
     def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)] = {

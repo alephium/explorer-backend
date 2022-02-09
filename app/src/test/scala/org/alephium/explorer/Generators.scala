@@ -134,7 +134,7 @@ trait Generators {
 
   lazy val blockHeaderGen: Gen[BlockHeader] =
     for {
-      hash         <- blockHashGen
+      hash         <- blockEntryHashGen
       timestamp    <- timestampGen
       chainFrom    <- groupIndexGen
       chainTo      <- groupIndexGen
@@ -147,9 +147,10 @@ trait Generators {
       target       <- bytesGen
       hashrate     <- arbitrary[Long].map(BigInteger.valueOf)
       mainChain    <- Arbitrary.arbitrary[Boolean]
+      parent       <- Gen.option(blockEntryHashGen)
     } yield
       BlockHeader(
-        hash         = new BlockEntry.Hash(hash),
+        hash         = hash,
         timestamp    = timestamp,
         chainFrom    = GroupIndex.unsafe(chainFrom.value),
         chainTo      = GroupIndex.unsafe(chainTo.value),
@@ -161,7 +162,8 @@ trait Generators {
         txsHash      = txsHash,
         txsCount     = txsCount,
         target       = target,
-        hashrate     = hashrate
+        hashrate     = hashrate,
+        parent       = parent
       )
 
   private def parentIndex(chainTo: GroupIndex) = groupNum - 1 + chainTo.value
@@ -355,6 +357,7 @@ trait Generators {
       txsHash      <- hashGen
       txsCount     <- Gen.posNum[Int]
       target       <- bytesGen
+      parent       <- Gen.option(blockEntryHashGen)
     } yield {
       BlockHeader(
         hash,
@@ -369,7 +372,8 @@ trait Generators {
         txsHash,
         txsCount,
         target,
-        BigDecimal(hashrate).toBigInt.bigInteger
+        BigDecimal(hashrate).toBigInt.bigInteger,
+        parent
       )
     }
   }
