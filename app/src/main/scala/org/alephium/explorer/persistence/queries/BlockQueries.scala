@@ -64,7 +64,7 @@ trait BlockQueries
     sql"""
        |SELECT *
        |FROM #$block_headers
-       |WHERE hash = decode('#${hash.toString}', 'hex')
+       |WHERE hash = '\x#${hash.toString}'
        |""".stripMargin
       .as[BlockHeader](blockHeaderGetResult)
       .headOption
