@@ -218,6 +218,7 @@ object BlockDao {
         )
       }
     }
+
   def getAddressForInput(input:InputEntity): Future[Option[Address]] = {
     run(
     outputsTable.filter{out =>

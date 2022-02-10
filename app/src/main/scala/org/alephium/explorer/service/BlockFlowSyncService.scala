@@ -278,6 +278,10 @@ object BlockFlowSyncService extends StrictLogging {
       }
     }
 
+    private def checkAndGetInputsAddresses(block: BlockEntity) = {
+        Future.sequence(block.inputs.map(blockDao.getAddressForInput(_).map(_.get)))
+    }
+
     private def handleMissingMainChainBlock(missing: BlockEntry.Hash,
                                             chainFrom: GroupIndex): Future[Unit] = {
       logger.debug(s"Downloading missing block $missing")
