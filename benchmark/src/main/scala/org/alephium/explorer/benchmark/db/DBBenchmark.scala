@@ -38,110 +38,131 @@ import org.alephium.explorer.benchmark.db.state._
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 class DBBenchmark {
 
-  /**
-    * Benchmarks writes to `varchar` column type in [[org.alephium.explorer.benchmark.db.table.TableVarcharSchema]]
-    *
-    * @param state State of current iteration
-    */
-  @Benchmark
-  def writeVarchar(state: VarcharWriteState): Unit = {
-    import state.config.profile.api._
-    val _ = state.db.runNow(state.tableVarcharQuery += state.next, requestTimeout)
-  }
+//   /**
+//     * Benchmarks writes to `varchar` column type in [[org.alephium.explorer.benchmark.db.table.TableVarcharSchema]]
+//     *
+//     * @param state State of current iteration
+//     */
+//   @Benchmark
+//   def writeVarchar(state: VarcharWriteState): Unit = {
+//     import state.config.profile.api._
+//     val _ = state.db.runNow(state.tableVarcharQuery += state.next, requestTimeout)
+//   }
+
+//   /**
+//     * Benchmarks writes to `bytea` column type in [[org.alephium.explorer.benchmark.db.table.TableByteSchema]]
+//     *
+//     * @param state State of current iteration
+//     */
+//   @Benchmark
+//   def writeBytea(state: ByteaWriteState): Unit = {
+//     import state.config.profile.api._
+//     val _ = state.db.runNow(state.tableByteaQuery += state.next, requestTimeout)
+//   }
+
+//   /**
+//     * Benchmarks reads to `varchar` column type in [[org.alephium.explorer.benchmark.db.table.TableVarcharSchema]].
+//     *
+//     * @param state State of current iteration
+//     */
+//   @Benchmark
+//   def readVarchar(state: VarcharReadState): Unit = {
+//     import state.config.profile.api._
+//     val _ =
+//       state.db.runNow(state.tableVarcharQuery.filter(_.hash === state.next).result, requestTimeout)
+//   }
+
+//   /**
+//     * Benchmarks reads to `bytea` column type in [[org.alephium.explorer.benchmark.db.table.TableByteSchema]].
+//     *
+//     * @param state State of current iteration
+//     */
+//   @Benchmark
+//   def readBytea(state: ByteaReadState): Unit = {
+//     import state.config.profile.api._
+//     val _ =
+//       state.db.runNow(state.tableByteaQuery.filter(_.hash === state.next).result, requestTimeout)
+//   }
+
+//   @Benchmark
+//   def readMainChainIndex(state: BlockHeaderWithMainChainReadState): Unit = {
+//     import state.config.profile.api._
+//     val _ =
+//       state.db.runNow(state.blockHeadersTable.filter(_.mainChain).length.result, requestTimeout)
+//   }
+
+//   @Benchmark
+//   def readNoMainChainIndex(state: BlockHeaderWithoutMainChainReadState): Unit = {
+//     import state.config.profile.api._
+//     val _ =
+//       state.db.runNow(state.blockHeadersTable.filter(_.mainChain).length.result, requestTimeout)
+//   }
+
+//   /**
+//     * CONNECTION POOL = DISABLED
+//     *
+//     * The following benchmarks listMainChain's forward & reverse queries with connection pool disabled
+//     */
+//   @Benchmark
+//   def listBlocks_Forward_DisabledCP_Typed(state: ListBlocks_Forward_DisabledCP_ReadState): Unit = {
+//     val _ =
+//       Await.result(state.dao.listMainChain(state.next), requestTimeout)
+//   }
+
+//   @Benchmark
+//   def listBlocks_Reverse_DisabledCP_Typed(state: ListBlocks_Reverse_DisabledCP_ReadState): Unit = {
+//     val _ =
+//       Await.result(state.dao.listMainChain(state.next), requestTimeout)
+//   }
+
+//   @Benchmark
+//   def listBlocks_Forward_DisabledCP_SQL(state: ListBlocks_Forward_DisabledCP_ReadState): Unit = {
+//     val _ =
+//       Await.result(state.dao.listMainChainSQL(state.next), requestTimeout)
+//   }
+
+//   @Benchmark
+//   def listBlocks_Reverse_DisabledCP_SQL(state: ListBlocks_Reverse_DisabledCP_ReadState): Unit = {
+//     val _ =
+//       Await.result(state.dao.listMainChainSQL(state.next), requestTimeout)
+//   }
+
+//   /**
+//     * CONNECTION POOL = HIKARI
+//     *
+//     * Benchmarks listMainChain forward & reverse queries with [[DBConnectionPool.HikariCP]] as
+//     * the connection pool
+//     */
+//   @Benchmark
+//   def listBlocks_Forward_HikariCP_Typed(state: ListBlocks_Forward_HikariCP_ReadState): Unit = {
+//     val _ =
+//       Await.result(state.dao.listMainChain(state.next), requestTimeout)
+//   }
+
+//   @Benchmark
+//   def listBlocks_Forward_HikariCP_SQL(state: ListBlocks_Forward_HikariCP_ReadState): Unit = {
+//     val _ =
+//       Await.result(state.dao.listMainChainSQL(state.next), requestTimeout)
+//   }
 
   /**
-    * Benchmarks writes to `bytea` column type in [[org.alephium.explorer.benchmark.db.table.TableByteSchema]]
-    *
-    * @param state State of current iteration
-    */
+   * Address benchmarks
+   */
   @Benchmark
-  def writeBytea(state: ByteaWriteState): Unit = {
-    import state.config.profile.api._
-    val _ = state.db.runNow(state.tableByteaQuery += state.next, requestTimeout)
-  }
-
-  /**
-    * Benchmarks reads to `varchar` column type in [[org.alephium.explorer.benchmark.db.table.TableVarcharSchema]].
-    *
-    * @param state State of current iteration
-    */
-  @Benchmark
-  def readVarchar(state: VarcharReadState): Unit = {
-    import state.config.profile.api._
+  def getAddressTransactions(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(state.tableVarcharQuery.filter(_.hash === state.next).result, requestTimeout)
-  }
-
-  /**
-    * Benchmarks reads to `bytea` column type in [[org.alephium.explorer.benchmark.db.table.TableByteSchema]].
-    *
-    * @param state State of current iteration
-    */
-  @Benchmark
-  def readBytea(state: ByteaReadState): Unit = {
-    import state.config.profile.api._
-    val _ =
-      state.db.runNow(state.tableByteaQuery.filter(_.hash === state.next).result, requestTimeout)
+      Await.result(state.dao.getByAddress(state.address, state.pagination), requestTimeout)
   }
 
   @Benchmark
-  def readMainChainIndex(state: BlockHeaderWithMainChainReadState): Unit = {
-    import state.config.profile.api._
+  def getTxNumberByAddress(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(state.blockHeadersTable.filter(_.mainChain).length.result, requestTimeout)
+      Await.result(state.dao.getNumberByAddress(state.address), requestTimeout)
   }
 
   @Benchmark
-  def readNoMainChainIndex(state: BlockHeaderWithoutMainChainReadState): Unit = {
-    import state.config.profile.api._
+  def getBalance(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(state.blockHeadersTable.filter(_.mainChain).length.result, requestTimeout)
-  }
-
-  /**
-    * CONNECTION POOL = DISABLED
-    *
-    * The following benchmarks listMainChain's forward & reverse queries with connection pool disabled
-    */
-  @Benchmark
-  def listBlocks_Forward_DisabledCP_Typed(state: ListBlocks_Forward_DisabledCP_ReadState): Unit = {
-    val _ =
-      Await.result(state.dao.listMainChain(state.next), requestTimeout)
-  }
-
-  @Benchmark
-  def listBlocks_Reverse_DisabledCP_Typed(state: ListBlocks_Reverse_DisabledCP_ReadState): Unit = {
-    val _ =
-      Await.result(state.dao.listMainChain(state.next), requestTimeout)
-  }
-
-  @Benchmark
-  def listBlocks_Forward_DisabledCP_SQL(state: ListBlocks_Forward_DisabledCP_ReadState): Unit = {
-    val _ =
-      Await.result(state.dao.listMainChainSQL(state.next), requestTimeout)
-  }
-
-  @Benchmark
-  def listBlocks_Reverse_DisabledCP_SQL(state: ListBlocks_Reverse_DisabledCP_ReadState): Unit = {
-    val _ =
-      Await.result(state.dao.listMainChainSQL(state.next), requestTimeout)
-  }
-
-  /**
-    * CONNECTION POOL = HIKARI
-    *
-    * Benchmarks listMainChain forward & reverse queries with [[DBConnectionPool.HikariCP]] as
-    * the connection pool
-    */
-  @Benchmark
-  def listBlocks_Forward_HikariCP_Typed(state: ListBlocks_Forward_HikariCP_ReadState): Unit = {
-    val _ =
-      Await.result(state.dao.listMainChain(state.next), requestTimeout)
-  }
-
-  @Benchmark
-  def listBlocks_Forward_HikariCP_SQL(state: ListBlocks_Forward_HikariCP_ReadState): Unit = {
-    val _ =
-      Await.result(state.dao.listMainChainSQL(state.next), requestTimeout)
+      Await.result(state.dao.getBalance(state.address), requestTimeout)
   }
 }
