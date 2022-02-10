@@ -37,7 +37,8 @@ final case class BlockHeader(
     txsHash: Hash,
     txsCount: Int,
     target: ByteString,
-    hashrate: BigInteger
+    hashrate: BigInteger,
+    parent: Option[BlockEntry.Hash]
 ) {
   def toApi(deps: Seq[BlockEntry.Hash], transactions: Seq[Transaction]): BlockEntry =
     BlockEntry(hash, timestamp, chainFrom, chainTo, height, deps, transactions, mainChain, hashrate)
@@ -47,7 +48,7 @@ final case class BlockHeader(
 }
 
 object BlockHeader {
-  def fromEntity(blockEntity: BlockEntity): BlockHeader =
+  def fromEntity(blockEntity: BlockEntity, groupNum: Int): BlockHeader =
     BlockHeader(
       blockEntity.hash,
       blockEntity.timestamp,
@@ -61,6 +62,7 @@ object BlockHeader {
       blockEntity.txsHash,
       blockEntity.transactions.size,
       blockEntity.target,
-      blockEntity.hashrate
+      blockEntity.hashrate,
+      blockEntity.parent(groupNum)
     )
 }

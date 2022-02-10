@@ -48,6 +48,7 @@ trait BlockHeaderSchema extends Schema with CustomTypes {
     def target: Rep[ByteString]    = column[ByteString]("target")
     def hashrate: Rep[BigInteger] =
       column[BigInteger]("hashrate", O.SqlType("DECIMAL(80,0)")) //TODO How much decimal we need? this one is the same as for U256
+    def parent: Rep[Option[BlockEntry.Hash]] = column[Option[BlockEntry.Hash]]("parent")
 
     def timestampIdx: Index = index("blocks_timestamp_idx", timestamp)
     def heightIdx: Index    = index("blocks_height_idx", height)
@@ -65,7 +66,8 @@ trait BlockHeaderSchema extends Schema with CustomTypes {
        txsHash,
        txsCount,
        target,
-       hashrate)
+       hashrate,
+       parent)
         .<>((BlockHeader.apply _).tupled, BlockHeader.unapply)
   }
 

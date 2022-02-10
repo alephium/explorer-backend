@@ -174,7 +174,8 @@ class TransactionServiceSpec
       height       = Height.unsafe(1),
       transactions = Seq(tx1),
       inputs       = Seq(input1),
-      outputs      = Seq(output1)
+      outputs      = Seq(output1),
+      deps         = Seq.fill(2 * groupNum - 1)(block0.hash)
     )
 
     val blocks = Seq(block0, block1)

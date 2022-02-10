@@ -75,7 +75,8 @@ class ListBlocksReadState(reverse: Boolean,
       txsHash      = Blake2b.generate,
       txsCount     = scala.math.abs(Random.nextInt()),
       target       = ByteString.emptyByteString,
-      hashrate     = BigInteger.ONE
+      hashrate     = BigInteger.ONE,
+      parent       = Some(new BlockEntry.Hash(BlockHash.generate))
     )
 
   private def generateTransactions(header: BlockHeader): Seq[TransactionEntity] =

@@ -31,7 +31,10 @@ trait BlockQueries
     with BlockDepsSchema
     with LatestBlockSchema
     with TransactionQueries
+    with CustomTypes
     with StrictLogging {
+
+  val block_headers = blockHeadersTable.baseTableRow.tableName //block_headers table name
 
   val config: DatabaseConfig[JdbcProfile]
   import config.profile.api._
@@ -57,6 +60,16 @@ trait BlockQueries
       blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
     } yield blocks.headOption
 
+  def getBlockHeaderAction(hash: BlockEntry.Hash): DBActionR[Option[BlockHeader]] = {
+    sql"""
+       |SELECT *
+       |FROM #$block_headers
+       |WHERE hash = '\x#${hash.toString}'
+       |""".stripMargin
+      .as[BlockHeader](blockHeaderGetResult)
+      .headOption
+  }
+
   def getAtHeightAction(fromGroup: GroupIndex,
                         toGroup: GroupIndex,
                         height: Height): DBActionR[Seq[BlockEntry]] =
@@ -68,13 +81,13 @@ trait BlockQueries
       blocks <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
     } yield blocks
 
-  def insertAction(block: BlockEntity): DBActionRWT[Unit] =
+  def insertAction(block: BlockEntity, groupNum: Int): DBActionRWT[Unit] =
     (for {
       _ <- DBIOAction.sequence(block.deps.zipWithIndex.map {
         case (dep, i) => blockDepsTable.insertOrUpdate((block.hash, dep, i))
       })
       _ <- insertTransactionFromBlockQuery(block)
-      _ <- blockHeadersTable.insertOrUpdate(BlockHeader.fromEntity(block)).filter(_ > 0)
+      _ <- blockHeadersTable.insertOrUpdate(BlockHeader.fromEntity(block, groupNum)).filter(_ > 0)
     } yield ()).transactionally
 
   def listMainChainHeaders(mainChain: Query[BlockHeaders, BlockHeader, Seq],
@@ -126,7 +139,6 @@ trait BlockQueries
     */
   def listMainChainHeadersWithTxnNumberSQL(
       pagination: Pagination): DBActionRWT[Vector[BlockEntry.Lite]] = {
-    val block_headers = blockHeadersTable.baseTableRow.tableName //block_headers table name
 
     //order by for inner query
     val orderBy =
