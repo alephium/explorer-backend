@@ -130,6 +130,10 @@ trait CustomTypes extends JdbcProfile {
   implicit lazy val hashGetResult: GetResult[Hash] =
     (result: PositionedResult) => Hash.unsafe(ByteString.fromArrayUnsafe(result.nextBytes()))
 
+  implicit lazy val optionU256GetResult: GetResult[Option[U256]] =
+    (result: PositionedResult) =>
+      result.nextBigDecimalOption().map(bigDecimal => U256.unsafe(bigDecimal.toBigInt.bigInteger))
+
   /**
     * GetResult type for BlockEntry.Lite
     *
