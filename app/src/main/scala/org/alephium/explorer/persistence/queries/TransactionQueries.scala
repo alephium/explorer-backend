@@ -306,7 +306,6 @@ trait TransactionQueries
         FROM outputs
         LEFT OUTER JOIN inputs
         ON outputs.key = inputs.output_ref_key
-        AND inputs.main_chain = true
         WHERE outputs.main_chain = true
         AND outputs.address = '${address.value}'
         AND inputs.output_ref_key is null;
@@ -330,12 +329,27 @@ trait TransactionQueries
       .map { case (output, _) => (output.amount, output.lockTime) }
   }
 
-  def getBalanceAction(address: Address): DBActionR[(U256, U256)] = {
+     def getBalanceAction(address: Address): DBActionR[(U256, U256)] = {
+    getBalanceQuery(address).result.map { outputs =>
+      val now = TimeStamp.now()
+      outputs.foldLeft((U256.Zero, U256.Zero)) {
+        case ((total, locked), (amount, lockTime)) =>
+          val newTotal = total.addUnsafe(amount)
+          val newLocked = if (lockTime.map(_.isBefore(now)).getOrElse(true)) {
+            locked
+          } else {
+            locked.addUnsafe(amount)
+          }
+          (newTotal, newLocked)
+      }
+    }}
+
+  def getBalanceActionSQL(address: Address): DBActionR[(U256, U256)] = {
     for {
       total  <- getUnlockedBalanceSQL(address).head
-      locked <- getLockedBalanceSQL(address).head
+      //locked <- getLockedBalanceSQL(address).head
     } yield {
-      (total.getOrElse(U256.Zero), locked.getOrElse(U256.Zero))
+      (total.getOrElse(U256.Zero), total.getOrElse(U256.Zero))
     }
   }
 

@@ -165,4 +165,10 @@ class DBBenchmark {
     val balance  =
       Await.result(state.dao.getBalance(state.address), requestTimeout)
   }
+
+  @Benchmark
+  def getBalanceSQL(state: Address_ReadState): Unit = {
+    val balance  =
+      Await.result(state.dao.getBalanceSQL(state.address), requestTimeout)
+  }
 }
