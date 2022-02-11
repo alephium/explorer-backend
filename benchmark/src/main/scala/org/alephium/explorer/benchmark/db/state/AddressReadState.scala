@@ -34,13 +34,14 @@ import org.alephium.explorer.persistence.dao.{BlockDao,TransactionDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema._
+import org.alephium.protocol.ALPH
 import org.alephium.util.{Base58, TimeStamp, U256}
 
 /**
   * JMH state for benchmarking reads from TransactionDao
   */
 class AddressReadState(val db: DBExecutor)
-    extends ReadBenchmarkState[OutputEntity](testDataCount = 100, db = db)
+    extends ReadBenchmarkState[OutputEntity](testDataCount = 1000, db = db)
     with TransactionQueries
     with BlockHeaderSchema
     with InputSchema
@@ -76,9 +77,9 @@ class AddressReadState(val db: DBExecutor)
         order = 0
       )
     }
-  private def generateTransaction(blockHash:BlockEntry.Hash, timestamp:TimeStamp): TransactionEntity =
+  private def generateTransaction(blockHash:BlockEntry.Hash,txHash:Transaction.Hash, timestamp:TimeStamp): TransactionEntity =
       TransactionEntity(
-        hash      = new Transaction.Hash(Hash.generate),
+        hash      = txHash,
         blockHash = blockHash,
         timestamp = timestamp,
         chainFrom = GroupIndex.unsafe(1),
@@ -100,7 +101,7 @@ class AddressReadState(val db: DBExecutor)
         timestamp = timestamp,
         hint = Random.nextInt(),
         key = Hash.generate,
-        amount  = U256.unsafe(1),
+        amount  = ALPH.alph(1),
         address = address,
         mainChain =true,
         lockTime = None,
@@ -108,12 +109,21 @@ class AddressReadState(val db: DBExecutor)
       )
   }
 
+
   def persist(cache: Array[OutputEntity]): Unit = {
     logger.info(s"Generating transactions data.")
 
     val blocks = cache.map { output =>
       val blockHash = output.blockHash
+      val txHash= output.txHash
       val timestamp = output.timestamp
+      val inputs = if(Random.nextBoolean()) {
+        val output = cache(Random.nextInt(cache.length))
+        Seq(generateInput(blockHash, txHash, timestamp, output.hint, output.key))
+      } else {
+        Seq.empty
+      }
+
     BlockEntity(
       hash         = blockHash,
       timestamp    = timestamp,
@@ -121,9 +131,9 @@ class AddressReadState(val db: DBExecutor)
       chainTo      = GroupIndex.unsafe(16),
       height       = Height.genesis,
       deps = Seq.empty,
-      transactions = Seq(generateTransaction(blockHash, timestamp)),
-      inputs = Seq.empty,
-      outputs = Seq.empty,
+      transactions = Seq(generateTransaction(blockHash, txHash, timestamp)),
+      inputs = inputs,
+      outputs = Seq(output),
       mainChain    = true,
       nonce        = ByteString.emptyByteString,
       version      = 0,
@@ -156,7 +166,9 @@ class AddressReadState(val db: DBExecutor)
       timeout = batchWriteTimeout
     )
 
-  Await.result(blockDao.insertAll(blocks), requestTimeout)
+    logger.info("Persisting data")
+    blocks.sliding(10000).foreach{ bs=> Await.result(blockDao.insertAll(bs), batchWriteTimeout)
+    }
 
     logger.info("Persisting data complete")
   }

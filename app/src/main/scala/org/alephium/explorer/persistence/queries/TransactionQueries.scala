@@ -301,13 +301,12 @@ trait TransactionQueries
     }
 
   private val getBalanceQuery = Compiled { address: Rep[Address] =>
-    outputsTable
-      .filter(output => output.mainChain && output.address === address)
-      .map(output => (output.key, output.amount, output.lockTime))
+    mainOutputs
+      .filter(output => output.address === address)
       .joinLeft(mainInputs)
-      .on(_._1 === _.outputRefKey)
+      .on(_.key === _.outputRefKey)
       .filter(_._2.isEmpty)
-      .map { case ((_, amount, lockTime), _) => (amount, lockTime) }
+      .map { case (output, _) => (output.amount, output.lockTime) }
   }
 
   def getBalanceAction(address: Address): DBActionR[(U256, U256)] = {

@@ -101,9 +101,9 @@ abstract class ReadBenchmarkState[D: ClassTag](val testDataCount: Int, db: DBExe
       _next = cache(nextIndex)
       nextIndex += 1
       //Logs how much data from the cache is read
-      // if (nextIndex % (cache.length / 100D) == 0) {
-      //   logger.info(s"Read progress: $nextIndex/${cache.length}")
-      // }
+      if (nextIndex % (cache.length / 100D) == 0) {
+        //logger.info(s"Read progress: $nextIndex/${cache.length}")
+      }
     } catch {
       case exception: ArrayIndexOutOfBoundsException =>
         if (nextIndex == 0) {

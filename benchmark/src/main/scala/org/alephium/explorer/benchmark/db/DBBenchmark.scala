@@ -34,7 +34,7 @@ import org.alephium.explorer.benchmark.db.state._
 @Warmup(iterations = 0)
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
-@Measurement(iterations = 1, time = 1, timeUnit = TimeUnit.MINUTES) //runs this benchmark for x minutes
+@Measurement(iterations = 1, time = 5, timeUnit = TimeUnit.SECONDS) //runs this benchmark for x minutes
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 class DBBenchmark {
 
@@ -147,24 +147,22 @@ class DBBenchmark {
 
   /**
    * Address benchmarks
-   // */
+   */
   // @Benchmark
   // def getAddressTransactions(state: Address_ReadState): Unit = {
-   //  val _ =
-   //    Await.result(state.dao.getByAddress(state.address, state.pagination), requestTimeout)
+  //   val _ =
+  //     Await.result(state.dao.getByAddress(state.address, state.pagination), requestTimeout)
   // }
 
   // @Benchmark
   // def getTxNumberByAddress(state: Address_ReadState): Unit = {
-   //  val _ =
-   //    Await.result(state.dao.getNumberByAddress(state.address), requestTimeout)
+  //   val _ =
+  //     Await.result(state.dao.getNumberByAddress(state.address), requestTimeout)
   // }
 
   @Benchmark
   def getBalance(state: Address_ReadState): Unit = {
     val balance  =
       Await.result(state.dao.getBalance(state.address), requestTimeout)
-
-      println(s"${Console.RED}${Console.BOLD}*** balance ***\n\t${Console.RESET}${balance}")
   }
 }
