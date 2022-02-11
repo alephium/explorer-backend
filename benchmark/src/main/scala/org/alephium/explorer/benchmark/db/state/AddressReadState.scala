@@ -31,7 +31,7 @@ import org.alephium.explorer.benchmark.db.{DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.state.ListBlocksReadStateSettings._
 import org.alephium.explorer.persistence.dao.{BlockDao,TransactionDao}
-import org.alephium.explorer.persistence.model.{BlockEntity, BlockHeader, TransactionEntity}
+import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema._
 import org.alephium.util.{Base58, TimeStamp, U256}
@@ -40,7 +40,7 @@ import org.alephium.util.{Base58, TimeStamp, U256}
   * JMH state for benchmarking reads from TransactionDao
   */
 class AddressReadState(val db: DBExecutor)
-    extends ReadBenchmarkState[BlockEntity](testDataCount = 100, db = db)
+    extends ReadBenchmarkState[OutputEntity](testDataCount = 100, db = db)
     with TransactionQueries
     with BlockHeaderSchema
     with InputSchema
@@ -64,6 +64,18 @@ class AddressReadState(val db: DBExecutor)
       reverse = false
     )
 
+    private def generateInput(blockHash:BlockEntry.Hash, txHash: Transaction.Hash, timestamp:TimeStamp, hint:Int, key:Hash):InputEntity = {
+      InputEntity(
+        blockHash = blockHash,
+        txHash = txHash,
+        timestamp = timestamp,
+        hint = hint,
+        outputRefKey = key,
+        unlockScript  = None,
+        mainChain =true,
+        order = 0
+      )
+    }
   private def generateTransaction(blockHash:BlockEntry.Hash, timestamp:TimeStamp): TransactionEntity =
       TransactionEntity(
         hash      = new Transaction.Hash(Hash.generate),
@@ -77,9 +89,31 @@ class AddressReadState(val db: DBExecutor)
         mainChain = true
       )
 
-  def generateData(currentCacheSize: Int): BlockEntity = {
+  def generateData(currentCacheSize: Int): OutputEntity = {
       val blockHash = new BlockEntry.Hash(BlockHash.generate)
+      val txHash    = new Transaction.Hash(Hash.generate)
       val timestamp = TimeStamp.now()
+
+      OutputEntity(
+        blockHash = blockHash,
+        txHash = txHash,
+        timestamp = timestamp,
+        hint = Random.nextInt(),
+        key = Hash.generate,
+        amount  = U256.unsafe(1),
+        address = address,
+        mainChain =true,
+        lockTime = None,
+        order = 0
+      )
+  }
+
+  def persist(cache: Array[OutputEntity]): Unit = {
+    logger.info(s"Generating transactions data.")
+
+    val blocks = cache.map { output =>
+      val blockHash = output.blockHash
+      val timestamp = output.timestamp
     BlockEntity(
       hash         = blockHash,
       timestamp    = timestamp,
@@ -98,10 +132,7 @@ class AddressReadState(val db: DBExecutor)
       target       = ByteString.emptyByteString,
       hashrate     = BigInteger.ONE
     )
-  }
-
-  def persist(cache: Array[BlockEntity]): Unit = {
-    logger.info(s"Generating transactions data.")
+    }
 
     //drop existing tables
     val _ = db.dropTableIfExists(blockHeadersTable)
@@ -125,7 +156,7 @@ class AddressReadState(val db: DBExecutor)
       timeout = batchWriteTimeout
     )
 
-  Await.result(blockDao.insertAll(cache), requestTimeout)
+  Await.result(blockDao.insertAll(blocks), requestTimeout)
 
     logger.info("Persisting data complete")
   }

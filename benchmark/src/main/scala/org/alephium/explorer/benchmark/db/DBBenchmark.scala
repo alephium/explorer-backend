@@ -147,22 +147,24 @@ class DBBenchmark {
 
   /**
    * Address benchmarks
-   */
-  @Benchmark
-  def getAddressTransactions(state: Address_ReadState): Unit = {
-    val _ =
-      Await.result(state.dao.getByAddress(state.address, state.pagination), requestTimeout)
-  }
+   // */
+  // @Benchmark
+  // def getAddressTransactions(state: Address_ReadState): Unit = {
+   //  val _ =
+   //    Await.result(state.dao.getByAddress(state.address, state.pagination), requestTimeout)
+  // }
 
-  @Benchmark
-  def getTxNumberByAddress(state: Address_ReadState): Unit = {
-    val _ =
-      Await.result(state.dao.getNumberByAddress(state.address), requestTimeout)
-  }
+  // @Benchmark
+  // def getTxNumberByAddress(state: Address_ReadState): Unit = {
+   //  val _ =
+   //    Await.result(state.dao.getNumberByAddress(state.address), requestTimeout)
+  // }
 
   @Benchmark
   def getBalance(state: Address_ReadState): Unit = {
-    val _ =
+    val balance  =
       Await.result(state.dao.getBalance(state.address), requestTimeout)
+
+      println(s"${Console.RED}${Console.BOLD}*** balance ***\n\t${Console.RESET}${balance}")
   }
 }
