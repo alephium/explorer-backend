@@ -116,6 +116,10 @@ trait CustomTypes extends JdbcProfile {
     (result: PositionedResult) =>
       new BlockEntry.Hash(new BlockHash(ByteString.fromArrayUnsafe(result.nextBytes())))
 
+  implicit lazy val txHashGetResult: GetResult[Transaction.Hash] =
+    (result: PositionedResult) =>
+      new Transaction.Hash(new Hash(ByteString.fromArrayUnsafe(result.nextBytes())))
+
   implicit lazy val optionBlockEntryHashGetResult: GetResult[Option[BlockEntry.Hash]] =
     (result: PositionedResult) =>
       result

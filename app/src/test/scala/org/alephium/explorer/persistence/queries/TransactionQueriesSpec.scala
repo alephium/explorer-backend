@@ -46,12 +46,16 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     val (total, locked) = run(queries.getBalanceAction(address)).futureValue
     val (totalSQL, lockedSQL) = run(queries.getBalanceActionSQL(address)).futureValue
+    val (totalSQLNoJoin, lockedSQLNoJoin) = run(queries.getBalanceActionSQLNoJoin(address)).futureValue
 
     total is ALPH.alph(10)
     locked is ALPH.alph(7)
 
     totalSQL is ALPH.alph(10)
     lockedSQL is ALPH.alph(7)
+
+    totalSQLNoJoin is ALPH.alph(10)
+    lockedSQLNoJoin is ALPH.alph(7)
   }
 
   it should "get balance should only return unpent outputs" in new Fixture {
@@ -63,12 +67,38 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     run(queries.outputsTable ++= Seq(output1, output2)).futureValue
     run(queries.inputsTable += input1).futureValue
+    run(queries.updateSpentOutput(input1)).futureValue
+    run(queries.updateInputAddress(input1)).futureValue
 
     val (total, _) = run(queries.getBalanceAction(address)).futureValue
-
     val (totalSQL, _ ) = run(queries.getBalanceActionSQL(address)).futureValue
+    val (totalSQLNoJoin, _ ) = run(queries.getBalanceActionSQLNoJoin(address)).futureValue
+
     total is ALPH.alph(1)
     totalSQL is ALPH.alph(1)
+    totalSQLNoJoin is ALPH.alph(1)
+  }
+
+  it should "tx count" in new Fixture {
+    import databaseConfig.profile.api._
+
+    val output1 = output(address, ALPH.alph(1), None)
+    val output2 = output(address, ALPH.alph(2), None)
+    val input1  = input(output2.hint, output2.key)
+
+    run(queries.outputsTable ++= Seq(output1, output2)).futureValue
+    run(queries.inputsTable += input1).futureValue
+    run(queries.updateSpentOutput(input1)).futureValue
+    run(queries.updateInputAddress(input1)).futureValue
+
+    val total = run(queries.countAddressTransactions(address)).futureValue
+    val totalSQL = run(queries.countAddressTransactionsSQL(address)).futureValue.head
+
+    total is totalSQL
+
+    // total is ALPH.alph(1)
+    // totalSQL is ALPH.alph(1)
+    // totalSQLNoJoin is ALPH.alph(1)
   }
 
   it should "output's spent info should only take the input from the main chain " in new Fixture {
@@ -129,7 +159,7 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
         address,
         true,
         lockTime,
-        0
+        0 ,None
       )
 
     def input(hint: Int, outputRefKey: Hash): InputEntity =
@@ -141,7 +171,8 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
         outputRefKey,
         None,
         true,
-        0
-      )
+        0,
+        None
+      , None,None)
   }
 }

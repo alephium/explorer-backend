@@ -125,7 +125,8 @@ class TransactionServiceSpec
                    address0,
                    true,
                    None,
-                   0)
+                   0,
+                   None)
 
     val block0 = defaultBlockEntity.copy(
       hash         = blockHash0,
@@ -156,7 +157,8 @@ class TransactionServiceSpec
                              outputRefKey = output0.key,
                              None,
                              true,
-                             0)
+                             0,
+                             None, None,None)
     val output1 = OutputEntity(blockHash1,
                                tx1.hash,
                                timestamp = ts1,
@@ -166,7 +168,7 @@ class TransactionServiceSpec
                                address1,
                                true,
                                None,
-                               0)
+                               0,None)
 
     val block1 = defaultBlockEntity.copy(
       hash         = blockHash1,
@@ -205,7 +207,11 @@ class TransactionServiceSpec
     val res =
       transactionService.getTransactionsByAddress(address0, Pagination.unsafe(0, 5)).futureValue
 
+    val res2 =
+      transactionService.getTransactionsByAddressSQL(address0, Pagination.unsafe(0, 5)).futureValue
+
     res is Seq(t1, t0)
+    res2 is Seq(t1, t0)
   }
 
   it should "get only main chain transaction for an address in case of tx in two blocks (in case of reorg)" in new Fixture {
@@ -238,7 +244,8 @@ class TransactionServiceSpec
                        address0,
                        true,
                        None,
-                       0)
+                       0,
+                       None)
 
         val block0 = defaultBlockEntity.copy(
           hash         = blockHash0,

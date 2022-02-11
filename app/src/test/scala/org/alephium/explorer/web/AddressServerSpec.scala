@@ -85,6 +85,10 @@ class AddressServerSpec()
                                             pagination: Pagination): Future[Seq[Transaction]] =
         Future.successful(Seq.empty)
 
+      override def getTransactionsByAddressSQL(address: Address,
+                                            pagination: Pagination): Future[Seq[Transaction]] =
+        Future.successful(Seq.empty)
+
       override def getTransactionsNumberByAddress(address: Address): Future[Int] =
         Future.successful(0)
 

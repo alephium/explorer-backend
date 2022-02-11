@@ -25,7 +25,7 @@ import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.{DBActionR, DBActionW}
+import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema.{InputSchema, OutputSchema, TransactionSchema}
 import org.alephium.util.{TimeStamp, U256}
@@ -47,9 +47,33 @@ trait TransactionQueries
   def insertTransactionFromBlockQuery(blockEntity: BlockEntity): DBActionW[Unit] = {
     for {
       _ <- DBIOAction.sequence(blockEntity.transactions.map(transactionsTable.insertOrUpdate))
-      _ <- DBIOAction.sequence(blockEntity.inputs.map(inputsTable.insertOrUpdate))
       _ <- DBIOAction.sequence(blockEntity.outputs.map(outputsTable.insertOrUpdate))
+      _ <- DBIOAction.sequence(blockEntity.inputs.map(inputsTable.insertOrUpdate))
+      _ <- DBIOAction.sequence(blockEntity.inputs.map(updateSpentOutput))
+      _ <- DBIOAction.sequence(blockEntity.inputs.map(updateInputAddress))
     } yield ()
+  }
+
+  def updateSpentOutput(input:InputEntity):DBActionW[Int] = {
+    val query = s"""
+    UPDATE outputs
+    SET spent = '\\x${input.txHash}'
+    WHERE key = '\\x${input.outputRefKey.toHexString}'
+    """
+    sqlu"#$query"
+
+  }
+
+  def updateInputAddress(input:InputEntity):DBActionW[Int] = {
+     val query = s"""
+    UPDATE inputs
+    SET address = out.address,
+        output_tx_hash = out.tx_hash,
+        output_amount = out.amount
+    FROM (SELECT outputs.address, outputs.tx_hash, outputs.amount FROM outputs where key = '\\x${input.outputRefKey.toHexString}' LIMIT 1) AS out
+    WHERE inputs.output_ref_key = '\\x${input.outputRefKey.toHexString}' AND inputs.tx_hash = '\\x${input.txHash}' AND inputs.block_hash = '\\x${input.blockHash}'
+    """
+     sqlu"#$query"
   }
 
   def insertAllTransactionFromBlockQuerys(blockEntities: Seq[BlockEntity]): DBActionW[Unit] = {
@@ -65,6 +89,29 @@ trait TransactionQueries
 
   def countAddressTransactions(address: Address): DBActionR[Int] =
     getTxNumberByAddressQuery(address).result
+
+  def countAddressTransactionsSQL(address: Address): DBActionSR[Int] ={
+     val query = s"""
+    SELECT COUNT(*)
+    FROM (
+    SELECT tx_hash from outputs WHERE address = '$address'
+    UNION
+    SELECT tx_hash from inputs WHERE address = '$address'
+    ) tx_hashes
+    """
+     sql"""#$query""".as[Int]
+  }
+
+  def getTxHashesByAddressQuerySQL(address: Address, offset:Int, limit: Int): DBActionSR[(Transaction.Hash, BlockEntry.Hash, TimeStamp)] ={
+     val query = s"""
+    SELECT tx_hash, block_hash, timestamp from outputs WHERE address = '$address'
+    UNION
+    SELECT tx_hash, block_hash, timestamp from inputs WHERE address = '$address'
+    LIMIT $limit
+    OFFSET $offset
+    """
+     sql"""#$query""".as[(Transaction.Hash, BlockEntry.Hash, TimeStamp)]
+  }
 
   private val getTransactionQuery = Compiled { txHash: Rep[Transaction.Hash] =>
     mainTransactions
@@ -153,6 +200,21 @@ trait TransactionQueries
       }
   }
 
+  private def inputsFromTxsSQL(txHashes: Seq[Transaction.Hash]) = {
+    mainInputs
+      .filter(_.txHash inSet txHashes)
+      .map {input =>
+          (input.txHash,
+           (input.hint,
+            input.outputRefKey,
+            input.unlockScript,
+            input.outputTxHash,
+            input.address,
+            input.outputAmount),
+           input.order)
+      }
+  }
+
   private def outputsFromTxs(txHashes: Seq[Transaction.Hash]) = {
     mainOutputs
       .filter(_.txHash inSet txHashes)
@@ -170,6 +232,21 @@ trait TransactionQueries
             output.address,
             output.lockTime,
             input.map(_.txHash)),
+           output.order)
+      }
+  }
+
+  private def outputsFromTxsSQL(txHashes: Seq[Transaction.Hash]) = {
+    mainOutputs
+      .filter(_.txHash inSet txHashes)
+      .map {output=>
+          (output.txHash,
+           (output.hint,
+            output.key,
+            output.amount,
+            output.address,
+            output.lockTime,
+            output.spent),
            output.order)
       }
   }
@@ -204,6 +281,18 @@ trait TransactionQueries
     } yield txs
   }
 
+  def getTransactionsByAddressSQL(address: Address,
+                               pagination: Pagination): DBActionR[Seq[Transaction]] = {
+    val offset = pagination.offset
+    val limit  = pagination.limit
+    val toDrop = offset * limit
+    for {
+      txHashesTs <- getTxHashesByAddressQuerySQL(address, toDrop, limit)
+      txs        <- getTransactionsSQL(txHashesTs)
+    } yield txs
+  }
+
+
   def getTransactions(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp)])
     : DBActionR[Seq[Transaction]] = {
     val txHashes = txHashesTs.map(_._1)
@@ -220,6 +309,46 @@ trait TransactionQueries
           .map {
             case (_, input, _) =>
               toApiInput(input)
+          }
+      }
+      val ousByTx = ous.groupBy(_._1).view.mapValues { values =>
+        values
+          .sortBy {
+            case (_, _, index) => index
+          }
+          .map {
+            case (_, out, _) =>
+              toApiOutput(out)
+          }
+      }
+      val gasByTx = gas.groupBy(_._1).view.mapValues(_.map { case (_, s, g) => (s, g) })
+      txHashesTs.map {
+        case (tx, bh, ts) =>
+          val ins                   = insByTx.getOrElse(tx, Seq.empty)
+          val ous                   = ousByTx.getOrElse(tx, Seq.empty)
+          val gas                   = gasByTx.getOrElse(tx, Seq.empty)
+          val (gasAmount, gasPrice) = gas.headOption.getOrElse((0, U256.Zero))
+          Transaction(tx, bh, ts, ins, ous, gasAmount, gasPrice)
+      }
+    }
+  }
+
+  def getTransactionsSQL(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp)])
+    : DBActionR[Seq[Transaction]] = {
+    val txHashes = txHashesTs.map(_._1)
+    for {
+      ins <- inputsFromTxsSQL(txHashes).result
+      ous <- outputsFromTxsSQL(txHashes).result
+      gas <- gasFromTxs(txHashes).result
+    } yield {
+      val insByTx = ins.groupBy(_._1).view.mapValues { values =>
+        values
+          .sortBy {
+            case (_, _, index) => index
+          }
+          .map {
+            case (_, input, _) =>
+              toApiInputSQL(input)
           }
       }
       val ousByTx = ous.groupBy(_._1).view.mapValues { values =>
@@ -310,6 +439,16 @@ trait TransactionQueries
     sql"#$query".as[(U256,Option[TimeStamp], Option[Int])]
   }
 
+  private def getUnlockedBalanceSQLNoJoin(address: Address) = {
+    val query = s"""
+        SELECT outputs.amount, outputs.lock_time
+        FROM outputs
+        WHERE outputs.main_chain = true AND outputs.address = '$address' AND spent IS NULL
+      """
+    sql"#$query".as[(U256,Option[TimeStamp])]
+  }
+
+
   private val getBalanceQuery = Compiled { address: Rep[Address] =>
     mainOutputs
       .filter(output => output.address === address)
@@ -362,6 +501,10 @@ trait TransactionQueries
       getUnlockedBalanceSQL(address).map(sumBalance_)
   }
 
+  def getBalanceActionSQLNoJoin(address: Address): DBActionR[(U256, U256)] = {
+      getUnlockedBalanceSQLNoJoin(address).map(sumBalance)
+  }
+
   private val toApiInput = {
     (hint: Int,
      key: Hash,
@@ -370,6 +513,17 @@ trait TransactionQueries
      address: Address,
      amount: U256) =>
       Input(Output.Ref(hint, key), unlockScript, txHash, address, amount)
+  }.tupled
+
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  private val toApiInputSQL = {
+    (hint: Int,
+     key: Hash,
+     unlockScript: Option[String],
+     txHash: Option[Transaction.Hash],
+     address: Option[Address],
+     amount: Option[U256]) =>
+      Input(Output.Ref(hint, key), unlockScript, txHash.get, address.get, amount.get)
   }.tupled
 
   private val toApiOutput = (Output.apply _).tupled

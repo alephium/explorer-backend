@@ -268,7 +268,10 @@ object BlockFlowClient {
       input.outputRef.key,
       unlockScript,
       mainChain,
-      index
+      index,
+      None,
+      None,
+      None
     )
   }
 
@@ -308,7 +311,8 @@ object BlockFlowClient {
       new Address(output.address.toBase58),
       mainChain,
       lockTime,
-      index
+      index,
+      None
     )
   }
   // scalastyle:off magic.number

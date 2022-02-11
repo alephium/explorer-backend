@@ -29,7 +29,6 @@ import org.alephium.explorer.{BlockHash, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.benchmark.db.{DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
-import org.alephium.explorer.benchmark.db.state.ListBlocksReadStateSettings._
 import org.alephium.explorer.persistence.dao.{BlockDao,TransactionDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.TransactionQueries
@@ -65,7 +64,7 @@ class AddressReadState(val db: DBExecutor)
       reverse = false
     )
 
-    private def generateInput(blockHash:BlockEntry.Hash, txHash: Transaction.Hash, timestamp:TimeStamp, hint:Int, key:Hash):InputEntity = {
+    private def generateInput(blockHash:BlockEntry.Hash, txHash: Transaction.Hash, timestamp:TimeStamp, hint:Int, key:Hash) :InputEntity = {
       InputEntity(
         blockHash = blockHash,
         txHash = txHash,
@@ -74,7 +73,10 @@ class AddressReadState(val db: DBExecutor)
         outputRefKey = key,
         unlockScript  = None,
         mainChain =true,
-        order = 0
+        order = 0,
+        None,
+        None,
+        None
       )
     }
   private def generateTransaction(blockHash:BlockEntry.Hash,txHash:Transaction.Hash, timestamp:TimeStamp): TransactionEntity =
@@ -105,7 +107,8 @@ class AddressReadState(val db: DBExecutor)
         address = address,
         mainChain =true,
         lockTime = None,
-        order = 0
+        order = 0,
+        None
       )
   }
 
@@ -167,7 +170,11 @@ class AddressReadState(val db: DBExecutor)
     )
 
     logger.info("Persisting data")
-    blocks.sliding(10000).foreach{ bs=> Await.result(blockDao.insertAll(bs), batchWriteTimeout)
+    blocks.sliding(10000).foreach{ bs=> Await.result(blockDao.insertAll(bs.toSeq), batchWriteTimeout)
+    blocks.flatMap(_.inputs).sliding(10000).foreach(_.foreach{ input=>
+      Await.result(blockDao.updateSpent(input), batchWriteTimeout)
+      Await.result(blockDao.updateAddress(input), batchWriteTimeout)
+    })
     }
 
     logger.info("Persisting data complete")

@@ -160,15 +160,44 @@ class DBBenchmark {
   //     Await.result(state.dao.getNumberByAddress(state.address), requestTimeout)
   // }
 
+//   @Benchmark
+//   def getBalance(state: Address_ReadState): Unit = {
+//     val _  = Await.result(state.dao.getBalance(state.address), requestTimeout)
+//   }
+
+//   @Benchmark
+//   def getBalanceSQL(state: Address_ReadState): Unit = {
+//     val _  =
+//       Await.result(state.dao.getBalanceSQL(state.address), requestTimeout)
+//   }
+
+//   @Benchmark
+//   def getBalanceSQLNoJoin(state: Address_ReadState): Unit = {
+//     val _  =
+//       Await.result(state.dao.getBalanceSQLNoJoin(state.address), requestTimeout)
+//   }
+
+//   @Benchmark
+//   def getTxNumber(state: Address_ReadState): Unit = {
+//     val _  =
+//       Await.result(state.dao.getNumberByAddress(state.address), requestTimeout)
+//   }
+
+//   @Benchmark
+//   def getTxNumberSQL(state: Address_ReadState): Unit = {
+//     val _  =
+//       Await.result(state.dao.getNumberByAddressSQL(state.address), requestTimeout)
+//   }
+
   @Benchmark
-  def getBalance(state: Address_ReadState): Unit = {
-    val balance  =
-      Await.result(state.dao.getBalance(state.address), requestTimeout)
+  def getTxByAddress(state: Address_ReadState): Unit = {
+    val _  =
+      Await.result(state.dao.getByAddress(state.address, state.pagination), requestTimeout)
   }
 
   @Benchmark
-  def getBalanceSQL(state: Address_ReadState): Unit = {
-    val balance  =
-      Await.result(state.dao.getBalanceSQL(state.address), requestTimeout)
+  def getTxByAddressSQL(state: Address_ReadState): Unit = {
+    val _  =
+      Await.result(state.dao.getByAddressSQL(state.address, state.pagination), requestTimeout)
   }
 }

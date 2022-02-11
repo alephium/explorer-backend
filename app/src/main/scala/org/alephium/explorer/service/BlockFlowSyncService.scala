@@ -124,7 +124,7 @@ object BlockFlowSyncService extends StrictLogging {
     ): Future[Int] = {
       blockFlowClient.fetchBlocks(from, to, uri).flatMap {
         case Right(multiChain) =>
-              val blocks =multiChain.flatten.sortBy(_.timestamp)
+              val blocks = multiChain.flatten.sortBy(_.timestamp)
               if (blocks.nonEmpty) {
                 for {
                   _ <- foldFutures(blocks)(insert)
@@ -271,15 +271,10 @@ object BlockFlowSyncService extends StrictLogging {
         case None                            => Future.successful(logger.error(s"${block.hash} doesn't have a parent"))
       }).flatMap { _ =>
         for {
-          _ <- Future.sequence(block.inputs.map(blockDao.getAddressForInput(_).map(_.get)))
           _ <- blockDao.insert(block)
           _ <- blockDao.updateMainChain(block.hash, block.chainFrom, block.chainTo, groupNum)
         } yield (())
       }
-    }
-
-    private def checkAndGetInputsAddresses(block: BlockEntity) = {
-        Future.sequence(block.inputs.map(blockDao.getAddressForInput(_).map(_.get)))
     }
 
     private def handleMissingMainChainBlock(missing: BlockEntry.Hash,

@@ -30,7 +30,8 @@ final case class OutputEntity(
     address: Address,
     mainChain: Boolean,
     lockTime: Option[TimeStamp],
-    order: Int
+    order: Int,
+    spent: Option[Transaction.Hash]
 ) {
   def toApi(spent: Option[Transaction.Hash]): Output =
     Output(hint, key, amount, address, lockTime, spent)
