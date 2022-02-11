@@ -45,9 +45,13 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     run(queries.outputsTable ++= Seq(output1, output2, output3, output4)).futureValue
 
     val (total, locked) = run(queries.getBalanceAction(address)).futureValue
+    val (totalSQL, lockedSQL) = run(queries.getBalanceActionSQL(address)).futureValue
 
     total is ALPH.alph(10)
     locked is ALPH.alph(7)
+
+    totalSQL is ALPH.alph(10)
+    lockedSQL is ALPH.alph(7)
   }
 
   it should "get balance should only return unpent outputs" in new Fixture {
@@ -62,7 +66,9 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     val (total, _) = run(queries.getBalanceAction(address)).futureValue
 
+    val (totalSQL, _ ) = run(queries.getBalanceActionSQL(address)).futureValue
     total is ALPH.alph(1)
+    totalSQL is ALPH.alph(1)
   }
 
   it should "output's spent info should only take the input from the main chain " in new Fixture {

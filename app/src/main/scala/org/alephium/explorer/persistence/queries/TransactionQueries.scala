@@ -302,24 +302,14 @@ trait TransactionQueries
 
   private def getUnlockedBalanceSQL(address: Address) = {
     val query = s"""
-        SELECT sum(outputs.amount)
+        SELECT outputs.amount, outputs.lock_time, inputs.hint
         FROM outputs
-        LEFT OUTER JOIN inputs
-        ON outputs.key = inputs.output_ref_key
-        WHERE outputs.main_chain = true
-        AND outputs.address = '${address.value}'
-        AND inputs.output_ref_key is null;
+        LEFT JOIN inputs ON outputs.key = inputs.output_ref_key
+        WHERE outputs.main_chain = true AND outputs.address = '$address'
       """
-    sql"#$query".as[Option[U256]]
+    sql"#$query".as[(U256,Option[TimeStamp], Option[Int])]
   }
 
-  private def getLockedBalanceSQL(address: Address) = {
-    val instant = java.time.Instant.ofEpochMilli(TimeStamp.now().millis)
-    val query   = s"""
-      select sum(amount) from outputs where main_chain = true and address = '${address.value}' and lock_time > '${instant.toString}';
-"""
-    sql"""#$query""".as[Option[U256]]
-  }
   private val getBalanceQuery = Compiled { address: Rep[Address] =>
     mainOutputs
       .filter(output => output.address === address)
@@ -331,6 +321,10 @@ trait TransactionQueries
 
      def getBalanceAction(address: Address): DBActionR[(U256, U256)] = {
     getBalanceQuery(address).result.map { outputs =>
+      sumBalance(outputs)
+    }}
+
+     private def sumBalance(outputs: Seq[(U256,Option[TimeStamp])]) : (U256, U256) = {
       val now = TimeStamp.now()
       outputs.foldLeft((U256.Zero, U256.Zero)) {
         case ((total, locked), (amount, lockTime)) =>
@@ -342,15 +336,30 @@ trait TransactionQueries
           }
           (newTotal, newLocked)
       }
-    }}
+     }
+
+
+     private def sumBalance_(outputs: Seq[(U256,Option[TimeStamp], Option[Int])]) : (U256, U256) = {
+      val now = TimeStamp.now()
+      outputs.foldLeft((U256.Zero, U256.Zero)) {
+        case ((total, locked), (amount, lockTime, input)) =>
+          if(input.isEmpty) {
+          val newTotal = total.addUnsafe(amount)
+          val newLocked = if (lockTime.map(_.isBefore(now)).getOrElse(true)) {
+            locked
+          } else {
+            locked.addUnsafe(amount)
+          }
+          (newTotal, newLocked)
+          } else {
+            (total, locked)
+          }
+      }
+     }
+
 
   def getBalanceActionSQL(address: Address): DBActionR[(U256, U256)] = {
-    for {
-      total  <- getUnlockedBalanceSQL(address).head
-      //locked <- getLockedBalanceSQL(address).head
-    } yield {
-      (total.getOrElse(U256.Zero), total.getOrElse(U256.Zero))
-    }
+      getUnlockedBalanceSQL(address).map(sumBalance_)
   }
 
   private val toApiInput = {
