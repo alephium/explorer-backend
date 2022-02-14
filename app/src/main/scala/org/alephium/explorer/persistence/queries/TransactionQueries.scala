@@ -82,14 +82,16 @@ trait TransactionQueries
   def insertTxPerAddressFromOutputs(outputs:Seq[OutputEntity]):DBActionW[Int] = {
     if(outputs.nonEmpty) {
     val values = outputs.map { output =>
-      s"('\\x${output.txHash}','\\x${output.blockHash}',${output.timestamp.millis},'${output.address}',${output.mainChain})"
+    val instant = java.time.Instant.ofEpochMilli(output.timestamp.millis)
+      s"('\\x${output.txHash}','\\x${output.blockHash}','${instant}','${output.address}',${output.mainChain})"
     }.mkString(",\n")
-      println(s"${Console.RED}${Console.BOLD}*** values ***\n\t${Console.RESET}${values}")
-    sqlu"""
+    val query =s"""
       INSERT INTO transaction_per_addresses (hash, block_hash, timestamp, address, main_chain)
-      #$values
+      VALUES $values
       ON CONFLICT (hash, block_hash, address) DO NOTHING
     """
+    sqlu"#$query"
+
     } else {
       DBIOAction.successful(0)
     }
@@ -98,7 +100,7 @@ trait TransactionQueries
   def updateTxPerAddressFromInputs(input:InputEntity):DBActionW[Int] = {
    val query = s"""
       INSERT INTO transaction_per_addresses (hash, block_hash, timestamp, address, main_chain)
-      (SELECT inputs.tx_hash, inputs.block_hash, inputs.timestamp, inputs.address, inputs.main_chain FROM inputs WHERE inputs.output_ref_key = '\\x${input.outputRefKey.toHexString}' AND inputs.tx_hash = '\\x${input.txHash}' AND inputs.block_hash = '\\x${input.blockHash}'
+      (SELECT inputs.tx_hash, inputs.block_hash, inputs.timestamp, inputs.address, inputs.main_chain FROM inputs WHERE inputs.address IS NOT NULL AND inputs.output_ref_key = '\\x${input.outputRefKey.toHexString}' AND inputs.tx_hash = '\\x${input.txHash}' AND inputs.block_hash = '\\x${input.blockHash}')
       ON CONFLICT (hash, block_hash, address) DO NOTHING
     """
 
@@ -131,6 +133,13 @@ trait TransactionQueries
      sql"""#$query""".as[Int]
   }
 
+  def countAddressTransactionsSQLNoJoin(address: Address): DBActionSR[Int] ={
+     val query = s"""
+    SELECT COUNT(*) FROM transaction_per_addresses WHERE main_chain = true AND address = '$address'
+    """
+     sql"""#$query""".as[Int]
+  }
+
   def getTxHashesByAddressQuerySQL(address: Address, offset:Int, limit: Int): DBActionSR[(Transaction.Hash, BlockEntry.Hash, TimeStamp)] ={
      val query = s"""
     SELECT tx_hash, block_hash, timestamp from outputs WHERE address = '$address'
@@ -141,6 +150,16 @@ trait TransactionQueries
     """
      sql"""#$query""".as[(Transaction.Hash, BlockEntry.Hash, TimeStamp)]
   }
+
+  def getTxHashesByAddressQuerySQLNoJoin(address: Address, offset:Int, limit: Int): DBActionSR[(Transaction.Hash, BlockEntry.Hash, TimeStamp)] ={
+     val query = s"""
+    SELECT hash, block_hash, timestamp from transaction_per_addresses WHERE main_chain = true AND address = '$address'
+    LIMIT $limit
+    OFFSET $offset
+    """
+     sql"""#$query""".as[(Transaction.Hash, BlockEntry.Hash, TimeStamp)]
+  }
+
 
   private val getTransactionQuery = Compiled { txHash: Rep[Transaction.Hash] =>
     mainTransactions
@@ -208,7 +227,7 @@ trait TransactionQueries
         .take(limit)
   }
 
-  private def inputsFromTxs(txHashes: Seq[Transaction.Hash]) = {
+  def inputsFromTxs(txHashes: Seq[Transaction.Hash]) = {
     mainInputs
       .filter(_.txHash inSet txHashes)
       .join(mainOutputs)
@@ -229,7 +248,26 @@ trait TransactionQueries
       }
   }
 
-  private def inputsFromTxsSQL(txHashes: Seq[Transaction.Hash]) = {
+  def inputsFromTxsSQL(txHashes: Seq[Transaction.Hash]) = {
+    val values = txHashes.map(hash => s"inputs.tx_hash = '\\x$hash'").mkString(" OR ")
+    val state = sql"""
+    SELECT (inputs.tx_hash, inputs.hint, inputs.output_ref_key, inputs.unlock_script, outputs.tx_hash, outputs.address, outputs.amount, inputs.order) FROM inputs
+    JOIN outputs
+    ON inputs.output_ref_key = outputs.key
+    """.as[(Transaction.Hash,Int, Hash, Option[String], Transaction.Hash, Address, U256, Int)]
+    println(s"${Console.RED}${Console.BOLD}*** state ***\n\t${Console.RESET}${state.statements}")
+    state
+  }
+
+  def inputsFromTxsSQLNoJoin(txHashes: Seq[Transaction.Hash]) = {
+    val query = s"""
+    SELECT (tx_hash, hint, output_ref_key, unlock_script, output_tx_hash, address, output_amount, order) FROM inputs
+    WHERE inputs.tx_hash in (${txHashes.map(hash => s"'\\x$hash'").mkString(",")})
+    """
+    sql"#$query".as[(Transaction.Hash,Int, Hash, Option[String], Transaction.Hash, Address, U256, Int)]
+  }
+
+  def inputsFromTxsNoJoin(txHashes: Seq[Transaction.Hash]) = {
     mainInputs
       .filter(_.txHash inSet txHashes)
       .map {input =>
@@ -366,7 +404,7 @@ trait TransactionQueries
     : DBActionR[Seq[Transaction]] = {
     val txHashes = txHashesTs.map(_._1)
     for {
-      ins <- inputsFromTxsSQL(txHashes).result
+      ins <- inputsFromTxsNoJoin(txHashes).result
       ous <- outputsFromTxsSQL(txHashes).result
       gas <- gasFromTxs(txHashes).result
     } yield {
@@ -458,14 +496,14 @@ trait TransactionQueries
                   gasPrice)
     }
 
-  def getUnlockedBalanceSQL(address: Address):DBActionSR[(U256,Option[TimeStamp], Option[Int])] = {
+  def getUnlockedBalanceSQL(address: Address):DBActionSR[(U256,Option[TimeStamp])] = {
     val query = s"""
-        SELECT outputs.amount, outputs.lock_time, inputs.hint
+        SELECT outputs.amount, outputs.lock_time
         FROM outputs
         LEFT JOIN inputs ON outputs.key = inputs.output_ref_key
-        WHERE outputs.main_chain = true AND outputs.address = '$address'
+        WHERE outputs.main_chain = true AND outputs.address = '$address' AND inputs.block_hash IS NULL
       """
-    sql"#$query".as[(U256,Option[TimeStamp], Option[Int])]
+    sql"#$query".as[(U256,Option[TimeStamp])]
   }
 
   def getUnlockedBalanceSQLNoJoin(address: Address):DBActionSR[(U256,Option[TimeStamp])]  = {
@@ -506,28 +544,8 @@ trait TransactionQueries
       }
      }
 
-
-     private def sumBalance_(outputs: Seq[(U256,Option[TimeStamp], Option[Int])]) : (U256, U256) = {
-      val now = TimeStamp.now()
-      outputs.foldLeft((U256.Zero, U256.Zero)) {
-        case ((total, locked), (amount, lockTime, input)) =>
-          if(input.isEmpty) {
-          val newTotal = total.addUnsafe(amount)
-          val newLocked = if (lockTime.map(_.isBefore(now)).getOrElse(true)) {
-            locked
-          } else {
-            locked.addUnsafe(amount)
-          }
-          (newTotal, newLocked)
-          } else {
-            (total, locked)
-          }
-      }
-     }
-
-
   def getBalanceActionSQL(address: Address): DBActionR[(U256, U256)] = {
-      getUnlockedBalanceSQL(address).map(sumBalance_)
+      getUnlockedBalanceSQL(address).map(sumBalance)
   }
 
   def getBalanceActionSQLNoJoin(address: Address): DBActionR[(U256, U256)] = {

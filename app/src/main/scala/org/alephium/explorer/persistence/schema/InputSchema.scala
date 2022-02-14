@@ -48,6 +48,7 @@ trait InputSchema extends Schema with CustomTypes {
     def inputsTxHashIdx: Index = index("inputs_tx_hash_idx", txHash)
     def outputRefKeyIdx: Index = index("inputs_output_ref_key_idx", outputRefKey)
     def timestampIdx: Index    = index("inputs_timestamp_idx", timestamp)
+    def addressIdx: Index    = index("inputs_address_idx", address)
 
     def * : ProvenShape[InputEntity] =
       (blockHash, txHash, timestamp, hint, outputRefKey, unlockScript, mainChain, order, address,outputTxHash, outputAmount)

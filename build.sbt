@@ -169,6 +169,7 @@ val wartsCompileExcludes = Seq(
   Wart.Equals, // for upickle macroRW
   Wart.ToString, // for upickle macroRW
   Wart.Var, // for upickle macroRW
+  Wart.PublicInference,
   Wart.Nothing
 )
 

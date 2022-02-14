@@ -19,6 +19,7 @@ package org.alephium.explorer.persistence.model
 import org.alephium.explorer.api.model.{Address,BlockEntry, Transaction}
 import org.alephium.util.TimeStamp
 
+//KEEP
 final case class TransactionPerAddressEntity(
     hash: Transaction.Hash,
     blockHash: BlockEntry.Hash,

@@ -141,6 +141,9 @@ trait CustomTypes extends JdbcProfile {
   implicit lazy val hashGetResult: GetResult[Hash] =
     (result: PositionedResult) => Hash.unsafe(ByteString.fromArrayUnsafe(result.nextBytes()))
 
+  implicit lazy val addressGetResult: GetResult[Address] =
+    (result: PositionedResult) => Address.unsafe(result.nextString())
+
   implicit lazy val u256GetResult: GetResult[U256] =
     (result: PositionedResult) => {
       U256.unsafe(result.nextBigDecimal().toBigInt.bigInteger)

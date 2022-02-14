@@ -149,87 +149,80 @@ class DBBenchmark {
    * Address benchmarks
    */
   // @Benchmark
-  // def getAddressTransactions(state: Address_ReadState): Unit = {
-  //   val _ =
-  //     Await.result(state.dao.getByAddress(state.address, state.pagination), requestTimeout)
+  // def getBalanceQuery(state: Address_ReadState): Unit = {
+  //   import state.db.config.profile.api._
+  //   val _  =
+  //     state.db.runNow(state.queries.getBalanceQuery(state.address).result, requestTimeout)
   // }
 
   // @Benchmark
-  // def getTxNumberByAddress(state: Address_ReadState): Unit = {
-  //   val _ =
-  //     Await.result(state.dao.getNumberByAddress(state.address), requestTimeout)
+  // def getBalanceSQL(state: Address_ReadState): Unit = {
+  //   val _  =
+  //     state.db.runNow(state.queries.getUnlockedBalanceSQL(state.address), requestTimeout)
   // }
 
-//   @Benchmark
-//   def getBalance(state: Address_ReadState): Unit = {
-//     val _  = Await.result(state.dao.getBalance(state.address), requestTimeout)
-//   }
+  // @Benchmark
+  // def getBalanceSQLNoJoin(state: Address_ReadState): Unit = {
+  //   val _  =
+  //     state.db.runNow(state.queries.getUnlockedBalanceSQLNoJoin(state.address), requestTimeout)
+  // }
 
-//   @Benchmark
-//   def getBalanceSQL(state: Address_ReadState): Unit = {
-//     val _  =
-//       Await.result(state.dao.getBalanceSQL(state.address), requestTimeout)
-//   }
+  // @Benchmark
+  // def getTxHashesByAddressQuery(state: Address_ReadState): Unit = {
+  //   import state.db.config.profile.api._
+  //   val _  =
+  //     state.db.runNow(state.queries.getTxHashesByAddressQuery((state.address, state.pagination.offset, state.pagination.limit)).result, requestTimeout)
+  // }
 
-//   @Benchmark
-//   def getBalanceSQLNoJoin(state: Address_ReadState): Unit = {
-//     val _  =
-//       Await.result(state.dao.getBalanceSQLNoJoin(state.address), requestTimeout)
-//   }
+  // @Benchmark
+  // def getTxHashesByAddressQuerySQL(state: Address_ReadState): Unit = {
+  //   val _  =
+  //     state.db.runNow(state.queries.getTxHashesByAddressQuerySQL(state.address, state.pagination.offset, state.pagination.limit), requestTimeout)
+  // }
 
-//   @Benchmark
-//   def getTxNumber(state: Address_ReadState): Unit = {
-//     val _  =
-//       Await.result(state.dao.getNumberByAddress(state.address), requestTimeout)
-//   }
+  // @Benchmark
+  // def getTxHashesByAddressQuerySQLNoJoin(state: Address_ReadState): Unit = {
+  //   val _  =
+  //     state.db.runNow(state.queries.getTxHashesByAddressQuerySQLNoJoin(state.address, state.pagination.offset, state.pagination.limit), requestTimeout)
+  // }
 
-//   @Benchmark
-//   def getTxNumberSQL(state: Address_ReadState): Unit = {
-//     val _  =
-//       Await.result(state.dao.getNumberByAddressSQL(state.address), requestTimeout)
-//   }
+  // @Benchmark
+  // def countAddressTransactionsSQL(state: Address_ReadState): Unit = {
+  //   val _  =
+  //     state.db.runNow(state.queries.countAddressTransactionsSQL(state.address), requestTimeout)
+  // }
 
-//   @Benchmark
-//   def getTxByAddress(state: Address_ReadState): Unit = {
-//     val _  =
-//       Await.result(state.dao.getByAddress(state.address, state.pagination), requestTimeout)
-//   }
+  // @Benchmark
+  // def countAddressTransactionsSQLNoJoin(state: Address_ReadState): Unit = {
+  //   val _  =
+  //     state.db.runNow(state.queries.countAddressTransactionsSQLNoJoin(state.address), requestTimeout)
+  // }
 
-//   @Benchmark
-//   def getTxByAddressSQL(state: Address_ReadState): Unit = {
-//     val _  =
-//       Await.result(state.dao.getByAddressSQL(state.address, state.pagination), requestTimeout)
-//   }
-//
   @Benchmark
-  def getBalanceQuery(state: Address_ReadState): Unit = {
-    import state.db.config.profile.api._
+  def getInputsFromTxs(state: Address_ReadState): Unit = {
+     import state.config.profile.api._
     val _  =
-      state.db.runNow(state.queries.getBalanceQuery(state.address).result, requestTimeout)
+      state.db.runNow(state.queries.inputsFromTxs(state.blocks.flatMap(_.transactions.map(_.hash))).result, requestTimeout)
   }
 
   @Benchmark
-  def getUnlockedBalanceSQL(state: Address_ReadState): Unit = {
+  def getInputsFromTxsSQL(state: Address_ReadState): Unit = {
+     import state.config.profile.api._
     val _  =
-      state.db.runNow(state.queries.getUnlockedBalanceSQLNoJoin(state.address), requestTimeout)
+      state.db.runNow(state.queries.inputsFromTxsSQL(state.blocks.flatMap(_.transactions.map(_.hash))), requestTimeout)
   }
 
   @Benchmark
-  def getUnlockedBalanceSQLNoJoin(state: Address_ReadState): Unit = {
+  def getInputsFromTxsNoJoin(state: Address_ReadState): Unit = {
+     import state.config.profile.api._
     val _  =
-      state.db.runNow(state.queries.getUnlockedBalanceSQLNoJoin(state.address), requestTimeout)
+      state.db.runNow(state.queries.inputsFromTxsNoJoin(state.blocks.flatMap(_.transactions.map(_.hash))).result, requestTimeout)
   }
 
   @Benchmark
-  def getTxHashesByAddressQuery(state: Address_ReadState): Unit = {
-    import state.db.config.profile.api._
+  def getInputsFromTxsSQLNoJoin(state: Address_ReadState): Unit = {
+     import state.config.profile.api._
     val _  =
-      state.db.runNow(state.queries.getTxHashesByAddressQuery((state.address, state.pagination.offset, state.pagination.limit)).result, requestTimeout)
-  }
-
-  @Benchmark
-  def getTxHashesByAddressQuerySQL(state: Address_ReadState): Unit = {
-    val _  =
-      state.db.runNow(state.queries.getTxHashesByAddressQuerySQL(state.address, state.pagination.offset, state.pagination.limit), requestTimeout)
+      state.db.runNow(state.queries.inputsFromTxsSQLNoJoin(state.blocks.flatMap(_.transactions.map(_.hash))), requestTimeout)
   }
 }

@@ -101,6 +101,38 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     // totalSQLNoJoin is ALPH.alph(1)
   }
 
+  it should "getting inputs for txs" in new Fixture {
+    import databaseConfig.profile.api._
+
+    val output1 = output(address, ALPH.alph(1), None)
+    val output2 = output(address, ALPH.alph(2), None)
+    val input1  = input(output1.hint, output1.key)
+    val input2  = input(output2.hint, output2.key)
+
+    run(queries.outputsTable ++= Seq(output1, output2)).futureValue
+    run(queries.inputsTable ++= Seq(input1, input2)).futureValue
+    run(queries.updateSpentOutput(input1)).futureValue
+    run(queries.updateSpentOutput(input2)).futureValue
+    run(queries.updateInputAddress(input1)).futureValue
+    run(queries.updateInputAddress(input2)).futureValue
+
+    val txHashes = Seq(input1.txHash, input2.txHash)
+    val inputs = run(queries.inputsFromTxs(txHashes).result).futureValue
+    val inputsNoJoin = run(queries.inputsFromTxsNoJoin(txHashes).result).futureValue
+    val inputsSQL = run(queries.inputsFromTxsSQL(txHashes)).futureValue.toSeq
+    val inputsSQLNoJoin = run(queries.inputsFromTxsSQL(txHashes)).futureValue
+
+    println(s"${Console.RED}${Console.BOLD}*** inputs.size ***\n\t${Console.RESET}${inputs.size}")
+    println(s"${Console.RED}${Console.BOLD}*** inputsNoJoin ***\n\t${Console.RESET}${inputsNoJoin.size}")
+    println(s"${Console.RED}${Console.BOLD}*** inputsSQL ***\n\t${Console.RESET}${inputsSQL.size}")
+    println(s"${Console.RED}${Console.BOLD}*** inputsSQLNoJoin ***\n\t${Console.RESET}${inputsSQLNoJoin.size}")
+
+
+    // total is ALPH.alph(1)
+    // totalSQL is ALPH.alph(1)
+    // totalSQLNoJoin is ALPH.alph(1)
+  }
+
   it should "output's spent info should only take the input from the main chain " in new Fixture {
     import databaseConfig.profile.api._
 

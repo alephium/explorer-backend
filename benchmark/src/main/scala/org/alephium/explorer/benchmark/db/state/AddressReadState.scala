@@ -51,6 +51,7 @@ class AddressReadState(val db: DBExecutor)
     with BlockHeaderSchema
     with InputSchema
     with OutputSchema
+    with TransactionPerAddressSchema
     {
 
       val ec:ExecutionContext = ExecutionContext.global
@@ -68,6 +69,8 @@ class AddressReadState(val db: DBExecutor)
     val queries:TransactionQueries = new Queries( db.config)
 
   val address:Address = Address.unsafe(Base58.encode(Hash.generate.bytes))
+
+  var blocks: Seq[BlockEntity] = _
 
     val pagination:Pagination =Pagination.unsafe(
       offset  = 0,
@@ -127,7 +130,7 @@ class AddressReadState(val db: DBExecutor)
   def persist(cache: Array[OutputEntity]): Unit = {
     logger.info(s"Generating transactions data.")
 
-    val blocks = cache.map { output =>
+    blocks = cache.map { output =>
       val blockHash = output.blockHash
       val txHash= output.txHash
       val timestamp = output.timestamp
@@ -163,6 +166,7 @@ class AddressReadState(val db: DBExecutor)
     val _ = db.dropTableIfExists(transactionsTable)
     val _ = db.dropTableIfExists(inputsTable)
     val _ = db.dropTableIfExists(outputsTable)
+    val _ = db.dropTableIfExists(transactionPerAddressesTable)
 
 
     val createTable =
@@ -170,10 +174,12 @@ class AddressReadState(val db: DBExecutor)
         .andThen(transactionsTable.schema.create)
         .andThen(inputsTable.schema.create)
         .andThen(outputsTable.schema.create)
+        .andThen(transactionPerAddressesTable.schema.create)
         .andThen(createBlockHeadersIndexesSQL())
         .andThen(createTransactionMainChainIndex())
         .andThen(createInputMainChainIndex())
         .andThen(createOutputMainChainIndex())
+        .andThen(createTransactionPerAddressMainChainIndex())
 
     val _ = db.runNow(
       action  = createTable,
@@ -182,9 +188,12 @@ class AddressReadState(val db: DBExecutor)
 
     logger.info("Persisting data")
     blocks.sliding(10000).foreach{ bs=> Await.result(blockDao.insertAll(bs.toSeq), batchWriteTimeout)
+      val _= db.runNow(insertTxPerAddressFromOutputs(bs.toSeq.flatMap(_.outputs)),batchWriteTimeout)
+
     blocks.flatMap(_.inputs).sliding(10000).foreach(_.foreach{ input=>
       Await.result(blockDao.updateSpent(input), batchWriteTimeout)
       Await.result(blockDao.updateAddress(input), batchWriteTimeout)
+      db.runNow(updateTxPerAddressFromInputs(input),batchWriteTimeout)
     })
     }
 
