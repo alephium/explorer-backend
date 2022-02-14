@@ -56,8 +56,8 @@ trait BlockDao {
   def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit]
   def latestBlocks(): Future[Seq[(ChainIndex, LatestBlock)]]
   def updateLatestBlock(block: BlockEntity): Future[Unit]
-  def updateSpent(input:InputEntity):Future[Unit]
-  def updateAddress(input:InputEntity):Future[Unit]
+  def updateSpent(input: InputEntity): Future[Unit]
+  def updateAddress(input: InputEntity): Future[Unit]
 }
 
 object BlockDao {
@@ -220,12 +220,12 @@ object BlockDao {
       }
     }
 
-  def updateSpent(input:InputEntity):Future[Unit] = {
-    run(updateSpentOutput(input)).map(_=>())
-  }
+    def updateSpent(input: InputEntity): Future[Unit] = {
+      run(updateSpentOutput(input)).map(_ => ())
+    }
 
-  def updateAddress(input:InputEntity):Future[Unit] = {
-    run(updateInputAddress(input)).map(_=>())
-  }
+    def updateAddress(input: InputEntity): Future[Unit] = {
+      run(updateInputAddress(input)).map(_ => ())
+    }
   }
 }

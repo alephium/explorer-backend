@@ -82,10 +82,10 @@ trait CustomTypes extends JdbcProfile {
 
   implicit lazy val optionTimestampGetResult: GetResult[Option[TimeStamp]] =
     (result: PositionedResult) =>
-      result.nextTimestampOption().map{timestamp =>
-      TimeStamp.unsafe(
-        timestamp.toLocalDateTime().toInstant(java.time.ZoneOffset.UTC).toEpochMilli)
-      }
+      result.nextTimestampOption().map { timestamp =>
+        TimeStamp.unsafe(
+          timestamp.toLocalDateTime().toInstant(java.time.ZoneOffset.UTC).toEpochMilli)
+    }
 
   implicit lazy val timestampType: JdbcType[TimeStamp] =
     MappedJdbcType.base[TimeStamp, java.time.Instant](
@@ -119,6 +119,11 @@ trait CustomTypes extends JdbcProfile {
   implicit lazy val txHashGetResult: GetResult[Transaction.Hash] =
     (result: PositionedResult) =>
       new Transaction.Hash(new Hash(ByteString.fromArrayUnsafe(result.nextBytes())))
+
+  implicit lazy val optionTxHashGetResult: GetResult[Option[Transaction.Hash]] =
+    (result: PositionedResult) =>
+      result.nextBytesOption().map(bytes=> new Transaction.Hash(new Hash(ByteString.fromArrayUnsafe(bytes))))
+
 
   implicit lazy val optionBlockEntryHashGetResult: GetResult[Option[BlockEntry.Hash]] =
     (result: PositionedResult) =>

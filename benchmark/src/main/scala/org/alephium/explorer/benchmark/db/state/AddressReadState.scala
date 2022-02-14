@@ -31,30 +31,30 @@ import org.alephium.explorer.{BlockHash, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.benchmark.db.{DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
-import org.alephium.explorer.persistence.dao.{BlockDao,TransactionDao}
+import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Base58, TimeStamp, U256}
 
-    class Queries(val config: DatabaseConfig[JdbcProfile])(
-        implicit val executionContext: ExecutionContext)
-        extends TransactionQueries
+class Queries(val config: DatabaseConfig[JdbcProfile])(
+    implicit val executionContext: ExecutionContext)
+    extends TransactionQueries
 
 /**
   * JMH state for benchmarking reads from TransactionDao
   */
+@SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
 class AddressReadState(val db: DBExecutor)
     extends ReadBenchmarkState[OutputEntity](testDataCount = 1000, db = db)
     with TransactionQueries
     with BlockHeaderSchema
     with InputSchema
     with OutputSchema
-    with TransactionPerAddressSchema
-    {
+    with TransactionPerAddressSchema {
 
-      val ec:ExecutionContext = ExecutionContext.global
+  val ec: ExecutionContext = ExecutionContext.global
 
   implicit val executionContext: ExecutionContext = ec
   import config.profile.api._
@@ -65,100 +65,106 @@ class AddressReadState(val db: DBExecutor)
   val dao: TransactionDao =
     TransactionDao(config)(db.config.db.ioExecutionContext)
 
+  val queries: TransactionQueries = new Queries(db.config)
 
-    val queries:TransactionQueries = new Queries( db.config)
-
-  val address:Address = Address.unsafe(Base58.encode(Hash.generate.bytes))
+  val address: Address = Address.unsafe(Base58.encode(Hash.generate.bytes))
 
   var blocks: Seq[BlockEntity] = _
 
-    val pagination:Pagination =Pagination.unsafe(
-      offset  = 0,
-      limit   = 1000000,
-      reverse = false
+  val pagination: Pagination = Pagination.unsafe(
+    offset  = 0,
+    limit   = 100,
+    reverse = false
+  )
+
+  private def generateInput(blockHash: BlockEntry.Hash,
+                            txHash: Transaction.Hash,
+                            timestamp: TimeStamp,
+                            hint: Int,
+                            key: Hash): InputEntity = {
+    InputEntity(
+      blockHash    = blockHash,
+      txHash       = txHash,
+      timestamp    = timestamp,
+      hint         = hint,
+      outputRefKey = key,
+      unlockScript = None,
+      mainChain    = true,
+      order        = 0,
+      None,
+      None,
+      None
+    )
+  }
+  private def generateTransaction(blockHash: BlockEntry.Hash,
+                                  txHash: Transaction.Hash,
+                                  timestamp: TimeStamp): TransactionEntity =
+    TransactionEntity(
+      hash      = txHash,
+      blockHash = blockHash,
+      timestamp = timestamp,
+      chainFrom = GroupIndex.unsafe(1),
+      chainTo   = GroupIndex.unsafe(3),
+      gasAmount = 0,
+      gasPrice  = U256.unsafe(0),
+      index     = 0,
+      mainChain = true
     )
 
-    private def generateInput(blockHash:BlockEntry.Hash, txHash: Transaction.Hash, timestamp:TimeStamp, hint:Int, key:Hash) :InputEntity = {
-      InputEntity(
-        blockHash = blockHash,
-        txHash = txHash,
-        timestamp = timestamp,
-        hint = hint,
-        outputRefKey = key,
-        unlockScript  = None,
-        mainChain =true,
-        order = 0,
-        None,
-        None,
-        None
-      )
-    }
-  private def generateTransaction(blockHash:BlockEntry.Hash,txHash:Transaction.Hash, timestamp:TimeStamp): TransactionEntity =
-      TransactionEntity(
-        hash      = txHash,
-        blockHash = blockHash,
-        timestamp = timestamp,
-        chainFrom = GroupIndex.unsafe(1),
-        chainTo   = GroupIndex.unsafe(3),
-        gasAmount = 0,
-        gasPrice  = U256.unsafe(0),
-        index     = 0,
-        mainChain = true
-      )
-
   def generateData(currentCacheSize: Int): OutputEntity = {
-      val blockHash = new BlockEntry.Hash(BlockHash.generate)
-      val txHash    = new Transaction.Hash(Hash.generate)
-      val timestamp = TimeStamp.now()
+    val blockHash = new BlockEntry.Hash(BlockHash.generate)
+    val txHash    = new Transaction.Hash(Hash.generate)
+    val timestamp = TimeStamp.now()
 
-      OutputEntity(
-        blockHash = blockHash,
-        txHash = txHash,
-        timestamp = timestamp,
-        hint = Random.nextInt(),
-        key = Hash.generate,
-        amount  = ALPH.alph(1),
-        address = address,
-        mainChain =true,
-        lockTime = None,
-        order = 0,
-        None
-      )
+    OutputEntity(
+      blockHash = blockHash,
+      txHash    = txHash,
+      timestamp = timestamp,
+      hint      = Random.nextInt(),
+      key       = Hash.generate,
+      amount    = ALPH.alph(1),
+      address   = address,
+      mainChain = true,
+      lockTime  = None,
+      order     = 0,
+      None
+    )
   }
-
 
   def persist(cache: Array[OutputEntity]): Unit = {
     logger.info(s"Generating transactions data.")
 
+    var outputs = cache
     blocks = cache.map { output =>
       val blockHash = output.blockHash
-      val txHash= output.txHash
+      val txHash    = output.txHash
       val timestamp = output.timestamp
-      val inputs = if(Random.nextBoolean()) {
-        val output = cache(Random.nextInt(cache.length))
+      val inputs = if (Random.nextBoolean()) {
+        val output = outputs(Random.nextInt(outputs.length))
+        outputs = outputs.filter(_ != output)
         Seq(generateInput(blockHash, txHash, timestamp, output.hint, output.key))
       } else {
         Seq.empty
       }
 
-    BlockEntity(
-      hash         = blockHash,
-      timestamp    = timestamp,
-      chainFrom    = GroupIndex.unsafe(1),
-      chainTo      = GroupIndex.unsafe(16),
-      height       = Height.genesis,
-      deps = Seq.empty,
-      transactions = Seq(generateTransaction(blockHash, txHash, timestamp)),
-      inputs = inputs,
-      outputs = Seq(output),
-      mainChain    = true,
-      nonce        = ByteString.emptyByteString,
-      version      = 0,
-      depStateHash = Blake2b.generate,
-      txsHash      = Blake2b.generate,
-      target       = ByteString.emptyByteString,
-      hashrate     = BigInteger.ONE
-    )
+      BlockEntity(
+        hash         = blockHash,
+        timestamp    = timestamp,
+        chainFrom    = GroupIndex.unsafe(1),
+        chainTo      = GroupIndex.unsafe(16),
+        height       = Height.genesis,
+        deps         = Seq.empty,
+        transactions = Seq(generateTransaction(blockHash, txHash, timestamp)),
+        inputs       = inputs,
+        outputs      = Seq(output),
+        mainChain    = true,
+        nonce        = ByteString.emptyByteString,
+        version      = 0,
+        depStateHash = Blake2b.generate,
+        txsHash      = Blake2b.generate,
+        target       = ByteString.emptyByteString,
+        hashrate     = BigInteger.ONE
+      )
     }
 
     //drop existing tables
@@ -167,7 +173,6 @@ class AddressReadState(val db: DBExecutor)
     val _ = db.dropTableIfExists(inputsTable)
     val _ = db.dropTableIfExists(outputsTable)
     val _ = db.dropTableIfExists(transactionPerAddressesTable)
-
 
     val createTable =
       blockHeadersTable.schema.create
@@ -187,14 +192,20 @@ class AddressReadState(val db: DBExecutor)
     )
 
     logger.info("Persisting data")
-    blocks.sliding(10000).foreach{ bs=> Await.result(blockDao.insertAll(bs.toSeq), batchWriteTimeout)
-      val _= db.runNow(insertTxPerAddressFromOutputs(bs.toSeq.flatMap(_.outputs)),batchWriteTimeout)
+    blocks.sliding(10000).foreach { bs =>
+      val txs = bs.flatMap(_.transactions)
+      Await.result(blockDao.insertAll(bs.toSeq), batchWriteTimeout)
+      val _ =
+        db.runNow(insertTxPerAddressFromOutputs(bs.toSeq.flatMap(_.outputs.map(out=>(out,0)))), batchWriteTimeout)
 
-    blocks.flatMap(_.inputs).sliding(10000).foreach(_.foreach{ input=>
-      Await.result(blockDao.updateSpent(input), batchWriteTimeout)
-      Await.result(blockDao.updateAddress(input), batchWriteTimeout)
-      db.runNow(updateTxPerAddressFromInputs(input),batchWriteTimeout)
-    })
+      blocks
+        .flatMap(_.inputs)
+        .sliding(10000)
+        .foreach(_.foreach { input =>
+          Await.result(blockDao.updateSpent(input), batchWriteTimeout)
+          Await.result(blockDao.updateAddress(input), batchWriteTimeout)
+          db.runNow(updateTxPerAddressFromInputs(input, 0), batchWriteTimeout)
+        })
     }
 
     logger.info("Persisting data complete")
@@ -213,12 +224,10 @@ class AddressReadState(val db: DBExecutor)
   */
 @State(Scope.Thread)
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-class Address_ReadState(override val db: DBExecutor)
-    extends AddressReadState(db                   = db) {
+class Address_ReadState(override val db: DBExecutor) extends AddressReadState(db = db) {
 
   def this() = {
     this(db = DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.HikariCP))
   }
 }
 // scalastyle:on magic.number
-

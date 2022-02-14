@@ -124,15 +124,15 @@ object BlockFlowSyncService extends StrictLogging {
     ): Future[Int] = {
       blockFlowClient.fetchBlocks(from, to, uri).flatMap {
         case Right(multiChain) =>
-              val blocks = multiChain.flatten.sortBy(_.timestamp)
-              if (blocks.nonEmpty) {
-                for {
-                  _ <- foldFutures(blocks)(insert)
-                  _ <- blockDao.updateLatestBlock(blocks.last)
-                } yield (blocks.size)
-              } else {
-                Future.successful(0)
-              }
+          val blocks = multiChain.flatten.sortBy(_.timestamp)
+          if (blocks.nonEmpty) {
+            for {
+              _ <- foldFutures(blocks)(insert)
+              _ <- blockDao.updateLatestBlock(blocks.last)
+            } yield (blocks.size)
+          } else {
+            Future.successful(0)
+          }
         case Left(error) =>
           logger.error(error)
           Future.successful(0)
@@ -250,7 +250,8 @@ object BlockFlowSyncService extends StrictLogging {
       }
     }
 
-    @SuppressWarnings(Array("org.wartremover.warts.Recursion","org.wartremover.warts.OptionPartial"))
+    @SuppressWarnings(
+      Array("org.wartremover.warts.Recursion", "org.wartremover.warts.OptionPartial"))
     private def insert(block: BlockEntity): Future[Unit] = {
       (block.parent(groupNum) match {
         case Some(parent) =>

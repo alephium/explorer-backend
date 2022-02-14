@@ -44,9 +44,10 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     run(queries.outputsTable ++= Seq(output1, output2, output3, output4)).futureValue
 
-    val (total, locked) = run(queries.getBalanceAction(address)).futureValue
+    val (total, locked)       = run(queries.getBalanceAction(address)).futureValue
     val (totalSQL, lockedSQL) = run(queries.getBalanceActionSQL(address)).futureValue
-    val (totalSQLNoJoin, lockedSQLNoJoin) = run(queries.getBalanceActionSQLNoJoin(address)).futureValue
+    val (totalSQLNoJoin, lockedSQLNoJoin) =
+      run(queries.getBalanceActionSQLNoJoin(address)).futureValue
 
     total is ALPH.alph(10)
     locked is ALPH.alph(7)
@@ -70,9 +71,9 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     run(queries.updateSpentOutput(input1)).futureValue
     run(queries.updateInputAddress(input1)).futureValue
 
-    val (total, _) = run(queries.getBalanceAction(address)).futureValue
-    val (totalSQL, _ ) = run(queries.getBalanceActionSQL(address)).futureValue
-    val (totalSQLNoJoin, _ ) = run(queries.getBalanceActionSQLNoJoin(address)).futureValue
+    val (total, _)          = run(queries.getBalanceAction(address)).futureValue
+    val (totalSQL, _)       = run(queries.getBalanceActionSQL(address)).futureValue
+    val (totalSQLNoJoin, _) = run(queries.getBalanceActionSQLNoJoin(address)).futureValue
 
     total is ALPH.alph(1)
     totalSQL is ALPH.alph(1)
@@ -91,7 +92,7 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     run(queries.updateSpentOutput(input1)).futureValue
     run(queries.updateInputAddress(input1)).futureValue
 
-    val total = run(queries.countAddressTransactions(address)).futureValue
+    val total    = run(queries.countAddressTransactions(address)).futureValue
     val totalSQL = run(queries.countAddressTransactionsSQL(address)).futureValue.head
 
     total is totalSQL
@@ -116,18 +117,18 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     run(queries.updateInputAddress(input1)).futureValue
     run(queries.updateInputAddress(input2)).futureValue
 
-    val txHashes = Seq(input1.txHash, input2.txHash)
-    val inputs = run(queries.inputsFromTxs(txHashes).result).futureValue
-    val inputsNoJoin = run(queries.inputsFromTxsNoJoin(txHashes).result).futureValue
-    val inputsSQL = run(queries.inputsFromTxsSQL(txHashes)).futureValue.toSeq
-    val inputsSQLNoJoin = run(queries.inputsFromTxsSQL(txHashes)).futureValue
+    val txHashes        = Seq(input1.txHash, input2.txHash)
+    val inputs          = run(queries.inputsFromTxs(txHashes).result).futureValue
+    val inputsNoJoin    = run(queries.inputsFromTxsNoJoin(txHashes).result).futureValue
+    val inputsSQL       = run(queries.inputsFromTxsSQL(txHashes)).futureValue.toSeq
+    val inputsSQLNoJoin = run(queries.inputsFromTxsSQLNoJoin(txHashes)).futureValue
 
     println(s"${Console.RED}${Console.BOLD}*** inputs.size ***\n\t${Console.RESET}${inputs.size}")
-    println(s"${Console.RED}${Console.BOLD}*** inputsNoJoin ***\n\t${Console.RESET}${inputsNoJoin.size}")
+    println(
+      s"${Console.RED}${Console.BOLD}*** inputsNoJoin ***\n\t${Console.RESET}${inputsNoJoin.size}")
     println(s"${Console.RED}${Console.BOLD}*** inputsSQL ***\n\t${Console.RESET}${inputsSQL.size}")
-    println(s"${Console.RED}${Console.BOLD}*** inputsSQLNoJoin ***\n\t${Console.RESET}${inputsSQLNoJoin.size}")
-
-
+    println(
+      s"${Console.RED}${Console.BOLD}*** inputsSQLNoJoin ***\n\t${Console.RESET}${inputsSQLNoJoin.size}")
     // total is ALPH.alph(1)
     // totalSQL is ALPH.alph(1)
     // totalSQLNoJoin is ALPH.alph(1)
@@ -191,20 +192,21 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
         address,
         true,
         lockTime,
-        0 ,None
+        0,
+        None
       )
 
     def input(hint: Int, outputRefKey: Hash): InputEntity =
-      InputEntity(
-        blockEntryHashGen.sample.get,
-        transactionHashGen.sample.get,
-        now,
-        hint,
-        outputRefKey,
-        None,
-        true,
-        0,
-        None
-      , None,None)
+      InputEntity(blockEntryHashGen.sample.get,
+                  transactionHashGen.sample.get,
+                  now,
+                  hint,
+                  outputRefKey,
+                  None,
+                  true,
+                  0,
+                  None,
+                  None,
+                  None)
   }
 }

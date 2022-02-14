@@ -158,7 +158,9 @@ class TransactionServiceSpec
                              None,
                              true,
                              0,
-                             None, None,None)
+                             None,
+                             None,
+                             None)
     val output1 = OutputEntity(blockHash1,
                                tx1.hash,
                                timestamp = ts1,
@@ -168,7 +170,8 @@ class TransactionServiceSpec
                                address1,
                                true,
                                None,
-                               0,None)
+                               0,
+                               None)
 
     val block1 = defaultBlockEntity.copy(
       hash         = blockHash1,

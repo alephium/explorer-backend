@@ -40,24 +40,24 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
     import config.profile.api._
     // forAll(Gen.oneOf(blockEntities), arbitrary[Boolean]) {
     //   case (block, mainChainInput) =>
-    val block = Gen.oneOf(blockEntities).sample.get
+    val block          = Gen.oneOf(blockEntities).sample.get
     val mainChainInput = arbitrary[Boolean].sample.get
-        blockDao.insert(block).futureValue
-        blockDao.updateMainChainStatus(block.hash, mainChainInput).futureValue
+    blockDao.insert(block).futureValue
+    blockDao.updateMainChainStatus(block.hash, mainChainInput).futureValue
 
-        val fetchedBlock = blockDao.get(block.hash).futureValue.get
-        fetchedBlock.hash is block.hash
-        fetchedBlock.mainChain is mainChainInput
+    val fetchedBlock = blockDao.get(block.hash).futureValue.get
+    fetchedBlock.hash is block.hash
+    fetchedBlock.mainChain is mainChainInput
 
-        val inputQuery  = inputsTable.filter(_.blockHash === block.hash).map(_.mainChain).result
-        val outputQuery = outputsTable.filter(_.blockHash === block.hash).map(_.mainChain).result
+    val inputQuery  = inputsTable.filter(_.blockHash === block.hash).map(_.mainChain).result
+    val outputQuery = outputsTable.filter(_.blockHash === block.hash).map(_.mainChain).result
 
-        val inputs: Seq[Boolean]  = run(inputQuery).futureValue
-        val outputs: Seq[Boolean] = run(outputQuery).futureValue
+    val inputs: Seq[Boolean]  = run(inputQuery).futureValue
+    val outputs: Seq[Boolean] = run(outputQuery).futureValue
 
-        inputs.size is block.inputs.size
-        outputs.size is block.outputs.size
-        (inputs ++ outputs).foreach(isMainChain => isMainChain is mainChainInput)
+    inputs.size is block.inputs.size
+    outputs.size is block.outputs.size
+    (inputs ++ outputs).foreach(isMainChain => isMainChain is mainChainInput)
 //    }
   }
 

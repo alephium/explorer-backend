@@ -37,11 +37,11 @@ trait OutputSchema extends Schema with CustomTypes {
     def key: Rep[Hash]                  = column[Hash]("key", O.SqlType("BYTEA"))
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
-    def address: Rep[Address]            = column[Address]("address")
-    def mainChain: Rep[Boolean]          = column[Boolean]("main_chain")
-    def lockTime: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("lock_time")
-    def order: Rep[Int]                  = column[Int]("order")
-    def spent: Rep[Option[Transaction.Hash]]                  = column[Option[Transaction.Hash]]("spent")
+    def address: Rep[Address]                = column[Address]("address")
+    def mainChain: Rep[Boolean]              = column[Boolean]("main_chain")
+    def lockTime: Rep[Option[TimeStamp]]     = column[Option[TimeStamp]]("lock_time")
+    def order: Rep[Int]                      = column[Int]("order")
+    def spent: Rep[Option[Transaction.Hash]] = column[Option[Transaction.Hash]]("spent")
 
     def pk: PrimaryKey = primaryKey("outputs_pk", (key, blockHash))
 
@@ -52,7 +52,7 @@ trait OutputSchema extends Schema with CustomTypes {
     def timestampIdx: Index = index("outputs_timestamp_idx", timestamp)
 
     def * : ProvenShape[OutputEntity] =
-      (blockHash, txHash, timestamp, hint, key, amount, address, mainChain, lockTime, order,spent)
+      (blockHash, txHash, timestamp, hint, key, amount, address, mainChain, lockTime, order, spent)
         .<>((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }
 
