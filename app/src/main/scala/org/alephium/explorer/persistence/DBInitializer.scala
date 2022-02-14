@@ -38,6 +38,7 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
     with UnconfirmedTxSchema
     with UInputSchema
     with UOutputSchema
+    with TransactionPerAddressSchema
     with LatestBlockSchema
     with TokenSupplySchema
     with HashrateSchema
@@ -59,6 +60,7 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
       unconfirmedTxsTable,
       uinputsTable,
       uoutputsTable,
+      transactionPerAddressesTable,
       latestBlocksTable,
       hashrateTable,
       tokenSupplyTable
@@ -88,6 +90,7 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
       _ <- createTransactionMainChainIndex()
       _ <- createInputMainChainIndex()
       _ <- createOutputMainChainIndex()
+      _ <- createTransactionPerAddressMainChainIndex()
       _ <- createHashrateIntervalTypeIndex()
     } yield ())
   }

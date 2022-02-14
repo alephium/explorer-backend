@@ -27,13 +27,14 @@ import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.schema.{InputSchema, OutputSchema, TransactionSchema}
+import org.alephium.explorer.persistence.schema._
 import org.alephium.util.{TimeStamp, U256}
 
 trait TransactionQueries
     extends TransactionSchema
     with InputSchema
     with OutputSchema
+    with TransactionPerAddressSchema
     with StrictLogging {
 
   implicit def executionContext: ExecutionContext
@@ -51,6 +52,8 @@ trait TransactionQueries
       _ <- DBIOAction.sequence(blockEntity.inputs.map(inputsTable.insertOrUpdate))
       _ <- DBIOAction.sequence(blockEntity.inputs.map(updateSpentOutput))
       _ <- DBIOAction.sequence(blockEntity.inputs.map(updateInputAddress))
+      _ <- insertTxPerAddressFromOutputs(blockEntity.outputs)
+      _ <- DBIOAction.sequence(blockEntity.inputs.map(updateTxPerAddressFromInputs))
     } yield ()
   }
 
@@ -74,6 +77,32 @@ trait TransactionQueries
     WHERE inputs.output_ref_key = '\\x${input.outputRefKey.toHexString}' AND inputs.tx_hash = '\\x${input.txHash}' AND inputs.block_hash = '\\x${input.blockHash}'
     """
      sqlu"#$query"
+  }
+
+  def insertTxPerAddressFromOutputs(outputs:Seq[OutputEntity]):DBActionW[Int] = {
+    if(outputs.nonEmpty) {
+    val values = outputs.map { output =>
+      s"('\\x${output.txHash}','\\x${output.blockHash}',${output.timestamp.millis},'${output.address}',${output.mainChain})"
+    }.mkString(",\n")
+      println(s"${Console.RED}${Console.BOLD}*** values ***\n\t${Console.RESET}${values}")
+    sqlu"""
+      INSERT INTO transaction_per_addresses (hash, block_hash, timestamp, address, main_chain)
+      #$values
+      ON CONFLICT (hash, block_hash, address) DO NOTHING
+    """
+    } else {
+      DBIOAction.successful(0)
+    }
+  }
+
+  def updateTxPerAddressFromInputs(input:InputEntity):DBActionW[Int] = {
+   val query = s"""
+      INSERT INTO transaction_per_addresses (hash, block_hash, timestamp, address, main_chain)
+      (SELECT inputs.tx_hash, inputs.block_hash, inputs.timestamp, inputs.address, inputs.main_chain FROM inputs WHERE inputs.output_ref_key = '\\x${input.outputRefKey.toHexString}' AND inputs.tx_hash = '\\x${input.txHash}' AND inputs.block_hash = '\\x${input.blockHash}'
+      ON CONFLICT (hash, block_hash, address) DO NOTHING
+    """
+
+    sqlu"#$query"
   }
 
   def insertAllTransactionFromBlockQuerys(blockEntities: Seq[BlockEntity]): DBActionW[Unit] = {
@@ -157,7 +186,7 @@ trait TransactionQueries
       .length
   }
 
-  private val getTxHashesByAddressQuery = Compiled {
+  val getTxHashesByAddressQuery = Compiled {
     (address: Rep[Address], toDrop: ConstColumn[Long], limit: ConstColumn[Long]) =>
       mainInputs
         .join(mainOutputs)
@@ -429,7 +458,7 @@ trait TransactionQueries
                   gasPrice)
     }
 
-  private def getUnlockedBalanceSQL(address: Address) = {
+  def getUnlockedBalanceSQL(address: Address):DBActionSR[(U256,Option[TimeStamp], Option[Int])] = {
     val query = s"""
         SELECT outputs.amount, outputs.lock_time, inputs.hint
         FROM outputs
@@ -439,7 +468,7 @@ trait TransactionQueries
     sql"#$query".as[(U256,Option[TimeStamp], Option[Int])]
   }
 
-  private def getUnlockedBalanceSQLNoJoin(address: Address) = {
+  def getUnlockedBalanceSQLNoJoin(address: Address):DBActionSR[(U256,Option[TimeStamp])]  = {
     val query = s"""
         SELECT outputs.amount, outputs.lock_time
         FROM outputs
@@ -449,7 +478,7 @@ trait TransactionQueries
   }
 
 
-  private val getBalanceQuery = Compiled { address: Rep[Address] =>
+  val getBalanceQuery = Compiled { address: Rep[Address] =>
     mainOutputs
       .filter(output => output.address === address)
       .joinLeft(mainInputs)

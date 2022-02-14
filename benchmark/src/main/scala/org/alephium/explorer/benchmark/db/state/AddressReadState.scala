@@ -23,6 +23,8 @@ import scala.util.Random
 
 import akka.util.ByteString
 import org.openjdk.jmh.annotations.{Scope, State}
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
 
 import org.alephium.crypto.Blake2b
 import org.alephium.explorer.{BlockHash, Hash}
@@ -36,6 +38,10 @@ import org.alephium.explorer.persistence.schema._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Base58, TimeStamp, U256}
 
+    class Queries(val config: DatabaseConfig[JdbcProfile])(
+        implicit val executionContext: ExecutionContext)
+        extends TransactionQueries
+
 /**
   * JMH state for benchmarking reads from TransactionDao
   */
@@ -47,7 +53,9 @@ class AddressReadState(val db: DBExecutor)
     with OutputSchema
     {
 
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
+      val ec:ExecutionContext = ExecutionContext.global
+
+  implicit val executionContext: ExecutionContext = ec
   import config.profile.api._
 
   val blockDao: BlockDao =
@@ -55,6 +63,9 @@ class AddressReadState(val db: DBExecutor)
 
   val dao: TransactionDao =
     TransactionDao(config)(db.config.db.ioExecutionContext)
+
+
+    val queries:TransactionQueries = new Queries( db.config)
 
   val address:Address = Address.unsafe(Base58.encode(Hash.generate.bytes))
 
