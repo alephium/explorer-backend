@@ -17,6 +17,7 @@
 package org.alephium.explorer
 
 import slick.dbio.{DBIOAction, Effect, NoStream, Streaming}
+import slick.sql.SqlAction
 
 package object persistence {
 
@@ -29,4 +30,6 @@ package object persistence {
 
   type DBActionS[A, E <: Effect] = DBIOAction[Vector[A], Streaming[A], E]
   type DBActionSR[A]             = DBIOAction[Vector[A], Streaming[A], Effect.Read]
+
+  type SqlActionSR[A] = SqlAction[Vector[A], Streaming[A], Effect.Read]
 }

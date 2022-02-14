@@ -22,7 +22,7 @@ import org.scalatest.concurrent.ScalaFutures
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
-import org.alephium.explorer.{AlephiumSpec, Generators, Hash}
+import org.alephium.explorer.{AlephiumSpec, Generators, Hash, TestDBRunner}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.model._
@@ -97,7 +97,7 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     tx.outputs.size is 1 // was 2 in v1.4.1
   }
 
-  trait Fixture extends DatabaseFixture with DBRunner with Generators {
+  trait Fixture extends DatabaseFixture with DBRunner with TestDBRunner with Generators {
     val config: DatabaseConfig[JdbcProfile] = databaseConfig
 
     class Queries(val config: DatabaseConfig[JdbcProfile])(

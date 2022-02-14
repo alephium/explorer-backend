@@ -22,8 +22,8 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 import slick.lifted.ProvenShape
 
-import org.alephium.explorer.AlephiumSpec
-import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
+import org.alephium.explorer.{AlephiumSpec, TestDBRunner}
+import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.protocol.ALPH
 import org.alephium.util._
 
@@ -70,7 +70,7 @@ class CustomTypesSpec extends AlephiumSpec with ScalaFutures with Eventually {
     run(timestampTable.filter(_.timestamp <= t1).result).futureValue is Seq(t1, t2)
   }
 
-  trait Fixture extends CustomTypes with DatabaseFixture with DBRunner {
+  trait Fixture extends CustomTypes with DatabaseFixture with TestDBRunner {
     override val config = databaseConfig
 
     import config.profile.api._

@@ -22,11 +22,9 @@ import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.explorer.AlephiumSpec
-import org.alephium.explorer.Generators
+import org.alephium.explorer.{AlephiumSpec, Generators, TestDBRunner}
 import org.alephium.explorer.api.model.Transaction
 import org.alephium.explorer.persistence.DatabaseFixture
-import org.alephium.explorer.persistence.DBRunner
 import org.alephium.explorer.persistence.schema._
 
 class UnconfirmedTxDaoSpec extends AlephiumSpec with ScalaFutures with Generators with Eventually {
@@ -91,7 +89,7 @@ class UnconfirmedTxDaoSpec extends AlephiumSpec with ScalaFutures with Generator
       with UInputSchema
       with UOutputSchema
       with DatabaseFixture
-      with DBRunner {
+      with TestDBRunner {
     override val config = databaseConfig
     val utxDao          = UnconfirmedTxDao(databaseConfig)
   }

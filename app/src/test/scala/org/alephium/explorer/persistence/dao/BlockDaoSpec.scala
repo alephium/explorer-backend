@@ -24,9 +24,9 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.api.model
-import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.{AlephiumSpec, Generators, TestDBRunner}
 import org.alephium.explorer.api.model.{BlockEntry, Pagination}
-import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
+import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.BlockFlowClient
@@ -127,7 +127,7 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
       with BlockDepsSchema
       with TransactionSchema
       with DatabaseFixture
-      with DBRunner {
+      with TestDBRunner {
     override val config = databaseConfig
     val blockDao        = BlockDao(groupNum, databaseConfig)
     val blockflow: Seq[Seq[model.BlockEntry]] =

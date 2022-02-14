@@ -23,9 +23,9 @@ import scala.concurrent.ExecutionContext
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.{AlephiumSpec, Generators, TestDBRunner}
 import org.alephium.explorer.api.model.Hashrate
-import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
+import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.queries.HashrateQueries
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.util._
@@ -239,7 +239,7 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
   trait Fixture
       extends HashrateQueries
       with DatabaseFixture
-      with DBRunner
+      with TestDBRunner
       with BlockHeaderSchema
       with Generators {
 

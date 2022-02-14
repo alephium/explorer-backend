@@ -23,7 +23,7 @@ import scala.concurrent.ExecutionContext
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
 
-import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.{AlephiumSpec, Generators, TestDBRunner}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.dao.BlockDao
@@ -138,7 +138,7 @@ class TokenSupplyServiceSpec extends AlephiumSpec with ScalaFutures with Eventua
     }
   }
 
-  trait Fixture extends TokenSupplySchema with DatabaseFixture with DBRunner with Generators {
+  trait Fixture extends TokenSupplySchema with DatabaseFixture with TestDBRunner with Generators {
     override val config = databaseConfig
     import config.profile.api._
 

@@ -32,7 +32,7 @@ trait HashrateQueries extends CustomTypes {
 
   def getHashratesQuery(from: TimeStamp,
                         to: TimeStamp,
-                        interval: Int): DBActionSR[(TimeStamp, BigDecimal)] = {
+                        interval: Int): SqlActionSR[(TimeStamp, BigDecimal)] = {
     val fromInstant = Instant.ofEpochMilli(from.millis)
     val toInstant   = Instant.ofEpochMilli(to.millis)
 
@@ -84,7 +84,7 @@ trait HashrateQueries extends CustomTypes {
     )
   }
 
-  def compute10MinutesHashrate(from: TimeStamp): DBActionSR[(TimeStamp, BigDecimal)] = {
+  def compute10MinutesHashrate(from: TimeStamp): SqlActionSR[(TimeStamp, BigDecimal)] = {
     sql"#${compute10MinutesHashrateRawString(from)};".as[(TimeStamp, BigDecimal)]
   }
 
@@ -96,7 +96,7 @@ trait HashrateQueries extends CustomTypes {
     )
   }
 
-  def computeHourlyHashrate(from: TimeStamp): DBActionSR[(TimeStamp, BigDecimal)] = {
+  def computeHourlyHashrate(from: TimeStamp): SqlActionSR[(TimeStamp, BigDecimal)] = {
     sql"#${computeHourlyHashrateRawString(from)};".as[(TimeStamp, BigDecimal)]
   }
 
@@ -111,7 +111,7 @@ trait HashrateQueries extends CustomTypes {
     )
   }
 
-  def computeDailyHashrate(from: TimeStamp): DBActionSR[(TimeStamp, BigDecimal)] = {
+  def computeDailyHashrate(from: TimeStamp): SqlActionSR[(TimeStamp, BigDecimal)] = {
     sql"#${computeDailyHashrateRawString(from)};".as[(TimeStamp, BigDecimal)]
   }
 
