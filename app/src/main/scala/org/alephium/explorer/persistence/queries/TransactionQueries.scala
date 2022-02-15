@@ -53,14 +53,8 @@ trait TransactionQueries
       _ <- DBIOAction.sequence(blockEntity.inputs.map(inputsTable.insertOrUpdate))
       _ <- DBIOAction.sequence(blockEntity.inputs.map(updateSpentOutput))
       _ <- DBIOAction.sequence(blockEntity.inputs.map(updateInputAddress))
-      _ <- insertTxPerAddressFromOutputs(blockEntity.outputs.map(out =>
-        (out, blockEntity.transactions.find(_.hash == out.txHash).map(_.index).get)))
-      _ <- DBIOAction.sequence(
-        blockEntity.inputs.map(
-          in =>
-            updateTxPerAddressFromInputs(
-              in,
-              blockEntity.transactions.find(_.hash == in.txHash).map(_.index).get)))
+      _ <- insertTxPerAddressFromOutputs(blockEntity.outputs)
+      _ <- DBIOAction.sequence(blockEntity.inputs.map(updateTxPerAddressFromInputs))
     } yield ()
   }
 
@@ -86,19 +80,18 @@ trait TransactionQueries
     sqlu"#$query"
   }
 
-  def insertTxPerAddressFromOutputs(outputs: Seq[(OutputEntity, Int)]): DBActionW[Int] = {
+  def insertTxPerAddressFromOutputs(outputs: Seq[OutputEntity]): DBActionW[Int] = {
     if (outputs.nonEmpty) {
       val values = outputs
-        .map {
-          case (output, txIndex) =>
+        .map {output =>
             val instant = java.time.Instant.ofEpochMilli(output.timestamp.millis)
-            s"('\\x${output.txHash}','\\x${output.blockHash}','${instant}',${txIndex}, '${output.address}',${output.mainChain})"
+            s"('\\x${output.txHash}','\\x${output.blockHash}','${instant}', '${output.address}',${output.mainChain})"
         }
         .mkString(",\n")
       val query = s"""
-      INSERT INTO transaction_per_addresses (hash, block_hash, timestamp, index, address, main_chain)
+      INSERT INTO transaction_per_addresses (hash, block_hash, timestamp, address, main_chain)
       VALUES $values
-      ON CONFLICT (hash, block_hash, address, index) DO NOTHING
+      ON CONFLICT (hash, block_hash, address) DO NOTHING
     """
       sqlu"#$query"
 
@@ -107,11 +100,11 @@ trait TransactionQueries
     }
   }
 
-  def updateTxPerAddressFromInputs(input: InputEntity, txIndex: Int): DBActionW[Int] = {
+  def updateTxPerAddressFromInputs(input: InputEntity): DBActionW[Int] = {
     val query = s"""
-      INSERT INTO transaction_per_addresses (hash, block_hash, timestamp, index, address, main_chain)
-      (SELECT inputs.tx_hash, inputs.block_hash, inputs.timestamp, ${txIndex}, inputs.address, inputs.main_chain FROM inputs WHERE inputs.address IS NOT NULL AND inputs.output_ref_key = '\\x${input.outputRefKey.toHexString}' AND inputs.tx_hash = '\\x${input.txHash}' AND inputs.block_hash = '\\x${input.blockHash}')
-      ON CONFLICT (hash, block_hash, address, index) DO NOTHING
+      INSERT INTO transaction_per_addresses (hash, block_hash, timestamp, address, main_chain)
+      (SELECT inputs.tx_hash, inputs.block_hash, inputs.timestamp, inputs.address, inputs.main_chain FROM inputs WHERE inputs.address IS NOT NULL AND inputs.output_ref_key = '\\x${input.outputRefKey.toHexString}' AND inputs.tx_hash = '\\x${input.txHash}' AND inputs.block_hash = '\\x${input.blockHash}')
+      ON CONFLICT (hash, block_hash, address) DO NOTHING
     """
 
     sqlu"#$query"

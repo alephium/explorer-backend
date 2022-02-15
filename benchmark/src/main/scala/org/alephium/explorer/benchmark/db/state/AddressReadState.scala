@@ -196,7 +196,7 @@ class AddressReadState(val db: DBExecutor)
       val txs = bs.flatMap(_.transactions)
       Await.result(blockDao.insertAll(bs.toSeq), batchWriteTimeout)
       val _ =
-        db.runNow(insertTxPerAddressFromOutputs(bs.toSeq.flatMap(_.outputs.map(out => (out, 0)))),
+        db.runNow(insertTxPerAddressFromOutputs(bs.toSeq.flatMap(_.outputs)),
                   batchWriteTimeout)
 
       blocks
@@ -205,7 +205,7 @@ class AddressReadState(val db: DBExecutor)
         .foreach(_.foreach { input =>
           Await.result(blockDao.updateSpent(input), batchWriteTimeout)
           Await.result(blockDao.updateAddress(input), batchWriteTimeout)
-          db.runNow(updateTxPerAddressFromInputs(input, 0), batchWriteTimeout)
+          db.runNow(updateTxPerAddressFromInputs(input), batchWriteTimeout)
         })
     }
 

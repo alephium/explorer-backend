@@ -33,11 +33,10 @@ trait TransactionPerAddressSchema extends Schema with CustomTypes {
     def hash: Rep[Transaction.Hash]     = column[Transaction.Hash]("hash", O.SqlType("BYTEA"))
     def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
-    def txIndex: Rep[Int]               = column[Int]("index")
     def address: Rep[Address]           = column[Address]("address")
     def mainChain: Rep[Boolean]         = column[Boolean]("main_chain")
 
-    def pk: PrimaryKey = primaryKey("txs_per_address_pk", (hash, blockHash, address, txIndex))
+    def pk: PrimaryKey = primaryKey("txs_per_address_pk", (hash, blockHash, address))
 
     def hashIdx: Index      = index("txs_per_address_hash_idx", hash)
     def timestampIdx: Index = index("txs_per_address_timestamp_idx", timestamp)
@@ -45,7 +44,7 @@ trait TransactionPerAddressSchema extends Schema with CustomTypes {
     def addressIdx: Index   = index("txs_per_address_address_idx", address)
 
     def * : ProvenShape[TransactionPerAddressEntity] =
-      (hash, blockHash, timestamp, txIndex, address, mainChain)
+      (hash, blockHash, timestamp, address, mainChain)
         .<>((TransactionPerAddressEntity.apply _).tupled, TransactionPerAddressEntity.unapply)
   }
 
