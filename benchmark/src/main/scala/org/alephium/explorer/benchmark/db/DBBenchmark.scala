@@ -170,147 +170,153 @@ class DBBenchmark {
   @Benchmark
   def getTxHashesByAddressQuery(state: Address_ReadState): Unit = {
     import state.db.config.profile.api._
-    val _  =
-      state.db.runNow(state.queries.getTxHashesByAddressQuery((state.address, state.pagination.offset, state.pagination.limit)).result, requestTimeout)
+    val _ =
+      state.db.runNow(state.queries
+                        .getTxHashesByAddressQuery(
+                          (state.address, state.pagination.offset, state.pagination.limit))
+                        .result,
+                      requestTimeout)
   }
 
   @Benchmark
   def getTxHashesByAddressQuerySQL(state: Address_ReadState): Unit = {
-    val _  =
-      state.db.runNow(state.queries.getTxHashesByAddressQuerySQL(state.address, state.pagination.offset, state.pagination.limit), requestTimeout)
+    val _ =
+      state.db.runNow(state.queries.getTxHashesByAddressQuerySQL(state.address,
+                                                                 state.pagination.offset,
+                                                                 state.pagination.limit),
+                      requestTimeout)
   }
 
   @Benchmark
   def getTxHashesByAddressQuerySQLNoJoin(state: Address_ReadState): Unit = {
-    val _  =
-      state.db.runNow(state.queries.getTxHashesByAddressQuerySQLNoJoin(state.address, state.pagination.offset, state.pagination.limit), requestTimeout)
+    val _ =
+      state.db.runNow(state.queries.getTxHashesByAddressQuerySQLNoJoin(state.address,
+                                                                       state.pagination.offset,
+                                                                       state.pagination.limit),
+                      requestTimeout)
   }
 
   @Benchmark
   def countAddressTransactionsSQL(state: Address_ReadState): Unit = {
-    val _  =
+    val _ =
       state.db.runNow(state.queries.countAddressTransactionsSQL(state.address), requestTimeout)
   }
 
   @Benchmark
   def countAddressTransactionsSQLNoJoin(state: Address_ReadState): Unit = {
-    val _  =
-      state.db.runNow(state.queries.countAddressTransactionsSQLNoJoin(state.address), requestTimeout)
+    val _ =
+      state.db
+        .runNow(state.queries.countAddressTransactionsSQLNoJoin(state.address), requestTimeout)
   }
 
-   @Benchmark
-   def getInputsFromTxs(state: Address_ReadState): Unit = {
-     import state.config.profile.api._
-     val _ =
-       state.db.runNow(
-         state.queries.inputsFromTxs(state.blocks.flatMap(_.transactions.map(_.hash))).result,
-         requestTimeout)
-   }
+  @Benchmark
+  def getInputsFromTxs(state: Address_ReadState): Unit = {
+    import state.config.profile.api._
+    val _ =
+      state.db.runNow(
+        state.queries.inputsFromTxs(state.blocks.flatMap(_.transactions.map(_.hash))).result,
+        requestTimeout)
+  }
 
-   @Benchmark
-   def getInputsFromTxsNoJoin(state: Address_ReadState): Unit = {
-     import state.config.profile.api._
-     val _ =
-       state.db.runNow(
-         state.queries.inputsFromTxsNoJoin(state.blocks.flatMap(_.transactions.map(_.hash))).result,
-         requestTimeout)
-   }
+  @Benchmark
+  def getInputsFromTxsNoJoin(state: Address_ReadState): Unit = {
+    import state.config.profile.api._
+    val _ =
+      state.db.runNow(
+        state.queries.inputsFromTxsNoJoin(state.blocks.flatMap(_.transactions.map(_.hash))).result,
+        requestTimeout)
+  }
 
-   @Benchmark
-   def getInputsFromTxsSQL(state: Address_ReadState): Unit = {
-     import state.config.profile.api._
-     val _ =
-       state.db.runNow(
-         state.queries.inputsFromTxsSQL(state.blocks.flatMap(_.transactions.map(_.hash))),
-         requestTimeout)
-   }
+  @Benchmark
+  def getInputsFromTxsSQL(state: Address_ReadState): Unit = {
+    import state.config.profile.api._
+    val _ =
+      state.db.runNow(
+        state.queries.inputsFromTxsSQL(state.blocks.flatMap(_.transactions.map(_.hash))),
+        requestTimeout)
+  }
+  @Benchmark
+  def getInputsFromTxsSQLNoJoin(state: Address_ReadState): Unit = {
+    import state.config.profile.api._
+    val _ =
+      state.db.runNow(
+        state.queries.inputsFromTxsSQLNoJoin(state.blocks.flatMap(_.transactions.map(_.hash))),
+        requestTimeout)
+  }
 
+  @Benchmark
+  def getOutputsFromTxs(state: Address_ReadState): Unit = {
+    import state.config.profile.api._
+    val _ =
+      state.db.runNow(
+        state.queries.outputsFromTxs(state.blocks.flatMap(_.transactions.map(_.hash))).result,
+        requestTimeout)
+  }
 
-   @Benchmark
-   def getInputsFromTxsSQLNoJoin(state: Address_ReadState): Unit = {
-     import state.config.profile.api._
-     val _ =
-       state.db.runNow(
-         state.queries.inputsFromTxsSQLNoJoin(state.blocks.flatMap(_.transactions.map(_.hash))),
-         requestTimeout)
-   }
+  @Benchmark
+  def getOutputsFromTxsNoJoin(state: Address_ReadState): Unit = {
+    import state.config.profile.api._
+    val _ =
+      state.db.runNow(
+        state.queries.outputsFromTxsNoJoin(state.blocks.flatMap(_.transactions.map(_.hash))).result,
+        requestTimeout)
+  }
 
-   @Benchmark
-   def getOutputsFromTxs(state: Address_ReadState): Unit = {
-     import state.config.profile.api._
-     val _ =
-       state.db.runNow(
-         state.queries.outputsFromTxs(state.blocks.flatMap(_.transactions.map(_.hash))).result,
-         requestTimeout)
-   }
+  @Benchmark
+  def getOutputsFromTxsSQL(state: Address_ReadState): Unit = {
+    import state.config.profile.api._
+    val _ =
+      state.db.runNow(
+        state.queries.outputsFromTxsSQL(state.blocks.flatMap(_.transactions.map(_.hash))),
+        requestTimeout)
+  }
 
-   @Benchmark
-   def getOutputsFromTxsNoJoin(state: Address_ReadState): Unit = {
-     import state.config.profile.api._
-     val _ =
-       state.db.runNow(
-         state.queries.outputsFromTxsNoJoin(state.blocks.flatMap(_.transactions.map(_.hash))).result,
-         requestTimeout)
-   }
+  @Benchmark
+  def getOutputsFromTxsSQLNoJoin(state: Address_ReadState): Unit = {
+    import state.config.profile.api._
+    val _ =
+      state.db.runNow(
+        state.queries.outputsFromTxsSQLNoJoin(state.blocks.flatMap(_.transactions.map(_.hash))),
+        requestTimeout)
+  }
 
-   @Benchmark
-   def getOutputsFromTxsSQL(state: Address_ReadState): Unit = {
-     import state.config.profile.api._
-     val _ =
-       state.db.runNow(
-         state.queries.outputsFromTxsSQL(state.blocks.flatMap(_.transactions.map(_.hash))),
-         requestTimeout)
-   }
+  @Benchmark
+  def getGasFromTxs(state: Address_ReadState): Unit = {
+    import state.config.profile.api._
+    val _ =
+      state.db.runNow(
+        state.queries.gasFromTxs(state.blocks.flatMap(_.transactions.map(_.hash))).result,
+        requestTimeout)
+  }
 
-   @Benchmark
-   def getOutputsFromTxsSQLNoJoin(state: Address_ReadState): Unit = {
-     import state.config.profile.api._
-     val _ =
-       state.db.runNow(
-         state.queries.outputsFromTxsSQLNoJoin(state.blocks.flatMap(_.transactions.map(_.hash))),
-         requestTimeout)
-   }
-
-   @Benchmark
-   def getGasFromTxs(state: Address_ReadState): Unit = {
-     import state.config.profile.api._
-     val _ =
-       state.db.runNow(
-         state.queries.gasFromTxs(state.blocks.flatMap(_.transactions.map(_.hash))).result,
-         requestTimeout)
-   }
-
-   @Benchmark
-   def getGasFromTxsSQL(state: Address_ReadState): Unit = {
-     import state.config.profile.api._
-     val _ =
-       state.db.runNow(
-         state.queries.gasFromTxsSQL(state.blocks.flatMap(_.transactions.map(_.hash))),
-         requestTimeout)
-   }
+  @Benchmark
+  def getGasFromTxsSQL(state: Address_ReadState): Unit = {
+    import state.config.profile.api._
+    val _ =
+      state.db.runNow(state.queries.gasFromTxsSQL(state.blocks.flatMap(_.transactions.map(_.hash))),
+                      requestTimeout)
+  }
 
   @Benchmark
   def getTransactionsByAddress(state: Address_ReadState): Unit = {
     import state.config.profile.api._
     val _ =
-      state.db.runNow(
-        state.queries.getTransactionsByAddress(state.address, state.pagination),
-        requestTimeout)
+      state.db.runNow(state.queries.getTransactionsByAddress(state.address, state.pagination),
+                      requestTimeout)
   }
 
   @Benchmark
   def getTransactionsByAddressSQL(state: Address_ReadState): Unit = {
     import state.config.profile.api._
     val _ =
-      state.db.runNow(
-        state.queries.getTransactionsByAddressSQL(state.address, state.pagination),
-        requestTimeout)
+      state.db.runNow(state.queries.getTransactionsByAddressSQL(state.address, state.pagination),
+                      requestTimeout)
   }
 
   @Benchmark
   def getTransactionsByAddressSQLDAO(state: Address_ReadState): Unit = {
     import state.config.profile.api._
     val _ =
-       Await.result(state.dao.getByAddressSQL(state.address, state.pagination), requestTimeout)
+      Await.result(state.dao.getByAddressSQL(state.address, state.pagination), requestTimeout)
   }
 }

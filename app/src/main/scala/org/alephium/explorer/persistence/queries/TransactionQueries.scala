@@ -53,8 +53,14 @@ trait TransactionQueries
       _ <- DBIOAction.sequence(blockEntity.inputs.map(inputsTable.insertOrUpdate))
       _ <- DBIOAction.sequence(blockEntity.inputs.map(updateSpentOutput))
       _ <- DBIOAction.sequence(blockEntity.inputs.map(updateInputAddress))
-      _ <- insertTxPerAddressFromOutputs(blockEntity.outputs.map(out=>(out,blockEntity.transactions.find(_.hash == out.txHash).map(_.index).get)))
-        _ <- DBIOAction.sequence(blockEntity.inputs.map(in=> updateTxPerAddressFromInputs(in, blockEntity.transactions.find(_.hash == in.txHash).map(_.index).get)))
+      _ <- insertTxPerAddressFromOutputs(blockEntity.outputs.map(out =>
+        (out, blockEntity.transactions.find(_.hash == out.txHash).map(_.index).get)))
+      _ <- DBIOAction.sequence(
+        blockEntity.inputs.map(
+          in =>
+            updateTxPerAddressFromInputs(
+              in,
+              blockEntity.transactions.find(_.hash == in.txHash).map(_.index).get)))
     } yield ()
   }
 
@@ -83,9 +89,10 @@ trait TransactionQueries
   def insertTxPerAddressFromOutputs(outputs: Seq[(OutputEntity, Int)]): DBActionW[Int] = {
     if (outputs.nonEmpty) {
       val values = outputs
-        .map { case (output, txIndex) =>
-          val instant = java.time.Instant.ofEpochMilli(output.timestamp.millis)
-          s"('\\x${output.txHash}','\\x${output.blockHash}','${instant}',${txIndex}, '${output.address}',${output.mainChain})"
+        .map {
+          case (output, txIndex) =>
+            val instant = java.time.Instant.ofEpochMilli(output.timestamp.millis)
+            s"('\\x${output.txHash}','\\x${output.blockHash}','${instant}',${txIndex}, '${output.address}',${output.mainChain})"
         }
         .mkString(",\n")
       val query = s"""
@@ -100,7 +107,7 @@ trait TransactionQueries
     }
   }
 
-  def updateTxPerAddressFromInputs(input: InputEntity, txIndex:Int): DBActionW[Int] = {
+  def updateTxPerAddressFromInputs(input: InputEntity, txIndex: Int): DBActionW[Int] = {
     val query = s"""
       INSERT INTO transaction_per_addresses (hash, block_hash, timestamp, index, address, main_chain)
       (SELECT inputs.tx_hash, inputs.block_hash, inputs.timestamp, ${txIndex}, inputs.address, inputs.main_chain FROM inputs WHERE inputs.address IS NOT NULL AND inputs.output_ref_key = '\\x${input.outputRefKey.toHexString}' AND inputs.tx_hash = '\\x${input.txHash}' AND inputs.block_hash = '\\x${input.blockHash}')
@@ -144,10 +151,7 @@ trait TransactionQueries
   }
 
   //TODO This one is wrong as we need to join the txs to have the index
-  def getTxHashesByAddressQuerySQL(
-      address: Address,
-      offset: Int,
-      limit: Int)= {
+  def getTxHashesByAddressQuerySQL(address: Address, offset: Int, limit: Int) = {
     val query = s"""
     SELECT tx_hash, block_hash, timestamp from outputs WHERE address = '$address'
     UNION
@@ -313,7 +317,6 @@ trait TransactionQueries
       }
   }
 
-
   def outputsFromTxsSQL(txHashes: Seq[Transaction.Hash]) = {
     val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
     sql"""
@@ -321,7 +324,14 @@ trait TransactionQueries
     FROM outputs
     LEFT JOIN inputs ON inputs.output_ref_key = outputs.key AND inputs.main_chain = true
     WHERE outputs.tx_hash IN (#$values) AND outputs.main_chain = true
-    """.as[(Transaction.Hash, Int, Int, Hash, U256, Address, Option[TimeStamp], Option[Transaction.Hash])]
+    """.as[(Transaction.Hash,
+            Int,
+            Int,
+            Hash,
+            U256,
+            Address,
+            Option[TimeStamp],
+            Option[Transaction.Hash])]
   }
 
   def outputsFromTxsSQLNoJoin(txHashes: Seq[Transaction.Hash]) = {
@@ -330,21 +340,23 @@ trait TransactionQueries
     SELECT outputs.tx_hash, outputs.order, outputs.hint, outputs.key,  outputs.amount, outputs.address, outputs.lock_time, outputs.spent
     FROM outputs
     WHERE outputs.tx_hash IN (#$values) AND outputs.main_chain = true
-    """.as[(Transaction.Hash, Int, Int, Hash, U256, Address, Option[TimeStamp], Option[Transaction.Hash])]
+    """.as[(Transaction.Hash,
+            Int,
+            Int,
+            Hash,
+            U256,
+            Address,
+            Option[TimeStamp],
+            Option[Transaction.Hash])]
   }
 
- def outputsFromTxsNoJoin(txHashes: Seq[Transaction.Hash]) = {
+  def outputsFromTxsNoJoin(txHashes: Seq[Transaction.Hash]) = {
     mainOutputs
       .filter(_.txHash inSet txHashes)
-      .map{output =>
-          (output.txHash,
-           (output.hint,
-            output.key,
-            output.amount,
-            output.address,
-            output.lockTime,
-            output.spent),
-           output.order)
+      .map { output =>
+        (output.txHash,
+         (output.hint, output.key, output.amount, output.address, output.lockTime, output.spent),
+         output.order)
       }
   }
 
@@ -439,16 +451,20 @@ trait TransactionQueries
     } yield {
       txHashesTs.map {
         case (tx, bh, ts) =>
-          val ins                   =
+          val ins =
             insVec.filter(_._1 == tx).sortBy(_._2).map {
-             case (_, _, hint, key, unlockScript, txHash, address, amount) =>
-             Input(Output.Ref(hint, key), unlockScript, txHash, address, amount)
+              case (_, _, hint, key, unlockScript, txHash, address, amount) =>
+                Input(Output.Ref(hint, key), unlockScript, txHash, address, amount)
             }
-          val ous                   = ousVec.filter(_._1 == tx).sortBy(_._2).map {
-             case (_, _, hint, key,  amount, address, lockTime, spent) =>
-             Output(hint, key, amount, address, lockTime, spent)
+          val ous = ousVec.filter(_._1 == tx).sortBy(_._2).map {
+            case (_, _, hint, key, amount, address, lockTime, spent) =>
+              Output(hint, key, amount, address, lockTime, spent)
           }
-          val (gasAmount, gasPrice) = gasVec.filter(_._1 == tx).map{ case (_, s,g)=> (s,g)}.headOption.getOrElse((0, U256.Zero))
+          val (gasAmount, gasPrice) = gasVec
+            .filter(_._1 == tx)
+            .map { case (_, s, g) => (s, g) }
+            .headOption
+            .getOrElse((0, U256.Zero))
           Transaction(tx, bh, ts, ins, ous, gasAmount, gasPrice)
       }
     }
@@ -466,7 +482,6 @@ trait TransactionQueries
     WHERE main_chain = true AND hash IN (#$values)
     """.as[(Transaction.Hash, Int, U256)]
   }
-
 
   private val getInputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
     mainInputs

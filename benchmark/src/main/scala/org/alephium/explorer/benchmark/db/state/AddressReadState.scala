@@ -47,7 +47,7 @@ class Queries(val config: DatabaseConfig[JdbcProfile])(
   */
 @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
 class AddressReadState(val db: DBExecutor)
-    extends ReadBenchmarkState[OutputEntity](testDataCount = 1000, db = db)
+    extends ReadBenchmarkState[OutputEntity](testDataCount = 40000, db = db)
     with TransactionQueries
     with BlockHeaderSchema
     with InputSchema
@@ -196,7 +196,8 @@ class AddressReadState(val db: DBExecutor)
       val txs = bs.flatMap(_.transactions)
       Await.result(blockDao.insertAll(bs.toSeq), batchWriteTimeout)
       val _ =
-        db.runNow(insertTxPerAddressFromOutputs(bs.toSeq.flatMap(_.outputs.map(out=>(out,0)))), batchWriteTimeout)
+        db.runNow(insertTxPerAddressFromOutputs(bs.toSeq.flatMap(_.outputs.map(out => (out, 0)))),
+                  batchWriteTimeout)
 
       blocks
         .flatMap(_.inputs)

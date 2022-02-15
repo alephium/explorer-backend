@@ -54,31 +54,35 @@ object TransactionDao {
     def getByAddress(address: Address, pagination: Pagination): Future[Seq[Transaction]] =
       run(getTransactionsByAddress(address, pagination))
 
-    def getByAddressSQL(address: Address, pagination: Pagination): Future[Seq[Transaction]] ={
-    val offset = pagination.offset
-    val limit  = pagination.limit
-    val toDrop = offset * limit
-    for {
-      txHashesTs <- run(getTxHashesByAddressQuerySQLNoJoin(address, toDrop, limit))
-    txHashes = txHashesTs.map(_._1)
-      insVec <- run(inputsFromTxsSQL(txHashes))
-      ousVec <- run(outputsFromTxsSQL(txHashes))
-      gasVec <- run(gasFromTxsSQL(txHashes))
-    } yield {
-       txHashesTs.map {
-         case (tx, bh, ts) =>
-           val ins                   =
-             insVec.filter(_._1 == tx).sortBy(_._2).map {
-              case (_, _, hint, key, unlockScript, txHash, address, amount) =>
-              Input(Output.Ref(hint, key), unlockScript, txHash, address, amount)
-             }
-           val ous                   = ousVec.filter(_._1 == tx).sortBy(_._2).map {
-              case (_, _, hint, key,  amount, address, lockTime, spent) =>
-              Output(hint, key, amount, address, lockTime, spent)
-           }
-           val (gasAmount, gasPrice) = gasVec.filter(_._1 == tx).map{ case (_, s,g)=> (s,g)}.headOption.getOrElse((0, U256.Zero))
-           Transaction(tx, bh, ts, ins, ous, gasAmount, gasPrice)
-       }
+    def getByAddressSQL(address: Address, pagination: Pagination): Future[Seq[Transaction]] = {
+      val offset = pagination.offset
+      val limit  = pagination.limit
+      val toDrop = offset * limit
+      for {
+        txHashesTs <- run(getTxHashesByAddressQuerySQLNoJoin(address, toDrop, limit))
+        txHashes = txHashesTs.map(_._1)
+        insVec <- run(inputsFromTxsSQL(txHashes))
+        ousVec <- run(outputsFromTxsSQL(txHashes))
+        gasVec <- run(gasFromTxsSQL(txHashes))
+      } yield {
+        txHashesTs.map {
+          case (tx, bh, ts) =>
+            val ins =
+              insVec.filter(_._1 == tx).sortBy(_._2).map {
+                case (_, _, hint, key, unlockScript, txHash, address, amount) =>
+                  Input(Output.Ref(hint, key), unlockScript, txHash, address, amount)
+              }
+            val ous = ousVec.filter(_._1 == tx).sortBy(_._2).map {
+              case (_, _, hint, key, amount, address, lockTime, spent) =>
+                Output(hint, key, amount, address, lockTime, spent)
+            }
+            val (gasAmount, gasPrice) = gasVec
+              .filter(_._1 == tx)
+              .map { case (_, s, g) => (s, g) }
+              .headOption
+              .getOrElse((0, U256.Zero))
+            Transaction(tx, bh, ts, ins, ous, gasAmount, gasPrice)
+        }
       }
     }
 
