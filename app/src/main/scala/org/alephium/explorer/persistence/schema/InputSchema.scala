@@ -40,7 +40,7 @@ trait InputSchema extends Schema with CustomTypes {
     def order: Rep[Int]                   = column[Int]("order")
     def txIndex: Rep[Int]                 = column[Int]("tx_index")
 
-    def pk: PrimaryKey = primaryKey("inputs_pk", (outputRefKey, txHash, blockHash))
+    def pk: PrimaryKey = primaryKey("inputs_pk", (outputRefKey, blockHash))
 
     def blockHashIdx: Index    = index("inputs_block_hash_idx", blockHash)
     def inputsTxHashIdx: Index = index("inputs_tx_hash_idx", txHash)
