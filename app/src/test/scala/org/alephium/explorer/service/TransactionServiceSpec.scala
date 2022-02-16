@@ -208,7 +208,11 @@ class TransactionServiceSpec
     val res =
       transactionService.getTransactionsByAddress(address0, Pagination.unsafe(0, 5)).futureValue
 
+    val res2 =
+      transactionService.getTransactionsByAddressSQL(address0, Pagination.unsafe(0, 5)).futureValue
+
     res is Seq(t1, t0)
+    res2 is Seq(t1, t0)
   }
 
   it should "get only main chain transaction for an address in case of tx in two blocks (in case of reorg)" in new Fixture {

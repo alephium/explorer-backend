@@ -44,10 +44,14 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     run(queries.outputsTable ++= Seq(output1, output2, output3, output4)).futureValue
 
-    val (total, locked) = run(queries.getBalanceAction(address)).futureValue
+    val (total, locked)       = run(queries.getBalanceAction(address)).futureValue
+    val (totalSQL, lockedSQL) = run(queries.getBalanceActionSQL(address)).futureValue
 
     total is ALPH.alph(10)
     locked is ALPH.alph(7)
+
+    totalSQL is ALPH.alph(10)
+    lockedSQL is ALPH.alph(7)
   }
 
   it should "get balance should only return unpent outputs" in new Fixture {
@@ -60,9 +64,177 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     run(queries.outputsTable ++= Seq(output1, output2)).futureValue
     run(queries.inputsTable += input1).futureValue
 
-    val (total, _) = run(queries.getBalanceAction(address)).futureValue
+    val (total, _)    = run(queries.getBalanceAction(address)).futureValue
+    val (totalSQL, _) = run(queries.getBalanceActionSQL(address)).futureValue
 
     total is ALPH.alph(1)
+    totalSQL is ALPH.alph(1)
+  }
+
+  it should "txs count" in new Fixture {
+    import databaseConfig.profile.api._
+
+    val output1 = output(address, ALPH.alph(1), None)
+    val output2 = output(address, ALPH.alph(2), None)
+    val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
+    val input1  = input(output2.hint, output2.key)
+    val input2  = input(output3.hint, output3.key)
+
+    run(queries.outputsTable ++= Seq(output1, output2, output3)).futureValue
+    run(queries.inputsTable ++= Seq(input1, input2)).futureValue
+
+    val total    = run(queries.countAddressTransactions(address)).futureValue
+    val totalSQL = run(queries.countAddressTransactionsSQL(address)).futureValue.head
+
+    //tx of output1, output2 and input1
+    total is 3
+    totalSQL is 3
+  }
+
+  it should "get tx hashes by address" in new Fixture {
+    import databaseConfig.profile.api._
+
+    val output1 = output(address, ALPH.alph(1), None)
+    val output2 = output(address, ALPH.alph(2), None)
+    val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
+    val input1  = input(output2.hint, output2.key)
+    val input2  = input(output3.hint, output3.key)
+
+    run(queries.outputsTable ++= Seq(output1, output2, output3)).futureValue
+    run(queries.inputsTable ++= Seq(input1, input2)).futureValue
+
+    val hashes    = run(queries.getTxHashesByAddressQuery((address, 0, 10)).result).futureValue
+    val hashesSQL = run(queries.getTxHashesByAddressQuerySQL(address, 0, 10)).futureValue
+
+    val expected = Seq(
+      (output1.txHash, output1.blockHash, output1.timestamp, 0),
+      (output2.txHash, output2.blockHash, output2.timestamp, 0),
+      (input1.txHash, input1.blockHash, input1.timestamp, 0)
+    ).sortBy(_._3).reverse
+
+    hashes is expected
+    hashesSQL is expected.toVector
+  }
+
+  it should "outpus for txs" in new Fixture {
+    import databaseConfig.profile.api._
+
+    val output1 = output(address, ALPH.alph(1), None)
+    val output2 = output(address, ALPH.alph(2), None)
+    val output3 = output(address, ALPH.alph(3), None)
+    val output4 = output(address, ALPH.alph(3), None).copy(mainChain = false)
+    val input1  = input(output2.hint, output2.key)
+    val input2  = input(output3.hint, output3.key).copy(mainChain = false)
+
+    val outputs = Seq(output1, output2, output3, output4)
+    val inputs  = Seq(input1, input2)
+
+    run(queries.outputsTable ++= outputs).futureValue
+    run(queries.inputsTable ++= inputs).futureValue
+
+    val txHashes = outputs.map(_.txHash)
+
+    def res(output: OutputEntity, input: Option[InputEntity]) = {
+      (output.txHash,
+       output.order,
+       output.hint,
+       output.key,
+       output.amount,
+       output.address,
+       output.lockTime,
+       input.map(_.txHash))
+    }
+
+    val expected = Seq(
+      res(output1, None),
+      res(output2, Some(input1)),
+      res(output3, None)
+    ).sortBy(_._1.toString)
+
+    run(queries.outputsFromTxs(txHashes).result).futureValue.sortBy(_._1.toString) is expected
+    run(queries.outputsFromTxsSQL(txHashes)).futureValue.sortBy(_._1.toString) is expected.toVector
+  }
+
+  it should "inputs for txs" in new Fixture {
+    import databaseConfig.profile.api._
+
+    val output1 = output(address, ALPH.alph(1), None)
+    val output2 = output(address, ALPH.alph(2), None)
+    val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
+    val input1  = input(output1.hint, output1.key)
+    val input2  = input(output2.hint, output2.key)
+    val input3  = input(output3.hint, output3.key)
+
+    val inputs  = Seq(input1, input2)
+    val outputs = Seq(output1, output2)
+
+    run(queries.outputsTable ++= (outputs :+ output3)).futureValue
+    run(queries.inputsTable ++= (inputs :+ input3)).futureValue
+
+    val txHashes = Seq(input1.txHash, input2.txHash)
+
+    val expected = inputs.zip(outputs).map {
+      case (input, output) =>
+        (input.txHash,
+         input.order,
+         input.hint,
+         input.outputRefKey,
+         input.unlockScript,
+         output.txHash,
+         output.address,
+         output.amount)
+    }
+
+    run(queries.inputsFromTxs(txHashes).result).futureValue is expected
+    run(queries.inputsFromTxsSQL(txHashes)).futureValue is expected.toVector
+  }
+
+  it should "get tx by address" in new Fixture {
+    import databaseConfig.profile.api._
+
+    val output1 = output(address, ALPH.alph(1), None)
+    val output2 = output(address, ALPH.alph(2), None)
+    val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
+    val input1  = input(output2.hint, output2.key)
+    val input2  = input(output3.hint, output3.key)
+    val output4 = output(addressGen.sample.get, ALPH.alph(3), None)
+      .copy(txHash = input1.txHash, blockHash = input1.blockHash, timestamp = input1.timestamp)
+
+    val outputs = Seq(output1, output2, output3, output4)
+
+    val transactions = outputs.map(transaction)
+
+    run(queries.outputsTable ++= outputs).futureValue
+    run(queries.inputsTable ++= Seq(input1, input2)).futureValue
+    run(queries.transactionsTable ++= transactions).futureValue
+
+    def tx(output: OutputEntity, spent: Option[Transaction.Hash], inputs: Seq[Input]) = {
+      Transaction(
+        output.txHash,
+        output.blockHash,
+        output.timestamp,
+        inputs,
+        Seq(output.toApi(spent)),
+        1,
+        ALPH.alph(1)
+      )
+    }
+
+    val txs = run(queries.getTransactionsByAddress(address, Pagination.unsafe(0, 10))).futureValue
+    val txsSQL =
+      run(queries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue
+
+    val expected = Seq(
+      tx(output1, None, Seq.empty),
+      tx(output2, Some(input1.txHash), Seq.empty),
+      tx(output4, None, Seq(input1.toApi(output2)))
+    ).sortBy(_.timestamp).reverse
+
+    txs.size is 3
+    txsSQL.size is 3
+
+    txs is expected
+    txsSQL is expected
   }
 
   it should "output's spent info should only take the input from the main chain " in new Fixture {
@@ -107,7 +279,7 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val queries = new Queries(databaseConfig)
 
     val address = addressGen.sample.get
-    val now     = TimeStamp.now()
+    def now     = TimeStamp.now().plusMinutesUnsafe(scala.util.Random.nextLong(240))
 
     val chainFrom = GroupIndex.unsafe(0)
     val chainTo   = GroupIndex.unsafe(0)
@@ -123,19 +295,30 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
         address,
         true,
         lockTime,
+        0,
         0
       )
 
     def input(hint: Int, outputRefKey: Hash): InputEntity =
-      InputEntity(
-        blockEntryHashGen.sample.get,
-        transactionHashGen.sample.get,
-        now,
-        hint,
-        outputRefKey,
-        None,
-        true,
-        0
-      )
+      InputEntity(blockEntryHashGen.sample.get,
+                  transactionHashGen.sample.get,
+                  now,
+                  hint,
+                  outputRefKey,
+                  None,
+                  true,
+                  0,
+                  0)
+    def transaction(output: OutputEntity): TransactionEntity = {
+      TransactionEntity(output.txHash,
+                        output.blockHash,
+                        output.timestamp,
+                        GroupIndex.unsafe(0),
+                        GroupIndex.unsafe(1),
+                        1,
+                        ALPH.alph(1),
+                        0,
+                        true)
+    }
   }
 }
