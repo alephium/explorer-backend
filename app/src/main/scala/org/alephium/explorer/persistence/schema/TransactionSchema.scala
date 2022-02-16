@@ -34,9 +34,9 @@ trait TransactionSchema extends Schema with CustomTypes {
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
     def chainFrom: Rep[GroupIndex]      = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]        = column[GroupIndex]("chain_to")
-    def gasAmount: Rep[Int]             = column[Int]("gas-amount")
+    def gasAmount: Rep[Int]             = column[Int]("gas_amount")
     def gasPrice: Rep[U256] =
-      column[U256]("gas-price", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
+      column[U256]("gas_price", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
     def txIndex: Rep[Int]       = column[Int]("index")
     def mainChain: Rep[Boolean] = column[Boolean]("main_chain")
 
