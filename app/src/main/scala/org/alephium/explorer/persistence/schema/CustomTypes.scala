@@ -80,6 +80,13 @@ trait CustomTypes extends JdbcProfile {
       TimeStamp.unsafe(
         result.nextTimestamp().toLocalDateTime().toInstant(java.time.ZoneOffset.UTC).toEpochMilli)
 
+  implicit lazy val optionTimestampGetResult: GetResult[Option[TimeStamp]] =
+    (result: PositionedResult) =>
+      result.nextTimestampOption().map { timestamp =>
+        TimeStamp.unsafe(
+          timestamp.toLocalDateTime().toInstant(java.time.ZoneOffset.UTC).toEpochMilli)
+    }
+
   implicit lazy val timestampType: JdbcType[TimeStamp] =
     MappedJdbcType.base[TimeStamp, java.time.Instant](
       ts      => java.time.Instant.ofEpochMilli(ts.millis),
@@ -109,6 +116,16 @@ trait CustomTypes extends JdbcProfile {
     (result: PositionedResult) =>
       new BlockEntry.Hash(new BlockHash(ByteString.fromArrayUnsafe(result.nextBytes())))
 
+  implicit lazy val txHashGetResult: GetResult[Transaction.Hash] =
+    (result: PositionedResult) =>
+      new Transaction.Hash(new Hash(ByteString.fromArrayUnsafe(result.nextBytes())))
+
+  implicit lazy val optionTxHashGetResult: GetResult[Option[Transaction.Hash]] =
+    (result: PositionedResult) =>
+      result
+        .nextBytesOption()
+        .map(bytes => new Transaction.Hash(new Hash(ByteString.fromArrayUnsafe(bytes))))
+
   implicit lazy val optionBlockEntryHashGetResult: GetResult[Option[BlockEntry.Hash]] =
     (result: PositionedResult) =>
       result
@@ -129,6 +146,19 @@ trait CustomTypes extends JdbcProfile {
 
   implicit lazy val hashGetResult: GetResult[Hash] =
     (result: PositionedResult) => Hash.unsafe(ByteString.fromArrayUnsafe(result.nextBytes()))
+
+  implicit lazy val addressGetResult: GetResult[Address] =
+    (result: PositionedResult) => Address.unsafe(result.nextString())
+
+  implicit lazy val u256GetResult: GetResult[U256] =
+    (result: PositionedResult) => {
+      U256.unsafe(result.nextBigDecimal().toBigInt.bigInteger)
+    }
+
+  implicit lazy val optionU256GetResult: GetResult[Option[U256]] =
+    (result: PositionedResult) => {
+      result.nextBigDecimalOption().map(bigDecimal => U256.unsafe(bigDecimal.toBigInt.bigInteger))
+    }
 
   /**
     * GetResult type for BlockEntry.Lite
