@@ -125,6 +125,7 @@ class TransactionServiceSpec
                    address0,
                    true,
                    None,
+                   0,
                    0)
 
     val block0 = defaultBlockEntity.copy(
@@ -156,6 +157,7 @@ class TransactionServiceSpec
                              outputRefKey = output0.key,
                              None,
                              true,
+                             0,
                              0)
     val output1 = OutputEntity(blockHash1,
                                tx1.hash,
@@ -166,6 +168,7 @@ class TransactionServiceSpec
                                address1,
                                true,
                                None,
+                               0,
                                0)
 
     val block1 = defaultBlockEntity.copy(
@@ -238,6 +241,7 @@ class TransactionServiceSpec
                        address0,
                        true,
                        None,
+                       0,
                        0)
 
         val block0 = defaultBlockEntity.copy(

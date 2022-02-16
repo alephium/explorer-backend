@@ -28,7 +28,8 @@ final case class InputEntity(
     outputRefKey: Hash,
     unlockScript: Option[String],
     mainChain: Boolean,
-    order: Int
+    order: Int,
+    txIndex: Int
 ) {
   def toApi(outputRef: OutputEntity): Input =
     Input(

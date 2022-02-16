@@ -38,6 +38,7 @@ trait InputSchema extends Schema with CustomTypes {
     def unlockScript: Rep[Option[String]] = column[Option[String]]("unlock_script")
     def mainChain: Rep[Boolean]           = column[Boolean]("main_chain")
     def order: Rep[Int]                   = column[Int]("order")
+    def txIndex: Rep[Int]                 = column[Int]("tx_index")
 
     def pk: PrimaryKey = primaryKey("inputs_pk", (outputRefKey, txHash, blockHash))
 
@@ -47,7 +48,7 @@ trait InputSchema extends Schema with CustomTypes {
     def timestampIdx: Index    = index("inputs_timestamp_idx", timestamp)
 
     def * : ProvenShape[InputEntity] =
-      (blockHash, txHash, timestamp, hint, outputRefKey, unlockScript, mainChain, order)
+      (blockHash, txHash, timestamp, hint, outputRefKey, unlockScript, mainChain, order, txIndex)
         .<>((InputEntity.apply _).tupled, InputEntity.unapply)
   }
 

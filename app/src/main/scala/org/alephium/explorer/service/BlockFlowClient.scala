@@ -171,7 +171,7 @@ object BlockFlowClient {
       implicit groupConfig: GroupConfig): BlockEntity = {
     val hash         = new BlockEntry.Hash(block.hash)
     val mainChain    = false
-    val transactions = block.transactions.toSeq
+    val transactions = block.transactions.toSeq.zipWithIndex
     val chainFrom    = block.chainFrom
     val chainTo      = block.chainTo
     BlockEntity(
@@ -181,20 +181,24 @@ object BlockFlowClient {
       GroupIndex.unsafe(block.chainTo),
       Height.unsafe(block.height),
       block.deps.map(new BlockEntry.Hash(_)).toSeq,
-      transactions.zipWithIndex.map {
+      transactions.map {
         case (tx, index) =>
           txToEntity(tx, hash, block.timestamp, index, mainChain, chainFrom, chainTo)
       },
-      transactions.flatMap(tx =>
-        tx.inputs.toSeq.zipWithIndex.map {
-          case (in, index) =>
-            inputToEntity(in, hash, tx.id, block.timestamp, mainChain, index)
-      }),
-      transactions.flatMap(tx =>
-        tx.outputs.toSeq.zipWithIndex.map {
-          case (out, index) =>
-            outputToEntity(out, hash, tx.id, index, block.timestamp, mainChain)
-      }),
+      transactions.flatMap {
+        case (tx, txIndex) =>
+          tx.inputs.toSeq.zipWithIndex.map {
+            case (in, index) =>
+              inputToEntity(in, hash, tx.id, block.timestamp, mainChain, index, txIndex)
+          }
+      },
+      transactions.flatMap {
+        case (tx, txIndex) =>
+          tx.outputs.toSeq.zipWithIndex.map {
+            case (out, index) =>
+              outputToEntity(out, hash, tx.id, index, block.timestamp, mainChain, txIndex)
+          }
+      },
       mainChain = mainChain,
       block.nonce,
       block.version,
@@ -255,21 +259,21 @@ object BlockFlowClient {
                             txId: Hash,
                             timestamp: TimeStamp,
                             mainChain: Boolean,
-                            index: Int): InputEntity = {
+                            index: Int,
+                            txIndex: Int): InputEntity = {
     val unlockScript = input match {
       case asset: api.model.Input.Asset => Some(Hex.toHexString(asset.unlockScript))
       case _: api.model.Input.Contract  => None
     }
-    InputEntity(
-      blockHash,
-      new Transaction.Hash(txId),
-      timestamp,
-      input.outputRef.hint,
-      input.outputRef.key,
-      unlockScript,
-      mainChain,
-      index
-    )
+    InputEntity(blockHash,
+                new Transaction.Hash(txId),
+                timestamp,
+                input.outputRef.hint,
+                input.outputRef.key,
+                unlockScript,
+                mainChain,
+                index,
+                txIndex)
   }
 
   private def outputToUOutput(output: api.model.Output): UOutput = {
@@ -289,7 +293,8 @@ object BlockFlowClient {
                              txId: Hash,
                              index: Int,
                              timestamp: TimeStamp,
-                             mainChain: Boolean): OutputEntity = {
+                             mainChain: Boolean,
+                             txIndex: Int): OutputEntity = {
     val lockTime = output match {
       case asset: api.model.Output.Asset if asset.lockTime.millis > 0 => Some(asset.lockTime)
       case _                                                          => None
@@ -308,7 +313,8 @@ object BlockFlowClient {
       new Address(output.address.toBase58),
       mainChain,
       lockTime,
-      index
+      index,
+      txIndex
     )
   }
   // scalastyle:off magic.number
