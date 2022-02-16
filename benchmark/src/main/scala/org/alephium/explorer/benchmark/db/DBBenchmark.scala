@@ -34,7 +34,7 @@ import org.alephium.explorer.benchmark.db.state._
 @Warmup(iterations = 0)
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
-@Measurement(iterations = 1, time = 1, timeUnit = TimeUnit.MINUTES) //runs this benchmark for x minutes
+@Measurement(iterations = 1, time = 5, timeUnit = TimeUnit.SECONDS) //runs this benchmark for x minutes
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 class DBBenchmark {
 
@@ -143,5 +143,107 @@ class DBBenchmark {
   def listBlocks_Forward_HikariCP_SQL(state: ListBlocks_Forward_HikariCP_ReadState): Unit = {
     val _ =
       Await.result(state.dao.listMainChainSQL(state.next), requestTimeout)
+  }
+
+  /**
+    * Address benchmarks
+    */
+  @Benchmark
+  def getBalanceQuery(state: Address_ReadState): Unit = {
+    import state.db.config.profile.api._
+    val _ =
+      state.db.runNow(state.queries.getBalanceQuery(state.address).result, requestTimeout)
+  }
+
+  @Benchmark
+  def getBalanceSQL(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(state.queries.getBalanceQuerySQL(state.address), requestTimeout)
+  }
+
+  @Benchmark
+  def getTxHashesByAddressQuery(state: Address_ReadState): Unit = {
+    import state.db.config.profile.api._
+    val _ =
+      state.db.runNow(
+        state.queries
+          .getTxHashesByAddressQuery(
+            (state.address, state.pagination.offset.toLong, state.pagination.limit.toLong))
+          .result,
+        requestTimeout)
+  }
+
+  @Benchmark
+  def getTxHashesByAddressQuerySQL(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(state.queries.getTxHashesByAddressQuerySQL(state.address,
+                                                                 state.pagination.offset,
+                                                                 state.pagination.limit),
+                      requestTimeout)
+  }
+
+  @Benchmark
+  def countAddressTransactionsSQL(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(state.queries.countAddressTransactionsSQL(state.address), requestTimeout)
+  }
+
+  @Benchmark
+  def getInputsFromTxs(state: Address_ReadState): Unit = {
+    import state.config.profile.api._
+    val _ =
+      state.db.runNow(state.queries
+                        .inputsFromTxs(state.txHashes)
+                        .result,
+                      requestTimeout)
+  }
+
+  @Benchmark
+  def getInputsFromTxsSQL(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(state.queries.inputsFromTxsSQL(state.txHashes), requestTimeout)
+  }
+
+  @Benchmark
+  def getOutputsFromTxs(state: Address_ReadState): Unit = {
+    import state.config.profile.api._
+    val _ =
+      state.db.runNow(state.queries
+                        .outputsFromTxs(state.txHashes)
+                        .result,
+                      requestTimeout)
+  }
+
+  @Benchmark
+  def getOutputsFromTxsSQL(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(state.queries.outputsFromTxsSQL(state.txHashes), requestTimeout)
+  }
+
+  @Benchmark
+  def getGasFromTxs(state: Address_ReadState): Unit = {
+    import state.config.profile.api._
+    val _ =
+      state.db.runNow(state.queries.gasFromTxs(state.txHashes).result, requestTimeout)
+  }
+
+  @Benchmark
+  def getGasFromTxsSQL(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(state.queries.gasFromTxsSQL(state.txHashes), requestTimeout)
+  }
+
+  @Benchmark
+  def getTransactionsByAddress(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(state.queries.getTransactionsByAddress(state.address, state.pagination),
+                      requestTimeout)
+  }
+
+  @Benchmark
+  def getTransactionsByAddressSQL(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(state.queries.getTransactionsByAddressSQL(state.address, state.pagination),
+                      requestTimeout)
   }
 }
