@@ -22,7 +22,7 @@ import scala.reflect.ClassTag
 
 import akka.util.ByteString
 import slick.basic.DatabaseConfig
-import slick.jdbc.{GetResult, JdbcProfile, JdbcType, PositionedResult}
+import slick.jdbc._
 
 import org.alephium.explorer._
 import org.alephium.explorer.api.model._
@@ -197,4 +197,11 @@ trait CustomTypes extends JdbcProfile {
         hashrate     = result.<<,
         parent       = result.<<?
     )
+
+  /*
+   * SetParameters types
+   */
+
+  implicit lazy val setAddress: SetParameter[Address] = (v: Address, pp: PositionedParameters) =>
+    pp.setString(v.value)
 }

@@ -111,18 +111,17 @@ trait TransactionQueries
   }
 
   def countAddressTransactionsSQL(address: Address): DBActionSR[Int] = {
-    val query = s"""
+    sql"""
     SELECT COUNT(*)
     FROM (
       (SELECT inputs.tx_hash
         FROM inputs
-        JOIN outputs ON inputs.output_ref_key = outputs.key AND outputs.main_chain = true
+        JOIN outputs ON  outputs.main_chain = true AND inputs.output_ref_key = outputs.key AND outputs.address = $address
         WHERE inputs.main_chain = true)
     UNION
-    SELECT tx_hash from outputs WHERE main_chain = true AND address = '$address'
+    SELECT tx_hash from outputs WHERE main_chain = true AND address = $address
     ) tx_hashes
-    """
-    sql"""#$query""".as[Int]
+    """.as[Int]
   }
 
   val getTxHashesByAddressQuery = Compiled {

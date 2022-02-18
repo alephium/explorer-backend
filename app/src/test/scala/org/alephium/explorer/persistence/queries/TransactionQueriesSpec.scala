@@ -77,11 +77,13 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
     val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
+    val output4 = output(addressGen.sample.get, ALPH.alph(3), None)
     val input1  = input(output2.hint, output2.key)
     val input2  = input(output3.hint, output3.key)
+    val input3  = input(output4.hint, output4.key)
 
-    run(queries.outputsTable ++= Seq(output1, output2, output3)).futureValue
-    run(queries.inputsTable ++= Seq(input1, input2)).futureValue
+    run(queries.outputsTable ++= Seq(output1, output2, output3, output4)).futureValue
+    run(queries.inputsTable ++= Seq(input1, input2, input3)).futureValue
 
     val total    = run(queries.countAddressTransactions(address)).futureValue
     val totalSQL = run(queries.countAddressTransactionsSQL(address)).futureValue.head
@@ -97,11 +99,13 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
     val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
+    val output4 = output(addressGen.sample.get, ALPH.alph(3), None)
     val input1  = input(output2.hint, output2.key)
     val input2  = input(output3.hint, output3.key)
+    val input3  = input(output4.hint, output4.key)
 
-    run(queries.outputsTable ++= Seq(output1, output2, output3)).futureValue
-    run(queries.inputsTable ++= Seq(input1, input2)).futureValue
+    run(queries.outputsTable ++= Seq(output1, output2, output3, output4)).futureValue
+    run(queries.inputsTable ++= Seq(input1, input2, input3)).futureValue
 
     val hashes    = run(queries.getTxHashesByAddressQuery((address, 0, 10)).result).futureValue
     val hashesSQL = run(queries.getTxHashesByAddressQuerySQL(address, 0, 10)).futureValue
