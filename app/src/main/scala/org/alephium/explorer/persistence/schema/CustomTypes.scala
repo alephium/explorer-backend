@@ -204,4 +204,8 @@ trait CustomTypes extends JdbcProfile {
 
   implicit lazy val setAddress: SetParameter[Address] = (v: Address, pp: PositionedParameters) =>
     pp.setString(v.value)
+
+  implicit lazy val setTimeStamp: SetParameter[TimeStamp] =
+    (v: TimeStamp, pp: PositionedParameters) =>
+      pp.setTimestamp(java.sql.Timestamp.from(java.time.Instant.ofEpochMilli(v.millis)))
 }

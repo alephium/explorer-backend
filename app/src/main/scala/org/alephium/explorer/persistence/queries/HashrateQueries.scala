@@ -33,15 +33,12 @@ trait HashrateQueries extends CustomTypes {
   def getHashratesQuery(from: TimeStamp,
                         to: TimeStamp,
                         interval: Int): DBActionSR[(TimeStamp, BigDecimal)] = {
-    val fromInstant = Instant.ofEpochMilli(from.millis)
-    val toInstant   = Instant.ofEpochMilli(to.millis)
-
     sql"""
         SELECT timestamp, value
         FROM hashrates
-        WHERE interval_type = #$interval
-        AND timestamp >= '#${fromInstant.toString}'
-        AND timestamp <= '#${toInstant.toString}'
+        WHERE interval_type = $interval
+        AND timestamp >= $from
+        AND timestamp <= $to
         ORDER BY timestamp
       """.as[(TimeStamp, BigDecimal)]
   }

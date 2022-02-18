@@ -149,15 +149,15 @@ trait TransactionQueries
     (
       SELECT inputs.tx_hash, inputs.block_hash, inputs.timestamp, inputs.tx_index
       FROM inputs
-      JOIN outputs ON outputs.main_chain = true AND inputs.output_ref_key = outputs.key AND outputs.address = '#$address'
+      JOIN outputs ON outputs.main_chain = true AND inputs.output_ref_key = outputs.key AND outputs.address = $address
       WHERE inputs.main_chain = true
       UNION
       SELECT tx_hash, block_hash, timestamp, tx_index from outputs
-      WHERE main_chain = true AND address = '#$address'
+      WHERE main_chain = true AND address = $address
     )
     ORDER BY timestamp DESC, tx_index
-    LIMIT #$limit
-    OFFSET #$offset
+    LIMIT $limit
+    OFFSET $offset
     """.as
   }
 
@@ -403,13 +403,12 @@ trait TransactionQueries
     }
 
   def getBalanceQuerySQL(address: Address): DBActionSR[(U256, Option[TimeStamp])] = {
-    val query = s"""
+    sql"""
         SELECT outputs.amount, outputs.lock_time
         FROM outputs
         LEFT JOIN inputs ON outputs.key = inputs.output_ref_key
-        WHERE outputs.main_chain = true AND outputs.address = '$address' AND inputs.block_hash IS NULL
-      """
-    sql"#$query".as[(U256, Option[TimeStamp])]
+        WHERE outputs.main_chain = true AND outputs.address = $address AND inputs.block_hash IS NULL
+      """.as[(U256, Option[TimeStamp])]
   }
 
   val getBalanceQuery = Compiled { address: Rep[Address] =>
