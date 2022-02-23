@@ -16,16 +16,15 @@
 
 package org.alephium.explorer.persistence.schema
 
-import scala.concurrent.ExecutionContext
-
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Minutes, Span}
-import slick.lifted.ProvenShape
-
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.protocol.ALPH
 import org.alephium.util._
+import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.time.{Minutes, Span}
+import slick.lifted.ProvenShape
+
+import scala.concurrent.ExecutionContext
 
 class CustomTypesSpec extends AlephiumSpec with ScalaFutures with Eventually {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
@@ -70,7 +69,55 @@ class CustomTypesSpec extends AlephiumSpec with ScalaFutures with Eventually {
     run(timestampTable.filter(_.timestamp <= t1).result).futureValue is Seq(t1, t2)
   }
 
-  trait Fixture extends CustomTypes with DatabaseFixture with DBRunner {
+  it should "persist and read timestamp" in new Fixture {
+
+    import config.profile.api._
+
+    /**
+      * Reading written timestamps fails when connectionPool is enabled (HikariCP),
+      * see application.conf.
+      *
+      * This problem seems to be happening only with timestamps. This test narrows
+      * downs the problem for debugging.
+      */
+    val insertTimestamp = TimeStamp.unsafe(155378831591591L)
+    //More test timestamps that fail this test
+    //247051996136270L
+    //64021373170510L
+    //198075290701573L
+    //249229276538059L
+
+    (1 to 100) foreach { i =>
+      println("Iteration: " + i)
+
+      //create a fresh table
+      run(sqlu"DROP TABLE IF EXISTS timestamps;").futureValue
+      run(timestampTable.schema.create).futureValue
+
+      //write timestamp
+      run(timestampTable += insertTimestamp).futureValue
+      //read the table
+      val readTimestamps = run(timestampTable.result).futureValue
+
+      try {
+        //read timestamp should contain only the insert
+        readTimestamps should contain only insertTimestamp
+      } catch {
+        case throwable: Throwable =>
+          readTimestamps should have size 1
+          val actualTimestamp = readTimestamps.head
+
+          //print out errored timestamp
+          println("Inserted: " + insertTimestamp)
+          println("Actual:   " + actualTimestamp)
+          println(s"Equality: ${actualTimestamp.value == insertTimestamp.value}")
+
+          throw throwable
+      }
+    }
+  }
+
+  trait Fixture extends CustomTypes with DatabaseFixture with OutputSchema with DBRunner {
     override val config = databaseConfig
 
     import config.profile.api._
