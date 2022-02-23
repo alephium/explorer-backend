@@ -32,8 +32,8 @@ import org.alephium.util.{TimeStamp, U256}
 
 trait TransactionQueries
     extends TransactionSchema
-    with InputSchema
-    with OutputSchema
+    with InputsQueries
+    with OutputsQueries
     with StrictLogging {
 
   implicit def executionContext: ExecutionContext
@@ -44,16 +44,25 @@ trait TransactionQueries
   private val mainInputs       = inputsTable.filter(_.mainChain)
   private val mainOutputs      = outputsTable.filter(_.mainChain)
 
-  def insertTransactionFromBlockQuery(blockEntity: BlockEntity): DBActionW[Unit] = {
-    for {
-      _ <- DBIOAction.sequence(blockEntity.transactions.map(transactionsTable.insertOrUpdate))
-      _ <- DBIOAction.sequence(blockEntity.inputs.map(inputsTable.insertOrUpdate))
-      _ <- DBIOAction.sequence(blockEntity.outputs.map(outputsTable.insertOrUpdate))
-    } yield ()
+  def insertTransactionFromBlockQuery(blockEntity: BlockEntity): DBActionW[Seq[InputEntity]] = {
+    insertAll(blockEntity.transactions, blockEntity.outputs, blockEntity.inputs)
   }
 
-  def insertAllTransactionFromBlockQuerys(blockEntities: Seq[BlockEntity]): DBActionW[Unit] = {
-    DBIOAction.sequence(blockEntities.map(insertTransactionFromBlockQuery)).map(_ => ())
+  def insertAllTransactionFromBlockQuerys(
+      blockEntities: Seq[BlockEntity]): DBActionW[Seq[InputEntity]] = {
+    DBIOAction.sequence(blockEntities.map(insertTransactionFromBlockQuery)).map(_.flatten)
+  }
+
+  def insertAll(transactions: Seq[TransactionEntity],
+                outputs: Seq[OutputEntity],
+                inputs: Seq[InputEntity]): DBActionW[Seq[InputEntity]] = {
+    for {
+      _              <- DBIOAction.sequence(transactions.map(transactionsTable.insertOrUpdate))
+      _              <- DBIOAction.sequence(inputs.map(inputsTable.insertOrUpdate))
+      _              <- DBIOAction.sequence(outputs.map(outputsTable.insertOrUpdate))
+      _              <- insertTxPerAddressFromOutputs(outputs)
+      inputsToUpdate <- insertTxPerAddressFromInputs(inputs, outputs)
+    } yield inputsToUpdate
   }
 
   private val countBlockHashTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
@@ -124,6 +133,14 @@ trait TransactionQueries
     """.as[Int]
   }
 
+  def countAddressTransactionsSQLNoJoin(address: Address): DBActionSR[Int] = {
+    sql"""
+    SELECT COUNT(*)
+    FROM transaction_per_addresses
+    WHERE main_chain = true AND address = $address
+    """.as[Int]
+  }
+
   val getTxHashesByAddressQuery = Compiled {
     (address: Rep[Address], toDrop: ConstColumn[Long], limit: ConstColumn[Long]) =>
       mainInputs
@@ -161,79 +178,17 @@ trait TransactionQueries
     """.as
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
-  def inputsFromTxs(txHashes: Seq[Transaction.Hash]) = {
-    mainInputs
-      .filter(_.txHash inSet txHashes)
-      .join(mainOutputs)
-      .on {
-        case (input, outputs) =>
-          input.outputRefKey === outputs.key
-      }
-      .map {
-        case (input, output) =>
-          (input.txHash,
-           input.order,
-           input.hint,
-           input.outputRefKey,
-           input.unlockScript,
-           output.txHash,
-           output.address,
-           output.amount)
-      }
-  }
-
-  // format: off
-  def inputsFromTxsSQL(txHashes: Seq[Transaction.Hash]):
-    DBActionSR[(Transaction.Hash, Int, Int, Hash, Option[String], Transaction.Hash, Address, U256)] = {
-  // format: on
-    val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
+  def getTxHashesByAddressQuerySQLNoJoin(
+      address: Address,
+      offset: Int,
+      limit: Int): DBActionSR[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)] = {
     sql"""
-    SELECT inputs.tx_hash, inputs.order, inputs.hint, inputs.output_ref_key, inputs.unlock_script, outputs.tx_hash, outputs.address, outputs.amount
-    FROM inputs
-    JOIN outputs ON inputs.output_ref_key = outputs.key AND outputs.main_chain = true
-    WHERE inputs.tx_hash IN (#$values) AND inputs.main_chain = true
-    """.as
-  }
-
-  @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
-  def outputsFromTxs(txHashes: Seq[Transaction.Hash]) = {
-    mainOutputs
-      .filter(_.txHash inSet txHashes)
-      .joinLeft(mainInputs)
-      .on {
-        case (out, inputs) =>
-          out.key === inputs.outputRefKey
-      }
-      .map {
-        case (output, input) =>
-          (output.txHash,
-           output.order,
-           output.hint,
-           output.key,
-           output.amount,
-           output.address,
-           output.lockTime,
-           input.map(_.txHash))
-      }
-  }
-
-  def outputsFromTxsSQL(
-      txHashes: Seq[Transaction.Hash]
-  ): DBActionSR[(Transaction.Hash,
-                 Int,
-                 Int,
-                 Hash,
-                 U256,
-                 Address,
-                 Option[TimeStamp],
-                 Option[Transaction.Hash])] = {
-    val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
-    sql"""
-    SELECT outputs.tx_hash, outputs.order, outputs.hint, outputs.key,  outputs.amount, outputs.address, outputs.lock_time, inputs.tx_hash
-    FROM outputs
-    LEFT JOIN inputs ON inputs.output_ref_key = outputs.key AND inputs.main_chain = true
-    WHERE outputs.tx_hash IN (#$values) AND outputs.main_chain = true
+      SELECT hash, block_hash, timestamp, tx_index
+      FROM transaction_per_addresses
+      WHERE main_chain = true AND address = $address
+      ORDER BY timestamp DESC, tx_index
+      LIMIT $limit
+      OFFSET $offset
     """.as
   }
 
@@ -273,7 +228,7 @@ trait TransactionQueries
     val limit  = pagination.limit
     val toDrop = offset * limit
     for {
-      txHashesTs <- getTxHashesByAddressQuerySQL(address, toDrop, limit)
+      txHashesTs <- getTxHashesByAddressQuerySQLNoJoin(address, toDrop, limit)
       txs        <- getTransactionsSQL(txHashesTs)
     } yield txs
   }
@@ -350,40 +305,6 @@ trait TransactionQueries
     """.as
   }
 
-  private val getInputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
-    mainInputs
-      .filter(_.txHash === txHash)
-      .join(mainOutputs)
-      .on(_.outputRefKey === _.key)
-      .sortBy(_._1.order)
-      .map {
-        case (input, output) =>
-          (input.hint,
-           input.outputRefKey,
-           input.unlockScript,
-           output.txHash,
-           output.address,
-           output.amount)
-      }
-  }
-
-  private val getOutputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
-    outputsTable
-      .filter(output => output.mainChain && output.txHash === txHash)
-      .joinLeft(mainInputs)
-      .on(_.key === _.outputRefKey)
-      .sortBy(_._1.order)
-      .map {
-        case (output, input) =>
-          (output.hint,
-           output.key,
-           output.amount,
-           output.address,
-           output.lockTime,
-           input.map(_.txHash))
-      }
-  }
-
   private def getKnownTransactionAction(txHash: Transaction.Hash,
                                         blockHash: BlockEntry.Hash,
                                         timestamp: TimeStamp,
@@ -443,18 +364,6 @@ trait TransactionQueries
   def getBalanceActionSQL(address: Address): DBActionR[(U256, U256)] = {
     getBalanceQuerySQL(address).map(sumBalance)
   }
-
-  private val toApiInput = {
-    (hint: Int,
-     key: Hash,
-     unlockScript: Option[String],
-     txHash: Transaction.Hash,
-     address: Address,
-     amount: U256) =>
-      Input(Output.Ref(hint, key), unlockScript, txHash, address, amount)
-  }.tupled
-
-  private val toApiOutput = (Output.apply _).tupled
 
   // switch logger.trace when we can disable debugging mode
   protected def debugShow(query: slickProfile.ProfileAction[_, _, _]) = {

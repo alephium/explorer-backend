@@ -19,6 +19,7 @@ package org.alephium.explorer.persistence.queries
 import scala.concurrent.ExecutionContext
 
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.{Minutes, Span}
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
@@ -30,6 +31,8 @@ import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
+
+  override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
 
   implicit val executionContext: ExecutionContext = ExecutionContext.global
 
@@ -52,6 +55,8 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     totalSQL is ALPH.alph(10)
     lockedSQL is ALPH.alph(7)
+
+    config.db.close
   }
 
   it should "get balance should only return unpent outputs" in new Fixture {
@@ -69,28 +74,59 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     total is ALPH.alph(1)
     totalSQL is ALPH.alph(1)
+
+    config.db.close
   }
 
   it should "txs count" in new Fixture {
-    import databaseConfig.profile.api._
-
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
     val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
     val output4 = output(addressGen.sample.get, ALPH.alph(3), None)
-    val input1  = input(output2.hint, output2.key)
-    val input2  = input(output3.hint, output3.key)
-    val input3  = input(output4.hint, output4.key)
 
-    run(queries.outputsTable ++= Seq(output1, output2, output3, output4)).futureValue
-    run(queries.inputsTable ++= Seq(input1, input2, input3)).futureValue
+    val input1 = input(output2.hint, output2.key)
+    val input2 = input(output3.hint, output3.key).copy(mainChain = false)
+    val input3 = input(output4.hint, output4.key)
 
-    val total    = run(queries.countAddressTransactions(address)).futureValue
-    val totalSQL = run(queries.countAddressTransactionsSQL(address)).futureValue.head
+    val outputs = Seq(output1, output2, output3, output4)
+    val inputs  = Seq(input1, input2, input3)
+    run(queries.insertAll(Seq.empty, outputs, inputs)).futureValue
+
+    val total          = run(queries.countAddressTransactions(address)).futureValue
+    val totalSQL       = run(queries.countAddressTransactionsSQL(address)).futureValue.head
+    val totalSQLNoJoin = run(queries.countAddressTransactionsSQLNoJoin(address)).futureValue.head
 
     //tx of output1, output2 and input1
     total is 3
     totalSQL is 3
+    totalSQLNoJoin is 3
+
+    config.db.close
+  }
+
+  it should "return inputs to update if corresponding output is not inserted" in new Fixture {
+    import databaseConfig.profile.api._
+
+    val output1 = output(address, ALPH.alph(1), None)
+    val output2 = output(address, ALPH.alph(2), None)
+
+    val input1 = input(output1.hint, output1.key)
+    val input2 = input(output2.hint, output2.key)
+
+    val outputs = Seq(output1)
+    val inputs  = Seq(input1, input2)
+
+    val inputsToUpdate = run(queries.insertAll(Seq.empty, outputs, inputs)).futureValue
+
+    inputsToUpdate is Seq(input2)
+    run(queries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 2
+
+    run(queries.outputsTable += output2).futureValue
+    run(queries.insertTxPerAddressFromInput(inputsToUpdate.head)).futureValue is 1
+
+    run(queries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 3
+
+    config.db.close
   }
 
   it should "get tx hashes by address" in new Fixture {
@@ -101,14 +137,18 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
     val output4 = output(addressGen.sample.get, ALPH.alph(3), None)
     val input1  = input(output2.hint, output2.key)
-    val input2  = input(output3.hint, output3.key)
+    val input2  = input(output3.hint, output3.key).copy(mainChain = false)
     val input3  = input(output4.hint, output4.key)
 
-    run(queries.outputsTable ++= Seq(output1, output2, output3, output4)).futureValue
-    run(queries.inputsTable ++= Seq(input1, input2, input3)).futureValue
+    val outputs = Seq(output1, output2, output3, output4)
+    val inputs  = Seq(input1, input2, input3)
+
+    run(queries.insertAll(Seq.empty, outputs, inputs)).futureValue
 
     val hashes    = run(queries.getTxHashesByAddressQuery((address, 0, 10)).result).futureValue
     val hashesSQL = run(queries.getTxHashesByAddressQuerySQL(address, 0, 10)).futureValue
+    val hashesSQLNoJoin =
+      run(queries.getTxHashesByAddressQuerySQLNoJoin(address, 0, 10)).futureValue
 
     val expected = Seq(
       (output1.txHash, output1.blockHash, output1.timestamp, 0),
@@ -118,6 +158,9 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     hashes is expected
     hashesSQL is expected.toVector
+    hashesSQLNoJoin is expected.toVector
+
+    config.db.close
   }
 
   it should "outpus for txs" in new Fixture {
@@ -157,6 +200,7 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     run(queries.outputsFromTxs(txHashes).result).futureValue.sortBy(_._1.toString) is expected
     run(queries.outputsFromTxsSQL(txHashes)).futureValue.sortBy(_._1.toString) is expected.toVector
+    config.db.close
   }
 
   it should "inputs for txs" in new Fixture {
@@ -191,11 +235,10 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     run(queries.inputsFromTxs(txHashes).result).futureValue is expected
     run(queries.inputsFromTxsSQL(txHashes)).futureValue is expected.toVector
+    config.db.close
   }
 
   it should "get tx by address" in new Fixture {
-    import databaseConfig.profile.api._
-
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
     val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
@@ -204,13 +247,11 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val output4 = output(addressGen.sample.get, ALPH.alph(3), None)
       .copy(txHash = input1.txHash, blockHash = input1.blockHash, timestamp = input1.timestamp)
 
-    val outputs = Seq(output1, output2, output3, output4)
-
+    val outputs      = Seq(output1, output2, output3, output4)
+    val inputs       = Seq(input1, input2)
     val transactions = outputs.map(transaction)
 
-    run(queries.outputsTable ++= outputs).futureValue
-    run(queries.inputsTable ++= Seq(input1, input2)).futureValue
-    run(queries.transactionsTable ++= transactions).futureValue
+    run(queries.insertAll(transactions, outputs, inputs)).futureValue
 
     def tx(output: OutputEntity, spent: Option[Transaction.Hash], inputs: Seq[Input]) = {
       Transaction(
@@ -239,6 +280,7 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     txs is expected
     txsSQL is expected
+    config.db.close
   }
 
   it should "output's spent info should only take the input from the main chain " in new Fixture {
@@ -271,6 +313,7 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val tx = run(queries.getTransactionAction(tx1.hash)).futureValue.get
 
     tx.outputs.size is 1 // was 2 in v1.4.1
+    config.db.close
   }
 
   trait Fixture extends DatabaseFixture with DBRunner with Generators {
