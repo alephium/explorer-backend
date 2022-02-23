@@ -35,7 +35,7 @@ class AddressServer(transactionService: TransactionService, val blockflowFetchMa
     toRoute(getTransactionsByAddress) {
       case (address, pagination) =>
         transactionService
-          .getTransactionsByAddress(address, pagination)
+          .getTransactionsByAddressSQL(address, pagination)
           .map(Right.apply)
     } ~
       toRoute(getAddressInfo) {

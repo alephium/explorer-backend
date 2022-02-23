@@ -25,7 +25,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence.dao.BlockDao
-import org.alephium.explorer.persistence.model.BlockEntity
+import org.alephium.explorer.persistence.model.{BlockEntity, InputEntity}
 import org.alephium.util.{Duration, TimeStamp}
 
 /*
@@ -125,16 +125,7 @@ object BlockFlowSyncService extends StrictLogging {
       blockFlowClient.fetchBlocks(from, to, uri).flatMap {
         case Right(multiChain) =>
           Future
-            .sequence(multiChain.map { blocks =>
-              if (blocks.nonEmpty) {
-                for {
-                  _ <- foldFutures(blocks)(insert)
-                  _ <- blockDao.updateLatestBlock(blocks.last)
-                } yield (blocks.size)
-              } else {
-                Future.successful(0)
-              }
-            })
+            .sequence(multiChain.map(insertBlocks))
             .map(_.sum)
         case Left(error) =>
           logger.error(error)
@@ -254,7 +245,7 @@ object BlockFlowSyncService extends StrictLogging {
     }
 
     @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
-    private def insert(block: BlockEntity): Future[Unit] = {
+    private def insert(block: BlockEntity): Future[Seq[InputEntity]] = {
       (block.parent(groupNum) match {
         case Some(parent) =>
           //We make sure the parent is inserted before inserting the block
@@ -274,9 +265,34 @@ object BlockFlowSyncService extends StrictLogging {
         case None                            => Future.successful(logger.error(s"${block.hash} doesn't have a parent"))
       }).flatMap { _ =>
         for {
-          _ <- blockDao.insert(block)
-          _ <- blockDao.updateMainChain(block.hash, block.chainFrom, block.chainTo, groupNum)
-        } yield (())
+          inputsToUpdate <- blockDao.insert(block)
+          _              <- blockDao.updateMainChain(block.hash, block.chainFrom, block.chainTo, groupNum)
+        } yield (inputsToUpdate)
+      }
+    }
+
+    private def insertBlocks(blocks: Seq[BlockEntity]): Future[Int] = {
+      if (blocks.nonEmpty) {
+        for {
+          inputsToUpdate <- foldFutures(blocks)(insert)
+          _              <- blockDao.updateLatestBlock(blocks.last)
+          _              <- handleInputsToUpdate(inputsToUpdate.flatten)
+        } yield (blocks.size)
+      } else {
+        Future.successful(0)
+      }
+    }
+
+    private def handleInputsToUpdate(inputs: Seq[InputEntity]) = {
+      if (inputs.nonEmpty) {
+        blockDao.updateInputs(inputs).map { updated =>
+          if (updated < inputs.size) {
+            logger.error(
+              s"Couldn't fully update inputs: ${inputs.map(in => (in.blockHash, in.outputRefKey))}")
+          }
+        }
+      } else {
+        Future.successful(())
       }
     }
 
@@ -286,7 +302,7 @@ object BlockFlowSyncService extends StrictLogging {
       blockFlowClient.fetchBlock(chainFrom, missing).flatMap {
         case Left(error) => Future.successful(logger.error(error))
         case Right(block) =>
-          insert(block)
+          insert(block).map(_ => ())
       }
     }
   }

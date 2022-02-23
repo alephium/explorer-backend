@@ -190,7 +190,7 @@ object TokenSupplyService {
                   (total, circulating) <- computeTokenSupply(day)
                   _                    <- insert(TokenSupplyEntity(day, total, circulating))
                 } yield (()))
-              }
+              }.map(_ => ())
             }
       }
     }

@@ -30,6 +30,7 @@ trait BlockQueries
     extends BlockHeaderSchema
     with BlockDepsSchema
     with LatestBlockSchema
+    with TransactionPerAddressSchema
     with TransactionQueries
     with CustomTypes
     with StrictLogging {
@@ -81,14 +82,14 @@ trait BlockQueries
       blocks <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
     } yield blocks
 
-  def insertAction(block: BlockEntity, groupNum: Int): DBActionRWT[Unit] =
+  def insertAction(block: BlockEntity, groupNum: Int): DBActionRWT[Seq[InputEntity]] =
     (for {
       _ <- DBIOAction.sequence(block.deps.zipWithIndex.map {
         case (dep, i) => blockDepsTable.insertOrUpdate((block.hash, dep, i))
       })
-      _ <- insertTransactionFromBlockQuery(block)
-      _ <- blockHeadersTable.insertOrUpdate(BlockHeader.fromEntity(block, groupNum)).filter(_ > 0)
-    } yield ()).transactionally
+      inputsToUpdate <- insertTransactionFromBlockQuery(block)
+      _              <- blockHeadersTable.insertOrUpdate(BlockHeader.fromEntity(block, groupNum)).filter(_ > 0)
+    } yield inputsToUpdate).transactionally
 
   def listMainChainHeaders(mainChain: Query[BlockHeaders, BlockHeader, Seq],
                            pagination: Pagination): DBActionR[Seq[BlockHeader]] = {
@@ -187,6 +188,10 @@ trait BlockQueries
           .update(isMainChain)
         _ <- blockHeadersTable
           .filter(_.hash === hash)
+          .map(_.mainChain)
+          .update(isMainChain)
+        _ <- transactionPerAddressesTable
+          .filter(_.blockHash === hash)
           .map(_.mainChain)
           .update(isMainChain)
       } yield ()

@@ -32,6 +32,7 @@ trait TransactionDao {
   def getByAddressSQL(address: Address, pagination: Pagination): Future[Seq[Transaction]]
   def getNumberByAddress(address: Address): Future[Int]
   def getNumberByAddressSQL(address: Address): Future[Int]
+  def getNumberByAddressSQLNoJoin(address: Address): Future[Int]
   def getBalance(address: Address): Future[(U256, U256)]
   def getBalanceSQL(address: Address): Future[(U256, U256)]
 }
@@ -62,6 +63,9 @@ object TransactionDao {
 
     def getNumberByAddressSQL(address: Address): Future[Int] =
       run(countAddressTransactionsSQL(address)).map(_.headOption.getOrElse(0))
+
+    def getNumberByAddressSQLNoJoin(address: Address): Future[Int] =
+      run(countAddressTransactionsSQLNoJoin(address)).map(_.headOption.getOrElse(0))
 
     def getBalance(address: Address): Future[(U256, U256)] =
       run(getBalanceAction(address))

@@ -43,8 +43,8 @@ trait BlockDao {
   def getAtHeight(fromGroup: GroupIndex,
                   toGroup: GroupIndex,
                   height: Height): Future[Seq[BlockEntry]]
-  def insert(block: BlockEntity): Future[Unit]
-  def insertAll(blocks: Seq[BlockEntity]): Future[Unit]
+  def insert(block: BlockEntity): Future[Seq[InputEntity]]
+  def insertAll(blocks: Seq[BlockEntity]): Future[Seq[InputEntity]]
   def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)]
   def listMainChainSQL(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)]
   def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntry.Lite]]
@@ -56,6 +56,7 @@ trait BlockDao {
   def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit]
   def latestBlocks(): Future[Seq[(ChainIndex, LatestBlock)]]
   def updateLatestBlock(block: BlockEntity): Future[Unit]
+  def updateInputs(inputs: Seq[InputEntity]): Future[Int]
 }
 
 object BlockDao {
@@ -111,12 +112,12 @@ object BlockDao {
                     height: Height): Future[Seq[BlockEntry]] =
       run(getAtHeightAction(fromGroup, toGroup, height))
 
-    def insert(block: BlockEntity): Future[Unit] = {
+    def insert(block: BlockEntity): Future[Seq[InputEntity]] = {
       run(insertAction(block, groupNum))
     }
 
-    def insertAll(blocks: Seq[BlockEntity]): Future[Unit] = {
-      run(DBIOAction.sequence(blocks.map(b => insertAction(b, groupNum)))).map(_ => ())
+    def insertAll(blocks: Seq[BlockEntity]): Future[Seq[InputEntity]] = {
+      run(DBIOAction.sequence(blocks.map(b => insertAction(b, groupNum)))).map(_.flatten)
     }
 
     def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)] = {
@@ -216,6 +217,12 @@ object BlockDao {
           Future.successful(latestBlock).asJava.toCompletableFuture
         )
       }
+    }
+
+    def updateInputs(inputs: Seq[InputEntity]): Future[Int] = {
+      run(
+        DBIOAction.sequence(inputs.map(insertTxPerAddressFromInput))
+      ).map(_.sum)
     }
   }
 }

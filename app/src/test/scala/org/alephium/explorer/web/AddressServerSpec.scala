@@ -44,8 +44,8 @@ class AddressServerSpec()
   it should "validate and forward `txLimit` query param " in new Fixture {
     var testLimit = 0
     val transactionService = new EmptyTransactionService {
-      override def getTransactionsByAddress(address: Address,
-                                            pagination: Pagination): Future[Seq[Transaction]] = {
+      override def getTransactionsByAddressSQL(address: Address,
+                                               pagination: Pagination): Future[Seq[Transaction]] = {
         testLimit = pagination.limit
         Future.successful(Seq.empty)
       }
@@ -85,12 +85,12 @@ class AddressServerSpec()
                                             pagination: Pagination): Future[Seq[Transaction]] =
         Future.successful(Seq.empty)
 
+      override def getTransactionsNumberByAddress(address: Address): Future[Int] =
+        Future.successful(0)
+
       override def getTransactionsByAddressSQL(address: Address,
                                                pagination: Pagination): Future[Seq[Transaction]] =
         Future.successful(Seq.empty)
-
-      override def getTransactionsNumberByAddress(address: Address): Future[Int] =
-        Future.successful(0)
 
       override def getBalance(address: Address): Future[(U256, U256)] =
         Future.successful((U256.Zero, U256.Zero))

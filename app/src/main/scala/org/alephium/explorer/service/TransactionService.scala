@@ -54,9 +54,9 @@ object TransactionService {
       transactionDao.getByAddressSQL(address, pagination)
 
     def getTransactionsNumberByAddress(address: Address): Future[Int] =
-      transactionDao.getNumberByAddress(address)
+      transactionDao.getNumberByAddressSQLNoJoin(address)
 
     def getBalance(address: Address): Future[(U256, U256)] =
-      transactionDao.getBalance(address)
+      transactionDao.getBalanceSQL(address)
   }
 }

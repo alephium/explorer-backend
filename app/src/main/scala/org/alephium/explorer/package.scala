@@ -37,9 +37,9 @@ package object explorer {
   type BlockHash = Blake3
   val BlockHash: Blake3.type = Blake3
 
-  def foldFutures[A](seqA: Seq[A])(f: A => Future[Unit])(
-      implicit executionContext: ExecutionContext): Future[Unit] =
-    seqA.foldLeft(Future.successful(())) {
-      case (acc, a) => acc.flatMap(_ => f(a))
+  def foldFutures[A, B](seqA: Seq[A])(f: A => Future[B])(
+      implicit executionContext: ExecutionContext): Future[Seq[B]] =
+    seqA.foldLeft(Future.successful(Seq.empty[B])) {
+      case (acc, a) => acc.flatMap(p => f(a).map(b => p :+ b))
     }
 }

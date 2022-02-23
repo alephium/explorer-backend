@@ -183,7 +183,9 @@ class TransactionServiceSpec
 
     val blocks = Seq(block0, block1)
 
-    Future.sequence(blocks.map(blockDao.insert)).futureValue
+    val inputsToUpdate = Future.sequence(blocks.map(blockDao.insert)).futureValue.flatten
+
+    blockDao.updateInputs(inputsToUpdate).futureValue
 
     val t0 = Transaction(
       tx0.hash,
