@@ -84,7 +84,7 @@ trait BlockQueries
   def insertAction(block: BlockEntity, groupNum: Int): DBActionRWT[Unit] =
     (for {
       _ <- DBIOAction.sequence(block.deps.zipWithIndex.map {
-        case (dep, i) => blockDepsTable.insertOrUpdate((block.hash, dep, i))
+        case (dep, i) => blockDepsTable.insertOrUpdate(BlockDepEntity(block.hash, dep, i))
       })
       _ <- insertTransactionFromBlockQuery(block)
       _ <- blockHeadersTable.insertOrUpdate(BlockHeader.fromEntity(block, groupNum)).filter(_ > 0)
