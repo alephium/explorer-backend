@@ -41,6 +41,7 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
     with LatestBlockSchema
     with TokenSupplySchema
     with HashrateSchema
+    with TransactionPerAddressSchema
     with DBRunner
     with StrictLogging {
   import config.profile.api._
@@ -61,7 +62,8 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
       uoutputsTable,
       latestBlocksTable,
       hashrateTable,
-      tokenSupplyTable
+      tokenSupplyTable,
+      transactionPerAddressesTable
     )
 
   def createTables(): Future[Unit] = {
@@ -89,6 +91,7 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
       _ <- createInputMainChainIndex()
       _ <- createOutputMainChainIndex()
       _ <- createHashrateIntervalTypeIndex()
+      _ <- createTransactionPerAddressMainChainIndex()
     } yield ())
   }
 

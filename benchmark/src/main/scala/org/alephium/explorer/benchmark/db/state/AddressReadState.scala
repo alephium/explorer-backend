@@ -53,7 +53,8 @@ class AddressReadState(val db: DBExecutor)
     with TransactionQueries
     with BlockHeaderSchema
     with InputSchema
-    with OutputSchema {
+    with OutputSchema
+    with TransactionPerAddressSchema {
 
   val ec: ExecutionContext = ExecutionContext.global
 
@@ -176,16 +177,19 @@ class AddressReadState(val db: DBExecutor)
     val _ = db.dropTableIfExists(transactionsTable)
     val _ = db.dropTableIfExists(inputsTable)
     val _ = db.dropTableIfExists(outputsTable)
+    val _ = db.dropTableIfExists(transactionPerAddressesTable)
 
     val createTable =
       blockHeadersTable.schema.create
         .andThen(transactionsTable.schema.create)
         .andThen(inputsTable.schema.create)
         .andThen(outputsTable.schema.create)
+        .andThen(transactionPerAddressesTable.schema.create)
         .andThen(createBlockHeadersIndexesSQL())
         .andThen(createTransactionMainChainIndex())
         .andThen(createInputMainChainIndex())
         .andThen(createOutputMainChainIndex())
+        .andThen(createTransactionPerAddressMainChainIndex())
 
     val _ = db.runNow(
       action  = createTable,
