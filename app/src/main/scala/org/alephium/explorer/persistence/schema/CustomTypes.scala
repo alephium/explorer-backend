@@ -17,6 +17,8 @@
 package org.alephium.explorer.persistence.schema
 
 import java.math.BigInteger
+import java.sql.Timestamp
+import java.time._
 
 import scala.reflect.ClassTag
 
@@ -78,18 +80,17 @@ trait CustomTypes extends JdbcProfile {
   implicit lazy val timestampGetResult: GetResult[TimeStamp] =
     (result: PositionedResult) =>
       TimeStamp.unsafe(
-        result.nextTimestamp().toLocalDateTime().toInstant(java.time.ZoneOffset.UTC).toEpochMilli)
+        result.nextTimestamp().toLocalDateTime().toInstant(ZoneOffset.UTC).toEpochMilli)
 
   implicit lazy val optionTimestampGetResult: GetResult[Option[TimeStamp]] =
     (result: PositionedResult) =>
       result.nextTimestampOption().map { timestamp =>
-        TimeStamp.unsafe(
-          timestamp.toLocalDateTime().toInstant(java.time.ZoneOffset.UTC).toEpochMilli)
+        TimeStamp.unsafe(timestamp.toLocalDateTime().toInstant(ZoneOffset.UTC).toEpochMilli)
     }
 
   implicit lazy val timestampType: JdbcType[TimeStamp] =
-    MappedJdbcType.base[TimeStamp, java.time.Instant](
-      ts      => java.time.Instant.ofEpochMilli(ts.millis),
+    MappedJdbcType.base[TimeStamp, Instant](
+      ts      => Instant.ofEpochMilli(ts.millis),
       instant => TimeStamp.unsafe(instant.toEpochMilli)
     )
   implicit lazy val u256Type: JdbcType[U256] = MappedJdbcType.base[U256, BigDecimal](
@@ -206,6 +207,17 @@ trait CustomTypes extends JdbcProfile {
     pp.setString(v.value)
 
   implicit lazy val setTimeStamp: SetParameter[TimeStamp] =
-    (v: TimeStamp, pp: PositionedParameters) =>
-      pp.setTimestamp(java.sql.Timestamp.from(java.time.Instant.ofEpochMilli(v.millis)))
+    (v: TimeStamp, pp: PositionedParameters) => {
+      pp.setTimestamp(
+        Timestamp.valueOf(Instant.ofEpochMilli(v.millis).atZone(ZoneOffset.UTC).toLocalDateTime))
+    }
+
+  implicit lazy val setTransactionHash: SetParameter[Transaction.Hash] =
+    (v: Transaction.Hash, pp: PositionedParameters) => pp.setBytes(v.value.bytes.toArray)
+
+  implicit lazy val setBlockHash: SetParameter[BlockEntry.Hash] =
+    (v: BlockEntry.Hash, pp: PositionedParameters) => pp.setBytes(v.value.bytes.toArray)
+
+  implicit lazy val setHash: SetParameter[Hash] = (v: Hash, pp: PositionedParameters) =>
+    pp.setBytes(v.bytes.toArray)
 }
