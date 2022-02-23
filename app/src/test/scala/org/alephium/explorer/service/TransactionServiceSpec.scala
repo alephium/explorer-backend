@@ -59,7 +59,7 @@ class TransactionServiceSpec
 
     val txLimit = 5
 
-    Future.sequence(blocks.map(blockDao.insert)).futureValue
+    Future.sequence(blocks.map(blockDao.insertSQL)).futureValue
     Future
       .sequence(blocks.map(block => blockDao.updateMainChainStatus(block.hash, true)))
       .futureValue
@@ -85,7 +85,7 @@ class TransactionServiceSpec
 
     block.outputs.head.amount is amount
 
-    blockDao.insert(block).futureValue
+    blockDao.insertSQL(block).futureValue
     blockDao.updateMainChainStatus(block.hash, true).futureValue
 
     val fetchedAmout =
@@ -180,7 +180,7 @@ class TransactionServiceSpec
 
     val blocks = Seq(block0, block1)
 
-    Future.sequence(blocks.map(blockDao.insert)).futureValue
+    Future.sequence(blocks.map(blockDao.insertSQL)).futureValue
 
     val t0 = Transaction(
       tx0.hash,
@@ -262,7 +262,7 @@ class TransactionServiceSpec
 
         val blocks = Seq(block0, block1)
 
-        Future.sequence(blocks.map(blockDao.insert)).futureValue
+        Future.sequence(blocks.map(blockDao.insertSQL)).futureValue
 
         transactionService
           .getTransactionsByAddress(address0, Pagination.unsafe(0, 5))
@@ -300,7 +300,7 @@ class TransactionServiceSpec
 
     val outputs = blocks.flatMap(_.outputs)
 
-    Future.sequence(blocks.map(blockDao.insert)).futureValue
+    Future.sequence(blocks.map(blockDao.insertSQL)).futureValue
     Future
       .sequence(blocks.map(block => blockDao.updateMainChainStatus(block.hash, true)))
       .futureValue

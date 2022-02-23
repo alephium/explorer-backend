@@ -377,4 +377,158 @@ trait Generators {
       )
     }
   }
+
+  /** Update toUpdate's primary key to be the same as `original` */
+  def copyPrimaryKeys(original: BlockDepEntity, toUpdate: BlockDepEntity): BlockDepEntity =
+    toUpdate.copy(
+      hash = original.hash,
+      dep  = original.dep
+    )
+
+  lazy val blockDepGen: Gen[BlockDepEntity] =
+    for {
+      hash  <- blockEntryHashGen
+      dep   <- blockEntryHashGen
+      order <- Gen.posNum[Int]
+    } yield
+      BlockDepEntity(
+        hash  = hash,
+        dep   = dep,
+        order = order
+      )
+
+  /** Generates a tuple2 of [[BlockDepEntity]] where the second one has
+    * the same primary key as the first one but with different values */
+  lazy val blockDepUpdatedGen: Gen[(BlockDepEntity, BlockDepEntity)] =
+    for {
+      dep1 <- blockDepGen
+      dep2 <- blockDepGen
+    } yield {
+      (dep1, copyPrimaryKeys(dep1, dep2))
+    }
+
+  lazy val outputEntityGen: Gen[OutputEntity] =
+    for {
+      blockHash <- blockEntryHashGen
+      txHash    <- transactionHashGen
+      timestamp <- timestampGen
+      hint      <- Gen.posNum[Int]
+      key       <- hashGen
+      amount    <- u256Gen
+      address   <- addressGen
+      lockTime  <- Gen.option(timestampGen)
+      mainChain <- arbitrary[Boolean]
+      order     <- arbitrary[Int]
+    } yield
+      OutputEntity(
+        blockHash = blockHash,
+        txHash    = txHash,
+        timestamp = timestamp,
+        hint      = hint,
+        key       = key,
+        amount    = amount,
+        address   = address,
+        mainChain = mainChain,
+        lockTime  = lockTime,
+        order     = order
+      )
+
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def inputEntityGen(outputEntityGen: Gen[OutputEntity] = outputEntityGen): Gen[InputEntity] =
+    for {
+      outputEntity <- outputEntityGen
+      unlockScript <- Gen.option(Gen.hexStr)
+    } yield {
+      InputEntity(
+        blockHash    = outputEntity.blockHash,
+        txHash       = outputEntity.txHash,
+        timestamp    = outputEntity.timestamp,
+        hint         = outputEntity.hint,
+        outputRefKey = outputEntity.key,
+        unlockScript = unlockScript,
+        mainChain    = outputEntity.mainChain,
+        order        = outputEntity.order
+      )
+    }
+
+  /** Update toUpdate's primary key to be the same as `original` */
+  def copyPrimaryKeys(original: InputEntity, toUpdate: InputEntity): InputEntity =
+    toUpdate.copy(
+      outputRefKey = original.outputRefKey,
+      txHash       = original.txHash,
+      blockHash    = original.blockHash
+    )
+
+  /** Generate two InputEntities where the second one is an update of the first */
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def updatedInputEntityGen(
+      outputEntityGen: Gen[OutputEntity] = outputEntityGen): Gen[(InputEntity, InputEntity)] =
+    for {
+      input1 <- inputEntityGen(outputEntityGen)
+      input2 <- inputEntityGen(outputEntityGen)
+    } yield {
+      (input1, copyPrimaryKeys(input1, input2))
+    }
+
+  /** Update toUpdate's primary key to be the same as `original` */
+  def copyPrimaryKeys(original: OutputEntity, toUpdate: OutputEntity): OutputEntity =
+    toUpdate.copy(
+      key       = original.key,
+      blockHash = original.blockHash
+    )
+
+  /** Generates a tuple2 of [[OutputEntity]] where the second one has
+    * the same primary key as the first one but with different values */
+  def updatedOutputEntityGen(): Gen[(OutputEntity, OutputEntity)] =
+    for {
+      output1 <- outputEntityGen
+      output2 <- outputEntityGen
+    } yield {
+      (output1, copyPrimaryKeys(output1, output2))
+    }
+
+  /** Update toUpdate's primary key to be the same as `original` */
+  def copyPrimaryKeys(original: TransactionEntity, toUpdate: TransactionEntity): TransactionEntity =
+    toUpdate.copy(hash = original.hash)
+
+  /** Generates a [[BlockEntity]] with optional parent */
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def updatedTransactionEntityGen(blockHash: Gen[BlockEntry.Hash] = blockEntryHashGen)
+    : Gen[(TransactionEntity, TransactionEntity)] =
+    for {
+      transaction1 <- transactionEntityGen(blockHash)
+      transaction2 <- transactionEntityGen(blockHash)
+    } yield {
+      (transaction1, copyPrimaryKeys(transaction1, transaction2))
+    }
+
+  /** Update toUpdate's primary key to be the same as original */
+  def copyPrimaryKeys(original: BlockHeader, toUpdate: BlockHeader): BlockHeader =
+    toUpdate.copy(
+      hash         = original.hash,
+      depStateHash = original.depStateHash
+    )
+
+  /** Generates a tuple2 of [[BlockHeader]] where the second one has
+    * the same primary key as the first one but with different values */
+  def updatedBlockHeaderGen(): Gen[(BlockHeader, BlockHeader)] =
+    for {
+      blockHeader1 <- blockHeaderGen
+      blockHeader2 <- blockHeaderGen
+    } yield {
+      (blockHeader1, copyPrimaryKeys(blockHeader1, blockHeader2))
+    }
+
+  /** Generates a [[BlockEntity]] with optional parent */
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def genBlockEntityWithOptionalParent(
+      groupIndexGen: Gen[GroupIndex] = Gen.const(GroupIndex.unsafe(0)))
+    : Gen[(BlockEntity, Option[BlockEntity])] =
+    for {
+      groupIndex <- groupIndexGen
+      parent     <- Gen.option(blockEntityGen(groupIndex, groupIndex, None))
+      child      <- blockEntityGen(groupIndex, groupIndex, parent)
+    } yield {
+      (child, parent)
+    }
 }

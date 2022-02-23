@@ -38,4 +38,7 @@ final case class InputEntity(
       outputRef.address,
       outputRef.amount
     )
+
+  def primaryKey(): (Hash, Transaction.Hash, BlockEntry.Hash) =
+    (outputRefKey, txHash, blockHash)
 }

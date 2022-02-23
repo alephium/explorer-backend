@@ -34,4 +34,7 @@ final case class OutputEntity(
 ) {
   def toApi(spent: Option[Transaction.Hash]): Output =
     Output(hint, key, amount, address, lockTime, spent)
+
+  def primaryKey(): (Hash, BlockEntry.Hash) =
+    (key, blockHash)
 }

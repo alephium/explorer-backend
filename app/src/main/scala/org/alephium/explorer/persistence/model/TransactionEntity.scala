@@ -29,4 +29,7 @@ final case class TransactionEntity(
     gasPrice: U256,
     index: Int,
     mainChain: Boolean
-)
+) {
+  def primaryKey(): (Transaction.Hash, BlockEntry.Hash) =
+    (hash, blockHash)
+}

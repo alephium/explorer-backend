@@ -18,4 +18,10 @@ package org.alephium.explorer.persistence.model
 
 import org.alephium.explorer.api.model.BlockEntry
 
-case class BlockDepEntity(hash: BlockEntry.Hash, dep: BlockEntry.Hash, order: Int)
+/**
+  * Class for defining rows in table [[org.alephium.explorer.persistence.schema.BlockDepsSchema]]
+  */
+final case class BlockDepEntity(hash: BlockEntry.Hash, dep: BlockEntry.Hash, order: Int) {
+  def primaryKey(): (BlockEntry.Hash, BlockEntry.Hash) =
+    (hash, dep)
+}

@@ -16,15 +16,21 @@
 
 package org.alephium.explorer.persistence.queries
 
+import scala.collection.mutable
+
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
-import slick.jdbc.JdbcProfile
+import slick.jdbc.{JdbcProfile, PositionedParameters, SetParameter, SQLActionBuilder}
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.persistence.queries.BlockDepQueries.upsertBlockDeps
+import org.alephium.explorer.persistence.queries.InputQueries.upsertInputs
+import org.alephium.explorer.persistence.queries.OutputQueries.upsertOutputs
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomSetParameter._
 
 trait BlockQueries
     extends BlockHeaderSchema
@@ -212,5 +218,108 @@ trait BlockQueries
       }
       .result
       .headOption
+  }
+
+  /** Inserts block_headers or update them if there is a primary key conflict */
+  // scalastyle:off method.length magic.number
+  def upsertBlockHeaders(blocks: Iterable[BlockHeader]): DBActionW[Int] =
+    if (blocks.isEmpty) {
+      DBIOAction.successful(0)
+    } else {
+      val placeholder = paramPlaceholder(rows = blocks.size, columns = 14)
+
+      val query =
+        s"""
+           |insert into $block_headers ("hash",
+           |                            "timestamp",
+           |                            "chain_from",
+           |                            "chain_to",
+           |                            "height",
+           |                            "main_chain",
+           |                            "nonce",
+           |                            "version",
+           |                            "dep_state_hash",
+           |                            "txs_hash",
+           |                            "txs_count",
+           |                            "target",
+           |                            "hashrate",
+           |                            "parent")
+           |values $placeholder
+           |ON CONFLICT ON CONSTRAINT block_headers_pkey
+           |    DO UPDATE SET "timestamp"      = EXCLUDED."timestamp",
+           |                  "chain_from"     = EXCLUDED."chain_from",
+           |                  "chain_to"       = EXCLUDED."chain_to",
+           |                  "height"         = EXCLUDED."height",
+           |                  "main_chain"     = EXCLUDED."main_chain",
+           |                  "nonce"          = EXCLUDED."nonce",
+           |                  "version"        = EXCLUDED."version",
+           |                  "dep_state_hash" = EXCLUDED."dep_state_hash",
+           |                  "txs_hash"       = EXCLUDED."txs_hash",
+           |                  "txs_count"      = EXCLUDED."txs_count",
+           |                  "target"         = EXCLUDED."target",
+           |                  "hashrate"       = EXCLUDED."hashrate",
+           |                  "parent"         = EXCLUDED."parent"
+           |""".stripMargin
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          blocks foreach { block =>
+            params >> block.hash
+            params >> block.timestamp
+            params >> block.chainFrom
+            params >> block.chainTo
+            params >> block.height
+            params >> block.mainChain
+            params >> block.nonce
+            params >> block.version
+            params >> block.depStateHash
+            params >> block.txsHash
+            params >> block.txsCount
+            params >> block.target
+            params >> block.hashrate
+            params >> block.parent
+        }
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv  = parameters
+      ).asUpdate
+    }
+  // scalastyle:on method.length magic.number
+
+  /** Transactionally write blocks */
+  @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
+  def upsertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int): DBActionRWT[Int] = {
+    import BlockEntityUpsertOrdering._
+
+    /**
+      * `mutable.SortedSet` to handle cases when there are duplicates so
+      * the queries always insert the latest data.
+      *
+      * Ordering is applied on primary key of each table.
+      * */
+    val blockDeps    = mutable.SortedSet.empty[BlockDepEntity](blockDepOrdering)
+    val transactions = mutable.SortedSet.empty[TransactionEntity](transactionOrdering)
+    val inputs       = mutable.SortedSet.empty[InputEntity](inputEntityOrdering)
+    val outputs      = mutable.SortedSet.empty[OutputEntity](outputEntityOrdering)
+    val blockHeaders = mutable.SortedSet.empty[BlockHeader](blockHeaderOrdering)
+
+    //build data for all insert queries in single iteration
+    blocks foreach { block =>
+      val _ = blockDeps addAll block.toBlockDepEntities()
+      val _ = transactions addAll block.transactions
+      val _ = inputs addAll block.inputs
+      val _ = outputs addAll block.outputs
+      val _ = blockHeaders addOne block.toBlockHeader(groupNum)
+    }
+
+    val query =
+      upsertBlockDeps(blockDeps) andThen
+        upsertTransactions(transactions) andThen
+        upsertInputs(inputs) andThen
+        upsertOutputs(outputs) andThen
+        upsertBlockHeaders(blockHeaders)
+
+    query.transactionally
   }
 }

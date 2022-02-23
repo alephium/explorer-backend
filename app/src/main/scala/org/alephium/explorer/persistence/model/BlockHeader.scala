@@ -45,6 +45,9 @@ final case class BlockHeader(
 
   lazy val toLiteApi: BlockEntry.Lite =
     BlockEntry.Lite(hash, timestamp, chainFrom, chainTo, height, txsCount, mainChain, hashrate)
+
+  def primaryKey(): BlockEntry.Hash =
+    hash
 }
 
 object BlockHeader {
