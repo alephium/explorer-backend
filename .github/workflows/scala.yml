@@ -27,4 +27,4 @@ jobs:
     - uses: actions/setup-java@v1
       with:
         java-version: 11
-    - run: sbt ";scalafmtCheck;test:scalafmtCheck;scalafmtSbtCheck;scalastyle;test:scalastyle;test;app/assembly"
+    - run: sbt "test"
