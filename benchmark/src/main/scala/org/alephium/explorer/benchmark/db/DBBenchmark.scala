@@ -18,7 +18,7 @@ package org.alephium.explorer.benchmark.db
 
 import java.util.concurrent.TimeUnit
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContext}
 
 import org.openjdk.jmh.annotations._
 
@@ -183,9 +183,45 @@ class DBBenchmark {
   }
 
   @Benchmark
+  def getTxHashesByAddressQuerySQLNoJoin(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(state.queries.getTxHashesByAddressQuerySQLNoJoin(state.address,
+                                                                       state.pagination.offset,
+                                                                       state.pagination.limit),
+                      requestTimeout)
+  }
+
+  @Benchmark
   def countAddressTransactionsSQL(state: Address_ReadState): Unit = {
     val _ =
       state.db.runNow(state.queries.countAddressTransactionsSQL(state.address), requestTimeout)
+  }
+
+  @Benchmark
+  def countAddressTransactionsSQLNoJoin(state: Address_ReadState): Unit = {
+    val _ =
+      state.db
+        .runNow(state.queries.countAddressTransactionsSQLNoJoin(state.address), requestTimeout)
+  }
+
+  @Benchmark
+  def getAddressInfo(state: Address_ReadState): Unit = {
+    implicit val ec: ExecutionContext = ExecutionContext.global
+
+    val _ = Await.result(for {
+      _ <- state.dao.getBalanceSQL(state.address)
+      _ <- state.dao.getNumberByAddressSQL(state.address)
+    } yield (), requestTimeout)
+  }
+
+  @Benchmark
+  def getAddressInfoWithTxAddressTable(state: Address_ReadState): Unit = {
+    implicit val ec: ExecutionContext = ExecutionContext.global
+
+    val _ = Await.result(for {
+      _ <- state.dao.getBalanceSQL(state.address)
+      _ <- state.dao.getNumberByAddressSQLNoJoin(state.address)
+    } yield (), requestTimeout)
   }
 
   @Benchmark
