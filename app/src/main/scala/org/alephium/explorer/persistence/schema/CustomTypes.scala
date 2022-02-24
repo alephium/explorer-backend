@@ -76,14 +76,12 @@ trait CustomTypes extends JdbcProfile {
   )
 
   implicit lazy val timestampGetResult: GetResult[TimeStamp] =
-    (result: PositionedResult) =>
-      TimeStamp.unsafe(
-        result.nextTimestamp().toLocalDateTime().toInstant(java.time.ZoneOffset.UTC).toEpochMilli)
+    (result: PositionedResult) => TimeStamp.unsafe(result.nextTimestamp().getTime)
 
   implicit lazy val timestampType: JdbcType[TimeStamp] =
-    MappedJdbcType.base[TimeStamp, java.time.Instant](
-      ts      => java.time.Instant.ofEpochMilli(ts.millis),
-      instant => TimeStamp.unsafe(instant.toEpochMilli)
+    MappedJdbcType.base[TimeStamp, java.sql.Timestamp](
+      ts      => new java.sql.Timestamp(ts.millis),
+      instant => TimeStamp.unsafe(instant.getTime)
     )
   implicit lazy val u256Type: JdbcType[U256] = MappedJdbcType.base[U256, BigDecimal](
     u256       => BigDecimal(u256.v),
