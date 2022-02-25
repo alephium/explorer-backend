@@ -17,17 +17,16 @@
 package org.alephium.explorer.persistence.schema
 
 import java.math.BigInteger
-
 import scala.reflect.ClassTag
-
 import akka.util.ByteString
 import slick.basic.DatabaseConfig
 import slick.jdbc._
-
 import org.alephium.explorer._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.util.{TimeStamp, U256}
+
+import java.time.{Instant, OffsetDateTime, ZoneId, ZoneOffset}
 
 trait CustomTypes extends JdbcProfile {
   val config: DatabaseConfig[JdbcProfile]
@@ -76,12 +75,12 @@ trait CustomTypes extends JdbcProfile {
   )
 
   implicit lazy val timestampGetResult: GetResult[TimeStamp] =
-    (result: PositionedResult) => TimeStamp.unsafe(result.nextTimestamp().getTime)
+    (result: PositionedResult) => TimeStamp.unsafe(OffsetDateTime.parse(result.nextString()).toInstant.toEpochMilli)
 
   implicit lazy val timestampType: JdbcType[TimeStamp] =
-    MappedJdbcType.base[TimeStamp, java.sql.Timestamp](
-      ts      => new java.sql.Timestamp(ts.millis),
-      instant => TimeStamp.unsafe(instant.getTime)
+    MappedJdbcType.base[TimeStamp, OffsetDateTime](
+      ts      => OffsetDateTime.ofInstant(Instant.ofEpochMilli(ts.millis), ZoneOffset.UTC),
+      dt => TimeStamp.unsafe(dt.toInstant.toEpochMilli)
     )
   implicit lazy val u256Type: JdbcType[U256] = MappedJdbcType.base[U256, BigDecimal](
     u256       => BigDecimal(u256.v),
