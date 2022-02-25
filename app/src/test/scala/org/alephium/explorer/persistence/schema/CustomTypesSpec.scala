@@ -72,7 +72,7 @@ class CustomTypesSpec extends AlephiumSpec with ScalaFutures with Eventually {
 
       println(s"${Console.RED}${Console.BOLD}*** str ***\n\t${Console.RESET}${str}")
 
-      str.last is "2020-12-31 12:00:00" //OOUUUCCHHHH should be 11:00
+      str.last is "2020-12-31 11:00:00" //YEAH
 
     run(timestampTable.filter(_.timestamp <= t1).result).futureValue is Seq(t1, t2)
   }

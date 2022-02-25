@@ -17,6 +17,7 @@ val commonSettings = Seq(
   name := "explorer-backend",
   organization := "org.alephium",
   scalaVersion := "2.13.3",
+  javaOptions += "-Duser.timezone=UTC",
   scalacOptions ++= Seq(
 //    "-deprecation",
 //    "-encoding",
