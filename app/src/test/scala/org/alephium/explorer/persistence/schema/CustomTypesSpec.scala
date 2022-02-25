@@ -37,7 +37,7 @@ class CustomTypesSpec extends AlephiumSpec with ScalaFutures with Eventually {
     run(timestampTable.schema.create).futureValue
 
     val t1 = ALPH.LaunchTimestamp
-    val t2 = ts("2020-12-31T23:59:59.999Z")
+    val t2 = ts("2020-12-31T11:00:00.000Z")
 
     val timestamps = Seq(t1, t2)
     run(timestampTable ++= timestamps).futureValue
@@ -51,20 +51,28 @@ class CustomTypesSpec extends AlephiumSpec with ScalaFutures with Eventually {
      * by 1 here in Switzerland
      */
     run(
-      sql"SELECT * from timestamps WHERE timestamp ='#${instant1.toString}';"
+      sql"SELECT * from timestamps WHERE timestamp =$t1;"
         .as[TimeStamp]).futureValue is Vector(t1)
 
     run(timestampTable.filter(_.timestamp === t1).result).futureValue is Seq(t1)
 
     run(
-      sql"SELECT * from timestamps WHERE timestamp ='#${instant2.toString}';"
+      sql"SELECT * from timestamps WHERE timestamp =$t2;"
         .as[TimeStamp]).futureValue is Vector(t2)
 
     run(timestampTable.filter(_.timestamp === t2).result).futureValue is Seq(t2)
 
     run(
-      sql"SELECT * from timestamps WHERE timestamp <='#${instant1.toString}';"
+      sql"SELECT * from timestamps WHERE timestamp <=$t1;"
         .as[TimeStamp]).futureValue is Vector(t1, t2)
+
+    val str = run(
+      sql"SELECT * from timestamps"
+        .as[String]).futureValue
+
+      println(s"${Console.RED}${Console.BOLD}*** str ***\n\t${Console.RESET}${str}")
+
+      str.last is "2020-12-31 12:00:00" //OOUUUCCHHHH should be 11:00
 
     run(timestampTable.filter(_.timestamp <= t1).result).futureValue is Seq(t1, t2)
   }

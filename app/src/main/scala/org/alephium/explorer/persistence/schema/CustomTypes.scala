@@ -22,7 +22,7 @@ import scala.reflect.ClassTag
 
 import akka.util.ByteString
 import slick.basic.DatabaseConfig
-import slick.jdbc.{GetResult, JdbcProfile, JdbcType, PositionedResult}
+import slick.jdbc._
 
 import org.alephium.explorer._
 import org.alephium.explorer.api.model._
@@ -165,4 +165,10 @@ trait CustomTypes extends JdbcProfile {
         hashrate     = result.<<,
         parent       = result.<<?
     )
+
+  implicit lazy val setTimeStamp: SetParameter[TimeStamp] =
+    (v: TimeStamp, pp: PositionedParameters) => {
+      pp.setTimestamp( new java.sql.Timestamp(v.millis))
+    }
+
 }
