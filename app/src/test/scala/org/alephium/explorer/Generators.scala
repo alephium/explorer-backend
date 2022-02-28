@@ -113,6 +113,7 @@ trait Generators {
       gasPrice  <- u256Gen
       index     <- Gen.posNum[Int]
       mainChain <- Arbitrary.arbitrary[Boolean]
+      height       <- heightGen
     } yield
       TransactionEntity(
         hash      = hash,
@@ -123,7 +124,8 @@ trait Generators {
         gasAmount = gasAmount,
         gasPrice  = gasPrice,
         index     = index,
-        mainChain = mainChain
+        mainChain = mainChain,
+        height = height
       )
 
   lazy val blockHeaderTransactionEntityGen: Gen[(BlockHeader, List[TransactionEntity])] =

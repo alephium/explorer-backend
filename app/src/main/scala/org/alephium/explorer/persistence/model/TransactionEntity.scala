@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Transaction}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.util.{TimeStamp, U256}
 
 final case class TransactionEntity(
@@ -28,5 +28,6 @@ final case class TransactionEntity(
     gasAmount: Int,
     gasPrice: U256,
     index: Int,
-    mainChain: Boolean
+    mainChain: Boolean,
+    height: Height
 )

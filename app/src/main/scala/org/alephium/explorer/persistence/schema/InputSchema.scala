@@ -20,7 +20,7 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 import slick.sql.SqlAction
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{BlockEntry, Transaction}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.explorer.persistence.model.InputEntity
 import org.alephium.util.TimeStamp
 
@@ -38,6 +38,9 @@ trait InputSchema extends Schema with CustomTypes {
     def unlockScript: Rep[Option[String]] = column[Option[String]]("unlock_script")
     def mainChain: Rep[Boolean]           = column[Boolean]("main_chain")
     def order: Rep[Int]                   = column[Int]("order")
+    def chainFrom: Rep[GroupIndex]      = column[GroupIndex]("chain_from")
+    def chainTo: Rep[GroupIndex]        = column[GroupIndex]("chain_to")
+    def height: Rep[Height]              = column[Height]("height")
 
     def pk: PrimaryKey = primaryKey("inputs_pk", (outputRefKey, txHash, blockHash))
 
@@ -47,7 +50,7 @@ trait InputSchema extends Schema with CustomTypes {
     def timestampIdx: Index    = index("inputs_timestamp_idx", timestamp)
 
     def * : ProvenShape[InputEntity] =
-      (blockHash, txHash, timestamp, hint, outputRefKey, unlockScript, mainChain, order)
+      (blockHash, txHash, timestamp, hint, outputRefKey, unlockScript, mainChain, order, chainFrom, chainTo,height)
         .<>((InputEntity.apply _).tupled, InputEntity.unapply)
   }
 

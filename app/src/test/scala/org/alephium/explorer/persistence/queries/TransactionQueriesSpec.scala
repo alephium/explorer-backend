@@ -80,7 +80,8 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
       tx1.gasAmount,
       tx1.gasPrice,
       0,
-      true
+      true,
+      height
     )
 
     val output1 =
@@ -111,6 +112,7 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     val chainFrom = GroupIndex.unsafe(0)
     val chainTo   = GroupIndex.unsafe(0)
+    val height = Height.unsafe(0)
 
     def output(address: Address, amount: U256, lockTime: Option[TimeStamp]): OutputEntity =
       OutputEntity(
@@ -123,7 +125,10 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
         address,
         true,
         lockTime,
-        0
+        0,
+        chainFrom,
+        chainTo,
+        height
       )
 
     def input(hint: Int, outputRefKey: Hash): InputEntity =
@@ -135,7 +140,10 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
         outputRefKey,
         None,
         true,
-        0
+        0,
+        chainFrom,
+        chainTo,
+        height
       )
   }
 }

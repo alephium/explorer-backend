@@ -19,7 +19,7 @@ package org.alephium.explorer.persistence.schema
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 import slick.sql.SqlAction
 
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Transaction}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex,Height, Transaction}
 import org.alephium.explorer.persistence.model.TransactionEntity
 import org.alephium.util.{TimeStamp, U256}
 
@@ -39,6 +39,7 @@ trait TransactionSchema extends Schema with CustomTypes {
       column[U256]("gas-price", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
     def txIndex: Rep[Int]       = column[Int]("index")
     def mainChain: Rep[Boolean] = column[Boolean]("main_chain")
+    def height: Rep[Height]        = column[Height]("height")
 
     def pk: PrimaryKey = primaryKey("txs_pk", (hash, blockHash))
 
@@ -49,7 +50,7 @@ trait TransactionSchema extends Schema with CustomTypes {
     def chainToIdx: Index   = index("txs_chain_to_idx", chainTo)
 
     def * : ProvenShape[TransactionEntity] =
-      (hash, blockHash, timestamp, chainFrom, chainTo, gasAmount, gasPrice, txIndex, mainChain)
+      (hash, blockHash, timestamp, chainFrom, chainTo, gasAmount, gasPrice, txIndex, mainChain, height)
         .<>((TransactionEntity.apply _).tupled, TransactionEntity.unapply)
   }
 

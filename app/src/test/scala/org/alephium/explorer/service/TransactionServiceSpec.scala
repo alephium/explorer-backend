@@ -112,7 +112,8 @@ class TransactionServiceSpec
       gasAmount,
       gasPrice,
       0,
-      true
+      true,
+      height
     )
 
     val output0 =
@@ -125,7 +126,10 @@ class TransactionServiceSpec
                    address0,
                    true,
                    None,
-                   0)
+                   0,
+                   groupIndex,
+                   groupIndex,
+                   height)
 
     val block0 = defaultBlockEntity.copy(
       hash         = blockHash0,
@@ -147,7 +151,8 @@ class TransactionServiceSpec
       gasAmount1,
       gasPrice1,
       0,
-      true
+      true,
+      height
     )
     val input1 = InputEntity(blockHash1,
                              tx1.hash,
@@ -156,7 +161,10 @@ class TransactionServiceSpec
                              outputRefKey = output0.key,
                              None,
                              true,
-                             0)
+                             0,
+                             groupIndex,
+                             groupIndex,
+                             height)
     val output1 = OutputEntity(blockHash1,
                                tx1.hash,
                                timestamp = ts1,
@@ -166,7 +174,10 @@ class TransactionServiceSpec
                                address1,
                                true,
                                None,
-                               0)
+                               0,
+                               groupIndex,
+                               groupIndex,
+                               height)
 
     val block1 = defaultBlockEntity.copy(
       hash         = blockHash1,
@@ -225,7 +236,8 @@ class TransactionServiceSpec
           Gen.posNum[Int].sample.get,
           amountGen.sample.get,
           0,
-          true
+          true,
+          height
         )
 
         val output0 =
@@ -238,7 +250,10 @@ class TransactionServiceSpec
                        address0,
                        true,
                        None,
-                       0)
+                       0,
+                       groupIndex,
+                       groupIndex,
+                       height)
 
         val block0 = defaultBlockEntity.copy(
           hash         = blockHash0,
@@ -340,6 +355,7 @@ class TransactionServiceSpec
     val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
 
     val groupIndex = GroupIndex.unsafe(0)
+    val height = Height.unsafe(0)
 
     val defaultBlockEntity: BlockEntity =
       BlockEntity(
@@ -347,7 +363,7 @@ class TransactionServiceSpec
         timestamp    = TimeStamp.unsafe(0),
         chainFrom    = groupIndex,
         chainTo      = groupIndex,
-        height       = Height.unsafe(0),
+        height       = height,
         deps         = Seq.empty,
         transactions = Seq.empty,
         inputs       = Seq.empty,

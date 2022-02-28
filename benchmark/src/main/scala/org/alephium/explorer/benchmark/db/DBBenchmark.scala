@@ -150,7 +150,7 @@ class DBBenchmark {
    */
 
   @Benchmark
-  def update_Main_Chain_No_Fork(state: MainChainUpdateStateNoFork): Unit = {
+  def update_Main_Chain_No_Fork_Old(state: MainChainUpdateStateNoForkOld): Unit = {
     val _ =
       Await.result(state.dao.updateMainChainOld(state.cache.last.hash,
                                                 state.chainFrom,
@@ -170,7 +170,7 @@ class DBBenchmark {
   }
 
   @Benchmark
-  def update_Main_Chain_Fork(state: MainChainUpdateStateFork): Unit = {
+  def update_Main_Chain_Fork_Old(state: MainChainUpdateStateForkOld): Unit = {
     val _ =
       Await.result(state.dao.updateMainChainOld(state.cache.last.hash,
                                                 state.chainFrom,

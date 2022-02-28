@@ -202,11 +202,7 @@ object BlockDao {
           case Some(block) if !block.mainChain =>
             assert(block.chainFrom == chainFrom && block.chainTo == chainTo)
             (for {
-              blocks <- getBlockHashesAtHeight(block.chainFrom, block.chainTo, block.height)
-              _ <- updateMainChainStatusInActionSQL(blocks
-                                                      .filterNot(_ === block.hash),
-                                                    false)
-              _ <- updateMainChainStatusActionSQL(hash, true)
+               _ <- updateMainChainAtAction(hash, block.chainFrom, block.chainTo, block.height)
             } yield {
               block.parent.map(Right(_))
             })

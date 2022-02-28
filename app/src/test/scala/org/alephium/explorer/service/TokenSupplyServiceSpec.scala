@@ -180,7 +180,7 @@ class TokenSupplyServiceSpec extends AlephiumSpec with ScalaFutures with Eventua
         timestamp = timestamp,
         inputs = block1.outputs.zipWithIndex.map {
           case (out, index) =>
-            InputEntity(block.hash, txHash, timestamp, 0, out.key, None, false, index)
+            InputEntity(block.hash, txHash, timestamp, 0, out.key, None, false, index, block.chainFrom, block.chainTo, block.height)
         },
         outputs = block.outputs.map(_.copy(timestamp = timestamp))
       )

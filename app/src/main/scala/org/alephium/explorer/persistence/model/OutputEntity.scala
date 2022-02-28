@@ -17,7 +17,7 @@
 package org.alephium.explorer.persistence.model
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, BlockEntry, Output, Transaction}
+import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Output, Transaction}
 import org.alephium.util.{TimeStamp, U256}
 
 final case class OutputEntity(
@@ -30,7 +30,10 @@ final case class OutputEntity(
     address: Address,
     mainChain: Boolean,
     lockTime: Option[TimeStamp],
-    order: Int
+    order: Int,
+    chainFrom: GroupIndex,
+    chainTo: GroupIndex,
+    height:Height
 ) {
   def toApi(spent: Option[Transaction.Hash]): Output =
     Output(hint, key, amount, address, lockTime, spent)

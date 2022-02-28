@@ -172,28 +172,29 @@ object BlockFlowClient {
     val hash         = new BlockEntry.Hash(block.hash)
     val mainChain    = false
     val transactions = block.transactions.toSeq
-    val chainFrom    = block.chainFrom
-    val chainTo      = block.chainTo
+    val chainFrom    = GroupIndex.unsafe(block.chainFrom)
+    val chainTo      = GroupIndex.unsafe(block.chainTo)
+    val height = Height.unsafe(block.height)
     BlockEntity(
       hash,
       block.timestamp,
       GroupIndex.unsafe(block.chainFrom),
       GroupIndex.unsafe(block.chainTo),
-      Height.unsafe(block.height),
+      height,
       block.deps.map(new BlockEntry.Hash(_)).toSeq,
       transactions.zipWithIndex.map {
         case (tx, index) =>
-          txToEntity(tx, hash, block.timestamp, index, mainChain, chainFrom, chainTo)
+          txToEntity(tx, hash, block.timestamp, index, mainChain, chainFrom, chainTo, height)
       },
       transactions.flatMap(tx =>
         tx.inputs.toSeq.zipWithIndex.map {
           case (in, index) =>
-            inputToEntity(in, hash, tx.id, block.timestamp, mainChain, index)
+            inputToEntity(in, hash, tx.id, block.timestamp, mainChain, index,chainFrom, chainTo,  height)
       }),
       transactions.flatMap(tx =>
         tx.outputs.toSeq.zipWithIndex.map {
           case (out, index) =>
-            outputToEntity(out, hash, tx.id, index, block.timestamp, mainChain)
+            outputToEntity(out, hash, tx.id, index, block.timestamp, mainChain, chainFrom, chainTo, height)
       }),
       mainChain = mainChain,
       block.nonce,
@@ -225,18 +226,20 @@ object BlockFlowClient {
                          timestamp: TimeStamp,
                          index: Int,
                          mainChain: Boolean,
-                         chainFrom: Int,
-                         chainTo: Int): TransactionEntity =
+                         chainFrom: GroupIndex,
+                         chainTo: GroupIndex,
+                         height: Height): TransactionEntity =
     TransactionEntity(
       new Transaction.Hash(tx.id),
       blockHash,
       timestamp,
-      GroupIndex.unsafe(chainFrom),
-      GroupIndex.unsafe(chainTo),
+      chainFrom,
+      chainTo,
       tx.gasAmount,
       tx.gasPrice,
       index,
-      mainChain
+      mainChain,
+      height
     )
 
   private def inputToUInput(input: api.model.Input): UInput = {
@@ -255,7 +258,10 @@ object BlockFlowClient {
                             txId: Hash,
                             timestamp: TimeStamp,
                             mainChain: Boolean,
-                            index: Int): InputEntity = {
+                            index: Int,
+                         chainFrom: GroupIndex,
+                         chainTo: GroupIndex,
+                            height: Height): InputEntity = {
     val unlockScript = input match {
       case asset: api.model.Input.Asset => Some(Hex.toHexString(asset.unlockScript))
       case _: api.model.Input.Contract  => None
@@ -268,7 +274,10 @@ object BlockFlowClient {
       input.outputRef.key,
       unlockScript,
       mainChain,
-      index
+      index,
+      chainFrom,
+    chainTo,
+      height
     )
   }
 
@@ -289,7 +298,10 @@ object BlockFlowClient {
                              txId: Hash,
                              index: Int,
                              timestamp: TimeStamp,
-                             mainChain: Boolean): OutputEntity = {
+                             mainChain: Boolean,
+                         chainFrom: GroupIndex,
+                         chainTo: GroupIndex,
+                             height: Height): OutputEntity = {
     val lockTime = output match {
       case asset: api.model.Output.Asset if asset.lockTime.millis > 0 => Some(asset.lockTime)
       case _                                                          => None
@@ -308,7 +320,10 @@ object BlockFlowClient {
       new Address(output.address.toBase58),
       mainChain,
       lockTime,
-      index
+      index,
+      chainFrom,
+    chainTo,
+      height
     )
   }
   // scalastyle:off magic.number

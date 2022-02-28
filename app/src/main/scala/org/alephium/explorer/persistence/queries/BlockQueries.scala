@@ -235,6 +235,43 @@ trait BlockQueries
       .transactionally
   }
 
+
+  def updateMainChainAtAction(hash: BlockEntry.Hash,
+                              chainFrom: GroupIndex, chainTo:GroupIndex, height: Height): DBActionRWT[Int] = {
+    sqlu"""
+            UPDATE transactions
+            SET main_chain = (CASE WHEN block_hash = $hash THEN true ELSE false END)
+            WHERE chain_from = ${chainFrom.value}
+            AND chain_to = ${chainTo.value}
+            AND height = ${height.value}
+          """
+      .andThen(
+        sqlu"""UPDATE outputs
+            SET main_chain = (CASE WHEN block_hash = $hash THEN true ELSE false END)
+            WHERE chain_from = ${chainFrom.value}
+            AND chain_to = ${chainTo.value}
+            AND height = ${height.value}
+            """
+      )
+      .andThen(
+        sqlu"""UPDATE inputs
+            SET main_chain = (CASE WHEN block_hash = $hash THEN true ELSE false END)
+            WHERE chain_from = ${chainFrom.value}
+            AND chain_to = ${chainTo.value}
+            AND height = ${height.value}
+            """
+      )
+      .andThen(
+        sqlu"""UPDATE block_headers
+            SET main_chain = (CASE WHEN hash = $hash THEN true ELSE false END)
+            WHERE chain_from = ${chainFrom.value}
+            AND chain_to = ${chainTo.value}
+            AND height = ${height.value}
+            """
+      )
+      .transactionally
+  }
+
   def updateMainChainStatusInActionSQL(hashes: Seq[BlockEntry.Hash],
                                        isMainChain: Boolean): DBActionRWT[Int] = {
     if (hashes.nonEmpty) {

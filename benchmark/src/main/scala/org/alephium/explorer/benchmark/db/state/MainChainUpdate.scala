@@ -113,8 +113,26 @@ class MainChainUpdate(testDataCount: Int, fork: Boolean, val db: DBExecutor)
 // scalastyle:off magic.number
 @State(Scope.Thread)
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+class MainChainUpdateStateNoForkOld(override val db: DBExecutor)
+    extends MainChainUpdate(testDataCount = 500, false, db = db) {
+  def this() = {
+    this(DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.HikariCP))
+  }
+}
+@State(Scope.Thread)
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+class MainChainUpdateStateForkOld(override val db: DBExecutor)
+    extends MainChainUpdate(testDataCount = 500, true, db = db) {
+  def this() = {
+    this(DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.HikariCP))
+  }
+}
+
+// scalastyle:off magic.number
+@State(Scope.Thread)
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 class MainChainUpdateStateNoFork(override val db: DBExecutor)
-    extends MainChainUpdate(testDataCount = 1000, false, db = db) {
+    extends MainChainUpdate(testDataCount = 500, false, db = db) {
   def this() = {
     this(DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.HikariCP))
   }
@@ -122,7 +140,7 @@ class MainChainUpdateStateNoFork(override val db: DBExecutor)
 @State(Scope.Thread)
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 class MainChainUpdateStateFork(override val db: DBExecutor)
-    extends MainChainUpdate(testDataCount = 1000, true, db = db) {
+    extends MainChainUpdate(testDataCount = 500, true, db = db) {
   def this() = {
     this(DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.HikariCP))
   }

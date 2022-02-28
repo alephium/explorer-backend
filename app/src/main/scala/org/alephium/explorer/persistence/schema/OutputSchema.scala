@@ -20,7 +20,7 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 import slick.sql.SqlAction
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
+import org.alephium.explorer.api.model.{Address, BlockEntry, GroupIndex, Height, Transaction}
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.util.{TimeStamp, U256}
 
@@ -41,6 +41,9 @@ trait OutputSchema extends Schema with CustomTypes {
     def mainChain: Rep[Boolean]          = column[Boolean]("main_chain")
     def lockTime: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("lock_time")
     def order: Rep[Int]                  = column[Int]("order")
+    def chainFrom: Rep[GroupIndex]      = column[GroupIndex]("chain_from")
+    def chainTo: Rep[GroupIndex]        = column[GroupIndex]("chain_to")
+    def height: Rep[Height]        = column[Height]("height")
 
     def pk: PrimaryKey = primaryKey("outputs_pk", (key, blockHash))
 
@@ -51,7 +54,7 @@ trait OutputSchema extends Schema with CustomTypes {
     def timestampIdx: Index = index("outputs_timestamp_idx", timestamp)
 
     def * : ProvenShape[OutputEntity] =
-      (blockHash, txHash, timestamp, hint, key, amount, address, mainChain, lockTime, order)
+      (blockHash, txHash, timestamp, hint, key, amount, address, mainChain, lockTime, order, chainFrom, chainTo,height)
         .<>((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }
 

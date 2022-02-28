@@ -90,7 +90,8 @@ class ListBlocksReadState(reverse: Boolean,
         gasAmount = 0,
         gasPrice  = U256.unsafe(0),
         index     = 0,
-        mainChain = header.mainChain
+        mainChain = header.mainChain,
+        height = header.height
       )
     }
 
