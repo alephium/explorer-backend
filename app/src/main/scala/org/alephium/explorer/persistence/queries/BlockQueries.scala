@@ -70,6 +70,19 @@ trait BlockQueries
       .headOption
   }
 
+  def getBlockHashesAtHeight(fromGroup: GroupIndex,
+                             toGroup: GroupIndex,
+                             height: Height): DBActionSR[BlockEntry.Hash] = {
+    sql"""
+       |SELECT hash
+       |FROM #$block_headers
+       |WHERE chain_from = ${fromGroup.value}
+       |AND chain_to = ${toGroup.value}
+       |AND height = ${height.value}
+       |""".stripMargin
+      .as[BlockEntry.Hash]
+  }
+
   def getAtHeightAction(fromGroup: GroupIndex,
                         toGroup: GroupIndex,
                         height: Height): DBActionR[Seq[BlockEntry]] =

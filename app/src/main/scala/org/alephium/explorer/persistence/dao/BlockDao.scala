@@ -169,10 +169,9 @@ object BlockDao {
           case Some(block) if !block.mainChain =>
             assert(block.chainFrom == chainFrom && block.chainTo == chainTo)
             (for {
-              blocks <- getAtHeightAction(block.chainFrom, block.chainTo, block.height)
+              blocks <- getBlockHashesAtHeight(block.chainFrom, block.chainTo, block.height)
               _ <- DBIOAction.sequence(
                 blocks
-                  .map(_.hash)
                   .filterNot(_ === block.hash)
                   .map(updateMainChainStatusAction(_, false)))
               _ <- updateMainChainStatusAction(hash, true)

@@ -22,7 +22,7 @@ import scala.reflect.ClassTag
 
 import akka.util.ByteString
 import slick.basic.DatabaseConfig
-import slick.jdbc.{GetResult, JdbcProfile, JdbcType, PositionedResult}
+import slick.jdbc._
 
 import org.alephium.explorer._
 import org.alephium.explorer.api.model._
@@ -167,4 +167,9 @@ trait CustomTypes extends JdbcProfile {
         hashrate     = result.<<,
         parent       = result.<<?
     )
+
+  implicit object BlockEntryHashSetParameter extends SetParameter[BlockEntry.Hash] {
+    override def apply(input: BlockEntry.Hash, params: PositionedParameters): Unit =
+      params setBytes input.value.bytes.toArray
+  }
 }
