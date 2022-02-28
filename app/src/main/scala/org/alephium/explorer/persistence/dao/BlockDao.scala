@@ -53,6 +53,10 @@ trait BlockDao {
                       chainFrom: GroupIndex,
                       chainTo: GroupIndex,
                       groupNum: Int): Future[Option[BlockEntry.Hash]]
+  def updateMainChainOld(hash: BlockEntry.Hash,
+                         chainFrom: GroupIndex,
+                         chainTo: GroupIndex,
+                         groupNum: Int): Future[Option[BlockEntry.Hash]]
   def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit]
   def latestBlocks(): Future[Seq[(ChainIndex, LatestBlock)]]
   def updateLatestBlock(block: BlockEntity): Future[Unit]
@@ -188,11 +192,46 @@ object BlockDao {
         }
     }
 
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+    def updateMainChainActionSQL(hash: BlockEntry.Hash,
+                                 chainFrom: GroupIndex,
+                                 chainTo: GroupIndex,
+                                 groupNum: Int): DBActionRWT[Option[BlockEntry.Hash]] = {
+      getBlockHeaderAction(hash)
+        .flatMap {
+          case Some(block) if !block.mainChain =>
+            assert(block.chainFrom == chainFrom && block.chainTo == chainTo)
+            (for {
+              blocks <- getBlockHashesAtHeight(block.chainFrom, block.chainTo, block.height)
+              _ <- updateMainChainStatusInActionSQL(blocks
+                                                      .filterNot(_ === block.hash),
+                                                    false)
+              _ <- updateMainChainStatusActionSQL(hash, true)
+            } yield {
+              block.parent.map(Right(_))
+            })
+          case None => DBIOAction.successful(Some(Left(hash)))
+          case _    => DBIOAction.successful(None)
+        }
+        .flatMap {
+          case Some(Right(parent)) => updateMainChainActionSQL(parent, chainFrom, chainTo, groupNum)
+          case Some(Left(missing)) => DBIOAction.successful(Some(missing))
+          case None                => DBIOAction.successful(None)
+        }
+    }
+
+    def updateMainChainOld(hash: BlockEntry.Hash,
+                           chainFrom: GroupIndex,
+                           chainTo: GroupIndex,
+                           groupNum: Int): Future[Option[BlockEntry.Hash]] = {
+      run(updateMainChainAction(hash, chainFrom, chainTo, groupNum))
+    }
+
     def updateMainChain(hash: BlockEntry.Hash,
                         chainFrom: GroupIndex,
                         chainTo: GroupIndex,
                         groupNum: Int): Future[Option[BlockEntry.Hash]] = {
-      run(updateMainChainAction(hash, chainFrom, chainTo, groupNum))
+      run(updateMainChainActionSQL(hash, chainFrom, chainTo, groupNum))
     }
 
     def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit] = {

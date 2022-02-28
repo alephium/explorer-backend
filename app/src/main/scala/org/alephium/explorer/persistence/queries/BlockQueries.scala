@@ -207,6 +207,66 @@ trait BlockQueries
     query.transactionally
   }
 
+  def updateMainChainStatusActionSQL(hash: BlockEntry.Hash,
+                                     isMainChain: Boolean): DBActionRWT[Int] = {
+    sqlu"""
+            UPDATE transactions
+            SET main_chain = $isMainChain
+            WHERE block_hash = $hash
+          """
+      .andThen(
+        sqlu"""UPDATE outputs
+            SET main_chain = $isMainChain
+            WHERE block_hash = $hash
+            """
+      )
+      .andThen(
+        sqlu"""UPDATE inputs
+            SET main_chain = $isMainChain
+            WHERE block_hash = $hash
+            """
+      )
+      .andThen(
+        sqlu"""UPDATE block_headers
+            SET main_chain = $isMainChain
+            WHERE hash = $hash
+            """
+      )
+      .transactionally
+  }
+
+  def updateMainChainStatusInActionSQL(hashes: Seq[BlockEntry.Hash],
+                                       isMainChain: Boolean): DBActionRWT[Int] = {
+    if (hashes.nonEmpty) {
+      val str = hashes.map(b => s"'\\x${b.toString}'").mkString(",")
+      sqlu"""
+            UPDATE transactions
+            SET main_chain = $isMainChain
+            WHERE block_hash IN (#$str)
+          """
+        .andThen(
+          sqlu"""UPDATE outputs
+            SET main_chain = $isMainChain
+            WHERE block_hash IN (#$str)
+            """
+        )
+        .andThen(
+          sqlu"""UPDATE inputs
+            SET main_chain = $isMainChain
+            WHERE block_hash IN (#$str)
+            """
+        )
+        .andThen(
+          sqlu"""UPDATE block_headers
+            SET main_chain = $isMainChain
+            WHERE hash IN (#$str)
+            """
+        )
+        .transactionally
+    } else {
+      DBIOAction.successful(0)
+    }
+  }
   def buildBlockEntryWithoutTxsAction(blockHeader: BlockHeader): DBActionR[BlockEntry] =
     for {
       deps <- blockDepsQuery(blockHeader.hash).result
