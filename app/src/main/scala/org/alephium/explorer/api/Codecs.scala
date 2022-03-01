@@ -23,7 +23,7 @@ import sttp.tapir.CodecFormat.TextPlain
 
 import org.alephium.explorer.{BlockHash, Hash}
 import org.alephium.explorer.api.Json._
-import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
+import org.alephium.explorer.api.model.{Address, BlockEntry, IntervalType, Transaction}
 import org.alephium.json.Json._
 
 object Codecs {
@@ -41,6 +41,9 @@ object Codecs {
 
   implicit val transactionHashTapirCodec: Codec[String, Transaction.Hash, TextPlain] =
     hashTapirCodec.map(new Transaction.Hash(_))(_.value)
+
+  implicit val timeIntervalCodec: Codec[String, IntervalType, TextPlain] =
+    fromJson[IntervalType]
 
   def fromJson[A: ReadWriter]: Codec[String, A, TextPlain] =
     Codec.string.mapDecode[A] { raw =>

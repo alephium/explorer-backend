@@ -22,7 +22,7 @@ import sttp.tapir.generic.auto._
 import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.BaseEndpoint
-import org.alephium.explorer.api.model.Hashrate
+import org.alephium.explorer.api.model.{Hashrate, IntervalType}
 
 // scalastyle:off magic.number
 trait ChartsEndpoints extends BaseEndpoint with QueryParams {
@@ -32,12 +32,12 @@ trait ChartsEndpoints extends BaseEndpoint with QueryParams {
       .tag("Charts")
       .in("charts")
 
-  val getHashrates: BaseEndpoint[(TimeInterval, Int), Seq[Hashrate]] =
+  val getHashrates: BaseEndpoint[(TimeInterval, IntervalType), Seq[Hashrate]] =
     chartsEndpoint.get
       .in("hashrates")
       .in(timeIntervalQuery)
-      .in(query[Int]("interval").validate(Validator.min(0)).validate(Validator.max(2)))
+      .in(intervalTypeQuery)
       .out(jsonBody[Seq[Hashrate]])
+      .description("`interval-type` query param: ten-minutes, hourly, daily")
       .summary("Get explorer informations.")
-      .description("`interval` query param: 0 = 10 minutes, 1 = hourly, 2 = daily")
 }

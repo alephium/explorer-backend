@@ -20,6 +20,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
+import org.alephium.explorer.api.model.IntervalType
 import org.alephium.explorer.persistence.model.HashrateEntity
 import org.alephium.util.TimeStamp
 
@@ -29,9 +30,9 @@ trait HashrateSchema extends CustomTypes {
   import config.profile.api._
 
   class Hashrates(tag: Tag) extends Table[HashrateEntity](tag, "hashrates") {
-    def timestamp: Rep[TimeStamp] = column[TimeStamp]("timestamp")
-    def value: Rep[BigDecimal]    = column[BigDecimal]("value")
-    def intervalType: Rep[Int]    = column[Int]("interval_type")
+    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
+    def value: Rep[BigDecimal]          = column[BigDecimal]("value")
+    def intervalType: Rep[IntervalType] = column[IntervalType]("interval_type")
 
     def pk: PrimaryKey = primaryKey("hashrates_pk", (timestamp, intervalType))
 

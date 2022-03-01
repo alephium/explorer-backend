@@ -19,9 +19,9 @@ package org.alephium.explorer.persistence.queries
 import scala.concurrent.ExecutionContext
 
 import slick.basic.DatabaseConfig
-import slick.dbio.DBIOAction
 import slick.jdbc.JdbcProfile
 
+import org.alephium.explorer.api.model.IntervalType
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.util.TimeStamp
@@ -33,33 +33,31 @@ trait HashrateQueries extends CustomTypes {
 
   def getHashratesQuery(from: TimeStamp,
                         to: TimeStamp,
-                        interval: Int): DBActionSR[(TimeStamp, BigDecimal)] = {
+                        intervalType: IntervalType): DBActionSR[(TimeStamp, BigDecimal)] = {
 
     sql"""
         SELECT timestamp, value
         FROM hashrates
-        WHERE interval_type = $interval
+        WHERE interval_type = ${intervalType.value}
         AND timestamp >= $from
         AND timestamp <= $to
         ORDER BY timestamp
       """.as[(TimeStamp, BigDecimal)]
   }
 
-  def computeHashratesAndInsert(from: TimeStamp, intervalType: Int): DBActionW[Int] = {
-    if (intervalType >= 0 || intervalType <= 2) {
-      val dateGroup = (intervalType match {
-        case 0 => tenMinutesQuery
-        case 1 => hourlyQuery
-        case 2 => dailyQuery
-        case _ => ""
-      })
+  def computeHashratesAndInsert(from: TimeStamp, intervalType: IntervalType): DBActionW[Int] = {
+    val dateGroup = intervalType match {
+      case IntervalType.TenMinutes => tenMinutesQuery
+      case IntervalType.Hourly     => hourlyQuery
+      case IntervalType.Daily      => dailyQuery
+    }
 
-      sqlu"""
+    sqlu"""
         INSERT INTO hashrates (timestamp, value, interval_type)
         SELECT
         EXTRACT(EPOCH FROM ((#$dateGroup) AT TIME ZONE 'UTC')) * 1000 as ts,
         AVG(hashrate),
-        $intervalType
+        ${intervalType.value}
         FROM block_headers
         WHERE timestamp >= $from
         AND main_chain = true
@@ -67,9 +65,6 @@ trait HashrateQueries extends CustomTypes {
         ON CONFLICT (timestamp, interval_type) DO UPDATE
         SET value = EXCLUDED.value
       """
-    } else {
-      DBIOAction.successful(0)
-    }
   }
 
   /*
@@ -104,7 +99,7 @@ trait HashrateQueries extends CustomTypes {
     computeHashrateRawString(
       from,
       tenMinutesQuery,
-      0
+      IntervalType.TenMinutes
     )
   }
 
@@ -117,7 +112,7 @@ trait HashrateQueries extends CustomTypes {
     computeHashrateRawString(
       from,
       hourlyQuery,
-      1
+      IntervalType.Hourly
     )
   }
 
@@ -130,7 +125,7 @@ trait HashrateQueries extends CustomTypes {
     computeHashrateRawString(
       from,
       dailyQuery,
-      2
+      IntervalType.Daily
     )
   }
 
@@ -140,12 +135,14 @@ trait HashrateQueries extends CustomTypes {
     sql.map(_.map { case (ts, v, _) => (ts, v) })
   }
 
-  private def computeHashrateRawString(from: TimeStamp, dateGroup: String, intervalType: Int) = {
+  private def computeHashrateRawString(from: TimeStamp,
+                                       dateGroup: String,
+                                       intervalType: IntervalType) = {
     sql"""
         SELECT
         EXTRACT(EPOCH FROM ((#$dateGroup) AT TIME ZONE 'UTC')) * 1000 as ts,
         AVG(hashrate),
-        $intervalType
+        ${intervalType.value}
         FROM block_headers
         WHERE timestamp >= $from
         AND main_chain = true

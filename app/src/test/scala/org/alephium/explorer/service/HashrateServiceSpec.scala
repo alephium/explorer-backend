@@ -24,7 +24,7 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
-import org.alephium.explorer.api.model.Hashrate
+import org.alephium.explorer.api.model.{Hashrate, IntervalType}
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.queries.HashrateQueries
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
@@ -146,11 +146,11 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
 
     run(blockHeadersTable ++= blocks).futureValue
 
-    hashrateService.get(from, to, 0).futureValue is Vector.empty
+    hashrateService.get(from, to, IntervalType.TenMinutes).futureValue is Vector.empty
 
     hashrateService.syncOnce().futureValue
 
-    hashrateService.get(from, to, 0).futureValue is
+    hashrateService.get(from, to, IntervalType.TenMinutes).futureValue is
       Vector(
         hr("2022-01-06T23:50:00.000Z", 1),
         hr("2022-01-07T12:10:00.000Z", 3),
@@ -158,14 +158,14 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
         hr("2022-01-08T00:10:00.000Z", 100)
       )
 
-    hashrateService.get(from, to, 1).futureValue is Vector(
+    hashrateService.get(from, to, IntervalType.Hourly).futureValue is Vector(
       hr("2022-01-07T00:00:00.000Z", 1),
       hr("2022-01-07T13:00:00.000Z", 3),
       hr("2022-01-08T00:00:00.000Z", 12),
       hr("2022-01-08T01:00:00.000Z", 100)
     )
 
-    hashrateService.get(from, to, 2).futureValue is Vector(
+    hashrateService.get(from, to, IntervalType.Daily).futureValue is Vector(
       hr("2022-01-07T00:00:00.000Z", 1),
       hr("2022-01-08T00:00:00.000Z", 6),
       hr("2022-01-09T00:00:00.000Z", 100)
@@ -180,7 +180,7 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
 
     hashrateService.syncOnce().futureValue
 
-    hashrateService.get(from, to, 0).futureValue is
+    hashrateService.get(from, to, IntervalType.TenMinutes).futureValue is
       Vector(
         hr("2022-01-06T23:50:00.000Z", 1),
         hr("2022-01-07T12:10:00.000Z", 3),
@@ -190,7 +190,7 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
         hr("2022-01-08T20:40:00.000Z", 4)
       )
 
-    hashrateService.get(from, to, 1).futureValue is Vector(
+    hashrateService.get(from, to, IntervalType.Hourly).futureValue is Vector(
       hr("2022-01-07T00:00:00.000Z", 1),
       hr("2022-01-07T13:00:00.000Z", 3),
       hr("2022-01-08T00:00:00.000Z", 12),
@@ -199,7 +199,7 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
       hr("2022-01-08T21:00:00.000Z", 4)
     )
 
-    hashrateService.get(from, to, 2).futureValue is Vector(
+    hashrateService.get(from, to, IntervalType.Daily).futureValue is Vector(
       hr("2022-01-07T00:00:00.000Z", 1),
       hr("2022-01-08T00:00:00.000Z", 6),
       hr("2022-01-09T00:00:00.000Z", 38)

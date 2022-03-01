@@ -97,6 +97,15 @@ trait CustomTypes extends JdbcProfile {
       bytes => ByteString.fromArrayUnsafe(bytes)
     )
 
+  implicit lazy val intervalTypeType: JdbcType[IntervalType] =
+    MappedJdbcType.base[IntervalType, Int](
+      _.value, {
+        case 0 => IntervalType.TenMinutes
+        case 1 => IntervalType.Daily
+        case 2 => IntervalType.Hourly
+      }
+    )
+
   /**
     * GetResult types
     */
