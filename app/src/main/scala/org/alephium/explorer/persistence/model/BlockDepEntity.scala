@@ -21,7 +21,4 @@ import org.alephium.explorer.api.model.BlockEntry
 /**
   * Class for defining rows in table [[org.alephium.explorer.persistence.schema.BlockDepsSchema]]
   */
-final case class BlockDepEntity(hash: BlockEntry.Hash, dep: BlockEntry.Hash, order: Int) {
-  def primaryKey(): (BlockEntry.Hash, BlockEntry.Hash) =
-    (hash, dep)
-}
+final case class BlockDepEntity(hash: BlockEntry.Hash, dep: BlockEntry.Hash, order: Int)

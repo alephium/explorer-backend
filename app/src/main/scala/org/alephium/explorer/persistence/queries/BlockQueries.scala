@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.persistence.queries
 
-import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
@@ -290,19 +290,11 @@ trait BlockQueries
   /** Transactionally write blocks */
   @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
   def upsertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int): DBActionRWT[Int] = {
-    import BlockEntityUpsertOrdering._
-
-    /**
-      * `mutable.SortedSet` to handle cases when there are duplicates so
-      * the queries always insert the latest data.
-      *
-      * Ordering is applied on primary key of each table.
-      * */
-    val blockDeps    = mutable.SortedSet.empty[BlockDepEntity](blockDepOrdering)
-    val transactions = mutable.SortedSet.empty[TransactionEntity](transactionOrdering)
-    val inputs       = mutable.SortedSet.empty[InputEntity](inputEntityOrdering)
-    val outputs      = mutable.SortedSet.empty[OutputEntity](outputEntityOrdering)
-    val blockHeaders = mutable.SortedSet.empty[BlockHeader](blockHeaderOrdering)
+    val blockDeps    = ListBuffer.empty[BlockDepEntity]
+    val transactions = ListBuffer.empty[TransactionEntity]
+    val inputs       = ListBuffer.empty[InputEntity]
+    val outputs      = ListBuffer.empty[OutputEntity]
+    val blockHeaders = ListBuffer.empty[BlockHeader]
 
     //build data for all insert queries in single iteration
     blocks foreach { block =>

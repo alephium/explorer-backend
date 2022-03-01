@@ -26,7 +26,6 @@ import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
-import org.alephium.explorer.persistence.model.{BlockDepEntity, BlockHeader}
 import org.alephium.explorer.persistence.schema._
 
 class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
@@ -75,7 +74,7 @@ class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
 
         //check block_headers table
         val actualBlockHeaders = run(blockHeadersTable.result).futureValue
-        val expectBlockHeaders = entities.map(BlockHeader.fromEntity(_, groupNum))
+        val expectBlockHeaders = entities.map(_.toBlockHeader(groupNum))
         actualBlockHeaders should contain allElementsOf expectBlockHeaders
 
         //check transactions table
@@ -94,14 +93,8 @@ class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
         actualOutputs should contain allElementsOf expectedOutputs
 
         //check block_deps table
-        val actualDeps = run(blockDepsTable.result).futureValue
-        val expectedBlockDeps =
-          entities.flatMap { block =>
-            block.deps.zipWithIndex map {
-              case (dep, i) =>
-                BlockDepEntity(hash = block.hash, dep = dep, order = i)
-            }
-          }
+        val actualDeps        = run(blockDepsTable.result).futureValue
+        val expectedBlockDeps = entities.flatMap(_.toBlockDepEntities())
         actualDeps should contain allElementsOf expectedBlockDeps
 
       //There is no need for testing updates here since updates are already

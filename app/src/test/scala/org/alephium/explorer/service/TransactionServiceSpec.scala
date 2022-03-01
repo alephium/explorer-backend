@@ -24,7 +24,7 @@ import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.{AlephiumSpec, BlockHash, Generators}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao, UnconfirmedTxDao}
@@ -175,7 +175,7 @@ class TransactionServiceSpec
       transactions = Seq(tx1),
       inputs       = Seq(input1),
       outputs      = Seq(output1),
-      deps         = Seq.fill(2 * groupNum - 1)(block0.hash)
+      deps         = Seq.fill(2 * groupNum - 1)(new BlockEntry.Hash(BlockHash.generate))
     )
 
     val blocks = Seq(block0, block1)
