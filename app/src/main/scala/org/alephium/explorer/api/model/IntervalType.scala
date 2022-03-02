@@ -46,4 +46,11 @@ object IntervalType {
       case Hourly => "hourly"
       case Daily  => "daily"
     }
+
+  def unsafe(int: Int): IntervalType = {
+    int match {
+      case IntervalType.Daily.value  => IntervalType.Daily
+      case IntervalType.Hourly.value => IntervalType.Hourly
+    }
+  }
 }
