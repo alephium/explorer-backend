@@ -38,6 +38,6 @@ trait ChartsEndpoints extends BaseEndpoint with QueryParams {
       .in(timeIntervalQuery)
       .in(intervalTypeQuery)
       .out(jsonBody[Seq[Hashrate]])
-      .description("`interval-type` query param: hourly, daily")
+      .description(s"`interval-type` query param: ${IntervalType.all.map(_.string).mkString(", ")}")
       .summary("Get explorer informations.")
 }

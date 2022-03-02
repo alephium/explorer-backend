@@ -22,30 +22,32 @@ import org.alephium.json.Json._
 
 sealed trait IntervalType {
   def value: Int
+  def string: String
 }
 
 object IntervalType {
   case object Hourly extends IntervalType {
-    val value: Int = 0
+    val value: Int     = 0
+    val string: String = "hourly"
   }
   case object Daily extends IntervalType {
-    val value: Int = 1
+    val value: Int     = 1
+    val string: String = "daily"
   }
+
+  val all: Seq[IntervalType] = Seq(Hourly: IntervalType, Daily: IntervalType)
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   implicit val reader: Reader[IntervalType] =
     StringReader.map {
-      case "hourly" => Hourly
-      case "daily"  => Daily
+      case Hourly.string => Hourly
+      case Daily.string  => Daily
       case _ =>
         throw new Abort("Cannot decode time-step, expected one of: hourly, daily")
     }
 
   implicit val writer: Writer[IntervalType] =
-    StringWriter.comap {
-      case Hourly => "hourly"
-      case Daily  => "daily"
-    }
+    StringWriter.comap(_.string)
 
   def unsafe(int: Int): IntervalType = {
     int match {
