@@ -99,7 +99,7 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     tx.outputs.size is 1 // was 2 in v1.4.1
   }
 
-  it should "insert and update transactions" in new Fixture {
+  it should "insert and ignore transactions" in new Fixture {
 
     import databaseConfig.profile.api._
 
@@ -110,12 +110,12 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
       val updatedTransactions  = transactions.map(_._2)
 
       //insert
-      run(queries.upsertTransactions(existingTransactions)).futureValue is existingTransactions.size
+      run(queries.insertTransactions(existingTransactions)).futureValue is existingTransactions.size
       run(queries.transactionsTable.result).futureValue should contain allElementsOf existingTransactions
 
-      //update
-      run(queries.upsertTransactions(updatedTransactions)).futureValue is updatedTransactions.size
-      run(queries.transactionsTable.result).futureValue should contain allElementsOf updatedTransactions
+      //ignore
+      run(queries.insertTransactions(updatedTransactions)).futureValue is 0
+      run(queries.transactionsTable.result).futureValue should contain allElementsOf existingTransactions
     }
   }
 

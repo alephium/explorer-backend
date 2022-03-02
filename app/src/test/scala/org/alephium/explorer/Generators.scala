@@ -489,7 +489,7 @@ trait Generators {
 
   /** Update toUpdate's primary key to be the same as `original` */
   def copyPrimaryKeys(original: TransactionEntity, toUpdate: TransactionEntity): TransactionEntity =
-    toUpdate.copy(hash = original.hash)
+    toUpdate.copy(hash = original.hash, blockHash = original.blockHash)
 
   /** Generates a [[BlockEntity]] with optional parent */
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
