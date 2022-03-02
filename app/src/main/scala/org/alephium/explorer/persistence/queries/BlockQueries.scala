@@ -298,7 +298,7 @@ trait BlockQueries
 
     //build data for all insert queries in single iteration
     blocks foreach { block =>
-      val _ = blockDeps addAll block.toBlockDepEntities()
+      val _ = if (block.height.value != 0) blockDeps addAll block.toBlockDepEntities()
       val _ = transactions addAll block.transactions
       val _ = inputs addAll block.inputs
       val _ = outputs addAll block.outputs
