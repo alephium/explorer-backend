@@ -25,8 +25,8 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 
 object OutputQueries {
 
-  /** Inserts outputs or updates rows with primary key conflict */
-  def upsertOutputs(outputs: Iterable[OutputEntity]): DBActionW[Int] =
+  /** Inserts outputs or ignore rows with primary key conflict */
+  def insertOutputs(outputs: Iterable[OutputEntity]): DBActionW[Int] =
     if (outputs.isEmpty) {
       DBIOAction.successful(0)
     } else {

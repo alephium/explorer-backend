@@ -127,7 +127,7 @@ object BlockDao {
 
     /** Inserts a multiple blocks transactionally via SQL */
     def insertAllSQL(blocks: Seq[BlockEntity]): Future[Unit] =
-      run(upsertBlockEntity(blocks, groupNum)).map(_ => ())
+      run(insertBlockEntity(blocks, groupNum)).map(_ => ())
 
     def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)] = {
       val mainChain = blockHeadersTable.filter(_.mainChain)

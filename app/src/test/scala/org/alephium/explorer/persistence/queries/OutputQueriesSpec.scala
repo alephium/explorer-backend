@@ -45,12 +45,12 @@ class OutputQueriesSpec extends AlephiumSpec with ScalaFutures {
       val existing = existingAndUpdates.map(_._1) //existing outputs
       val ignored  = existingAndUpdates.map(_._2) //ignored outputs
 
-      //upsert existing
-      run(upsertOutputs(existing)).futureValue is existing.size
+      //insert existing
+      run(insertOutputs(existing)).futureValue is existing.size
       run(outputsTable.result).futureValue is existing
 
-      //upsert should ignore existing outputs
-      run(upsertOutputs(ignored)).futureValue is 0
+      //insert should ignore existing outputs
+      run(insertOutputs(ignored)).futureValue is 0
       run(outputsTable.result).futureValue should contain allElementsOf existing
     }
   }

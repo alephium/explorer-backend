@@ -44,14 +44,14 @@ class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
       val existing = existingAndUpdates.map(_._1) //existing blocks
       val ingored  = existingAndUpdates.map(_._2) //ingored blocks
 
-      val query = queries.upsertBlockHeaders(existing)
+      val query = queries.insertBlockHeaders(existing)
 
-      //upsert existing
+      //insert existing
       run(query).futureValue is existing.size
       run(queries.blockHeadersTable.result).futureValue should contain allElementsOf existing
 
-      //upsert should ingore existing inputs
-      run(queries.upsertBlockHeaders(ingored)).futureValue is 0
+      //insert should ingore existing inputs
+      run(queries.insertBlockHeaders(ingored)).futureValue is 0
       run(queries.blockHeadersTable.result).futureValue should contain allElementsOf existing
     }
   }
@@ -69,8 +69,8 @@ class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
         run(outputsTable.delete).futureValue
         run(blockDepsTable.delete).futureValue
 
-        //execute upsert on blocks and expect all tables get inserted
-        run(queries.upsertBlockEntity(entities, groupNum)).futureValue is entities.size
+        //execute insert on blocks and expect all tables get inserted
+        run(queries.insertBlockEntity(entities, groupNum)).futureValue is entities.size
 
         //check block_headers table
         val actualBlockHeaders = run(blockHeadersTable.result).futureValue

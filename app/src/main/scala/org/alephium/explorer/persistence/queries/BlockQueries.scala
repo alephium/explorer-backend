@@ -26,9 +26,9 @@ import slick.jdbc.{JdbcProfile, PositionedParameters, SetParameter, SQLActionBui
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries.BlockDepQueries.upsertBlockDeps
-import org.alephium.explorer.persistence.queries.InputQueries.upsertInputs
-import org.alephium.explorer.persistence.queries.OutputQueries.upsertOutputs
+import org.alephium.explorer.persistence.queries.BlockDepQueries.insertBlockDeps
+import org.alephium.explorer.persistence.queries.InputQueries.insertInputs
+import org.alephium.explorer.persistence.queries.OutputQueries.insertOutputs
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 
@@ -220,9 +220,9 @@ trait BlockQueries
       .headOption
   }
 
-  /** Inserts block_headers or update them if there is a primary key conflict */
+  /** Inserts block_headers or ignore them if there is a primary key conflict */
   // scalastyle:off method.length magic.number
-  def upsertBlockHeaders(blocks: Iterable[BlockHeader]): DBActionW[Int] =
+  def insertBlockHeaders(blocks: Iterable[BlockHeader]): DBActionW[Int] =
     if (blocks.isEmpty) {
       DBIOAction.successful(0)
     } else {
@@ -277,7 +277,7 @@ trait BlockQueries
 
   /** Transactionally write blocks */
   @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
-  def upsertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int): DBActionRWT[Int] = {
+  def insertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int): DBActionRWT[Int] = {
     val blockDeps    = ListBuffer.empty[BlockDepEntity]
     val transactions = ListBuffer.empty[TransactionEntity]
     val inputs       = ListBuffer.empty[InputEntity]
@@ -294,11 +294,11 @@ trait BlockQueries
     }
 
     val query =
-      upsertBlockDeps(blockDeps) andThen
-        upsertTransactions(transactions) andThen
-        upsertInputs(inputs) andThen
-        upsertOutputs(outputs) andThen
-        upsertBlockHeaders(blockHeaders)
+      insertBlockDeps(blockDeps) andThen
+        insertTransactions(transactions) andThen
+        insertInputs(inputs) andThen
+        insertOutputs(outputs) andThen
+        insertBlockHeaders(blockHeaders)
 
     query.transactionally
   }

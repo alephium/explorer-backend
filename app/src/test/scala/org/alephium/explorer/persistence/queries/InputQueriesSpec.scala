@@ -45,12 +45,12 @@ class InputQueriesSpec extends AlephiumSpec with ScalaFutures {
       val existing = existingAndUpdates.map(_._1) //existing inputs
       val ignored  = existingAndUpdates.map(_._2) //updated inputs
 
-      //upsert existing
-      run(upsertInputs(existing)).futureValue is existing.size
+      //insert existing
+      run(insertInputs(existing)).futureValue is existing.size
       run(inputsTable.result).futureValue should contain allElementsOf existing
 
-      //upsert should ignore existing inputs
-      run(upsertInputs(ignored)).futureValue is 0
+      //insert should ignore existing inputs
+      run(insertInputs(ignored)).futureValue is 0
       run(inputsTable.result).futureValue should contain allElementsOf existing
     }
   }

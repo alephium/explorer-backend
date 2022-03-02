@@ -26,7 +26,7 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 object BlockDepQueries {
 
   /**
-    * Insert block_deps or update if there is a primary key conflict.
+    * Insert block_deps or ignore if there is a primary key conflict.
     *
     * Slick creates the following `INSERT` using string interpolation. Here
     * the same is achieved by manually creating the [[SQLActionBuilder]] so
@@ -35,7 +35,7 @@ object BlockDepQueries {
     * <a href="https://scala-slick.org/doc/3.3.3/sql.html#splicing-literal-values">Splicing</a>
     * is not used to insert values so these queries are still cacheable prepared-statements.
     */
-  def upsertBlockDeps(deps: Iterable[BlockDepEntity]): DBActionW[Int] =
+  def insertBlockDeps(deps: Iterable[BlockDepEntity]): DBActionW[Int] =
     if (deps.isEmpty) {
       DBIOAction.successful(0)
     } else {

@@ -57,8 +57,8 @@ trait TransactionQueries
     DBIOAction.sequence(blockEntities.map(insertTransactionFromBlockQuery)).map(_ => ())
   }
 
-  /** Inserts transactions or updates rows with primary key conflict */
-  def upsertTransactions(transactions: Iterable[TransactionEntity]): DBActionW[Int] =
+  /** Inserts transactions or ignore rows with primary key conflict */
+  def insertTransactions(transactions: Iterable[TransactionEntity]): DBActionW[Int] =
     if (transactions.isEmpty) {
       DBIOAction.successful(0)
     } else {

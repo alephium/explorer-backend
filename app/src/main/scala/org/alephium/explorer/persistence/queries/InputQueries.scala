@@ -25,8 +25,8 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 
 object InputQueries {
 
-  /** Inserts inputs or updates rows with primary key conflict */
-  def upsertInputs(inputs: Iterable[InputEntity]): DBActionW[Int] =
+  /** Inserts inputs or ignore rows with primary key conflict */
+  def insertInputs(inputs: Iterable[InputEntity]): DBActionW[Int] =
     if (inputs.isEmpty) {
       DBIOAction.successful(0)
     } else {
