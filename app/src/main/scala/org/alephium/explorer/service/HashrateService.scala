@@ -39,7 +39,6 @@ trait HashrateService extends SyncService {
 
 object HashrateService {
 
-  val tenMinStepBack: Duration = Duration.ofHoursUnsafe(2)
   val hourlyStepBack: Duration = Duration.ofHoursUnsafe(2)
   val dailyStepBack: Duration  = Duration.ofDaysUnsafe(1)
 
@@ -76,10 +75,8 @@ object HashrateService {
     private def updateHashrates(): Future[Unit] = {
       run(
         for {
-          tenMinTs <- findLatestHashrateAndStepBack(IntervalType.TenMinutes, compute10MinStepBack)
           hourlyTs <- findLatestHashrateAndStepBack(IntervalType.Hourly, computeHourlyStepBack)
           dailyTs  <- findLatestHashrateAndStepBack(IntervalType.Daily, computeDailyStepBack)
-          _        <- computeHashratesAndInsert(tenMinTs, IntervalType.TenMinutes)
           _        <- computeHashratesAndInsert(hourlyTs, IntervalType.Hourly)
           _        <- computeHashratesAndInsert(dailyTs, IntervalType.Daily)
         } yield ()
@@ -107,10 +104,6 @@ object HashrateService {
    * We truncate to a round value and add 1 millisecond to be sure
    * to recompute a complete time step and not step back in the middle of it.
    */
-
-  def compute10MinStepBack(timestamp: TimeStamp): TimeStamp = {
-    truncatedToHour(timestamp.minusUnsafe(tenMinStepBack)).plusMillisUnsafe(1)
-  }
 
   def computeHourlyStepBack(timestamp: TimeStamp): TimeStamp = {
     truncatedToHour(timestamp.minusUnsafe(hourlyStepBack)).plusMillisUnsafe(1)

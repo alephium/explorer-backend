@@ -1131,7 +1131,7 @@
           "Charts"
         ],
         "summary": "Get explorer informations.",
-        "description": "`interval-type` query param: ten-minutes, hourly, daily",
+        "description": "`interval-type` query param: hourly, daily",
         "operationId": "getChartsHashrates",
         "parameters": [
           {

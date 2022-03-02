@@ -25,30 +25,25 @@ sealed trait IntervalType {
 }
 
 object IntervalType {
-  case object TenMinutes extends IntervalType {
+  case object Hourly extends IntervalType {
     val value: Int = 0
   }
-  case object Hourly extends IntervalType {
-    val value: Int = 1
-  }
   case object Daily extends IntervalType {
-    val value: Int = 2
+    val value: Int = 1
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   implicit val reader: Reader[IntervalType] =
     StringReader.map {
-      case "ten-minutes" => TenMinutes
-      case "hourly"      => Hourly
-      case "daily"       => Daily
+      case "hourly" => Hourly
+      case "daily"  => Daily
       case _ =>
-        throw new Abort("Cannot decode time-step, expected one of: ten-minutes, hourly, daily")
+        throw new Abort("Cannot decode time-step, expected one of: hourly, daily")
     }
 
   implicit val writer: Writer[IntervalType] =
     StringWriter.comap {
-      case TenMinutes => "ten-minutes"
-      case Hourly     => "hourly"
-      case Daily      => "daily"
+      case Hourly => "hourly"
+      case Daily  => "daily"
     }
 }

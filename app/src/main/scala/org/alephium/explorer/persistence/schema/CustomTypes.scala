@@ -100,9 +100,8 @@ trait CustomTypes extends JdbcProfile {
   implicit lazy val intervalTypeType: JdbcType[IntervalType] =
     MappedJdbcType.base[IntervalType, Int](
       _.value, {
-        case 0 => IntervalType.TenMinutes
-        case 1 => IntervalType.Daily
-        case 2 => IntervalType.Hourly
+        case 0 => IntervalType.Daily
+        case 1 => IntervalType.Hourly
       }
     )
 

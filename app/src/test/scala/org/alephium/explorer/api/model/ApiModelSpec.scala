@@ -27,7 +27,6 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
   }
 
   it should "IntervalType" in {
-    check[IntervalType](IntervalType.TenMinutes, s""""ten-minutes"""")
     check[IntervalType](IntervalType.Hourly, s""""hourly"""")
     check[IntervalType](IntervalType.Daily, s""""daily"""")
   }
