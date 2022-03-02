@@ -20,10 +20,10 @@ import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
 import org.alephium.util.TimeStamp
 
 final case class TransactionPerAddressEntity(
+    address: Address,
     hash: Transaction.Hash,
     blockHash: BlockEntry.Hash,
     timestamp: TimeStamp,
     txIndex: Int,
-    address: Address,
     mainChain: Boolean
 )

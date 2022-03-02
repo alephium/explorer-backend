@@ -74,8 +74,8 @@ trait InputsQueries extends InputSchema with OutputSchema with StrictLogging {
 
   def insertTxPerAddressFromInput(input: InputEntity): DBActionW[Int] = {
     sqlu"""
-      INSERT INTO transaction_per_addresses (hash, block_hash, timestamp, tx_index, address, main_chain)
-      (SELECT ${input.txHash}, ${input.blockHash}, ${input.timestamp}, ${input.txIndex}, address, main_chain FROM outputs WHERE key = ${input.outputRefKey})
+      INSERT INTO transaction_per_addresses (address, hash, block_hash, timestamp, tx_index, main_chain)
+      (SELECT address, ${input.txHash}, ${input.blockHash}, ${input.timestamp}, ${input.txIndex}, main_chain FROM outputs WHERE key = ${input.outputRefKey})
       ON CONFLICT (hash, block_hash, address) DO UPDATE
       SET address = EXCLUDED.address
     """
@@ -87,12 +87,12 @@ trait InputsQueries extends InputSchema with OutputSchema with StrictLogging {
         .map {
           case (address, input) =>
             val instant = java.time.Instant.ofEpochMilli(input.timestamp.millis)
-            s"('\\x${input.txHash}', '\\x${input.blockHash}', '${instant}', ${input.txIndex}, '${address}', ${input.mainChain}) "
+            s"('${address}', '\\x${input.txHash}', '\\x${input.blockHash}', '${instant}', ${input.txIndex}, ${input.mainChain}) "
         }
         .mkString(",\n")
 
       sqlu"""
-      INSERT INTO transaction_per_addresses (hash, block_hash, timestamp, tx_index, address, main_chain)
+      INSERT INTO transaction_per_addresses (address, hash, block_hash, timestamp, tx_index, main_chain)
       VALUES #$values
       ON CONFLICT (hash, block_hash, address) DO NOTHING
     """

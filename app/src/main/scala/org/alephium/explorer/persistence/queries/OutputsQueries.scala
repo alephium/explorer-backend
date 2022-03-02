@@ -44,11 +44,11 @@ trait OutputsQueries extends OutputSchema with InputSchema with StrictLogging {
       val values = outputs
         .map { output =>
           val instant = java.time.Instant.ofEpochMilli(output.timestamp.millis)
-          s"('\\x${output.txHash}','\\x${output.blockHash}','${instant}', ${output.txIndex},'${output.address}',${output.mainChain})"
+          s"('${output.address}','\\x${output.txHash}','\\x${output.blockHash}','${instant}', ${output.txIndex},${output.mainChain})"
         }
         .mkString(",\n")
       sqlu"""
-      INSERT INTO transaction_per_addresses (hash, block_hash, timestamp, tx_index, address, main_chain)
+      INSERT INTO transaction_per_addresses (address, hash, block_hash, timestamp, tx_index, main_chain)
       VALUES #$values
       ON CONFLICT (hash, block_hash, address) DO NOTHING
     """
