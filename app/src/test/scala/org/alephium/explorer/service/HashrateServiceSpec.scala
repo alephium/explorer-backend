@@ -24,7 +24,7 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
-import org.alephium.explorer.api.model.Hashrate
+import org.alephium.explorer.api.model.{Hashrate, IntervalType}
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.queries.HashrateQueries
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
@@ -33,49 +33,6 @@ import org.alephium.util._
 class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
-  it should "10 minutes hashrates" in new Fixture {
-    import config.profile.api._
-
-    /*
-     * Format:
-     *
-     * (TimeStamp, Hashrate)
-     *
-     * Empty comments are here to show each group of time interval
-     */
-    val blocks = Seq(
-      b("2022-01-07T23:50:00.000Z", 1),
-      //
-      b("2022-01-07T23:50:00.001Z", 2),
-      b("2022-01-08T00:00:00.000Z", 4),
-      //
-      b("2022-01-08T00:00:00.001Z", 10),
-      b("2022-01-08T00:08:23.123Z", 30),
-      b("2022-01-08T00:10:00.000Z", 50),
-      //
-      b("2022-01-08T00:11:00.000Z", 100)
-    )
-
-    run(blockHeadersTable ++= blocks).futureValue
-
-    run(
-      compute10MinutesHashrate(from)
-    ).futureValue.sortBy(_._1) is
-      Vector(
-        v("2022-01-07T23:50:00.000Z", 1),
-        v("2022-01-08T00:00:00.000Z", 3),
-        v("2022-01-08T00:10:00.000Z", 30),
-        v("2022-01-08T00:20:00.000Z", 100)
-      )
-
-    run(
-      compute10MinutesHashrate(ts("2022-01-08T00:10:00.000Z"))
-    ).futureValue.sortBy(_._1) is
-      Vector(
-        v("2022-01-08T00:10:00.000Z", 50),
-        v("2022-01-08T00:20:00.000Z", 100)
-      )
-  }
 
   it should "hourly hashrates" in new Fixture {
     import config.profile.api._
@@ -146,26 +103,18 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
 
     run(blockHeadersTable ++= blocks).futureValue
 
-    hashrateService.get(from, to, 0).futureValue is Vector.empty
+    hashrateService.get(from, to, IntervalType.Hourly).futureValue is Vector.empty
 
     hashrateService.syncOnce().futureValue
 
-    hashrateService.get(from, to, 0).futureValue is
-      Vector(
-        hr("2022-01-06T23:50:00.000Z", 1),
-        hr("2022-01-07T12:10:00.000Z", 3),
-        hr("2022-01-08T00:00:00.000Z", 12),
-        hr("2022-01-08T00:10:00.000Z", 100)
-      )
-
-    hashrateService.get(from, to, 1).futureValue is Vector(
+    hashrateService.get(from, to, IntervalType.Hourly).futureValue is Vector(
       hr("2022-01-07T00:00:00.000Z", 1),
       hr("2022-01-07T13:00:00.000Z", 3),
       hr("2022-01-08T00:00:00.000Z", 12),
       hr("2022-01-08T01:00:00.000Z", 100)
     )
 
-    hashrateService.get(from, to, 2).futureValue is Vector(
+    hashrateService.get(from, to, IntervalType.Daily).futureValue is Vector(
       hr("2022-01-07T00:00:00.000Z", 1),
       hr("2022-01-08T00:00:00.000Z", 6),
       hr("2022-01-09T00:00:00.000Z", 100)
@@ -180,17 +129,7 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
 
     hashrateService.syncOnce().futureValue
 
-    hashrateService.get(from, to, 0).futureValue is
-      Vector(
-        hr("2022-01-06T23:50:00.000Z", 1),
-        hr("2022-01-07T12:10:00.000Z", 3),
-        hr("2022-01-08T00:00:00.000Z", 12),
-        hr("2022-01-08T00:10:00.000Z", 100),
-        hr("2022-01-08T01:30:00.000Z", 10),
-        hr("2022-01-08T20:40:00.000Z", 4)
-      )
-
-    hashrateService.get(from, to, 1).futureValue is Vector(
+    hashrateService.get(from, to, IntervalType.Hourly).futureValue is Vector(
       hr("2022-01-07T00:00:00.000Z", 1),
       hr("2022-01-07T13:00:00.000Z", 3),
       hr("2022-01-08T00:00:00.000Z", 12),
@@ -199,7 +138,7 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
       hr("2022-01-08T21:00:00.000Z", 4)
     )
 
-    hashrateService.get(from, to, 2).futureValue is Vector(
+    hashrateService.get(from, to, IntervalType.Daily).futureValue is Vector(
       hr("2022-01-07T00:00:00.000Z", 1),
       hr("2022-01-08T00:00:00.000Z", 6),
       hr("2022-01-09T00:00:00.000Z", 38)
@@ -210,8 +149,6 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
     {
       val timestamp = ts("2022-01-08T12:21:34.321Z")
 
-      HashrateService.compute10MinStepBack(timestamp) is ts("2022-01-08T10:00:00.001Z")
-
       HashrateService.computeHourlyStepBack(timestamp) is ts("2022-01-08T10:00:00.001Z")
 
       HashrateService.computeDailyStepBack(timestamp) is ts("2022-01-07T00:00:00.001Z")
@@ -219,16 +156,12 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
     {
       val timestamp = ts("2022-01-08T00:00:00.000Z")
 
-      HashrateService.compute10MinStepBack(timestamp) is ts("2022-01-07T22:00:00.001Z")
-
       HashrateService.computeHourlyStepBack(timestamp) is ts("2022-01-07T22:00:00.001Z")
 
       HashrateService.computeDailyStepBack(timestamp) is ts("2022-01-07T00:00:00.001Z")
     }
     {
       val timestamp = ts("2022-01-08T23:59:59.999Z")
-
-      HashrateService.compute10MinStepBack(timestamp) is ts("2022-01-08T21:00:00.001Z")
 
       HashrateService.computeHourlyStepBack(timestamp) is ts("2022-01-08T21:00:00.001Z")
 

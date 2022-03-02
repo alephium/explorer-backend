@@ -22,7 +22,7 @@ import scala.reflect.ClassTag
 
 import akka.util.ByteString
 import slick.basic.DatabaseConfig
-import slick.jdbc.{GetResult, JdbcProfile, JdbcType, PositionedResult}
+import slick.jdbc._
 
 import org.alephium.explorer._
 import org.alephium.explorer.api.model._
@@ -75,16 +75,11 @@ trait CustomTypes extends JdbcProfile {
     string => Address.unsafe(string)
   )
 
-  implicit lazy val timestampGetResult: GetResult[TimeStamp] =
-    (result: PositionedResult) =>
-      TimeStamp.unsafe(
-        result.nextTimestamp().toLocalDateTime().toInstant(java.time.ZoneOffset.UTC).toEpochMilli)
+  implicit lazy val timestampType: JdbcType[TimeStamp] = MappedJdbcType.base[TimeStamp, Long](
+    _.millis,
+    long => TimeStamp.unsafe(long)
+  )
 
-  implicit lazy val timestampType: JdbcType[TimeStamp] =
-    MappedJdbcType.base[TimeStamp, java.time.Instant](
-      ts      => java.time.Instant.ofEpochMilli(ts.millis),
-      instant => TimeStamp.unsafe(instant.toEpochMilli)
-    )
   implicit lazy val u256Type: JdbcType[U256] = MappedJdbcType.base[U256, BigDecimal](
     u256       => BigDecimal(u256.v),
     bigDecimal => U256.unsafe(bigDecimal.toBigInt.bigInteger)
@@ -102,6 +97,12 @@ trait CustomTypes extends JdbcProfile {
       bytes => ByteString.fromArrayUnsafe(bytes)
     )
 
+  implicit lazy val intervalTypeType: JdbcType[IntervalType] =
+    MappedJdbcType.base[IntervalType, Int](
+      _.value,
+      IntervalType.unsafe
+    )
+
   /**
     * GetResult types
     */
@@ -114,6 +115,9 @@ trait CustomTypes extends JdbcProfile {
       result
         .nextBytesOption()
         .map(bytes => new BlockEntry.Hash(new BlockHash(ByteString.fromArrayUnsafe(bytes))))
+
+  implicit lazy val timestampGetResult: GetResult[TimeStamp] =
+    (result: PositionedResult) => TimeStamp.unsafe(result.nextLong())
 
   implicit lazy val groupIndexGetResult: GetResult[GroupIndex] =
     (result: PositionedResult) => GroupIndex.unsafe(result.nextInt())
@@ -167,4 +171,7 @@ trait CustomTypes extends JdbcProfile {
         hashrate     = result.<<,
         parent       = result.<<?
     )
+
+  implicit lazy val setTimeStamp: SetParameter[TimeStamp] =
+    (v: TimeStamp, pp: PositionedParameters) => pp.setLong(v.millis)
 }

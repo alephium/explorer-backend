@@ -16,10 +16,11 @@
 
 package org.alephium.explorer.persistence.model
 
+import org.alephium.explorer.api.model.IntervalType
 import org.alephium.util.TimeStamp
 
 final case class HashrateEntity(
     timestamp: TimeStamp,
     value: BigDecimal,
-    intervalType: Int //10 min: 0, hourly: 1, daily: 2
+    intervalType: IntervalType
 )

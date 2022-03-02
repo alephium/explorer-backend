@@ -26,6 +26,11 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     read[T](jsonRaw) is data
   }
 
+  it should "IntervalType" in {
+    check[IntervalType](IntervalType.Hourly, s""""hourly"""")
+    check[IntervalType](IntervalType.Daily, s""""daily"""")
+  }
+
   it should "Transaction" in {
     forAll(transactionGen) { tx =>
       val expected = s"""
