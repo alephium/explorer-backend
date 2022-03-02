@@ -45,12 +45,7 @@ object InputQueries {
            |VALUES $placeholder
            |ON CONFLICT
            |    ON CONSTRAINT inputs_pk
-           |    DO UPDATE SET "timestamp"      = EXCLUDED."timestamp",
-           |                  "hint"           = EXCLUDED."hint",
-           |                  "output_ref_key" = EXCLUDED."output_ref_key",
-           |                  "unlock_script"  = EXCLUDED."unlock_script",
-           |                  "main_chain"     = EXCLUDED."main_chain",
-           |                  "order"          = excluded."order";
+           |    DO NOTHING
            |""".stripMargin
 
       val parameters: SetParameter[Unit] =

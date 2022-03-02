@@ -34,7 +34,7 @@ class OutputQueriesSpec extends AlephiumSpec with ScalaFutures {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
-  it should "insert and update outputs" in new Fixture {
+  it should "insert and ignore outputs" in new Fixture {
 
     import config.profile.api._
 
@@ -43,15 +43,15 @@ class OutputQueriesSpec extends AlephiumSpec with ScalaFutures {
       run(outputsTable.delete).futureValue
 
       val existing = existingAndUpdates.map(_._1) //existing outputs
-      val updates  = existingAndUpdates.map(_._2) //updated outputs
+      val ignored  = existingAndUpdates.map(_._2) //ignored outputs
 
       //upsert existing
       run(upsertOutputs(existing)).futureValue is existing.size
       run(outputsTable.result).futureValue is existing
 
-      //upsert should update existing outputs
-      run(upsertOutputs(updates)).futureValue is updates.size
-      run(outputsTable.result).futureValue should contain allElementsOf updates
+      //upsert should ignore existing outputs
+      run(upsertOutputs(ignored)).futureValue is 0
+      run(outputsTable.result).futureValue should contain allElementsOf existing
     }
   }
 

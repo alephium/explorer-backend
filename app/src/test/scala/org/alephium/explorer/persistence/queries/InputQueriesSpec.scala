@@ -34,7 +34,7 @@ class InputQueriesSpec extends AlephiumSpec with ScalaFutures {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
-  it should "insert and update inputs" in new Fixture {
+  it should "insert and ignore inputs" in new Fixture {
 
     import config.profile.api._
 
@@ -43,15 +43,15 @@ class InputQueriesSpec extends AlephiumSpec with ScalaFutures {
       run(inputsTable.delete).futureValue
 
       val existing = existingAndUpdates.map(_._1) //existing inputs
-      val updates  = existingAndUpdates.map(_._2) //updated inputs
+      val ignored  = existingAndUpdates.map(_._2) //updated inputs
 
       //upsert existing
       run(upsertInputs(existing)).futureValue is existing.size
       run(inputsTable.result).futureValue should contain allElementsOf existing
 
-      //upsert should update existing inputs
-      run(upsertInputs(updates)).futureValue is updates.size
-      run(inputsTable.result).futureValue should contain allElementsOf updates
+      //upsert should ignore existing inputs
+      run(upsertInputs(ignored)).futureValue is 0
+      run(inputsTable.result).futureValue should contain allElementsOf existing
     }
   }
 

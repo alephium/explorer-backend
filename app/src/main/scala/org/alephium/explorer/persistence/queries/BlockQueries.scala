@@ -246,19 +246,7 @@ trait BlockQueries
            |                            "parent")
            |values $placeholder
            |ON CONFLICT ON CONSTRAINT block_headers_pkey
-           |    DO UPDATE SET "timestamp"      = EXCLUDED."timestamp",
-           |                  "chain_from"     = EXCLUDED."chain_from",
-           |                  "chain_to"       = EXCLUDED."chain_to",
-           |                  "height"         = EXCLUDED."height",
-           |                  "main_chain"     = EXCLUDED."main_chain",
-           |                  "nonce"          = EXCLUDED."nonce",
-           |                  "version"        = EXCLUDED."version",
-           |                  "dep_state_hash" = EXCLUDED."dep_state_hash",
-           |                  "txs_hash"       = EXCLUDED."txs_hash",
-           |                  "txs_count"      = EXCLUDED."txs_count",
-           |                  "target"         = EXCLUDED."target",
-           |                  "hashrate"       = EXCLUDED."hashrate",
-           |                  "parent"         = EXCLUDED."parent"
+           |    DO NOTHING
            |""".stripMargin
 
       val parameters: SetParameter[Unit] =

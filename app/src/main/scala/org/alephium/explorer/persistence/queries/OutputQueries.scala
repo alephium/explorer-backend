@@ -47,14 +47,7 @@ object OutputQueries {
            |VALUES $placeholder
            |ON CONFLICT
            |    ON CONSTRAINT outputs_pk
-           |    DO UPDATE SET "tx_hash"    = EXCLUDED."tx_hash",
-           |                  "timestamp"  = EXCLUDED."timestamp",
-           |                  "hint"       = EXCLUDED."hint",
-           |                  "amount"     = EXCLUDED."amount",
-           |                  "address"    = EXCLUDED."address",
-           |                  "main_chain" = EXCLUDED."main_chain",
-           |                  lock_time    = EXCLUDED."lock_time",
-           |                  "order"      = EXCLUDED."order";
+           |    DO NOTHING
            |""".stripMargin
 
       val parameters: SetParameter[Unit] =

@@ -34,7 +34,7 @@ class BlockDepQueriesSpec extends AlephiumSpec with ScalaFutures {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
-  it should "update and insert block_deps" in new Fixture {
+  it should "insert and ignore block_deps" in new Fixture {
     import config.profile.api._
 
     forAll(Gen.listOf(blockDepUpdatedGen)) { deps =>
@@ -42,15 +42,15 @@ class BlockDepQueriesSpec extends AlephiumSpec with ScalaFutures {
       run(blockDepsTable.delete).futureValue
 
       val original = deps.map(_._1)
-      val updated  = deps.map(_._2)
+      val ignored  = deps.map(_._2)
 
       run(upsertBlockDeps(original)).futureValue is original.size
       run(blockDepsTable.result).futureValue is original
 
-      //Update the same data with updated order
-      run(upsertBlockDeps(updated)).futureValue is original.size
-      //it should contain updated rows
-      run(blockDepsTable.result).futureValue should contain allElementsOf updated
+      //Ignore the same data with do nothing order
+      run(upsertBlockDeps(ignored)).futureValue is 0
+      //it should contain original rows
+      run(blockDepsTable.result).futureValue should contain allElementsOf original
     }
   }
 

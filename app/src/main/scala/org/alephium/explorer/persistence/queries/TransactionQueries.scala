@@ -77,13 +77,7 @@ trait TransactionQueries
            |                          main_chain)
            |values $placeholder
            |ON CONFLICT ON CONSTRAINT txs_pk
-           |    DO UPDATE SET timestamp    = excluded.timestamp,
-           |                  chain_from   = excluded.chain_from,
-           |                  chain_to     = excluded.chain_to,
-           |                  "gas-amount" = excluded."gas-amount",
-           |                  "gas-price"  = excluded."gas-price",
-           |                  index        = excluded.index,
-           |                  main_chain   = excluded.main_chain;
+           |    DO NOTHING
            |""".stripMargin
 
       val parameters: SetParameter[Unit] =

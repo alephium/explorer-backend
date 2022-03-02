@@ -41,13 +41,12 @@ object BlockDepQueries {
     } else {
       //generate '?' placeholders for the parameterised SQL query
       val placeholder = paramPlaceholder(rows = deps.size, columns = 3)
-
       val query =
         s"""
            |INSERT INTO block_deps ("hash", "dep", "order")
            |VALUES $placeholder
            |ON CONFLICT ON CONSTRAINT hash_deps_pk
-           |    DO UPDATE SET "order" = EXCLUDED."order";
+           |    DO NOTHING
            |""".stripMargin
 
       //set parameters following the insert order defined by the query above
