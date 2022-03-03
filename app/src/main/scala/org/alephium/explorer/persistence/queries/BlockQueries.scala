@@ -276,7 +276,7 @@ trait BlockQueries
   // scalastyle:on method.length magic.number
 
   /** Transactionally write blocks */
-  @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
+  @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures", "org.wartremover.warts.NonUnitStatements"))
   def insertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int): DBActionRWT[Int] = {
     val blockDeps    = ListBuffer.empty[BlockDepEntity]
     val transactions = ListBuffer.empty[TransactionEntity]
@@ -286,11 +286,11 @@ trait BlockQueries
 
     //build data for all insert queries in single iteration
     blocks foreach { block =>
-      val _ = if (block.height.value != 0) blockDeps addAll block.toBlockDepEntities()
-      val _ = transactions addAll block.transactions
-      val _ = inputs addAll block.inputs
-      val _ = outputs addAll block.outputs
-      val _ = blockHeaders addOne block.toBlockHeader(groupNum)
+      if (block.height.value != 0) blockDeps addAll block.toBlockDepEntities()
+      transactions addAll block.transactions
+      inputs addAll block.inputs
+      outputs addAll block.outputs
+      blockHeaders addOne block.toBlockHeader(groupNum)
     }
 
     val query =

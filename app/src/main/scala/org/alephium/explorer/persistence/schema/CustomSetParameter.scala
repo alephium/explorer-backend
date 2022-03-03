@@ -17,8 +17,6 @@
 package org.alephium.explorer.persistence.schema
 
 import java.math.BigInteger
-import java.sql.Timestamp
-import java.time.{Instant, ZoneOffset}
 
 import akka.util.ByteString
 import slick.jdbc.{PositionedParameters, SetParameter}
@@ -119,15 +117,8 @@ object CustomSetParameter {
   }
 
   implicit object TimeStampSetParameter extends SetParameter[TimeStamp] {
-    // FIXME: There is an issue with timestamps returning incorrect values when queried.
-    //        The issue is reported and known. The code here will be determined by the
-    //        outcome of that other PR.
     override def apply(input: TimeStamp, params: PositionedParameters): Unit =
-      // Conversion copied from CustomTypes.timestampGetResult. So typed and SQL queries
-      // return the same output.
-      params.setTimestamp(
-        Timestamp.valueOf(
-          Instant.ofEpochMilli(input.millis).atZone(ZoneOffset.UTC).toLocalDateTime))
+      params setLong input.millis
   }
 
   implicit object TimeStampOptionSetParameter extends SetParameter[Option[TimeStamp]] {
