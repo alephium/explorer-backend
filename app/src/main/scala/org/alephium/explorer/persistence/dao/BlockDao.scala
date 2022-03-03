@@ -45,6 +45,8 @@ trait BlockDao {
                   height: Height): Future[Seq[BlockEntry]]
   def insert(block: BlockEntity): Future[Seq[InputEntity]]
   def insertAll(blocks: Seq[BlockEntity]): Future[Seq[InputEntity]]
+  def insertSQL(block: BlockEntity): Future[Unit]
+  def insertAllSQL(blocks: Seq[BlockEntity]): Future[Unit]
   def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)]
   def listMainChainSQL(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)]
   def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntry.Lite]]
@@ -119,6 +121,14 @@ object BlockDao {
     def insertAll(blocks: Seq[BlockEntity]): Future[Seq[InputEntity]] = {
       run(DBIOAction.sequence(blocks.map(b => insertAction(b, groupNum)))).map(_.flatten)
     }
+
+    /** Inserts a single block transactionally via SQL */
+    def insertSQL(block: BlockEntity): Future[Unit] =
+      insertAllSQL(Seq(block))
+
+    /** Inserts a multiple blocks transactionally via SQL */
+    def insertAllSQL(blocks: Seq[BlockEntity]): Future[Unit] =
+      run(insertBlockEntity(blocks, groupNum)).map(_ => ())
 
     def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)] = {
       val mainChain = blockHeadersTable.filter(_.mainChain)

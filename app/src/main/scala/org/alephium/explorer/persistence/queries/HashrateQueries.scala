@@ -16,11 +16,12 @@
 
 package org.alephium.explorer.persistence.queries
 
-import java.time._
+import scala.concurrent.ExecutionContext
 
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
+import org.alephium.explorer.api.model.IntervalType
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.util.TimeStamp
@@ -32,31 +33,37 @@ trait HashrateQueries extends CustomTypes {
 
   def getHashratesQuery(from: TimeStamp,
                         to: TimeStamp,
-                        interval: Int): DBActionSR[(TimeStamp, BigDecimal)] = {
+                        intervalType: IntervalType): DBActionSR[(TimeStamp, BigDecimal)] = {
+
     sql"""
         SELECT timestamp, value
         FROM hashrates
-        WHERE interval_type = $interval
+        WHERE interval_type = ${intervalType.value}
         AND timestamp >= $from
         AND timestamp <= $to
         ORDER BY timestamp
       """.as[(TimeStamp, BigDecimal)]
   }
 
-  def computeHashratesAndInsert(from: TimeStamp, intervalType: Int): DBActionW[Int] = {
-    val hashrates = (intervalType match {
-      case 0 => compute10MinutesHashrateRawString(from)
-      case 1 => computeHourlyHashrateRawString(from)
-      case 2 => computeDailyHashrateRawString(from)
-      case _ => "()"
-    })
+  def computeHashratesAndInsert(from: TimeStamp, intervalType: IntervalType): DBActionW[Int] = {
+    val dateGroup = intervalType match {
+      case IntervalType.Hourly => hourlyQuery
+      case IntervalType.Daily  => dailyQuery
+    }
 
     sqlu"""
-      INSERT INTO hashrates (timestamp, value, interval_type)
-      (#$hashrates)
-      ON CONFLICT (timestamp, interval_type) DO UPDATE
-      SET value = EXCLUDED.value
-    """
+        INSERT INTO hashrates (timestamp, value, interval_type)
+        SELECT
+        EXTRACT(EPOCH FROM ((#$dateGroup) AT TIME ZONE 'UTC')) * 1000 as ts,
+        AVG(hashrate),
+        ${intervalType.value}
+        FROM block_headers
+        WHERE timestamp >= $from
+        AND main_chain = true
+        GROUP BY ts
+        ON CONFLICT (timestamp, interval_type) DO UPDATE
+        SET value = EXCLUDED.value
+      """
   }
 
   /*
@@ -66,65 +73,57 @@ trait HashrateQueries extends CustomTypes {
    * and the value at 09:00:00.001 will be averaged with the value at 10:00.
    * The idea is to have round time value, to ease the charts reading, rather than averaging at 08:59:59.999
    * Have a look at `HashrateServiceSpec` for multiple examples
-   *
-   * 10 minutes interval example with 8:26:05.832
-   * trucate hour: 8:00:00
-   * minutes + seconds as minutes: 26 + 5.832 / 60 = 26.09
-   * round to above 10 minutes: ceiling(26.09 / 10) * 10 = 30
-   * result: 8:30
    */
-  private def compute10MinutesHashrateRawString(from: TimeStamp): String = {
+
+  private val timestampTZ = "to_timestamp(timestamp/1000.0) AT TIME ZONE 'UTC'"
+
+  private val hourlyQuery =
+    s"DATE_TRUNC('HOUR', $timestampTZ) + ((CEILING((EXTRACT(MINUTE FROM $timestampTZ) + EXTRACT(SECOND FROM $timestampTZ)/60) / 60)) * INTERVAL '1 HOUR')"
+
+  private val dailyQuery =
+    s"""DATE_TRUNC('DAY', $timestampTZ) +
+      ((CEILING((EXTRACT(HOUR FROM $timestampTZ)*60 + EXTRACT(MINUTE FROM $timestampTZ) + EXTRACT(SECOND FROM $timestampTZ)/60)/60/24)) * INTERVAL '1 DAY')
+    """
+
+  private def computeHourlyHashrateRawString(from: TimeStamp) = {
     computeHashrateRawString(
       from,
-      "DATE_TRUNC('HOUR', timestamp) + ((CEILING((EXTRACT(MINUTE FROM timestamp) + EXTRACT(SECOND FROM timestamp)/60)/10)*10) * INTERVAL '1 MINUTE')",
-      0
+      hourlyQuery,
+      IntervalType.Hourly
     )
   }
 
-  def compute10MinutesHashrate(from: TimeStamp): DBActionSR[(TimeStamp, BigDecimal)] = {
-    sql"#${compute10MinutesHashrateRawString(from)};".as[(TimeStamp, BigDecimal)]
+  def computeHourlyHashrate(from: TimeStamp)(
+      implicit ec: ExecutionContext): DBActionR[Vector[(TimeStamp, BigDecimal)]] = {
+    computeHourlyHashrateRawString(from).map(_.map { case (ts, v, _) => (ts, v) })
   }
 
-  private def computeHourlyHashrateRawString(from: TimeStamp): String = {
+  private def computeDailyHashrateRawString(from: TimeStamp) = {
     computeHashrateRawString(
       from,
-      "DATE_TRUNC('HOUR', timestamp) + ((CEILING((EXTRACT(MINUTE FROM timestamp) + EXTRACT(SECOND FROM timestamp)/60) / 60)) * INTERVAL '1 HOUR')",
-      1
+      dailyQuery,
+      IntervalType.Daily
     )
   }
 
-  def computeHourlyHashrate(from: TimeStamp): DBActionSR[(TimeStamp, BigDecimal)] = {
-    sql"#${computeHourlyHashrateRawString(from)};".as[(TimeStamp, BigDecimal)]
-  }
-
-  private def computeDailyHashrateRawString(from: TimeStamp): String = {
-    computeHashrateRawString(
-      from,
-      """
-        DATE_TRUNC('DAY', timestamp) +
-        ((CEILING((EXTRACT(HOUR FROM timestamp)*60 + EXTRACT(MINUTE FROM timestamp) + EXTRACT(SECOND FROM timestamp)/60)/60/24)) * INTERVAL '1 DAY')
-      """,
-      2
-    )
-  }
-
-  def computeDailyHashrate(from: TimeStamp): DBActionSR[(TimeStamp, BigDecimal)] = {
-    sql"#${computeDailyHashrateRawString(from)};".as[(TimeStamp, BigDecimal)]
+  def computeDailyHashrate(from: TimeStamp)(
+      implicit ec: ExecutionContext): DBActionR[Vector[(TimeStamp, BigDecimal)]] = {
+    val sql = computeDailyHashrateRawString(from)
+    sql.map(_.map { case (ts, v, _) => (ts, v) })
   }
 
   private def computeHashrateRawString(from: TimeStamp,
                                        dateGroup: String,
-                                       intervalType: Int): String = {
-    val instant = Instant.ofEpochMilli(from.millis)
-    s"""
+                                       intervalType: IntervalType) = {
+    sql"""
         SELECT
-        $dateGroup as date,
+        EXTRACT(EPOCH FROM ((#$dateGroup) AT TIME ZONE 'UTC')) * 1000 as ts,
         AVG(hashrate),
-        $intervalType
+        ${intervalType.value}
         FROM block_headers
-        WHERE timestamp >= '${instant.toString}'
+        WHERE timestamp >= $from
         AND main_chain = true
-        GROUP BY date
-      """
+        GROUP BY ts
+      """.as[(TimeStamp, BigDecimal, Int)]
   }
 }

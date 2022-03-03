@@ -16,11 +16,9 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.api.model.IntervalType
-import org.alephium.util.TimeStamp
+import org.alephium.explorer.api.model.BlockEntry
 
-final case class HashrateEntity(
-    timestamp: TimeStamp,
-    value: BigDecimal,
-    intervalType: IntervalType
-)
+/**
+  * Class for defining rows in table [[org.alephium.explorer.persistence.schema.BlockDepsSchema]]
+  */
+final case class BlockDepEntity(hash: BlockEntry.Hash, dep: BlockEntry.Hash, order: Int)

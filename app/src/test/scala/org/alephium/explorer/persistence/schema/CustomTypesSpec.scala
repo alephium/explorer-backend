@@ -43,28 +43,25 @@ class CustomTypesSpec extends AlephiumSpec with ScalaFutures with Eventually {
     val timestamps = Seq(t1, t2)
     run(timestampTable ++= timestamps).futureValue
 
-    val instant1 = java.time.Instant.ofEpochMilli(t1.millis)
-    val instant2 = java.time.Instant.ofEpochMilli(t2.millis)
-
     /*
      * Using slick returns the correct timestamp, while the raw sql doesnt.
      * This is because the data is stored in db as a local time, so shifted
      * by 1 here in Switzerland
      */
     run(
-      sql"SELECT * from timestamps WHERE timestamp ='#${instant1.toString}';"
+      sql"SELECT * from timestamps WHERE timestamp = $t1"
         .as[TimeStamp]).futureValue is Vector(t1)
 
     run(timestampTable.filter(_.timestamp === t1).result).futureValue is Seq(t1)
 
     run(
-      sql"SELECT * from timestamps WHERE timestamp ='#${instant2.toString}';"
+      sql"SELECT * from timestamps WHERE timestamp = $t2"
         .as[TimeStamp]).futureValue is Vector(t2)
 
     run(timestampTable.filter(_.timestamp === t2).result).futureValue is Seq(t2)
 
     run(
-      sql"SELECT * from timestamps WHERE timestamp <='#${instant1.toString}';"
+      sql"SELECT * from timestamps WHERE timestamp <= $t1"
         .as[TimeStamp]).futureValue is Vector(t1, t2)
 
     run(timestampTable.filter(_.timestamp <= t1).result).futureValue is Seq(t1, t2)

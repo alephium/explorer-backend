@@ -13,12 +13,12 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
-package org.alephium.explorer.benchmark.db.util
+package org.alephium.explorer.util
 
 object TestUtils {
 
   /**
-    * Similar to [[scala.util.Using]] but unlike `Using` it does not return a [[scala.util.Try]].
+    * Mini [[scala.util.Using]] but unlike `Using` it does not return a [[scala.util.Try]].
     *
     * For test cases `Try` is not needed. We just want to return the test result and close immediately
     * throwing any failures with stacktrace.

@@ -18,6 +18,7 @@ package org.alephium.explorer.persistence.queries
 
 import scala.concurrent.ExecutionContext
 
+import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
 import slick.basic.DatabaseConfig
@@ -27,6 +28,7 @@ import org.alephium.explorer.{AlephiumSpec, Generators, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.persistence.schema.TransactionSchema
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
@@ -316,7 +318,27 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     config.db.close
   }
 
-  trait Fixture extends DatabaseFixture with DBRunner with Generators {
+  it should "insert and ignore transactions" in new Fixture {
+
+    import databaseConfig.profile.api._
+
+    forAll(Gen.listOf(updatedTransactionEntityGen())) { transactions =>
+      run(transactionsTable.delete).futureValue
+
+      val existingTransactions = transactions.map(_._1)
+      val updatedTransactions  = transactions.map(_._2)
+
+      //insert
+      run(queries.insertTransactions(existingTransactions)).futureValue is existingTransactions.size
+      run(queries.transactionsTable.result).futureValue should contain allElementsOf existingTransactions
+
+      //ignore
+      run(queries.insertTransactions(updatedTransactions)).futureValue is 0
+      run(queries.transactionsTable.result).futureValue should contain allElementsOf existingTransactions
+    }
+  }
+
+  trait Fixture extends DatabaseFixture with DBRunner with Generators with TransactionSchema {
     val config: DatabaseConfig[JdbcProfile] = databaseConfig
 
     class Queries(val config: DatabaseConfig[JdbcProfile])(

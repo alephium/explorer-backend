@@ -77,22 +77,11 @@ trait CustomTypes extends JdbcProfile {
     string => Address.unsafe(string)
   )
 
-  implicit lazy val timestampGetResult: GetResult[TimeStamp] =
-    (result: PositionedResult) =>
-      TimeStamp.unsafe(
-        result.nextTimestamp().toLocalDateTime().toInstant(ZoneOffset.UTC).toEpochMilli)
+  implicit lazy val timestampType: JdbcType[TimeStamp] = MappedJdbcType.base[TimeStamp, Long](
+    _.millis,
+    long => TimeStamp.unsafe(long)
+  )
 
-  implicit lazy val optionTimestampGetResult: GetResult[Option[TimeStamp]] =
-    (result: PositionedResult) =>
-      result.nextTimestampOption().map { timestamp =>
-        TimeStamp.unsafe(timestamp.toLocalDateTime().toInstant(ZoneOffset.UTC).toEpochMilli)
-    }
-
-  implicit lazy val timestampType: JdbcType[TimeStamp] =
-    MappedJdbcType.base[TimeStamp, Instant](
-      ts      => Instant.ofEpochMilli(ts.millis),
-      instant => TimeStamp.unsafe(instant.toEpochMilli)
-    )
   implicit lazy val u256Type: JdbcType[U256] = MappedJdbcType.base[U256, BigDecimal](
     u256       => BigDecimal(u256.v),
     bigDecimal => U256.unsafe(bigDecimal.toBigInt.bigInteger)
@@ -108,6 +97,12 @@ trait CustomTypes extends JdbcProfile {
     MappedJdbcType.base[ByteString, Array[Byte]](
       _.toArray,
       bytes => ByteString.fromArrayUnsafe(bytes)
+    )
+
+  implicit lazy val intervalTypeType: JdbcType[IntervalType] =
+    MappedJdbcType.base[IntervalType, Int](
+      _.value,
+      IntervalType.unsafe
     )
 
   /**
@@ -132,6 +127,9 @@ trait CustomTypes extends JdbcProfile {
       result
         .nextBytesOption()
         .map(bytes => new BlockEntry.Hash(new BlockHash(ByteString.fromArrayUnsafe(bytes))))
+
+  implicit lazy val timestampGetResult: GetResult[TimeStamp] =
+    (result: PositionedResult) => TimeStamp.unsafe(result.nextLong())
 
   implicit lazy val groupIndexGetResult: GetResult[GroupIndex] =
     (result: PositionedResult) => GroupIndex.unsafe(result.nextInt())
@@ -206,12 +204,6 @@ trait CustomTypes extends JdbcProfile {
   implicit lazy val setAddress: SetParameter[Address] = (v: Address, pp: PositionedParameters) =>
     pp.setString(v.value)
 
-  implicit lazy val setTimeStamp: SetParameter[TimeStamp] =
-    (v: TimeStamp, pp: PositionedParameters) => {
-      pp.setTimestamp(
-        Timestamp.valueOf(Instant.ofEpochMilli(v.millis).atZone(ZoneOffset.UTC).toLocalDateTime))
-    }
-
   implicit lazy val setTransactionHash: SetParameter[Transaction.Hash] =
     (v: Transaction.Hash, pp: PositionedParameters) => pp.setBytes(v.value.bytes.toArray)
 
@@ -220,4 +212,6 @@ trait CustomTypes extends JdbcProfile {
 
   implicit lazy val setHash: SetParameter[Hash] = (v: Hash, pp: PositionedParameters) =>
     pp.setBytes(v.bytes.toArray)
+  implicit lazy val setTimeStamp: SetParameter[TimeStamp] =
+    (v: TimeStamp, pp: PositionedParameters) => pp.setLong(v.millis)
 }

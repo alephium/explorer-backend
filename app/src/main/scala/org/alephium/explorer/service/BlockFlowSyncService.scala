@@ -87,6 +87,7 @@ object BlockFlowSyncService extends StrictLogging {
       }
     }
 
+    // scalastyle:off magic.number
     private def syncOnceWith(step: Duration, backStep: Duration): Future[Unit] = {
       logger.debug("Start syncing")
       val startedAt  = TimeStamp.now()
@@ -103,8 +104,8 @@ object BlockFlowSyncService extends StrictLogging {
                     syncTimeRange(from, to, uri).map { num =>
                       synchronized {
                         downloaded = downloaded + num
-                        logger.debug(
-                          s"Downloaded ${downloaded}, progress ${(downloaded.toFloat / nbOfBlocksToDownloads * 100.0).toInt}%")
+                        logger.debug(s"Downloaded ${downloaded}, progress ${scala.math
+                          .min(100, (downloaded.toFloat / nbOfBlocksToDownloads * 100.0).toInt)}%")
                       }
                     }
                 }
@@ -116,6 +117,7 @@ object BlockFlowSyncService extends StrictLogging {
           logger.debug(s"Syncing done in ${duration.toMinutes} min")
         }
     }
+    // scalastyle:on magic.number
 
     private def syncTimeRange(
         from: TimeStamp,

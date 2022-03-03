@@ -21,13 +21,14 @@ import scala.concurrent.ExecutionContext
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
-import slick.jdbc.JdbcProfile
+import slick.jdbc.{JdbcProfile, PositionedParameters, SetParameter, SQLActionBuilder}
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.util.{TimeStamp, U256}
 
 trait TransactionQueries
@@ -64,6 +65,49 @@ trait TransactionQueries
       inputsToUpdate <- insertTxPerAddressFromInputs(inputs, outputs)
     } yield inputsToUpdate
   }
+
+  /** Inserts transactions or ignore rows with primary key conflict */
+  def insertTransactions(transactions: Iterable[TransactionEntity]): DBActionW[Int] =
+    if (transactions.isEmpty) {
+      DBIOAction.successful(0)
+    } else {
+      val placeholder = paramPlaceholder(rows = transactions.size, columns = 9)
+
+      val query =
+        s"""
+           |insert into transactions (hash,
+           |                          block_hash,
+           |                          timestamp,
+           |                          chain_from,
+           |                          chain_to,
+           |                          "gas-amount",
+           |                          "gas-price",
+           |                          index,
+           |                          main_chain)
+           |values $placeholder
+           |ON CONFLICT ON CONSTRAINT txs_pk
+           |    DO NOTHING
+           |""".stripMargin
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          transactions foreach { transaction =>
+            params >> transaction.hash
+            params >> transaction.blockHash
+            params >> transaction.timestamp
+            params >> transaction.chainFrom
+            params >> transaction.chainTo
+            params >> transaction.gasAmount
+            params >> transaction.gasPrice
+            params >> transaction.index
+            params >> transaction.mainChain
+        }
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv  = parameters
+      ).asUpdate
+    }
 
   private val countBlockHashTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
     transactionsTable.filter(_.blockHash === blockHash).length
