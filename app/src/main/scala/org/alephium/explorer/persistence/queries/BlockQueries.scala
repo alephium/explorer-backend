@@ -16,15 +16,21 @@
 
 package org.alephium.explorer.persistence.queries
 
+import scala.collection.mutable.ListBuffer
+
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
-import slick.jdbc.JdbcProfile
+import slick.jdbc.{JdbcProfile, PositionedParameters, SetParameter, SQLActionBuilder}
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.persistence.queries.BlockDepQueries.insertBlockDeps
+import org.alephium.explorer.persistence.queries.InputQueries.insertInputs
+import org.alephium.explorer.persistence.queries.OutputQueries.insertOutputs
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomSetParameter._
 
 trait BlockQueries
     extends BlockHeaderSchema
@@ -84,7 +90,7 @@ trait BlockQueries
   def insertAction(block: BlockEntity, groupNum: Int): DBActionRWT[Unit] =
     (for {
       _ <- DBIOAction.sequence(block.deps.zipWithIndex.map {
-        case (dep, i) => blockDepsTable.insertOrUpdate((block.hash, dep, i))
+        case (dep, i) => blockDepsTable.insertOrUpdate(BlockDepEntity(block.hash, dep, i))
       })
       _ <- insertTransactionFromBlockQuery(block)
       _ <- blockHeadersTable.insertOrUpdate(BlockHeader.fromEntity(block, groupNum)).filter(_ > 0)
@@ -212,5 +218,89 @@ trait BlockQueries
       }
       .result
       .headOption
+  }
+
+  /** Inserts block_headers or ignore them if there is a primary key conflict */
+  // scalastyle:off magic.number
+  def insertBlockHeaders(blocks: Iterable[BlockHeader]): DBActionW[Int] =
+    if (blocks.isEmpty) {
+      DBIOAction.successful(0)
+    } else {
+      val placeholder = paramPlaceholder(rows = blocks.size, columns = 14)
+
+      val query =
+        s"""
+           |insert into $block_headers ("hash",
+           |                            "timestamp",
+           |                            "chain_from",
+           |                            "chain_to",
+           |                            "height",
+           |                            "main_chain",
+           |                            "nonce",
+           |                            "version",
+           |                            "dep_state_hash",
+           |                            "txs_hash",
+           |                            "txs_count",
+           |                            "target",
+           |                            "hashrate",
+           |                            "parent")
+           |values $placeholder
+           |ON CONFLICT ON CONSTRAINT block_headers_pkey
+           |    DO NOTHING
+           |""".stripMargin
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          blocks foreach { block =>
+            params >> block.hash
+            params >> block.timestamp
+            params >> block.chainFrom
+            params >> block.chainTo
+            params >> block.height
+            params >> block.mainChain
+            params >> block.nonce
+            params >> block.version
+            params >> block.depStateHash
+            params >> block.txsHash
+            params >> block.txsCount
+            params >> block.target
+            params >> block.hashrate
+            params >> block.parent
+        }
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv  = parameters
+      ).asUpdate
+    }
+  // scalastyle:on magic.number
+
+  /** Transactionally write blocks */
+  @SuppressWarnings(
+    Array("org.wartremover.warts.MutableDataStructures", "org.wartremover.warts.NonUnitStatements"))
+  def insertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int): DBActionRWT[Int] = {
+    val blockDeps    = ListBuffer.empty[BlockDepEntity]
+    val transactions = ListBuffer.empty[TransactionEntity]
+    val inputs       = ListBuffer.empty[InputEntity]
+    val outputs      = ListBuffer.empty[OutputEntity]
+    val blockHeaders = ListBuffer.empty[BlockHeader]
+
+    //build data for all insert queries in single iteration
+    blocks foreach { block =>
+      if (block.height.value != 0) blockDeps addAll block.toBlockDepEntities()
+      transactions addAll block.transactions
+      inputs addAll block.inputs
+      outputs addAll block.outputs
+      blockHeaders addOne block.toBlockHeader(groupNum)
+    }
+
+    val query =
+      insertBlockDeps(blockDeps) andThen
+        insertTransactions(transactions) andThen
+        insertInputs(inputs) andThen
+        insertOutputs(outputs) andThen
+        insertBlockHeaders(blockHeaders)
+
+    query.transactionally
   }
 }

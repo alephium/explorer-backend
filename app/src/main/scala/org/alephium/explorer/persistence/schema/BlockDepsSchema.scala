@@ -21,14 +21,14 @@ import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.api.model.BlockEntry
+import org.alephium.explorer.persistence.model.BlockDepEntity
 
 trait BlockDepsSchema extends CustomTypes {
   val config: DatabaseConfig[JdbcProfile]
 
   import config.profile.api._
 
-  class BlockDeps(tag: Tag)
-      extends Table[(BlockEntry.Hash, BlockEntry.Hash, Int)](tag, "block_deps") {
+  class BlockDeps(tag: Tag) extends Table[BlockDepEntity](tag, "block_deps") {
     def hash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("hash", O.SqlType("BYTEA"))
     def dep: Rep[BlockEntry.Hash]  = column[BlockEntry.Hash]("dep", O.SqlType("BYTEA"))
     def order: Rep[Int]            = column[Int]("order")
@@ -37,7 +37,8 @@ trait BlockDepsSchema extends CustomTypes {
     def hashIdx: Index = index("deps_hash_idx", hash)
     def depIdx: Index  = index("deps_dep_idx", dep)
 
-    def * : ProvenShape[(BlockEntry.Hash, BlockEntry.Hash, Int)] = (hash, dep, order)
+    def * : ProvenShape[BlockDepEntity] =
+      (hash, dep, order).<>((BlockDepEntity.apply _).tupled, BlockDepEntity.unapply)
   }
 
   val blockDepsTable: TableQuery[BlockDeps] = TableQuery[BlockDeps]

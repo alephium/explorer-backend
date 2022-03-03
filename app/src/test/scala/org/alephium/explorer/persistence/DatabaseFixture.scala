@@ -41,4 +41,5 @@ trait DatabaseFixture {
 
   Await.result(dbInitializer.dropTables(), Duration.ofSecondsUnsafe(10).asScala)
   Await.result(dbInitializer.createTables(), Duration.ofSecondsUnsafe(10).asScala)
+
 }

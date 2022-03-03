@@ -52,4 +52,14 @@ final case class BlockEntity(
     )
   }
 
+  /** Builds entries for block_deps table */
+  def toBlockDepEntities(): Seq[BlockDepEntity] =
+    deps.zipWithIndex map {
+      case (dep, i) =>
+        BlockDepEntity(hash = hash, dep = dep, order = i)
+    }
+
+  @inline def toBlockHeader(groupNum: Int): BlockHeader =
+    BlockHeader.fromEntity(this, groupNum)
+
 }

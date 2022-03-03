@@ -276,7 +276,7 @@ object BlockFlowSyncService extends StrictLogging {
         case None                            => Future.successful(logger.error(s"${block.hash} doesn't have a parent"))
       }).flatMap { _ =>
         for {
-          _ <- blockDao.insert(block)
+          _ <- blockDao.insertSQL(block)
           _ <- blockDao.updateMainChain(block.hash, block.chainFrom, block.chainTo, groupNum)
         } yield (())
       }

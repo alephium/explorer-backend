@@ -20,7 +20,7 @@ import scala.concurrent.duration._
 
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.benchmark.db.DBExecutor
-import org.alephium.explorer.benchmark.db.util.TestUtils._
+import org.alephium.explorer.util.TestUtils._
 
 /**
   * Tests the behaviour of functions implemented in [[WriteBenchmarkState]] using

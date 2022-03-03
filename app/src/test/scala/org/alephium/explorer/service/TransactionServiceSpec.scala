@@ -24,7 +24,7 @@ import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.{AlephiumSpec, BlockHash, Generators}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao, UnconfirmedTxDao}
@@ -59,7 +59,7 @@ class TransactionServiceSpec
 
     val txLimit = 5
 
-    Future.sequence(blocks.map(blockDao.insert)).futureValue
+    Future.sequence(blocks.map(blockDao.insertSQL)).futureValue
     Future
       .sequence(blocks.map(block => blockDao.updateMainChainStatus(block.hash, true)))
       .futureValue
@@ -85,7 +85,7 @@ class TransactionServiceSpec
 
     block.outputs.head.amount is amount
 
-    blockDao.insert(block).futureValue
+    blockDao.insertSQL(block).futureValue
     blockDao.updateMainChainStatus(block.hash, true).futureValue
 
     val fetchedAmout =
@@ -175,12 +175,12 @@ class TransactionServiceSpec
       transactions = Seq(tx1),
       inputs       = Seq(input1),
       outputs      = Seq(output1),
-      deps         = Seq.fill(2 * groupNum - 1)(block0.hash)
+      deps         = Seq.fill(2 * groupNum - 1)(new BlockEntry.Hash(BlockHash.generate))
     )
 
     val blocks = Seq(block0, block1)
 
-    Future.sequence(blocks.map(blockDao.insert)).futureValue
+    Future.sequence(blocks.map(blockDao.insertSQL)).futureValue
 
     val t0 = Transaction(
       tx0.hash,
@@ -262,7 +262,7 @@ class TransactionServiceSpec
 
         val blocks = Seq(block0, block1)
 
-        Future.sequence(blocks.map(blockDao.insert)).futureValue
+        Future.sequence(blocks.map(blockDao.insertSQL)).futureValue
 
         transactionService
           .getTransactionsByAddress(address0, Pagination.unsafe(0, 5))
@@ -300,7 +300,7 @@ class TransactionServiceSpec
 
     val outputs = blocks.flatMap(_.outputs)
 
-    Future.sequence(blocks.map(blockDao.insert)).futureValue
+    Future.sequence(blocks.map(blockDao.insertSQL)).futureValue
     Future
       .sequence(blocks.map(block => blockDao.updateMainChainStatus(block.hash, true)))
       .futureValue
