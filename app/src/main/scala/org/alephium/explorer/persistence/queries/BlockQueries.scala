@@ -221,7 +221,7 @@ trait BlockQueries
   }
 
   /** Inserts block_headers or ignore them if there is a primary key conflict */
-  // scalastyle:off method.length magic.number
+  // scalastyle:off magic.number
   def insertBlockHeaders(blocks: Iterable[BlockHeader]): DBActionW[Int] =
     if (blocks.isEmpty) {
       DBIOAction.successful(0)
@@ -273,7 +273,7 @@ trait BlockQueries
         unitPConv  = parameters
       ).asUpdate
     }
-  // scalastyle:on method.length magic.number
+  // scalastyle:on magic.number
 
   /** Transactionally write blocks */
   @SuppressWarnings(

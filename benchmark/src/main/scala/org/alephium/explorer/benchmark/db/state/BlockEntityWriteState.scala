@@ -25,7 +25,6 @@ import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.persistence.DBInitializer
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockEntity
-import org.alephium.explorer.persistence.schema._
 import org.alephium.util.Duration
 
 /**
@@ -33,13 +32,7 @@ import org.alephium.util.Duration
   */
 @State(Scope.Thread)
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-class BlockEntityWriteState(val db: DBExecutor)
-    extends WriteBenchmarkState[BlockEntity](db)
-    with BlockHeaderSchema
-    with TransactionSchema
-    with InputSchema
-    with OutputSchema
-    with BlockDepsSchema {
+class BlockEntityWriteState(val db: DBExecutor) extends WriteBenchmarkState[BlockEntity](db) {
 
   val dao: BlockDao =
     BlockDao(4, config)(db.config.db.ioExecutionContext)
