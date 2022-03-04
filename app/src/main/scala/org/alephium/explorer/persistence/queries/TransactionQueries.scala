@@ -31,9 +31,11 @@ import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.persistence.schema.InputSchema._
+import org.alephium.explorer.persistence.schema.OutputSchema._
 import org.alephium.util.{TimeStamp, U256}
 
-trait TransactionQueries extends TransactionSchema with OutputsQueries with StrictLogging {
+trait TransactionQueries extends TransactionSchema with StrictLogging {
 
   implicit def executionContext: ExecutionContext
   val config: DatabaseConfig[JdbcProfile]

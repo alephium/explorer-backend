@@ -33,8 +33,6 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
     extends BlockHeaderSchema
     with BlockDepsSchema
     with TransactionSchema
-    with InputSchema
-    with OutputSchema
     with UnconfirmedTxSchema
     with UInputSchema
     with UOutputSchema
@@ -55,8 +53,8 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
       blockHeadersTable,
       blockDepsTable,
       transactionsTable,
-      inputsTable,
-      outputsTable,
+      InputSchema.inputsTable,
+      OutputSchema.outputsTable,
       unconfirmedTxsTable,
       uinputsTable,
       uoutputsTable,
@@ -88,8 +86,8 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
     run(for {
       _ <- createBlockHeadersIndexesSQL()
       _ <- createTransactionMainChainIndex()
-      _ <- createInputMainChainIndex()
-      _ <- createOutputMainChainIndex()
+      _ <- InputSchema.createInputMainChainIndex()
+      _ <- OutputSchema.createOutputMainChainIndex()
       _ <- createTransactionPerAddressMainChainIndex()
     } yield ())
   }

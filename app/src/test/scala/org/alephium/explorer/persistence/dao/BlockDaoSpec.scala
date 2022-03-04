@@ -29,6 +29,8 @@ import org.alephium.explorer.api.model.{BlockEntry, Pagination}
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.InputSchema._
+import org.alephium.explorer.persistence.schema.OutputSchema._
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.util.TimeStamp
 
@@ -121,9 +123,7 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
   }
 
   trait Fixture
-      extends InputSchema
-      with OutputSchema
-      with BlockHeaderSchema
+      extends BlockHeaderSchema
       with BlockDepsSchema
       with TransactionSchema
       with DatabaseFixture

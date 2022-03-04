@@ -26,6 +26,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.state._
 import org.alephium.explorer.persistence.queries.InputQueries._
+import org.alephium.explorer.persistence.queries.OutputQueries._
 
 /**
   * Implements all JMH functions executing benchmarks on Postgres.
@@ -234,16 +235,13 @@ class DBBenchmark {
   @Benchmark
   def getOutputsFromTxs(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(state.queries
-                        .outputsFromTxs(state.txHashes)
-                        .result,
-                      requestTimeout)
+      state.db.runNow(outputsFromTxs(state.txHashes).result, requestTimeout)
   }
 
   @Benchmark
   def getOutputsFromTxsSQL(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(state.queries.outputsFromTxsSQL(state.txHashes), requestTimeout)
+      state.db.runNow(outputsFromTxsSQL(state.txHashes), requestTimeout)
   }
 
   @Benchmark

@@ -35,6 +35,8 @@ import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.InputSchema._
+import org.alephium.explorer.persistence.schema.OutputSchema._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Base58, TimeStamp, U256}
 
@@ -52,8 +54,6 @@ class AddressReadState(val db: DBExecutor)
     extends ReadBenchmarkState[OutputEntity](testDataCount = 1000, db = db)
     with TransactionQueries
     with BlockHeaderSchema
-    with InputSchema
-    with OutputSchema
     with TransactionPerAddressSchema {
 
   val ec: ExecutionContext = ExecutionContext.global

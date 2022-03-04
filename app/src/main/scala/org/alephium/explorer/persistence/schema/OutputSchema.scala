@@ -25,7 +25,7 @@ import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.util.{TimeStamp, U256}
 
-trait OutputSchema extends Schema with CustomTypes {
+object OutputSchema extends Schema with CustomTypes {
 
   private val tableName = "outputs"
 

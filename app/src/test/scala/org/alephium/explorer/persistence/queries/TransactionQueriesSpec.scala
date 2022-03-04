@@ -29,6 +29,9 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputQueries._
+import org.alephium.explorer.persistence.queries.OutputQueries._
+import org.alephium.explorer.persistence.schema.InputSchema._
+import org.alephium.explorer.persistence.schema.OutputSchema._
 import org.alephium.explorer.persistence.schema.TransactionSchema
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
@@ -48,7 +51,7 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val output3 = output(address, ALPH.alph(3), Some(TimeStamp.now().plusMinutesUnsafe(10)))
     val output4 = output(address, ALPH.alph(4), Some(TimeStamp.now().plusMinutesUnsafe(10)))
 
-    run(queries.outputsTable ++= Seq(output1, output2, output3, output4)).futureValue
+    run(outputsTable ++= Seq(output1, output2, output3, output4)).futureValue
 
     val (total, locked)       = run(queries.getBalanceAction(address)).futureValue
     val (totalSQL, lockedSQL) = run(queries.getBalanceActionSQL(address)).futureValue
@@ -69,8 +72,8 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val output2 = output(address, ALPH.alph(2), None)
     val input1  = input(output2.hint, output2.key)
 
-    run(queries.outputsTable ++= Seq(output1, output2)).futureValue
-    run(queries.inputsTable += input1).futureValue
+    run(outputsTable ++= Seq(output1, output2)).futureValue
+    run(inputsTable += input1).futureValue
 
     val (total, _)    = run(queries.getBalanceAction(address)).futureValue
     val (totalSQL, _) = run(queries.getBalanceActionSQL(address)).futureValue
@@ -128,7 +131,7 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     run(queries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 2
 
-    run(queries.outputsTable += output2).futureValue
+    run(outputsTable += output2).futureValue
     run(insertTxPerAddressFromInput(inputsToUpdate.head)).futureValue is 1
 
     run(queries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 3
@@ -184,8 +187,8 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val outputs = Seq(output1, output2, output3, output4)
     val inputs  = Seq(input1, input2)
 
-    run(queries.outputsTable ++= outputs).futureValue
-    run(queries.inputsTable ++= inputs).futureValue
+    run(outputsTable ++= outputs).futureValue
+    run(inputsTable ++= inputs).futureValue
 
     val txHashes = outputs.map(_.txHash)
 
@@ -206,8 +209,8 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
       res(output3, None)
     ).sortBy(_._1.toString)
 
-    run(queries.outputsFromTxs(txHashes).result).futureValue.sortBy(_._1.toString) is expected
-    run(queries.outputsFromTxsSQL(txHashes)).futureValue.sortBy(_._1.toString) is expected.toVector
+    run(outputsFromTxs(txHashes).result).futureValue.sortBy(_._1.toString) is expected
+    run(outputsFromTxsSQL(txHashes)).futureValue.sortBy(_._1.toString) is expected.toVector
     config.db.close
   }
 
@@ -224,8 +227,8 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val inputs  = Seq(input1, input2)
     val outputs = Seq(output1, output2)
 
-    run(queries.outputsTable ++= (outputs :+ output3)).futureValue
-    run(queries.inputsTable ++= (inputs :+ input3)).futureValue
+    run(outputsTable ++= (outputs :+ output3)).futureValue
+    run(inputsTable ++= (inputs :+ input3)).futureValue
 
     val txHashes = Seq(input1.txHash, input2.txHash)
 
@@ -315,8 +318,8 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val input1 = input(output1.hint, output1.key).copy(txHash = tx2.hash, blockHash = tx2.blockHash)
     val input2 = input(output1.hint, output1.key).copy(txHash = tx2.hash).copy(mainChain = false)
 
-    run(queries.outputsTable += output1).futureValue
-    run(queries.inputsTable ++= Seq(input1, input2)).futureValue
+    run(outputsTable += output1).futureValue
+    run(inputsTable ++= Seq(input1, input2)).futureValue
     run(queries.transactionsTable ++= Seq(txEntity1)).futureValue
 
     val tx = run(queries.getTransactionAction(tx1.hash)).futureValue.get

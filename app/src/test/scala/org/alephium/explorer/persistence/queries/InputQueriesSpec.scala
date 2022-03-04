@@ -27,7 +27,7 @@ import slick.jdbc.JdbcProfile
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.queries.InputQueries._
-import org.alephium.explorer.persistence.schema.InputSchema
+import org.alephium.explorer.persistence.schema.InputSchema._
 
 class InputQueriesSpec extends AlephiumSpec with ScalaFutures {
 
@@ -55,7 +55,7 @@ class InputQueriesSpec extends AlephiumSpec with ScalaFutures {
     }
   }
 
-  trait Fixture extends DatabaseFixture with DBRunner with Generators with InputSchema {
+  trait Fixture extends DatabaseFixture with DBRunner with Generators {
     val config: DatabaseConfig[JdbcProfile] = databaseConfig
   }
 }

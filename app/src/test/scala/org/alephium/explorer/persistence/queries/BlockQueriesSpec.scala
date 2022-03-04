@@ -27,6 +27,8 @@ import slick.jdbc.JdbcProfile
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.InputSchema._
+import org.alephium.explorer.persistence.schema.OutputSchema._
 
 class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
 
@@ -108,8 +110,6 @@ class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
       with Generators
       with BlockHeaderSchema
       with TransactionSchema
-      with InputSchema
-      with OutputSchema
       with BlockDepsSchema {
     val config: DatabaseConfig[JdbcProfile] = databaseConfig
 

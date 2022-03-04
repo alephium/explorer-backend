@@ -25,7 +25,7 @@ import org.alephium.explorer.api.model.{BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.InputEntity
 import org.alephium.util.TimeStamp
 
-trait InputSchema extends Schema with CustomTypes {
+object InputSchema extends Schema with CustomTypes {
 
   private val tableName = "inputs"
 

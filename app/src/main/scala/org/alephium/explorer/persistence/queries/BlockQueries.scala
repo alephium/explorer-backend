@@ -31,6 +31,8 @@ import org.alephium.explorer.persistence.queries.InputQueries.insertInputs
 import org.alephium.explorer.persistence.queries.OutputQueries.insertOutputs
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.persistence.schema.InputSchema._
+import org.alephium.explorer.persistence.schema.OutputSchema._
 
 trait BlockQueries
     extends BlockHeaderSchema

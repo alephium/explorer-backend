@@ -28,9 +28,11 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.persistence.schema.InputSchema._
+import org.alephium.explorer.persistence.schema.OutputSchema._
 import org.alephium.util.U256
 
-object InputQueries extends InputSchema with OutputSchema {
+object InputQueries extends CustomTypes {
 
   private val mainInputs  = inputsTable.filter(_.mainChain)
   private val mainOutputs = outputsTable.filter(_.mainChain)
