@@ -17,8 +17,6 @@
 package org.alephium.explorer.persistence.schema
 
 import java.math.BigInteger
-import java.sql.Timestamp
-import java.time._
 
 import scala.reflect.ClassTag
 
@@ -131,6 +129,9 @@ trait CustomTypes extends JdbcProfile {
   implicit lazy val timestampGetResult: GetResult[TimeStamp] =
     (result: PositionedResult) => TimeStamp.unsafe(result.nextLong())
 
+  implicit lazy val optionTimestampGetResult: GetResult[Option[TimeStamp]] =
+    (result: PositionedResult) => result.nextLongOption().map(TimeStamp.unsafe)
+
   implicit lazy val groupIndexGetResult: GetResult[GroupIndex] =
     (result: PositionedResult) => GroupIndex.unsafe(result.nextInt())
 
@@ -196,22 +197,4 @@ trait CustomTypes extends JdbcProfile {
         hashrate     = result.<<,
         parent       = result.<<?
     )
-
-  /*
-   * SetParameters types
-   */
-
-  implicit lazy val setAddress: SetParameter[Address] = (v: Address, pp: PositionedParameters) =>
-    pp.setString(v.value)
-
-  implicit lazy val setTransactionHash: SetParameter[Transaction.Hash] =
-    (v: Transaction.Hash, pp: PositionedParameters) => pp.setBytes(v.value.bytes.toArray)
-
-  implicit lazy val setBlockHash: SetParameter[BlockEntry.Hash] =
-    (v: BlockEntry.Hash, pp: PositionedParameters) => pp.setBytes(v.value.bytes.toArray)
-
-  implicit lazy val setHash: SetParameter[Hash] = (v: Hash, pp: PositionedParameters) =>
-    pp.setBytes(v.bytes.toArray)
-  implicit lazy val setTimeStamp: SetParameter[TimeStamp] =
-    (v: TimeStamp, pp: PositionedParameters) => pp.setLong(v.millis)
 }

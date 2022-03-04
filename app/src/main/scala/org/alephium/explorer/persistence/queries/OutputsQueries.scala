@@ -30,7 +30,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.util.{TimeStamp, U256}
 
-trait OutputsQueries extends OutputSchema with InputSchema with StrictLogging {
+trait OutputsQueries extends OutputSchema with InputSchema with CustomTypes with StrictLogging {
 
   implicit def executionContext: ExecutionContext
   val config: DatabaseConfig[JdbcProfile]
@@ -43,8 +43,7 @@ trait OutputsQueries extends OutputSchema with InputSchema with StrictLogging {
     if (outputs.nonEmpty) {
       val values = outputs
         .map { output =>
-          val instant = java.time.Instant.ofEpochMilli(output.timestamp.millis)
-          s"('${output.address}','\\x${output.txHash}','\\x${output.blockHash}','${instant}', ${output.txIndex},${output.mainChain})"
+          s"('${output.address}','\\x${output.txHash}','\\x${output.blockHash}','${output.timestamp.millis}', ${output.txIndex},${output.mainChain})"
         }
         .mkString(",\n")
       sqlu"""

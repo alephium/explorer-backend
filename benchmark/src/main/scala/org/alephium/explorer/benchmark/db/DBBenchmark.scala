@@ -36,6 +36,7 @@ import org.alephium.explorer.benchmark.db.state._
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Measurement(iterations = 1, time = 5, timeUnit = TimeUnit.SECONDS) //runs this benchmark for x minutes
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+// scalastyle:off number.of.methods
 class DBBenchmark {
 
   /**

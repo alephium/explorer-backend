@@ -28,6 +28,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.util.U256
 
 trait InputsQueries extends InputSchema with OutputSchema with StrictLogging {
@@ -86,8 +87,7 @@ trait InputsQueries extends InputSchema with OutputSchema with StrictLogging {
       val values = inputs
         .map {
           case (address, input) =>
-            val instant = java.time.Instant.ofEpochMilli(input.timestamp.millis)
-            s"('${address}', '\\x${input.txHash}', '\\x${input.blockHash}', '${instant}', ${input.txIndex}, ${input.mainChain}) "
+            s"('${address}', '\\x${input.txHash}', '\\x${input.blockHash}', '${input.timestamp.millis}', ${input.txIndex}, ${input.mainChain}) "
         }
         .mkString(",\n")
 

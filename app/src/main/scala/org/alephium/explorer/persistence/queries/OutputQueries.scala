@@ -30,7 +30,8 @@ object OutputQueries {
     if (outputs.isEmpty) {
       DBIOAction.successful(0)
     } else {
-      val placeholder = paramPlaceholder(rows = outputs.size, columns = 10)
+      // scalastyle:off magic.number
+      val placeholder = paramPlaceholder(rows = outputs.size, columns = 11)
 
       val query =
         s"""
@@ -43,7 +44,8 @@ object OutputQueries {
            |                     "address",
            |                     "main_chain",
            |                     "lock_time",
-           |                     "order")
+           |                     "order",
+           |                     "tx_index")
            |VALUES $placeholder
            |ON CONFLICT
            |    ON CONSTRAINT outputs_pk
@@ -63,6 +65,7 @@ object OutputQueries {
             params >> output.mainChain
             params >> output.lockTime
             params >> output.order
+            params >> output.txIndex
         }
 
       SQLActionBuilder(

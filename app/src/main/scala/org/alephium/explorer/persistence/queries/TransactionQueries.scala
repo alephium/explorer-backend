@@ -80,8 +80,8 @@ trait TransactionQueries
            |                          timestamp,
            |                          chain_from,
            |                          chain_to,
-           |                          "gas-amount",
-           |                          "gas-price",
+           |                          gas_amount,
+           |                          gas_price,
            |                          index,
            |                          main_chain)
            |values $placeholder

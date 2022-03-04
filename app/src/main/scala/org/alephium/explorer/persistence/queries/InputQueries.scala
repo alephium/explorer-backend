@@ -30,7 +30,7 @@ object InputQueries {
     if (inputs.isEmpty) {
       DBIOAction.successful(0)
     } else {
-      val placeholder = paramPlaceholder(rows = inputs.size, columns = 8)
+      val placeholder = paramPlaceholder(rows = inputs.size, columns = 9)
 
       val query =
         s"""
@@ -41,7 +41,8 @@ object InputQueries {
            |                    "output_ref_key",
            |                    "unlock_script",
            |                    "main_chain",
-           |                    "order")
+           |                    "order",
+           |                    "tx_index")
            |VALUES $placeholder
            |ON CONFLICT
            |    ON CONSTRAINT inputs_pk
@@ -59,6 +60,7 @@ object InputQueries {
             params >> input.unlockScript
             params >> input.mainChain
             params >> input.order
+            params >> input.txIndex
         }
 
       SQLActionBuilder(

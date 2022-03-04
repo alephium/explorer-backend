@@ -90,7 +90,6 @@ class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
       _ <- createTransactionMainChainIndex()
       _ <- createInputMainChainIndex()
       _ <- createOutputMainChainIndex()
-      _ <- createHashrateIntervalTypeIndex()
       _ <- createTransactionPerAddressMainChainIndex()
     } yield ())
   }
