@@ -267,7 +267,8 @@ object BlockFlowSyncService extends StrictLogging {
         case None                            => Future.successful(logger.error(s"${block.hash} doesn't have a parent"))
       }).flatMap { _ =>
         for {
-          inputsToUpdate <- blockDao.insert(block)
+          _              <- blockDao.insert(block)
+          inputsToUpdate <- blockDao.updateTransactionPerAddress(block)
           _              <- blockDao.updateMainChain(block.hash, block.chainFrom, block.chainTo, groupNum)
         } yield (inputsToUpdate)
       }
@@ -287,12 +288,7 @@ object BlockFlowSyncService extends StrictLogging {
 
     private def handleInputsToUpdate(inputs: Seq[InputEntity]) = {
       if (inputs.nonEmpty) {
-        blockDao.updateInputs(inputs).map { updated =>
-          if (updated < inputs.size) {
-            logger.error(
-              s"Couldn't fully update inputs: ${inputs.map(in => (in.blockHash, in.outputRefKey))}")
-          }
-        }
+        blockDao.updateInputs(inputs).map(_ => ())
       } else {
         Future.successful(())
       }

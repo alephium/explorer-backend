@@ -284,29 +284,17 @@ class DBBenchmark {
                       requestTimeout)
   }
 
-  /** Benchmarks for inserting Blocks. Typed vs SQL. With & without HikariCP */
+  /** Benchmarks for inserting Blocks. With & without HikariCP */
 
   @Benchmark
-  def blockEntityWrite_DisabledCP_Typed(state: BlockEntityWriteState_DisabledCP): Unit = {
+  def blockEntityWrite_DisabledCP(state: BlockEntityWriteState_DisabledCP): Unit = {
     val _ =
       Await.result(state.dao.insert(state.next), requestTimeout)
   }
 
   @Benchmark
-  def blockEntityWrite_DisabledCP_SQL(state: BlockEntityWriteState_DisabledCP): Unit = {
-    val _ =
-      Await.result(state.dao.insertSQL(state.next), requestTimeout)
-  }
-
-  @Benchmark
-  def blockEntityWrite_HikariCP_Typed(state: BlockEntityWriteState_HikariCP): Unit = {
+  def blockEntityWrite_HikariCP(state: BlockEntityWriteState_HikariCP): Unit = {
     val _ =
       Await.result(state.dao.insert(state.next), requestTimeout)
-  }
-
-  @Benchmark
-  def blockEntityWrite_HikariCP_SQL(state: BlockEntityWriteState_HikariCP): Unit = {
-    val _ =
-      Await.result(state.dao.insertSQL(state.next), requestTimeout)
   }
 }

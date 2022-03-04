@@ -77,8 +77,7 @@ trait InputsQueries extends InputSchema with OutputSchema with StrictLogging {
     sqlu"""
       INSERT INTO transaction_per_addresses (address, hash, block_hash, timestamp, tx_index, main_chain)
       (SELECT address, ${input.txHash}, ${input.blockHash}, ${input.timestamp}, ${input.txIndex}, main_chain FROM outputs WHERE key = ${input.outputRefKey})
-      ON CONFLICT (hash, block_hash, address) DO UPDATE
-      SET address = EXCLUDED.address
+      ON CONFLICT (hash, block_hash, address) DO NOTHING
     """
   }
 

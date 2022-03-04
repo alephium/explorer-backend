@@ -40,7 +40,7 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
     import config.profile.api._
     forAll(Gen.oneOf(blockEntities), arbitrary[Boolean]) {
       case (block, mainChainInput) =>
-        blockDao.insertSQL(block).futureValue
+        blockDao.insert(block).futureValue
         blockDao.updateMainChainStatus(block.hash, mainChainInput).futureValue
 
         val fetchedBlock = blockDao.get(block.hash).futureValue.get
@@ -62,8 +62,8 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
   it should "not insert a block twice" in new Fixture {
     import config.profile.api._
     forAll(Gen.oneOf(blockEntities)) { block =>
-      blockDao.insertSQL(block).futureValue
-      blockDao.insertSQL(block).futureValue
+      blockDao.insert(block).futureValue
+      blockDao.insert(block).futureValue
 
       val blockheadersQuery                = blockHeadersTable.filter(_.hash === block.hash).map(_.hash).result
       val headerHash: Seq[BlockEntry.Hash] = run(blockheadersQuery).futureValue

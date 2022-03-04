@@ -88,15 +88,6 @@ trait BlockQueries
       blocks <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
     } yield blocks
 
-  def insertAction(block: BlockEntity, groupNum: Int): DBActionRWT[Seq[InputEntity]] =
-    (for {
-      _ <- DBIOAction.sequence(block.deps.zipWithIndex.map {
-        case (dep, i) => blockDepsTable.insertOrUpdate(BlockDepEntity(block.hash, dep, i))
-      })
-      inputsToUpdate <- insertTransactionFromBlockQuery(block)
-      _              <- blockHeadersTable.insertOrUpdate(BlockHeader.fromEntity(block, groupNum)).filter(_ > 0)
-    } yield inputsToUpdate).transactionally
-
   def listMainChainHeaders(mainChain: Query[BlockHeaders, BlockHeader, Seq],
                            pagination: Pagination): DBActionR[Seq[BlockHeader]] = {
     val sorted = if (pagination.reverse) {

@@ -104,7 +104,7 @@ class SanityChecker(
       case Left(error) => Future.successful(logger.error(error))
       case Right(block) =>
         for {
-          _ <- blockDao.insertSQL(block)
+          _ <- blockDao.insert(block)
           b <- blockDao.get(block.hash).map(_.get)
           _ <- checkBlock(b)
         } yield ()

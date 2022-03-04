@@ -43,14 +43,13 @@ trait BlockDao {
   def getAtHeight(fromGroup: GroupIndex,
                   toGroup: GroupIndex,
                   height: Height): Future[Seq[BlockEntry]]
-  def insert(block: BlockEntity): Future[Seq[InputEntity]]
-  def insertAll(blocks: Seq[BlockEntity]): Future[Seq[InputEntity]]
-  def insertSQL(block: BlockEntity): Future[Unit]
-  def insertAllSQL(blocks: Seq[BlockEntity]): Future[Unit]
+  def insert(block: BlockEntity): Future[Unit]
+  def insertAll(blocks: Seq[BlockEntity]): Future[Unit]
   def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)]
   def listMainChainSQL(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)]
   def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntry.Lite]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
+  def updateTransactionPerAddress(block: BlockEntity): Future[Seq[InputEntity]]
   def updateMainChain(hash: BlockEntry.Hash,
                       chainFrom: GroupIndex,
                       chainTo: GroupIndex,
@@ -114,20 +113,18 @@ object BlockDao {
                     height: Height): Future[Seq[BlockEntry]] =
       run(getAtHeightAction(fromGroup, toGroup, height))
 
-    def insert(block: BlockEntity): Future[Seq[InputEntity]] = {
-      run(insertAction(block, groupNum))
-    }
-
-    def insertAll(blocks: Seq[BlockEntity]): Future[Seq[InputEntity]] = {
-      run(DBIOAction.sequence(blocks.map(b => insertAction(b, groupNum)))).map(_.flatten)
+    def updateTransactionPerAddress(block: BlockEntity): Future[Seq[InputEntity]] = {
+      run(
+        updateTransactionPerAddressAction(block.outputs, block.inputs)
+      )
     }
 
     /** Inserts a single block transactionally via SQL */
-    def insertSQL(block: BlockEntity): Future[Unit] =
-      insertAllSQL(Seq(block))
+    def insert(block: BlockEntity): Future[Unit] =
+      insertAll(Seq(block))
 
     /** Inserts a multiple blocks transactionally via SQL */
-    def insertAllSQL(blocks: Seq[BlockEntity]): Future[Unit] =
+    def insertAll(blocks: Seq[BlockEntity]): Future[Unit] =
       run(insertBlockEntity(blocks, groupNum)).map(_ => ())
 
     def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)] = {

@@ -194,7 +194,7 @@ class TokenSupplyServiceSpec extends AlephiumSpec with ScalaFutures with Eventua
     }
 
     def test(blocks: BlockEntity*)(amounts: Seq[U256]) = {
-      blockDao.insertAllSQL(Seq.from(blocks)).futureValue
+      blockDao.insertAll(Seq.from(blocks)).futureValue
       blocks.foreach { block =>
         blockDao.updateMainChainStatus(block.hash, true).futureValue
       }

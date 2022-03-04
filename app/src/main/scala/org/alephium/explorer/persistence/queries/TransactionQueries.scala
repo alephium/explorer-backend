@@ -27,6 +27,8 @@ import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.persistence.queries.InputQueries._
+import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.util.{TimeStamp, U256}
@@ -45,25 +47,12 @@ trait TransactionQueries
   private val mainInputs       = inputsTable.filter(_.mainChain)
   private val mainOutputs      = outputsTable.filter(_.mainChain)
 
-  def insertTransactionFromBlockQuery(blockEntity: BlockEntity): DBActionW[Seq[InputEntity]] = {
-    insertAll(blockEntity.transactions, blockEntity.outputs, blockEntity.inputs)
-  }
-
-  def insertAllTransactionFromBlockQuerys(
-      blockEntities: Seq[BlockEntity]): DBActionW[Seq[InputEntity]] = {
-    DBIOAction.sequence(blockEntities.map(insertTransactionFromBlockQuery)).map(_.flatten)
-  }
-
   def insertAll(transactions: Seq[TransactionEntity],
                 outputs: Seq[OutputEntity],
-                inputs: Seq[InputEntity]): DBActionW[Seq[InputEntity]] = {
-    for {
-      _              <- DBIOAction.sequence(transactions.map(transactionsTable.insertOrUpdate))
-      _              <- DBIOAction.sequence(inputs.map(inputsTable.insertOrUpdate))
-      _              <- DBIOAction.sequence(outputs.map(outputsTable.insertOrUpdate))
-      _              <- insertTxPerAddressFromOutputs(outputs)
-      inputsToUpdate <- insertTxPerAddressFromInputs(inputs, outputs)
-    } yield inputsToUpdate
+                inputs: Seq[InputEntity]): DBActionW[Int] = {
+    insertTransactions(transactions) andThen
+      insertInputs(inputs) andThen
+      insertOutputs(outputs)
   }
 
   /** Inserts transactions or ignore rows with primary key conflict */
@@ -109,6 +98,13 @@ trait TransactionQueries
       ).asUpdate
     }
 
+  def updateTransactionPerAddressAction(outputs: Seq[OutputEntity],
+                                        inputs: Seq[InputEntity]): DBActionRW[Seq[InputEntity]] = {
+    for {
+      _              <- insertTxPerAddressFromOutputs(outputs)
+      inputsToUpdate <- insertTxPerAddressFromInputs(inputs, outputs)
+    } yield inputsToUpdate
+  }
   private val countBlockHashTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
     transactionsTable.filter(_.blockHash === blockHash).length
   }
