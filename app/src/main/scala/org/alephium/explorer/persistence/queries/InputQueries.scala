@@ -84,17 +84,18 @@ object InputQueries extends CustomTypes {
   def insertTxPerAddressFromInputs(inputs: Seq[InputEntity], outputs: Seq[OutputEntity])(
       implicit ec: ExecutionContext): DBActionW[Seq[InputEntity]] = {
 
-    val inputsWithMaybeAddress = inputs.map(in => (in.address, in))
+    val inputsAdressOption = inputs.map(in => (in.address, in))
 
-    val assets = inputsWithMaybeAddress
+    val outputsByAddress = outputs.groupBy(out => (out.address, out.txHash))
+
+    val assets = inputsAdressOption
       .collect {
-        case (Some(address), input)
-            if !outputs.exists(out => out.address == address && out.txHash == input.txHash) =>
+        case (Some(address), input) if outputsByAddress.get((address, input.txHash)).isEmpty =>
           (address, input)
       }
       .distinctBy { case (address, input) => (address, input.txHash) }
 
-    val others = inputsWithMaybeAddress.collect {
+    val others = inputsAdressOption.collect {
       case (None, input) => input
     }
 
