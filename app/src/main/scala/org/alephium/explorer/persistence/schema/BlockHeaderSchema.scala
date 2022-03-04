@@ -19,6 +19,7 @@ package org.alephium.explorer.persistence.schema
 import java.math.BigInteger
 
 import akka.util.ByteString
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, ProvenShape}
 import slick.sql.SqlAction
 
@@ -28,8 +29,6 @@ import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.util.TimeStamp
 
 trait BlockHeaderSchema extends Schema with CustomTypes {
-  import config.profile.api._
-
   private val tableName = "block_headers"
 
   class BlockHeaders(tag: Tag) extends Table[BlockHeader](tag, tableName) {

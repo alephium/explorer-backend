@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.schema
 
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 import slick.sql.SqlAction
 
@@ -24,8 +25,6 @@ import org.alephium.explorer.persistence.model.TransactionEntity
 import org.alephium.util.{TimeStamp, U256}
 
 trait TransactionSchema extends Schema with CustomTypes {
-  import config.profile.api._
-
   private val tableName = "transactions"
 
   class Transactions(tag: Tag) extends Table[TransactionEntity](tag, tableName) {

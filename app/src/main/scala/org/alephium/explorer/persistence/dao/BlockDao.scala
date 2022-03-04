@@ -31,6 +31,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries._
+import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.ChainIndex

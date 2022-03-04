@@ -21,9 +21,11 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.{Await, ExecutionContext}
 
 import org.openjdk.jmh.annotations._
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.state._
+import org.alephium.explorer.persistence.queries.InputQueries._
 
 /**
   * Implements all JMH functions executing benchmarks on Postgres.
@@ -46,7 +48,6 @@ class DBBenchmark {
     */
   @Benchmark
   def writeVarchar(state: VarcharWriteState): Unit = {
-    import state.config.profile.api._
     val _ = state.db.runNow(state.tableVarcharQuery += state.next, requestTimeout)
   }
 
@@ -57,7 +58,6 @@ class DBBenchmark {
     */
   @Benchmark
   def writeBytea(state: ByteaWriteState): Unit = {
-    import state.config.profile.api._
     val _ = state.db.runNow(state.tableByteaQuery += state.next, requestTimeout)
   }
 
@@ -68,7 +68,6 @@ class DBBenchmark {
     */
   @Benchmark
   def readVarchar(state: VarcharReadState): Unit = {
-    import state.config.profile.api._
     val _ =
       state.db.runNow(state.tableVarcharQuery.filter(_.hash === state.next).result, requestTimeout)
   }
@@ -80,21 +79,18 @@ class DBBenchmark {
     */
   @Benchmark
   def readBytea(state: ByteaReadState): Unit = {
-    import state.config.profile.api._
     val _ =
       state.db.runNow(state.tableByteaQuery.filter(_.hash === state.next).result, requestTimeout)
   }
 
   @Benchmark
   def readMainChainIndex(state: BlockHeaderWithMainChainReadState): Unit = {
-    import state.config.profile.api._
     val _ =
       state.db.runNow(state.blockHeadersTable.filter(_.mainChain).length.result, requestTimeout)
   }
 
   @Benchmark
   def readNoMainChainIndex(state: BlockHeaderWithoutMainChainReadState): Unit = {
-    import state.config.profile.api._
     val _ =
       state.db.runNow(state.blockHeadersTable.filter(_.mainChain).length.result, requestTimeout)
   }
@@ -151,7 +147,6 @@ class DBBenchmark {
     */
   @Benchmark
   def getBalanceQuery(state: Address_ReadState): Unit = {
-    import state.db.config.profile.api._
     val _ =
       state.db.runNow(state.queries.getBalanceQuery(state.address).result, requestTimeout)
   }
@@ -164,7 +159,6 @@ class DBBenchmark {
 
   @Benchmark
   def getTxHashesByAddressQuery(state: Address_ReadState): Unit = {
-    import state.db.config.profile.api._
     val _ =
       state.db.runNow(
         state.queries
@@ -227,23 +221,18 @@ class DBBenchmark {
 
   @Benchmark
   def getInputsFromTxs(state: Address_ReadState): Unit = {
-    import state.config.profile.api._
     val _ =
-      state.db.runNow(state.queries
-                        .inputsFromTxs(state.txHashes)
-                        .result,
-                      requestTimeout)
+      state.db.runNow(inputsFromTxs(state.txHashes).result, requestTimeout)
   }
 
   @Benchmark
   def getInputsFromTxsSQL(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(state.queries.inputsFromTxsSQL(state.txHashes), requestTimeout)
+      state.db.runNow(inputsFromTxsSQL(state.txHashes), requestTimeout)
   }
 
   @Benchmark
   def getOutputsFromTxs(state: Address_ReadState): Unit = {
-    import state.config.profile.api._
     val _ =
       state.db.runNow(state.queries
                         .outputsFromTxs(state.txHashes)
@@ -259,7 +248,6 @@ class DBBenchmark {
 
   @Benchmark
   def getGasFromTxs(state: Address_ReadState): Unit = {
-    import state.config.profile.api._
     val _ =
       state.db.runNow(state.queries.gasFromTxs(state.txHashes).result, requestTimeout)
   }

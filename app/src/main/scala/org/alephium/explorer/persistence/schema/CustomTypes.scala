@@ -21,8 +21,8 @@ import java.math.BigInteger
 import scala.reflect.ClassTag
 
 import akka.util.ByteString
-import slick.basic.DatabaseConfig
 import slick.jdbc._
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer._
 import org.alephium.explorer.api.model._
@@ -30,8 +30,6 @@ import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.util.{TimeStamp, U256}
 
 trait CustomTypes extends JdbcProfile {
-  val config: DatabaseConfig[JdbcProfile]
-  import config.profile.api._
 
   private def buildHashTypes[H: ClassTag](from: Hash => H, to: H => Hash): JdbcType[H] =
     MappedJdbcType.base[H, Array[Byte]](

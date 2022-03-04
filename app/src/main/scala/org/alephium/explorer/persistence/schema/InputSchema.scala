@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.schema
 
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 import slick.sql.SqlAction
 
@@ -25,7 +26,6 @@ import org.alephium.explorer.persistence.model.InputEntity
 import org.alephium.util.TimeStamp
 
 trait InputSchema extends Schema with CustomTypes {
-  import config.profile.api._
 
   private val tableName = "inputs"
 

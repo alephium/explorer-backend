@@ -28,6 +28,7 @@ import org.alephium.explorer.{AlephiumSpec, Generators, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.schema.TransactionSchema
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
@@ -128,7 +129,7 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     run(queries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 2
 
     run(queries.outputsTable += output2).futureValue
-    run(queries.insertTxPerAddressFromInput(inputsToUpdate.head)).futureValue is 1
+    run(insertTxPerAddressFromInput(inputsToUpdate.head)).futureValue is 1
 
     run(queries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 3
 
@@ -240,8 +241,8 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
          output.amount)
     }
 
-    run(queries.inputsFromTxs(txHashes).result).futureValue is expected
-    run(queries.inputsFromTxsSQL(txHashes)).futureValue is expected.toVector
+    run(inputsFromTxs(txHashes).result).futureValue is expected
+    run(inputsFromTxsSQL(txHashes)).futureValue is expected.toVector
     config.db.close
   }
 
