@@ -294,6 +294,14 @@ trait BlockQueries
       blockHeaders addOne block.toBlockHeader(groupNum)
     }
 
+    val total = (blocks.size * 14) + (blocks.map(_.transactions.size).sum*9) + (blocks.map(_.inputs.size).sum*8) + (blocks.map(_.outputs.size).sum *10)+ (blocks.map(_.deps.size).sum*3)
+
+    if(total > 10000) {
+      println(s"${Console.RED}${Console.BOLD}*** total ***\n\t${Console.RESET}${total}")
+      println(s"${Console.RED}${Console.BOLD}*** blocks ***\n\t${Console.RESET}${blocks}")
+      sys.exit(0)
+    }
+
     val query =
       insertBlockDeps(blockDeps) andThen
         insertTransactions(transactions) andThen
