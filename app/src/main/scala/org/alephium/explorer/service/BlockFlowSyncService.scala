@@ -277,7 +277,7 @@ object BlockFlowSyncService extends StrictLogging {
       }).flatMap { _ =>
         for {
           _ <- blockDao.insertSQL(block)
-          _ <- blockDao.updateMainChain(block.hash, block.chainFrom, block.chainTo, groupNum)
+          //_ <- blockDao.updateMainChain(block.hash, block.chainFrom, block.chainTo, groupNum)
         } yield (())
       }
     }
