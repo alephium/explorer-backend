@@ -30,9 +30,13 @@ object InputQueries {
     if (inputs.isEmpty) {
       DBIOAction.successful(0)
     } else {
-      val placeholder = paramPlaceholder(rows = inputs.size, columns = 8)
+      val in1 = inputs.take(inputs.size / 2)
+      val in2 = inputs.drop(inputs.size / 2)
 
-      val query =
+      val placeholder1 = paramPlaceholder(rows = in1.size, columns = 8)
+      val placeholder2 = paramPlaceholder(rows = in2.size, columns = 8)
+
+      val query1 =
         s"""
            |INSERT INTO inputs ("block_hash",
            |                    "tx_hash",
@@ -42,15 +46,43 @@ object InputQueries {
            |                    "unlock_script",
            |                    "main_chain",
            |                    "order")
-           |VALUES $placeholder
+           |VALUES $placeholder1
            |ON CONFLICT
            |    ON CONSTRAINT inputs_pk
            |    DO NOTHING
            |""".stripMargin
 
-      val parameters: SetParameter[Unit] =
+      val query2 =
+        s"""
+           |INSERT INTO inputs ("block_hash",
+           |                    "tx_hash",
+           |                    "timestamp",
+           |                    "hint",
+           |                    "output_ref_key",
+           |                    "unlock_script",
+           |                    "main_chain",
+           |                    "order")
+           |VALUES $placeholder2
+           |ON CONFLICT
+           |    ON CONSTRAINT inputs_pk
+           |    DO NOTHING
+           |""".stripMargin
+
+      val parameters1: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
-          inputs foreach { input =>
+          in1 foreach { input =>
+            params >> input.blockHash
+            params >> input.txHash
+            params >> input.timestamp
+            params >> input.hint
+            params >> input.outputRefKey
+            params >> input.unlockScript
+            params >> input.mainChain
+            params >> input.order
+        }
+      val parameters2: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          in2 foreach { input =>
             params >> input.blockHash
             params >> input.txHash
             params >> input.timestamp
@@ -62,8 +94,13 @@ object InputQueries {
         }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv  = parameters
-      ).asUpdate
+        queryParts = query1,
+        unitPConv  = parameters1
+      ).asUpdate.andThen(
+        SQLActionBuilder(
+          queryParts = query2,
+          unitPConv  = parameters2
+        ).asUpdate
+      )
     }
 }
