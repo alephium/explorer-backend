@@ -16,7 +16,6 @@
 
 package org.alephium.explorer.persistence.queries
 
-import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 
 import org.alephium.explorer.persistence.DBActionW
@@ -27,11 +26,7 @@ object InputQueries {
 
   /** Inserts inputs or ignore rows with primary key conflict */
   def insertInputs(inputs: Iterable[InputEntity]): DBActionW[Int] =
-    if (inputs.isEmpty) {
-      DBIOAction.successful(0)
-    } else {
-      val placeholder = paramPlaceholder(rows = inputs.size, columns = 8)
-
+    QueryUtil.splitUpdates(rows = inputs, queryRowParams = 8) { (inputs, placeholder) =>
       val query =
         s"""
            |INSERT INTO inputs ("block_hash",
