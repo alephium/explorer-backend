@@ -293,6 +293,14 @@ trait BlockQueries
       outputs addAll block.outputs
       blockHeaders addOne block.toBlockHeader(groupNum)
     }
+    val total = (blocks.size * 14) + (blocks.map(_.transactions.size).sum * 9) + (blocks
+      .map(_.inputs.size)
+      .sum * 8) + (blocks.map(_.outputs.size).sum * 10) + (blocks.map(_.deps.size).sum * 3)
+
+    //prepared statement's bind variable is limitied to 32767
+    if (total > 40000) {
+      println(s"${Console.RED}${Console.BOLD}*** total ***\n\t${Console.RESET}${total}")
+    }
 
     val query =
       insertBlockDeps(blockDeps) andThen

@@ -17,12 +17,15 @@
 package org.alephium.explorer.persistence.dao
 
 import scala.concurrent.ExecutionContext
+import scala.io.Source
+import scala.util.{Success, Try, Using}
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
+import org.alephium.api.ApiModelCodec
 import org.alephium.api.model
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.{BlockEntry, Pagination}
@@ -30,7 +33,8 @@ import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.BlockFlowClient
-import org.alephium.util.TimeStamp
+import org.alephium.json.Json._
+import org.alephium.util.{Duration, TimeStamp}
 
 class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with Eventually {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
@@ -120,6 +124,18 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
     }
   }
 
+  it should "insert big block" in new Fixture {
+    Using(Source.fromFile("src/test/resources/big_block.json")) { source =>
+      val rawBlock = source.getLines().mkString
+      for {
+        blockEntry <- Try(read[model.BlockEntry](rawBlock))
+      } yield {
+        val block = BlockFlowClient.blockProtocolToEntity(blockEntry)
+        blockDao.insertSQL(block).futureValue
+      }
+    }.flatten is Success(())
+  }
+
   trait Fixture
       extends InputSchema
       with OutputSchema
@@ -127,9 +143,12 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
       with BlockDepsSchema
       with TransactionSchema
       with DatabaseFixture
-      with DBRunner {
-    override val config = databaseConfig
-    val blockDao        = BlockDao(groupNum, databaseConfig)
+      with DBRunner
+      with ApiModelCodec {
+    override val config                = databaseConfig
+    val blockflowFetchMaxAge: Duration = Duration.ofMinutesUnsafe(30)
+
+    val blockDao = BlockDao(groupNum, databaseConfig)
     val blockflow: Seq[Seq[model.BlockEntry]] =
       blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
     val blocksProtocol: Seq[model.BlockEntry] = blockflow.flatten
