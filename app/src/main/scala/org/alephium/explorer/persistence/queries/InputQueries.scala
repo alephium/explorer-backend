@@ -16,7 +16,6 @@
 
 package org.alephium.explorer.persistence.queries
 
-import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 
 import org.alephium.explorer.persistence.DBActionW
@@ -27,16 +26,8 @@ object InputQueries {
 
   /** Inserts inputs or ignore rows with primary key conflict */
   def insertInputs(inputs: Iterable[InputEntity]): DBActionW[Int] =
-    if (inputs.isEmpty) {
-      DBIOAction.successful(0)
-    } else {
-      val in1 = inputs.take(inputs.size / 2)
-      val in2 = inputs.drop(inputs.size / 2)
-
-      val placeholder1 = paramPlaceholder(rows = in1.size, columns = 8)
-      val placeholder2 = paramPlaceholder(rows = in2.size, columns = 8)
-
-      val query1 =
+    QueryUtil.splitUpdates(rows = inputs, queryRowParams = 8) { (inputs, placeholder) =>
+      val query =
         s"""
            |INSERT INTO inputs ("block_hash",
            |                    "tx_hash",
@@ -46,43 +37,15 @@ object InputQueries {
            |                    "unlock_script",
            |                    "main_chain",
            |                    "order")
-           |VALUES $placeholder1
+           |VALUES $placeholder
            |ON CONFLICT
            |    ON CONSTRAINT inputs_pk
            |    DO NOTHING
            |""".stripMargin
 
-      val query2 =
-        s"""
-           |INSERT INTO inputs ("block_hash",
-           |                    "tx_hash",
-           |                    "timestamp",
-           |                    "hint",
-           |                    "output_ref_key",
-           |                    "unlock_script",
-           |                    "main_chain",
-           |                    "order")
-           |VALUES $placeholder2
-           |ON CONFLICT
-           |    ON CONSTRAINT inputs_pk
-           |    DO NOTHING
-           |""".stripMargin
-
-      val parameters1: SetParameter[Unit] =
+      val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
-          in1 foreach { input =>
-            params >> input.blockHash
-            params >> input.txHash
-            params >> input.timestamp
-            params >> input.hint
-            params >> input.outputRefKey
-            params >> input.unlockScript
-            params >> input.mainChain
-            params >> input.order
-        }
-      val parameters2: SetParameter[Unit] =
-        (_: Unit, params: PositionedParameters) =>
-          in2 foreach { input =>
+          inputs foreach { input =>
             params >> input.blockHash
             params >> input.txHash
             params >> input.timestamp
@@ -94,13 +57,8 @@ object InputQueries {
         }
 
       SQLActionBuilder(
-        queryParts = query1,
-        unitPConv  = parameters1
-      ).asUpdate.andThen(
-        SQLActionBuilder(
-          queryParts = query2,
-          unitPConv  = parameters2
-        ).asUpdate
-      )
+        queryParts = query,
+        unitPConv  = parameters
+      ).asUpdate
     }
 }
