@@ -25,7 +25,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.StrictLogging
 import io.prometheus.client.hotspot.DefaultExports
 import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile
 
 import org.alephium.api.model.ApiKey
 import org.alephium.explorer.sideEffect
@@ -69,7 +69,8 @@ object Main extends App with StrictLogging {
   val readOnly: Boolean    = config.getBoolean("explorer.readOnly")
   val syncPeriod: Duration = Duration.from(config.getDuration("explorer.syncPeriod")).get
 
-  val databaseConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig[JdbcProfile]("db")
+  val databaseConfig: DatabaseConfig[PostgresProfile] =
+    DatabaseConfig.forConfig[PostgresProfile]("db")
 
   val app: Application =
     new Application(host,

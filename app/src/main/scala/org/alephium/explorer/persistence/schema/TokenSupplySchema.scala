@@ -16,17 +16,13 @@
 
 package org.alephium.explorer.persistence.schema
 
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
 import org.alephium.explorer.persistence.model.TokenSupplyEntity
 import org.alephium.util.{TimeStamp, U256}
 
 trait TokenSupplySchema extends CustomTypes {
-  val config: DatabaseConfig[JdbcProfile]
-
-  import config.profile.api._
 
   class TokenSupplies(tag: Tag) extends Table[TokenSupplyEntity](tag, "token_supply") {
     def timestamp: Rep[TimeStamp] = column[TimeStamp]("timestamp", O.PrimaryKey)

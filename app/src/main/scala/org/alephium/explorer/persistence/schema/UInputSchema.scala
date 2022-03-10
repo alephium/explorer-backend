@@ -16,8 +16,7 @@
 
 package org.alephium.explorer.persistence.schema
 
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.Hash
@@ -25,9 +24,6 @@ import org.alephium.explorer.api.model.Transaction
 import org.alephium.explorer.persistence.model.UInputEntity
 
 trait UInputSchema extends CustomTypes {
-  val config: DatabaseConfig[JdbcProfile]
-
-  import config.profile.api._
 
   class UInputs(tag: Tag) extends Table[UInputEntity](tag, "uinputs") {
     def txHash: Rep[Transaction.Hash]     = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))

@@ -20,7 +20,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DBActionW, DBRunner}
@@ -37,18 +38,17 @@ trait UnconfirmedTxDao {
 }
 
 object UnconfirmedTxDao {
-  def apply(config: DatabaseConfig[JdbcProfile])(
+  def apply(databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit executionContext: ExecutionContext): UnconfirmedTxDao =
-    new Impl(config)
+    new Impl(databaseConfig)
 
-  private class Impl(val config: DatabaseConfig[JdbcProfile])(
+  private class Impl(val databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit val executionContext: ExecutionContext)
       extends UnconfirmedTxDao
       with UnconfirmedTxSchema
       with UInputSchema
       with UOutputSchema
       with DBRunner {
-    import config.profile.api._
 
     def get(hash: Transaction.Hash): Future[Option[UnconfirmedTx]] = {
       run(for {

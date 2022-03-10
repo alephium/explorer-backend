@@ -24,7 +24,7 @@ import scala.util.Random
 import akka.util.ByteString
 import org.openjdk.jmh.annotations.{Scope, State}
 import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile
 
 import org.alephium.crypto.Blake2b
 import org.alephium.explorer.{BlockHash, Hash}
@@ -40,7 +40,7 @@ import org.alephium.explorer.persistence.schema.OutputSchema._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Base58, TimeStamp, U256}
 
-class Queries(val config: DatabaseConfig[JdbcProfile])(
+class Queries(val config: DatabaseConfig[PostgresProfile])(
     implicit val executionContext: ExecutionContext)
     extends TransactionQueries
 

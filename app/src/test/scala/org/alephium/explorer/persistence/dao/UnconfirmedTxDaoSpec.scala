@@ -21,6 +21,7 @@ import scala.concurrent.ExecutionContext
 import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.Generators
@@ -34,7 +35,6 @@ class UnconfirmedTxDaoSpec extends AlephiumSpec with ScalaFutures with Generator
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
   it should "insertMany" in new Fixture {
-    import config.profile.api._
     forAll(Gen.listOfN(5, utransactionGen)) { txs =>
       utxDao.insertMany(txs).futureValue
 
@@ -92,7 +92,6 @@ class UnconfirmedTxDaoSpec extends AlephiumSpec with ScalaFutures with Generator
       with UOutputSchema
       with DatabaseFixture
       with DBRunner {
-    override val config = databaseConfig
-    val utxDao          = UnconfirmedTxDao(databaseConfig)
+    val utxDao = UnconfirmedTxDao(databaseConfig)
   }
 }

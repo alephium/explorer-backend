@@ -21,7 +21,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AnyOps
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex}
@@ -30,15 +31,14 @@ import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.queries.BlockQueries
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.TraversableOps"))
-class SanityChecker(
-    groupNum: Int,
-    blockFlowClient: BlockFlowClient,
-    blockDao: BlockDao,
-    val config: DatabaseConfig[JdbcProfile])(implicit val executionContext: ExecutionContext)
+class SanityChecker(groupNum: Int,
+                    blockFlowClient: BlockFlowClient,
+                    blockDao: BlockDao,
+                    val databaseConfig: DatabaseConfig[PostgresProfile])(
+    implicit val executionContext: ExecutionContext)
     extends BlockQueries
     with DBRunner
     with StrictLogging {
-  import config.profile.api._
 
   private def findLatestBlock(from: GroupIndex, to: GroupIndex): Future[Option[BlockEntry.Hash]] = {
     run(

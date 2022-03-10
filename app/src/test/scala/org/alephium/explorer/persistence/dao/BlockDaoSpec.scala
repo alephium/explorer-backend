@@ -23,6 +23,7 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.api.{model, ApiModelCodec}
 import org.alephium.explorer.{AlephiumSpec, Generators}
@@ -42,7 +43,6 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
   it should "updateMainChainStatus correctly" in new Fixture {
-    import config.profile.api._
     forAll(Gen.oneOf(blockEntities), arbitrary[Boolean]) {
       case (block, mainChainInput) =>
         blockDao.insert(block).futureValue
@@ -65,7 +65,6 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
   }
 
   it should "not insert a block twice" in new Fixture {
-    import config.profile.api._
     forAll(Gen.oneOf(blockEntities)) { block =>
       blockDao.insert(block).futureValue
       blockDao.insert(block).futureValue
@@ -102,8 +101,6 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
            Gen.choose(0, blocksCount),
            arbitrary[Boolean]) {
       case (blocks, pageNum, pageLimit, reverse) =>
-        import config.profile.api._
-
         //clear test data
         run(blockHeadersTable.delete).futureValue
         run(transactionsTable.delete).futureValue
@@ -141,7 +138,6 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
       with DatabaseFixture
       with DBRunner
       with ApiModelCodec {
-    override val config                = databaseConfig
     val blockflowFetchMaxAge: Duration = Duration.ofMinutesUnsafe(30)
 
     val blockDao = BlockDao(groupNum, databaseConfig)

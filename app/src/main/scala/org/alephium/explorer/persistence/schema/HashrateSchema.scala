@@ -16,8 +16,7 @@
 
 package org.alephium.explorer.persistence.schema
 
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.api.model.IntervalType
@@ -25,9 +24,6 @@ import org.alephium.explorer.persistence.model.HashrateEntity
 import org.alephium.util.TimeStamp
 
 trait HashrateSchema extends CustomTypes {
-  val config: DatabaseConfig[JdbcProfile]
-
-  import config.profile.api._
 
   class Hashrates(tag: Tag) extends Table[HashrateEntity](tag, "hashrates") {
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")

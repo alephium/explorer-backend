@@ -16,8 +16,7 @@
 
 package org.alephium.explorer.persistence.schema
 
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
 import org.alephium.explorer.api.model.{GroupIndex, Transaction}
@@ -25,9 +24,6 @@ import org.alephium.explorer.persistence.model.UnconfirmedTxEntity
 import org.alephium.util.U256
 
 trait UnconfirmedTxSchema extends CustomTypes {
-  val config: DatabaseConfig[JdbcProfile]
-
-  import config.profile.api._
 
   class UnconfirmedTxs(tag: Tag) extends Table[UnconfirmedTxEntity](tag, "utransactions") {
     def hash: Rep[Transaction.Hash] =

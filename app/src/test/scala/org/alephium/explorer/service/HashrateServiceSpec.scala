@@ -22,6 +22,7 @@ import scala.concurrent.ExecutionContext
 
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.{Hashrate, IntervalType}
@@ -35,7 +36,6 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
   it should "hourly hashrates" in new Fixture {
-    import config.profile.api._
 
     val blocks = Seq(
       b("2022-01-07T23:00:00.001Z", 2),
@@ -60,7 +60,6 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
   }
 
   it should "daily hashrates" in new Fixture {
-    import config.profile.api._
 
     val blocks = Seq(
       b("2022-01-07T00:00:00.001Z", 2),
@@ -91,7 +90,6 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
   }
 
   it should "sync, update and return correct hashrates" in new Fixture {
-    import config.profile.api._
 
     val blocks = Seq(
       b("2022-01-06T23:45:35.300Z", 1),
@@ -181,8 +179,6 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
 
     val hashrateService: HashrateService =
       HashrateService(syncPeriod = Duration.unsafe(1000), databaseConfig)
-
-    override val config = databaseConfig
 
     def ts(str: String): TimeStamp = {
       TimeStamp.unsafe(Instant.parse(str).toEpochMilli)

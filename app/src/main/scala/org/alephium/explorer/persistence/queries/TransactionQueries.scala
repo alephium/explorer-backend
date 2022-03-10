@@ -19,9 +19,9 @@ package org.alephium.explorer.persistence.queries
 import scala.concurrent.ExecutionContext
 
 import com.typesafe.scalalogging.StrictLogging
-import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
-import slick.jdbc.{JdbcProfile, PositionedParameters, SetParameter, SQLActionBuilder}
+import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
@@ -38,8 +38,6 @@ import org.alephium.util.{TimeStamp, U256}
 trait TransactionQueries extends TransactionSchema with StrictLogging {
 
   implicit def executionContext: ExecutionContext
-  val config: DatabaseConfig[JdbcProfile]
-  import config.profile.api._
 
   private val mainTransactions = transactionsTable.filter(_.mainChain)
   private val mainInputs       = inputsTable.filter(_.mainChain)

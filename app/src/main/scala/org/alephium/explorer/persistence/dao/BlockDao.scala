@@ -24,7 +24,8 @@ import com.github.benmanes.caffeine.cache._
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AnyOps
 import org.alephium.explorer.api.model._
@@ -62,11 +63,11 @@ trait BlockDao {
 }
 
 object BlockDao {
-  def apply(groupNum: Int, config: DatabaseConfig[JdbcProfile])(
+  def apply(groupNum: Int, databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit executionContext: ExecutionContext): BlockDao =
-    new Impl(groupNum, config)
+    new Impl(groupNum, databaseConfig)
   @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
-  class Impl(groupNum: Int, val config: DatabaseConfig[JdbcProfile])(
+  class Impl(groupNum: Int, val databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit val executionContext: ExecutionContext)
       extends BlockDao
       with CustomTypes
@@ -77,7 +78,6 @@ object BlockDao {
       with TransactionQueries
       with DBRunner
       with StrictLogging {
-    import config.profile.api._
 
     private implicit val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
 

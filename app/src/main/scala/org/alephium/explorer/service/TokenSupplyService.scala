@@ -24,7 +24,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model.{GroupIndex, Height, Pagination, TokenSupply}
 import org.alephium.explorer.foldFutures
@@ -43,12 +44,12 @@ trait TokenSupplyService extends SyncService {
 }
 
 object TokenSupplyService {
-  def apply(syncPeriod: Duration, config: DatabaseConfig[JdbcProfile], groupNum: Int)(
+  def apply(syncPeriod: Duration, databaseConfig: DatabaseConfig[PostgresProfile], groupNum: Int)(
       implicit executionContext: ExecutionContext): TokenSupplyService =
-    new Impl(syncPeriod, config, groupNum)
+    new Impl(syncPeriod, databaseConfig, groupNum)
 
   private class Impl(val syncPeriod: Duration,
-                     val config: DatabaseConfig[JdbcProfile],
+                     val databaseConfig: DatabaseConfig[PostgresProfile],
                      groupNum: Int)(implicit val executionContext: ExecutionContext)
       extends TokenSupplyService
       with TransactionQueries
@@ -56,7 +57,6 @@ object TokenSupplyService {
       with TokenSupplySchema
       with DBRunner
       with StrictLogging {
-    import config.profile.api._
 
     private val launchDay =
       Instant.ofEpochMilli(ALPH.LaunchTimestamp.millis).truncatedTo(ChronoUnit.DAYS)

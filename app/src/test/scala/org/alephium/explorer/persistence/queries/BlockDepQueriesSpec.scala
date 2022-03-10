@@ -21,8 +21,7 @@ import scala.concurrent.ExecutionContext
 import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
@@ -35,7 +34,6 @@ class BlockDepQueriesSpec extends AlephiumSpec with ScalaFutures {
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
   it should "insert and ignore block_deps" in new Fixture {
-    import config.profile.api._
 
     forAll(Gen.listOf(blockDepUpdatedGen)) { deps =>
       //clean existing rows
@@ -54,7 +52,5 @@ class BlockDepQueriesSpec extends AlephiumSpec with ScalaFutures {
     }
   }
 
-  trait Fixture extends DatabaseFixture with DBRunner with Generators with BlockDepsSchema {
-    val config: DatabaseConfig[JdbcProfile] = databaseConfig
-  }
+  trait Fixture extends DatabaseFixture with DBRunner with Generators with BlockDepsSchema
 }

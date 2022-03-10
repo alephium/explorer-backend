@@ -19,9 +19,9 @@ package org.alephium.explorer.persistence.queries
 import scala.collection.mutable.ListBuffer
 
 import com.typesafe.scalalogging.StrictLogging
-import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
-import slick.jdbc.{JdbcProfile, PositionedParameters, SetParameter, SQLActionBuilder}
+import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
@@ -44,9 +44,6 @@ trait BlockQueries
     with StrictLogging {
 
   val block_headers = blockHeadersTable.baseTableRow.tableName //block_headers table name
-
-  val config: DatabaseConfig[JdbcProfile]
-  import config.profile.api._
 
   private val blockDepsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
     blockDepsTable.filter(_.hash === blockHash).sortBy(_.order).map(_.dep)
@@ -292,6 +289,7 @@ trait BlockQueries
       blockHeaders addOne block.toBlockHeader(groupNum)
     }
 
+    //
     val query =
       insertBlockDeps(blockDeps) andThen
         insertTransactions(transactions) andThen

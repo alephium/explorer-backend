@@ -21,8 +21,7 @@ import scala.concurrent.ExecutionContext
 import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
@@ -36,8 +35,6 @@ class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1000, Minutes))
 
   it should "insert and ignore block_headers" in new Fixture {
-
-    import config.profile.api._
 
     forAll(Gen.listOf(updatedBlockHeaderGen())) { existingAndUpdates =>
       //fresh table
@@ -59,8 +56,6 @@ class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
   }
 
   it should "insert deps, transactions, inputs, outputs, block_headers" in new Fixture {
-
-    import config.profile.api._
 
     forAll(Gen.listOf(genBlockEntityWithOptionalParent().map(_._1))) {
       case entities =>
@@ -111,13 +106,9 @@ class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
       with BlockHeaderSchema
       with TransactionSchema
       with BlockDepsSchema {
-    val config: DatabaseConfig[JdbcProfile] = databaseConfig
 
-    class Queries(val config: DatabaseConfig[JdbcProfile])(
-        implicit val executionContext: ExecutionContext)
-        extends BlockQueries
+    class Queries(implicit val executionContext: ExecutionContext) extends BlockQueries
 
-    val queries = new Queries(databaseConfig)
-
+    val queries = new Queries
   }
 }
