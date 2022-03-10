@@ -35,6 +35,7 @@ object OutputQueries extends CustomTypes {
   private val mainOutputs = outputsTable.filter(_.mainChain)
 
   /** Inserts outputs or ignore rows with primary key conflict */
+  // scalastyle:off magic.number
   def insertOutputs(outputs: Iterable[OutputEntity]): DBActionW[Int] =
     QueryUtil.splitUpdates(rows = outputs, queryRowParams = 11) { (outputs, placeholder) =>
       val query =
