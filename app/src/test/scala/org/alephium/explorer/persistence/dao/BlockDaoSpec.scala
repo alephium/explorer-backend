@@ -17,13 +17,14 @@
 package org.alephium.explorer.persistence.dao
 
 import scala.concurrent.ExecutionContext
+import scala.io.Source
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.api.model
+import org.alephium.api.{model, ApiModelCodec}
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.{BlockEntry, Pagination}
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
@@ -32,7 +33,9 @@ import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.InputSchema._
 import org.alephium.explorer.persistence.schema.OutputSchema._
 import org.alephium.explorer.service.BlockFlowClient
-import org.alephium.util.TimeStamp
+import org.alephium.explorer.util.TestUtils._
+import org.alephium.json.Json._
+import org.alephium.util.{Duration, TimeStamp}
 
 class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with Eventually {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
@@ -122,14 +125,26 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
     }
   }
 
+  it should "Recreate issue #162 - not throw exception when inserting a big block" in new Fixture {
+    using(Source.fromResource("big_block.json")) { source =>
+      val rawBlock   = source.getLines().mkString
+      val blockEntry = read[model.BlockEntry](rawBlock)
+      val block      = BlockFlowClient.blockProtocolToEntity(blockEntry)
+      blockDao.insert(block).futureValue is ()
+    }
+  }
+
   trait Fixture
       extends BlockHeaderSchema
       with BlockDepsSchema
       with TransactionSchema
       with DatabaseFixture
-      with DBRunner {
-    override val config = databaseConfig
-    val blockDao        = BlockDao(groupNum, databaseConfig)
+      with DBRunner
+      with ApiModelCodec {
+    override val config                = databaseConfig
+    val blockflowFetchMaxAge: Duration = Duration.ofMinutesUnsafe(30)
+
+    val blockDao = BlockDao(groupNum, databaseConfig)
     val blockflow: Seq[Seq[model.BlockEntry]] =
       blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
     val blocksProtocol: Seq[model.BlockEntry] = blockflow.flatten

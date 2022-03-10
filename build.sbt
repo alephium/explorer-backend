@@ -7,8 +7,8 @@ def mainProject(id: String): Project = {
     .settings(commonSettings: _*)
     .settings(
       name := s"explorer-backend-$id",
-      scalastyleConfig in Compile := root.base / "scalastyle-config.xml",
-      scalastyleConfig in Test := root.base / "scalastyle-test-config.xml"
+      Compile / scalastyleConfig := root.base / "scalastyle-config.xml",
+      Test / scalastyleConfig := root.base / "scalastyle-test-config.xml"
     )
     .enablePlugins(JavaAppPackaging, sbtdocker.DockerPlugin, BuildInfoPlugin)
 }
@@ -53,8 +53,8 @@ val commonSettings = Seq(
     "-Ywarn-value-discard"
   ),
   Test / envVars += "ALEPHIUM_ENV" -> "test",
-  wartremoverErrors in (Compile, compile) := Warts.allBut(wartsCompileExcludes: _*),
-  wartremoverErrors in (Test, compile) := Warts.allBut(wartsTestExcludes: _*),
+  Compile / compile / wartremoverErrors := Warts.allBut(wartsCompileExcludes: _*),
+  Test / compile / wartremoverErrors := Warts.allBut(wartsTestExcludes: _*),
   fork := true
 )
 
@@ -101,9 +101,9 @@ lazy val app = mainProject("app")
       micrometerPrometheus,
     ))
   .settings(
-    mainClass in assembly := Some("org.alephium.explorer.Main"),
-    assemblyJarName in assembly := s"explorer-backend-${version.value}.jar",
-    test in assembly := {},
+    assembly / mainClass := Some("org.alephium.explorer.Main"),
+    assembly / assemblyJarName := s"explorer-backend-${version.value}.jar",
+    assembly / test := {},
     docker / dockerfile := {
       val appSource = stage.value
       val appTarget = "/app"
@@ -133,12 +133,12 @@ lazy val app = mainProject("app")
     ),
     buildInfoPackage := "org.alephium.explorer",
     buildInfoUsePackageAsPath := true,
-    assemblyMergeStrategy in assembly := {
+    assembly / assemblyMergeStrategy := {
       case PathList("META-INF", "io.netty.versions.properties", xs @ _*) =>
         MergeStrategy.first
       case "module-info.class" =>
         MergeStrategy.discard
-      case other => (assemblyMergeStrategy in assembly).value(other)
+      case other => (assembly / assemblyMergeStrategy).value(other)
     }
   )
 

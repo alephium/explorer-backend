@@ -36,12 +36,7 @@ object OutputQueries extends CustomTypes {
 
   /** Inserts outputs or ignore rows with primary key conflict */
   def insertOutputs(outputs: Iterable[OutputEntity]): DBActionW[Int] =
-    if (outputs.isEmpty) {
-      DBIOAction.successful(0)
-    } else {
-      // scalastyle:off magic.number
-      val placeholder = paramPlaceholder(rows = outputs.size, columns = 11)
-
+    QueryUtil.splitUpdates(rows = outputs, queryRowParams = 11) { (outputs, placeholder) =>
       val query =
         s"""
            |INSERT INTO outputs ("block_hash",
