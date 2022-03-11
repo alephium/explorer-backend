@@ -64,8 +64,8 @@ class BlockHeaderMainChainReadState(dropMainChainIndex: Boolean,
   def persist(data: Array[BlockHeader]): Unit = {
     //create a fresh table and insert the data
     val query =
-      BlockHeaderSchema.blockHeadersTable.schema.dropIfExists
-        .andThen(BlockHeaderSchema.blockHeadersTable.schema.create)
+      BlockHeaderSchema.table.schema.dropIfExists
+        .andThen(BlockHeaderSchema.table.schema.create)
         .andThen(BlockHeaderSchema.createBlockHeadersIndexesSQL())
         .andThen {
           //drop main_chain if dropMainChainIndex is true
@@ -75,7 +75,7 @@ class BlockHeaderMainChainReadState(dropMainChainIndex: Boolean,
             DBIO.successful(0)
           }
         }
-        .andThen(BlockHeaderSchema.blockHeadersTable ++= data)
+        .andThen(BlockHeaderSchema.table ++= data)
 
     val _ = db.runNow(
       action  = query,

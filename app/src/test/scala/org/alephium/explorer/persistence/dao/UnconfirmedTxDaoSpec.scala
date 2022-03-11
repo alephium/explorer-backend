@@ -40,7 +40,7 @@ class UnconfirmedTxDaoSpec extends AlephiumSpec with ScalaFutures with Generator
 
       txs.foreach { tx =>
         val dbTx =
-          run(UnconfirmedTxSchema.unconfirmedTxsTable.filter(_.hash === tx.hash).result).futureValue
+          run(UnconfirmedTxSchema.table.filter(_.hash === tx.hash).result).futureValue
         dbTx.size is 1
         dbTx.head.hash is tx.hash
         dbTx.head.chainFrom is tx.chainFrom
@@ -48,12 +48,12 @@ class UnconfirmedTxDaoSpec extends AlephiumSpec with ScalaFutures with Generator
         dbTx.head.gasAmount is tx.gasAmount
         dbTx.head.gasPrice is tx.gasPrice
 
-        val inputs = run(UInputSchema.uinputsTable.filter(_.txHash === tx.hash).result).futureValue
+        val inputs = run(UInputSchema.table.filter(_.txHash === tx.hash).result).futureValue
         inputs.size is tx.inputs.size
         inputs.foreach(input => tx.inputs.contains(input.toApi))
 
         val outputs =
-          run(UOutputSchema.uoutputsTable.filter(_.txHash === tx.hash).result).futureValue
+          run(UOutputSchema.table.filter(_.txHash === tx.hash).result).futureValue
         outputs.size is tx.outputs.size
         outputs.foreach(output => tx.outputs.contains(output.toApi))
       }

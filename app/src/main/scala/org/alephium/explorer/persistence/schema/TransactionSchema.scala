@@ -18,16 +18,14 @@ package org.alephium.explorer.persistence.schema
 
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
-import slick.sql.SqlAction
 
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Transaction}
 import org.alephium.explorer.persistence.model.TransactionEntity
 import org.alephium.util.{TimeStamp, U256}
 
-object TransactionSchema extends Schema with CustomTypes {
-  private val tableName = "transactions"
+object TransactionSchema extends SchemaMainChain[TransactionEntity]("transactions") {
 
-  class Transactions(tag: Tag) extends Table[TransactionEntity](tag, tableName) {
+  class Transactions(tag: Tag) extends Table[TransactionEntity](tag, name) {
     def hash: Rep[Transaction.Hash]     = column[Transaction.Hash]("hash", O.SqlType("BYTEA"))
     def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
@@ -52,8 +50,5 @@ object TransactionSchema extends Schema with CustomTypes {
         .<>((TransactionEntity.apply _).tupled, TransactionEntity.unapply)
   }
 
-  def createTransactionMainChainIndex(): SqlAction[Int, NoStream, Effect] =
-    mainChainIndex(tableName)
-
-  val transactionsTable: TableQuery[Transactions] = TableQuery[Transactions]
+  val table: TableQuery[Transactions] = TableQuery[Transactions]
 }

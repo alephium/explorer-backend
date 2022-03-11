@@ -51,9 +51,9 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
         fetchedBlock.mainChain is mainChainInput
 
         val inputQuery =
-          InputSchema.inputsTable.filter(_.blockHash === block.hash).map(_.mainChain).result
+          InputSchema.table.filter(_.blockHash === block.hash).map(_.mainChain).result
         val outputQuery =
-          OutputSchema.outputsTable.filter(_.blockHash === block.hash).map(_.mainChain).result
+          OutputSchema.table.filter(_.blockHash === block.hash).map(_.mainChain).result
 
         val inputs: Seq[Boolean]  = run(inputQuery).futureValue
         val outputs: Seq[Boolean] = run(outputQuery).futureValue
@@ -70,18 +70,18 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
       blockDao.insert(block).futureValue
 
       val blockheadersQuery =
-        BlockHeaderSchema.blockHeadersTable.filter(_.hash === block.hash).map(_.hash).result
+        BlockHeaderSchema.table.filter(_.hash === block.hash).map(_.hash).result
       val headerHash: Seq[BlockEntry.Hash] = run(blockheadersQuery).futureValue
       headerHash.size is 1
       headerHash.foreach(_.is(block.hash))
       block.transactions.nonEmpty is true
 
-      val inputQuery  = InputSchema.inputsTable.filter(_.blockHash === block.hash).result
-      val outputQuery = OutputSchema.outputsTable.filter(_.blockHash === block.hash).result
+      val inputQuery  = InputSchema.table.filter(_.blockHash === block.hash).result
+      val outputQuery = OutputSchema.table.filter(_.blockHash === block.hash).result
       val blockDepsQuery =
-        BlockDepsSchema.blockDepsTable.filter(_.hash === block.hash).map(_.dep).result
+        BlockDepsSchema.table.filter(_.hash === block.hash).map(_.dep).result
       val transactionsQuery =
-        TransactionSchema.transactionsTable.filter(_.blockHash === block.hash).result
+        TransactionSchema.table.filter(_.blockHash === block.hash).result
       val queries  = Seq(inputQuery, outputQuery, blockDepsQuery, transactionsQuery)
       val dbInputs = Seq(block.inputs, block.outputs, block.deps, block.transactions)
 
@@ -105,12 +105,12 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
            arbitrary[Boolean]) {
       case (blocks, pageNum, pageLimit, reverse) =>
         //clear test data
-        run(BlockHeaderSchema.blockHeadersTable.delete).futureValue
-        run(TransactionSchema.transactionsTable.delete).futureValue
+        run(BlockHeaderSchema.table.delete).futureValue
+        run(TransactionSchema.table.delete).futureValue
 
         //create test data
-        run(BlockHeaderSchema.blockHeadersTable ++= blocks.map(_._1)).futureValue
-        run(TransactionSchema.transactionsTable ++= blocks.flatten(_._2)).futureValue
+        run(BlockHeaderSchema.table ++= blocks.map(_._1)).futureValue
+        run(TransactionSchema.table ++= blocks.flatten(_._2)).futureValue
 
         //Assert results returned by typed and SQL query are the same
         def runAssert(page: Pagination) = {

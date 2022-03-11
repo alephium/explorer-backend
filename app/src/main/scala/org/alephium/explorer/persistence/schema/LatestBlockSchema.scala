@@ -26,9 +26,9 @@ import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.persistence.model.LatestBlock
 import org.alephium.util.TimeStamp
 
-object LatestBlockSchema extends CustomTypes {
+object LatestBlockSchema extends Schema[LatestBlock]("latest_blocks") {
 
-  class LatestBlocks(tag: Tag) extends Table[LatestBlock](tag, "latest_blocks") {
+  class LatestBlocks(tag: Tag) extends Table[LatestBlock](tag, name) {
     def hash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("hash", O.SqlType("bytea"))
     def timestamp: Rep[TimeStamp]  = column[TimeStamp]("timestamp")
     def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
@@ -45,5 +45,5 @@ object LatestBlockSchema extends CustomTypes {
         .<>((LatestBlock.apply _).tupled, LatestBlock.unapply)
   }
 
-  val latestBlocksTable: TableQuery[LatestBlocks] = TableQuery[LatestBlocks]
+  val table: TableQuery[LatestBlocks] = TableQuery[LatestBlocks]
 }

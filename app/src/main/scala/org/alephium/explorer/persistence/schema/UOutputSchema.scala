@@ -23,9 +23,9 @@ import org.alephium.explorer.api.model.{Address, Transaction}
 import org.alephium.explorer.persistence.model.UOutputEntity
 import org.alephium.util.{TimeStamp, U256}
 
-object UOutputSchema extends CustomTypes {
+object UOutputSchema extends Schema[UOutputEntity]("uoutputs") {
 
-  class UOutputs(tag: Tag) extends Table[UOutputEntity](tag, "uoutputs") {
+  class UOutputs(tag: Tag) extends Table[UOutputEntity](tag, name) {
     def txHash: Rep[Transaction.Hash] = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
@@ -41,5 +41,5 @@ object UOutputSchema extends CustomTypes {
         .<>((UOutputEntity.apply _).tupled, UOutputEntity.unapply)
   }
 
-  val uoutputsTable: TableQuery[UOutputs] = TableQuery[UOutputs]
+  val table: TableQuery[UOutputs] = TableQuery[UOutputs]
 }

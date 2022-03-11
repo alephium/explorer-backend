@@ -23,9 +23,9 @@ import org.alephium.explorer.api.model.{GroupIndex, Transaction}
 import org.alephium.explorer.persistence.model.UnconfirmedTxEntity
 import org.alephium.util.U256
 
-object UnconfirmedTxSchema extends CustomTypes {
+object UnconfirmedTxSchema extends Schema[UnconfirmedTxEntity]("utransactions") {
 
-  class UnconfirmedTxs(tag: Tag) extends Table[UnconfirmedTxEntity](tag, "utransactions") {
+  class UnconfirmedTxs(tag: Tag) extends Table[UnconfirmedTxEntity](tag, name) {
     def hash: Rep[Transaction.Hash] =
       column[Transaction.Hash]("hash", O.PrimaryKey, O.SqlType("BYTEA"))
     def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
@@ -39,5 +39,5 @@ object UnconfirmedTxSchema extends CustomTypes {
         .<>((UnconfirmedTxEntity.apply _).tupled, UnconfirmedTxEntity.unapply)
   }
 
-  val unconfirmedTxsTable: TableQuery[UnconfirmedTxs] = TableQuery[UnconfirmedTxs]
+  val table: TableQuery[UnconfirmedTxs] = TableQuery[UnconfirmedTxs]
 }

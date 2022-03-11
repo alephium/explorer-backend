@@ -32,8 +32,8 @@ import org.alephium.util.U256
 
 object InputQueries extends CustomTypes {
 
-  private val mainInputs  = InputSchema.inputsTable.filter(_.mainChain)
-  private val mainOutputs = OutputSchema.outputsTable.filter(_.mainChain)
+  private val mainInputs  = InputSchema.table.filter(_.mainChain)
+  private val mainOutputs = OutputSchema.table.filter(_.mainChain)
 
   /** Inserts inputs or ignore rows with primary key conflict */
   def insertInputs(inputs: Iterable[InputEntity]): DBActionW[Int] =

@@ -40,18 +40,18 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
           "org.wartremover.warts.Serializable"))
   private val allTables =
     Seq(
-      BlockHeaderSchema.blockHeadersTable,
-      BlockDepsSchema.blockDepsTable,
-      TransactionSchema.transactionsTable,
-      InputSchema.inputsTable,
-      OutputSchema.outputsTable,
-      UnconfirmedTxSchema.unconfirmedTxsTable,
-      UInputSchema.uinputsTable,
-      UOutputSchema.uoutputsTable,
-      LatestBlockSchema.latestBlocksTable,
-      HashrateSchema.hashrateTable,
-      TokenSupplySchema.tokenSupplyTable,
-      TransactionPerAddressSchema.transactionPerAddressesTable
+      BlockHeaderSchema.table,
+      BlockDepsSchema.table,
+      TransactionSchema.table,
+      InputSchema.table,
+      OutputSchema.table,
+      UnconfirmedTxSchema.table,
+      UInputSchema.table,
+      UOutputSchema.table,
+      LatestBlockSchema.table,
+      HashrateSchema.table,
+      TokenSupplySchema.table,
+      TransactionPerAddressSchema.table
     )
 
   def createTables(): Future[Unit] = {
@@ -75,10 +75,10 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
   private def createIndexes(): Future[Unit] = {
     run(for {
       _ <- BlockHeaderSchema.createBlockHeadersIndexesSQL()
-      _ <- TransactionSchema.createTransactionMainChainIndex()
-      _ <- InputSchema.createInputMainChainIndex()
-      _ <- OutputSchema.createOutputMainChainIndex()
-      _ <- TransactionPerAddressSchema.createTransactionPerAddressMainChainIndex()
+      _ <- TransactionSchema.createMainChainIndex
+      _ <- InputSchema.createMainChainIndex
+      _ <- OutputSchema.createMainChainIndex
+      _ <- TransactionPerAddressSchema.createMainChainIndex
     } yield ())
   }
 

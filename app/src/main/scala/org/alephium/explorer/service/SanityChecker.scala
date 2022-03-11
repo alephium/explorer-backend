@@ -43,7 +43,7 @@ class SanityChecker(groupNum: Int,
 
   private def findLatestBlock(from: GroupIndex, to: GroupIndex): Future[Option[BlockEntry.Hash]] = {
     run(
-      BlockHeaderSchema.blockHeadersTable
+      BlockHeaderSchema.table
         .filter(header => header.mainChain && header.chainFrom === from && header.chainTo === to)
         .sortBy(_.timestamp.desc)
         .map(_.hash)
@@ -67,7 +67,7 @@ class SanityChecker(groupNum: Int,
     } else {
       running = true
       i       = 0
-      run(BlockHeaderSchema.blockHeadersTable.size.result).flatMap { nbOfBlocks =>
+      run(BlockHeaderSchema.table.size.result).flatMap { nbOfBlocks =>
         totalNbOfBlocks = nbOfBlocks
         logger.info(s"Starting sanity check $totalNbOfBlocks to check")
         Future

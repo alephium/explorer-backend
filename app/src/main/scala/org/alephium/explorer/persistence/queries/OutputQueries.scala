@@ -29,8 +29,8 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputQueries extends CustomTypes {
-  private val mainInputs  = InputSchema.inputsTable.filter(_.mainChain)
-  private val mainOutputs = OutputSchema.outputsTable.filter(_.mainChain)
+  private val mainInputs  = InputSchema.table.filter(_.mainChain)
+  private val mainOutputs = OutputSchema.table.filter(_.mainChain)
 
   /** Inserts outputs or ignore rows with primary key conflict */
   // scalastyle:off magic.number
@@ -137,7 +137,7 @@ object OutputQueries extends CustomTypes {
 
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
   val getOutputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
-    OutputSchema.outputsTable
+    OutputSchema.table
       .filter(output => output.mainChain && output.txHash === txHash)
       .joinLeft(mainInputs)
       .on(_.key === _.outputRefKey)

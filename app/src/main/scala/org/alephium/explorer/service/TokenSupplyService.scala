@@ -74,7 +74,7 @@ object TokenSupplyService {
       val limit  = pagination.limit.toLong
       val toDrop = offset * limit
       run(
-        TokenSupplySchema.tokenSupplyTable
+        TokenSupplySchema.table
           .sortBy { _.timestamp.desc }
           .drop(toDrop)
           .take(limit)
@@ -91,7 +91,7 @@ object TokenSupplyService {
 
     def getLatestTokenSupply(): Future[Option[TokenSupply]] = {
       run(
-        TokenSupplySchema.tokenSupplyTable
+        TokenSupplySchema.table
           .sortBy { _.timestamp.desc }
           .result
           .headOption
@@ -105,15 +105,15 @@ object TokenSupplyService {
       })
     }
 
-    private val mainInputs       = InputSchema.inputsTable.filter(_.mainChain)
-    private val mainOutputs      = OutputSchema.outputsTable.filter(_.mainChain)
-    private val mainTransactions = TransactionSchema.transactionsTable.filter(_.mainChain)
+    private val mainInputs       = InputSchema.table.filter(_.mainChain)
+    private val mainOutputs      = OutputSchema.table.filter(_.mainChain)
+    private val mainTransactions = TransactionSchema.table.filter(_.mainChain)
 
     private def genesisLockedToken(lockTime: TimeStamp) = {
       mainOutputs
         .join(
           mainTransactions
-            .join(BlockHeaderSchema.blockHeadersTable.filter(_.height === Height.unsafe(0)))
+            .join(BlockHeaderSchema.table.filter(_.height === Height.unsafe(0)))
             .on(_.blockHash === _.hash)
         )
         .on(_.txHash === _._1.hash)
@@ -138,7 +138,7 @@ object TokenSupplyService {
         DBIOAction.sequence(
           chainIndexes.map {
             case (from, to) =>
-              BlockHeaderSchema.blockHeadersTable
+              BlockHeaderSchema.table
                 .filter(header => header.chainFrom === from && header.chainTo === to)
                 .sortBy(_.timestamp.desc)
                 .map(_.timestamp)
@@ -201,12 +201,12 @@ object TokenSupplyService {
     }
 
     private def insert(tokenSupply: TokenSupplyEntity) = {
-      TokenSupplySchema.tokenSupplyTable.insertOrUpdate(tokenSupply)
+      TokenSupplySchema.table.insertOrUpdate(tokenSupply)
     }
 
     private def getLatestTimestamp(): Future[Option[TimeStamp]] = {
       run(
-        TokenSupplySchema.tokenSupplyTable
+        TokenSupplySchema.table
           .sortBy { _.timestamp.desc }
           .map(_.timestamp)
           .result

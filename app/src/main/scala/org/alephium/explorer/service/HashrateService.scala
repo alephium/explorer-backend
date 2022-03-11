@@ -83,7 +83,7 @@ object HashrateService {
 
     private def findLatestHashrate(
         intervalType: IntervalType): DBActionR[Option[HashrateEntity]] = {
-      HashrateSchema.hashrateTable
+      HashrateSchema.table
         .filter(_.intervalType === intervalType)
         .sortBy(_.timestamp.desc)
         .result

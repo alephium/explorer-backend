@@ -22,9 +22,9 @@ import slick.lifted.ProvenShape
 import org.alephium.explorer.persistence.model.TokenSupplyEntity
 import org.alephium.util.{TimeStamp, U256}
 
-object TokenSupplySchema extends CustomTypes {
+object TokenSupplySchema extends Schema[TokenSupplyEntity]("token_supply") {
 
-  class TokenSupplies(tag: Tag) extends Table[TokenSupplyEntity](tag, "token_supply") {
+  class TokenSupplies(tag: Tag) extends Table[TokenSupplyEntity](tag, name) {
     def timestamp: Rep[TimeStamp] = column[TimeStamp]("timestamp", O.PrimaryKey)
     def total: Rep[U256] =
       column[U256]("total", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
@@ -36,5 +36,5 @@ object TokenSupplySchema extends CustomTypes {
         .<>((TokenSupplyEntity.apply _).tupled, TokenSupplyEntity.unapply)
   }
 
-  val tokenSupplyTable: TableQuery[TokenSupplies] = TableQuery[TokenSupplies]
+  val table: TableQuery[TokenSupplies] = TableQuery[TokenSupplies]
 }

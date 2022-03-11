@@ -50,9 +50,9 @@ object UnconfirmedTxDao {
 
     def get(hash: Transaction.Hash): Future[Option[UnconfirmedTx]] = {
       run(for {
-        maybeTx <- UnconfirmedTxSchema.unconfirmedTxsTable.filter(_.hash === hash).result.headOption
-        inputs  <- UInputSchema.uinputsTable.filter(_.txHash === hash).result
-        outputs <- UOutputSchema.uoutputsTable.filter(_.txHash === hash).result
+        maybeTx <- UnconfirmedTxSchema.table.filter(_.hash === hash).result.headOption
+        inputs  <- UInputSchema.table.filter(_.txHash === hash).result
+        outputs <- UOutputSchema.table.filter(_.txHash === hash).result
       } yield {
         maybeTx.map { tx =>
           UnconfirmedTx(
@@ -74,9 +74,9 @@ object UnconfirmedTxDao {
       val inputs   = entities.flatMap { case (_, in, _) => in }
       val outputs  = entities.flatMap { case (_, _, out) => out }
       for {
-        _ <- DBIOAction.sequence(txs.map(UnconfirmedTxSchema.unconfirmedTxsTable.insertOrUpdate))
-        _ <- DBIOAction.sequence(inputs.map(UInputSchema.uinputsTable.insertOrUpdate))
-        _ <- DBIOAction.sequence(outputs.map(UOutputSchema.uoutputsTable.insertOrUpdate))
+        _ <- DBIOAction.sequence(txs.map(UnconfirmedTxSchema.table.insertOrUpdate))
+        _ <- DBIOAction.sequence(inputs.map(UInputSchema.table.insertOrUpdate))
+        _ <- DBIOAction.sequence(outputs.map(UOutputSchema.table.insertOrUpdate))
       } yield ()
     }
 
@@ -85,14 +85,14 @@ object UnconfirmedTxDao {
     }
 
     def listHashes(): Future[Seq[Transaction.Hash]] = {
-      run(UnconfirmedTxSchema.unconfirmedTxsTable.map(_.hash).result)
+      run(UnconfirmedTxSchema.table.map(_.hash).result)
     }
 
     private def removeManyAction(txs: Seq[Transaction.Hash]): DBActionW[Unit] = {
       for {
-        _ <- UnconfirmedTxSchema.unconfirmedTxsTable.filter(_.hash inSet txs).delete
-        _ <- UOutputSchema.uoutputsTable.filter(_.txHash inSet txs).delete
-        _ <- UInputSchema.uinputsTable.filter(_.txHash inSet txs).delete
+        _ <- UnconfirmedTxSchema.table.filter(_.hash inSet txs).delete
+        _ <- UOutputSchema.table.filter(_.txHash inSet txs).delete
+        _ <- UInputSchema.table.filter(_.txHash inSet txs).delete
       } yield ()
     }
 

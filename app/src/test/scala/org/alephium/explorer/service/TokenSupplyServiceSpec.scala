@@ -201,7 +201,7 @@ class TokenSupplyServiceSpec extends AlephiumSpec with ScalaFutures with Eventua
       tokenSupplyService.syncOnce().futureValue is ()
 
       eventually {
-        val tokenSupply = run(TokenSupplySchema.tokenSupplyTable.result).futureValue.reverse
+        val tokenSupply = run(TokenSupplySchema.table.result).futureValue.reverse
         tokenSupply.map(_.circulating) is amounts
 
         tokenSupplyService

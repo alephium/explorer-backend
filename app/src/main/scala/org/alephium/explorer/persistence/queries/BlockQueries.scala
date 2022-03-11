@@ -34,10 +34,10 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 
 trait BlockQueries extends TransactionQueries with CustomTypes with StrictLogging {
 
-  val block_headers = BlockHeaderSchema.blockHeadersTable.baseTableRow.tableName //block_headers table name
+  val block_headers = BlockHeaderSchema.table.baseTableRow.tableName //block_headers table name
 
   private val blockDepsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
-    BlockDepsSchema.blockDepsTable.filter(_.hash === blockHash).sortBy(_.order).map(_.dep)
+    BlockDepsSchema.table.filter(_.hash === blockHash).sortBy(_.order).map(_.dep)
   }
 
   def buildBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry] =
@@ -48,12 +48,12 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
 
   def getBlockEntryLiteAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry.Lite]] =
     for {
-      header <- BlockHeaderSchema.blockHeadersTable.filter(_.hash === hash).result.headOption
+      header <- BlockHeaderSchema.table.filter(_.hash === hash).result.headOption
     } yield header.map(_.toLiteApi)
 
   def getBlockEntryAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry]] =
     for {
-      headers <- BlockHeaderSchema.blockHeadersTable.filter(_.hash === hash).result
+      headers <- BlockHeaderSchema.table.filter(_.hash === hash).result
       blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
     } yield blocks.headOption
 
@@ -71,7 +71,7 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
                         toGroup: GroupIndex,
                         height: Height): DBActionR[Seq[BlockEntry]] =
     for {
-      headers <- BlockHeaderSchema.blockHeadersTable
+      headers <- BlockHeaderSchema.table
         .filter(header =>
           header.height === height && header.chainFrom === fromGroup && header.chainTo === toGroup)
         .result
@@ -155,29 +155,29 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
 
   /** Counts main_chain Blocks */
   def countMainChain(): Rep[Int] =
-    BlockHeaderSchema.blockHeadersTable.filter(_.mainChain).length
+    BlockHeaderSchema.table.filter(_.mainChain).length
 
   def updateMainChainStatusAction(hash: BlockEntry.Hash,
                                   isMainChain: Boolean): DBActionRWT[Unit] = {
     val query =
       for {
-        _ <- TransactionSchema.transactionsTable
+        _ <- TransactionSchema.table
           .filter(_.blockHash === hash)
           .map(_.mainChain)
           .update(isMainChain)
-        _ <- OutputSchema.outputsTable
+        _ <- OutputSchema.table
           .filter(_.blockHash === hash)
           .map(_.mainChain)
           .update(isMainChain)
-        _ <- InputSchema.inputsTable
+        _ <- InputSchema.table
           .filter(_.blockHash === hash)
           .map(_.mainChain)
           .update(isMainChain)
-        _ <- BlockHeaderSchema.blockHeadersTable
+        _ <- BlockHeaderSchema.table
           .filter(_.hash === hash)
           .map(_.mainChain)
           .update(isMainChain)
-        _ <- TransactionPerAddressSchema.transactionPerAddressesTable
+        _ <- TransactionPerAddressSchema.table
           .filter(_.blockHash === hash)
           .map(_.mainChain)
           .update(isMainChain)
@@ -193,12 +193,12 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
 
   def getBlockEntryWithoutTxsAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry]] =
     for {
-      headers <- BlockHeaderSchema.blockHeadersTable.filter(_.hash === hash).result
+      headers <- BlockHeaderSchema.table.filter(_.hash === hash).result
       blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryWithoutTxsAction))
     } yield blocks.headOption
 
   def getLatestBlock(chainFrom: GroupIndex, chainTo: GroupIndex): DBActionR[Option[LatestBlock]] = {
-    LatestBlockSchema.latestBlocksTable
+    LatestBlockSchema.table
       .filter { block =>
         block.chainFrom === chainFrom && block.chainTo === chainTo
       }

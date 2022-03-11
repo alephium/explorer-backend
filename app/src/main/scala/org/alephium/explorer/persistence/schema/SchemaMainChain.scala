@@ -17,8 +17,9 @@
 package org.alephium.explorer.persistence.schema
 
 import slick.jdbc.PostgresProfile.api._
-import slick.lifted.AbstractTable
+import slick.sql.SqlAction
 
-abstract class Schema[A](val name: String) extends CustomTypes {
-  val table: TableQuery[_ <: AbstractTable[A]]
+abstract class SchemaMainChain[A](name: String) extends Schema[A](name) {
+  lazy val createMainChainIndex: SqlAction[Int, NoStream, Effect] =
+    sqlu"create index if not exists #${name}_main_chain_idx on #${name} (main_chain) where main_chain = true;"
 }

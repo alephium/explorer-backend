@@ -23,9 +23,9 @@ import org.alephium.explorer.api.model.IntervalType
 import org.alephium.explorer.persistence.model.HashrateEntity
 import org.alephium.util.TimeStamp
 
-object HashrateSchema extends CustomTypes {
+object HashrateSchema extends Schema[HashrateEntity]("hashrates") {
 
-  class Hashrates(tag: Tag) extends Table[HashrateEntity](tag, "hashrates") {
+  class Hashrates(tag: Tag) extends Table[HashrateEntity](tag, name) {
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
     def value: Rep[BigDecimal]          = column[BigDecimal]("value")
     def intervalType: Rep[IntervalType] = column[IntervalType]("interval_type")
@@ -40,5 +40,5 @@ object HashrateSchema extends CustomTypes {
         .<>((HashrateEntity.apply _).tupled, HashrateEntity.unapply)
   }
 
-  val hashrateTable: TableQuery[Hashrates] = TableQuery[Hashrates]
+  val table: TableQuery[Hashrates] = TableQuery[Hashrates]
 }

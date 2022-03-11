@@ -37,18 +37,18 @@ class BlockDepQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     forAll(Gen.listOf(blockDepUpdatedGen)) { deps =>
       //clean existing rows
-      run(BlockDepsSchema.blockDepsTable.delete).futureValue
+      run(BlockDepsSchema.table.delete).futureValue
 
       val original = deps.map(_._1)
       val ignored  = deps.map(_._2)
 
       run(insertBlockDeps(original)).futureValue is original.size
-      run(BlockDepsSchema.blockDepsTable.result).futureValue is original
+      run(BlockDepsSchema.table.result).futureValue is original
 
       //Ignore the same data with do nothing order
       run(insertBlockDeps(ignored)).futureValue is 0
       //it should contain original rows
-      run(BlockDepsSchema.blockDepsTable.result).futureValue should contain allElementsOf original
+      run(BlockDepsSchema.table.result).futureValue should contain allElementsOf original
     }
   }
 

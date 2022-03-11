@@ -88,15 +88,13 @@ class DBBenchmark {
   @Benchmark
   def readMainChainIndex(state: BlockHeaderWithMainChainReadState): Unit = {
     val _ =
-      state.db.runNow(BlockHeaderSchema.blockHeadersTable.filter(_.mainChain).length.result,
-                      requestTimeout)
+      state.db.runNow(BlockHeaderSchema.table.filter(_.mainChain).length.result, requestTimeout)
   }
 
   @Benchmark
   def readNoMainChainIndex(state: BlockHeaderWithoutMainChainReadState): Unit = {
     val _ =
-      state.db.runNow(BlockHeaderSchema.blockHeadersTable.filter(_.mainChain).length.result,
-                      requestTimeout)
+      state.db.runNow(BlockHeaderSchema.table.filter(_.mainChain).length.result, requestTimeout)
   }
 
   /**

@@ -36,7 +36,7 @@ class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     forAll(Gen.listOf(updatedBlockHeaderGen())) { existingAndUpdates =>
       //fresh table
-      run(BlockHeaderSchema.blockHeadersTable.delete).futureValue
+      run(BlockHeaderSchema.table.delete).futureValue
 
       val existing = existingAndUpdates.map(_._1) //existing blocks
       val ingored  = existingAndUpdates.map(_._2) //ingored blocks
@@ -45,11 +45,11 @@ class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
 
       //insert existing
       run(query).futureValue is existing.size
-      run(BlockHeaderSchema.blockHeadersTable.result).futureValue should contain allElementsOf existing
+      run(BlockHeaderSchema.table.result).futureValue should contain allElementsOf existing
 
       //insert should ingore existing inputs
       run(queries.insertBlockHeaders(ingored)).futureValue is 0
-      run(BlockHeaderSchema.blockHeadersTable.result).futureValue should contain allElementsOf existing
+      run(BlockHeaderSchema.table.result).futureValue should contain allElementsOf existing
     }
   }
 
@@ -58,27 +58,27 @@ class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
     forAll(Gen.listOf(genBlockEntityWithOptionalParent().map(_._1))) {
       case entities =>
         //clear all tables
-        run(BlockHeaderSchema.blockHeadersTable.delete).futureValue
-        run(TransactionSchema.transactionsTable.delete).futureValue
-        run(InputSchema.inputsTable.delete).futureValue
-        run(OutputSchema.outputsTable.delete).futureValue
-        run(BlockDepsSchema.blockDepsTable.delete).futureValue
+        run(BlockHeaderSchema.table.delete).futureValue
+        run(TransactionSchema.table.delete).futureValue
+        run(InputSchema.table.delete).futureValue
+        run(OutputSchema.table.delete).futureValue
+        run(BlockDepsSchema.table.delete).futureValue
 
         //execute insert on blocks and expect all tables get inserted
         run(queries.insertBlockEntity(entities, groupNum)).futureValue is entities.size
 
         //check block_headers table
-        val actualBlockHeaders = run(BlockHeaderSchema.blockHeadersTable.result).futureValue
+        val actualBlockHeaders = run(BlockHeaderSchema.table.result).futureValue
         val expectBlockHeaders = entities.map(_.toBlockHeader(groupNum))
         actualBlockHeaders should contain allElementsOf expectBlockHeaders
 
         //check transactions table
-        val actualTransactions   = run(TransactionSchema.transactionsTable.result).futureValue
+        val actualTransactions   = run(TransactionSchema.table.result).futureValue
         val expectedTransactions = entities.flatMap(_.transactions)
         actualTransactions should contain allElementsOf expectedTransactions
 
         //check inputs table
-        val actualInputs   = run(InputSchema.inputsTable.result).futureValue
+        val actualInputs   = run(InputSchema.table.result).futureValue
         val expectedInputs = entities.flatMap(_.inputs)
         actualInputs should contain allElementsOf expectedInputs
 
@@ -88,7 +88,7 @@ class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
         //actualOutputs should contain allElementsOf expectedOutputs
 
         //check block_deps table
-        val actualDeps        = run(BlockDepsSchema.blockDepsTable.result).futureValue
+        val actualDeps        = run(BlockDepsSchema.table.result).futureValue
         val expectedBlockDeps = entities.flatMap(_.toBlockDepEntities())
         actualDeps should contain allElementsOf expectedBlockDeps
 

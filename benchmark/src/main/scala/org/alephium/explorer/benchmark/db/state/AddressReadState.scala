@@ -169,23 +169,23 @@ class AddressReadState(val db: DBExecutor)
     }
 
     //drop existing tables
-    val _ = db.dropTableIfExists(BlockHeaderSchema.blockHeadersTable)
-    val _ = db.dropTableIfExists(TransactionSchema.transactionsTable)
-    val _ = db.dropTableIfExists(InputSchema.inputsTable)
-    val _ = db.dropTableIfExists(OutputSchema.outputsTable)
-    val _ = db.dropTableIfExists(TransactionPerAddressSchema.transactionPerAddressesTable)
+    val _ = db.dropTableIfExists(BlockHeaderSchema.table)
+    val _ = db.dropTableIfExists(TransactionSchema.table)
+    val _ = db.dropTableIfExists(InputSchema.table)
+    val _ = db.dropTableIfExists(OutputSchema.table)
+    val _ = db.dropTableIfExists(TransactionPerAddressSchema.table)
 
     val createTable =
-      BlockHeaderSchema.blockHeadersTable.schema.create
-        .andThen(TransactionSchema.transactionsTable.schema.create)
-        .andThen(InputSchema.inputsTable.schema.create)
-        .andThen(OutputSchema.outputsTable.schema.create)
-        .andThen(TransactionPerAddressSchema.transactionPerAddressesTable.schema.create)
+      BlockHeaderSchema.table.schema.create
+        .andThen(TransactionSchema.table.schema.create)
+        .andThen(InputSchema.table.schema.create)
+        .andThen(OutputSchema.table.schema.create)
+        .andThen(TransactionPerAddressSchema.table.schema.create)
         .andThen(BlockHeaderSchema.createBlockHeadersIndexesSQL())
-        .andThen(TransactionSchema.createTransactionMainChainIndex())
-        .andThen(InputSchema.createInputMainChainIndex())
-        .andThen(OutputSchema.createOutputMainChainIndex())
-        .andThen(TransactionPerAddressSchema.createTransactionPerAddressMainChainIndex())
+        .andThen(TransactionSchema.createMainChainIndex)
+        .andThen(InputSchema.createMainChainIndex)
+        .andThen(OutputSchema.createMainChainIndex)
+        .andThen(TransactionPerAddressSchema.createMainChainIndex)
 
     val _ = db.runNow(
       action  = createTable,
