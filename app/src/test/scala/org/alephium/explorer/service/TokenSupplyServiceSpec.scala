@@ -139,7 +139,7 @@ class TokenSupplyServiceSpec extends AlephiumSpec with ScalaFutures with Eventua
     }
   }
 
-  trait Fixture extends TokenSupplySchema with DatabaseFixture with DBRunner with Generators {
+  trait Fixture extends DatabaseFixture with DBRunner with Generators {
 
     val now = TimeStamp.now()
 
@@ -201,7 +201,7 @@ class TokenSupplyServiceSpec extends AlephiumSpec with ScalaFutures with Eventua
       tokenSupplyService.syncOnce().futureValue is ()
 
       eventually {
-        val tokenSupply = run(tokenSupplyTable.result).futureValue.reverse
+        val tokenSupply = run(TokenSupplySchema.tokenSupplyTable.result).futureValue.reverse
         tokenSupply.map(_.circulating) is amounts
 
         tokenSupplyService

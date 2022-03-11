@@ -26,7 +26,7 @@ import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.persistence.model.LatestBlock
 import org.alephium.util.TimeStamp
 
-trait LatestBlockSchema extends CustomTypes {
+object LatestBlockSchema extends CustomTypes {
 
   class LatestBlocks(tag: Tag) extends Table[LatestBlock](tag, "latest_blocks") {
     def hash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("hash", O.SqlType("bytea"))

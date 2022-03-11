@@ -24,7 +24,7 @@ import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.TransactionPerAddressEntity
 import org.alephium.util.TimeStamp
 
-trait TransactionPerAddressSchema extends Schema with CustomTypes {
+object TransactionPerAddressSchema extends Schema with CustomTypes {
   private val tableName = "transaction_per_addresses"
 
   class TransactionPerAddresses(tag: Tag)

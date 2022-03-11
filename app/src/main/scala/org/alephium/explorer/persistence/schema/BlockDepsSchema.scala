@@ -22,7 +22,7 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 import org.alephium.explorer.api.model.BlockEntry
 import org.alephium.explorer.persistence.model.BlockDepEntity
 
-trait BlockDepsSchema extends CustomTypes {
+object BlockDepsSchema extends CustomTypes {
 
   class BlockDeps(tag: Tag) extends Table[BlockDepEntity](tag, "block_deps") {
     def hash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("hash", O.SqlType("BYTEA"))

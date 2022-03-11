@@ -23,7 +23,7 @@ import org.alephium.explorer.api.model.{Address, Transaction}
 import org.alephium.explorer.persistence.model.UOutputEntity
 import org.alephium.util.{TimeStamp, U256}
 
-trait UOutputSchema extends CustomTypes {
+object UOutputSchema extends CustomTypes {
 
   class UOutputs(tag: Tag) extends Table[UOutputEntity](tag, "uoutputs") {
     def txHash: Rep[Transaction.Hash] = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))

@@ -31,8 +31,6 @@ import org.alephium.explorer.api.model.{BlockEntry, Pagination}
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
-import org.alephium.explorer.persistence.schema.InputSchema._
-import org.alephium.explorer.persistence.schema.OutputSchema._
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.json.Json._
@@ -52,8 +50,10 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
         fetchedBlock.hash is block.hash
         fetchedBlock.mainChain is mainChainInput
 
-        val inputQuery  = inputsTable.filter(_.blockHash === block.hash).map(_.mainChain).result
-        val outputQuery = outputsTable.filter(_.blockHash === block.hash).map(_.mainChain).result
+        val inputQuery =
+          InputSchema.inputsTable.filter(_.blockHash === block.hash).map(_.mainChain).result
+        val outputQuery =
+          OutputSchema.outputsTable.filter(_.blockHash === block.hash).map(_.mainChain).result
 
         val inputs: Seq[Boolean]  = run(inputQuery).futureValue
         val outputs: Seq[Boolean] = run(outputQuery).futureValue
@@ -69,18 +69,21 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
       blockDao.insert(block).futureValue
       blockDao.insert(block).futureValue
 
-      val blockheadersQuery                = blockHeadersTable.filter(_.hash === block.hash).map(_.hash).result
+      val blockheadersQuery =
+        BlockHeaderSchema.blockHeadersTable.filter(_.hash === block.hash).map(_.hash).result
       val headerHash: Seq[BlockEntry.Hash] = run(blockheadersQuery).futureValue
       headerHash.size is 1
       headerHash.foreach(_.is(block.hash))
       block.transactions.nonEmpty is true
 
-      val inputQuery        = inputsTable.filter(_.blockHash === block.hash).result
-      val outputQuery       = outputsTable.filter(_.blockHash === block.hash).result
-      val blockDepsQuery    = blockDepsTable.filter(_.hash === block.hash).map(_.dep).result
-      val transactionsQuery = transactionsTable.filter(_.blockHash === block.hash).result
-      val queries           = Seq(inputQuery, outputQuery, blockDepsQuery, transactionsQuery)
-      val dbInputs          = Seq(block.inputs, block.outputs, block.deps, block.transactions)
+      val inputQuery  = InputSchema.inputsTable.filter(_.blockHash === block.hash).result
+      val outputQuery = OutputSchema.outputsTable.filter(_.blockHash === block.hash).result
+      val blockDepsQuery =
+        BlockDepsSchema.blockDepsTable.filter(_.hash === block.hash).map(_.dep).result
+      val transactionsQuery =
+        TransactionSchema.transactionsTable.filter(_.blockHash === block.hash).result
+      val queries  = Seq(inputQuery, outputQuery, blockDepsQuery, transactionsQuery)
+      val dbInputs = Seq(block.inputs, block.outputs, block.deps, block.transactions)
 
       def checkDuplicates[T](dbInput: Seq[T], dbOutput: Seq[T]) = {
         dbOutput.size is dbInput.size
@@ -102,12 +105,12 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
            arbitrary[Boolean]) {
       case (blocks, pageNum, pageLimit, reverse) =>
         //clear test data
-        run(blockHeadersTable.delete).futureValue
-        run(transactionsTable.delete).futureValue
+        run(BlockHeaderSchema.blockHeadersTable.delete).futureValue
+        run(TransactionSchema.transactionsTable.delete).futureValue
 
         //create test data
-        run(blockHeadersTable ++= blocks.map(_._1)).futureValue
-        run(transactionsTable ++= blocks.flatten(_._2)).futureValue
+        run(BlockHeaderSchema.blockHeadersTable ++= blocks.map(_._1)).futureValue
+        run(TransactionSchema.transactionsTable ++= blocks.flatten(_._2)).futureValue
 
         //Assert results returned by typed and SQL query are the same
         def runAssert(page: Pagination) = {
@@ -131,13 +134,7 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
     }
   }
 
-  trait Fixture
-      extends BlockHeaderSchema
-      with BlockDepsSchema
-      with TransactionSchema
-      with DatabaseFixture
-      with DBRunner
-      with ApiModelCodec {
+  trait Fixture extends DatabaseFixture with DBRunner with CustomTypes with ApiModelCodec {
     val blockflowFetchMaxAge: Duration = Duration.ofMinutesUnsafe(30)
 
     val blockDao = BlockDao(groupNum, databaseConfig)

@@ -29,6 +29,7 @@ import org.alephium.explorer.api.model.{BlockEntry, GroupIndex}
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.queries.BlockQueries
+import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.TraversableOps"))
 class SanityChecker(groupNum: Int,
@@ -42,7 +43,7 @@ class SanityChecker(groupNum: Int,
 
   private def findLatestBlock(from: GroupIndex, to: GroupIndex): Future[Option[BlockEntry.Hash]] = {
     run(
-      blockHeadersTable
+      BlockHeaderSchema.blockHeadersTable
         .filter(header => header.mainChain && header.chainFrom === from && header.chainTo === to)
         .sortBy(_.timestamp.desc)
         .map(_.hash)
@@ -66,7 +67,7 @@ class SanityChecker(groupNum: Int,
     } else {
       running = true
       i       = 0
-      run(blockHeadersTable.size.result).flatMap { nbOfBlocks =>
+      run(BlockHeaderSchema.blockHeadersTable.size.result).flatMap { nbOfBlocks =>
         totalNbOfBlocks = nbOfBlocks
         logger.info(s"Starting sanity check $totalNbOfBlocks to check")
         Future

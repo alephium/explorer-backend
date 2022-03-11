@@ -39,8 +39,7 @@ import org.alephium.util.TimeStamp
 class BlockHeaderMainChainReadState(dropMainChainIndex: Boolean,
                                     testDataCount: Int,
                                     val db: DBExecutor)
-    extends ReadBenchmarkState[BlockHeader](testDataCount = testDataCount, db = db)
-    with BlockHeaderSchema {
+    extends ReadBenchmarkState[BlockHeader](testDataCount = testDataCount, db = db) {
 
   import config.profile.api._
 
@@ -65,9 +64,9 @@ class BlockHeaderMainChainReadState(dropMainChainIndex: Boolean,
   def persist(data: Array[BlockHeader]): Unit = {
     //create a fresh table and insert the data
     val query =
-      blockHeadersTable.schema.dropIfExists
-        .andThen(blockHeadersTable.schema.create)
-        .andThen(createBlockHeadersIndexesSQL())
+      BlockHeaderSchema.blockHeadersTable.schema.dropIfExists
+        .andThen(BlockHeaderSchema.blockHeadersTable.schema.create)
+        .andThen(BlockHeaderSchema.createBlockHeadersIndexesSQL())
         .andThen {
           //drop main_chain if dropMainChainIndex is true
           if (dropMainChainIndex) {
@@ -76,7 +75,7 @@ class BlockHeaderMainChainReadState(dropMainChainIndex: Boolean,
             DBIO.successful(0)
           }
         }
-        .andThen(blockHeadersTable ++= data)
+        .andThen(BlockHeaderSchema.blockHeadersTable ++= data)
 
     val _ = db.runNow(
       action  = query,

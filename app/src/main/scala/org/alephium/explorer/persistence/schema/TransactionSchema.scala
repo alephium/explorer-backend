@@ -24,7 +24,7 @@ import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Transaction}
 import org.alephium.explorer.persistence.model.TransactionEntity
 import org.alephium.util.{TimeStamp, U256}
 
-trait TransactionSchema extends Schema with CustomTypes {
+object TransactionSchema extends Schema with CustomTypes {
   private val tableName = "transactions"
 
   class Transactions(tag: Tag) extends Table[TransactionEntity](tag, tableName) {

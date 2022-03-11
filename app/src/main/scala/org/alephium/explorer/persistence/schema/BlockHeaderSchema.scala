@@ -28,7 +28,7 @@ import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.util.TimeStamp
 
-trait BlockHeaderSchema extends Schema with CustomTypes {
+object BlockHeaderSchema extends Schema with CustomTypes {
   private val tableName = "block_headers"
 
   class BlockHeaders(tag: Tag) extends Table[BlockHeader](tag, tableName) {

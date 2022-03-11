@@ -31,17 +31,7 @@ import org.alephium.explorer.persistence.schema._
 
 class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
     implicit val executionContext: ExecutionContext)
-    extends BlockHeaderSchema
-    with BlockDepsSchema
-    with TransactionSchema
-    with UnconfirmedTxSchema
-    with UInputSchema
-    with UOutputSchema
-    with LatestBlockSchema
-    with TokenSupplySchema
-    with HashrateSchema
-    with TransactionPerAddressSchema
-    with DBRunner
+    extends DBRunner
     with StrictLogging {
 
   @SuppressWarnings(
@@ -50,18 +40,18 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
           "org.wartremover.warts.Serializable"))
   private val allTables =
     Seq(
-      blockHeadersTable,
-      blockDepsTable,
-      transactionsTable,
+      BlockHeaderSchema.blockHeadersTable,
+      BlockDepsSchema.blockDepsTable,
+      TransactionSchema.transactionsTable,
       InputSchema.inputsTable,
       OutputSchema.outputsTable,
-      unconfirmedTxsTable,
-      uinputsTable,
-      uoutputsTable,
-      latestBlocksTable,
-      hashrateTable,
-      tokenSupplyTable,
-      transactionPerAddressesTable
+      UnconfirmedTxSchema.unconfirmedTxsTable,
+      UInputSchema.uinputsTable,
+      UOutputSchema.uoutputsTable,
+      LatestBlockSchema.latestBlocksTable,
+      HashrateSchema.hashrateTable,
+      TokenSupplySchema.tokenSupplyTable,
+      TransactionPerAddressSchema.transactionPerAddressesTable
     )
 
   def createTables(): Future[Unit] = {
@@ -84,11 +74,11 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
 
   private def createIndexes(): Future[Unit] = {
     run(for {
-      _ <- createBlockHeadersIndexesSQL()
-      _ <- createTransactionMainChainIndex()
+      _ <- BlockHeaderSchema.createBlockHeadersIndexesSQL()
+      _ <- TransactionSchema.createTransactionMainChainIndex()
       _ <- InputSchema.createInputMainChainIndex()
       _ <- OutputSchema.createOutputMainChainIndex()
-      _ <- createTransactionPerAddressMainChainIndex()
+      _ <- TransactionPerAddressSchema.createTransactionPerAddressMainChainIndex()
     } yield ())
   }
 

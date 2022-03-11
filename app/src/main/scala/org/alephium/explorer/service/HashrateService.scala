@@ -51,8 +51,6 @@ object HashrateService {
       implicit val executionContext: ExecutionContext)
       extends HashrateService
       with HashrateQueries
-      with BlockHeaderSchema
-      with HashrateSchema
       with DBRunner
       with StrictLogging {
 
@@ -85,7 +83,7 @@ object HashrateService {
 
     private def findLatestHashrate(
         intervalType: IntervalType): DBActionR[Option[HashrateEntity]] = {
-      hashrateTable
+      HashrateSchema.hashrateTable
         .filter(_.intervalType === intervalType)
         .sortBy(_.timestamp.desc)
         .result

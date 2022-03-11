@@ -26,7 +26,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.queries.OutputQueries._
-import org.alephium.explorer.persistence.schema.OutputSchema._
+import org.alephium.explorer.persistence.schema.OutputSchema
 
 class OutputQueriesSpec extends AlephiumSpec with ScalaFutures {
 
@@ -37,18 +37,18 @@ class OutputQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     forAll(Gen.listOf(updatedOutputEntityGen())) { existingAndUpdates =>
       //fresh table
-      run(outputsTable.delete).futureValue
+      run(OutputSchema.outputsTable.delete).futureValue
 
       val existing = existingAndUpdates.map(_._1) //existing outputs
       val ignored  = existingAndUpdates.map(_._2) //ignored outputs
 
       //insert existing
       run(insertOutputs(existing)).futureValue is existing.size
-      run(outputsTable.result).futureValue is existing
+      run(OutputSchema.outputsTable.result).futureValue is existing
 
       //insert should ignore existing outputs
       run(insertOutputs(ignored)).futureValue is 0
-      run(outputsTable.result).futureValue should contain allElementsOf existing
+      run(OutputSchema.outputsTable.result).futureValue should contain allElementsOf existing
     }
   }
 

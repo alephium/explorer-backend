@@ -23,7 +23,7 @@ import org.alephium.explorer.api.model.{GroupIndex, Transaction}
 import org.alephium.explorer.persistence.model.UnconfirmedTxEntity
 import org.alephium.util.U256
 
-trait UnconfirmedTxSchema extends CustomTypes {
+object UnconfirmedTxSchema extends CustomTypes {
 
   class UnconfirmedTxs(tag: Tag) extends Table[UnconfirmedTxEntity](tag, "utransactions") {
     def hash: Rep[Transaction.Hash] =

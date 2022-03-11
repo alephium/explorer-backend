@@ -23,7 +23,7 @@ import org.alephium.explorer.api.model.IntervalType
 import org.alephium.explorer.persistence.model.HashrateEntity
 import org.alephium.util.TimeStamp
 
-trait HashrateSchema extends CustomTypes {
+object HashrateSchema extends CustomTypes {
 
   class Hashrates(tag: Tag) extends Table[HashrateEntity](tag, "hashrates") {
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")

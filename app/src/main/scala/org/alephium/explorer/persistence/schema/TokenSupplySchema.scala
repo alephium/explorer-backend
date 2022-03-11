@@ -22,7 +22,7 @@ import slick.lifted.ProvenShape
 import org.alephium.explorer.persistence.model.TokenSupplyEntity
 import org.alephium.util.{TimeStamp, U256}
 
-trait TokenSupplySchema extends CustomTypes {
+object TokenSupplySchema extends CustomTypes {
 
   class TokenSupplies(tag: Tag) extends Table[TokenSupplyEntity](tag, "token_supply") {
     def timestamp: Rep[TimeStamp] = column[TimeStamp]("timestamp", O.PrimaryKey)

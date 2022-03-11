@@ -32,9 +32,7 @@ import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model.TokenSupplyEntity
 import org.alephium.explorer.persistence.queries.TransactionQueries
-import org.alephium.explorer.persistence.schema.{BlockHeaderSchema, TokenSupplySchema}
-import org.alephium.explorer.persistence.schema.InputSchema._
-import org.alephium.explorer.persistence.schema.OutputSchema._
+import org.alephium.explorer.persistence.schema._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
@@ -53,8 +51,6 @@ object TokenSupplyService {
                      groupNum: Int)(implicit val executionContext: ExecutionContext)
       extends TokenSupplyService
       with TransactionQueries
-      with BlockHeaderSchema
-      with TokenSupplySchema
       with DBRunner
       with StrictLogging {
 
@@ -78,7 +74,7 @@ object TokenSupplyService {
       val limit  = pagination.limit.toLong
       val toDrop = offset * limit
       run(
-        tokenSupplyTable
+        TokenSupplySchema.tokenSupplyTable
           .sortBy { _.timestamp.desc }
           .drop(toDrop)
           .take(limit)
@@ -95,7 +91,7 @@ object TokenSupplyService {
 
     def getLatestTokenSupply(): Future[Option[TokenSupply]] = {
       run(
-        tokenSupplyTable
+        TokenSupplySchema.tokenSupplyTable
           .sortBy { _.timestamp.desc }
           .result
           .headOption
@@ -109,15 +105,15 @@ object TokenSupplyService {
       })
     }
 
-    private val mainInputs       = inputsTable.filter(_.mainChain)
-    private val mainOutputs      = outputsTable.filter(_.mainChain)
-    private val mainTransactions = transactionsTable.filter(_.mainChain)
+    private val mainInputs       = InputSchema.inputsTable.filter(_.mainChain)
+    private val mainOutputs      = OutputSchema.outputsTable.filter(_.mainChain)
+    private val mainTransactions = TransactionSchema.transactionsTable.filter(_.mainChain)
 
     private def genesisLockedToken(lockTime: TimeStamp) = {
       mainOutputs
         .join(
           mainTransactions
-            .join(blockHeadersTable.filter(_.height === Height.unsafe(0)))
+            .join(BlockHeaderSchema.blockHeadersTable.filter(_.height === Height.unsafe(0)))
             .on(_.blockHash === _.hash)
         )
         .on(_.txHash === _._1.hash)
@@ -142,7 +138,7 @@ object TokenSupplyService {
         DBIOAction.sequence(
           chainIndexes.map {
             case (from, to) =>
-              blockHeadersTable
+              BlockHeaderSchema.blockHeadersTable
                 .filter(header => header.chainFrom === from && header.chainTo === to)
                 .sortBy(_.timestamp.desc)
                 .map(_.timestamp)
@@ -205,12 +201,12 @@ object TokenSupplyService {
     }
 
     private def insert(tokenSupply: TokenSupplyEntity) = {
-      tokenSupplyTable.insertOrUpdate(tokenSupply)
+      TokenSupplySchema.tokenSupplyTable.insertOrUpdate(tokenSupply)
     }
 
     private def getLatestTimestamp(): Future[Option[TimeStamp]] = {
       run(
-        tokenSupplyTable
+        TokenSupplySchema.tokenSupplyTable
           .sortBy { _.timestamp.desc }
           .map(_.timestamp)
           .result

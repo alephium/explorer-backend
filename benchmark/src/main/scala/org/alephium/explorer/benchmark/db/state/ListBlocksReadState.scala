@@ -42,9 +42,7 @@ class ListBlocksReadState(reverse: Boolean,
                           limitPerPage: Int,
                           transactionsPerBlock: Int,
                           val db: DBExecutor)
-    extends ReadBenchmarkState[Pagination](testDataCount = maxPages, db = db)
-    with BlockHeaderSchema
-    with TransactionSchema {
+    extends ReadBenchmarkState[Pagination](testDataCount = maxPages, db = db) {
 
   import config.profile.api._
 
@@ -101,29 +99,29 @@ class ListBlocksReadState(reverse: Boolean,
     val transactions = blocks flatMap generateTransactions //generate transactions for each block
 
     //drop existing tables
-    val _ = db.dropTableIfExists(blockHeadersTable)
-    val _ = db.dropTableIfExists(transactionsTable)
+    val _ = db.dropTableIfExists(BlockHeaderSchema.blockHeadersTable)
+    val _ = db.dropTableIfExists(TransactionSchema.transactionsTable)
 
-    logger.info(s"Persisting ${blockHeadersTable.baseTableRow.tableName} data")
+    logger.info(s"Persisting ${BlockHeaderSchema.blockHeadersTable.baseTableRow.tableName} data")
 
     //Persist blocks
     val persistBlocks =
-      blockHeadersTable.schema.create
-        .andThen(createBlockHeadersIndexesSQL())
-        .andThen(blockHeadersTable ++= blocks)
+      BlockHeaderSchema.blockHeadersTable.schema.create
+        .andThen(BlockHeaderSchema.createBlockHeadersIndexesSQL())
+        .andThen(BlockHeaderSchema.blockHeadersTable ++= blocks)
 
     val _ = db.runNow(
       action  = persistBlocks,
       timeout = batchWriteTimeout
     )
 
-    logger.info(s"Persisting ${transactionsTable.baseTableRow.tableName} data")
+    logger.info(s"Persisting ${TransactionSchema.transactionsTable.baseTableRow.tableName} data")
 
     //Persist transactions
     val persistTransactions =
-      transactionsTable.schema.create
-        .andThen(createTransactionMainChainIndex())
-        .andThen(transactionsTable ++= transactions)
+      TransactionSchema.transactionsTable.schema.create
+        .andThen(TransactionSchema.createTransactionMainChainIndex())
+        .andThen(TransactionSchema.transactionsTable ++= transactions)
 
     val _ = db.runNow(
       action  = persistTransactions,

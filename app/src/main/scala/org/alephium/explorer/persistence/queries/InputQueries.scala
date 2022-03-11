@@ -28,14 +28,12 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.explorer.persistence.schema.InputSchema._
-import org.alephium.explorer.persistence.schema.OutputSchema._
 import org.alephium.util.U256
 
 object InputQueries extends CustomTypes {
 
-  private val mainInputs  = inputsTable.filter(_.mainChain)
-  private val mainOutputs = outputsTable.filter(_.mainChain)
+  private val mainInputs  = InputSchema.inputsTable.filter(_.mainChain)
+  private val mainOutputs = OutputSchema.outputsTable.filter(_.mainChain)
 
   /** Inserts inputs or ignore rows with primary key conflict */
   def insertInputs(inputs: Iterable[InputEntity]): DBActionW[Int] =

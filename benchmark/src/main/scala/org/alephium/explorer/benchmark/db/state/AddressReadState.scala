@@ -35,8 +35,6 @@ import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema._
-import org.alephium.explorer.persistence.schema.InputSchema._
-import org.alephium.explorer.persistence.schema.OutputSchema._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Base58, TimeStamp, U256}
 
@@ -52,9 +50,7 @@ class Queries(val config: DatabaseConfig[PostgresProfile])(
 @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
 class AddressReadState(val db: DBExecutor)
     extends ReadBenchmarkState[OutputEntity](testDataCount = 1000, db = db)
-    with TransactionQueries
-    with BlockHeaderSchema
-    with TransactionPerAddressSchema {
+    with TransactionQueries {
 
   val ec: ExecutionContext = ExecutionContext.global
 
@@ -173,23 +169,23 @@ class AddressReadState(val db: DBExecutor)
     }
 
     //drop existing tables
-    val _ = db.dropTableIfExists(blockHeadersTable)
-    val _ = db.dropTableIfExists(transactionsTable)
-    val _ = db.dropTableIfExists(inputsTable)
-    val _ = db.dropTableIfExists(outputsTable)
-    val _ = db.dropTableIfExists(transactionPerAddressesTable)
+    val _ = db.dropTableIfExists(BlockHeaderSchema.blockHeadersTable)
+    val _ = db.dropTableIfExists(TransactionSchema.transactionsTable)
+    val _ = db.dropTableIfExists(InputSchema.inputsTable)
+    val _ = db.dropTableIfExists(OutputSchema.outputsTable)
+    val _ = db.dropTableIfExists(TransactionPerAddressSchema.transactionPerAddressesTable)
 
     val createTable =
-      blockHeadersTable.schema.create
-        .andThen(transactionsTable.schema.create)
-        .andThen(inputsTable.schema.create)
-        .andThen(outputsTable.schema.create)
-        .andThen(transactionPerAddressesTable.schema.create)
-        .andThen(createBlockHeadersIndexesSQL())
-        .andThen(createTransactionMainChainIndex())
-        .andThen(createInputMainChainIndex())
-        .andThen(createOutputMainChainIndex())
-        .andThen(createTransactionPerAddressMainChainIndex())
+      BlockHeaderSchema.blockHeadersTable.schema.create
+        .andThen(TransactionSchema.transactionsTable.schema.create)
+        .andThen(InputSchema.inputsTable.schema.create)
+        .andThen(OutputSchema.outputsTable.schema.create)
+        .andThen(TransactionPerAddressSchema.transactionPerAddressesTable.schema.create)
+        .andThen(BlockHeaderSchema.createBlockHeadersIndexesSQL())
+        .andThen(TransactionSchema.createTransactionMainChainIndex())
+        .andThen(InputSchema.createInputMainChainIndex())
+        .andThen(OutputSchema.createOutputMainChainIndex())
+        .andThen(TransactionPerAddressSchema.createTransactionPerAddressMainChainIndex())
 
     val _ = db.runNow(
       action  = createTable,

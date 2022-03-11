@@ -71,10 +71,7 @@ object BlockDao {
       implicit val executionContext: ExecutionContext)
       extends BlockDao
       with CustomTypes
-      with BlockHeaderSchema
-      with BlockDepsSchema
       with BlockQueries
-      with LatestBlockSchema
       with TransactionQueries
       with DBRunner
       with StrictLogging {
@@ -129,7 +126,7 @@ object BlockDao {
       run(insertBlockEntity(blocks, groupNum)).map(_ => ())
 
     def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)] = {
-      val mainChain = blockHeadersTable.filter(_.mainChain)
+      val mainChain = BlockHeaderSchema.blockHeadersTable.filter(_.mainChain)
       val action =
         for {
           headers <- listMainChainHeaders(mainChain, pagination)
@@ -149,7 +146,7 @@ object BlockDao {
     def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntry.Lite]] = {
       val action =
         for {
-          headers <- blockHeadersTable
+          headers <- BlockHeaderSchema.blockHeadersTable
             .filter(header => header.timestamp >= from && header.timestamp <= to)
             .sortBy(b => (b.timestamp.desc, b.hash))
             .result
@@ -160,7 +157,7 @@ object BlockDao {
 
     def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]] = {
       val query =
-        blockHeadersTable
+        BlockHeaderSchema.blockHeadersTable
           .filter(header => header.chainFrom === fromGroup && header.chainTo === toGroup)
           .map(_.height)
           .max
@@ -219,7 +216,7 @@ object BlockDao {
     def updateLatestBlock(block: BlockEntity): Future[Unit] = {
       val chainIndex  = ChainIndex.unsafe(block.chainFrom.value, block.chainTo.value)
       val latestBlock = LatestBlock.fromEntity(block)
-      run(latestBlocksTable.insertOrUpdate(latestBlock)).map { _ =>
+      run(LatestBlockSchema.latestBlocksTable.insertOrUpdate(latestBlock)).map { _ =>
         cachedLatestBlocks.put(
           chainIndex,
           Future.successful(latestBlock).asJava.toCompletableFuture

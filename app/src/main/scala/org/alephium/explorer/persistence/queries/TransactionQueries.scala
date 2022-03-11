@@ -31,17 +31,15 @@ import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.explorer.persistence.schema.InputSchema._
-import org.alephium.explorer.persistence.schema.OutputSchema._
 import org.alephium.util.{TimeStamp, U256}
 
-trait TransactionQueries extends TransactionSchema with StrictLogging {
+trait TransactionQueries extends CustomTypes with StrictLogging {
 
   implicit def executionContext: ExecutionContext
 
-  private val mainTransactions = transactionsTable.filter(_.mainChain)
-  private val mainInputs       = inputsTable.filter(_.mainChain)
-  private val mainOutputs      = outputsTable.filter(_.mainChain)
+  private val mainTransactions = TransactionSchema.transactionsTable.filter(_.mainChain)
+  private val mainInputs       = InputSchema.inputsTable.filter(_.mainChain)
+  private val mainOutputs      = OutputSchema.outputsTable.filter(_.mainChain)
 
   def insertAll(transactions: Seq[TransactionEntity],
                 outputs: Seq[OutputEntity],
@@ -102,7 +100,7 @@ trait TransactionQueries extends TransactionSchema with StrictLogging {
     } yield inputsToUpdate
   }
   private val countBlockHashTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
-    transactionsTable.filter(_.blockHash === blockHash).length
+    TransactionSchema.transactionsTable.filter(_.blockHash === blockHash).length
   }
 
   def countBlockHashTransactions(blockHash: BlockEntry.Hash): DBActionR[Int] =
@@ -125,7 +123,7 @@ trait TransactionQueries extends TransactionSchema with StrictLogging {
     }
 
   private val getTxHashesByBlockHashQuery = Compiled { (blockHash: Rep[BlockEntry.Hash]) =>
-    transactionsTable
+    TransactionSchema.transactionsTable
       .filter(_.blockHash === blockHash)
       .sortBy(_.txIndex)
       .map(tx => (tx.hash, tx.blockHash, tx.timestamp, tx.txIndex))
@@ -133,7 +131,7 @@ trait TransactionQueries extends TransactionSchema with StrictLogging {
 
   private val getTxHashesByBlockHashWithPaginationQuery = Compiled {
     (blockHash: Rep[BlockEntry.Hash], toDrop: ConstColumn[Long], limit: ConstColumn[Long]) =>
-      transactionsTable
+      TransactionSchema.transactionsTable
         .filter(_.blockHash === blockHash)
         .sortBy(_.txIndex)
         .map(tx => (tx.hash, tx.blockHash, tx.timestamp, tx.txIndex))
