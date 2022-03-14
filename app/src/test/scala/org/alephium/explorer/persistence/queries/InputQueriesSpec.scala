@@ -61,15 +61,15 @@ class InputQueriesSpec extends AlephiumSpec with ScalaFutures {
     /** Following two test inserting larger queries
       * See <a href="https://github.com/alephium/explorer-backend/issues/160">#160</a>
       **/
-    info(s"Large: Test with fixed '${QueryUtil.postgresDefaultParameterLimit}' data size")
+    info(s"Large: Test with fixed '${QueryUtil.parameterLimit}' data size")
     Gen
-      .listOfN(QueryUtil.postgresDefaultParameterLimit.toInt, updatedInputEntityGen())
+      .listOfN(QueryUtil.parameterLimit.toInt, updatedInputEntityGen())
       .sample
       .foreach(runTest)
 
-    info(s"Large: Test with fixed '${QueryUtil.postgresDefaultParameterLimit + 1}' data size")
+    info(s"Large: Test with fixed '${QueryUtil.parameterLimit + 1}' data size")
     Gen
-      .listOfN(QueryUtil.postgresDefaultParameterLimit + 1, updatedInputEntityGen())
+      .listOfN(QueryUtil.parameterLimit + 1, updatedInputEntityGen())
       .sample
       .foreach(runTest)
   }
