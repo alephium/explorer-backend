@@ -13,6 +13,64 @@ def mainProject(id: String): Project = {
     .enablePlugins(JavaAppPackaging, sbtdocker.DockerPlugin, ScalaUnidocPlugin)
 }
 
+/**
+  * Finds the jar file for an external library.
+  *
+  * @param classPath The classpath to search
+  * @param moduleId  Target external library to find within the classpath
+  * @return          The jar file of external library or [[sys.error]] if not found.
+  */
+def findDependencyJar(classPath: Classpath, moduleId: ModuleID): File = {
+  val jarFileOption =
+    classPath.find { file =>
+      file.get(moduleID.key).exists { module =>
+        module.organization == moduleId.organization && module.name.startsWith(moduleId.name)
+      }
+    }
+
+  jarFileOption match {
+    case Some(jarFile) =>
+      jarFile.data
+
+    case None =>
+      sys.error(
+        s"Dependency not found: ${moduleId.organization}:${moduleId.name}:${moduleId.revision}")
+  }
+}
+
+/** Scala-docs API Mapping for scala-library */
+def scalaDocsAPIMapping(classPath: Classpath, scalaVersion: String): (sbt.File, sbt.URL) = {
+  val scalaLibJar =
+    findDependencyJar(
+      classPath = classPath,
+      moduleId  = "org.scala-lang" % "scala-library" % scalaVersion
+    )
+
+  val scalaDocsURL = url(s"http://www.scala-lang.org/api/$scalaVersion/")
+
+  scalaLibJar -> scalaDocsURL
+}
+
+/** Scala-docs API Mapping for slick */
+def slickScalaDocAPIMapping(classPath: Classpath,
+                            slickModuleId: ModuleID,
+                            scalaVersion: String): (sbt.File, sbt.URL) = {
+  val slickJar =
+    findDependencyJar(
+      classPath = classPath,
+      moduleId  = slickModuleId
+    )
+
+  //fetch only the major and minor
+  val scalaMajorMinor = scalaVersion.split("\\.").take(2).mkString(".")
+  val slickDocsURL =
+    url(
+      s"https://www.javadoc.io/doc/com.typesafe.slick/slick_$scalaMajorMinor/${slickModuleId.revision}/index.html"
+    )
+
+  slickJar -> slickDocsURL
+}
+
 val commonSettings = Seq(
   name := "explorer-backend",
   organization := "org.alephium",
@@ -55,7 +113,16 @@ val commonSettings = Seq(
   Test / envVars += "ALEPHIUM_ENV" -> "test",
   Compile / compile / wartremoverErrors := Warts.allBut(wartsCompileExcludes: _*),
   Test / compile / wartremoverErrors := Warts.allBut(wartsTestExcludes: _*),
-  fork := true
+  fork := true,
+  apiMappings ++= {
+    val scalaDocsMap =
+      scalaDocsAPIMapping(
+        classPath    = (Compile / fullClasspath).value,
+        scalaVersion = scalaVersion.value
+      )
+
+    Map(scalaDocsMap)
+  }
 )
 
 lazy val root = (project in file("."))
@@ -139,6 +206,16 @@ lazy val app = mainProject("app")
       case "module-info.class" =>
         MergeStrategy.discard
       case other => (assembly / assemblyMergeStrategy).value(other)
+    },
+    apiMappings ++= {
+      val slickAPIMapping =
+        slickScalaDocAPIMapping(
+          classPath     = (Compile / fullClasspath).value,
+          slickModuleId = slick,
+          scalaVersion  = scalaVersion.value
+        )
+
+      Map(slickAPIMapping)
     }
   )
 
@@ -159,7 +236,17 @@ lazy val benchmark = mainProject("benchmark")
       slick,
       slickHikaricp,
       postgresql
-    )
+    ),
+    apiMappings ++= {
+      val slickAPIMapping =
+        slickScalaDocAPIMapping(
+          classPath     = (Compile / fullClasspath).value,
+          slickModuleId = slick,
+          scalaVersion  = scalaVersion.value
+        )
+
+      Map(slickAPIMapping)
+    }
   )
 
 val wartsCompileExcludes = Seq(
