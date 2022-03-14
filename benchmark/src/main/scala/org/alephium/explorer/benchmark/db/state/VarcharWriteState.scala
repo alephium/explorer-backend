@@ -24,7 +24,7 @@ import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.table.TableVarcharSchema
 
 /**
-  * JMH state for benchmarking writes to [[TableVarcharSchema]].
+  * JMH state for benchmarking writes to [[org.alephium.explorer.benchmark.db.table.TableVarcharSchema]].
   */
 @State(Scope.Thread)
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))

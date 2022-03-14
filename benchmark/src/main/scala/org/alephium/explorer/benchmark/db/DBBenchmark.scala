@@ -28,7 +28,8 @@ import org.alephium.explorer.benchmark.db.state._
 /**
   * Implements all JMH functions executing benchmarks on Postgres.
   *
-  * Prerequisite: Database set by [[dbName]] should exists.
+  * Prerequisite: Database set by [[org.alephium.explorer.benchmark.db.BenchmarkSettings.dbName]]
+  *               should exists.
   */
 @Fork(value        = 1, warmups = 0)
 @Warmup(iterations = 0)
