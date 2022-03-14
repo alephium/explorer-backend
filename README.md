@@ -84,3 +84,27 @@ sbt test
 [postgresql]: https://www.postgresql.org/
 [sbt]: https://www.scala-sbt.org/
 [bytea]: https://www.postgresql.org/docs/9.0/datatype-binary.html
+
+## Scaladoc
+
+To generate scala-doc run: `sbt unidoc`
+
+### Referencing external libraries in scala-docs
+
+To reference external libraries in scala-docs make sure the library is recognised by adding an `apiMapping`.
+
+See `scalaDocsAPIMapping` in `build.sbt` file as a reference for creating this `apiMapping` for an external library.
+
+```scala
+def myLibraryAPIMapping(classPath: Classpath, scalaVersion: String): (sbt.File, sbt.URL) =
+  ??? //follow `scalaDocsAPIMapping` in build.sbt
+
+//add the apiMapping to the project that depends on `myLibrary`
+apiMappings ++=
+  Map(
+    myLibraryAPIMapping(
+      classPath = (Compile / fullClasspath).value,
+      scalaVersion = scalaVersion.value
+    )
+  )
+```
