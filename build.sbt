@@ -10,7 +10,7 @@ def mainProject(id: String): Project = {
       Compile / scalastyleConfig := root.base / "scalastyle-config.xml",
       Test / scalastyleConfig := root.base / "scalastyle-test-config.xml"
     )
-    .enablePlugins(JavaAppPackaging, sbtdocker.DockerPlugin, BuildInfoPlugin)
+    .enablePlugins(JavaAppPackaging, sbtdocker.DockerPlugin, BuildInfoPlugin, ScalaUnidocPlugin)
 }
 
 val commonSettings = Seq(
