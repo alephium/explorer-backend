@@ -10,7 +10,7 @@ def mainProject(id: String): Project = {
       Compile / scalastyleConfig := root.base / "scalastyle-config.xml",
       Test / scalastyleConfig := root.base / "scalastyle-test-config.xml"
     )
-    .enablePlugins(JavaAppPackaging, sbtdocker.DockerPlugin, BuildInfoPlugin, ScalaUnidocPlugin)
+    .enablePlugins(JavaAppPackaging, sbtdocker.DockerPlugin, ScalaUnidocPlugin)
 }
 
 val commonSettings = Seq(
@@ -63,43 +63,43 @@ lazy val root = (project in file("."))
   .aggregate(app, tools, benchmark)
 
 lazy val app = mainProject("app")
-  .settings(
-    libraryDependencies ++= Seq(
-      alephiumUtil,
-      alephiumProtocol,
-      alephiumApi,
-      alephiumCrypto,
-      alephiumJson,
-      alephiumHttp,
-      tapirCore,
-      tapirAkka,
-      tapirOpenapi,
-      tapirOpenapiModel,
-      tapirSwaggerUi,
-      tapirClient,
-      sttpAkkaBackend,
-      akkaHttpJson,
-      upickle,
-      akkaHttpCors,
-      caffeine,
-      scalaLogging,
-      logback,
-      akkaTest,
-      akkaHttptest,
-      akkaStream,
-      akkaStreamTest,
-      scalatest,
-      scalatestplus,
-      scalacheck,
-      slick,
-      slickHikaricp,
-      postgresql,
-      prometheusSimpleClient,
-      prometheusSimpleClientHotspot,
-      tapirPrometheusMetrics,
-      micrometerCore,
-      micrometerPrometheus,
-    ))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(libraryDependencies ++= Seq(
+    alephiumUtil,
+    alephiumProtocol,
+    alephiumApi,
+    alephiumCrypto,
+    alephiumJson,
+    alephiumHttp,
+    tapirCore,
+    tapirAkka,
+    tapirOpenapi,
+    tapirOpenapiModel,
+    tapirSwaggerUi,
+    tapirClient,
+    sttpAkkaBackend,
+    akkaHttpJson,
+    upickle,
+    akkaHttpCors,
+    caffeine,
+    scalaLogging,
+    logback,
+    akkaTest,
+    akkaHttptest,
+    akkaStream,
+    akkaStreamTest,
+    scalatest,
+    scalatestplus,
+    scalacheck,
+    slick,
+    slickHikaricp,
+    postgresql,
+    prometheusSimpleClient,
+    prometheusSimpleClientHotspot,
+    tapirPrometheusMetrics,
+    micrometerCore,
+    micrometerPrometheus,
+  ))
   .settings(
     assembly / mainClass := Some("org.alephium.explorer.Main"),
     assembly / assemblyJarName := s"explorer-backend-${version.value}.jar",
