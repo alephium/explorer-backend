@@ -19,7 +19,7 @@ package org.alephium.explorer.benchmark.db.state
 import com.typesafe.scalalogging.StrictLogging
 import org.openjdk.jmh.annotations.{Level, Setup, TearDown}
 import slick.basic.DatabaseConfig
-import slick.jdbc.PostgresProfile
+import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.benchmark.db.DBExecutor
 
@@ -37,7 +37,7 @@ import org.alephium.explorer.benchmark.db.DBExecutor
   */
 abstract class WriteBenchmarkState[D](db: DBExecutor) extends AutoCloseable with StrictLogging {
 
-  val config: DatabaseConfig[PostgresProfile] =
+  val config: DatabaseConfig[JdbcProfile] =
     db.config
 
   /**

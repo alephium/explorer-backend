@@ -23,7 +23,6 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
-import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.api.{model, ApiModelCodec}
 import org.alephium.explorer.{AlephiumSpec, Generators}
@@ -31,6 +30,8 @@ import org.alephium.explorer.api.model.{BlockEntry, Pagination}
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.InputSchema._
+import org.alephium.explorer.persistence.schema.OutputSchema._
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.json.Json._
@@ -41,6 +42,7 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
   it should "updateMainChainStatus correctly" in new Fixture {
+    import config.profile.api._
     forAll(Gen.oneOf(blockEntities), arbitrary[Boolean]) {
       case (block, mainChainInput) =>
         blockDao.insert(block).futureValue
@@ -50,10 +52,8 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
         fetchedBlock.hash is block.hash
         fetchedBlock.mainChain is mainChainInput
 
-        val inputQuery =
-          InputSchema.table.filter(_.blockHash === block.hash).map(_.mainChain).result
-        val outputQuery =
-          OutputSchema.table.filter(_.blockHash === block.hash).map(_.mainChain).result
+        val inputQuery  = inputsTable.filter(_.blockHash === block.hash).map(_.mainChain).result
+        val outputQuery = outputsTable.filter(_.blockHash === block.hash).map(_.mainChain).result
 
         val inputs: Seq[Boolean]  = run(inputQuery).futureValue
         val outputs: Seq[Boolean] = run(outputQuery).futureValue
@@ -65,25 +65,23 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
   }
 
   it should "not insert a block twice" in new Fixture {
+    import config.profile.api._
     forAll(Gen.oneOf(blockEntities)) { block =>
       blockDao.insert(block).futureValue
       blockDao.insert(block).futureValue
 
-      val blockheadersQuery =
-        BlockHeaderSchema.table.filter(_.hash === block.hash).map(_.hash).result
+      val blockheadersQuery                = blockHeadersTable.filter(_.hash === block.hash).map(_.hash).result
       val headerHash: Seq[BlockEntry.Hash] = run(blockheadersQuery).futureValue
       headerHash.size is 1
       headerHash.foreach(_.is(block.hash))
       block.transactions.nonEmpty is true
 
-      val inputQuery  = InputSchema.table.filter(_.blockHash === block.hash).result
-      val outputQuery = OutputSchema.table.filter(_.blockHash === block.hash).result
-      val blockDepsQuery =
-        BlockDepsSchema.table.filter(_.hash === block.hash).map(_.dep).result
-      val transactionsQuery =
-        TransactionSchema.table.filter(_.blockHash === block.hash).result
-      val queries  = Seq(inputQuery, outputQuery, blockDepsQuery, transactionsQuery)
-      val dbInputs = Seq(block.inputs, block.outputs, block.deps, block.transactions)
+      val inputQuery        = inputsTable.filter(_.blockHash === block.hash).result
+      val outputQuery       = outputsTable.filter(_.blockHash === block.hash).result
+      val blockDepsQuery    = blockDepsTable.filter(_.hash === block.hash).map(_.dep).result
+      val transactionsQuery = transactionsTable.filter(_.blockHash === block.hash).result
+      val queries           = Seq(inputQuery, outputQuery, blockDepsQuery, transactionsQuery)
+      val dbInputs          = Seq(block.inputs, block.outputs, block.deps, block.transactions)
 
       def checkDuplicates[T](dbInput: Seq[T], dbOutput: Seq[T]) = {
         dbOutput.size is dbInput.size
@@ -104,13 +102,15 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
            Gen.choose(0, blocksCount),
            arbitrary[Boolean]) {
       case (blocks, pageNum, pageLimit, reverse) =>
+        import config.profile.api._
+
         //clear test data
-        run(BlockHeaderSchema.table.delete).futureValue
-        run(TransactionSchema.table.delete).futureValue
+        run(blockHeadersTable.delete).futureValue
+        run(transactionsTable.delete).futureValue
 
         //create test data
-        run(BlockHeaderSchema.table ++= blocks.map(_._1)).futureValue
-        run(TransactionSchema.table ++= blocks.flatten(_._2)).futureValue
+        run(blockHeadersTable ++= blocks.map(_._1)).futureValue
+        run(transactionsTable ++= blocks.flatten(_._2)).futureValue
 
         //Assert results returned by typed and SQL query are the same
         def runAssert(page: Pagination) = {
@@ -134,7 +134,14 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
     }
   }
 
-  trait Fixture extends DatabaseFixture with DBRunner with CustomTypes with ApiModelCodec {
+  trait Fixture
+      extends BlockHeaderSchema
+      with BlockDepsSchema
+      with TransactionSchema
+      with DatabaseFixture
+      with DBRunner
+      with ApiModelCodec {
+    override val config                = databaseConfig
     val blockflowFetchMaxAge: Duration = Duration.ofMinutesUnsafe(30)
 
     val blockDao = BlockDao(groupNum, databaseConfig)

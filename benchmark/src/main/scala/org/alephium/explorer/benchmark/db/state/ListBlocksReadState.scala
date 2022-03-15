@@ -42,7 +42,9 @@ class ListBlocksReadState(reverse: Boolean,
                           limitPerPage: Int,
                           transactionsPerBlock: Int,
                           val db: DBExecutor)
-    extends ReadBenchmarkState[Pagination](testDataCount = maxPages, db = db) {
+    extends ReadBenchmarkState[Pagination](testDataCount = maxPages, db = db)
+    with BlockHeaderSchema
+    with TransactionSchema {
 
   import config.profile.api._
 
@@ -99,29 +101,29 @@ class ListBlocksReadState(reverse: Boolean,
     val transactions = blocks flatMap generateTransactions //generate transactions for each block
 
     //drop existing tables
-    val _ = db.dropTableIfExists(BlockHeaderSchema.table)
-    val _ = db.dropTableIfExists(TransactionSchema.table)
+    val _ = db.dropTableIfExists(blockHeadersTable)
+    val _ = db.dropTableIfExists(transactionsTable)
 
-    logger.info(s"Persisting ${BlockHeaderSchema.table.baseTableRow.tableName} data")
+    logger.info(s"Persisting ${blockHeadersTable.baseTableRow.tableName} data")
 
     //Persist blocks
     val persistBlocks =
-      BlockHeaderSchema.table.schema.create
-        .andThen(BlockHeaderSchema.createBlockHeadersIndexesSQL())
-        .andThen(BlockHeaderSchema.table ++= blocks)
+      blockHeadersTable.schema.create
+        .andThen(createBlockHeadersIndexesSQL())
+        .andThen(blockHeadersTable ++= blocks)
 
     val _ = db.runNow(
       action  = persistBlocks,
       timeout = batchWriteTimeout
     )
 
-    logger.info(s"Persisting ${TransactionSchema.table.baseTableRow.tableName} data")
+    logger.info(s"Persisting ${transactionsTable.baseTableRow.tableName} data")
 
     //Persist transactions
     val persistTransactions =
-      TransactionSchema.table.schema.create
-        .andThen(TransactionSchema.createMainChainIndex)
-        .andThen(TransactionSchema.table ++= transactions)
+      transactionsTable.schema.create
+        .andThen(createTransactionMainChainIndex())
+        .andThen(transactionsTable ++= transactions)
 
     val _ = db.runNow(
       action  = persistTransactions,

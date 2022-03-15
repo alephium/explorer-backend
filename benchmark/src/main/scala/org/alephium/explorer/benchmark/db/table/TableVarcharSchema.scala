@@ -17,12 +17,12 @@
 package org.alephium.explorer.benchmark.db.table
 
 import slick.basic.DatabaseConfig
-import slick.jdbc.PostgresProfile
+import slick.jdbc.JdbcProfile
 import slick.lifted.ProvenShape
 
 trait TableVarcharSchema {
 
-  val config: DatabaseConfig[PostgresProfile]
+  val config: DatabaseConfig[JdbcProfile]
 
   import config.profile.api._
 

@@ -29,7 +29,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.util.{TimeStamp, U256}
 
-trait CustomTypes extends PostgresProfile {
+trait CustomTypes extends JdbcProfile {
 
   private def buildHashTypes[H: ClassTag](from: Hash => H, to: H => Hash): JdbcType[H] =
     MappedJdbcType.base[H, Array[Byte]](

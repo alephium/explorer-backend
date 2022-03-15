@@ -16,16 +16,20 @@
 
 package org.alephium.explorer.persistence.schema
 
-import slick.jdbc.PostgresProfile.api._
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
 import slick.lifted.ProvenShape
 
 import org.alephium.explorer.api.model.{GroupIndex, Transaction}
 import org.alephium.explorer.persistence.model.UnconfirmedTxEntity
 import org.alephium.util.U256
 
-object UnconfirmedTxSchema extends Schema[UnconfirmedTxEntity]("utransactions") {
+trait UnconfirmedTxSchema extends CustomTypes {
+  val config: DatabaseConfig[JdbcProfile]
 
-  class UnconfirmedTxs(tag: Tag) extends Table[UnconfirmedTxEntity](tag, name) {
+  import config.profile.api._
+
+  class UnconfirmedTxs(tag: Tag) extends Table[UnconfirmedTxEntity](tag, "utransactions") {
     def hash: Rep[Transaction.Hash] =
       column[Transaction.Hash]("hash", O.PrimaryKey, O.SqlType("BYTEA"))
     def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
@@ -39,5 +43,5 @@ object UnconfirmedTxSchema extends Schema[UnconfirmedTxEntity]("utransactions") 
         .<>((UnconfirmedTxEntity.apply _).tupled, UnconfirmedTxEntity.unapply)
   }
 
-  val table: TableQuery[UnconfirmedTxs] = TableQuery[UnconfirmedTxs]
+  val unconfirmedTxsTable: TableQuery[UnconfirmedTxs] = TableQuery[UnconfirmedTxs]
 }

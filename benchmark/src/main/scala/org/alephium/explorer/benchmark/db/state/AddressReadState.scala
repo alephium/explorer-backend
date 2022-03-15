@@ -24,7 +24,7 @@ import scala.util.Random
 import akka.util.ByteString
 import org.openjdk.jmh.annotations.{Scope, State}
 import slick.basic.DatabaseConfig
-import slick.jdbc.PostgresProfile
+import slick.jdbc.JdbcProfile
 
 import org.alephium.crypto.Blake2b
 import org.alephium.explorer.{BlockHash, Hash}
@@ -35,10 +35,12 @@ import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.InputSchema._
+import org.alephium.explorer.persistence.schema.OutputSchema._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Base58, TimeStamp, U256}
 
-class Queries(val config: DatabaseConfig[PostgresProfile])(
+class Queries(val config: DatabaseConfig[JdbcProfile])(
     implicit val executionContext: ExecutionContext)
     extends TransactionQueries
 
@@ -50,7 +52,9 @@ class Queries(val config: DatabaseConfig[PostgresProfile])(
 @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
 class AddressReadState(val db: DBExecutor)
     extends ReadBenchmarkState[OutputEntity](testDataCount = 1000, db = db)
-    with TransactionQueries {
+    with TransactionQueries
+    with BlockHeaderSchema
+    with TransactionPerAddressSchema {
 
   val ec: ExecutionContext = ExecutionContext.global
 
@@ -169,23 +173,23 @@ class AddressReadState(val db: DBExecutor)
     }
 
     //drop existing tables
-    val _ = db.dropTableIfExists(BlockHeaderSchema.table)
-    val _ = db.dropTableIfExists(TransactionSchema.table)
-    val _ = db.dropTableIfExists(InputSchema.table)
-    val _ = db.dropTableIfExists(OutputSchema.table)
-    val _ = db.dropTableIfExists(TransactionPerAddressSchema.table)
+    val _ = db.dropTableIfExists(blockHeadersTable)
+    val _ = db.dropTableIfExists(transactionsTable)
+    val _ = db.dropTableIfExists(inputsTable)
+    val _ = db.dropTableIfExists(outputsTable)
+    val _ = db.dropTableIfExists(transactionPerAddressesTable)
 
     val createTable =
-      BlockHeaderSchema.table.schema.create
-        .andThen(TransactionSchema.table.schema.create)
-        .andThen(InputSchema.table.schema.create)
-        .andThen(OutputSchema.table.schema.create)
-        .andThen(TransactionPerAddressSchema.table.schema.create)
-        .andThen(BlockHeaderSchema.createBlockHeadersIndexesSQL())
-        .andThen(TransactionSchema.createMainChainIndex)
-        .andThen(InputSchema.createMainChainIndex)
-        .andThen(OutputSchema.createMainChainIndex)
-        .andThen(TransactionPerAddressSchema.createMainChainIndex)
+      blockHeadersTable.schema.create
+        .andThen(transactionsTable.schema.create)
+        .andThen(inputsTable.schema.create)
+        .andThen(outputsTable.schema.create)
+        .andThen(transactionPerAddressesTable.schema.create)
+        .andThen(createBlockHeadersIndexesSQL())
+        .andThen(createTransactionMainChainIndex())
+        .andThen(createInputMainChainIndex())
+        .andThen(createOutputMainChainIndex())
+        .andThen(createTransactionPerAddressMainChainIndex())
 
     val _ = db.runNow(
       action  = createTable,

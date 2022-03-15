@@ -21,7 +21,7 @@ import scala.jdk.CollectionConverters._
 
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import slick.basic.DatabaseConfig
-import slick.jdbc.PostgresProfile
+import slick.jdbc.JdbcProfile
 
 import org.alephium.util.Duration
 
@@ -34,8 +34,8 @@ trait DatabaseFixture {
       ).view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava)
     .withFallback(ConfigFactory.load())
 
-  val databaseConfig: DatabaseConfig[PostgresProfile] =
-    DatabaseConfig.forConfig[PostgresProfile]("db", config)
+  val databaseConfig: DatabaseConfig[JdbcProfile] =
+    DatabaseConfig.forConfig[JdbcProfile]("db", config)
 
   val dbInitializer: DBInitializer = new DBInitializer(databaseConfig)(ExecutionContext.global)
 

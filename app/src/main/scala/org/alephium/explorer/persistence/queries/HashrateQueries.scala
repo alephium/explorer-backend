@@ -18,7 +18,8 @@ package org.alephium.explorer.persistence.queries
 
 import scala.concurrent.ExecutionContext
 
-import slick.jdbc.PostgresProfile.api._
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.api.model.IntervalType
 import org.alephium.explorer.persistence._
@@ -27,6 +28,9 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.util.TimeStamp
 
 trait HashrateQueries extends CustomTypes {
+  val config: DatabaseConfig[JdbcProfile]
+
+  import config.profile.api._
 
   def getHashratesQuery(from: TimeStamp,
                         to: TimeStamp,

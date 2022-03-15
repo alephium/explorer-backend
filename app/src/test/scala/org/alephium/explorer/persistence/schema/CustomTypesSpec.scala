@@ -20,7 +20,6 @@ import scala.concurrent.ExecutionContext
 
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
-import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
 import org.alephium.explorer.AlephiumSpec
@@ -34,6 +33,7 @@ class CustomTypesSpec extends AlephiumSpec with ScalaFutures with Eventually {
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
   it should "convert TimeStamp" in new Fixture {
+    import config.profile.api._
 
     run(sqlu"DROP TABLE IF EXISTS timestamps;").futureValue
     run(timestampTable.schema.create).futureValue
@@ -69,6 +69,9 @@ class CustomTypesSpec extends AlephiumSpec with ScalaFutures with Eventually {
   }
 
   trait Fixture extends CustomTypes with DatabaseFixture with DBRunner {
+    override val config = databaseConfig
+
+    import config.profile.api._
 
     def ts(str: String): TimeStamp = TimeStamp.unsafe(java.time.Instant.parse(str).toEpochMilli)
 

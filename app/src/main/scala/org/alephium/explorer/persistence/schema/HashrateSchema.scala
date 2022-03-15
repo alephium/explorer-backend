@@ -16,16 +16,20 @@
 
 package org.alephium.explorer.persistence.schema
 
-import slick.jdbc.PostgresProfile.api._
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.api.model.IntervalType
 import org.alephium.explorer.persistence.model.HashrateEntity
 import org.alephium.util.TimeStamp
 
-object HashrateSchema extends Schema[HashrateEntity]("hashrates") {
+trait HashrateSchema extends CustomTypes {
+  val config: DatabaseConfig[JdbcProfile]
 
-  class Hashrates(tag: Tag) extends Table[HashrateEntity](tag, name) {
+  import config.profile.api._
+
+  class Hashrates(tag: Tag) extends Table[HashrateEntity](tag, "hashrates") {
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
     def value: Rep[BigDecimal]          = column[BigDecimal]("value")
     def intervalType: Rep[IntervalType] = column[IntervalType]("interval_type")
@@ -40,5 +44,5 @@ object HashrateSchema extends Schema[HashrateEntity]("hashrates") {
         .<>((HashrateEntity.apply _).tupled, HashrateEntity.unapply)
   }
 
-  val table: TableQuery[Hashrates] = TableQuery[Hashrates]
+  val hashrateTable: TableQuery[Hashrates] = TableQuery[Hashrates]
 }

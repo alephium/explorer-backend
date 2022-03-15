@@ -18,15 +18,18 @@ package org.alephium.explorer.persistence.schema
 
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
+import slick.sql.SqlAction
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.InputEntity
 import org.alephium.util.TimeStamp
 
-object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
+object InputSchema extends Schema with CustomTypes {
 
-  class Inputs(tag: Tag) extends Table[InputEntity](tag, name) {
+  private val tableName = "inputs"
+
+  class Inputs(tag: Tag) extends Table[InputEntity](tag, tableName) {
     def blockHash: Rep[BlockEntry.Hash]   = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
     def txHash: Rep[Transaction.Hash]     = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
     def timestamp: Rep[TimeStamp]         = column[TimeStamp]("timestamp")
@@ -49,5 +52,8 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
         .<>((InputEntity.apply _).tupled, InputEntity.unapply)
   }
 
-  val table: TableQuery[Inputs] = TableQuery[Inputs]
+  def createInputMainChainIndex(): SqlAction[Int, NoStream, Effect] =
+    mainChainIndex(tableName)
+
+  val inputsTable: TableQuery[Inputs] = TableQuery[Inputs]
 }

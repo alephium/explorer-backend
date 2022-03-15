@@ -24,15 +24,16 @@ import scala.concurrent.{ExecutionContext, Future}
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
-import slick.jdbc.PostgresProfile
-import slick.jdbc.PostgresProfile.api._
+import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.api.model.{GroupIndex, Height, Pagination, TokenSupply}
 import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model.TokenSupplyEntity
 import org.alephium.explorer.persistence.queries.TransactionQueries
-import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.{BlockHeaderSchema, TokenSupplySchema}
+import org.alephium.explorer.persistence.schema.InputSchema._
+import org.alephium.explorer.persistence.schema.OutputSchema._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
@@ -42,17 +43,20 @@ trait TokenSupplyService extends SyncService {
 }
 
 object TokenSupplyService {
-  def apply(syncPeriod: Duration, databaseConfig: DatabaseConfig[PostgresProfile], groupNum: Int)(
+  def apply(syncPeriod: Duration, config: DatabaseConfig[JdbcProfile], groupNum: Int)(
       implicit executionContext: ExecutionContext): TokenSupplyService =
-    new Impl(syncPeriod, databaseConfig, groupNum)
+    new Impl(syncPeriod, config, groupNum)
 
   private class Impl(val syncPeriod: Duration,
-                     val databaseConfig: DatabaseConfig[PostgresProfile],
+                     val config: DatabaseConfig[JdbcProfile],
                      groupNum: Int)(implicit val executionContext: ExecutionContext)
       extends TokenSupplyService
       with TransactionQueries
+      with BlockHeaderSchema
+      with TokenSupplySchema
       with DBRunner
       with StrictLogging {
+    import config.profile.api._
 
     private val launchDay =
       Instant.ofEpochMilli(ALPH.LaunchTimestamp.millis).truncatedTo(ChronoUnit.DAYS)
@@ -74,7 +78,7 @@ object TokenSupplyService {
       val limit  = pagination.limit.toLong
       val toDrop = offset * limit
       run(
-        TokenSupplySchema.table
+        tokenSupplyTable
           .sortBy { _.timestamp.desc }
           .drop(toDrop)
           .take(limit)
@@ -91,7 +95,7 @@ object TokenSupplyService {
 
     def getLatestTokenSupply(): Future[Option[TokenSupply]] = {
       run(
-        TokenSupplySchema.table
+        tokenSupplyTable
           .sortBy { _.timestamp.desc }
           .result
           .headOption
@@ -105,15 +109,15 @@ object TokenSupplyService {
       })
     }
 
-    private val mainInputs       = InputSchema.table.filter(_.mainChain)
-    private val mainOutputs      = OutputSchema.table.filter(_.mainChain)
-    private val mainTransactions = TransactionSchema.table.filter(_.mainChain)
+    private val mainInputs       = inputsTable.filter(_.mainChain)
+    private val mainOutputs      = outputsTable.filter(_.mainChain)
+    private val mainTransactions = transactionsTable.filter(_.mainChain)
 
     private def genesisLockedToken(lockTime: TimeStamp) = {
       mainOutputs
         .join(
           mainTransactions
-            .join(BlockHeaderSchema.table.filter(_.height === Height.unsafe(0)))
+            .join(blockHeadersTable.filter(_.height === Height.unsafe(0)))
             .on(_.blockHash === _.hash)
         )
         .on(_.txHash === _._1.hash)
@@ -138,7 +142,7 @@ object TokenSupplyService {
         DBIOAction.sequence(
           chainIndexes.map {
             case (from, to) =>
-              BlockHeaderSchema.table
+              blockHeadersTable
                 .filter(header => header.chainFrom === from && header.chainTo === to)
                 .sortBy(_.timestamp.desc)
                 .map(_.timestamp)
@@ -201,12 +205,12 @@ object TokenSupplyService {
     }
 
     private def insert(tokenSupply: TokenSupplyEntity) = {
-      TokenSupplySchema.table.insertOrUpdate(tokenSupply)
+      tokenSupplyTable.insertOrUpdate(tokenSupply)
     }
 
     private def getLatestTimestamp(): Future[Option[TimeStamp]] = {
       run(
-        TokenSupplySchema.table
+        tokenSupplyTable
           .sortBy { _.timestamp.desc }
           .map(_.timestamp)
           .result

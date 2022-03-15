@@ -19,7 +19,7 @@ package org.alephium.explorer.persistence.dao
 import scala.concurrent.{ExecutionContext, Future}
 
 import slick.basic.DatabaseConfig
-import slick.jdbc.PostgresProfile
+import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DBRunner
@@ -38,11 +38,11 @@ trait TransactionDao {
 }
 
 object TransactionDao {
-  def apply(databaseConfig: DatabaseConfig[PostgresProfile])(
+  def apply(config: DatabaseConfig[JdbcProfile])(
       implicit executionContext: ExecutionContext): TransactionDao =
-    new Impl(databaseConfig)
+    new Impl(config)
 
-  private class Impl(val databaseConfig: DatabaseConfig[PostgresProfile])(
+  private class Impl(val config: DatabaseConfig[JdbcProfile])(
       implicit val executionContext: ExecutionContext)
       extends TransactionDao
       with TransactionQueries

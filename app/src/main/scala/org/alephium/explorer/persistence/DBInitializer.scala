@@ -21,18 +21,28 @@ import scala.concurrent.{ExecutionContext, Future}
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
-import slick.jdbc.PostgresProfile
-import slick.jdbc.PostgresProfile.api._
+import slick.jdbc.JdbcProfile
 import slick.jdbc.meta.MTable
 
 import org.alephium.explorer.AnyOps
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.schema._
 
-class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
+class DBInitializer(val config: DatabaseConfig[JdbcProfile])(
     implicit val executionContext: ExecutionContext)
-    extends DBRunner
+    extends BlockHeaderSchema
+    with BlockDepsSchema
+    with TransactionSchema
+    with UnconfirmedTxSchema
+    with UInputSchema
+    with UOutputSchema
+    with LatestBlockSchema
+    with TokenSupplySchema
+    with HashrateSchema
+    with TransactionPerAddressSchema
+    with DBRunner
     with StrictLogging {
+  import config.profile.api._
 
   @SuppressWarnings(
     Array("org.wartremover.warts.JavaSerializable",
@@ -40,18 +50,18 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
           "org.wartremover.warts.Serializable"))
   private val allTables =
     Seq(
-      BlockHeaderSchema.table,
-      BlockDepsSchema.table,
-      TransactionSchema.table,
-      InputSchema.table,
-      OutputSchema.table,
-      UnconfirmedTxSchema.table,
-      UInputSchema.table,
-      UOutputSchema.table,
-      LatestBlockSchema.table,
-      HashrateSchema.table,
-      TokenSupplySchema.table,
-      TransactionPerAddressSchema.table
+      blockHeadersTable,
+      blockDepsTable,
+      transactionsTable,
+      InputSchema.inputsTable,
+      OutputSchema.outputsTable,
+      unconfirmedTxsTable,
+      uinputsTable,
+      uoutputsTable,
+      latestBlocksTable,
+      hashrateTable,
+      tokenSupplyTable,
+      transactionPerAddressesTable
     )
 
   def createTables(): Future[Unit] = {
@@ -74,11 +84,11 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
 
   private def createIndexes(): Future[Unit] = {
     run(for {
-      _ <- BlockHeaderSchema.createBlockHeadersIndexesSQL()
-      _ <- TransactionSchema.createMainChainIndex
-      _ <- InputSchema.createMainChainIndex
-      _ <- OutputSchema.createMainChainIndex
-      _ <- TransactionPerAddressSchema.createMainChainIndex
+      _ <- createBlockHeadersIndexesSQL()
+      _ <- createTransactionMainChainIndex()
+      _ <- InputSchema.createInputMainChainIndex()
+      _ <- OutputSchema.createOutputMainChainIndex()
+      _ <- createTransactionPerAddressMainChainIndex()
     } yield ())
   }
 
@@ -94,6 +104,6 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
 }
 
 object DBInitializer {
-  def apply(config: DatabaseConfig[PostgresProfile])(
+  def apply(config: DatabaseConfig[JdbcProfile])(
       implicit executionContext: ExecutionContext): DBInitializer = new DBInitializer(config)
 }

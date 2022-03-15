@@ -20,7 +20,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
-import slick.jdbc.PostgresProfile
+import slick.jdbc.JdbcProfile
 import slick.jdbc.meta.MTable
 
 import org.alephium.explorer.persistence.DBRunner
@@ -30,11 +30,11 @@ trait HealthCheckDao {
 }
 
 object HealthCheckDao {
-  def apply(databaseConfig: DatabaseConfig[PostgresProfile])(
+  def apply(config: DatabaseConfig[JdbcProfile])(
       implicit executionContext: ExecutionContext): HealthCheckDao =
-    new Impl(databaseConfig)
+    new Impl(config)
 
-  class Impl(val databaseConfig: DatabaseConfig[PostgresProfile])(
+  class Impl(val config: DatabaseConfig[JdbcProfile])(
       implicit val executionContext: ExecutionContext)
       extends HealthCheckDao
       with DBRunner

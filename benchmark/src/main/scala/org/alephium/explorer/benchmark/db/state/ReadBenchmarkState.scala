@@ -22,7 +22,7 @@ import scala.reflect.ClassTag
 import com.typesafe.scalalogging.StrictLogging
 import org.openjdk.jmh.annotations._
 import slick.basic.DatabaseConfig
-import slick.jdbc.PostgresProfile
+import slick.jdbc.JdbcProfile
 
 import org.alephium.explorer.benchmark.db.DBExecutor
 
@@ -46,7 +46,7 @@ abstract class ReadBenchmarkState[D: ClassTag](val testDataCount: Int, db: DBExe
   //testDataCount cannot be 0 or negative value
   require(testDataCount >= 1, s"Invalid testDataCount '$testDataCount'. It should be >= 1.")
 
-  val config: DatabaseConfig[PostgresProfile] =
+  val config: DatabaseConfig[JdbcProfile] =
     db.config
 
   /**

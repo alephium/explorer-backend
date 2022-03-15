@@ -16,16 +16,20 @@
 
 package org.alephium.explorer.persistence.schema
 
-import slick.jdbc.PostgresProfile.api._
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.Transaction
 import org.alephium.explorer.persistence.model.UInputEntity
 
-object UInputSchema extends Schema[UInputEntity]("uinputs") {
+trait UInputSchema extends CustomTypes {
+  val config: DatabaseConfig[JdbcProfile]
 
-  class UInputs(tag: Tag) extends Table[UInputEntity](tag, name) {
+  import config.profile.api._
+
+  class UInputs(tag: Tag) extends Table[UInputEntity](tag, "uinputs") {
     def txHash: Rep[Transaction.Hash]     = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
     def hint: Rep[Int]                    = column[Int]("hint")
     def outputRefKey: Rep[Hash]           = column[Hash]("output_ref_key", O.SqlType("BYTEA"))
@@ -40,5 +44,5 @@ object UInputSchema extends Schema[UInputEntity]("uinputs") {
         .<>((UInputEntity.apply _).tupled, UInputEntity.unapply)
   }
 
-  val table: TableQuery[UInputs] = TableQuery[UInputs]
+  val uinputsTable: TableQuery[UInputs] = TableQuery[UInputs]
 }

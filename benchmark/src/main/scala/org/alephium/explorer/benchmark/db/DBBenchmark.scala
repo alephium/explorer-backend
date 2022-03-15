@@ -27,7 +27,6 @@ import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.state._
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
-import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 
 /**
   * Implements all JMH functions executing benchmarks on Postgres.
@@ -88,13 +87,13 @@ class DBBenchmark {
   @Benchmark
   def readMainChainIndex(state: BlockHeaderWithMainChainReadState): Unit = {
     val _ =
-      state.db.runNow(BlockHeaderSchema.table.filter(_.mainChain).length.result, requestTimeout)
+      state.db.runNow(state.blockHeadersTable.filter(_.mainChain).length.result, requestTimeout)
   }
 
   @Benchmark
   def readNoMainChainIndex(state: BlockHeaderWithoutMainChainReadState): Unit = {
     val _ =
-      state.db.runNow(BlockHeaderSchema.table.filter(_.mainChain).length.result, requestTimeout)
+      state.db.runNow(state.blockHeadersTable.filter(_.mainChain).length.result, requestTimeout)
   }
 
   /**

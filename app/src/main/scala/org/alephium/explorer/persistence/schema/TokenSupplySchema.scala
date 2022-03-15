@@ -16,15 +16,19 @@
 
 package org.alephium.explorer.persistence.schema
 
-import slick.jdbc.PostgresProfile.api._
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
 import slick.lifted.ProvenShape
 
 import org.alephium.explorer.persistence.model.TokenSupplyEntity
 import org.alephium.util.{TimeStamp, U256}
 
-object TokenSupplySchema extends Schema[TokenSupplyEntity]("token_supply") {
+trait TokenSupplySchema extends CustomTypes {
+  val config: DatabaseConfig[JdbcProfile]
 
-  class TokenSupplies(tag: Tag) extends Table[TokenSupplyEntity](tag, name) {
+  import config.profile.api._
+
+  class TokenSupplies(tag: Tag) extends Table[TokenSupplyEntity](tag, "token_supply") {
     def timestamp: Rep[TimeStamp] = column[TimeStamp]("timestamp", O.PrimaryKey)
     def total: Rep[U256] =
       column[U256]("total", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
@@ -36,5 +40,5 @@ object TokenSupplySchema extends Schema[TokenSupplyEntity]("token_supply") {
         .<>((TokenSupplyEntity.apply _).tupled, TokenSupplyEntity.unapply)
   }
 
-  val table: TableQuery[TokenSupplies] = TableQuery[TokenSupplies]
+  val tokenSupplyTable: TableQuery[TokenSupplies] = TableQuery[TokenSupplies]
 }
