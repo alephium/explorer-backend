@@ -95,7 +95,7 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
   }
 
   /**
-    * Order by query for [[blockHeadersTable]]
+    * Order by query for [[org.alephium.explorer.persistence.schema.BlockHeaderSchema.table]]
     *
     * @param prefix If non-empty adds the prefix with dot to all columns.
     */
@@ -123,7 +123,7 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
     orderBySQLString(prefix = "", reverse = false)
 
   /**
-    * Fetches all main_chain [[blockHeadersTable]] rows
+    * Fetches all main_chain [[org.alephium.explorer.persistence.schema.BlockHeaderSchema.table]] rows
     */
   def listMainChainHeadersWithTxnNumberSQL(
       pagination: Pagination): DBActionRWT[Vector[BlockEntry.Lite]] = {
