@@ -18,12 +18,10 @@ package org.alephium.tools
 
 import org.alephium.api.OpenAPIWriters.openApiJson
 import org.alephium.explorer.docs.Documentation
-import org.alephium.util.Duration
 
 object OpenApiUpdate extends App {
   new Documentation {
-    private val json                            = openApiJson(docs, dropAuth = false)
-    override val blockflowFetchMaxAge: Duration = Duration.zero
+    private val json = openApiJson(docs, dropAuth = false)
 
     import java.io.PrintWriter
     new PrintWriter("../app/src/main/resources/explorer-backend-openapi.json") {

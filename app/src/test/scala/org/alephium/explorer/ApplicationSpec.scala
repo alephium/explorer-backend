@@ -398,7 +398,7 @@ object ApplicationSpec {
           }
         } ~
         path("transactions" / "unconfirmed") {
-          val txs  = Gen.listOfN(5, transactionProtocolGen).sample.get
+          val txs  = Gen.listOfN(5, transactionTemplateProtocolGen).sample.get
           val from = groupIndexGen.sample.get.value
           val to   = groupIndexGen.sample.get.value
           complete(
