@@ -16,19 +16,15 @@
 
 package org.alephium.explorer.persistence.schema
 
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.api.model.BlockEntry
 import org.alephium.explorer.persistence.model.BlockDepEntity
 
-trait BlockDepsSchema extends CustomTypes {
-  val config: DatabaseConfig[JdbcProfile]
+object BlockDepsSchema extends Schema[BlockDepEntity]("block_deps") {
 
-  import config.profile.api._
-
-  class BlockDeps(tag: Tag) extends Table[BlockDepEntity](tag, "block_deps") {
+  class BlockDeps(tag: Tag) extends Table[BlockDepEntity](tag, name) {
     def hash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("hash", O.SqlType("BYTEA"))
     def dep: Rep[BlockEntry.Hash]  = column[BlockEntry.Hash]("dep", O.SqlType("BYTEA"))
     def order: Rep[Int]            = column[Int]("order")
@@ -41,5 +37,5 @@ trait BlockDepsSchema extends CustomTypes {
       (hash, dep, order).<>((BlockDepEntity.apply _).tupled, BlockDepEntity.unapply)
   }
 
-  val blockDepsTable: TableQuery[BlockDeps] = TableQuery[BlockDeps]
+  val table: TableQuery[BlockDeps] = TableQuery[BlockDeps]
 }

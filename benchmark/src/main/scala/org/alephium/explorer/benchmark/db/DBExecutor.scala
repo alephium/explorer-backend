@@ -22,7 +22,7 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile
 import slick.lifted.AbstractTable
 
 import org.alephium.explorer.persistence.DBAction
@@ -39,7 +39,7 @@ object DBExecutor extends StrictLogging {
   def apply(name: String, host: String, port: Int, connectionPool: DBConnectionPool): DBExecutor = {
     logger.info(s"Connecting to database: '$name'")
     val config =
-      DatabaseConfig.forConfig[JdbcProfile](
+      DatabaseConfig.forConfig[PostgresProfile](
         path = "db",
         config = ConfigFactory.parseString(
           s"""db = {
@@ -80,7 +80,7 @@ object DBExecutor extends StrictLogging {
   * @note Similar to [[org.alephium.explorer.persistence.DBRunner]] but provides blocking execution.
   *       To avoid naming conflicts it's named [[DBExecutor]] instead of `DBRunner`.
   */
-class DBExecutor private (val config: DatabaseConfig[JdbcProfile]) extends StrictLogging {
+class DBExecutor private (val config: DatabaseConfig[PostgresProfile]) extends StrictLogging {
 
   import config.profile.api._
 

@@ -18,12 +18,16 @@ package org.alephium.explorer.benchmark.db
 
 import java.util.concurrent.TimeUnit
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContext}
 
 import org.openjdk.jmh.annotations._
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.state._
+import org.alephium.explorer.persistence.queries.InputQueries._
+import org.alephium.explorer.persistence.queries.OutputQueries._
+import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 
 /**
   * Implements all JMH functions executing benchmarks on Postgres.
@@ -35,8 +39,9 @@ import org.alephium.explorer.benchmark.db.state._
 @Warmup(iterations = 0)
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
-@Measurement(iterations = 1, time = 1, timeUnit = TimeUnit.MINUTES) //runs this benchmark for x minutes
+@Measurement(iterations = 1, time = 5, timeUnit = TimeUnit.SECONDS) //runs this benchmark for x minutes
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+// scalastyle:off number.of.methods
 class DBBenchmark {
 
   /**
@@ -46,7 +51,6 @@ class DBBenchmark {
     */
   @Benchmark
   def writeVarchar(state: VarcharWriteState): Unit = {
-    import state.config.profile.api._
     val _ = state.db.runNow(state.tableVarcharQuery += state.next, requestTimeout)
   }
 
@@ -57,7 +61,6 @@ class DBBenchmark {
     */
   @Benchmark
   def writeBytea(state: ByteaWriteState): Unit = {
-    import state.config.profile.api._
     val _ = state.db.runNow(state.tableByteaQuery += state.next, requestTimeout)
   }
 
@@ -68,7 +71,6 @@ class DBBenchmark {
     */
   @Benchmark
   def readVarchar(state: VarcharReadState): Unit = {
-    import state.config.profile.api._
     val _ =
       state.db.runNow(state.tableVarcharQuery.filter(_.hash === state.next).result, requestTimeout)
   }
@@ -80,23 +82,20 @@ class DBBenchmark {
     */
   @Benchmark
   def readBytea(state: ByteaReadState): Unit = {
-    import state.config.profile.api._
     val _ =
       state.db.runNow(state.tableByteaQuery.filter(_.hash === state.next).result, requestTimeout)
   }
 
   @Benchmark
   def readMainChainIndex(state: BlockHeaderWithMainChainReadState): Unit = {
-    import state.config.profile.api._
     val _ =
-      state.db.runNow(state.blockHeadersTable.filter(_.mainChain).length.result, requestTimeout)
+      state.db.runNow(BlockHeaderSchema.table.filter(_.mainChain).length.result, requestTimeout)
   }
 
   @Benchmark
   def readNoMainChainIndex(state: BlockHeaderWithoutMainChainReadState): Unit = {
-    import state.config.profile.api._
     val _ =
-      state.db.runNow(state.blockHeadersTable.filter(_.mainChain).length.result, requestTimeout)
+      state.db.runNow(BlockHeaderSchema.table.filter(_.mainChain).length.result, requestTimeout)
   }
 
   /**
@@ -146,29 +145,144 @@ class DBBenchmark {
       Await.result(state.dao.listMainChainSQL(state.next), requestTimeout)
   }
 
-  /** Benchmarks for inserting Blocks. Typed vs SQL. With & without HikariCP */
+  /**
+    * Address benchmarks
+    */
+  @Benchmark
+  def getBalanceQuery(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(state.queries.getBalanceQuery(state.address).result, requestTimeout)
+  }
 
   @Benchmark
-  def blockEntityWrite_DisabledCP_Typed(state: BlockEntityWriteState_DisabledCP): Unit = {
+  def getBalanceSQL(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(state.queries.getBalanceQuerySQL(state.address), requestTimeout)
+  }
+
+  @Benchmark
+  def getTxHashesByAddressQuery(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(
+        state.queries
+          .getTxHashesByAddressQuery(
+            (state.address, state.pagination.offset.toLong, state.pagination.limit.toLong))
+          .result,
+        requestTimeout)
+  }
+
+  @Benchmark
+  def getTxHashesByAddressQuerySQL(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(state.queries.getTxHashesByAddressQuerySQL(state.address,
+                                                                 state.pagination.offset,
+                                                                 state.pagination.limit),
+                      requestTimeout)
+  }
+
+  @Benchmark
+  def getTxHashesByAddressQuerySQLNoJoin(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(state.queries.getTxHashesByAddressQuerySQLNoJoin(state.address,
+                                                                       state.pagination.offset,
+                                                                       state.pagination.limit),
+                      requestTimeout)
+  }
+
+  @Benchmark
+  def countAddressTransactionsSQL(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(state.queries.countAddressTransactionsSQL(state.address), requestTimeout)
+  }
+
+  @Benchmark
+  def countAddressTransactionsSQLNoJoin(state: Address_ReadState): Unit = {
+    val _ =
+      state.db
+        .runNow(state.queries.countAddressTransactionsSQLNoJoin(state.address), requestTimeout)
+  }
+
+  @Benchmark
+  def getAddressInfo(state: Address_ReadState): Unit = {
+    implicit val ec: ExecutionContext = ExecutionContext.global
+
+    val _ = Await.result(for {
+      _ <- state.dao.getBalanceSQL(state.address)
+      _ <- state.dao.getNumberByAddressSQL(state.address)
+    } yield (), requestTimeout)
+  }
+
+  @Benchmark
+  def getAddressInfoWithTxAddressTable(state: Address_ReadState): Unit = {
+    implicit val ec: ExecutionContext = ExecutionContext.global
+
+    val _ = Await.result(for {
+      _ <- state.dao.getBalanceSQL(state.address)
+      _ <- state.dao.getNumberByAddressSQLNoJoin(state.address)
+    } yield (), requestTimeout)
+  }
+
+  @Benchmark
+  def getInputsFromTxs(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(inputsFromTxs(state.txHashes).result, requestTimeout)
+  }
+
+  @Benchmark
+  def getInputsFromTxsSQL(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(inputsFromTxsSQL(state.txHashes), requestTimeout)
+  }
+
+  @Benchmark
+  def getOutputsFromTxs(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(outputsFromTxs(state.txHashes).result, requestTimeout)
+  }
+
+  @Benchmark
+  def getOutputsFromTxsSQL(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(outputsFromTxsSQL(state.txHashes), requestTimeout)
+  }
+
+  @Benchmark
+  def getGasFromTxs(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(state.queries.gasFromTxs(state.txHashes).result, requestTimeout)
+  }
+
+  @Benchmark
+  def getGasFromTxsSQL(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(state.queries.gasFromTxsSQL(state.txHashes), requestTimeout)
+  }
+
+  @Benchmark
+  def getTransactionsByAddress(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(state.queries.getTransactionsByAddress(state.address, state.pagination),
+                      requestTimeout)
+  }
+
+  @Benchmark
+  def getTransactionsByAddressSQL(state: Address_ReadState): Unit = {
+    val _ =
+      state.db.runNow(state.queries.getTransactionsByAddressSQL(state.address, state.pagination),
+                      requestTimeout)
+  }
+
+  /** Benchmarks for inserting Blocks. With & without HikariCP */
+
+  @Benchmark
+  def blockEntityWrite_DisabledCP(state: BlockEntityWriteState_DisabledCP): Unit = {
     val _ =
       Await.result(state.dao.insert(state.next), requestTimeout)
   }
 
   @Benchmark
-  def blockEntityWrite_DisabledCP_SQL(state: BlockEntityWriteState_DisabledCP): Unit = {
-    val _ =
-      Await.result(state.dao.insertSQL(state.next), requestTimeout)
-  }
-
-  @Benchmark
-  def blockEntityWrite_HikariCP_Typed(state: BlockEntityWriteState_HikariCP): Unit = {
+  def blockEntityWrite_HikariCP(state: BlockEntityWriteState_HikariCP): Unit = {
     val _ =
       Await.result(state.dao.insert(state.next), requestTimeout)
-  }
-
-  @Benchmark
-  def blockEntityWrite_HikariCP_SQL(state: BlockEntityWriteState_HikariCP): Unit = {
-    val _ =
-      Await.result(state.dao.insertSQL(state.next), requestTimeout)
   }
 }

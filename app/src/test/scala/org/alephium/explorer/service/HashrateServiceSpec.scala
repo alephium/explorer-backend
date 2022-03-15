@@ -22,6 +22,7 @@ import scala.concurrent.ExecutionContext
 
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.{Hashrate, IntervalType}
@@ -35,7 +36,6 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
   it should "hourly hashrates" in new Fixture {
-    import config.profile.api._
 
     val blocks = Seq(
       b("2022-01-07T23:00:00.001Z", 2),
@@ -48,7 +48,7 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
       b("2022-01-09T00:00:00.000Z", 100)
     )
 
-    run(blockHeadersTable ++= blocks).futureValue
+    run(BlockHeaderSchema.table ++= blocks).futureValue
 
     run(
       computeHourlyHashrate(from)
@@ -60,7 +60,6 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
   }
 
   it should "daily hashrates" in new Fixture {
-    import config.profile.api._
 
     val blocks = Seq(
       b("2022-01-07T00:00:00.001Z", 2),
@@ -72,7 +71,7 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
       b("2022-01-09T12:00:00.000Z", 100)
     )
 
-    run(blockHeadersTable ++= blocks).futureValue
+    run(BlockHeaderSchema.table ++= blocks).futureValue
 
     run(
       computeDailyHashrate(from)
@@ -91,7 +90,6 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
   }
 
   it should "sync, update and return correct hashrates" in new Fixture {
-    import config.profile.api._
 
     val blocks = Seq(
       b("2022-01-06T23:45:35.300Z", 1),
@@ -101,7 +99,7 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
       b("2022-01-08T00:03:10.123Z", 100)
     )
 
-    run(blockHeadersTable ++= blocks).futureValue
+    run(BlockHeaderSchema.table ++= blocks).futureValue
 
     hashrateService.get(from, to, IntervalType.Hourly).futureValue is Vector.empty
 
@@ -125,7 +123,7 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
       b("2022-01-08T20:38:00.000Z", 4)
     )
 
-    run(blockHeadersTable ++= newBlocks).futureValue
+    run(BlockHeaderSchema.table ++= newBlocks).futureValue
 
     hashrateService.syncOnce().futureValue
 
@@ -169,20 +167,13 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
     }
   }
 
-  trait Fixture
-      extends HashrateQueries
-      with DatabaseFixture
-      with DBRunner
-      with BlockHeaderSchema
-      with Generators {
+  trait Fixture extends HashrateQueries with DatabaseFixture with DBRunner with Generators {
 
     val from = TimeStamp.zero
     val to   = TimeStamp.now()
 
     val hashrateService: HashrateService =
       HashrateService(syncPeriod = Duration.unsafe(1000), databaseConfig)
-
-    override val config = databaseConfig
 
     def ts(str: String): TimeStamp = {
       TimeStamp.unsafe(Instant.parse(str).toEpochMilli)

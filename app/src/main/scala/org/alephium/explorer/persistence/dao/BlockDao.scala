@@ -24,13 +24,15 @@ import com.github.benmanes.caffeine.cache._
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AnyOps
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries._
+import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.ChainIndex
@@ -45,12 +47,11 @@ trait BlockDao {
                   height: Height): Future[Seq[BlockEntry]]
   def insert(block: BlockEntity): Future[Unit]
   def insertAll(blocks: Seq[BlockEntity]): Future[Unit]
-  def insertSQL(block: BlockEntity): Future[Unit]
-  def insertAllSQL(blocks: Seq[BlockEntity]): Future[Unit]
   def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)]
   def listMainChainSQL(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)]
   def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntry.Lite]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
+  def updateTransactionPerAddress(block: BlockEntity): Future[Seq[InputEntity]]
   def updateMainChain(hash: BlockEntry.Hash,
                       chainFrom: GroupIndex,
                       chainTo: GroupIndex,
@@ -58,25 +59,22 @@ trait BlockDao {
   def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit]
   def latestBlocks(): Future[Seq[(ChainIndex, LatestBlock)]]
   def updateLatestBlock(block: BlockEntity): Future[Unit]
+  def updateInputs(inputs: Seq[InputEntity]): Future[Int]
 }
 
 object BlockDao {
-  def apply(groupNum: Int, config: DatabaseConfig[JdbcProfile])(
+  def apply(groupNum: Int, databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit executionContext: ExecutionContext): BlockDao =
-    new Impl(groupNum, config)
+    new Impl(groupNum, databaseConfig)
   @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
-  class Impl(groupNum: Int, val config: DatabaseConfig[JdbcProfile])(
+  class Impl(groupNum: Int, val databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit val executionContext: ExecutionContext)
       extends BlockDao
       with CustomTypes
-      with BlockHeaderSchema
-      with BlockDepsSchema
       with BlockQueries
-      with LatestBlockSchema
       with TransactionQueries
       with DBRunner
       with StrictLogging {
-    import config.profile.api._
 
     private implicit val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
 
@@ -113,24 +111,22 @@ object BlockDao {
                     height: Height): Future[Seq[BlockEntry]] =
       run(getAtHeightAction(fromGroup, toGroup, height))
 
-    def insert(block: BlockEntity): Future[Unit] = {
-      run(insertAction(block, groupNum))
-    }
-
-    def insertAll(blocks: Seq[BlockEntity]): Future[Unit] = {
-      run(DBIOAction.sequence(blocks.map(b => insertAction(b, groupNum)))).map(_ => ())
+    def updateTransactionPerAddress(block: BlockEntity): Future[Seq[InputEntity]] = {
+      run(
+        updateTransactionPerAddressAction(block.outputs, block.inputs)
+      )
     }
 
     /** Inserts a single block transactionally via SQL */
-    def insertSQL(block: BlockEntity): Future[Unit] =
-      insertAllSQL(Seq(block))
+    def insert(block: BlockEntity): Future[Unit] =
+      insertAll(Seq(block))
 
     /** Inserts a multiple blocks transactionally via SQL */
-    def insertAllSQL(blocks: Seq[BlockEntity]): Future[Unit] =
+    def insertAll(blocks: Seq[BlockEntity]): Future[Unit] =
       run(insertBlockEntity(blocks, groupNum)).map(_ => ())
 
     def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)] = {
-      val mainChain = blockHeadersTable.filter(_.mainChain)
+      val mainChain = BlockHeaderSchema.table.filter(_.mainChain)
       val action =
         for {
           headers <- listMainChainHeaders(mainChain, pagination)
@@ -150,7 +146,7 @@ object BlockDao {
     def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntry.Lite]] = {
       val action =
         for {
-          headers <- blockHeadersTable
+          headers <- BlockHeaderSchema.table
             .filter(header => header.timestamp >= from && header.timestamp <= to)
             .sortBy(b => (b.timestamp.desc, b.hash))
             .result
@@ -161,7 +157,7 @@ object BlockDao {
 
     def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]] = {
       val query =
-        blockHeadersTable
+        BlockHeaderSchema.table
           .filter(header => header.chainFrom === fromGroup && header.chainTo === toGroup)
           .map(_.height)
           .max
@@ -220,12 +216,18 @@ object BlockDao {
     def updateLatestBlock(block: BlockEntity): Future[Unit] = {
       val chainIndex  = ChainIndex.unsafe(block.chainFrom.value, block.chainTo.value)
       val latestBlock = LatestBlock.fromEntity(block)
-      run(latestBlocksTable.insertOrUpdate(latestBlock)).map { _ =>
+      run(LatestBlockSchema.table.insertOrUpdate(latestBlock)).map { _ =>
         cachedLatestBlocks.put(
           chainIndex,
           Future.successful(latestBlock).asJava.toCompletableFuture
         )
       }
+    }
+
+    def updateInputs(inputs: Seq[InputEntity]): Future[Int] = {
+      run(
+        DBIOAction.sequence(inputs.map(insertTxPerAddressFromInput))
+      ).map(_.sum)
     }
   }
 }

@@ -19,20 +19,16 @@ package org.alephium.explorer.persistence.schema
 import java.math.BigInteger
 
 import akka.util.ByteString
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.persistence.model.LatestBlock
 import org.alephium.util.TimeStamp
 
-trait LatestBlockSchema extends CustomTypes {
-  val config: DatabaseConfig[JdbcProfile]
+object LatestBlockSchema extends Schema[LatestBlock]("latest_blocks") {
 
-  import config.profile.api._
-
-  class LatestBlocks(tag: Tag) extends Table[LatestBlock](tag, "latest_blocks") {
+  class LatestBlocks(tag: Tag) extends Table[LatestBlock](tag, name) {
     def hash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("hash", O.SqlType("bytea"))
     def timestamp: Rep[TimeStamp]  = column[TimeStamp]("timestamp")
     def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
@@ -49,5 +45,5 @@ trait LatestBlockSchema extends CustomTypes {
         .<>((LatestBlock.apply _).tupled, LatestBlock.unapply)
   }
 
-  val latestBlocksTable: TableQuery[LatestBlocks] = TableQuery[LatestBlocks]
+  val table: TableQuery[LatestBlocks] = TableQuery[LatestBlocks]
 }

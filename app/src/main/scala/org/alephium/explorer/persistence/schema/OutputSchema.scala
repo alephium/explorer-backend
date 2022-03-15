@@ -16,20 +16,17 @@
 
 package org.alephium.explorer.persistence.schema
 
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
-import slick.sql.SqlAction
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.util.{TimeStamp, U256}
 
-trait OutputSchema extends Schema with CustomTypes {
-  import config.profile.api._
+object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
 
-  private val tableName = "outputs"
-
-  class Outputs(tag: Tag) extends Table[OutputEntity](tag, tableName) {
+  class Outputs(tag: Tag) extends Table[OutputEntity](tag, name) {
     def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
     def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
@@ -41,6 +38,7 @@ trait OutputSchema extends Schema with CustomTypes {
     def mainChain: Rep[Boolean]          = column[Boolean]("main_chain")
     def lockTime: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("lock_time")
     def order: Rep[Int]                  = column[Int]("order")
+    def txIndex: Rep[Int]                = column[Int]("tx_index")
 
     def pk: PrimaryKey = primaryKey("outputs_pk", (key, blockHash))
 
@@ -51,12 +49,19 @@ trait OutputSchema extends Schema with CustomTypes {
     def timestampIdx: Index = index("outputs_timestamp_idx", timestamp)
 
     def * : ProvenShape[OutputEntity] =
-      (blockHash, txHash, timestamp, hint, key, amount, address, mainChain, lockTime, order)
+      (blockHash,
+       txHash,
+       timestamp,
+       hint,
+       key,
+       amount,
+       address,
+       mainChain,
+       lockTime,
+       order,
+       txIndex)
         .<>((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }
 
-  def createOutputMainChainIndex(): SqlAction[Int, NoStream, Effect] =
-    mainChainIndex(tableName)
-
-  val outputsTable: TableQuery[Outputs] = TableQuery[Outputs]
+  val table: TableQuery[Outputs] = TableQuery[Outputs]
 }

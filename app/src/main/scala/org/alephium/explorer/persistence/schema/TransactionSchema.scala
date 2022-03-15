@@ -16,27 +16,24 @@
 
 package org.alephium.explorer.persistence.schema
 
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
-import slick.sql.SqlAction
 
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Transaction}
 import org.alephium.explorer.persistence.model.TransactionEntity
 import org.alephium.util.{TimeStamp, U256}
 
-trait TransactionSchema extends Schema with CustomTypes {
-  import config.profile.api._
+object TransactionSchema extends SchemaMainChain[TransactionEntity]("transactions") {
 
-  private val tableName = "transactions"
-
-  class Transactions(tag: Tag) extends Table[TransactionEntity](tag, tableName) {
+  class Transactions(tag: Tag) extends Table[TransactionEntity](tag, name) {
     def hash: Rep[Transaction.Hash]     = column[Transaction.Hash]("hash", O.SqlType("BYTEA"))
     def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
     def chainFrom: Rep[GroupIndex]      = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]        = column[GroupIndex]("chain_to")
-    def gasAmount: Rep[Int]             = column[Int]("gas-amount")
+    def gasAmount: Rep[Int]             = column[Int]("gas_amount")
     def gasPrice: Rep[U256] =
-      column[U256]("gas-price", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
+      column[U256]("gas_price", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
     def txIndex: Rep[Int]       = column[Int]("index")
     def mainChain: Rep[Boolean] = column[Boolean]("main_chain")
 
@@ -53,8 +50,5 @@ trait TransactionSchema extends Schema with CustomTypes {
         .<>((TransactionEntity.apply _).tupled, TransactionEntity.unapply)
   }
 
-  def createTransactionMainChainIndex(): SqlAction[Int, NoStream, Effect] =
-    mainChainIndex(tableName)
-
-  val transactionsTable: TableQuery[Transactions] = TableQuery[Transactions]
+  val table: TableQuery[Transactions] = TableQuery[Transactions]
 }

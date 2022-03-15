@@ -16,20 +16,17 @@
 
 package org.alephium.explorer.persistence.schema
 
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
-import slick.sql.SqlAction
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.InputEntity
 import org.alephium.util.TimeStamp
 
-trait InputSchema extends Schema with CustomTypes {
-  import config.profile.api._
+object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
 
-  private val tableName = "inputs"
-
-  class Inputs(tag: Tag) extends Table[InputEntity](tag, tableName) {
+  class Inputs(tag: Tag) extends Table[InputEntity](tag, name) {
     def blockHash: Rep[BlockEntry.Hash]   = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
     def txHash: Rep[Transaction.Hash]     = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
     def timestamp: Rep[TimeStamp]         = column[TimeStamp]("timestamp")
@@ -38,8 +35,9 @@ trait InputSchema extends Schema with CustomTypes {
     def unlockScript: Rep[Option[String]] = column[Option[String]]("unlock_script")
     def mainChain: Rep[Boolean]           = column[Boolean]("main_chain")
     def order: Rep[Int]                   = column[Int]("order")
+    def txIndex: Rep[Int]                 = column[Int]("tx_index")
 
-    def pk: PrimaryKey = primaryKey("inputs_pk", (outputRefKey, txHash, blockHash))
+    def pk: PrimaryKey = primaryKey("inputs_pk", (outputRefKey, blockHash))
 
     def blockHashIdx: Index    = index("inputs_block_hash_idx", blockHash)
     def inputsTxHashIdx: Index = index("inputs_tx_hash_idx", txHash)
@@ -47,12 +45,9 @@ trait InputSchema extends Schema with CustomTypes {
     def timestampIdx: Index    = index("inputs_timestamp_idx", timestamp)
 
     def * : ProvenShape[InputEntity] =
-      (blockHash, txHash, timestamp, hint, outputRefKey, unlockScript, mainChain, order)
+      (blockHash, txHash, timestamp, hint, outputRefKey, unlockScript, mainChain, order, txIndex)
         .<>((InputEntity.apply _).tupled, InputEntity.unapply)
   }
 
-  def createInputMainChainIndex(): SqlAction[Int, NoStream, Effect] =
-    mainChainIndex(tableName)
-
-  val inputsTable: TableQuery[Inputs] = TableQuery[Inputs]
+  val table: TableQuery[Inputs] = TableQuery[Inputs]
 }

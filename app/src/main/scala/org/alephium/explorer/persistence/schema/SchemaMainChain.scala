@@ -14,27 +14,12 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.benchmark.db.table
+package org.alephium.explorer.persistence.schema
 
-import slick.basic.DatabaseConfig
-import slick.jdbc.PostgresProfile
-import slick.lifted.ProvenShape
+import slick.jdbc.PostgresProfile.api._
+import slick.sql.SqlAction
 
-trait TableByteSchema {
-
-  val config: DatabaseConfig[PostgresProfile]
-
-  import config.profile.api._
-
-  /**
-    * Table with single column that stores byte arrays
-    */
-  class TableBytea(tag: Tag) extends Table[Array[Byte]](tag, "table_bytea") {
-    def hash: Rep[Array[Byte]] = column[Array[Byte]]("hash", O.PrimaryKey, O.SqlType("BYTEA"))
-
-    def * : ProvenShape[Array[Byte]] = hash
-  }
-
-  val tableByteaQuery: TableQuery[TableBytea] = TableQuery[TableBytea]
-
+abstract class SchemaMainChain[A](name: String) extends Schema[A](name) {
+  lazy val createMainChainIndex: SqlAction[Int, NoStream, Effect] =
+    sqlu"create index if not exists #${name}_main_chain_idx on #${name} (main_chain) where main_chain = true;"
 }

@@ -73,7 +73,8 @@ object DataGenerator {
           address   = Address.unsafe(Random.alphanumeric.take(10).mkString),
           mainChain = transaction.mainChain,
           lockTime  = Some(TimeStamp.now()),
-          order     = order
+          order     = order,
+          txIndex   = order
         )
     }
 
@@ -88,7 +89,8 @@ object DataGenerator {
           outputRefKey = output.key,
           unlockScript = Some(Random.alphanumeric.take(10).mkString),
           mainChain    = output.mainChain,
-          order        = order
+          order        = order,
+          txIndex      = order
         )
     }
 

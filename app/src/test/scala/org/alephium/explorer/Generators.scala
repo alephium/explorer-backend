@@ -419,6 +419,7 @@ trait Generators {
       lockTime  <- Gen.option(timestampGen)
       mainChain <- arbitrary[Boolean]
       order     <- arbitrary[Int]
+      txIndex   <- arbitrary[Int]
     } yield
       OutputEntity(
         blockHash = blockHash,
@@ -430,7 +431,8 @@ trait Generators {
         address   = address,
         mainChain = mainChain,
         lockTime  = lockTime,
-        order     = order
+        order     = order,
+        txIndex   = txIndex
       )
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -438,6 +440,7 @@ trait Generators {
     for {
       outputEntity <- outputEntityGen
       unlockScript <- Gen.option(Gen.hexStr)
+      txIndex      <- arbitrary[Int]
     } yield {
       InputEntity(
         blockHash    = outputEntity.blockHash,
@@ -447,7 +450,8 @@ trait Generators {
         outputRefKey = outputEntity.key,
         unlockScript = unlockScript,
         mainChain    = outputEntity.mainChain,
-        order        = outputEntity.order
+        order        = outputEntity.order,
+        txIndex      = txIndex
       )
     }
 

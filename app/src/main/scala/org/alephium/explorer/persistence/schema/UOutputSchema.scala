@@ -16,20 +16,16 @@
 
 package org.alephium.explorer.persistence.schema
 
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.api.model.{Address, Transaction}
 import org.alephium.explorer.persistence.model.UOutputEntity
 import org.alephium.util.{TimeStamp, U256}
 
-trait UOutputSchema extends CustomTypes {
-  val config: DatabaseConfig[JdbcProfile]
+object UOutputSchema extends Schema[UOutputEntity]("uoutputs") {
 
-  import config.profile.api._
-
-  class UOutputs(tag: Tag) extends Table[UOutputEntity](tag, "uoutputs") {
+  class UOutputs(tag: Tag) extends Table[UOutputEntity](tag, name) {
     def txHash: Rep[Transaction.Hash] = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
@@ -45,5 +41,5 @@ trait UOutputSchema extends CustomTypes {
         .<>((UOutputEntity.apply _).tupled, UOutputEntity.unapply)
   }
 
-  val uoutputsTable: TableQuery[UOutputs] = TableQuery[UOutputs]
+  val table: TableQuery[UOutputs] = TableQuery[UOutputs]
 }

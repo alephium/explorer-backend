@@ -16,32 +16,28 @@
 
 package org.alephium.explorer.persistence.schema
 
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
 import org.alephium.explorer.api.model.{GroupIndex, Transaction}
 import org.alephium.explorer.persistence.model.UnconfirmedTxEntity
 import org.alephium.util.U256
 
-trait UnconfirmedTxSchema extends CustomTypes {
-  val config: DatabaseConfig[JdbcProfile]
+object UnconfirmedTxSchema extends Schema[UnconfirmedTxEntity]("utransactions") {
 
-  import config.profile.api._
-
-  class UnconfirmedTxs(tag: Tag) extends Table[UnconfirmedTxEntity](tag, "utransactions") {
+  class UnconfirmedTxs(tag: Tag) extends Table[UnconfirmedTxEntity](tag, name) {
     def hash: Rep[Transaction.Hash] =
       column[Transaction.Hash]("hash", O.PrimaryKey, O.SqlType("BYTEA"))
     def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
-    def gasAmount: Rep[Int]        = column[Int]("gas-amount")
+    def gasAmount: Rep[Int]        = column[Int]("gas_amount")
     def gasPrice: Rep[U256] =
-      column[U256]("gas-price", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
+      column[U256]("gas_price", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
 
     def * : ProvenShape[UnconfirmedTxEntity] =
       (hash, chainFrom, chainTo, gasAmount, gasPrice)
         .<>((UnconfirmedTxEntity.apply _).tupled, UnconfirmedTxEntity.unapply)
   }
 
-  val unconfirmedTxsTable: TableQuery[UnconfirmedTxs] = TableQuery[UnconfirmedTxs]
+  val table: TableQuery[UnconfirmedTxs] = TableQuery[UnconfirmedTxs]
 }

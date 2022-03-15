@@ -25,6 +25,8 @@ import org.alephium.util.U256
 trait TransactionService {
   def getTransaction(transactionHash: Transaction.Hash): Future[Option[TransactionLike]]
   def getTransactionsByAddress(address: Address, pagination: Pagination): Future[Seq[Transaction]]
+  def getTransactionsByAddressSQL(address: Address,
+                                  pagination: Pagination): Future[Seq[Transaction]]
   def getTransactionsNumberByAddress(address: Address): Future[Int]
   def getBalance(address: Address): Future[(U256, U256)]
 }
@@ -47,10 +49,14 @@ object TransactionService {
                                  pagination: Pagination): Future[Seq[Transaction]] =
       transactionDao.getByAddress(address, pagination)
 
+    def getTransactionsByAddressSQL(address: Address,
+                                    pagination: Pagination): Future[Seq[Transaction]] =
+      transactionDao.getByAddressSQL(address, pagination)
+
     def getTransactionsNumberByAddress(address: Address): Future[Int] =
-      transactionDao.getNumberByAddress(address)
+      transactionDao.getNumberByAddressSQLNoJoin(address)
 
     def getBalance(address: Address): Future[(U256, U256)] =
-      transactionDao.getBalance(address)
+      transactionDao.getBalanceSQL(address)
   }
 }

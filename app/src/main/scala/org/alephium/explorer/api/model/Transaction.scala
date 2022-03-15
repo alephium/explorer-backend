@@ -45,8 +45,10 @@ final case class Transaction(
     gasPrice: U256
 ) extends TransactionLike
 object Transaction {
-  final class Hash(val value: explorer.Hash) extends AnyVal
-  object Hash                                extends HashCompanion[explorer.Hash, Hash](new Hash(_), _.value)
+  final class Hash(val value: explorer.Hash) extends AnyVal {
+    override def toString(): String = value.toHexString
+  }
+  object Hash extends HashCompanion[explorer.Hash, Hash](new Hash(_), _.value)
 
   implicit val txRW: ReadWriter[Transaction] = macroRW
 }

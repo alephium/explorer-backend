@@ -59,7 +59,7 @@ class TransactionServiceSpec
 
     val txLimit = 5
 
-    Future.sequence(blocks.map(blockDao.insertSQL)).futureValue
+    Future.sequence(blocks.map(blockDao.insert)).futureValue
     Future
       .sequence(blocks.map(block => blockDao.updateMainChainStatus(block.hash, true)))
       .futureValue
@@ -85,7 +85,7 @@ class TransactionServiceSpec
 
     block.outputs.head.amount is amount
 
-    blockDao.insertSQL(block).futureValue
+    blockDao.insert(block).futureValue
     blockDao.updateMainChainStatus(block.hash, true).futureValue
 
     val fetchedAmout =
@@ -125,6 +125,7 @@ class TransactionServiceSpec
                    address0,
                    true,
                    None,
+                   0,
                    0)
 
     val block0 = defaultBlockEntity.copy(
@@ -156,6 +157,7 @@ class TransactionServiceSpec
                              outputRefKey = output0.key,
                              None,
                              true,
+                             0,
                              0)
     val output1 = OutputEntity(blockHash1,
                                tx1.hash,
@@ -166,6 +168,7 @@ class TransactionServiceSpec
                                address1,
                                true,
                                None,
+                               0,
                                0)
 
     val block1 = defaultBlockEntity.copy(
@@ -180,7 +183,10 @@ class TransactionServiceSpec
 
     val blocks = Seq(block0, block1)
 
-    Future.sequence(blocks.map(blockDao.insertSQL)).futureValue
+    Future.sequence(blocks.map(blockDao.insert)).futureValue
+    val inputsToUpdate =
+      Future.sequence(blocks.map(blockDao.updateTransactionPerAddress)).futureValue.flatten
+    blockDao.updateInputs(inputsToUpdate).futureValue
 
     val t0 = Transaction(
       tx0.hash,
@@ -205,7 +211,11 @@ class TransactionServiceSpec
     val res =
       transactionService.getTransactionsByAddress(address0, Pagination.unsafe(0, 5)).futureValue
 
+    val res2 =
+      transactionService.getTransactionsByAddressSQL(address0, Pagination.unsafe(0, 5)).futureValue
+
     res is Seq(t1, t0)
+    res2 is Seq(t1, t0)
   }
 
   it should "get only main chain transaction for an address in case of tx in two blocks (in case of reorg)" in new Fixture {
@@ -238,6 +248,7 @@ class TransactionServiceSpec
                        address0,
                        true,
                        None,
+                       0,
                        0)
 
         val block0 = defaultBlockEntity.copy(
@@ -262,7 +273,7 @@ class TransactionServiceSpec
 
         val blocks = Seq(block0, block1)
 
-        Future.sequence(blocks.map(blockDao.insertSQL)).futureValue
+        Future.sequence(blocks.map(blockDao.insert)).futureValue
 
         transactionService
           .getTransactionsByAddress(address0, Pagination.unsafe(0, 5))
@@ -300,7 +311,7 @@ class TransactionServiceSpec
 
     val outputs = blocks.flatMap(_.outputs)
 
-    Future.sequence(blocks.map(blockDao.insertSQL)).futureValue
+    Future.sequence(blocks.map(blockDao.insert)).futureValue
     Future
       .sequence(blocks.map(block => blockDao.updateMainChainStatus(block.hash, true)))
       .futureValue

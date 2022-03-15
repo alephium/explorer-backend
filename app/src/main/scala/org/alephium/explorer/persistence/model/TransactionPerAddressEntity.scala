@@ -14,27 +14,16 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.benchmark.db.table
+package org.alephium.explorer.persistence.model
 
-import slick.basic.DatabaseConfig
-import slick.jdbc.PostgresProfile
-import slick.lifted.ProvenShape
+import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
+import org.alephium.util.TimeStamp
 
-trait TableByteSchema {
-
-  val config: DatabaseConfig[PostgresProfile]
-
-  import config.profile.api._
-
-  /**
-    * Table with single column that stores byte arrays
-    */
-  class TableBytea(tag: Tag) extends Table[Array[Byte]](tag, "table_bytea") {
-    def hash: Rep[Array[Byte]] = column[Array[Byte]]("hash", O.PrimaryKey, O.SqlType("BYTEA"))
-
-    def * : ProvenShape[Array[Byte]] = hash
-  }
-
-  val tableByteaQuery: TableQuery[TableBytea] = TableQuery[TableBytea]
-
-}
+final case class TransactionPerAddressEntity(
+    address: Address,
+    hash: Transaction.Hash,
+    blockHash: BlockEntry.Hash,
+    timestamp: TimeStamp,
+    txIndex: Int,
+    mainChain: Boolean
+)

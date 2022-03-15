@@ -21,8 +21,7 @@ import scala.concurrent.ExecutionContext
 import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
@@ -35,11 +34,9 @@ class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
 
   it should "insert and ignore block_headers" in new Fixture {
 
-    import config.profile.api._
-
     forAll(Gen.listOf(updatedBlockHeaderGen())) { existingAndUpdates =>
       //fresh table
-      run(blockHeadersTable.delete).futureValue
+      run(BlockHeaderSchema.table.delete).futureValue
 
       val existing = existingAndUpdates.map(_._1) //existing blocks
       val ingored  = existingAndUpdates.map(_._2) //ingored blocks
@@ -48,42 +45,40 @@ class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
 
       //insert existing
       run(query).futureValue is existing.size
-      run(queries.blockHeadersTable.result).futureValue should contain allElementsOf existing
+      run(BlockHeaderSchema.table.result).futureValue should contain allElementsOf existing
 
       //insert should ingore existing inputs
       run(queries.insertBlockHeaders(ingored)).futureValue is 0
-      run(queries.blockHeadersTable.result).futureValue should contain allElementsOf existing
+      run(BlockHeaderSchema.table.result).futureValue should contain allElementsOf existing
     }
   }
 
   it should "insert deps, transactions, inputs, outputs, block_headers" in new Fixture {
 
-    import config.profile.api._
-
     forAll(Gen.listOf(genBlockEntityWithOptionalParent().map(_._1))) {
       case entities =>
         //clear all tables
-        run(blockHeadersTable.delete).futureValue
-        run(transactionsTable.delete).futureValue
-        run(inputsTable.delete).futureValue
-        run(outputsTable.delete).futureValue
-        run(blockDepsTable.delete).futureValue
+        run(BlockHeaderSchema.table.delete).futureValue
+        run(TransactionSchema.table.delete).futureValue
+        run(InputSchema.table.delete).futureValue
+        run(OutputSchema.table.delete).futureValue
+        run(BlockDepsSchema.table.delete).futureValue
 
         //execute insert on blocks and expect all tables get inserted
         run(queries.insertBlockEntity(entities, groupNum)).futureValue is entities.size
 
         //check block_headers table
-        val actualBlockHeaders = run(blockHeadersTable.result).futureValue
+        val actualBlockHeaders = run(BlockHeaderSchema.table.result).futureValue
         val expectBlockHeaders = entities.map(_.toBlockHeader(groupNum))
         actualBlockHeaders should contain allElementsOf expectBlockHeaders
 
         //check transactions table
-        val actualTransactions   = run(transactionsTable.result).futureValue
+        val actualTransactions   = run(TransactionSchema.table.result).futureValue
         val expectedTransactions = entities.flatMap(_.transactions)
         actualTransactions should contain allElementsOf expectedTransactions
 
         //check inputs table
-        val actualInputs   = run(inputsTable.result).futureValue
+        val actualInputs   = run(InputSchema.table.result).futureValue
         val expectedInputs = entities.flatMap(_.inputs)
         actualInputs should contain allElementsOf expectedInputs
 
@@ -93,7 +88,7 @@ class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
         //actualOutputs should contain allElementsOf expectedOutputs
 
         //check block_deps table
-        val actualDeps        = run(blockDepsTable.result).futureValue
+        val actualDeps        = run(BlockDepsSchema.table.result).futureValue
         val expectedBlockDeps = entities.flatMap(_.toBlockDepEntities())
         actualDeps should contain allElementsOf expectedBlockDeps
 
@@ -102,22 +97,10 @@ class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
     }
   }
 
-  trait Fixture
-      extends DatabaseFixture
-      with DBRunner
-      with Generators
-      with BlockHeaderSchema
-      with TransactionSchema
-      with InputSchema
-      with OutputSchema
-      with BlockDepsSchema {
-    val config: DatabaseConfig[JdbcProfile] = databaseConfig
+  trait Fixture extends DatabaseFixture with DBRunner with Generators {
 
-    class Queries(val config: DatabaseConfig[JdbcProfile])(
-        implicit val executionContext: ExecutionContext)
-        extends BlockQueries
+    class Queries(implicit val executionContext: ExecutionContext) extends BlockQueries
 
-    val queries = new Queries(databaseConfig)
-
+    val queries = new Queries
   }
 }

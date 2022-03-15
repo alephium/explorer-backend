@@ -19,9 +19,9 @@ package org.alephium.explorer.persistence.dao
 import scala.concurrent.{ExecutionContext, Future}
 
 import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.api.model.{Address, Pagination, Transaction}
+import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DBRunner
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.util.U256
@@ -29,16 +29,20 @@ import org.alephium.util.U256
 trait TransactionDao {
   def get(hash: Transaction.Hash): Future[Option[Transaction]]
   def getByAddress(address: Address, pagination: Pagination): Future[Seq[Transaction]]
+  def getByAddressSQL(address: Address, pagination: Pagination): Future[Seq[Transaction]]
   def getNumberByAddress(address: Address): Future[Int]
+  def getNumberByAddressSQL(address: Address): Future[Int]
+  def getNumberByAddressSQLNoJoin(address: Address): Future[Int]
   def getBalance(address: Address): Future[(U256, U256)]
+  def getBalanceSQL(address: Address): Future[(U256, U256)]
 }
 
 object TransactionDao {
-  def apply(config: DatabaseConfig[JdbcProfile])(
+  def apply(databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit executionContext: ExecutionContext): TransactionDao =
-    new Impl(config)
+    new Impl(databaseConfig)
 
-  private class Impl(val config: DatabaseConfig[JdbcProfile])(
+  private class Impl(val databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit val executionContext: ExecutionContext)
       extends TransactionDao
       with TransactionQueries
@@ -50,10 +54,23 @@ object TransactionDao {
     def getByAddress(address: Address, pagination: Pagination): Future[Seq[Transaction]] =
       run(getTransactionsByAddress(address, pagination))
 
+    def getByAddressSQL(address: Address, pagination: Pagination): Future[Seq[Transaction]] = {
+      run(getTransactionsByAddressSQL(address, pagination))
+    }
+
     def getNumberByAddress(address: Address): Future[Int] =
       run(countAddressTransactions(address))
 
+    def getNumberByAddressSQL(address: Address): Future[Int] =
+      run(countAddressTransactionsSQL(address)).map(_.headOption.getOrElse(0))
+
+    def getNumberByAddressSQLNoJoin(address: Address): Future[Int] =
+      run(countAddressTransactionsSQLNoJoin(address)).map(_.headOption.getOrElse(0))
+
     def getBalance(address: Address): Future[(U256, U256)] =
       run(getBalanceAction(address))
+
+    def getBalanceSQL(address: Address): Future[(U256, U256)] =
+      run(getBalanceActionSQL(address))
   }
 }
