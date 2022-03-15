@@ -35,7 +35,8 @@ import org.alephium.explorer.persistence.schema.{BlockHeaderSchema, TransactionS
 import org.alephium.util.{TimeStamp, U256}
 
 /**
-  * JMH state for benchmarking reads to [[BlockHeaderSchema]] & [[TransactionSchema]].
+  * JMH state for benchmarking reads to [[org.alephium.explorer.persistence.schema.BlockHeaderSchema]] &
+  * [[org.alephium.explorer.persistence.schema.TransactionSchema]].
   */
 class ListBlocksReadState(reverse: Boolean,
                           maxPages: Int,
@@ -52,7 +53,7 @@ class ListBlocksReadState(reverse: Boolean,
     BlockDao(4, config)(db.config.db.ioExecutionContext)
 
   /**
-    * Generates a [[Pagination]] instance for each page to query.
+    * Generates a [[org.alephium.explorer.api.model.Pagination]] instance for each page to query.
     */
   def generateData(currentCacheSize: Int): Pagination =
     Pagination.unsafe(

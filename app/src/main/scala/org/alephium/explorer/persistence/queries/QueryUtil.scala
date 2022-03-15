@@ -61,7 +61,7 @@ object QueryUtil {
     *                           - _3 = Previous query. Used to join with next query.
     * @tparam R type of rows
     * @tparam Q type of query
-    * @return A single query of type [[Q]]
+    * @return A single batched query
     */
   def splitFoldLeft[R, Q](rows: Iterable[R],
                           initialQuery: Q,

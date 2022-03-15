@@ -72,7 +72,7 @@ abstract class ReadBenchmarkState[D: ClassTag](val testDataCount: Int, db: DBExe
   val cache: Array[D] =
     new Array[D](testDataCount)
 
-  /** Generates random data of type [[D]] */
+  /** Generates random data */
   def generateData(currentCacheSize: Int): D
 
   /** Invoked once during [[beforeAll]]. It should persist the input data to the target database. */

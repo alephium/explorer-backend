@@ -24,9 +24,10 @@ import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.table.TableByteSchema
 
 /**
-  * JMH state for benchmarking reads to [[TableByteSchema]].
+  * JMH state for benchmarking reads to [[org.alephium.explorer.benchmark.db.table.TableByteSchema]].
   *
-  * @param testDataCount total number of rows to generate in [[TableByteSchema]]
+  * @param testDataCount total number of rows to generate in
+  *                      [[org.alephium.explorer.benchmark.db.table.TableByteSchema]]
   */
 @State(Scope.Thread)
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))

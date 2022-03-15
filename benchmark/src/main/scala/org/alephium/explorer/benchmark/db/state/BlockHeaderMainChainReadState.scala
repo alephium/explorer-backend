@@ -33,8 +33,8 @@ import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.util.TimeStamp
 
 /**
-  * JMH state for benchmarking reads to [[BlockHeaderSchema]] when
-  * main_chain index exists vs dropped.
+  * JMH state for benchmarking reads to [[org.alephium.explorer.persistence.schema.BlockHeaderSchema]]
+  * when main_chain index exists vs dropped.
   */
 class BlockHeaderMainChainReadState(dropMainChainIndex: Boolean,
                                     testDataCount: Int,

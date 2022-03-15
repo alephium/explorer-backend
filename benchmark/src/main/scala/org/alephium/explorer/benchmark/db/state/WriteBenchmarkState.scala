@@ -56,7 +56,7 @@ abstract class WriteBenchmarkState[D](db: DBExecutor) extends AutoCloseable with
     */
   def next: D = _next
 
-  /** Generates random data of type [[D]] */
+  /** Generates random data */
   def generateData(): D
 
   /** Invoked once before a benchmark is started. Used to create a desired state for eg: create/clearing a table */

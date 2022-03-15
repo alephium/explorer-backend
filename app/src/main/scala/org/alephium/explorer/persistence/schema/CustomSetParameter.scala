@@ -25,7 +25,7 @@ import org.alephium.explorer
 import org.alephium.explorer.api.model._
 import org.alephium.util.{TimeStamp, U256}
 
-/** [[SetParameter]] implicits for setting values in SQL queries */
+/** [[slick.jdbc.SetParameter]] implicits for setting values in SQL queries */
 object CustomSetParameter {
 
   /**

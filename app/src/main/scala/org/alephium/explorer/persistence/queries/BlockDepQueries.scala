@@ -29,7 +29,7 @@ object BlockDepQueries {
     * Insert block_deps or ignore if there is a primary key conflict.
     *
     * Slick creates the following `INSERT` using string interpolation. Here
-    * the same is achieved by manually creating the [[SQLActionBuilder]] so
+    * the same is achieved by manually creating the [[slick.jdbc.SQLActionBuilder]] so
     * our inserts can write multiple rows within a single `INSERT` statement.
     *
     * <a href="https://scala-slick.org/doc/3.3.3/sql.html#splicing-literal-values">Splicing</a>
