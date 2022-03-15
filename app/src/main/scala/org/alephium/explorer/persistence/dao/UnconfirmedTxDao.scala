@@ -20,7 +20,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DBActionW, DBRunner}
@@ -37,24 +38,21 @@ trait UnconfirmedTxDao {
 }
 
 object UnconfirmedTxDao {
-  def apply(config: DatabaseConfig[JdbcProfile])(
+  def apply(databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit executionContext: ExecutionContext): UnconfirmedTxDao =
-    new Impl(config)
+    new Impl(databaseConfig)
 
-  private class Impl(val config: DatabaseConfig[JdbcProfile])(
+  private class Impl(val databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit val executionContext: ExecutionContext)
       extends UnconfirmedTxDao
-      with UnconfirmedTxSchema
-      with UInputSchema
-      with UOutputSchema
+      with CustomTypes
       with DBRunner {
-    import config.profile.api._
 
     def get(hash: Transaction.Hash): Future[Option[UnconfirmedTx]] = {
       run(for {
-        maybeTx <- unconfirmedTxsTable.filter(_.hash === hash).result.headOption
-        inputs  <- uinputsTable.filter(_.txHash === hash).result
-        outputs <- uoutputsTable.filter(_.txHash === hash).result
+        maybeTx <- UnconfirmedTxSchema.table.filter(_.hash === hash).result.headOption
+        inputs  <- UInputSchema.table.filter(_.txHash === hash).result
+        outputs <- UOutputSchema.table.filter(_.txHash === hash).result
       } yield {
         maybeTx.map { tx =>
           UnconfirmedTx(
@@ -76,9 +74,9 @@ object UnconfirmedTxDao {
       val inputs   = entities.flatMap { case (_, in, _) => in }
       val outputs  = entities.flatMap { case (_, _, out) => out }
       for {
-        _ <- DBIOAction.sequence(txs.map(unconfirmedTxsTable.insertOrUpdate))
-        _ <- DBIOAction.sequence(inputs.map(uinputsTable.insertOrUpdate))
-        _ <- DBIOAction.sequence(outputs.map(uoutputsTable.insertOrUpdate))
+        _ <- DBIOAction.sequence(txs.map(UnconfirmedTxSchema.table.insertOrUpdate))
+        _ <- DBIOAction.sequence(inputs.map(UInputSchema.table.insertOrUpdate))
+        _ <- DBIOAction.sequence(outputs.map(UOutputSchema.table.insertOrUpdate))
       } yield ()
     }
 
@@ -87,14 +85,14 @@ object UnconfirmedTxDao {
     }
 
     def listHashes(): Future[Seq[Transaction.Hash]] = {
-      run(unconfirmedTxsTable.map(_.hash).result)
+      run(UnconfirmedTxSchema.table.map(_.hash).result)
     }
 
     private def removeManyAction(txs: Seq[Transaction.Hash]): DBActionW[Unit] = {
       for {
-        _ <- unconfirmedTxsTable.filter(_.hash inSet txs).delete
-        _ <- uoutputsTable.filter(_.txHash inSet txs).delete
-        _ <- uinputsTable.filter(_.txHash inSet txs).delete
+        _ <- UnconfirmedTxSchema.table.filter(_.hash inSet txs).delete
+        _ <- UOutputSchema.table.filter(_.txHash inSet txs).delete
+        _ <- UInputSchema.table.filter(_.txHash inSet txs).delete
       } yield ()
     }
 

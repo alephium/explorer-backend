@@ -24,7 +24,8 @@ import com.github.benmanes.caffeine.cache._
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AnyOps
 import org.alephium.explorer.api.model._
@@ -62,22 +63,18 @@ trait BlockDao {
 }
 
 object BlockDao {
-  def apply(groupNum: Int, config: DatabaseConfig[JdbcProfile])(
+  def apply(groupNum: Int, databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit executionContext: ExecutionContext): BlockDao =
-    new Impl(groupNum, config)
+    new Impl(groupNum, databaseConfig)
   @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
-  class Impl(groupNum: Int, val config: DatabaseConfig[JdbcProfile])(
+  class Impl(groupNum: Int, val databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit val executionContext: ExecutionContext)
       extends BlockDao
       with CustomTypes
-      with BlockHeaderSchema
-      with BlockDepsSchema
       with BlockQueries
-      with LatestBlockSchema
       with TransactionQueries
       with DBRunner
       with StrictLogging {
-    import config.profile.api._
 
     private implicit val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
 
@@ -129,7 +126,7 @@ object BlockDao {
       run(insertBlockEntity(blocks, groupNum)).map(_ => ())
 
     def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)] = {
-      val mainChain = blockHeadersTable.filter(_.mainChain)
+      val mainChain = BlockHeaderSchema.table.filter(_.mainChain)
       val action =
         for {
           headers <- listMainChainHeaders(mainChain, pagination)
@@ -149,7 +146,7 @@ object BlockDao {
     def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntry.Lite]] = {
       val action =
         for {
-          headers <- blockHeadersTable
+          headers <- BlockHeaderSchema.table
             .filter(header => header.timestamp >= from && header.timestamp <= to)
             .sortBy(b => (b.timestamp.desc, b.hash))
             .result
@@ -160,7 +157,7 @@ object BlockDao {
 
     def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]] = {
       val query =
-        blockHeadersTable
+        BlockHeaderSchema.table
           .filter(header => header.chainFrom === fromGroup && header.chainTo === toGroup)
           .map(_.height)
           .max
@@ -219,7 +216,7 @@ object BlockDao {
     def updateLatestBlock(block: BlockEntity): Future[Unit] = {
       val chainIndex  = ChainIndex.unsafe(block.chainFrom.value, block.chainTo.value)
       val latestBlock = LatestBlock.fromEntity(block)
-      run(latestBlocksTable.insertOrUpdate(latestBlock)).map { _ =>
+      run(LatestBlockSchema.table.insertOrUpdate(latestBlock)).map { _ =>
         cachedLatestBlocks.put(
           chainIndex,
           Future.successful(latestBlock).asJava.toCompletableFuture

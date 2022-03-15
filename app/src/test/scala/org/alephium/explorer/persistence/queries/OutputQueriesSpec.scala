@@ -21,13 +21,12 @@ import scala.concurrent.ExecutionContext
 import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.queries.OutputQueries._
-import org.alephium.explorer.persistence.schema.OutputSchema._
+import org.alephium.explorer.persistence.schema.OutputSchema
 
 class OutputQueriesSpec extends AlephiumSpec with ScalaFutures {
 
@@ -36,26 +35,22 @@ class OutputQueriesSpec extends AlephiumSpec with ScalaFutures {
 
   it should "insert and ignore outputs" in new Fixture {
 
-    import config.profile.api._
-
     forAll(Gen.listOf(updatedOutputEntityGen())) { existingAndUpdates =>
       //fresh table
-      run(outputsTable.delete).futureValue
+      run(OutputSchema.table.delete).futureValue
 
       val existing = existingAndUpdates.map(_._1) //existing outputs
       val ignored  = existingAndUpdates.map(_._2) //ignored outputs
 
       //insert existing
       run(insertOutputs(existing)).futureValue is existing.size
-      run(outputsTable.result).futureValue is existing
+      run(OutputSchema.table.result).futureValue is existing
 
       //insert should ignore existing outputs
       run(insertOutputs(ignored)).futureValue is 0
-      run(outputsTable.result).futureValue should contain allElementsOf existing
+      run(OutputSchema.table.result).futureValue should contain allElementsOf existing
     }
   }
 
-  trait Fixture extends DatabaseFixture with DBRunner with Generators {
-    val config: DatabaseConfig[JdbcProfile] = databaseConfig
-  }
+  trait Fixture extends DatabaseFixture with DBRunner with Generators
 }

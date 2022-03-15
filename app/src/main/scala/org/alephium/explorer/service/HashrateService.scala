@@ -23,7 +23,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model.{Hashrate, IntervalType}
 import org.alephium.explorer.persistence._
@@ -42,19 +43,16 @@ object HashrateService {
   val hourlyStepBack: Duration = Duration.ofHoursUnsafe(2)
   val dailyStepBack: Duration  = Duration.ofDaysUnsafe(1)
 
-  def apply(syncPeriod: Duration, config: DatabaseConfig[JdbcProfile])(
+  def apply(syncPeriod: Duration, databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit executionContext: ExecutionContext): HashrateService =
-    new Impl(syncPeriod, config)
+    new Impl(syncPeriod, databaseConfig)
 
-  private class Impl(val syncPeriod: Duration, val config: DatabaseConfig[JdbcProfile])(
+  private class Impl(val syncPeriod: Duration, val databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit val executionContext: ExecutionContext)
       extends HashrateService
       with HashrateQueries
-      with BlockHeaderSchema
-      with HashrateSchema
       with DBRunner
       with StrictLogging {
-    import config.profile.api._
 
     def syncOnce(): Future[Unit] = {
       logger.debug("Updating hashrates")
@@ -85,7 +83,7 @@ object HashrateService {
 
     private def findLatestHashrate(
         intervalType: IntervalType): DBActionR[Option[HashrateEntity]] = {
-      hashrateTable
+      HashrateSchema.table
         .filter(_.intervalType === intervalType)
         .sortBy(_.timestamp.desc)
         .result

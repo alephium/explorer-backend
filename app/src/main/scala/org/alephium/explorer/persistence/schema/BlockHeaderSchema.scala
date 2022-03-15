@@ -28,10 +28,9 @@ import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.util.TimeStamp
 
-trait BlockHeaderSchema extends Schema with CustomTypes {
-  private val tableName = "block_headers"
+object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
 
-  class BlockHeaders(tag: Tag) extends Table[BlockHeader](tag, tableName) {
+  class BlockHeaders(tag: Tag) extends Table[BlockHeader](tag, name) {
     def hash: Rep[BlockEntry.Hash] =
       column[BlockEntry.Hash]("hash", O.PrimaryKey, O.SqlType("bytea"))
     def timestamp: Rep[TimeStamp]  = column[TimeStamp]("timestamp")
@@ -78,24 +77,15 @@ trait BlockHeaderSchema extends Schema with CustomTypes {
     */
   private def fullIndexSQL(): SqlAction[Int, NoStream, Effect] =
     sqlu"""
-      create unique index if not exists block_headers_full_index
-          on #${tableName} (main_chain asc, timestamp desc, hash asc, chain_from asc, chain_to asc, height asc);
+      create unique index if not exists #${name}_full_index
+          on #${name} (main_chain asc, timestamp desc, hash asc, chain_from asc, chain_to asc, height asc);
       """
-
-  /**
-    * Builds partial index for column `main_chain` when `true` for performant
-    * [[org.alephium.explorer.persistence.dao.BlockDao.listMainChain]] queries.
-    *
-    * @see PR <a href="https://github.com/alephium/explorer-backend/pull/116">#116</a> for benchmarks
-    */
-  private def mainChainIndexSQL(): SqlAction[Int, NoStream, Effect] =
-    mainChainIndex(tableName)
 
   /**
     * Joins all indexes created via raw SQL
     */
   def createBlockHeadersIndexesSQL(): DBIO[Unit] =
-    DBIO.seq(fullIndexSQL(), mainChainIndexSQL())
+    DBIO.seq(fullIndexSQL(), createMainChainIndex)
 
-  val blockHeadersTable: TableQuery[BlockHeaders] = TableQuery[BlockHeaders]
+  val table: TableQuery[BlockHeaders] = TableQuery[BlockHeaders]
 }

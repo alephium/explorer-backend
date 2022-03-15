@@ -22,6 +22,7 @@ import scala.concurrent.ExecutionContext
 
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model._
@@ -138,9 +139,7 @@ class TokenSupplyServiceSpec extends AlephiumSpec with ScalaFutures with Eventua
     }
   }
 
-  trait Fixture extends TokenSupplySchema with DatabaseFixture with DBRunner with Generators {
-    override val config = databaseConfig
-    import config.profile.api._
+  trait Fixture extends DatabaseFixture with DBRunner with Generators {
 
     val now = TimeStamp.now()
 
@@ -202,7 +201,7 @@ class TokenSupplyServiceSpec extends AlephiumSpec with ScalaFutures with Eventua
       tokenSupplyService.syncOnce().futureValue is ()
 
       eventually {
-        val tokenSupply = run(tokenSupplyTable.result).futureValue.reverse
+        val tokenSupply = run(TokenSupplySchema.table.result).futureValue.reverse
         tokenSupply.map(_.circulating) is amounts
 
         tokenSupplyService

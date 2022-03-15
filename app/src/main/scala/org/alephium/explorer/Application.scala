@@ -23,7 +23,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.PostgresProfile
 
 import org.alephium.api.model.{ApiKey, PeerAddress, SelfClique}
 import org.alephium.explorer.persistence.DBInitializer
@@ -42,7 +42,7 @@ class Application(
     groupNum: Int,
     blockflowFetchMaxAge: Duration,
     networkId: NetworkId,
-    databaseConfig: DatabaseConfig[JdbcProfile],
+    databaseConfig: DatabaseConfig[PostgresProfile],
     maybeBlockFlowApiKey: Option[ApiKey],
     syncPeriod: Duration)(implicit system: ActorSystem, executionContext: ExecutionContext)
     extends StrictLogging {

@@ -18,17 +18,15 @@ package org.alephium.explorer.persistence.schema
 
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
-import slick.sql.SqlAction
 
 import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.TransactionPerAddressEntity
 import org.alephium.util.TimeStamp
 
-trait TransactionPerAddressSchema extends Schema with CustomTypes {
-  private val tableName = "transaction_per_addresses"
+object TransactionPerAddressSchema
+    extends SchemaMainChain[TransactionPerAddressEntity]("transaction_per_addresses") {
 
-  class TransactionPerAddresses(tag: Tag)
-      extends Table[TransactionPerAddressEntity](tag, tableName) {
+  class TransactionPerAddresses(tag: Tag) extends Table[TransactionPerAddressEntity](tag, name) {
     def address: Rep[Address]           = column[Address]("address")
     def hash: Rep[Transaction.Hash]     = column[Transaction.Hash]("hash", O.SqlType("BYTEA"))
     def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
@@ -48,9 +46,5 @@ trait TransactionPerAddressSchema extends Schema with CustomTypes {
         .<>((TransactionPerAddressEntity.apply _).tupled, TransactionPerAddressEntity.unapply)
   }
 
-  def createTransactionPerAddressMainChainIndex(): SqlAction[Int, NoStream, Effect] =
-    mainChainIndex(tableName)
-
-  val transactionPerAddressesTable: TableQuery[TransactionPerAddresses] =
-    TableQuery[TransactionPerAddresses]
+  val table: TableQuery[TransactionPerAddresses] = TableQuery[TransactionPerAddresses]
 }

@@ -19,9 +19,9 @@ package org.alephium.explorer.persistence.queries
 import scala.collection.mutable.ListBuffer
 
 import com.typesafe.scalalogging.StrictLogging
-import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
-import slick.jdbc.{JdbcProfile, PositionedParameters, SetParameter, SQLActionBuilder}
+import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
@@ -31,25 +31,13 @@ import org.alephium.explorer.persistence.queries.InputQueries.insertInputs
 import org.alephium.explorer.persistence.queries.OutputQueries.insertOutputs
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.explorer.persistence.schema.InputSchema._
-import org.alephium.explorer.persistence.schema.OutputSchema._
 
-trait BlockQueries
-    extends BlockHeaderSchema
-    with BlockDepsSchema
-    with LatestBlockSchema
-    with TransactionPerAddressSchema
-    with TransactionQueries
-    with CustomTypes
-    with StrictLogging {
+trait BlockQueries extends TransactionQueries with CustomTypes with StrictLogging {
 
-  val block_headers = blockHeadersTable.baseTableRow.tableName //block_headers table name
-
-  val config: DatabaseConfig[JdbcProfile]
-  import config.profile.api._
+  val block_headers = BlockHeaderSchema.table.baseTableRow.tableName //block_headers table name
 
   private val blockDepsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
-    blockDepsTable.filter(_.hash === blockHash).sortBy(_.order).map(_.dep)
+    BlockDepsSchema.table.filter(_.hash === blockHash).sortBy(_.order).map(_.dep)
   }
 
   def buildBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry] =
@@ -60,12 +48,12 @@ trait BlockQueries
 
   def getBlockEntryLiteAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry.Lite]] =
     for {
-      header <- blockHeadersTable.filter(_.hash === hash).result.headOption
+      header <- BlockHeaderSchema.table.filter(_.hash === hash).result.headOption
     } yield header.map(_.toLiteApi)
 
   def getBlockEntryAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry]] =
     for {
-      headers <- blockHeadersTable.filter(_.hash === hash).result
+      headers <- BlockHeaderSchema.table.filter(_.hash === hash).result
       blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
     } yield blocks.headOption
 
@@ -83,14 +71,14 @@ trait BlockQueries
                         toGroup: GroupIndex,
                         height: Height): DBActionR[Seq[BlockEntry]] =
     for {
-      headers <- blockHeadersTable
+      headers <- BlockHeaderSchema.table
         .filter(header =>
           header.height === height && header.chainFrom === fromGroup && header.chainTo === toGroup)
         .result
       blocks <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
     } yield blocks
 
-  def listMainChainHeaders(mainChain: Query[BlockHeaders, BlockHeader, Seq],
+  def listMainChainHeaders(mainChain: Query[BlockHeaderSchema.BlockHeaders, BlockHeader, Seq],
                            pagination: Pagination): DBActionR[Seq[BlockHeader]] = {
     val sorted = if (pagination.reverse) {
       mainChain
@@ -167,29 +155,29 @@ trait BlockQueries
 
   /** Counts main_chain Blocks */
   def countMainChain(): Rep[Int] =
-    blockHeadersTable.filter(_.mainChain).length
+    BlockHeaderSchema.table.filter(_.mainChain).length
 
   def updateMainChainStatusAction(hash: BlockEntry.Hash,
                                   isMainChain: Boolean): DBActionRWT[Unit] = {
     val query =
       for {
-        _ <- transactionsTable
+        _ <- TransactionSchema.table
           .filter(_.blockHash === hash)
           .map(_.mainChain)
           .update(isMainChain)
-        _ <- outputsTable
+        _ <- OutputSchema.table
           .filter(_.blockHash === hash)
           .map(_.mainChain)
           .update(isMainChain)
-        _ <- inputsTable
+        _ <- InputSchema.table
           .filter(_.blockHash === hash)
           .map(_.mainChain)
           .update(isMainChain)
-        _ <- blockHeadersTable
+        _ <- BlockHeaderSchema.table
           .filter(_.hash === hash)
           .map(_.mainChain)
           .update(isMainChain)
-        _ <- transactionPerAddressesTable
+        _ <- TransactionPerAddressSchema.table
           .filter(_.blockHash === hash)
           .map(_.mainChain)
           .update(isMainChain)
@@ -205,12 +193,12 @@ trait BlockQueries
 
   def getBlockEntryWithoutTxsAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry]] =
     for {
-      headers <- blockHeadersTable.filter(_.hash === hash).result
+      headers <- BlockHeaderSchema.table.filter(_.hash === hash).result
       blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryWithoutTxsAction))
     } yield blocks.headOption
 
   def getLatestBlock(chainFrom: GroupIndex, chainTo: GroupIndex): DBActionR[Option[LatestBlock]] = {
-    latestBlocksTable
+    LatestBlockSchema.table
       .filter { block =>
         block.chainFrom === chainFrom && block.chainTo === chainTo
       }
@@ -292,6 +280,7 @@ trait BlockQueries
       blockHeaders addOne block.toBlockHeader(groupNum)
     }
 
+    //
     val query =
       insertBlockDeps(blockDeps) andThen
         insertTransactions(transactions) andThen

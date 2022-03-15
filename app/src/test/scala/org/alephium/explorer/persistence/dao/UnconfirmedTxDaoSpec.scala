@@ -21,6 +21,7 @@ import scala.concurrent.ExecutionContext
 import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.Generators
@@ -34,12 +35,12 @@ class UnconfirmedTxDaoSpec extends AlephiumSpec with ScalaFutures with Generator
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
   it should "insertMany" in new Fixture {
-    import config.profile.api._
     forAll(Gen.listOfN(5, utransactionGen)) { txs =>
       utxDao.insertMany(txs).futureValue
 
       txs.foreach { tx =>
-        val dbTx = run(unconfirmedTxsTable.filter(_.hash === tx.hash).result).futureValue
+        val dbTx =
+          run(UnconfirmedTxSchema.table.filter(_.hash === tx.hash).result).futureValue
         dbTx.size is 1
         dbTx.head.hash is tx.hash
         dbTx.head.chainFrom is tx.chainFrom
@@ -47,11 +48,12 @@ class UnconfirmedTxDaoSpec extends AlephiumSpec with ScalaFutures with Generator
         dbTx.head.gasAmount is tx.gasAmount
         dbTx.head.gasPrice is tx.gasPrice
 
-        val inputs = run(uinputsTable.filter(_.txHash === tx.hash).result).futureValue
+        val inputs = run(UInputSchema.table.filter(_.txHash === tx.hash).result).futureValue
         inputs.size is tx.inputs.size
         inputs.foreach(input => tx.inputs.contains(input.toApi))
 
-        val outputs = run(uoutputsTable.filter(_.txHash === tx.hash).result).futureValue
+        val outputs =
+          run(UOutputSchema.table.filter(_.txHash === tx.hash).result).futureValue
         outputs.size is tx.outputs.size
         outputs.foreach(output => tx.outputs.contains(output.toApi))
       }
@@ -86,13 +88,7 @@ class UnconfirmedTxDaoSpec extends AlephiumSpec with ScalaFutures with Generator
     }
   }
 
-  trait Fixture
-      extends UnconfirmedTxSchema
-      with UInputSchema
-      with UOutputSchema
-      with DatabaseFixture
-      with DBRunner {
-    override val config = databaseConfig
-    val utxDao          = UnconfirmedTxDao(databaseConfig)
+  trait Fixture extends DatabaseFixture with CustomTypes with DBRunner {
+    val utxDao = UnconfirmedTxDao(databaseConfig)
   }
 }
