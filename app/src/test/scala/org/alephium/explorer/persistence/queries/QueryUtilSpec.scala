@@ -86,9 +86,9 @@ class QueryUtilSpec extends AlephiumSpec {
     //expect 4 parameters per query
     val expectedQueries =
       Seq(
-        Query(List(Row(1, 1), Row(2, 2)), "(?, ?),\n(?, ?)"),
-        Query(List(Row(3, 3), Row(4, 4)), "(?, ?),\n(?, ?)"),
-        Query(List(Row(5, 5), Row(6, 6)), "(?, ?),\n(?, ?)")
+        Query(List(Row(1, 1), Row(2, 2)), "(?, ?),(?, ?)"),
+        Query(List(Row(3, 3), Row(4, 4)), "(?, ?),(?, ?)"),
+        Query(List(Row(5, 5), Row(6, 6)), "(?, ?),(?, ?)")
       )
 
     queries is expectedQueries
@@ -106,9 +106,9 @@ class QueryUtilSpec extends AlephiumSpec {
     //expect 4 parameters per query but the last/odd gets it own query
     val expectedQueries =
       List(
-        Query(Seq(Row(1, 1), Row(2, 2)), "(?, ?),\n(?, ?)"),
-        Query(Seq(Row(3, 3), Row(4, 4)), "(?, ?),\n(?, ?)"),
-        Query(Seq(Row(5, 5), Row(6, 6)), "(?, ?),\n(?, ?)"),
+        Query(Seq(Row(1, 1), Row(2, 2)), "(?, ?),(?, ?)"),
+        Query(Seq(Row(3, 3), Row(4, 4)), "(?, ?),(?, ?)"),
+        Query(Seq(Row(5, 5), Row(6, 6)), "(?, ?),(?, ?)"),
         Query(Seq(Row(7, 7)), "(?, ?)")
       )
 
@@ -150,7 +150,7 @@ class QueryUtilSpec extends AlephiumSpec {
     val expectedQuery =
       Query(
         rows         = List(Row(1, 1), Row(2, 2), Row(3, 3), Row(4, 4), Row(5, 5), Row(6, 6), Row(7, 7)),
-        placeHolders = "(?, ?),\n(?, ?),\n(?, ?),\n(?, ?),\n(?, ?),\n(?, ?),\n(?, ?)"
+        placeHolders = "(?, ?),(?, ?),(?, ?),(?, ?),(?, ?),(?, ?),(?, ?)"
       )
 
     queries should contain only expectedQuery

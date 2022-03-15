@@ -32,8 +32,7 @@ object CustomSetParameter {
     * Builds '?' placeholders for generating parameterised SQL queries.
     *
     * Example: If rows = 2, columns = 3 this function will return
-    *          (?, ?, ?),
-    *          (?, ?, ?)
+    *          comma separated rows (?, ?, ?),(?, ?, ?).
     */
   def paramPlaceholder(rows: Int, columns: Int): String =
     if (rows <= 0 || columns <= 0) {
@@ -46,7 +45,7 @@ object CustomSetParameter {
 
       Array
         .fill(rows)(placeholders)
-        .mkString(",\n")
+        .mkString(",")
     }
 
   implicit object BlockEntryHashSetParameter extends SetParameter[BlockEntry.Hash] {
