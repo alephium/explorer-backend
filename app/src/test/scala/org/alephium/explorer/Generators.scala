@@ -168,13 +168,20 @@ trait Generators {
 
   private def parentIndex(chainTo: GroupIndex) = groupNum - 1 + chainTo.value
 
-  lazy val addressProtocolGen: Gen[protocol.Address] =
+  lazy val addressAssetProtocolGen: Gen[protocol.Address.Asset] =
     for {
       group <- Gen.choose(0, groupConfig.groups - 1)
     } yield {
       val groupIndex     = protocol.GroupIndex.unsafe(group)
       val (_, publicKey) = groupIndex.generateKey
       protocol.Address.p2pkh(publicKey)
+    }
+
+  lazy val addressContractProtocolGen: Gen[protocol.Address.Contract] =
+    for {
+      contractId <- hashGen
+    } yield {
+      protocol.Address.contract(contractId)
     }
 
   lazy val amountGen: Gen[U256] = Gen.choose(1000L, Number.quadrillion).map(ALPH.nanoAlph)
@@ -195,34 +202,90 @@ trait Generators {
     key  <- hashGen
   } yield protocolApi.OutputRef(hint, key)
 
-  lazy val inputProtocolGen: Gen[protocolApi.Input] = for {
+  lazy val inputProtocolGen: Gen[protocolApi.Input.Asset] = for {
     outputRef    <- outputRefProtocolGen
     unlockScript <- hashGen.map(_.bytes)
   } yield protocolApi.Input.Asset(outputRef, unlockScript)
 
-  def outputProtocolGen: Gen[protocolApi.Output] =
+  def outputAssetProtocolGen: Gen[protocolApi.Output.Asset] =
     for {
+      hint     <- Gen.posNum[Int]
+      key      <- hashGen
       amount   <- amountGen
       lockTime <- timestampGen
-      address  <- addressProtocolGen
+      address  <- addressAssetProtocolGen
     } yield
-      protocolApi.Output.Asset(protocolApi.Amount(amount),
+      protocolApi.Output.Asset(hint,
+                               key,
+                               protocolApi.Amount(amount),
                                address,
                                AVector.empty,
                                lockTime,
                                ByteString.empty)
 
-  def transactionProtocolGen: Gen[protocolApi.Tx] =
+  def outputContractProtocolGen: Gen[protocolApi.Output.Contract] =
+    for {
+      hint    <- Gen.posNum[Int]
+      key     <- hashGen
+      amount  <- amountGen
+      address <- addressContractProtocolGen
+    } yield
+      protocolApi.Output.Contract(hint, key, protocolApi.Amount(amount), address, AVector.empty)
+
+  def outputProtocolGen: Gen[protocolApi.Output] =
+    Gen.oneOf(outputAssetProtocolGen: Gen[protocolApi.Output],
+              outputContractProtocolGen: Gen[protocolApi.Output])
+
+  def scriptGen: Gen[protocolApi.Script] = Gen.hexStr.map(protocolApi.Script.apply)
+  def unsignedTxGen: Gen[protocolApi.UnsignedTx] =
     for {
       hash       <- transactionHashGen
+      version    <- Gen.posNum[Byte]
+      networkId  <- Gen.posNum[Byte]
+      scriptOpt  <- Gen.option(scriptGen)
       inputSize  <- Gen.choose(0, 10)
       inputs     <- Gen.listOfN(inputSize, inputProtocolGen)
       outputSize <- Gen.choose(2, 10)
-      outputs    <- Gen.listOfN(outputSize, outputProtocolGen)
+      outputs    <- Gen.listOfN(outputSize, outputAssetProtocolGen)
       gasAmount  <- Gen.posNum[Int]
       gasPrice   <- Gen.posNum[Long].map(U256.unsafe)
     } yield
-      protocolApi.Tx(hash.value, AVector.from(inputs), AVector.from(outputs), gasAmount, gasPrice)
+      protocolApi.UnsignedTx(hash.value,
+                             version,
+                             networkId,
+                             scriptOpt,
+                             gasAmount,
+                             gasPrice,
+                             AVector.from(inputs),
+                             AVector.from(outputs))
+
+  def transactionProtocolGen: Gen[protocolApi.Transaction] =
+    for {
+      unsigned             <- unsignedTxGen
+      scriptExecutionOk    <- arbitrary[Boolean]
+      contractInputsSize   <- Gen.choose(0, 5)
+      contractInputs       <- Gen.listOfN(contractInputsSize, outputRefProtocolGen)
+      generatedOutputsSize <- Gen.choose(0, 5)
+      generatedOutputs     <- Gen.listOfN(generatedOutputsSize, outputProtocolGen)
+      inputSignatures      <- Gen.listOfN(2, bytesGen)
+      scriptSignatures     <- Gen.listOfN(2, bytesGen)
+    } yield
+      protocolApi.Transaction(unsigned,
+                              scriptExecutionOk,
+                              AVector.from(contractInputs),
+                              AVector.from(generatedOutputs),
+                              AVector.from(inputSignatures),
+                              AVector.from(scriptSignatures))
+
+  def transactionTemplateProtocolGen: Gen[protocolApi.TransactionTemplate] =
+    for {
+      unsigned         <- unsignedTxGen
+      inputSignatures  <- Gen.listOfN(2, bytesGen)
+      scriptSignatures <- Gen.listOfN(2, bytesGen)
+    } yield
+      protocolApi.TransactionTemplate(unsigned,
+                                      AVector.from(inputSignatures),
+                                      AVector.from(scriptSignatures))
 
   def blockEntryProtocolGen: Gen[protocolApi.BlockEntry] =
     for {

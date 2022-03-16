@@ -17,9 +17,9 @@
 import sbt._
 
 object Version {
-  lazy val common = "1.2.8"
+  lazy val common = "1.3.0-rc4"
 
-  lazy val akka       = "2.6.15"
+  lazy val akka       = "2.6.18"
   lazy val tapir      = "0.18.1"
   lazy val slick      = "3.3.2"
   lazy val postgresql = "42.2.12"
@@ -37,7 +37,7 @@ object Dependencies {
   lazy val alephiumHttp     = "org.alephium" %% "alephium-http"     % Version.common
 
   lazy val akkaTest       = "com.typesafe.akka" %% "akka-testkit"        % Version.akka % Test
-  lazy val akkaHttptest   = "com.typesafe.akka" %% "akka-http-testkit"   % "10.2.4" % Test
+  lazy val akkaHttptest   = "com.typesafe.akka" %% "akka-http-testkit"   % "10.2.7" % Test
   lazy val akkaStream     = "com.typesafe.akka" %% "akka-stream-typed"   % Version.akka
   lazy val akkaStreamTest = "com.typesafe.akka" %% "akka-stream-testkit" % Version.akka % Test
 
@@ -51,7 +51,7 @@ object Dependencies {
   lazy val tapirClient       = "com.softwaremill.sttp.tapir"   %% "tapir-sttp-client"          % Version.tapir
   lazy val sttpAkkaBackend   = "com.softwaremill.sttp.client3" %% "akka-http-backend"          % Version.sttp
 
-  lazy val akkaHttpJson = "de.heikoseeberger" %% "akka-http-upickle" % "1.36.0"
+  lazy val akkaHttpJson = "de.heikoseeberger" %% "akka-http-upickle" % "1.39.2"
   lazy val `upickle`    = "com.lihaoyi"       %% "upickle"           % "1.3.8"
 
   lazy val caffeine = "com.github.ben-manes.caffeine" % "caffeine" % "3.0.5"
