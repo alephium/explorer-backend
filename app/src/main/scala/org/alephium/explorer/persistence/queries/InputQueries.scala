@@ -37,7 +37,7 @@ object InputQueries extends CustomTypes {
 
   /** Inserts inputs or ignore rows with primary key conflict */
   def insertInputs(inputs: Iterable[InputEntity]): DBActionW[Int] =
-    QueryUtil.splitUpdates(rows = inputs, queryRowParams = 9) { (inputs, placeholder) =>
+    QuerySplitter.splitUpdates(rows = inputs, queryRowParams = 9) { (inputs, placeholder) =>
       val query =
         s"""
            |INSERT INTO inputs ("block_hash",

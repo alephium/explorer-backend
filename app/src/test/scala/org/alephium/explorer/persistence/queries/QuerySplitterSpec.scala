@@ -20,7 +20,7 @@ import org.scalacheck.Gen
 
 import org.alephium.explorer.AlephiumSpec
 
-class QueryUtilSpec extends AlephiumSpec {
+class QuerySplitterSpec extends AlephiumSpec {
 
   //A query's parameter row
   case class Row(param1: Int, param2: Int)
@@ -43,13 +43,13 @@ class QueryUtilSpec extends AlephiumSpec {
   case class Query(rows: Iterable[Row], placeHolders: String)
 
   /**
-    * Calls [[QueryUtil.splitFoldLeft]] and simple returns the result returned by it to test
+    * Calls [[QuerySplitter.splitFoldLeft]] and simple returns the result returned by it to test
     * the split's result.
     *
     * Each split is a single [[Query]] object which contains its [[Row]] and a placeholder String.
     */
   def getQueries(rows: Seq[Row], initialResult: Seq[Query], queryMaxParams: Short): Seq[Query] =
-    QueryUtil.splitFoldLeft[Row, Seq[Query]](
+    QuerySplitter.splitFoldLeft[Row, Seq[Query]](
       rows         = rows,
       initialQuery = initialResult,
       //Number of parameters in Row. For this test it's param1 & param2 = 2
@@ -190,14 +190,14 @@ class QueryUtilSpec extends AlephiumSpec {
     val columnsPerRows = 10
 
     //Check that maxParametersPerQuery is 2000 and valid to use in this test case
-    QueryUtil.maxParametersPerQuery is 2000.toShort
+    QuerySplitter.maxParametersPerQuery is 2000.toShort
 
     val querySplits: Seq[Query] =
-      QueryUtil.splitFoldLeft[Row, Seq[Query]](
+      QuerySplitter.splitFoldLeft[Row, Seq[Query]](
         rows           = rows,
         initialQuery   = Seq.empty,
         queryRowParams = columnsPerRows,
-        queryMaxParams = QueryUtil.maxParametersPerQuery //From comment: if test with N = 2000
+        queryMaxParams = QuerySplitter.maxParametersPerQuery //From comment: if test with N = 2000
       ) { (rowsForThisQuery, placeholderForThisQuery, allQueries) =>
         //collect all queries
         allQueries :+ Query(rowsForThisQuery, placeholderForThisQuery)

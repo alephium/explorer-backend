@@ -23,7 +23,7 @@ import slick.dbio.DBIOAction
 import org.alephium.explorer.persistence.DBActionW
 import org.alephium.explorer.persistence.schema.CustomSetParameter.paramPlaceholder
 
-object QueryUtil {
+object QuerySplitter {
 
   /** Maximum number of parameters per query.
     *
