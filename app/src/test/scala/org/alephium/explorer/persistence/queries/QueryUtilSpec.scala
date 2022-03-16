@@ -155,4 +155,63 @@ class QueryUtilSpec extends AlephiumSpec {
 
     queries should contain only expectedQuery
   }
+
+  it should "Test following PR review comment in #162: See link below" in {
+
+    /**
+      * Test following <a href="https://github.com/alephium/explorer-backend/pull/162#discussion_r826874299">comment</a>.
+      *
+      * Let's say the limit of parameters (i.e. ?) is N, and each query has M parameters,
+      * then each insertion can insert upto N/M rows. If N = 200 and M=10, then each batch
+      * can insert at most 20 rows. This would be very slow. However, if test with N = 2000,
+      * then each batch would insert 200 rows. Let me know if I am clear enough now.
+      */
+    //a table row with 10 columns == 10 query params ('?') per row
+    case class Row(col1: Int,
+                   col2: Int,
+                   col3: Int,
+                   col4: Int,
+                   col5: Int,
+                   col6: Int,
+                   col7: Int,
+                   col8: Int,
+                   col9: Int,
+                   col10: Int)
+
+    //The foldLeft function below simply returns the rows and placeholder
+    //generated per batch/chunk. This data type holds that information.
+    case class Query(rows: Iterable[Row], placeholder: String)
+
+    //let's generate some data - 10,000 rows
+    val rows = (1 to 10000).map(i => Row(i, i, i, i, i, i, i, i, i, i))
+
+    //From comment: M=10
+    //Number of columns per row or number of params '?' per row
+    val columnsPerRows = 10
+
+    //Check that maxParametersPerQuery is 2000 and valid to use in this test case
+    QueryUtil.maxParametersPerQuery is 2000.toShort
+
+    val querySplits: Seq[Query] =
+      QueryUtil.splitFoldLeft[Row, Seq[Query]](
+        rows           = rows,
+        initialQuery   = Seq.empty,
+        queryRowParams = columnsPerRows,
+        queryMaxParams = QueryUtil.maxParametersPerQuery //From comment: if test with N = 2000
+      ) { (rowsForThisQuery, placeholderForThisQuery, allQueries) =>
+        //collect all queries
+        allQueries :+ Query(rowsForThisQuery, placeholderForThisQuery)
+      }
+
+    //From comment: then each batch would insert 200 rows
+    querySplits.size is (10000 / 200)
+
+    querySplits foreach { split =>
+      //From comment: then each batch would insert 200 rows
+      //Assert each query gets 200 rows
+      split.rows should have size 200
+      //Assert each column has 10 '?'
+      split.placeholder.count(_ == '?') is (200 * 10)
+    }
+  }
 }

@@ -25,12 +25,15 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter.paramPlacehol
 
 object QueryUtil {
 
-  /** Maximum number of parameters allowed by Postgres per query.
+  /** Maximum number of parameters per query.
+    *
+    * @note This value cannot be > [[scala.Short.MaxValue]].
+    *       See issue <a href="https://github.com/alephium/explorer-backend/issues/160">#160</a>.
     *
     * TODO: This should be passed as a configuration instead of hardcoding it
     *       and should be passed as parameter to the function using this value.
     * */
-  val postgresDefaultParameterLimit: Short = Short.MaxValue
+  val maxParametersPerQuery: Short = 2000
 
   private val emptyUpdates = DBIOAction.successful(0)
 
@@ -38,7 +41,7 @@ object QueryUtil {
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def splitUpdates[R](rows: Iterable[R],
                       queryRowParams: Int,
-                      queryMaxParams: Short = postgresDefaultParameterLimit)(
+                      queryMaxParams: Short = maxParametersPerQuery)(
       queryBuilder: (Iterable[R], String) => DBActionW[Int]): DBActionW[Int] =
     splitFoldLeft[R, DBActionW[Int]](initialQuery   = emptyUpdates,
                                      queryRowParams = queryRowParams,
@@ -53,7 +56,7 @@ object QueryUtil {
     * @param rows             All query parameters
     * @param initialQuery     Returned when params are empty
     * @param queryRowParams   Max number of parameters in a single row of a query. Or the number of '?' in a single row.
-    * @param queryMaxParams   Maximum number of parameters for each query. Eg: [[postgresDefaultParameterLimit]]
+    * @param queryMaxParams   Maximum number of parameters for each query. Eg: [[maxParametersPerQuery]]
     * @param foldLeft         Given a set of following inputs (Tuple3) returns the next query.
     *                         Similar to foldLeft in a collection type.
     *                           - _1 = Parameter split for current query
