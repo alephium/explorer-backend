@@ -184,14 +184,14 @@ object BlockFlowClient {
         case (tx, txIndex) =>
           tx.contractInputs.toSeq.zipWithIndex.map {
             case (outputRef, index) =>
-              val shiftIndex = index + inputs.size
-              outputRefToInputToEntity(outputRef,
-                                       hash,
-                                       tx.unsigned.hash,
-                                       block.timestamp,
-                                       mainChain,
-                                       shiftIndex,
-                                       txIndex)
+              val shiftIndex = index + tx.unsigned.inputs.length
+              outputRefToInputEntity(outputRef,
+                                     hash,
+                                     tx.unsigned.hash,
+                                     block.timestamp,
+                                     mainChain,
+                                     shiftIndex,
+                                     txIndex)
           }
       }
     inputs ++ contractInputs
@@ -220,7 +220,7 @@ object BlockFlowClient {
         case (tx, txIndex) =>
           tx.generatedOutputs.toSeq.zipWithIndex.map {
             case (out, index) =>
-              val shiftIndex = index + outputs.size
+              val shiftIndex = index + tx.unsigned.outputs.length
               outputToEntity(out,
                              hash,
                              tx.unsigned.hash,
@@ -331,13 +331,13 @@ object BlockFlowClient {
                 txIndex)
   }
 
-  private def outputRefToInputToEntity(outputRef: api.model.OutputRef,
-                                       blockHash: BlockEntry.Hash,
-                                       txId: Hash,
-                                       timestamp: TimeStamp,
-                                       mainChain: Boolean,
-                                       index: Int,
-                                       txIndex: Int): InputEntity = {
+  private def outputRefToInputEntity(outputRef: api.model.OutputRef,
+                                     blockHash: BlockEntry.Hash,
+                                     txId: Hash,
+                                     timestamp: TimeStamp,
+                                     mainChain: Boolean,
+                                     index: Int,
+                                     txIndex: Int): InputEntity = {
     InputEntity(
       blockHash,
       new Transaction.Hash(txId),
