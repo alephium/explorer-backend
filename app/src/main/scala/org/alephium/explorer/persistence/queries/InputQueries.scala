@@ -197,6 +197,6 @@ object InputQueries extends CustomTypes {
      txHash: Transaction.Hash,
      address: Address,
      amount: U256) =>
-      Input(Output.Ref(hint, key), unlockScript, txHash, address, amount)
+      Input(OutputRef(hint, key), unlockScript, txHash, address, amount)
   }.tupled
 }

@@ -202,7 +202,7 @@ class TransactionServiceSpec
       tx1.hash,
       blockHash1,
       ts1,
-      Seq(Input(Output.Ref(0, output0.key), None, tx0.hash, address0, U256.One)),
+      Seq(Input(OutputRef(0, output0.key), None, tx0.hash, address0, U256.One)),
       Seq(Output(output1.hint, output1.key, U256.One, address1, None, None)),
       gasAmount1,
       gasPrice1

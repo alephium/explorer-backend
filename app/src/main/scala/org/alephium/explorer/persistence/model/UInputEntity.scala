@@ -17,7 +17,7 @@
 package org.alephium.explorer.persistence.model
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Output, Transaction, UInput}
+import org.alephium.explorer.api.model.{OutputRef, Transaction, UInput}
 
 final case class UInputEntity(
     txHash: Transaction.Hash,
@@ -26,7 +26,7 @@ final case class UInputEntity(
     unlockScript: Option[String]
 ) {
   lazy val toApi: UInput = UInput(
-    Output.Ref(hint, outputRefKey),
+    OutputRef(hint, outputRefKey),
     unlockScript
   )
 }

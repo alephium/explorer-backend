@@ -1401,7 +1401,7 @@
         "type": "object",
         "properties": {
           "outputRef": {
-            "$ref": "#/components/schemas/Ref"
+            "$ref": "#/components/schemas/OutputRef"
           },
           "unlockScript": {
             "type": "string"
@@ -1533,6 +1533,21 @@
           }
         }
       },
+      "OutputRef": {
+        "required": [
+          "hint",
+          "key"
+        ],
+        "type": "object",
+        "properties": {
+          "hint": {
+            "type": "integer"
+          },
+          "key": {
+            "type": "string"
+          }
+        }
+      },
       "PerChainValue": {
         "required": [
           "chainFrom",
@@ -1549,21 +1564,6 @@
           },
           "value": {
             "type": "integer"
-          }
-        }
-      },
-      "Ref": {
-        "required": [
-          "hint",
-          "key"
-        ],
-        "type": "object",
-        "properties": {
-          "hint": {
-            "type": "integer"
-          },
-          "key": {
-            "type": "string"
           }
         }
       },
@@ -1663,7 +1663,7 @@
         "type": "object",
         "properties": {
           "outputRef": {
-            "$ref": "#/components/schemas/Ref"
+            "$ref": "#/components/schemas/OutputRef"
           },
           "unlockScript": {
             "type": "string"

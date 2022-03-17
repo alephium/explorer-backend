@@ -192,10 +192,10 @@ trait Generators {
       j <- 0 to groupConfig.groups - 1
     } yield (GroupIndex.unsafe(i), GroupIndex.unsafe(j))
 
-  lazy val outputRefGen: Gen[Output.Ref] = for {
+  lazy val outputRefGen: Gen[OutputRef] = for {
     hint <- arbitrary[Int]
     key  <- hashGen
-  } yield Output.Ref(hint, key)
+  } yield OutputRef(hint, key)
 
   lazy val outputRefProtocolGen: Gen[protocolApi.OutputRef] = for {
     hint <- arbitrary[Int]

@@ -17,7 +17,7 @@
 package org.alephium.explorer.persistence.model
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, BlockEntry, Input, Output, Transaction}
+import org.alephium.explorer.api.model.{Address, BlockEntry, Input, OutputRef, Transaction}
 import org.alephium.protocol
 import org.alephium.protocol.vm.UnlockScript
 import org.alephium.serde.deserialize
@@ -36,7 +36,7 @@ final case class InputEntity(
 ) {
   def toApi(outputRef: OutputEntity): Input =
     Input(
-      Output.Ref(hint, outputRefKey),
+      OutputRef(hint, outputRefKey),
       unlockScript,
       outputRef.txHash,
       outputRef.address,

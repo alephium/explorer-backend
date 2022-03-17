@@ -22,7 +22,7 @@ import org.alephium.util.U256
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 final case class Input(
-    outputRef: Output.Ref,
+    outputRef: OutputRef,
     unlockScript: Option[String] = None,
     txHashRef: Transaction.Hash,
     address: Address,
