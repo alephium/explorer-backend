@@ -1652,7 +1652,7 @@
             "$ref": "#/components/schemas/Transaction"
           },
           {
-            "$ref": "#/components/schemas/UnconfirmedTx"
+            "$ref": "#/components/schemas/UnconfirmedTransaction"
           }
         ]
       },
@@ -1701,7 +1701,7 @@
           }
         }
       },
-      "UnconfirmedTx": {
+      "UnconfirmedTransaction": {
         "required": [
           "hash",
           "chainFrom",

@@ -29,12 +29,12 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 
 trait UnconfirmedTxDao {
-  def get(hash: Transaction.Hash): Future[Option[UnconfirmedTx]]
-  def insertMany(utxs: Seq[UnconfirmedTx]): Future[Unit]
+  def get(hash: Transaction.Hash): Future[Option[UnconfirmedTransaction]]
+  def insertMany(utxs: Seq[UnconfirmedTransaction]): Future[Unit]
   def listHashes(): Future[Seq[Transaction.Hash]]
   def removeMany(txs: Seq[Transaction.Hash]): Future[Unit]
   def removeAndInsertMany(toRemove: Seq[Transaction.Hash],
-                          toInsert: Seq[UnconfirmedTx]): Future[Unit]
+                          toInsert: Seq[UnconfirmedTransaction]): Future[Unit]
 }
 
 object UnconfirmedTxDao {
@@ -48,14 +48,14 @@ object UnconfirmedTxDao {
       with CustomTypes
       with DBRunner {
 
-    def get(hash: Transaction.Hash): Future[Option[UnconfirmedTx]] = {
+    def get(hash: Transaction.Hash): Future[Option[UnconfirmedTransaction]] = {
       run(for {
         maybeTx <- UnconfirmedTxSchema.table.filter(_.hash === hash).result.headOption
         inputs  <- UInputSchema.table.filter(_.txHash === hash).result
         outputs <- UOutputSchema.table.filter(_.txHash === hash).result
       } yield {
         maybeTx.map { tx =>
-          UnconfirmedTx(
+          UnconfirmedTransaction(
             tx.hash,
             tx.chainFrom,
             tx.chainTo,
@@ -68,7 +68,7 @@ object UnconfirmedTxDao {
       })
     }
 
-    private def insertManyAction(utxs: Seq[UnconfirmedTx]): DBActionW[Unit] = {
+    private def insertManyAction(utxs: Seq[UnconfirmedTransaction]): DBActionW[Unit] = {
       val entities = utxs.map(UnconfirmedTxEntity.from)
       val txs      = entities.map { case (tx, _, _) => tx }
       val inputs   = entities.flatMap { case (_, in, _) => in }
@@ -80,7 +80,7 @@ object UnconfirmedTxDao {
       } yield ()
     }
 
-    def insertMany(utxs: Seq[UnconfirmedTx]): Future[Unit] = {
+    def insertMany(utxs: Seq[UnconfirmedTransaction]): Future[Unit] = {
       run(insertManyAction(utxs))
     }
 
@@ -101,7 +101,7 @@ object UnconfirmedTxDao {
     }
 
     def removeAndInsertMany(toRemove: Seq[Transaction.Hash],
-                            toInsert: Seq[UnconfirmedTx]): Future[Unit] = {
+                            toInsert: Seq[UnconfirmedTransaction]): Future[Unit] = {
       run((for {
         _ <- removeManyAction(toRemove)
         _ <- insertManyAction(toInsert)

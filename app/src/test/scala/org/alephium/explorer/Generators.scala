@@ -89,7 +89,7 @@ trait Generators {
       gasPrice  <- u256Gen
     } yield Transaction(hash, blockHash, timestamp, Seq.empty, Seq.empty, gasAmount, gasPrice)
 
-  lazy val utransactionGen: Gen[UnconfirmedTx] =
+  lazy val utransactionGen: Gen[UnconfirmedTransaction] =
     for {
       hash      <- transactionHashGen
       chainFrom <- groupIndexGen
@@ -98,7 +98,7 @@ trait Generators {
       outputs   <- Gen.listOfN(3, uoutputGen)
       gasAmount <- Gen.posNum[Int]
       gasPrice  <- u256Gen
-    } yield UnconfirmedTx(hash, chainFrom, chainTo, inputs, outputs, gasAmount, gasPrice)
+    } yield UnconfirmedTransaction(hash, chainFrom, chainTo, inputs, outputs, gasAmount, gasPrice)
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def transactionEntityGen(

@@ -75,7 +75,7 @@ trait BlockFlowClient {
 
   def fetchSelfClique(): Future[Either[String, SelfClique]]
 
-  def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UnconfirmedTx]]]
+  def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]]
 }
 
 object BlockFlowClient {
@@ -141,7 +141,7 @@ object BlockFlowClient {
         .map(_.map(_.blocks.map(_.map(blockProtocolToEntity).toSeq).toSeq))
     }
 
-    def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UnconfirmedTx]]] =
+    def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]] =
       _send(listUnconfirmedTransactions, uri, ())
         .map(_.map { utxs =>
           utxs.flatMap { utx =>
@@ -268,8 +268,8 @@ object BlockFlowClient {
                       chainFrom: Int,
                       chainTo: Int,
                       inputs: Seq[UInput],
-                      outputs: Seq[UOutput]): UnconfirmedTx =
-    UnconfirmedTx(
+                      outputs: Seq[UOutput]): UnconfirmedTransaction =
+    UnconfirmedTransaction(
       new Transaction.Hash(tx.unsigned.hash),
       GroupIndex.unsafe(chainFrom),
       GroupIndex.unsafe(chainTo),
