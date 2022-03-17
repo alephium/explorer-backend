@@ -28,7 +28,8 @@ final case class UnconfirmedTxEntity(
 )
 
 object UnconfirmedTxEntity {
-  def from(utx: UnconfirmedTransaction): (UnconfirmedTxEntity, Seq[UInputEntity], Seq[UOutputEntity]) = {
+  def from(
+      utx: UnconfirmedTransaction): (UnconfirmedTxEntity, Seq[UInputEntity], Seq[UOutputEntity]) = {
     (UnconfirmedTxEntity(
        utx.hash,
        utx.chainFrom,

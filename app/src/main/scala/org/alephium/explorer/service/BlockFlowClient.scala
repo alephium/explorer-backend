@@ -141,7 +141,8 @@ object BlockFlowClient {
         .map(_.map(_.blocks.map(_.map(blockProtocolToEntity).toSeq).toSeq))
     }
 
-    def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]] =
+    def fetchUnconfirmedTransactions(
+        uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]] =
       _send(listUnconfirmedTransactions, uri, ())
         .map(_.map { utxs =>
           utxs.flatMap { utx =>

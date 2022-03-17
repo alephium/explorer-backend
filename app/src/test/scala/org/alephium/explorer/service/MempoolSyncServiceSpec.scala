@@ -78,7 +78,8 @@ class MempoolSyncServiceSpec
     var unconfirmedTransactions: Seq[UnconfirmedTransaction] = Seq.empty
 
     val blockFlowClient: BlockFlowClient = new BlockFlowClient {
-      def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]] =
+      def fetchUnconfirmedTransactions(
+          uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]] =
         Future.successful(Right(unconfirmedTransactions))
       def fetchBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]] =
         ???

@@ -17,6 +17,7 @@
 package org.alephium.explorer.service
 
 import scala.concurrent.{ExecutionContext, Future}
+
 import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.StrictLogging
 

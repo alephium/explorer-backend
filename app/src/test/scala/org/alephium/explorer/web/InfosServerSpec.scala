@@ -104,7 +104,7 @@ class InfosServerSpec()
 
     val chainHeight = PerChainValue(0, 0, 1)
     val blockService = new BlockService {
-      def getLiteBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]] = ???
+      def getLiteBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntryLite]] = ???
       def getBlockTransactions(hash: BlockEntry.Hash,
                                pagination: Pagination): Future[Seq[Transaction]] = ???
       def listBlocks(pagination: Pagination): Future[ListBlocks]                 = ???

@@ -21,7 +21,7 @@ import java.math.BigInteger
 import akka.util.ByteString
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, Transaction}
+import org.alephium.explorer.api.model.{BlockEntry, BlockEntryLite, GroupIndex, Height, Transaction}
 import org.alephium.util.TimeStamp
 
 final case class BlockHeader(
@@ -43,8 +43,8 @@ final case class BlockHeader(
   def toApi(deps: Seq[BlockEntry.Hash], transactions: Seq[Transaction]): BlockEntry =
     BlockEntry(hash, timestamp, chainFrom, chainTo, height, deps, transactions, mainChain, hashrate)
 
-  lazy val toLiteApi: BlockEntry.Lite =
-    BlockEntry.Lite(hash, timestamp, chainFrom, chainTo, height, txsCount, mainChain, hashrate)
+  lazy val toLiteApi: BlockEntryLite =
+    BlockEntryLite(hash, timestamp, chainFrom, chainTo, height, txsCount, mainChain, hashrate)
 }
 
 object BlockHeader {

@@ -126,7 +126,7 @@ trait ApplicationSpec
 
     forAll(Gen.oneOf(blocks)) { block =>
       Get(s"/blocks/${block.hash.value.toHexString}") ~> routes ~> check {
-        val blockResult = responseAs[BlockEntry.Lite]
+        val blockResult = responseAs[BlockEntryLite]
         blockResult.hash is block.hash
         blockResult.timestamp is block.timestamp
         blockResult.chainFrom is block.chainFrom
