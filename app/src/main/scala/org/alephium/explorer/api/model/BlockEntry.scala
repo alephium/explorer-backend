@@ -46,18 +46,18 @@ object BlockEntry {
   object Hash extends HashCompanion[BlockHash, Hash](new Hash(_), _.value)
 
   implicit val codec: ReadWriter[BlockEntry] = macroRW
+}
 
-  final case class Lite(
-      hash: BlockEntry.Hash,
-      timestamp: TimeStamp,
-      chainFrom: GroupIndex,
-      chainTo: GroupIndex,
-      height: Height,
-      txNumber: Int,
-      mainChain: Boolean,
-      hashRate: BigInteger
-  )
-  object Lite {
-    implicit val codec: ReadWriter[Lite] = macroRW
-  }
+final case class BlockEntryLite(
+    hash: BlockEntry.Hash,
+    timestamp: TimeStamp,
+    chainFrom: GroupIndex,
+    chainTo: GroupIndex,
+    height: Height,
+    txNumber: Int,
+    mainChain: Boolean,
+    hashRate: BigInteger
+)
+object BlockEntryLite {
+  implicit val codec: ReadWriter[BlockEntryLite] = macroRW
 }

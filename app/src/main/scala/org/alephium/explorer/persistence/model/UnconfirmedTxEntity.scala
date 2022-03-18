@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.api.model.{GroupIndex, Transaction, UnconfirmedTx}
+import org.alephium.explorer.api.model.{GroupIndex, Transaction, UnconfirmedTransaction}
 import org.alephium.util.U256
 
 final case class UnconfirmedTxEntity(
@@ -28,7 +28,8 @@ final case class UnconfirmedTxEntity(
 )
 
 object UnconfirmedTxEntity {
-  def from(utx: UnconfirmedTx): (UnconfirmedTxEntity, Seq[UInputEntity], Seq[UOutputEntity]) = {
+  def from(
+      utx: UnconfirmedTransaction): (UnconfirmedTxEntity, Seq[UInputEntity], Seq[UOutputEntity]) = {
     (UnconfirmedTxEntity(
        utx.hash,
        utx.chainFrom,

@@ -46,7 +46,7 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
       txs  <- getTransactionsByBlockHash(blockHeader.hash)
     } yield blockHeader.toApi(deps, txs)
 
-  def getBlockEntryLiteAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry.Lite]] =
+  def getBlockEntryLiteAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntryLite]] =
     for {
       header <- BlockHeaderSchema.table.filter(_.hash === hash).result.headOption
     } yield header.map(_.toLiteApi)
@@ -126,7 +126,7 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
     * Fetches all main_chain [[org.alephium.explorer.persistence.schema.BlockHeaderSchema.table]] rows
     */
   def listMainChainHeadersWithTxnNumberSQL(
-      pagination: Pagination): DBActionRWT[Vector[BlockEntry.Lite]] = {
+      pagination: Pagination): DBActionRWT[Vector[BlockEntryLite]] = {
 
     //order by for inner query
     val orderBy =
@@ -150,7 +150,7 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
            |#$orderBy
            |limit ${pagination.limit} offset ${pagination.limit * pagination.offset}
            |""".stripMargin
-      .as[BlockEntry.Lite](blockEntryListGetResult)
+      .as[BlockEntryLite](blockEntryListGetResult)
   }
 
   /** Counts main_chain Blocks */

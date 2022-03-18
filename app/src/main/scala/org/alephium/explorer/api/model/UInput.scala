@@ -20,7 +20,7 @@ import org.alephium.json.Json._
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 final case class UInput(
-    outputRef: Output.Ref,
+    outputRef: OutputRef,
     unlockScript: Option[String] = None
 )
 

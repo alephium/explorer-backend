@@ -16,22 +16,12 @@
 
 package org.alephium.explorer.api.model
 
-import org.alephium.api.UtilJson._
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.Json.{hashReadWriter, u256ReadWriter}
+import org.alephium.explorer.api.Json.hashReadWriter
 import org.alephium.json.Json._
-import org.alephium.util.{TimeStamp, U256}
 
-@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-final case class Output(
-    hint: Int,
-    key: Hash,
-    amount: U256,
-    address: Address,
-    lockTime: Option[TimeStamp]     = None,
-    spent: Option[Transaction.Hash] = None
-)
+final case class OutputRef(hint: Int, key: Hash)
 
-object Output {
-  implicit val readWriter: ReadWriter[Output] = macroRW
+object OutputRef {
+  implicit val readWriter: ReadWriter[OutputRef] = macroRW
 }

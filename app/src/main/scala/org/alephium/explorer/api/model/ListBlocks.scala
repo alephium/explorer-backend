@@ -18,7 +18,7 @@ package org.alephium.explorer.api.model
 
 import org.alephium.json.Json._
 
-final case class ListBlocks(total: Int, blocks: Seq[BlockEntry.Lite])
+final case class ListBlocks(total: Int, blocks: Seq[BlockEntryLite])
 
 object ListBlocks {
   implicit val readWriter: ReadWriter[ListBlocks] = macroRW

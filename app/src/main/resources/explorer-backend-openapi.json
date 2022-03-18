@@ -142,7 +142,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Lite"
+                  "$ref": "#/components/schemas/BlockEntryLite"
                 }
               }
             }
@@ -1360,6 +1360,92 @@
           }
         }
       },
+      "BlockEntryLite": {
+        "required": [
+          "hash",
+          "timestamp",
+          "chainFrom",
+          "chainTo",
+          "height",
+          "txNumber",
+          "mainChain",
+          "hashRate"
+        ],
+        "type": "object",
+        "properties": {
+          "hash": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "chainFrom": {
+            "type": "integer"
+          },
+          "chainTo": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "txNumber": {
+            "type": "integer"
+          },
+          "mainChain": {
+            "type": "boolean"
+          },
+          "hashRate": {
+            "type": "string",
+            "format": "bigint"
+          }
+        }
+      },
+      "ConfirmedTransaction": {
+        "required": [
+          "hash",
+          "blockHash",
+          "timestamp",
+          "gasAmount",
+          "gasPrice",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "hash": {
+            "type": "string"
+          },
+          "blockHash": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Input"
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Output"
+            }
+          },
+          "gasAmount": {
+            "type": "integer"
+          },
+          "gasPrice": {
+            "type": "string",
+            "format": "uint256"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
       "ExplorerInfo": {
         "required": [
           "releaseVersion",
@@ -1401,7 +1487,7 @@
         "type": "object",
         "properties": {
           "outputRef": {
-            "$ref": "#/components/schemas/Ref"
+            "$ref": "#/components/schemas/OutputRef"
           },
           "unlockScript": {
             "type": "string"
@@ -1441,49 +1527,8 @@
           "blocks": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Lite"
+              "$ref": "#/components/schemas/BlockEntryLite"
             }
-          }
-        }
-      },
-      "Lite": {
-        "required": [
-          "hash",
-          "timestamp",
-          "chainFrom",
-          "chainTo",
-          "height",
-          "txNumber",
-          "mainChain",
-          "hashRate"
-        ],
-        "type": "object",
-        "properties": {
-          "hash": {
-            "type": "string"
-          },
-          "timestamp": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "chainFrom": {
-            "type": "integer"
-          },
-          "chainTo": {
-            "type": "integer"
-          },
-          "height": {
-            "type": "integer"
-          },
-          "txNumber": {
-            "type": "integer"
-          },
-          "mainChain": {
-            "type": "boolean"
-          },
-          "hashRate": {
-            "type": "string",
-            "format": "bigint"
           }
         }
       },
@@ -1533,6 +1578,21 @@
           }
         }
       },
+      "OutputRef": {
+        "required": [
+          "hint",
+          "key"
+        ],
+        "type": "object",
+        "properties": {
+          "hint": {
+            "type": "integer"
+          },
+          "key": {
+            "type": "string"
+          }
+        }
+      },
       "PerChainValue": {
         "required": [
           "chainFrom",
@@ -1549,21 +1609,6 @@
           },
           "value": {
             "type": "integer"
-          }
-        }
-      },
-      "Ref": {
-        "required": [
-          "hint",
-          "key"
-        ],
-        "type": "object",
-        "properties": {
-          "hint": {
-            "type": "integer"
-          },
-          "key": {
-            "type": "string"
           }
         }
       },
@@ -1649,12 +1694,15 @@
       "TransactionLike": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/Transaction"
+            "$ref": "#/components/schemas/ConfirmedTransaction"
           },
           {
-            "$ref": "#/components/schemas/UnconfirmedTx"
+            "$ref": "#/components/schemas/UnconfirmedTransaction"
           }
-        ]
+        ],
+        "discriminator": {
+          "propertyName": "type"
+        }
       },
       "UInput": {
         "required": [
@@ -1663,7 +1711,7 @@
         "type": "object",
         "properties": {
           "outputRef": {
-            "$ref": "#/components/schemas/Ref"
+            "$ref": "#/components/schemas/OutputRef"
           },
           "unlockScript": {
             "type": "string"
@@ -1701,13 +1749,14 @@
           }
         }
       },
-      "UnconfirmedTx": {
+      "UnconfirmedTransaction": {
         "required": [
           "hash",
           "chainFrom",
           "chainTo",
           "gasAmount",
-          "gasPrice"
+          "gasPrice",
+          "type"
         ],
         "type": "object",
         "properties": {
@@ -1738,6 +1787,9 @@
           "gasPrice": {
             "type": "string",
             "format": "uint256"
+          },
+          "type": {
+            "type": "string"
           }
         }
       }

@@ -35,7 +35,6 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     forAll(transactionGen) { tx =>
       val expected = s"""
        |{
-       |  "type": "confirmed",
        |  "hash": "${tx.hash.value.toHexString}",
        |  "blockHash": "${tx.blockHash}",
        |  "timestamp": ${tx.timestamp.millis},
@@ -45,6 +44,23 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
        |  "gasPrice": "${tx.gasPrice}"
        |}""".stripMargin
       check(tx, expected)
+    }
+  }
+
+  it should "ConfirmedTransaction" in {
+    forAll(transactionGen) { tx =>
+      val expected = s"""
+       |{
+       |  "type": "Confirmed",
+       |  "hash": "${tx.hash.value.toHexString}",
+       |  "blockHash": "${tx.blockHash}",
+       |  "timestamp": ${tx.timestamp.millis},
+       |  "inputs": [],
+       |  "outputs": [],
+       |  "gasAmount": ${tx.gasAmount},
+       |  "gasPrice": "${tx.gasPrice}"
+       |}""".stripMargin
+      check(ConfirmedTransaction.from(tx), expected)
     }
   }
 
@@ -111,7 +127,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     forAll(utransactionGen) { utx =>
       val expected = s"""
      |{
-     |  "type": "unconfirmed",
+     |  "type": "Unconfirmed",
      |  "hash": "${utx.hash.value.toHexString}",
      |  "chainFrom": ${utx.chainFrom.value},
      |  "chainTo": ${utx.chainTo.value},

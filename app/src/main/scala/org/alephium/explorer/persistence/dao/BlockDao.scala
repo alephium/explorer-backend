@@ -40,16 +40,16 @@ import org.alephium.util.TimeStamp
 
 trait BlockDao {
   def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]]
-  def getLite(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]]
+  def getLite(hash: BlockEntry.Hash): Future[Option[BlockEntryLite]]
   def getTransactions(hash: BlockEntry.Hash, pagination: Pagination): Future[Seq[Transaction]]
   def getAtHeight(fromGroup: GroupIndex,
                   toGroup: GroupIndex,
                   height: Height): Future[Seq[BlockEntry]]
   def insert(block: BlockEntity): Future[Unit]
   def insertAll(blocks: Seq[BlockEntity]): Future[Unit]
-  def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)]
-  def listMainChainSQL(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)]
-  def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntry.Lite]]
+  def listMainChain(pagination: Pagination): Future[(Seq[BlockEntryLite], Int)]
+  def listMainChainSQL(pagination: Pagination): Future[(Seq[BlockEntryLite], Int)]
+  def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntryLite]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
   def updateTransactionPerAddress(block: BlockEntity): Future[Seq[InputEntity]]
   def updateMainChain(hash: BlockEntry.Hash,
@@ -97,7 +97,7 @@ object BlockDao {
       .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
       .buildAsync(asyncLoader)
 
-    def getLite(hash: BlockEntry.Hash): Future[Option[BlockEntry.Lite]] =
+    def getLite(hash: BlockEntry.Hash): Future[Option[BlockEntryLite]] =
       run(getBlockEntryLiteAction(hash))
 
     def getTransactions(hash: BlockEntry.Hash, pagination: Pagination): Future[Seq[Transaction]] =
@@ -125,7 +125,7 @@ object BlockDao {
     def insertAll(blocks: Seq[BlockEntity]): Future[Unit] =
       run(insertBlockEntity(blocks, groupNum)).map(_ => ())
 
-    def listMainChain(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)] = {
+    def listMainChain(pagination: Pagination): Future[(Seq[BlockEntryLite], Int)] = {
       val mainChain = BlockHeaderSchema.table.filter(_.mainChain)
       val action =
         for {
@@ -137,13 +137,13 @@ object BlockDao {
     }
 
     /** SQL version of [[listMainChain]] */
-    def listMainChainSQL(pagination: Pagination): Future[(Seq[BlockEntry.Lite], Int)] = {
+    def listMainChainSQL(pagination: Pagination): Future[(Seq[BlockEntryLite], Int)] = {
       val blockEntries = run(listMainChainHeadersWithTxnNumberSQL(pagination))
       val count        = run(countMainChain().result)
       blockEntries.zip(count)
     }
 
-    def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntry.Lite]] = {
+    def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntryLite]] = {
       val action =
         for {
           headers <- BlockHeaderSchema.table

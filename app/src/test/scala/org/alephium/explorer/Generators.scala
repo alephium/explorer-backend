@@ -89,7 +89,7 @@ trait Generators {
       gasPrice  <- u256Gen
     } yield Transaction(hash, blockHash, timestamp, Seq.empty, Seq.empty, gasAmount, gasPrice)
 
-  lazy val utransactionGen: Gen[UnconfirmedTx] =
+  lazy val utransactionGen: Gen[UnconfirmedTransaction] =
     for {
       hash      <- transactionHashGen
       chainFrom <- groupIndexGen
@@ -98,7 +98,7 @@ trait Generators {
       outputs   <- Gen.listOfN(3, uoutputGen)
       gasAmount <- Gen.posNum[Int]
       gasPrice  <- u256Gen
-    } yield UnconfirmedTx(hash, chainFrom, chainTo, inputs, outputs, gasAmount, gasPrice)
+    } yield UnconfirmedTransaction(hash, chainFrom, chainTo, inputs, outputs, gasAmount, gasPrice)
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def transactionEntityGen(
@@ -192,22 +192,22 @@ trait Generators {
       j <- 0 to groupConfig.groups - 1
     } yield (GroupIndex.unsafe(i), GroupIndex.unsafe(j))
 
-  lazy val outputRefGen: Gen[Output.Ref] = for {
+  lazy val outputRefGen: Gen[OutputRef] = for {
     hint <- arbitrary[Int]
     key  <- hashGen
-  } yield Output.Ref(hint, key)
+  } yield OutputRef(hint, key)
 
   lazy val outputRefProtocolGen: Gen[protocolApi.OutputRef] = for {
     hint <- arbitrary[Int]
     key  <- hashGen
   } yield protocolApi.OutputRef(hint, key)
 
-  lazy val inputProtocolGen: Gen[protocolApi.Input.Asset] = for {
+  lazy val inputProtocolGen: Gen[protocolApi.AssetInput] = for {
     outputRef    <- outputRefProtocolGen
     unlockScript <- hashGen.map(_.bytes)
-  } yield protocolApi.Input.Asset(outputRef, unlockScript)
+  } yield protocolApi.AssetInput(outputRef, unlockScript)
 
-  def outputAssetProtocolGen: Gen[protocolApi.Output.Asset] =
+  def fixedOutputAssetProtocolGen: Gen[protocolApi.FixedAssetOutput] =
     for {
       hint     <- Gen.posNum[Int]
       key      <- hashGen
@@ -215,22 +215,25 @@ trait Generators {
       lockTime <- timestampGen
       address  <- addressAssetProtocolGen
     } yield
-      protocolApi.Output.Asset(hint,
-                               key,
-                               protocolApi.Amount(amount),
-                               address,
-                               AVector.empty,
-                               lockTime,
-                               ByteString.empty)
+      protocolApi.FixedAssetOutput(hint,
+                                   key,
+                                   protocolApi.Amount(amount),
+                                   address,
+                                   AVector.empty,
+                                   lockTime,
+                                   ByteString.empty)
 
-  def outputContractProtocolGen: Gen[protocolApi.Output.Contract] =
+  def outputAssetProtocolGen: Gen[protocolApi.AssetOutput] =
+    fixedOutputAssetProtocolGen.map(_.upCast())
+
+  def outputContractProtocolGen: Gen[protocolApi.ContractOutput] =
     for {
       hint    <- Gen.posNum[Int]
       key     <- hashGen
       amount  <- amountGen
       address <- addressContractProtocolGen
     } yield
-      protocolApi.Output.Contract(hint, key, protocolApi.Amount(amount), address, AVector.empty)
+      protocolApi.ContractOutput(hint, key, protocolApi.Amount(amount), address, AVector.empty)
 
   def outputProtocolGen: Gen[protocolApi.Output] =
     Gen.oneOf(outputAssetProtocolGen: Gen[protocolApi.Output],
@@ -246,7 +249,7 @@ trait Generators {
       inputSize  <- Gen.choose(0, 10)
       inputs     <- Gen.listOfN(inputSize, inputProtocolGen)
       outputSize <- Gen.choose(2, 10)
-      outputs    <- Gen.listOfN(outputSize, outputAssetProtocolGen)
+      outputs    <- Gen.listOfN(outputSize, fixedOutputAssetProtocolGen)
       gasAmount  <- Gen.posNum[Int]
       gasPrice   <- Gen.posNum[Long].map(U256.unsafe)
     } yield

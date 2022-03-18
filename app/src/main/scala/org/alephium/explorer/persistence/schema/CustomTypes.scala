@@ -159,23 +159,23 @@ trait CustomTypes extends PostgresProfile {
     }
 
   /**
-    * GetResult type for BlockEntry.Lite
+    * GetResult type for BlockEntryLite
     *
     * @note The order in which the query returns the column values matters.
     *       For example: Getting (`.<<`) `chainTo` before `chainFrom` when
     *       `chainFrom` is before `chainTo` in the query result would compile
     *       but would result in incorrect data.
     */
-  val blockEntryListGetResult: GetResult[BlockEntry.Lite] =
+  val blockEntryListGetResult: GetResult[BlockEntryLite] =
     (result: PositionedResult) =>
-      BlockEntry.Lite(hash      = result.<<,
-                      timestamp = result.<<,
-                      chainFrom = result.<<,
-                      chainTo   = result.<<,
-                      height    = result.<<,
-                      mainChain = result.<<,
-                      hashRate  = result.<<,
-                      txNumber  = result.<<)
+      BlockEntryLite(hash      = result.<<,
+                     timestamp = result.<<,
+                     chainFrom = result.<<,
+                     chainTo   = result.<<,
+                     height    = result.<<,
+                     mainChain = result.<<,
+                     hashRate  = result.<<,
+                     txNumber  = result.<<)
 
   val blockHeaderGetResult: GetResult[BlockHeader] =
     (result: PositionedResult) =>

@@ -25,7 +25,7 @@ import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.api.model.{ChainInfo, HashesAtHeight, SelfClique}
 import org.alephium.explorer.{AlephiumSpec, Generators}
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, UnconfirmedTx}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, UnconfirmedTransaction}
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.dao.UnconfirmedTxDao
 import org.alephium.explorer.persistence.model._
@@ -75,10 +75,11 @@ class MempoolSyncServiceSpec
 
     val utxDao: UnconfirmedTxDao = UnconfirmedTxDao(databaseConfig)
 
-    var unconfirmedTransactions: Seq[UnconfirmedTx] = Seq.empty
+    var unconfirmedTransactions: Seq[UnconfirmedTransaction] = Seq.empty
 
     val blockFlowClient: BlockFlowClient = new BlockFlowClient {
-      def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UnconfirmedTx]]] =
+      def fetchUnconfirmedTransactions(
+          uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]] =
         Future.successful(Right(unconfirmedTransactions))
       def fetchBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]] =
         ???

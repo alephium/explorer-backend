@@ -202,7 +202,7 @@ class TransactionServiceSpec
       tx1.hash,
       blockHash1,
       ts1,
-      Seq(Input(Output.Ref(0, output0.key), None, tx0.hash, address0, U256.One)),
+      Seq(Input(OutputRef(0, output0.key), None, tx0.hash, address0, U256.One)),
       Seq(Output(output1.hint, output1.key, U256.One, address1, None, None)),
       gasAmount1,
       gasPrice1
@@ -284,7 +284,7 @@ class TransactionServiceSpec
           .getTransaction(tx.hash)
           .futureValue
           .get
-          .asInstanceOf[Transaction]
+          .asInstanceOf[ConfirmedTransaction]
           .blockHash is blockHash0 // was sometime blockHash1 in fb7127f
     }
   }
@@ -319,7 +319,11 @@ class TransactionServiceSpec
     blocks.foreach { block =>
       block.transactions.map { tx =>
         val transaction =
-          transactionService.getTransaction(tx.hash).futureValue.get.asInstanceOf[Transaction]
+          transactionService
+            .getTransaction(tx.hash)
+            .futureValue
+            .get
+            .asInstanceOf[ConfirmedTransaction]
         transaction.outputs.map(_.key) is block.outputs
           .filter(_.txHash == tx.hash)
           .sortBy(_.order)
