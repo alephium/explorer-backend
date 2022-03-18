@@ -51,7 +51,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     forAll(transactionGen) { tx =>
       val expected = s"""
        |{
-       |  "type": "confirmed",
+       |  "type": "Confirmed",
        |  "hash": "${tx.hash.value.toHexString}",
        |  "blockHash": "${tx.blockHash}",
        |  "timestamp": ${tx.timestamp.millis},
@@ -127,7 +127,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     forAll(utransactionGen) { utx =>
       val expected = s"""
      |{
-     |  "type": "unconfirmed",
+     |  "type": "Unconfirmed",
      |  "hash": "${utx.hash.value.toHexString}",
      |  "chainFrom": ${utx.chainFrom.value},
      |  "chainTo": ${utx.chainTo.value},

@@ -18,13 +18,7 @@ package org.alephium.explorer.service
 
 import scala.concurrent.{ExecutionContext, Future}
 
-import org.alephium.explorer.api.model.{
-  Address,
-  ConfirmedTransaction,
-  Pagination,
-  Transaction,
-  TransactionLike
-}
+import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.dao.{TransactionDao, UnconfirmedTxDao}
 import org.alephium.util.U256
 

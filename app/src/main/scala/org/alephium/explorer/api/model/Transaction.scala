@@ -53,7 +53,7 @@ object TransactionLike {
     ReadWriter.merge(ConfirmedTransaction.txRW, UnconfirmedTransaction.utxRW)
 }
 
-@upickle.implicits.key("confirmed")
+@upickle.implicits.key("Confirmed")
 final case class ConfirmedTransaction(
     hash: Transaction.Hash,
     blockHash: BlockEntry.Hash,
@@ -77,7 +77,7 @@ object ConfirmedTransaction {
   )
 }
 
-@upickle.implicits.key("unconfirmed")
+@upickle.implicits.key("Unconfirmed")
 final case class UnconfirmedTransaction(
     hash: Transaction.Hash,
     chainFrom: GroupIndex,
