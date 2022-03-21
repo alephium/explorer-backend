@@ -7,8 +7,8 @@ def mainProject(id: String): Project = {
     .settings(commonSettings: _*)
     .settings(
       name := s"explorer-backend-$id",
-      Compile / scalastyleConfig := root.base / "scalastyle-config.xml",
-      Test / scalastyleConfig := root.base / "scalastyle-test-config.xml"
+//      Compile / scalastyleConfig := root.base / "scalastyle-config.xml",
+//      Test / scalastyleConfig := root.base / "scalastyle-test-config.xml"
     )
     .enablePlugins(JavaAppPackaging, sbtdocker.DockerPlugin, ScalaUnidocPlugin)
 }
@@ -76,43 +76,43 @@ val commonSettings = Seq(
   organization := "org.alephium",
   scalaVersion := "2.13.3",
   scalacOptions ++= Seq(
-    "-deprecation",
-    "-encoding",
-    "utf-8",
-    "-explaintypes",
-    "-feature",
-    "-unchecked",
-    "-Xsource:3.1",
-    "-Xfatal-warnings",
-    "-Xlint:adapted-args",
-    "-Xlint:constant",
-    "-Xlint:delayedinit-select",
-    "-Xlint:doc-detached",
-    "-Xlint:inaccessible",
-    "-Xlint:infer-any",
-    "-Xlint:missing-interpolator",
-    "-Xlint:nullary-unit",
-    "-Xlint:option-implicit",
-    "-Xlint:package-object-classes",
-    "-Xlint:poly-implicit-overload",
-    "-Xlint:private-shadow",
-    "-Xlint:stars-align",
-    "-Xlint:type-parameter-shadow",
-    "-Xlint:nonlocal-return",
-    "-Ywarn-dead-code",
-    "-Ywarn-extra-implicit",
-    "-Ywarn-numeric-widen",
-    "-Ywarn-unused:implicits",
-    "-Ywarn-unused:imports",
-    "-Ywarn-unused:locals",
-    "-Ywarn-unused:params",
-    "-Ywarn-unused:patvars",
-    "-Ywarn-unused:privates",
-    "-Ywarn-value-discard"
+//    "-deprecation",
+//    "-encoding",
+//    "utf-8",
+//    "-explaintypes",
+//    "-feature",
+//    "-unchecked",
+//    "-Xsource:3.1",
+//    "-Xfatal-warnings",
+//    "-Xlint:adapted-args",
+//    "-Xlint:constant",
+//    "-Xlint:delayedinit-select",
+//    "-Xlint:doc-detached",
+//    "-Xlint:inaccessible",
+//    "-Xlint:infer-any",
+//    "-Xlint:missing-interpolator",
+//    "-Xlint:nullary-unit",
+//    "-Xlint:option-implicit",
+//    "-Xlint:package-object-classes",
+//    "-Xlint:poly-implicit-overload",
+//    "-Xlint:private-shadow",
+//    "-Xlint:stars-align",
+//    "-Xlint:type-parameter-shadow",
+//    "-Xlint:nonlocal-return",
+//    "-Ywarn-dead-code",
+//    "-Ywarn-extra-implicit",
+//    "-Ywarn-numeric-widen",
+//    "-Ywarn-unused:implicits",
+//    "-Ywarn-unused:imports",
+//    "-Ywarn-unused:locals",
+//    "-Ywarn-unused:params",
+//    "-Ywarn-unused:patvars",
+//    "-Ywarn-unused:privates",
+//    "-Ywarn-value-discard"
   ),
   Test / envVars += "ALEPHIUM_ENV" -> "test",
-  Compile / compile / wartremoverErrors := Warts.allBut(wartsCompileExcludes: _*),
-  Test / compile / wartremoverErrors := Warts.allBut(wartsTestExcludes: _*),
+//  Compile / compile / wartremoverErrors := Warts.allBut(wartsCompileExcludes: _*),
+//  Test / compile / wartremoverErrors := Warts.allBut(wartsTestExcludes: _*),
   fork := true,
   apiMappings ++= {
     val scalaDocsMap =
@@ -249,24 +249,24 @@ lazy val benchmark = mainProject("benchmark")
     }
   )
 
-val wartsCompileExcludes = Seq(
-  Wart.Any,
-  Wart.ImplicitParameter,
-  Wart.StringPlusAny,
-  Wart.Null, // for upickle macroRW
-  Wart.Equals, // for upickle macroRW
-  Wart.ToString, // for upickle macroRW
-  Wart.Var, // for upickle macroRW
-  Wart.Throw, // for upickle macroRW
-  Wart.Nothing
-)
-
-val wartsTestExcludes = wartsCompileExcludes ++ Seq(
-  Wart.PublicInference,
-  Wart.OptionPartial,
-  Wart.Overloading,
-  Wart.NonUnitStatements,
-  Wart.TraversableOps,
-  Wart.Throw,
-  Wart.Equals
-)
+//val wartsCompileExcludes = Seq(
+//  Wart.Any,
+//  Wart.ImplicitParameter,
+//  Wart.StringPlusAny,
+//  Wart.Null, // for upickle macroRW
+//  Wart.Equals, // for upickle macroRW
+//  Wart.ToString, // for upickle macroRW
+//  Wart.Var, // for upickle macroRW
+//  Wart.Throw, // for upickle macroRW
+//  Wart.Nothing
+//)
+//
+//val wartsTestExcludes = wartsCompileExcludes ++ Seq(
+//  Wart.PublicInference,
+//  Wart.OptionPartial,
+//  Wart.Overloading,
+//  Wart.NonUnitStatements,
+//  Wart.TraversableOps,
+//  Wart.Throw,
+//  Wart.Equals
+//)
