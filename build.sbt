@@ -203,6 +203,8 @@ lazy val app = mainProject("app")
     assembly / assemblyMergeStrategy := {
       case PathList("META-INF", "io.netty.versions.properties", xs @ _*) =>
         MergeStrategy.first
+      case PathList("META-INF", "maven", "org.webjars", "swagger-ui", xs @ _*) =>
+        MergeStrategy.first
       case "module-info.class" =>
         MergeStrategy.discard
       case other => (assembly / assemblyMergeStrategy).value(other)

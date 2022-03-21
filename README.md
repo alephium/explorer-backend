@@ -33,6 +33,15 @@ You need to have [Postgresql][postgresql] and [sbt][sbt] installed in your syste
 sbt app/run
 ```
 
+### 4. Single Jar
+
+```shell
+sbt app/assembly
+```
+
+The resulting assembly file will appear in `app/target/scala-2.13/` directory.
+
+
 ### Querying hashes
 
 Hash strings are stored as [bytea][bytea]. To query a hash string in
