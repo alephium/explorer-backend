@@ -35,7 +35,7 @@ object OutputQueries extends CustomTypes {
   /** Inserts outputs or ignore rows with primary key conflict */
   // scalastyle:off magic.number
   def insertOutputs(outputs: Iterable[OutputEntity]): DBActionW[Int] =
-    QueryUtil.splitUpdates(rows = outputs, queryRowParams = 11) { (outputs, placeholder) =>
+    QuerySplitter.splitUpdates(rows = outputs, columnsPerRow = 11) { (outputs, placeholder) =>
       val query =
         s"""
            |INSERT INTO outputs ("block_hash",
@@ -76,6 +76,7 @@ object OutputQueries extends CustomTypes {
         unitPConv  = parameters
       ).asUpdate
     }
+  // scalastyle:on magic.number
 
   def insertTxPerAddressFromOutputs(outputs: Seq[OutputEntity]): DBActionW[Int] = {
     if (outputs.nonEmpty) {
