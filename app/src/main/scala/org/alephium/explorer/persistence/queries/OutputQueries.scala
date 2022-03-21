@@ -117,23 +117,21 @@ object OutputQueries extends CustomTypes {
       }
   }
 
-  def outputsFromTxsSQL(
-      txHashes: Seq[Transaction.Hash]
-  ): DBActionSR[(Transaction.Hash,
-                 Int,
-                 Int,
-                 Hash,
-                 U256,
-                 Address,
-                 Option[TimeStamp],
-                 Option[Transaction.Hash])] = {
-    val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
-    sql"""
+  // format: off
+  def outputsFromTxsSQL(txHashes: Seq[Transaction.Hash]):
+  DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, U256, Address, Option[TimeStamp], Option[Transaction.Hash])]] = {
+  // format: on
+    if (txHashes.nonEmpty) {
+      val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
+      sql"""
     SELECT outputs.tx_hash, outputs.order, outputs.hint, outputs.key,  outputs.amount, outputs.address, outputs.lock_time, inputs.tx_hash
     FROM outputs
     LEFT JOIN inputs ON inputs.output_ref_key = outputs.key AND inputs.main_chain = true
     WHERE outputs.tx_hash IN (#$values) AND outputs.main_chain = true
     """.as
+    } else {
+      DBIOAction.successful(Seq.empty)
+    }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
