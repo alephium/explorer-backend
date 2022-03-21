@@ -137,9 +137,9 @@ object ListBlocksReadStateSettings {
   // if maxPage is 100 and limitPerPage is 20 then
   // the number of generated blocks will be 100 * 20
 
-  val maxPages: Int             = 10000
+  val maxPages: Int             = 50000
   val limitPerPage: Int         = 20
-  val transactionsPerBlock: Int = 5
+  val transactionsPerBlock: Int = 0
 }
 // scalastyle:off magic.number
 

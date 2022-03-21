@@ -49,6 +49,7 @@ trait BlockDao {
   def insertAll(blocks: Seq[BlockEntity]): Future[Unit]
   def listMainChain(pagination: Pagination): Future[(Seq[BlockEntryLite], Int)]
   def listMainChainSQL(pagination: Pagination): Future[(Seq[BlockEntryLite], Int)]
+  def listMainChainSQLNoCount(pagination: Pagination): Future[Seq[BlockEntryLite]]
   def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntryLite]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
   def updateTransactionPerAddress(block: BlockEntity): Future[Seq[InputEntity]]
@@ -142,6 +143,9 @@ object BlockDao {
       val count        = run(countMainChain().result)
       blockEntries.zip(count)
     }
+
+    def listMainChainSQLNoCount(pagination: Pagination): Future[Seq[BlockEntryLite]] =
+      run(listMainChainHeadersWithTxnNumberSQL(pagination))
 
     def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntryLite]] = {
       val action =
