@@ -160,15 +160,19 @@ object InputQueries extends CustomTypes {
 
   // format: off
   def inputsFromTxsSQL(txHashes: Seq[Transaction.Hash]):
-    DBActionSR[(Transaction.Hash, Int, Int, Hash, Option[String], Transaction.Hash, Address, U256)] = {
+    DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Transaction.Hash, Address, U256)]] = {
   // format: on
-    val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
-    sql"""
+    if (txHashes.nonEmpty) {
+      val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
+      sql"""
     SELECT inputs.tx_hash, inputs.order, inputs.hint, inputs.output_ref_key, inputs.unlock_script, outputs.tx_hash, outputs.address, outputs.amount
     FROM inputs
     JOIN outputs ON inputs.output_ref_key = outputs.key AND outputs.main_chain = true
     WHERE inputs.tx_hash IN (#$values) AND inputs.main_chain = true
     """.as
+    } else {
+      DBIOAction.successful(Seq.empty)
+    }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))

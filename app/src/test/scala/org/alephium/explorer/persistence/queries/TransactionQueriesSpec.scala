@@ -322,6 +322,11 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     }
   }
 
+  //https://github.com/alephium/explorer-backend/issues/174
+  it should "return an empty list when not transactions are found - Isssue 174" in new Fixture {
+    run(queries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue is Seq.empty
+  }
+
   trait Fixture extends DatabaseFixture with DBRunner with Generators {
 
     class Queries(implicit val executionContext: ExecutionContext) extends TransactionQueries

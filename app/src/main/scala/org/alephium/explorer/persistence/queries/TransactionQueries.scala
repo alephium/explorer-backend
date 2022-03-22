@@ -281,13 +281,17 @@ trait TransactionQueries extends CustomTypes with StrictLogging {
 
   def getTransactionsSQL(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)])
     : DBActionR[Seq[Transaction]] = {
-    val txHashes = txHashesTs.map(_._1)
-    for {
-      inputs  <- inputsFromTxsSQL(txHashes)
-      outputs <- outputsFromTxsSQL(txHashes)
-      gases   <- gasFromTxsSQL(txHashes)
-    } yield {
-      buildTransaction(txHashesTs, inputs, outputs, gases)
+    if (txHashesTs.nonEmpty) {
+      val txHashes = txHashesTs.map(_._1)
+      for {
+        inputs  <- inputsFromTxsSQL(txHashes)
+        outputs <- outputsFromTxsSQL(txHashes)
+        gases   <- gasFromTxsSQL(txHashes)
+      } yield {
+        buildTransaction(txHashesTs, inputs, outputs, gases)
+      }
+    } else {
+      DBIOAction.successful(Seq.empty)
     }
   }
 
@@ -330,13 +334,18 @@ trait TransactionQueries extends CustomTypes with StrictLogging {
     mainTransactions.filter(_.hash inSet txHashes).map(tx => (tx.hash, tx.gasAmount, tx.gasPrice))
   }
 
-  def gasFromTxsSQL(txHashes: Seq[Transaction.Hash]): DBActionSR[(Transaction.Hash, Int, U256)] = {
-    val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
-    sql"""
+  def gasFromTxsSQL(
+      txHashes: Seq[Transaction.Hash]): DBActionR[Seq[(Transaction.Hash, Int, U256)]] = {
+    if (txHashes.nonEmpty) {
+      val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
+      sql"""
     SELECT hash, gas_amount, gas_price
     FROM transactions
     WHERE main_chain = true AND hash IN (#$values)
     """.as
+    } else {
+      DBIOAction.successful(Seq.empty)
+    }
   }
 
   private def getKnownTransactionAction(txHash: Transaction.Hash,
