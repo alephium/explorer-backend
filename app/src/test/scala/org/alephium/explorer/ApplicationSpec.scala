@@ -36,7 +36,6 @@ import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.api.{ApiError, ApiModelCodec}
 import org.alephium.api.model
-import org.alephium.api.model._
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
@@ -330,15 +329,17 @@ object ApplicationSpec {
     override def api: Api = Json
 
     val cliqueId = CliqueId.generate
-    def fetchHashesAtHeight(from: GroupIndex, to: GroupIndex, height: Height): HashesAtHeight =
-      HashesAtHeight(AVector.from(blocks.collect {
+    def fetchHashesAtHeight(from: GroupIndex,
+                            to: GroupIndex,
+                            height: Height): model.HashesAtHeight =
+      model.HashesAtHeight(AVector.from(blocks.collect {
         case block
             if block.chainFrom === from.value && block.chainTo === to.value && block.height === height.value =>
           block.hash
       }.toSeq))
 
-    def getChainInfo(from: GroupIndex, to: GroupIndex): ChainInfo = {
-      ChainInfo(
+    def getChainInfo(from: GroupIndex, to: GroupIndex): model.ChainInfo = {
+      model.ChainInfo(
         blocks
           .collect {
             case block if block.chainFrom == from.value && block.chainTo === to.value =>
@@ -348,7 +349,7 @@ object ApplicationSpec {
           .getOrElse(Height.genesis.value))
     }
 
-    private val peer = PeerAddress(address, port, 0, 0)
+    private val peer = model.PeerAddress(address, port, 0, 0)
     val HashSegment  = Segment.map(raw => BlockHash.unsafe(Hex.unsafe(raw)))
     val routes: Route =
       path("blockflow") {
@@ -357,7 +358,7 @@ object ApplicationSpec {
             get {
               complete(
                 Future.successful(
-                  FetchResponse(
+                  model.FetchResponse(
                     AVector.from(
                       blockflow
                         .map(
@@ -406,10 +407,10 @@ object ApplicationSpec {
           )
         } ~
         path("infos" / "self-clique") {
-          complete(SelfClique(cliqueId, AVector(peer), true, true))
+          complete(model.SelfClique(cliqueId, AVector(peer), true, true))
         } ~
         path("infos" / "chain-params") {
-          complete(ChainParams(networkId, 18, groupNum, groupNum))
+          complete(model.ChainParams(networkId, 18, groupNum, groupNum))
         }
 
     val server = Http().newServerAt(address.getHostAddress, port).bindFlow(routes)
