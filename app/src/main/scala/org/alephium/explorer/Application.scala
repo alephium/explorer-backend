@@ -25,7 +25,7 @@ import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.api.model.{ApiKey, PeerAddress, SelfClique}
+import org.alephium.api.model.{ApiKey, ChainParams, PeerAddress}
 import org.alephium.explorer.persistence.DBInitializer
 import org.alephium.explorer.persistence.dao._
 import org.alephium.explorer.service._
@@ -95,8 +95,9 @@ class Application(
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   private def startSyncService(): Future[Unit] = {
     for {
-      selfClique <- blockFlowClient.fetchSelfClique()
-      _          <- validateSelfClique(selfClique)
+      selfClique  <- blockFlowClient.fetchSelfClique()
+      chainParams <- blockFlowClient.fetchChainParams()
+      _           <- validateChainParams(chainParams)
       peers = urisFromPeers(selfClique.toOption.get.nodes.toSeq)
       _ <- blockFlowSyncService.start(peers)
       _ <- mempoolSyncService.start(peers)
@@ -125,11 +126,12 @@ class Application(
       logger.info("Application stopped")
     }
 
-  def validateSelfClique(response: Either[String, SelfClique]): Future[Unit] = {
+  def validateChainParams(response: Either[String, ChainParams]): Future[Unit] = {
     response match {
-      case Right(selfClique) =>
-        if (selfClique.networkId =/= networkId) {
-          logger.error(s"Chain id mismatch: ${selfClique.networkId} (remote) vs $networkId (local)")
+      case Right(chainParams) =>
+        if (chainParams.networkId =/= networkId) {
+          logger.error(
+            s"Chain id mismatch: ${chainParams.networkId} (remote) vs $networkId (local)")
           sys.exit(1)
         } else {
           Future.successful(())
