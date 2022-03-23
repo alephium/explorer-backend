@@ -23,7 +23,7 @@ import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.api.model.{ChainInfo, HashesAtHeight, SelfClique}
+import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, UnconfirmedTransaction}
 import org.alephium.explorer.persistence.DatabaseFixture
@@ -91,6 +91,7 @@ class MempoolSyncServiceSpec
                               to: GroupIndex,
                               height: Height): Future[Either[String, HashesAtHeight]] = ???
       def fetchSelfClique(): Future[Either[String, SelfClique]]                       = ???
+      def fetchChainParams(): Future[Either[String, ChainParams]]                     = ???
     }
 
   }

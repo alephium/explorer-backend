@@ -22,7 +22,7 @@ import akka.http.scaladsl.model.Uri
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
 
-import org.alephium.api.model.{ChainInfo, HashesAtHeight, SelfClique}
+import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.{AlephiumSpec, BlockHash, Generators}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
@@ -261,16 +261,17 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
       def fetchSelfClique(): Future[Either[String, SelfClique]] =
         Future.successful(
           Right(
-            SelfClique(CliqueId.generate,
-                       NetworkId.AlephiumDevNet,
-                       18,
-                       AVector.empty,
-                       true,
-                       true,
-                       1,
-                       2)
+            SelfClique(CliqueId.generate, AVector.empty, true, true)
           )
         )
+
+      def fetchChainParams(): Future[Either[String, ChainParams]] =
+        Future.successful(
+          Right(
+            ChainParams(NetworkId.AlephiumDevNet, 18, 1, 2)
+          )
+        )
+
       def fetchUnconfirmedTransactions(
           uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]] =
         Future.successful(Right(Seq.empty))

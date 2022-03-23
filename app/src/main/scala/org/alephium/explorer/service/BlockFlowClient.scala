@@ -28,7 +28,7 @@ import sttp.client3._
 
 import org.alephium.api
 import org.alephium.api.Endpoints
-import org.alephium.api.model.{ChainInfo, HashesAtHeight, SelfClique}
+import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
@@ -75,6 +75,8 @@ trait BlockFlowClient {
 
   def fetchSelfClique(): Future[Either[String, SelfClique]]
 
+  def fetchChainParams(): Future[Either[String, ChainParams]]
+
   def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]]
 }
 
@@ -113,10 +115,10 @@ object BlockFlowClient {
     //TODO Introduce monad transformer helper for more readability
     def fetchBlock(fromGroup: GroupIndex,
                    hash: BlockEntry.Hash): Future[Either[String, BlockEntity]] =
-      fetchSelfClique().flatMap {
+      fetchSelfCliqueAndChainParams().flatMap {
         case Left(error) => Future.successful(Left(error))
-        case Right(selfClique) =>
-          selfCliqueIndex(selfClique, fromGroup) match {
+        case Right((selfClique, chainParams)) =>
+          selfCliqueIndex(selfClique, chainParams, fromGroup) match {
             case Left(error) => Future.successful(Left(error))
             case Right((nodeAddress, restPort)) =>
               val uri = s"http://${nodeAddress.getHostAddress}:${restPort}"
@@ -157,9 +159,21 @@ object BlockFlowClient {
     def fetchSelfClique(): Future[Either[String, SelfClique]] =
       _send(getSelfClique, uri, ())
 
+    def fetchChainParams(): Future[Either[String, ChainParams]] =
+      _send(getChainParams, uri, ())
+
+    private def fetchSelfCliqueAndChainParams()
+      : Future[Either[String, (SelfClique, ChainParams)]] = {
+      fetchSelfClique().flatMap {
+        case Left(error) => Future.successful(Left(error))
+        case Right(selfClique) =>
+          fetchChainParams().map(_.map(chainParams => (selfClique, chainParams)))
+      }
+    }
     private def selfCliqueIndex(selfClique: SelfClique,
+                                chainParams: ChainParams,
                                 group: GroupIndex): Either[String, (InetAddress, Int)] = {
-      if (selfClique.groupNumPerBroker <= 0) {
+      if (chainParams.groupNumPerBroker <= 0) {
         Left(
           s"SelfClique.groupNumPerBroker ($selfClique.groupNumPerBroker) cannot be less or equal to zero")
       } else {

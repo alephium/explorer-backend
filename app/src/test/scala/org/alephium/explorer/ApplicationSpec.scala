@@ -36,7 +36,7 @@ import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.api.{ApiError, ApiModelCodec}
 import org.alephium.api.model
-import org.alephium.api.model.{ChainInfo, FetchResponse, HashesAtHeight, PeerAddress, SelfClique}
+import org.alephium.api.model._
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
@@ -406,8 +406,10 @@ object ApplicationSpec {
           )
         } ~
         path("infos" / "self-clique") {
-          complete(
-            SelfClique(cliqueId, networkId, 18, AVector(peer), true, true, groupNum, groupNum))
+          complete(SelfClique(cliqueId, AVector(peer), true, true))
+        } ~
+        path("infos" / "chain-params") {
+          complete(ChainParams(networkId, 18, groupNum, groupNum))
         }
 
     val server = Http().newServerAt(address.getHostAddress, port).bindFlow(routes)
