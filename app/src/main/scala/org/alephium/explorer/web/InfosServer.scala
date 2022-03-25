@@ -59,7 +59,8 @@ class InfosServer(val blockflowFetchMaxAge: Duration,
             Right(toALPH(total))
           }
       } ~
-      toRoute(getHeights)(_ => blockService.listMaxHeights().map(Right(_)))
+      toRoute(getHeights)(_           => blockService.listMaxHeights().map(Right(_))) ~
+      toRoute(getTotalTransactions)(_ => transactionService.getTotalNumber().map(Right(_)))
 
   private def toALPH(u256: U256): BigDecimal =
     new BigDecimal(u256.v).divide(new BigDecimal(ALPH.oneAlph.v))

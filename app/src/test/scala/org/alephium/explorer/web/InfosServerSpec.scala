@@ -24,10 +24,10 @@ import org.scalatest.concurrent.ScalaFutures
 
 import org.alephium.explorer.{AlephiumSpec, BuildInfo}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.service.{BlockService, TokenSupplyService}
+import org.alephium.explorer.service._
 import org.alephium.json.Json
 import org.alephium.protocol.ALPH
-import org.alephium.util.{Duration, TimeStamp}
+import org.alephium.util.{Duration, TimeStamp, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var"))
 class InfosServerSpec()
@@ -111,6 +111,28 @@ class InfosServerSpec()
       def listMaxHeights(): Future[Seq[PerChainValue]]                           = Future.successful(Seq(chainHeight))
     }
 
-    val server = new InfosServer(Duration.zero, tokenSupplyService, blockService)
+    val transactionService = new TransactionService {
+      override def getTransaction(
+          transactionHash: Transaction.Hash): Future[Option[TransactionLike]] =
+        Future.successful(None)
+      override def getTransactionsByAddress(address: Address,
+                                            pagination: Pagination): Future[Seq[Transaction]] =
+        Future.successful(Seq.empty)
+
+      override def getTransactionsNumberByAddress(address: Address): Future[Int] =
+        Future.successful(0)
+
+      override def getTransactionsByAddressSQL(address: Address,
+                                               pagination: Pagination): Future[Seq[Transaction]] =
+        Future.successful(Seq.empty)
+
+      override def getBalance(address: Address): Future[(U256, U256)] =
+        Future.successful((U256.Zero, U256.Zero))
+
+      def getTotalNumber(): Future[Long] = Future.successful(0L)
+    }
+
+    val server =
+      new InfosServer(Duration.zero, tokenSupplyService, blockService, transactionService)
   }
 }

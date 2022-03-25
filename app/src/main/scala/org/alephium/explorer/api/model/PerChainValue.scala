@@ -22,7 +22,7 @@ import org.alephium.json.Json._
 final case class PerChainValue(
     chainFrom: Int,
     chainTo: Int,
-    value: Int
+    value: Long
 )
 
 object PerChainValue {
