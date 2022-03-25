@@ -43,6 +43,7 @@ trait Documentation
       getTotalSupply,
       getCirculatingSupply,
       getTotalTransactions,
+      getAverageBlockTime,
       getHashrates,
       sanityCheck
     ),

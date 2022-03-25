@@ -26,13 +26,15 @@ import akka.http.scaladsl.server.Route
 import org.alephium.explorer.BuildInfo
 import org.alephium.explorer.api.InfosEndpoints
 import org.alephium.explorer.api.model.ExplorerInfo
-import org.alephium.explorer.service.{BlockService, TokenSupplyService}
+import org.alephium.explorer.service.{BlockService, TokenSupplyService, TransactionService}
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, U256}
 
-class InfosServer(val blockflowFetchMaxAge: Duration,
-                  tokenSupplyService: TokenSupplyService,
-                  blockService: BlockService)(implicit executionContext: ExecutionContext)
+class InfosServer(
+    val blockflowFetchMaxAge: Duration,
+    tokenSupplyService: TokenSupplyService,
+    blockService: BlockService,
+    transactionService: TransactionService)(implicit executionContext: ExecutionContext)
     extends Server
     with InfosEndpoints {
 
@@ -60,7 +62,8 @@ class InfosServer(val blockflowFetchMaxAge: Duration,
           }
       } ~
       toRoute(getHeights)(_           => blockService.listMaxHeights().map(Right(_))) ~
-      toRoute(getTotalTransactions)(_ => transactionService.getTotalNumber().map(Right(_)))
+      toRoute(getTotalTransactions)(_ => transactionService.getTotalNumber().map(Right(_))) ~
+      toRoute(getAverageBlockTime)(_  => blockService.getAverageBlockTime().map(Right(_)))
 
   private def toALPH(u256: U256): BigDecimal =
     new BigDecimal(u256.v).divide(new BigDecimal(ALPH.oneAlph.v))

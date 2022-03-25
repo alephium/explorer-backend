@@ -102,13 +102,15 @@ class InfosServerSpec()
 
     }
 
-    val chainHeight = PerChainValue(0, 0, 1)
+    val chainHeight = PerChainValue(0, 0, 60000)
+    val blockTime   = PerChainValue(0, 0, 1)
     val blockService = new BlockService {
       def getLiteBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntryLite]] = ???
       def getBlockTransactions(hash: BlockEntry.Hash,
                                pagination: Pagination): Future[Seq[Transaction]] = ???
       def listBlocks(pagination: Pagination): Future[ListBlocks]                 = ???
       def listMaxHeights(): Future[Seq[PerChainValue]]                           = Future.successful(Seq(chainHeight))
+      def getAverageBlockTime(): Future[Seq[PerChainValue]]                      = Future.successful(Seq(blockTime))
     }
 
     val transactionService = new TransactionService {
