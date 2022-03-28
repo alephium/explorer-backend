@@ -83,6 +83,22 @@ class InfosServerSpec()
     }
   }
 
+  it should "return the total transactions number" in new Fixture {
+    Get(s"/infos/total-transactions") ~> server.route ~> check {
+      val total = response.entity
+        .toStrict(Duration.ofSecondsUnsafe(5).asScala)
+        .map(_.data.utf8String)
+        .futureValue
+
+      total is "10"
+    }
+  }
+
+  it should "return the average block times" in new Fixture {
+    Get(s"/infos/average-block-times") ~> server.route ~> check {
+      responseAs[Seq[PerChainValue]] is Seq(blockTime)
+    }
+  }
   trait Fixture {
     val tokenSupply = TokenSupply(TimeStamp.zero, ALPH.alph(1), ALPH.alph(2), ALPH.alph(3))
     val tokenSupplyService = new TokenSupplyService {
@@ -131,7 +147,7 @@ class InfosServerSpec()
       override def getBalance(address: Address): Future[(U256, U256)] =
         Future.successful((U256.Zero, U256.Zero))
 
-      def getTotalNumber(): Future[Long] = Future.successful(0L)
+      def getTotalNumber(): Future[Long] = Future.successful(10L)
     }
 
     val server =
