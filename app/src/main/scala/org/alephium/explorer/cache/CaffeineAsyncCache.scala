@@ -19,7 +19,6 @@ package org.alephium.explorer.cache
 import java.util.concurrent.CompletableFuture
 
 import scala.concurrent.Future
-import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
 
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache
@@ -49,14 +48,8 @@ class CaffeineAsyncCache[K, V](cache: AsyncLoadingCache[K, V]) {
   def put(key: K, value: V): Unit =
     cache.put(key, CompletableFuture.completedFuture(value))
 
-  def put(key: K, value: Future[V]): Unit =
-    cache.put(key, value.asJava.toCompletableFuture)
-
   def invalidate(key: K): Unit =
     cache.synchronous().invalidate(key)
-
-  def invalidateAll(key: Iterable[K]): Unit =
-    cache.synchronous().invalidateAll(key.asJava)
 
   def invalidateAll(): Unit =
     cache.synchronous().invalidateAll()

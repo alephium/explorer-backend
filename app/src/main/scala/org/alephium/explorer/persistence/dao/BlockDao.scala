@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.persistence.dao
 
+import java.util.concurrent.{CompletableFuture, Executor}
+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
@@ -29,6 +31,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AnyOps
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.cache.CaffeineAsyncCache
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries._
@@ -130,6 +133,47 @@ object BlockDao {
       .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
       .buildAsync(blockTimeAsyncLoader)
 
+    /** Caches the number of rows return by a query.
+      *
+      * @note Slick's [[Query]] type does not implement equals or hashCode so
+      *       this cache will not work as expected on dynamically generated queries.
+      *       The queries to cache should be static i.e. should have the same memory
+      *       address.
+      *
+      *        {{{
+      *          //OK
+      *          cacheRowCount.get(mainChainQuery)
+      *          cacheRowCount.get(mainChainQuery)
+      *
+      *          //OK
+      *          cacheRowCount.get(BlockHeaderSchema.table)
+      *          cacheRowCount.get(BlockHeaderSchema.table)
+      *
+      *          //NOT OK
+      *          cacheRowCount.get(BlockHeaderSchema.table.filter(_.mainChain))
+      *          cacheRowCount.get(BlockHeaderSchema.table.filter(_.mainChain))
+      *        }}}
+      * */
+    private val cacheRowCount: CaffeineAsyncCache[Query[_, _, Seq], Int] =
+      CaffeineAsyncCache {
+        Caffeine
+          .newBuilder()
+          .refreshAfterWrite(2, java.util.concurrent.TimeUnit.MINUTES)
+          .buildAsync[Query[_, _, Seq], Int] {
+            new AsyncCacheLoader[Query[_, _, Seq], Int] {
+              override def asyncLoad(table: Query[_, _, Seq],
+                                     executor: Executor): CompletableFuture[Int] =
+                run(table.length.result).asJava.toCompletableFuture
+            }
+          }
+      }
+
+    def getRowCountFromCacheIfPresent[E, U](query: Query[E, U, Seq]): Option[Future[Int]] =
+      cacheRowCount.getIfPresent(query)
+
+    def invalidateCacheRowCount(): Unit =
+      cacheRowCount.invalidateAll()
+
     def getLite(hash: BlockEntry.Hash): Future[Option[BlockEntryLite]] =
       run(getBlockEntryLiteAction(hash))
 
@@ -156,7 +200,10 @@ object BlockDao {
 
     /** Inserts a multiple blocks transactionally via SQL */
     def insertAll(blocks: Seq[BlockEntity]): Future[Unit] =
-      run(insertBlockEntity(blocks, groupNum)).map(_ => ())
+      run(insertBlockEntity(blocks, groupNum))
+        .map { _ =>
+          cacheRowCount.invalidate(mainChainQuery)
+        }
 
     def listMainChain(pagination: Pagination): Future[(Seq[BlockEntryLite], Int)] = {
       val mainChain = BlockHeaderSchema.table.filter(_.mainChain)
@@ -173,6 +220,12 @@ object BlockDao {
     def listMainChainSQL(pagination: Pagination): Future[(Seq[BlockEntryLite], Int)] = {
       val blockEntries = run(listMainChainHeadersWithTxnNumberSQL(pagination))
       val count        = run(countMainChain().result)
+      blockEntries.zip(count)
+    }
+
+    def listMainChainSQLCached(pagination: Pagination): Future[(Seq[BlockEntryLite], Int)] = {
+      val blockEntries = run(listMainChainHeadersWithTxnNumberSQL(pagination))
+      val count        = cacheRowCount.get(mainChainQuery)
       blockEntries.zip(count)
     }
 
