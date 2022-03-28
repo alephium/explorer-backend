@@ -65,7 +65,7 @@ trait TransactionQueries extends CustomTypes with StrictLogging {
            |                          chain_to,
            |                          gas_amount,
            |                          gas_price,
-           |                          index,
+           |                          tx_order,
            |                          main_chain)
            |values $placeholder
            |ON CONFLICT ON CONSTRAINT txs_pk
@@ -82,7 +82,7 @@ trait TransactionQueries extends CustomTypes with StrictLogging {
             params >> transaction.chainTo
             params >> transaction.gasAmount
             params >> transaction.gasPrice
-            params >> transaction.index
+            params >> transaction.order
             params >> transaction.mainChain
         }
 
@@ -125,16 +125,16 @@ trait TransactionQueries extends CustomTypes with StrictLogging {
   private val getTxHashesByBlockHashQuery = Compiled { (blockHash: Rep[BlockEntry.Hash]) =>
     TransactionSchema.table
       .filter(_.blockHash === blockHash)
-      .sortBy(_.txIndex)
-      .map(tx => (tx.hash, tx.blockHash, tx.timestamp, tx.txIndex))
+      .sortBy(_.txOrder)
+      .map(tx => (tx.hash, tx.blockHash, tx.timestamp, tx.txOrder))
   }
 
   private val getTxHashesByBlockHashWithPaginationQuery = Compiled {
     (blockHash: Rep[BlockEntry.Hash], toDrop: ConstColumn[Long], limit: ConstColumn[Long]) =>
       TransactionSchema.table
         .filter(_.blockHash === blockHash)
-        .sortBy(_.txIndex)
-        .map(tx => (tx.hash, tx.blockHash, tx.timestamp, tx.txIndex))
+        .sortBy(_.txOrder)
+        .map(tx => (tx.hash, tx.blockHash, tx.timestamp, tx.txOrder))
         .drop(toDrop)
         .take(limit)
   }
@@ -181,13 +181,13 @@ trait TransactionQueries extends CustomTypes with StrictLogging {
         .join(mainOutputs)
         .on(_.outputRefKey === _.key)
         .filter(_._2.address === address)
-        .map { case (input, _) => (input.txHash, input.blockHash, input.timestamp, input.txIndex) }
+        .map { case (input, _) => (input.txHash, input.blockHash, input.timestamp, input.txOrder) }
         .union(
           mainOutputs
             .filter(_.address === address)
-            .map(out => (out.txHash, out.blockHash, out.timestamp, out.txIndex))
+            .map(out => (out.txHash, out.blockHash, out.timestamp, out.txOrder))
         )
-        .sortBy { case (_, _, timestamp, txIndex) => (timestamp.desc, txIndex) }
+        .sortBy { case (_, _, timestamp, txOrder) => (timestamp.desc, txOrder) }
         .drop(toDrop)
         .take(limit)
   }
@@ -198,15 +198,15 @@ trait TransactionQueries extends CustomTypes with StrictLogging {
       limit: Int): DBActionSR[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)] = {
     sql"""
     (
-      SELECT inputs.tx_hash, inputs.block_hash, inputs.timestamp, inputs.tx_index
+      SELECT inputs.tx_hash, inputs.block_hash, inputs.timestamp, inputs.tx_order
       FROM inputs
       JOIN outputs ON outputs.main_chain = true AND inputs.output_ref_key = outputs.key AND outputs.address = $address
       WHERE inputs.main_chain = true
       UNION
-      SELECT tx_hash, block_hash, timestamp, tx_index from outputs
+      SELECT tx_hash, block_hash, timestamp, tx_order from outputs
       WHERE main_chain = true AND address = $address
     )
-    ORDER BY timestamp DESC, tx_index
+    ORDER BY timestamp DESC, tx_order
     LIMIT $limit
     OFFSET $offset
     """.as
@@ -217,10 +217,10 @@ trait TransactionQueries extends CustomTypes with StrictLogging {
       offset: Int,
       limit: Int): DBActionSR[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)] = {
     sql"""
-      SELECT hash, block_hash, timestamp, tx_index
+      SELECT hash, block_hash, timestamp, tx_order
       FROM transaction_per_addresses
       WHERE main_chain = true AND address = $address
-      ORDER BY timestamp DESC, tx_index
+      ORDER BY timestamp DESC, tx_order
       LIMIT $limit
       OFFSET $offset
     """.as

@@ -24,6 +24,6 @@ final case class TransactionPerAddressEntity(
     hash: Transaction.Hash,
     blockHash: BlockEntry.Hash,
     timestamp: TimeStamp,
-    txIndex: Int,
+    txOrder: Int,
     mainChain: Boolean
 )

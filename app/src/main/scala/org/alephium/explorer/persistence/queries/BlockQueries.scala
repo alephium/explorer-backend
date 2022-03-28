@@ -37,7 +37,7 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
   val block_headers = BlockHeaderSchema.table.baseTableRow.tableName //block_headers table name
 
   private val blockDepsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
-    BlockDepsSchema.table.filter(_.hash === blockHash).sortBy(_.order).map(_.dep)
+    BlockDepsSchema.table.filter(_.hash === blockHash).sortBy(_.depOrder).map(_.dep)
   }
 
   def buildBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry] =

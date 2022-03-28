@@ -27,14 +27,14 @@ object BlockDepsSchema extends Schema[BlockDepEntity]("block_deps") {
   class BlockDeps(tag: Tag) extends Table[BlockDepEntity](tag, name) {
     def hash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("hash", O.SqlType("BYTEA"))
     def dep: Rep[BlockEntry.Hash]  = column[BlockEntry.Hash]("dep", O.SqlType("BYTEA"))
-    def order: Rep[Int]            = column[Int]("order")
+    def depOrder: Rep[Int]         = column[Int]("dep_order")
 
     def pk: PrimaryKey = primaryKey("hash_deps_pk", (hash, dep))
     def hashIdx: Index = index("deps_hash_idx", hash)
     def depIdx: Index  = index("deps_dep_idx", dep)
 
     def * : ProvenShape[BlockDepEntity] =
-      (hash, dep, order).<>((BlockDepEntity.apply _).tupled, BlockDepEntity.unapply)
+      (hash, dep, depOrder).<>((BlockDepEntity.apply _).tupled, BlockDepEntity.unapply)
   }
 
   val table: TableQuery[BlockDeps] = TableQuery[BlockDeps]

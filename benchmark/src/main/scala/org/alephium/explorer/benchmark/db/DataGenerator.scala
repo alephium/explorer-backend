@@ -55,7 +55,7 @@ object DataGenerator {
         chainTo   = GroupIndex.unsafe(3),
         gasAmount = Random.nextInt(1000),
         gasPrice  = U256.unsafe(0),
-        index     = Random.nextInt(1000),
+        order     = Random.nextInt(1000),
         mainChain = mainChain
       )
     }
@@ -74,7 +74,7 @@ object DataGenerator {
           mainChain = transaction.mainChain,
           lockTime  = Some(TimeStamp.now()),
           order     = order,
-          txIndex   = order
+          txOrder   = order
         )
     }
 
@@ -90,7 +90,7 @@ object DataGenerator {
           unlockScript = Some(Random.alphanumeric.take(10).mkString),
           mainChain    = output.mainChain,
           order        = order,
-          txIndex      = order
+          txOrder      = order
         )
     }
 

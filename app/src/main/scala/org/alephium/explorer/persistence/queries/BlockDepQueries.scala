@@ -43,7 +43,7 @@ object BlockDepQueries {
       val placeholder = paramPlaceholder(rows = deps.size, columns = 3)
       val query =
         s"""
-           |INSERT INTO block_deps ("hash", "dep", "order")
+           |INSERT INTO block_deps ("hash", "dep", "dep_order")
            |VALUES $placeholder
            |ON CONFLICT ON CONSTRAINT hash_deps_pk
            |    DO NOTHING

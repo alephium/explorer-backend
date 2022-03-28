@@ -31,7 +31,7 @@ object TransactionPerAddressSchema
     def hash: Rep[Transaction.Hash]     = column[Transaction.Hash]("hash", O.SqlType("BYTEA"))
     def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
-    def txIndex: Rep[Int]               = column[Int]("tx_index")
+    def txOrder: Rep[Int]               = column[Int]("tx_order")
     def mainChain: Rep[Boolean]         = column[Boolean]("main_chain")
 
     def pk: PrimaryKey = primaryKey("txs_per_address_pk", (hash, blockHash, address))
@@ -42,7 +42,7 @@ object TransactionPerAddressSchema
     def addressIdx: Index   = index("txs_per_address_address_idx", address)
 
     def * : ProvenShape[TransactionPerAddressEntity] =
-      (address, hash, blockHash, timestamp, txIndex, mainChain)
+      (address, hash, blockHash, timestamp, txOrder, mainChain)
         .<>((TransactionPerAddressEntity.apply _).tupled, TransactionPerAddressEntity.unapply)
   }
 

@@ -47,8 +47,8 @@ object InputQueries extends CustomTypes {
            |                    "output_ref_key",
            |                    "unlock_script",
            |                    "main_chain",
-           |                    "order",
-           |                    "tx_index")
+           |                    "input_order",
+           |                    "tx_order")
            |VALUES $placeholder
            |ON CONFLICT
            |    ON CONSTRAINT inputs_pk
@@ -66,7 +66,7 @@ object InputQueries extends CustomTypes {
             params >> input.unlockScript
             params >> input.mainChain
             params >> input.order
-            params >> input.txIndex
+            params >> input.txOrder
         }
 
       SQLActionBuilder(
@@ -111,8 +111,8 @@ object InputQueries extends CustomTypes {
 
   def insertTxPerAddressFromInput(input: InputEntity): DBActionW[Int] = {
     sqlu"""
-      INSERT INTO transaction_per_addresses (address, hash, block_hash, timestamp, tx_index, main_chain)
-      (SELECT address, ${input.txHash}, ${input.blockHash}, ${input.timestamp}, ${input.txIndex}, main_chain FROM outputs WHERE key = ${input.outputRefKey})
+      INSERT INTO transaction_per_addresses (address, hash, block_hash, timestamp, tx_order, main_chain)
+      (SELECT address, ${input.txHash}, ${input.blockHash}, ${input.timestamp}, ${input.txOrder}, main_chain FROM outputs WHERE key = ${input.outputRefKey})
       ON CONFLICT (hash, block_hash, address) DO NOTHING
     """
   }
@@ -122,12 +122,12 @@ object InputQueries extends CustomTypes {
       val values = inputs
         .map {
           case (address, input) =>
-            s"('${address}', '\\x${input.txHash}', '\\x${input.blockHash}', '${input.timestamp.millis}', ${input.txIndex}, ${input.mainChain}) "
+            s"('${address}', '\\x${input.txHash}', '\\x${input.blockHash}', '${input.timestamp.millis}', ${input.txOrder}, ${input.mainChain}) "
         }
         .mkString(",\n")
 
       sqlu"""
-      INSERT INTO transaction_per_addresses (address, hash, block_hash, timestamp, tx_index, main_chain)
+      INSERT INTO transaction_per_addresses (address, hash, block_hash, timestamp, tx_order, main_chain)
       VALUES #$values
       ON CONFLICT (hash, block_hash, address) DO NOTHING
     """
@@ -148,7 +148,7 @@ object InputQueries extends CustomTypes {
       .map {
         case (input, output) =>
           (input.txHash,
-           input.order,
+           input.inputOrder,
            input.hint,
            input.outputRefKey,
            input.unlockScript,
@@ -165,7 +165,7 @@ object InputQueries extends CustomTypes {
     if (txHashes.nonEmpty) {
       val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
       sql"""
-    SELECT inputs.tx_hash, inputs.order, inputs.hint, inputs.output_ref_key, inputs.unlock_script, outputs.tx_hash, outputs.address, outputs.amount
+    SELECT inputs.tx_hash, inputs.input_order, inputs.hint, inputs.output_ref_key, inputs.unlock_script, outputs.tx_hash, outputs.address, outputs.amount
     FROM inputs
     JOIN outputs ON inputs.output_ref_key = outputs.key AND outputs.main_chain = true
     WHERE inputs.tx_hash IN (#$values) AND inputs.main_chain = true
@@ -181,7 +181,7 @@ object InputQueries extends CustomTypes {
       .filter(_.txHash === txHash)
       .join(mainOutputs)
       .on(_.outputRefKey === _.key)
-      .sortBy(_._1.order)
+      .sortBy(_._1.inputOrder)
       .map {
         case (input, output) =>
           (input.hint,

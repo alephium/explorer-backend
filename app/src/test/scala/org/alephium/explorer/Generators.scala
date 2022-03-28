@@ -111,7 +111,7 @@ trait Generators {
       chainTo   <- groupIndexGen
       gasAmount <- Gen.posNum[Int]
       gasPrice  <- u256Gen
-      index     <- Gen.posNum[Int]
+      order     <- Gen.posNum[Int]
       mainChain <- Arbitrary.arbitrary[Boolean]
     } yield
       TransactionEntity(
@@ -122,7 +122,7 @@ trait Generators {
         chainTo   = chainTo,
         gasAmount = gasAmount,
         gasPrice  = gasPrice,
-        index     = index,
+        order     = order,
         mainChain = mainChain
       )
 
@@ -485,7 +485,7 @@ trait Generators {
       lockTime  <- Gen.option(timestampGen)
       mainChain <- arbitrary[Boolean]
       order     <- arbitrary[Int]
-      txIndex   <- arbitrary[Int]
+      txOrder   <- arbitrary[Int]
     } yield
       OutputEntity(
         blockHash = blockHash,
@@ -498,7 +498,7 @@ trait Generators {
         mainChain = mainChain,
         lockTime  = lockTime,
         order     = order,
-        txIndex   = txIndex
+        txOrder   = txOrder
       )
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -506,7 +506,7 @@ trait Generators {
     for {
       outputEntity <- outputEntityGen
       unlockScript <- Gen.option(Gen.hexStr)
-      txIndex      <- arbitrary[Int]
+      txOrder      <- arbitrary[Int]
     } yield {
       InputEntity(
         blockHash    = outputEntity.blockHash,
@@ -517,7 +517,7 @@ trait Generators {
         unlockScript = unlockScript,
         mainChain    = outputEntity.mainChain,
         order        = outputEntity.order,
-        txIndex      = txIndex
+        txOrder      = txOrder
       )
     }
 

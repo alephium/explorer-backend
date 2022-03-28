@@ -34,7 +34,7 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
     def gasAmount: Rep[Int]             = column[Int]("gas_amount")
     def gasPrice: Rep[U256] =
       column[U256]("gas_price", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
-    def txIndex: Rep[Int]       = column[Int]("index")
+    def txOrder: Rep[Int]       = column[Int]("tx_order")
     def mainChain: Rep[Boolean] = column[Boolean]("main_chain")
 
     def pk: PrimaryKey = primaryKey("txs_pk", (hash, blockHash))
@@ -46,7 +46,7 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
     def chainToIdx: Index   = index("txs_chain_to_idx", chainTo)
 
     def * : ProvenShape[TransactionEntity] =
-      (hash, blockHash, timestamp, chainFrom, chainTo, gasAmount, gasPrice, txIndex, mainChain)
+      (hash, blockHash, timestamp, chainFrom, chainTo, gasAmount, gasPrice, txOrder, mainChain)
         .<>((TransactionEntity.apply _).tupled, TransactionEntity.unapply)
   }
 
