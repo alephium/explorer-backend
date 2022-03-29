@@ -27,13 +27,14 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.api.{model, ApiModelCodec}
 import org.alephium.explorer.{AlephiumSpec, Generators}
-import org.alephium.explorer.api.model.{BlockEntry, Pagination}
+import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Pagination}
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.json.Json._
+import org.alephium.protocol.model.ChainIndex
 import org.alephium.util.{Duration, TimeStamp}
 
 class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with Eventually {
@@ -132,6 +133,40 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
       val block      = BlockFlowClient.blockProtocolToEntity(blockEntry)
       blockDao.insert(block).futureValue is ()
     }
+  }
+
+  it should "get average block time" in new Fixture {
+    val now        = TimeStamp.now()
+    val from       = GroupIndex.unsafe(0)
+    val to         = GroupIndex.unsafe(0)
+    val chainIndex = ChainIndex.unsafe(0, 0)
+    val block1 = blockHeaderGen.sample.get.copy(mainChain = true,
+                                                chainFrom = from,
+                                                chainTo   = to,
+                                                timestamp = now)
+    val block2 = blockHeaderGen.sample.get.copy(mainChain = true,
+                                                chainFrom = from,
+                                                chainTo   = to,
+                                                timestamp = now.plusMinutesUnsafe(2))
+    val block3 = blockHeaderGen.sample.get.copy(mainChain = true,
+                                                chainFrom = from,
+                                                chainTo   = to,
+                                                timestamp = now.plusMinutesUnsafe(4))
+    val block4 = blockHeaderGen.sample.get.copy(mainChain = true,
+                                                chainFrom = from,
+                                                chainTo   = to,
+                                                timestamp = now.plusMinutesUnsafe(6))
+
+    run(
+      LatestBlockSchema.table ++=
+        chainIndexes.map {
+          case (from, to) =>
+            LatestBlock.fromEntity(blockEntityGen(from, to, None).sample.get).copy(timestamp = now)
+        }).futureValue
+
+    run(BlockHeaderSchema.table ++= Seq(block1, block2, block3, block4)).futureValue
+
+    blockDao.getAverageBlockTime().futureValue.head is ((chainIndex, Duration.ofMinutesUnsafe(2)))
   }
 
   trait Fixture extends DatabaseFixture with DBRunner with CustomTypes with ApiModelCodec {

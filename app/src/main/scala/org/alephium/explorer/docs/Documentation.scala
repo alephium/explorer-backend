@@ -42,6 +42,8 @@ trait Documentation
       listTokenSupply,
       getTotalSupply,
       getCirculatingSupply,
+      getTotalTransactions,
+      getAverageBlockTime,
       getHashrates,
       sanityCheck
     ),

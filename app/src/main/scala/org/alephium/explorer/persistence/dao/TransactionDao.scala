@@ -17,7 +17,9 @@
 package org.alephium.explorer.persistence.dao
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.FutureConverters._
 
+import com.github.benmanes.caffeine.cache._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -35,6 +37,7 @@ trait TransactionDao {
   def getNumberByAddressSQLNoJoin(address: Address): Future[Int]
   def getBalance(address: Address): Future[(U256, U256)]
   def getBalanceSQL(address: Address): Future[(U256, U256)]
+  def getTotalNumber(): Future[Long]
 }
 
 object TransactionDao {
@@ -47,6 +50,18 @@ object TransactionDao {
       extends TransactionDao
       with TransactionQueries
       with DBRunner {
+
+    @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+    private val asyncLoader: AsyncCacheLoader[Int, Long] = {
+      case (_, _) =>
+        run(getTotalNumberQuery).map(_.headOption.getOrElse(0L)).asJava.toCompletableFuture
+    }
+
+    private val cachedTxsNumber: AsyncLoadingCache[Int, Long] = Caffeine
+      .newBuilder()
+      .maximumSize(1)
+      .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
+      .buildAsync(asyncLoader)
 
     def get(hash: Transaction.Hash): Future[Option[Transaction]] =
       run(getTransactionAction(hash))
@@ -72,5 +87,9 @@ object TransactionDao {
 
     def getBalanceSQL(address: Address): Future[(U256, U256)] =
       run(getBalanceActionSQL(address))
+
+    def getTotalNumber(): Future[Long] = {
+      cachedTxsNumber.get(0).asScala
+    }
   }
 }

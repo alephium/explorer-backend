@@ -42,7 +42,7 @@ class AppServer(blockService: BlockService,
   val transactionServer: TransactionServer =
     new TransactionServer(transactionService, blockFlowFetchMaxAge)
   val infosServer: InfosServer =
-    new InfosServer(blockFlowFetchMaxAge, tokenSupplyService, blockService)
+    new InfosServer(blockFlowFetchMaxAge, tokenSupplyService, blockService, transactionService)
   val utilsServer: UtilsServer   = new UtilsServer(blockFlowFetchMaxAge, sanityChecker)
   val chartsServer: ChartsServer = new ChartsServer(blockFlowFetchMaxAge, hashrateService)
   val documentation: DocumentationServer =

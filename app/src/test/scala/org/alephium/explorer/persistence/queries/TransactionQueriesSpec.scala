@@ -327,6 +327,18 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     run(queries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue is Seq.empty
   }
 
+  it should "get total number of main transactions" in new Fixture {
+
+    val tx1 = transactionEntityGen().sample.get.copy(mainChain = true)
+    val tx2 = transactionEntityGen().sample.get.copy(mainChain = true)
+    val tx3 = transactionEntityGen().sample.get.copy(mainChain = false)
+
+    run(TransactionSchema.table ++= Seq(tx1, tx2, tx3)).futureValue
+
+    val total = run(queries.getTotalNumberQuery).futureValue.head
+    total is 2
+  }
+
   trait Fixture extends DatabaseFixture with DBRunner with Generators {
 
     class Queries(implicit val executionContext: ExecutionContext) extends TransactionQueries

@@ -390,6 +390,13 @@ trait TransactionQueries extends CustomTypes with StrictLogging {
     }
   }
 
+  val getTotalNumberQuery: DBActionSR[Long] = {
+    sql"""
+      SELECT COUNT(*) from #${TransactionSchema.name}
+      WHERE main_chain = true
+    """.as[Long]
+  }
+
   private def sumBalance(outputs: Seq[(U256, Option[TimeStamp])]): (U256, U256) = {
     val now = TimeStamp.now()
     outputs.foldLeft((U256.Zero, U256.Zero)) {

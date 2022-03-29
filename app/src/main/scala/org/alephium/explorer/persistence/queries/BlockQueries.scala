@@ -31,6 +31,7 @@ import org.alephium.explorer.persistence.queries.InputQueries.insertInputs
 import org.alephium.explorer.persistence.queries.OutputQueries.insertOutputs
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.util.TimeStamp
 
 trait BlockQueries extends TransactionQueries with CustomTypes with StrictLogging {
 
@@ -289,5 +290,15 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
         insertBlockHeaders(blockHeaders)
 
     query.transactionally
+  }
+
+  def getBlockTimes(fromGroup: GroupIndex,
+                    toGroup: GroupIndex,
+                    after: TimeStamp): DBActionSR[TimeStamp] = {
+    sql"""
+      SELECT timestamp FROM  block_headers
+      WHERE chain_from = $fromGroup AND chain_to = $toGroup AND timestamp > $after
+      ORDER BY timestamp
+    """.as[TimeStamp]
   }
 }
