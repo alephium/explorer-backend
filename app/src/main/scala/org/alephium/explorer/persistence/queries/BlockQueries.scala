@@ -224,7 +224,7 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
            |                            "height",
            |                            "main_chain",
            |                            "nonce",
-           |                            "version",
+           |                            "block_version",
            |                            "dep_state_hash",
            |                            "txs_hash",
            |                            "txs_count",

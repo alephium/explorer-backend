@@ -39,7 +39,7 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
     def height: Rep[Height]        = column[Height]("height")
     def mainChain: Rep[Boolean]    = column[Boolean]("main_chain")
     def nonce: Rep[ByteString]     = column[ByteString]("nonce")
-    def version: Rep[Byte]         = column[Byte]("version")
+    def version: Rep[Byte]         = column[Byte]("block_version")
     def depStateHash: Rep[Hash]    = column[Hash]("dep_state_hash")
     def txsHash: Rep[Hash]         = column[Hash]("txs_hash")
     def txsCount: Rep[Int]         = column[Int]("txs_count")
