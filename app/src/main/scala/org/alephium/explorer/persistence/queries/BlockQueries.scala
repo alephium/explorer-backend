@@ -109,9 +109,9 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
       }
 
     if (reverse) {
-      s"order by ${columnPrefix}timestamp, ${columnPrefix}hash desc"
+      s"order by ${columnPrefix}block_timestamp, ${columnPrefix}hash desc"
     } else {
-      s"order by ${columnPrefix}timestamp desc, ${columnPrefix}hash"
+      s"order by ${columnPrefix}block_timestamp desc, ${columnPrefix}hash"
     }
   }
 
@@ -139,7 +139,7 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
 
     sql"""
            |select hash,
-           |       timestamp,
+           |       block_timestamp,
            |       chain_from,
            |       chain_to,
            |       height,
@@ -218,7 +218,7 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
       val query =
         s"""
            |insert into $block_headers ("hash",
-           |                            "timestamp",
+           |                            "block_timestamp",
            |                            "chain_from",
            |                            "chain_to",
            |                            "height",
@@ -296,9 +296,9 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
                     toGroup: GroupIndex,
                     after: TimeStamp): DBActionSR[TimeStamp] = {
     sql"""
-      SELECT timestamp FROM  block_headers
-      WHERE chain_from = $fromGroup AND chain_to = $toGroup AND timestamp > $after
-      ORDER BY timestamp
+      SELECT block_timestamp FROM  block_headers
+      WHERE chain_from = $fromGroup AND chain_to = $toGroup AND block_timestamp > $after
+      ORDER BY block_timestamp
     """.as[TimeStamp]
   }
 }

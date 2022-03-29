@@ -30,7 +30,7 @@ object TransactionPerAddressSchema
     def address: Rep[Address]           = column[Address]("address")
     def hash: Rep[Transaction.Hash]     = column[Transaction.Hash]("hash", O.SqlType("BYTEA"))
     def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
-    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
+    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("block_timestamp")
     def txOrder: Rep[Int]               = column[Int]("tx_order")
     def mainChain: Rep[Boolean]         = column[Boolean]("main_chain")
 

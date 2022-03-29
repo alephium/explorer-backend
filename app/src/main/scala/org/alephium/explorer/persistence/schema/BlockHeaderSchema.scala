@@ -33,7 +33,7 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
   class BlockHeaders(tag: Tag) extends Table[BlockHeader](tag, name) {
     def hash: Rep[BlockEntry.Hash] =
       column[BlockEntry.Hash]("hash", O.PrimaryKey, O.SqlType("bytea"))
-    def timestamp: Rep[TimeStamp]  = column[TimeStamp]("timestamp")
+    def timestamp: Rep[TimeStamp]  = column[TimeStamp]("block_timestamp")
     def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
     def height: Rep[Height]        = column[Height]("height")
@@ -78,7 +78,7 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
   private def fullIndexSQL(): SqlAction[Int, NoStream, Effect] =
     sqlu"""
       create unique index if not exists #${name}_full_index
-          on #${name} (main_chain asc, timestamp desc, hash asc, chain_from asc, chain_to asc, height asc);
+          on #${name} (main_chain asc, block_timestamp desc, hash asc, chain_from asc, chain_to asc, height asc);
       """
 
   /**

@@ -42,7 +42,7 @@ object InputQueries extends CustomTypes {
         s"""
            |INSERT INTO inputs ("block_hash",
            |                    "tx_hash",
-           |                    "timestamp",
+           |                    "block_timestamp",
            |                    "hint",
            |                    "output_ref_key",
            |                    "unlock_script",
@@ -111,7 +111,7 @@ object InputQueries extends CustomTypes {
 
   def insertTxPerAddressFromInput(input: InputEntity): DBActionW[Int] = {
     sqlu"""
-      INSERT INTO transaction_per_addresses (address, hash, block_hash, timestamp, tx_order, main_chain)
+      INSERT INTO transaction_per_addresses (address, hash, block_hash, block_timestamp, tx_order, main_chain)
       (SELECT address, ${input.txHash}, ${input.blockHash}, ${input.timestamp}, ${input.txOrder}, main_chain FROM outputs WHERE key = ${input.outputRefKey})
       ON CONFLICT (hash, block_hash, address) DO NOTHING
     """
@@ -127,7 +127,7 @@ object InputQueries extends CustomTypes {
         .mkString(",\n")
 
       sqlu"""
-      INSERT INTO transaction_per_addresses (address, hash, block_hash, timestamp, tx_order, main_chain)
+      INSERT INTO transaction_per_addresses (address, hash, block_hash, block_timestamp, tx_order, main_chain)
       VALUES #$values
       ON CONFLICT (hash, block_hash, address) DO NOTHING
     """

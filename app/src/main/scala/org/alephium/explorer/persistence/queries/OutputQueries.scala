@@ -40,7 +40,7 @@ object OutputQueries extends CustomTypes {
         s"""
            |INSERT INTO outputs ("block_hash",
            |                     "tx_hash",
-           |                     "timestamp",
+           |                     "block_timestamp",
            |                     "hint",
            |                     "key",
            |                     "amount",
@@ -86,7 +86,7 @@ object OutputQueries extends CustomTypes {
         }
         .mkString(",\n")
       sqlu"""
-      INSERT INTO transaction_per_addresses (address, hash, block_hash, timestamp, tx_order, main_chain)
+      INSERT INTO transaction_per_addresses (address, hash, block_hash, block_timestamp, tx_order, main_chain)
       VALUES #$values
       ON CONFLICT (hash, block_hash, address) DO NOTHING
     """

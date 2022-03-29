@@ -60,7 +60,7 @@ trait TransactionQueries extends CustomTypes with StrictLogging {
         s"""
            |insert into transactions (hash,
            |                          block_hash,
-           |                          timestamp,
+           |                          block_timestamp,
            |                          chain_from,
            |                          chain_to,
            |                          gas_amount,
@@ -198,15 +198,15 @@ trait TransactionQueries extends CustomTypes with StrictLogging {
       limit: Int): DBActionSR[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)] = {
     sql"""
     (
-      SELECT inputs.tx_hash, inputs.block_hash, inputs.timestamp, inputs.tx_order
+      SELECT inputs.tx_hash, inputs.block_hash, inputs.block_timestamp, inputs.tx_order
       FROM inputs
       JOIN outputs ON outputs.main_chain = true AND inputs.output_ref_key = outputs.key AND outputs.address = $address
       WHERE inputs.main_chain = true
       UNION
-      SELECT tx_hash, block_hash, timestamp, tx_order from outputs
+      SELECT tx_hash, block_hash, block_timestamp, tx_order from outputs
       WHERE main_chain = true AND address = $address
     )
-    ORDER BY timestamp DESC, tx_order
+    ORDER BY block_timestamp DESC, tx_order
     LIMIT $limit
     OFFSET $offset
     """.as
@@ -217,10 +217,10 @@ trait TransactionQueries extends CustomTypes with StrictLogging {
       offset: Int,
       limit: Int): DBActionSR[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)] = {
     sql"""
-      SELECT hash, block_hash, timestamp, tx_order
+      SELECT hash, block_hash, block_timestamp, tx_order
       FROM transaction_per_addresses
       WHERE main_chain = true AND address = $address
-      ORDER BY timestamp DESC, tx_order
+      ORDER BY block_timestamp DESC, tx_order
       LIMIT $limit
       OFFSET $offset
     """.as

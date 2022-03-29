@@ -28,7 +28,7 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
   class Transactions(tag: Tag) extends Table[TransactionEntity](tag, name) {
     def hash: Rep[Transaction.Hash]     = column[Transaction.Hash]("hash", O.SqlType("BYTEA"))
     def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
-    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
+    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("block_timestamp")
     def chainFrom: Rep[GroupIndex]      = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]        = column[GroupIndex]("chain_to")
     def gasAmount: Rep[Int]             = column[Int]("gas_amount")

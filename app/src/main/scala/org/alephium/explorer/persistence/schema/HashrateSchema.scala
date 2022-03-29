@@ -26,7 +26,7 @@ import org.alephium.util.TimeStamp
 object HashrateSchema extends Schema[HashrateEntity]("hashrates") {
 
   class Hashrates(tag: Tag) extends Table[HashrateEntity](tag, name) {
-    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
+    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("block_timestamp")
     def value: Rep[BigDecimal]          = column[BigDecimal]("value")
     def intervalType: Rep[IntervalType] = column[IntervalType]("interval_type")
 

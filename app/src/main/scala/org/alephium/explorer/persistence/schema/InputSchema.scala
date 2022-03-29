@@ -29,7 +29,7 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
   class Inputs(tag: Tag) extends Table[InputEntity](tag, name) {
     def blockHash: Rep[BlockEntry.Hash]   = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
     def txHash: Rep[Transaction.Hash]     = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
-    def timestamp: Rep[TimeStamp]         = column[TimeStamp]("timestamp")
+    def timestamp: Rep[TimeStamp]         = column[TimeStamp]("block_timestamp")
     def hint: Rep[Int]                    = column[Int]("hint")
     def outputRefKey: Rep[Hash]           = column[Hash]("output_ref_key", O.SqlType("BYTEA"))
     def unlockScript: Rep[Option[String]] = column[Option[String]]("unlock_script")
