@@ -30,7 +30,7 @@ object CaffeineAsyncCache {
 
 }
 
-/** A wrapper around [[AsyncLoadingCache]] to convert Java types to Scala. */
+/** A wrapper around [[com.github.benmanes.caffeine.cache.AsyncLoadingCache]] to convert Java types to Scala. */
 class CaffeineAsyncCache[K, V](cache: AsyncLoadingCache[K, V]) {
 
   def get(key: K): Future[V] =

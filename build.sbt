@@ -52,23 +52,38 @@ def scalaDocsAPIMapping(classPath: Classpath, scalaVersion: String): (sbt.File, 
 }
 
 /** Scala-docs API Mapping for slick */
-def slickScalaDocAPIMapping(classPath: Classpath,
-                            slickModuleId: ModuleID,
-                            scalaVersion: String): (sbt.File, sbt.URL) = {
+def slickScalaDocAPIMapping(classPath: Classpath, scalaVersion: String): (sbt.File, sbt.URL) = {
   val slickJar =
     findDependencyJar(
       classPath = classPath,
-      moduleId  = slickModuleId
+      moduleId  = slick
     )
 
   //fetch only the major and minor
   val scalaMajorMinor = scalaVersion.split("\\.").take(2).mkString(".")
   val slickDocsURL =
     url(
-      s"https://www.javadoc.io/doc/com.typesafe.slick/slick_$scalaMajorMinor/${slickModuleId.revision}/index.html"
+      s"https://www.javadoc.io/doc/com.typesafe.slick/slick_$scalaMajorMinor/${slick.revision}/index.html"
     )
 
   slickJar -> slickDocsURL
+}
+
+/** Java-docs API Mapping for Caffeine */
+def caffeineJavaDocAPIMapping(classPath: Classpath): (sbt.File, sbt.URL) = {
+  val slickJar =
+    findDependencyJar(
+      classPath = classPath,
+      moduleId  = caffeine
+    )
+
+  //fetch only the major and minor
+  val docsURL =
+    url(
+      s"https://www.javadoc.io/doc/com.github.ben-manes.caffeine/caffeine/${caffeine.revision}/com.github.benmanes.caffeine/"
+    )
+
+  slickJar -> docsURL
 }
 
 val commonSettings = Seq(
@@ -210,14 +225,18 @@ lazy val app = mainProject("app")
       case other => (assembly / assemblyMergeStrategy).value(other)
     },
     apiMappings ++= {
+      val classPath = (Compile / fullClasspath).value
+
       val slickAPIMapping =
         slickScalaDocAPIMapping(
-          classPath     = (Compile / fullClasspath).value,
-          slickModuleId = slick,
-          scalaVersion  = scalaVersion.value
+          classPath    = classPath,
+          scalaVersion = scalaVersion.value
         )
 
-      Map(slickAPIMapping)
+      val caffeineAPIMapping =
+        caffeineJavaDocAPIMapping(classPath)
+
+      Map(slickAPIMapping, caffeineAPIMapping)
     }
   )
 
@@ -242,9 +261,8 @@ lazy val benchmark = mainProject("benchmark")
     apiMappings ++= {
       val slickAPIMapping =
         slickScalaDocAPIMapping(
-          classPath     = (Compile / fullClasspath).value,
-          slickModuleId = slick,
-          scalaVersion  = scalaVersion.value
+          classPath    = (Compile / fullClasspath).value,
+          scalaVersion = scalaVersion.value
         )
 
       Map(slickAPIMapping)
