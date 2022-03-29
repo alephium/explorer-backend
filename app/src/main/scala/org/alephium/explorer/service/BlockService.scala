@@ -26,11 +26,12 @@ trait BlockService {
   def getBlockTransactions(hash: BlockEntry.Hash, pagination: Pagination): Future[Seq[Transaction]]
   def listBlocks(pagination: Pagination): Future[ListBlocks]
   def listMaxHeights(): Future[Seq[PerChainValue]]
+  def getAverageBlockTime(): Future[Seq[PerChainValue]]
 }
 
 object BlockService {
-  def apply(blockDAO: BlockDao)(implicit executionContext: ExecutionContext): BlockService =
-    new Impl(blockDAO)
+  def apply(blockDao: BlockDao)(implicit executionContext: ExecutionContext): BlockService =
+    new Impl(blockDao)
 
   private class Impl(blockDao: BlockDao)(implicit executionContext: ExecutionContext)
       extends BlockService {
@@ -53,7 +54,15 @@ object BlockService {
         .latestBlocks()
         .map(_.map {
           case (chainIndex, block) =>
-            PerChainValue(chainIndex.from.value, chainIndex.to.value, block.height.value)
+            PerChainValue(chainIndex.from.value, chainIndex.to.value, block.height.value.toLong)
+        })
+    }
+    def getAverageBlockTime(): Future[Seq[PerChainValue]] = {
+      blockDao
+        .getAverageBlockTime()
+        .map(_.map {
+          case (chainIndex, averageBlockTime) =>
+            PerChainValue(chainIndex.from.value, chainIndex.to.value, averageBlockTime.millis)
         })
     }
   }

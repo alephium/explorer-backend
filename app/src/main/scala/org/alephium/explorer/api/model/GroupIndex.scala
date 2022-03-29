@@ -33,6 +33,9 @@ object GroupIndex {
       Right(GroupIndex.unsafe(value))
     }
 
+  def fromProtocol(groupIndex: org.alephium.protocol.model.GroupIndex): GroupIndex =
+    unsafe(groupIndex.value)
+
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   implicit val readWriter: ReadWriter[GroupIndex] =
     readwriter[Int].bimap[GroupIndex](_.value,

@@ -95,6 +95,8 @@ class AddressServerSpec()
 
       override def getBalance(address: Address): Future[(U256, U256)] =
         Future.successful((U256.Zero, U256.Zero))
+
+      def getTotalNumber(): Future[Long] = Future.successful(0L)
     }
   }
 }

@@ -36,7 +36,7 @@ import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.ChainIndex
-import org.alephium.util.TimeStamp
+import org.alephium.util.{Duration, TimeStamp}
 
 trait BlockDao {
   def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]]
@@ -60,6 +60,7 @@ trait BlockDao {
   def latestBlocks(): Future[Seq[(ChainIndex, LatestBlock)]]
   def updateLatestBlock(block: BlockEntity): Future[Unit]
   def updateInputs(inputs: Seq[InputEntity]): Future[Int]
+  def getAverageBlockTime(): Future[Seq[(ChainIndex, Duration)]]
 }
 
 object BlockDao {
@@ -82,9 +83,8 @@ object BlockDao {
       i <- 0 to groupNum - 1
       j <- 0 to groupNum - 1
     } yield (ChainIndex.unsafe(i, j))).asJava
-
     @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-    private val asyncLoader: AsyncCacheLoader[ChainIndex, LatestBlock] = {
+    private val latestBlockAsyncLoader: AsyncCacheLoader[ChainIndex, LatestBlock] = {
       case (key, _) =>
         run(
           getLatestBlock(GroupIndex.unsafe(key.from.value), GroupIndex.unsafe(key.to.value))
@@ -95,7 +95,40 @@ object BlockDao {
       .newBuilder()
       .maximumSize(groupConfig.chainNum.toLong)
       .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
-      .buildAsync(asyncLoader)
+      .buildAsync(latestBlockAsyncLoader)
+
+    private val blockTimeAsyncLoader: AsyncCacheLoader[ChainIndex, Duration] = {
+      case (key, _) =>
+        val chainFrom = GroupIndex.fromProtocol(key.from)
+        val chainTo   = GroupIndex.fromProtocol(key.to)
+        (for {
+          latestBlock <- cachedLatestBlocks.get(key).asScala
+          after = latestBlock.timestamp.minusUnsafe(Duration.ofHoursUnsafe(2))
+          blockTimes <- run(getBlockTimes(chainFrom, chainTo, after))
+        } yield {
+          computeAverageBlockTime(blockTimes)
+        }).asJava.toCompletableFuture
+    }
+
+    @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
+    private def computeAverageBlockTime(blockTimes: Seq[TimeStamp]): Duration = {
+      if (blockTimes.size > 1) {
+        val (_, diffs) =
+          blockTimes.drop(1).foldLeft((blockTimes.head, Seq.empty: Seq[Duration])) {
+            case ((prev, acc), ts) =>
+              (ts, acc :+ (ts.deltaUnsafe(prev)))
+          }
+        diffs.fold(Duration.zero)(_ + _).divUnsafe(diffs.size.toLong)
+      } else {
+        Duration.zero
+      }
+    }
+
+    private val cachedBlockTimes: AsyncLoadingCache[ChainIndex, Duration] = Caffeine
+      .newBuilder()
+      .maximumSize(groupConfig.chainNum.toLong)
+      .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
+      .buildAsync(blockTimeAsyncLoader)
 
     def getLite(hash: BlockEntry.Hash): Future[Option[BlockEntryLite]] =
       run(getBlockEntryLiteAction(hash))
@@ -208,6 +241,14 @@ object BlockDao {
 
     def latestBlocks(): Future[Seq[(ChainIndex, LatestBlock)]] = {
       cachedLatestBlocks
+        .getAll(chainIndexes)
+        .asScala
+        .map(_.asScala.toSeq)
+    }
+
+    @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
+    def getAverageBlockTime(): Future[Seq[(ChainIndex, Duration)]] = {
+      cachedBlockTimes
         .getAll(chainIndexes)
         .asScala
         .map(_.asScala.toSeq)
