@@ -145,6 +145,12 @@ class DBBenchmark {
       Await.result(state.dao.listMainChainSQL(state.next), requestTimeout)
   }
 
+  @Benchmark
+  def listBlocks_Forward_HikariCP_SQL_Cached(state: ListBlocks_Forward_HikariCP_ReadState): Unit = {
+    val _ =
+      Await.result(state.dao.listMainChainSQLCached(state.next), requestTimeout)
+  }
+
   /**
     * Address benchmarks
     */
