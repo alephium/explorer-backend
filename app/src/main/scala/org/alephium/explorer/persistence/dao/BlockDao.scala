@@ -52,6 +52,7 @@ trait BlockDao {
   def insertAll(blocks: Seq[BlockEntity]): Future[Unit]
   def listMainChain(pagination: Pagination): Future[(Seq[BlockEntryLite], Int)]
   def listMainChainSQL(pagination: Pagination): Future[(Seq[BlockEntryLite], Int)]
+  def listMainChainSQLCached(pagination: Pagination): Future[(Seq[BlockEntryLite], Int)]
   def listIncludingForks(from: TimeStamp, to: TimeStamp): Future[Seq[BlockEntryLite]]
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]]
   def updateTransactionPerAddress(block: BlockEntity): Future[Seq[InputEntity]]

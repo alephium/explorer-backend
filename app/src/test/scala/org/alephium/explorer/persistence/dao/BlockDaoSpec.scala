@@ -117,7 +117,8 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
 
         //Assert results returned by typed and SQL query are the same
         def runAssert(page: Pagination) = {
-          val sqlResult   = blockDao.listMainChainSQL(page).futureValue
+          blockDao.invalidateCacheRowCount()
+          val sqlResult   = blockDao.listMainChainSQLCached(page).futureValue
           val typedResult = blockDao.listMainChain(page).futureValue
           sqlResult is typedResult
         }
