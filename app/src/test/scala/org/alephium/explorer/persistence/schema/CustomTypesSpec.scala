@@ -21,7 +21,6 @@ import scala.concurrent.ExecutionContext
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
-
 import slick.lifted.ProvenShape
 
 import org.alephium.explorer.AlephiumSpec
