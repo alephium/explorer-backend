@@ -43,7 +43,7 @@ object BlockService {
       blockDao.getTransactions(hash, pagination)
 
     def listBlocks(pagination: Pagination): Future[ListBlocks] = {
-      blockDao.listMainChainSQL(pagination).map {
+      blockDao.listMainChainSQLCached(pagination).map {
         case (blocks, total) =>
           ListBlocks(total, blocks)
       }

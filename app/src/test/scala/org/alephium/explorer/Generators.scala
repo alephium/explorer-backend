@@ -589,16 +589,31 @@ trait Generators {
       (blockHeader1, copyPrimaryKeys(blockHeader1, blockHeader2))
     }
 
-  /** Generates a [[BlockEntity]] with optional parent */
+  /**
+    * Generates a [[BlockEntity]] with optional paren
+    * t
+    * @param randomMainChainGen Some if randomness to mainChain should be applies else None.
+    *                           The generated boolean mainChain is set for both parent and child [[BlockEntity]].
+    */
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def genBlockEntityWithOptionalParent(
-      groupIndexGen: Gen[GroupIndex] = Gen.const(GroupIndex.unsafe(0)))
-    : Gen[(BlockEntity, Option[BlockEntity])] =
+      groupIndexGen: Gen[GroupIndex]           = Gen.const(GroupIndex.unsafe(0)),
+      randomMainChainGen: Option[Gen[Boolean]] = None): Gen[(BlockEntity, Option[BlockEntity])] =
     for {
       groupIndex <- groupIndexGen
       parent     <- Gen.option(blockEntityGen(groupIndex, groupIndex, None))
       child      <- blockEntityGen(groupIndex, groupIndex, parent)
     } yield {
-      (child, parent)
+      randomMainChainGen.flatMap(_.sample) match {
+        case Some(randomMainChain) =>
+          //set main_chain to generated sample
+          val childWithRandomMainChain  = child.copy(mainChain = randomMainChain)
+          val parentWithRandomMainChain = parent.map(_.copy(mainChain = randomMainChain))
+
+          (childWithRandomMainChain, parentWithRandomMainChain)
+
+        case None =>
+          (child, parent)
+      }
     }
 }

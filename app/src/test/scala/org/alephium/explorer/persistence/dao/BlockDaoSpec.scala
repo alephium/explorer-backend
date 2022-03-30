@@ -18,6 +18,7 @@ package org.alephium.explorer.persistence.dao
 
 import scala.concurrent.ExecutionContext
 import scala.io.Source
+import scala.util.Random
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
@@ -27,7 +28,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.api.{model, ApiModelCodec}
 import org.alephium.explorer.{AlephiumSpec, Generators}
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Pagination}
+import org.alephium.explorer.api.model.{BlockEntry, BlockEntryLite, GroupIndex, Pagination}
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
@@ -115,7 +116,8 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
 
         //Assert results returned by typed and SQL query are the same
         def runAssert(page: Pagination) = {
-          val sqlResult   = blockDao.listMainChainSQL(page).futureValue
+          blockDao.invalidateCacheRowCount()
+          val sqlResult   = blockDao.listMainChainSQLCached(page).futureValue
           val typedResult = blockDao.listMainChain(page).futureValue
           sqlResult is typedResult
         }
@@ -169,10 +171,108 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
     blockDao.getAverageBlockTime().futureValue.head is ((chainIndex, Duration.ofMinutesUnsafe(2)))
   }
 
+  it should "cache mainChainQuery's rowCount when table is empty" in new Fixture {
+    //Initially the cache is unpopulated so it should return None
+    blockDao.getRowCountFromCacheIfPresent(blockDao.mainChainQuery) is None
+
+    //dispatch listMainChainSQL on an empty table and expect the cache to be populated with 0 count
+    forAll(Gen.posNum[Int], Gen.posNum[Int], arbitrary[Boolean]) {
+      case (page, limit, reverse) =>
+        blockDao
+          .listMainChainSQLCached(Pagination.unsafe(page, limit min 1, reverse))
+          .futureValue is ((Seq.empty[BlockEntryLite], 0))
+
+        //assert the cache is populated
+        blockDao
+          .getRowCountFromCacheIfPresent(blockDao.mainChainQuery)
+          .map(_.futureValue) is Some(0)
+    }
+  }
+
+  it should "cache mainChainQuery's rowCount when table is non-empty" in new Fixture {
+    //generate some entities with random mainChain value
+    val entitiesGenerator: Gen[List[BlockEntity]] =
+      Gen
+        .listOf(genBlockEntityWithOptionalParent(randomMainChainGen = Some(arbitrary[Boolean])))
+        .map(_.map(_._1))
+
+    forAll(entitiesGenerator) { blockEntities =>
+      //clear existing data
+      run(BlockHeaderSchema.table.delete).futureValue
+
+      //insert new blockEntities and expect the cache to get invalided
+      blockDao.insertAll(blockEntities).futureValue
+      //Assert the cache is invalidated after insert
+      blockDao.getRowCountFromCacheIfPresent(blockDao.mainChainQuery) is None
+
+      //expected row count in cache
+      val expectedMainChainCount = blockEntities.count(_.mainChain)
+
+      //invoking listMainChainSQL would populate the cache with the row count
+      blockDao
+        .listMainChainSQLCached(Pagination.unsafe(0, 1))
+        .futureValue
+        ._2 is expectedMainChainCount
+
+      //check the cache directly and it should contain the row count
+      blockDao
+        .getRowCountFromCacheIfPresent(blockDao.mainChainQuery)
+        .map(_.futureValue) is Some(expectedMainChainCount)
+    }
+  }
+
+  it should "refresh row count cache of mainChainQuery when new data is inserted" in new Fixture {
+    //generate some entities with random mainChain value
+    val entitiesGenerator: Gen[List[BlockEntity]] =
+      Gen
+        .listOf(genBlockEntityWithOptionalParent(randomMainChainGen = Some(arbitrary[Boolean])))
+        .map(_.map(_._1))
+
+    def expectCacheIsInvalidated() =
+      blockDao.getRowCountFromCacheIfPresent(blockDao.mainChainQuery) is None
+
+    forAll(entitiesGenerator, entitiesGenerator) {
+      case (entities1, entities2) =>
+        //clear existing data
+        run(BlockHeaderSchema.table.delete).futureValue
+
+        /** INSERT BATCH 1 - [[entities1]] */
+        blockDao.insertAll(entities1).futureValue
+        expectCacheIsInvalidated()
+        //expected count
+        val expectedMainChainCount = entities1.count(_.mainChain)
+        //Assert the query return expected count
+        blockDao
+          .listMainChainSQLCached(Pagination.unsafe(0, 1, Random.nextBoolean()))
+          .futureValue
+          ._2 is expectedMainChainCount
+        //Assert the cache contains the right row count
+        blockDao
+          .getRowCountFromCacheIfPresent(blockDao.mainChainQuery)
+          .map(_.futureValue) is Some(expectedMainChainCount)
+
+        /** INSERT BATCH 2 - [[entities2]] */
+        //insert the next batch of block entities
+        blockDao.insertAll(entities2).futureValue
+        expectCacheIsInvalidated()
+        //Expected total row count in cache
+        val expectedMainChainCountTotal = entities2.count(_.mainChain) + expectedMainChainCount
+        //Dispatch a query so the cache get populated
+        blockDao
+          .listMainChainSQLCached(Pagination.unsafe(0, 1, Random.nextBoolean()))
+          .futureValue
+          ._2 is expectedMainChainCountTotal
+        //Dispatch a query so the cache get populated
+        blockDao
+          .getRowCountFromCacheIfPresent(blockDao.mainChainQuery)
+          .map(_.futureValue) is Some(expectedMainChainCountTotal)
+    }
+  }
+
   trait Fixture extends DatabaseFixture with DBRunner with CustomTypes with ApiModelCodec {
     val blockflowFetchMaxAge: Duration = Duration.ofMinutesUnsafe(30)
 
-    val blockDao = BlockDao(groupNum, databaseConfig)
+    val blockDao = new BlockDao.Impl(groupNum, databaseConfig)
     val blockflow: Seq[Seq[model.BlockEntry]] =
       blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
     val blocksProtocol: Seq[model.BlockEntry] = blockflow.flatten
