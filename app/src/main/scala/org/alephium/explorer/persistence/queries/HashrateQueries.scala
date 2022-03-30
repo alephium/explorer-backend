@@ -33,12 +33,12 @@ trait HashrateQueries extends CustomTypes {
                         intervalType: IntervalType): DBActionSR[(TimeStamp, BigDecimal)] = {
 
     sql"""
-        SELECT timestamp, value
+        SELECT block_timestamp, value
         FROM hashrates
         WHERE interval_type = ${intervalType.value}
-        AND timestamp >= $from
-        AND timestamp <= $to
-        ORDER BY timestamp
+        AND block_timestamp >= $from
+        AND block_timestamp <= $to
+        ORDER BY block_timestamp
       """.as[(TimeStamp, BigDecimal)]
   }
 
@@ -49,16 +49,16 @@ trait HashrateQueries extends CustomTypes {
     }
 
     sqlu"""
-        INSERT INTO hashrates (timestamp, value, interval_type)
+        INSERT INTO hashrates (block_timestamp, value, interval_type)
         SELECT
         EXTRACT(EPOCH FROM ((#$dateGroup) AT TIME ZONE 'UTC')) * 1000 as ts,
         AVG(hashrate),
         ${intervalType.value}
         FROM block_headers
-        WHERE timestamp >= $from
+        WHERE block_timestamp >= $from
         AND main_chain = true
         GROUP BY ts
-        ON CONFLICT (timestamp, interval_type) DO UPDATE
+        ON CONFLICT (block_timestamp, interval_type) DO UPDATE
         SET value = EXCLUDED.value
       """
   }
@@ -72,7 +72,7 @@ trait HashrateQueries extends CustomTypes {
    * Have a look at `HashrateServiceSpec` for multiple examples
    */
 
-  private val timestampTZ = "to_timestamp(timestamp/1000.0) AT TIME ZONE 'UTC'"
+  private val timestampTZ = "to_timestamp(block_timestamp/1000.0) AT TIME ZONE 'UTC'"
 
   private val hourlyQuery =
     s"DATE_TRUNC('HOUR', $timestampTZ) + ((CEILING((EXTRACT(MINUTE FROM $timestampTZ) + EXTRACT(SECOND FROM $timestampTZ)/60) / 60)) * INTERVAL '1 HOUR')"
@@ -118,7 +118,7 @@ trait HashrateQueries extends CustomTypes {
         AVG(hashrate),
         ${intervalType.value}
         FROM block_headers
-        WHERE timestamp >= $from
+        WHERE block_timestamp >= $from
         AND main_chain = true
         GROUP BY ts
       """.as[(TimeStamp, BigDecimal, Int)]

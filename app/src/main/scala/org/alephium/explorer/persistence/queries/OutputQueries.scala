@@ -40,15 +40,15 @@ object OutputQueries extends CustomTypes {
         s"""
            |INSERT INTO outputs ("block_hash",
            |                     "tx_hash",
-           |                     "timestamp",
+           |                     "block_timestamp",
            |                     "hint",
            |                     "key",
            |                     "amount",
            |                     "address",
            |                     "main_chain",
            |                     "lock_time",
-           |                     "order",
-           |                     "tx_index")
+           |                     "output_order",
+           |                     "tx_order")
            |VALUES $placeholder
            |ON CONFLICT
            |    ON CONSTRAINT outputs_pk
@@ -68,7 +68,7 @@ object OutputQueries extends CustomTypes {
             params >> output.mainChain
             params >> output.lockTime
             params >> output.order
-            params >> output.txIndex
+            params >> output.txOrder
         }
 
       SQLActionBuilder(
@@ -82,11 +82,11 @@ object OutputQueries extends CustomTypes {
     if (outputs.nonEmpty) {
       val values = outputs
         .map { output =>
-          s"('${output.address}','\\x${output.txHash}','\\x${output.blockHash}','${output.timestamp.millis}', ${output.txIndex},${output.mainChain})"
+          s"('${output.address}','\\x${output.txHash}','\\x${output.blockHash}','${output.timestamp.millis}', ${output.txOrder},${output.mainChain})"
         }
         .mkString(",\n")
       sqlu"""
-      INSERT INTO transaction_per_addresses (address, hash, block_hash, timestamp, tx_index, main_chain)
+      INSERT INTO transaction_per_addresses (address, hash, block_hash, block_timestamp, tx_order, main_chain)
       VALUES #$values
       ON CONFLICT (hash, block_hash, address) DO NOTHING
     """
@@ -107,7 +107,7 @@ object OutputQueries extends CustomTypes {
       .map {
         case (output, input) =>
           (output.txHash,
-           output.order,
+           output.outputOrder,
            output.hint,
            output.key,
            output.amount,
@@ -124,7 +124,7 @@ object OutputQueries extends CustomTypes {
     if (txHashes.nonEmpty) {
       val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
       sql"""
-    SELECT outputs.tx_hash, outputs.order, outputs.hint, outputs.key,  outputs.amount, outputs.address, outputs.lock_time, inputs.tx_hash
+    SELECT outputs.tx_hash, outputs.output_order, outputs.hint, outputs.key,  outputs.amount, outputs.address, outputs.lock_time, inputs.tx_hash
     FROM outputs
     LEFT JOIN inputs ON inputs.output_ref_key = outputs.key AND inputs.main_chain = true
     WHERE outputs.tx_hash IN (#$values) AND outputs.main_chain = true
@@ -140,7 +140,7 @@ object OutputQueries extends CustomTypes {
       .filter(output => output.mainChain && output.txHash === txHash)
       .joinLeft(mainInputs)
       .on(_.key === _.outputRefKey)
-      .sortBy(_._1.order)
+      .sortBy(_._1.outputOrder)
       .map {
         case (output, input) =>
           (output.hint,

@@ -29,7 +29,7 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
   class Outputs(tag: Tag) extends Table[OutputEntity](tag, name) {
     def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
     def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
-    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
+    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("block_timestamp")
     def hint: Rep[Int]                  = column[Int]("hint")
     def key: Rep[Hash]                  = column[Hash]("key", O.SqlType("BYTEA"))
     def amount: Rep[U256] =
@@ -37,8 +37,8 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
     def address: Rep[Address]            = column[Address]("address")
     def mainChain: Rep[Boolean]          = column[Boolean]("main_chain")
     def lockTime: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("lock_time")
-    def order: Rep[Int]                  = column[Int]("order")
-    def txIndex: Rep[Int]                = column[Int]("tx_index")
+    def outputOrder: Rep[Int]            = column[Int]("output_order")
+    def txOrder: Rep[Int]                = column[Int]("tx_order")
 
     def pk: PrimaryKey = primaryKey("outputs_pk", (key, blockHash))
 
@@ -58,8 +58,8 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
        address,
        mainChain,
        lockTime,
-       order,
-       txIndex)
+       outputOrder,
+       txOrder)
         .<>((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }
 

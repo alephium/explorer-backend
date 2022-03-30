@@ -28,13 +28,13 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
   class Transactions(tag: Tag) extends Table[TransactionEntity](tag, name) {
     def hash: Rep[Transaction.Hash]     = column[Transaction.Hash]("hash", O.SqlType("BYTEA"))
     def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
-    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
+    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("block_timestamp")
     def chainFrom: Rep[GroupIndex]      = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]        = column[GroupIndex]("chain_to")
     def gasAmount: Rep[Int]             = column[Int]("gas_amount")
     def gasPrice: Rep[U256] =
       column[U256]("gas_price", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
-    def txIndex: Rep[Int]       = column[Int]("index")
+    def txOrder: Rep[Int]       = column[Int]("tx_order")
     def mainChain: Rep[Boolean] = column[Boolean]("main_chain")
 
     def pk: PrimaryKey = primaryKey("txs_pk", (hash, blockHash))
@@ -46,7 +46,7 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
     def chainToIdx: Index   = index("txs_chain_to_idx", chainTo)
 
     def * : ProvenShape[TransactionEntity] =
-      (hash, blockHash, timestamp, chainFrom, chainTo, gasAmount, gasPrice, txIndex, mainChain)
+      (hash, blockHash, timestamp, chainFrom, chainTo, gasAmount, gasPrice, txOrder, mainChain)
         .<>((TransactionEntity.apply _).tupled, TransactionEntity.unapply)
   }
 

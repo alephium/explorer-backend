@@ -188,15 +188,15 @@ object BlockFlowClient {
     val transactions = block.transactions.toSeq.zipWithIndex
     val inputs =
       transactions.flatMap {
-        case (tx, txIndex) =>
+        case (tx, txOrder) =>
           tx.unsigned.inputs.toSeq.zipWithIndex.map {
             case (in, index) =>
-              inputToEntity(in, hash, tx.unsigned.txId, block.timestamp, mainChain, index, txIndex)
+              inputToEntity(in, hash, tx.unsigned.txId, block.timestamp, mainChain, index, txOrder)
           }
       }
     val contractInputs =
       transactions.flatMap {
-        case (tx, txIndex) =>
+        case (tx, txOrder) =>
           tx.contractInputs.toSeq.zipWithIndex.map {
             case (outputRef, index) =>
               val shiftIndex = index + tx.unsigned.inputs.length
@@ -206,7 +206,7 @@ object BlockFlowClient {
                                      block.timestamp,
                                      mainChain,
                                      shiftIndex,
-                                     txIndex)
+                                     txOrder)
           }
       }
     inputs ++ contractInputs
@@ -218,7 +218,7 @@ object BlockFlowClient {
     val transactions = block.transactions.toSeq.zipWithIndex
     val outputs =
       transactions.flatMap {
-        case (tx, txIndex) =>
+        case (tx, txOrder) =>
           tx.unsigned.fixedOutputs.toSeq.zipWithIndex.map {
             case (out, index) =>
               outputToEntity(out.upCast(),
@@ -227,12 +227,12 @@ object BlockFlowClient {
                              index,
                              block.timestamp,
                              mainChain,
-                             txIndex)
+                             txOrder)
           }
       }
     val generatedOutputs =
       transactions.flatMap {
-        case (tx, txIndex) =>
+        case (tx, txOrder) =>
           tx.generatedOutputs.toSeq.zipWithIndex.map {
             case (out, index) =>
               val shiftIndex = index + tx.unsigned.fixedOutputs.length
@@ -242,7 +242,7 @@ object BlockFlowClient {
                              shiftIndex,
                              block.timestamp,
                              mainChain,
-                             txIndex)
+                             txOrder)
           }
       }
     outputs ++ generatedOutputs
@@ -326,7 +326,7 @@ object BlockFlowClient {
                             timestamp: TimeStamp,
                             mainChain: Boolean,
                             index: Int,
-                            txIndex: Int): InputEntity = {
+                            txOrder: Int): InputEntity = {
     InputEntity(
       blockHash,
       new Transaction.Hash(txId),
@@ -336,7 +336,7 @@ object BlockFlowClient {
       Some(Hex.toHexString(input.unlockScript)),
       mainChain,
       index,
-      txIndex
+      txOrder
     )
   }
 
@@ -346,7 +346,7 @@ object BlockFlowClient {
                                      timestamp: TimeStamp,
                                      mainChain: Boolean,
                                      index: Int,
-                                     txIndex: Int): InputEntity = {
+                                     txOrder: Int): InputEntity = {
     InputEntity(
       blockHash,
       new Transaction.Hash(txId),
@@ -356,7 +356,7 @@ object BlockFlowClient {
       None,
       mainChain,
       index,
-      txIndex
+      txOrder
     )
   }
 
@@ -378,7 +378,7 @@ object BlockFlowClient {
                              index: Int,
                              timestamp: TimeStamp,
                              mainChain: Boolean,
-                             txIndex: Int): OutputEntity = {
+                             txOrder: Int): OutputEntity = {
     val lockTime = output match {
       case asset: api.model.AssetOutput if asset.lockTime.millis > 0 => Some(asset.lockTime)
       case _                                                         => None
@@ -398,7 +398,7 @@ object BlockFlowClient {
       mainChain,
       lockTime,
       index,
-      txIndex
+      txOrder
     )
   }
   // scalastyle:off magic.number

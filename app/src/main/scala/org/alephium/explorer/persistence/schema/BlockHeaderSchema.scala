@@ -33,13 +33,13 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
   class BlockHeaders(tag: Tag) extends Table[BlockHeader](tag, name) {
     def hash: Rep[BlockEntry.Hash] =
       column[BlockEntry.Hash]("hash", O.PrimaryKey, O.SqlType("bytea"))
-    def timestamp: Rep[TimeStamp]  = column[TimeStamp]("timestamp")
+    def timestamp: Rep[TimeStamp]  = column[TimeStamp]("block_timestamp")
     def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
     def height: Rep[Height]        = column[Height]("height")
     def mainChain: Rep[Boolean]    = column[Boolean]("main_chain")
     def nonce: Rep[ByteString]     = column[ByteString]("nonce")
-    def version: Rep[Byte]         = column[Byte]("version")
+    def version: Rep[Byte]         = column[Byte]("block_version")
     def depStateHash: Rep[Hash]    = column[Hash]("dep_state_hash")
     def txsHash: Rep[Hash]         = column[Hash]("txs_hash")
     def txsCount: Rep[Int]         = column[Int]("txs_count")
@@ -78,7 +78,7 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
   private def fullIndexSQL(): SqlAction[Int, NoStream, Effect] =
     sqlu"""
       create unique index if not exists #${name}_full_index
-          on #${name} (main_chain asc, timestamp desc, hash asc, chain_from asc, chain_to asc, height asc);
+          on #${name} (main_chain asc, block_timestamp desc, hash asc, chain_from asc, chain_to asc, height asc);
       """
 
   /**

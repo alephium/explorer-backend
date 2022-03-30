@@ -27,6 +27,6 @@ final case class TransactionEntity(
     chainTo: GroupIndex,
     gasAmount: Int,
     gasPrice: U256,
-    index: Int,
+    order: Int,
     mainChain: Boolean
 )

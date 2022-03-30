@@ -29,13 +29,13 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
   class Inputs(tag: Tag) extends Table[InputEntity](tag, name) {
     def blockHash: Rep[BlockEntry.Hash]   = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
     def txHash: Rep[Transaction.Hash]     = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
-    def timestamp: Rep[TimeStamp]         = column[TimeStamp]("timestamp")
+    def timestamp: Rep[TimeStamp]         = column[TimeStamp]("block_timestamp")
     def hint: Rep[Int]                    = column[Int]("hint")
     def outputRefKey: Rep[Hash]           = column[Hash]("output_ref_key", O.SqlType("BYTEA"))
     def unlockScript: Rep[Option[String]] = column[Option[String]]("unlock_script")
     def mainChain: Rep[Boolean]           = column[Boolean]("main_chain")
-    def order: Rep[Int]                   = column[Int]("order")
-    def txIndex: Rep[Int]                 = column[Int]("tx_index")
+    def inputOrder: Rep[Int]              = column[Int]("input_order")
+    def txOrder: Rep[Int]                 = column[Int]("tx_order")
 
     def pk: PrimaryKey = primaryKey("inputs_pk", (outputRefKey, blockHash))
 
@@ -45,7 +45,15 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
     def timestampIdx: Index    = index("inputs_timestamp_idx", timestamp)
 
     def * : ProvenShape[InputEntity] =
-      (blockHash, txHash, timestamp, hint, outputRefKey, unlockScript, mainChain, order, txIndex)
+      (blockHash,
+       txHash,
+       timestamp,
+       hint,
+       outputRefKey,
+       unlockScript,
+       mainChain,
+       inputOrder,
+       txOrder)
         .<>((InputEntity.apply _).tupled, InputEntity.unapply)
   }
 

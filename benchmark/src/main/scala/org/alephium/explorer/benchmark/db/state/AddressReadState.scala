@@ -90,7 +90,7 @@ class AddressReadState(val db: DBExecutor)
                 unlockScript = None,
                 mainChain    = true,
                 order        = 0,
-                txIndex      = 0)
+                txOrder      = 0)
   }
   private def generateTransaction(blockHash: BlockEntry.Hash,
                                   txHash: Transaction.Hash,
@@ -103,7 +103,7 @@ class AddressReadState(val db: DBExecutor)
       chainTo   = GroupIndex.unsafe(3),
       gasAmount = 0,
       gasPrice  = U256.unsafe(0),
-      index     = 0,
+      order     = 0,
       mainChain = true
     )
 
@@ -123,7 +123,7 @@ class AddressReadState(val db: DBExecutor)
       mainChain = true,
       lockTime  = None,
       order     = 0,
-      txIndex   = 0
+      txOrder   = 0
     )
   }
 

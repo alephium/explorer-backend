@@ -32,7 +32,7 @@ final case class InputEntity(
     unlockScript: Option[String],
     mainChain: Boolean,
     order: Int,
-    txIndex: Int
+    txOrder: Int
 ) {
   def toApi(outputRef: OutputEntity): Input =
     Input(

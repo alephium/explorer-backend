@@ -38,7 +38,7 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
   val block_headers = BlockHeaderSchema.table.baseTableRow.tableName //block_headers table name
 
   private val blockDepsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
-    BlockDepsSchema.table.filter(_.hash === blockHash).sortBy(_.order).map(_.dep)
+    BlockDepsSchema.table.filter(_.hash === blockHash).sortBy(_.depOrder).map(_.dep)
   }
 
   def buildBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry] =
@@ -109,9 +109,9 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
       }
 
     if (reverse) {
-      s"order by ${columnPrefix}timestamp, ${columnPrefix}hash desc"
+      s"order by ${columnPrefix}block_timestamp, ${columnPrefix}hash desc"
     } else {
-      s"order by ${columnPrefix}timestamp desc, ${columnPrefix}hash"
+      s"order by ${columnPrefix}block_timestamp desc, ${columnPrefix}hash"
     }
   }
 
@@ -139,7 +139,7 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
 
     sql"""
            |select hash,
-           |       timestamp,
+           |       block_timestamp,
            |       chain_from,
            |       chain_to,
            |       height,
@@ -218,13 +218,13 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
       val query =
         s"""
            |insert into $block_headers ("hash",
-           |                            "timestamp",
+           |                            "block_timestamp",
            |                            "chain_from",
            |                            "chain_to",
            |                            "height",
            |                            "main_chain",
            |                            "nonce",
-           |                            "version",
+           |                            "block_version",
            |                            "dep_state_hash",
            |                            "txs_hash",
            |                            "txs_count",
@@ -296,9 +296,9 @@ trait BlockQueries extends TransactionQueries with CustomTypes with StrictLoggin
                     toGroup: GroupIndex,
                     after: TimeStamp): DBActionSR[TimeStamp] = {
     sql"""
-      SELECT timestamp FROM  block_headers
-      WHERE chain_from = $fromGroup AND chain_to = $toGroup AND timestamp > $after
-      ORDER BY timestamp
+      SELECT block_timestamp FROM  block_headers
+      WHERE chain_from = $fromGroup AND chain_to = $toGroup AND block_timestamp > $after
+      ORDER BY block_timestamp
     """.as[TimeStamp]
   }
 }
