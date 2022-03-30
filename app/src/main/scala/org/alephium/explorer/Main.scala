@@ -55,7 +55,7 @@ object Main extends App with StrictLogging {
   val blockflowFetchMaxAge: Duration =
     Duration.from(config.getDuration("blockflow.blockflow-fetch-max-age")).get
   val networkId: NetworkId =
-    NetworkId.from(config.getInt("blockflow.chain-id")).get
+    NetworkId.from(config.getInt("blockflow.network-id")).get
 
   val blockflowApiKey: Option[ApiKey] =
     if (config.hasPath("blockflow.api-key")) {
