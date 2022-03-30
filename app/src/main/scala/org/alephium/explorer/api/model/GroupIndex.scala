@@ -20,7 +20,7 @@ import upickle.core.Abort
 
 import org.alephium.json.Json._
 
-final class GroupIndex(val value: Int) extends AnyVal {
+@inline final class GroupIndex(val value: Int) extends AnyVal {
   override def toString(): String = value.toString
 }
 

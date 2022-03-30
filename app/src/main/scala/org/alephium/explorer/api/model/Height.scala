@@ -21,7 +21,7 @@ import upickle.core.Abort
 import org.alephium.json.Json._
 import org.alephium.protocol.ALPH
 
-final class Height(val value: Int) extends AnyVal {
+@inline final class Height(val value: Int) extends AnyVal {
   override def toString(): String = value.toString
 }
 

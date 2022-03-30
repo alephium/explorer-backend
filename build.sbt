@@ -71,6 +71,14 @@ def slickScalaDocAPIMapping(classPath: Classpath,
   slickJar -> slickDocsURL
 }
 
+val inliningOptions =
+  Seq(
+    "-opt:l:inline",
+    "-opt-inline-from:org.alephium.explorer.**",
+    "-Yopt-log-inline",
+    "_"
+  )
+
 val commonSettings = Seq(
   name := "explorer-backend",
   organization := "org.alephium",
@@ -108,8 +116,8 @@ val commonSettings = Seq(
     "-Ywarn-unused:params",
     "-Ywarn-unused:patvars",
     "-Ywarn-unused:privates",
-    "-Ywarn-value-discard"
-  ),
+    "-Ywarn-value-discard",
+  ) ++ inliningOptions,
   Test / envVars += "ALEPHIUM_ENV" -> "test",
   Compile / compile / wartremoverErrors := Warts.allBut(wartsCompileExcludes: _*),
   Test / compile / wartremoverErrors := Warts.allBut(wartsTestExcludes: _*),
