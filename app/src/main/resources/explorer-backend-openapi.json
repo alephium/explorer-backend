@@ -443,7 +443,7 @@
         "tags": [
           "Addressess"
         ],
-        "description": "Get address informations",
+        "description": "Get address information",
         "operationId": "getAddressesAddress",
         "parameters": [
           {
