@@ -36,7 +36,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
     addressesEndpoint.get
       .in(path[Address]("address")(Codecs.addressTapirCodec))
       .out(jsonBody[AddressInfo])
-      .description("Get address informations")
+      .description("Get address information")
 
   val getTransactionsByAddress: BaseEndpoint[(Address, Pagination), Seq[Transaction]] =
     addressesEndpoint.get
@@ -51,12 +51,12 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .in(path[Address]("address")(Codecs.addressTapirCodec))
       .in("total-transactions")
       .out(jsonBody[Int])
-      .description("Get total transactions' number of a given address")
+      .description("Get total transactions of a given address")
 
   val getAddressBalance: BaseEndpoint[Address, AddressBalance] =
     addressesEndpoint.get
       .in(path[Address]("address")(Codecs.addressTapirCodec))
       .in("balance")
       .out(jsonBody[AddressBalance])
-      .description("Get address' balance")
+      .description("Get address balance")
 }
