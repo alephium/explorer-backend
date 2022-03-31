@@ -25,7 +25,7 @@ import org.scalacheck.Gen
 
 import org.alephium.api.ApiError
 import org.alephium.explorer.{AlephiumSpec, Generators}
-import org.alephium.explorer.api.model.{Address, Pagination, Transaction, TransactionLike}
+import org.alephium.explorer.api.model._
 import org.alephium.explorer.service.TransactionService
 import org.alephium.json.Json
 import org.alephium.util.{Duration, U256}
@@ -43,15 +43,13 @@ class AddressServerSpec()
 
   it should "validate and forward `txLimit` query param " in new Fixture {
     var testLimit = 0
-    val transactionService = new EmptyTransactionService {
+    override val transactionService = new EmptyTransactionService {
       override def getTransactionsByAddressSQL(address: Address,
                                                pagination: Pagination): Future[Seq[Transaction]] = {
         testLimit = pagination.limit
         Future.successful(Seq.empty)
       }
     }
-
-    val server = new AddressServer(transactionService, Duration.zero)
 
     forAll(addressGen, Gen.chooseNum[Int](-10, 120)) {
       case (address, txLimit) =>
@@ -76,7 +74,38 @@ class AddressServerSpec()
     }
   }
 
+  it should "get total transactions" in new Fixture {
+    forAll(addressGen) {
+      case (address) =>
+        Get(s"/addresses/${address}/total-transactions") ~> server.route ~> check {
+          responseAs[Int] is 0
+        }
+    }
+  }
+
+  it should "get balance" in new Fixture {
+    forAll(addressGen) {
+      case (address) =>
+        Get(s"/addresses/${address}/balance") ~> server.route ~> check {
+          responseAs[AddressBalance] is AddressBalance(U256.Zero, U256.Zero)
+        }
+    }
+  }
+
+  it should "get address info" in new Fixture {
+    forAll(addressGen) {
+      case (address) =>
+        Get(s"/addresses/${address}") ~> server.route ~> check {
+          responseAs[AddressInfo] is AddressInfo(U256.Zero, U256.Zero, 0)
+        }
+    }
+  }
+
   trait Fixture {
+
+    val transactionService = new EmptyTransactionService {}
+
+    lazy val server = new AddressServer(transactionService, Duration.zero)
 
     trait EmptyTransactionService extends TransactionService {
       override def getTransaction(
