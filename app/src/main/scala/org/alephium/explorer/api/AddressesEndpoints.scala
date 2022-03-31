@@ -22,7 +22,7 @@ import sttp.tapir.generic.auto._
 import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.api.Codecs
-import org.alephium.explorer.api.model.{Address, AddressInfo, Pagination, Transaction}
+import org.alephium.explorer.api.model._
 
 // scalastyle:off magic.number
 trait AddressesEndpoints extends BaseEndpoint with QueryParams {
@@ -45,4 +45,18 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .in(pagination)
       .out(jsonBody[Seq[Transaction]])
       .description("List transactions of a given address")
+
+  val getTotalTransactionsByAddress: BaseEndpoint[Address, Int] =
+    addressesEndpoint.get
+      .in(path[Address]("address")(Codecs.addressTapirCodec))
+      .in("total-transactions")
+      .out(jsonBody[Int])
+      .description("Get total transactions' number of a given address")
+
+  val getAddressBalance: BaseEndpoint[Address, AddressBalance] =
+    addressesEndpoint.get
+      .in(path[Address]("address")(Codecs.addressTapirCodec))
+      .in("balance")
+      .out(jsonBody[AddressBalance])
+      .description("Get address' balance")
 }

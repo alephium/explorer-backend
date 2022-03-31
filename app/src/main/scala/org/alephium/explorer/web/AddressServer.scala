@@ -22,7 +22,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 
 import org.alephium.explorer.api.AddressesEndpoints
-import org.alephium.explorer.api.model.AddressInfo
+import org.alephium.explorer.api.model.{AddressBalance, AddressInfo}
 import org.alephium.explorer.service.TransactionService
 import org.alephium.util.Duration
 
@@ -44,5 +44,14 @@ class AddressServer(transactionService: TransactionService, val blockflowFetchMa
             (balance, locked) <- transactionService.getBalance(address)
             txNumber          <- transactionService.getTransactionsNumberByAddress(address)
           } yield Right(AddressInfo(balance, locked, txNumber))
+      } ~
+      toRoute(getTotalTransactionsByAddress) { address =>
+        transactionService.getTransactionsNumberByAddress(address).map(Right(_))
+      } ~
+      toRoute(getAddressBalance) { address =>
+        for {
+          (balance, locked) <- transactionService.getBalance(address)
+        } yield (Right(AddressBalance(balance, locked)))
       }
+
 }
