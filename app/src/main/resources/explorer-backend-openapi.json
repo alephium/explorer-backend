@@ -441,7 +441,7 @@
     "/addresses/{address}": {
       "get": {
         "tags": [
-          "Addressess"
+          "Addresses"
         ],
         "description": "Get address information",
         "operationId": "getAddressesAddress",
@@ -537,7 +537,7 @@
     "/addresses/{address}/transactions": {
       "get": {
         "tags": [
-          "Addressess"
+          "Addresses"
         ],
         "description": "List transactions of a given address",
         "operationId": "getAddressesAddressTransactions",
@@ -1430,7 +1430,7 @@
         "operationId": "putUtilsSanity-check",
         "responses": {
           "200": {
-            
+
           },
           "400": {
             "description": "BadRequest",
