@@ -17,13 +17,14 @@
 package org.alephium.explorer.persistence.dao
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.jdk.FutureConverters._
 
 import com.github.benmanes.caffeine.cache._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.cache.CaffeineAsyncCache
 import org.alephium.explorer.persistence.DBRunner
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.util.U256
@@ -37,7 +38,7 @@ trait TransactionDao {
   def getNumberByAddressSQLNoJoin(address: Address): Future[Int]
   def getBalance(address: Address): Future[(U256, U256)]
   def getBalanceSQL(address: Address): Future[(U256, U256)]
-  def getTotalNumber(): Future[Long]
+  def getTotalNumber(): Future[Int]
 }
 
 object TransactionDao {
@@ -51,17 +52,13 @@ object TransactionDao {
       with TransactionQueries
       with DBRunner {
 
-    @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-    private val asyncLoader: AsyncCacheLoader[Int, Long] = {
-      case (_, _) =>
-        run(getTotalNumberQuery).map(_.headOption.getOrElse(0L)).asJava.toCompletableFuture
-    }
-
-    private val cachedTxsNumber: AsyncLoadingCache[Int, Long] = Caffeine
-      .newBuilder()
-      .maximumSize(1)
-      .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
-      .buildAsync(asyncLoader)
+    private val cachedTxsNumber: CaffeineAsyncCache[Query[_, _, Seq], Int] =
+      CaffeineAsyncCache.rowCountCache(this) {
+        Caffeine
+          .newBuilder()
+          .maximumSize(1)
+          .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
+      }
 
     def get(hash: Transaction.Hash): Future[Option[Transaction]] =
       run(getTransactionAction(hash))
@@ -88,8 +85,7 @@ object TransactionDao {
     def getBalanceSQL(address: Address): Future[(U256, U256)] =
       run(getBalanceActionSQL(address))
 
-    def getTotalNumber(): Future[Long] = {
-      cachedTxsNumber.get(0).asScala
-    }
+    def getTotalNumber(): Future[Int] =
+      cachedTxsNumber.get(mainTransactions)
   }
 }

@@ -66,10 +66,10 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[Seq[PerChainValue]])
       .description("List latest height for each chain")
 
-  val getTotalTransactions: BaseEndpoint[Unit, Long] =
+  val getTotalTransactions: BaseEndpoint[Unit, Int] =
     infosEndpoint.get
       .in("total-transactions")
-      .out(plainBody[Long])
+      .out(plainBody[Int])
       .description("Get the total number of transactions")
 
   val getAverageBlockTime: BaseEndpoint[Unit, Seq[PerChainValue]] =

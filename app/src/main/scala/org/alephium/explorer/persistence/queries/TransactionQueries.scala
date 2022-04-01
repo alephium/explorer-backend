@@ -37,9 +37,9 @@ trait TransactionQueries extends CustomTypes with StrictLogging {
 
   implicit def executionContext: ExecutionContext
 
-  private val mainTransactions = TransactionSchema.table.filter(_.mainChain)
-  private val mainInputs       = InputSchema.table.filter(_.mainChain)
-  private val mainOutputs      = OutputSchema.table.filter(_.mainChain)
+  val mainTransactions    = TransactionSchema.table.filter(_.mainChain)
+  private val mainInputs  = InputSchema.table.filter(_.mainChain)
+  private val mainOutputs = OutputSchema.table.filter(_.mainChain)
 
   def insertAll(transactions: Seq[TransactionEntity],
                 outputs: Seq[OutputEntity],
@@ -388,13 +388,6 @@ trait TransactionQueries extends CustomTypes with StrictLogging {
     getBalanceQuery(address).result.map { outputs =>
       sumBalance(outputs)
     }
-  }
-
-  val getTotalNumberQuery: DBActionSR[Long] = {
-    sql"""
-      SELECT COUNT(*) from #${TransactionSchema.name}
-      WHERE main_chain = true
-    """.as[Long]
   }
 
   private def sumBalance(outputs: Seq[(U256, Option[TimeStamp])]): (U256, U256) = {

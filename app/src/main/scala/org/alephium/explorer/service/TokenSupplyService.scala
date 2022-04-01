@@ -105,9 +105,8 @@ object TokenSupplyService {
       })
     }
 
-    private val mainInputs       = InputSchema.table.filter(_.mainChain)
-    private val mainOutputs      = OutputSchema.table.filter(_.mainChain)
-    private val mainTransactions = TransactionSchema.table.filter(_.mainChain)
+    private val mainInputs  = InputSchema.table.filter(_.mainChain)
+    private val mainOutputs = OutputSchema.table.filter(_.mainChain)
 
     private def genesisLockedToken(lockTime: TimeStamp) = {
       mainOutputs
