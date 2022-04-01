@@ -25,6 +25,7 @@ import slick.lifted.ProvenShape
 
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
+import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.protocol.ALPH
 import org.alephium.util._

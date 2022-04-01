@@ -30,6 +30,7 @@ import org.alephium.explorer.persistence.queries.BlockDepQueries.insertBlockDeps
 import org.alephium.explorer.persistence.queries.InputQueries.insertInputs
 import org.alephium.explorer.persistence.queries.OutputQueries.insertOutputs
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.util.TimeStamp
 
