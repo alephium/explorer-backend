@@ -19,6 +19,7 @@ package org.alephium.explorer.cache
 import java.util.concurrent.{CompletableFuture, Executor}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
 
 import com.github.benmanes.caffeine.cache.{AsyncCacheLoader, AsyncLoadingCache, Caffeine}
@@ -34,8 +35,8 @@ object CaffeineAsyncCache {
   /**
     * Caches the number of rows return by a query.
     *
-    * @note Slick's [[Query]] type does not implement equals or hashCode so
-    *       this cache will not work as expected on dynamically generated queries.
+    * @note Slick's [[slick.lifted.Query]] type does not implement equals or hashCode
+    *       so this cache will not work as expected on dynamically generated queries.
     *       The queries to cache should be static i.e. should have the same memory
     *       address.
     *
@@ -54,7 +55,7 @@ object CaffeineAsyncCache {
     *       }}}
     *
     * @param runner  Allows executing the input [[slick.lifted.Query]].
-    * @param builder Configured [[Caffeine]]'s cache instance.
+    * @param builder Pre-configured [[com.github.benmanes.caffeine.cache.Caffeine]]'s cache instance.
     */
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   def rowCountCache(runner: DBRunner)(builder: Caffeine[AnyRef, AnyRef])(
@@ -77,6 +78,10 @@ class CaffeineAsyncCache[K, V](cache: AsyncLoadingCache[K, V]) {
 
   def get(key: K): Future[V] =
     cache.get(key).asScala
+
+  def getAll(keys: Iterable[K])(implicit ec: ExecutionContext): Future[Seq[(K, V)]] =
+    //FIXME: `asScala.toSeq` could be achieved in single iteration using Factory or BuildFrom
+    cache.getAll(keys.asJava).asScala.map(_.asScala.toSeq)
 
   def getIfPresent(key: K): Option[Future[V]] = {
     val valueOrNull = cache.getIfPresent(key)

@@ -17,7 +17,6 @@
 package org.alephium.explorer.persistence.dao
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
 
 import com.github.benmanes.caffeine.cache._
@@ -81,10 +80,11 @@ object BlockDao {
 
     private implicit val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
 
-    private val chainIndexes: java.lang.Iterable[ChainIndex] = (for {
-      i <- 0 to groupNum - 1
-      j <- 0 to groupNum - 1
-    } yield (ChainIndex.unsafe(i, j))).asJava
+    private val chainIndexes: IndexedSeq[ChainIndex] = for {
+      i <- 0 until groupNum
+      j <- 0 until groupNum
+    } yield ChainIndex.unsafe(i, j)
+
     @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
     private val latestBlockAsyncLoader: AsyncCacheLoader[ChainIndex, LatestBlock] = {
       case (key, _) =>
@@ -93,18 +93,21 @@ object BlockDao {
         ).map(_.get).asJava.toCompletableFuture
     }
 
-    private val cachedLatestBlocks: AsyncLoadingCache[ChainIndex, LatestBlock] = Caffeine
-      .newBuilder()
-      .maximumSize(groupConfig.chainNum.toLong)
-      .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
-      .buildAsync(latestBlockAsyncLoader)
+    private val cachedLatestBlocks: CaffeineAsyncCache[ChainIndex, LatestBlock] =
+      CaffeineAsyncCache {
+        Caffeine
+          .newBuilder()
+          .maximumSize(groupConfig.chainNum.toLong)
+          .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
+          .buildAsync[ChainIndex, LatestBlock](latestBlockAsyncLoader)
+      }
 
     private val blockTimeAsyncLoader: AsyncCacheLoader[ChainIndex, Duration] = {
       case (key, _) =>
         val chainFrom = GroupIndex.fromProtocol(key.from)
         val chainTo   = GroupIndex.fromProtocol(key.to)
         (for {
-          latestBlock <- cachedLatestBlocks.get(key).asScala
+          latestBlock <- cachedLatestBlocks.get(key)
           after = latestBlock.timestamp.minusUnsafe(Duration.ofHoursUnsafe(2))
           blockTimes <- run(getBlockTimes(chainFrom, chainTo, after))
         } yield {
@@ -118,7 +121,7 @@ object BlockDao {
         val (_, diffs) =
           blockTimes.drop(1).foldLeft((blockTimes.head, Seq.empty: Seq[Duration])) {
             case ((prev, acc), ts) =>
-              (ts, acc :+ (ts.deltaUnsafe(prev)))
+              (ts, acc :+ ts.deltaUnsafe(prev))
           }
         diffs.fold(Duration.zero)(_ + _).divUnsafe(diffs.size.toLong)
       } else {
@@ -126,11 +129,14 @@ object BlockDao {
       }
     }
 
-    private val cachedBlockTimes: AsyncLoadingCache[ChainIndex, Duration] = Caffeine
-      .newBuilder()
-      .maximumSize(groupConfig.chainNum.toLong)
-      .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
-      .buildAsync(blockTimeAsyncLoader)
+    private val cachedBlockTimes: CaffeineAsyncCache[ChainIndex, Duration] =
+      CaffeineAsyncCache {
+        Caffeine
+          .newBuilder()
+          .maximumSize(groupConfig.chainNum.toLong)
+          .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
+          .buildAsync[ChainIndex, Duration](blockTimeAsyncLoader)
+      }
 
     private val cacheRowCount: CaffeineAsyncCache[Query[_, _, Seq], Int] =
       CaffeineAsyncCache.rowCountCache(this) {
@@ -263,29 +269,17 @@ object BlockDao {
       run(updateMainChainStatusAction(hash, isMainChain))
     }
 
-    def latestBlocks(): Future[Seq[(ChainIndex, LatestBlock)]] = {
-      cachedLatestBlocks
-        .getAll(chainIndexes)
-        .asScala
-        .map(_.asScala.toSeq)
-    }
+    def latestBlocks(): Future[Seq[(ChainIndex, LatestBlock)]] =
+      cachedLatestBlocks.getAll(chainIndexes)
 
-    @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
-    def getAverageBlockTime(): Future[Seq[(ChainIndex, Duration)]] = {
-      cachedBlockTimes
-        .getAll(chainIndexes)
-        .asScala
-        .map(_.asScala.toSeq)
-    }
+    def getAverageBlockTime(): Future[Seq[(ChainIndex, Duration)]] =
+      cachedBlockTimes.getAll(chainIndexes)
 
     def updateLatestBlock(block: BlockEntity): Future[Unit] = {
       val chainIndex  = ChainIndex.unsafe(block.chainFrom.value, block.chainTo.value)
       val latestBlock = LatestBlock.fromEntity(block)
       run(LatestBlockSchema.table.insertOrUpdate(latestBlock)).map { _ =>
-        cachedLatestBlocks.put(
-          chainIndex,
-          Future.successful(latestBlock).asJava.toCompletableFuture
-        )
+        cachedLatestBlocks.put(chainIndex, latestBlock)
       }
     }
 
