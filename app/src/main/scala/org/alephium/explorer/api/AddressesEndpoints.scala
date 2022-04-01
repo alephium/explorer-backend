@@ -29,7 +29,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
 
   private val addressesEndpoint =
     baseEndpoint
-      .tag("Addressess")
+      .tag("Addresses")
       .in("addresses")
 
   val getAddressInfo: BaseEndpoint[Address, AddressInfo] =
