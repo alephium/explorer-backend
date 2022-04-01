@@ -21,6 +21,7 @@ import slick.lifted.ProvenShape
 
 import org.alephium.explorer.api.model.{GroupIndex, Transaction}
 import org.alephium.explorer.persistence.model.UnconfirmedTxEntity
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.util.U256
 
 object UnconfirmedTxSchema extends Schema[UnconfirmedTxEntity]("utransactions") {

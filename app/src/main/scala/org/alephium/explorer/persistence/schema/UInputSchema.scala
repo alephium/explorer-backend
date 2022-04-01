@@ -22,6 +22,7 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.Transaction
 import org.alephium.explorer.persistence.model.UInputEntity
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
 object UInputSchema extends Schema[UInputEntity]("uinputs") {
 

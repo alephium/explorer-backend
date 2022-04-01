@@ -22,6 +22,7 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{BlockEntry, Transaction}
 import org.alephium.explorer.persistence.model.InputEntity
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.util.TimeStamp
 
 object InputSchema extends SchemaMainChain[InputEntity]("inputs") {

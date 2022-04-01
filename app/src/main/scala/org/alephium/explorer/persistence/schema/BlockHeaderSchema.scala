@@ -26,6 +26,7 @@ import slick.sql.SqlAction
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.persistence.model.BlockHeader
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.util.TimeStamp
 
 object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {

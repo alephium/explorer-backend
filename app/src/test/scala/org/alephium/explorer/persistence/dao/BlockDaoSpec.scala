@@ -32,6 +32,7 @@ import org.alephium.explorer.api.model.{BlockEntry, BlockEntryLite, GroupIndex, 
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.json.Json._
@@ -269,7 +270,7 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
     }
   }
 
-  trait Fixture extends DatabaseFixture with DBRunner with CustomTypes with ApiModelCodec {
+  trait Fixture extends DatabaseFixture with DBRunner with ApiModelCodec {
     val blockflowFetchMaxAge: Duration = Duration.ofMinutesUnsafe(30)
 
     val blockDao = new BlockDao.Impl(groupNum, databaseConfig)

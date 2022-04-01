@@ -33,6 +33,7 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model.TokenSupplyEntity
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 

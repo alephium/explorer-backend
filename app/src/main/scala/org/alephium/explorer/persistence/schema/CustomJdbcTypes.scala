@@ -22,13 +22,14 @@ import scala.reflect.ClassTag
 
 import akka.util.ByteString
 import slick.jdbc._
+import slick.jdbc.PostgresProfile._
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer._
 import org.alephium.explorer.api.model._
 import org.alephium.util.{TimeStamp, U256}
 
-trait CustomTypes extends PostgresProfile {
+object CustomJdbcTypes {
 
   private def buildHashTypes[H: ClassTag](from: Hash => H, to: H => Hash): JdbcType[H] =
     MappedJdbcType.base[H, Array[Byte]](

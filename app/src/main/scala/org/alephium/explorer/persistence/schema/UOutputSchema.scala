@@ -21,6 +21,7 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.api.model.{Address, Transaction}
 import org.alephium.explorer.persistence.model.UOutputEntity
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.util.{TimeStamp, U256}
 
 object UOutputSchema extends Schema[UOutputEntity]("uoutputs") {

@@ -19,6 +19,6 @@ package org.alephium.explorer.persistence.schema
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.AbstractTable
 
-abstract class Schema[A](val name: String) extends CustomTypes {
+abstract class Schema[A](val name: String) {
   val table: TableQuery[_ <: AbstractTable[A]]
 }

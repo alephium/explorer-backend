@@ -29,6 +29,7 @@ import org.alephium.explorer.api.model.Transaction
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.DBRunner
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
 class UnconfirmedTxDaoSpec extends AlephiumSpec with ScalaFutures with Generators with Eventually {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
@@ -88,7 +89,7 @@ class UnconfirmedTxDaoSpec extends AlephiumSpec with ScalaFutures with Generator
     }
   }
 
-  trait Fixture extends DatabaseFixture with CustomTypes with DBRunner {
+  trait Fixture extends DatabaseFixture with DBRunner {
     val utxDao = UnconfirmedTxDao(databaseConfig)
   }
 }

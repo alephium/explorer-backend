@@ -24,6 +24,7 @@ import slick.lifted.{PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.persistence.model.LatestBlock
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.util.TimeStamp
 
 object LatestBlockSchema extends Schema[LatestBlock]("latest_blocks") {
