@@ -30,10 +30,12 @@ import org.alephium.explorer.persistence.queries.BlockDepQueries.insertBlockDeps
 import org.alephium.explorer.persistence.queries.InputQueries.insertInputs
 import org.alephium.explorer.persistence.queries.OutputQueries.insertOutputs
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.util.TimeStamp
 
-trait BlockQueries extends TransactionQueries with CustomTypes with StrictLogging {
+trait BlockQueries extends TransactionQueries with StrictLogging {
 
   val block_headers = BlockHeaderSchema.table.baseTableRow.tableName //block_headers table name
 

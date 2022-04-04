@@ -20,6 +20,7 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
 import org.alephium.explorer.persistence.model.TokenSupplyEntity
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.util.{TimeStamp, U256}
 
 object TokenSupplySchema extends Schema[TokenSupplyEntity]("token_supply") {

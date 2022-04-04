@@ -21,6 +21,7 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Transaction}
 import org.alephium.explorer.persistence.model.TransactionEntity
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.util.{TimeStamp, U256}
 
 object TransactionSchema extends SchemaMainChain[TransactionEntity]("transactions") {

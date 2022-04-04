@@ -30,6 +30,7 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.queries.BlockQueries
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.TraversableOps"))
 class SanityChecker(groupNum: Int,

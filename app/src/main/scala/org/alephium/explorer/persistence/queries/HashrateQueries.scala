@@ -22,11 +22,11 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model.IntervalType
 import org.alephium.explorer.persistence._
-import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.util.TimeStamp
 
-trait HashrateQueries extends CustomTypes {
+trait HashrateQueries {
 
   def getHashratesQuery(from: TimeStamp,
                         to: TimeStamp,

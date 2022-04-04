@@ -21,6 +21,7 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.api.model.BlockEntry
 import org.alephium.explorer.persistence.model.BlockDepEntity
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
 object BlockDepsSchema extends Schema[BlockDepEntity]("block_deps") {
 

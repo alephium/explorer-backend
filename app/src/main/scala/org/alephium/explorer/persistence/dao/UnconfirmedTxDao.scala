@@ -27,6 +27,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DBActionW, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
 trait UnconfirmedTxDao {
   def get(hash: Transaction.Hash): Future[Option[UnconfirmedTransaction]]
@@ -45,7 +46,6 @@ object UnconfirmedTxDao {
   private class Impl(val databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit val executionContext: ExecutionContext)
       extends UnconfirmedTxDao
-      with CustomTypes
       with DBRunner {
 
     def get(hash: Transaction.Hash): Future[Option[UnconfirmedTransaction]] = {

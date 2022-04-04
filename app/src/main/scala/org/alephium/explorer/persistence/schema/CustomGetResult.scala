@@ -18,142 +18,69 @@ package org.alephium.explorer.persistence.schema
 
 import java.math.BigInteger
 
-import scala.reflect.ClassTag
-
 import akka.util.ByteString
-import slick.jdbc._
-import slick.jdbc.PostgresProfile.api._
+import slick.jdbc.{GetResult, PositionedResult}
 
-import org.alephium.explorer._
+import org.alephium.explorer.{BlockHash, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.util.{TimeStamp, U256}
 
-trait CustomTypes extends PostgresProfile {
-
-  private def buildHashTypes[H: ClassTag](from: Hash => H, to: H => Hash): JdbcType[H] =
-    MappedJdbcType.base[H, Array[Byte]](
-      to(_).bytes.toArray,
-      raw => from(Hash.unsafe(ByteString.fromArrayUnsafe(raw)))
-    )
-
-  private def buildBlockHashTypes[H: ClassTag](from: BlockHash => H,
-                                               to: H           => BlockHash): JdbcType[H] =
-    MappedJdbcType.base[H, Array[Byte]](
-      to(_).bytes.toArray,
-      raw => from(BlockHash.unsafe(ByteString.fromArrayUnsafe(raw)))
-    )
-
-  implicit lazy val hashType: JdbcType[Hash] = buildHashTypes(identity, identity)
-
-  implicit lazy val blockEntryHashType: JdbcType[BlockEntry.Hash] =
-    buildBlockHashTypes(
-      new BlockEntry.Hash(_),
-      _.value
-    )
-
-  implicit lazy val transactionHashType: JdbcType[Transaction.Hash] =
-    buildHashTypes(
-      new Transaction.Hash(_),
-      _.value
-    )
-
-  implicit lazy val groupIndexType: JdbcType[GroupIndex] = MappedJdbcType.base[GroupIndex, Int](
-    _.value,
-    int => GroupIndex.unsafe(int)
-  )
-
-  implicit lazy val heightType: JdbcType[Height] = MappedJdbcType.base[Height, Int](
-    _.value,
-    int => Height.unsafe(int)
-  )
-
-  implicit lazy val addressType: JdbcType[Address] = MappedJdbcType.base[Address, String](
-    _.value,
-    string => Address.unsafe(string)
-  )
-
-  implicit lazy val timestampType: JdbcType[TimeStamp] = MappedJdbcType.base[TimeStamp, Long](
-    _.millis,
-    long => TimeStamp.unsafe(long)
-  )
-
-  implicit lazy val u256Type: JdbcType[U256] = MappedJdbcType.base[U256, BigDecimal](
-    u256       => BigDecimal(u256.v),
-    bigDecimal => U256.unsafe(bigDecimal.toBigInt.bigInteger)
-  )
-
-  implicit lazy val bigIntegerType: JdbcType[BigInteger] =
-    MappedJdbcType.base[BigInteger, BigDecimal](
-      bigInteger => BigDecimal(bigInteger),
-      bigDecimal => bigDecimal.toBigInt.bigInteger
-    )
-
-  implicit lazy val bytestringType: JdbcType[ByteString] =
-    MappedJdbcType.base[ByteString, Array[Byte]](
-      _.toArray,
-      bytes => ByteString.fromArrayUnsafe(bytes)
-    )
-
-  implicit lazy val intervalTypeType: JdbcType[IntervalType] =
-    MappedJdbcType.base[IntervalType, Int](
-      _.value,
-      IntervalType.unsafe
-    )
+object CustomGetResult {
 
   /**
     * GetResult types
     */
-  implicit lazy val blockEntryHashGetResult: GetResult[BlockEntry.Hash] =
+  implicit val blockEntryHashGetResult: GetResult[BlockEntry.Hash] =
     (result: PositionedResult) =>
       new BlockEntry.Hash(new BlockHash(ByteString.fromArrayUnsafe(result.nextBytes())))
 
-  implicit lazy val txHashGetResult: GetResult[Transaction.Hash] =
+  implicit val txHashGetResult: GetResult[Transaction.Hash] =
     (result: PositionedResult) =>
       new Transaction.Hash(new Hash(ByteString.fromArrayUnsafe(result.nextBytes())))
 
-  implicit lazy val optionTxHashGetResult: GetResult[Option[Transaction.Hash]] =
+  implicit val optionTxHashGetResult: GetResult[Option[Transaction.Hash]] =
     (result: PositionedResult) =>
       result
         .nextBytesOption()
         .map(bytes => new Transaction.Hash(new Hash(ByteString.fromArrayUnsafe(bytes))))
 
-  implicit lazy val optionBlockEntryHashGetResult: GetResult[Option[BlockEntry.Hash]] =
+  implicit val optionBlockEntryHashGetResult: GetResult[Option[BlockEntry.Hash]] =
     (result: PositionedResult) =>
       result
         .nextBytesOption()
         .map(bytes => new BlockEntry.Hash(new BlockHash(ByteString.fromArrayUnsafe(bytes))))
 
-  implicit lazy val timestampGetResult: GetResult[TimeStamp] =
+  implicit val timestampGetResult: GetResult[TimeStamp] =
     (result: PositionedResult) => TimeStamp.unsafe(result.nextLong())
 
-  implicit lazy val optionTimestampGetResult: GetResult[Option[TimeStamp]] =
+  implicit val optionTimestampGetResult: GetResult[Option[TimeStamp]] =
     (result: PositionedResult) => result.nextLongOption().map(TimeStamp.unsafe)
 
-  implicit lazy val groupIndexGetResult: GetResult[GroupIndex] =
+  implicit val groupIndexGetResult: GetResult[GroupIndex] =
     (result: PositionedResult) => GroupIndex.unsafe(result.nextInt())
 
-  implicit lazy val heightGetResult: GetResult[Height] =
+  implicit val heightGetResult: GetResult[Height] =
     (result: PositionedResult) => Height.unsafe(result.nextInt())
 
-  implicit lazy val bigIntegerGetResult: GetResult[BigInteger] =
+  implicit val bigIntegerGetResult: GetResult[BigInteger] =
     (result: PositionedResult) => result.nextBigDecimal().toBigInt.bigInteger
 
-  implicit lazy val bytestringGetResult: GetResult[ByteString] =
+  implicit val byteStringGetResult: GetResult[ByteString] =
     (result: PositionedResult) => ByteString.fromArrayUnsafe(result.nextBytes())
 
-  implicit lazy val hashGetResult: GetResult[Hash] =
+  implicit val hashGetResult: GetResult[Hash] =
     (result: PositionedResult) => Hash.unsafe(ByteString.fromArrayUnsafe(result.nextBytes()))
 
-  implicit lazy val addressGetResult: GetResult[Address] =
+  implicit val addressGetResult: GetResult[Address] =
     (result: PositionedResult) => Address.unsafe(result.nextString())
 
-  implicit lazy val u256GetResult: GetResult[U256] =
+  implicit val u256GetResult: GetResult[U256] =
     (result: PositionedResult) => {
       U256.unsafe(result.nextBigDecimal().toBigInt.bigInteger)
     }
 
-  implicit lazy val optionU256GetResult: GetResult[Option[U256]] =
+  implicit val optionU256GetResult: GetResult[Option[U256]] =
     (result: PositionedResult) => {
       result.nextBigDecimalOption().map(bigDecimal => U256.unsafe(bigDecimal.toBigInt.bigInteger))
     }
@@ -195,4 +122,5 @@ trait CustomTypes extends PostgresProfile {
         hashrate     = result.<<,
         parent       = result.<<?
     )
+
 }

@@ -30,10 +30,12 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.util.{TimeStamp, U256}
 
-trait TransactionQueries extends CustomTypes with StrictLogging {
+trait TransactionQueries extends StrictLogging {
 
   implicit def executionContext: ExecutionContext
 
