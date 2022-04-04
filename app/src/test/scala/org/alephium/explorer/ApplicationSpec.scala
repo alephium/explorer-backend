@@ -41,6 +41,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service.BlockFlowClient
+import org.alephium.explorer.util.TestUtils._
 import org.alephium.json.Json
 import org.alephium.json.Json._
 import org.alephium.protocol.model.{CliqueId, NetworkId}
@@ -284,14 +285,16 @@ trait ApplicationSpec
     }
     Get("/docs/explorer-backend-openapi.json") ~> routes ~> check {
       status is StatusCodes.OK
+
+      val lines =
+        using(
+          Source.fromFile(
+            name = Main.getClass.getResource("/explorer-backend-openapi.json").getPath,
+            enc  = "UTF-8")
+        )(_.getLines())
+
       val expectedOpenapi =
-        read[ujson.Value](
-          Source
-            .fromFile(Main.getClass.getResource("/explorer-backend-openapi.json").getPath, "UTF-8")
-            .getLines()
-            .toSeq
-            .mkString("\n")
-        )
+        read[ujson.Value](lines.mkString("\n"))
 
       val openapi =
         read[ujson.Value](
