@@ -335,7 +335,7 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     run(TransactionSchema.table ++= Seq(tx1, tx2, tx3)).futureValue
 
-    val total = run(queries.getTotalNumberQuery).futureValue.head
+    val total = run(queries.mainTransactions.length.result).futureValue
     total is 2
   }
 
