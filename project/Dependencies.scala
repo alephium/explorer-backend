@@ -17,7 +17,7 @@
 import sbt._
 
 object Version {
-  lazy val common = "1.3.0-rc9"
+  lazy val common = "1.3.0"
 
   lazy val akka       = "2.6.18"
   lazy val tapir      = "0.18.1"
