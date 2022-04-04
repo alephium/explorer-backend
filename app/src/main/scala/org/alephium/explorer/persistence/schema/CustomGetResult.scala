@@ -31,56 +31,56 @@ object CustomGetResult {
   /**
     * GetResult types
     */
-  implicit lazy val blockEntryHashGetResult: GetResult[BlockEntry.Hash] =
+  implicit val blockEntryHashGetResult: GetResult[BlockEntry.Hash] =
     (result: PositionedResult) =>
       new BlockEntry.Hash(new BlockHash(ByteString.fromArrayUnsafe(result.nextBytes())))
 
-  implicit lazy val txHashGetResult: GetResult[Transaction.Hash] =
+  implicit val txHashGetResult: GetResult[Transaction.Hash] =
     (result: PositionedResult) =>
       new Transaction.Hash(new Hash(ByteString.fromArrayUnsafe(result.nextBytes())))
 
-  implicit lazy val optionTxHashGetResult: GetResult[Option[Transaction.Hash]] =
+  implicit val optionTxHashGetResult: GetResult[Option[Transaction.Hash]] =
     (result: PositionedResult) =>
       result
         .nextBytesOption()
         .map(bytes => new Transaction.Hash(new Hash(ByteString.fromArrayUnsafe(bytes))))
 
-  implicit lazy val optionBlockEntryHashGetResult: GetResult[Option[BlockEntry.Hash]] =
+  implicit val optionBlockEntryHashGetResult: GetResult[Option[BlockEntry.Hash]] =
     (result: PositionedResult) =>
       result
         .nextBytesOption()
         .map(bytes => new BlockEntry.Hash(new BlockHash(ByteString.fromArrayUnsafe(bytes))))
 
-  implicit lazy val timestampGetResult: GetResult[TimeStamp] =
+  implicit val timestampGetResult: GetResult[TimeStamp] =
     (result: PositionedResult) => TimeStamp.unsafe(result.nextLong())
 
-  implicit lazy val optionTimestampGetResult: GetResult[Option[TimeStamp]] =
+  implicit val optionTimestampGetResult: GetResult[Option[TimeStamp]] =
     (result: PositionedResult) => result.nextLongOption().map(TimeStamp.unsafe)
 
-  implicit lazy val groupIndexGetResult: GetResult[GroupIndex] =
+  implicit val groupIndexGetResult: GetResult[GroupIndex] =
     (result: PositionedResult) => GroupIndex.unsafe(result.nextInt())
 
-  implicit lazy val heightGetResult: GetResult[Height] =
+  implicit val heightGetResult: GetResult[Height] =
     (result: PositionedResult) => Height.unsafe(result.nextInt())
 
-  implicit lazy val bigIntegerGetResult: GetResult[BigInteger] =
+  implicit val bigIntegerGetResult: GetResult[BigInteger] =
     (result: PositionedResult) => result.nextBigDecimal().toBigInt.bigInteger
 
-  implicit lazy val bytestringGetResult: GetResult[ByteString] =
+  implicit val byteStringGetResult: GetResult[ByteString] =
     (result: PositionedResult) => ByteString.fromArrayUnsafe(result.nextBytes())
 
-  implicit lazy val hashGetResult: GetResult[Hash] =
+  implicit val hashGetResult: GetResult[Hash] =
     (result: PositionedResult) => Hash.unsafe(ByteString.fromArrayUnsafe(result.nextBytes()))
 
-  implicit lazy val addressGetResult: GetResult[Address] =
+  implicit val addressGetResult: GetResult[Address] =
     (result: PositionedResult) => Address.unsafe(result.nextString())
 
-  implicit lazy val u256GetResult: GetResult[U256] =
+  implicit val u256GetResult: GetResult[U256] =
     (result: PositionedResult) => {
       U256.unsafe(result.nextBigDecimal().toBigInt.bigInteger)
     }
 
-  implicit lazy val optionU256GetResult: GetResult[Option[U256]] =
+  implicit val optionU256GetResult: GetResult[Option[U256]] =
     (result: PositionedResult) => {
       result.nextBigDecimalOption().map(bigDecimal => U256.unsafe(bigDecimal.toBigInt.bigInteger))
     }
