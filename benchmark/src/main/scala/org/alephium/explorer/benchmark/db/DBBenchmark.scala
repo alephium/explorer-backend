@@ -293,51 +293,98 @@ class DBBenchmark {
     state.db.runNow(state.countMainChain, requestTimeout)
 
   @Benchmark
-  def b_main_chain_PartialIndex(state: PartialVSFullIndexState_PartialMainChain): Unit =
+  def b_main_chain_FullIndex(state: PartialVSFullIndexState_FullMainChain): Unit =
     state.db.runNow(state.countMainChain, requestTimeout)
 
   @Benchmark
-  def c_main_chain_FullIndex(state: PartialVSFullIndexState_FullMainChain): Unit =
+  def c_main_chain_FullIndex_Reset_10(state: PartialVSFullIndexState_FullMainChain_Reset_10): Unit =
     state.db.runNow(state.countMainChain, requestTimeout)
 
   @Benchmark
-  def d_main_chain_PartialIndex_Reset_1000(
-      state: PartialVSFullIndexState_PartialMainChain_Reset): Unit =
+  def d_main_chain_FullIndex_Reset_100(
+      state: PartialVSFullIndexState_FullMainChain_Reset_100): Unit =
+    state.db.runNow(state.countMainChain, requestTimeout)
+
+  @Benchmark
+  def e_main_chain_FullIndex_Reset_1000(
+      state: PartialVSFullIndexState_FullMainChain_Reset_1000): Unit =
+    state.db.runNow(state.countMainChain, requestTimeout)
+
+  @Benchmark
+  def f_main_chain_PartialIndex(state: PartialVSFullIndexState_PartialMainChain): Unit =
+    state.db.runNow(state.countMainChain, requestTimeout)
+
+  @Benchmark
+  def g_main_chain_PartialIndex_Reset_10(
+      state: PartialVSFullIndexState_PartialMainChain_Reset_10): Unit =
+    state.db.runNow(state.countMainChain, requestTimeout)
+
+  @Benchmark
+  def h_main_chain_PartialIndex_Reset_100(
+      state: PartialVSFullIndexState_PartialMainChain_Reset_100): Unit =
+    state.db.runNow(state.countMainChain, requestTimeout)
+
+  @Benchmark
+  def i_main_chain_PartialIndex_Reset_1000(
+      state: PartialVSFullIndexState_PartialMainChain_Reset_1000): Unit =
     state.db.runNow(state.countMainChain, requestTimeout)
 
   /**
     * INTEGER INDEX (interval) BENCHMARKS
     */
   @Benchmark
-  def e_interval_NoIndex(state: PartialVSFullIndexState_NoIndex_Interval): Unit =
+  def a_interval_NoIndex(state: PartialVSFullIndexState_NoIndex_Interval): Unit =
     state.db.runNow(state.countInterval, requestTimeout)
 
   @Benchmark
-  def f_interval_FullIndex(state: PartialVSFullIndexState_FullInterval): Unit =
+  def b_interval_FullIndex(state: PartialVSFullIndexState_FullInterval): Unit =
     state.db.runNow(state.countInterval, requestTimeout)
 
   @Benchmark
-  def g_interval_PartialIndex(state: PartialVSFullIndexState_PartialInterval): Unit =
+  def c_interval_FullIndex_Reset_10(state: PartialVSFullIndexState_FullInterval_Reset_10): Unit =
     state.db.runNow(state.countInterval, requestTimeout)
 
   @Benchmark
-  def h_interval_PartialIndex_Reset_1000(
-      state: PartialVSFullIndexState_PartialInterval_Reset): Unit =
+  def d_interval_FullIndex_Reset_100(state: PartialVSFullIndexState_FullInterval_Reset_100): Unit =
+    state.db.runNow(state.countInterval, requestTimeout)
+
+  @Benchmark
+  def e_interval_FullIndex_Reset_1000(
+      state: PartialVSFullIndexState_FullInterval_Reset_1000): Unit =
+    state.db.runNow(state.countInterval, requestTimeout)
+
+  @Benchmark
+  def f_interval_PartialIndex(state: PartialVSFullIndexState_PartialInterval): Unit =
+    state.db.runNow(state.countInterval, requestTimeout)
+
+  @Benchmark
+  def g_interval_PartialIndex_Reset_10(
+      state: PartialVSFullIndexState_PartialInterval_Reset_10): Unit =
+    state.db.runNow(state.countInterval, requestTimeout)
+
+  @Benchmark
+  def h_interval_PartialIndex_Reset_100(
+      state: PartialVSFullIndexState_PartialInterval_Reset_100): Unit =
+    state.db.runNow(state.countInterval, requestTimeout)
+
+  @Benchmark
+  def i_interval_PartialIndex_Reset_1000(
+      state: PartialVSFullIndexState_PartialInterval_Reset_1000): Unit =
     state.db.runNow(state.countInterval, requestTimeout)
 
   /**
     * COMPOSITE KEY INDEX (tx_id & main_chain) BENCHMARKS
     */
   @Benchmark
-  def i_composite_NoIndex(state: PartialVSFullIndexState_NoIndex_Composite): Unit =
+  def a_composite_NoIndex(state: PartialVSFullIndexState_NoIndex_Composite): Unit =
     state.db.runNow(state.selectMainChainTransaction(state.next.id), requestTimeout)
 
   @Benchmark
-  def j_composite_FullIndex(state: PartialVSFullIndexState_FullComposite): Unit =
+  def b_composite_FullIndex(state: PartialVSFullIndexState_FullComposite): Unit =
     state.db.runNow(state.selectMainChainTransaction(state.next.id), requestTimeout)
 
   @Benchmark
-  def k_composite_PartialIndex(state: PartialVSFullIndexState_PartialComposite): Unit =
+  def c_composite_PartialIndex(state: PartialVSFullIndexState_PartialComposite): Unit =
     state.db.runNow(state.selectMainChainTransaction(state.next.id), requestTimeout)
 
 }

@@ -29,10 +29,12 @@ object IndexType {
   case object NoIndex extends IndexType
 
   case object FullMainChain                            extends IndexType
+  case class FullMainChainReset(resetInterval: Int)    extends IndexType
   case object PartialMainChain                         extends IndexType
   case class PartialMainChainReset(resetInterval: Int) extends IndexType
 
   case object FullInterval                            extends IndexType
+  case class FullIntervalReset(resetInterval: Int)    extends IndexType
   case object PartialInterval                         extends IndexType
   case class PartialIntervalReset(resetInterval: Int) extends IndexType
 
@@ -72,6 +74,9 @@ class PartialVSFullIndexState(indexType: IndexType,
   override def generateData(currentCacheSize: Int): Transaction = {
     val mainChain =
       indexType match {
+        case IndexType.FullMainChainReset(resetInterval) =>
+          currentCacheSize % resetInterval == 0
+
         case IndexType.PartialMainChainReset(resetInterval) =>
           currentCacheSize % resetInterval == 0
 
@@ -81,6 +86,12 @@ class PartialVSFullIndexState(indexType: IndexType,
 
     val interval =
       indexType match {
+        case IndexType.FullIntervalReset(resetInterval) =>
+          if (currentCacheSize % resetInterval == 0)
+            0
+          else
+            currentCacheSize
+
         case IndexType.PartialIntervalReset(resetInterval) =>
           if (currentCacheSize % resetInterval == 0)
             0
@@ -110,13 +121,13 @@ class PartialVSFullIndexState(indexType: IndexType,
         case IndexType.NoIndex =>
           ""
 
-        case IndexType.FullMainChain =>
+        case IndexType.FullMainChain | IndexType.FullMainChainReset(_) =>
           "create index full_main_chain_idx on transactions (main_chain);"
 
         case IndexType.PartialMainChain | IndexType.PartialMainChainReset(_) =>
           "create index partial_main_chain_idx on transactions (main_chain) where main_chain = true;"
 
-        case IndexType.FullInterval =>
+        case IndexType.FullInterval | IndexType.FullIntervalReset(_) =>
           "create index full_interval_idx on transactions (interval);"
 
         case IndexType.PartialInterval | IndexType.PartialIntervalReset(_) =>
@@ -178,18 +189,41 @@ class PartialVSFullIndexState(indexType: IndexType,
 
 /** MAIN_CHAIN OR BOOLEAN INDEX STATES */
 class PartialVSFullIndexState_NoIndex_MainChain extends PartialVSFullIndexState(IndexType.NoIndex)
-class PartialVSFullIndexState_FullMainChain     extends PartialVSFullIndexState(IndexType.FullMainChain)
+
+class PartialVSFullIndexState_FullMainChain extends PartialVSFullIndexState(IndexType.FullMainChain)
+class PartialVSFullIndexState_FullMainChain_Reset_10
+    extends PartialVSFullIndexState(IndexType.FullMainChainReset(10))
+class PartialVSFullIndexState_FullMainChain_Reset_100
+    extends PartialVSFullIndexState(IndexType.FullMainChainReset(100))
+class PartialVSFullIndexState_FullMainChain_Reset_1000
+    extends PartialVSFullIndexState(IndexType.FullMainChainReset(1000))
+
 class PartialVSFullIndexState_PartialMainChain
     extends PartialVSFullIndexState(IndexType.PartialMainChain)
-class PartialVSFullIndexState_PartialMainChain_Reset
+class PartialVSFullIndexState_PartialMainChain_Reset_10
+    extends PartialVSFullIndexState(IndexType.PartialMainChainReset(10))
+class PartialVSFullIndexState_PartialMainChain_Reset_100
+    extends PartialVSFullIndexState(IndexType.PartialMainChainReset(100))
+class PartialVSFullIndexState_PartialMainChain_Reset_1000
     extends PartialVSFullIndexState(IndexType.PartialMainChainReset(1000))
 
 /** INTERVAL OR INTEGER INDEX STATES */
 class PartialVSFullIndexState_NoIndex_Interval extends PartialVSFullIndexState(IndexType.NoIndex)
 class PartialVSFullIndexState_FullInterval     extends PartialVSFullIndexState(IndexType.FullInterval)
+class PartialVSFullIndexState_FullInterval_Reset_10
+    extends PartialVSFullIndexState(IndexType.FullIntervalReset(10))
+class PartialVSFullIndexState_FullInterval_Reset_100
+    extends PartialVSFullIndexState(IndexType.FullIntervalReset(100))
+class PartialVSFullIndexState_FullInterval_Reset_1000
+    extends PartialVSFullIndexState(IndexType.FullIntervalReset(1000))
+
 class PartialVSFullIndexState_PartialInterval
     extends PartialVSFullIndexState(IndexType.PartialInterval)
-class PartialVSFullIndexState_PartialInterval_Reset
+class PartialVSFullIndexState_PartialInterval_Reset_10
+    extends PartialVSFullIndexState(IndexType.PartialIntervalReset(10))
+class PartialVSFullIndexState_PartialInterval_Reset_100
+    extends PartialVSFullIndexState(IndexType.PartialIntervalReset(100))
+class PartialVSFullIndexState_PartialInterval_Reset_1000
     extends PartialVSFullIndexState(IndexType.PartialIntervalReset(1000))
 
 /** COMPOSITE KEYS (tx_id & main_chain) INDEX STATES */
