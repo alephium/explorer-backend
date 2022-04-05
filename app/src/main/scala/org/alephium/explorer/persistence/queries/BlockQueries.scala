@@ -217,10 +217,9 @@ trait BlockQueries extends TransactionQueries with StrictLogging {
     if (blocks.isEmpty) {
       DBIOAction.successful(0)
     } else {
-      val placeholder = paramPlaceholder(rows = blocks.size, columns = 14)
-
-      val query =
-        s"""
+      QuerySplitter.splitUpdates(rows = blocks, columnsPerRow = 14) { (blocks, placeholder) =>
+        val query =
+          s"""
            |insert into $block_headers ("hash",
            |                            "block_timestamp",
            |                            "chain_from",
@@ -240,29 +239,30 @@ trait BlockQueries extends TransactionQueries with StrictLogging {
            |    DO NOTHING
            |""".stripMargin
 
-      val parameters: SetParameter[Unit] =
-        (_: Unit, params: PositionedParameters) =>
-          blocks foreach { block =>
-            params >> block.hash
-            params >> block.timestamp
-            params >> block.chainFrom
-            params >> block.chainTo
-            params >> block.height
-            params >> block.mainChain
-            params >> block.nonce
-            params >> block.version
-            params >> block.depStateHash
-            params >> block.txsHash
-            params >> block.txsCount
-            params >> block.target
-            params >> block.hashrate
-            params >> block.parent
-        }
+        val parameters: SetParameter[Unit] =
+          (_: Unit, params: PositionedParameters) =>
+            blocks foreach { block =>
+              params >> block.hash
+              params >> block.timestamp
+              params >> block.chainFrom
+              params >> block.chainTo
+              params >> block.height
+              params >> block.mainChain
+              params >> block.nonce
+              params >> block.version
+              params >> block.depStateHash
+              params >> block.txsHash
+              params >> block.txsCount
+              params >> block.target
+              params >> block.hashrate
+              params >> block.parent
+          }
 
-      SQLActionBuilder(
-        queryParts = query,
-        unitPConv  = parameters
-      ).asUpdate
+        SQLActionBuilder(
+          queryParts = query,
+          unitPConv  = parameters
+        ).asUpdate
+      }
     }
   // scalastyle:on magic.number
 
