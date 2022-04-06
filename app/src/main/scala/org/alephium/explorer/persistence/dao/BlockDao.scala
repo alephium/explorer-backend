@@ -142,7 +142,7 @@ object BlockDao {
       CaffeineAsyncCache.rowCountCache(this) {
         Caffeine
           .newBuilder()
-          .refreshAfterWrite(2, java.util.concurrent.TimeUnit.MINUTES)
+          .refreshAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
       }
 
     def getRowCountFromCacheIfPresent[E, U](query: Query[E, U, Seq]): Option[Future[Int]] =
