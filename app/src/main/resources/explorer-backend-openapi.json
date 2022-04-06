@@ -1305,7 +1305,7 @@
         "tags": [
           "Charts"
         ],
-        "summary": "Get explorer informations.",
+        "summary": "Get hashrate chart in H/s",
         "description": "`interval-type` query param: hourly, daily",
         "operationId": "getChartsHashrates",
         "parameters": [
@@ -1429,7 +1429,7 @@
         "operationId": "putUtilsSanity-check",
         "responses": {
           "200": {
-
+            
           },
           "400": {
             "description": "BadRequest",
