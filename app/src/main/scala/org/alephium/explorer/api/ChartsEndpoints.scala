@@ -39,5 +39,5 @@ trait ChartsEndpoints extends BaseEndpoint with QueryParams {
       .in(intervalTypeQuery)
       .out(jsonBody[Seq[Hashrate]])
       .description(s"`interval-type` query param: ${IntervalType.all.map(_.string).mkString(", ")}")
-      .summary("Get explorer informations.")
+      .summary("Get hashrate chart in H/s")
 }

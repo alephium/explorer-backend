@@ -37,6 +37,8 @@ trait Documentation
       getTransactionById,
       getAddressInfo,
       getTransactionsByAddress,
+      getTotalTransactionsByAddress,
+      getAddressBalance,
       getInfos,
       getHeights,
       listTokenSupply,
