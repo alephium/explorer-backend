@@ -88,7 +88,7 @@ object BlockDao {
     @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
     private val latestBlockAsyncLoader: AsyncCacheLoader[ChainIndex, LatestBlock] = {
       case (key, _) =>
-        run(
+        runAction(
           getLatestBlock(GroupIndex.unsafe(key.from.value), GroupIndex.unsafe(key.to.value))
         ).map(_.get).asJava.toCompletableFuture
     }
@@ -109,7 +109,7 @@ object BlockDao {
         (for {
           latestBlock <- cachedLatestBlocks.get(key)
           after = latestBlock.timestamp.minusUnsafe(Duration.ofHoursUnsafe(2))
-          blockTimes <- run(getBlockTimes(chainFrom, chainTo, after))
+          blockTimes <- runAction(getBlockTimes(chainFrom, chainTo, after))
         } yield {
           computeAverageBlockTime(blockTimes)
         }).asJava.toCompletableFuture
@@ -152,21 +152,21 @@ object BlockDao {
       cacheRowCount.invalidateAll()
 
     def getLite(hash: BlockEntry.Hash): Future[Option[BlockEntryLite]] =
-      run(getBlockEntryLiteAction(hash))
+      runAction(getBlockEntryLiteAction(hash))
 
     def getTransactions(hash: BlockEntry.Hash, pagination: Pagination): Future[Seq[Transaction]] =
-      run(getTransactionsByBlockHashWithPagination(hash, pagination))
+      runAction(getTransactionsByBlockHashWithPagination(hash, pagination))
 
     def get(hash: BlockEntry.Hash): Future[Option[BlockEntry]] =
-      run(getBlockEntryAction(hash))
+      runAction(getBlockEntryAction(hash))
 
     def getAtHeight(fromGroup: GroupIndex,
                     toGroup: GroupIndex,
                     height: Height): Future[Seq[BlockEntry]] =
-      run(getAtHeightAction(fromGroup, toGroup, height))
+      runAction(getAtHeightAction(fromGroup, toGroup, height))
 
     def updateTransactionPerAddress(block: BlockEntity): Future[Seq[InputEntity]] = {
-      run(
+      runAction(
         updateTransactionPerAddressAction(block.outputs, block.inputs)
       )
     }
@@ -177,7 +177,7 @@ object BlockDao {
 
     /** Inserts a multiple blocks transactionally via SQL */
     def insertAll(blocks: Seq[BlockEntity]): Future[Unit] =
-      run(insertBlockEntity(blocks, groupNum))
+      runAction(insertBlockEntity(blocks, groupNum))
         .map { _ =>
           cacheRowCount.invalidate(mainChainQuery)
         }
@@ -190,18 +190,18 @@ object BlockDao {
           total   <- mainChain.length.result
         } yield (headers.map(_.toLiteApi), total)
 
-      run(action)
+      runAction(action)
     }
 
     /** SQL version of [[listMainChain]] */
     def listMainChainSQL(pagination: Pagination): Future[(Seq[BlockEntryLite], Int)] = {
-      val blockEntries = run(listMainChainHeadersWithTxnNumberSQL(pagination))
-      val count        = run(countMainChain().result)
+      val blockEntries = runAction(listMainChainHeadersWithTxnNumberSQL(pagination))
+      val count        = runAction(countMainChain().result)
       blockEntries.zip(count)
     }
 
     def listMainChainSQLCached(pagination: Pagination): Future[(Seq[BlockEntryLite], Int)] = {
-      val blockEntries = run(listMainChainHeadersWithTxnNumberSQL(pagination))
+      val blockEntries = runAction(listMainChainHeadersWithTxnNumberSQL(pagination))
       val count        = cacheRowCount.get(mainChainQuery)
       blockEntries.zip(count)
     }
@@ -215,7 +215,7 @@ object BlockDao {
             .result
         } yield headers.map(_.toLiteApi)
 
-      run(action)
+      runAction(action)
     }
 
     def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Option[Height]] = {
@@ -225,7 +225,7 @@ object BlockDao {
           .map(_.height)
           .max
 
-      run(query.result)
+      runAction(query.result)
     }
 
     @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
@@ -262,11 +262,11 @@ object BlockDao {
                         chainFrom: GroupIndex,
                         chainTo: GroupIndex,
                         groupNum: Int): Future[Option[BlockEntry.Hash]] = {
-      run(updateMainChainAction(hash, chainFrom, chainTo, groupNum))
+      runAction(updateMainChainAction(hash, chainFrom, chainTo, groupNum))
     }
 
     def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean): Future[Unit] = {
-      run(updateMainChainStatusAction(hash, isMainChain))
+      runAction(updateMainChainStatusAction(hash, isMainChain))
     }
 
     def latestBlocks(): Future[Seq[(ChainIndex, LatestBlock)]] =
@@ -278,13 +278,13 @@ object BlockDao {
     def updateLatestBlock(block: BlockEntity): Future[Unit] = {
       val chainIndex  = ChainIndex.unsafe(block.chainFrom.value, block.chainTo.value)
       val latestBlock = LatestBlock.fromEntity(block)
-      run(LatestBlockSchema.table.insertOrUpdate(latestBlock)).map { _ =>
+      runAction(LatestBlockSchema.table.insertOrUpdate(latestBlock)).map { _ =>
         cachedLatestBlocks.put(chainIndex, latestBlock)
       }
     }
 
     def updateInputs(inputs: Seq[InputEntity]): Future[Int] = {
-      run(
+      runAction(
         DBIOAction.sequence(inputs.map(insertTxPerAddressFromInput))
       ).map(_.sum)
     }

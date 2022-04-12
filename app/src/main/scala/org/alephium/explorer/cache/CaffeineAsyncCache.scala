@@ -67,7 +67,7 @@ object CaffeineAsyncCache {
           new AsyncCacheLoader[Query[_, _, Seq], Int] {
             override def asyncLoad(table: Query[_, _, Seq],
                                    executor: Executor): CompletableFuture[Int] =
-              runner.run(table.length.result).asJava.toCompletableFuture
+              runner.runAction(table.length.result).asJava.toCompletableFuture
           }
         }
     }

@@ -56,7 +56,7 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
 
   def createTables(): Future[Unit] = {
     //TODO Look for something like https://flywaydb.org/ to manage schemas
-    val existingTables = run(MTable.getTables)
+    val existingTables = runAction(MTable.getTables)
     existingTables
       .flatMap { tables =>
         Future.sequence(allTables.map { table =>
@@ -66,14 +66,14 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
             } else {
               DBIOAction.successful(())
             }
-          run(createIfNotExist)
+          runAction(createIfNotExist)
         })
       }
       .flatMap(_ => createIndexes())
   }
 
   private def createIndexes(): Future[Unit] = {
-    run(for {
+    runAction(for {
       _ <- BlockHeaderSchema.createBlockHeadersIndexesSQL()
       _ <- TransactionSchema.createMainChainIndex
       _ <- InputSchema.createMainChainIndex
@@ -89,7 +89,7 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
         s"DROP TABLE IF EXISTS $name;"
       }
       .mkString("\n")
-    run(sqlu"#$query").map(_ => ())
+    runAction(sqlu"#$query").map(_ => ())
   }
 }
 

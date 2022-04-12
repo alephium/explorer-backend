@@ -37,18 +37,18 @@ class OutputQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     forAll(Gen.listOf(updatedOutputEntityGen())) { existingAndUpdates =>
       //fresh table
-      run(OutputSchema.table.delete).futureValue
+      runAction(OutputSchema.table.delete).futureValue
 
       val existing = existingAndUpdates.map(_._1) //existing outputs
       val ignored  = existingAndUpdates.map(_._2) //ignored outputs
 
       //insert existing
-      run(insertOutputs(existing)).futureValue is existing.size
-      run(OutputSchema.table.result).futureValue is existing
+      runAction(insertOutputs(existing)).futureValue is existing.size
+      runAction(OutputSchema.table.result).futureValue is existing
 
       //insert should ignore existing outputs
-      run(insertOutputs(ignored)).futureValue is 0
-      run(OutputSchema.table.result).futureValue should contain allElementsOf existing
+      runAction(insertOutputs(ignored)).futureValue is 0
+      runAction(OutputSchema.table.result).futureValue should contain allElementsOf existing
     }
   }
 

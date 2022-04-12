@@ -48,9 +48,9 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
       b("2022-01-09T00:00:00.000Z", 100)
     )
 
-    run(BlockHeaderSchema.table ++= blocks).futureValue
+    runAction(BlockHeaderSchema.table ++= blocks).futureValue
 
-    run(
+    runAction(
       computeHourlyHashrate(from)
     ).futureValue.sortBy(_._1) is Vector(
       v("2022-01-08T00:00:00.000Z", 3),
@@ -71,9 +71,9 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
       b("2022-01-09T12:00:00.000Z", 100)
     )
 
-    run(BlockHeaderSchema.table ++= blocks).futureValue
+    runAction(BlockHeaderSchema.table ++= blocks).futureValue
 
-    run(
+    runAction(
       computeDailyHashrate(from)
     ).futureValue.sortBy(_._1) is
       Vector(
@@ -81,7 +81,7 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
         v("2022-01-09T00:00:00.000Z", 20),
         v("2022-01-10T00:00:00.000Z", 100)
       )
-    run(
+    runAction(
       computeDailyHashrate(ts("2022-01-09T10:00:00.000Z"))
     ).futureValue.sortBy(_._1) is
       Vector(
@@ -99,7 +99,7 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
       b("2022-01-08T00:03:10.123Z", 100)
     )
 
-    run(BlockHeaderSchema.table ++= blocks).futureValue
+    runAction(BlockHeaderSchema.table ++= blocks).futureValue
 
     hashrateService.get(from, to, IntervalType.Hourly).futureValue is Vector.empty
 
@@ -123,7 +123,7 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
       b("2022-01-08T20:38:00.000Z", 4)
     )
 
-    run(BlockHeaderSchema.table ++= newBlocks).futureValue
+    runAction(BlockHeaderSchema.table ++= newBlocks).futureValue
 
     hashrateService.syncOnce().futureValue
 

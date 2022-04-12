@@ -37,37 +37,37 @@ class CustomJdbcTypesSpec extends AlephiumSpec with ScalaFutures with Eventually
 
   it should "convert TimeStamp" in new Fixture {
 
-    run(sqlu"DROP TABLE IF EXISTS timestamps;").futureValue
-    run(timestampTable.schema.create).futureValue
+    runAction(sqlu"DROP TABLE IF EXISTS timestamps;").futureValue
+    runAction(timestampTable.schema.create).futureValue
 
     val t1 = ALPH.LaunchTimestamp
     val t2 = ts("2020-12-31T23:59:59.999Z")
 
     val timestamps = Seq(t1, t2)
-    run(timestampTable ++= timestamps).futureValue
+    runAction(timestampTable ++= timestamps).futureValue
 
     /*
      * Using slick returns the correct timestamp, while the raw sql doesnt.
      * This is because the data is stored in db as a local time, so shifted
      * by 1 here in Switzerland
      */
-    run(
+    runAction(
       sql"SELECT * from timestamps WHERE timestamp = $t1"
         .as[TimeStamp]).futureValue is Vector(t1)
 
-    run(timestampTable.filter(_.timestamp === t1).result).futureValue is Seq(t1)
+    runAction(timestampTable.filter(_.timestamp === t1).result).futureValue is Seq(t1)
 
-    run(
+    runAction(
       sql"SELECT * from timestamps WHERE timestamp = $t2"
         .as[TimeStamp]).futureValue is Vector(t2)
 
-    run(timestampTable.filter(_.timestamp === t2).result).futureValue is Seq(t2)
+    runAction(timestampTable.filter(_.timestamp === t2).result).futureValue is Seq(t2)
 
-    run(
+    runAction(
       sql"SELECT * from timestamps WHERE timestamp <= $t1"
         .as[TimeStamp]).futureValue is Vector(t1, t2)
 
-    run(timestampTable.filter(_.timestamp <= t1).result).futureValue is Seq(t1, t2)
+    runAction(timestampTable.filter(_.timestamp <= t1).result).futureValue is Seq(t1, t2)
   }
 
   trait Fixture extends DatabaseFixture with DBRunner {

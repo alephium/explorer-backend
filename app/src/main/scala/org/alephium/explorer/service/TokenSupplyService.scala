@@ -74,7 +74,7 @@ object TokenSupplyService {
       val offset = pagination.offset.toLong
       val limit  = pagination.limit.toLong
       val toDrop = offset * limit
-      run(
+      runAction(
         TokenSupplySchema.table
           .sortBy { _.timestamp.desc }
           .drop(toDrop)
@@ -91,7 +91,7 @@ object TokenSupplyService {
     }
 
     def getLatestTokenSupply(): Future[Option[TokenSupply]] = {
-      run(
+      runAction(
         TokenSupplySchema.table
           .sortBy { _.timestamp.desc }
           .result
@@ -134,7 +134,7 @@ object TokenSupplyService {
 
     @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
     private def findMinimumLatestBlockTime(): Future[Option[TimeStamp]] = {
-      run(
+      runAction(
         DBIOAction.sequence(
           chainIndexes.map {
             case (from, to) =>
@@ -184,7 +184,7 @@ object TokenSupplyService {
             .flatMap { latestTs =>
               val days = buildDaysRange(latestTs, mininumLatestBlockTime)
               foldFutures(days) { day =>
-                run(for {
+                runAction(for {
                   (total, circulating) <- computeTokenSupply(day)
                   _                    <- insert(TokenSupplyEntity(day, total, circulating))
                 } yield (()))
@@ -194,7 +194,7 @@ object TokenSupplyService {
     }
 
     private def initGenesisTokenSupply(): Future[TimeStamp] = {
-      run(for {
+      runAction(for {
         (total, circulating) <- computeTokenSupply(ALPH.LaunchTimestamp)
         _                    <- insert(TokenSupplyEntity(ALPH.LaunchTimestamp, total, circulating))
       } yield (ALPH.LaunchTimestamp))
@@ -205,7 +205,7 @@ object TokenSupplyService {
     }
 
     private def getLatestTimestamp(): Future[Option[TimeStamp]] = {
-      run(
+      runAction(
         TokenSupplySchema.table
           .sortBy { _.timestamp.desc }
           .map(_.timestamp)

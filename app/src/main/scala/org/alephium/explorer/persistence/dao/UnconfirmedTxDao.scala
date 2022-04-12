@@ -49,7 +49,7 @@ object UnconfirmedTxDao {
       with DBRunner {
 
     def get(hash: Transaction.Hash): Future[Option[UnconfirmedTransaction]] = {
-      run(for {
+      runAction(for {
         maybeTx <- UnconfirmedTxSchema.table.filter(_.hash === hash).result.headOption
         inputs  <- UInputSchema.table.filter(_.txHash === hash).result
         outputs <- UOutputSchema.table.filter(_.txHash === hash).result
@@ -81,11 +81,11 @@ object UnconfirmedTxDao {
     }
 
     def insertMany(utxs: Seq[UnconfirmedTransaction]): Future[Unit] = {
-      run(insertManyAction(utxs))
+      runAction(insertManyAction(utxs))
     }
 
     def listHashes(): Future[Seq[Transaction.Hash]] = {
-      run(UnconfirmedTxSchema.table.map(_.hash).result)
+      runAction(UnconfirmedTxSchema.table.map(_.hash).result)
     }
 
     private def removeManyAction(txs: Seq[Transaction.Hash]): DBActionW[Unit] = {
@@ -97,12 +97,12 @@ object UnconfirmedTxDao {
     }
 
     def removeMany(txs: Seq[Transaction.Hash]): Future[Unit] = {
-      run(removeManyAction(txs))
+      runAction(removeManyAction(txs))
     }
 
     def removeAndInsertMany(toRemove: Seq[Transaction.Hash],
                             toInsert: Seq[UnconfirmedTransaction]): Future[Unit] = {
-      run((for {
+      runAction((for {
         _ <- removeManyAction(toRemove)
         _ <- insertManyAction(toInsert)
       } yield ()).transactionally)

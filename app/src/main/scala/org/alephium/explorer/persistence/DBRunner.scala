@@ -26,7 +26,7 @@ trait DBRunner {
   val databaseConfig: DatabaseConfig[PostgresProfile]
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
-  def run[R, E <: Effect](action: DBAction[R, E])(
+  def runAction[R, E <: Effect](action: DBAction[R, E])(
       implicit executionContext: ExecutionContext): Future[R] =
     databaseConfig.db.run(action).recover {
       case error => throw new RuntimeException(error)

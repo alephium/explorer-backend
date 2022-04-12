@@ -61,29 +61,29 @@ object TransactionDao {
       }
 
     def get(hash: Transaction.Hash): Future[Option[Transaction]] =
-      run(getTransactionAction(hash))
+      runAction(getTransactionAction(hash))
 
     def getByAddress(address: Address, pagination: Pagination): Future[Seq[Transaction]] =
-      run(getTransactionsByAddress(address, pagination))
+      runAction(getTransactionsByAddress(address, pagination))
 
     def getByAddressSQL(address: Address, pagination: Pagination): Future[Seq[Transaction]] = {
-      run(getTransactionsByAddressSQL(address, pagination))
+      runAction(getTransactionsByAddressSQL(address, pagination))
     }
 
     def getNumberByAddress(address: Address): Future[Int] =
-      run(countAddressTransactions(address))
+      runAction(countAddressTransactions(address))
 
     def getNumberByAddressSQL(address: Address): Future[Int] =
-      run(countAddressTransactionsSQL(address)).map(_.headOption.getOrElse(0))
+      runAction(countAddressTransactionsSQL(address)).map(_.headOption.getOrElse(0))
 
     def getNumberByAddressSQLNoJoin(address: Address): Future[Int] =
-      run(countAddressTransactionsSQLNoJoin(address)).map(_.headOption.getOrElse(0))
+      runAction(countAddressTransactionsSQLNoJoin(address)).map(_.headOption.getOrElse(0))
 
     def getBalance(address: Address): Future[(U256, U256)] =
-      run(getBalanceAction(address))
+      runAction(getBalanceAction(address))
 
     def getBalanceSQL(address: Address): Future[(U256, U256)] =
-      run(getBalanceActionSQL(address))
+      runAction(getBalanceActionSQL(address))
 
     def getTotalNumber(): Future[Int] =
       cachedTxsNumber.get(mainTransactions)

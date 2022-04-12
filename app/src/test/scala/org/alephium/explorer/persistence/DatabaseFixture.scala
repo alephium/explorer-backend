@@ -25,7 +25,7 @@ import slick.jdbc.PostgresProfile
 
 import org.alephium.util.Duration
 
-trait DatabaseFixture {
+trait DatabaseFixture extends AutoCloseable {
 
   private val config = ConfigFactory
     .parseMap(
@@ -41,5 +41,8 @@ trait DatabaseFixture {
 
   Await.result(dbInitializer.dropTables(), Duration.ofSecondsUnsafe(10).asScala)
   Await.result(dbInitializer.createTables(), Duration.ofSecondsUnsafe(10).asScala)
+
+  def close(): Unit =
+    databaseConfig.db.close()
 
 }

@@ -47,10 +47,10 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val output3 = output(address, ALPH.alph(3), Some(TimeStamp.now().plusMinutesUnsafe(10)))
     val output4 = output(address, ALPH.alph(4), Some(TimeStamp.now().plusMinutesUnsafe(10)))
 
-    run(OutputSchema.table ++= Seq(output1, output2, output3, output4)).futureValue
+    runAction(OutputSchema.table ++= Seq(output1, output2, output3, output4)).futureValue
 
-    val (total, locked)       = run(queries.getBalanceAction(address)).futureValue
-    val (totalSQL, lockedSQL) = run(queries.getBalanceActionSQL(address)).futureValue
+    val (total, locked)       = runAction(queries.getBalanceAction(address)).futureValue
+    val (totalSQL, lockedSQL) = runAction(queries.getBalanceActionSQL(address)).futureValue
 
     total is ALPH.alph(10)
     locked is ALPH.alph(7)
@@ -65,11 +65,11 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val output2 = output(address, ALPH.alph(2), None)
     val input1  = input(output2.hint, output2.key)
 
-    run(OutputSchema.table ++= Seq(output1, output2)).futureValue
-    run(InputSchema.table += input1).futureValue
+    runAction(OutputSchema.table ++= Seq(output1, output2)).futureValue
+    runAction(InputSchema.table += input1).futureValue
 
-    val (total, _)    = run(queries.getBalanceAction(address)).futureValue
-    val (totalSQL, _) = run(queries.getBalanceActionSQL(address)).futureValue
+    val (total, _)    = runAction(queries.getBalanceAction(address)).futureValue
+    val (totalSQL, _) = runAction(queries.getBalanceActionSQL(address)).futureValue
 
     total is ALPH.alph(1)
     totalSQL is ALPH.alph(1)
@@ -87,12 +87,12 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
 
     val outputs = Seq(output1, output2, output3, output4)
     val inputs  = Seq(input1, input2, input3)
-    run(queries.insertAll(Seq.empty, outputs, inputs)).futureValue
-    run(queries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
+    runAction(queries.insertAll(Seq.empty, outputs, inputs)).futureValue
+    runAction(queries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
 
-    val total          = run(queries.countAddressTransactions(address)).futureValue
-    val totalSQL       = run(queries.countAddressTransactionsSQL(address)).futureValue.head
-    val totalSQLNoJoin = run(queries.countAddressTransactionsSQLNoJoin(address)).futureValue.head
+    val total          = runAction(queries.countAddressTransactions(address)).futureValue
+    val totalSQL       = runAction(queries.countAddressTransactionsSQL(address)).futureValue.head
+    val totalSQLNoJoin = runAction(queries.countAddressTransactionsSQLNoJoin(address)).futureValue.head
 
     //tx of output1, output2 and input1
     total is 3
@@ -111,18 +111,18 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val outputs = Seq(output1)
     val inputs  = Seq(input1, input2)
 
-    run(queries.insertAll(Seq.empty, outputs, inputs)).futureValue
+    runAction(queries.insertAll(Seq.empty, outputs, inputs)).futureValue
 
-    val inputsToUpdate = run(queries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
+    val inputsToUpdate = runAction(queries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
 
     inputsToUpdate is Seq(input2)
 
-    run(queries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 2
+    runAction(queries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 2
 
-    run(OutputSchema.table += output2).futureValue
-    run(insertTxPerAddressFromInput(inputsToUpdate.head)).futureValue is 1
+    runAction(OutputSchema.table += output2).futureValue
+    runAction(insertTxPerAddressFromInput(inputsToUpdate.head)).futureValue is 1
 
-    run(queries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 3
+    runAction(queries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 3
   }
 
   it should "get tx hashes by address" in new Fixture {
@@ -138,13 +138,13 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val outputs = Seq(output1, output2, output3, output4)
     val inputs  = Seq(input1, input2, input3)
 
-    run(queries.insertAll(Seq.empty, outputs, inputs)).futureValue
-    run(queries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
+    runAction(queries.insertAll(Seq.empty, outputs, inputs)).futureValue
+    runAction(queries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
 
-    val hashes    = run(queries.getTxHashesByAddressQuery((address, 0, 10)).result).futureValue
-    val hashesSQL = run(queries.getTxHashesByAddressQuerySQL(address, 0, 10)).futureValue
+    val hashes    = runAction(queries.getTxHashesByAddressQuery((address, 0, 10)).result).futureValue
+    val hashesSQL = runAction(queries.getTxHashesByAddressQuerySQL(address, 0, 10)).futureValue
     val hashesSQLNoJoin =
-      run(queries.getTxHashesByAddressQuerySQLNoJoin(address, 0, 10)).futureValue
+      runAction(queries.getTxHashesByAddressQuerySQLNoJoin(address, 0, 10)).futureValue
 
     val expected = Seq(
       (output1.txHash, output1.blockHash, output1.timestamp, 0),
@@ -169,8 +169,8 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val outputs = Seq(output1, output2, output3, output4)
     val inputs  = Seq(input1, input2)
 
-    run(OutputSchema.table ++= outputs).futureValue
-    run(InputSchema.table ++= inputs).futureValue
+    runAction(OutputSchema.table ++= outputs).futureValue
+    runAction(InputSchema.table ++= inputs).futureValue
 
     val txHashes = outputs.map(_.txHash)
 
@@ -191,8 +191,8 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
       res(output3, None)
     ).sortBy(_._1.toString)
 
-    run(outputsFromTxs(txHashes).result).futureValue.sortBy(_._1.toString) is expected
-    run(outputsFromTxsSQL(txHashes)).futureValue.sortBy(_._1.toString) is expected.toVector
+    runAction(outputsFromTxs(txHashes).result).futureValue.sortBy(_._1.toString) is expected
+    runAction(outputsFromTxsSQL(txHashes)).futureValue.sortBy(_._1.toString) is expected.toVector
   }
 
   it should "inputs for txs" in new Fixture {
@@ -207,8 +207,8 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val inputs  = Seq(input1, input2)
     val outputs = Seq(output1, output2)
 
-    run(OutputSchema.table ++= (outputs :+ output3)).futureValue
-    run(InputSchema.table ++= (inputs :+ input3)).futureValue
+    runAction(OutputSchema.table ++= (outputs :+ output3)).futureValue
+    runAction(InputSchema.table ++= (inputs :+ input3)).futureValue
 
     val txHashes = Seq(input1.txHash, input2.txHash)
 
@@ -224,8 +224,8 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
          output.amount)
     }
 
-    run(inputsFromTxs(txHashes).result).futureValue is expected
-    run(inputsFromTxsSQL(txHashes)).futureValue is expected.toVector
+    runAction(inputsFromTxs(txHashes).result).futureValue is expected
+    runAction(inputsFromTxsSQL(txHashes)).futureValue is expected.toVector
   }
 
   it should "get tx by address" in new Fixture {
@@ -241,8 +241,8 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val inputs       = Seq(input1, input2)
     val transactions = outputs.map(transaction)
 
-    run(queries.insertAll(transactions, outputs, inputs)).futureValue
-    run(queries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
+    runAction(queries.insertAll(transactions, outputs, inputs)).futureValue
+    runAction(queries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
 
     def tx(output: OutputEntity, spent: Option[Transaction.Hash], inputs: Seq[Input]) = {
       Transaction(
@@ -256,9 +256,9 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
       )
     }
 
-    val txs = run(queries.getTransactionsByAddress(address, Pagination.unsafe(0, 10))).futureValue
+    val txs = runAction(queries.getTransactionsByAddress(address, Pagination.unsafe(0, 10))).futureValue
     val txsSQL =
-      run(queries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue
+      runAction(queries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue
 
     val expected = Seq(
       tx(output1, None, Seq.empty),
@@ -295,11 +295,11 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val input1 = input(output1.hint, output1.key).copy(txHash = tx2.hash, blockHash = tx2.blockHash)
     val input2 = input(output1.hint, output1.key).copy(txHash = tx2.hash).copy(mainChain = false)
 
-    run(OutputSchema.table += output1).futureValue
-    run(InputSchema.table ++= Seq(input1, input2)).futureValue
-    run(TransactionSchema.table ++= Seq(txEntity1)).futureValue
+    runAction(OutputSchema.table += output1).futureValue
+    runAction(InputSchema.table ++= Seq(input1, input2)).futureValue
+    runAction(TransactionSchema.table ++= Seq(txEntity1)).futureValue
 
-    val tx = run(queries.getTransactionAction(tx1.hash)).futureValue.get
+    val tx = runAction(queries.getTransactionAction(tx1.hash)).futureValue.get
 
     tx.outputs.size is 1 // was 2 in v1.4.1
   }
@@ -307,24 +307,24 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
   it should "insert and ignore transactions" in new Fixture {
 
     forAll(Gen.listOf(updatedTransactionEntityGen())) { transactions =>
-      run(TransactionSchema.table.delete).futureValue
+      runAction(TransactionSchema.table.delete).futureValue
 
       val existingTransactions = transactions.map(_._1)
       val updatedTransactions  = transactions.map(_._2)
 
       //insert
-      run(queries.insertTransactions(existingTransactions)).futureValue is existingTransactions.size
-      run(TransactionSchema.table.result).futureValue should contain allElementsOf existingTransactions
+      runAction(queries.insertTransactions(existingTransactions)).futureValue is existingTransactions.size
+      runAction(TransactionSchema.table.result).futureValue should contain allElementsOf existingTransactions
 
       //ignore
-      run(queries.insertTransactions(updatedTransactions)).futureValue is 0
-      run(TransactionSchema.table.result).futureValue should contain allElementsOf existingTransactions
+      runAction(queries.insertTransactions(updatedTransactions)).futureValue is 0
+      runAction(TransactionSchema.table.result).futureValue should contain allElementsOf existingTransactions
     }
   }
 
   //https://github.com/alephium/explorer-backend/issues/174
   it should "return an empty list when not transactions are found - Isssue 174" in new Fixture {
-    run(queries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue is Seq.empty
+    runAction(queries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue is Seq.empty
   }
 
   it should "get total number of main transactions" in new Fixture {
@@ -333,9 +333,9 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     val tx2 = transactionEntityGen().sample.get.copy(mainChain = true)
     val tx3 = transactionEntityGen().sample.get.copy(mainChain = false)
 
-    run(TransactionSchema.table ++= Seq(tx1, tx2, tx3)).futureValue
+    runAction(TransactionSchema.table ++= Seq(tx1, tx2, tx3)).futureValue
 
-    val total = run(queries.mainTransactions.length.result).futureValue
+    val total = runAction(queries.mainTransactions.length.result).futureValue
     total is 2
   }
 

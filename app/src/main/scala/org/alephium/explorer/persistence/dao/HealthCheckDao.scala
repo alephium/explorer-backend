@@ -41,7 +41,7 @@ object HealthCheckDao {
       with StrictLogging {
 
     def healthCheck(): Future[Unit] = {
-      run(MTable.getTables).map(_ => ())
+      runAction(MTable.getTables).map(_ => ())
     }
   }
 }

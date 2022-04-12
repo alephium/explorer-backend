@@ -58,8 +58,8 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
         val outputQuery =
           OutputSchema.table.filter(_.blockHash === block.hash).map(_.mainChain).result
 
-        val inputs: Seq[Boolean]  = run(inputQuery).futureValue
-        val outputs: Seq[Boolean] = run(outputQuery).futureValue
+        val inputs: Seq[Boolean]  = runAction(inputQuery).futureValue
+        val outputs: Seq[Boolean] = runAction(outputQuery).futureValue
 
         inputs.size is block.inputs.size
         outputs.size is block.outputs.size
@@ -74,7 +74,7 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
 
       val blockheadersQuery =
         BlockHeaderSchema.table.filter(_.hash === block.hash).map(_.hash).result
-      val headerHash: Seq[BlockEntry.Hash] = run(blockheadersQuery).futureValue
+      val headerHash: Seq[BlockEntry.Hash] = runAction(blockheadersQuery).futureValue
       headerHash.size is 1
       headerHash.foreach(_.is(block.hash))
       block.transactions.nonEmpty is true
@@ -95,7 +95,7 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
 
       dbInputs
         .zip(queries)
-        .foreach { case (dbInput, query) => checkDuplicates(dbInput, run(query).futureValue) }
+        .foreach { case (dbInput, query) => checkDuplicates(dbInput, runAction(query).futureValue) }
     }
   }
 
@@ -108,12 +108,12 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
            arbitrary[Boolean]) {
       case (blocks, pageNum, pageLimit, reverse) =>
         //clear test data
-        run(BlockHeaderSchema.table.delete).futureValue
-        run(TransactionSchema.table.delete).futureValue
+        runAction(BlockHeaderSchema.table.delete).futureValue
+        runAction(TransactionSchema.table.delete).futureValue
 
         //create test data
-        run(BlockHeaderSchema.table ++= blocks.map(_._1)).futureValue
-        run(TransactionSchema.table ++= blocks.flatten(_._2)).futureValue
+        runAction(BlockHeaderSchema.table ++= blocks.map(_._1)).futureValue
+        runAction(TransactionSchema.table ++= blocks.flatten(_._2)).futureValue
 
         //Assert results returned by typed and SQL query are the same
         def runAssert(page: Pagination) = {
@@ -160,14 +160,14 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
                                                 chainTo   = to,
                                                 timestamp = now.plusMinutesUnsafe(6))
 
-    run(
+    runAction(
       LatestBlockSchema.table ++=
         chainIndexes.map {
           case (from, to) =>
             LatestBlock.fromEntity(blockEntityGen(from, to, None).sample.get).copy(timestamp = now)
         }).futureValue
 
-    run(BlockHeaderSchema.table ++= Seq(block1, block2, block3, block4)).futureValue
+    runAction(BlockHeaderSchema.table ++= Seq(block1, block2, block3, block4)).futureValue
 
     blockDao.getAverageBlockTime().futureValue.head is ((chainIndex, Duration.ofMinutesUnsafe(2)))
   }
@@ -199,7 +199,7 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
 
     forAll(entitiesGenerator) { blockEntities =>
       //clear existing data
-      run(BlockHeaderSchema.table.delete).futureValue
+      runAction(BlockHeaderSchema.table.delete).futureValue
 
       //insert new blockEntities and expect the cache to get invalided
       blockDao.insertAll(blockEntities).futureValue
@@ -235,7 +235,7 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
     forAll(entitiesGenerator, entitiesGenerator) {
       case (entities1, entities2) =>
         //clear existing data
-        run(BlockHeaderSchema.table.delete).futureValue
+        runAction(BlockHeaderSchema.table.delete).futureValue
 
         /** INSERT BATCH 1 - [[entities1]] */
         blockDao.insertAll(entities1).futureValue

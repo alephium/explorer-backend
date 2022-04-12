@@ -65,14 +65,14 @@ object HashrateService {
     }
 
     def get(from: TimeStamp, to: TimeStamp, intervalType: IntervalType): Future[Seq[Hashrate]] = {
-      run(getHashratesQuery(from, to, intervalType)).map(_.map {
+      runAction(getHashratesQuery(from, to, intervalType)).map(_.map {
         case (timestamp, hashrate) =>
           Hashrate(timestamp, hashrate)
       })
     }
 
     private def updateHashrates(): Future[Unit] = {
-      run(
+      runAction(
         for {
           hourlyTs <- findLatestHashrateAndStepBack(IntervalType.Hourly, computeHourlyStepBack)
           dailyTs  <- findLatestHashrateAndStepBack(IntervalType.Daily, computeDailyStepBack)
