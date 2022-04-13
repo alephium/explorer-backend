@@ -34,7 +34,13 @@ import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
-class TokenSupplyServiceSpec extends AlephiumSpec with ScalaFutures with Eventually {
+class TokenSupplyServiceSpec
+    extends AlephiumSpec
+    with DatabaseFixtureForEach
+    with DBRunner
+    with Generators
+    with ScalaFutures
+    with Eventually {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(50, Seconds))
 
@@ -139,7 +145,7 @@ class TokenSupplyServiceSpec extends AlephiumSpec with ScalaFutures with Eventua
     }
   }
 
-  trait Fixture extends DatabaseFixture with DBRunner with Generators {
+  trait Fixture {
 
     val now = TimeStamp.now()
 

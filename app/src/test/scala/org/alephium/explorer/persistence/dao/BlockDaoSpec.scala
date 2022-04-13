@@ -29,7 +29,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.api.{model, ApiModelCodec}
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.{BlockEntry, BlockEntryLite, GroupIndex, Pagination}
-import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
@@ -39,7 +39,13 @@ import org.alephium.json.Json._
 import org.alephium.protocol.model.ChainIndex
 import org.alephium.util.{Duration, TimeStamp}
 
-class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with Eventually {
+class BlockDaoSpec
+    extends AlephiumSpec
+    with DatabaseFixtureForEach
+    with DBRunner
+    with ScalaFutures
+    with Generators
+    with Eventually {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
@@ -270,7 +276,7 @@ class BlockDaoSpec extends AlephiumSpec with ScalaFutures with Generators with E
     }
   }
 
-  trait Fixture extends DatabaseFixture with DBRunner with ApiModelCodec {
+  trait Fixture extends ApiModelCodec {
     val blockflowFetchMaxAge: Duration = Duration.ofMinutesUnsafe(30)
 
     val blockDao = new BlockDao.Impl(groupNum, databaseConfig)

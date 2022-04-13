@@ -26,12 +26,18 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.{Hashrate, IntervalType}
-import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.queries.HashrateQueries
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.util._
 
-class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually {
+class HashrateServiceSpec
+    extends AlephiumSpec
+    with DatabaseFixtureForEach
+    with DBRunner
+    with Generators
+    with ScalaFutures
+    with Eventually {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
@@ -167,7 +173,7 @@ class HashrateServiceSpec extends AlephiumSpec with ScalaFutures with Eventually
     }
   }
 
-  trait Fixture extends HashrateQueries with DatabaseFixture with DBRunner with Generators {
+  trait Fixture extends HashrateQueries {
 
     val from = TimeStamp.zero
     val to   = TimeStamp.now()

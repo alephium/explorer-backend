@@ -24,17 +24,22 @@ import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
-import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.InputEntity
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.schema.InputSchema
 
-class InputQueriesSpec extends AlephiumSpec with ScalaFutures {
+class InputQueriesSpec
+    extends AlephiumSpec
+    with DatabaseFixtureForEach
+    with DBRunner
+    with Generators
+    with ScalaFutures {
 
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
-  it should "insert and ignore inputs" in new Fixture {
+  it should "insert and ignore inputs" in {
 
     def runTest(existingAndUpdated: Seq[(InputEntity, InputEntity)]) = {
       //fresh table
@@ -72,6 +77,4 @@ class InputQueriesSpec extends AlephiumSpec with ScalaFutures {
       .sample
       .foreach(runTest)
   }
-
-  trait Fixture extends DatabaseFixture with DBRunner with Generators
 }

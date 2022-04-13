@@ -26,7 +26,7 @@ import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.explorer.{AlephiumSpec, BlockHash, Generators}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.DatabaseFixture
+import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao, UnconfirmedTxDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.protocol.ALPH
@@ -38,6 +38,7 @@ import org.alephium.util.{TimeStamp, U256}
         "org.wartremover.warts.AsInstanceOf"))
 class TransactionServiceSpec
     extends AlephiumSpec
+    with DatabaseFixtureForEach
     with Generators
     with ScalaFutures
     with Eventually {
@@ -348,7 +349,7 @@ class TransactionServiceSpec
 
   }
 
-  trait Fixture extends DatabaseFixture {
+  trait Fixture {
     val blockDao: BlockDao                     = BlockDao(groupNum, databaseConfig)
     val transactionDao: TransactionDao         = TransactionDao(databaseConfig)
     val utransactionDao: UnconfirmedTxDao      = UnconfirmedTxDao(databaseConfig)

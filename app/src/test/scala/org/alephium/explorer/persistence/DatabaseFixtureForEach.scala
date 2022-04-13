@@ -16,19 +16,25 @@
 
 package org.alephium.explorer.persistence
 
-import scala.concurrent.{ExecutionContext, Future}
-
+import org.scalatest.{BeforeAndAfterEach, Suite}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
-import slick.jdbc.PostgresProfile.api._
 
-trait DBRunner {
-  def databaseConfig: DatabaseConfig[PostgresProfile]
+/**
+  * Creates and drops a new database connection for each test-case.
+  */
+trait DatabaseFixtureForEach extends BeforeAndAfterEach { this: Suite =>
 
-  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
-  def run[R, E <: Effect](action: DBAction[R, E])(
-      implicit executionContext: ExecutionContext): Future[R] =
-    databaseConfig.db.run(action).recover {
-      case error => throw new RuntimeException(error)
-    }
+  var databaseConfig: DatabaseConfig[PostgresProfile] = _
+
+  override def beforeEach(): Unit = {
+    super.beforeEach()
+    databaseConfig = DatabaseFixture.createDatabaseConfig()
+    DatabaseFixture.dropCreateTables(databaseConfig)
+  }
+
+  override def afterEach(): Unit = {
+    super.afterEach()
+    databaseConfig.db.close()
+  }
 }

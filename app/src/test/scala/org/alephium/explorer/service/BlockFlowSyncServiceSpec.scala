@@ -25,14 +25,19 @@ import org.scalatest.time.{Seconds, Span}
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.{AlephiumSpec, BlockHash, Generators}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.DatabaseFixture
+import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.protocol.model.{ChainIndex, CliqueId, NetworkId}
 import org.alephium.util.{AVector, Duration, Hex, TimeStamp}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
-class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Eventually {
+class BlockFlowSyncServiceSpec
+    extends AlephiumSpec
+    with DatabaseFixtureForEach
+    with Generators
+    with ScalaFutures
+    with Eventually {
   override implicit val patienceConfig = PatienceConfig(timeout = Span(50, Seconds))
 
   it should "build timestamp range" in new Fixture {
@@ -130,7 +135,7 @@ class BlockFlowSyncServiceSpec extends AlephiumSpec with ScalaFutures with Event
     databaseConfig.db.close
   }
 
-  trait Fixture extends DatabaseFixture with Generators {
+  trait Fixture {
 
     def t(l: Long)            = TimeStamp.unsafe(l)
     def s(l: Long)            = Duration.ofMillisUnsafe(l)
