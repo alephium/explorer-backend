@@ -25,7 +25,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators, Hash}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
@@ -33,7 +33,12 @@ import org.alephium.explorer.persistence.schema._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
-class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
+class TransactionQueriesSpec
+    extends AlephiumSpec
+    with DatabaseFixtureForEach
+    with DBRunner
+    with Generators
+    with ScalaFutures {
 
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
 
@@ -339,7 +344,7 @@ class TransactionQueriesSpec extends AlephiumSpec with ScalaFutures {
     total is 2
   }
 
-  trait Fixture extends DatabaseFixture with DBRunner with Generators {
+  trait Fixture {
 
     class Queries(implicit val executionContext: ExecutionContext) extends TransactionQueries
 

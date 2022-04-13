@@ -24,16 +24,21 @@ import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
-import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.queries.BlockDepQueries._
 import org.alephium.explorer.persistence.schema.BlockDepsSchema
 
-class BlockDepQueriesSpec extends AlephiumSpec with ScalaFutures {
+class BlockDepQueriesSpec
+    extends AlephiumSpec
+    with DatabaseFixtureForEach
+    with DBRunner
+    with Generators
+    with ScalaFutures {
 
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
-  it should "insert and ignore block_deps" in new Fixture {
+  it should "insert and ignore block_deps" in {
 
     forAll(Gen.listOf(blockDepUpdatedGen)) { deps =>
       //clean existing rows
@@ -52,5 +57,4 @@ class BlockDepQueriesSpec extends AlephiumSpec with ScalaFutures {
     }
   }
 
-  trait Fixture extends DatabaseFixture with DBRunner with Generators
 }

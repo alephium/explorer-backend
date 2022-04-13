@@ -25,7 +25,10 @@ import slick.jdbc.PostgresProfile
 
 import org.alephium.util.Duration
 
-trait DatabaseFixture {
+/**
+  * Implements functions for managing test database connections.
+  */
+object DatabaseFixture {
 
   private val config = ConfigFactory
     .parseMap(
@@ -34,12 +37,13 @@ trait DatabaseFixture {
       ).view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava)
     .withFallback(ConfigFactory.load())
 
-  val databaseConfig: DatabaseConfig[PostgresProfile] =
+  def createDatabaseConfig(): DatabaseConfig[PostgresProfile] =
     DatabaseConfig.forConfig[PostgresProfile]("db", config)
 
-  val dbInitializer: DBInitializer = new DBInitializer(databaseConfig)(ExecutionContext.global)
+  def dropCreateTables(databaseConfig: DatabaseConfig[PostgresProfile]) = {
+    val dbInitializer: DBInitializer = new DBInitializer(databaseConfig)(ExecutionContext.global)
 
-  Await.result(dbInitializer.dropTables(), Duration.ofSecondsUnsafe(10).asScala)
-  Await.result(dbInitializer.createTables(), Duration.ofSecondsUnsafe(10).asScala)
-
+    Await.result(dbInitializer.dropTables(), Duration.ofSecondsUnsafe(10).asScala)
+    Await.result(dbInitializer.createTables(), Duration.ofSecondsUnsafe(10).asScala)
+  }
 }

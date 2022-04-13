@@ -24,10 +24,15 @@ import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
-import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.schema._
 
-class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
+class BlockQueriesSpec
+    extends AlephiumSpec
+    with DatabaseFixtureForEach
+    with DBRunner
+    with Generators
+    with ScalaFutures {
 
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1000, Minutes))
@@ -97,7 +102,7 @@ class BlockQueriesSpec extends AlephiumSpec with ScalaFutures {
     }
   }
 
-  trait Fixture extends DatabaseFixture with DBRunner with Generators {
+  trait Fixture {
 
     class Queries(implicit val executionContext: ExecutionContext) extends BlockQueries
 

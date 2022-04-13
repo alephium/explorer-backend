@@ -26,13 +26,14 @@ import org.scalatest.time.{Minutes, Span}
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, UnconfirmedTransaction}
-import org.alephium.explorer.persistence.DatabaseFixture
+import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.UnconfirmedTxDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.util.{Duration, TimeStamp}
 
 class MempoolSyncServiceSpec
     extends AlephiumSpec
+    with DatabaseFixtureForEach
     with Generators
     with ScalaFutures
     with Eventually {
@@ -70,7 +71,7 @@ class MempoolSyncServiceSpec
     databaseConfig.db.close
   }
 
-  trait Fixture extends DatabaseFixture with Generators {
+  trait Fixture {
     implicit val executionContext: ExecutionContext = ExecutionContext.global
 
     val utxDao: UnconfirmedTxDao = UnconfirmedTxDao(databaseConfig)

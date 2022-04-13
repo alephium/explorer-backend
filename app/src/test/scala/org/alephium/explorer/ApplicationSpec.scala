@@ -38,7 +38,7 @@ import org.alephium.api.{ApiError, ApiModelCodec}
 import org.alephium.api.model
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.DatabaseFixture
+import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.util.TestUtils._
@@ -51,7 +51,7 @@ trait ApplicationSpec
     extends AlephiumSpec
     with ScalatestRouteTest
     with ScalaFutures
-    with DatabaseFixture
+    with DatabaseFixtureForAll
     with Generators
     with Eventually
     with UpickleCustomizationSupport {

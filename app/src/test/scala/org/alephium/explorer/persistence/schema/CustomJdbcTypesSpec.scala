@@ -24,14 +24,19 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
 import org.alephium.explorer.AlephiumSpec
-import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.protocol.ALPH
 import org.alephium.util._
 
-class CustomJdbcTypesSpec extends AlephiumSpec with ScalaFutures with Eventually {
+class CustomJdbcTypesSpec
+    extends AlephiumSpec
+    with DatabaseFixtureForEach
+    with DBRunner
+    with ScalaFutures
+    with Eventually {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
@@ -70,7 +75,7 @@ class CustomJdbcTypesSpec extends AlephiumSpec with ScalaFutures with Eventually
     run(timestampTable.filter(_.timestamp <= t1).result).futureValue is Seq(t1, t2)
   }
 
-  trait Fixture extends DatabaseFixture with DBRunner {
+  trait Fixture {
 
     def ts(str: String): TimeStamp = TimeStamp.unsafe(java.time.Instant.parse(str).toEpochMilli)
 

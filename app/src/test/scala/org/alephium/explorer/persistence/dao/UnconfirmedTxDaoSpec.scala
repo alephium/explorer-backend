@@ -23,15 +23,19 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.AlephiumSpec
-import org.alephium.explorer.Generators
+import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.Transaction
-import org.alephium.explorer.persistence.DatabaseFixture
-import org.alephium.explorer.persistence.DBRunner
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
-class UnconfirmedTxDaoSpec extends AlephiumSpec with ScalaFutures with Generators with Eventually {
+class UnconfirmedTxDaoSpec
+    extends AlephiumSpec
+    with DatabaseFixtureForEach
+    with DBRunner
+    with ScalaFutures
+    with Generators
+    with Eventually {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
@@ -89,7 +93,7 @@ class UnconfirmedTxDaoSpec extends AlephiumSpec with ScalaFutures with Generator
     }
   }
 
-  trait Fixture extends DatabaseFixture with DBRunner {
+  trait Fixture {
     val utxDao = UnconfirmedTxDao(databaseConfig)
   }
 }
