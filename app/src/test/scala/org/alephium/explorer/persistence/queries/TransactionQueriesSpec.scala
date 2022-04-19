@@ -368,7 +368,8 @@ class TransactionQueriesSpec
         true,
         lockTime,
         0,
-        0
+        0,
+        None
       )
 
     def input(hint: Int, outputRefKey: Hash): InputEntity =

@@ -113,17 +113,18 @@ class AddressReadState(val db: DBExecutor)
     val timestamp = TimeStamp.now()
 
     OutputEntity(
-      blockHash = blockHash,
-      txHash    = txHash,
-      timestamp = timestamp,
-      hint      = Random.nextInt(),
-      key       = Hash.generate,
-      amount    = ALPH.alph(1),
-      address   = address,
-      mainChain = true,
-      lockTime  = None,
-      order     = 0,
-      txOrder   = 0
+      blockHash      = blockHash,
+      txHash         = txHash,
+      timestamp      = timestamp,
+      hint           = Random.nextInt(),
+      key            = Hash.generate,
+      amount         = ALPH.alph(1),
+      address        = address,
+      mainChain      = true,
+      lockTime       = None,
+      order          = 0,
+      txOrder        = 0,
+      spentFinalized = None
     )
   }
 

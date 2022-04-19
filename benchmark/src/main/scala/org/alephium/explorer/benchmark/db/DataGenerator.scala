@@ -64,17 +64,18 @@ object DataGenerator {
     transactions.zipWithIndex map {
       case (transaction, order) =>
         OutputEntity(
-          blockHash = transaction.blockHash,
-          txHash    = transaction.hash,
-          timestamp = transaction.timestamp,
-          hint      = Random.nextInt(1000),
-          key       = Hash.generate,
-          amount    = U256.unsafe(Random.nextInt(100)),
-          address   = Address.unsafe(Random.alphanumeric.take(10).mkString),
-          mainChain = transaction.mainChain,
-          lockTime  = Some(TimeStamp.now()),
-          order     = order,
-          txOrder   = order
+          blockHash      = transaction.blockHash,
+          txHash         = transaction.hash,
+          timestamp      = transaction.timestamp,
+          hint           = Random.nextInt(1000),
+          key            = Hash.generate,
+          amount         = U256.unsafe(Random.nextInt(100)),
+          address        = Address.unsafe(Random.alphanumeric.take(10).mkString),
+          mainChain      = transaction.mainChain,
+          lockTime       = Some(TimeStamp.now()),
+          order          = order,
+          txOrder        = order,
+          spentFinalized = None
         )
     }
 

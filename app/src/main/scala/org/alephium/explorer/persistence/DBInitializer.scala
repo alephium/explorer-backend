@@ -80,6 +80,7 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
       _ <- InputSchema.createMainChainIndex
       _ <- OutputSchema.createMainChainIndex
       _ <- TransactionPerAddressSchema.createMainChainIndex
+      _ <- OutputSchema.createNonSpentIndex
     } yield ())
   }
 
