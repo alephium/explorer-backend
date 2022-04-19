@@ -369,28 +369,29 @@ trait TransactionQueries extends StrictLogging {
                   gasPrice)
     }
 
-  def getBalanceQuerySQL(address: Address): DBActionSR[(U256, Option[TimeStamp])] = {
+  def getBalanceQueryDEPRECATED(address: Address): DBActionSR[(U256, Option[TimeStamp])] = {
     sql"""
         SELECT outputs.amount, outputs.lock_time
         FROM outputs
-        LEFT JOIN inputs ON outputs.key = inputs.output_ref_key
-        WHERE outputs.main_chain = true AND outputs.address = $address AND inputs.block_hash IS NULL
+        LEFT JOIN inputs
+        ON outputs.key = inputs.output_ref_key
+        WHERE outputs.main_chain = true
+        AND outputs.address = $address
+        AND inputs.block_hash IS NULL
       """.as[(U256, Option[TimeStamp])]
   }
 
-  val getBalanceQuery = Compiled { address: Rep[Address] =>
-    mainOutputs
-      .filter(output => output.address === address)
-      .joinLeft(mainInputs)
-      .on(_.key === _.outputRefKey)
-      .filter(_._2.isEmpty)
-      .map { case (output, _) => (output.amount, output.lockTime) }
-  }
-
-  def getBalanceAction(address: Address): DBActionR[(U256, U256)] = {
-    getBalanceQuery(address).result.map { outputs =>
-      sumBalance(outputs)
-    }
+  def getBalanceQuery(address: Address): DBActionSR[(U256, Option[TimeStamp])] = {
+    sql"""
+      SELECT outputs.amount, outputs.lock_time
+      FROM outputs
+      LEFT JOIN inputs
+      ON outputs.key = inputs.output_ref_key
+      WHERE outputs.spent_finalized IS NULL
+      AND outputs.main_chain = true
+      AND outputs.address = $address
+      AND inputs.block_hash IS NULL;
+    """.as[(U256, Option[TimeStamp])]
   }
 
   private def sumBalance(outputs: Seq[(U256, Option[TimeStamp])]): (U256, U256) = {
@@ -407,8 +408,12 @@ trait TransactionQueries extends StrictLogging {
     }
   }
 
-  def getBalanceActionSQL(address: Address): DBActionR[(U256, U256)] = {
-    getBalanceQuerySQL(address).map(sumBalance)
+  def getBalanceActionDEPRECATED(address: Address): DBActionR[(U256, U256)] = {
+    getBalanceQueryDEPRECATED(address).map(sumBalance)
+  }
+
+  def getBalanceAction(address: Address): DBActionR[(U256, U256)] = {
+    getBalanceQuery(address).map(sumBalance)
   }
 
   // switch logger.trace when we can disable debugging mode

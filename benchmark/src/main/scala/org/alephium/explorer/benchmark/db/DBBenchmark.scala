@@ -154,16 +154,17 @@ class DBBenchmark {
   /**
     * Address benchmarks
     */
+
   @Benchmark
-  def getBalanceQuery(state: Address_ReadState): Unit = {
+  def getBalance(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(state.queries.getBalanceQuery(state.address).result, requestTimeout)
+      state.db.runNow(state.queries.getBalanceQuery(state.address), requestTimeout)
   }
 
   @Benchmark
-  def getBalanceSQL(state: Address_ReadState): Unit = {
+  def getBalanceDEPRECATED(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(state.queries.getBalanceQuerySQL(state.address), requestTimeout)
+      state.db.runNow(state.queries.getBalanceQueryDEPRECATED(state.address), requestTimeout)
   }
 
   @Benchmark
@@ -213,7 +214,7 @@ class DBBenchmark {
     implicit val ec: ExecutionContext = ExecutionContext.global
 
     val _ = Await.result(for {
-      _ <- state.dao.getBalanceSQL(state.address)
+      _ <- state.dao.getBalance(state.address)
       _ <- state.dao.getNumberByAddressSQL(state.address)
     } yield (), requestTimeout)
   }
@@ -223,7 +224,7 @@ class DBBenchmark {
     implicit val ec: ExecutionContext = ExecutionContext.global
 
     val _ = Await.result(for {
-      _ <- state.dao.getBalanceSQL(state.address)
+      _ <- state.dao.getBalance(state.address)
       _ <- state.dao.getNumberByAddressSQLNoJoin(state.address)
     } yield (), requestTimeout)
   }
