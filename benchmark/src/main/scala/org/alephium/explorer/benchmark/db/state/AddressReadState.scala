@@ -29,12 +29,13 @@ import slick.jdbc.PostgresProfile
 import org.alephium.crypto.Blake2b
 import org.alephium.explorer.{BlockHash, Hash}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.benchmark.db.{DBConnectionPool, DBExecutor}
+import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.service.FinalizerService
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Base58, TimeStamp, U256}
 
@@ -49,7 +50,7 @@ class Queries(val config: DatabaseConfig[PostgresProfile])(
 // scalastyle:off method.length
 @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
 class AddressReadState(val db: DBExecutor)
-    extends ReadBenchmarkState[OutputEntity](testDataCount = 1000, db = db)
+    extends ReadBenchmarkState[OutputEntity](testDataCount = 4000, db = db)
     with TransactionQueries {
 
   val ec: ExecutionContext = ExecutionContext.global
@@ -175,6 +176,7 @@ class AddressReadState(val db: DBExecutor)
     val _ = db.dropTableIfExists(InputSchema.table)
     val _ = db.dropTableIfExists(OutputSchema.table)
     val _ = db.dropTableIfExists(TransactionPerAddressSchema.table)
+    val _ = db.dropTableIfExists(TempSpentSchema.table)
 
     val createTable =
       BlockHeaderSchema.table.schema.create
@@ -182,11 +184,13 @@ class AddressReadState(val db: DBExecutor)
         .andThen(InputSchema.table.schema.create)
         .andThen(OutputSchema.table.schema.create)
         .andThen(TransactionPerAddressSchema.table.schema.create)
+        .andThen(TempSpentSchema.table.schema.create)
         .andThen(BlockHeaderSchema.createBlockHeadersIndexesSQL())
         .andThen(TransactionSchema.createMainChainIndex)
         .andThen(InputSchema.createMainChainIndex)
         .andThen(OutputSchema.createMainChainIndex)
         .andThen(TransactionPerAddressSchema.createMainChainIndex)
+        .andThen(OutputSchema.createNonSpentIndex)
 
     val _ = db.runNow(
       action  = createTable,
@@ -197,6 +201,9 @@ class AddressReadState(val db: DBExecutor)
     blocks.sliding(10000).foreach { bs =>
       Await.result(blockDao.insertAll(bs.toSeq), batchWriteTimeout)
     }
+
+    val _ =
+      db.runNow(FinalizerService.finalizeOutputs(DataGenerator.timestampMaxValue), requestTimeout)
 
     logger.info("Persisting data complete")
   }

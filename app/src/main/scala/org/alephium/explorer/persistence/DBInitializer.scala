@@ -28,6 +28,7 @@ import slick.jdbc.meta.MTable
 import org.alephium.explorer.AnyOps
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.service.FinalizerService
 
 class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
     implicit val executionContext: ExecutionContext)
@@ -55,7 +56,17 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
       TempSpentSchema.table
     )
 
-  def createTables(): Future[Unit] = {
+  def initialize(): Future[Unit] = {
+    for {
+      _ <- createTables()
+      _ <- Migrations.migrate(databaseConfig)
+      _ <- createIndexes()
+      _ <- makeUpdates()
+    } yield ()
+  }
+
+  private def createTables(): Future[Unit] = {
+    logger.info("Create Tables")
     //TODO Look for something like https://flywaydb.org/ to manage schemas
     val existingTables = run(MTable.getTables)
     existingTables
@@ -70,10 +81,11 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
           run(createIfNotExist)
         })
       }
-      .flatMap(_ => createIndexes())
+      .map(_ => ())
   }
 
   private def createIndexes(): Future[Unit] = {
+    logger.info("Create Indexes")
     run(for {
       _ <- BlockHeaderSchema.createBlockHeadersIndexesSQL()
       _ <- TransactionSchema.createMainChainIndex
@@ -82,6 +94,11 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
       _ <- TransactionPerAddressSchema.createMainChainIndex
       _ <- OutputSchema.createNonSpentIndex
     } yield ())
+  }
+
+  private def makeUpdates(): Future[Unit] = {
+    logger.info("Updating database (might take long)")
+    run(FinalizerService.finalizeOutputs(FinalizerService.finalizationTime))
   }
 
   def dropTables(): Future[Unit] = {

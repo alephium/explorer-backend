@@ -70,6 +70,9 @@ class Application(
   val tokenSupplyService: TokenSupplyService =
     TokenSupplyService(syncPeriod = Duration.ofMinutesUnsafe(1), databaseConfig, groupNum)
 
+  val finalizerService: FinalizerService =
+    FinalizerService(syncPeriod = Duration.ofMinutesUnsafe(10), databaseConfig)
+
   val blockService: BlockService             = BlockService(blockDao)
   val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
 
@@ -103,6 +106,7 @@ class Application(
       _ <- mempoolSyncService.start(peers)
       _ <- tokenSupplyService.start()
       _ <- hashrateService.start()
+      _ <- finalizerService.start()
     } yield ()
   }
 

@@ -44,6 +44,6 @@ object DatabaseFixture {
     val dbInitializer: DBInitializer = new DBInitializer(databaseConfig)(ExecutionContext.global)
 
     Await.result(dbInitializer.dropTables(), Duration.ofSecondsUnsafe(10).asScala)
-    Await.result(dbInitializer.createTables(), Duration.ofSecondsUnsafe(10).asScala)
+    Await.result(dbInitializer.initialize(), Duration.ofSecondsUnsafe(10).asScala)
   }
 }

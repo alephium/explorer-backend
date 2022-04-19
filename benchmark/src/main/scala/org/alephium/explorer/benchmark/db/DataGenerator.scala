@@ -42,6 +42,8 @@ import org.alephium.util.{TimeStamp, U256}
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 object DataGenerator {
 
+  val timestampMaxValue: TimeStamp = TimeStamp.unsafe(253370764800000L) //Jan 01 9999 00:00:00
+
   def genTransactions(count: Int                 = 10,
                       blockHash: BlockEntry.Hash = new BlockEntry.Hash(BlockHash.generate),
                       blockTimestamp: TimeStamp  = TimeStamp.now(),
