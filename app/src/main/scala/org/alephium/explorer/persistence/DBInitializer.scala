@@ -51,7 +51,8 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
       LatestBlockSchema.table,
       HashrateSchema.table,
       TokenSupplySchema.table,
-      TransactionPerAddressSchema.table
+      TransactionPerAddressSchema.table,
+      TempSpentSchema.table
     )
 
   def createTables(): Future[Unit] = {
