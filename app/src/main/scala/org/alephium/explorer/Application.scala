@@ -106,11 +106,30 @@ class Application(
     } yield ()
   }
 
+  private def startReadWrite(): Future[Unit] = {
+    if (!readOnly) {
+      for {
+        _ <- dbInitializer.initialize()
+        _ <- if (readOnly) Future.successful(()) else startSyncService()
+      } yield ()
+
+    } else {
+      Future.successful(())
+    }
+  }
+
+  private def stopReadWrite(): Future[Unit] = {
+    if (!readOnly) {
+      blockFlowSyncService.stop()
+    } else {
+      Future.successful(())
+    }
+  }
+
   def start: Future[Unit] = {
     for {
       _       <- healthCheckDao.healthCheck()
-      _       <- dbInitializer.createTables()
-      _       <- if (readOnly) Future.successful(()) else startSyncService()
+      _       <- startReadWrite()
       binding <- Http().newServerAt(host, port).bindFlow(server.route)
     } yield {
       sideEffect(bindingPromise.success(binding))
@@ -120,7 +139,7 @@ class Application(
 
   def stop: Future[Unit] =
     for {
-      _ <- if (!readOnly) blockFlowSyncService.stop() else Future.successful(())
+      _ <- stopReadWrite()
       _ <- bindingPromise.future.flatMap(_.unbind())
     } yield {
       logger.info("Application stopped")
