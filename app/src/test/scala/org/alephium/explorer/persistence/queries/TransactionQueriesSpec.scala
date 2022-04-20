@@ -30,6 +30,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.service.FinalizerService
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
@@ -79,6 +80,16 @@ class TransactionQueriesSpec
 
     total is ALPH.alph(1)
     totalDEPRECATED is ALPH.alph(1)
+
+    val from = TimeStamp.zero
+    val to   = timestampMaxValue
+    FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from), databaseConfig).futureValue
+
+    val (totalFinalized, _)           = run(queries.getBalanceAction(address)).futureValue
+    val (totalFinalizedDEPRECATED, _) = run(queries.getBalanceActionDEPRECATED(address)).futureValue
+
+    totalFinalized is ALPH.alph(1)
+    totalFinalizedDEPRECATED is ALPH.alph(1)
   }
 
   it should "txs count" in new Fixture {

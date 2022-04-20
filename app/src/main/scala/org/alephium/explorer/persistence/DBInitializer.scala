@@ -29,7 +29,6 @@ import org.alephium.explorer.AnyOps
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.FinalizerService
-import org.alephium.protocol.ALPH
 
 class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
     implicit val executionContext: ExecutionContext)
@@ -99,7 +98,7 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
 
   private def makeUpdates(): Future[Unit] = {
     logger.info("Updating database (might take long)")
-    run(FinalizerService.finalizeOutputs(ALPH.LaunchTimestamp, FinalizerService.finalizationTime))
+    FinalizerService.finalizeOutputs(databaseConfig)
   }
 
   def dropTables(): Future[Unit] = {
@@ -115,5 +114,6 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
 
 object DBInitializer {
   def apply(config: DatabaseConfig[PostgresProfile])(
-      implicit executionContext: ExecutionContext): DBInitializer = new DBInitializer(config)
+      implicit executionContext: ExecutionContext): DBInitializer =
+    new DBInitializer(config)
 }

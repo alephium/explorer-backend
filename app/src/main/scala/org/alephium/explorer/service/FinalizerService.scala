@@ -24,9 +24,12 @@ import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence._
-import org.alephium.explorer.persistence.schema.CustomSetParameter.TimeStampSetParameter
-import org.alephium.protocol.ALPH
+import org.alephium.explorer.persistence.model.AppState
+import org.alephium.explorer.persistence.schema.AppStateSchema
+import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.util.{Duration, TimeStamp}
 
 /*
@@ -40,7 +43,7 @@ object FinalizerService extends StrictLogging {
   // scalastyle:off magic.number
   val finalizationDuration: Duration = Duration.ofSecondsUnsafe(6500)
   def finalizationTime: TimeStamp    = TimeStamp.now().minusUnsafe(finalizationDuration)
-  val batchSize: Int                 = 1000
+  def rangeStep: Duration            = Duration.ofHoursUnsafe(24)
   // scalastyle:on magic.number
 
   def apply(syncPeriod: Duration, databaseConfig: DatabaseConfig[PostgresProfile])(
@@ -54,74 +57,96 @@ object FinalizerService extends StrictLogging {
 
     override def syncOnce(): Future[Unit] = {
       logger.debug("Finalizing")
-      run(finalizeOutputs(ALPH.LaunchTimestamp, finalizationTime))
+      finalizeOutputs(databaseConfig)
     }
   }
 
-  def finalizeOutputs(from: TimeStamp, to: TimeStamp)(
-      implicit executionContext: ExecutionContext): DBActionR[Unit] = {
-    for {
-      toUpdate <- updateSpentTable(from, to)
-      _ = logger.debug(s"$toUpdate outputs to update")
-      _ <- updateSpentOutput(toUpdate)
-    } yield {
-      logger.debug(s"Outputs finalized")
+  def finalizeOutputs(databaseConfig: DatabaseConfig[PostgresProfile])(
+      implicit executionContext: ExecutionContext): Future[Unit] = {
+    DBRunner.run(databaseConfig)(getStartEndTime()).flatMap {
+      case Some((start, end)) =>
+        finalizeOutputsWith(start, end, rangeStep, databaseConfig)
+      case None =>
+        Future.successful(())
     }
   }
 
-  def updateSpentTable(from: TimeStamp, to: TimeStamp): DBActionR[Int] = {
-    sqlu"""
-  INSERT INTO temp_spent
-   SELECT ROW_NUMBER() OVER(ORDER BY key), o.key, i.tx_hash
-    FROM outputs o
-    INNER JOIN inputs i
-    ON o.key = i.output_ref_key
-    WHERE o.spent_finalized IS NULL
-    AND o.main_chain=true
-    AND i.main_chain=true
-    AND i.block_timestamp >= $from
-    AND i.block_timestamp < $to;
-
-    """
+  def finalizeOutputsWith(start: TimeStamp,
+                          end: TimeStamp,
+                          step: Duration,
+                          databaseConfig: DatabaseConfig[PostgresProfile])(
+      implicit executionContext: ExecutionContext): Future[Unit] = {
+    var i = 0
+    logger.debug(s"Updating outputs")
+    val timeRanges =
+      BlockFlowSyncService.buildTimestampRange(start, end, step)
+    foldFutures(timeRanges) {
+      case (from, to) =>
+        DBRunner
+          .run(databaseConfig)(
+            for {
+              nb <- updateOutputs(from, to)
+              _  <- updateAppState(to)
+            } yield nb
+          )
+          .map { nb =>
+            i = i + nb
+            logger.debug(s"$i outputs updated")
+          }
+    }.map(_ => logger.debug(s"Outputs updated"))
   }
 
-  /*
-   * Update `spent_finalized` field
-   * The SQL Procedure would be the preferd solution, but is not used now as we can't get the logging working when running from the scala app,
-   */
-  private def updateSpentOutput(totalRecords: Int)(
-      implicit executionContext: ExecutionContext): DBActionR[Unit] = {
-    if (totalRecords > 0) {
-      logger.info(s"Updating $totalRecords outputs")
-      for {
-        _ <- updateLoop(totalRecords, 0)
-        _ <- sqlu"""TRUNCATE TABLE temp_spent"""
-      } yield (())
-    } else {
-      DBIOAction.successful(())
-    }
-  }
-
-  private def updateLoop(totalRecords: Int, counter: Int)(
-      implicit executionContext: ExecutionContext): DBActionR[Int] = {
-    if (counter <= totalRecords) {
-      update(counter, totalRecords)
-    } else {
-      DBIOAction.successful(0)
-    }
-  }
-
-  private def update(counter: Int, totalRecords: Int)(
-      implicit executionContext: ExecutionContext): DBActionR[Int] = {
-    logger.info(s"Updating $counter/$totalRecords")
+  private def updateOutputs(from: TimeStamp, to: TimeStamp): DBActionR[Int] = {
     sqlu"""
       UPDATE outputs o
-      SET spent_finalized = ts.tx_hash
-      FROM temp_spent ts
-      WHERE ts.key = o.key
-      AND ts.row_number > $counter AND ts.row_number <= $counter+#$batchSize
-    """.flatMap { _ =>
-      updateLoop(totalRecords, counter + batchSize)
-    }
+      SET spent_finalized = i.tx_hash
+      FROM inputs i
+      WHERE i.output_ref_key = o.key
+      AND o.main_chain=true
+      AND i.main_chain=true
+      AND i.block_timestamp >= $from
+      AND i.block_timestamp < $to;
+      """
+  }
+
+  def getStartEndTime()(
+      implicit executionContext: ExecutionContext): DBActionR[Option[(TimeStamp, TimeStamp)]] = {
+    getMaxInputsTs.flatMap(_.headOption match {
+      case None =>
+        //No input in db
+        DBIOAction.successful(None)
+      case Some(_end) =>
+        val ft  = finalizationTime
+        val end = if (_end.isBefore(ft)) _end else ft
+        getAppState.flatMap(_.headOption match {
+          case None =>
+            //No last_finalized_input_time in app_state
+            getMinInputsTs.map(_.headOption.map(start => (start, end)))
+          case Some(appState) =>
+            DBIOAction.successful(Some((appState.value, end)))
+        })
+    })
+  }
+
+  private val getMinInputsTs: DBActionSR[TimeStamp] = {
+    sql"""
+    SELECT MIN(block_timestamp) FROM inputs WHERE main_chain = true
+    """.as[TimeStamp]
+  }
+
+  private val getMaxInputsTs: DBActionSR[TimeStamp] = {
+    sql"""
+    SELECT MAX(block_timestamp) FROM inputs WHERE main_chain = true
+    """.as[TimeStamp]
+  }
+
+  private val getAppState: DBActionSR[AppState.Time] = {
+    sql"""
+    SELECT value FROM app_state where key = 'last_finalized_input_time'
+    """.as[AppState.Time]
+  }
+
+  private def updateAppState(time: TimeStamp) = {
+    AppStateSchema.table.insertOrUpdate(AppState("last_finalized_input_time", AppState.Time(time)))
   }
 }

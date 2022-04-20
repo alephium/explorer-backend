@@ -202,10 +202,11 @@ class AddressReadState(val db: DBExecutor)
       Await.result(blockDao.insertAll(bs.toSeq), batchWriteTimeout)
     }
 
+    val from = ALPH.LaunchTimestamp
+    val to   = DataGenerator.timestampMaxValue
     val _ =
-      db.runNow(
-        FinalizerService.finalizeOutputs(ALPH.LaunchTimestamp, DataGenerator.timestampMaxValue),
-        requestTimeout)
+      Await.result(FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from), db.config),
+                   batchWriteTimeout)
 
     logger.info("Persisting data complete")
   }
