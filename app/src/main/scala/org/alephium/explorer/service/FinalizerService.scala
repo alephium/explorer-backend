@@ -43,7 +43,7 @@ object FinalizerService extends StrictLogging {
   // scalastyle:off magic.number
   val finalizationDuration: Duration = Duration.ofSecondsUnsafe(6500)
   def finalizationTime: TimeStamp    = TimeStamp.now().minusUnsafe(finalizationDuration)
-  private val rangeStep              = Duration.ofMinutesUnsafe(60)
+  private val rangeStep              = Duration.ofMinutesUnsafe(60 * 24)
   // scalastyle:on magic.number
 
   def apply(syncPeriod: Duration, databaseConfig: DatabaseConfig[PostgresProfile])(
@@ -61,20 +61,25 @@ object FinalizerService extends StrictLogging {
     }
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
   def finalizeOutputs(from: TimeStamp,
                       to: TimeStamp,
                       databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit executionContext: ExecutionContext): Future[Unit] = {
     var i = 0
-    DBRunner.run(databaseConfig)(getMinInputsTs()).flatMap { mins =>
+    DBRunner.run(databaseConfig)(getLatestFinalizedTime()).flatMap { startingTs =>
+      println(s"${Console.RED}${Console.BOLD}*** startingTs ***\n\t${Console.RESET}${startingTs}")
       logger.debug(s"Updating outputs")
-      val min        = mins.head
-      val timeRanges = BlockFlowSyncService.buildTimestampRange(min, finalizationTime, rangeStep)
+      val timeRanges =
+        BlockFlowSyncService.buildTimestampRange(startingTs, finalizationTime, rangeStep)
       foldFutures(timeRanges) {
         case (from, to) =>
           DBRunner
-            .run(databaseConfig)(updateOutputs(from, to))
+            .run(databaseConfig)(
+              for {
+                nb <- updateOutputs(from, to)
+                _  <- updateAppState(to)
+              } yield nb
+            )
             .map { nb =>
               i = i + nb
               logger.debug(s"$i outputs updated")
@@ -83,10 +88,44 @@ object FinalizerService extends StrictLogging {
     }
   }
 
-  def getMinInputsTs(): DBActionSR[TimeStamp] = {
+  @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
+  def getLatestFinalizedTime()(
+      implicit executionContext: ExecutionContext): DBActionR[TimeStamp] = {
+    getAppState.flatMap { appState =>
+      if (appState.isEmpty) {
+        getMinInputsTs.map(_.head).flatMap { ts =>
+          initAppState(ts).map(_ => ts)
+        }
+      } else {
+        DBIOAction.successful(appState.head)
+      }
+    }
+  }
+
+  val getMinInputsTs: DBActionSR[TimeStamp] = {
     sql"""
     SELECT MIN(block_timestamp) FROM inputs
     """.as[TimeStamp]
+  }
+
+  val getAppState: DBActionSR[TimeStamp] = {
+    sql"""
+    SELECT input_finalized_time FROM app_state
+    """.as[TimeStamp]
+  }
+
+  def initAppState(time: TimeStamp): DBActionR[Int] = {
+    sqlu"""
+    INSERT INTO app_state (input_finalized_time)
+    VALUES ($time)
+    """
+  }
+
+  def updateAppState(time: TimeStamp): DBActionR[Int] = {
+    sqlu"""
+    UPDATE app_state
+    SET input_finalized_time = $time
+    """
   }
 
   def updateOutputs(from: TimeStamp, to: TimeStamp): DBActionR[Int] = {

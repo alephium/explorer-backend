@@ -16,28 +16,21 @@
 
 package org.alephium.explorer.persistence.schema
 
-import java.math.BigInteger
-
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, ProvenShape}
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.Transaction
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.util.TimeStamp
 
-object TempSpentSchema extends SchemaMainChain[(BigInteger, Hash, Transaction.Hash)]("temp_spent") {
+object AppStateSchema extends SchemaMainChain[TimeStamp]("app_state") {
 
-  class Spents(tag: Tag) extends Table[(BigInteger, Hash, Transaction.Hash)](tag, name) {
-    def rowNumber: Rep[BigInteger]    = column[BigInteger]("row_number")
-    def key: Rep[Hash]                = column[Hash]("key", O.SqlType("BYTEA"))
-    def txHash: Rep[Transaction.Hash] = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
+  class AppState(tag: Tag) extends Table[TimeStamp](tag, name) {
+    def finalized: Rep[TimeStamp] = column[TimeStamp]("input_finalized_time")
 
-    def keyIdx: Index       = index("temp_spent_key_idx", key)
-    def rowNumberIdx: Index = index("temp_spent_row_number_idx", rowNumber)
-
-    def * : ProvenShape[(BigInteger, Hash, Transaction.Hash)] = (rowNumber, key, txHash)
-
+    def * : ProvenShape[TimeStamp] = (finalized)
   }
 
-  val table: TableQuery[Spents] = TableQuery[Spents]
+  val table: TableQuery[AppState] = TableQuery[AppState]
 }
