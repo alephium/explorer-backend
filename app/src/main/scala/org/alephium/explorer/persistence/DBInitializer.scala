@@ -54,7 +54,7 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
       HashrateSchema.table,
       TokenSupplySchema.table,
       TransactionPerAddressSchema.table,
-      TempSpentSchema.table
+      AppStateSchema.table
     )
 
   def initialize(): Future[Unit] = {

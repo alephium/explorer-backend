@@ -23,6 +23,7 @@ import slick.jdbc.{PositionedParameters, SetParameter}
 
 import org.alephium.explorer
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.persistence.model.AppState
 import org.alephium.util.{TimeStamp, U256}
 
 /** [[slick.jdbc.SetParameter]] implicits for setting values in SQL queries */
@@ -91,6 +92,11 @@ object CustomSetParameter {
   implicit object TransactionHashSetParameter extends SetParameter[Transaction.Hash] {
     override def apply(input: Transaction.Hash, params: PositionedParameters): Unit =
       params setBytes input.value.bytes.toArray
+  }
+
+  implicit object AppStateTime extends SetParameter[AppState.Time] {
+    override def apply(input: AppState.Time, params: PositionedParameters): Unit =
+      params setBytes AppState.Value.serialize(input).toArray
   }
 
   implicit object BlockEntryHashOptionSetParameter extends SetParameter[Option[BlockEntry.Hash]] {

@@ -27,6 +27,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer._
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.persistence.model.AppState
 import org.alephium.util.{TimeStamp, U256}
 
 object CustomJdbcTypes {
@@ -101,4 +102,10 @@ object CustomJdbcTypes {
       IntervalType.unsafe
     )
 
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  implicit lazy val appStateValue: JdbcType[AppState.Value] =
+    MappedJdbcType.base[AppState.Value, ByteString](
+      appState => AppState.Value.serialize(appState.value),
+      input    => AppState.Value.deserialize(input).toOption.get
+    )
 }

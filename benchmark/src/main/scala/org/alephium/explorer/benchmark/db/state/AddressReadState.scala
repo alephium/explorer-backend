@@ -176,7 +176,7 @@ class AddressReadState(val db: DBExecutor)
     val _ = db.dropTableIfExists(InputSchema.table)
     val _ = db.dropTableIfExists(OutputSchema.table)
     val _ = db.dropTableIfExists(TransactionPerAddressSchema.table)
-    val _ = db.dropTableIfExists(TempSpentSchema.table)
+    val _ = db.dropTableIfExists(AppStateSchema.table)
 
     val createTable =
       BlockHeaderSchema.table.schema.create
@@ -184,7 +184,7 @@ class AddressReadState(val db: DBExecutor)
         .andThen(InputSchema.table.schema.create)
         .andThen(OutputSchema.table.schema.create)
         .andThen(TransactionPerAddressSchema.table.schema.create)
-        .andThen(TempSpentSchema.table.schema.create)
+        .andThen(AppStateSchema.table.schema.create)
         .andThen(BlockHeaderSchema.createBlockHeadersIndexesSQL())
         .andThen(TransactionSchema.createMainChainIndex)
         .andThen(InputSchema.createMainChainIndex)

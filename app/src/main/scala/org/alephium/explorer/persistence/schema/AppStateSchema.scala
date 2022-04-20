@@ -16,28 +16,20 @@
 
 package org.alephium.explorer.persistence.schema
 
-import java.math.BigInteger
-
 import slick.jdbc.PostgresProfile.api._
-import slick.lifted.{Index, ProvenShape}
+import slick.lifted.ProvenShape
 
-import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.Transaction
+import org.alephium.explorer.persistence.model.AppState
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
-object TempSpentSchema extends SchemaMainChain[(BigInteger, Hash, Transaction.Hash)]("temp_spent") {
+object AppStateSchema extends SchemaMainChain[AppState]("app_state") {
 
-  class Spents(tag: Tag) extends Table[(BigInteger, Hash, Transaction.Hash)](tag, name) {
-    def rowNumber: Rep[BigInteger]    = column[BigInteger]("row_number")
-    def key: Rep[Hash]                = column[Hash]("key", O.SqlType("BYTEA"))
-    def txHash: Rep[Transaction.Hash] = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
+  class AppStates(tag: Tag) extends Table[AppState](tag, name) {
+    def key: Rep[String]           = column[String]("key", O.PrimaryKey)
+    def value: Rep[AppState.Value] = column[AppState.Value]("value")
 
-    def keyIdx: Index       = index("temp_spent_key_idx", key)
-    def rowNumberIdx: Index = index("temp_spent_row_number_idx", rowNumber)
-
-    def * : ProvenShape[(BigInteger, Hash, Transaction.Hash)] = (rowNumber, key, txHash)
-
+    def * : ProvenShape[AppState] = (key, value).<>((AppState.apply _).tupled, AppState.unapply)
   }
 
-  val table: TableQuery[Spents] = TableQuery[Spents]
+  val table: TableQuery[AppStates] = TableQuery[AppStates]
 }

@@ -23,7 +23,7 @@ import slick.jdbc.{GetResult, PositionedResult}
 
 import org.alephium.explorer.{BlockHash, Hash}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.model.BlockHeader
+import org.alephium.explorer.persistence.model.{AppState, BlockHeader}
 import org.alephium.util.{TimeStamp, U256}
 
 object CustomGetResult {
@@ -79,6 +79,21 @@ object CustomGetResult {
     (result: PositionedResult) => {
       U256.unsafe(result.nextBigDecimal().toBigInt.bigInteger)
     }
+
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  implicit lazy val appStateValueGetResult: GetResult[AppState.Value] =
+    (result: PositionedResult) =>
+      AppState.Value.deserialize(ByteString.fromArrayUnsafe(result.nextBytes())).toOption.get
+
+  @SuppressWarnings(
+    Array("org.wartremover.warts.OptionPartial", "org.wartremover.warts.AsInstanceOf"))
+  implicit lazy val appStateTimeGetResult: GetResult[AppState.Time] =
+    (result: PositionedResult) =>
+      AppState.Value
+        .deserialize(ByteString.fromArrayUnsafe(result.nextBytes()))
+        .toOption
+        .get
+        .asInstanceOf[AppState.Time]
 
   implicit val optionU256GetResult: GetResult[Option[U256]] =
     (result: PositionedResult) => {
