@@ -122,47 +122,4 @@ object FinalizerService extends StrictLogging {
       updateLoop(totalRecords, counter + batchSize)
     }
   }
-
-  def callProcedure(): DBActionR[Int] = {
-    sqlu"""
-    call update_spent_info();
-    TRUNCATE TABLE temp_spent;
-    """
-  }
-
-  def initProcedure(): DBActionR[Int] = {
-    sqlu"""
-    CREATE OR REPLACE PROCEDURE update_spent_info()
-    LANGUAGE plpgsql
-    AS $$$$
-    DECLARE
-      total_records  int;
-      batch_size int:=100;
-      counter int:=0;
-    BEGIN
-
-      SELECT INTO total_records MAX(row_number) FROM temp_spent;
-
-      RAISE DEBUG 'Total records to be updated %', total_records  ;
-
-      WHILE counter <= total_records  LOOP
-
-      RAISE DEBUG 'Updating % / %', counter+batch_size , total_records ;
-
-      UPDATE outputs o
-      SET spent_finalized = ts.tx_hash
-      FROM temp_spent ts
-      WHERE ts.key = o.key
-      AND ts.row_number > counter AND ts.row_number <= counter+batch_size;
-
-      COMMIT;
-
-      counter := counter+batch_size;
-
-      END LOOP ;
-
-    END;
-    $$$$;
-    """
-  }
 }
