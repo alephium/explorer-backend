@@ -24,8 +24,11 @@ import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.{foldFutures, Hash}
+import org.alephium.explorer.api.model.Transaction
 import org.alephium.explorer.persistence._
-import org.alephium.explorer.persistence.schema.CustomSetParameter.TimeStampSetParameter
+import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp}
 
@@ -54,74 +57,49 @@ object FinalizerService extends StrictLogging {
 
     override def syncOnce(): Future[Unit] = {
       logger.debug("Finalizing")
-      run(finalizeOutputs(ALPH.LaunchTimestamp, finalizationTime))
+      finalizeOutputs(ALPH.LaunchTimestamp, finalizationTime, databaseConfig)
     }
   }
 
-  def finalizeOutputs(from: TimeStamp, to: TimeStamp)(
-      implicit executionContext: ExecutionContext): DBActionR[Unit] = {
-    for {
-      toUpdate <- updateSpentTable(from, to)
-      _ = logger.debug(s"$toUpdate outputs to update")
-      _ <- updateSpentOutput(toUpdate)
-    } yield {
-      logger.debug(s"Outputs finalized")
+  def finalizeOutputs(from: TimeStamp,
+                      to: TimeStamp,
+                      databaseConfig: DatabaseConfig[PostgresProfile])(
+      implicit executionContext: ExecutionContext): Future[Unit] = {
+    var i = 0
+    DBRunner.run(databaseConfig)(getOutputsToUpdate(from, to)).flatMap { outputs =>
+      logger.debug(s"Updating ${outputs.size} outputs")
+      foldFutures(outputs.grouped(batchSize).toSeq) { sub =>
+        DBRunner
+          .run(databaseConfig)(DBIOAction.sequence(sub.toSeq.map {
+            case (outputKey, txHash) => updateOutput(outputKey, txHash)
+          }))
+          .map { _ =>
+            i = i + sub.size
+            logger.debug(s"$i/${outputs.size} outputs updated")
+          }
+      }.map(_ => logger.debug(s"${outputs.size} outputs updated"))
     }
   }
 
-  def updateSpentTable(from: TimeStamp, to: TimeStamp): DBActionR[Int] = {
+  def getOutputsToUpdate(from: TimeStamp, to: TimeStamp): DBActionSR[(Hash, Transaction.Hash)] = {
+    sql"""
+      SELECT o.key, i.tx_hash
+      FROM inputs i
+      INNER JOIN outputs o
+      ON i.output_ref_key = o.key
+      WHERE o.spent_finalized IS NULL
+      AND o.main_chain=true
+      AND i.main_chain=true
+      AND i.block_timestamp >= $from
+      AND i.block_timestamp < $to;
+    """.as[(Hash, Transaction.Hash)]
+  }
+
+  def updateOutput(outputKey: Hash, txHash: Transaction.Hash): DBActionR[Int] = {
     sqlu"""
-  INSERT INTO temp_spent
-   SELECT ROW_NUMBER() OVER(ORDER BY key), o.key, i.tx_hash
-    FROM outputs o
-    INNER JOIN inputs i
-    ON o.key = i.output_ref_key
-    WHERE o.spent_finalized IS NULL
-    AND o.main_chain=true
-    AND i.main_chain=true
-    AND i.block_timestamp >= $from
-    AND i.block_timestamp < $to;
-
+      UPDATE outputs
+      SET spent_finalized = $txHash
+      WHERE key = $outputKey
     """
-  }
-
-  /*
-   * Update `spent_finalized` field
-   * The SQL Procedure would be the preferd solution, but is not used now as we can't get the logging working when running from the scala app,
-   */
-  private def updateSpentOutput(totalRecords: Int)(
-      implicit executionContext: ExecutionContext): DBActionR[Unit] = {
-    if (totalRecords > 0) {
-      logger.info(s"Updating $totalRecords outputs")
-      for {
-        _ <- updateLoop(totalRecords, 0)
-        _ <- sqlu"""TRUNCATE TABLE temp_spent"""
-      } yield (())
-    } else {
-      DBIOAction.successful(())
-    }
-  }
-
-  private def updateLoop(totalRecords: Int, counter: Int)(
-      implicit executionContext: ExecutionContext): DBActionR[Int] = {
-    if (counter <= totalRecords) {
-      update(counter, totalRecords)
-    } else {
-      DBIOAction.successful(0)
-    }
-  }
-
-  private def update(counter: Int, totalRecords: Int)(
-      implicit executionContext: ExecutionContext): DBActionR[Int] = {
-    logger.info(s"Updating $counter/$totalRecords")
-    sqlu"""
-      UPDATE outputs o
-      SET spent_finalized = ts.tx_hash
-      FROM temp_spent ts
-      WHERE ts.key = o.key
-      AND ts.row_number > $counter AND ts.row_number <= $counter+#$batchSize
-    """.flatMap { _ =>
-      updateLoop(totalRecords, counter + batchSize)
-    }
   }
 }

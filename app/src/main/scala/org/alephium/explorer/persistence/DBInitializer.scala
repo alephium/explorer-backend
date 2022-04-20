@@ -99,7 +99,9 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
 
   private def makeUpdates(): Future[Unit] = {
     logger.info("Updating database (might take long)")
-    run(FinalizerService.finalizeOutputs(ALPH.LaunchTimestamp, FinalizerService.finalizationTime))
+    FinalizerService.finalizeOutputs(ALPH.LaunchTimestamp,
+                                     FinalizerService.finalizationTime,
+                                     databaseConfig)
   }
 
   def dropTables(): Future[Unit] = {
