@@ -203,7 +203,9 @@ class AddressReadState(val db: DBExecutor)
     }
 
     val _ =
-      db.runNow(FinalizerService.finalizeOutputs(DataGenerator.timestampMaxValue), requestTimeout)
+      db.runNow(
+        FinalizerService.finalizeOutputs(ALPH.LaunchTimestamp, DataGenerator.timestampMaxValue),
+        requestTimeout)
 
     logger.info("Persisting data complete")
   }

@@ -26,6 +26,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.schema.CustomSetParameter.TimeStampSetParameter
+import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp}
 
 /*
@@ -53,14 +54,14 @@ object FinalizerService extends StrictLogging {
 
     override def syncOnce(): Future[Unit] = {
       logger.debug("Finalizing")
-      run(finalizeOutputs(finalizationTime))
+      run(finalizeOutputs(ALPH.LaunchTimestamp, finalizationTime))
     }
   }
 
-  def finalizeOutputs(before: TimeStamp)(
+  def finalizeOutputs(from: TimeStamp, to: TimeStamp)(
       implicit executionContext: ExecutionContext): DBActionR[Unit] = {
     for {
-      toUpdate <- updateSpentTable(before)
+      toUpdate <- updateSpentTable(from, to)
       _ = logger.debug(s"$toUpdate outputs to update")
       _ <- updateSpentOutput(toUpdate)
     } yield {
@@ -68,7 +69,7 @@ object FinalizerService extends StrictLogging {
     }
   }
 
-  def updateSpentTable(before: TimeStamp): DBActionR[Int] = {
+  def updateSpentTable(from: TimeStamp, to: TimeStamp): DBActionR[Int] = {
     sqlu"""
   INSERT INTO temp_spent
    SELECT ROW_NUMBER() OVER(ORDER BY key), o.key, i.tx_hash
@@ -78,7 +79,8 @@ object FinalizerService extends StrictLogging {
     WHERE o.spent_finalized IS NULL
     AND o.main_chain=true
     AND i.main_chain=true
-    AND i.block_timestamp < $before;
+    AND i.block_timestamp >= $from
+    AND i.block_timestamp < $to;
 
     """
   }
