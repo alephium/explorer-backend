@@ -43,7 +43,7 @@ object FinalizerService extends StrictLogging {
   // scalastyle:off magic.number
   val finalizationDuration: Duration = Duration.ofSecondsUnsafe(6500)
   def finalizationTime: TimeStamp    = TimeStamp.now().minusUnsafe(finalizationDuration)
-  val batchSize: Int                 = 1000
+  private val rangeStep              = Duration.ofMinutesUnsafe(60)
   // scalastyle:on magic.number
 
   def apply(syncPeriod: Duration, databaseConfig: DatabaseConfig[PostgresProfile])(
@@ -61,45 +61,44 @@ object FinalizerService extends StrictLogging {
     }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
   def finalizeOutputs(from: TimeStamp,
                       to: TimeStamp,
                       databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit executionContext: ExecutionContext): Future[Unit] = {
     var i = 0
-    DBRunner.run(databaseConfig)(getOutputsToUpdate(from, to)).flatMap { outputs =>
-      logger.debug(s"Updating ${outputs.size} outputs")
-      foldFutures(outputs.grouped(batchSize).toSeq) { sub =>
-        DBRunner
-          .run(databaseConfig)(DBIOAction.sequence(sub.toSeq.map {
-            case (outputKey, txHash) => updateOutput(outputKey, txHash)
-          }))
-          .map { _ =>
-            i = i + sub.size
-            logger.debug(s"$i/${outputs.size} outputs updated")
-          }
-      }.map(_ => logger.debug(s"${outputs.size} outputs updated"))
+    DBRunner.run(databaseConfig)(getMinInputsTs()).flatMap { mins =>
+      logger.debug(s"Updating outputs")
+      val min        = mins.head
+      val timeRanges = BlockFlowSyncService.buildTimestampRange(min, finalizationTime, rangeStep)
+      foldFutures(timeRanges) {
+        case (from, to) =>
+          DBRunner
+            .run(databaseConfig)(updateOutputs(from, to))
+            .map { nb =>
+              i = i + nb
+              logger.debug(s"$i outputs updated")
+            }
+      }.map(_ => ())
     }
   }
 
-  def getOutputsToUpdate(from: TimeStamp, to: TimeStamp): DBActionSR[(Hash, Transaction.Hash)] = {
+  def getMinInputsTs(): DBActionSR[TimeStamp] = {
     sql"""
-      SELECT o.key, i.tx_hash
+    SELECT MIN(block_timestamp) FROM inputs
+    """.as[TimeStamp]
+  }
+
+  def updateOutputs(from: TimeStamp, to: TimeStamp): DBActionR[Int] = {
+    sqlu"""
+      UPDATE outputs o
+      SET spent_finalized = i.tx_hash
       FROM inputs i
-      INNER JOIN outputs o
-      ON i.output_ref_key = o.key
-      WHERE o.spent_finalized IS NULL
+      WHERE i.output_ref_key = o.key
       AND o.main_chain=true
       AND i.main_chain=true
       AND i.block_timestamp >= $from
       AND i.block_timestamp < $to;
-    """.as[(Hash, Transaction.Hash)]
-  }
-
-  def updateOutput(outputKey: Hash, txHash: Transaction.Hash): DBActionR[Int] = {
-    sqlu"""
-      UPDATE outputs
-      SET spent_finalized = $txHash
-      WHERE key = $outputKey
-    """
+      """
   }
 }
