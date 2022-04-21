@@ -110,11 +110,11 @@ class Application(
     } yield ()
   }
 
-  private def startReadWrite(): Future[Unit] = {
+  private def startTasksForReadWriteApp(): Future[Unit] = {
     if (!readOnly) {
       for {
         _ <- dbInitializer.initialize()
-        _ <- if (readOnly) Future.successful(()) else startSyncService()
+        _ <- startSyncService()
       } yield ()
 
     } else {
@@ -133,7 +133,7 @@ class Application(
   def start: Future[Unit] = {
     for {
       _       <- healthCheckDao.healthCheck()
-      _       <- startReadWrite()
+      _       <- startTasksForReadWriteApp()
       binding <- Http().newServerAt(host, port).bindFlow(server.route)
     } yield {
       sideEffect(bindingPromise.success(binding))
