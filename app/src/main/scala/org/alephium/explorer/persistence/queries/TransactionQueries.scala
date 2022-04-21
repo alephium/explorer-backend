@@ -53,13 +53,10 @@ trait TransactionQueries extends StrictLogging {
 
   /** Inserts transactions or ignore rows with primary key conflict */
   def insertTransactions(transactions: Iterable[TransactionEntity]): DBActionW[Int] =
-    if (transactions.isEmpty) {
-      DBIOAction.successful(0)
-    } else {
-      QuerySplitter.splitUpdates(rows = transactions, columnsPerRow = 9) {
-        (transactions, placeholder) =>
-          val query =
-            s"""
+    QuerySplitter.splitUpdates(rows = transactions, columnsPerRow = 9) {
+      (transactions, placeholder) =>
+        val query =
+          s"""
            |insert into transactions (hash,
            |                          block_hash,
            |                          block_timestamp,
@@ -74,25 +71,24 @@ trait TransactionQueries extends StrictLogging {
            |    DO NOTHING
            |""".stripMargin
 
-          val parameters: SetParameter[Unit] =
-            (_: Unit, params: PositionedParameters) =>
-              transactions foreach { transaction =>
-                params >> transaction.hash
-                params >> transaction.blockHash
-                params >> transaction.timestamp
-                params >> transaction.chainFrom
-                params >> transaction.chainTo
-                params >> transaction.gasAmount
-                params >> transaction.gasPrice
-                params >> transaction.order
-                params >> transaction.mainChain
-            }
+        val parameters: SetParameter[Unit] =
+          (_: Unit, params: PositionedParameters) =>
+            transactions foreach { transaction =>
+              params >> transaction.hash
+              params >> transaction.blockHash
+              params >> transaction.timestamp
+              params >> transaction.chainFrom
+              params >> transaction.chainTo
+              params >> transaction.gasAmount
+              params >> transaction.gasPrice
+              params >> transaction.order
+              params >> transaction.mainChain
+          }
 
-          SQLActionBuilder(
-            queryParts = query,
-            unitPConv  = parameters
-          ).asUpdate
-      }
+        SQLActionBuilder(
+          queryParts = query,
+          unitPConv  = parameters
+        ).asUpdate
     }
 
   def updateTransactionPerAddressAction(outputs: Seq[OutputEntity],
