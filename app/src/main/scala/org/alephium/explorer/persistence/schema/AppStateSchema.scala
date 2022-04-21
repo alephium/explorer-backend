@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.schema
 
+import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
@@ -25,8 +26,8 @@ import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 object AppStateSchema extends SchemaMainChain[AppState]("app_state") {
 
   class AppStates(tag: Tag) extends Table[AppState](tag, name) {
-    def key: Rep[String]           = column[String]("key", O.PrimaryKey)
-    def value: Rep[AppState.Value] = column[AppState.Value]("value")
+    def key: Rep[String]       = column[String]("key", O.PrimaryKey)
+    def value: Rep[ByteString] = column[ByteString]("value")
 
     def * : ProvenShape[AppState] = (key, value).<>((AppState.apply _).tupled, AppState.unapply)
   }

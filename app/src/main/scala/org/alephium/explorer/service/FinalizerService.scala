@@ -18,6 +18,7 @@ package org.alephium.explorer.service
 
 import scala.concurrent.{ExecutionContext, Future}
 
+import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
@@ -30,6 +31,7 @@ import org.alephium.explorer.persistence.model.AppState
 import org.alephium.explorer.persistence.schema.AppStateSchema
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.serde._
 import org.alephium.util.{Duration, TimeStamp}
 
 /*
@@ -86,7 +88,7 @@ object FinalizerService extends StrictLogging {
           .run(databaseConfig)(
             for {
               nb <- updateOutputs(from, to)
-              _  <- updateAppState(to)
+              _  <- updateLastFinalizedInputTime(to)
             } yield nb
           )
           .map { nb =>
@@ -118,13 +120,13 @@ object FinalizerService extends StrictLogging {
       case Some(_end) =>
         val ft  = finalizationTime
         val end = if (_end.isBefore(ft)) _end else ft
-        getAppState.flatMap(_.headOption match {
+        getLastFinalizedInputTime().flatMap {
           case None =>
             //No last_finalized_input_time in app_state
             getMinInputsTs.map(_.headOption.map(start => (start, end)))
-          case Some(appState) =>
-            DBIOAction.successful(Some((appState.value, end)))
-        })
+          case Some(lastFinalizedInputTime) =>
+            DBIOAction.successful(Some((lastFinalizedInputTime, end)))
+        }
     })
   }
 
@@ -140,13 +142,23 @@ object FinalizerService extends StrictLogging {
     """.as[TimeStamp]
   }
 
-  private val getAppState: DBActionSR[AppState.Time] = {
+  private def getLastFinalizedInputTime()(
+      implicit executionContext: ExecutionContext): DBActionR[Option[TimeStamp]] = {
     sql"""
     SELECT value FROM app_state where key = 'last_finalized_input_time'
-    """.as[AppState.Time]
+    """
+      .as[ByteString]
+      .map(_.headOption.flatMap { bytes =>
+        deserialize[TimeStamp](bytes) match {
+          case Left(error) =>
+            logger.error(s"Cannot deserialize `last_finalized_input_time`: $error")
+            None
+          case Right(timestamp) => Some(timestamp)
+        }
+      })
   }
 
-  private def updateAppState(time: TimeStamp) = {
-    AppStateSchema.table.insertOrUpdate(AppState("last_finalized_input_time", AppState.Time(time)))
+  private def updateLastFinalizedInputTime(time: TimeStamp) = {
+    AppStateSchema.table.insertOrUpdate(AppState("last_finalized_input_time", serialize(time)))
   }
 }

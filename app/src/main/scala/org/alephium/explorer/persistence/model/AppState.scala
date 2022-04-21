@@ -18,34 +18,7 @@ package org.alephium.explorer.persistence.model
 
 import akka.util.ByteString
 
-import org.alephium.serde
-import org.alephium.serde._
-import org.alephium.util.TimeStamp
-
 final case class AppState(
     key: String,
-    value: AppState.Value
+    value: ByteString
 )
-object AppState {
-
-  trait Value
-  final case class Time(value: TimeStamp) extends Value
-
-  object Value extends Serde[AppState.Value] {
-
-    override def serialize(input: Value): ByteString =
-      input match {
-        case ts: Time => ByteString(0) ++ serde.serialize(ts.value)
-      }
-
-    override def _deserialize(input: ByteString): SerdeResult[Staging[Value]] =
-      byteSerde._deserialize(input).flatMap {
-        case Staging(byte, rest) =>
-          if (byte == 0) {
-            serdeTS.deserialize(rest).map(ts => Staging(Time(ts), ByteString.empty))
-          } else {
-            Left(SerdeError.wrongFormat(s"Invalid AppState.Value"))
-          }
-      }
-  }
-}
