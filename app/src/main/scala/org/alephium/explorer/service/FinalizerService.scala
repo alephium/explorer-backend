@@ -86,10 +86,12 @@ object FinalizerService extends StrictLogging {
       case (from, to) =>
         DBRunner
           .run(databaseConfig)(
-            for {
-              nb <- updateOutputs(from, to)
-              _  <- updateLastFinalizedInputTime(to)
-            } yield nb
+            (
+              for {
+                nb <- updateOutputs(from, to)
+                _  <- updateLastFinalizedInputTime(to)
+              } yield nb
+            ).transactionally
           )
           .map { nb =>
             i = i + nb
