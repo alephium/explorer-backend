@@ -26,7 +26,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.persistence._
 
 object Migrations extends StrictLogging {
-  val outputStatus: DBActionW[Int] = sqlu"""
+  val addOutputStatusColumn: DBActionW[Int] = sqlu"""
     ALTER TABLE outputs
     ADD COLUMN IF NOT EXISTS "spent_finalized" BYTEA DEFAULT NULL;
   """
@@ -35,7 +35,7 @@ object Migrations extends StrictLogging {
       implicit ec: ExecutionContext): Future[Unit] = {
     logger.info("Migrating")
     DBRunner.run(databaseConfig)(for {
-      _ <- Migrations.outputStatus
+      _ <- Migrations.addOutputStatusColumn
     } yield ())
   }
 }
