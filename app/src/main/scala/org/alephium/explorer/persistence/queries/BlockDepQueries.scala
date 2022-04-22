@@ -16,7 +16,6 @@
 
 package org.alephium.explorer.persistence.queries
 
-import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 
 import org.alephium.explorer.persistence.DBActionW
@@ -36,11 +35,8 @@ object BlockDepQueries {
     * is not used to insert values so these queries are still cacheable prepared-statements.
     */
   def insertBlockDeps(deps: Iterable[BlockDepEntity]): DBActionW[Int] =
-    if (deps.isEmpty) {
-      DBIOAction.successful(0)
-    } else {
-      //generate '?' placeholders for the parameterised SQL query
-      val placeholder = paramPlaceholder(rows = deps.size, columns = 3)
+    //generate '?' placeholders for the parameterised SQL query
+    QuerySplitter.splitUpdates(rows = deps, columnsPerRow = 3) { (deps, placeholder) =>
       val query =
         s"""
            |INSERT INTO block_deps ("hash", "dep", "dep_order")

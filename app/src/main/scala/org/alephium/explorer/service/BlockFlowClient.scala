@@ -398,7 +398,8 @@ object BlockFlowClient {
       mainChain,
       lockTime,
       index,
-      txOrder
+      txOrder,
+      None
     )
   }
   // scalastyle:off magic.number

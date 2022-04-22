@@ -42,6 +42,8 @@ import org.alephium.util.{TimeStamp, U256}
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 object DataGenerator {
 
+  val timestampMaxValue: TimeStamp = TimeStamp.unsafe(253370764800000L) //Jan 01 9999 00:00:00
+
   def genTransactions(count: Int                 = 10,
                       blockHash: BlockEntry.Hash = new BlockEntry.Hash(BlockHash.generate),
                       blockTimestamp: TimeStamp  = TimeStamp.now(),
@@ -64,17 +66,18 @@ object DataGenerator {
     transactions.zipWithIndex map {
       case (transaction, order) =>
         OutputEntity(
-          blockHash = transaction.blockHash,
-          txHash    = transaction.hash,
-          timestamp = transaction.timestamp,
-          hint      = Random.nextInt(1000),
-          key       = Hash.generate,
-          amount    = U256.unsafe(Random.nextInt(100)),
-          address   = Address.unsafe(Random.alphanumeric.take(10).mkString),
-          mainChain = transaction.mainChain,
-          lockTime  = Some(TimeStamp.now()),
-          order     = order,
-          txOrder   = order
+          blockHash      = transaction.blockHash,
+          txHash         = transaction.hash,
+          timestamp      = transaction.timestamp,
+          hint           = Random.nextInt(1000),
+          key            = Hash.generate,
+          amount         = U256.unsafe(Random.nextInt(100)),
+          address        = Address.unsafe(Random.alphanumeric.take(10).mkString),
+          mainChain      = transaction.mainChain,
+          lockTime       = Some(TimeStamp.now()),
+          order          = order,
+          txOrder        = order,
+          spentFinalized = None
         )
     }
 

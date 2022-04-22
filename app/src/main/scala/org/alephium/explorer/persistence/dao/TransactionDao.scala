@@ -37,7 +37,6 @@ trait TransactionDao {
   def getNumberByAddressSQL(address: Address): Future[Int]
   def getNumberByAddressSQLNoJoin(address: Address): Future[Int]
   def getBalance(address: Address): Future[(U256, U256)]
-  def getBalanceSQL(address: Address): Future[(U256, U256)]
   def getTotalNumber(): Future[Int]
 }
 
@@ -81,9 +80,6 @@ object TransactionDao {
 
     def getBalance(address: Address): Future[(U256, U256)] =
       run(getBalanceAction(address))
-
-    def getBalanceSQL(address: Address): Future[(U256, U256)] =
-      run(getBalanceActionSQL(address))
 
     def getTotalNumber(): Future[Int] =
       cachedTxsNumber.get(mainTransactions)

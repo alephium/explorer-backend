@@ -21,6 +21,7 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
+import org.alephium.explorer.persistence.DBActionW
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.util.{TimeStamp, U256}
@@ -40,6 +41,8 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
     def lockTime: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("lock_time")
     def outputOrder: Rep[Int]            = column[Int]("output_order")
     def txOrder: Rep[Int]                = column[Int]("tx_order")
+    def spentFinalized: Rep[Option[Transaction.Hash]] =
+      column[Option[Transaction.Hash]]("spent_finalized", O.Default(None))
 
     def pk: PrimaryKey = primaryKey("outputs_pk", (key, blockHash))
 
@@ -60,9 +63,13 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
        mainChain,
        lockTime,
        outputOrder,
-       txOrder)
+       txOrder,
+       spentFinalized)
         .<>((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }
+
+  lazy val createNonSpentIndex: DBActionW[Int] =
+    sqlu"create unique index if not exists non_spent_output_idx on #${name} (address, main_chain, key, block_hash) where spent_finalized IS NULL;"
 
   val table: TableQuery[Outputs] = TableQuery[Outputs]
 }

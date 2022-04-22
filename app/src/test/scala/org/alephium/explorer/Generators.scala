@@ -488,17 +488,18 @@ trait Generators {
       txOrder   <- arbitrary[Int]
     } yield
       OutputEntity(
-        blockHash = blockHash,
-        txHash    = txHash,
-        timestamp = timestamp,
-        hint      = hint,
-        key       = key,
-        amount    = amount,
-        address   = address,
-        mainChain = mainChain,
-        lockTime  = lockTime,
-        order     = order,
-        txOrder   = txOrder
+        blockHash      = blockHash,
+        txHash         = txHash,
+        timestamp      = timestamp,
+        hint           = hint,
+        key            = key,
+        amount         = amount,
+        address        = address,
+        mainChain      = mainChain,
+        lockTime       = lockTime,
+        order          = order,
+        txOrder        = txOrder,
+        spentFinalized = None
       )
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))

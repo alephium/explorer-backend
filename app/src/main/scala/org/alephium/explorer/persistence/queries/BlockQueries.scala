@@ -214,11 +214,7 @@ trait BlockQueries extends TransactionQueries with StrictLogging {
   /** Inserts block_headers or ignore them if there is a primary key conflict */
   // scalastyle:off magic.number
   def insertBlockHeaders(blocks: Iterable[BlockHeader]): DBActionW[Int] =
-    if (blocks.isEmpty) {
-      DBIOAction.successful(0)
-    } else {
-      val placeholder = paramPlaceholder(rows = blocks.size, columns = 14)
-
+    QuerySplitter.splitUpdates(rows = blocks, columnsPerRow = 14) { (blocks, placeholder) =>
       val query =
         s"""
            |insert into $block_headers ("hash",
