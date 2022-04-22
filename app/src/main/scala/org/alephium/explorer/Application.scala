@@ -122,7 +122,7 @@ class Application(
     }
   }
 
-  private def stopReadWrite(): Future[Unit] = {
+  private def stopTasksForReadWriteApp(): Future[Unit] = {
     if (!readOnly) {
       blockFlowSyncService.stop()
     } else {
@@ -143,7 +143,7 @@ class Application(
 
   def stop: Future[Unit] =
     for {
-      _ <- stopReadWrite()
+      _ <- stopTasksForReadWriteApp()
       _ <- bindingPromise.future.flatMap(_.unbind())
     } yield {
       logger.info("Application stopped")

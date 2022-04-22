@@ -78,7 +78,7 @@ object FinalizerService extends StrictLogging {
                           step: Duration,
                           databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit executionContext: ExecutionContext): Future[Unit] = {
-    var i = 0
+    var updateCounter = 0
     logger.debug(s"Updating outputs")
     val timeRanges =
       BlockFlowSyncService.buildTimestampRange(start, end, step)
@@ -94,8 +94,8 @@ object FinalizerService extends StrictLogging {
             ).transactionally
           )
           .map { nb =>
-            i = i + nb
-            logger.debug(s"$i outputs updated")
+            updateCounter = updateCounter + nb
+            logger.debug(s"$updateCounter outputs updated")
           }
     }.map(_ => logger.debug(s"Outputs updated"))
   }
