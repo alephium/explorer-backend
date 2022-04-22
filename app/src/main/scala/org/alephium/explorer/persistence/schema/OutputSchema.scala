@@ -69,7 +69,7 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
   }
 
   lazy val createNonSpentIndex: DBActionW[Int] =
-    sqlu"create index if not exists non_spent_output_idx on #${name} (address, main_chain, key, block_hash) where spent_finalized IS NULL;"
+    sqlu"create unique index if not exists non_spent_output_idx on #${name} (address, main_chain, key, block_hash) where spent_finalized IS NULL;"
 
   val table: TableQuery[Outputs] = TableQuery[Outputs]
 }
