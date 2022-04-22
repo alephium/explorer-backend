@@ -115,33 +115,29 @@ object FinalizerService extends StrictLogging {
 
   def getStartEndTime()(
       implicit executionContext: ExecutionContext): DBActionR[Option[(TimeStamp, TimeStamp)]] = {
-    getMaxInputsTs.flatMap(_.headOption match {
-      case None =>
-        //No input in db
-        DBIOAction.successful(None)
-      case Some(_end) =>
-        val ft  = finalizationTime
+    val ft = finalizationTime
+    getMinMaxInputsTs.flatMap(_.headOption match {
+      //No input in db
+      case None | Some((TimeStamp.zero, TimeStamp.zero)) => DBIOAction.successful(None)
+      // only one input
+      case Some((start, end)) if start == end => DBIOAction.successful(None)
+      // inputs are only after finalization time, noop
+      case Some((start, _)) if ft.isBefore(start) => DBIOAction.successful(None)
+      case Some((start, _end)) =>
         val end = if (_end.isBefore(ft)) _end else ft
-        getLastFinalizedInputTime().flatMap {
+        getLastFinalizedInputTime().map {
           case None =>
-            //No last_finalized_input_time in app_state
-            getMinInputsTs.map(_.headOption.map(start => (start, end)))
+            Some((start, end))
           case Some(lastFinalizedInputTime) =>
-            DBIOAction.successful(Some((lastFinalizedInputTime, end)))
+            Some((lastFinalizedInputTime, end))
         }
     })
   }
 
-  private val getMinInputsTs: DBActionSR[TimeStamp] = {
+  private val getMinMaxInputsTs: DBActionSR[(TimeStamp, TimeStamp)] = {
     sql"""
-    SELECT MIN(block_timestamp) FROM inputs WHERE main_chain = true
-    """.as[TimeStamp]
-  }
-
-  private val getMaxInputsTs: DBActionSR[TimeStamp] = {
-    sql"""
-    SELECT MAX(block_timestamp) FROM inputs WHERE main_chain = true
-    """.as[TimeStamp]
+    SELECT MIN(block_timestamp),Max(block_timestamp) FROM inputs WHERE main_chain = true
+    """.as[(TimeStamp, TimeStamp)]
   }
 
   private def getLastFinalizedInputTime()(
