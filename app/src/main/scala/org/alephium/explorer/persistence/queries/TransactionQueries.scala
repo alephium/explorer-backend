@@ -53,13 +53,10 @@ trait TransactionQueries extends StrictLogging {
 
   /** Inserts transactions or ignore rows with primary key conflict */
   def insertTransactions(transactions: Iterable[TransactionEntity]): DBActionW[Int] =
-    if (transactions.isEmpty) {
-      DBIOAction.successful(0)
-    } else {
-      val placeholder = paramPlaceholder(rows = transactions.size, columns = 9)
-
-      val query =
-        s"""
+    QuerySplitter.splitUpdates(rows = transactions, columnsPerRow = 9) {
+      (transactions, placeholder) =>
+        val query =
+          s"""
            |insert into transactions (hash,
            |                          block_hash,
            |                          block_timestamp,
@@ -74,24 +71,24 @@ trait TransactionQueries extends StrictLogging {
            |    DO NOTHING
            |""".stripMargin
 
-      val parameters: SetParameter[Unit] =
-        (_: Unit, params: PositionedParameters) =>
-          transactions foreach { transaction =>
-            params >> transaction.hash
-            params >> transaction.blockHash
-            params >> transaction.timestamp
-            params >> transaction.chainFrom
-            params >> transaction.chainTo
-            params >> transaction.gasAmount
-            params >> transaction.gasPrice
-            params >> transaction.order
-            params >> transaction.mainChain
-        }
+        val parameters: SetParameter[Unit] =
+          (_: Unit, params: PositionedParameters) =>
+            transactions foreach { transaction =>
+              params >> transaction.hash
+              params >> transaction.blockHash
+              params >> transaction.timestamp
+              params >> transaction.chainFrom
+              params >> transaction.chainTo
+              params >> transaction.gasAmount
+              params >> transaction.gasPrice
+              params >> transaction.order
+              params >> transaction.mainChain
+          }
 
-      SQLActionBuilder(
-        queryParts = query,
-        unitPConv  = parameters
-      ).asUpdate
+        SQLActionBuilder(
+          queryParts = query,
+          unitPConv  = parameters
+        ).asUpdate
     }
 
   def updateTransactionPerAddressAction(outputs: Seq[OutputEntity],
@@ -368,28 +365,30 @@ trait TransactionQueries extends StrictLogging {
                   gasPrice)
     }
 
-  def getBalanceQuerySQL(address: Address): DBActionSR[(U256, Option[TimeStamp])] = {
+  def getBalanceQueryDEPRECATED(address: Address): DBActionSR[(U256, Option[TimeStamp])] = {
     sql"""
         SELECT outputs.amount, outputs.lock_time
         FROM outputs
-        LEFT JOIN inputs ON outputs.key = inputs.output_ref_key
-        WHERE outputs.main_chain = true AND outputs.address = $address AND inputs.block_hash IS NULL
+        LEFT JOIN inputs
+        ON outputs.key = inputs.output_ref_key
+        WHERE outputs.main_chain = true
+        AND outputs.address = $address
+        AND inputs.block_hash IS NULL
       """.as[(U256, Option[TimeStamp])]
   }
 
-  val getBalanceQuery = Compiled { address: Rep[Address] =>
-    mainOutputs
-      .filter(output => output.address === address)
-      .joinLeft(mainInputs)
-      .on(_.key === _.outputRefKey)
-      .filter(_._2.isEmpty)
-      .map { case (output, _) => (output.amount, output.lockTime) }
-  }
-
-  def getBalanceAction(address: Address): DBActionR[(U256, U256)] = {
-    getBalanceQuery(address).result.map { outputs =>
-      sumBalance(outputs)
-    }
+  def getBalanceQuery(address: Address): DBActionSR[(U256, Option[TimeStamp])] = {
+    sql"""
+      SELECT outputs.amount, outputs.lock_time
+      FROM outputs
+      LEFT JOIN inputs
+      ON outputs.key = inputs.output_ref_key
+      AND inputs.main_chain = true
+      AND outputs.main_chain = true
+      WHERE outputs.spent_finalized IS NULL
+      AND outputs.address = $address
+      AND inputs.block_hash IS NULL;
+    """.as[(U256, Option[TimeStamp])]
   }
 
   private def sumBalance(outputs: Seq[(U256, Option[TimeStamp])]): (U256, U256) = {
@@ -406,8 +405,12 @@ trait TransactionQueries extends StrictLogging {
     }
   }
 
-  def getBalanceActionSQL(address: Address): DBActionR[(U256, U256)] = {
-    getBalanceQuerySQL(address).map(sumBalance)
+  def getBalanceActionDEPRECATED(address: Address): DBActionR[(U256, U256)] = {
+    getBalanceQueryDEPRECATED(address).map(sumBalance)
+  }
+
+  def getBalanceAction(address: Address): DBActionR[(U256, U256)] = {
+    getBalanceQuery(address).map(sumBalance)
   }
 
   // switch logger.trace when we can disable debugging mode

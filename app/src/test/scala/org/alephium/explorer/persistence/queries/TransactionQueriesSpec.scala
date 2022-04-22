@@ -30,6 +30,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.service.FinalizerService
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
@@ -54,14 +55,15 @@ class TransactionQueriesSpec
 
     run(OutputSchema.table ++= Seq(output1, output2, output3, output4)).futureValue
 
-    val (total, locked)       = run(queries.getBalanceAction(address)).futureValue
-    val (totalSQL, lockedSQL) = run(queries.getBalanceActionSQL(address)).futureValue
+    val (total, locked) = run(queries.getBalanceAction(address)).futureValue
+    val (totalDEPRECATED, lockedDEPRECATED) =
+      run(queries.getBalanceActionDEPRECATED(address)).futureValue
 
     total is ALPH.alph(10)
     locked is ALPH.alph(7)
 
-    totalSQL is ALPH.alph(10)
-    lockedSQL is ALPH.alph(7)
+    totalDEPRECATED is ALPH.alph(10)
+    lockedDEPRECATED is ALPH.alph(7)
   }
 
   it should "get balance should only return unpent outputs" in new Fixture {
@@ -73,11 +75,21 @@ class TransactionQueriesSpec
     run(OutputSchema.table ++= Seq(output1, output2)).futureValue
     run(InputSchema.table += input1).futureValue
 
-    val (total, _)    = run(queries.getBalanceAction(address)).futureValue
-    val (totalSQL, _) = run(queries.getBalanceActionSQL(address)).futureValue
+    val (total, _)           = run(queries.getBalanceAction(address)).futureValue
+    val (totalDEPRECATED, _) = run(queries.getBalanceActionDEPRECATED(address)).futureValue
 
     total is ALPH.alph(1)
-    totalSQL is ALPH.alph(1)
+    totalDEPRECATED is ALPH.alph(1)
+
+    val from = TimeStamp.zero
+    val to   = timestampMaxValue
+    FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from), databaseConfig).futureValue
+
+    val (totalFinalized, _)           = run(queries.getBalanceAction(address)).futureValue
+    val (totalFinalizedDEPRECATED, _) = run(queries.getBalanceActionDEPRECATED(address)).futureValue
+
+    totalFinalized is ALPH.alph(1)
+    totalFinalizedDEPRECATED is ALPH.alph(1)
   }
 
   it should "txs count" in new Fixture {
@@ -368,7 +380,8 @@ class TransactionQueriesSpec
         true,
         lockTime,
         0,
-        0
+        0,
+        None
       )
 
     def input(hint: Int, outputRefKey: Hash): InputEntity =

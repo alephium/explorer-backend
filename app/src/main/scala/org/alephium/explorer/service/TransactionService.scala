@@ -58,7 +58,7 @@ object TransactionService {
       transactionDao.getNumberByAddressSQLNoJoin(address)
 
     def getBalance(address: Address): Future[(U256, U256)] =
-      transactionDao.getBalanceSQL(address)
+      transactionDao.getBalance(address)
 
     def getTotalNumber(): Future[Int] =
       transactionDao.getTotalNumber()

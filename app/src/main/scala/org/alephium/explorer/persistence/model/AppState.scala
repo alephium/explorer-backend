@@ -16,24 +16,9 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, BlockEntry, Output, Transaction}
-import org.alephium.util.{TimeStamp, U256}
+import akka.util.ByteString
 
-final case class OutputEntity(
-    blockHash: BlockEntry.Hash,
-    txHash: Transaction.Hash,
-    timestamp: TimeStamp,
-    hint: Int,
-    key: Hash,
-    amount: U256,
-    address: Address,
-    mainChain: Boolean,
-    lockTime: Option[TimeStamp],
-    order: Int,
-    txOrder: Int,
-    spentFinalized: Option[Transaction.Hash]
-) {
-  def toApi(spent: Option[Transaction.Hash]): Output =
-    Output(hint, key, amount, address, lockTime, spent)
-}
+final case class AppState(
+    key: String,
+    value: ByteString
+)

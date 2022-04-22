@@ -28,6 +28,7 @@ import slick.jdbc.meta.MTable
 import org.alephium.explorer.AnyOps
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.service.FinalizerService
 
 class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
     implicit val executionContext: ExecutionContext)
@@ -51,10 +52,21 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
       LatestBlockSchema.table,
       HashrateSchema.table,
       TokenSupplySchema.table,
-      TransactionPerAddressSchema.table
+      TransactionPerAddressSchema.table,
+      AppStateSchema.table
     )
 
-  def createTables(): Future[Unit] = {
+  def initialize(): Future[Unit] = {
+    for {
+      _ <- createTables()
+      _ <- Migrations.migrate(databaseConfig)
+      _ <- createIndexes()
+      _ <- makeUpdates()
+    } yield ()
+  }
+
+  private def createTables(): Future[Unit] = {
+    logger.info("Create Tables")
     //TODO Look for something like https://flywaydb.org/ to manage schemas
     val existingTables = run(MTable.getTables)
     existingTables
@@ -69,17 +81,24 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
           run(createIfNotExist)
         })
       }
-      .flatMap(_ => createIndexes())
+      .map(_ => ())
   }
 
   private def createIndexes(): Future[Unit] = {
+    logger.info("Create Indexes")
     run(for {
       _ <- BlockHeaderSchema.createBlockHeadersIndexesSQL()
       _ <- TransactionSchema.createMainChainIndex
       _ <- InputSchema.createMainChainIndex
       _ <- OutputSchema.createMainChainIndex
       _ <- TransactionPerAddressSchema.createMainChainIndex
+      _ <- OutputSchema.createNonSpentIndex
     } yield ())
+  }
+
+  private def makeUpdates(): Future[Unit] = {
+    logger.info("Updating database (might take long)")
+    FinalizerService.finalizeOutputs(databaseConfig)
   }
 
   def dropTables(): Future[Unit] = {
@@ -95,5 +114,6 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
 
 object DBInitializer {
   def apply(config: DatabaseConfig[PostgresProfile])(
-      implicit executionContext: ExecutionContext): DBInitializer = new DBInitializer(config)
+      implicit executionContext: ExecutionContext): DBInitializer =
+    new DBInitializer(config)
 }

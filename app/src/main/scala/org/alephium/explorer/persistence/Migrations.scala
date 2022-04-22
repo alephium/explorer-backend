@@ -18,27 +18,24 @@ package org.alephium.explorer.persistence
 
 import scala.concurrent.{ExecutionContext, Future}
 
+import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
-trait DBRunner {
-  def databaseConfig: DatabaseConfig[PostgresProfile]
+import org.alephium.explorer.persistence._
 
-  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
-  def run[R, E <: Effect](action: DBAction[R, E])(
-      implicit executionContext: ExecutionContext): Future[R] =
-    databaseConfig.db.run(action).recover {
-      case error => throw new RuntimeException(error)
-    }
-}
+object Migrations extends StrictLogging {
+  val addOutputStatusColumn: DBActionW[Int] = sqlu"""
+    ALTER TABLE outputs
+    ADD COLUMN IF NOT EXISTS "spent_finalized" BYTEA DEFAULT NULL;
+  """
 
-object DBRunner {
-  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
-  def run[R, E <: Effect](databaseConfig: DatabaseConfig[PostgresProfile])(action: DBAction[R, E])(
-      implicit executionContext: ExecutionContext): Future[R] =
-    databaseConfig.db.run(action).recover {
-      case error => throw new RuntimeException(error)
-    }
-
+  def migrate(databaseConfig: DatabaseConfig[PostgresProfile])(
+      implicit ec: ExecutionContext): Future[Unit] = {
+    logger.info("Migrating")
+    DBRunner.run(databaseConfig)(for {
+      _ <- Migrations.addOutputStatusColumn
+    } yield ())
+  }
 }

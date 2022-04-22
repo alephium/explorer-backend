@@ -100,5 +100,4 @@ object CustomJdbcTypes {
       _.value,
       IntervalType.unsafe
     )
-
 }

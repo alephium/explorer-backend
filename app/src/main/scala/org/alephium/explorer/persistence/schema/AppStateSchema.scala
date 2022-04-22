@@ -14,26 +14,23 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.model
+package org.alephium.explorer.persistence.schema
 
-import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, BlockEntry, Output, Transaction}
-import org.alephium.util.{TimeStamp, U256}
+import akka.util.ByteString
+import slick.jdbc.PostgresProfile.api._
+import slick.lifted.ProvenShape
 
-final case class OutputEntity(
-    blockHash: BlockEntry.Hash,
-    txHash: Transaction.Hash,
-    timestamp: TimeStamp,
-    hint: Int,
-    key: Hash,
-    amount: U256,
-    address: Address,
-    mainChain: Boolean,
-    lockTime: Option[TimeStamp],
-    order: Int,
-    txOrder: Int,
-    spentFinalized: Option[Transaction.Hash]
-) {
-  def toApi(spent: Option[Transaction.Hash]): Output =
-    Output(hint, key, amount, address, lockTime, spent)
+import org.alephium.explorer.persistence.model.AppState
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+
+object AppStateSchema extends SchemaMainChain[AppState]("app_state") {
+
+  class AppStates(tag: Tag) extends Table[AppState](tag, name) {
+    def key: Rep[String]       = column[String]("key", O.PrimaryKey)
+    def value: Rep[ByteString] = column[ByteString]("value")
+
+    def * : ProvenShape[AppState] = (key, value).<>((AppState.apply _).tupled, AppState.unapply)
+  }
+
+  val table: TableQuery[AppStates] = TableQuery[AppStates]
 }

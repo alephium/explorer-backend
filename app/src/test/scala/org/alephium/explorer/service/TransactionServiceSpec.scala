@@ -127,7 +127,8 @@ class TransactionServiceSpec
                    true,
                    None,
                    0,
-                   0)
+                   0,
+                   None)
 
     val block0 = defaultBlockEntity.copy(
       hash         = blockHash0,
@@ -170,7 +171,8 @@ class TransactionServiceSpec
                                true,
                                None,
                                0,
-                               0)
+                               0,
+                               None)
 
     val block1 = defaultBlockEntity.copy(
       hash         = blockHash1,
@@ -250,7 +252,8 @@ class TransactionServiceSpec
                        true,
                        None,
                        0,
-                       0)
+                       0,
+                       None)
 
         val block0 = defaultBlockEntity.copy(
           hash         = blockHash0,

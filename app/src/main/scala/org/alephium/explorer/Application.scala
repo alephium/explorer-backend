@@ -70,6 +70,9 @@ class Application(
   val tokenSupplyService: TokenSupplyService =
     TokenSupplyService(syncPeriod = Duration.ofMinutesUnsafe(1), databaseConfig, groupNum)
 
+  val finalizerService: FinalizerService =
+    FinalizerService(syncPeriod = Duration.ofMinutesUnsafe(10), databaseConfig)
+
   val blockService: BlockService             = BlockService(blockDao)
   val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
 
@@ -103,14 +106,34 @@ class Application(
       _ <- mempoolSyncService.start(peers)
       _ <- tokenSupplyService.start()
       _ <- hashrateService.start()
+      _ <- finalizerService.start()
     } yield ()
+  }
+
+  private def startTasksForReadWriteApp(): Future[Unit] = {
+    if (!readOnly) {
+      for {
+        _ <- dbInitializer.initialize()
+        _ <- startSyncService()
+      } yield ()
+
+    } else {
+      Future.successful(())
+    }
+  }
+
+  private def stopTasksForReadWriteApp(): Future[Unit] = {
+    if (!readOnly) {
+      blockFlowSyncService.stop()
+    } else {
+      Future.successful(())
+    }
   }
 
   def start: Future[Unit] = {
     for {
       _       <- healthCheckDao.healthCheck()
-      _       <- dbInitializer.createTables()
-      _       <- if (readOnly) Future.successful(()) else startSyncService()
+      _       <- startTasksForReadWriteApp()
       binding <- Http().newServerAt(host, port).bindFlow(server.route)
     } yield {
       sideEffect(bindingPromise.success(binding))
@@ -120,7 +143,7 @@ class Application(
 
   def stop: Future[Unit] =
     for {
-      _ <- if (!readOnly) blockFlowSyncService.stop() else Future.successful(())
+      _ <- stopTasksForReadWriteApp()
       _ <- bindingPromise.future.flatMap(_.unbind())
     } yield {
       logger.info("Application stopped")
