@@ -29,6 +29,7 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
+import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
@@ -38,10 +39,6 @@ import org.alephium.util.{TimeStamp, U256}
 trait TransactionQueries extends StrictLogging {
 
   implicit def executionContext: ExecutionContext
-
-  val mainTransactions    = TransactionSchema.table.filter(_.mainChain)
-  private val mainInputs  = InputSchema.table.filter(_.mainChain)
-  private val mainOutputs = OutputSchema.table.filter(_.mainChain)
 
   def insertAll(transactions: Seq[TransactionEntity],
                 outputs: Seq[OutputEntity],
@@ -417,4 +414,14 @@ trait TransactionQueries extends StrictLogging {
   protected def debugShow(query: slickProfile.ProfileAction[_, _, _]) = {
     print(s"${query.statements.mkString}\n")
   }
+}
+
+object TransactionQueries {
+
+  val mainTransactions: Query[TransactionSchema.Transactions, TransactionEntity, Seq] =
+    TransactionSchema.table.filter(_.mainChain)
+
+  private val mainInputs  = InputSchema.table.filter(_.mainChain)
+  private val mainOutputs = OutputSchema.table.filter(_.mainChain)
+
 }

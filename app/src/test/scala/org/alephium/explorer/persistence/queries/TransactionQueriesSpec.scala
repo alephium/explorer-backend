@@ -352,7 +352,7 @@ class TransactionQueriesSpec
 
     run(TransactionSchema.table ++= Seq(tx1, tx2, tx3)).futureValue
 
-    val total = run(queries.mainTransactions.length.result).futureValue
+    val total = run(TransactionQueries.mainTransactions.length.result).futureValue
     total is 2
   }
 

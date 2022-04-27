@@ -354,7 +354,7 @@ class TransactionServiceSpec
 
   trait Fixture {
     val blockDao: BlockDao                     = BlockDao(groupNum, databaseConfig)
-    val transactionDao: TransactionDao         = TransactionDao(databaseConfig)
+    val transactionDao: TransactionDao         = TransactionDao(databaseConfig).futureValue
     val utransactionDao: UnconfirmedTxDao      = UnconfirmedTxDao(databaseConfig)
     val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
 

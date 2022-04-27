@@ -16,7 +16,8 @@
 
 package org.alephium.explorer
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -47,10 +48,16 @@ class Application(
     syncPeriod: Duration)(implicit system: ActorSystem, executionContext: ExecutionContext)
     extends StrictLogging {
 
+  //TOTO: Temporary placeholder for executing services returning a Future.
+  //      This will eventually be removed and the all services will get started
+  //      asynchronously via the start function.
+  def awaitService[T](f: => Future[T]): T =
+    Await.result(f, 5.seconds)
+
   val dbInitializer: DBInitializer = DBInitializer(databaseConfig)
 
   val blockDao: BlockDao                = BlockDao(groupNum, databaseConfig)
-  val transactionDao: TransactionDao    = TransactionDao(databaseConfig)
+  val transactionDao: TransactionDao    = awaitService(TransactionDao(databaseConfig))
   val utransactionDao: UnconfirmedTxDao = UnconfirmedTxDao(databaseConfig)
   val healthCheckDao: HealthCheckDao    = HealthCheckDao(databaseConfig)
 
