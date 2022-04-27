@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.persistence.dao
 
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
 import slick.basic.DatabaseConfig
@@ -51,9 +51,9 @@ object TransactionDao {
       with TransactionQueries
       with DBRunner {
 
-    lazy val cacheTxnNumber =
-      AsyncReloadingCache(
-        initial     = Await.result(getTotalNumberFromDB(), 5.seconds),
+    val cacheTxnNumber =
+      AsyncReloadingCache.expireAndReload(
+        initial     = 0,
         reloadAfter = 5.seconds
       )(_ => getTotalNumberFromDB())
 

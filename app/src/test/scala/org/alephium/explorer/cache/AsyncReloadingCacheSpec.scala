@@ -114,4 +114,17 @@ class AsyncReloadingCacheSpec extends AlephiumSpec with ScalaFutures with Eventu
       reloadCount.get() is 3
     }
   }
+
+  it should "expireAndReload: should reload on boot" in {
+    val cache =
+      AsyncReloadingCache.expireAndReload(initial = 0, reloadAfter = 1.hour) { currentValue =>
+        currentValue is 0
+
+        Future(Int.MaxValue)
+      }
+
+    eventually(Timeout(1.second)) {
+      cache.get() is Int.MaxValue
+    }
+  }
 }

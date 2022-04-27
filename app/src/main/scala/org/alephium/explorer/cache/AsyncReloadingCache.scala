@@ -50,6 +50,19 @@ object AsyncReloadingCache {
       loader      = loader
     )
 
+  /** Expires and reloads the cache on boot */
+  @inline def expireAndReload[T](initial: T, reloadAfter: FiniteDuration)(
+      loader: T => Future[T]): AsyncReloadingCache[T] = {
+    val cache =
+      AsyncReloadingCache(
+        initial     = initial,
+        reloadAfter = reloadAfter
+      )(loader)
+
+    cache.expireAndReload()
+
+    cache
+  }
 }
 
 /**
