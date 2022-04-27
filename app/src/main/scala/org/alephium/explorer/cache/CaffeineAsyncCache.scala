@@ -80,7 +80,6 @@ class CaffeineAsyncCache[K, V](cache: AsyncLoadingCache[K, V]) {
     cache.get(key).asScala
 
   def getAll(keys: Iterable[K])(implicit ec: ExecutionContext): Future[Seq[(K, V)]] =
-    //FIXME: `asScala.toSeq` could be achieved in single iteration using Factory or BuildFrom
     cache.getAll(keys.asJava).asScala.map(_.asScala.toSeq)
 
   def getIfPresent(key: K): Option[Future[V]] = {

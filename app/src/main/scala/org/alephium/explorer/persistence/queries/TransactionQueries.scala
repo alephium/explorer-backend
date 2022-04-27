@@ -396,7 +396,7 @@ trait TransactionQueries extends StrictLogging {
     outputs.foldLeft((U256.Zero, U256.Zero)) {
       case ((total, locked), (amount, lockTime)) =>
         val newTotal = total.addUnsafe(amount)
-        val newLocked = if (lockTime.map(_.isBefore(now)).getOrElse(true)) {
+        val newLocked = if (lockTime.forall(_.isBefore(now))) {
           locked
         } else {
           locked.addUnsafe(amount)
