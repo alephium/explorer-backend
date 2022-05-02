@@ -104,7 +104,7 @@ class TransactionQueriesSpec
     val (total, _)           = run(queries.getBalanceAction(address)).futureValue
     val (totalDEPRECATED, _) = run(queries.getBalanceActionDEPRECATED(address)).futureValue
 
-    total is ALPH.alph(3) // ARG!
+    total is ALPH.alph(1)
     totalDEPRECATED is ALPH.alph(1)
   }
 
