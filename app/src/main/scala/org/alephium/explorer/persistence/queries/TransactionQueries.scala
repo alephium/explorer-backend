@@ -397,10 +397,16 @@ trait TransactionQueries extends StrictLogging {
   }
 
   def getBalanceAction(address: Address): DBActionR[(U256, U256)] =
+    getBalanceUntilLockTime(
+      address  = address,
+      lockTime = TimeStamp.now()
+    )
+
+  def getBalanceUntilLockTime(address: Address, lockTime: TimeStamp): DBActionR[(U256, U256)] =
     sql"""
       SELECT sum(outputs.amount),
              sum(CASE
-                     WHEN outputs.lock_time is NULL or outputs.lock_time < (extract(epoch from now()) * 1000) THEN 0
+                     WHEN outputs.lock_time is NULL or outputs.lock_time < ${lockTime.millis} THEN 0
                      ELSE outputs.amount
                  END)
       FROM outputs
