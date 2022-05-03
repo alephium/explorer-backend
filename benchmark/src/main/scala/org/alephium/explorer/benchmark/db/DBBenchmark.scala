@@ -158,7 +158,7 @@ class DBBenchmark {
   @Benchmark
   def getBalance(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(state.queries.getBalanceQuery(state.address), requestTimeout)
+      state.db.runNow(state.queries.getBalanceAction(state.address), requestTimeout)
   }
 
   @Benchmark

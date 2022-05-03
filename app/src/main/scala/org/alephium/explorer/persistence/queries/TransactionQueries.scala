@@ -33,6 +33,7 @@ import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.util.SlickSugar._
 import org.alephium.util.{TimeStamp, U256}
 
 trait TransactionQueries extends StrictLogging {
@@ -377,20 +378,6 @@ trait TransactionQueries extends StrictLogging {
       """.as[(U256, Option[TimeStamp])]
   }
 
-  def getBalanceQuery(address: Address): DBActionSR[(U256, Option[TimeStamp])] = {
-    sql"""
-      SELECT outputs.amount, outputs.lock_time
-      FROM outputs
-      LEFT JOIN inputs
-      ON outputs.key = inputs.output_ref_key
-      AND inputs.main_chain = true
-      WHERE outputs.spent_finalized IS NULL
-      AND outputs.address = $address
-      AND outputs.main_chain = true
-      AND inputs.block_hash IS NULL;
-    """.as[(U256, Option[TimeStamp])]
-  }
-
   private def sumBalance(outputs: Seq[(U256, Option[TimeStamp])]): (U256, U256) = {
     val now = TimeStamp.now()
     outputs.foldLeft((U256.Zero, U256.Zero)) {
@@ -409,9 +396,28 @@ trait TransactionQueries extends StrictLogging {
     getBalanceQueryDEPRECATED(address).map(sumBalance)
   }
 
-  def getBalanceAction(address: Address): DBActionR[(U256, U256)] = {
-    getBalanceQuery(address).map(sumBalance)
-  }
+  def getBalanceAction(address: Address): DBActionR[(U256, U256)] =
+    getBalanceUntilLockTime(
+      address  = address,
+      lockTime = TimeStamp.now()
+    )
+
+  def getBalanceUntilLockTime(address: Address, lockTime: TimeStamp): DBActionR[(U256, U256)] =
+    sql"""
+      SELECT sum(outputs.amount),
+             sum(CASE
+                     WHEN outputs.lock_time is NULL or outputs.lock_time < ${lockTime.millis} THEN 0
+                     ELSE outputs.amount
+                 END)
+      FROM outputs
+               LEFT JOIN inputs
+                         ON outputs.key = inputs.output_ref_key
+                             AND inputs.main_chain = true
+      WHERE outputs.spent_finalized IS NULL
+        AND outputs.address = $address
+        AND outputs.main_chain = true
+        AND inputs.block_hash IS NULL;
+    """.as[(U256, U256)].exactlyOne
 
   // switch logger.trace when we can disable debugging mode
   protected def debugShow(query: slickProfile.ProfileAction[_, _, _]) = {
