@@ -92,6 +92,22 @@ class TransactionQueriesSpec
     totalFinalizedDEPRECATED is ALPH.alph(1)
   }
 
+  it should "get balance should only take main chain outputs" in new Fixture {
+
+    val output1 = output(address, ALPH.alph(1), None)
+    val output2 = output(address, ALPH.alph(2), None).copy(mainChain = false)
+    val input1  = input(output2.hint, output2.key).copy(mainChain = false)
+
+    run(OutputSchema.table ++= Seq(output1, output2)).futureValue
+    run(InputSchema.table += input1).futureValue
+
+    val (total, _)           = run(queries.getBalanceAction(address)).futureValue
+    val (totalDEPRECATED, _) = run(queries.getBalanceActionDEPRECATED(address)).futureValue
+
+    total is ALPH.alph(1)
+    totalDEPRECATED is ALPH.alph(1)
+  }
+
   it should "txs count" in new Fixture {
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)

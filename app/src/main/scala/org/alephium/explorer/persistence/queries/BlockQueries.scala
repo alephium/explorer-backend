@@ -104,28 +104,20 @@ trait BlockQueries extends TransactionQueries with StrictLogging {
     *
     * @param prefix If non-empty adds the prefix with dot to all columns.
     */
-  private def orderBySQLString(prefix: String, reverse: Boolean): String = {
-    val columnPrefix =
-      if (prefix.isEmpty) {
-        prefix
-      } else {
-        prefix + "."
-      }
-
+  private def orderBySQLString(reverse: Boolean): String =
     if (reverse) {
-      s"order by ${columnPrefix}block_timestamp, ${columnPrefix}hash desc"
+      s"order by block_timestamp, hash desc"
     } else {
-      s"order by ${columnPrefix}block_timestamp desc, ${columnPrefix}hash"
+      s"order by block_timestamp desc, hash"
     }
-  }
 
   /** Reverse order by without prefix */
   private val LIST_BLOCKS_ORDER_BY_REVERSE: String =
-    orderBySQLString(prefix = "", reverse = true)
+    orderBySQLString(reverse = true)
 
   /** Forward order by without prefix */
   private val LIST_BLOCKS_ORDER_BY_FORWARD: String =
-    orderBySQLString(prefix = "", reverse = false)
+    orderBySQLString(reverse = false)
 
   /**
     * Fetches all main_chain [[org.alephium.explorer.persistence.schema.BlockHeaderSchema.table]] rows
@@ -281,7 +273,6 @@ trait BlockQueries extends TransactionQueries with StrictLogging {
       blockHeaders addOne block.toBlockHeader(groupNum)
     }
 
-    //
     val query =
       insertBlockDeps(blockDeps) andThen
         insertTransactions(transactions) andThen
