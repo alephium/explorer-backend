@@ -147,7 +147,7 @@ class InfosServerSpec()
       override def getBalance(address: Address): Future[(U256, U256)] =
         Future.successful((U256.Zero, U256.Zero))
 
-      def getTotalNumber(): Future[Int] = Future.successful(10)
+      def getTotalNumber(): Int = 10
     }
 
     val server =

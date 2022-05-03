@@ -62,7 +62,7 @@ class InfosServer(
           }
       } ~
       toRoute(getHeights)(_           => blockService.listMaxHeights().map(Right(_))) ~
-      toRoute(getTotalTransactions)(_ => transactionService.getTotalNumber().map(Right(_))) ~
+      toRoute(getTotalTransactions)(_ => Future(Right(transactionService.getTotalNumber()))) ~
       toRoute(getAverageBlockTime)(_  => blockService.getAverageBlockTime().map(Right(_)))
 
   private def toALPH(u256: U256): BigDecimal =

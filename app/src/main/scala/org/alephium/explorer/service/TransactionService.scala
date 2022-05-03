@@ -29,7 +29,7 @@ trait TransactionService {
                                   pagination: Pagination): Future[Seq[Transaction]]
   def getTransactionsNumberByAddress(address: Address): Future[Int]
   def getBalance(address: Address): Future[(U256, U256)]
-  def getTotalNumber(): Future[Int]
+  def getTotalNumber(): Int
 }
 
 object TransactionService {
@@ -60,7 +60,7 @@ object TransactionService {
     def getBalance(address: Address): Future[(U256, U256)] =
       transactionDao.getBalance(address)
 
-    def getTotalNumber(): Future[Int] =
+    def getTotalNumber(): Int =
       transactionDao.getTotalNumber()
   }
 }

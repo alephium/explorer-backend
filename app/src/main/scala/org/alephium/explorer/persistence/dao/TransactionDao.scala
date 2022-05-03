@@ -17,14 +17,14 @@
 package org.alephium.explorer.persistence.dao
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
 
-import com.github.benmanes.caffeine.cache._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.cache.CaffeineAsyncCache
+import org.alephium.explorer.cache.AsyncReloadingCache
 import org.alephium.explorer.persistence.DBRunner
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.util.U256
@@ -37,7 +37,7 @@ trait TransactionDao {
   def getNumberByAddressSQL(address: Address): Future[Int]
   def getNumberByAddressSQLNoJoin(address: Address): Future[Int]
   def getBalance(address: Address): Future[(U256, U256)]
-  def getTotalNumber(): Future[Int]
+  def getTotalNumber(): Int
 }
 
 object TransactionDao {
@@ -51,13 +51,11 @@ object TransactionDao {
       with TransactionQueries
       with DBRunner {
 
-    private val cachedTxsNumber: CaffeineAsyncCache[Query[_, _, Seq], Int] =
-      CaffeineAsyncCache.rowCountCache(this) {
-        Caffeine
-          .newBuilder()
-          .maximumSize(1)
-          .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
-      }
+    val cacheTxnNumber =
+      AsyncReloadingCache.expireAndReload(
+        initial     = 0,
+        reloadAfter = 5.seconds
+      )(_ => getTotalNumberFromDB())
 
     def get(hash: Transaction.Hash): Future[Option[Transaction]] =
       run(getTransactionAction(hash))
@@ -81,7 +79,10 @@ object TransactionDao {
     def getBalance(address: Address): Future[(U256, U256)] =
       run(getBalanceAction(address))
 
-    def getTotalNumber(): Future[Int] =
-      cachedTxsNumber.get(mainTransactions)
+    def getTotalNumber(): Int =
+      cacheTxnNumber.get()
+
+    def getTotalNumberFromDB() =
+      run(mainTransactions.length.result)
   }
 }
