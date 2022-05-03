@@ -384,9 +384,9 @@ trait TransactionQueries extends StrictLogging {
       LEFT JOIN inputs
       ON outputs.key = inputs.output_ref_key
       AND inputs.main_chain = true
-      AND outputs.main_chain = true
       WHERE outputs.spent_finalized IS NULL
       AND outputs.address = $address
+      AND outputs.main_chain = true
       AND inputs.block_hash IS NULL;
     """.as[(U256, Option[TimeStamp])]
   }
