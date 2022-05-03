@@ -80,18 +80,18 @@ object InputQueries {
   def insertTxPerAddressFromInputs(inputs: Seq[InputEntity], outputs: Seq[OutputEntity])(
       implicit ec: ExecutionContext): DBActionW[Seq[InputEntity]] = {
 
-    val inputsAdressOption = inputs.map(in => (in.address, in))
+    val inputsAddressOption = inputs.map(in => (in.address, in))
 
     val outputsByAddress = outputs.groupBy(out => (out.address, out.txHash))
 
-    val assets = inputsAdressOption
+    val assets = inputsAddressOption
       .collect {
-        case (Some(address), input) if outputsByAddress.get((address, input.txHash)).isEmpty =>
+        case (Some(address), input) if !outputsByAddress.contains((address, input.txHash)) =>
           (address, input)
       }
       .distinctBy { case (address, input) => (address, input.txHash) }
 
-    val others = inputsAdressOption.collect {
+    val others = inputsAddressOption.collect {
       case (None, input) => input
     }
 
@@ -124,7 +124,7 @@ object InputQueries {
       val values = inputs
         .map {
           case (address, input) =>
-            s"('${address}', '\\x${input.txHash}', '\\x${input.blockHash}', '${input.timestamp.millis}', ${input.txOrder}, ${input.mainChain}) "
+            s"('$address', '\\x${input.txHash}', '\\x${input.blockHash}', '${input.timestamp.millis}', ${input.txOrder}, ${input.mainChain}) "
         }
         .mkString(",\n")
 
