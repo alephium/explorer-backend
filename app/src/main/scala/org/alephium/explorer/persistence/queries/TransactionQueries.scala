@@ -383,7 +383,7 @@ trait TransactionQueries extends StrictLogging {
     outputs.foldLeft((U256.Zero, U256.Zero)) {
       case ((total, locked), (amount, lockTime)) =>
         val newTotal = total.addUnsafe(amount)
-        val newLocked = if (lockTime.map(_.isBefore(now)).getOrElse(true)) {
+        val newLocked = if (lockTime.forall(_.isBefore(now))) {
           locked
         } else {
           locked.addUnsafe(amount)
@@ -413,9 +413,9 @@ trait TransactionQueries extends StrictLogging {
                LEFT JOIN inputs
                          ON outputs.key = inputs.output_ref_key
                              AND inputs.main_chain = true
-                             AND outputs.main_chain = true
       WHERE outputs.spent_finalized IS NULL
         AND outputs.address = $address
+        AND outputs.main_chain = true
         AND inputs.block_hash IS NULL;
     """.as[(U256, U256)].exactlyOne
 
