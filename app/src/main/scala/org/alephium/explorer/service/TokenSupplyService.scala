@@ -27,16 +27,39 @@ import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.api.model.{GroupIndex, Height, Pagination, TokenSupply}
+import org.alephium.explorer.api.model.{GroupIndex, Pagination, TokenSupply}
 import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model.TokenSupplyEntity
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.util.SlickSugar._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
+/*
+ * Token supply service.
+ *
+ * Circulating supply computation follows CoinMarketCap:
+ *
+ * Circulating supply = Total supply - Balances from reserved wallet - Locked tokens
+ *
+ * Reserved wallets can be:
+ *   Burn
+ *   Escrow
+ *   Private sale investors
+ *   Marketing operations
+ *   Treasury
+ *   Ecosystem incentives
+ *   Team/advisor/contractors
+ *   Team-conrolled assets
+ *
+ * Most of those wallets are included in our genesis blocks, so we don't take those blocks when computing the circulating supply,
+ * some other wallets were creating after the launch and are explicitly listed below in `excludedAddresses`.
+ */
 trait TokenSupplyService extends SyncService {
   def listTokenSupply(pagination: Pagination): Future[Seq[TokenSupply]]
   def getLatestTokenSupply(): Future[Option[TokenSupply]]
@@ -54,6 +77,20 @@ object TokenSupplyService {
       with TransactionQueries
       with DBRunner
       with StrictLogging {
+
+    // scalastyle:off
+    private val excludedAddresses =
+      """(
+          'EnYRcDQ8sXTNYQg3DpKagp1GqKRVj8U9JVK1t65ynpMNQsErYKJwFUiZDu6jWRaysNY7tDxLHJCNwQr2S5iBa2ZNErMk7TWpEFppFvGFVpogtZzBFg7zZF9HMb4LmXjrySLeC4WZLxr72iLVJ4SH1Q3JG1cJz3KCNMsxxvhGJvFdz1mu2gz19ZngpUXD1hPUdfjUSGXCJVnJpCTFn3WH1iMekBd6s4MoteLERNP6jRcfB3V5BwCSUrvmL2tLUvrrVidHSZVnM3VTucC2kAarEAP1yKt4f6jfzVNmchz5V3RX3qd8kQTjq',
+          'Eki6MBjZmhht1XqWogUCjjBYgLL1wBKyUHhz6eHBhkNPsaLY1xWdLPqp6p9t6rTqG28LxnpPb6dZsEjithNG4RWkK1ko5zZVFFLup52H14tq9iBMPCABzJ1Mjj69hudwMxNS2aF8tm9MtUq1a1ya8MYZ7hKWwtHRw7RV849fKZNoQL1w9LxeaWcNdRoPMJx61XyoN6F9CKBAqWsgkLVmNi5CZD1Ge8eTrKoQ6nxu9NbG2D5duWRmraZiQeLJtEuP7oyofdPnuyTT36d4TqpMWpF841oa8PBfep67v5HJTPZ56mpLkxGP5',
+          'X4TqZeAizjDV8yt7XzxDVLywdzmJvLALtdAnjAERtCY3TPkyPXt4A5fxvXAX7UucXPpSYF7amNysNiniqb98vQ5rs9gh12MDXhsAf5kWmbmjXDygxV9AboSj8QR7QK8duaKAkZ',
+          'X1YV9KRRCS4JEN2pd9c7mdqGcEKXKSUEobsekxkzZFWVheAmCE8VcZVGgMjgaLpsXdyqhZPjQrC2uN8FyZsu1ACstPyGb65gAeZZQmk5jYzXAPN2WRo2QpFXEy5jPwMAmB68bj',
+          'X4TqZeAizjDV8yt7XzxDVLywdzmJvLALtdAnjAERtCY3TZRMTpcBzZxiDEnw7XMoBTsr7jXELnzqYbC7sYSW71ZC6JUhKn47Qpe2pD65NpvHq47rsa6RQ4yiCApkx6tsWDqHsF',
+          'X4QxH1pzNyqmMKHjtGhtcZi3abzAuktFnj5dLVa2Q2jCtTEnYqxULip8HvwiLaJMwsixEjVD1Fya4vXGh3jQpbu76bs7TSgZRJJqnG6BkvhxRcNX8aTaDhzUUzeSU3npqCjogu',
+          'X4QxH1pzNyqmMKHjtGhtcZi3abzAuktFnj5dLVa2Q2jCtd4sm5vqRtsED7PkyvyvNFiVgMVcP5kmyKz4m7XsfCh169c36ZezkwpDEnuQSxfQfYDhbFvLDz8BN3HErjusisymDT',
+          'EmMHhafTauTaFyZm5cWfwTvHUaQpRAzefPw1TuycvnGcwonSnGuSYFUb3CC7CwN4iC5TyU1Re4m2qTf39pGsr6GukGHFk5d5zANVT5QH2LjwVvMRm3K4dafoH2yVYEi57Dp6zkCf9fm8FWW8GPCaupM3hvTgF4sTzUC9X4HaiQefqomc72FsTyR9kqgHmMMSsTkAfNu9jZ6YfFTNEJo5ncdLx75bkGeWqydf8ctWMpW9tX8JvET5c5uTU5pwV9trtFgR4DqwPEkVAvoJUKAGU66hACWYNFsWNsgNQc9VtQyaXD3p7aDT'
+        )"""
+    // scalastyle:on
 
     private val launchDay =
       Instant.ofEpochMilli(ALPH.LaunchTimestamp.millis).truncatedTo(ChronoUnit.DAYS)
@@ -106,30 +143,40 @@ object TokenSupplyService {
       })
     }
 
-    private val mainInputs  = InputSchema.table.filter(_.mainChain)
-    private val mainOutputs = OutputSchema.table.filter(_.mainChain)
-
-    private def genesisLockedToken(lockTime: TimeStamp) = {
-      mainOutputs
-        .join(
-          mainTransactions
-            .join(BlockHeaderSchema.table.filter(_.height === Height.unsafe(0)))
-            .on(_.blockHash === _.hash)
-        )
-        .on(_.txHash === _._1.hash)
-        .filter { case (output, _) => output.lockTime.map(_ > lockTime).getOrElse(false) }
-        .map { case (output, _) => output.amount }
-        .sum
+    private def circulatingTokensQuery(at: TimeStamp) = {
+      sql"""
+      SELECT sum(CASE WHEN
+                     /* Only count unlock tokens */
+                     outputs.lock_time is NULL OR outputs.lock_time <= $at THEN outputs.amount
+                   ELSE 0
+                 END)
+      FROM outputs
+      LEFT JOIN inputs
+        ON outputs.key = inputs.output_ref_key
+        AND inputs.main_chain = true
+        AND inputs.block_timestamp <= $at
+      WHERE outputs.block_timestamp >= ${ALPH.LaunchTimestamp} /* We don't count genesis address */
+      AND outputs.block_timestamp <= $at
+      AND outputs.main_chain = true
+      AND outputs.spent_finalized IS NULL
+      AND outputs.address NOT IN #$excludedAddresses /* We exclude the reserved wallets */
+      AND inputs.block_hash IS NULL;
+        """.as[Option[U256]].exactlyOne
     }
 
-    private def unspentTokens(at: TimeStamp) = {
-      mainOutputs
-        .filter(_.timestamp <= at)
-        .joinLeft(mainInputs.filter(_.timestamp <= at))
-        .on(_.key === _.outputRefKey)
-        .filter { case (_, inputOpt) => inputOpt.isEmpty }
-        .map { case (output, _) => output.amount }
-        .sum
+    private def allUnspentTokens(at: TimeStamp) = {
+      sql"""
+        SELECT sum(outputs.amount)
+        FROM outputs
+        LEFT JOIN inputs
+          ON outputs.key = inputs.output_ref_key
+          AND inputs.main_chain = true
+          AND inputs.block_timestamp <= $at
+        WHERE outputs.main_chain = true
+        AND outputs.block_timestamp <= $at
+        AND outputs.spent_finalized IS NULL
+        AND inputs.block_hash IS NULL;
+      """.as[U256].exactlyOne
     }
 
     @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
@@ -163,11 +210,10 @@ object TokenSupplyService {
 
     private def computeTokenSupply(at: TimeStamp): DBActionR[(U256, U256)] = {
       for {
-        unspent       <- unspentTokens(at).result
-        genesisLocked <- genesisLockedToken(at).result
+        total       <- allUnspentTokens(at)
+        circulating <- circulatingTokensQuery(at)
       } yield {
-        val total = unspent.getOrElse(U256.Zero)
-        (total, total.subUnsafe(genesisLocked.getOrElse(U256.Zero)))
+        (total, circulating.getOrElse(U256.Zero))
       }
     }
 
