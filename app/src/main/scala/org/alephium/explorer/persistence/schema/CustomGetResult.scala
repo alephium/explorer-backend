@@ -69,6 +69,10 @@ object CustomGetResult {
   implicit val byteStringGetResult: GetResult[ByteString] =
     (result: PositionedResult) => ByteString.fromArrayUnsafe(result.nextBytes())
 
+  implicit val optionByteStringGetResult: GetResult[Option[ByteString]] =
+    (result: PositionedResult) =>
+      result.nextBytesOption().map(bytes => ByteString.fromArrayUnsafe(bytes))
+
   implicit val hashGetResult: GetResult[Hash] =
     (result: PositionedResult) => Hash.unsafe(ByteString.fromArrayUnsafe(result.nextBytes()))
 
