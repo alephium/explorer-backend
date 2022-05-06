@@ -223,7 +223,7 @@ object TokenSupplyService {
               case Some(latestTs) => Future.successful(latestTs)
             }
             .flatMap { latestTs =>
-              val days = buildDaysRange(latestTs, mininumLatestBlockTime)
+              val days = buildDaysRange(latestTs, mininumLatestBlockTime).reverse
               foldFutures(days) { day =>
                 run(for {
                   (total, circulating) <- computeTokenSupply(day)
