@@ -400,9 +400,19 @@ trait TransactionQueries extends StrictLogging {
     getBalanceUntilLockTime(
       address  = address,
       lockTime = TimeStamp.now()
+    ) map {
+      case (total, locked) =>
+        (total.getOrElse(U256.Zero), locked.getOrElse(U256.Zero))
+    }
+
+  def getBalanceActionOption(address: Address): DBActionR[(Option[U256], Option[U256])] =
+    getBalanceUntilLockTime(
+      address  = address,
+      lockTime = TimeStamp.now()
     )
 
-  def getBalanceUntilLockTime(address: Address, lockTime: TimeStamp): DBActionR[(U256, U256)] =
+  def getBalanceUntilLockTime(address: Address,
+                              lockTime: TimeStamp): DBActionR[(Option[U256], Option[U256])] =
     sql"""
       SELECT sum(outputs.amount),
              sum(CASE
@@ -417,7 +427,7 @@ trait TransactionQueries extends StrictLogging {
         AND outputs.address = $address
         AND outputs.main_chain = true
         AND inputs.block_hash IS NULL;
-    """.as[(U256, U256)].exactlyOne
+    """.as[(Option[U256], Option[U256])].exactlyOne
 
   // switch logger.trace when we can disable debugging mode
   protected def debugShow(query: slickProfile.ProfileAction[_, _, _]) = {
