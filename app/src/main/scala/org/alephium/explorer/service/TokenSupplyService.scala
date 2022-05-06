@@ -145,11 +145,7 @@ object TokenSupplyService {
 
     private def circulatingTokensQuery(at: TimeStamp) = {
       sql"""
-      SELECT sum(CASE WHEN
-                     /* Only count unlock tokens */
-                     outputs.lock_time is NULL OR outputs.lock_time <= $at THEN outputs.amount
-                   ELSE 0
-                 END)
+      SELECT sum(outputs.amount)
       FROM outputs
       LEFT JOIN inputs
         ON outputs.key = inputs.output_ref_key
@@ -157,6 +153,7 @@ object TokenSupplyService {
         AND inputs.block_timestamp <= $at
       WHERE outputs.block_timestamp >= ${ALPH.LaunchTimestamp} /* We don't count genesis address */
       AND outputs.block_timestamp <= $at
+      AND (outputs.lock_time is NULL OR outputs.lock_time <= $at) /* Only count unlock tokens */
       AND outputs.main_chain = true
       AND outputs.address NOT IN #$excludedAddresses /* We exclude the reserved wallets */
       AND inputs.block_hash IS NULL;
