@@ -158,7 +158,6 @@ object TokenSupplyService {
       WHERE outputs.block_timestamp >= ${ALPH.LaunchTimestamp} /* We don't count genesis address */
       AND outputs.block_timestamp <= $at
       AND outputs.main_chain = true
-      AND outputs.spent_finalized IS NULL
       AND outputs.address NOT IN #$excludedAddresses /* We exclude the reserved wallets */
       AND inputs.block_hash IS NULL;
         """.as[Option[U256]].exactlyOne
@@ -174,7 +173,6 @@ object TokenSupplyService {
           AND inputs.block_timestamp <= $at
         WHERE outputs.main_chain = true
         AND outputs.block_timestamp <= $at
-        AND outputs.spent_finalized IS NULL
         AND inputs.block_hash IS NULL;
       """.as[U256].exactlyOne
     }
