@@ -56,8 +56,7 @@ object Migrations extends StrictLogging {
       implicit ec: ExecutionContext): Future[Unit] = {
     logger.info("Migrating")
     DBRunner.run(databaseConfig)(for {
-      version <- getVersion()
-      _ = println(s"${Console.RED}${Console.BOLD}*** version ***\n\t${Console.RESET}${version}")
+      version       <- getVersion()
       newVersionOpt <- migrations(version)
       _             <- updateVersion(newVersionOpt)
     } yield ())
