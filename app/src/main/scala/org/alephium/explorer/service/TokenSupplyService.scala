@@ -179,6 +179,46 @@ object TokenSupplyService {
       allUnspentTokensOption(at).map(_.getOrElse(U256.Zero))
     }
 
+    private def reservedTokensOptionQuery(at: TimeStamp): DBActionR[Option[U256]] = {
+      sql"""
+       SELECT sum(outputs.amount)
+       FROM outputs
+       LEFT JOIN inputs
+         ON outputs.key = inputs.output_ref_key
+         AND inputs.main_chain = true
+         AND inputs.block_timestamp <= $at
+       WHERE outputs.block_timestamp <= $at
+       AND outputs.main_chain = true
+      AND outputs.address IN #$reservedAddresses /* We only take the reserved wallets */
+      AND inputs.block_hash IS NULL;
+        """.as[Option[U256]].exactlyOne
+    }
+
+    private def reservedTokensQuery(at: TimeStamp): DBActionR[U256] = {
+      reservedTokensOptionQuery(at).map(_.getOrElse(U256.Zero))
+    }
+
+    private def lockedTokensOptionQuery(at: TimeStamp): DBActionR[Option[U256]] = {
+      sql"""
+       SELECT sum(outputs.amount)
+       FROM outputs
+       LEFT JOIN inputs
+         ON outputs.key = inputs.output_ref_key
+         AND inputs.main_chain = true
+         AND inputs.block_timestamp <= $at
+      WHERE outputs.block_timestamp >= ${ALPH.LaunchTimestamp} /* We don't count genesis address */
+       AND outputs.block_timestamp <= $at
+       AND outputs.lock_time > $at /* count only locked tokens */
+       AND outputs.main_chain = true
+      AND outputs.address NOT IN #$reservedAddresses /* We exclude the reserved wallets */
+      AND inputs.block_hash IS NULL;
+        """.as[Option[U256]].exactlyOne
+    }
+
+    private def lockedTokensQuery(at: TimeStamp): DBActionR[U256] = {
+      lockedTokensOptionQuery(at).map(_.getOrElse(U256.Zero))
+    }
+
     @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
     private def findMinimumLatestBlockTime(): Future[Option[TimeStamp]] = {
       run(
@@ -208,12 +248,18 @@ object TokenSupplyService {
       }
     }
 
-    private def computeTokenSupply(at: TimeStamp): DBActionR[(U256, U256)] = {
+    private def computeTokenSupply(at: TimeStamp): DBActionR[(U256, U256, U256, U256)] = {
       for {
         total       <- allUnspentTokensQuery(at)
         circulating <- circulatingTokensQuery(at)
+        reserved    <- reservedTokensQuery(at)
+        locked      <- lockedTokensQuery(at)
       } yield {
-        (total, circulating)
+        val zero = total.subUnsafe(circulating).subUnsafe(reserved).subUnsafe(locked)
+        if (zero != U256.Zero) {
+          logger.error(s"Wrong supply computed at $at")
+        }
+        (total, circulating, reserved, locked)
       }
     }
 
@@ -231,8 +277,8 @@ object TokenSupplyService {
               val days = buildDaysRange(latestTs, mininumLatestBlockTime)
               foldFutures(days) { day =>
                 run(for {
-                  (total, circulating) <- computeTokenSupply(day)
-                  _                    <- insert(TokenSupplyEntity(day, total, circulating))
+                  (total, circulating, reserved, locked) <- computeTokenSupply(day)
+                  _                                      <- insert(TokenSupplyEntity(day, total, circulating, reserved, locked))
                 } yield (()))
               }.map(_ => ())
             }
@@ -241,8 +287,8 @@ object TokenSupplyService {
 
     private def initGenesisTokenSupply(): Future[TimeStamp] = {
       run(for {
-        (total, circulating) <- computeTokenSupply(ALPH.LaunchTimestamp)
-        _                    <- insert(TokenSupplyEntity(ALPH.LaunchTimestamp, total, circulating))
+        (total, circulating, reserved, locked) <- computeTokenSupply(ALPH.LaunchTimestamp)
+        _                                      <- insert(TokenSupplyEntity(ALPH.LaunchTimestamp, total, circulating, reserved, locked))
       } yield (ALPH.LaunchTimestamp))
     }
 

@@ -41,11 +41,18 @@ object Migrations extends StrictLogging {
     DELETE FROM token_supply
   """
 
+  val addReservedAndLockedTopkenSupplyColumn: DBActionW[Int] = sqlu"""
+    ALTER TABLE token_supply
+    ADD COLUMN IF NOT EXISTS "reserved" numeric(80,0) NOT NULL,
+    ADD COLUMN IF NOT EXISTS "locked" numeric(80,0) NOT NULL
+  """
+
   def migrations(version: Int)(implicit ec: ExecutionContext): DBActionW[Option[Int]] = {
     if (version == 0) {
       for {
         _ <- addOutputStatusColumn
         _ <- resetTokenSupply
+        _ <- addReservedAndLockedTopkenSupplyColumn
       } yield (Some(1))
     } else {
       DBIOAction.successful(None)
