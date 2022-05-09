@@ -71,8 +71,7 @@ object Migrations extends StrictLogging {
         deserialize[Int](bytes) match {
           case Left(error) =>
             logger.error(s"Invalid migration version, closing app. $error")
-            System.exit(1)
-            0
+            sys.exit(1)
           case Right(version) => version
         }
     }
