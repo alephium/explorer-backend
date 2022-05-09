@@ -140,7 +140,7 @@ object TokenSupplyService {
       })
     }
 
-    private def circulatingTokensQuery(at: TimeStamp) = {
+    private def circulatingTokensOptionQuery(at: TimeStamp): DBActionR[Option[U256]] = {
       sql"""
       SELECT sum(outputs.amount)
       FROM outputs
@@ -157,7 +157,11 @@ object TokenSupplyService {
         """.as[Option[U256]].exactlyOne
     }
 
-    private def allUnspentTokens(at: TimeStamp) = {
+    def circulatingTokensQuery(at: TimeStamp): DBActionR[U256] = {
+      circulatingTokensOptionQuery(at).map(_.getOrElse(U256.Zero))
+    }
+
+    private def allUnspentTokensOption(at: TimeStamp): DBActionR[Option[U256]] = {
       sql"""
         SELECT sum(outputs.amount)
         FROM outputs
@@ -168,7 +172,11 @@ object TokenSupplyService {
         WHERE outputs.main_chain = true
         AND outputs.block_timestamp <= $at
         AND inputs.block_hash IS NULL;
-      """.as[U256].exactlyOne
+      """.as[Option[U256]].exactlyOne
+    }
+
+    def allUnspentTokensQuery(at: TimeStamp): DBActionR[U256] = {
+      allUnspentTokensOption(at).map(_.getOrElse(U256.Zero))
     }
 
     @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
@@ -202,10 +210,10 @@ object TokenSupplyService {
 
     private def computeTokenSupply(at: TimeStamp): DBActionR[(U256, U256)] = {
       for {
-        total       <- allUnspentTokens(at)
+        total       <- allUnspentTokensQuery(at)
         circulating <- circulatingTokensQuery(at)
       } yield {
-        (total, circulating.getOrElse(U256.Zero))
+        (total, circulating)
       }
     }
 
