@@ -34,20 +34,18 @@ import org.alephium.protocol.model.NetworkId
 import org.alephium.util.Duration
 
 // scalastyle:off magic.number
-class Application(
-    host: String,
-    port: Int,
-    readOnly: Boolean,
-    blockFlowUri: Uri,
-    groupNum: Int,
-    blockflowFetchMaxAge: Duration,
-    networkId: NetworkId,
-    databaseConfig: DatabaseConfig[PostgresProfile],
-    maybeBlockFlowApiKey: Option[ApiKey],
-    syncPeriod: Duration)(implicit system: ActorSystem, executionContext: ExecutionContext)
+class Application(host: String,
+                  port: Int,
+                  readOnly: Boolean,
+                  blockFlowUri: Uri,
+                  groupNum: Int,
+                  blockflowFetchMaxAge: Duration,
+                  networkId: NetworkId,
+                  maybeBlockFlowApiKey: Option[ApiKey],
+                  syncPeriod: Duration)(implicit system: ActorSystem,
+                                        executionContext: ExecutionContext,
+                                        databaseConfig: DatabaseConfig[PostgresProfile])
     extends StrictLogging {
-
-  val dbInitializer: DBInitializer = DBInitializer(databaseConfig)
 
   val blockDao: BlockDao                = BlockDao(groupNum, databaseConfig)
   val transactionDao: TransactionDao    = TransactionDao(databaseConfig)
@@ -113,7 +111,7 @@ class Application(
   private def startTasksForReadWriteApp(): Future[Unit] = {
     if (!readOnly) {
       for {
-        _ <- dbInitializer.initialize()
+        _ <- DBInitializer.initialize()
         _ <- startSyncService()
       } yield ()
 
