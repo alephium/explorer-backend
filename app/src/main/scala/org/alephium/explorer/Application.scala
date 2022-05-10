@@ -50,7 +50,6 @@ class Application(host: String,
   val blockDao: BlockDao                = BlockDao(groupNum, databaseConfig)
   val transactionDao: TransactionDao    = TransactionDao(databaseConfig)
   val utransactionDao: UnconfirmedTxDao = UnconfirmedTxDao(databaseConfig)
-  val healthCheckDao: HealthCheckDao    = HealthCheckDao(databaseConfig)
 
   //Services
   val blockFlowClient: BlockFlowClient =
@@ -130,7 +129,7 @@ class Application(host: String,
 
   def start: Future[Unit] = {
     for {
-      _       <- healthCheckDao.healthCheck()
+      _       <- HealthCheckDao.healthCheck()
       _       <- startTasksForReadWriteApp()
       binding <- Http().newServerAt(host, port).bindFlow(server.route)
     } yield {
