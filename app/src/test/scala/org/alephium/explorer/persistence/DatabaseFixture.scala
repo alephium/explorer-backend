@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.persistence
 
-import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
+import scala.concurrent.{Await, ExecutionContext}
 import scala.jdk.CollectionConverters._
 
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
@@ -41,7 +41,7 @@ object DatabaseFixture {
     DatabaseConfig.forConfig[PostgresProfile]("db", config)
 
   def dropCreateTables()(implicit databaseConfig: DatabaseConfig[PostgresProfile]) = {
-    implicit val ec: ExecutionContextExecutor = ExecutionContext.global
+    implicit val ec: ExecutionContext = ExecutionContext.global
 
     Await.result(DBInitializer.dropTables(), Duration.ofSecondsUnsafe(10).asScala)
     Await.result(DBInitializer.initialize(), Duration.ofSecondsUnsafe(10).asScala)
