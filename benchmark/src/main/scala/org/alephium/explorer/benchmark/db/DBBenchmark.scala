@@ -18,7 +18,7 @@ package org.alephium.explorer.benchmark.db
 
 import java.util.concurrent.TimeUnit
 
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.Await
 
 import org.openjdk.jmh.annotations._
 import slick.jdbc.PostgresProfile.api._
@@ -27,6 +27,7 @@ import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.state._
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
+import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 
 /**
@@ -157,21 +158,23 @@ class DBBenchmark {
 
   @Benchmark
   def getBalance(state: Address_ReadState): Unit = {
+    import state.executionContext
+
     val _ =
-      state.db.runNow(state.queries.getBalanceAction(state.address), requestTimeout)
+      state.db.runNow(TransactionQueries.getBalanceAction(state.address), requestTimeout)
   }
 
   @Benchmark
   def getBalanceDEPRECATED(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(state.queries.getBalanceQueryDEPRECATED(state.address), requestTimeout)
+      state.db.runNow(TransactionQueries.getBalanceQueryDEPRECATED(state.address), requestTimeout)
   }
 
   @Benchmark
   def getTxHashesByAddressQuery(state: Address_ReadState): Unit = {
     val _ =
       state.db.runNow(
-        state.queries
+        TransactionQueries
           .getTxHashesByAddressQuery(
             (state.address, state.pagination.offset.toLong, state.pagination.limit.toLong))
           .result,
@@ -181,37 +184,37 @@ class DBBenchmark {
   @Benchmark
   def getTxHashesByAddressQuerySQL(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(state.queries.getTxHashesByAddressQuerySQL(state.address,
-                                                                 state.pagination.offset,
-                                                                 state.pagination.limit),
+      state.db.runNow(TransactionQueries.getTxHashesByAddressQuerySQL(state.address,
+                                                                      state.pagination.offset,
+                                                                      state.pagination.limit),
                       requestTimeout)
   }
 
   @Benchmark
   def getTxHashesByAddressQuerySQLNoJoin(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(state.queries.getTxHashesByAddressQuerySQLNoJoin(state.address,
-                                                                       state.pagination.offset,
-                                                                       state.pagination.limit),
+      state.db.runNow(TransactionQueries.getTxHashesByAddressQuerySQLNoJoin(state.address,
+                                                                            state.pagination.offset,
+                                                                            state.pagination.limit),
                       requestTimeout)
   }
 
   @Benchmark
   def countAddressTransactionsSQL(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(state.queries.countAddressTransactionsSQL(state.address), requestTimeout)
+      state.db.runNow(TransactionQueries.countAddressTransactionsSQL(state.address), requestTimeout)
   }
 
   @Benchmark
   def countAddressTransactionsSQLNoJoin(state: Address_ReadState): Unit = {
     val _ =
       state.db
-        .runNow(state.queries.countAddressTransactionsSQLNoJoin(state.address), requestTimeout)
+        .runNow(TransactionQueries.countAddressTransactionsSQLNoJoin(state.address), requestTimeout)
   }
 
   @Benchmark
   def getAddressInfo(state: Address_ReadState): Unit = {
-    implicit val ec: ExecutionContext = ExecutionContext.global
+    import state.executionContext
 
     val _ = Await.result(for {
       _ <- state.dao.getBalance(state.address)
@@ -221,7 +224,7 @@ class DBBenchmark {
 
   @Benchmark
   def getAddressInfoWithTxAddressTable(state: Address_ReadState): Unit = {
-    implicit val ec: ExecutionContext = ExecutionContext.global
+    import state.executionContext
 
     val _ = Await.result(for {
       _ <- state.dao.getBalance(state.address)
@@ -256,27 +259,32 @@ class DBBenchmark {
   @Benchmark
   def getGasFromTxs(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(state.queries.gasFromTxs(state.txHashes).result, requestTimeout)
+      state.db.runNow(TransactionQueries.gasFromTxs(state.txHashes).result, requestTimeout)
   }
 
   @Benchmark
   def getGasFromTxsSQL(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(state.queries.gasFromTxsSQL(state.txHashes), requestTimeout)
+      state.db.runNow(TransactionQueries.gasFromTxsSQL(state.txHashes), requestTimeout)
   }
 
   @Benchmark
   def getTransactionsByAddress(state: Address_ReadState): Unit = {
+    import state.executionContext
+
     val _ =
-      state.db.runNow(state.queries.getTransactionsByAddress(state.address, state.pagination),
+      state.db.runNow(TransactionQueries.getTransactionsByAddress(state.address, state.pagination),
                       requestTimeout)
   }
 
   @Benchmark
   def getTransactionsByAddressSQL(state: Address_ReadState): Unit = {
+    import state.executionContext
+
     val _ =
-      state.db.runNow(state.queries.getTransactionsByAddressSQL(state.address, state.pagination),
-                      requestTimeout)
+      state.db.runNow(
+        TransactionQueries.getTransactionsByAddressSQL(state.address, state.pagination),
+        requestTimeout)
   }
 
   /** Benchmarks for inserting Blocks. With & without HikariCP */

@@ -28,7 +28,7 @@ import org.alephium.explorer.AnyOps
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex}
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.dao.BlockDao
-import org.alephium.explorer.persistence.queries.BlockQueries
+import org.alephium.explorer.persistence.queries.BlockQueries._
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
@@ -38,8 +38,7 @@ class SanityChecker(groupNum: Int,
                     blockDao: BlockDao,
                     val databaseConfig: DatabaseConfig[PostgresProfile])(
     implicit val executionContext: ExecutionContext)
-    extends BlockQueries
-    with DBRunner
+    extends DBRunner
     with StrictLogging {
 
   private def findLatestBlock(from: GroupIndex, to: GroupIndex): Future[Option[BlockEntry.Hash]] = {

@@ -17,6 +17,7 @@
 package org.alephium.explorer.persistence.queries
 
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.ExecutionContext
 
 import com.typesafe.scalalogging.StrictLogging
 import slick.dbio.DBIOAction
@@ -29,34 +30,40 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.BlockDepQueries.insertBlockDeps
 import org.alephium.explorer.persistence.queries.InputQueries.insertInputs
 import org.alephium.explorer.persistence.queries.OutputQueries.insertOutputs
+import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.util.TimeStamp
 
-trait BlockQueries extends TransactionQueries with StrictLogging {
+object BlockQueries extends StrictLogging {
 
+  @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
   val block_headers = BlockHeaderSchema.table.baseTableRow.tableName //block_headers table name
 
+  @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
   val mainChainQuery = BlockHeaderSchema.table.filter(_.mainChain)
 
   private val blockDepsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
     BlockDepsSchema.table.filter(_.hash === blockHash).sortBy(_.depOrder).map(_.dep)
   }
 
-  def buildBlockEntryAction(blockHeader: BlockHeader): DBActionR[BlockEntry] =
+  def buildBlockEntryAction(blockHeader: BlockHeader)(
+      implicit ec: ExecutionContext): DBActionR[BlockEntry] =
     for {
       deps <- blockDepsQuery(blockHeader.hash).result
       txs  <- getTransactionsByBlockHash(blockHeader.hash)
     } yield blockHeader.toApi(deps, txs)
 
-  def getBlockEntryLiteAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntryLite]] =
+  def getBlockEntryLiteAction(hash: BlockEntry.Hash)(
+      implicit ec: ExecutionContext): DBActionR[Option[BlockEntryLite]] =
     for {
       header <- BlockHeaderSchema.table.filter(_.hash === hash).result.headOption
     } yield header.map(_.toLiteApi)
 
-  def getBlockEntryAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry]] =
+  def getBlockEntryAction(hash: BlockEntry.Hash)(
+      implicit ec: ExecutionContext): DBActionR[Option[BlockEntry]] =
     for {
       headers <- BlockHeaderSchema.table.filter(_.hash === hash).result
       blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
@@ -72,9 +79,8 @@ trait BlockQueries extends TransactionQueries with StrictLogging {
       .headOption
   }
 
-  def getAtHeightAction(fromGroup: GroupIndex,
-                        toGroup: GroupIndex,
-                        height: Height): DBActionR[Seq[BlockEntry]] =
+  def getAtHeightAction(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
+      implicit ec: ExecutionContext): DBActionR[Seq[BlockEntry]] =
     for {
       headers <- BlockHeaderSchema.table
         .filter(header =>
@@ -154,8 +160,8 @@ trait BlockQueries extends TransactionQueries with StrictLogging {
   def countMainChain(): Rep[Int] =
     BlockHeaderSchema.table.filter(_.mainChain).length
 
-  def updateMainChainStatusAction(hash: BlockEntry.Hash,
-                                  isMainChain: Boolean): DBActionRWT[Unit] = {
+  def updateMainChainStatusAction(hash: BlockEntry.Hash, isMainChain: Boolean)(
+      implicit ec: ExecutionContext): DBActionRWT[Unit] = {
     val query =
       for {
         _ <- TransactionSchema.table
@@ -183,12 +189,14 @@ trait BlockQueries extends TransactionQueries with StrictLogging {
     query.transactionally
   }
 
-  def buildBlockEntryWithoutTxsAction(blockHeader: BlockHeader): DBActionR[BlockEntry] =
+  def buildBlockEntryWithoutTxsAction(blockHeader: BlockHeader)(
+      implicit ec: ExecutionContext): DBActionR[BlockEntry] =
     for {
       deps <- blockDepsQuery(blockHeader.hash).result
     } yield blockHeader.toApi(deps, Seq.empty)
 
-  def getBlockEntryWithoutTxsAction(hash: BlockEntry.Hash): DBActionR[Option[BlockEntry]] =
+  def getBlockEntryWithoutTxsAction(hash: BlockEntry.Hash)(
+      implicit ec: ExecutionContext): DBActionR[Option[BlockEntry]] =
     for {
       headers <- BlockHeaderSchema.table.filter(_.hash === hash).result
       blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryWithoutTxsAction))

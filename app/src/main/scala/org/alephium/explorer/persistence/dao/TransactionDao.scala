@@ -26,7 +26,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.AsyncReloadingCache
 import org.alephium.explorer.persistence.DBRunner
-import org.alephium.explorer.persistence.queries.TransactionQueries
+import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.util.U256
 
 trait TransactionDao {
@@ -48,7 +48,6 @@ object TransactionDao {
   private class Impl(val databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit val executionContext: ExecutionContext)
       extends TransactionDao
-      with TransactionQueries
       with DBRunner {
 
     val cacheTxnNumber =

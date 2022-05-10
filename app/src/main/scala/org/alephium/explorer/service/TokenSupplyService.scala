@@ -32,7 +32,6 @@ import org.alephium.explorer.api.model.{GroupIndex, Pagination, TokenSupply}
 import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model.TokenSupplyEntity
-import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
@@ -75,7 +74,6 @@ object TokenSupplyService {
                      val databaseConfig: DatabaseConfig[PostgresProfile],
                      groupNum: Int)(implicit val executionContext: ExecutionContext)
       extends TokenSupplyService
-      with TransactionQueries
       with DBRunner
       with StrictLogging {
 

@@ -33,7 +33,6 @@ import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBEx
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.protocol.ALPH
@@ -41,7 +40,6 @@ import org.alephium.util.{Base58, TimeStamp, U256}
 
 class Queries(val config: DatabaseConfig[PostgresProfile])(
     implicit val executionContext: ExecutionContext)
-    extends TransactionQueries
 
 /**
   * JMH state for benchmarking reads from TransactionDao
@@ -50,8 +48,7 @@ class Queries(val config: DatabaseConfig[PostgresProfile])(
 // scalastyle:off method.length
 @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
 class AddressReadState(val db: DBExecutor)
-    extends ReadBenchmarkState[OutputEntity](testDataCount = 4000, db = db)
-    with TransactionQueries {
+    extends ReadBenchmarkState[OutputEntity](testDataCount = 4000, db = db) {
 
   val ec: ExecutionContext = ExecutionContext.global
 
@@ -63,8 +60,6 @@ class AddressReadState(val db: DBExecutor)
 
   val dao: TransactionDao =
     TransactionDao(config)(db.config.db.ioExecutionContext)
-
-  val queries: TransactionQueries = new Queries(db.config)
 
   val address: Address = Address.unsafe(Base58.encode(Hash.generate.bytes))
 
