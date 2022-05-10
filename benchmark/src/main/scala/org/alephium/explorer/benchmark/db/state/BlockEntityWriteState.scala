@@ -16,9 +16,11 @@
 
 package org.alephium.explorer.benchmark.db.state
 
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
 
 import org.openjdk.jmh.annotations.{Scope, State}
+import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
@@ -41,9 +43,11 @@ class BlockEntityWriteState(val db: DBExecutor) extends WriteBenchmarkState[Bloc
     DataGenerator.genBlockEntity()
 
   def beforeAll(): Unit = {
-    val dbInitializer: DBInitializer = new DBInitializer(config)(ExecutionContext.global)
-    Await.result(dbInitializer.dropTables(), Duration.ofSecondsUnsafe(10).asScala)
-    Await.result(dbInitializer.initialize(), Duration.ofSecondsUnsafe(10).asScala)
+    implicit val ec: ExecutionContextExecutor        = ExecutionContext.global
+    implicit val dc: DatabaseConfig[PostgresProfile] = config
+
+    Await.result(DBInitializer.dropTables(), Duration.ofSecondsUnsafe(10).asScala)
+    Await.result(DBInitializer.initialize(), Duration.ofSecondsUnsafe(10).asScala)
   }
 }
 

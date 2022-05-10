@@ -69,7 +69,7 @@ object Main extends App with StrictLogging {
   val readOnly: Boolean    = config.getBoolean("explorer.readOnly")
   val syncPeriod: Duration = Duration.from(config.getDuration("explorer.syncPeriod")).get
 
-  val databaseConfig: DatabaseConfig[PostgresProfile] =
+  implicit val databaseConfig: DatabaseConfig[PostgresProfile] =
     DatabaseConfig.forConfig[PostgresProfile]("db")
 
   val app: Application =
@@ -80,7 +80,6 @@ object Main extends App with StrictLogging {
                     groupNum,
                     blockflowFetchMaxAge,
                     networkId,
-                    databaseConfig,
                     blockflowApiKey,
                     syncPeriod)
 

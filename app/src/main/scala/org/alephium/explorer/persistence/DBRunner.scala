@@ -41,4 +41,13 @@ object DBRunner {
       case error => throw new RuntimeException(error)
     }
 
+  /** Temporary function until all things are made stateless */
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  def run[R, E <: Effect](action: DBAction[R, E])(
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[R] =
+    databaseConfig.db.run(action).recoverWith {
+      case error => Future.failed(new RuntimeException(error))
+    }
+
 }

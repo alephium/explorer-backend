@@ -25,12 +25,12 @@ import slick.jdbc.PostgresProfile
   */
 trait DatabaseFixtureForAll extends BeforeAndAfterAll { this: Suite =>
 
-  val databaseConfig: DatabaseConfig[PostgresProfile] =
+  implicit val databaseConfig: DatabaseConfig[PostgresProfile] =
     DatabaseFixture.createDatabaseConfig()
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    DatabaseFixture.dropCreateTables(databaseConfig)
+    DatabaseFixture.dropCreateTables()
   }
 
   override def afterAll(): Unit = {

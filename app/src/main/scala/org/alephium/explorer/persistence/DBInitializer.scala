@@ -26,14 +26,11 @@ import slick.jdbc.PostgresProfile.api._
 import slick.jdbc.meta.MTable
 
 import org.alephium.explorer.AnyOps
-import org.alephium.explorer.persistence._
+import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.FinalizerService
 
-class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
-    implicit val executionContext: ExecutionContext)
-    extends DBRunner
-    with StrictLogging {
+object DBInitializer extends StrictLogging {
 
   @SuppressWarnings(
     Array("org.wartremover.warts.JavaSerializable",
@@ -56,7 +53,8 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
       AppStateSchema.table
     )
 
-  def initialize(): Future[Unit] = {
+  def initialize()(implicit executionContext: ExecutionContext,
+                   databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
     for {
       _ <- createTables()
       _ <- Migrations.migrate(databaseConfig)
@@ -65,7 +63,8 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
     } yield ()
   }
 
-  private def createTables(): Future[Unit] = {
+  private def createTables()(implicit executionContext: ExecutionContext,
+                             databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
     logger.info("Create Tables")
     //TODO Look for something like https://flywaydb.org/ to manage schemas
     val existingTables = run(MTable.getTables)
@@ -84,7 +83,8 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
       .map(_ => ())
   }
 
-  private def createIndexes(): Future[Unit] = {
+  private def createIndexes()(implicit executionContext: ExecutionContext,
+                              databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
     logger.info("Create Indexes")
     run(for {
       _ <- BlockHeaderSchema.createBlockHeadersIndexesSQL()
@@ -96,12 +96,14 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
     } yield ())
   }
 
-  private def makeUpdates(): Future[Unit] = {
+  private def makeUpdates()(implicit executionContext: ExecutionContext,
+                            databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
     logger.info("Updating database (might take long)")
     FinalizerService.finalizeOutputs(databaseConfig)
   }
 
-  def dropTables(): Future[Unit] = {
+  def dropTables()(implicit executionContext: ExecutionContext,
+                   databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
     val query = allTables
       .map { table =>
         val name = table.baseTableRow.tableName
@@ -110,10 +112,4 @@ class DBInitializer(val databaseConfig: DatabaseConfig[PostgresProfile])(
       .mkString("\n")
     run(sqlu"#$query").map(_ => ())
   }
-}
-
-object DBInitializer {
-  def apply(config: DatabaseConfig[PostgresProfile])(
-      implicit executionContext: ExecutionContext): DBInitializer =
-    new DBInitializer(config)
 }

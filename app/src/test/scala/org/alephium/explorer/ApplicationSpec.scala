@@ -103,7 +103,6 @@ trait ApplicationSpec
     groupNum,
     blockflowFetchMaxAge,
     networkId,
-    databaseConfig,
     None,
     Duration.ofSecondsUnsafe(5)
   )
