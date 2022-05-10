@@ -100,7 +100,12 @@ class InfosServerSpec()
     }
   }
   trait Fixture {
-    val tokenSupply = TokenSupply(TimeStamp.zero, ALPH.alph(1), ALPH.alph(2), ALPH.alph(3))
+    val tokenSupply = TokenSupply(TimeStamp.zero,
+                                  ALPH.alph(1),
+                                  ALPH.alph(2),
+                                  ALPH.alph(3),
+                                  ALPH.alph(5),
+                                  ALPH.alph(5))
     val tokenSupplyService = new TokenSupplyService {
       def listTokenSupply(pagination: Pagination): Future[Seq[TokenSupply]] =
         Future.successful(

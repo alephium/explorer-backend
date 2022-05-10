@@ -2013,6 +2013,8 @@
           "timestamp",
           "total",
           "circulating",
+          "reserved",
+          "locked",
           "maximum"
         ],
         "type": "object",
@@ -2026,6 +2028,14 @@
             "format": "uint256"
           },
           "circulating": {
+            "type": "string",
+            "format": "uint256"
+          },
+          "reserved": {
+            "type": "string",
+            "format": "uint256"
+          },
+          "locked": {
             "type": "string",
             "format": "uint256"
           },

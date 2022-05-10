@@ -119,6 +119,8 @@ object TokenSupplyService {
           entity.timestamp,
           entity.total,
           entity.circulating,
+          entity.reserved,
+          entity.locked,
           ALPH.MaxALPHValue
         )
       })
@@ -135,6 +137,8 @@ object TokenSupplyService {
           entity.timestamp,
           entity.total,
           entity.circulating,
+          entity.reserved,
+          entity.locked,
           ALPH.MaxALPHValue
         )
       })
