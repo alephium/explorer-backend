@@ -31,8 +31,9 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.CaffeineAsyncCache
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries._
+import org.alephium.explorer.persistence.queries.BlockQueries._
 import org.alephium.explorer.persistence.queries.InputQueries._
+import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.config.GroupConfig
@@ -73,8 +74,6 @@ object BlockDao {
   class Impl(groupNum: Int, val databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit val executionContext: ExecutionContext)
       extends BlockDao
-      with BlockQueries
-      with TransactionQueries
       with DBRunner
       with StrictLogging {
 

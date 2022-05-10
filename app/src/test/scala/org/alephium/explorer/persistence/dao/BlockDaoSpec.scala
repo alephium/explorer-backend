@@ -31,6 +31,7 @@ import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.{BlockEntry, BlockEntryLite, GroupIndex, Pagination}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.persistence.queries.BlockQueries
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.service.BlockFlowClient
@@ -180,7 +181,7 @@ class BlockDaoSpec
 
   it should "cache mainChainQuery's rowCount when table is empty" in new Fixture {
     //Initially the cache is unpopulated so it should return None
-    blockDao.getRowCountFromCacheIfPresent(blockDao.mainChainQuery) is None
+    blockDao.getRowCountFromCacheIfPresent(BlockQueries.mainChainQuery) is None
 
     //dispatch listMainChainSQL on an empty table and expect the cache to be populated with 0 count
     forAll(Gen.posNum[Int], Gen.posNum[Int], arbitrary[Boolean]) {
@@ -191,7 +192,7 @@ class BlockDaoSpec
 
         //assert the cache is populated
         blockDao
-          .getRowCountFromCacheIfPresent(blockDao.mainChainQuery)
+          .getRowCountFromCacheIfPresent(BlockQueries.mainChainQuery)
           .map(_.futureValue) is Some(0)
     }
   }
@@ -210,7 +211,7 @@ class BlockDaoSpec
       //insert new blockEntities and expect the cache to get invalided
       blockDao.insertAll(blockEntities).futureValue
       //Assert the cache is invalidated after insert
-      blockDao.getRowCountFromCacheIfPresent(blockDao.mainChainQuery) is None
+      blockDao.getRowCountFromCacheIfPresent(BlockQueries.mainChainQuery) is None
 
       //expected row count in cache
       val expectedMainChainCount = blockEntities.count(_.mainChain)
@@ -223,7 +224,7 @@ class BlockDaoSpec
 
       //check the cache directly and it should contain the row count
       blockDao
-        .getRowCountFromCacheIfPresent(blockDao.mainChainQuery)
+        .getRowCountFromCacheIfPresent(BlockQueries.mainChainQuery)
         .map(_.futureValue) is Some(expectedMainChainCount)
     }
   }
@@ -236,7 +237,7 @@ class BlockDaoSpec
         .map(_.map(_._1))
 
     def expectCacheIsInvalidated() =
-      blockDao.getRowCountFromCacheIfPresent(blockDao.mainChainQuery) is None
+      blockDao.getRowCountFromCacheIfPresent(BlockQueries.mainChainQuery) is None
 
     forAll(entitiesGenerator, entitiesGenerator) {
       case (entities1, entities2) =>
@@ -255,7 +256,7 @@ class BlockDaoSpec
           ._2 is expectedMainChainCount
         //Assert the cache contains the right row count
         blockDao
-          .getRowCountFromCacheIfPresent(blockDao.mainChainQuery)
+          .getRowCountFromCacheIfPresent(BlockQueries.mainChainQuery)
           .map(_.futureValue) is Some(expectedMainChainCount)
 
         /** INSERT BATCH 2 - [[entities2]] */
@@ -271,7 +272,7 @@ class BlockDaoSpec
           ._2 is expectedMainChainCountTotal
         //Dispatch a query so the cache get populated
         blockDao
-          .getRowCountFromCacheIfPresent(blockDao.mainChainQuery)
+          .getRowCountFromCacheIfPresent(BlockQueries.mainChainQuery)
           .map(_.futureValue) is Some(expectedMainChainCountTotal)
     }
   }

@@ -46,10 +46,10 @@ class TransactionQueriesSpec
   implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   it should "compute locked balance when empty" in new Fixture {
-    val balanceOption = run(queries.getBalanceActionOption(address)).futureValue
+    val balanceOption = run(TransactionQueries.getBalanceActionOption(address)).futureValue
     balanceOption is ((None, None))
 
-    val balance = run(queries.getBalanceAction(address)).futureValue
+    val balance = run(TransactionQueries.getBalanceAction(address)).futureValue
     balance is ((U256.Zero, U256.Zero))
   }
 
@@ -63,9 +63,9 @@ class TransactionQueriesSpec
 
     run(OutputSchema.table ++= Seq(output1, output2, output3, output4)).futureValue
 
-    val (total, locked) = run(queries.getBalanceAction(address)).futureValue
+    val (total, locked) = run(TransactionQueries.getBalanceAction(address)).futureValue
     val (totalDEPRECATED, lockedDEPRECATED) =
-      run(queries.getBalanceActionDEPRECATED(address)).futureValue
+      run(TransactionQueries.getBalanceActionDEPRECATED(address)).futureValue
 
     total is ALPH.alph(10)
     locked is ALPH.alph(7)
@@ -83,8 +83,9 @@ class TransactionQueriesSpec
     run(OutputSchema.table ++= Seq(output1, output2)).futureValue
     run(InputSchema.table += input1).futureValue
 
-    val (total, _)           = run(queries.getBalanceAction(address)).futureValue
-    val (totalDEPRECATED, _) = run(queries.getBalanceActionDEPRECATED(address)).futureValue
+    val (total, _) = run(TransactionQueries.getBalanceAction(address)).futureValue
+    val (totalDEPRECATED, _) =
+      run(TransactionQueries.getBalanceActionDEPRECATED(address)).futureValue
 
     total is ALPH.alph(1)
     totalDEPRECATED is ALPH.alph(1)
@@ -93,8 +94,9 @@ class TransactionQueriesSpec
     val to   = timestampMaxValue
     FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from), databaseConfig).futureValue
 
-    val (totalFinalized, _)           = run(queries.getBalanceAction(address)).futureValue
-    val (totalFinalizedDEPRECATED, _) = run(queries.getBalanceActionDEPRECATED(address)).futureValue
+    val (totalFinalized, _) = run(TransactionQueries.getBalanceAction(address)).futureValue
+    val (totalFinalizedDEPRECATED, _) =
+      run(TransactionQueries.getBalanceActionDEPRECATED(address)).futureValue
 
     totalFinalized is ALPH.alph(1)
     totalFinalizedDEPRECATED is ALPH.alph(1)
@@ -109,8 +111,9 @@ class TransactionQueriesSpec
     run(OutputSchema.table ++= Seq(output1, output2)).futureValue
     run(InputSchema.table += input1).futureValue
 
-    val (total, _)           = run(queries.getBalanceAction(address)).futureValue
-    val (totalDEPRECATED, _) = run(queries.getBalanceActionDEPRECATED(address)).futureValue
+    val (total, _) = run(TransactionQueries.getBalanceAction(address)).futureValue
+    val (totalDEPRECATED, _) =
+      run(TransactionQueries.getBalanceActionDEPRECATED(address)).futureValue
 
     total is ALPH.alph(1)
     totalDEPRECATED is ALPH.alph(1)
@@ -128,12 +131,13 @@ class TransactionQueriesSpec
 
     val outputs = Seq(output1, output2, output3, output4)
     val inputs  = Seq(input1, input2, input3)
-    run(queries.insertAll(Seq.empty, outputs, inputs)).futureValue
-    run(queries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
+    run(TransactionQueries.insertAll(Seq.empty, outputs, inputs)).futureValue
+    run(TransactionQueries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
 
-    val total          = run(queries.countAddressTransactions(address)).futureValue
-    val totalSQL       = run(queries.countAddressTransactionsSQL(address)).futureValue.head
-    val totalSQLNoJoin = run(queries.countAddressTransactionsSQLNoJoin(address)).futureValue.head
+    val total    = run(TransactionQueries.countAddressTransactions(address)).futureValue
+    val totalSQL = run(TransactionQueries.countAddressTransactionsSQL(address)).futureValue.head
+    val totalSQLNoJoin =
+      run(TransactionQueries.countAddressTransactionsSQLNoJoin(address)).futureValue.head
 
     //tx of output1, output2 and input1
     total is 3
@@ -152,18 +156,19 @@ class TransactionQueriesSpec
     val outputs = Seq(output1)
     val inputs  = Seq(input1, input2)
 
-    run(queries.insertAll(Seq.empty, outputs, inputs)).futureValue
+    run(TransactionQueries.insertAll(Seq.empty, outputs, inputs)).futureValue
 
-    val inputsToUpdate = run(queries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
+    val inputsToUpdate =
+      run(TransactionQueries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
 
     inputsToUpdate is Seq(input2)
 
-    run(queries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 2
+    run(TransactionQueries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 2
 
     run(OutputSchema.table += output2).futureValue
     run(insertTxPerAddressFromInput(inputsToUpdate.head)).futureValue is 1
 
-    run(queries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 3
+    run(TransactionQueries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 3
   }
 
   it should "get tx hashes by address" in new Fixture {
@@ -179,13 +184,14 @@ class TransactionQueriesSpec
     val outputs = Seq(output1, output2, output3, output4)
     val inputs  = Seq(input1, input2, input3)
 
-    run(queries.insertAll(Seq.empty, outputs, inputs)).futureValue
-    run(queries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
+    run(TransactionQueries.insertAll(Seq.empty, outputs, inputs)).futureValue
+    run(TransactionQueries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
 
-    val hashes    = run(queries.getTxHashesByAddressQuery((address, 0, 10)).result).futureValue
-    val hashesSQL = run(queries.getTxHashesByAddressQuerySQL(address, 0, 10)).futureValue
+    val hashes =
+      run(TransactionQueries.getTxHashesByAddressQuery((address, 0, 10)).result).futureValue
+    val hashesSQL = run(TransactionQueries.getTxHashesByAddressQuerySQL(address, 0, 10)).futureValue
     val hashesSQLNoJoin =
-      run(queries.getTxHashesByAddressQuerySQLNoJoin(address, 0, 10)).futureValue
+      run(TransactionQueries.getTxHashesByAddressQuerySQLNoJoin(address, 0, 10)).futureValue
 
     val expected = Seq(
       (output1.txHash, output1.blockHash, output1.timestamp, 0),
@@ -282,8 +288,8 @@ class TransactionQueriesSpec
     val inputs       = Seq(input1, input2)
     val transactions = outputs.map(transaction)
 
-    run(queries.insertAll(transactions, outputs, inputs)).futureValue
-    run(queries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
+    run(TransactionQueries.insertAll(transactions, outputs, inputs)).futureValue
+    run(TransactionQueries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
 
     def tx(output: OutputEntity, spent: Option[Transaction.Hash], inputs: Seq[Input]) = {
       Transaction(
@@ -297,9 +303,10 @@ class TransactionQueriesSpec
       )
     }
 
-    val txs = run(queries.getTransactionsByAddress(address, Pagination.unsafe(0, 10))).futureValue
+    val txs =
+      run(TransactionQueries.getTransactionsByAddress(address, Pagination.unsafe(0, 10))).futureValue
     val txsSQL =
-      run(queries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue
+      run(TransactionQueries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue
 
     val expected = Seq(
       tx(output1, None, Seq.empty),
@@ -340,7 +347,7 @@ class TransactionQueriesSpec
     run(InputSchema.table ++= Seq(input1, input2)).futureValue
     run(TransactionSchema.table ++= Seq(txEntity1)).futureValue
 
-    val tx = run(queries.getTransactionAction(tx1.hash)).futureValue.get
+    val tx = run(TransactionQueries.getTransactionAction(tx1.hash)).futureValue.get
 
     tx.outputs.size is 1 // was 2 in v1.4.1
   }
@@ -354,18 +361,18 @@ class TransactionQueriesSpec
       val updatedTransactions  = transactions.map(_._2)
 
       //insert
-      run(queries.insertTransactions(existingTransactions)).futureValue is existingTransactions.size
+      run(TransactionQueries.insertTransactions(existingTransactions)).futureValue is existingTransactions.size
       run(TransactionSchema.table.result).futureValue should contain allElementsOf existingTransactions
 
       //ignore
-      run(queries.insertTransactions(updatedTransactions)).futureValue is 0
+      run(TransactionQueries.insertTransactions(updatedTransactions)).futureValue is 0
       run(TransactionSchema.table.result).futureValue should contain allElementsOf existingTransactions
     }
   }
 
   //https://github.com/alephium/explorer-backend/issues/174
   it should "return an empty list when not transactions are found - Isssue 174" in new Fixture {
-    run(queries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue is Seq.empty
+    run(TransactionQueries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue is Seq.empty
   }
 
   it should "get total number of main transactions" in new Fixture {
@@ -376,15 +383,11 @@ class TransactionQueriesSpec
 
     run(TransactionSchema.table ++= Seq(tx1, tx2, tx3)).futureValue
 
-    val total = run(queries.mainTransactions.length.result).futureValue
+    val total = run(TransactionQueries.mainTransactions.length.result).futureValue
     total is 2
   }
 
   trait Fixture {
-
-    class Queries(implicit val executionContext: ExecutionContext) extends TransactionQueries
-
-    val queries = new Queries
 
     val address = addressGen.sample.get
     def now     = TimeStamp.now().plusMinutesUnsafe(scala.util.Random.nextLong(240))
