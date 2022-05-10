@@ -18,30 +18,15 @@ package org.alephium.explorer.persistence.dao
 
 import scala.concurrent.{ExecutionContext, Future}
 
-import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import slick.jdbc.meta.MTable
 
-import org.alephium.explorer.persistence.DBRunner
-
-trait HealthCheckDao {
-  def healthCheck(): Future[Unit]
-}
+import org.alephium.explorer.persistence.DBRunner._
 
 object HealthCheckDao {
-  def apply(databaseConfig: DatabaseConfig[PostgresProfile])(
-      implicit executionContext: ExecutionContext): HealthCheckDao =
-    new Impl(databaseConfig)
 
-  class Impl(val databaseConfig: DatabaseConfig[PostgresProfile])(
-      implicit val executionContext: ExecutionContext)
-      extends HealthCheckDao
-      with DBRunner
-      with StrictLogging {
-
-    def healthCheck(): Future[Unit] = {
-      run(MTable.getTables).map(_ => ())
-    }
-  }
+  def healthCheck()(implicit executionContext: ExecutionContext,
+                    databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] =
+    run(MTable.getTables).map(_ => ())
 }

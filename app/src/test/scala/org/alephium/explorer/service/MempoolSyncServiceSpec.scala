@@ -41,16 +41,16 @@ class MempoolSyncServiceSpec
 
   it should "start/sync/stop" in new Fixture {
     val mempoolSyncService =
-      MempoolSyncService(syncPeriod = Duration.unsafe(100), blockFlowClient, utxDao)
+      MempoolSyncService(syncPeriod = Duration.unsafe(100), blockFlowClient, UnconfirmedTxDao)
 
     mempoolSyncService.start(Seq("")).futureValue is ()
 
-    utxDao.listHashes().futureValue is Seq.empty
+    UnconfirmedTxDao.listHashes().futureValue is Seq.empty
 
     unconfirmedTransactions = Gen.listOfN(10, utransactionGen).sample.get
 
     eventually {
-      utxDao.listHashes().futureValue.toSet is unconfirmedTransactions.map(_.hash).toSet
+      UnconfirmedTxDao.listHashes().futureValue.toSet is unconfirmedTransactions.map(_.hash).toSet
     }
 
     val head   = unconfirmedTransactions.head
@@ -63,7 +63,9 @@ class MempoolSyncServiceSpec
     unconfirmedTransactions = newUnconfirmedTransactions
 
     eventually {
-      utxDao.listHashes().futureValue.toSet is newUnconfirmedTransactions.map(_.hash).toSet
+      UnconfirmedTxDao.listHashes().futureValue.toSet is newUnconfirmedTransactions
+        .map(_.hash)
+        .toSet
     }
 
     mempoolSyncService.stop().futureValue is ()
@@ -73,8 +75,6 @@ class MempoolSyncServiceSpec
 
   trait Fixture {
     implicit val executionContext: ExecutionContext = ExecutionContext.global
-
-    val utxDao: UnconfirmedTxDao = UnconfirmedTxDao(databaseConfig)
 
     var unconfirmedTransactions: Seq[UnconfirmedTransaction] = Seq.empty
 

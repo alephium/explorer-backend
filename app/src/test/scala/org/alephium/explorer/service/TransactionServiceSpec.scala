@@ -297,7 +297,7 @@ class TransactionServiceSpec
     val utx = utransactionGen.sample.get
 
     transactionService.getTransaction(utx.hash).futureValue is None
-    utransactionDao.insertMany(Seq(utx)).futureValue
+    UnconfirmedTxDao.insertMany(Seq(utx)).futureValue
     transactionService.getTransaction(utx.hash).futureValue is Some(utx)
   }
 
@@ -353,10 +353,10 @@ class TransactionServiceSpec
   }
 
   trait Fixture {
-    val blockDao: BlockDao                     = BlockDao(groupNum, databaseConfig)
-    val transactionDao: TransactionDao         = TransactionDao(databaseConfig)
-    val utransactionDao: UnconfirmedTxDao      = UnconfirmedTxDao(databaseConfig)
-    val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
+    val blockDao: BlockDao             = BlockDao(groupNum, databaseConfig)
+    val transactionDao: TransactionDao = TransactionDao(databaseConfig)
+    val transactionService: TransactionService =
+      TransactionService(transactionDao, UnconfirmedTxDao)
 
     val groupIndex = GroupIndex.unsafe(0)
 

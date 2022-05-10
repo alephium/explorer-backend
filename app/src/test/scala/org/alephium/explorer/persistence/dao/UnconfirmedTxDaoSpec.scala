@@ -39,9 +39,9 @@ class UnconfirmedTxDaoSpec
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
-  it should "insertMany" in new Fixture {
+  it should "insertMany" in {
     forAll(Gen.listOfN(5, utransactionGen)) { txs =>
-      utxDao.insertMany(txs).futureValue
+      UnconfirmedTxDao.insertMany(txs).futureValue
 
       txs.foreach { tx =>
         val dbTx =
@@ -65,35 +65,31 @@ class UnconfirmedTxDaoSpec
     }
   }
 
-  it should "get" in new Fixture {
+  it should "get" in {
     forAll(utransactionGen) { utx =>
-      utxDao.insertMany(Seq(utx)).futureValue
+      UnconfirmedTxDao.insertMany(Seq(utx)).futureValue
 
-      utxDao.get(utx.hash).futureValue is Some(utx)
+      UnconfirmedTxDao.get(utx.hash).futureValue is Some(utx)
     }
   }
 
-  it should "removeMany" in new Fixture {
+  it should "removeMany" in {
     forAll(Gen.listOfN(5, utransactionGen)) { txs =>
-      utxDao.insertMany(txs).futureValue
-      utxDao.removeMany(txs.map(_.hash)).futureValue
+      UnconfirmedTxDao.insertMany(txs).futureValue
+      UnconfirmedTxDao.removeMany(txs.map(_.hash)).futureValue
 
       txs.foreach { tx =>
-        utxDao.get(tx.hash).futureValue is None
+        UnconfirmedTxDao.get(tx.hash).futureValue is None
       }
     }
   }
 
-  it should "listHashes" in new Fixture {
+  it should "listHashes" in {
     var hashes = Set.empty[Transaction.Hash]
     forAll(Gen.listOfN(5, utransactionGen)) { txs =>
-      utxDao.insertMany(txs).futureValue
+      UnconfirmedTxDao.insertMany(txs).futureValue
       hashes = hashes ++ txs.map(_.hash)
-      utxDao.listHashes().futureValue.toSet is hashes
+      UnconfirmedTxDao.listHashes().futureValue.toSet is hashes
     }
-  }
-
-  trait Fixture {
-    val utxDao = UnconfirmedTxDao(databaseConfig)
   }
 }

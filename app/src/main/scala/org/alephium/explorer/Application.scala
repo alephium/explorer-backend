@@ -47,10 +47,8 @@ class Application(host: String,
                                         databaseConfig: DatabaseConfig[PostgresProfile])
     extends StrictLogging {
 
-  val blockDao: BlockDao                = BlockDao(groupNum, databaseConfig)
-  val transactionDao: TransactionDao    = TransactionDao(databaseConfig)
-  val utransactionDao: UnconfirmedTxDao = UnconfirmedTxDao(databaseConfig)
-  val healthCheckDao: HealthCheckDao    = HealthCheckDao(databaseConfig)
+  val blockDao: BlockDao             = BlockDao(groupNum, databaseConfig)
+  val transactionDao: TransactionDao = TransactionDao(databaseConfig)
 
   //Services
   val blockFlowClient: BlockFlowClient =
@@ -60,7 +58,7 @@ class Application(host: String,
     BlockFlowSyncService(groupNum = groupNum, syncPeriod = syncPeriod, blockFlowClient, blockDao)
 
   val mempoolSyncService: MempoolSyncService =
-    MempoolSyncService(syncPeriod = syncPeriod, blockFlowClient, utransactionDao)
+    MempoolSyncService(syncPeriod = syncPeriod, blockFlowClient, UnconfirmedTxDao)
 
   val hashrateService: HashrateService =
     HashrateService(syncPeriod = Duration.ofMinutesUnsafe(1), databaseConfig)
@@ -72,7 +70,7 @@ class Application(host: String,
     FinalizerService(syncPeriod = Duration.ofMinutesUnsafe(10), databaseConfig)
 
   val blockService: BlockService             = BlockService(blockDao)
-  val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
+  val transactionService: TransactionService = TransactionService(transactionDao, UnconfirmedTxDao)
 
   val sanityChecker: SanityChecker =
     new SanityChecker(groupNum, blockFlowClient, blockDao, databaseConfig)
@@ -130,7 +128,7 @@ class Application(host: String,
 
   def start: Future[Unit] = {
     for {
-      _       <- healthCheckDao.healthCheck()
+      _       <- HealthCheckDao.healthCheck()
       _       <- startTasksForReadWriteApp()
       binding <- Http().newServerAt(host, port).bindFlow(server.route)
     } yield {

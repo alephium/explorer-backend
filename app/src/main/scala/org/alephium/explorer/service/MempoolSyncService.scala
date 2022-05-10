@@ -20,6 +20,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.StrictLogging
+import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.persistence.dao.UnconfirmedTxDao
 import org.alephium.util.Duration
@@ -32,12 +34,14 @@ trait MempoolSyncService extends SyncService.BlockFlow
 
 object MempoolSyncService {
   def apply(syncPeriod: Duration, blockFlowClient: BlockFlowClient, utxDao: UnconfirmedTxDao)(
-      implicit executionContext: ExecutionContext): MempoolSyncService =
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]): MempoolSyncService =
     new Impl(syncPeriod, blockFlowClient, utxDao)
 
   private class Impl(val syncPeriod: Duration,
                      blockFlowClient: BlockFlowClient,
-                     utxDao: UnconfirmedTxDao)(implicit val executionContext: ExecutionContext)
+                     utxDao: UnconfirmedTxDao)(implicit val executionContext: ExecutionContext,
+                                               databaseConfig: DatabaseConfig[PostgresProfile])
       extends MempoolSyncService
       with StrictLogging {
 
