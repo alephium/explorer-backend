@@ -29,7 +29,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.api.model.{Hashrate, IntervalType}
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model.HashrateEntity
-import org.alephium.explorer.persistence.queries.HashrateQueries
+import org.alephium.explorer.persistence.queries.HashrateQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.ALPH
@@ -51,7 +51,6 @@ object HashrateService {
   private class Impl(val syncPeriod: Duration, val databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit val executionContext: ExecutionContext)
       extends HashrateService
-      with HashrateQueries
       with DBRunner
       with StrictLogging {
 

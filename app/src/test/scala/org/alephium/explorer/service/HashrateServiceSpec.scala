@@ -27,7 +27,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.{Hashrate, IntervalType}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
-import org.alephium.explorer.persistence.queries.HashrateQueries
+import org.alephium.explorer.persistence.queries.HashrateQueries._
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.util._
 
@@ -173,7 +173,7 @@ class HashrateServiceSpec
     }
   }
 
-  trait Fixture extends HashrateQueries {
+  trait Fixture {
 
     val from = TimeStamp.zero
     val to   = TimeStamp.now()
