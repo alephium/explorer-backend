@@ -24,11 +24,6 @@ import slick.jdbc.meta.MTable
 
 import org.alephium.explorer.persistence.DBRunner._
 
-trait HealthCheckDao {
-  def healthCheck()(implicit executionContext: ExecutionContext,
-                    databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit]
-}
-
 object HealthCheckDao {
 
   def healthCheck()(implicit executionContext: ExecutionContext,
