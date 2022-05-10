@@ -30,6 +30,7 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
@@ -95,7 +96,7 @@ class TokenSupplyServiceSpec
     override val genesisLocked = false
 
     test(genesisBlock) {
-      Seq(blockAmount(genesisBlock))
+      Seq(U256.Zero)
     }
   }
 
@@ -112,8 +113,8 @@ class TokenSupplyServiceSpec
 
     test(genesisBlock, block1, block2) {
       Seq(
-        blockAmount(genesisBlock).addUnsafe(blockAmount(block1)),
-        blockAmount(genesisBlock)
+        blockAmount(block1),
+        U256.Zero
       )
     }
   }
@@ -123,7 +124,7 @@ class TokenSupplyServiceSpec
     override val block1Locked  = true
 
     test(genesisBlock, block1, block2) {
-      Seq(blockAmount(genesisBlock).addUnsafe(blockAmount(block1)), blockAmount(genesisBlock))
+      Seq(U256.Zero, U256.Zero)
     }
   }
 
@@ -131,9 +132,7 @@ class TokenSupplyServiceSpec
     override val genesisLocked = false
 
     test(genesisBlock, block1, block2, block3) {
-      Seq(blockAmount(genesisBlock).addUnsafe(blockAmount(block2)),
-          blockAmount(genesisBlock).addUnsafe(blockAmount(block1)),
-          blockAmount(genesisBlock))
+      Seq(blockAmount(block2), blockAmount(block1), U256.Zero)
     }
   }
 
@@ -142,6 +141,14 @@ class TokenSupplyServiceSpec
 
     test(genesisBlock, block1, block2, block3) {
       Seq(blockAmount(block2), blockAmount(block1), U256.Zero)
+    }
+  }
+
+  it should "Token supply - Not count excluded addresses" in new Fixture {
+    override val genesisLocked = true
+
+    test(genesisBlock, block1, block2, block3, block4) {
+      Seq(blockAmount(block2), blockAmount(block2), blockAmount(block1), U256.Zero)
     }
   }
 
@@ -187,13 +194,24 @@ class TokenSupplyServiceSpec
           case (out, index) =>
             InputEntity(block.hash, txHash, timestamp, 0, out.key, None, false, index, 0)
         },
-        outputs = block.outputs.map(_.copy(timestamp = timestamp))
+        outputs = block.outputs.map(_.copy(timestamp = timestamp, lockTime = None))
       )
     }
 
     lazy val block3 = {
       val block =
         blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block2)).sample.get
+      val timestamp = block.timestamp.plusHoursUnsafe(24)
+      val address =
+        Address.unsafe(
+          "X4TqZeAizjDV8yt7XzxDVLywdzmJvLALtdAnjAERtCY3TPkyPXt4A5fxvXAX7UucXPpSYF7amNysNiniqb98vQ5rs9gh12MDXhsAf5kWmbmjXDygxV9AboSj8QR7QK8duaKAkZ")
+      block.copy(timestamp = timestamp,
+                 outputs   = block.outputs.map(_.copy(timestamp = timestamp, address = address)))
+    }
+
+    lazy val block4 = {
+      val block =
+        blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block3)).sample.get
       val timestamp = block.timestamp.plusHoursUnsafe(24)
       block.copy(timestamp = timestamp, outputs = block.outputs.map(_.copy(timestamp = timestamp)))
     }
@@ -207,7 +225,9 @@ class TokenSupplyServiceSpec
       tokenSupplyService.syncOnce().futureValue is ()
 
       eventually {
-        val tokenSupply = run(TokenSupplySchema.table.result).futureValue.reverse
+        val tokenSupply =
+          run(TokenSupplySchema.table.sortBy(_.timestamp).result).futureValue.reverse
+
         tokenSupply.map(_.circulating) is amounts
 
         tokenSupplyService

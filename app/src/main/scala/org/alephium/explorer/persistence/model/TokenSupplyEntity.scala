@@ -21,5 +21,7 @@ import org.alephium.util.{TimeStamp, U256}
 final case class TokenSupplyEntity(
     timestamp: TimeStamp,
     total: U256,
-    circulating: U256
+    circulating: U256,
+    reserved: U256,
+    locked: U256
 )

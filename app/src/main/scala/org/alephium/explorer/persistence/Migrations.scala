@@ -18,12 +18,18 @@ package org.alephium.explorer.persistence
 
 import scala.concurrent.{ExecutionContext, Future}
 
+import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
+import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.persistence._
+import org.alephium.explorer.persistence.model.AppState
+import org.alephium.explorer.persistence.schema.AppStateSchema
+import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.serde._
 
 object Migrations extends StrictLogging {
   val addOutputStatusColumn: DBActionW[Int] = sqlu"""
@@ -31,11 +37,60 @@ object Migrations extends StrictLogging {
     ADD COLUMN IF NOT EXISTS "spent_finalized" BYTEA DEFAULT NULL;
   """
 
+  val resetTokenSupply: DBActionW[Int] = sqlu"""
+    DELETE FROM token_supply
+  """
+
+  val addReservedAndLockedTopkenSupplyColumn: DBActionW[Int] = sqlu"""
+    ALTER TABLE token_supply
+    ADD COLUMN IF NOT EXISTS "reserved" numeric(80,0) NOT NULL,
+    ADD COLUMN IF NOT EXISTS "locked" numeric(80,0) NOT NULL
+  """
+
+  def migrations(version: Int)(implicit ec: ExecutionContext): DBActionW[Option[Int]] = {
+    if (version == 0) {
+      for {
+        _ <- addOutputStatusColumn
+        _ <- resetTokenSupply
+        _ <- addReservedAndLockedTopkenSupplyColumn
+      } yield (Some(1))
+    } else {
+      DBIOAction.successful(None)
+    }
+  }
+
   def migrate(databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit ec: ExecutionContext): Future[Unit] = {
     logger.info("Migrating")
     DBRunner.run(databaseConfig)(for {
-      _ <- Migrations.addOutputStatusColumn
+      version       <- getVersion()
+      newVersionOpt <- migrations(version)
+      _             <- updateVersion(newVersionOpt)
     } yield ())
+  }
+
+  def getVersion()(implicit ec: ExecutionContext): DBActionR[Int] = {
+    sql"""
+      SELECT value FROM app_state where key = 'migrations_version'
+    """.as[ByteString].headOption.map {
+      case None => 0
+      case Some(bytes) =>
+        deserialize[Int](bytes) match {
+          case Left(error) =>
+            logger.error(s"Invalid migration version, closing app. $error")
+            sys.exit(1)
+          case Right(version) => version
+        }
+    }
+  }
+
+  def updateVersion(versionOpt: Option[Int])(implicit ec: ExecutionContext): DBActionW[Unit] = {
+    versionOpt match {
+      case None => DBIOAction.successful(())
+      case Some(version) =>
+        AppStateSchema.table
+          .insertOrUpdate(AppState("migrations_version", serialize(version)))
+          .map(_ => ())
+    }
   }
 }
