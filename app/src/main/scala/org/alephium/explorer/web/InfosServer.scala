@@ -61,6 +61,22 @@ class InfosServer(
             Right(toALPH(total))
           }
       } ~
+      toRoute(getReservedSupply) { _ =>
+        tokenSupplyService
+          .getLatestTokenSupply()
+          .map { supply =>
+            val reserved = supply.map(_.reserved).getOrElse(U256.Zero)
+            Right(toALPH(reserved))
+          }
+      } ~
+      toRoute(getLockedSupply) { _ =>
+        tokenSupplyService
+          .getLatestTokenSupply()
+          .map { supply =>
+            val locked = supply.map(_.locked).getOrElse(U256.Zero)
+            Right(toALPH(locked))
+          }
+      } ~
       toRoute(getHeights)(_           => blockService.listMaxHeights().map(Right(_))) ~
       toRoute(getTotalTransactions)(_ => Future(Right(transactionService.getTotalNumber()))) ~
       toRoute(getAverageBlockTime)(_  => blockService.getAverageBlockTime().map(Right(_)))

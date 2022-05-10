@@ -83,6 +83,28 @@ class InfosServerSpec()
     }
   }
 
+  it should "return the reserved token supply" in new Fixture {
+    Get(s"/infos/supply/reserved-alph") ~> server.route ~> check {
+      val reserved = response.entity
+        .toStrict(Duration.ofSecondsUnsafe(5).asScala)
+        .map(_.data.utf8String)
+        .futureValue
+
+      reserved is "3"
+    }
+  }
+
+  it should "return the locked token supply" in new Fixture {
+    Get(s"/infos/supply/locked-alph") ~> server.route ~> check {
+      val locked = response.entity
+        .toStrict(Duration.ofSecondsUnsafe(5).asScala)
+        .map(_.data.utf8String)
+        .futureValue
+
+      locked is "4"
+    }
+  }
+
   it should "return the total transactions number" in new Fixture {
     Get(s"/infos/total-transactions") ~> server.route ~> check {
       val total = response.entity
@@ -104,7 +126,7 @@ class InfosServerSpec()
                                   ALPH.alph(1),
                                   ALPH.alph(2),
                                   ALPH.alph(3),
-                                  ALPH.alph(5),
+                                  ALPH.alph(4),
                                   ALPH.alph(5))
     val tokenSupplyService = new TokenSupplyService {
       def listTokenSupply(pagination: Pagination): Future[Seq[TokenSupply]] =
