@@ -26,7 +26,7 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.util.TimeStamp
 
-trait HashrateQueries {
+object HashrateQueries {
 
   def getHashratesQuery(from: TimeStamp,
                         to: TimeStamp,
