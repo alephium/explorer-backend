@@ -150,8 +150,7 @@ object TokenSupplyService {
         ON outputs.key = inputs.output_ref_key
         AND inputs.main_chain = true
         AND inputs.block_timestamp <= $at
-      WHERE outputs.block_timestamp >= ${ALPH.LaunchTimestamp} /* We don't count genesis address */
-      AND outputs.block_timestamp <= $at
+      WHERE outputs.block_timestamp <= $at
       AND (outputs.lock_time is NULL OR outputs.lock_time <= $at) /* Only count unlock tokens */
       AND outputs.main_chain = true
       AND outputs.address NOT IN #$reservedAddresses /* We exclude the reserved wallets */
@@ -208,8 +207,7 @@ object TokenSupplyService {
          ON outputs.key = inputs.output_ref_key
          AND inputs.main_chain = true
          AND inputs.block_timestamp <= $at
-      WHERE outputs.block_timestamp >= ${ALPH.LaunchTimestamp} /* We don't count genesis address */
-       AND outputs.block_timestamp <= $at
+       WHERE outputs.block_timestamp <= $at
        AND outputs.lock_time > $at /* count only locked tokens */
        AND outputs.main_chain = true
       AND outputs.address NOT IN #$reservedAddresses /* We exclude the reserved wallets */
