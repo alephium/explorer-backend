@@ -164,12 +164,15 @@ class TokenSupplyServiceSpec
     lazy val tokenSupplyService: TokenSupplyService =
       TokenSupplyService(syncPeriod = Duration.unsafe(30 * 1000), databaseConfig, groupNum = 1)
 
+    val genesisAddress = Address.unsafe("122uvHwwcaWoXR1ryub9VK1yh2CZvYCqXxzsYDHRb2jYB")
+
     lazy val genesisBlock = {
       val lockTime =
         if (genesisLocked) Some(TimeStamp.now().plusUnsafe(Duration.ofHoursUnsafe(1))) else None
       val block = blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), None).sample.get
       block.copy(
-        outputs = block.outputs.map(_.copy(timestamp = block.timestamp, lockTime = lockTime)))
+        outputs = block.outputs.map(
+          _.copy(timestamp = block.timestamp, lockTime = lockTime, address = genesisAddress)))
     }
 
     lazy val block1 = {
