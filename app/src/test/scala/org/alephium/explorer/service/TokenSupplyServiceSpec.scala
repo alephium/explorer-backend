@@ -24,8 +24,9 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting}
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
@@ -159,7 +160,8 @@ class TokenSupplyServiceSpec
     val genesisLocked: Boolean
     val block1Locked: Boolean = false
 
-    lazy val blockDao: BlockDao = BlockDao(groupNum, databaseConfig)
+    implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
+    implicit val blockCache: BlockCache      = BlockCache()
 
     lazy val tokenSupplyService: TokenSupplyService =
       TokenSupplyService(syncPeriod = Duration.unsafe(30 * 1000), databaseConfig, groupNum = 1)
@@ -220,9 +222,9 @@ class TokenSupplyServiceSpec
     }
 
     def test(blocks: BlockEntity*)(amounts: Seq[U256]) = {
-      blockDao.insertAll(Seq.from(blocks)).futureValue
+      BlockDao.insertAll(Seq.from(blocks)).futureValue
       blocks.foreach { block =>
-        blockDao.updateMainChainStatus(block.hash, true).futureValue
+        BlockDao.updateMainChainStatus(block.hash, true).futureValue
       }
 
       tokenSupplyService.syncOnce().futureValue is ()

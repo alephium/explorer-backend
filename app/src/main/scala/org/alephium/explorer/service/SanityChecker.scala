@@ -24,22 +24,23 @@ import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.AnyOps
+import org.alephium.explorer.{AnyOps, GroupSetting}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex}
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence._
+import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.queries.BlockQueries._
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.TraversableOps"))
-class SanityChecker(groupNum: Int,
-                    blockFlowClient: BlockFlowClient,
-                    blockDao: BlockDao,
-                    val databaseConfig: DatabaseConfig[PostgresProfile])(
-    implicit val executionContext: ExecutionContext)
-    extends DBRunner
-    with StrictLogging {
+class SanityChecker(groupNum: Int, blockFlowClient: BlockFlowClient)(
+    implicit val executionContext: ExecutionContext,
+    databaseConfig: DatabaseConfig[PostgresProfile],
+    blockCache: BlockCache,
+    groupSetting: GroupSetting)
+    extends StrictLogging {
 
   private def findLatestBlock(from: GroupIndex, to: GroupIndex): Future[Option[BlockEntry.Hash]] = {
     run(
@@ -76,7 +77,7 @@ class SanityChecker(groupNum: Int,
               findLatestBlock(from, to).flatMap {
                 case None => Future.successful(())
                 case Some(hash) =>
-                  blockDao.get(hash).flatMap {
+                  BlockDao.get(hash).flatMap {
                     case None => Future.successful(())
                     case Some(block) =>
                       checkBlock(block)
@@ -105,8 +106,8 @@ class SanityChecker(groupNum: Int,
       case Left(error) => Future.successful(logger.error(error))
       case Right(block) =>
         for {
-          _ <- blockDao.insert(block)
-          b <- blockDao.get(block.hash).map(_.get)
+          _ <- BlockDao.insert(block)
+          b <- BlockDao.get(block.hash).map(_.get)
           _ <- checkBlock(b)
         } yield ()
     }

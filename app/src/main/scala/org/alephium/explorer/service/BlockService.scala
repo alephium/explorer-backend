@@ -18,52 +18,73 @@ package org.alephium.explorer.service
 
 import scala.concurrent.{ExecutionContext, Future}
 
+import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
+
+import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.dao.BlockDao
 
 trait BlockService {
-  def getLiteBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntryLite]]
-  def getBlockTransactions(hash: BlockEntry.Hash, pagination: Pagination): Future[Seq[Transaction]]
-  def listBlocks(pagination: Pagination): Future[ListBlocks]
-  def listMaxHeights(): Future[Seq[PerChainValue]]
-  def getAverageBlockTime(): Future[Seq[PerChainValue]]
+  def getLiteBlockByHash(hash: BlockEntry.Hash)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntryLite]]
+
+  def getBlockTransactions(hash: BlockEntry.Hash, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]]
+
+  def listBlocks(pagination: Pagination)(implicit ec: ExecutionContext,
+                                         dc: DatabaseConfig[PostgresProfile],
+                                         cache: BlockCache): Future[ListBlocks]
+
+  def listMaxHeights()(implicit cache: BlockCache,
+                       groupSetting: GroupSetting,
+                       ec: ExecutionContext): Future[Seq[PerChainValue]]
+
+  def getAverageBlockTime()(implicit cache: BlockCache,
+                            groupSetting: GroupSetting,
+                            ec: ExecutionContext): Future[Seq[PerChainValue]]
 }
 
-object BlockService {
-  def apply(blockDao: BlockDao)(implicit executionContext: ExecutionContext): BlockService =
-    new Impl(blockDao)
+object BlockService extends BlockService {
 
-  private class Impl(blockDao: BlockDao)(implicit executionContext: ExecutionContext)
-      extends BlockService {
-    def getLiteBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntryLite]] =
-      blockDao.getLite(hash)
+  def getLiteBlockByHash(hash: BlockEntry.Hash)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntryLite]] =
+    BlockDao.getLite(hash)
 
-    def getBlockTransactions(hash: BlockEntry.Hash,
-                             pagination: Pagination): Future[Seq[Transaction]] =
-      blockDao.getTransactions(hash, pagination)
+  def getBlockTransactions(hash: BlockEntry.Hash, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
+    BlockDao.getTransactions(hash, pagination)
 
-    def listBlocks(pagination: Pagination): Future[ListBlocks] = {
-      blockDao.listMainChainSQLCached(pagination).map {
-        case (blocks, total) =>
-          ListBlocks(total, blocks)
-      }
+  def listBlocks(pagination: Pagination)(implicit ec: ExecutionContext,
+                                         dc: DatabaseConfig[PostgresProfile],
+                                         cache: BlockCache): Future[ListBlocks] =
+    BlockDao.listMainChainSQLCached(pagination).map {
+      case (blocks, total) =>
+        ListBlocks(total, blocks)
     }
 
-    def listMaxHeights(): Future[Seq[PerChainValue]] = {
-      blockDao
-        .latestBlocks()
-        .map(_.map {
-          case (chainIndex, block) =>
-            PerChainValue(chainIndex.from.value, chainIndex.to.value, block.height.value.toLong)
-        })
-    }
-    def getAverageBlockTime(): Future[Seq[PerChainValue]] = {
-      blockDao
-        .getAverageBlockTime()
-        .map(_.map {
-          case (chainIndex, averageBlockTime) =>
-            PerChainValue(chainIndex.from.value, chainIndex.to.value, averageBlockTime.millis)
-        })
-    }
-  }
+  def listMaxHeights()(implicit cache: BlockCache,
+                       groupSetting: GroupSetting,
+                       ec: ExecutionContext): Future[Seq[PerChainValue]] =
+    BlockDao
+      .latestBlocks()
+      .map(_.map {
+        case (chainIndex, block) =>
+          PerChainValue(chainIndex.from.value, chainIndex.to.value, block.height.value.toLong)
+      })
+
+  def getAverageBlockTime()(implicit cache: BlockCache,
+                            groupSetting: GroupSetting,
+                            ec: ExecutionContext): Future[Seq[PerChainValue]] =
+    BlockDao
+      .getAverageBlockTime()
+      .map(_.map {
+        case (chainIndex, averageBlockTime) =>
+          PerChainValue(chainIndex.from.value, chainIndex.to.value, averageBlockTime.millis)
+      })
 }
