@@ -45,7 +45,7 @@ object Scheduler extends StrictLogging {
     )
 
   /**
-    * Calculate time left to schedule for the input [[LocalTime]].
+    * Calculate time left to schedule for the input [[java.time.LocalTime]].
     * If the time is in the past then the schedule for tomorrow.
     *
     * TimeZone used is local machine's default time-zone
@@ -127,7 +127,7 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
   }
 
   /**
-    * Schedules daily at a fixed [[LocalTime]].
+    * Schedules daily at a fixed [[java.time.LocalTime]].
     *
     * If the time is in the past (eg: 1PM when now is 2PM) then the
     * schedule occurs for tomorrow.
@@ -152,7 +152,7 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
     scheduleLoopFlatMap(interval, interval)(init)(block)
 
   /**
-    * Similar to [[scheduleLoop]] but invokes `init` block only once and
+    * Similar to `scheduleLoop` but invokes `init` block only once and
     * makes that init value available to `block` for all future schedules.
     */
   def scheduleLoopFlatMap[A, B](firstInterval: FiniteDuration, loopInterval: FiniteDuration)(
