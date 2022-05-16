@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.util
 
-import java.time.{Instant, LocalDateTime, ZoneId, ZoneOffset}
+import java.time.{Instant, LocalDateTime, LocalTime, ZoneId, ZoneOffset}
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -26,14 +26,26 @@ import org.alephium.explorer.AlephiumSpec._
 class TimeUtilSpec extends AnyWordSpec with Matchers {
 
   "toLocalFromUTC" should {
-    "convert to local time from UTC" in {
+    "convert UTC LocalDateTime to system's LocalDateTime" in {
       val millis = Instant.ofEpochMilli(System.currentTimeMillis())
 
-      val local = LocalDateTime.ofInstant(millis, ZoneId.systemDefault())
       val utc   = LocalDateTime.ofInstant(millis, ZoneOffset.UTC)
+      val local = LocalDateTime.ofInstant(millis, ZoneId.systemDefault())
 
       //convert utc to local
       TimeUtil.toLocalFromUTC(utc) is local
+    }
+  }
+
+  "toLocalDateTimeNow" should {
+    "convert LocalTime to system's LocalDateTime" in {
+      val millis = Instant.ofEpochMilli(System.currentTimeMillis())
+
+      val utc   = LocalTime.ofInstant(millis, ZoneOffset.UTC)
+      val local = LocalDateTime.ofInstant(millis, ZoneId.systemDefault())
+
+      //convert utc to local
+      TimeUtil.toLocalDateTimeNow(utc) is local
     }
   }
 

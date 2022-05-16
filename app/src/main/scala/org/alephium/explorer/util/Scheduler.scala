@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.util
 
-import java.time.LocalDateTime
+import java.time.{LocalDateTime, LocalTime}
 import java.util.{Timer, TimerTask}
 
 import scala.annotation.tailrec
@@ -61,7 +61,9 @@ object Scheduler extends StrictLogging {
     val timeLeft = Duration.between(LocalDateTime.now(), scheduleAt)
 
     if (timeLeft.isNegative) { //time is in the past, schedule for tomorrow.
-      scheduleTime(scheduleAt.plusDays(1))
+      val daysBehind = Math.abs(timeLeft.toDays) + 1
+      logger.trace(s"Scheduled time is $daysBehind.days behind.")
+      scheduleTime(scheduleAt.plusDays(daysBehind))
     } else { //time is in the future. Good!
       val nextSchedule = timeLeft.toNanos.nanos
       //calculate first schedule using today's date.
@@ -147,10 +149,23 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
     *
     * If the time is in the past (eg: 1PM when now is 2PM) then the
     * schedule occurs for tomorrow.
+    *
+    * @param atUTC Should be in UTC.
     */
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def scheduleDailyAtUTC[T](atUTC: LocalDateTime)(block: => Future[T])(
       implicit ec: ExecutionContext): Unit =
     scheduleDailyAt(TimeUtil.toLocalFromUTC(atUTC))(block)
+
+  /**
+    * Schedules daily, starting from today.
+    *
+    * @param atUTC Should be in UTC.
+    */
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  def scheduleDailyAtUTC[T](atUTC: LocalTime)(block: => Future[T])(
+      implicit ec: ExecutionContext): Unit =
+    scheduleDailyAt(TimeUtil.toLocalDateTimeNow(atUTC))(block)
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def scheduleLoopFlatMap[A, B](interval: FiniteDuration)(init: => Future[A])(

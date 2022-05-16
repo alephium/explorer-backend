@@ -51,6 +51,8 @@ class SchedulerSpec extends AnyWordSpec with Matchers with Eventually with Scala
         Scheduler.scheduleTime(LocalDateTime.now().plusHours(2).plusMinutes(1)).toHours is 2
         //Minutes
         Scheduler.scheduleTime(LocalDateTime.now().plusMinutes(10).plusSeconds(2)).toMinutes is 10
+        //Days
+        Scheduler.scheduleTime(LocalDateTime.now().plusDays(10).plusSeconds(2)).toDays is 10
       }
     }
 
@@ -60,6 +62,10 @@ class SchedulerSpec extends AnyWordSpec with Matchers with Eventually with Scala
         Scheduler.scheduleTime(LocalDateTime.now().minusHours(1).plusSeconds(2)).toHours is 23
         //Time is 1 minute in the past so schedule happens after 23 hours (next day)
         Scheduler.scheduleTime(LocalDateTime.now().minusMinutes(1)).toHours is 23
+        //Time is few seconds in the past so schedule happens after 23 hours (next day)
+        Scheduler.scheduleTime(LocalDateTime.now().minusSeconds(3)).toHours is 23
+        //1 year behind will still return 23 hours schedule time.
+        Scheduler.scheduleTime(LocalDateTime.now().minusYears(1)).toHours is 23
       }
     }
   }

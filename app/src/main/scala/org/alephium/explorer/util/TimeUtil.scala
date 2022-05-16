@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.util
 
-import java.time.{LocalDateTime, ZonedDateTime, ZoneId, ZoneOffset}
+import java.time._
 
 object TimeUtil {
 
@@ -28,5 +28,9 @@ object TimeUtil {
 
   @inline def toLocalFromUTC(utc: LocalDateTime): LocalDateTime =
     toLocalFromUTCZoned(utc.atZone(ZoneOffset.UTC))
+
+  /** Convert's UTC [[java.time.LocalTime]] to [[java.time.LocalDateTime]] in local date time */
+  @inline def toLocalDateTimeNow(utc: LocalTime): LocalDateTime =
+    toLocalFromUTC(utc.atDate(LocalDate.now(ZoneOffset.UTC)))
 
 }
