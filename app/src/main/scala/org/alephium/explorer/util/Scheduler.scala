@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.util
 
-import java.time.{LocalDate, LocalDateTime, LocalTime}
+import java.time.LocalDateTime
 import java.util.{Timer, TimerTask}
 
 import scala.annotation.tailrec
@@ -33,8 +33,8 @@ object Scheduler extends StrictLogging {
   /**
     * Creates a Scheduler.
     *
-    * @param name     the name of the associated thread
-    * @param isDaemon true if the associated thread should run as a daemon
+    * @param name     Name of the associated thread
+    * @param isDaemon `true` if the associated thread should run as a daemon
     */
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def apply(name: String, isDaemon: Boolean = true): Scheduler =
@@ -45,35 +45,30 @@ object Scheduler extends StrictLogging {
     )
 
   /**
-    * Calculate time left to schedule for the input [[java.time.LocalTime]].
-    * If the time is in the past then the schedule for tomorrow.
+    * Calculate time left to schedule for the input [[java.time.LocalDateTime]].
+    * If the time is in the past then it schedules for tomorrow.
     *
-    * TimeZone used is local machine's default time-zone
+    * TimeZone used is local machine's default time-zone.
     *
-    * @param at Time to schedule at.
+    * @param scheduleAt Time to schedule at.
     *
     * @return Time left until next schedule.
     */
-  def scheduleTime(at: LocalTime): FiniteDuration = {
+  @tailrec
+  def scheduleTime(scheduleAt: LocalDateTime): FiniteDuration = {
     import java.time.Duration
 
-    @tailrec
-    def calculate(scheduleAt: LocalDateTime): FiniteDuration = {
-      val timeLeft = Duration.between(LocalDateTime.now(), scheduleAt)
+    val timeLeft = Duration.between(LocalDateTime.now(), scheduleAt)
 
-      if (timeLeft.isNegative) { //time is in the past, schedule for tomorrow.
-        calculate(scheduleAt.plusDays(1))
-      } else { //time is in the future. Good!
-        timeLeft.toNanos.nanos
-      }
+    if (timeLeft.isNegative) { //time is in the past, schedule for tomorrow.
+      scheduleTime(scheduleAt.plusDays(1))
+    } else { //time is in the future. Good!
+      val nextSchedule = timeLeft.toNanos.nanos
+      //calculate first schedule using today's date.
+      logger.debug(s"Scheduled task after ${nextSchedule.toSeconds}.seconds")
+      nextSchedule
     }
-
-    //calculate first schedule using today's date.
-    val nextSchedule = calculate(LocalDateTime.of(LocalDate.now(), at))
-    logger.debug(s"Scheduled task after ${nextSchedule.toSeconds}.seconds")
-    nextSchedule
   }
-
 }
 
 class Scheduler private (name: String, timer: Timer, @volatile private var terminated: Boolean)
@@ -127,13 +122,14 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
   }
 
   /**
-    * Schedules daily at a fixed [[java.time.LocalTime]].
+    * Schedules daily, starting from [[java.time.LocalDateTime]] in system's local timezone.
     *
     * If the time is in the past (eg: 1PM when now is 2PM) then the
     * schedule occurs for tomorrow.
     */
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
-  def scheduleDailyAt[T](at: LocalTime)(block: => Future[T])(implicit ec: ExecutionContext): Unit =
+  def scheduleDailyAt[T](at: LocalDateTime)(block: => Future[T])(
+      implicit ec: ExecutionContext): Unit =
     scheduleOnce(scheduleTime(at))(block) onComplete {
       case Failure(exception) =>
         //Log the failure.
@@ -145,6 +141,16 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
           scheduleDailyAt(at)(block)
         }
     }
+
+  /**
+    * Schedules daily, starting from [[java.time.LocalDateTime]] in UTC.
+    *
+    * If the time is in the past (eg: 1PM when now is 2PM) then the
+    * schedule occurs for tomorrow.
+    */
+  def scheduleDailyAtUTC[T](atUTC: LocalDateTime)(block: => Future[T])(
+      implicit ec: ExecutionContext): Unit =
+    scheduleDailyAt(TimeUtil.toLocalFromUTC(atUTC))(block)
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def scheduleLoopFlatMap[A, B](interval: FiniteDuration)(init: => Future[A])(

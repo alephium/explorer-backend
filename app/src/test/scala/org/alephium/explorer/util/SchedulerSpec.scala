@@ -15,7 +15,7 @@
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 package org.alephium.explorer.util
 
-import java.time.LocalTime
+import java.time.LocalDateTime
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -39,7 +39,7 @@ class SchedulerSpec extends AnyWordSpec with Matchers with Eventually with Scala
     "time is now" should {
       "return now/current/immediate duration" in {
         //Time is now! Expect hours and minutes to be zero. Add 2 seconds to account for execution time.
-        val timeLeft = Scheduler.scheduleTime(LocalTime.now().plusSeconds(2))
+        val timeLeft = Scheduler.scheduleTime(LocalDateTime.now().plusSeconds(2))
         timeLeft.toHours is 0
         timeLeft.toMinutes is 0
       }
@@ -48,20 +48,18 @@ class SchedulerSpec extends AnyWordSpec with Matchers with Eventually with Scala
     "time is in the future" should {
       "return today's duration" in {
         //Hours
-        Scheduler.scheduleTime(LocalTime.now().plusHours(2).plusMinutes(1)).toHours is 2
+        Scheduler.scheduleTime(LocalDateTime.now().plusHours(2).plusMinutes(1)).toHours is 2
         //Minutes
-        Scheduler.scheduleTime(LocalTime.now().plusMinutes(10).plusSeconds(2)).toMinutes is 10
+        Scheduler.scheduleTime(LocalDateTime.now().plusMinutes(10).plusSeconds(2)).toMinutes is 10
       }
     }
 
     "time is in the past" should {
       "return tomorrows duration" in {
         //Time is 1 hour in the past so schedule happens 23 hours later
-        Scheduler.scheduleTime(LocalTime.now().minusHours(1).plusSeconds(2)).toHours is 23
+        Scheduler.scheduleTime(LocalDateTime.now().minusHours(1).plusSeconds(2)).toHours is 23
         //Time is 1 minute in the past so schedule happens after 23 hours (next day)
-        LocalTime
-          .ofNanoOfDay(Scheduler.scheduleTime(LocalTime.now().minusMinutes(1)).toNanos)
-          .getHour is 23
+        Scheduler.scheduleTime(LocalDateTime.now().minusMinutes(1)).toHours is 23
       }
     }
   }
@@ -82,11 +80,14 @@ class SchedulerSpec extends AnyWordSpec with Matchers with Eventually with Scala
           scheduleTimes.size() should be > 6
         }
 
+        val firstTime = scheduleTimes.pollFirst()
+
         //check that all scheduled tasks have 1 second difference.
-        scheduleTimes.asScala.drop(1).foldLeft(scheduleTimes.peekFirst()) {
+        scheduleTimes.asScala.foldLeft(firstTime) {
           case (previous, next) =>
-            //difference between previous scheduled task and next should be between (0 .. 1]
-            (next - previous).nanos.toSeconds should (be > 0L and be <= 1L)
+            //difference between previous scheduled task and next should not be
+            //greater than 2 seconds and no less than 1 second.
+            (next - previous).nanos.toMillis should (be > 995L and be <= 1900L)
             next
         }
       }
@@ -101,7 +102,7 @@ class SchedulerSpec extends AnyWordSpec with Matchers with Eventually with Scala
 
         //the time the schedule was executed
         @volatile var scheduledTime = 0L
-        scheduler.scheduleDailyAt(LocalTime.now().plusSeconds(3)) {
+        scheduler.scheduleDailyAt(LocalDateTime.now().plusSeconds(3)) {
           Future {
             scheduledTime = System.nanoTime()
           }
