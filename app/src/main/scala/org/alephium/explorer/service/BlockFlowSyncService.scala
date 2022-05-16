@@ -21,9 +21,12 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.StrictLogging
+import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
 
+import org.alephium.explorer.{foldFutures, GroupSetting}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
-import org.alephium.explorer.foldFutures
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.{BlockEntity, InputEntity}
 import org.alephium.util.{Duration, TimeStamp}
@@ -52,16 +55,18 @@ trait BlockFlowSyncService extends SyncService.BlockFlow
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.TraversableOps"))
 object BlockFlowSyncService extends StrictLogging {
-  def apply(groupNum: Int,
-            syncPeriod: Duration,
-            blockFlowClient: BlockFlowClient,
-            blockDao: BlockDao)(implicit executionContext: ExecutionContext): BlockFlowSyncService =
-    new Impl(groupNum, syncPeriod, blockFlowClient, blockDao)
+  def apply(groupNum: Int, syncPeriod: Duration, blockFlowClient: BlockFlowClient)(
+      implicit executionContext: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockCache: BlockCache,
+      groupSetting: GroupSetting): BlockFlowSyncService =
+    new Impl(groupNum, syncPeriod, blockFlowClient)
 
-  private class Impl(groupNum: Int,
-                     val syncPeriod: Duration,
-                     blockFlowClient: BlockFlowClient,
-                     blockDao: BlockDao)(implicit val executionContext: ExecutionContext)
+  private class Impl(groupNum: Int, val syncPeriod: Duration, blockFlowClient: BlockFlowClient)(
+      implicit val executionContext: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockCache: BlockCache,
+      groupSetting: GroupSetting)
       extends BlockFlowSyncService {
 
     private val chainIndexes: Seq[(GroupIndex, GroupIndex)] = for {
@@ -140,7 +145,7 @@ object BlockFlowSyncService extends StrictLogging {
       Future
         .traverse(chainIndexes) {
           case (fromGroup, toGroup) =>
-            blockDao.maxHeight(fromGroup, toGroup).flatMap {
+            BlockDao.maxHeight(fromGroup, toGroup).flatMap {
               case Some(height) if height.value == 0 =>
                 syncAt(fromGroup, toGroup, Height.unsafe(1)).map(_.nonEmpty)
               case None =>
@@ -164,11 +169,11 @@ object BlockFlowSyncService extends StrictLogging {
       Future
         .traverse(chainIndexes) {
           case (fromGroup, toGroup) =>
-            blockDao
+            BlockDao
               .maxHeight(fromGroup, toGroup)
               .flatMap {
                 case Some(height) =>
-                  blockDao
+                  BlockDao
                     .getAtHeight(fromGroup, toGroup, height)
                     .map { blocks =>
                       blocks.map(_.timestamp).maxOption.map(ts => (ts, height))
@@ -228,7 +233,7 @@ object BlockFlowSyncService extends StrictLogging {
             val bestBlock = blocks.head // First block is the main chain one
             for {
               _ <- insert(bestBlock)
-              _ <- blockDao.updateLatestBlock(bestBlock)
+              _ <- BlockDao.updateLatestBlock(bestBlock)
             } yield Some(Seq(bestBlock))
           case Right(_) => Future.successful(None)
           case Left(errors) =>
@@ -240,7 +245,7 @@ object BlockFlowSyncService extends StrictLogging {
     private def updateMainChain(hash: BlockEntry.Hash,
                                 chainFrom: GroupIndex,
                                 chainTo: GroupIndex): Future[Unit] = {
-      blockDao.updateMainChain(hash, chainFrom, chainTo, groupNum).flatMap {
+      BlockDao.updateMainChain(hash, chainFrom, chainTo, groupNum).flatMap {
         case None          => Future.successful(())
         case Some(missing) => handleMissingMainChainBlock(missing, chainFrom)
       }
@@ -251,7 +256,7 @@ object BlockFlowSyncService extends StrictLogging {
       (block.parent(groupNum) match {
         case Some(parent) =>
           //We make sure the parent is inserted before inserting the block
-          blockDao
+          BlockDao
             .get(parent)
             .flatMap {
               case None =>
@@ -267,9 +272,9 @@ object BlockFlowSyncService extends StrictLogging {
         case None                            => Future.successful(logger.error(s"${block.hash} doesn't have a parent"))
       }).flatMap { _ =>
         for {
-          _              <- blockDao.insert(block)
-          inputsToUpdate <- blockDao.updateTransactionPerAddress(block)
-          _              <- blockDao.updateMainChain(block.hash, block.chainFrom, block.chainTo, groupNum)
+          _              <- BlockDao.insert(block)
+          inputsToUpdate <- BlockDao.updateTransactionPerAddress(block)
+          _              <- BlockDao.updateMainChain(block.hash, block.chainFrom, block.chainTo, groupNum)
         } yield (inputsToUpdate)
       }
     }
@@ -278,7 +283,7 @@ object BlockFlowSyncService extends StrictLogging {
       if (blocks.nonEmpty) {
         for {
           inputsToUpdate <- foldFutures(blocks)(insert)
-          _              <- blockDao.updateLatestBlock(blocks.last)
+          _              <- BlockDao.updateLatestBlock(blocks.last)
           _              <- handleInputsToUpdate(inputsToUpdate.flatten)
         } yield (blocks.size)
       } else {
@@ -288,7 +293,7 @@ object BlockFlowSyncService extends StrictLogging {
 
     private def handleInputsToUpdate(inputs: Seq[InputEntity]) = {
       if (inputs.nonEmpty) {
-        blockDao.updateInputs(inputs).map(_ => ())
+        BlockDao.updateInputs(inputs).map(_ => ())
       } else {
         Future.successful(())
       }

@@ -22,7 +22,10 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
 import com.typesafe.scalalogging.StrictLogging
+import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
 
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.service._
 import org.alephium.explorer.web._
 import org.alephium.util.Duration
@@ -33,7 +36,10 @@ class AppServer(blockService: BlockService,
                 tokenSupplyService: TokenSupplyService,
                 hashrateService: HashrateService,
                 sanityChecker: SanityChecker,
-                blockFlowFetchMaxAge: Duration)(implicit executionContext: ExecutionContext)
+                blockFlowFetchMaxAge: Duration)(implicit executionContext: ExecutionContext,
+                                                dc: DatabaseConfig[PostgresProfile],
+                                                blockCache: BlockCache,
+                                                groupSetting: GroupSetting)
     extends StrictLogging {
 
   val blockServer: BlockServer = new BlockServer(blockService, blockFlowFetchMaxAge)
