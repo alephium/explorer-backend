@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.util
 
-import java.time.{Instant, LocalDateTime, LocalTime, ZoneId, ZoneOffset}
+import java.time._
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -25,28 +25,22 @@ import org.alephium.explorer.AlephiumSpec._
 
 class TimeUtilSpec extends AnyWordSpec with Matchers {
 
-  "toLocalFromUTC" should {
-    "convert UTC LocalDateTime to system's LocalDateTime" in {
-      val millis = Instant.ofEpochMilli(System.currentTimeMillis())
+  "toZonedDateTime" should {
+    "convert OffsetTime to ZonedDateTime with today's date" in {
+      val zone         = ZoneId.of("Australia/Perth")
+      val expectedDate = LocalDateTime.now(zone) //expected day/month/year
+      val expectedTime = OffsetTime.now(zone) //expected hour/minute/day
 
-      val utc   = LocalDateTime.ofInstant(millis, ZoneOffset.UTC)
-      val local = LocalDateTime.ofInstant(millis, ZoneId.systemDefault())
+      val actual = TimeUtil.toZonedDateTime(expectedTime) //actual ZonedDateTime
 
-      //convert utc to local
-      TimeUtil.toLocalFromUTC(utc) is local
+      //check time
+      actual.getHour is expectedTime.getHour
+      actual.getMinute is expectedTime.getMinute
+      actual.getSecond is expectedTime.getSecond
+      //check year
+      actual.getDayOfYear is expectedDate.getDayOfYear
+      actual.getMonth is expectedDate.getMonth
+      actual.getYear is expectedDate.getYear
     }
   }
-
-  "toLocalDateTimeNow" should {
-    "convert LocalTime to system's LocalDateTime" in {
-      val millis = Instant.ofEpochMilli(System.currentTimeMillis())
-
-      val utc   = LocalTime.ofInstant(millis, ZoneOffset.UTC)
-      val local = LocalDateTime.ofInstant(millis, ZoneId.systemDefault())
-
-      //convert utc to local
-      TimeUtil.toLocalDateTimeNow(utc) is local
-    }
-  }
-
 }

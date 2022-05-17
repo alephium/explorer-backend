@@ -20,17 +20,8 @@ import java.time._
 
 object TimeUtil {
 
-  /** Converts input UTC time to local system's time */
-  def toLocalFromUTCZoned(utc: ZonedDateTime): LocalDateTime =
-    utc
-      .withZoneSameInstant(ZoneId.systemDefault())
-      .toLocalDateTime
-
-  @inline def toLocalFromUTC(utc: LocalDateTime): LocalDateTime =
-    toLocalFromUTCZoned(utc.atZone(ZoneOffset.UTC))
-
-  /** Convert's UTC [[java.time.LocalTime]] to [[java.time.LocalDateTime]] in local date time */
-  @inline def toLocalDateTimeNow(utc: LocalTime): LocalDateTime =
-    toLocalFromUTC(utc.atDate(LocalDate.now(ZoneOffset.UTC)))
+  /** Convert's [[java.time.OffsetTime]] to [[java.time.ZonedDateTime]] in the same zone */
+  @inline def toZonedDateTime(time: OffsetTime): ZonedDateTime =
+    time.atDate(LocalDate.now(time.getOffset)).toZonedDateTime
 
 }

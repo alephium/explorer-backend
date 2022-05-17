@@ -15,7 +15,7 @@
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 package org.alephium.explorer.util
 
-import java.time.LocalDateTime
+import java.time._
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -23,55 +23,75 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
+import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import org.alephium.explorer.AlephiumSpec._
 import org.alephium.explorer.util.TestUtils._
 
-class SchedulerSpec extends AnyWordSpec with Matchers with Eventually with ScalaFutures {
+class SchedulerSpec
+    extends AnyWordSpec
+    with ScalaCheckDrivenPropertyChecks
+    with Matchers
+    with Eventually
+    with ScalaFutures {
 
   implicit val executionContext: ExecutionContext = ExecutionContext.global
+
+  def zoneIds(): Iterable[ZoneId] =
+    ZoneId.getAvailableZoneIds.asScala.map(ZoneId.of)
 
   "scheduleTime" when {
     "time is now" should {
       "return now/current/immediate duration" in {
-        //Time is now! Expect hours and minutes to be zero. Add 2 seconds to account for execution time.
-        val timeLeft = Scheduler.scheduleTime(LocalDateTime.now().plusSeconds(2))
-        timeLeft.toHours is 0
-        timeLeft.toMinutes is 0
+        forAll(Gen.oneOf(zoneIds())) { zoneId =>
+          //Time is now! Expect hours and minutes to be zero. Add 2 seconds to account for execution time.
+          val timeLeft = Scheduler.scheduleTime(ZonedDateTime.now(zoneId).plusSeconds(2))
+          timeLeft.toHours is 0
+          timeLeft.toMinutes is 0
+        }
       }
     }
 
     "time is in the future" should {
       "return today's duration" in {
-        //Hours
-        Scheduler.scheduleTime(LocalDateTime.now().plusHours(2).plusMinutes(1)).toHours is 2
-        //Minutes
-        Scheduler.scheduleTime(LocalDateTime.now().plusMinutes(10).plusSeconds(2)).toMinutes is 10
-        //Days
-        Scheduler.scheduleTime(LocalDateTime.now().plusDays(10).plusSeconds(2)).toDays is 10
+        forAll(Gen.oneOf(zoneIds())) { zoneId =>
+          //Hours
+          Scheduler.scheduleTime(ZonedDateTime.now(zoneId).plusHours(2).plusMinutes(1)).toHours is 2
+          //Minutes
+          Scheduler
+            .scheduleTime(ZonedDateTime.now(zoneId).plusMinutes(10).plusSeconds(2))
+            .toMinutes is 10
+          //Days
+          Scheduler.scheduleTime(ZonedDateTime.now(zoneId).plusDays(10).plusSeconds(2)).toDays is 10
+        }
       }
     }
 
     "time is in the past" should {
       "return tomorrows duration" in {
-        //Time is 1 hour in the past so schedule happens 23 hours later
-        Scheduler.scheduleTime(LocalDateTime.now().minusHours(1).plusSeconds(2)).toHours is 23
-        //Time is 1 minute in the past so schedule happens after 23 hours (next day)
-        Scheduler.scheduleTime(LocalDateTime.now().minusMinutes(1)).toHours is 23
-        //Time is few seconds in the past so schedule happens after 23 hours (next day)
-        Scheduler.scheduleTime(LocalDateTime.now().minusSeconds(3)).toHours is 23
-        //1 year behind will still return 23 hours schedule time.
-        Scheduler.scheduleTime(LocalDateTime.now().minusYears(1)).toHours is 23
+        forAll(Gen.oneOf(zoneIds())) { zoneId =>
+          //Time is 1 hour in the past so schedule happens 23 hours later
+          Scheduler
+            .scheduleTime(ZonedDateTime.now(zoneId).minusHours(1).plusSeconds(2))
+            .toHours is 23
+          //Time is 1 minute in the past so schedule happens after 23 hours (next day)
+          Scheduler.scheduleTime(ZonedDateTime.now(zoneId).minusMinutes(1)).toHours is 23
+          //Time is few seconds in the past so schedule happens after 23 hours (next day)
+          Scheduler.scheduleTime(ZonedDateTime.now(zoneId).minusSeconds(3)).toHours is 23
+          //1 year behind will still return 23 hours schedule time.
+          Scheduler.scheduleTime(ZonedDateTime.now(zoneId).minusYears(1)).toHours is 23
+        }
       }
     }
   }
 
   "scheduleLoop" should {
-    "schedule tasks at regular interval" in {
+    "schedule tasks at regular fixed interval" in {
       using(Scheduler("test")) { scheduler =>
         //collects all scheduled task times
         val scheduleTimes = new ConcurrentLinkedDeque[Long]
@@ -101,22 +121,49 @@ class SchedulerSpec extends AnyWordSpec with Matchers with Eventually with Scala
   }
 
   "scheduleDailyAt" should {
-    "schedule at" in {
-      using(Scheduler("test")) { scheduler =>
-        //starting time for the test
-        val testStartTime = System.nanoTime()
+    "schedule a task" when {
+      "input is ZonedDateTime" in {
+        forAll(Gen.oneOf(zoneIds())) { zoneId =>
+          using(Scheduler("test")) { scheduler =>
+            //starting time for the test
+            val startTime               = System.currentTimeMillis() //test started
+            @volatile var executionTime = 0L //scheduler executed
 
-        //the time the schedule was executed
-        @volatile var scheduledTime = 0L
-        scheduler.scheduleDailyAt(LocalDateTime.now().plusSeconds(3)) {
-          Future {
-            scheduledTime = System.nanoTime()
+            scheduler.scheduleDailyAt(ZonedDateTime.now(zoneId).plusSeconds(3)) {
+              Future {
+                executionTime = System.currentTimeMillis()
+              }
+            }
+
+            //scheduledTime - testStartTime is 3 seconds
+            eventually(Timeout(5.seconds)) {
+              //expect the task to be executed between [2.5 .. 3.9] seconds.
+              (executionTime - startTime) should (be >= 2500L and be <= 3900L)
+            }
           }
         }
+      }
 
-        //scheduledTime - testStartTime is 3 seconds
-        eventually(Timeout(5.seconds)) {
-          (scheduledTime.nanos - testStartTime.nanos).toSeconds is 3
+      "input is OffsetTime" in {
+        forAll(Gen.oneOf(zoneIds())) { zoneId =>
+          using(Scheduler("test")) { scheduler =>
+            val now        = LocalDateTime.now(zoneId)
+            val zoneOffSet = zoneId.getRules.getOffset(now)
+
+            val startTime               = System.currentTimeMillis() //test started
+            @volatile var executionTime = 0L //scheduler executed
+
+            scheduler.scheduleDailyAt(OffsetTime.now(zoneOffSet).plusSeconds(4)) {
+              Future {
+                executionTime = System.currentTimeMillis()
+              }
+            }
+
+            eventually(Timeout(10.seconds)) {
+              //expect the task to be executed between [2.9 .. 4.9] seconds.
+              (executionTime - startTime) should (be >= 2900L and be <= 4900L)
+            }
+          }
         }
       }
     }

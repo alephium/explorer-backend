@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.util
 
-import java.time.{LocalDateTime, LocalTime}
+import java.time.{OffsetTime, ZonedDateTime}
 import java.util.{Timer, TimerTask}
 
 import scala.annotation.tailrec
@@ -45,20 +45,18 @@ object Scheduler extends StrictLogging {
     )
 
   /**
-    * Calculate time left to schedule for the input [[java.time.LocalDateTime]].
+    * Calculate time left to schedule for the input [[java.time.ZonedDateTime]].
     * If the time is in the past then it schedules for tomorrow.
-    *
-    * TimeZone used is local machine's default time-zone.
     *
     * @param scheduleAt Time to schedule at.
     *
     * @return Time left until next schedule.
     */
   @tailrec
-  def scheduleTime(scheduleAt: LocalDateTime): FiniteDuration = {
+  def scheduleTime(scheduleAt: ZonedDateTime): FiniteDuration = {
     import java.time.Duration
 
-    val timeLeft = Duration.between(LocalDateTime.now(), scheduleAt)
+    val timeLeft = Duration.between(ZonedDateTime.now(scheduleAt.getZone), scheduleAt)
 
     if (timeLeft.isNegative) { //time is in the past, schedule for tomorrow.
       val daysBehind = Math.abs(timeLeft.toDays) + 1
@@ -81,7 +79,7 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
     * Schedules the block after a delay.
     *
     * Every other function is just a combinator to build more functionality
-    * on top of this function that actually schedules the task.
+    * on top of this function.
     */
   def scheduleOnce[T](delay: FiniteDuration)(block: => Future[T]): Future[T] = {
     val promise = Promise[T]()
@@ -124,13 +122,13 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
   }
 
   /**
-    * Schedules daily, starting from [[java.time.LocalDateTime]] in system's local timezone.
+    * Schedules daily, starting from the given [[java.time.ZonedDateTime]].
     *
     * If the time is in the past (eg: 1PM when now is 2PM) then the
     * schedule occurs for tomorrow.
     */
-  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
-  def scheduleDailyAt[T](at: LocalDateTime)(block: => Future[T])(
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))
+  def scheduleDailyAt[T](at: ZonedDateTime)(block: => Future[T])(
       implicit ec: ExecutionContext): Unit =
     scheduleOnce(scheduleTime(at))(block) onComplete {
       case Failure(exception) =>
@@ -145,27 +143,11 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
     }
 
   /**
-    * Schedules daily, starting from [[java.time.LocalDateTime]] in UTC.
-    *
-    * If the time is in the past (eg: 1PM when now is 2PM) then the
-    * schedule occurs for tomorrow.
-    *
-    * @param atUTC Should be in UTC.
-    */
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def scheduleDailyAtUTC[T](atUTC: LocalDateTime)(block: => Future[T])(
-      implicit ec: ExecutionContext): Unit =
-    scheduleDailyAt(TimeUtil.toLocalFromUTC(atUTC))(block)
-
-  /**
     * Schedules daily, starting from today.
-    *
-    * @param atUTC Should be in UTC.
     */
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def scheduleDailyAtUTC[T](atUTC: LocalTime)(block: => Future[T])(
-      implicit ec: ExecutionContext): Unit =
-    scheduleDailyAt(TimeUtil.toLocalDateTimeNow(atUTC))(block)
+  def scheduleDailyAt[T](at: OffsetTime)(block: => Future[T])(implicit ec: ExecutionContext): Unit =
+    scheduleDailyAt(TimeUtil.toZonedDateTime(at))(block)
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def scheduleLoopFlatMap[A, B](interval: FiniteDuration)(init: => Future[A])(
