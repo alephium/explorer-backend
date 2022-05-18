@@ -53,19 +53,19 @@ object Scheduler extends StrictLogging {
     * @return Time left until next schedule.
     */
   @tailrec
-  def scheduleTime(scheduleAt: ZonedDateTime): FiniteDuration = {
+  def scheduleTime(scheduleAt: ZonedDateTime, schedulerName: String): FiniteDuration = {
     import java.time.Duration
 
     val timeLeft = Duration.between(ZonedDateTime.now(scheduleAt.getZone), scheduleAt)
 
     if (timeLeft.isNegative) { //time is in the past, schedule for tomorrow.
       val daysBehind = Math.abs(timeLeft.toDays) + 1
-      logger.trace(s"Scheduled time is $daysBehind.days behind.")
-      scheduleTime(scheduleAt.plusDays(daysBehind))
+      logger.trace(s"Scheduler '$schedulerName': Scheduled time is $daysBehind.days behind")
+      scheduleTime(scheduleAt.plusDays(daysBehind), schedulerName)
     } else { //time is in the future. Good!
       val nextSchedule = timeLeft.toNanos.nanos
       //calculate first schedule using today's date.
-      logger.debug(s"Scheduled task after ${nextSchedule.toSeconds}.seconds")
+      logger.debug(s"Scheduler '$schedulerName': Scheduled delay ${nextSchedule.toSeconds}.seconds")
       nextSchedule
     }
   }
@@ -130,7 +130,7 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
   @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))
   def scheduleDailyAt[T](at: ZonedDateTime)(block: => Future[T])(
       implicit ec: ExecutionContext): Unit =
-    scheduleOnce(scheduleTime(at))(block) onComplete {
+    scheduleOnce(scheduleTime(at, name))(block) onComplete {
       case Failure(exception) =>
         //Log the failure.
         logger.error(s"Scheduler '$name': Failed executing task", exception)
@@ -186,5 +186,6 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
   override def close(): Unit = {
     terminated = true
     timer.cancel()
+    logger.info(s"Scheduler '$name' terminated!")
   }
 }

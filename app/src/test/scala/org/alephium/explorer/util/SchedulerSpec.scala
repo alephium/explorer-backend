@@ -42,15 +42,17 @@ class SchedulerSpec
 
   implicit val executionContext: ExecutionContext = ExecutionContext.global
 
-  def zoneIds(): Iterable[ZoneId] =
+  val zoneIds: Iterable[ZoneId] =
     ZoneId.getAvailableZoneIds.asScala.map(ZoneId.of)
 
   "scheduleTime" when {
     "time is now" should {
       "return now/current/immediate duration" in {
-        forAll(Gen.oneOf(zoneIds())) { zoneId =>
+        forAll(Gen.oneOf(zoneIds)) { zoneId =>
           //Time is now! Expect hours and minutes to be zero. Add 2 seconds to account for execution time.
-          val timeLeft = Scheduler.scheduleTime(ZonedDateTime.now(zoneId).plusSeconds(2))
+          val timeLeft =
+            Scheduler.scheduleTime(ZonedDateTime.now(zoneId).plusSeconds(2), "test-scheduler")
+
           timeLeft.toHours is 0
           timeLeft.toMinutes is 0
         }
@@ -59,32 +61,43 @@ class SchedulerSpec
 
     "time is in the future" should {
       "return today's duration" in {
-        forAll(Gen.oneOf(zoneIds())) { zoneId =>
+        forAll(Gen.oneOf(zoneIds)) { zoneId =>
           //Hours
-          Scheduler.scheduleTime(ZonedDateTime.now(zoneId).plusHours(2).plusMinutes(1)).toHours is 2
+          Scheduler
+            .scheduleTime(ZonedDateTime.now(zoneId).plusHours(2).plusMinutes(1), "test-scheduler")
+            .toHours is 2
           //Minutes
           Scheduler
-            .scheduleTime(ZonedDateTime.now(zoneId).plusMinutes(10).plusSeconds(2))
+            .scheduleTime(ZonedDateTime.now(zoneId).plusMinutes(10).plusSeconds(2),
+                          "test-scheduler")
             .toMinutes is 10
           //Days
-          Scheduler.scheduleTime(ZonedDateTime.now(zoneId).plusDays(10).plusSeconds(2)).toDays is 10
+          Scheduler
+            .scheduleTime(ZonedDateTime.now(zoneId).plusDays(10).plusSeconds(2), "test-scheduler")
+            .toDays is 10
         }
       }
     }
 
     "time is in the past" should {
       "return tomorrows duration" in {
-        forAll(Gen.oneOf(zoneIds())) { zoneId =>
+        forAll(Gen.oneOf(zoneIds)) { zoneId =>
           //Time is 1 hour in the past so schedule happens 23 hours later
           Scheduler
-            .scheduleTime(ZonedDateTime.now(zoneId).minusHours(1).plusSeconds(2))
+            .scheduleTime(ZonedDateTime.now(zoneId).minusHours(1).plusSeconds(2), "test-scheduler")
             .toHours is 23
           //Time is 1 minute in the past so schedule happens after 23 hours (next day)
-          Scheduler.scheduleTime(ZonedDateTime.now(zoneId).minusMinutes(1)).toHours is 23
+          Scheduler
+            .scheduleTime(ZonedDateTime.now(zoneId).minusMinutes(1), "test-scheduler")
+            .toHours is 23
           //Time is few seconds in the past so schedule happens after 23 hours (next day)
-          Scheduler.scheduleTime(ZonedDateTime.now(zoneId).minusSeconds(3)).toHours is 23
+          Scheduler
+            .scheduleTime(ZonedDateTime.now(zoneId).minusSeconds(3), "test-scheduler")
+            .toHours is 23
           //1 year behind will still return 23 hours schedule time.
-          Scheduler.scheduleTime(ZonedDateTime.now(zoneId).minusYears(1)).toHours is 23
+          Scheduler
+            .scheduleTime(ZonedDateTime.now(zoneId).minusYears(1), "test-scheduler")
+            .toHours is 23
         }
       }
     }
@@ -123,7 +136,7 @@ class SchedulerSpec
   "scheduleDailyAt" should {
     "schedule a task" when {
       "input is ZonedDateTime" in {
-        forAll(Gen.oneOf(zoneIds())) { zoneId =>
+        forAll(Gen.oneOf(zoneIds)) { zoneId =>
           using(Scheduler("test")) { scheduler =>
             //starting time for the test
             val startTime               = System.currentTimeMillis() //test started
@@ -145,7 +158,7 @@ class SchedulerSpec
       }
 
       "input is OffsetTime" in {
-        forAll(Gen.oneOf(zoneIds())) { zoneId =>
+        forAll(Gen.oneOf(zoneIds)) { zoneId =>
           using(Scheduler("test")) { scheduler =>
             val now        = LocalDateTime.now(zoneId)
             val zoneOffSet = zoneId.getRules.getOffset(now)
