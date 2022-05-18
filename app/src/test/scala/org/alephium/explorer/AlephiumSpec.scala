@@ -40,3 +40,5 @@ trait AlephiumSpec extends AnyFlatSpecLike with ScalaCheckDrivenPropertyChecks w
     // scalastyle:on scalatest-matcher
   }
 }
+
+object AlephiumSpec extends AlephiumSpec
