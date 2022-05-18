@@ -92,7 +92,7 @@ class TransactionQueriesSpec
 
     val from = TimeStamp.zero
     val to   = timestampMaxValue
-    FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from), databaseConfig).futureValue
+    FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from)).futureValue
 
     val (totalFinalized, _) = run(TransactionQueries.getBalanceAction(address)).futureValue
     val (totalFinalizedDEPRECATED, _) =

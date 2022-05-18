@@ -71,9 +71,6 @@ class Application(host: String,
   val mempoolSyncService: MempoolSyncService =
     MempoolSyncService(syncPeriod = syncPeriod, blockFlowClient, UnconfirmedTxDao)
 
-  val finalizerService: FinalizerService =
-    FinalizerService(syncPeriod = Duration.ofMinutesUnsafe(10), databaseConfig)
-
   val transactionService: TransactionService = TransactionService(transactionDao, UnconfirmedTxDao)
 
   val sanityChecker: SanityChecker =
@@ -105,7 +102,7 @@ class Application(host: String,
       _ <- mempoolSyncService.start(peers)
       _ <- TokenSupplyService.start(1.minute)
       _ <- HashrateService.start(1.minute)
-      _ <- finalizerService.start()
+      _ <- FinalizerService.start(10.minutes)
     } yield ()
   }
 

@@ -99,7 +99,7 @@ object DBInitializer extends StrictLogging {
   private def makeUpdates()(implicit executionContext: ExecutionContext,
                             databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
     logger.info("Updating database (might take long)")
-    FinalizerService.finalizeOutputs(databaseConfig)
+    FinalizerService.finalizeOutputs()
   }
 
   def dropTables()(implicit executionContext: ExecutionContext,
