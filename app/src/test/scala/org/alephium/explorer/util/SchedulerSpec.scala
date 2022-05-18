@@ -110,7 +110,7 @@ class SchedulerSpec
         val scheduleTimes = new ConcurrentLinkedDeque[Long]
 
         //schedule tasks every 1 second, first one being immediate
-        scheduler.scheduleLoop(0.seconds, 1.seconds) {
+        scheduler.scheduleLoop("test", 0.seconds, 1.seconds) {
           Future(scheduleTimes.add(System.nanoTime()))
         }
 
@@ -142,7 +142,7 @@ class SchedulerSpec
             val startTime               = System.currentTimeMillis() //test started
             @volatile var executionTime = 0L //scheduler executed
 
-            scheduler.scheduleDailyAt(ZonedDateTime.now(zoneId).plusSeconds(3)) {
+            scheduler.scheduleDailyAt("test", ZonedDateTime.now(zoneId).plusSeconds(3)) {
               Future {
                 executionTime = System.currentTimeMillis()
               }
@@ -166,7 +166,7 @@ class SchedulerSpec
             val startTime               = System.currentTimeMillis() //test started
             @volatile var executionTime = 0L //scheduler executed
 
-            scheduler.scheduleDailyAt(OffsetTime.now(zoneOffSet).plusSeconds(4)) {
+            scheduler.scheduleDailyAt("test", OffsetTime.now(zoneOffSet).plusSeconds(4)) {
               Future {
                 executionTime = System.currentTimeMillis()
               }
@@ -189,7 +189,7 @@ class SchedulerSpec
         val blockInvocations = new AtomicInteger(0) //# of times block was invoked
 
         //schedule tasks every 1 second, first one being immediate
-        scheduler.scheduleLoopFlatMap(0.seconds, 1.seconds) {
+        scheduler.scheduleLoopFlatMap("test", 0.seconds, 1.seconds) {
           //init
           Future(initInvocations.incrementAndGet())
         } { initInvoked: Int =>
