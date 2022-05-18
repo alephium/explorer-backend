@@ -17,6 +17,7 @@
 package org.alephium.explorer.service
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 
 import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
@@ -27,10 +28,12 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence._
+import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.model.AppState
 import org.alephium.explorer.persistence.schema.AppStateSchema
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.util.Scheduler
 import org.alephium.serde._
 import org.alephium.util.{Duration, TimeStamp}
 
@@ -38,9 +41,7 @@ import org.alephium.util.{Duration, TimeStamp}
  * Syncing mempool
  */
 
-trait FinalizerService extends SyncService.BlockFlow
-
-object FinalizerService extends StrictLogging {
+case object FinalizerService extends StrictLogging {
 
   // scalastyle:off magic.number
   val finalizationDuration: Duration = Duration.ofSecondsUnsafe(6500)
@@ -48,59 +49,54 @@ object FinalizerService extends StrictLogging {
   def rangeStep: Duration            = Duration.ofHoursUnsafe(24)
   // scalastyle:on magic.number
 
-  def apply(syncPeriod: Duration, databaseConfig: DatabaseConfig[PostgresProfile])(
-      implicit executionContext: ExecutionContext): FinalizerService =
-    new Impl(syncPeriod, databaseConfig)
+  def start(interval: FiniteDuration)(implicit ec: ExecutionContext,
+                                      dc: DatabaseConfig[PostgresProfile],
+                                      scheduler: Scheduler): Future[Unit] =
+    scheduler.scheduleLoop(
+      taskId        = FinalizerService.productPrefix,
+      firstInterval = ScalaDuration.Zero,
+      loopInterval  = interval
+    )(syncOnce())
 
-  private class Impl(val syncPeriod: Duration, val databaseConfig: DatabaseConfig[PostgresProfile])(
-      implicit val executionContext: ExecutionContext)
-      extends FinalizerService
-      with DBRunner {
-
-    override def syncOnce(): Future[Unit] = {
-      logger.debug("Finalizing")
-      finalizeOutputs(databaseConfig)
-    }
+  def syncOnce()(implicit ec: ExecutionContext,
+                 dc: DatabaseConfig[PostgresProfile]): Future[Unit] = {
+    logger.debug("Finalizing")
+    finalizeOutputs()
   }
 
-  def finalizeOutputs(databaseConfig: DatabaseConfig[PostgresProfile])(
-      implicit executionContext: ExecutionContext): Future[Unit] = {
-    DBRunner.run(databaseConfig)(getStartEndTime()).flatMap {
+  def finalizeOutputs()(implicit ec: ExecutionContext,
+                        dc: DatabaseConfig[PostgresProfile]): Future[Unit] =
+    run(getStartEndTime()).flatMap {
       case Some((start, end)) =>
-        finalizeOutputsWith(start, end, rangeStep, databaseConfig)
+        finalizeOutputsWith(start, end, rangeStep)
       case None =>
         Future.successful(())
     }
-  }
 
-  def finalizeOutputsWith(start: TimeStamp,
-                          end: TimeStamp,
-                          step: Duration,
-                          databaseConfig: DatabaseConfig[PostgresProfile])(
-      implicit executionContext: ExecutionContext): Future[Unit] = {
+  def finalizeOutputsWith(start: TimeStamp, end: TimeStamp, step: Duration)(
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
     var updateCounter = 0
     logger.debug(s"Updating outputs")
     val timeRanges =
       BlockFlowSyncService.buildTimestampRange(start, end, step)
     foldFutures(timeRanges) {
       case (from, to) =>
-        DBRunner
-          .run(databaseConfig)(
-            (
-              for {
-                nb <- updateOutputs(from, to)
-                _  <- updateLastFinalizedInputTime(to)
-              } yield nb
-            ).transactionally
-          )
-          .map { nb =>
-            updateCounter = updateCounter + nb
-            logger.debug(s"$updateCounter outputs updated")
-          }
+        run(
+          (
+            for {
+              nb <- updateOutputs(from, to)
+              _  <- updateLastFinalizedInputTime(to)
+            } yield nb
+          ).transactionally
+        ).map { nb =>
+          updateCounter = updateCounter + nb
+          logger.debug(s"$updateCounter outputs updated")
+        }
     }.map(_ => logger.debug(s"Outputs updated"))
   }
 
-  private def updateOutputs(from: TimeStamp, to: TimeStamp): DBActionR[Int] = {
+  private def updateOutputs(from: TimeStamp, to: TimeStamp): DBActionR[Int] =
     sqlu"""
       UPDATE outputs o
       SET spent_finalized = i.tx_hash
@@ -111,7 +107,6 @@ object FinalizerService extends StrictLogging {
       AND i.block_timestamp >= $from
       AND i.block_timestamp < $to;
       """
-  }
 
   def getStartEndTime()(
       implicit executionContext: ExecutionContext): DBActionR[Option[(TimeStamp, TimeStamp)]] = {
@@ -134,14 +129,13 @@ object FinalizerService extends StrictLogging {
     })
   }
 
-  private val getMinMaxInputsTs: DBActionSR[(TimeStamp, TimeStamp)] = {
+  private val getMinMaxInputsTs: DBActionSR[(TimeStamp, TimeStamp)] =
     sql"""
     SELECT MIN(block_timestamp),Max(block_timestamp) FROM inputs WHERE main_chain = true
     """.as[(TimeStamp, TimeStamp)]
-  }
 
   private def getLastFinalizedInputTime()(
-      implicit executionContext: ExecutionContext): DBActionR[Option[TimeStamp]] = {
+      implicit executionContext: ExecutionContext): DBActionR[Option[TimeStamp]] =
     sql"""
     SELECT value FROM app_state where key = 'last_finalized_input_time'
     """
@@ -154,9 +148,7 @@ object FinalizerService extends StrictLogging {
           case Right(timestamp) => Some(timestamp)
         }
       })
-  }
 
-  private def updateLastFinalizedInputTime(time: TimeStamp) = {
+  private def updateLastFinalizedInputTime(time: TimeStamp) =
     AppStateSchema.table.insertOrUpdate(AppState("last_finalized_input_time", serialize(time)))
-  }
 }
