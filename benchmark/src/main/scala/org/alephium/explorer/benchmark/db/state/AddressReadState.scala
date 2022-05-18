@@ -27,10 +27,11 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.crypto.Blake2b
-import org.alephium.explorer.{BlockHash, Hash}
+import org.alephium.explorer.{BlockHash, GroupSetting, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
@@ -54,9 +55,6 @@ class AddressReadState(val db: DBExecutor)
 
   implicit val executionContext: ExecutionContext = ec
   import config.profile.api._
-
-  val blockDao: BlockDao =
-    BlockDao(4, config)(db.config.db.ioExecutionContext)
 
   val dao: TransactionDao =
     TransactionDao(config)(db.config.db.ioExecutionContext)
@@ -192,9 +190,22 @@ class AddressReadState(val db: DBExecutor)
       timeout = batchWriteTimeout
     )
 
+    implicit val groupSetting: GroupSetting =
+      GroupSetting(4)
+
+    implicit val blockCache: BlockCache =
+      BlockCache()(
+        groupSetting = groupSetting,
+        ec           = config.db.ioExecutionContext,
+        dc           = db.config
+      )
+
+    implicit val dc: DatabaseConfig[PostgresProfile] =
+      config
+
     logger.info("Persisting data")
     blocks.sliding(10000).foreach { bs =>
-      Await.result(blockDao.insertAll(bs.toSeq), batchWriteTimeout)
+      Await.result(BlockDao.insertAll(bs.toSeq), batchWriteTimeout)
     }
 
     val from = ALPH.LaunchTimestamp

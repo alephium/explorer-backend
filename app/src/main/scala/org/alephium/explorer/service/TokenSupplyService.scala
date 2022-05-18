@@ -58,7 +58,7 @@ import org.alephium.util.{Duration, TimeStamp, U256}
  *   Team-conrolled assets
  *
  * Most of those wallets are included in our genesis blocks, so we don't take those blocks when computing the circulating supply,
- * some other wallets were creating after the launch and are explicitly listed below in `excludedAddresses`.
+ * some other wallets were creating after the launch and are explicitly listed below in `reservedAddresses`.
  */
 trait TokenSupplyService extends SyncService {
   def listTokenSupply(pagination: Pagination): Future[Seq[TokenSupply]]
@@ -77,15 +77,7 @@ object TokenSupplyService {
       with DBRunner
       with StrictLogging {
 
-    private val excludedAddresses = Source.fromResource("excluded_addresses").getLines().mkString
-    private val mainnetGenesisAddresses =
-      Source.fromResource("mainnet_genesis_addresses").getLines().mkString
-
-    private val reservedAddresses =
-      s"""(
-          $excludedAddresses,
-          $mainnetGenesisAddresses
-        )"""
+    private val reservedAddresses = Source.fromResource("reserved_addresses").getLines().mkString
 
     private val launchDay =
       Instant.ofEpochMilli(ALPH.LaunchTimestamp.millis).truncatedTo(ChronoUnit.DAYS)
@@ -153,7 +145,7 @@ object TokenSupplyService {
       WHERE outputs.block_timestamp <= $at
       AND (outputs.lock_time is NULL OR outputs.lock_time <= $at) /* Only count unlock tokens */
       AND outputs.main_chain = true
-      AND outputs.address NOT IN #$reservedAddresses /* We exclude the reserved wallets */
+      AND outputs.address NOT IN (#$reservedAddresses) /* We exclude the reserved wallets */
       AND inputs.block_hash IS NULL;
         """.as[Option[U256]].exactlyOne
     }
@@ -190,7 +182,7 @@ object TokenSupplyService {
          AND inputs.block_timestamp <= $at
        WHERE outputs.block_timestamp <= $at
        AND outputs.main_chain = true
-      AND outputs.address IN #$reservedAddresses /* We only take the reserved wallets */
+      AND outputs.address IN (#$reservedAddresses) /* We only take the reserved wallets */
       AND inputs.block_hash IS NULL;
         """.as[Option[U256]].exactlyOne
     }
@@ -210,7 +202,7 @@ object TokenSupplyService {
        WHERE outputs.block_timestamp <= $at
        AND outputs.lock_time > $at /* count only locked tokens */
        AND outputs.main_chain = true
-      AND outputs.address NOT IN #$reservedAddresses /* We exclude the reserved wallets */
+      AND outputs.address NOT IN (#$reservedAddresses) /* We exclude the reserved wallets */
       AND inputs.block_hash IS NULL;
         """.as[Option[U256]].exactlyOne
     }

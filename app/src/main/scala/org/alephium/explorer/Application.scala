@@ -26,6 +26,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.model.{ApiKey, ChainParams, PeerAddress}
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.DBInitializer
 import org.alephium.explorer.persistence.dao._
 import org.alephium.explorer.service._
@@ -47,7 +48,12 @@ class Application(host: String,
                                         databaseConfig: DatabaseConfig[PostgresProfile])
     extends StrictLogging {
 
-  val blockDao: BlockDao             = BlockDao(groupNum, databaseConfig)
+  implicit val groupSetting: GroupSetting =
+    GroupSetting(groupNum)
+
+  implicit val blockCache: BlockCache =
+    BlockCache()
+
   val transactionDao: TransactionDao = TransactionDao(databaseConfig)
 
   //Services
@@ -55,7 +61,7 @@ class Application(host: String,
     BlockFlowClient.apply(blockFlowUri, groupNum, blockflowFetchMaxAge, maybeBlockFlowApiKey)
 
   val blockFlowSyncService: BlockFlowSyncService =
-    BlockFlowSyncService(groupNum = groupNum, syncPeriod = syncPeriod, blockFlowClient, blockDao)
+    BlockFlowSyncService(groupNum = groupNum, syncPeriod = syncPeriod, blockFlowClient)
 
   val mempoolSyncService: MempoolSyncService =
     MempoolSyncService(syncPeriod = syncPeriod, blockFlowClient, UnconfirmedTxDao)
@@ -69,14 +75,13 @@ class Application(host: String,
   val finalizerService: FinalizerService =
     FinalizerService(syncPeriod = Duration.ofMinutesUnsafe(10), databaseConfig)
 
-  val blockService: BlockService             = BlockService(blockDao)
   val transactionService: TransactionService = TransactionService(transactionDao, UnconfirmedTxDao)
 
   val sanityChecker: SanityChecker =
-    new SanityChecker(groupNum, blockFlowClient, blockDao, databaseConfig)
+    new SanityChecker(groupNum, blockFlowClient)
 
   val server: AppServer =
-    new AppServer(blockService,
+    new AppServer(BlockService,
                   transactionService,
                   tokenSupplyService,
                   hashrateService,

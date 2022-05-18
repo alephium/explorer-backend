@@ -23,18 +23,21 @@ import scala.concurrent.{ExecutionContext, Future}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 
-import org.alephium.explorer.BuildInfo
+import org.alephium.explorer.{BuildInfo, GroupSetting}
 import org.alephium.explorer.api.InfosEndpoints
 import org.alephium.explorer.api.model.ExplorerInfo
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.service.{BlockService, TokenSupplyService, TransactionService}
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, U256}
 
-class InfosServer(
-    val blockflowFetchMaxAge: Duration,
-    tokenSupplyService: TokenSupplyService,
-    blockService: BlockService,
-    transactionService: TransactionService)(implicit executionContext: ExecutionContext)
+class InfosServer(val blockflowFetchMaxAge: Duration,
+                  tokenSupplyService: TokenSupplyService,
+                  blockService: BlockService,
+                  transactionService: TransactionService)(
+    implicit executionContext: ExecutionContext,
+    blockCache: BlockCache,
+    groupSettings: GroupSetting)
     extends Server
     with InfosEndpoints {
 

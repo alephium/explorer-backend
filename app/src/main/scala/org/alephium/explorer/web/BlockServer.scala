@@ -20,14 +20,19 @@ import scala.concurrent.ExecutionContext
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
 
 import org.alephium.api.ApiError
 import org.alephium.explorer.api.BlockEndpoints
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.service.BlockService
 import org.alephium.util.Duration
 
 class BlockServer(blockService: BlockService, val blockflowFetchMaxAge: Duration)(
-    implicit executionContext: ExecutionContext)
+    implicit executionContext: ExecutionContext,
+    dc: DatabaseConfig[PostgresProfile],
+    blockCache: BlockCache)
     extends Server
     with BlockEndpoints {
   val route: Route =

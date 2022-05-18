@@ -24,12 +24,12 @@ import akka.util.ByteString
 import org.openjdk.jmh.annotations.{Scope, State}
 
 import org.alephium.crypto.Blake2b
-import org.alephium.explorer.{BlockHash, Hash}
+import org.alephium.explorer.{BlockHash, GroupSetting, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.benchmark.db.{DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.state.ListBlocksReadStateSettings._
-import org.alephium.explorer.persistence.dao.BlockDao
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.model.{BlockHeader, TransactionEntity}
 import org.alephium.explorer.persistence.schema.{BlockHeaderSchema, TransactionSchema}
 import org.alephium.util.{TimeStamp, U256}
@@ -47,8 +47,12 @@ class ListBlocksReadState(reverse: Boolean,
 
   import config.profile.api._
 
-  val dao: BlockDao =
-    BlockDao(4, config)(db.config.db.ioExecutionContext)
+  val blockCache: BlockCache =
+    BlockCache()(
+      groupSetting = GroupSetting(4),
+      ec           = config.db.ioExecutionContext,
+      dc           = db.config
+    )
 
   /**
     * Generates a [[org.alephium.explorer.api.model.Pagination]] instance for each page to query.
