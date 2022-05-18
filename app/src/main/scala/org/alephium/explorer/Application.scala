@@ -17,6 +17,7 @@
 package org.alephium.explorer
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -31,6 +32,7 @@ import org.alephium.explorer.persistence.DBInitializer
 import org.alephium.explorer.persistence.dao._
 import org.alephium.explorer.service._
 import org.alephium.explorer.sideEffect
+import org.alephium.explorer.util.Scheduler
 import org.alephium.protocol.model.NetworkId
 import org.alephium.util.Duration
 
@@ -47,6 +49,9 @@ class Application(host: String,
                                         executionContext: ExecutionContext,
                                         databaseConfig: DatabaseConfig[PostgresProfile])
     extends StrictLogging {
+
+  implicit val scheduler: Scheduler =
+    Scheduler(s"${classOf[Application].getSimpleName} scheduler")
 
   implicit val groupSetting: GroupSetting =
     GroupSetting(groupNum)
@@ -66,9 +71,6 @@ class Application(host: String,
   val mempoolSyncService: MempoolSyncService =
     MempoolSyncService(syncPeriod = syncPeriod, blockFlowClient, UnconfirmedTxDao)
 
-  val hashrateService: HashrateService =
-    HashrateService(syncPeriod = Duration.ofMinutesUnsafe(1), databaseConfig)
-
   val tokenSupplyService: TokenSupplyService =
     TokenSupplyService(syncPeriod = Duration.ofMinutesUnsafe(1), databaseConfig, groupNum)
 
@@ -84,7 +86,6 @@ class Application(host: String,
     new AppServer(BlockService,
                   transactionService,
                   tokenSupplyService,
-                  hashrateService,
                   sanityChecker,
                   blockflowFetchMaxAge)
 
@@ -106,7 +107,7 @@ class Application(host: String,
       _ <- blockFlowSyncService.start(peers)
       _ <- mempoolSyncService.start(peers)
       _ <- tokenSupplyService.start()
-      _ <- hashrateService.start()
+      _ <- HashrateService.start(1.minute)
       _ <- finalizerService.start()
     } yield ()
   }
