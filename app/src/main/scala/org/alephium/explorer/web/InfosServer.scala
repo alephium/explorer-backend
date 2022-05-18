@@ -22,6 +22,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.{BuildInfo, GroupSetting}
 import org.alephium.explorer.api.InfosEndpoints
@@ -36,6 +38,7 @@ class InfosServer(val blockflowFetchMaxAge: Duration,
                   blockService: BlockService,
                   transactionService: TransactionService)(
     implicit executionContext: ExecutionContext,
+    dc: DatabaseConfig[PostgresProfile],
     blockCache: BlockCache,
     groupSettings: GroupSetting)
     extends Server

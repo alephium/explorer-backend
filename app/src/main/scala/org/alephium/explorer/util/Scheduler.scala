@@ -117,7 +117,9 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
       case Failure(exception) =>
         //Log the failure.
         logger.error(s"${logId(taskId)}: Failed executing task", exception)
-        scheduleLoop(taskId, loopInterval, loopInterval)(block)
+        if (!terminated) {
+          scheduleLoop(taskId, loopInterval, loopInterval)(block)
+        }
 
       case Success(_) =>
         if (!terminated) {
@@ -141,7 +143,9 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
       case Failure(exception) =>
         //Log the failure.
         logger.error(s"${logId(taskId)}: Failed executing task", exception)
-        scheduleDailyAt(taskId, at)(block)
+        if (!terminated) {
+          scheduleDailyAt(taskId, at)(block)
+        }
 
       case Success(_) =>
         if (!terminated) {
