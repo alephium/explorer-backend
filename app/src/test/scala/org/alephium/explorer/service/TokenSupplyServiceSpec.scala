@@ -160,11 +160,8 @@ class TokenSupplyServiceSpec
     val genesisLocked: Boolean
     val block1Locked: Boolean = false
 
-    implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
+    implicit val groupSettings: GroupSetting = GroupSetting(groupNum = 1)
     implicit val blockCache: BlockCache      = BlockCache()
-
-    lazy val tokenSupplyService: TokenSupplyService =
-      TokenSupplyService(syncPeriod = Duration.unsafe(30 * 1000), databaseConfig, groupNum = 1)
 
     val genesisAddress = Address.unsafe("122uvHwwcaWoXR1ryub9VK1yh2CZvYCqXxzsYDHRb2jYB")
 
@@ -227,7 +224,7 @@ class TokenSupplyServiceSpec
         BlockDao.updateMainChainStatus(block.hash, true).futureValue
       }
 
-      tokenSupplyService.syncOnce().futureValue is ()
+      TokenSupplyService.syncOnce().futureValue is ()
 
       eventually {
         val tokenSupply =
@@ -235,15 +232,15 @@ class TokenSupplyServiceSpec
 
         tokenSupply.map(_.circulating) is amounts
 
-        tokenSupplyService
+        TokenSupplyService
           .listTokenSupply(Pagination.unsafe(0, 1))
           .futureValue
           .map(_.circulating) is Seq(amounts.head)
-        tokenSupplyService
+        TokenSupplyService
           .listTokenSupply(Pagination.unsafe(0, 0))
           .futureValue is Seq.empty
 
-        tokenSupplyService
+        TokenSupplyService
           .getLatestTokenSupply()
           .futureValue
           .map(_.circulating) is Some(amounts.head)

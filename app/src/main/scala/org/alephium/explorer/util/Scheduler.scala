@@ -53,19 +53,19 @@ object Scheduler extends StrictLogging {
     * @return Time left until next schedule.
     */
   @tailrec
-  def scheduleTime(scheduleAt: ZonedDateTime, schedulerName: String): FiniteDuration = {
+  def scheduleTime(scheduleAt: ZonedDateTime, id: String): FiniteDuration = {
     import java.time.Duration
 
     val timeLeft = Duration.between(ZonedDateTime.now(scheduleAt.getZone), scheduleAt)
 
     if (timeLeft.isNegative) { //time is in the past, schedule for tomorrow.
       val daysBehind = Math.abs(timeLeft.toDays) + 1
-      logger.trace(s"Scheduler '$schedulerName': Scheduled time is $daysBehind.days behind")
-      scheduleTime(scheduleAt.plusDays(daysBehind), schedulerName)
+      logger.trace(s"$id: Scheduled time is $daysBehind.days behind")
+      scheduleTime(scheduleAt.plusDays(daysBehind), id)
     } else { //time is in the future. Good!
       val nextSchedule = timeLeft.toNanos.nanos
       //calculate first schedule using today's date.
-      logger.debug(s"Scheduler '$schedulerName': Scheduled delay ${nextSchedule.toSeconds}.seconds")
+      logger.debug(s"$id: Scheduled delay ${nextSchedule.toSeconds}.seconds")
       nextSchedule
     }
   }
@@ -75,13 +75,17 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
     extends AutoCloseable
     with StrictLogging {
 
+  /** Prefix used in logs to differentiate schedulers and tasks submitted to the scheduler */
+  @inline def logId(taskId: String): String =
+    s"Scheduler '$name', Task '$taskId'"
+
   /**
     * Schedules the block after a delay.
     *
     * Every other function is just a combinator to build more functionality
     * on top of this function.
     */
-  def scheduleOnce[T](delay: FiniteDuration)(block: => Future[T]): Future[T] = {
+  def scheduleOnce[T](taskId: String, delay: FiniteDuration)(block: => Future[T]): Future[T] = {
     val promise = Promise[T]()
 
     val task =
@@ -92,29 +96,34 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
       }
 
     timer.schedule(task, delay.toMillis max 0)
+    logger.debug(
+      s"${logId(taskId)}: Scheduled with delay ${delay.toSeconds}.seconds"
+    )
     promise.future
   }
 
   /** Schedule block at given interval */
-  def scheduleLoop[T](interval: FiniteDuration)(block: => Future[T])(
+  def scheduleLoop[T](taskId: String, interval: FiniteDuration)(block: => Future[T])(
       implicit ec: ExecutionContext): Future[T] =
-    scheduleLoop(interval, interval)(block)
+    scheduleLoop(taskId, interval, interval)(block)
 
   /** Schedules the block at given `loopInterval` with the first schedule at `firstInterval` */
   @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))
-  def scheduleLoop[T](firstInterval: FiniteDuration, loopInterval: FiniteDuration)(
+  def scheduleLoop[T](taskId: String, firstInterval: FiniteDuration, loopInterval: FiniteDuration)(
       block: => Future[T])(implicit ec: ExecutionContext): Future[T] = {
-    val initial = scheduleOnce(firstInterval)(block)
+    val initial = scheduleOnce(taskId, firstInterval)(block)
 
     initial onComplete {
       case Failure(exception) =>
         //Log the failure.
-        logger.error(s"Scheduler '$name': Failed executing task", exception)
-        scheduleLoop(loopInterval, loopInterval)(block)
+        logger.error(s"${logId(taskId)}: Failed executing task", exception)
+        if (!terminated) {
+          scheduleLoop(taskId, loopInterval, loopInterval)(block)
+        }
 
       case Success(_) =>
         if (!terminated) {
-          scheduleLoop(loopInterval, loopInterval)(block)
+          scheduleLoop(taskId, loopInterval, loopInterval)(block)
         }
     }
 
@@ -128,17 +137,19 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
     * schedule occurs for tomorrow.
     */
   @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))
-  def scheduleDailyAt[T](at: ZonedDateTime)(block: => Future[T])(
+  def scheduleDailyAt[T](taskId: String, at: ZonedDateTime)(block: => Future[T])(
       implicit ec: ExecutionContext): Unit =
-    scheduleOnce(scheduleTime(at, name))(block) onComplete {
+    scheduleOnce(taskId, scheduleTime(at, logId(taskId)))(block) onComplete {
       case Failure(exception) =>
         //Log the failure.
-        logger.error(s"Scheduler '$name': Failed executing task", exception)
-        scheduleDailyAt(at)(block)
+        logger.error(s"${logId(taskId)}: Failed executing task", exception)
+        if (!terminated) {
+          scheduleDailyAt(taskId, at)(block)
+        }
 
       case Success(_) =>
         if (!terminated) {
-          scheduleDailyAt(at)(block)
+          scheduleDailyAt(taskId, at)(block)
         }
     }
 
@@ -146,24 +157,28 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
     * Schedules daily, starting from today.
     */
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def scheduleDailyAt[T](at: OffsetTime)(block: => Future[T])(implicit ec: ExecutionContext): Unit =
-    scheduleDailyAt(TimeUtil.toZonedDateTime(at))(block)
+  def scheduleDailyAt[T](taskId: String, at: OffsetTime)(block: => Future[T])(
+      implicit ec: ExecutionContext): Unit =
+    scheduleDailyAt(taskId, TimeUtil.toZonedDateTime(at))(block)
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def scheduleLoopFlatMap[A, B](interval: FiniteDuration)(init: => Future[A])(
+  def scheduleLoopFlatMap[A, B](taskId: String, interval: FiniteDuration)(init: => Future[A])(
       block: A => Future[B])(implicit ec: ExecutionContext): Future[B] =
-    scheduleLoopFlatMap(interval, interval)(init)(block)
+    scheduleLoopFlatMap(taskId, interval, interval)(init)(block)
 
   /**
     * Similar to `scheduleLoop` but invokes `init` block only once and
     * makes that init value available to `block` for all future schedules.
     */
-  def scheduleLoopFlatMap[A, B](firstInterval: FiniteDuration, loopInterval: FiniteDuration)(
-      init: => Future[A])(block: A => Future[B])(implicit ec: ExecutionContext): Future[B] = {
+  def scheduleLoopFlatMap[A, B](taskId: String,
+                                firstInterval: FiniteDuration,
+                                loopInterval: FiniteDuration)(init: => Future[A])(
+      block: A => Future[B])(implicit ec: ExecutionContext): Future[B] = {
     //None if init has not yet been invoked else Some(A)
     @volatile var initializerResult: Option[A] = None
 
     scheduleLoop(
+      taskId        = taskId,
       firstInterval = firstInterval,
       loopInterval  = loopInterval
     ) {

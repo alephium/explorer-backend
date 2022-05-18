@@ -134,19 +134,20 @@ class InfosServerSpec()
                                   ALPH.alph(4),
                                   ALPH.alph(5))
     val tokenSupplyService = new TokenSupplyService {
-      def listTokenSupply(pagination: Pagination): Future[Seq[TokenSupply]] =
+      def listTokenSupply(pagination: Pagination)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[TokenSupply]] =
         Future.successful(
           Seq(
             tokenSupply
           ))
-      def getLatestTokenSupply(): Future[Option[TokenSupply]] =
+
+      def getLatestTokenSupply()(implicit ec: ExecutionContext,
+                                 dc: DatabaseConfig[PostgresProfile]): Future[Option[TokenSupply]] =
         Future.successful(
           Some(
             tokenSupply
           ))
-      implicit def executionContext: ExecutionContext = ???
-      def syncOnce(): Future[Unit]                    = ???
-      def syncPeriod: Duration                        = ???
 
     }
 

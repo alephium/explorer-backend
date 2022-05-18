@@ -34,7 +34,6 @@ import org.alephium.util.Duration
 class AppServer(blockService: BlockService,
                 transactionService: TransactionService,
                 tokenSupplyService: TokenSupplyService,
-                hashrateService: HashrateService,
                 sanityChecker: SanityChecker,
                 blockFlowFetchMaxAge: Duration)(implicit executionContext: ExecutionContext,
                                                 dc: DatabaseConfig[PostgresProfile],
@@ -50,7 +49,7 @@ class AppServer(blockService: BlockService,
   val infosServer: InfosServer =
     new InfosServer(blockFlowFetchMaxAge, tokenSupplyService, blockService, transactionService)
   val utilsServer: UtilsServer   = new UtilsServer(blockFlowFetchMaxAge, sanityChecker)
-  val chartsServer: ChartsServer = new ChartsServer(blockFlowFetchMaxAge, hashrateService)
+  val chartsServer: ChartsServer = new ChartsServer(blockFlowFetchMaxAge)
   val documentation: DocumentationServer =
     new DocumentationServer(blockFlowFetchMaxAge)
 

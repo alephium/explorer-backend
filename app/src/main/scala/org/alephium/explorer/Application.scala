@@ -17,6 +17,7 @@
 package org.alephium.explorer
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -31,6 +32,7 @@ import org.alephium.explorer.persistence.DBInitializer
 import org.alephium.explorer.persistence.dao._
 import org.alephium.explorer.service._
 import org.alephium.explorer.sideEffect
+import org.alephium.explorer.util.Scheduler
 import org.alephium.protocol.model.NetworkId
 import org.alephium.util.Duration
 
@@ -47,6 +49,9 @@ class Application(host: String,
                                         executionContext: ExecutionContext,
                                         databaseConfig: DatabaseConfig[PostgresProfile])
     extends StrictLogging {
+
+  implicit val scheduler: Scheduler =
+    Scheduler(s"${classOf[Application].getSimpleName} scheduler")
 
   implicit val groupSetting: GroupSetting =
     GroupSetting(groupNum)
@@ -66,12 +71,6 @@ class Application(host: String,
   val mempoolSyncService: MempoolSyncService =
     MempoolSyncService(syncPeriod = syncPeriod, blockFlowClient, UnconfirmedTxDao)
 
-  val hashrateService: HashrateService =
-    HashrateService(syncPeriod = Duration.ofMinutesUnsafe(1), databaseConfig)
-
-  val tokenSupplyService: TokenSupplyService =
-    TokenSupplyService(syncPeriod = Duration.ofMinutesUnsafe(1), databaseConfig, groupNum)
-
   val finalizerService: FinalizerService =
     FinalizerService(syncPeriod = Duration.ofMinutesUnsafe(10), databaseConfig)
 
@@ -83,8 +82,7 @@ class Application(host: String,
   val server: AppServer =
     new AppServer(BlockService,
                   transactionService,
-                  tokenSupplyService,
-                  hashrateService,
+                  TokenSupplyService,
                   sanityChecker,
                   blockflowFetchMaxAge)
 
@@ -105,8 +103,8 @@ class Application(host: String,
       peers = urisFromPeers(selfClique.toOption.get.nodes.toSeq)
       _ <- blockFlowSyncService.start(peers)
       _ <- mempoolSyncService.start(peers)
-      _ <- tokenSupplyService.start()
-      _ <- hashrateService.start()
+      _ <- TokenSupplyService.start(1.minute)
+      _ <- HashrateService.start(1.minute)
       _ <- finalizerService.start()
     } yield ()
   }
@@ -142,13 +140,15 @@ class Application(host: String,
     }
   }
 
-  def stop: Future[Unit] =
+  def stop: Future[Unit] = {
+    scheduler.close()
     for {
       _ <- stopTasksForReadWriteApp()
       _ <- bindingPromise.future.flatMap(_.unbind())
     } yield {
       logger.info("Application stopped")
     }
+  }
 
   def validateChainParams(response: Either[String, ChainParams]): Future[Unit] = {
     response match {
