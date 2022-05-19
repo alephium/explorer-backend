@@ -16,9 +16,6 @@
 
 package org.alephium.explorer.service
 
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 
@@ -35,6 +32,7 @@ import org.alephium.explorer.persistence.queries.HashrateQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.util.Scheduler
+import org.alephium.explorer.util.TimeUtil._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp}
 
@@ -105,18 +103,4 @@ case object HashrateService extends StrictLogging {
 
   def computeDailyStepBack(timestamp: TimeStamp): TimeStamp =
     truncatedToDay(timestamp.minusUnsafe(dailyStepBack)).plusMillisUnsafe(1)
-
-  private def mapInstant(timestamp: TimeStamp)(f: Instant => Instant): TimeStamp = {
-    val instant = Instant.ofEpochMilli(timestamp.millis)
-    TimeStamp
-      .unsafe(
-        f(instant).toEpochMilli
-      )
-  }
-
-  private def truncatedToHour(timestamp: TimeStamp): TimeStamp =
-    mapInstant(timestamp)(_.truncatedTo(ChronoUnit.HOURS))
-
-  private def truncatedToDay(timestamp: TimeStamp): TimeStamp =
-    mapInstant(timestamp)(_.truncatedTo(ChronoUnit.DAYS))
 }
