@@ -107,6 +107,14 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
       implicit ec: ExecutionContext): Future[T] =
     scheduleLoop(taskId, interval, interval)(block)
 
+  /** Fires and forgets the scheduled task */
+  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
+  def scheduleLoopAndForget[T](taskId: String, interval: FiniteDuration)(block: => Future[T])(
+      implicit ec: ExecutionContext): Unit = {
+    scheduleLoop(taskId, interval, interval)(block)
+    ()
+  }
+
   /** Schedules the block at given `loopInterval` with the first schedule at `firstInterval` */
   @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))
   def scheduleLoop[T](taskId: String, firstInterval: FiniteDuration, loopInterval: FiniteDuration)(
