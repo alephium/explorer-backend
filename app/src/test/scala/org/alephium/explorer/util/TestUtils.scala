@@ -30,7 +30,7 @@ object TestUtils {
     *
     * @return Result of type [[A]]
     */
-  def using[R <: AutoCloseable, A](resource: => R)(code: R => A): A =
+  def using[R <: AutoCloseable, A](resource: R)(code: R => A): A =
     try code(resource)
     finally resource.close()
 
