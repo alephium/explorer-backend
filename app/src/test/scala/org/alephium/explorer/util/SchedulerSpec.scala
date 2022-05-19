@@ -210,4 +210,20 @@ class SchedulerSpec
       }
     }
   }
+
+  "scheduleLoopAndForget" should {
+    "fire and forget" in {
+      val invocationsCount = new AtomicInteger(0) //# of times init was invoked
+
+      using(Scheduler("test")) { scheduler =>
+        scheduler.scheduleLoopAndForget("test", 500.milliseconds) {
+          Future(invocationsCount.incrementAndGet())
+        }
+
+        eventually(Timeout(2.seconds)) {
+          invocationsCount.get() should be >= 2
+        }
+      }
+    }
+  }
 }
