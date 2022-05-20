@@ -49,6 +49,7 @@ trait Documentation
       getTotalTransactions,
       getAverageBlockTime,
       getHashrates,
+      getTxCount,
       sanityCheck
     ),
     "Alephium Explorer API",

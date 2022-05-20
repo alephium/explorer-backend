@@ -22,7 +22,7 @@ import sttp.tapir.generic.auto._
 import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.BaseEndpoint
-import org.alephium.explorer.api.model.{Hashrate, IntervalType}
+import org.alephium.explorer.api.model.{Hashrate, IntervalType, TimedValues}
 
 // scalastyle:off magic.number
 trait ChartsEndpoints extends BaseEndpoint with QueryParams {
@@ -40,4 +40,14 @@ trait ChartsEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[Seq[Hashrate]])
       .description(s"`interval-type` query param: ${IntervalType.all.map(_.string).mkString(", ")}")
       .summary("Get hashrate chart in H/s")
+
+  val getTxCount: BaseEndpoint[(TimeInterval, IntervalType, Boolean), Seq[TimedValues]] =
+    chartsEndpoint.get
+      .in("transactions-count")
+      .in(timeIntervalQuery)
+      .in(intervalTypeQuery)
+      .in(query[Boolean]("per-chain").default(false))
+      .out(jsonBody[Seq[TimedValues]])
+      .description(s"`interval-type` query param: ${IntervalType.all.map(_.string).mkString(", ")}")
+      .summary("Get transaction count history")
 }

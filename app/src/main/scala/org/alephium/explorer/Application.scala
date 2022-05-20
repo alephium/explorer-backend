@@ -103,6 +103,7 @@ class Application(host: String,
       _ <- TokenSupplyService.start(1.minute)
       _ <- HashrateService.start(1.minute)
       _ <- FinalizerService.start(10.minutes)
+      _ <- TransactionHistoryService.start(15.minutes)
     } yield ()
   }
 

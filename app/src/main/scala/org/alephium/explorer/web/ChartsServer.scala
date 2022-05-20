@@ -18,12 +18,14 @@ package org.alephium.explorer.web
 
 import scala.concurrent.ExecutionContext
 
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.api.ChartsEndpoints
-import org.alephium.explorer.service.HashrateService
+import org.alephium.explorer.api.model.TimedValues
+import org.alephium.explorer.service.{HashrateService, TransactionHistoryService}
 import org.alephium.util.Duration
 
 class ChartsServer(val blockflowFetchMaxAge: Duration)(implicit executionContext: ExecutionContext,
@@ -35,5 +37,21 @@ class ChartsServer(val blockflowFetchMaxAge: Duration)(implicit executionContext
     toRoute(getHashrates) {
       case (timeInterval, interval) =>
         HashrateService.get(timeInterval.from, timeInterval.to, interval).map(Right(_))
-    }
+    } ~
+      toRoute(getTxCount) {
+        case (timeInterval, interval, perChain) =>
+          if (perChain) {
+            TransactionHistoryService
+              .getPerChain(timeInterval.from, timeInterval.to, interval)
+              .map(Right(_))
+          } else {
+            TransactionHistoryService
+              .getAllChains(timeInterval.from, timeInterval.to, interval)
+              .map { seq =>
+                Right(seq.map {
+                  case (timestamp, count) => TimedValues(timestamp, count)
+                })
+              }
+          }
+      }
 }
