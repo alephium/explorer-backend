@@ -83,11 +83,13 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
                                       databaseConfig: DatabaseConfig[PostgresProfile],
                                       groupSetting: GroupSetting,
                                       scheduler: Scheduler): Future[Unit] =
-    scheduler.scheduleLoop(
-      taskId        = TokenSupplyService.productPrefix,
-      firstInterval = ScalaDuration.Zero,
-      loopInterval  = interval
-    )(syncOnce())
+    Future.successful(
+      scheduler.scheduleLoopAndForget(
+        taskId        = TokenSupplyService.productPrefix,
+        firstInterval = ScalaDuration.Zero,
+        loopInterval  = interval
+      )(syncOnce())
+    )
 
   def syncOnce()(implicit ec: ExecutionContext,
                  dc: DatabaseConfig[PostgresProfile],

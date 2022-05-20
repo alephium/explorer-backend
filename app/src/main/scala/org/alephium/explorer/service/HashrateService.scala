@@ -44,11 +44,13 @@ case object HashrateService extends StrictLogging {
   def start(interval: FiniteDuration)(implicit executionContext: ExecutionContext,
                                       databaseConfig: DatabaseConfig[PostgresProfile],
                                       scheduler: Scheduler): Future[Unit] =
-    scheduler.scheduleLoop(
-      taskId        = HashrateService.productPrefix,
-      firstInterval = ScalaDuration.Zero,
-      loopInterval  = interval
-    )(syncOnce())
+    Future.successful(
+      scheduler.scheduleLoopAndForget(
+        taskId        = HashrateService.productPrefix,
+        firstInterval = ScalaDuration.Zero,
+        loopInterval  = interval
+      )(syncOnce())
+    )
 
   def syncOnce()(implicit ec: ExecutionContext,
                  dc: DatabaseConfig[PostgresProfile]): Future[Unit] = {
