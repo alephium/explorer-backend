@@ -28,7 +28,7 @@ import org.alephium.explorer.{AlephiumSpec, BlockHash, Generators, GroupSetting}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
-import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao, UnconfirmedTxDao}
+import org.alephium.explorer.persistence.dao.{BlockDao, UnconfirmedTxDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{TimeStamp, U256}
@@ -66,7 +66,7 @@ class TransactionServiceSpec
       .sequence(blocks.map(block => BlockDao.updateMainChainStatus(block.hash, true)))
       .futureValue
 
-    transactionService
+    TransactionService
       .getTransactionsByAddress(address, Pagination.unsafe(0, txLimit))
       .futureValue
       .size is txLimit
@@ -213,10 +213,10 @@ class TransactionServiceSpec
     )
 
     val res =
-      transactionService.getTransactionsByAddress(address0, Pagination.unsafe(0, 5)).futureValue
+      TransactionService.getTransactionsByAddress(address0, Pagination.unsafe(0, 5)).futureValue
 
     val res2 =
-      transactionService.getTransactionsByAddressSQL(address0, Pagination.unsafe(0, 5)).futureValue
+      TransactionService.getTransactionsByAddressSQL(address0, Pagination.unsafe(0, 5)).futureValue
 
     res is Seq(t1, t0)
     res2 is Seq(t1, t0)
@@ -280,12 +280,12 @@ class TransactionServiceSpec
 
         Future.sequence(blocks.map(BlockDao.insert)).futureValue
 
-        transactionService
+        TransactionService
           .getTransactionsByAddress(address0, Pagination.unsafe(0, 5))
           .futureValue
           .size is 1 // was 2 in fb7127f
 
-        transactionService
+        TransactionService
           .getTransaction(tx.hash)
           .futureValue
           .get
@@ -297,9 +297,9 @@ class TransactionServiceSpec
   it should "fall back on unconfirmed tx" in new Fixture {
     val utx = utransactionGen.sample.get
 
-    transactionService.getTransaction(utx.hash).futureValue is None
+    TransactionService.getTransaction(utx.hash).futureValue is None
     UnconfirmedTxDao.insertMany(Seq(utx)).futureValue
-    transactionService.getTransaction(utx.hash).futureValue is Some(utx)
+    TransactionService.getTransaction(utx.hash).futureValue is Some(utx)
   }
 
   it should "preserve outputs order" in new Fixture {
@@ -324,7 +324,7 @@ class TransactionServiceSpec
     blocks.foreach { block =>
       block.transactions.map { tx =>
         val transaction =
-          transactionService
+          TransactionService
             .getTransaction(tx.hash)
             .futureValue
             .get
@@ -336,7 +336,7 @@ class TransactionServiceSpec
       }
     }
 
-    transactionService
+    TransactionService
       .getTransactionsByAddress(address, Pagination.unsafe(0, Int.MaxValue))
       .futureValue
       .map { transaction =>
@@ -356,10 +356,6 @@ class TransactionServiceSpec
   trait Fixture {
     implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
     implicit val blockCache: BlockCache      = BlockCache()
-
-    val transactionDao: TransactionDao = TransactionDao(databaseConfig).futureValue
-    val transactionService: TransactionService =
-      TransactionService(transactionDao, UnconfirmedTxDao)
 
     val groupIndex = GroupIndex.unsafe(0)
 

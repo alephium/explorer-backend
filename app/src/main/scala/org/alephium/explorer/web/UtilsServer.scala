@@ -23,11 +23,8 @@ import akka.http.scaladsl.server.Route
 import org.alephium.explorer.api.UtilsEndpoints
 import org.alephium.explorer.service.SanityChecker
 import org.alephium.explorer.sideEffect
-import org.alephium.util.Duration
 
-class UtilsServer(val blockflowFetchMaxAge: Duration, sanityChecker: SanityChecker)
-    extends Server
-    with UtilsEndpoints {
+class UtilsServer(sanityChecker: SanityChecker) extends Server with UtilsEndpoints {
 
   val route: Route =
     toRoute(sanityCheck) { _ =>

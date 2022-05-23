@@ -29,7 +29,7 @@ import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.state._
 import org.alephium.explorer.cache.BlockCache
-import org.alephium.explorer.persistence.dao.BlockDao
+import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.queries.TransactionQueries
@@ -242,20 +242,22 @@ class DBBenchmark {
   @Benchmark
   def getAddressInfo(state: Address_ReadState): Unit = {
     import state.executionContext
+    import state.databaseConfig
 
     val _ = Await.result(for {
-      _ <- state.dao.getBalance(state.address)
-      _ <- state.dao.getNumberByAddressSQL(state.address)
+      _ <- TransactionDao.getBalance(state.address)
+      _ <- TransactionDao.getNumberByAddressSQL(state.address)
     } yield (), requestTimeout)
   }
 
   @Benchmark
   def getAddressInfoWithTxAddressTable(state: Address_ReadState): Unit = {
     import state.executionContext
+    import state.databaseConfig
 
     val _ = Await.result(for {
-      _ <- state.dao.getBalance(state.address)
-      _ <- state.dao.getNumberByAddressSQLNoJoin(state.address)
+      _ <- TransactionDao.getBalance(state.address)
+      _ <- TransactionDao.getNumberByAddressSQLNoJoin(state.address)
     } yield (), requestTimeout)
   }
 

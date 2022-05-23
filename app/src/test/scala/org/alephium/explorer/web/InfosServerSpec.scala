@@ -26,7 +26,7 @@ import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.{AlephiumSpec, BuildInfo, Generators, GroupSetting}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.cache.{BlockCache, TransactionCache}
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.service._
 import org.alephium.json.Json
@@ -183,30 +183,39 @@ class InfosServerSpec()
     }
 
     val transactionService = new TransactionService {
-      override def getTransaction(
-          transactionHash: Transaction.Hash): Future[Option[TransactionLike]] =
+      override def getTransaction(transactionHash: Transaction.Hash)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Option[TransactionLike]] =
         Future.successful(None)
-      override def getTransactionsByAddress(address: Address,
-                                            pagination: Pagination): Future[Seq[Transaction]] =
+
+      override def getTransactionsByAddress(address: Address, pagination: Pagination)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
         Future.successful(Seq.empty)
 
-      override def getTransactionsNumberByAddress(address: Address): Future[Int] =
+      override def getTransactionsNumberByAddress(address: Address)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Int] =
         Future.successful(0)
 
-      override def getTransactionsByAddressSQL(address: Address,
-                                               pagination: Pagination): Future[Seq[Transaction]] =
+      override def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
         Future.successful(Seq.empty)
 
-      override def getBalance(address: Address): Future[(U256, U256)] =
+      override def getBalance(address: Address)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
         Future.successful((U256.Zero, U256.Zero))
 
-      def getTotalNumber(): Int = 10
+      def getTotalNumber()(implicit cache: TransactionCache): Int = 10
     }
 
-    implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
-    implicit val blockCache: BlockCache      = BlockCache()
+    implicit val groupSettings: GroupSetting        = GroupSetting(groupNum)
+    implicit val blockCache: BlockCache             = BlockCache()
+    implicit val transactionCache: TransactionCache = TransactionCache().futureValue
 
     val server =
-      new InfosServer(Duration.zero, tokenSupplyService, blockService, transactionService)
+      new InfosServer(tokenSupplyService, blockService, transactionService)
   }
 }
