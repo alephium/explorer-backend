@@ -216,6 +216,6 @@ class InfosServerSpec()
     implicit val transactionCache: TransactionCache = TransactionCache().futureValue
 
     val server =
-      new InfosServer(Duration.zero, tokenSupplyService, blockService, transactionService)
+      new InfosServer(tokenSupplyService, blockService, transactionService)
   }
 }

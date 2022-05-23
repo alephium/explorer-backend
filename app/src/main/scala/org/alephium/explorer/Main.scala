@@ -28,7 +28,6 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.model.ApiKey
-import org.alephium.explorer.sideEffect
 import org.alephium.protocol.model.NetworkId
 import org.alephium.util.Duration
 
@@ -52,8 +51,6 @@ object Main extends App with StrictLogging {
   }
 
   val groupNum: Int = config.getInt("blockflow.groupNum")
-  val blockflowFetchMaxAge: Duration =
-    Duration.from(config.getDuration("blockflow.blockflow-fetch-max-age")).get
   val networkId: NetworkId =
     NetworkId.from(config.getInt("blockflow.network-id")).get
 
@@ -78,7 +75,6 @@ object Main extends App with StrictLogging {
                     readOnly,
                     blockflowUri,
                     groupNum,
-                    blockflowFetchMaxAge,
                     networkId,
                     blockflowApiKey,
                     syncPeriod)

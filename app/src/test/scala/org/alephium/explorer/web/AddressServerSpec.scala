@@ -32,7 +32,7 @@ import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.service.TransactionService
 import org.alephium.json.Json
-import org.alephium.util.{Duration, U256}
+import org.alephium.util.U256
 
 @SuppressWarnings(Array("org.wartremover.warts.Var"))
 class AddressServerSpec()
@@ -111,7 +111,7 @@ class AddressServerSpec()
 
     val transactionService = new EmptyTransactionService {}
 
-    lazy val server = new AddressServer(transactionService, Duration.zero)
+    lazy val server = new AddressServer(transactionService)
 
     trait EmptyTransactionService extends TransactionService {
       override def getTransaction(transactionHash: Transaction.Hash)(

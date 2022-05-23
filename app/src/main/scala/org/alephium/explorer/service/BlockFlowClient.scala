@@ -81,18 +81,12 @@ trait BlockFlowClient {
 }
 
 object BlockFlowClient {
-  def apply(uri: Uri,
-            groupNum: Int,
-            blockflowFetchMaxAge: Duration,
-            maybeApiKey: Option[api.model.ApiKey])(
+  def apply(uri: Uri, groupNum: Int, maybeApiKey: Option[api.model.ApiKey])(
       implicit executionContext: ExecutionContext
   ): BlockFlowClient =
-    new Impl(uri, groupNum, blockflowFetchMaxAge, maybeApiKey)
+    new Impl(uri, groupNum, maybeApiKey)
 
-  private class Impl(uri: Uri,
-                     groupNum: Int,
-                     val blockflowFetchMaxAge: Duration,
-                     val maybeApiKey: Option[api.model.ApiKey])(
+  private class Impl(uri: Uri, groupNum: Int, val maybeApiKey: Option[api.model.ApiKey])(
       implicit executionContext: ExecutionContext
   ) extends BlockFlowClient
       with Endpoints

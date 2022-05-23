@@ -31,10 +31,9 @@ import org.alephium.explorer.api.model.ExplorerInfo
 import org.alephium.explorer.cache.{BlockCache, TransactionCache}
 import org.alephium.explorer.service.{BlockService, TokenSupplyService, TransactionService}
 import org.alephium.protocol.ALPH
-import org.alephium.util.{Duration, U256}
+import org.alephium.util.U256
 
-class InfosServer(val blockflowFetchMaxAge: Duration,
-                  tokenSupplyService: TokenSupplyService,
+class InfosServer(tokenSupplyService: TokenSupplyService,
                   blockService: BlockService,
                   transactionService: TransactionService)(
     implicit executionContext: ExecutionContext,

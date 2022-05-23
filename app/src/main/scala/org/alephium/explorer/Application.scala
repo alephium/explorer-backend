@@ -41,7 +41,6 @@ class Application(host: String,
                   readOnly: Boolean,
                   blockFlowUri: Uri,
                   groupNum: Int,
-                  blockflowFetchMaxAge: Duration,
                   networkId: NetworkId,
                   maybeBlockFlowApiKey: Option[ApiKey],
                   syncPeriod: Duration)(implicit system: ActorSystem,
@@ -69,7 +68,7 @@ class Application(host: String,
 
   //Services
   val blockFlowClient: BlockFlowClient =
-    BlockFlowClient.apply(blockFlowUri, groupNum, blockflowFetchMaxAge, maybeBlockFlowApiKey)
+    BlockFlowClient(blockFlowUri, groupNum, maybeBlockFlowApiKey)
 
   val blockFlowSyncService: BlockFlowSyncService =
     BlockFlowSyncService(groupNum = groupNum, syncPeriod = syncPeriod, blockFlowClient)
@@ -81,11 +80,7 @@ class Application(host: String,
     new SanityChecker(groupNum, blockFlowClient)
 
   val server: AppServer =
-    new AppServer(BlockService,
-                  TransactionService,
-                  TokenSupplyService,
-                  sanityChecker,
-                  blockflowFetchMaxAge)
+    new AppServer(BlockService, TransactionService, TokenSupplyService, sanityChecker)
 
   private val bindingPromise: Promise[Http.ServerBinding] = Promise()
 

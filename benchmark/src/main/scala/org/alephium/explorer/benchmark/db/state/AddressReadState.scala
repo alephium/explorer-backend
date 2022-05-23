@@ -53,7 +53,7 @@ class AddressReadState(val db: DBExecutor)
 
   val ec: ExecutionContext = ExecutionContext.global
 
-  implicit val executionContext: ExecutionContext = ec
+  implicit val executionContext: ExecutionContext              = ec
   implicit val databaseConfig: DatabaseConfig[PostgresProfile] = db.config
 
   import config.profile.api._
