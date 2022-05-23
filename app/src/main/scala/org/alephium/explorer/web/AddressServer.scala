@@ -41,12 +41,11 @@ class AddressServer(transactionService: TransactionService, val blockflowFetchMa
           .getTransactionsByAddressSQL(address, pagination)
           .map(Right.apply)
     } ~
-      toRoute(getAddressInfo) {
-        case (address) =>
-          for {
-            (balance, locked) <- transactionService.getBalance(address)
-            txNumber          <- transactionService.getTransactionsNumberByAddress(address)
-          } yield Right(AddressInfo(balance, locked, txNumber))
+      toRoute(getAddressInfo) { address =>
+        for {
+          (balance, locked) <- transactionService.getBalance(address)
+          txNumber          <- transactionService.getTransactionsNumberByAddress(address)
+        } yield Right(AddressInfo(balance, locked, txNumber))
       } ~
       toRoute(getTotalTransactionsByAddress) { address =>
         transactionService.getTransactionsNumberByAddress(address).map(Right(_))
@@ -54,7 +53,7 @@ class AddressServer(transactionService: TransactionService, val blockflowFetchMa
       toRoute(getAddressBalance) { address =>
         for {
           (balance, locked) <- transactionService.getBalance(address)
-        } yield (Right(AddressBalance(balance, locked)))
+        } yield Right(AddressBalance(balance, locked))
       }
 
 }
