@@ -16,14 +16,17 @@
 
 package org.alephium.explorer.benchmark.db.state
 
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
 
 import org.openjdk.jmh.annotations.{Scope, State}
+import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
 
+import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.DBInitializer
-import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.util.Duration
 
@@ -34,16 +37,25 @@ import org.alephium.util.Duration
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 class BlockEntityWriteState(val db: DBExecutor) extends WriteBenchmarkState[BlockEntity](db) {
 
-  val dao: BlockDao =
-    BlockDao(4, config)(db.config.db.ioExecutionContext)
+  val groupSetting: GroupSetting =
+    GroupSetting(4)
+
+  val blockCache: BlockCache =
+    BlockCache()(
+      groupSetting = groupSetting,
+      ec           = config.db.ioExecutionContext,
+      dc           = db.config
+    )
 
   def generateData(): BlockEntity =
     DataGenerator.genBlockEntity()
 
   def beforeAll(): Unit = {
-    val dbInitializer: DBInitializer = new DBInitializer(config)(ExecutionContext.global)
-    Await.result(dbInitializer.dropTables(), Duration.ofSecondsUnsafe(10).asScala)
-    Await.result(dbInitializer.initialize(), Duration.ofSecondsUnsafe(10).asScala)
+    implicit val ec: ExecutionContextExecutor        = ExecutionContext.global
+    implicit val dc: DatabaseConfig[PostgresProfile] = config
+
+    Await.result(DBInitializer.dropTables(), Duration.ofSecondsUnsafe(10).asScala)
+    Await.result(DBInitializer.initialize(), Duration.ofSecondsUnsafe(10).asScala)
   }
 }
 

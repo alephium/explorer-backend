@@ -18,6 +18,9 @@ package org.alephium.explorer.service
 
 import scala.concurrent.{ExecutionContext, Future}
 
+import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
+
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.dao.{TransactionDao, UnconfirmedTxDao}
 import org.alephium.util.U256
@@ -34,11 +37,13 @@ trait TransactionService {
 
 object TransactionService {
   def apply(transactionDao: TransactionDao, utransactionDao: UnconfirmedTxDao)(
-      implicit executionContext: ExecutionContext): TransactionService =
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]): TransactionService =
     new Impl(transactionDao, utransactionDao)
 
   private class Impl(transactionDao: TransactionDao, utransactionDao: UnconfirmedTxDao)(
-      implicit executionContext: ExecutionContext)
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile])
       extends TransactionService {
     def getTransaction(transactionHash: Transaction.Hash): Future[Option[TransactionLike]] =
       transactionDao.get(transactionHash).flatMap {

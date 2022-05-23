@@ -23,8 +23,9 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
 
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
-import org.alephium.explorer.{AlephiumSpec, BlockHash, Generators}
+import org.alephium.explorer.{AlephiumSpec, BlockHash, Generators, GroupSetting}
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
@@ -83,7 +84,7 @@ class BlockFlowSyncServiceSpec
 
   it should "start/sync/stop" in new Fixture {
     val blockFlowSyncService =
-      BlockFlowSyncService(groupNum, syncPeriod = Duration.unsafe(1000), blockFlowClient, blockDao)
+      BlockFlowSyncService(groupNum, syncPeriod = Duration.unsafe(1000), blockFlowClient)
 
     checkBlocks(Seq.empty)
 
@@ -221,7 +222,8 @@ class BlockFlowSyncServiceSpec
     def blockFlow: Seq[Seq[BlockEntry]] =
       blockEntitiesToBlockEntries(blockFlowEntity)
 
-    val blockDao: BlockDao = BlockDao(groupNum, databaseConfig)
+    implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
+    implicit val blockCache: BlockCache      = BlockCache()
 
     def blockEntities = blockFlowEntity.flatten
 
@@ -283,7 +285,7 @@ class BlockFlowSyncServiceSpec
     }
 
     def checkBlocks(blocksToCheck: Seq[BlockEntry]) = {
-      val result = blockDao
+      val result = BlockDao
         .listIncludingForks(TimeStamp.unsafe(0), timestampMaxValue)
         .futureValue
         .map(_.hash)
@@ -293,7 +295,7 @@ class BlockFlowSyncServiceSpec
     }
 
     def checkMainChain(mainChain: Seq[BlockEntry.Hash]) = {
-      val result = blockDao
+      val result = BlockDao
         .listMainChain(Pagination.unsafe(0, blocks.size))
         .futureValue
         ._1
@@ -306,7 +308,7 @@ class BlockFlowSyncServiceSpec
 
     def checkLatestHeight(height: Int) = {
       eventually {
-        blockDao
+        BlockDao
           .latestBlocks()
           .futureValue
           .find { case (chainIndex, _) => chainIndex == ChainIndex.unsafe(0, 0) }

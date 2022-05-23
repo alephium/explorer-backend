@@ -28,6 +28,7 @@ import org.alephium.explorer.cache.AsyncReloadingCache
 import org.alephium.explorer.persistence.DBRunner
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries.TransactionQueries
+import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.util.U256
 
 trait TransactionDao {
@@ -42,7 +43,6 @@ trait TransactionDao {
 }
 
 object TransactionDao {
-
   def apply(databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit executionContext: ExecutionContext): Future[TransactionDao] =
     AsyncReloadingCache.reloadNow(reloadAfter = 5.seconds) {
@@ -58,7 +58,6 @@ object TransactionDao {
       val databaseConfig: DatabaseConfig[PostgresProfile],
       cacheTxnNumber: AsyncReloadingCache[Int])(implicit val executionContext: ExecutionContext)
       extends TransactionDao
-      with TransactionQueries
       with DBRunner {
 
     def get(hash: Transaction.Hash): Future[Option[Transaction]] =

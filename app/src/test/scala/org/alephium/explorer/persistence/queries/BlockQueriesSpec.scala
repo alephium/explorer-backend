@@ -37,7 +37,7 @@ class BlockQueriesSpec
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1000, Minutes))
 
-  it should "insert and ignore block_headers" in new Fixture {
+  it should "insert and ignore block_headers" in {
 
     forAll(Gen.listOf(updatedBlockHeaderGen())) { existingAndUpdates =>
       //fresh table
@@ -46,19 +46,19 @@ class BlockQueriesSpec
       val existing = existingAndUpdates.map(_._1) //existing blocks
       val ingored  = existingAndUpdates.map(_._2) //ingored blocks
 
-      val query = queries.insertBlockHeaders(existing)
+      val query = BlockQueries.insertBlockHeaders(existing)
 
       //insert existing
       run(query).futureValue is existing.size
       run(BlockHeaderSchema.table.result).futureValue should contain allElementsOf existing
 
       //insert should ingore existing inputs
-      run(queries.insertBlockHeaders(ingored)).futureValue is 0
+      run(BlockQueries.insertBlockHeaders(ingored)).futureValue is 0
       run(BlockHeaderSchema.table.result).futureValue should contain allElementsOf existing
     }
   }
 
-  it should "insert deps, transactions, inputs, outputs, block_headers" in new Fixture {
+  it should "insert deps, transactions, inputs, outputs, block_headers" in {
 
     forAll(Gen.listOf(genBlockEntityWithOptionalParent().map(_._1))) {
       case entities =>
@@ -70,7 +70,7 @@ class BlockQueriesSpec
         run(BlockDepsSchema.table.delete).futureValue
 
         //execute insert on blocks and expect all tables get inserted
-        run(queries.insertBlockEntity(entities, groupNum)).futureValue is entities.size
+        run(BlockQueries.insertBlockEntity(entities, groupNum)).futureValue is entities.size
 
         //check block_headers table
         val actualBlockHeaders = run(BlockHeaderSchema.table.result).futureValue
@@ -100,12 +100,5 @@ class BlockQueriesSpec
       //There is no need for testing updates here since updates are already
       //tested each table's individual test-cases.
     }
-  }
-
-  trait Fixture {
-
-    class Queries(implicit val executionContext: ExecutionContext) extends BlockQueries
-
-    val queries = new Queries
   }
 }

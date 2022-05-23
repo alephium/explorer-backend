@@ -19,19 +19,21 @@ package org.alephium.explorer.web
 import scala.concurrent.ExecutionContext
 
 import akka.http.scaladsl.server.Route
+import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.api.ChartsEndpoints
 import org.alephium.explorer.service.HashrateService
 import org.alephium.util.Duration
 
-class ChartsServer(val blockflowFetchMaxAge: Duration, hashrateService: HashrateService)(
-    implicit executionContext: ExecutionContext)
+class ChartsServer(val blockflowFetchMaxAge: Duration)(implicit executionContext: ExecutionContext,
+                                                       dc: DatabaseConfig[PostgresProfile])
     extends Server
     with ChartsEndpoints {
 
   val route: Route =
     toRoute(getHashrates) {
       case (timeInterval, interval) =>
-        hashrateService.get(timeInterval.from, timeInterval.to, interval).map(Right(_))
+        HashrateService.get(timeInterval.from, timeInterval.to, interval).map(Right(_))
     }
 }

@@ -24,12 +24,14 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting}
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
@@ -95,7 +97,7 @@ class TokenSupplyServiceSpec
     override val genesisLocked = false
 
     test(genesisBlock) {
-      Seq(blockAmount(genesisBlock))
+      Seq(U256.Zero)
     }
   }
 
@@ -112,8 +114,8 @@ class TokenSupplyServiceSpec
 
     test(genesisBlock, block1, block2) {
       Seq(
-        blockAmount(genesisBlock).addUnsafe(blockAmount(block1)),
-        blockAmount(genesisBlock)
+        blockAmount(block1),
+        U256.Zero
       )
     }
   }
@@ -123,7 +125,7 @@ class TokenSupplyServiceSpec
     override val block1Locked  = true
 
     test(genesisBlock, block1, block2) {
-      Seq(blockAmount(genesisBlock).addUnsafe(blockAmount(block1)), blockAmount(genesisBlock))
+      Seq(U256.Zero, U256.Zero)
     }
   }
 
@@ -131,9 +133,7 @@ class TokenSupplyServiceSpec
     override val genesisLocked = false
 
     test(genesisBlock, block1, block2, block3) {
-      Seq(blockAmount(genesisBlock).addUnsafe(blockAmount(block2)),
-          blockAmount(genesisBlock).addUnsafe(blockAmount(block1)),
-          blockAmount(genesisBlock))
+      Seq(blockAmount(block2), blockAmount(block1), U256.Zero)
     }
   }
 
@@ -145,6 +145,14 @@ class TokenSupplyServiceSpec
     }
   }
 
+  it should "Token supply - Not count excluded addresses" in new Fixture {
+    override val genesisLocked = true
+
+    test(genesisBlock, block1, block2, block3, block4) {
+      Seq(blockAmount(block2), blockAmount(block2), blockAmount(block1), U256.Zero)
+    }
+  }
+
   trait Fixture {
 
     val now = TimeStamp.now()
@@ -152,17 +160,18 @@ class TokenSupplyServiceSpec
     val genesisLocked: Boolean
     val block1Locked: Boolean = false
 
-    lazy val blockDao: BlockDao = BlockDao(groupNum, databaseConfig)
+    implicit val groupSettings: GroupSetting = GroupSetting(groupNum = 1)
+    implicit val blockCache: BlockCache      = BlockCache()
 
-    lazy val tokenSupplyService: TokenSupplyService =
-      TokenSupplyService(syncPeriod = Duration.unsafe(30 * 1000), databaseConfig, groupNum = 1)
+    val genesisAddress = Address.unsafe("122uvHwwcaWoXR1ryub9VK1yh2CZvYCqXxzsYDHRb2jYB")
 
     lazy val genesisBlock = {
       val lockTime =
         if (genesisLocked) Some(TimeStamp.now().plusUnsafe(Duration.ofHoursUnsafe(1))) else None
       val block = blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), None).sample.get
       block.copy(
-        outputs = block.outputs.map(_.copy(timestamp = block.timestamp, lockTime = lockTime)))
+        outputs = block.outputs.map(
+          _.copy(timestamp = block.timestamp, lockTime = lockTime, address = genesisAddress)))
     }
 
     lazy val block1 = {
@@ -187,7 +196,7 @@ class TokenSupplyServiceSpec
           case (out, index) =>
             InputEntity(block.hash, txHash, timestamp, 0, out.key, None, false, index, 0)
         },
-        outputs = block.outputs.map(_.copy(timestamp = timestamp))
+        outputs = block.outputs.map(_.copy(timestamp = timestamp, lockTime = None))
       )
     }
 
@@ -195,30 +204,43 @@ class TokenSupplyServiceSpec
       val block =
         blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block2)).sample.get
       val timestamp = block.timestamp.plusHoursUnsafe(24)
+      val address =
+        Address.unsafe(
+          "X4TqZeAizjDV8yt7XzxDVLywdzmJvLALtdAnjAERtCY3TPkyPXt4A5fxvXAX7UucXPpSYF7amNysNiniqb98vQ5rs9gh12MDXhsAf5kWmbmjXDygxV9AboSj8QR7QK8duaKAkZ")
+      block.copy(timestamp = timestamp,
+                 outputs   = block.outputs.map(_.copy(timestamp = timestamp, address = address)))
+    }
+
+    lazy val block4 = {
+      val block =
+        blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block3)).sample.get
+      val timestamp = block.timestamp.plusHoursUnsafe(24)
       block.copy(timestamp = timestamp, outputs = block.outputs.map(_.copy(timestamp = timestamp)))
     }
 
     def test(blocks: BlockEntity*)(amounts: Seq[U256]) = {
-      blockDao.insertAll(Seq.from(blocks)).futureValue
+      BlockDao.insertAll(Seq.from(blocks)).futureValue
       blocks.foreach { block =>
-        blockDao.updateMainChainStatus(block.hash, true).futureValue
+        BlockDao.updateMainChainStatus(block.hash, true).futureValue
       }
 
-      tokenSupplyService.syncOnce().futureValue is ()
+      TokenSupplyService.syncOnce().futureValue is ()
 
       eventually {
-        val tokenSupply = run(TokenSupplySchema.table.result).futureValue.reverse
+        val tokenSupply =
+          run(TokenSupplySchema.table.sortBy(_.timestamp).result).futureValue.reverse
+
         tokenSupply.map(_.circulating) is amounts
 
-        tokenSupplyService
+        TokenSupplyService
           .listTokenSupply(Pagination.unsafe(0, 1))
           .futureValue
           .map(_.circulating) is Seq(amounts.head)
-        tokenSupplyService
+        TokenSupplyService
           .listTokenSupply(Pagination.unsafe(0, 0))
           .futureValue is Seq.empty
 
-        tokenSupplyService
+        TokenSupplyService
           .getLatestTokenSupply()
           .futureValue
           .map(_.circulating) is Some(amounts.head)

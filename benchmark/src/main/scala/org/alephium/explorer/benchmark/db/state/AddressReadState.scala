@@ -27,14 +27,14 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.crypto.Blake2b
-import org.alephium.explorer.{BlockHash, Hash}
+import org.alephium.explorer.{BlockHash, GroupSetting, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.benchmark.BenchmarkUtils._
 import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.protocol.ALPH
@@ -42,7 +42,6 @@ import org.alephium.util.{Base58, TimeStamp, U256}
 
 class Queries(val config: DatabaseConfig[PostgresProfile])(
     implicit val executionContext: ExecutionContext)
-    extends TransactionQueries
 
 /**
   * JMH state for benchmarking reads from TransactionDao
@@ -51,21 +50,15 @@ class Queries(val config: DatabaseConfig[PostgresProfile])(
 // scalastyle:off method.length
 @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
 class AddressReadState(val db: DBExecutor)
-    extends ReadBenchmarkState[OutputEntity](testDataCount = 4000, db = db)
-    with TransactionQueries {
+    extends ReadBenchmarkState[OutputEntity](testDataCount = 4000, db = db) {
 
   val ec: ExecutionContext = ExecutionContext.global
 
   implicit val executionContext: ExecutionContext = ec
   import config.profile.api._
 
-  val blockDao: BlockDao =
-    BlockDao(4, config)(db.config.db.ioExecutionContext)
-
   val dao: TransactionDao =
     TransactionDao(config)(db.config.db.ioExecutionContext).await()
-
-  val queries: TransactionQueries = new Queries(db.config)
 
   val address: Address = Address.unsafe(Base58.encode(Hash.generate.bytes))
 
@@ -198,15 +191,28 @@ class AddressReadState(val db: DBExecutor)
       timeout = batchWriteTimeout
     )
 
+    implicit val groupSetting: GroupSetting =
+      GroupSetting(4)
+
+    implicit val blockCache: BlockCache =
+      BlockCache()(
+        groupSetting = groupSetting,
+        ec           = config.db.ioExecutionContext,
+        dc           = db.config
+      )
+
+    implicit val dc: DatabaseConfig[PostgresProfile] =
+      config
+
     logger.info("Persisting data")
     blocks.sliding(10000).foreach { bs =>
-      Await.result(blockDao.insertAll(bs.toSeq), batchWriteTimeout)
+      Await.result(BlockDao.insertAll(bs.toSeq), batchWriteTimeout)
     }
 
     val from = ALPH.LaunchTimestamp
     val to   = DataGenerator.timestampMaxValue
     val _ =
-      Await.result(FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from), db.config),
+      Await.result(FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from)),
                    batchWriteTimeout)
 
     logger.info("Persisting data complete")

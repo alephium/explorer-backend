@@ -29,7 +29,6 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
-import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
@@ -37,9 +36,12 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickSugar._
 import org.alephium.util.{TimeStamp, U256}
 
-trait TransactionQueries extends StrictLogging {
+object TransactionQueries extends StrictLogging {
 
-  implicit def executionContext: ExecutionContext
+  @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
+  val mainTransactions    = TransactionSchema.table.filter(_.mainChain)
+  private val mainInputs  = InputSchema.table.filter(_.mainChain)
+  private val mainOutputs = OutputSchema.table.filter(_.mainChain)
 
   def insertAll(transactions: Seq[TransactionEntity],
                 outputs: Seq[OutputEntity],
@@ -89,8 +91,8 @@ trait TransactionQueries extends StrictLogging {
         ).asUpdate
     }
 
-  def updateTransactionPerAddressAction(outputs: Seq[OutputEntity],
-                                        inputs: Seq[InputEntity]): DBActionRW[Seq[InputEntity]] = {
+  def updateTransactionPerAddressAction(outputs: Seq[OutputEntity], inputs: Seq[InputEntity])(
+      implicit ec: ExecutionContext): DBActionRW[Seq[InputEntity]] = {
     for {
       _              <- insertTxPerAddressFromOutputs(outputs)
       inputsToUpdate <- insertTxPerAddressFromInputs(inputs, outputs)
@@ -112,7 +114,8 @@ trait TransactionQueries extends StrictLogging {
       .map(tx => (tx.blockHash, tx.timestamp, tx.gasAmount, tx.gasPrice))
   }
 
-  def getTransactionAction(txHash: Transaction.Hash): DBActionR[Option[Transaction]] =
+  def getTransactionAction(txHash: Transaction.Hash)(
+      implicit ec: ExecutionContext): DBActionR[Option[Transaction]] =
     getTransactionQuery(txHash).result.headOption.flatMap {
       case None => DBIOAction.successful(None)
       case Some((blockHash, timestamp, gasAmount, gasPrice)) =>
@@ -172,6 +175,7 @@ trait TransactionQueries extends StrictLogging {
     """.as[Int]
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
   val getTxHashesByAddressQuery = Compiled {
     (address: Rep[Address], toDrop: ConstColumn[Long], limit: ConstColumn[Long]) =>
       mainInputs
@@ -223,16 +227,16 @@ trait TransactionQueries extends StrictLogging {
     """.as
   }
 
-  def getTransactionsByBlockHash(blockHash: BlockEntry.Hash): DBActionR[Seq[Transaction]] = {
+  def getTransactionsByBlockHash(blockHash: BlockEntry.Hash)(
+      implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
     for {
       txHashesTs <- getTxHashesByBlockHashQuery(blockHash).result
       txs        <- getTransactions(txHashesTs)
     } yield txs
   }
 
-  def getTransactionsByBlockHashWithPagination(
-      blockHash: BlockEntry.Hash,
-      pagination: Pagination): DBActionR[Seq[Transaction]] = {
+  def getTransactionsByBlockHashWithPagination(blockHash: BlockEntry.Hash, pagination: Pagination)(
+      implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
     val offset = pagination.offset.toLong
     val limit  = pagination.limit.toLong
     val toDrop = offset * limit
@@ -242,8 +246,8 @@ trait TransactionQueries extends StrictLogging {
     } yield txs
   }
 
-  def getTransactionsByAddress(address: Address,
-                               pagination: Pagination): DBActionR[Seq[Transaction]] = {
+  def getTransactionsByAddress(address: Address, pagination: Pagination)(
+      implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
     val offset = pagination.offset.toLong
     val limit  = pagination.limit.toLong
     val toDrop = offset * limit
@@ -253,8 +257,8 @@ trait TransactionQueries extends StrictLogging {
     } yield txs
   }
 
-  def getTransactionsByAddressSQL(address: Address,
-                                  pagination: Pagination): DBActionR[Seq[Transaction]] = {
+  def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
+      implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
     val offset = pagination.offset
     val limit  = pagination.limit
     val toDrop = offset * limit
@@ -264,8 +268,8 @@ trait TransactionQueries extends StrictLogging {
     } yield txs
   }
 
-  def getTransactions(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)])
-    : DBActionR[Seq[Transaction]] = {
+  def getTransactions(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)])(
+      implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
     val txHashes = txHashesTs.map(_._1)
     for {
       inputs  <- inputsFromTxs(txHashes).result
@@ -276,8 +280,8 @@ trait TransactionQueries extends StrictLogging {
     }
   }
 
-  def getTransactionsSQL(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)])
-    : DBActionR[Seq[Transaction]] = {
+  def getTransactionsSQL(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)])(
+      implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
     if (txHashesTs.nonEmpty) {
       val txHashes = txHashesTs.map(_._1)
       for {
@@ -345,11 +349,12 @@ trait TransactionQueries extends StrictLogging {
     }
   }
 
-  private def getKnownTransactionAction(txHash: Transaction.Hash,
-                                        blockHash: BlockEntry.Hash,
-                                        timestamp: TimeStamp,
-                                        gasAmount: Int,
-                                        gasPrice: U256): DBActionR[Transaction] =
+  private def getKnownTransactionAction(
+      txHash: Transaction.Hash,
+      blockHash: BlockEntry.Hash,
+      timestamp: TimeStamp,
+      gasAmount: Int,
+      gasPrice: U256)(implicit ec: ExecutionContext): DBActionR[Transaction] =
     for {
       ins  <- getInputsQuery(txHash).result
       outs <- getOutputsQuery(txHash).result
@@ -389,17 +394,29 @@ trait TransactionQueries extends StrictLogging {
     }
   }
 
-  def getBalanceActionDEPRECATED(address: Address): DBActionR[(U256, U256)] = {
+  def getBalanceActionDEPRECATED(address: Address)(
+      implicit ec: ExecutionContext): DBActionR[(U256, U256)] = {
     getBalanceQueryDEPRECATED(address).map(sumBalance)
   }
 
-  def getBalanceAction(address: Address): DBActionR[(U256, U256)] =
+  def getBalanceAction(address: Address)(implicit ec: ExecutionContext): DBActionR[(U256, U256)] =
+    getBalanceUntilLockTime(
+      address  = address,
+      lockTime = TimeStamp.now()
+    ) map {
+      case (total, locked) =>
+        (total.getOrElse(U256.Zero), locked.getOrElse(U256.Zero))
+    }
+
+  def getBalanceActionOption(address: Address)(
+      implicit ec: ExecutionContext): DBActionR[(Option[U256], Option[U256])] =
     getBalanceUntilLockTime(
       address  = address,
       lockTime = TimeStamp.now()
     )
 
-  def getBalanceUntilLockTime(address: Address, lockTime: TimeStamp): DBActionR[(U256, U256)] =
+  def getBalanceUntilLockTime(address: Address, lockTime: TimeStamp)(
+      implicit ec: ExecutionContext): DBActionR[(Option[U256], Option[U256])] =
     sql"""
       SELECT sum(outputs.amount),
              sum(CASE
@@ -414,20 +431,10 @@ trait TransactionQueries extends StrictLogging {
         AND outputs.address = $address
         AND outputs.main_chain = true
         AND inputs.block_hash IS NULL;
-    """.as[(U256, U256)].exactlyOne
+    """.as[(Option[U256], Option[U256])].exactlyOne
 
   // switch logger.trace when we can disable debugging mode
   protected def debugShow(query: slickProfile.ProfileAction[_, _, _]) = {
     print(s"${query.statements.mkString}\n")
   }
-}
-
-object TransactionQueries {
-
-  val mainTransactions: Query[TransactionSchema.Transactions, TransactionEntity, Seq] =
-    TransactionSchema.table.filter(_.mainChain)
-
-  private val mainInputs  = InputSchema.table.filter(_.mainChain)
-  private val mainOutputs = OutputSchema.table.filter(_.mainChain)
-
 }

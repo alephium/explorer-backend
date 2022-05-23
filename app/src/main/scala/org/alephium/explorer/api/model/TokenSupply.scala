@@ -25,6 +25,8 @@ final case class TokenSupply(
     timestamp: TimeStamp,
     total: U256,
     circulating: U256,
+    reserved: U256,
+    locked: U256,
     maximum: U256
 )
 

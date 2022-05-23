@@ -21,9 +21,13 @@ import scala.concurrent.{ExecutionContext, Future}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpupickle.UpickleCustomizationSupport
 import org.scalatest.concurrent.ScalaFutures
+import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.{AlephiumSpec, BuildInfo}
+import org.alephium.explorer.{AlephiumSpec, BuildInfo, Generators, GroupSetting}
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.service._
 import org.alephium.json.Json
 import org.alephium.protocol.ALPH
@@ -33,6 +37,7 @@ import org.alephium.util.{Duration, TimeStamp, U256}
 class InfosServerSpec()
     extends AlephiumSpec
     with AkkaDecodeFailureHandler
+    with DatabaseFixtureForEach
     with ScalaFutures
     with ScalatestRouteTest
     with UpickleCustomizationSupport {
@@ -83,6 +88,28 @@ class InfosServerSpec()
     }
   }
 
+  it should "return the reserved token supply" in new Fixture {
+    Get(s"/infos/supply/reserved-alph") ~> server.route ~> check {
+      val reserved = response.entity
+        .toStrict(Duration.ofSecondsUnsafe(5).asScala)
+        .map(_.data.utf8String)
+        .futureValue
+
+      reserved is "3"
+    }
+  }
+
+  it should "return the locked token supply" in new Fixture {
+    Get(s"/infos/supply/locked-alph") ~> server.route ~> check {
+      val locked = response.entity
+        .toStrict(Duration.ofSecondsUnsafe(5).asScala)
+        .map(_.data.utf8String)
+        .futureValue
+
+      locked is "4"
+    }
+  }
+
   it should "return the total transactions number" in new Fixture {
     Get(s"/infos/total-transactions") ~> server.route ~> check {
       val total = response.entity
@@ -99,34 +126,60 @@ class InfosServerSpec()
       responseAs[Seq[PerChainValue]] is Seq(blockTime)
     }
   }
-  trait Fixture {
-    val tokenSupply = TokenSupply(TimeStamp.zero, ALPH.alph(1), ALPH.alph(2), ALPH.alph(3))
+  trait Fixture extends Generators {
+    val tokenSupply = TokenSupply(TimeStamp.zero,
+                                  ALPH.alph(1),
+                                  ALPH.alph(2),
+                                  ALPH.alph(3),
+                                  ALPH.alph(4),
+                                  ALPH.alph(5))
     val tokenSupplyService = new TokenSupplyService {
-      def listTokenSupply(pagination: Pagination): Future[Seq[TokenSupply]] =
+      def listTokenSupply(pagination: Pagination)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[TokenSupply]] =
         Future.successful(
           Seq(
             tokenSupply
           ))
-      def getLatestTokenSupply(): Future[Option[TokenSupply]] =
+
+      def getLatestTokenSupply()(implicit ec: ExecutionContext,
+                                 dc: DatabaseConfig[PostgresProfile]): Future[Option[TokenSupply]] =
         Future.successful(
           Some(
             tokenSupply
           ))
-      implicit def executionContext: ExecutionContext = ???
-      def syncOnce(): Future[Unit]                    = ???
-      def syncPeriod: Duration                        = ???
 
     }
 
     val chainHeight = PerChainValue(0, 0, 60000)
     val blockTime   = PerChainValue(0, 0, 1)
     val blockService = new BlockService {
-      def getLiteBlockByHash(hash: BlockEntry.Hash): Future[Option[BlockEntryLite]] = ???
-      def getBlockTransactions(hash: BlockEntry.Hash,
-                               pagination: Pagination): Future[Seq[Transaction]] = ???
-      def listBlocks(pagination: Pagination): Future[ListBlocks]                 = ???
-      def listMaxHeights(): Future[Seq[PerChainValue]]                           = Future.successful(Seq(chainHeight))
-      def getAverageBlockTime(): Future[Seq[PerChainValue]]                      = Future.successful(Seq(blockTime))
+
+      def getLiteBlockByHash(hash: BlockEntry.Hash)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntryLite]] =
+        ???
+
+      def getBlockTransactions(hash: BlockEntry.Hash, pagination: Pagination)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
+        ???
+
+      def listBlocks(pagination: Pagination)(implicit ec: ExecutionContext,
+                                             dc: DatabaseConfig[PostgresProfile],
+                                             cache: BlockCache): Future[ListBlocks] =
+        ???
+
+      def listMaxHeights()(implicit cache: BlockCache,
+                           groupSetting: GroupSetting,
+                           ec: ExecutionContext): Future[Seq[PerChainValue]] =
+        Future.successful(Seq(chainHeight))
+
+      def getAverageBlockTime()(implicit cache: BlockCache,
+                                groupSetting: GroupSetting,
+                                ec: ExecutionContext): Future[Seq[PerChainValue]] =
+        Future.successful(Seq(blockTime))
+
     }
 
     val transactionService = new TransactionService {
@@ -149,6 +202,9 @@ class InfosServerSpec()
 
       def getTotalNumber(): Int = 10
     }
+
+    implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
+    implicit val blockCache: BlockCache      = BlockCache()
 
     val server =
       new InfosServer(Duration.zero, tokenSupplyService, blockService, transactionService)

@@ -14,19 +14,14 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.dao
+package org.alephium.explorer.util
 
-import scala.concurrent.{ExecutionContext, Future}
+import java.time._
 
-import slick.basic.DatabaseConfig
-import slick.jdbc.PostgresProfile
-import slick.jdbc.meta.MTable
+object TimeUtil {
 
-import org.alephium.explorer.persistence.DBRunner._
+  /** Convert's [[java.time.OffsetTime]] to [[java.time.ZonedDateTime]] in the same zone */
+  @inline def toZonedDateTime(time: OffsetTime): ZonedDateTime =
+    time.atDate(LocalDate.now(time.getOffset)).toZonedDateTime
 
-object HealthCheckDao {
-
-  def healthCheck()(implicit executionContext: ExecutionContext,
-                    databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] =
-    run(MTable.getTables).map(_ => ())
 }

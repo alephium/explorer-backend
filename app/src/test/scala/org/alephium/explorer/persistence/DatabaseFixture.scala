@@ -40,10 +40,10 @@ object DatabaseFixture {
   def createDatabaseConfig(): DatabaseConfig[PostgresProfile] =
     DatabaseConfig.forConfig[PostgresProfile]("db", config)
 
-  def dropCreateTables(databaseConfig: DatabaseConfig[PostgresProfile]) = {
-    val dbInitializer: DBInitializer = new DBInitializer(databaseConfig)(ExecutionContext.global)
+  def dropCreateTables()(implicit databaseConfig: DatabaseConfig[PostgresProfile]) = {
+    implicit val ec: ExecutionContext = ExecutionContext.global
 
-    Await.result(dbInitializer.dropTables(), Duration.ofSecondsUnsafe(10).asScala)
-    Await.result(dbInitializer.initialize(), Duration.ofSecondsUnsafe(10).asScala)
+    Await.result(DBInitializer.dropTables(), Duration.ofSecondsUnsafe(10).asScala)
+    Await.result(DBInitializer.initialize(), Duration.ofSecondsUnsafe(10).asScala)
   }
 }

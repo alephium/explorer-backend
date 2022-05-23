@@ -24,8 +24,9 @@ import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.explorer.{AlephiumSpec, BlockHash, Generators}
+import org.alephium.explorer.{AlephiumSpec, BlockHash, Generators, GroupSetting}
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao, UnconfirmedTxDao}
 import org.alephium.explorer.persistence.model._
@@ -60,9 +61,9 @@ class TransactionServiceSpec
 
     val txLimit = 5
 
-    Future.sequence(blocks.map(blockDao.insert)).futureValue
+    Future.sequence(blocks.map(BlockDao.insert)).futureValue
     Future
-      .sequence(blocks.map(block => blockDao.updateMainChainStatus(block.hash, true)))
+      .sequence(blocks.map(block => BlockDao.updateMainChainStatus(block.hash, true)))
       .futureValue
 
     transactionService
@@ -86,11 +87,11 @@ class TransactionServiceSpec
 
     block.outputs.head.amount is amount
 
-    blockDao.insert(block).futureValue
-    blockDao.updateMainChainStatus(block.hash, true).futureValue
+    BlockDao.insert(block).futureValue
+    BlockDao.updateMainChainStatus(block.hash, true).futureValue
 
     val fetchedAmout =
-      blockDao.get(block.hash).futureValue.get.transactions.flatMap(_.outputs.map(_.amount)).head
+      BlockDao.get(block.hash).futureValue.get.transactions.flatMap(_.outputs.map(_.amount)).head
     fetchedAmout is amount
   }
 
@@ -186,10 +187,10 @@ class TransactionServiceSpec
 
     val blocks = Seq(block0, block1)
 
-    Future.sequence(blocks.map(blockDao.insert)).futureValue
+    Future.sequence(blocks.map(BlockDao.insert)).futureValue
     val inputsToUpdate =
-      Future.sequence(blocks.map(blockDao.updateTransactionPerAddress)).futureValue.flatten
-    blockDao.updateInputs(inputsToUpdate).futureValue
+      Future.sequence(blocks.map(BlockDao.updateTransactionPerAddress)).futureValue.flatten
+    BlockDao.updateInputs(inputsToUpdate).futureValue
 
     val t0 = Transaction(
       tx0.hash,
@@ -277,7 +278,7 @@ class TransactionServiceSpec
 
         val blocks = Seq(block0, block1)
 
-        Future.sequence(blocks.map(blockDao.insert)).futureValue
+        Future.sequence(blocks.map(BlockDao.insert)).futureValue
 
         transactionService
           .getTransactionsByAddress(address0, Pagination.unsafe(0, 5))
@@ -297,7 +298,7 @@ class TransactionServiceSpec
     val utx = utransactionGen.sample.get
 
     transactionService.getTransaction(utx.hash).futureValue is None
-    utransactionDao.insertMany(Seq(utx)).futureValue
+    UnconfirmedTxDao.insertMany(Seq(utx)).futureValue
     transactionService.getTransaction(utx.hash).futureValue is Some(utx)
   }
 
@@ -315,9 +316,9 @@ class TransactionServiceSpec
 
     val outputs = blocks.flatMap(_.outputs)
 
-    Future.sequence(blocks.map(blockDao.insert)).futureValue
+    Future.sequence(blocks.map(BlockDao.insert)).futureValue
     Future
-      .sequence(blocks.map(block => blockDao.updateMainChainStatus(block.hash, true)))
+      .sequence(blocks.map(block => BlockDao.updateMainChainStatus(block.hash, true)))
       .futureValue
 
     blocks.foreach { block =>
@@ -353,10 +354,12 @@ class TransactionServiceSpec
   }
 
   trait Fixture {
-    val blockDao: BlockDao                     = BlockDao(groupNum, databaseConfig)
-    val transactionDao: TransactionDao         = TransactionDao(databaseConfig).futureValue
-    val utransactionDao: UnconfirmedTxDao      = UnconfirmedTxDao(databaseConfig)
-    val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
+    implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
+    implicit val blockCache: BlockCache      = BlockCache()
+
+    val transactionDao: TransactionDao = TransactionDao(databaseConfig).futureValue
+    val transactionService: TransactionService =
+      TransactionService(transactionDao, UnconfirmedTxDao)
 
     val groupIndex = GroupIndex.unsafe(0)
 

@@ -27,7 +27,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model.{Hashrate, IntervalType}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
-import org.alephium.explorer.persistence.queries.HashrateQueries
+import org.alephium.explorer.persistence.queries.HashrateQueries._
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.util._
 
@@ -107,18 +107,18 @@ class HashrateServiceSpec
 
     run(BlockHeaderSchema.table ++= blocks).futureValue
 
-    hashrateService.get(from, to, IntervalType.Hourly).futureValue is Vector.empty
+    HashrateService.get(from, to, IntervalType.Hourly).futureValue is Vector.empty
 
-    hashrateService.syncOnce().futureValue
+    HashrateService.syncOnce().futureValue
 
-    hashrateService.get(from, to, IntervalType.Hourly).futureValue is Vector(
+    HashrateService.get(from, to, IntervalType.Hourly).futureValue is Vector(
       hr("2022-01-07T00:00:00.000Z", 1),
       hr("2022-01-07T13:00:00.000Z", 3),
       hr("2022-01-08T00:00:00.000Z", 12),
       hr("2022-01-08T01:00:00.000Z", 100)
     )
 
-    hashrateService.get(from, to, IntervalType.Daily).futureValue is Vector(
+    HashrateService.get(from, to, IntervalType.Daily).futureValue is Vector(
       hr("2022-01-07T00:00:00.000Z", 1),
       hr("2022-01-08T00:00:00.000Z", 6),
       hr("2022-01-09T00:00:00.000Z", 100)
@@ -131,9 +131,9 @@ class HashrateServiceSpec
 
     run(BlockHeaderSchema.table ++= newBlocks).futureValue
 
-    hashrateService.syncOnce().futureValue
+    HashrateService.syncOnce().futureValue
 
-    hashrateService.get(from, to, IntervalType.Hourly).futureValue is Vector(
+    HashrateService.get(from, to, IntervalType.Hourly).futureValue is Vector(
       hr("2022-01-07T00:00:00.000Z", 1),
       hr("2022-01-07T13:00:00.000Z", 3),
       hr("2022-01-08T00:00:00.000Z", 12),
@@ -142,7 +142,7 @@ class HashrateServiceSpec
       hr("2022-01-08T21:00:00.000Z", 4)
     )
 
-    hashrateService.get(from, to, IntervalType.Daily).futureValue is Vector(
+    HashrateService.get(from, to, IntervalType.Daily).futureValue is Vector(
       hr("2022-01-07T00:00:00.000Z", 1),
       hr("2022-01-08T00:00:00.000Z", 6),
       hr("2022-01-09T00:00:00.000Z", 38)
@@ -173,13 +173,10 @@ class HashrateServiceSpec
     }
   }
 
-  trait Fixture extends HashrateQueries {
+  trait Fixture {
 
     val from = TimeStamp.zero
     val to   = TimeStamp.now()
-
-    val hashrateService: HashrateService =
-      HashrateService(syncPeriod = Duration.unsafe(1000), databaseConfig)
 
     def ts(str: String): TimeStamp = {
       TimeStamp.unsafe(Instant.parse(str).toEpochMilli)

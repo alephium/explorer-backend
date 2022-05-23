@@ -24,88 +24,104 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.{DBActionW, DBRunner}
+import org.alephium.explorer.persistence.DBActionW
+import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
 trait UnconfirmedTxDao {
-  def get(hash: Transaction.Hash): Future[Option[UnconfirmedTransaction]]
-  def insertMany(utxs: Seq[UnconfirmedTransaction]): Future[Unit]
-  def listHashes(): Future[Seq[Transaction.Hash]]
-  def removeMany(txs: Seq[Transaction.Hash]): Future[Unit]
-  def removeAndInsertMany(toRemove: Seq[Transaction.Hash],
-                          toInsert: Seq[UnconfirmedTransaction]): Future[Unit]
+
+  def get(hash: Transaction.Hash)(
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Option[UnconfirmedTransaction]]
+
+  def insertMany(utxs: Seq[UnconfirmedTransaction])(
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit]
+
+  def listHashes()(implicit executionContext: ExecutionContext,
+                   databaseConfig: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction.Hash]]
+
+  def removeMany(txs: Seq[Transaction.Hash])(
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit]
+
+  def removeAndInsertMany(toRemove: Seq[Transaction.Hash], toInsert: Seq[UnconfirmedTransaction])(
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit]
 }
 
-object UnconfirmedTxDao {
-  def apply(databaseConfig: DatabaseConfig[PostgresProfile])(
-      implicit executionContext: ExecutionContext): UnconfirmedTxDao =
-    new Impl(databaseConfig)
+object UnconfirmedTxDao extends UnconfirmedTxDao {
 
-  private class Impl(val databaseConfig: DatabaseConfig[PostgresProfile])(
-      implicit val executionContext: ExecutionContext)
-      extends UnconfirmedTxDao
-      with DBRunner {
+  def get(hash: Transaction.Hash)(
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Option[UnconfirmedTransaction]] = {
+    run(for {
+      maybeTx <- UnconfirmedTxSchema.table.filter(_.hash === hash).result.headOption
+      inputs  <- UInputSchema.table.filter(_.txHash === hash).result
+      outputs <- UOutputSchema.table.filter(_.txHash === hash).result
+    } yield {
+      maybeTx.map { tx =>
+        UnconfirmedTransaction(
+          tx.hash,
+          tx.chainFrom,
+          tx.chainTo,
+          inputs.map(_.toApi),
+          outputs.map(_.toApi),
+          tx.gasAmount,
+          tx.gasPrice
+        )
+      }
+    })
+  }
 
-    def get(hash: Transaction.Hash): Future[Option[UnconfirmedTransaction]] = {
-      run(for {
-        maybeTx <- UnconfirmedTxSchema.table.filter(_.hash === hash).result.headOption
-        inputs  <- UInputSchema.table.filter(_.txHash === hash).result
-        outputs <- UOutputSchema.table.filter(_.txHash === hash).result
-      } yield {
-        maybeTx.map { tx =>
-          UnconfirmedTransaction(
-            tx.hash,
-            tx.chainFrom,
-            tx.chainTo,
-            inputs.map(_.toApi),
-            outputs.map(_.toApi),
-            tx.gasAmount,
-            tx.gasPrice
-          )
-        }
-      })
-    }
+  private def insertManyAction(utxs: Seq[UnconfirmedTransaction])(
+      implicit executionContext: ExecutionContext): DBActionW[Unit] = {
+    val entities = utxs.map(UnconfirmedTxEntity.from)
+    val txs      = entities.map { case (tx, _, _) => tx }
+    val inputs   = entities.flatMap { case (_, in, _) => in }
+    val outputs  = entities.flatMap { case (_, _, out) => out }
+    for {
+      _ <- DBIOAction.sequence(txs.map(UnconfirmedTxSchema.table.insertOrUpdate))
+      _ <- DBIOAction.sequence(inputs.map(UInputSchema.table.insertOrUpdate))
+      _ <- DBIOAction.sequence(outputs.map(UOutputSchema.table.insertOrUpdate))
+    } yield ()
+  }
 
-    private def insertManyAction(utxs: Seq[UnconfirmedTransaction]): DBActionW[Unit] = {
-      val entities = utxs.map(UnconfirmedTxEntity.from)
-      val txs      = entities.map { case (tx, _, _) => tx }
-      val inputs   = entities.flatMap { case (_, in, _) => in }
-      val outputs  = entities.flatMap { case (_, _, out) => out }
-      for {
-        _ <- DBIOAction.sequence(txs.map(UnconfirmedTxSchema.table.insertOrUpdate))
-        _ <- DBIOAction.sequence(inputs.map(UInputSchema.table.insertOrUpdate))
-        _ <- DBIOAction.sequence(outputs.map(UOutputSchema.table.insertOrUpdate))
-      } yield ()
-    }
+  def insertMany(utxs: Seq[UnconfirmedTransaction])(
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
+    run(insertManyAction(utxs))
+  }
 
-    def insertMany(utxs: Seq[UnconfirmedTransaction]): Future[Unit] = {
-      run(insertManyAction(utxs))
-    }
+  def listHashes()(
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction.Hash]] = {
+    run(UnconfirmedTxSchema.table.map(_.hash).result)
+  }
 
-    def listHashes(): Future[Seq[Transaction.Hash]] = {
-      run(UnconfirmedTxSchema.table.map(_.hash).result)
-    }
+  private def removeManyAction(txs: Seq[Transaction.Hash])(
+      implicit executionContext: ExecutionContext): DBActionW[Unit] = {
+    for {
+      _ <- UnconfirmedTxSchema.table.filter(_.hash inSet txs).delete
+      _ <- UOutputSchema.table.filter(_.txHash inSet txs).delete
+      _ <- UInputSchema.table.filter(_.txHash inSet txs).delete
+    } yield ()
+  }
 
-    private def removeManyAction(txs: Seq[Transaction.Hash]): DBActionW[Unit] = {
-      for {
-        _ <- UnconfirmedTxSchema.table.filter(_.hash inSet txs).delete
-        _ <- UOutputSchema.table.filter(_.txHash inSet txs).delete
-        _ <- UInputSchema.table.filter(_.txHash inSet txs).delete
-      } yield ()
-    }
+  def removeMany(txs: Seq[Transaction.Hash])(
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
+    run(removeManyAction(txs))
+  }
 
-    def removeMany(txs: Seq[Transaction.Hash]): Future[Unit] = {
-      run(removeManyAction(txs))
-    }
-
-    def removeAndInsertMany(toRemove: Seq[Transaction.Hash],
-                            toInsert: Seq[UnconfirmedTransaction]): Future[Unit] = {
-      run((for {
-        _ <- removeManyAction(toRemove)
-        _ <- insertManyAction(toInsert)
-      } yield ()).transactionally)
-    }
+  def removeAndInsertMany(toRemove: Seq[Transaction.Hash], toInsert: Seq[UnconfirmedTransaction])(
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
+    run((for {
+      _ <- removeManyAction(toRemove)
+      _ <- insertManyAction(toInsert)
+    } yield ()).transactionally)
   }
 }

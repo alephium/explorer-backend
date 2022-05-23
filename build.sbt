@@ -203,6 +203,7 @@ lazy val app = mainProject("app")
       val versionTag    = version.value.replace('+', '_')
       Seq(
         ImageName(baseImageName + ":" + versionTag),
+        ImageName(baseImageName + ":latest"),
       )
     },
     buildInfoKeys := Seq[BuildInfoKey](

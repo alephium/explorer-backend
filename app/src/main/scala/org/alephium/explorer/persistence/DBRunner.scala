@@ -34,11 +34,25 @@ trait DBRunner {
 }
 
 object DBRunner {
+  @inline def apply(dc: DatabaseConfig[PostgresProfile]): DBRunner =
+    new DBRunner {
+      override def databaseConfig = dc
+    }
+
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   def run[R, E <: Effect](databaseConfig: DatabaseConfig[PostgresProfile])(action: DBAction[R, E])(
       implicit executionContext: ExecutionContext): Future[R] =
     databaseConfig.db.run(action).recover {
       case error => throw new RuntimeException(error)
+    }
+
+  /** Temporary function until all things are made stateless */
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  def run[R, E <: Effect](action: DBAction[R, E])(
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[R] =
+    databaseConfig.db.run(action).recoverWith {
+      case error => Future.failed(new RuntimeException(error))
     }
 
 }

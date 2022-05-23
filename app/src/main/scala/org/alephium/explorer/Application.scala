@@ -27,25 +27,27 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.model.{ApiKey, ChainParams, PeerAddress}
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.DBInitializer
 import org.alephium.explorer.persistence.dao._
 import org.alephium.explorer.service._
 import org.alephium.explorer.sideEffect
+import org.alephium.explorer.util.Scheduler
 import org.alephium.protocol.model.NetworkId
 import org.alephium.util.Duration
 
 // scalastyle:off magic.number
-class Application(
-    host: String,
-    port: Int,
-    readOnly: Boolean,
-    blockFlowUri: Uri,
-    groupNum: Int,
-    blockflowFetchMaxAge: Duration,
-    networkId: NetworkId,
-    databaseConfig: DatabaseConfig[PostgresProfile],
-    maybeBlockFlowApiKey: Option[ApiKey],
-    syncPeriod: Duration)(implicit system: ActorSystem, executionContext: ExecutionContext)
+class Application(host: String,
+                  port: Int,
+                  readOnly: Boolean,
+                  blockFlowUri: Uri,
+                  groupNum: Int,
+                  blockflowFetchMaxAge: Duration,
+                  networkId: NetworkId,
+                  maybeBlockFlowApiKey: Option[ApiKey],
+                  syncPeriod: Duration)(implicit system: ActorSystem,
+                                        executionContext: ExecutionContext,
+                                        databaseConfig: DatabaseConfig[PostgresProfile])
     extends StrictLogging {
 
   //TOTO: Temporary placeholder for executing services returning a Future.
@@ -54,43 +56,37 @@ class Application(
   def awaitService[T](f: => Future[T]): T =
     Await.result(f, 5.seconds)
 
-  val dbInitializer: DBInitializer = DBInitializer(databaseConfig)
+  implicit val scheduler: Scheduler =
+    Scheduler(s"${classOf[Application].getSimpleName} scheduler")
 
-  val blockDao: BlockDao                = BlockDao(groupNum, databaseConfig)
-  val transactionDao: TransactionDao    = awaitService(TransactionDao(databaseConfig))
-  val utransactionDao: UnconfirmedTxDao = UnconfirmedTxDao(databaseConfig)
-  val healthCheckDao: HealthCheckDao    = HealthCheckDao(databaseConfig)
+  implicit val groupSetting: GroupSetting =
+    GroupSetting(groupNum)
+
+  implicit val blockCache: BlockCache =
+    BlockCache()
+
+  val transactionDao: TransactionDao =
+    awaitService(TransactionDao(databaseConfig))
 
   //Services
   val blockFlowClient: BlockFlowClient =
     BlockFlowClient.apply(blockFlowUri, groupNum, blockflowFetchMaxAge, maybeBlockFlowApiKey)
 
   val blockFlowSyncService: BlockFlowSyncService =
-    BlockFlowSyncService(groupNum = groupNum, syncPeriod = syncPeriod, blockFlowClient, blockDao)
+    BlockFlowSyncService(groupNum = groupNum, syncPeriod = syncPeriod, blockFlowClient)
 
   val mempoolSyncService: MempoolSyncService =
-    MempoolSyncService(syncPeriod = syncPeriod, blockFlowClient, utransactionDao)
+    MempoolSyncService(syncPeriod = syncPeriod, blockFlowClient, UnconfirmedTxDao)
 
-  val hashrateService: HashrateService =
-    HashrateService(syncPeriod = Duration.ofMinutesUnsafe(1), databaseConfig)
-
-  val tokenSupplyService: TokenSupplyService =
-    TokenSupplyService(syncPeriod = Duration.ofMinutesUnsafe(1), databaseConfig, groupNum)
-
-  val finalizerService: FinalizerService =
-    FinalizerService(syncPeriod = Duration.ofMinutesUnsafe(10), databaseConfig)
-
-  val blockService: BlockService             = BlockService(blockDao)
-  val transactionService: TransactionService = TransactionService(transactionDao, utransactionDao)
+  val transactionService: TransactionService = TransactionService(transactionDao, UnconfirmedTxDao)
 
   val sanityChecker: SanityChecker =
-    new SanityChecker(groupNum, blockFlowClient, blockDao, databaseConfig)
+    new SanityChecker(groupNum, blockFlowClient)
 
   val server: AppServer =
-    new AppServer(blockService,
+    new AppServer(BlockService,
                   transactionService,
-                  tokenSupplyService,
-                  hashrateService,
+                  TokenSupplyService,
                   sanityChecker,
                   blockflowFetchMaxAge)
 
@@ -111,16 +107,16 @@ class Application(
       peers = urisFromPeers(selfClique.toOption.get.nodes.toSeq)
       _ <- blockFlowSyncService.start(peers)
       _ <- mempoolSyncService.start(peers)
-      _ <- tokenSupplyService.start()
-      _ <- hashrateService.start()
-      _ <- finalizerService.start()
+      _ <- TokenSupplyService.start(1.minute)
+      _ <- HashrateService.start(1.minute)
+      _ <- FinalizerService.start(10.minutes)
     } yield ()
   }
 
   private def startTasksForReadWriteApp(): Future[Unit] = {
     if (!readOnly) {
       for {
-        _ <- dbInitializer.initialize()
+        _ <- DBInitializer.initialize()
         _ <- startSyncService()
       } yield ()
 
@@ -139,7 +135,7 @@ class Application(
 
   def start: Future[Unit] = {
     for {
-      _       <- healthCheckDao.healthCheck()
+      _       <- HealthCheckDao.healthCheck()
       _       <- startTasksForReadWriteApp()
       binding <- Http().newServerAt(host, port).bindFlow(server.route)
     } yield {
@@ -148,13 +144,15 @@ class Application(
     }
   }
 
-  def stop: Future[Unit] =
+  def stop: Future[Unit] = {
+    scheduler.close()
     for {
       _ <- stopTasksForReadWriteApp()
       _ <- bindingPromise.future.flatMap(_.unbind())
     } yield {
       logger.info("Application stopped")
     }
+  }
 
   def validateChainParams(response: Either[String, ChainParams]): Future[Unit] = {
     response match {

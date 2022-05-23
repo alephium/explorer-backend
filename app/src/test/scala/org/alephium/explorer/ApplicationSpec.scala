@@ -103,7 +103,6 @@ trait ApplicationSpec
     groupNum,
     blockflowFetchMaxAge,
     networkId,
-    databaseConfig,
     None,
     Duration.ofSecondsUnsafe(5)
   )
@@ -291,7 +290,7 @@ trait ApplicationSpec
           Source.fromFile(
             name = Main.getClass.getResource("/explorer-backend-openapi.json").getPath,
             enc  = "UTF-8")
-        )(_.getLines())
+        )(_.getLines().toList)
 
       val expectedOpenapi =
         read[ujson.Value](lines.mkString("\n"))

@@ -22,19 +22,25 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.BuildInfo
+import org.alephium.explorer.{BuildInfo, GroupSetting}
 import org.alephium.explorer.api.InfosEndpoints
 import org.alephium.explorer.api.model.ExplorerInfo
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.service.{BlockService, TokenSupplyService, TransactionService}
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, U256}
 
-class InfosServer(
-    val blockflowFetchMaxAge: Duration,
-    tokenSupplyService: TokenSupplyService,
-    blockService: BlockService,
-    transactionService: TransactionService)(implicit executionContext: ExecutionContext)
+class InfosServer(val blockflowFetchMaxAge: Duration,
+                  tokenSupplyService: TokenSupplyService,
+                  blockService: BlockService,
+                  transactionService: TransactionService)(
+    implicit executionContext: ExecutionContext,
+    dc: DatabaseConfig[PostgresProfile],
+    blockCache: BlockCache,
+    groupSettings: GroupSetting)
     extends Server
     with InfosEndpoints {
 
@@ -59,6 +65,22 @@ class InfosServer(
           .map { supply =>
             val total = supply.map(_.total).getOrElse(U256.Zero)
             Right(toALPH(total))
+          }
+      } ~
+      toRoute(getReservedSupply) { _ =>
+        tokenSupplyService
+          .getLatestTokenSupply()
+          .map { supply =>
+            val reserved = supply.map(_.reserved).getOrElse(U256.Zero)
+            Right(toALPH(reserved))
+          }
+      } ~
+      toRoute(getLockedSupply) { _ =>
+        tokenSupplyService
+          .getLatestTokenSupply()
+          .map { supply =>
+            val locked = supply.map(_.locked).getOrElse(U256.Zero)
+            Right(toALPH(locked))
           }
       } ~
       toRoute(getHeights)(_           => blockService.listMaxHeights().map(Right(_))) ~
