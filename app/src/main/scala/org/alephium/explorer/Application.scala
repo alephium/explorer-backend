@@ -67,7 +67,7 @@ class Application(host: String,
     awaitService(TransactionCache())
 
   //Services
-  val blockFlowClient: BlockFlowClient =
+  implicit val blockFlowClient: BlockFlowClient =
     BlockFlowClient(blockFlowUri, groupNum, maybeBlockFlowApiKey)
 
   val blockFlowSyncService: BlockFlowSyncService =
@@ -76,11 +76,8 @@ class Application(host: String,
   val mempoolSyncService: MempoolSyncService =
     MempoolSyncService(syncPeriod = syncPeriod, blockFlowClient, UnconfirmedTxDao)
 
-  val sanityChecker: SanityChecker =
-    new SanityChecker(groupNum, blockFlowClient)
-
   val server: AppServer =
-    new AppServer(BlockService, TransactionService, TokenSupplyService, sanityChecker)
+    new AppServer(BlockService, TransactionService, TokenSupplyService)
 
   private val bindingPromise: Promise[Http.ServerBinding] = Promise()
 

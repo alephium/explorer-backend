@@ -32,12 +32,12 @@ import org.alephium.explorer.web._
 // scalastyle:off magic.number
 class AppServer(blockService: BlockService,
                 transactionService: TransactionService,
-                tokenSupplyService: TokenSupplyService,
-                sanityChecker: SanityChecker)(implicit executionContext: ExecutionContext,
-                                              dc: DatabaseConfig[PostgresProfile],
-                                              blockCache: BlockCache,
-                                              transactionCache: TransactionCache,
-                                              groupSetting: GroupSetting)
+                tokenSupplyService: TokenSupplyService)(implicit executionContext: ExecutionContext,
+                                                        dc: DatabaseConfig[PostgresProfile],
+                                                        blockFlowClient: BlockFlowClient,
+                                                        blockCache: BlockCache,
+                                                        transactionCache: TransactionCache,
+                                                        groupSetting: GroupSetting)
     extends StrictLogging {
 
   val blockServer: BlockServer = new BlockServer(blockService)
@@ -47,7 +47,7 @@ class AppServer(blockService: BlockService,
     new TransactionServer(transactionService)
   val infosServer: InfosServer =
     new InfosServer(tokenSupplyService, blockService, transactionService)
-  val utilsServer: UtilsServer   = new UtilsServer(sanityChecker)
+  val utilsServer: UtilsServer   = new UtilsServer()
   val chartsServer: ChartsServer = new ChartsServer()
 
   val route: Route =
