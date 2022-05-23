@@ -16,7 +16,7 @@
 
 package org.alephium.explorer
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
@@ -50,6 +50,12 @@ class Application(host: String,
                                         databaseConfig: DatabaseConfig[PostgresProfile])
     extends StrictLogging {
 
+  //TOTO: Temporary placeholder for executing services returning a Future.
+  //      This will eventually be removed and the all services will get started
+  //      asynchronously via the start function.
+  def awaitService[T](f: => Future[T]): T =
+    Await.result(f, 5.seconds)
+
   implicit val scheduler: Scheduler =
     Scheduler(s"${classOf[Application].getSimpleName} scheduler")
 
@@ -59,7 +65,8 @@ class Application(host: String,
   implicit val blockCache: BlockCache =
     BlockCache()
 
-  val transactionDao: TransactionDao = TransactionDao(databaseConfig)
+  val transactionDao: TransactionDao =
+    awaitService(TransactionDao(databaseConfig))
 
   //Services
   val blockFlowClient: BlockFlowClient =

@@ -29,6 +29,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.crypto.Blake2b
 import org.alephium.explorer.{BlockHash, GroupSetting, Hash}
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.benchmark.BenchmarkUtils._
 import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.cache.BlockCache
@@ -57,7 +58,7 @@ class AddressReadState(val db: DBExecutor)
   import config.profile.api._
 
   val dao: TransactionDao =
-    TransactionDao(config)(db.config.db.ioExecutionContext)
+    TransactionDao(config)(db.config.db.ioExecutionContext).await()
 
   val address: Address = Address.unsafe(Base58.encode(Hash.generate.bytes))
 

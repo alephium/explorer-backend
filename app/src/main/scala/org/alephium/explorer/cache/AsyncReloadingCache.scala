@@ -50,18 +50,38 @@ object AsyncReloadingCache {
       loader      = loader
     )
 
-  /** Expires and reloads the cache on boot */
-  @inline def expireAndReload[T](initial: T, reloadAfter: FiniteDuration)(
-      loader: T => Future[T]): AsyncReloadingCache[T] = {
+  /**
+    * Used when initial value is unknown during compile-time and
+    * should be fetched asynchronously during runtime via `loader`.
+    *
+    * {{{
+    *   val cache =
+    *     AsyncReloadingCache.reloadNow(reloadAfter = 5.seconds) {
+    *       Future("my cached values")
+    *     }
+    * }}}
+    */
+  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
+  def reloadNow[T](reloadAfter: FiniteDuration)(loader: => Future[T])(
+      implicit ec: ExecutionContext): Future[AsyncReloadingCache[T]] = {
+    //scalastyle:off null
+    //Null is internal only. Initial value is never shared with the client
+    //so null is never accessed and NullPointerException will never occur.
     val cache =
-      AsyncReloadingCache(
-        initial     = initial,
+      AsyncReloadingCache[T](
+        initial     = null.asInstanceOf[T],
         reloadAfter = reloadAfter
-      )(loader)
+      )(_ => loader)
+    //scalastyle:on null
 
-    cache.expireAndReload()
-
-    cache
+    //Reload the cache. If reload was not executed (unlikely to happen) fail the future.
+    cache.expireAndReloadFuture() flatMap { reloaded =>
+      if (reloaded) {
+        Future.successful(cache)
+      } else {
+        Future.failed(new Exception("Failed to load cache on boot-up."))
+      }
+    }
   }
 }
 
@@ -100,16 +120,29 @@ class AsyncReloadingCache[T](@volatile private var value: T,
     reload()
   }
 
+  def expireAndReloadFuture()(implicit ec: ExecutionContext): Future[Boolean] = {
+    expire()
+    reloadFuture()
+  }
+
   /** Sets the current cached value as expired which gets reload on next [[get]] */
   def expire(): Unit =
     deadline = Deadline.now
 
+  /** Reload and update state in the current [[ExecutionContext]].
+    * State update is inexpensive therefore local [[ExecutionContext]] is used.
+    * */
+  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
   private def reload(): Unit =
+    reloadFuture()(ExecutionContext.parasitic): Unit
+
+  /** Reload the cache and updates state only in the given [[ExecutionContext]] */
+  private def reloadFuture()(implicit ec: ExecutionContext): Future[Boolean] =
     //Reload if expired and not already being reloaded by another thread
     if (deadline.isOverdue() && reloading.compareAndSet(false, true)) {
-      //fetch and set next cache state while staying in the current
-      //ExecutionContext since the state update is inexpensive.
-      loader(value).onComplete { result =>
+      val loadedFuture = loader(value)
+      //fetch and set next cache state
+      loadedFuture.onComplete { result =>
         result match {
           case Success(value) =>
             this.value = value
@@ -123,6 +156,10 @@ class AsyncReloadingCache[T](@volatile private var value: T,
         deadline = reloadAfter.fromNow
         //release to allow next reload
         reloading.set(false)
-      }(ExecutionContext.parasitic)
+      }
+
+      loadedFuture.map(_ => true)
+    } else {
+      Future.successful(false)
     }
 }

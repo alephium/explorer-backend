@@ -357,7 +357,7 @@ class TransactionServiceSpec
     implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
     implicit val blockCache: BlockCache      = BlockCache()
 
-    val transactionDao: TransactionDao = TransactionDao(databaseConfig)
+    val transactionDao: TransactionDao = TransactionDao(databaseConfig).futureValue
     val transactionService: TransactionService =
       TransactionService(transactionDao, UnconfirmedTxDao)
 
