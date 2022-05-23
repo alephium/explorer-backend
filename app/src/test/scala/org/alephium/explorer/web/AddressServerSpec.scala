@@ -16,16 +16,20 @@
 
 package org.alephium.explorer.web
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpupickle.UpickleCustomizationSupport
 import org.scalacheck.Gen
+import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
 
 import org.alephium.api.ApiError
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.cache.TransactionCache
+import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.service.TransactionService
 import org.alephium.json.Json
 import org.alephium.util.{Duration, U256}
@@ -34,6 +38,7 @@ import org.alephium.util.{Duration, U256}
 class AddressServerSpec()
     extends AlephiumSpec
     with AkkaDecodeFailureHandler
+    with DatabaseFixtureForEach
     with Generators
     with ScalatestRouteTest
     with UpickleCustomizationSupport {
@@ -44,8 +49,9 @@ class AddressServerSpec()
   it should "validate and forward `txLimit` query param " in new Fixture {
     var testLimit = 0
     override val transactionService = new EmptyTransactionService {
-      override def getTransactionsByAddressSQL(address: Address,
-                                               pagination: Pagination): Future[Seq[Transaction]] = {
+      override def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] = {
         testLimit = pagination.limit
         Future.successful(Seq.empty)
       }
@@ -108,24 +114,33 @@ class AddressServerSpec()
     lazy val server = new AddressServer(transactionService, Duration.zero)
 
     trait EmptyTransactionService extends TransactionService {
-      override def getTransaction(
-          transactionHash: Transaction.Hash): Future[Option[TransactionLike]] =
+      override def getTransaction(transactionHash: Transaction.Hash)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Option[TransactionLike]] =
         Future.successful(None)
-      override def getTransactionsByAddress(address: Address,
-                                            pagination: Pagination): Future[Seq[Transaction]] =
+
+      override def getTransactionsByAddress(address: Address, pagination: Pagination)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
         Future.successful(Seq.empty)
 
-      override def getTransactionsNumberByAddress(address: Address): Future[Int] =
+      override def getTransactionsNumberByAddress(address: Address)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Int] =
         Future.successful(0)
 
-      override def getTransactionsByAddressSQL(address: Address,
-                                               pagination: Pagination): Future[Seq[Transaction]] =
+      override def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
         Future.successful(Seq.empty)
 
-      override def getBalance(address: Address): Future[(U256, U256)] =
+      override def getBalance(address: Address)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
         Future.successful((U256.Zero, U256.Zero))
 
-      def getTotalNumber(): Int = 0
+      def getTotalNumber()(implicit cache: TransactionCache): Int =
+        0
     }
   }
 }

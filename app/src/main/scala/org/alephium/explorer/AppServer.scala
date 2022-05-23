@@ -25,7 +25,7 @@ import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.cache.{BlockCache, TransactionCache}
 import org.alephium.explorer.service._
 import org.alephium.explorer.web._
 import org.alephium.util.Duration
@@ -38,6 +38,7 @@ class AppServer(blockService: BlockService,
                 blockFlowFetchMaxAge: Duration)(implicit executionContext: ExecutionContext,
                                                 dc: DatabaseConfig[PostgresProfile],
                                                 blockCache: BlockCache,
+                                                transactionCache: TransactionCache,
                                                 groupSetting: GroupSetting)
     extends StrictLogging {
 

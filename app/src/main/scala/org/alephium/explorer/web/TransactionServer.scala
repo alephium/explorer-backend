@@ -19,6 +19,8 @@ package org.alephium.explorer.web
 import scala.concurrent.ExecutionContext
 
 import akka.http.scaladsl.server.Route
+import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
 
 import org.alephium.api.ApiError
 import org.alephium.explorer.api.TransactionEndpoints
@@ -26,7 +28,8 @@ import org.alephium.explorer.service.TransactionService
 import org.alephium.util.Duration
 
 class TransactionServer(transactionService: TransactionService, val blockflowFetchMaxAge: Duration)(
-    implicit executionContext: ExecutionContext)
+    implicit ec: ExecutionContext,
+    dc: DatabaseConfig[PostgresProfile])
     extends Server
     with TransactionEndpoints {
   val route: Route = toRoute(getTransactionById)(

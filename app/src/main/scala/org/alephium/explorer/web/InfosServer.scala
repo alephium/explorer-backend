@@ -28,7 +28,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer.{BuildInfo, GroupSetting}
 import org.alephium.explorer.api.InfosEndpoints
 import org.alephium.explorer.api.model.ExplorerInfo
-import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.cache.{BlockCache, TransactionCache}
 import org.alephium.explorer.service.{BlockService, TokenSupplyService, TransactionService}
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, U256}
@@ -40,6 +40,7 @@ class InfosServer(val blockflowFetchMaxAge: Duration,
     implicit executionContext: ExecutionContext,
     dc: DatabaseConfig[PostgresProfile],
     blockCache: BlockCache,
+    transactionCache: TransactionCache,
     groupSettings: GroupSetting)
     extends Server
     with InfosEndpoints {

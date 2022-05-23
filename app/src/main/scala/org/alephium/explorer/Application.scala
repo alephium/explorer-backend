@@ -27,11 +27,10 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.model.{ApiKey, ChainParams, PeerAddress}
-import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.cache.{BlockCache, TransactionCache}
 import org.alephium.explorer.persistence.DBInitializer
 import org.alephium.explorer.persistence.dao._
 import org.alephium.explorer.service._
-import org.alephium.explorer.sideEffect
 import org.alephium.explorer.util.Scheduler
 import org.alephium.protocol.model.NetworkId
 import org.alephium.util.Duration
@@ -65,8 +64,8 @@ class Application(host: String,
   implicit val blockCache: BlockCache =
     BlockCache()
 
-  val transactionDao: TransactionDao =
-    awaitService(TransactionDao(databaseConfig))
+  implicit val transactionCache: TransactionCache =
+    awaitService(TransactionCache())
 
   //Services
   val blockFlowClient: BlockFlowClient =
@@ -78,14 +77,12 @@ class Application(host: String,
   val mempoolSyncService: MempoolSyncService =
     MempoolSyncService(syncPeriod = syncPeriod, blockFlowClient, UnconfirmedTxDao)
 
-  val transactionService: TransactionService = TransactionService(transactionDao, UnconfirmedTxDao)
-
   val sanityChecker: SanityChecker =
     new SanityChecker(groupNum, blockFlowClient)
 
   val server: AppServer =
     new AppServer(BlockService,
-                  transactionService,
+                  TransactionService,
                   TokenSupplyService,
                   sanityChecker,
                   blockflowFetchMaxAge)
