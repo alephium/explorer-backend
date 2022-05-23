@@ -98,7 +98,8 @@ trait ApplicationSpec
     groupNum,
     networkId,
     None,
-    Duration.ofSecondsUnsafe(5)
+    Duration.ofSecondsUnsafe(5),
+    true
   )
 
   def initApp(app: Application): Unit = {
