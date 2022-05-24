@@ -226,4 +226,111 @@ class SchedulerSpec
       }
     }
   }
+
+  "scheduleLoopConditional" should {
+    "not execute block" when {
+      "init is false" in {
+        val initInvocations         = new AtomicInteger() //# of init invocations
+        @volatile var blockExecuted = false //true if block gets executed, else false
+
+        using(Scheduler("test")) { scheduler =>
+          scheduler.scheduleLoopConditional("test", 10.milliseconds, ()) {
+            Future {
+              initInvocations.incrementAndGet()
+              false
+            }
+          } { _ =>
+            Future {
+              blockExecuted = true
+            }
+          }
+
+          eventually(Timeout(2.seconds)) {
+            //allow at least 50 init invocations
+            initInvocations.get() should be >= 50
+          }
+
+          blockExecuted is false //block is never executed because init is always return false
+        }
+      }
+
+      "init throws exception" in {
+        val initInvocations         = new AtomicInteger() //# of init invocations
+        @volatile var blockExecuted = false //true if block gets executed, else false
+
+        using(Scheduler("test")) { scheduler =>
+          scheduler.scheduleLoopConditional("test", 10.milliseconds, ()) {
+            initInvocations.incrementAndGet() //increment init invocation count
+            Future.failed(new Exception("I'm sorry!")) //Init is always failing. So expect block to never get executed.
+          } { _ =>
+            Future {
+              blockExecuted = true
+            }
+          }
+
+          eventually(Timeout(2.seconds)) {
+            //allow at least 50 init invocations
+            initInvocations.get() should be >= 50
+          }
+
+          blockExecuted is false //block is never executed because init is always failing with exception
+        }
+      }
+    }
+
+    "execute block" when {
+      "init returns true" in {
+        val initInvocations = new AtomicInteger() //# of init invocations
+        val blockExecuted   = new AtomicInteger() //# of block invocations
+
+        using(Scheduler("test")) { scheduler =>
+          //use blockExecuted as a state
+          scheduler.scheduleLoopConditional("test", 1.millisecond, blockExecuted) {
+            Future {
+              initInvocations.incrementAndGet()
+              true
+            }
+          } { state =>
+            Future(state.incrementAndGet())
+          }
+
+          eventually(Timeout(2.seconds)) {
+            blockExecuted.get() should be >= 50 //allow block to get executed a number of times
+          }
+
+          initInvocations.get() is 1 //init gets invoked only once
+        }
+      }
+
+      "init recovers from a reoccurring exception" in {
+        forAll(Gen.posNum[Int]) { failedInits => //# of failed init attempts
+          val initInvocations = new AtomicInteger() //# of init invocations
+          val blockExecutions = new AtomicInteger() //# of block invocations
+
+          using(Scheduler("test")) { scheduler =>
+            //use blockExecutions as the state
+            scheduler.scheduleLoopConditional("test", 5.milliseconds, blockExecutions) {
+              if (initInvocations.incrementAndGet() <= failedInits) {
+                Future.failed(new Exception("I'm sorry!"))
+              } else {
+                //time to allow init pass through.
+                Future(true)
+              }
+            } { state =>
+              //increment the blockInvocation count via state
+              Future(state.incrementAndGet())
+            }
+
+            eventually(Timeout(2.seconds)) {
+              //lets have block executed multiples times
+              blockExecutions.get() should be >= 50
+            }
+
+            //init is invoked (failedInits + 1 (success)) number of times
+            initInvocations.get() is (failedInits + 1)
+          }
+        }
+      }
+    }
+  }
 }
