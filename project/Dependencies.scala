@@ -17,14 +17,14 @@
 import sbt._
 
 object Version {
-  lazy val common = "1.3.0"
+  lazy val common = "1.4.0-leman8"
 
-  lazy val akka       = "2.6.18"
-  lazy val tapir      = "0.18.1"
+  lazy val akka       = "2.6.19"
+  lazy val tapir      = "0.18.3"
   lazy val slick      = "3.3.2"
   lazy val postgresql = "42.2.12"
-  lazy val sttp       = "3.3.11"
-  lazy val prometheus = "0.10.0"
+  lazy val sttp       = "3.3.18"
+  lazy val prometheus = "0.15.0"
   lazy val micrometer = "1.7.4"
 }
 
