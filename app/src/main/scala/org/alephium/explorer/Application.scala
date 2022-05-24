@@ -74,9 +74,6 @@ class Application(host: String,
   val blockFlowSyncService: BlockFlowSyncService =
     BlockFlowSyncService(groupNum = groupNum, syncPeriod = syncPeriod, blockFlowClient)
 
-  val mempoolSyncService: MempoolSyncService =
-    MempoolSyncService(syncPeriod = syncPeriod, blockFlowClient, UnconfirmedTxDao)
-
   val server: AppServer =
     new AppServer(BlockService, TransactionService, TokenSupplyService)
 
@@ -107,12 +104,13 @@ class Application(host: String,
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   private def startSyncService(): Future[Unit] = {
+    val syncDuration = syncPeriod.millis.milliseconds
     for {
       chainParams <- blockFlowClient.fetchChainParams()
       _           <- validateChainParams(chainParams)
       peers       <- getBlockFlowPeers()
       _           <- blockFlowSyncService.start(peers)
-      _           <- mempoolSyncService.start(peers)
+      _           <- MempoolSyncService.start(peers, syncDuration)
       _           <- TokenSupplyService.start(1.minute)
       _           <- HashrateService.start(1.minute)
       _           <- FinalizerService.start(10.minutes)
