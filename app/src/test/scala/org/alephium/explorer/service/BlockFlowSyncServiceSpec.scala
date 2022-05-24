@@ -17,6 +17,7 @@
 package org.alephium.explorer.service
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
 
 import akka.http.scaladsl.model.Uri
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
@@ -29,6 +30,8 @@ import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.util.Scheduler
+import org.alephium.explorer.util.TestUtils._
 import org.alephium.protocol.model.{ChainIndex, CliqueId, NetworkId}
 import org.alephium.util.{AVector, Duration, Hex, TimeStamp}
 
@@ -83,57 +86,53 @@ class BlockFlowSyncServiceSpec
   }
 
   it should "start/sync/stop" in new Fixture {
-    val blockFlowSyncService =
-      BlockFlowSyncService(groupNum, syncPeriod = Duration.unsafe(1000), blockFlowClient)
+    using(Scheduler("")) { implicit scheduler =>
+      checkBlocks(Seq.empty)
+      BlockFlowSyncService.start(Seq(""), 1.second)
 
-    checkBlocks(Seq.empty)
+      chainOToO = Seq(block0, block1, block2)
+      eventually(checkMainChain(Seq(block0.hash, block1.hash, block2.hash)))
 
-    blockFlowSyncService.start(Seq("")).futureValue is ()
+      checkLatestHeight(2)
 
-    chainOToO = Seq(block0, block1, block2)
-    eventually(checkMainChain(Seq(block0.hash, block1.hash, block2.hash)))
+      chainOToO = Seq(block0, block1, block3, block4)
+      eventually(checkMainChain(Seq(block0.hash, block1.hash, block3.hash, block4.hash)))
 
-    checkLatestHeight(2)
+      checkLatestHeight(3)
 
-    chainOToO = Seq(block0, block1, block3, block4)
-    eventually(checkMainChain(Seq(block0.hash, block1.hash, block3.hash, block4.hash)))
+      chainOToO = Seq(block0, block1, block3, block4, block5, block7, block8, block14)
+      eventually(
+        checkMainChain(
+          Seq(block0.hash,
+              block1.hash,
+              block3.hash,
+              block4.hash,
+              block5.hash,
+              block7.hash,
+              block8.hash,
+              block14.hash)))
 
-    checkLatestHeight(3)
+      checkLatestHeight(7)
 
-    chainOToO = Seq(block0, block1, block3, block4, block5, block7, block8, block14)
-    eventually(
-      checkMainChain(
-        Seq(block0.hash,
-            block1.hash,
-            block3.hash,
-            block4.hash,
-            block5.hash,
-            block7.hash,
-            block8.hash,
-            block14.hash)))
+      chainOToO = Seq(block0, block1, block3, block4, block5, block6, block10, block12)
+      eventually(
+        checkMainChain(
+          Seq(block0.hash,
+              block1.hash,
+              block3.hash,
+              block4.hash,
+              block5.hash,
+              block6.hash,
+              block10.hash,
+              block12.hash)))
 
-    checkLatestHeight(7)
+      chainOToO = Seq(block0, block1, block3, block4, block5, block6, block9, block11, block13)
+      eventually(checkMainChain(mainChain))
 
-    chainOToO = Seq(block0, block1, block3, block4, block5, block6, block10, block12)
-    eventually(
-      checkMainChain(
-        Seq(block0.hash,
-            block1.hash,
-            block3.hash,
-            block4.hash,
-            block5.hash,
-            block6.hash,
-            block10.hash,
-            block12.hash)))
+      checkLatestHeight(8)
 
-    chainOToO = Seq(block0, block1, block3, block4, block5, block6, block9, block11, block13)
-    eventually(checkMainChain(mainChain))
-
-    checkLatestHeight(8)
-
-    blockFlowSyncService.stop().futureValue is ()
-
-    databaseConfig.db.close
+      databaseConfig.db.close
+    }
   }
 
   trait Fixture {
@@ -229,7 +228,7 @@ class BlockFlowSyncServiceSpec
 
     def blocks: Seq[BlockEntry] = blockFlow.flatten
 
-    val blockFlowClient: BlockFlowClient = new BlockFlowClient {
+    implicit val blockFlowClient: BlockFlowClient = new BlockFlowClient {
       def fetchBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]] =
         Future.successful(blockEntities.find(_.hash === hash).toRight(s"$hash Not Found"))
 
