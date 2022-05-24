@@ -2360,7 +2360,8 @@
             "type": "integer"
           },
           "key": {
-            "type": "string"
+            "type": "string",
+            "format": "32-byte-hash"
           },
           "amount": {
             "type": "string",
@@ -2389,7 +2390,8 @@
             "type": "integer"
           },
           "key": {
-            "type": "string"
+            "type": "string",
+            "format": "32-byte-hash"
           }
         }
       },
