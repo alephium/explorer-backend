@@ -63,7 +63,7 @@ class Application(host: String,
   implicit val blockCache: BlockCache =
     BlockCache()
 
-  implicit val transactionCache: TransactionCache =
+  implicit lazy val transactionCache: TransactionCache =
     awaitService(TransactionCache())
 
   //Services
@@ -79,7 +79,7 @@ class Application(host: String,
   val sanityChecker: SanityChecker =
     new SanityChecker(groupNum, blockFlowClient)
 
-  val server: AppServer =
+  lazy val server: AppServer =
     new AppServer(BlockService, TransactionService, TokenSupplyService, sanityChecker)
 
   private val bindingPromise: Promise[Http.ServerBinding] = Promise()
