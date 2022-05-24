@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.web
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
@@ -27,31 +27,30 @@ import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model.{AddressBalance, AddressInfo}
 import org.alephium.explorer.service.TransactionService
 
-class AddressServer(transactionService: TransactionService)(implicit ec: ExecutionContext,
-                                                            dc: DatabaseConfig[PostgresProfile])
+class AddressServer(transactionService: TransactionService)(
+    implicit val executionContext: ExecutionContext,
+    dc: DatabaseConfig[PostgresProfile])
     extends Server
     with AddressesEndpoints {
 
   val route: Route =
-    toRoute(getTransactionsByAddress) {
+    toRoute(getTransactionsByAddress.serverLogicSuccess[Future] {
       case (address, pagination) =>
         transactionService
           .getTransactionsByAddressSQL(address, pagination)
-          .map(Right.apply)
-    } ~
-      toRoute(getAddressInfo) { address =>
+    }) ~
+      toRoute(getAddressInfo.serverLogicSuccess[Future] { address =>
         for {
           (balance, locked) <- transactionService.getBalance(address)
           txNumber          <- transactionService.getTransactionsNumberByAddress(address)
-        } yield Right(AddressInfo(balance, locked, txNumber))
-      } ~
-      toRoute(getTotalTransactionsByAddress) { address =>
+        } yield AddressInfo(balance, locked, txNumber)
+      }) ~
+      toRoute(getTotalTransactionsByAddress.serverLogic[Future] { address =>
         transactionService.getTransactionsNumberByAddress(address).map(Right(_))
-      } ~
-      toRoute(getAddressBalance) { address =>
+      }) ~
+      toRoute(getAddressBalance.serverLogicSuccess[Future] { address =>
         for {
           (balance, locked) <- transactionService.getBalance(address)
-        } yield Right(AddressBalance(balance, locked))
-      }
-
+        } yield AddressBalance(balance, locked)
+      })
 }

@@ -16,14 +16,18 @@
 
 package org.alephium.explorer.web
 
+import scala.concurrent.{ExecutionContext, Future}
+
 import akka.http.scaladsl.server.Route
-import sttp.tapir.swagger.akkahttp.SwaggerAkka
+import sttp.tapir.swagger.{SwaggerUI, SwaggerUIOptions}
 
 import org.alephium.api.OpenAPIWriters.openApiJson
 import org.alephium.explorer.docs.Documentation
 
-object DocumentationServer extends Server with Documentation {
-
-  val route: Route =
-    new SwaggerAkka(openApiJson(docs, dropAuth = false), yamlName = "explorer-backend-openapi.json").routes
+class DocumentationServer()(implicit val executionContext: ExecutionContext)
+    extends Server
+    with Documentation {
+  val route: Route = toRoute(
+    SwaggerUI[Future](openApiJson(docs, dropAuth             = false),
+                      SwaggerUIOptions.default.copy(yamlName = "explorer-backend-openapi.json")))
 }

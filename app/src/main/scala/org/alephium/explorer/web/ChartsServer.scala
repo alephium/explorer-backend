@@ -31,7 +31,8 @@ import org.alephium.explorer.api.model.{IntervalType, TimedCount}
 import org.alephium.explorer.service.{HashrateService, TransactionHistoryService}
 import org.alephium.util.Duration
 
-class ChartsServer()(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile])
+class ChartsServer()(implicit val executionContext: ExecutionContext,
+                     dc: DatabaseConfig[PostgresProfile])
     extends Server
     with ChartsEndpoints {
 
@@ -40,41 +41,40 @@ class ChartsServer()(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresP
   // scalastyle:on magic.number
 
   val route: Route =
-    toRoute(getHashrates) {
+    toRoute(getHashrates.serverLogic[Future] {
       case (timeInterval, interval) =>
         validateTimeInterval(timeInterval, interval) {
-          HashrateService.get(timeInterval.from, timeInterval.to, interval).map(Right(_))
+          HashrateService.get(timeInterval.from, timeInterval.to, interval)
         }
-    } ~
-      toRoute(getAllChainsTxCount) {
+    }) ~
+      toRoute(getAllChainsTxCount.serverLogic[Future] {
         case (timeInterval, interval) =>
           validateTimeInterval(timeInterval, interval) {
             TransactionHistoryService
               .getAllChains(timeInterval.from, timeInterval.to, interval)
               .map { seq =>
-                Right(seq.map {
+                seq.map {
                   case (timestamp, count) => TimedCount(timestamp, count)
-                })
+                }
               }
           }
-      } ~
-      toRoute(getPerChainTxCount) {
+      }) ~
+      toRoute(getPerChainTxCount.serverLogic[Future] {
         case (timeInterval, interval) =>
           validateTimeInterval(timeInterval, interval) {
             TransactionHistoryService
               .getPerChain(timeInterval.from, timeInterval.to, interval)
-              .map(Right(_))
           }
-      }
+      })
 
   private def validateTimeInterval[A](timeInterval: TimeInterval, intervalType: IntervalType)(
-      contd: => Future[Either[ApiError[_ <: StatusCode], A]]) = {
+      contd: => Future[A]): Future[Either[ApiError[_ <: StatusCode], A]] = {
     intervalType match {
-      case IntervalType.Daily => contd
+      case IntervalType.Daily => contd.map(Right(_))
       case IntervalType.Hourly =>
         timeInterval.validateTimeSpan(maxHourlyTimeSpan) match {
           case Left(error) => Future.successful(Left(error))
-          case Right(_)    => contd
+          case Right(_)    => contd.map(Right(_))
         }
     }
   }

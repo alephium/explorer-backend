@@ -17,14 +17,15 @@
 import sbt._
 
 object Version {
-  lazy val common = "1.3.0"
+  lazy val common = "1.4.0"
 
-  lazy val akka       = "2.6.18"
-  lazy val tapir      = "0.18.1"
+  lazy val akka       = "2.6.19"
+  lazy val tapir      = "1.0.0"
   lazy val slick      = "3.3.2"
   lazy val postgresql = "42.2.12"
-  lazy val sttp       = "3.3.11"
-  lazy val prometheus = "0.10.0"
+  lazy val sttp       = "3.5.2"
+  lazy val apispec    = "0.2.1"
+  lazy val prometheus = "0.15.0"
   lazy val micrometer = "1.7.4"
 }
 
@@ -37,19 +38,19 @@ object Dependencies {
   lazy val alephiumHttp     = "org.alephium" %% "alephium-http"     % Version.common
 
   lazy val akkaTest       = "com.typesafe.akka" %% "akka-testkit"        % Version.akka % Test
-  lazy val akkaHttptest   = "com.typesafe.akka" %% "akka-http-testkit"   % "10.2.7" % Test
+  lazy val akkaHttptest   = "com.typesafe.akka" %% "akka-http-testkit"   % "10.2.9" % Test
   lazy val akkaStream     = "com.typesafe.akka" %% "akka-stream-typed"   % Version.akka
   lazy val akkaStreamTest = "com.typesafe.akka" %% "akka-stream-testkit" % Version.akka % Test
 
   lazy val akkaHttpCors = "ch.megard" %% "akka-http-cors" % "0.4.3"
 
-  lazy val tapirCore         = "com.softwaremill.sttp.tapir"   %% "tapir-core"                 % Version.tapir
-  lazy val tapirAkka         = "com.softwaremill.sttp.tapir"   %% "tapir-akka-http-server"     % Version.tapir
-  lazy val tapirOpenapi      = "com.softwaremill.sttp.tapir"   %% "tapir-openapi-docs"         % Version.tapir
-  lazy val tapirSwaggerUi    = "com.softwaremill.sttp.tapir"   %% "tapir-swagger-ui-akka-http" % Version.tapir
-  lazy val tapirOpenapiModel = "com.softwaremill.sttp.tapir"   %% "tapir-openapi-model"        % Version.tapir
-  lazy val tapirClient       = "com.softwaremill.sttp.tapir"   %% "tapir-sttp-client"          % Version.tapir
-  lazy val sttpAkkaBackend   = "com.softwaremill.sttp.client3" %% "akka-http-backend"          % Version.sttp
+  lazy val tapirCore         = "com.softwaremill.sttp.tapir"   %% "tapir-core"             % Version.tapir
+  lazy val tapirAkka         = "com.softwaremill.sttp.tapir"   %% "tapir-akka-http-server" % Version.tapir
+  lazy val tapirOpenapi      = "com.softwaremill.sttp.tapir"   %% "tapir-openapi-docs"     % Version.tapir
+  lazy val tapirSwaggerUi    = "com.softwaremill.sttp.tapir"   %% "tapir-swagger-ui"       % Version.tapir
+  lazy val tapirOpenapiModel = "com.softwaremill.sttp.apispec" %% "openapi-model"          % Version.apispec
+  lazy val tapirClient       = "com.softwaremill.sttp.tapir"   %% "tapir-sttp-client"      % Version.tapir
+  lazy val sttpAkkaBackend   = "com.softwaremill.sttp.client3" %% "akka-http-backend"      % Version.sttp
 
   lazy val akkaHttpJson = "de.heikoseeberger" %% "akka-http-upickle" % "1.39.2"
   lazy val `upickle`    = "com.lihaoyi"       %% "upickle"           % "1.3.8"

@@ -31,7 +31,7 @@ trait BaseEndpoint extends ErrorExamples with TapirCodecs with TapirSchemasLike 
   implicit val customConfiguration: Configuration =
     Configuration.default.withDiscriminator("type")
 
-  type BaseEndpoint[I, O] = Endpoint[I, ApiError[_ <: StatusCode], O, Any]
+  type BaseEndpoint[I, O] = Endpoint[Unit, I, ApiError[_ <: StatusCode], O, Any]
 
   val baseEndpoint: BaseEndpoint[Unit, Unit] =
     endpoint

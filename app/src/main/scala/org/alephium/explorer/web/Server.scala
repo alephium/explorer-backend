@@ -23,9 +23,9 @@ import org.alephium.explorer.Metrics
 
 trait Server extends AkkaHttpServerInterpreter with AkkaDecodeFailureHandler {
   override def akkaHttpServerOptions: AkkaHttpServerOptions =
-    AkkaHttpServerOptions.customInterceptors(
-      decodeFailureHandler = decodeFailureHandler,
-      metricsInterceptor   = Some(Metrics.prometheus.metricsInterceptor())
-    )
+    AkkaHttpServerOptions.customiseInterceptors
+      .decodeFailureHandler(decodeFailureHandler)
+      .metricsInterceptor(Metrics.prometheus.metricsInterceptor())
+      .options
   def route: Route
 }

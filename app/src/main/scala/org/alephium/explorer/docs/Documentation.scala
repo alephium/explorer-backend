@@ -16,8 +16,8 @@
 
 package org.alephium.explorer.docs
 
+import sttp.apispec.openapi.OpenAPI
 import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
-import sttp.tapir.openapi.OpenAPI
 
 import org.alephium.explorer.api._
 
