@@ -25,7 +25,7 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.GroupSetting
-import org.alephium.explorer.api.model.{GroupIndex, IntervalType, PerChainValue, TimedValues}
+import org.alephium.explorer.api.model._
 import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.DBRunner._
@@ -69,17 +69,16 @@ case object TransactionHistoryService extends StrictLogging {
 
   def getPerChain(from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Seq[TimedValues]] = {
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[PerChainTimedValues]] = {
     run(getPerChainQuery(intervalType, from, to)).map(_.groupBy {
       case (timestamp, _, _, _) => timestamp
     }.map {
       case (timestamp, values) =>
-        val total = values.map { case (_, _, _, count) => count }.sum
         val perChainValues = values.map {
           case (_, chainFrom, chainTo, count) =>
             PerChainValue(chainFrom.value, chainTo.value, count)
         }
-        TimedValues(timestamp, total, Some(perChainValues))
+        PerChainTimedValues(timestamp, perChainValues)
     }.toSeq)
   }
 

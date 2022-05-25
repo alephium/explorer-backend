@@ -21,11 +21,11 @@ import org.alephium.json.Json._
 import org.alephium.util.TimeStamp
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-final case class TimedValues(
+final case class PerChainTimedValues(
     timestamp: TimeStamp,
-    totalAllChains: Long
+    totalPerChain: Seq[PerChainValue]
 )
 
-object TimedValues {
-  implicit val readWriter: ReadWriter[TimedValues] = macroRW
+object PerChainTimedValues {
+  implicit val readWriter: ReadWriter[PerChainTimedValues] = macroRW
 }

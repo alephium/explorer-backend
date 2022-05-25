@@ -38,20 +38,20 @@ class ChartsServer(val blockflowFetchMaxAge: Duration)(implicit executionContext
       case (timeInterval, interval) =>
         HashrateService.get(timeInterval.from, timeInterval.to, interval).map(Right(_))
     } ~
-      toRoute(getTxCount) {
-        case (timeInterval, interval, perChain) =>
-          if (perChain) {
-            TransactionHistoryService
-              .getPerChain(timeInterval.from, timeInterval.to, interval)
-              .map(Right(_))
-          } else {
-            TransactionHistoryService
-              .getAllChains(timeInterval.from, timeInterval.to, interval)
-              .map { seq =>
-                Right(seq.map {
-                  case (timestamp, count) => TimedValues(timestamp, count)
-                })
-              }
-          }
+      toRoute(getAllChainsTxCount) {
+        case (timeInterval, interval) =>
+          TransactionHistoryService
+            .getAllChains(timeInterval.from, timeInterval.to, interval)
+            .map { seq =>
+              Right(seq.map {
+                case (timestamp, count) => TimedValues(timestamp, count)
+              })
+            }
+      } ~
+      toRoute(getPerChainTxCount) {
+        case (timeInterval, interval) =>
+          TransactionHistoryService
+            .getPerChain(timeInterval.from, timeInterval.to, interval)
+            .map(Right(_))
       }
 }
