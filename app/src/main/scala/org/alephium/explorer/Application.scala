@@ -71,9 +71,6 @@ class Application(host: String,
   implicit val blockFlowClient: BlockFlowClient =
     BlockFlowClient(blockFlowUri, groupNum, maybeBlockFlowApiKey)
 
-  val blockFlowSyncService: BlockFlowSyncService =
-    BlockFlowSyncService(groupNum = groupNum, syncPeriod = syncPeriod, blockFlowClient)
-
   val server: AppServer =
     new AppServer(BlockService, TransactionService, TokenSupplyService)
 
@@ -104,16 +101,16 @@ class Application(host: String,
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   private def startSyncService(): Future[Unit] = {
-    val syncDuration = syncPeriod.millis.milliseconds
     for {
       chainParams <- blockFlowClient.fetchChainParams()
       _           <- validateChainParams(chainParams)
       peers       <- getBlockFlowPeers()
-      _           <- blockFlowSyncService.start(peers)
-      _           <- MempoolSyncService.start(peers, syncDuration)
-      _           <- TokenSupplyService.start(1.minute)
-      _           <- HashrateService.start(1.minute)
-      _           <- FinalizerService.start(10.minutes)
+      syncDuration = syncPeriod.millis.milliseconds
+      _            = BlockFlowSyncService.start(peers, syncDuration)
+      _ <- MempoolSyncService.start(peers, syncDuration)
+      _ <- TokenSupplyService.start(1.minute)
+      _ <- HashrateService.start(1.minute)
+      _ <- FinalizerService.start(10.minutes)
     } yield ()
   }
 
@@ -124,14 +121,6 @@ class Application(host: String,
         _ <- startSyncService()
       } yield ()
 
-    } else {
-      Future.successful(())
-    }
-  }
-
-  private def stopTasksForReadWriteApp(): Future[Unit] = {
-    if (!readOnly) {
-      blockFlowSyncService.stop()
     } else {
       Future.successful(())
     }
@@ -151,7 +140,6 @@ class Application(host: String,
   def stop: Future[Unit] = {
     scheduler.close()
     for {
-      _ <- stopTasksForReadWriteApp()
       _ <- bindingPromise.future.flatMap(_.unbind())
     } yield {
       logger.info("Application stopped")
