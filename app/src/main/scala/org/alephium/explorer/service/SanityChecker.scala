@@ -35,14 +35,11 @@ import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.TraversableOps"))
-class SanityChecker(groupNum: Int, blockFlowClient: BlockFlowClient)(
-    implicit val executionContext: ExecutionContext,
-    databaseConfig: DatabaseConfig[PostgresProfile],
-    blockCache: BlockCache,
-    groupSetting: GroupSetting)
-    extends StrictLogging {
+object SanityChecker extends StrictLogging {
 
-  private def findLatestBlock(from: GroupIndex, to: GroupIndex): Future[Option[BlockEntry.Hash]] = {
+  private def findLatestBlock(from: GroupIndex, to: GroupIndex)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntry.Hash]] = {
     run(
       BlockHeaderSchema.table
         .filter(header => header.mainChain && header.chainFrom === from && header.chainTo === to)
@@ -53,16 +50,15 @@ class SanityChecker(groupNum: Int, blockFlowClient: BlockFlowClient)(
     )
   }
 
-  private val chainIndexes: Seq[(GroupIndex, GroupIndex)] = for {
-    i <- 0 to groupNum - 1
-    j <- 0 to groupNum - 1
-  } yield (GroupIndex.unsafe(i), GroupIndex.unsafe(j))
-
   private var running: Boolean = false
   private var i                = 0
   private var totalNbOfBlocks  = 0
 
-  def check(): Future[Unit] = {
+  def check()(implicit ec: ExecutionContext,
+              dc: DatabaseConfig[PostgresProfile],
+              blockFlowClient: BlockFlowClient,
+              blockCache: BlockCache,
+              groupSetting: GroupSetting): Future[Unit] = {
     if (running) {
       Future.successful(logger.error("Sanity check already running"))
     } else {
@@ -72,7 +68,7 @@ class SanityChecker(groupNum: Int, blockFlowClient: BlockFlowClient)(
         totalNbOfBlocks = nbOfBlocks
         logger.info(s"Starting sanity check $totalNbOfBlocks to check")
         Future
-          .sequence(chainIndexes.map {
+          .sequence(groupSetting.groupIndexes.map {
             case (from, to) =>
               findLatestBlock(from, to).flatMap {
                 case None => Future.successful(())
@@ -92,15 +88,24 @@ class SanityChecker(groupNum: Int, blockFlowClient: BlockFlowClient)(
     }
   }
 
-  private def checkBlock(block: BlockEntry): Future[Unit] = {
-    updateMainChain(block.hash, block.chainFrom, block.chainTo, groupNum).flatMap {
+  private def checkBlock(block: BlockEntry)(implicit ec: ExecutionContext,
+                                            dc: DatabaseConfig[PostgresProfile],
+                                            blockFlowClient: BlockFlowClient,
+                                            blockCache: BlockCache,
+                                            groupSetting: GroupSetting): Future[Unit] = {
+    updateMainChain(block.hash, block.chainFrom, block.chainTo, groupSetting.groupNum).flatMap {
       case None          => Future.successful(())
       case Some(missing) => handleMissingBlock(missing, block.chainFrom)
     }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-  private def handleMissingBlock(missing: BlockEntry.Hash, chainFrom: GroupIndex): Future[Unit] = {
+  private def handleMissingBlock(missing: BlockEntry.Hash, chainFrom: GroupIndex)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      blockCache: BlockCache,
+      groupSetting: GroupSetting): Future[Unit] = {
     logger.info(s"Downloading missing block $missing")
     blockFlowClient.fetchBlock(chainFrom, missing).flatMap {
       case Left(error) => Future.successful(logger.error(error))
@@ -117,7 +122,9 @@ class SanityChecker(groupNum: Int, blockFlowClient: BlockFlowClient)(
   private def updateMainChainAction(hash: BlockEntry.Hash,
                                     chainFrom: GroupIndex,
                                     chainTo: GroupIndex,
-                                    groupNum: Int): DBActionRWT[Option[BlockEntry.Hash]] = {
+                                    groupNum: Int)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): DBActionRWT[Option[BlockEntry.Hash]] = {
     i = i + 1
     if (i % 10000 == 0) {
       logger.debug(s"Checked $i blocks , progress ${(i.toFloat / totalNbOfBlocks * 100.0).toInt}%")
@@ -151,7 +158,8 @@ class SanityChecker(groupNum: Int, blockFlowClient: BlockFlowClient)(
   def updateMainChain(hash: BlockEntry.Hash,
                       chainFrom: GroupIndex,
                       chainTo: GroupIndex,
-                      groupNum: Int): Future[Option[BlockEntry.Hash]] = {
+                      groupNum: Int)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntry.Hash]] =
     run(updateMainChainAction(hash, chainFrom, chainTo, groupNum))
-  }
 }
