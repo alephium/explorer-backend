@@ -21,6 +21,7 @@ import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
+import slick.dbio.DBIO
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
@@ -70,16 +71,19 @@ case object TransactionHistoryService extends StrictLogging {
   def getPerChain(from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Seq[PerChainTimedValues]] = {
-    run(getPerChainQuery(intervalType, from, to)).map(_.groupBy {
-      case (timestamp, _, _, _) => timestamp
-    }.map {
-      case (timestamp, values) =>
-        val perChainValues = values.map {
-          case (_, chainFrom, chainTo, count) =>
-            PerChainValue(chainFrom.value, chainTo.value, count)
+    run(getPerChainQuery(intervalType, from, to)).map(
+      _.groupBy {
+        case (timestamp, _, _, _) => timestamp
+      }.map {
+          case (timestamp, values) =>
+            val perChainValues = values.map {
+              case (_, chainFrom, chainTo, count) =>
+                PerChainValue(chainFrom.value, chainTo.value, count)
+            }
+            PerChainTimedValues(timestamp, perChainValues)
         }
-        PerChainTimedValues(timestamp, perChainValues)
-    }.toSeq)
+        .toSeq
+        .sortBy(_.timestamp)) //We need to sort because `groupBy` doesn't preserve order
   }
 
   def getAllChains(from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(
@@ -118,12 +122,14 @@ case object TransactionHistoryService extends StrictLogging {
 
       foldFutures(ranges) {
         case (from, to) =>
-          Future
-            .sequence(gs.groupIndexes.map {
-              case (chainFrom, chainTo) =>
-                run(countAndInsert(intervalType, from, to, chainFrom, chainTo))
-            })
-            .map(_ => ())
+          run(
+            DBIO.sequence(
+              gs.groupIndexes.map {
+                case (chainFrom, chainTo) =>
+                  countAndInsertPerChain(intervalType, from, to, chainFrom, chainTo)
+              } :+ countAndInsertAllChains(intervalType, from, to)
+            )
+          )
       }.map(_ => ())
     }
   }
@@ -184,11 +190,11 @@ case object TransactionHistoryService extends StrictLogging {
       .map(_.map(_.timestamp))
   }
 
-  private def countAndInsert(intervalType: IntervalType,
-                             from: TimeStamp,
-                             to: TimeStamp,
-                             chainFrom: GroupIndex,
-                             chainTo: GroupIndex) = {
+  private def countAndInsertPerChain(intervalType: IntervalType,
+                                     from: TimeStamp,
+                                     to: TimeStamp,
+                                     chainFrom: GroupIndex,
+                                     chainTo: GroupIndex) = {
     sqlu"""
       INSERT INTO transactions_history(timestamp, chain_from, chain_to, value, interval_type)
         SELECT $from, $chainFrom, $chainTo, COUNT(*), $intervalType
@@ -198,6 +204,22 @@ case object TransactionHistoryService extends StrictLogging {
         AND block_timestamp <= $to
         AND chain_from = $chainFrom
         and chain_to = $chainTo
+        ON CONFLICT (interval_type, timestamp, chain_from, chain_to) DO UPDATE
+        SET value = EXCLUDED.value
+    """
+  }
+
+  //count all chains tx and insert with special group index -1
+  private def countAndInsertAllChains(intervalType: IntervalType,
+                                      from: TimeStamp,
+                                      to: TimeStamp) = {
+    sqlu"""
+      INSERT INTO transactions_history(timestamp, chain_from, chain_to, value, interval_type)
+        SELECT $from, -1, -1, COUNT(*), $intervalType
+        FROM transactions
+        WHERE main_chain = true
+        AND block_timestamp >= $from
+        AND block_timestamp <= $to
         ON CONFLICT (interval_type, timestamp, chain_from, chain_to) DO UPDATE
         SET value = EXCLUDED.value
     """
@@ -213,6 +235,8 @@ case object TransactionHistoryService extends StrictLogging {
         WHERE interval_type = $intervalType
         AND timestamp >= $from
         AND timestamp <= $to
+        AND chain_from <> -1
+        AND chain_to <> -1
         ORDER BY timestamp
       """.as[(TimeStamp, GroupIndex, GroupIndex, Long)]
   }
@@ -221,11 +245,12 @@ case object TransactionHistoryService extends StrictLogging {
                         from: TimeStamp,
                         to: TimeStamp): DBActionSR[(TimeStamp, Long)] = {
     sql"""
-        SELECT timestamp, SUM(value) FROM transactions_history
+        SELECT timestamp, value FROM transactions_history
         WHERE interval_type = $intervalType
         AND timestamp >= $from
         AND timestamp <= $to
-        GROUP BY timestamp
+        AND chain_from = -1
+        AND chain_to = -1
         ORDER BY timestamp
       """.as[(TimeStamp, Long)]
   }

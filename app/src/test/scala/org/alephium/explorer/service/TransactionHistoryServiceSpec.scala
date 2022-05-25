@@ -23,11 +23,14 @@ import scala.concurrent.ExecutionContext
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 import org.scalatest.wordspec.AnyWordSpec
+import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.{Generators, GroupSetting}
 import org.alephium.explorer.AlephiumSpec._
-import org.alephium.explorer.Generators
-import org.alephium.explorer.api.model.IntervalType
+import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.model.TransactionEntity
+import org.alephium.explorer.persistence.schema.TransactionSchema
 import org.alephium.util._
 
 class TransactionHistoryServiceSpec
@@ -88,6 +91,139 @@ class TransactionHistoryServiceSpec
         ts("2022-01-08T00:00:00.000Z"),
         IntervalType.Hourly
       ) is Seq.empty
+    }
+  }
+
+  "countAndInsert" should {
+    "handle per chains and all chains counting" in {
+
+      implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
+
+      val group0 = GroupIndex.unsafe(0)
+      val group1 = GroupIndex.unsafe(1)
+
+      //Launch timestamp: 2021-11-08T13:59:33.00Z
+
+      def txGroup(tsStr: String, group: GroupIndex): TransactionEntity = {
+        transactionEntityGen().sample.get
+          .copy(timestamp = ts(tsStr), chainFrom = group, chainTo = group, mainChain = true)
+      }
+
+      val tx1 = txGroup("2021-11-08T14:15:00.000Z", group0)
+      val tx2 = txGroup("2021-11-08T14:23:00.000Z", group0)
+      val tx3 = txGroup("2021-11-08T14:32:00.000Z", group1)
+      val tx4 = txGroup("2021-11-08T14:45:00.000Z", group1)
+      val tx5 = txGroup("2021-11-08T15:56:00.000Z", group0)
+
+      val tx6  = txGroup("2021-11-09T08:08:00.000Z", group0)
+      val tx7  = txGroup("2021-11-09T08:23:00.000Z", group1)
+      val tx8  = txGroup("2021-11-09T08:54:00.000Z", group0)
+      val tx9  = txGroup("2021-11-09T12:43:00.000Z", group0)
+      val tx10 = txGroup("2021-11-09T12:58:00.000Z", group0)
+
+      val tx11 = txGroup("2021-11-10T01:00:00.000Z", group0)
+
+      run(TransactionSchema.table ++= Seq(tx1, tx2, tx3, tx4, tx5, tx6, tx7, tx8, tx9, tx10, tx11)).futureValue
+
+      TransactionHistoryService.syncOnce().futureValue
+
+      /*
+       * Per Chain Daily
+       */
+
+      val perChainsDaily = TransactionHistoryService
+        .getPerChain(
+          ts("2021-11-07T12:34:00.000Z"),
+          ts("2021-11-09T23:00:00.000Z"),
+          IntervalType.Daily
+        )
+        .futureValue
+
+      perChainsDaily.map { perChainTime =>
+        PerChainTimedValues(
+          perChainTime.timestamp,
+          perChainTime.totalPerChain.filter(_.value != 0)
+        )
+      } is
+        Seq(
+          PerChainTimedValues(ts("2021-11-08T00:00:00.000Z"),
+                              Seq(PerChainValue(group0.value, group0.value, 3),
+                                  PerChainValue(group1.value, group1.value, 2))),
+          PerChainTimedValues(ts("2021-11-09T00:00:00.000Z"),
+                              Seq(PerChainValue(group0.value, group0.value, 4),
+                                  PerChainValue(group1.value, group1.value, 1)))
+        )
+
+      /*
+       * Per Chain Hourly
+       */
+
+      val perChainsHourly = TransactionHistoryService
+        .getPerChain(
+          ts("2021-11-07T12:34:00.000Z"),
+          ts("2021-11-09T23:00:00.000Z"),
+          IntervalType.Hourly
+        )
+        .futureValue
+
+      perChainsHourly
+        .map { perChainTime =>
+          PerChainTimedValues(
+            perChainTime.timestamp,
+            perChainTime.totalPerChain.filter(_.value != 0)
+          )
+        }
+        .filter(_.totalPerChain.nonEmpty) is
+        Seq(
+          PerChainTimedValues(ts("2021-11-08T14:00:00.000Z"),
+                              Seq(PerChainValue(group0.value, group0.value, 2),
+                                  PerChainValue(group1.value, group1.value, 2))),
+          PerChainTimedValues(ts("2021-11-08T15:00:00.000Z"),
+                              Seq(PerChainValue(group0.value, group0.value, 1))),
+          PerChainTimedValues(ts("2021-11-09T08:00:00.000Z"),
+                              Seq(PerChainValue(group0.value, group0.value, 2),
+                                  PerChainValue(group1.value, group1.value, 1))),
+          PerChainTimedValues(ts("2021-11-09T12:00:00.000Z"),
+                              Seq(PerChainValue(group0.value, group0.value, 2)))
+        )
+
+      /*
+       * All Chains Daily
+       */
+
+      val allChainsDaily = TransactionHistoryService
+        .getAllChains(
+          ts("2021-11-07T12:34:00.000Z"),
+          ts("2021-11-09T23:00:00.000Z"),
+          IntervalType.Daily
+        )
+        .futureValue
+
+      allChainsDaily is
+        Seq(
+          (ts("2021-11-08T00:00:00.000Z"), 5L),
+          (ts("2021-11-09T00:00:00.000Z"), 5L)
+        )
+
+      /*
+       * All Chains Hourly
+       */
+
+      val allChainsHourly = TransactionHistoryService
+        .getAllChains(
+          ts("2021-11-07T12:34:00.000Z"),
+          ts("2021-11-09T23:00:00.000Z"),
+          IntervalType.Hourly
+        )
+        .futureValue
+
+      allChainsHourly.filter(_._2 != 0) is
+        Seq(
+          (ts("2021-11-08T14:00:00.000Z"), 4L),
+          (ts("2021-11-08T15:00:00.000Z"), 1L),
+          (ts("2021-11-09T08:00:00.000Z"), 3L),
+          (ts("2021-11-09T12:00:00.000Z"), 2L)
+        )
     }
   }
 }
