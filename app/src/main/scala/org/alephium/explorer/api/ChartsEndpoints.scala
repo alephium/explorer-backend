@@ -27,6 +27,8 @@ import org.alephium.explorer.api.model.{Hashrate, IntervalType, PerChainTimedVal
 // scalastyle:off magic.number
 trait ChartsEndpoints extends BaseEndpoint with QueryParams {
 
+  private lazy val intervalTypes = IntervalType.all.map(_.string).mkString(", ")
+
   private val chartsEndpoint =
     baseEndpoint
       .tag("Charts")
@@ -38,7 +40,7 @@ trait ChartsEndpoints extends BaseEndpoint with QueryParams {
       .in(timeIntervalQuery)
       .in(intervalTypeQuery)
       .out(jsonBody[Seq[Hashrate]])
-      .description(s"`interval-type` query param: ${IntervalType.all.map(_.string).mkString(", ")}")
+      .description(s"`interval-type` query param: $intervalTypes")
       .summary("Get hashrate chart in H/s")
 
   val getAllChainsTxCount: BaseEndpoint[(TimeInterval, IntervalType), Seq[TimedValues]] =
@@ -47,7 +49,7 @@ trait ChartsEndpoints extends BaseEndpoint with QueryParams {
       .in(timeIntervalQuery)
       .in(intervalTypeQuery)
       .out(jsonBody[Seq[TimedValues]])
-      .description(s"`interval-type` query param: ${IntervalType.all.map(_.string).mkString(", ")}")
+      .description(s"`interval-type` query param: ${intervalTypes}")
       .summary("Get transaction count history")
 
   val getPerChainTxCount: BaseEndpoint[(TimeInterval, IntervalType), Seq[PerChainTimedValues]] =
@@ -56,6 +58,6 @@ trait ChartsEndpoints extends BaseEndpoint with QueryParams {
       .in(timeIntervalQuery)
       .in(intervalTypeQuery)
       .out(jsonBody[Seq[PerChainTimedValues]])
-      .description(s"`interval-type` query param: ${IntervalType.all.map(_.string).mkString(", ")}")
-      .summary("Get transaction count history")
+      .description(s"`interval-type` query param: ${intervalTypes}")
+      .summary("Get transaction count history per chain")
 }

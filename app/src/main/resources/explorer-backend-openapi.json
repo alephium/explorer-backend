@@ -1909,7 +1909,7 @@
         "tags": [
           "Charts"
         ],
-        "summary": "Get transaction count history",
+        "summary": "Get transaction count history per chain",
         "description": "`interval-type` query param: hourly, daily",
         "operationId": "getChartsTransactions-count-per-chain",
         "parameters": [
