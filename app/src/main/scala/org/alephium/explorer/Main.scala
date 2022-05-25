@@ -61,6 +61,8 @@ object Main extends App with StrictLogging {
       None
     }
 
+  val directCliqueAccess: Boolean = config.getBoolean("blockflow.direct-clique-access")
+
   val port: Int            = config.getInt("explorer.port")
   val host: String         = config.getString("explorer.host")
   val readOnly: Boolean    = config.getBoolean("explorer.readOnly")
@@ -77,7 +79,8 @@ object Main extends App with StrictLogging {
                     groupNum,
                     networkId,
                     blockflowApiKey,
-                    syncPeriod)
+                    syncPeriod,
+                    directCliqueAccess)
 
   app.start.onComplete {
     case Success(_) => ()

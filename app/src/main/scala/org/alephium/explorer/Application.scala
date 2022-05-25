@@ -43,9 +43,10 @@ class Application(host: String,
                   groupNum: Int,
                   networkId: NetworkId,
                   maybeBlockFlowApiKey: Option[ApiKey],
-                  syncPeriod: Duration)(implicit system: ActorSystem,
-                                        executionContext: ExecutionContext,
-                                        databaseConfig: DatabaseConfig[PostgresProfile])
+                  syncPeriod: Duration,
+                  directCliqueAccess: Boolean)(implicit system: ActorSystem,
+                                               executionContext: ExecutionContext,
+                                               databaseConfig: DatabaseConfig[PostgresProfile])
     extends StrictLogging {
 
   //TOTO: Temporary placeholder for executing services returning a Future.
@@ -87,18 +88,34 @@ class Application(host: String,
     }
   }
 
+  private def getBlockFlowPeers(): Future[Seq[Uri]] = {
+    if (directCliqueAccess) {
+      blockFlowClient.fetchSelfClique().map {
+        case Right(selfClique) =>
+          val peers = urisFromPeers(selfClique.nodes.toSeq)
+          logger.debug(s"Syncing with clique peers: $peers")
+          peers
+        case Left(error) =>
+          logger.error(s"Cannot fetch self-clique: $error")
+          sys.exit(1)
+      }
+    } else {
+      logger.debug(s"Syncing with node: $blockFlowUri")
+      Future.successful(Seq(blockFlowUri))
+    }
+  }
+
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   private def startSyncService(): Future[Unit] = {
     for {
-      selfClique  <- blockFlowClient.fetchSelfClique()
       chainParams <- blockFlowClient.fetchChainParams()
       _           <- validateChainParams(chainParams)
-      peers = urisFromPeers(selfClique.toOption.get.nodes.toSeq)
-      _ <- blockFlowSyncService.start(peers)
-      _ <- mempoolSyncService.start(peers)
-      _ <- TokenSupplyService.start(1.minute)
-      _ <- HashrateService.start(1.minute)
-      _ <- FinalizerService.start(10.minutes)
+      peers       <- getBlockFlowPeers()
+      _           <- blockFlowSyncService.start(peers)
+      _           <- mempoolSyncService.start(peers)
+      _           <- TokenSupplyService.start(1.minute)
+      _           <- HashrateService.start(1.minute)
+      _           <- FinalizerService.start(10.minutes)
     } yield ()
   }
 
