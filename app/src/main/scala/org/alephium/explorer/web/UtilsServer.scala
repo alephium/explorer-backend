@@ -16,19 +16,28 @@
 
 package org.alephium.explorer.web
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.server.Route
+import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
 
+import org.alephium.explorer.{sideEffect, GroupSetting}
 import org.alephium.explorer.api.UtilsEndpoints
-import org.alephium.explorer.service.SanityChecker
-import org.alephium.explorer.sideEffect
+import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.service.{BlockFlowClient, SanityChecker}
 
-class UtilsServer(sanityChecker: SanityChecker) extends Server with UtilsEndpoints {
+class UtilsServer()(implicit ec: ExecutionContext,
+                    dc: DatabaseConfig[PostgresProfile],
+                    blockFlowClient: BlockFlowClient,
+                    blockCache: BlockCache,
+                    groupSetting: GroupSetting)
+    extends Server
+    with UtilsEndpoints {
 
   val route: Route =
     toRoute(sanityCheck) { _ =>
-      sideEffect(sanityChecker.check())
+      sideEffect(SanityChecker.check())
       Future.successful(Right(()))
     }
 }
