@@ -16,7 +16,7 @@
 
 package org.alephium.explorer
 
-import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
@@ -31,6 +31,7 @@ import org.alephium.explorer.cache.{BlockCache, TransactionCache}
 import org.alephium.explorer.persistence.DBInitializer
 import org.alephium.explorer.persistence.dao._
 import org.alephium.explorer.service._
+import org.alephium.explorer.util.FutureUtil._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.protocol.model.NetworkId
 import org.alephium.util.Duration
@@ -49,11 +50,9 @@ class Application(host: String,
                                                databaseConfig: DatabaseConfig[PostgresProfile])
     extends StrictLogging {
 
-  //TOTO: Temporary placeholder for executing services returning a Future.
-  //      This will eventually be removed and the all services will get started
-  //      asynchronously via the start function.
-  def awaitService[T](f: => Future[T]): T =
-    Await.result(f, 5.seconds)
+  if (!readOnly) {
+    DBInitializer.initialize().await(10.seconds)
+  }
 
   implicit val scheduler: Scheduler =
     Scheduler(s"${classOf[Application].getSimpleName} scheduler")
@@ -65,7 +64,7 @@ class Application(host: String,
     BlockCache()
 
   implicit val transactionCache: TransactionCache =
-    awaitService(TransactionCache())
+    TransactionCache().await(5.seconds)
 
   //Services
   implicit val blockFlowClient: BlockFlowClient =
@@ -121,11 +120,7 @@ class Application(host: String,
 
   private def startTasksForReadWriteApp(): Future[Unit] = {
     if (!readOnly) {
-      for {
-        _ <- DBInitializer.initialize()
-        _ <- startSyncService()
-      } yield ()
-
+      startSyncService()
     } else {
       Future.successful(())
     }
