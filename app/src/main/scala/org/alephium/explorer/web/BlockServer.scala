@@ -27,12 +27,10 @@ import org.alephium.api.ApiError
 import org.alephium.explorer.api.BlockEndpoints
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.service.BlockService
-import org.alephium.util.Duration
 
-class BlockServer(blockService: BlockService, val blockflowFetchMaxAge: Duration)(
-    implicit executionContext: ExecutionContext,
-    dc: DatabaseConfig[PostgresProfile],
-    blockCache: BlockCache)
+class BlockServer(blockService: BlockService)(implicit ec: ExecutionContext,
+                                              dc: DatabaseConfig[PostgresProfile],
+                                              blockCache: BlockCache)
     extends Server
     with BlockEndpoints {
   val route: Route =

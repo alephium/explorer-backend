@@ -27,11 +27,11 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.model.{ApiKey, ChainParams, PeerAddress}
-import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.cache.{BlockCache, TransactionCache}
 import org.alephium.explorer.persistence.DBInitializer
 import org.alephium.explorer.persistence.dao._
 import org.alephium.explorer.service._
-import org.alephium.explorer.sideEffect
+import org.alephium.explorer.util.FutureUtil._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.protocol.model.NetworkId
 import org.alephium.util.Duration
@@ -42,13 +42,17 @@ class Application(host: String,
                   readOnly: Boolean,
                   blockFlowUri: Uri,
                   groupNum: Int,
-                  blockflowFetchMaxAge: Duration,
                   networkId: NetworkId,
                   maybeBlockFlowApiKey: Option[ApiKey],
-                  syncPeriod: Duration)(implicit system: ActorSystem,
-                                        executionContext: ExecutionContext,
-                                        databaseConfig: DatabaseConfig[PostgresProfile])
+                  syncPeriod: Duration,
+                  directCliqueAccess: Boolean)(implicit system: ActorSystem,
+                                               executionContext: ExecutionContext,
+                                               databaseConfig: DatabaseConfig[PostgresProfile])
     extends StrictLogging {
+
+  if (!readOnly) {
+    DBInitializer.initialize().await(10.seconds)
+  }
 
   implicit val scheduler: Scheduler =
     Scheduler(s"${classOf[Application].getSimpleName} scheduler")
@@ -59,11 +63,12 @@ class Application(host: String,
   implicit val blockCache: BlockCache =
     BlockCache()
 
-  val transactionDao: TransactionDao = TransactionDao(databaseConfig)
+  implicit val transactionCache: TransactionCache =
+    TransactionCache().await(5.seconds)
 
   //Services
-  val blockFlowClient: BlockFlowClient =
-    BlockFlowClient.apply(blockFlowUri, groupNum, blockflowFetchMaxAge, maybeBlockFlowApiKey)
+  implicit val blockFlowClient: BlockFlowClient =
+    BlockFlowClient(blockFlowUri, groupNum, maybeBlockFlowApiKey)
 
   val blockFlowSyncService: BlockFlowSyncService =
     BlockFlowSyncService(groupNum = groupNum, syncPeriod = syncPeriod, blockFlowClient)
@@ -71,17 +76,8 @@ class Application(host: String,
   val mempoolSyncService: MempoolSyncService =
     MempoolSyncService(syncPeriod = syncPeriod, blockFlowClient, UnconfirmedTxDao)
 
-  val transactionService: TransactionService = TransactionService(transactionDao, UnconfirmedTxDao)
-
-  val sanityChecker: SanityChecker =
-    new SanityChecker(groupNum, blockFlowClient)
-
   val server: AppServer =
-    new AppServer(BlockService,
-                  transactionService,
-                  TokenSupplyService,
-                  sanityChecker,
-                  blockflowFetchMaxAge)
+    new AppServer(BlockService, TransactionService, TokenSupplyService)
 
   private val bindingPromise: Promise[Http.ServerBinding] = Promise()
 
@@ -91,29 +87,41 @@ class Application(host: String,
     }
   }
 
+  private def getBlockFlowPeers(): Future[Seq[Uri]] = {
+    if (directCliqueAccess) {
+      blockFlowClient.fetchSelfClique().map {
+        case Right(selfClique) =>
+          val peers = urisFromPeers(selfClique.nodes.toSeq)
+          logger.debug(s"Syncing with clique peers: $peers")
+          peers
+        case Left(error) =>
+          logger.error(s"Cannot fetch self-clique: $error")
+          sys.exit(1)
+      }
+    } else {
+      logger.debug(s"Syncing with node: $blockFlowUri")
+      Future.successful(Seq(blockFlowUri))
+    }
+  }
+
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   private def startSyncService(): Future[Unit] = {
     for {
-      selfClique  <- blockFlowClient.fetchSelfClique()
       chainParams <- blockFlowClient.fetchChainParams()
       _           <- validateChainParams(chainParams)
-      peers = urisFromPeers(selfClique.toOption.get.nodes.toSeq)
-      _ <- blockFlowSyncService.start(peers)
-      _ <- mempoolSyncService.start(peers)
-      _ <- TokenSupplyService.start(1.minute)
-      _ <- HashrateService.start(1.minute)
-      _ <- FinalizerService.start(10.minutes)
-      _ <- TransactionHistoryService.start(15.minutes)
+      peers       <- getBlockFlowPeers()
+      _           <- blockFlowSyncService.start(peers)
+      _           <- mempoolSyncService.start(peers)
+      _           <- TokenSupplyService.start(1.minute)
+      _           <- HashrateService.start(1.minute)
+      _           <- FinalizerService.start(10.minutes)
+      _           <- TransactionHistoryService.start(15.minutes)
     } yield ()
   }
 
   private def startTasksForReadWriteApp(): Future[Unit] = {
     if (!readOnly) {
-      for {
-        _ <- DBInitializer.initialize()
-        _ <- startSyncService()
-      } yield ()
-
+      startSyncService()
     } else {
       Future.successful(())
     }

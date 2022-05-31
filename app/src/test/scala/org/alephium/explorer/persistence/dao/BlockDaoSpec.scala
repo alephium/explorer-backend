@@ -282,8 +282,6 @@ class BlockDaoSpec
     implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
     implicit val blockCache: BlockCache      = BlockCache()
 
-    val blockflowFetchMaxAge: Duration = Duration.ofMinutesUnsafe(30)
-
     val blockflow: Seq[Seq[model.BlockEntry]] =
       blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
     val blocksProtocol: Seq[model.BlockEntry] = blockflow.flatten

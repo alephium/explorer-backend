@@ -34,9 +34,7 @@ import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.api.{ApiError, ApiModelCodec}
-import org.alephium.api.model
-import org.alephium.explorer.AlephiumSpec
+import org.alephium.api.{model, ApiError, ApiModelCodec}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.persistence.model.BlockEntity
@@ -45,7 +43,7 @@ import org.alephium.explorer.util.TestUtils._
 import org.alephium.json.Json
 import org.alephium.json.Json._
 import org.alephium.protocol.model.{CliqueId, NetworkId}
-import org.alephium.util.{AVector, Duration, Hex, TimeStamp, U256}
+import org.alephium.util.{Duration, _}
 
 trait ApplicationSpec
     extends AlephiumSpec
@@ -63,8 +61,6 @@ trait ApplicationSpec
   implicit val defaultTimeout          = RouteTestTimeout(5.seconds)
 
   val networkId: NetworkId = NetworkId.AlephiumDevNet
-
-  val blockflowFetchMaxAge: Duration = Duration.ofMinutesUnsafe(30)
 
   val txLimit = 20
 
@@ -90,8 +86,7 @@ trait ApplicationSpec
                                             localhost,
                                             blockFlowPort,
                                             blockflow,
-                                            networkId,
-                                            blockflowFetchMaxAge)
+                                            networkId)
 
   val blockflowBinding = blockFlowMock.server.futureValue
 
@@ -101,10 +96,10 @@ trait ApplicationSpec
     readOnly,
     Uri(s"http://${localhost.getHostAddress}:$blockFlowPort"),
     groupNum,
-    blockflowFetchMaxAge,
     networkId,
     None,
-    Duration.ofSecondsUnsafe(5)
+    Duration.ofSecondsUnsafe(5),
+    true
   )
 
   def initApp(app: Application): Unit = {
@@ -317,8 +312,7 @@ object ApplicationSpec {
                             address: InetAddress,
                             port: Int,
                             blockflow: Seq[Seq[model.BlockEntry]],
-                            networkId: NetworkId,
-                            val blockflowFetchMaxAge: Duration)(implicit system: ActorSystem)
+                            networkId: NetworkId)(implicit system: ActorSystem)
       extends ApiModelCodec
       with Generators
       with UpickleCustomizationSupport {

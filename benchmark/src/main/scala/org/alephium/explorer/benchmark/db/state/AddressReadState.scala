@@ -32,7 +32,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.cache.BlockCache
-import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
+import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.FinalizerService
@@ -53,11 +53,10 @@ class AddressReadState(val db: DBExecutor)
 
   val ec: ExecutionContext = ExecutionContext.global
 
-  implicit val executionContext: ExecutionContext = ec
-  import config.profile.api._
+  implicit val executionContext: ExecutionContext              = ec
+  implicit val databaseConfig: DatabaseConfig[PostgresProfile] = db.config
 
-  val dao: TransactionDao =
-    TransactionDao(config)(db.config.db.ioExecutionContext)
+  import config.profile.api._
 
   val address: Address = Address.unsafe(Base58.encode(Hash.generate.bytes))
 
@@ -199,9 +198,6 @@ class AddressReadState(val db: DBExecutor)
         ec           = config.db.ioExecutionContext,
         dc           = db.config
       )
-
-    implicit val dc: DatabaseConfig[PostgresProfile] =
-      config
 
     logger.info("Persisting data")
     blocks.sliding(10000).foreach { bs =>

@@ -14,16 +14,20 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.web
+package org.alephium.explorer.util
 
-import akka.http.scaladsl.server.Route
-import sttp.tapir.swagger.akkahttp.SwaggerAkka
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
 
-import org.alephium.api.OpenAPIWriters.openApiJson
-import org.alephium.explorer.docs.Documentation
+object FutureUtil {
 
-object DocumentationServer extends Server with Documentation {
+  implicit class AwaitUtils[T](f: => Future[T]) {
 
-  val route: Route =
-    new SwaggerAkka(openApiJson(docs, dropAuth = false), yamlName = "explorer-backend-openapi.json").routes
+    //Convenience function to wait on a future
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+    @inline def await(seconds: FiniteDuration = 5.seconds): T =
+      Await.result(f, seconds)
+
+  }
+
 }

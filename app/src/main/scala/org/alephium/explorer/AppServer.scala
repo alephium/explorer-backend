@@ -25,33 +25,30 @@ import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.cache.{BlockCache, TransactionCache}
 import org.alephium.explorer.service._
 import org.alephium.explorer.web._
-import org.alephium.util.Duration
 
 // scalastyle:off magic.number
 class AppServer(blockService: BlockService,
                 transactionService: TransactionService,
-                tokenSupplyService: TokenSupplyService,
-                sanityChecker: SanityChecker,
-                blockFlowFetchMaxAge: Duration)(implicit executionContext: ExecutionContext,
-                                                dc: DatabaseConfig[PostgresProfile],
-                                                blockCache: BlockCache,
-                                                groupSetting: GroupSetting)
+                tokenSupplyService: TokenSupplyService)(implicit executionContext: ExecutionContext,
+                                                        dc: DatabaseConfig[PostgresProfile],
+                                                        blockFlowClient: BlockFlowClient,
+                                                        blockCache: BlockCache,
+                                                        transactionCache: TransactionCache,
+                                                        groupSetting: GroupSetting)
     extends StrictLogging {
 
-  val blockServer: BlockServer = new BlockServer(blockService, blockFlowFetchMaxAge)
+  val blockServer: BlockServer = new BlockServer(blockService)
   val addressServer: AddressServer =
-    new AddressServer(transactionService, blockFlowFetchMaxAge)
+    new AddressServer(transactionService)
   val transactionServer: TransactionServer =
-    new TransactionServer(transactionService, blockFlowFetchMaxAge)
+    new TransactionServer(transactionService)
   val infosServer: InfosServer =
-    new InfosServer(blockFlowFetchMaxAge, tokenSupplyService, blockService, transactionService)
-  val utilsServer: UtilsServer   = new UtilsServer(blockFlowFetchMaxAge, sanityChecker)
-  val chartsServer: ChartsServer = new ChartsServer(blockFlowFetchMaxAge)
-  val documentation: DocumentationServer =
-    new DocumentationServer(blockFlowFetchMaxAge)
+    new InfosServer(tokenSupplyService, blockService, transactionService)
+  val utilsServer: UtilsServer   = new UtilsServer()
+  val chartsServer: ChartsServer = new ChartsServer()
 
   val route: Route =
     cors()(
@@ -61,6 +58,6 @@ class AppServer(blockService: BlockService,
         infosServer.route ~
         chartsServer.route ~
         utilsServer.route ~
-        documentation.route ~
+        DocumentationServer.route ~
         Metrics.route)
 }

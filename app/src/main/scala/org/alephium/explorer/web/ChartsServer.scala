@@ -26,10 +26,8 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer.api.ChartsEndpoints
 import org.alephium.explorer.api.model.TimedValues
 import org.alephium.explorer.service.{HashrateService, TransactionHistoryService}
-import org.alephium.util.Duration
 
-class ChartsServer(val blockflowFetchMaxAge: Duration)(implicit executionContext: ExecutionContext,
-                                                       dc: DatabaseConfig[PostgresProfile])
+class ChartsServer()(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile])
     extends Server
     with ChartsEndpoints {
 

@@ -22,50 +22,62 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.dao.{TransactionDao, UnconfirmedTxDao}
 import org.alephium.util.U256
 
 trait TransactionService {
-  def getTransaction(transactionHash: Transaction.Hash): Future[Option[TransactionLike]]
-  def getTransactionsByAddress(address: Address, pagination: Pagination): Future[Seq[Transaction]]
-  def getTransactionsByAddressSQL(address: Address,
-                                  pagination: Pagination): Future[Seq[Transaction]]
-  def getTransactionsNumberByAddress(address: Address): Future[Int]
-  def getBalance(address: Address): Future[(U256, U256)]
-  def getTotalNumber(): Int
+  def getTransaction(transactionHash: Transaction.Hash)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Option[TransactionLike]]
+
+  def getTransactionsByAddress(address: Address, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]]
+
+  def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]]
+
+  def getTransactionsNumberByAddress(address: Address)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Int]
+
+  def getBalance(address: Address)(implicit ec: ExecutionContext,
+                                   dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)]
+
+  def getTotalNumber()(implicit cache: TransactionCache): Int
 }
 
-object TransactionService {
-  def apply(transactionDao: TransactionDao, utransactionDao: UnconfirmedTxDao)(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): TransactionService =
-    new Impl(transactionDao, utransactionDao)
+object TransactionService extends TransactionService {
 
-  private class Impl(transactionDao: TransactionDao, utransactionDao: UnconfirmedTxDao)(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile])
-      extends TransactionService {
-    def getTransaction(transactionHash: Transaction.Hash): Future[Option[TransactionLike]] =
-      transactionDao.get(transactionHash).flatMap {
-        case None     => utransactionDao.get(transactionHash)
-        case Some(tx) => Future.successful(Some(ConfirmedTransaction.from(tx)))
-      }
+  def getTransaction(transactionHash: Transaction.Hash)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Option[TransactionLike]] =
+    TransactionDao.get(transactionHash).flatMap {
+      case None     => UnconfirmedTxDao.get(transactionHash)
+      case Some(tx) => Future.successful(Some(ConfirmedTransaction.from(tx)))
+    }
 
-    def getTransactionsByAddress(address: Address,
-                                 pagination: Pagination): Future[Seq[Transaction]] =
-      transactionDao.getByAddress(address, pagination)
+  def getTransactionsByAddress(address: Address, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
+    TransactionDao.getByAddress(address, pagination)
 
-    def getTransactionsByAddressSQL(address: Address,
-                                    pagination: Pagination): Future[Seq[Transaction]] =
-      transactionDao.getByAddressSQL(address, pagination)
+  def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
+    TransactionDao.getByAddressSQL(address, pagination)
 
-    def getTransactionsNumberByAddress(address: Address): Future[Int] =
-      transactionDao.getNumberByAddressSQLNoJoin(address)
+  def getTransactionsNumberByAddress(address: Address)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Int] =
+    TransactionDao.getNumberByAddressSQLNoJoin(address)
 
-    def getBalance(address: Address): Future[(U256, U256)] =
-      transactionDao.getBalance(address)
+  def getBalance(address: Address)(implicit ec: ExecutionContext,
+                                   dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
+    TransactionDao.getBalance(address)
 
-    def getTotalNumber(): Int =
-      transactionDao.getTotalNumber()
-  }
+  def getTotalNumber()(implicit cache: TransactionCache): Int =
+    cache.getMainChainTxnCount()
 }
