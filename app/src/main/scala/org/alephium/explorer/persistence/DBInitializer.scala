@@ -28,7 +28,6 @@ import slick.jdbc.meta.MTable
 import org.alephium.explorer.AnyOps
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.schema._
-import org.alephium.explorer.service.FinalizerService
 
 object DBInitializer extends StrictLogging {
 
@@ -60,7 +59,6 @@ object DBInitializer extends StrictLogging {
       _ <- createTables()
       _ <- Migrations.migrate(databaseConfig)
       _ <- createIndexes()
-      _ <- makeUpdates()
     } yield ()
   }
 
@@ -95,12 +93,6 @@ object DBInitializer extends StrictLogging {
       _ <- TransactionPerAddressSchema.createMainChainIndex
       _ <- OutputSchema.createNonSpentIndex
     } yield ())
-  }
-
-  private def makeUpdates()(implicit executionContext: ExecutionContext,
-                            databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
-    logger.info("Updating database (might take long)")
-    FinalizerService.finalizeOutputs()
   }
 
   def dropTables()(implicit executionContext: ExecutionContext,
