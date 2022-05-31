@@ -18,15 +18,14 @@ package org.alephium.explorer.api.model
 
 import org.alephium.api.UtilJson.{timestampReader, timestampWriter}
 import org.alephium.json.Json._
-import org.alephium.util.{TimeStamp}
+import org.alephium.util.TimeStamp
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-final case class Hashrate(
+final case class PerChainTimedCount(
     timestamp: TimeStamp,
-    hashrate: BigDecimal,
-    value: BigDecimal
+    totalCountPerChain: Seq[PerChainCount]
 )
 
-object Hashrate {
-  implicit val readWriter: ReadWriter[Hashrate] = macroRW
+object PerChainTimedCount {
+  implicit val readWriter: ReadWriter[PerChainTimedCount] = macroRW
 }

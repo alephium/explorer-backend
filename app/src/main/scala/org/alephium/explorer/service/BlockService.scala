@@ -41,11 +41,11 @@ trait BlockService {
 
   def listMaxHeights()(implicit cache: BlockCache,
                        groupSetting: GroupSetting,
-                       ec: ExecutionContext): Future[Seq[PerChainValue]]
+                       ec: ExecutionContext): Future[Seq[PerChainHeight]]
 
   def getAverageBlockTime()(implicit cache: BlockCache,
                             groupSetting: GroupSetting,
-                            ec: ExecutionContext): Future[Seq[PerChainValue]]
+                            ec: ExecutionContext): Future[Seq[PerChainDuration]]
 }
 
 object BlockService extends BlockService {
@@ -70,21 +70,23 @@ object BlockService extends BlockService {
 
   def listMaxHeights()(implicit cache: BlockCache,
                        groupSetting: GroupSetting,
-                       ec: ExecutionContext): Future[Seq[PerChainValue]] =
+                       ec: ExecutionContext): Future[Seq[PerChainHeight]] =
     BlockDao
       .latestBlocks()
       .map(_.map {
         case (chainIndex, block) =>
-          PerChainValue(chainIndex.from.value, chainIndex.to.value, block.height.value.toLong)
+          val height = block.height.value.toLong
+          PerChainHeight(chainIndex.from.value, chainIndex.to.value, height, height)
       })
 
   def getAverageBlockTime()(implicit cache: BlockCache,
                             groupSetting: GroupSetting,
-                            ec: ExecutionContext): Future[Seq[PerChainValue]] =
+                            ec: ExecutionContext): Future[Seq[PerChainDuration]] =
     BlockDao
       .getAverageBlockTime()
       .map(_.map {
         case (chainIndex, averageBlockTime) =>
-          PerChainValue(chainIndex.from.value, chainIndex.to.value, averageBlockTime.millis)
+          val duration = averageBlockTime.millis
+          PerChainDuration(chainIndex.from.value, chainIndex.to.value, duration, duration)
       })
 }

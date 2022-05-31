@@ -188,6 +188,6 @@ class HashrateServiceSpec
     }
 
     def v(time: String, value: Double)  = (ts(time), bg(value))
-    def hr(time: String, value: Double) = Hashrate(ts(time), bg(value))
+    def hr(time: String, value: Double) = Hashrate(ts(time), bg(value), bg(value))
   }
 }

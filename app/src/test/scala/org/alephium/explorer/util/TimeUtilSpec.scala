@@ -22,6 +22,8 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import org.alephium.explorer.AlephiumSpec._
+import org.alephium.explorer.util.TimeUtil._
+import org.alephium.util.TimeStamp
 
 class TimeUtilSpec extends AnyWordSpec with Matchers {
 
@@ -31,7 +33,7 @@ class TimeUtilSpec extends AnyWordSpec with Matchers {
       val expectedDate = LocalDateTime.now(zone) //expected day/month/year
       val expectedTime = OffsetTime.now(zone) //expected hour/minute/day
 
-      val actual = TimeUtil.toZonedDateTime(expectedTime) //actual ZonedDateTime
+      val actual = toZonedDateTime(expectedTime) //actual ZonedDateTime
 
       //check time
       actual.getHour is expectedTime.getHour
@@ -43,4 +45,21 @@ class TimeUtilSpec extends AnyWordSpec with Matchers {
       actual.getYear is expectedDate.getYear
     }
   }
+
+  "truncatedToDay" should {
+    "truncate the timestamp to current day" in {
+      val timestamp = ts("2022-05-18T14:06:43.268Z")
+      truncatedToDay(timestamp) is ts("2022-05-18T00:00:00.000Z")
+    }
+  }
+
+  "truncatedToHour" should {
+    "truncate the timestamp to current hour" in {
+      val timestamp = ts("2022-05-18T14:06:43.268Z")
+      truncatedToHour(timestamp) is ts("2022-05-18T14:00:00.000Z")
+    }
+  }
+
+  def ts(str: String): TimeStamp =
+    TimeStamp.unsafe(Instant.parse(str).toEpochMilli)
 }

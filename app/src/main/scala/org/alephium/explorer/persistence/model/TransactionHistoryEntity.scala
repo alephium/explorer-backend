@@ -14,19 +14,15 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.api.model
+package org.alephium.explorer.persistence.model
 
-import org.alephium.api.UtilJson.{timestampReader, timestampWriter}
-import org.alephium.json.Json._
-import org.alephium.util.{TimeStamp}
+import org.alephium.explorer.api.model.{GroupIndex, IntervalType}
+import org.alephium.util.TimeStamp
 
-@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-final case class Hashrate(
+final case class TransactionHistoryEntity(
     timestamp: TimeStamp,
-    hashrate: BigDecimal,
-    value: BigDecimal
+    chainFrom: GroupIndex,
+    chainTo: GroupIndex,
+    count: Long,
+    intervalType: IntervalType
 )
-
-object Hashrate {
-  implicit val readWriter: ReadWriter[Hashrate] = macroRW
-}

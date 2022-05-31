@@ -36,8 +36,8 @@ case object MempoolSyncService extends StrictLogging {
   def start(nodeUris: Seq[Uri], interval: FiniteDuration)(implicit ec: ExecutionContext,
                                                           dc: DatabaseConfig[PostgresProfile],
                                                           blockFlowClient: BlockFlowClient,
-                                                          scheduler: Scheduler): Future[Unit] =
-    scheduler.scheduleLoop(
+                                                          scheduler: Scheduler): Unit =
+    scheduler.scheduleLoopAndForget(
       taskId        = this.productPrefix,
       firstInterval = ScalaDuration.Zero,
       loopInterval  = interval

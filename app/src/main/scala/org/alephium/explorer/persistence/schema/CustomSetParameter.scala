@@ -58,6 +58,11 @@ object CustomSetParameter {
       params setInt input.value
   }
 
+  implicit object IntervalTypeSetParameter extends SetParameter[IntervalType] {
+    override def apply(input: IntervalType, params: PositionedParameters): Unit =
+      params setInt input.value
+  }
+
   implicit object ExplorerHashSetParameter extends SetParameter[explorer.Hash] {
     override def apply(input: explorer.Hash, params: PositionedParameters): Unit =
       params setBytes input.bytes.toArray

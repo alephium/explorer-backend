@@ -112,6 +112,16 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
       implicit ec: ExecutionContext): Unit =
     sideEffect(scheduleLoop(taskId, interval, interval)(block))
 
+  @SuppressWarnings(
+    Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Overloading"))
+  def scheduleLoopAndForget[T](
+      taskId: String,
+      firstInterval: FiniteDuration,
+      loopInterval: FiniteDuration)(block: => Future[T])(implicit ec: ExecutionContext): Unit = {
+    scheduleLoop(taskId, firstInterval, loopInterval)(block)
+    ()
+  }
+
   /** Schedules the block at given `loopInterval` with the first schedule at `firstInterval` */
   @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))
   def scheduleLoop[T](taskId: String, firstInterval: FiniteDuration, loopInterval: FiniteDuration)(

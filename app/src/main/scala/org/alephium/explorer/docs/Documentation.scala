@@ -49,6 +49,8 @@ trait Documentation
       getTotalTransactions,
       getAverageBlockTime,
       getHashrates,
+      getAllChainsTxCount,
+      getPerChainTxCount,
       sanityCheck
     ),
     "Alephium Explorer API",

@@ -19,12 +19,13 @@ package org.alephium.explorer.api.model
 import org.alephium.json.Json._
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-final case class PerChainValue(
+final case class PerChainDuration(
     chainFrom: Int,
     chainTo: Int,
-    value: Long
+    duration: Long,
+    value: Long // TODO Remove once front-end is using `duration`
 )
 
-object PerChainValue {
-  implicit val readWriter: ReadWriter[PerChainValue] = macroRW
+object PerChainDuration {
+  implicit val readWriter: ReadWriter[PerChainDuration] = macroRW
 }

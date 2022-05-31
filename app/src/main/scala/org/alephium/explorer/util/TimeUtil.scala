@@ -17,11 +17,31 @@
 package org.alephium.explorer.util
 
 import java.time._
+import java.time.temporal.ChronoUnit
+
+import org.alephium.util.TimeStamp
 
 object TimeUtil {
 
   /** Convert's [[java.time.OffsetTime]] to [[java.time.ZonedDateTime]] in the same zone */
   @inline def toZonedDateTime(time: OffsetTime): ZonedDateTime =
     time.atDate(LocalDate.now(time.getOffset)).toZonedDateTime
+
+  @inline def toInstant(timestamp: TimeStamp): Instant =
+    Instant.ofEpochMilli(timestamp.millis)
+
+  def truncatedToDay(timestamp: TimeStamp): TimeStamp =
+    mapInstant(timestamp)(_.truncatedTo(ChronoUnit.DAYS))
+
+  def truncatedToHour(timestamp: TimeStamp): TimeStamp =
+    mapInstant(timestamp)(_.truncatedTo(ChronoUnit.HOURS))
+
+  private def mapInstant(timestamp: TimeStamp)(f: Instant => Instant): TimeStamp = {
+    val instant = toInstant(timestamp)
+    TimeStamp
+      .unsafe(
+        f(instant).toEpochMilli
+      )
+  }
 
 }
