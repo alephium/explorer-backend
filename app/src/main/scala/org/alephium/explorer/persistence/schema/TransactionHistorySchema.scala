@@ -30,7 +30,7 @@ object TransactionHistorySchema extends Schema[TransactionHistoryEntity]("transa
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
     def chainFrom: Rep[GroupIndex]      = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]        = column[GroupIndex]("chain_to")
-    def value: Rep[Long]                = column[Long]("value")
+    def count: Rep[Long]                = column[Long]("value")
     def intervalType: Rep[IntervalType] = column[IntervalType]("interval_type")
 
     def pk: PrimaryKey =
@@ -39,7 +39,7 @@ object TransactionHistorySchema extends Schema[TransactionHistoryEntity]("transa
     def timestampIdx: Index    = index("transactions_history_timestamp_idx", timestamp)
 
     def * : ProvenShape[TransactionHistoryEntity] =
-      (timestamp, chainFrom, chainTo, value, intervalType)
+      (timestamp, chainFrom, chainTo, count, intervalType)
         .<>((TransactionHistoryEntity.apply _).tupled, TransactionHistoryEntity.unapply)
   }
 

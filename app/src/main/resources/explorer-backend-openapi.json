@@ -952,7 +952,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/PerChainValue"
+                    "$ref": "#/components/schemas/PerChainHeight"
                   }
                 }
               }
@@ -1589,7 +1589,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/PerChainValue"
+                    "$ref": "#/components/schemas/PerChainDuration"
                   }
                 }
               }
@@ -1829,7 +1829,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/TimedValues"
+                    "$ref": "#/components/schemas/TimedCount"
                   }
                 }
               }
@@ -1949,7 +1949,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/PerChainTimedValues"
+                    "$ref": "#/components/schemas/PerChainTimedCount"
                   }
                 }
               }
@@ -2389,28 +2389,31 @@
           }
         }
       },
-      "PerChainTimedValues": {
-        "required": [
-          "timestamp"
-        ],
-        "type": "object",
-        "properties": {
-          "timestamp": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "totalPerChain": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PerChainValue"
-            }
-          }
-        }
-      },
-      "PerChainValue": {
+      "PerChainCount": {
         "required": [
           "chainFrom",
           "chainTo",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "chainFrom": {
+            "type": "integer"
+          },
+          "chainTo": {
+            "type": "integer"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PerChainDuration": {
+        "required": [
+          "chainFrom",
+          "chainTo",
+          "duration",
           "value"
         ],
         "type": "object",
@@ -2421,9 +2424,56 @@
           "chainTo": {
             "type": "integer"
           },
+          "duration": {
+            "type": "integer",
+            "format": "int64"
+          },
           "value": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "PerChainHeight": {
+        "required": [
+          "chainFrom",
+          "chainTo",
+          "height",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "chainFrom": {
+            "type": "integer"
+          },
+          "chainTo": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "value": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PerChainTimedCount": {
+        "required": [
+          "timestamp"
+        ],
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalCountPerChain": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PerChainCount"
+            }
           }
         }
       },
@@ -2438,10 +2488,10 @@
           }
         }
       },
-      "TimedValues": {
+      "TimedCount": {
         "required": [
           "timestamp",
-          "totalAllChains"
+          "totalCountAllChains"
         ],
         "type": "object",
         "properties": {
@@ -2449,7 +2499,7 @@
             "type": "integer",
             "format": "int64"
           },
-          "totalAllChains": {
+          "totalCountAllChains": {
             "type": "integer",
             "format": "int64"
           }

@@ -24,7 +24,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.api.ChartsEndpoints
-import org.alephium.explorer.api.model.TimedValues
+import org.alephium.explorer.api.model.TimedCount
 import org.alephium.explorer.service.{HashrateService, TransactionHistoryService}
 
 class ChartsServer()(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile])
@@ -42,7 +42,7 @@ class ChartsServer()(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresP
             .getAllChains(timeInterval.from, timeInterval.to, interval)
             .map { seq =>
               Right(seq.map {
-                case (timestamp, count) => TimedValues(timestamp, count)
+                case (timestamp, count) => TimedCount(timestamp, count)
               })
             }
       } ~

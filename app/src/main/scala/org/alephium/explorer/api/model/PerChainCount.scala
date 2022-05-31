@@ -14,15 +14,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.model
+package org.alephium.explorer.api.model
 
-import org.alephium.explorer.api.model.{GroupIndex, IntervalType}
-import org.alephium.util.TimeStamp
+import org.alephium.json.Json._
 
-final case class TransactionHistoryEntity(
-    timestamp: TimeStamp,
-    chainFrom: GroupIndex,
-    chainTo: GroupIndex,
-    count: Long,
-    intervalType: IntervalType
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+final case class PerChainCount(
+    chainFrom: Int,
+    chainTo: Int,
+    count: Long
 )
+
+object PerChainCount {
+  implicit val readWriter: ReadWriter[PerChainCount] = macroRW
+}

@@ -70,17 +70,17 @@ case object TransactionHistoryService extends StrictLogging {
 
   def getPerChain(from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Seq[PerChainTimedValues]] = {
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[PerChainTimedCount]] = {
     run(getPerChainQuery(intervalType, from, to)).map(
       _.groupBy {
         case (timestamp, _, _, _) => timestamp
       }.map {
           case (timestamp, values) =>
-            val perChainValues = values.map {
+            val perChainCounts = values.map {
               case (_, chainFrom, chainTo, count) =>
-                PerChainValue(chainFrom.value, chainTo.value, count)
+                PerChainCount(chainFrom.value, chainTo.value, count)
             }
-            PerChainTimedValues(timestamp, perChainValues)
+            PerChainTimedCount(timestamp, perChainCounts)
         }
         .toSeq
         .sortBy(_.timestamp)) //We need to sort because `groupBy` doesn't preserve order

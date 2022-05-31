@@ -16,15 +16,16 @@
 
 package org.alephium.explorer.api.model
 
+import org.alephium.api.UtilJson.{timestampReader, timestampWriter}
 import org.alephium.json.Json._
+import org.alephium.util.TimeStamp
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-final case class PerChainValue(
-    chainFrom: Int,
-    chainTo: Int,
-    value: Long
+final case class TimedCount(
+    timestamp: TimeStamp,
+    totalCountAllChains: Long
 )
 
-object PerChainValue {
-  implicit val readWriter: ReadWriter[PerChainValue] = macroRW
+object TimedCount {
+  implicit val readWriter: ReadWriter[TimedCount] = macroRW
 }

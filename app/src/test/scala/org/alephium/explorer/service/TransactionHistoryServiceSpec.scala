@@ -140,18 +140,18 @@ class TransactionHistoryServiceSpec
         .futureValue
 
       perChainsDaily.map { perChainTime =>
-        PerChainTimedValues(
+        PerChainTimedCount(
           perChainTime.timestamp,
-          perChainTime.totalPerChain.filter(_.value != 0)
+          perChainTime.totalCountPerChain.filter(_.count != 0)
         )
       } is
         Seq(
-          PerChainTimedValues(ts("2021-11-08T00:00:00.000Z"),
-                              Seq(PerChainValue(group0.value, group0.value, 3),
-                                  PerChainValue(group1.value, group1.value, 2))),
-          PerChainTimedValues(ts("2021-11-09T00:00:00.000Z"),
-                              Seq(PerChainValue(group0.value, group0.value, 4),
-                                  PerChainValue(group1.value, group1.value, 1)))
+          PerChainTimedCount(ts("2021-11-08T00:00:00.000Z"),
+                             Seq(PerChainCount(group0.value, group0.value, 3),
+                                 PerChainCount(group1.value, group1.value, 2))),
+          PerChainTimedCount(ts("2021-11-09T00:00:00.000Z"),
+                             Seq(PerChainCount(group0.value, group0.value, 4),
+                                 PerChainCount(group1.value, group1.value, 1)))
         )
 
       /*
@@ -168,23 +168,23 @@ class TransactionHistoryServiceSpec
 
       perChainsHourly
         .map { perChainTime =>
-          PerChainTimedValues(
+          PerChainTimedCount(
             perChainTime.timestamp,
-            perChainTime.totalPerChain.filter(_.value != 0)
+            perChainTime.totalCountPerChain.filter(_.count != 0)
           )
         }
-        .filter(_.totalPerChain.nonEmpty) is
+        .filter(_.totalCountPerChain.nonEmpty) is
         Seq(
-          PerChainTimedValues(ts("2021-11-08T14:00:00.000Z"),
-                              Seq(PerChainValue(group0.value, group0.value, 2),
-                                  PerChainValue(group1.value, group1.value, 2))),
-          PerChainTimedValues(ts("2021-11-08T15:00:00.000Z"),
-                              Seq(PerChainValue(group0.value, group0.value, 1))),
-          PerChainTimedValues(ts("2021-11-09T08:00:00.000Z"),
-                              Seq(PerChainValue(group0.value, group0.value, 2),
-                                  PerChainValue(group1.value, group1.value, 1))),
-          PerChainTimedValues(ts("2021-11-09T12:00:00.000Z"),
-                              Seq(PerChainValue(group0.value, group0.value, 2)))
+          PerChainTimedCount(ts("2021-11-08T14:00:00.000Z"),
+                             Seq(PerChainCount(group0.value, group0.value, 2),
+                                 PerChainCount(group1.value, group1.value, 2))),
+          PerChainTimedCount(ts("2021-11-08T15:00:00.000Z"),
+                             Seq(PerChainCount(group0.value, group0.value, 1))),
+          PerChainTimedCount(ts("2021-11-09T08:00:00.000Z"),
+                             Seq(PerChainCount(group0.value, group0.value, 2),
+                                 PerChainCount(group1.value, group1.value, 1))),
+          PerChainTimedCount(ts("2021-11-09T12:00:00.000Z"),
+                             Seq(PerChainCount(group0.value, group0.value, 2)))
         )
 
       /*

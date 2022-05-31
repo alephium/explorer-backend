@@ -56,7 +56,7 @@ class InfosServerSpec()
 
   it should "return chains heights" in new Fixture {
     Get(s"/infos/heights") ~> server.route ~> check {
-      responseAs[Seq[PerChainValue]] is Seq(chainHeight)
+      responseAs[Seq[PerChainHeight]] is Seq(chainHeight)
     }
   }
 
@@ -123,7 +123,7 @@ class InfosServerSpec()
 
   it should "return the average block times" in new Fixture {
     Get(s"/infos/average-block-times") ~> server.route ~> check {
-      responseAs[Seq[PerChainValue]] is Seq(blockTime)
+      responseAs[Seq[PerChainDuration]] is Seq(blockTime)
     }
   }
   trait Fixture extends Generators {
@@ -151,8 +151,8 @@ class InfosServerSpec()
 
     }
 
-    val chainHeight = PerChainValue(0, 0, 60000)
-    val blockTime   = PerChainValue(0, 0, 1)
+    val chainHeight = PerChainHeight(0, 0, 60000, 60000)
+    val blockTime   = PerChainDuration(0, 0, 1, 1)
     val blockService = new BlockService {
 
       def getLiteBlockByHash(hash: BlockEntry.Hash)(
@@ -172,12 +172,12 @@ class InfosServerSpec()
 
       def listMaxHeights()(implicit cache: BlockCache,
                            groupSetting: GroupSetting,
-                           ec: ExecutionContext): Future[Seq[PerChainValue]] =
+                           ec: ExecutionContext): Future[Seq[PerChainHeight]] =
         Future.successful(Seq(chainHeight))
 
       def getAverageBlockTime()(implicit cache: BlockCache,
                                 groupSetting: GroupSetting,
-                                ec: ExecutionContext): Future[Seq[PerChainValue]] =
+                                ec: ExecutionContext): Future[Seq[PerChainDuration]] =
         Future.successful(Seq(blockTime))
 
     }

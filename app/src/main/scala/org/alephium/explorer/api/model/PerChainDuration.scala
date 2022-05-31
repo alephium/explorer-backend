@@ -16,16 +16,16 @@
 
 package org.alephium.explorer.api.model
 
-import org.alephium.api.UtilJson.{timestampReader, timestampWriter}
 import org.alephium.json.Json._
-import org.alephium.util.TimeStamp
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-final case class TimedValues(
-    timestamp: TimeStamp,
-    totalAllChains: Long
+final case class PerChainDuration(
+    chainFrom: Int,
+    chainTo: Int,
+    duration: Long,
+    value: Long // TODO Remove once front-end is using `duration`
 )
 
-object TimedValues {
-  implicit val readWriter: ReadWriter[TimedValues] = macroRW
+object PerChainDuration {
+  implicit val readWriter: ReadWriter[PerChainDuration] = macroRW
 }
