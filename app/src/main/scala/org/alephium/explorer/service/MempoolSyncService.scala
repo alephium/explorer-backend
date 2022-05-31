@@ -17,6 +17,7 @@
 package org.alephium.explorer.service
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 
 import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.StrictLogging
@@ -24,50 +25,48 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.persistence.dao.UnconfirmedTxDao
-import org.alephium.util.Duration
+import org.alephium.explorer.util.Scheduler
 
 /*
  * Syncing mempool
  */
 
-trait MempoolSyncService extends SyncService.BlockFlow
+case object MempoolSyncService extends StrictLogging {
 
-object MempoolSyncService {
-  def apply(syncPeriod: Duration, blockFlowClient: BlockFlowClient, utxDao: UnconfirmedTxDao)(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): MempoolSyncService =
-    new Impl(syncPeriod, blockFlowClient, utxDao)
+  def start(nodeUris: Seq[Uri], interval: FiniteDuration)(implicit ec: ExecutionContext,
+                                                          dc: DatabaseConfig[PostgresProfile],
+                                                          blockFlowClient: BlockFlowClient,
+                                                          scheduler: Scheduler): Future[Unit] =
+    scheduler.scheduleLoop(
+      taskId        = this.productPrefix,
+      firstInterval = ScalaDuration.Zero,
+      loopInterval  = interval
+    )(syncOnce(nodeUris))
 
-  private class Impl(val syncPeriod: Duration,
-                     blockFlowClient: BlockFlowClient,
-                     utxDao: UnconfirmedTxDao)(implicit val executionContext: ExecutionContext,
-                                               databaseConfig: DatabaseConfig[PostgresProfile])
-      extends MempoolSyncService
-      with StrictLogging {
-
-    override def syncOnce(): Future[Unit] = {
-      logger.debug("Syncing mempol")
-      Future.sequence(nodeUris.map(syncMempool)).map { _ =>
-        logger.debug("Mempool synced")
-      }
+  def syncOnce(nodeUris: Seq[Uri])(implicit ec: ExecutionContext,
+                                   dc: DatabaseConfig[PostgresProfile],
+                                   blockFlowClient: BlockFlowClient): Future[Unit] = {
+    logger.debug("Syncing mempol")
+    Future.sequence(nodeUris.map(syncMempool)).map { _ =>
+      logger.debug("Mempool synced")
     }
+  }
 
-    private def syncMempool(
-        uri: Uri
-    ): Future[Unit] = {
-      blockFlowClient.fetchUnconfirmedTransactions(uri).flatMap {
-        case Right(utxs) =>
-          utxDao.listHashes().flatMap { localUtxs =>
-            val localUtxsSet = localUtxs.toSet
-            val newHashes    = utxs.map(_.hash).toSet
-            val newUtxs      = utxs.filterNot(tx => localUtxsSet.contains(tx.hash))
-            val toDrop       = localUtxs.filterNot(tx => newHashes.contains(tx))
-            utxDao.removeAndInsertMany(toDrop, newUtxs)
-          }
-        case Left(error) =>
-          logger.error(error)
-          Future.successful(())
-      }
+  private def syncMempool(uri: Uri)(implicit ec: ExecutionContext,
+                                    dc: DatabaseConfig[PostgresProfile],
+                                    blockFlowClient: BlockFlowClient): Future[Unit] = {
+    blockFlowClient.fetchUnconfirmedTransactions(uri).flatMap {
+      case Right(utxs) =>
+        UnconfirmedTxDao.listHashes().flatMap { localUtxs =>
+          val localUtxsSet = localUtxs.toSet
+          val newHashes    = utxs.map(_.hash).toSet
+          val newUtxs      = utxs.filterNot(tx => localUtxsSet.contains(tx.hash))
+          val toDrop       = localUtxs.filterNot(tx => newHashes.contains(tx))
+          UnconfirmedTxDao.removeAndInsertMany(toDrop, newUtxs)
+        }
+      case Left(error) =>
+        logger.error(error)
+        Future.successful(())
     }
   }
 }
