@@ -17,6 +17,7 @@
 package org.alephium.explorer.service
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
 
 import akka.http.scaladsl.model.Uri
 import org.scalacheck.Gen
@@ -29,7 +30,9 @@ import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, Unconfir
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.UnconfirmedTxDao
 import org.alephium.explorer.persistence.model._
-import org.alephium.util.{Duration, TimeStamp}
+import org.alephium.explorer.util.Scheduler
+import org.alephium.explorer.util.TestUtils._
+import org.alephium.util.TimeStamp
 
 class MempoolSyncServiceSpec
     extends AlephiumSpec
@@ -40,37 +43,34 @@ class MempoolSyncServiceSpec
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
 
   it should "start/sync/stop" in new Fixture {
-    val mempoolSyncService =
-      MempoolSyncService(syncPeriod = Duration.unsafe(100), blockFlowClient, UnconfirmedTxDao)
+    using(Scheduler("test")) { implicit scheduler =>
+      MempoolSyncService.start(Seq(""), 100.milliseconds).futureValue is ()
 
-    mempoolSyncService.start(Seq("")).futureValue is ()
+      UnconfirmedTxDao.listHashes().futureValue is Seq.empty
 
-    UnconfirmedTxDao.listHashes().futureValue is Seq.empty
+      unconfirmedTransactions = Gen.listOfN(10, utransactionGen).sample.get
 
-    unconfirmedTransactions = Gen.listOfN(10, utransactionGen).sample.get
+      eventually {
+        UnconfirmedTxDao.listHashes().futureValue.toSet is unconfirmedTransactions.map(_.hash).toSet
+      }
 
-    eventually {
-      UnconfirmedTxDao.listHashes().futureValue.toSet is unconfirmedTransactions.map(_.hash).toSet
+      val head   = unconfirmedTransactions.head
+      val last   = unconfirmedTransactions.last
+      val middle = unconfirmedTransactions(5)
+
+      val newUnconfirmedTransactions =
+        unconfirmedTransactions.filterNot(tx => tx == head || tx == last || tx == middle)
+
+      unconfirmedTransactions = newUnconfirmedTransactions
+
+      eventually {
+        UnconfirmedTxDao.listHashes().futureValue.toSet is newUnconfirmedTransactions
+          .map(_.hash)
+          .toSet
+      }
+
+      databaseConfig.db.close
     }
-
-    val head   = unconfirmedTransactions.head
-    val last   = unconfirmedTransactions.last
-    val middle = unconfirmedTransactions(5)
-
-    val newUnconfirmedTransactions =
-      unconfirmedTransactions.filterNot(tx => tx == head || tx == last || tx == middle)
-
-    unconfirmedTransactions = newUnconfirmedTransactions
-
-    eventually {
-      UnconfirmedTxDao.listHashes().futureValue.toSet is newUnconfirmedTransactions
-        .map(_.hash)
-        .toSet
-    }
-
-    mempoolSyncService.stop().futureValue is ()
-
-    databaseConfig.db.close
   }
 
   trait Fixture {
@@ -78,7 +78,7 @@ class MempoolSyncServiceSpec
 
     var unconfirmedTransactions: Seq[UnconfirmedTransaction] = Seq.empty
 
-    val blockFlowClient: BlockFlowClient = new BlockFlowClient {
+    implicit val blockFlowClient: BlockFlowClient = new BlockFlowClient {
       def fetchUnconfirmedTransactions(
           uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]] =
         Future.successful(Right(unconfirmedTransactions))

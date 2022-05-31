@@ -26,6 +26,7 @@ import scala.util.{Failure, Success}
 
 import com.typesafe.scalalogging.StrictLogging
 
+import org.alephium.explorer._
 import org.alephium.explorer.util.Scheduler.scheduleTime
 
 object Scheduler extends StrictLogging {
@@ -90,9 +91,8 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
 
     val task =
       new TimerTask {
-        @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
         def run(): Unit =
-          promise.completeWith(block)
+          sideEffect(promise.completeWith(block))
       }
 
     timer.schedule(task, delay.toMillis max 0)
@@ -108,12 +108,9 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
     scheduleLoop(taskId, interval, interval)(block)
 
   /** Fires and forgets the scheduled task */
-  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
   def scheduleLoopAndForget[T](taskId: String, interval: FiniteDuration)(block: => Future[T])(
-      implicit ec: ExecutionContext): Unit = {
-    scheduleLoop(taskId, interval, interval)(block)
-    ()
-  }
+      implicit ec: ExecutionContext): Unit =
+    sideEffect(scheduleLoop(taskId, interval, interval)(block))
 
   /** Schedules the block at given `loopInterval` with the first schedule at `firstInterval` */
   @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))
@@ -169,39 +166,61 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
       implicit ec: ExecutionContext): Unit =
     scheduleDailyAt(taskId, TimeUtil.toZonedDateTime(at))(block)
 
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def scheduleLoopFlatMap[A, B](taskId: String, interval: FiniteDuration)(init: => Future[A])(
-      block: A => Future[B])(implicit ec: ExecutionContext): Future[B] =
-    scheduleLoopFlatMap(taskId, interval, interval)(init)(block)
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))
+  def scheduleLoopConditional[A, S](
+      taskId: String,
+      interval: FiniteDuration,
+      state: S
+  )(init: => Future[Boolean])(block: S => Future[A])(implicit ec: ExecutionContext): Unit =
+    scheduleLoopConditional(
+      taskId        = taskId,
+      firstInterval = interval,
+      loopInterval  = interval,
+      state         = state
+    )(init)(block)
 
   /**
-    * Similar to `scheduleLoop` but invokes `init` block only once and
-    * makes that init value available to `block` for all future schedules.
+    * Conditionally executes `block` only if `init` returns true.
+    * @param state The state of the block.
+    *              Unlike `scheduleLoopFlatMap` above which passes the result of `init`
+    *              as state into `block`, here the state is provided as a function input.
+    * @param init  Invoked at specified intervals until it returns true.
+    *              When true, block is executed without any further init
+    *              invocations.
     */
-  def scheduleLoopFlatMap[A, B](taskId: String,
-                                firstInterval: FiniteDuration,
-                                loopInterval: FiniteDuration)(init: => Future[A])(
-      block: A => Future[B])(implicit ec: ExecutionContext): Future[B] = {
-    //None if init has not yet been invoked else Some(A)
-    @volatile var initializerResult: Option[A] = None
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))
+  def scheduleLoopConditional[A, S](
+      taskId: String,
+      firstInterval: FiniteDuration,
+      loopInterval: FiniteDuration,
+      state: S
+  )(init: => Future[Boolean])(block: S => Future[A])(implicit ec: ExecutionContext): Unit = {
+    //false if init has not been executed or previous init attempt returned false, else true.
+    @volatile var initialized: Boolean = false
 
-    scheduleLoop(
-      taskId        = taskId,
-      firstInterval = firstInterval,
-      loopInterval  = loopInterval
-    ) {
-      //flatMap init onto block
-      initializerResult match {
-        case Some(value) =>
-          //init was already invoked, invoke block.
-          block(value)
-
-        case None =>
-          //init not invoked, invoke not and flatMap onto block
-          init flatMap { result =>
-            initializerResult = Some(result)
-            block(result)
+    sideEffect {
+      scheduleLoop(
+        taskId        = taskId,
+        firstInterval = firstInterval,
+        loopInterval  = loopInterval
+      ) {
+        if (initialized) { //Already initialised. Invoke block!
+          block(state)
+        } else { //Not initialised! Invoke init!
+          init flatMap { initResult =>
+            if (initResult) { //Init successful! Invoke block!
+              logger.debug(
+                s"${logId(taskId)}: Task initialisation result: $initResult. Executing block")
+              initialized = initResult
+              block(state)
+            } else {
+              //Init returned false. Do not execute block.
+              logger.debug(
+                s"${logId(taskId)}: Task initialisation result: $initResult. Executing block delayed.")
+              Future.unit
+            }
           }
+        }
       }
     }
   }
