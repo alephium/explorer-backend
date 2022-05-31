@@ -138,28 +138,6 @@ object InputQueries {
     }
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
-  def inputsFromTxs(txHashes: Seq[Transaction.Hash]) = {
-    mainInputs
-      .filter(_.txHash inSet txHashes)
-      .join(mainOutputs)
-      .on {
-        case (input, outputs) =>
-          input.outputRefKey === outputs.key
-      }
-      .map {
-        case (input, output) =>
-          (input.txHash,
-           input.inputOrder,
-           input.hint,
-           input.outputRefKey,
-           input.unlockScript,
-           output.txHash,
-           output.address,
-           output.amount)
-      }
-  }
-
   // format: off
   def inputsFromTxsSQL(txHashes: Seq[Transaction.Hash]):
     DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Transaction.Hash, Address, U256)]] = {

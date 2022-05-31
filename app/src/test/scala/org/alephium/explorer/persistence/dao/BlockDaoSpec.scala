@@ -107,36 +107,6 @@ class BlockDaoSpec
     }
   }
 
-  it should "list block headers via SQL and typed should return same result" in new Fixture {
-    val blocksCount = 30 //number of blocks to create
-
-    forAll(Gen.listOfN(blocksCount, blockHeaderTransactionEntityGen),
-           Gen.choose(0, blocksCount),
-           Gen.choose(0, blocksCount),
-           arbitrary[Boolean]) {
-      case (blocks, pageNum, pageLimit, reverse) =>
-        //clear test data
-        run(BlockHeaderSchema.table.delete).futureValue
-        run(TransactionSchema.table.delete).futureValue
-
-        //create test data
-        run(BlockHeaderSchema.table ++= blocks.map(_._1)).futureValue
-        run(TransactionSchema.table ++= blocks.flatten(_._2)).futureValue
-
-        //Assert results returned by typed and SQL query are the same
-        def runAssert(page: Pagination) = {
-          BlockDao.invalidateCacheRowCount()
-          val sqlResult   = BlockDao.listMainChainSQLCached(page).futureValue
-          val typedResult = BlockDao.listMainChain(page).futureValue
-          sqlResult is typedResult
-        }
-
-        runAssert(Pagination.unsafe(0, pageLimit, reverse)) //First page test
-        runAssert(Pagination.unsafe(pageNum, pageLimit, reverse)) //Random page test
-        runAssert(Pagination.unsafe(blocks.size, pageLimit, reverse)) //Last page test
-    }
-  }
-
   it should "Recreate issue #162 - not throw exception when inserting a big block" in new Fixture {
     using(Source.fromResource("big_block.json")) { source =>
       val rawBlock   = source.getLines().mkString

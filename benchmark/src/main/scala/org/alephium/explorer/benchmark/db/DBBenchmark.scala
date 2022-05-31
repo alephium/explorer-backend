@@ -110,39 +110,23 @@ class DBBenchmark {
     * The following benchmarks listMainChain's forward & reverse queries with connection pool disabled
     */
   @Benchmark
-  def listBlocks_Forward_DisabledCP_Typed(state: ListBlocks_Forward_DisabledCP_ReadState): Unit = {
-    implicit val ec: ExecutionContext                = state.config.db.ioExecutionContext
-    implicit val dc: DatabaseConfig[PostgresProfile] = state.config
-
-    val _ =
-      Await.result(BlockDao.listMainChain(state.next), requestTimeout)
-  }
-
-  @Benchmark
-  def listBlocks_Reverse_DisabledCP_Typed(state: ListBlocks_Reverse_DisabledCP_ReadState): Unit = {
-    implicit val ec: ExecutionContext                = state.config.db.ioExecutionContext
-    implicit val dc: DatabaseConfig[PostgresProfile] = state.config
-
-    val _ =
-      Await.result(BlockDao.listMainChain(state.next), requestTimeout)
-  }
-
-  @Benchmark
   def listBlocks_Forward_DisabledCP_SQL(state: ListBlocks_Forward_DisabledCP_ReadState): Unit = {
     implicit val ec: ExecutionContext                = state.config.db.ioExecutionContext
     implicit val dc: DatabaseConfig[PostgresProfile] = state.config
+    implicit val cache: BlockCache                   = state.blockCache
 
     val _ =
-      Await.result(BlockDao.listMainChainSQL(state.next), requestTimeout)
+      Await.result(BlockDao.listMainChainSQLCached(state.next), requestTimeout)
   }
 
   @Benchmark
   def listBlocks_Reverse_DisabledCP_SQL(state: ListBlocks_Reverse_DisabledCP_ReadState): Unit = {
     implicit val ec: ExecutionContext                = state.config.db.ioExecutionContext
     implicit val dc: DatabaseConfig[PostgresProfile] = state.config
+    implicit val cache: BlockCache                   = state.blockCache
 
     val _ =
-      Await.result(BlockDao.listMainChainSQL(state.next), requestTimeout)
+      Await.result(BlockDao.listMainChainSQLCached(state.next), requestTimeout)
   }
 
   /**
@@ -151,24 +135,6 @@ class DBBenchmark {
     * Benchmarks listMainChain forward & reverse queries with [[DBConnectionPool.HikariCP]] as
     * the connection pool
     */
-  @Benchmark
-  def listBlocks_Forward_HikariCP_Typed(state: ListBlocks_Forward_HikariCP_ReadState): Unit = {
-    implicit val ec: ExecutionContext                = state.config.db.ioExecutionContext
-    implicit val dc: DatabaseConfig[PostgresProfile] = state.config
-
-    val _ =
-      Await.result(BlockDao.listMainChain(state.next), requestTimeout)
-  }
-
-  @Benchmark
-  def listBlocks_Forward_HikariCP_SQL(state: ListBlocks_Forward_HikariCP_ReadState): Unit = {
-    implicit val ec: ExecutionContext                = state.config.db.ioExecutionContext
-    implicit val dc: DatabaseConfig[PostgresProfile] = state.config
-
-    val _ =
-      Await.result(BlockDao.listMainChainSQL(state.next), requestTimeout)
-  }
-
   @Benchmark
   def listBlocks_Forward_HikariCP_SQL_Cached(state: ListBlocks_Forward_HikariCP_ReadState): Unit = {
     implicit val ec: ExecutionContext                = state.config.db.ioExecutionContext
@@ -192,32 +158,6 @@ class DBBenchmark {
   }
 
   @Benchmark
-  def getBalanceDEPRECATED(state: Address_ReadState): Unit = {
-    val _ =
-      state.db.runNow(TransactionQueries.getBalanceQueryDEPRECATED(state.address), requestTimeout)
-  }
-
-  @Benchmark
-  def getTxHashesByAddressQuery(state: Address_ReadState): Unit = {
-    val _ =
-      state.db.runNow(
-        TransactionQueries
-          .getTxHashesByAddressQuery(
-            (state.address, state.pagination.offset.toLong, state.pagination.limit.toLong))
-          .result,
-        requestTimeout)
-  }
-
-  @Benchmark
-  def getTxHashesByAddressQuerySQL(state: Address_ReadState): Unit = {
-    val _ =
-      state.db.runNow(TransactionQueries.getTxHashesByAddressQuerySQL(state.address,
-                                                                      state.pagination.offset,
-                                                                      state.pagination.limit),
-                      requestTimeout)
-  }
-
-  @Benchmark
   def getTxHashesByAddressQuerySQLNoJoin(state: Address_ReadState): Unit = {
     val _ =
       state.db.runNow(TransactionQueries.getTxHashesByAddressQuerySQLNoJoin(state.address,
@@ -227,27 +167,10 @@ class DBBenchmark {
   }
 
   @Benchmark
-  def countAddressTransactionsSQL(state: Address_ReadState): Unit = {
-    val _ =
-      state.db.runNow(TransactionQueries.countAddressTransactionsSQL(state.address), requestTimeout)
-  }
-
-  @Benchmark
   def countAddressTransactionsSQLNoJoin(state: Address_ReadState): Unit = {
     val _ =
       state.db
         .runNow(TransactionQueries.countAddressTransactionsSQLNoJoin(state.address), requestTimeout)
-  }
-
-  @Benchmark
-  def getAddressInfo(state: Address_ReadState): Unit = {
-    import state.executionContext
-    import state.databaseConfig
-
-    val _ = Await.result(for {
-      _ <- TransactionDao.getBalance(state.address)
-      _ <- TransactionDao.getNumberByAddressSQL(state.address)
-    } yield (), requestTimeout)
   }
 
   @Benchmark
@@ -262,21 +185,9 @@ class DBBenchmark {
   }
 
   @Benchmark
-  def getInputsFromTxs(state: Address_ReadState): Unit = {
-    val _ =
-      state.db.runNow(inputsFromTxs(state.txHashes).result, requestTimeout)
-  }
-
-  @Benchmark
   def getInputsFromTxsSQL(state: Address_ReadState): Unit = {
     val _ =
       state.db.runNow(inputsFromTxsSQL(state.txHashes), requestTimeout)
-  }
-
-  @Benchmark
-  def getOutputsFromTxs(state: Address_ReadState): Unit = {
-    val _ =
-      state.db.runNow(outputsFromTxs(state.txHashes).result, requestTimeout)
   }
 
   @Benchmark
@@ -286,24 +197,9 @@ class DBBenchmark {
   }
 
   @Benchmark
-  def getGasFromTxs(state: Address_ReadState): Unit = {
-    val _ =
-      state.db.runNow(TransactionQueries.gasFromTxs(state.txHashes).result, requestTimeout)
-  }
-
-  @Benchmark
   def getGasFromTxsSQL(state: Address_ReadState): Unit = {
     val _ =
       state.db.runNow(TransactionQueries.gasFromTxsSQL(state.txHashes), requestTimeout)
-  }
-
-  @Benchmark
-  def getTransactionsByAddress(state: Address_ReadState): Unit = {
-    import state.executionContext
-
-    val _ =
-      state.db.runNow(TransactionQueries.getTransactionsByAddress(state.address, state.pagination),
-                      requestTimeout)
   }
 
   @Benchmark
