@@ -105,13 +105,14 @@ class Application(host: String,
       _           <- validateChainParams(chainParams)
       peers       <- getBlockFlowPeers()
       syncDuration = syncPeriod.millis.milliseconds
-      _            = BlockFlowSyncService.start(peers, syncDuration)
-      _ <- MempoolSyncService.start(peers, syncDuration)
-      _ <- TokenSupplyService.start(1.minute)
-      _ <- HashrateService.start(1.minute)
-      _ <- FinalizerService.start(10.minutes)
-      _ <- TransactionHistoryService.start(15.minutes)
-    } yield ()
+    } yield {
+      BlockFlowSyncService.start(peers, syncDuration)
+      MempoolSyncService.start(peers, syncDuration)
+      TokenSupplyService.start(1.minute)
+      HashrateService.start(1.minute)
+      FinalizerService.start(10.minutes)
+      TransactionHistoryService.start(15.minutes)
+    }
   }
 
   private def startTasksForReadWriteApp(): Future[Unit] = {
