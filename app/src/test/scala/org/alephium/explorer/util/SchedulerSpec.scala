@@ -182,35 +182,6 @@ class SchedulerSpec
     }
   }
 
-  "scheduleLoopFlatMap" should {
-    "invoke init only once" in {
-      using(Scheduler("test")) { scheduler =>
-        val initInvocations  = new AtomicInteger(0) //# of times init was invoked
-        val blockInvocations = new AtomicInteger(0) //# of times block was invoked
-
-        //schedule tasks every 1 second, first one being immediate
-        scheduler.scheduleLoopFlatMap("test", 0.seconds, 1.seconds) {
-          //init
-          Future(initInvocations.incrementAndGet())
-        } { initInvoked: Int =>
-          Future {
-            //does not change even on multiple invocations.
-            initInvoked is 1
-            blockInvocations.incrementAndGet()
-          }
-        }
-
-        eventually(Timeout(10.seconds)) {
-          //wait until block is invoked at least 6 times
-          blockInvocations.get() should be > 6
-        }
-
-        //init is only invoked once.
-        initInvocations.get() is 1
-      }
-    }
-  }
-
   "scheduleLoopAndForget" should {
     "fire and forget" in {
       val invocationsCount = new AtomicInteger(0) //# of times init was invoked
