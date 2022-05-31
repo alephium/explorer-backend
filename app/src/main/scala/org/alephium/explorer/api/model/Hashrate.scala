@@ -23,6 +23,7 @@ import org.alephium.util.{TimeStamp}
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 final case class Hashrate(
     timestamp: TimeStamp,
+    hashrate: BigDecimal,
     value: BigDecimal
 )
 

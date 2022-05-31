@@ -67,7 +67,7 @@ case object HashrateService extends StrictLogging {
       dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hashrate]] =
     run(getHashratesQuery(from, to, intervalType)).map(_.map {
       case (timestamp, hashrate) =>
-        Hashrate(timestamp, hashrate)
+        Hashrate(timestamp, hashrate, hashrate)
     })
 
   private def updateHashrates()(implicit ec: ExecutionContext,

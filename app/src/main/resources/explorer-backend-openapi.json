@@ -2260,6 +2260,7 @@
       "Hashrate": {
         "required": [
           "timestamp",
+          "hashrate",
           "value"
         ],
         "type": "object",
@@ -2267,6 +2268,9 @@
           "timestamp": {
             "type": "integer",
             "format": "int64"
+          },
+          "hashrate": {
+            "type": "string"
           },
           "value": {
             "type": "string"
