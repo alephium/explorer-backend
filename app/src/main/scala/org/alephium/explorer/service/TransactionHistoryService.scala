@@ -123,12 +123,14 @@ case object TransactionHistoryService extends StrictLogging {
       foldFutures(ranges) {
         case (from, to) =>
           run(
-            DBIO.sequence(
-              gs.groupIndexes.map {
-                case (chainFrom, chainTo) =>
-                  countAndInsertPerChain(intervalType, from, to, chainFrom, chainTo)
-              } :+ countAndInsertAllChains(intervalType, from, to)
-            )
+            DBIO
+              .sequence(
+                gs.groupIndexes.map {
+                  case (chainFrom, chainTo) =>
+                    countAndInsertPerChain(intervalType, from, to, chainFrom, chainTo)
+                } :+ countAndInsertAllChains(intervalType, from, to)
+              )
+              .transactionally
           )
       }.map(_ => ())
     }
