@@ -33,23 +33,10 @@ object TransactionDao {
       dc: DatabaseConfig[PostgresProfile]): Future[Option[Transaction]] =
     run(getTransactionAction(hash))
 
-  def getByAddress(address: Address, pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
-    run(getTransactionsByAddress(address, pagination))
-
   def getByAddressSQL(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
     run(getTransactionsByAddressSQL(address, pagination))
-
-  def getNumberByAddress(address: Address)(implicit ec: ExecutionContext,
-                                           dc: DatabaseConfig[PostgresProfile]): Future[Int] =
-    run(countAddressTransactions(address))
-
-  def getNumberByAddressSQL(address: Address)(implicit ec: ExecutionContext,
-                                              dc: DatabaseConfig[PostgresProfile]): Future[Int] =
-    run(countAddressTransactionsSQL(address)).map(_.headOption.getOrElse(0))
 
   def getNumberByAddressSQLNoJoin(address: Address)(
       implicit ec: ExecutionContext,

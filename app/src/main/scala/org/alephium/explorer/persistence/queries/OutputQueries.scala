@@ -31,8 +31,7 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputQueries {
-  private val mainInputs  = InputSchema.table.filter(_.mainChain)
-  private val mainOutputs = OutputSchema.table.filter(_.mainChain)
+  private val mainInputs = InputSchema.table.filter(_.mainChain)
 
   /** Inserts outputs or ignore rows with primary key conflict */
   // scalastyle:off magic.number
@@ -95,28 +94,6 @@ object OutputQueries {
     } else {
       DBIOAction.successful(0)
     }
-  }
-
-  @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
-  def outputsFromTxs(txHashes: Seq[Transaction.Hash]) = {
-    mainOutputs
-      .filter(_.txHash inSet txHashes)
-      .joinLeft(mainInputs)
-      .on {
-        case (out, inputs) =>
-          out.key === inputs.outputRefKey
-      }
-      .map {
-        case (output, input) =>
-          (output.txHash,
-           output.outputOrder,
-           output.hint,
-           output.key,
-           output.amount,
-           output.address,
-           output.lockTime,
-           input.map(_.txHash))
-      }
   }
 
   // format: off

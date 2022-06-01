@@ -89,28 +89,6 @@ object BlockDao {
         cache.invalidateRowCount(mainChainQuery)
       }
 
-  def listMainChain(pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[(Seq[BlockEntryLite], Int)] = {
-    val mainChain = BlockHeaderSchema.table.filter(_.mainChain)
-    val action =
-      for {
-        headers <- listMainChainHeaders(mainChain, pagination)
-        total   <- mainChain.length.result
-      } yield (headers.map(_.toLiteApi), total)
-
-    run(action)
-  }
-
-  /** SQL version of [[listMainChain]] */
-  def listMainChainSQL(pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[(Seq[BlockEntryLite], Int)] = {
-    val blockEntries = run(listMainChainHeadersWithTxnNumberSQL(pagination))
-    val count        = run(countMainChain().result)
-    blockEntries.zip(count)
-  }
-
   def listMainChainSQLCached(pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],

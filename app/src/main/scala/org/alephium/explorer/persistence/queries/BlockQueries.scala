@@ -156,10 +156,6 @@ object BlockQueries extends StrictLogging {
       .as[BlockEntryLite](blockEntryListGetResult)
   }
 
-  /** Counts main_chain Blocks */
-  def countMainChain(): Rep[Int] =
-    BlockHeaderSchema.table.filter(_.mainChain).length
-
   def updateMainChainStatusAction(hash: BlockEntry.Hash, isMainChain: Boolean)(
       implicit ec: ExecutionContext): DBActionRWT[Unit] = {
     val query =

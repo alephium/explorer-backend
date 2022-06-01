@@ -64,14 +64,10 @@ class TransactionQueriesSpec
     run(OutputSchema.table ++= Seq(output1, output2, output3, output4)).futureValue
 
     val (total, locked) = run(TransactionQueries.getBalanceAction(address)).futureValue
-    val (totalDEPRECATED, lockedDEPRECATED) =
-      run(TransactionQueries.getBalanceActionDEPRECATED(address)).futureValue
 
     total is ALPH.alph(10)
     locked is ALPH.alph(7)
 
-    totalDEPRECATED is ALPH.alph(10)
-    lockedDEPRECATED is ALPH.alph(7)
   }
 
   it should "get balance should only return unpent outputs" in new Fixture {
@@ -84,22 +80,16 @@ class TransactionQueriesSpec
     run(InputSchema.table += input1).futureValue
 
     val (total, _) = run(TransactionQueries.getBalanceAction(address)).futureValue
-    val (totalDEPRECATED, _) =
-      run(TransactionQueries.getBalanceActionDEPRECATED(address)).futureValue
 
     total is ALPH.alph(1)
-    totalDEPRECATED is ALPH.alph(1)
 
     val from = TimeStamp.zero
     val to   = timestampMaxValue
     FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from)).futureValue
 
     val (totalFinalized, _) = run(TransactionQueries.getBalanceAction(address)).futureValue
-    val (totalFinalizedDEPRECATED, _) =
-      run(TransactionQueries.getBalanceActionDEPRECATED(address)).futureValue
 
     totalFinalized is ALPH.alph(1)
-    totalFinalizedDEPRECATED is ALPH.alph(1)
   }
 
   it should "get balance should only take main chain outputs" in new Fixture {
@@ -112,11 +102,8 @@ class TransactionQueriesSpec
     run(InputSchema.table += input1).futureValue
 
     val (total, _) = run(TransactionQueries.getBalanceAction(address)).futureValue
-    val (totalDEPRECATED, _) =
-      run(TransactionQueries.getBalanceActionDEPRECATED(address)).futureValue
 
     total is ALPH.alph(1)
-    totalDEPRECATED is ALPH.alph(1)
   }
 
   it should "txs count" in new Fixture {
@@ -134,14 +121,10 @@ class TransactionQueriesSpec
     run(TransactionQueries.insertAll(Seq.empty, outputs, inputs)).futureValue
     run(TransactionQueries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
 
-    val total    = run(TransactionQueries.countAddressTransactions(address)).futureValue
-    val totalSQL = run(TransactionQueries.countAddressTransactionsSQL(address)).futureValue.head
     val totalSQLNoJoin =
       run(TransactionQueries.countAddressTransactionsSQLNoJoin(address)).futureValue.head
 
     //tx of output1, output2 and input1
-    total is 3
-    totalSQL is 3
     totalSQLNoJoin is 3
   }
 
@@ -187,9 +170,6 @@ class TransactionQueriesSpec
     run(TransactionQueries.insertAll(Seq.empty, outputs, inputs)).futureValue
     run(TransactionQueries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
 
-    val hashes =
-      run(TransactionQueries.getTxHashesByAddressQuery((address, 0, 10)).result).futureValue
-    val hashesSQL = run(TransactionQueries.getTxHashesByAddressQuerySQL(address, 0, 10)).futureValue
     val hashesSQLNoJoin =
       run(TransactionQueries.getTxHashesByAddressQuerySQLNoJoin(address, 0, 10)).futureValue
 
@@ -199,8 +179,6 @@ class TransactionQueriesSpec
       (input1.txHash, input1.blockHash, input1.timestamp, 0)
     ).sortBy(_._3).reverse
 
-    hashes is expected
-    hashesSQL is expected.toVector
     hashesSQLNoJoin is expected.toVector
   }
 
@@ -238,7 +216,6 @@ class TransactionQueriesSpec
       res(output3, None)
     ).sortBy(_._1.toString)
 
-    run(outputsFromTxs(txHashes).result).futureValue.sortBy(_._1.toString) is expected
     run(outputsFromTxsSQL(txHashes)).futureValue.sortBy(_._1.toString) is expected.toVector
   }
 
@@ -271,7 +248,6 @@ class TransactionQueriesSpec
          output.amount)
     }
 
-    run(inputsFromTxs(txHashes).result).futureValue is expected
     run(inputsFromTxsSQL(txHashes)).futureValue is expected.toVector
   }
 
@@ -303,8 +279,6 @@ class TransactionQueriesSpec
       )
     }
 
-    val txs =
-      run(TransactionQueries.getTransactionsByAddress(address, Pagination.unsafe(0, 10))).futureValue
     val txsSQL =
       run(TransactionQueries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue
 
@@ -314,10 +288,7 @@ class TransactionQueriesSpec
       tx(output4, None, Seq(input1.toApi(output2)))
     ).sortBy(_.timestamp).reverse
 
-    txs.size is 3
     txsSQL.size is 3
-
-    txs is expected
     txsSQL is expected
   }
 

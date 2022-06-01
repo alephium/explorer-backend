@@ -61,13 +61,18 @@ class TransactionServiceSpec
 
     val txLimit = 5
 
-    Future.sequence(blocks.map(BlockDao.insert)).futureValue
+    BlockDao.insertAll(blocks).futureValue
     Future
-      .sequence(blocks.map(block => BlockDao.updateMainChainStatus(block.hash, true)))
+      .sequence(blocks.map { block =>
+        for {
+          _ <- BlockDao.updateTransactionPerAddress(block)
+          _ <- BlockDao.updateMainChainStatus(block.hash, true)
+        } yield (())
+      })
       .futureValue
 
     TransactionService
-      .getTransactionsByAddress(address, Pagination.unsafe(0, txLimit))
+      .getTransactionsByAddressSQL(address, Pagination.unsafe(0, txLimit))
       .futureValue
       .size is txLimit
   }
@@ -212,13 +217,9 @@ class TransactionServiceSpec
       gasPrice1
     )
 
-    val res =
-      TransactionService.getTransactionsByAddress(address0, Pagination.unsafe(0, 5)).futureValue
-
     val res2 =
       TransactionService.getTransactionsByAddressSQL(address0, Pagination.unsafe(0, 5)).futureValue
 
-    res is Seq(t1, t0)
     res2 is Seq(t1, t0)
   }
 
@@ -279,9 +280,10 @@ class TransactionServiceSpec
         val blocks = Seq(block0, block1)
 
         Future.sequence(blocks.map(BlockDao.insert)).futureValue
+        Future.sequence(blocks.map(BlockDao.updateTransactionPerAddress)).futureValue
 
         TransactionService
-          .getTransactionsByAddress(address0, Pagination.unsafe(0, 5))
+          .getTransactionsByAddressSQL(address0, Pagination.unsafe(0, 5))
           .futureValue
           .size is 1 // was 2 in fb7127f
 
@@ -337,7 +339,7 @@ class TransactionServiceSpec
     }
 
     TransactionService
-      .getTransactionsByAddress(address, Pagination.unsafe(0, Int.MaxValue))
+      .getTransactionsByAddressSQL(address, Pagination.unsafe(0, Int.MaxValue))
       .futureValue
       .map { transaction =>
         transaction.outputs.map(_.key) is outputs
