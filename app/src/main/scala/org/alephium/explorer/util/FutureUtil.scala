@@ -16,8 +16,7 @@
 
 package org.alephium.explorer.util
 
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 import com.typesafe.scalalogging.StrictLogging
@@ -25,11 +24,6 @@ import com.typesafe.scalalogging.StrictLogging
 object FutureUtil extends StrictLogging {
 
   implicit class FutureEnrichment[A](val future: Future[A]) extends AnyVal {
-
-    //Convenience function to wait on a future
-    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    @inline def await(seconds: FiniteDuration = 5.seconds): A =
-      Await.result(future, seconds)
 
     /** Maps to function for the Future in this/current Thread */
     @inline def mapSync[B](f: A => B): Future[B] =
