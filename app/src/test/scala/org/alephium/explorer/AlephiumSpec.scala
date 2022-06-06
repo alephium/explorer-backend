@@ -27,7 +27,9 @@ import org.scalatest.matchers.dsl.ResultOfATypeInvocation
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-trait IsMatchers extends Matchers {
+trait AlephiumSpec extends AnyFlatSpecLike with ScalaCheckDrivenPropertyChecks with Matchers {
+  @nowarn protected implicit def noShrink[A]: Shrink[A] = Shrink(_ => Stream.empty)
+
   // scalastyle:off no.should
   implicit class IsOps[A: Equality](left: A)(implicit pos: Position) {
     // scalastyle:off scalatest-matcher
@@ -39,9 +41,4 @@ trait IsMatchers extends Matchers {
   }
 }
 
-trait AlephiumSpec extends AnyFlatSpecLike with ScalaCheckDrivenPropertyChecks with IsMatchers {
-  @nowarn protected implicit def noShrink[A]: Shrink[A] = Shrink(_ => Stream.empty)
-
-}
-
-object AlephiumSpec extends IsMatchers
+object AlephiumSpec extends AlephiumSpec
