@@ -59,6 +59,7 @@ object Dependencies {
   lazy val scalatest     = "org.scalatest"              %% "scalatest"       % "3.1.1" % Test
   lazy val scalacheck    = "org.scalacheck"             %% "scalacheck"      % "1.14.3" % Test
   lazy val scalatestplus = "org.scalatestplus"          %% "scalacheck-1-14" % "3.1.1.1" % Test
+  lazy val scalaMock     = "org.scalamock"              %% "scalamock"       % "5.2.0" % Test
   lazy val scalaLogging  = "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.2"
   lazy val logback       = "ch.qos.logback"             % "logback-classic"  % "1.2.3"
 
