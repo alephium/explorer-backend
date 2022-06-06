@@ -25,6 +25,7 @@ import org.alephium.protocol.model.{CliqueId, NetworkId}
 import org.alephium.util.AVector
 
 /** Generators for types supplied by Core `org.alephium.api` package */
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 object GenCoreApi {
 
   val genPeerAddress: Gen[PeerAddress] =

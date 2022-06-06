@@ -71,7 +71,7 @@ object AsyncCloseable extends StrictLogging {
       closeable.terminate().mapSyncToUnit()
   }
 
-  /** Provides [[AsyncCloseable]] for all [[AutoCloseable]] types */
+  /** Provides [[AsyncCloseable]] for all [[java.lang.AutoCloseable]] types */
   implicit def fromAutoCloseable[A <: AutoCloseable]: AsyncCloseable[A] =
     new AsyncCloseable[A] {
       override def close(closeable: A)(implicit ec: ExecutionContext): Future[Unit] =

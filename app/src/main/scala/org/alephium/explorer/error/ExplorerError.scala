@@ -34,9 +34,7 @@ sealed trait FatalSystemExit extends ExplorerError
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 object ExplorerError {
 
-  /****************************************
-   ****** Group: [[FatalSystemExit]] ******
-   ****************************************/
+  /******** Group: [[FatalSystemExit]] ********/
   final case class FailedToFetchSelfClique(remoteMessage: String)
       extends Exception(s"Could not fetch self-clique: $remoteMessage.")
       with FatalSystemExit
@@ -49,9 +47,7 @@ object ExplorerError {
       extends Exception(s"Impossible to fetch network type: $err")
       with FatalSystemExit
 
-  /****************************************
-   ******** Group: [[ConfigError]] ********
-   ****************************************/
+  /******** Group: [[ConfigError]] ********/
   final case class InvalidApplicationConfig(field: String, cause: Throwable)
       extends Exception(s"Invalid ${ApplicationConfig.productPrefix}: $field", cause)
       with ConfigError

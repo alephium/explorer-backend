@@ -30,34 +30,36 @@ object GenConfig {
   /** A Map containing all configurations */
   def genRawConfigMap(): Gen[Map[String, _]] =
     for {
-      groupNum                     <- Arbitrary.arbitrary[Int]
-      cliqueAccess                 <- Arbitrary.arbitrary[Boolean]
-      explorerHost                 <- Arbitrary.arbitrary[String]
-      explorerPort                 <- Arbitrary.arbitrary[Int]
-      networkId                    <- Arbitrary.arbitrary[Int]
-      apiKey                       <- Arbitrary.arbitrary[String]
-      host                         <- Arbitrary.arbitrary[String]
-      port                         <- Arbitrary.arbitrary[Int]
-      readOnly                     <- Arbitrary.arbitrary[Boolean]
-      syncPeriod                   <- genTimeDurationForConfigString
-      tokenSupplyServiceSyncPeriod <- genTimeDurationForConfigString
-      hashRateServiceSyncPeriod    <- genTimeDurationForConfigString
-      finalizerServiceSyncPeriod   <- genTimeDurationForConfigString
+      groupNum                            <- Arbitrary.arbitrary[Int]
+      cliqueAccess                        <- Arbitrary.arbitrary[Boolean]
+      explorerHost                        <- Arbitrary.arbitrary[String]
+      explorerPort                        <- Arbitrary.arbitrary[Int]
+      networkId                           <- Arbitrary.arbitrary[Int]
+      apiKey                              <- Arbitrary.arbitrary[String]
+      host                                <- Arbitrary.arbitrary[String]
+      port                                <- Arbitrary.arbitrary[Int]
+      readOnly                            <- Arbitrary.arbitrary[Boolean]
+      syncPeriod                          <- genTimeDurationForConfigString
+      tokenSupplyServiceSyncPeriod        <- genTimeDurationForConfigString
+      hashRateServiceSyncPeriod           <- genTimeDurationForConfigString
+      finalizerServiceSyncPeriod          <- genTimeDurationForConfigString
+      transactionHistoryServiceSyncPeriod <- genTimeDurationForConfigString
     } yield
       Map(
-        KEY_BLOCK_FLOW_GROUP_NUM                      -> groupNum,
-        KEY_BLOCK_FLOW_DIRECT_CLIQUE_ACCESS           -> cliqueAccess,
-        KEY_BLOCK_FLOW_HOST                           -> explorerHost,
-        KEY_BLOCK_FLOW_PORT                           -> explorerPort,
-        KEY_BLOCK_FLOW_NETWORK_ID                     -> networkId,
-        KEY_BLOCK_FLOW_API_KEY                        -> apiKey,
-        KEY_EXPLORER_PORT                             -> port,
-        KEY_EXPLORER_HOST                             -> host,
-        KEY_EXPLORER_READ_ONLY                        -> readOnly,
-        KEY_EXPLORER_SYNC_PERIOD                      -> syncPeriod,
-        KEY_EXPLORER_TOKEN_SUPPLY_SERVICE_SYNC_PERIOD -> tokenSupplyServiceSyncPeriod,
-        KEY_EXPLORER_HASH_RATE_SERVICE_SYNC_PERIOD    -> hashRateServiceSyncPeriod,
-        KEY_EXPLORER_FINALIZER_SERVICE_SYNC_PERIOD    -> finalizerServiceSyncPeriod
+        KEY_BLOCK_FLOW_GROUP_NUM                             -> groupNum,
+        KEY_BLOCK_FLOW_DIRECT_CLIQUE_ACCESS                  -> cliqueAccess,
+        KEY_BLOCK_FLOW_HOST                                  -> explorerHost,
+        KEY_BLOCK_FLOW_PORT                                  -> explorerPort,
+        KEY_BLOCK_FLOW_NETWORK_ID                            -> networkId,
+        KEY_BLOCK_FLOW_API_KEY                               -> apiKey,
+        KEY_EXPLORER_PORT                                    -> port,
+        KEY_EXPLORER_HOST                                    -> host,
+        KEY_EXPLORER_READ_ONLY                               -> readOnly,
+        KEY_EXPLORER_SYNC_PERIOD                             -> syncPeriod,
+        KEY_EXPLORER_TOKEN_SUPPLY_SERVICE_SYNC_PERIOD        -> tokenSupplyServiceSyncPeriod,
+        KEY_EXPLORER_HASH_RATE_SERVICE_SYNC_PERIOD           -> hashRateServiceSyncPeriod,
+        KEY_EXPLORER_FINALIZER_SERVICE_SYNC_PERIOD           -> finalizerServiceSyncPeriod,
+        KEY_EXPLORER_TRANSACTION_HISTORY_SERVICE_SYNC_PERIOD -> transactionHistoryServiceSyncPeriod
       )
 
   def parseMap(map: Map[String, _]): Config =
@@ -81,7 +83,8 @@ object GenConfig {
       KEY_EXPLORER_SYNC_PERIOD,
       KEY_EXPLORER_TOKEN_SUPPLY_SERVICE_SYNC_PERIOD,
       KEY_EXPLORER_HASH_RATE_SERVICE_SYNC_PERIOD,
-      KEY_EXPLORER_FINALIZER_SERVICE_SYNC_PERIOD
+      KEY_EXPLORER_FINALIZER_SERVICE_SYNC_PERIOD,
+      KEY_EXPLORER_TRANSACTION_HISTORY_SERVICE_SYNC_PERIOD
     )
 
 }

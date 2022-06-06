@@ -69,6 +69,11 @@ class ApplicationConfigSpec extends AnyWordSpec with Matchers with ScalaCheckDri
         raw
           .getDuration(KEY_EXPLORER_FINALIZER_SERVICE_SYNC_PERIOD)
           .toScala
+
+      appConfig.transactionHistoryServicePeriod is
+        raw
+          .getDuration(KEY_EXPLORER_TRANSACTION_HISTORY_SERVICE_SYNC_PERIOD)
+          .toScala
     }
   }
 

@@ -16,146 +16,261 @@
 
 package org.alephium.explorer
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri
+import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.api.model.{ApiKey, ChainParams, PeerAddress}
+import org.alephium.api.model.{ChainParams, PeerAddress}
 import org.alephium.explorer.cache.{BlockCache, TransactionCache}
+import org.alephium.explorer.config.{ApplicationConfig, ExplorerConfig}
+import org.alephium.explorer.error.ExplorerError.{
+  ChainIdMismatch,
+  FailedToFetchSelfClique,
+  ImpossibleToFetchNetworkType
+}
 import org.alephium.explorer.persistence.DBInitializer
-import org.alephium.explorer.persistence.dao._
+import org.alephium.explorer.persistence.dao.HealthCheckDao
 import org.alephium.explorer.service._
 import org.alephium.explorer.util.FutureUtil._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.protocol.model.NetworkId
-import org.alephium.util.Duration
 
-// scalastyle:off magic.number
-class Application(host: String,
-                  port: Int,
-                  readOnly: Boolean,
-                  blockFlowUri: Uri,
-                  groupNum: Int,
-                  networkId: NetworkId,
-                  maybeBlockFlowApiKey: Option[ApiKey],
-                  syncPeriod: Duration,
-                  directCliqueAccess: Boolean)(implicit system: ActorSystem,
-                                               executionContext: ExecutionContext,
-                                               databaseConfig: DatabaseConfig[PostgresProfile])
-    extends StrictLogging {
+/** Implements function for Explorer boot-up sequence */
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+object Application extends StrictLogging {
 
-  if (!readOnly) {
-    DBInitializer.initialize().await(10.seconds)
-  }
+  /** Start Explorer via `application.conf` */
+  def apply()(implicit ec: ExecutionContext): Future[ExplorerState] =
+    Try(ConfigFactory.load()) match {
+      case Failure(exception) => Future.failed(exception)
+      case Success(config)    => Application(config)
+    }
 
-  implicit val scheduler: Scheduler =
-    Scheduler(s"${classOf[Application].getSimpleName} scheduler")
+  /** Start Explorer given configurations read from `application.conf` */
+  def apply(config: Config)(implicit ec: ExecutionContext): Future[ExplorerState] =
+    ApplicationConfig(config) match {
+      case Failure(exception)         => Future.failed(exception)
+      case Success(applicationConfig) => Application(applicationConfig)
+    }
 
-  implicit val groupSetting: GroupSetting =
-    GroupSetting(groupNum)
+  /** Start Explorer given typed [[org.alephium.explorer.config.ApplicationConfig]] */
+  def apply(applicationConfig: ApplicationConfig)(
+      implicit ec: ExecutionContext): Future[ExplorerState] =
+    ExplorerConfig(applicationConfig) match {
+      case Failure(exception)      => Future.failed(exception)
+      case Success(explorerConfig) => Application(explorerConfig)
+    }
 
-  implicit val blockCache: BlockCache =
-    BlockCache()
+  /** Start Explorer given validated [[org.alephium.explorer.config.ExplorerConfig]] */
+  def apply(config: ExplorerConfig)(implicit ec: ExecutionContext): Future[ExplorerState] =
+    managed(initialiseDatabase(config.readOnly, "db")) { implicit dc =>
+      implicit val blockFlowClient: BlockFlowClient =
+        BlockFlowClient(
+          uri         = config.blockFlowUri,
+          groupNum    = config.groupNum,
+          maybeApiKey = config.maybeBlockFlowApiKey
+        )
 
-  implicit val transactionCache: TransactionCache =
-    TransactionCache().await(5.seconds)
+      implicit val groupSetting: GroupSetting =
+        GroupSetting(config.groupNum)
 
-  //Services
-  implicit val blockFlowClient: BlockFlowClient =
-    BlockFlowClient(blockFlowUri, groupNum, maybeBlockFlowApiKey)
+      implicit val blockCache: BlockCache =
+        BlockCache()
 
-  val server: AppServer =
-    new AppServer(BlockService, TransactionService, TokenSupplyService)
+      managed(startSyncServices(config)) { scheduler =>
+        TransactionCache() flatMap { implicit transactionCache =>
+          //Last step: Start http server
+          startHttpServer(
+            host = config.host,
+            port = config.port
+          ) mapSync { akkaHttpServer =>
+            ExplorerState(
+              scheduler        = scheduler,
+              database         = dc,
+              akkaHttpServer   = akkaHttpServer,
+              blockFlowClient  = blockFlowClient,
+              groupSettings    = groupSetting,
+              blockCache       = blockCache,
+              transactionCache = transactionCache
+            )
+          }
+        }
+      }
+    }
 
-  private val bindingPromise: Promise[Http.ServerBinding] = Promise()
+  /**
+    * Start sync services from the configuration [[org.alephium.explorer.config.ExplorerConfig]]
+    *
+    * @return A `Some(Scheduler)` if configured to start in read-write else `None`.
+    */
+  def startSyncServices(config: ExplorerConfig)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      blockCache: BlockCache,
+      groupSetting: GroupSetting): Future[Option[Scheduler]] =
+    if (config.readOnly) {
+      Future.successful(None)
+    } else {
+      getPeers(
+        networkId          = config.networkId,
+        directCliqueAccess = config.directCliqueAccess,
+        blockFlowUri       = config.blockFlowUri
+      ) flatMap { peers =>
+        startSyncServices(
+          peers                           = peers,
+          syncPeriod                      = config.syncPeriod,
+          tokenSupplyServiceSyncPeriod    = config.tokenSupplyServiceSyncPeriod,
+          hashRateServiceSyncPeriod       = config.hashRateServiceSyncPeriod,
+          finalizerServiceSyncPeriod      = config.finalizerServiceSyncPeriod,
+          transactionHistoryServicePeriod = config.transactionHistoryServicePeriod
+        ).mapSync(Some(_))
+      }
+    }
 
-  private def urisFromPeers(peers: Seq[PeerAddress]): Seq[Uri] = {
+  /** Start sync services given the peers */
+  // scalastyle:off
+  def startSyncServices(peers: Seq[Uri],
+                        syncPeriod: FiniteDuration,
+                        tokenSupplyServiceSyncPeriod: FiniteDuration,
+                        hashRateServiceSyncPeriod: FiniteDuration,
+                        finalizerServiceSyncPeriod: FiniteDuration,
+                        transactionHistoryServicePeriod: FiniteDuration)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      blockCache: BlockCache,
+      groupSetting: GroupSetting): Future[Scheduler] =
+    managed(Scheduler("SYNC_SERVICES")) { implicit scheduler =>
+      Future.fromTry {
+        Try {
+          BlockFlowSyncService.start(peers, syncPeriod)
+          MempoolSyncService.start(peers, syncPeriod)
+          TokenSupplyService.start(tokenSupplyServiceSyncPeriod)
+          HashrateService.start(hashRateServiceSyncPeriod)
+          FinalizerService.start(finalizerServiceSyncPeriod)
+          TransactionHistoryService.start(transactionHistoryServicePeriod)
+
+          scheduler
+        }
+      }
+    }
+  // scalastyle:on
+
+  /** Start AkkaHttp server */
+  def startHttpServer(host: String, port: Int)(implicit ec: ExecutionContext,
+                                               dc: DatabaseConfig[PostgresProfile],
+                                               blockFlowClient: BlockFlowClient,
+                                               blockCache: BlockCache,
+                                               transactionCache: TransactionCache,
+                                               groupSetting: GroupSetting): Future[AkkaHttpServer] =
+    managed(ActorSystem("Akka-Http-Actor-System")) { implicit system =>
+      val routes =
+        AppServer.routes()
+
+      val httpServer =
+        Http()
+          .newServerAt(host, port)
+          .bindFlow(routes)
+
+      //routes are required by test-cases.
+      httpServer map { server =>
+        AkkaHttpServer(
+          server      = server,
+          routes      = routes,
+          actorSystem = system
+        )
+      }
+    }
+
+  /** Fetch network peers */
+  def getPeers(networkId: NetworkId, directCliqueAccess: Boolean, blockFlowUri: Uri)(
+      implicit ec: ExecutionContext,
+      blockFlowClient: BlockFlowClient): Future[Seq[Uri]] =
+    blockFlowClient
+      .fetchChainParams()
+      .flatMap { chainParams =>
+        val validationResult =
+          validateChainParams(
+            networkId = networkId,
+            response  = chainParams
+          )
+
+        validationResult match {
+          case Failure(exception) =>
+            Future.failed(exception)
+
+          case Success(_) =>
+            getBlockFlowPeers(
+              directCliqueAccess = directCliqueAccess,
+              blockFlowUri       = blockFlowUri
+            )
+        }
+      }
+
+  /**
+    * Initialise the database from the config file.
+    *
+    * @param readOnly If true tried to validate connection else initialises schema.
+    * @param path     Path of database config in `application.conf` file.
+    * @param ec       Application Level execution (Not used for DB calls)
+    *
+    * @return Slick config provides Ability to run queries.
+    */
+  def initialiseDatabase(readOnly: Boolean, path: String)(
+      implicit ec: ExecutionContext): Future[DatabaseConfig[PostgresProfile]] =
+    managed(DatabaseConfig.forConfig[PostgresProfile](path)) { implicit dc =>
+      if (readOnly) {
+        HealthCheckDao.healthCheck().mapSyncToVal(dc)
+      } else {
+        DBInitializer.initialize().mapSyncToVal(dc)
+      }
+    }
+
+  /** Converts `PeerAddress` to `Uri` */
+  def urisFromPeers(peers: Seq[PeerAddress]): Seq[Uri] =
     peers.map { peer =>
       s"http://${peer.address.getHostAddress}:${peer.restPort}"
     }
-  }
 
-  private def getBlockFlowPeers(): Future[Seq[Uri]] = {
+  def getBlockFlowPeers(directCliqueAccess: Boolean, blockFlowUri: Uri)(
+      implicit ec: ExecutionContext,
+      blockFlowClient: BlockFlowClient): Future[Seq[Uri]] =
     if (directCliqueAccess) {
-      blockFlowClient.fetchSelfClique().map {
+      blockFlowClient.fetchSelfClique() flatMap {
         case Right(selfClique) =>
+          //TODO: What happens when peers are empty?
+          //      Should Application be allowed to start if there were no peers?
           val peers = urisFromPeers(selfClique.nodes.toSeq)
           logger.debug(s"Syncing with clique peers: $peers")
-          peers
+          Future.successful(peers)
+
         case Left(error) =>
-          logger.error(s"Cannot fetch self-clique: $error")
-          sys.exit(1)
+          Future.failed(FailedToFetchSelfClique(error))
       }
     } else {
       logger.debug(s"Syncing with node: $blockFlowUri")
       Future.successful(Seq(blockFlowUri))
     }
-  }
 
-  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-  private def startSyncService(): Future[Unit] = {
-    for {
-      chainParams <- blockFlowClient.fetchChainParams()
-      _           <- validateChainParams(chainParams)
-      peers       <- getBlockFlowPeers()
-      syncDuration = syncPeriod.millis.milliseconds
-    } yield {
-      BlockFlowSyncService.start(peers, syncDuration)
-      MempoolSyncService.start(peers, syncDuration)
-      TokenSupplyService.start(1.minute)
-      HashrateService.start(1.minute)
-      FinalizerService.start(10.minutes)
-      TransactionHistoryService.start(15.minutes)
-    }
-  }
-
-  private def startTasksForReadWriteApp(): Future[Unit] = {
-    if (!readOnly) {
-      startSyncService()
-    } else {
-      Future.successful(())
-    }
-  }
-
-  def start: Future[Unit] = {
-    for {
-      _       <- HealthCheckDao.healthCheck()
-      _       <- startTasksForReadWriteApp()
-      binding <- Http().newServerAt(host, port).bindFlow(server.route)
-    } yield {
-      sideEffect(bindingPromise.success(binding))
-      logger.info(s"Listening http request on $binding")
-    }
-  }
-
-  def stop: Future[Unit] = {
-    scheduler.close()
-    for {
-      _ <- bindingPromise.future.flatMap(_.unbind())
-    } yield {
-      logger.info("Application stopped")
-    }
-  }
-
-  def validateChainParams(response: Either[String, ChainParams]): Future[Unit] = {
+  def validateChainParams(networkId: NetworkId, response: Either[String, ChainParams]): Try[Unit] =
     response match {
       case Right(chainParams) =>
         if (chainParams.networkId =/= networkId) {
-          logger.error(
-            s"Chain id mismatch: ${chainParams.networkId} (remote) vs $networkId (local)")
-          sys.exit(1)
+          Failure(ChainIdMismatch(chainParams.networkId, networkId))
         } else {
-          Future.successful(())
+          Success(())
         }
+
       case Left(err) =>
-        logger.error(s"Impossible to fetch network type: $err")
-        sys.exit(1)
+        Failure(ImpossibleToFetchNetworkType(err))
     }
-  }
 }

@@ -50,6 +50,8 @@ case object ApplicationConfig {
   val KEY_EXPLORER_TOKEN_SUPPLY_SERVICE_SYNC_PERIOD = "explorer.tokenSupplyServiceSyncPeriod"
   val KEY_EXPLORER_HASH_RATE_SERVICE_SYNC_PERIOD    = "explorer.hashRateServiceSyncPeriod"
   val KEY_EXPLORER_FINALIZER_SERVICE_SYNC_PERIOD    = "explorer.finalizerServiceSyncPeriod"
+  val KEY_EXPLORER_TRANSACTION_HISTORY_SERVICE_SYNC_PERIOD =
+    "explorer.transactionHistoryServiceSyncPeriod"
 
   def load(): Try[ApplicationConfig] =
     ApplicationConfig(ConfigFactory.load())
@@ -79,21 +81,24 @@ case object ApplicationConfig {
                                         conf.getDuration)
       finalizerServiceSyncPeriod <- safe(KEY_EXPLORER_FINALIZER_SERVICE_SYNC_PERIOD,
                                          conf.getDuration)
+      transactionHistoryServicePeriod <- safe(KEY_EXPLORER_TRANSACTION_HISTORY_SERVICE_SYNC_PERIOD,
+                                              conf.getDuration)
     } yield
       ApplicationConfig(
-        blockFlowGroupNum            = blockFlowGroupNum,
-        blockFlowDirectCliqueAccess  = blockFlowDirectCliqueAccess,
-        blockFlowHost                = blockFlowHost,
-        blockFlowPort                = blockFlowPort,
-        blockFlowNetworkId           = blockFlowNetworkId,
-        blockFlowApiKey              = blockFlowApiKey,
-        explorerHost                 = explorerHost,
-        explorerPort                 = explorerPort,
-        explorerReadOnly             = explorerReadOnly,
-        explorerSyncPeriod           = explorerSyncPeriod.toScala,
-        tokenSupplyServiceSyncPeriod = tokenSupplyServiceSyncPeriod.toScala,
-        hashRateServiceSyncPeriod    = hashRateServiceSyncPeriod.toScala,
-        finalizerServiceSyncPeriod   = finalizerServiceSyncPeriod.toScala
+        blockFlowGroupNum               = blockFlowGroupNum,
+        blockFlowDirectCliqueAccess     = blockFlowDirectCliqueAccess,
+        blockFlowHost                   = blockFlowHost,
+        blockFlowPort                   = blockFlowPort,
+        blockFlowNetworkId              = blockFlowNetworkId,
+        blockFlowApiKey                 = blockFlowApiKey,
+        explorerHost                    = explorerHost,
+        explorerPort                    = explorerPort,
+        explorerReadOnly                = explorerReadOnly,
+        explorerSyncPeriod              = explorerSyncPeriod.toScala,
+        tokenSupplyServiceSyncPeriod    = tokenSupplyServiceSyncPeriod.toScala,
+        hashRateServiceSyncPeriod       = hashRateServiceSyncPeriod.toScala,
+        finalizerServiceSyncPeriod      = finalizerServiceSyncPeriod.toScala,
+        transactionHistoryServicePeriod = transactionHistoryServicePeriod.toScala
       )
 
   @inline def validateConfig(config: Config): Try[Config] =
@@ -124,4 +129,5 @@ final case class ApplicationConfig(blockFlowGroupNum: Int,
                                    explorerSyncPeriod: FiniteDuration,
                                    tokenSupplyServiceSyncPeriod: FiniteDuration,
                                    hashRateServiceSyncPeriod: FiniteDuration,
-                                   finalizerServiceSyncPeriod: FiniteDuration)
+                                   finalizerServiceSyncPeriod: FiniteDuration,
+                                   transactionHistoryServicePeriod: FiniteDuration)

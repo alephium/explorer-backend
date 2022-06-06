@@ -43,32 +43,34 @@ object ExplorerConfig {
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def apply(config: ApplicationConfig): Try[ExplorerConfig] =
     for {
-      groupNum                     <- validateGroupNum(config.blockFlowGroupNum)
-      directCliqueAccess           <- Success(config.blockFlowDirectCliqueAccess)
-      port                         <- validatePort(config.explorerPort)
-      host                         <- validateHost(config.blockFlowHost)
-      readOnly                     <- Success(config.explorerReadOnly)
-      blockFlowUri                 <- validateUri(config.blockFlowHost, config.blockFlowPort)
-      networkId                    <- validateNetworkId(config.blockFlowNetworkId)
-      blockFlowApiKey              <- validateApiKey(config.blockFlowApiKey)
-      syncPeriod                   <- validateSyncPeriod(config.explorerSyncPeriod)
-      tokenSupplyServiceSyncPeriod <- validateSyncPeriod(config.tokenSupplyServiceSyncPeriod)
-      hashRateServiceSyncPeriod    <- validateSyncPeriod(config.hashRateServiceSyncPeriod)
-      finalizerServiceSyncPeriod   <- validateSyncPeriod(config.finalizerServiceSyncPeriod)
+      groupNum                        <- validateGroupNum(config.blockFlowGroupNum)
+      directCliqueAccess              <- Success(config.blockFlowDirectCliqueAccess)
+      port                            <- validatePort(config.explorerPort)
+      host                            <- validateHost(config.blockFlowHost)
+      readOnly                        <- Success(config.explorerReadOnly)
+      blockFlowUri                    <- validateUri(config.blockFlowHost, config.blockFlowPort)
+      networkId                       <- validateNetworkId(config.blockFlowNetworkId)
+      blockFlowApiKey                 <- validateApiKey(config.blockFlowApiKey)
+      syncPeriod                      <- validateSyncPeriod(config.explorerSyncPeriod)
+      tokenSupplyServiceSyncPeriod    <- validateSyncPeriod(config.tokenSupplyServiceSyncPeriod)
+      hashRateServiceSyncPeriod       <- validateSyncPeriod(config.hashRateServiceSyncPeriod)
+      finalizerServiceSyncPeriod      <- validateSyncPeriod(config.finalizerServiceSyncPeriod)
+      transactionHistoryServicePeriod <- validateSyncPeriod(config.transactionHistoryServicePeriod)
     } yield
       ExplorerConfig(
-        groupNum                     = groupNum,
-        directCliqueAccess           = directCliqueAccess,
-        blockFlowUri                 = blockFlowUri,
-        networkId                    = networkId,
-        maybeBlockFlowApiKey         = blockFlowApiKey,
-        host                         = host,
-        port                         = port,
-        readOnly                     = readOnly,
-        syncPeriod                   = syncPeriod,
-        tokenSupplyServiceSyncPeriod = tokenSupplyServiceSyncPeriod,
-        hashRateServiceSyncPeriod    = hashRateServiceSyncPeriod,
-        finalizerServiceSyncPeriod   = finalizerServiceSyncPeriod
+        groupNum                        = groupNum,
+        directCliqueAccess              = directCliqueAccess,
+        blockFlowUri                    = blockFlowUri,
+        networkId                       = networkId,
+        maybeBlockFlowApiKey            = blockFlowApiKey,
+        host                            = host,
+        port                            = port,
+        readOnly                        = readOnly,
+        syncPeriod                      = syncPeriod,
+        tokenSupplyServiceSyncPeriod    = tokenSupplyServiceSyncPeriod,
+        hashRateServiceSyncPeriod       = hashRateServiceSyncPeriod,
+        finalizerServiceSyncPeriod      = finalizerServiceSyncPeriod,
+        transactionHistoryServicePeriod = transactionHistoryServicePeriod
       )
 
   def validateGroupNum(groupNum: Int): Try[Int] =
@@ -153,4 +155,5 @@ final case class ExplorerConfig private (groupNum: Int,
                                          syncPeriod: FiniteDuration,
                                          tokenSupplyServiceSyncPeriod: FiniteDuration,
                                          hashRateServiceSyncPeriod: FiniteDuration,
-                                         finalizerServiceSyncPeriod: FiniteDuration)
+                                         finalizerServiceSyncPeriod: FiniteDuration,
+                                         transactionHistoryServicePeriod: FiniteDuration)

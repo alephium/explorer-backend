@@ -17,78 +17,42 @@
 package org.alephium.explorer
 
 import scala.concurrent.{Await, ExecutionContext}
-import scala.util.{Failure, Success}
+import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.Uri
-import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.StrictLogging
 import io.prometheus.client.hotspot.DefaultExports
-import slick.basic.DatabaseConfig
-import slick.jdbc.PostgresProfile
 
-import org.alephium.api.model.ApiKey
-import org.alephium.protocol.model.NetworkId
-import org.alephium.util.Duration
+import org.alephium.explorer.error.FatalSystemExit
 
-@SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-object Main extends App with StrictLogging {
+object Main extends StrictLogging {
 
-  logger.info("Starting Application")
-  logger.info(s"Build info: ${BuildInfo}")
+  def main(args: Array[String]): Unit = {
+    logger.info("Starting Explorer")
+    logger.info(s"Build info: $BuildInfo")
 
-  DefaultExports.initialize()
+    DefaultExports.initialize()
 
-  implicit val system: ActorSystem                = ActorSystem("Explorer")
-  implicit val executionContext: ExecutionContext = system.dispatcher
+    //Application Level ExecutionContext not shared with Akka-Http.
+    implicit val ec: ExecutionContext =
+      ExecutionContext.Implicits.global
 
-  val config: Config = ConfigFactory.load()
+    Try(Await.result(Application(), 30.seconds)) match {
+      case Failure(err) =>
+        err match {
+          case err: FatalSystemExit =>
+            logger.error("FATAL SYSTEM ERROR! TERMINATING JVM!", err)
 
-  val blockflowUri: Uri = {
-    val host = config.getString("blockflow.host")
-    val port = config.getInt("blockflow.port")
-    Uri(s"http://$host:$port")
-  }
+          case err =>
+            logger.error("Explorer boot-up failed!", err)
+        }
 
-  val groupNum: Int = config.getInt("blockflow.groupNum")
-  val networkId: NetworkId =
-    NetworkId.from(config.getInt("blockflow.network-id")).get
+      case Success(state) =>
+        def awaitClose(): Unit =
+          Await.result(state.close(), 30.seconds)
 
-  val blockflowApiKey: Option[ApiKey] =
-    if (config.hasPath("blockflow.api-key")) {
-      Some(ApiKey.from(config.getString("blockflow.api-key")).toOption.get)
-    } else {
-      None
+        sideEffect(scala.sys.addShutdownHook(awaitClose()))
+        logger.info(s"Explorer boot-up successful in ${state.getClass.getSimpleName} mode!")
     }
-
-  val directCliqueAccess: Boolean = config.getBoolean("blockflow.direct-clique-access")
-
-  val port: Int            = config.getInt("explorer.port")
-  val host: String         = config.getString("explorer.host")
-  val readOnly: Boolean    = config.getBoolean("explorer.readOnly")
-  val syncPeriod: Duration = Duration.from(config.getDuration("explorer.syncPeriod")).get
-
-  implicit val databaseConfig: DatabaseConfig[PostgresProfile] =
-    DatabaseConfig.forConfig[PostgresProfile]("db")
-
-  val app: Application =
-    new Application(host,
-                    port,
-                    readOnly,
-                    blockflowUri,
-                    groupNum,
-                    networkId,
-                    blockflowApiKey,
-                    syncPeriod,
-                    directCliqueAccess)
-
-  app.start.onComplete {
-    case Success(_) => ()
-    case Failure(e) =>
-      logger.error("Fatal error during initialization.", e)
-      sys.exit(1)
   }
-
-  sideEffect(
-    scala.sys.addShutdownHook(Await.result(app.stop, Duration.ofSecondsUnsafe(10).asScala)))
 }
