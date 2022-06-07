@@ -45,7 +45,7 @@ import org.alephium.json.Json._
 import org.alephium.protocol.model.{CliqueId, NetworkId}
 import org.alephium.util.{Duration, _}
 
-trait ApplicationSpec
+trait ExplorerSpec
     extends AlephiumSpec
     with ScalatestRouteTest
     with ScalaFutures
@@ -82,7 +82,7 @@ trait ApplicationSpec
 
   val blockFlowPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
   val blockFlowMock =
-    new ApplicationSpec.BlockFlowServerMock(groupNum,
+    new ExplorerSpec.BlockFlowServerMock(groupNum,
                                             localhost,
                                             blockFlowPort,
                                             blockflow,
@@ -308,7 +308,7 @@ trait ApplicationSpec
   }
 }
 
-object ApplicationSpec {
+object ExplorerSpec {
 
   class BlockFlowServerMock(_groupNum: Int,
                             address: InetAddress,
@@ -415,7 +415,7 @@ object ApplicationSpec {
   }
 }
 
-class ReadOnlyApplicationSpec extends ApplicationSpec {
+class ReadOnlyExplorerSpec extends ExplorerSpec {
 //  override def initApp(app: Application): Unit = {
 //    val rwApp: Application = createApp(false)
 //    super.initApp(rwApp)
@@ -436,6 +436,6 @@ class ReadOnlyApplicationSpec extends ApplicationSpec {
 
 }
 
-class ReadWriteApplicationSpec extends ApplicationSpec {
+class ReadWriteExplorerSpec extends ExplorerSpec {
 //  override lazy val app: Application = createApp(false)
 }

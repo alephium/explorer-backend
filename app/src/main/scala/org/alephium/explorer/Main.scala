@@ -33,21 +33,23 @@ object Main extends StrictLogging {
 
     DefaultExports.initialize()
 
-    //Application Level ExecutionContext not shared with Akka-Http.
+    //Application Level ExecutionContext not shared with Akka-Http or ActorSystem.
     implicit val ec: ExecutionContext =
       ExecutionContext.Implicits.global
 
-    Try(Await.result(Application(), 30.seconds)) match {
+    //Explorer is started Asynchronously. Until the server is started Explorer
+    //Thread is daemon mode so block.
+    Try(Await.result(Explorer(), 30.seconds)) match {
       case Failure(err) =>
         err match {
           case err: FatalSystemExit =>
-            logger.error("FATAL SYSTEM ERROR! TERMINATING JVM!", err)
+            logger.error("FATAL SYSTEM ERROR!", err)
 
           case err =>
             logger.error("Explorer boot-up failed!", err)
         }
 
-      case Success(state) =>
+      case Success(state) => //Server started
         def awaitClose(): Unit =
           Await.result(state.close(), 30.seconds)
 

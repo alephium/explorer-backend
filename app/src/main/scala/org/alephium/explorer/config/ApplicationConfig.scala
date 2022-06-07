@@ -29,9 +29,11 @@ import org.alephium.explorer.error.ExplorerError.{EmptyApplicationConfig, Invali
   * of types read by `typesafe.Config`.
   *
   * Reading `application.conf` via `typesafe.Config` is unsafe and therefore
-  * should be used in this file only.
+  * should be used in this file only. Only a typed [[ApplicationConfig]] is passed
+  * to the rest of the application.
   *
-  * [[ApplicationConfig]] can be parsed into [[ExplorerConfig]]
+  * [[ApplicationConfig]] can then be used to convert to a validated [[ExplorerConfig]]
+  * that is used for starting [[org.alephium.explorer.Explorer]]
   */
 case object ApplicationConfig {
 
@@ -117,6 +119,7 @@ case object ApplicationConfig {
     }
 }
 
+/** Typed values of `application.conf` */
 final case class ApplicationConfig(blockFlowGroupNum: Int,
                                    blockFlowDirectCliqueAccess: Boolean,
                                    blockFlowHost: String,

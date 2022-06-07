@@ -22,7 +22,7 @@ import scala.concurrent.duration._
 import akka.http.scaladsl.model.Uri
 import org.scalacheck.{Arbitrary, Gen}
 
-/** Generators for types supplied by libraries outside of Alephium eg: java or scala packages */
+/** Generators for types supplied by libraries outside Alephium eg: java or scala packages */
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 object GenCommon {
 

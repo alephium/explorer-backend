@@ -92,6 +92,7 @@ class ApplicationConfigSpec extends AnyWordSpec with Matchers with ScalaCheckDri
           appConfig.success.value.blockFlowApiKey is None
         } else {
           appConfig.failure.exception is a[InvalidApplicationConfig]
+          //Exception message (Stacktrace) should include the missing config's name
           appConfig.failure.exception.getCause.getMessage should include(keyToRemove)
         }
       }

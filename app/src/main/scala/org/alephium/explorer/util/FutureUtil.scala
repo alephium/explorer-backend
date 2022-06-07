@@ -49,24 +49,24 @@ object FutureUtil extends StrictLogging {
     * {{{
     *  managed(Scheduler("")) {
     *     scheduler =>
-    *       Future(???) //Do something with the scheduler
+    *       Future(???) //If this Future fails, Scheduler is closed.
     *  }
     * }}}
     *
-    * Multiple resources can also be initialised. If the body of any one of the resource,
-    * parent resources are all closed ensuring no leaks.
+    * Multiple resources can be initialised with embedding. If the body of any
+    * one of the resource fails, all parent resources are closed ensuring no leaks.
     * {{{
     *   managed(ActorSystem("")) { resource1 =>
     *     managed(Scheduler("")) { resource2 =>
     *       managed(someResource()) { resource3 =>
-    *          Future("Do something!")
+    *          Future(???) //If this Future fails, all resources above are closed
     *       }
     *     }
     *   }
     * }}}
     *
-    * @param resource The resource to manage
-    * @param body     The body checked for failure.
+    * @param resource The resource to manage.
+    * @param body     The body recover for failure.
     *
     * @return The result of the body.
     */

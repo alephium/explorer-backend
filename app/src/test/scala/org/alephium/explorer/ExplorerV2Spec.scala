@@ -39,7 +39,7 @@ import org.alephium.explorer.error.ExplorerError.{ChainIdMismatch, ImpossibleToF
 import org.alephium.explorer.service.BlockFlowClient
 
 /** Temporary placeholder. These tests should be merged into ApplicationSpec  */
-class ApplicationV2Spec
+class ExplorerV2Spec
     extends AnyWordSpec
     with Matchers
     with ScalaCheckDrivenPropertyChecks
@@ -52,13 +52,13 @@ class ApplicationV2Spec
   "initialiseDatabase" should {
     "successfully connect" when {
       "readOnly mode" in {
-        Application
+        Explorer
           .initialiseDatabase(readOnly = true, "db")
           .futureValue(Timeout(5.seconds)) is a[DatabaseConfig[_]]
       }
 
       "readWrite mode" in {
-        Application
+        Explorer
           .initialiseDatabase(readOnly = false, "db")
           .futureValue(Timeout(5.seconds)) is a[DatabaseConfig[_]]
       }
@@ -67,7 +67,7 @@ class ApplicationV2Spec
     "fail connection" when {
       "database path is invalid" in {
         Seq(true, false) foreach { mode =>
-          Application
+          Explorer
             .initialiseDatabase(readOnly = mode, "invalid path")
             .failed
             .futureValue is a[ConfigException.Missing]
@@ -88,9 +88,9 @@ class ApplicationV2Spec
           (client.fetchSelfClique _).expects() returns Future.successful(Right(selfClique))
 
           val expectedPeers =
-            Application.urisFromPeers(selfClique.nodes.toSeq)
+            Explorer.urisFromPeers(selfClique.nodes.toSeq)
 
-          Application
+          Explorer
             .getBlockFlowPeers(directCliqueAccess = true,
                                blockFlowUri       = explorerConfig.blockFlowUri)
             .futureValue is expectedPeers
@@ -100,7 +100,7 @@ class ApplicationV2Spec
       "directCliqueAccess = false" in {
         implicit val client: BlockFlowClient = mock[BlockFlowClient]
 
-        Application
+        Explorer
           .getBlockFlowPeers(directCliqueAccess = false, blockFlowUri = explorerConfig.blockFlowUri)
           .futureValue is Seq(explorerConfig.blockFlowUri)
       }
@@ -118,7 +118,7 @@ class ApplicationV2Spec
 
         forAll(matchingNetworkId) {
           case (networkId, chainParams) =>
-            Application.validateChainParams(networkId, Right(chainParams)) is Success(())
+            Explorer.validateChainParams(networkId, Right(chainParams)) is Success(())
         }
       }
     }
@@ -133,7 +133,7 @@ class ApplicationV2Spec
 
         forAll(mismatchedNetworkId) {
           case (networkId, chainParams) =>
-            Application
+            Explorer
               .validateChainParams(networkId, Right(chainParams))
               .failure
               .exception is ChainIdMismatch(remote = chainParams.networkId, local = networkId)
@@ -143,7 +143,7 @@ class ApplicationV2Spec
       "response was an error" in {
         forAll(genNetworkId, Arbitrary.arbitrary[String]) {
           case (networkId, error) =>
-            Application
+            Explorer
               .validateChainParams(networkId, Left(error))
               .failure
               .exception is ImpossibleToFetchNetworkType(error)

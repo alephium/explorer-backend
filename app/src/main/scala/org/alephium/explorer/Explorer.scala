@@ -45,32 +45,33 @@ import org.alephium.protocol.model.NetworkId
 
 /** Implements function for Explorer boot-up sequence */
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-object Application extends StrictLogging {
+object Explorer extends StrictLogging {
 
   /** Start Explorer via `application.conf` */
   def apply()(implicit ec: ExecutionContext): Future[ExplorerState] =
     Try(ConfigFactory.load()) match {
       case Failure(exception) => Future.failed(exception)
-      case Success(config)    => Application(config)
+      case Success(config)    => Explorer(config)
     }
 
-  /** Start Explorer given configurations read from `application.conf` */
+  /** Start Explorer from `application.conf` */
   def apply(config: Config)(implicit ec: ExecutionContext): Future[ExplorerState] =
     ApplicationConfig(config) match {
       case Failure(exception)         => Future.failed(exception)
-      case Success(applicationConfig) => Application(applicationConfig)
+      case Success(applicationConfig) => Explorer(applicationConfig)
     }
 
-  /** Start Explorer given typed [[org.alephium.explorer.config.ApplicationConfig]] */
+  /** Start Explorer from typed [[org.alephium.explorer.config.ApplicationConfig]] */
   def apply(applicationConfig: ApplicationConfig)(
       implicit ec: ExecutionContext): Future[ExplorerState] =
     ExplorerConfig(applicationConfig) match {
       case Failure(exception)      => Future.failed(exception)
-      case Success(explorerConfig) => Application(explorerConfig)
+      case Success(explorerConfig) => Explorer(explorerConfig)
     }
 
-  /** Start Explorer given validated [[org.alephium.explorer.config.ExplorerConfig]] */
+  /** Start Explorer from validated [[org.alephium.explorer.config.ExplorerConfig]] */
   def apply(config: ExplorerConfig)(implicit ec: ExecutionContext): Future[ExplorerState] =
+    //First: Check database is available
     managed(initialiseDatabase(config.readOnly, "db")) { implicit dc =>
       implicit val blockFlowClient: BlockFlowClient =
         BlockFlowClient(
@@ -85,13 +86,15 @@ object Application extends StrictLogging {
       implicit val blockCache: BlockCache =
         BlockCache()
 
+      //Second: Start sync services
       managed(startSyncServices(config)) { scheduler =>
         TransactionCache() flatMap { implicit transactionCache =>
-          //Last step: Start http server
+          //Finally: Start http server
           startHttpServer(
             host = config.host,
             port = config.port
           ) mapSync { akkaHttpServer =>
+            //Return explorer's state: Either ReadOnly or ReadWrite
             ExplorerState(
               scheduler        = scheduler,
               database         = dc,
@@ -248,7 +251,7 @@ object Application extends StrictLogging {
       blockFlowClient.fetchSelfClique() flatMap {
         case Right(selfClique) =>
           //TODO: What happens when peers are empty?
-          //      Should Application be allowed to start if there were no peers?
+          //      Should Application even be allowed to start if there were no peers?
           val peers = urisFromPeers(selfClique.nodes.toSeq)
           logger.debug(s"Syncing with clique peers: $peers")
           Future.successful(peers)

@@ -25,7 +25,7 @@ import com.typesafe.scalalogging.StrictLogging
 
 import org.alephium.explorer.util.AsyncCloseable._
 
-/** Stores AkkaHttp related instance created on boot-up */
+/** Stores AkkaHttp related instances created on boot-up */
 final case class AkkaHttpServer(server: Http.ServerBinding, routes: Route, actorSystem: ActorSystem)
     extends StrictLogging {
 
