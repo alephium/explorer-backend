@@ -54,7 +54,7 @@ object Explorer extends StrictLogging {
       case Success(config)    => Explorer(config)
     }
 
-  /** Start Explorer from `application.conf` */
+  /** Start Explorer from parsed/loaded `application.conf` */
   def apply(config: Config)(implicit ec: ExecutionContext): Future[ExplorerState] =
     ApplicationConfig(config) match {
       case Failure(exception)         => Future.failed(exception)
@@ -72,7 +72,7 @@ object Explorer extends StrictLogging {
   /** Start Explorer from validated [[org.alephium.explorer.config.ExplorerConfig]] */
   def apply(config: ExplorerConfig)(implicit ec: ExecutionContext): Future[ExplorerState] =
     //First: Check database is available
-    managed(initialiseDatabase(config.readOnly, "db")) { implicit dc =>
+    managed(initialiseDatabase(config.readOnly, "db", ConfigFactory.load())) { implicit dc =>
       implicit val blockFlowClient: BlockFlowClient =
         BlockFlowClient(
           uri         = config.blockFlowUri,
@@ -222,15 +222,17 @@ object Explorer extends StrictLogging {
   /**
     * Initialise the database from the config file.
     *
+    * TODO: Make config a part of `ExplorerConfig`
+    *
     * @param readOnly If true tried to validate connection else initialises schema.
     * @param path     Path of database config in `application.conf` file.
     * @param ec       Application Level execution (Not used for DB calls)
     *
     * @return Slick config provides Ability to run queries.
     */
-  def initialiseDatabase(readOnly: Boolean, path: String)(
+  def initialiseDatabase(readOnly: Boolean, path: String, config: Config)(
       implicit ec: ExecutionContext): Future[DatabaseConfig[PostgresProfile]] =
-    managed(DatabaseConfig.forConfig[PostgresProfile](path)) { implicit dc =>
+    managed(DatabaseConfig.forConfig[PostgresProfile](path, config)) { implicit dc =>
       if (readOnly) {
         HealthCheckDao.healthCheck().mapSyncToVal(dc)
       } else {

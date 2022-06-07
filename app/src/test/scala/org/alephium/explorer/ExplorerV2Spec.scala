@@ -36,7 +36,9 @@ import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.config.{ApplicationConfig, ExplorerConfig}
 import org.alephium.explorer.error.ExplorerError.{ChainIdMismatch, ImpossibleToFetchNetworkType}
+import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.service.BlockFlowClient
+import org.alephium.explorer.util.TestUtils._
 
 /** Temporary placeholder. These tests should be merged into ApplicationSpec  */
 class ExplorerV2Spec
@@ -52,15 +54,21 @@ class ExplorerV2Spec
   "initialiseDatabase" should {
     "successfully connect" when {
       "readOnly mode" in {
-        Explorer
-          .initialiseDatabase(readOnly = true, "db")
-          .futureValue(Timeout(5.seconds)) is a[DatabaseConfig[_]]
+        val database =
+          Explorer
+            .initialiseDatabase(readOnly = true, "db", DatabaseFixture.config)
+            .futureValue(Timeout(5.seconds))
+
+        using(database)(_ is a[DatabaseConfig[_]])
       }
 
       "readWrite mode" in {
-        Explorer
-          .initialiseDatabase(readOnly = false, "db")
-          .futureValue(Timeout(5.seconds)) is a[DatabaseConfig[_]]
+        val database =
+          Explorer
+            .initialiseDatabase(readOnly = false, "db", DatabaseFixture.config)
+            .futureValue(Timeout(5.seconds))
+
+        using(database)(_ is a[DatabaseConfig[_]])
       }
     }
 
@@ -68,7 +76,7 @@ class ExplorerV2Spec
       "database path is invalid" in {
         Seq(true, false) foreach { mode =>
           Explorer
-            .initialiseDatabase(readOnly = mode, "invalid path")
+            .initialiseDatabase(readOnly = mode, "invalid path", DatabaseFixture.config)
             .failed
             .futureValue is a[ConfigException.Missing]
         }
