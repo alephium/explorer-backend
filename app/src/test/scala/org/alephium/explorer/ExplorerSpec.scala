@@ -82,11 +82,7 @@ trait ExplorerSpec
 
   val blockFlowPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
   val blockFlowMock =
-    new ExplorerSpec.BlockFlowServerMock(groupNum,
-                                            localhost,
-                                            blockFlowPort,
-                                            blockflow,
-                                            networkId)
+    new ExplorerSpec.BlockFlowServerMock(groupNum, localhost, blockFlowPort, blockflow, networkId)
 
   val blockflowBinding = blockFlowMock.server.futureValue
 

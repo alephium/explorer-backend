@@ -30,23 +30,21 @@ import org.alephium.explorer.config.ExplorerConfig._
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.protocol.model.NetworkId
 
-class ExplorerConfigSpec extends AnyWordSpec with  ScalaCheckDrivenPropertyChecks {
+class ExplorerConfigSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks {
 
   "validateGroupNum" should {
     "fail validation" when {
       "group numbers are negative" in {
-        forAll(Gen.negNum[Int]) {
-          negativeNum =>
-            validateGroupNum(negativeNum).failure.exception is InvalidGroupNumber(negativeNum)
+        forAll(Gen.negNum[Int]) { negativeNum =>
+          validateGroupNum(negativeNum).failure.exception is InvalidGroupNumber(negativeNum)
         }
       }
     }
 
     "pass validation" when {
       "positive groupNum" in {
-        forAll(Gen.choose(1, 100)) {
-          positiveNum =>
-            validateGroupNum(positiveNum).success.value is positiveNum
+        forAll(Gen.choose(1, 100)) { positiveNum =>
+          validateGroupNum(positiveNum).success.value is positiveNum
         }
       }
     }
@@ -55,9 +53,8 @@ class ExplorerConfigSpec extends AnyWordSpec with  ScalaCheckDrivenPropertyCheck
   "validatePort" should {
     "fail validation" when {
       "portNums are negative" in {
-        forAll(Gen.negNum[Int]) {
-          negativeNum =>
-            validatePort(negativeNum).failure.exception is InvalidPortNumber(negativeNum)
+        forAll(Gen.negNum[Int]) { negativeNum =>
+          validatePort(negativeNum).failure.exception is InvalidPortNumber(negativeNum)
         }
       }
 
@@ -72,9 +69,8 @@ class ExplorerConfigSpec extends AnyWordSpec with  ScalaCheckDrivenPropertyCheck
 
     "pass validation" when {
       "port number is between 1 & 65_535 (inclusive)" in {
-        forAll(Gen.choose(1, 65_535)) {
-          port =>
-            validatePort(port).success.value is port
+        forAll(Gen.choose(1, 65535)) { port =>
+          validatePort(port).success.value is port
         }
       }
     }
@@ -93,7 +89,7 @@ class ExplorerConfigSpec extends AnyWordSpec with  ScalaCheckDrivenPropertyCheck
     "pass validation" when {
       "host is local" in {
         validateHost("localhost").success.value should be("localhost")
-        validateHost("120.0.0.1").success.value should be ("120.0.0.1")
+        validateHost("120.0.0.1").success.value should be("120.0.0.1")
       }
     }
   }
@@ -101,19 +97,20 @@ class ExplorerConfigSpec extends AnyWordSpec with  ScalaCheckDrivenPropertyCheck
   "validateNetworkId" should {
     "fail validation" when {
       "networkId is greater than Byte.MaxValue" in {
-        validateNetworkId(Byte.MaxValue + 1).failure.exception is InvalidNetworkId(Byte.MaxValue + 1)
+        validateNetworkId(Byte.MaxValue + 1).failure.exception is
+          InvalidNetworkId(Byte.MaxValue + 1)
       }
 
       "networkId is less than Byte.MinValue" in {
-        validateNetworkId(Byte.MinValue - 1).failure.exception is InvalidNetworkId(Byte.MinValue - 1)
+        validateNetworkId(Byte.MinValue - 1).failure.exception is
+          InvalidNetworkId(Byte.MinValue - 1)
       }
     }
 
     "pass validation" when {
       "Byte.MinValue <= networkId <= Byte.MaxValue" in {
-        forAll(Arbitrary.arbitrary[Byte]) {
-          byte =>
-            validateNetworkId(byte.toInt).success.value is NetworkId(byte)
+        forAll(Arbitrary.arbitrary[Byte]) { byte =>
+          validateNetworkId(byte.toInt).success.value is NetworkId(byte)
         }
       }
     }
@@ -122,18 +119,17 @@ class ExplorerConfigSpec extends AnyWordSpec with  ScalaCheckDrivenPropertyCheck
   "validateApiKey" should {
     "fail validation" when {
       "apiKey.length < 32" in {
-        forAll(genStringOfLength(31)) {
-          string =>
-            validateApiKey(string).failure.exception is InvalidApiKey("Api key must have at least 32 characters")
+        forAll(genStringOfLength(31)) { string =>
+          validateApiKey(string).failure.exception is InvalidApiKey(
+            "Api key must have at least 32 characters")
         }
       }
     }
 
     "pass validation" when {
       "apiKey.length > 32" in {
-        forAll(genStringOfLengthBetween(32, 100)) {
-          string =>
-            validateApiKey(string).success.value is ApiKey.unsafe(string)
+        forAll(genStringOfLengthBetween(32, 100)) { string =>
+          validateApiKey(string).success.value is ApiKey.unsafe(string)
         }
       }
     }
@@ -158,5 +154,4 @@ class ExplorerConfigSpec extends AnyWordSpec with  ScalaCheckDrivenPropertyCheck
       }
     }
   }
-
 }
