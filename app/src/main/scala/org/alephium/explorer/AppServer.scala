@@ -38,9 +38,9 @@ object AppServer {
                transactionCache: TransactionCache,
                groupSetting: GroupSetting): Route = {
 
-    val blockServer                = new BlockServer(BlockService)
+    val blockServer                = new BlockServer()
     val addressServer              = new AddressServer(TransactionService)
-    val transactionServer          = new TransactionServer(TransactionService)
+    val transactionServer          = new TransactionServer()
     val infosServer                = new InfosServer(TokenSupplyService, BlockService, TransactionService)
     val utilsServer: UtilsServer   = new UtilsServer()
     val chartsServer: ChartsServer = new ChartsServer()

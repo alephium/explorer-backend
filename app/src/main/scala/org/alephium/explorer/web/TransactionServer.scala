@@ -26,13 +26,12 @@ import org.alephium.api.ApiError
 import org.alephium.explorer.api.TransactionEndpoints
 import org.alephium.explorer.service.TransactionService
 
-class TransactionServer(transactionService: TransactionService)(implicit ec: ExecutionContext,
-                                                                dc: DatabaseConfig[PostgresProfile])
+class TransactionServer(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile])
     extends Server
     with TransactionEndpoints {
   val route: Route = toRoute(getTransactionById)(
     hash =>
-      transactionService
+      TransactionService
         .getTransaction(hash)
         .map(_.toRight(ApiError.NotFound(hash.value.toHexString))))
 }
