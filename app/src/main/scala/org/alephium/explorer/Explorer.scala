@@ -31,11 +31,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.api.model.{ChainParams, PeerAddress}
 import org.alephium.explorer.cache.{BlockCache, TransactionCache}
 import org.alephium.explorer.config.{ApplicationConfig, ExplorerConfig}
-import org.alephium.explorer.error.ExplorerError.{
-  ChainIdMismatch,
-  FailedToFetchSelfClique,
-  ImpossibleToFetchNetworkType
-}
+import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.persistence.DBInitializer
 import org.alephium.explorer.persistence.dao.HealthCheckDao
 import org.alephium.explorer.service._
@@ -48,30 +44,30 @@ import org.alephium.protocol.model.NetworkId
 object Explorer extends StrictLogging {
 
   /** Start Explorer via `application.conf` */
-  def apply()(implicit ec: ExecutionContext, system: ActorSystem): Future[ExplorerState] =
+  def start()(implicit ec: ExecutionContext, system: ActorSystem): Future[ExplorerState] =
     Try(ConfigFactory.load()) match {
       case Failure(exception) => Future.failed(exception)
-      case Success(config)    => Explorer(config)
+      case Success(config)    => Explorer.start(config)
     }
 
   /** Start Explorer from parsed/loaded `application.conf` */
-  def apply(config: Config)(implicit ec: ExecutionContext,
+  def start(config: Config)(implicit ec: ExecutionContext,
                             system: ActorSystem): Future[ExplorerState] =
     ApplicationConfig(config) match {
       case Failure(exception)         => Future.failed(exception)
-      case Success(applicationConfig) => Explorer(applicationConfig)
+      case Success(applicationConfig) => Explorer.start(applicationConfig)
     }
 
   /** Start Explorer from typed [[org.alephium.explorer.config.ApplicationConfig]] */
-  def apply(applicationConfig: ApplicationConfig)(implicit ec: ExecutionContext,
+  def start(applicationConfig: ApplicationConfig)(implicit ec: ExecutionContext,
                                                   system: ActorSystem): Future[ExplorerState] =
     ExplorerConfig(applicationConfig) match {
       case Failure(exception)      => Future.failed(exception)
-      case Success(explorerConfig) => Explorer(explorerConfig)
+      case Success(explorerConfig) => Explorer.start(explorerConfig)
     }
 
   /** Start Explorer from validated [[org.alephium.explorer.config.ExplorerConfig]] */
-  def apply(config: ExplorerConfig)(implicit ec: ExecutionContext,
+  def start(config: ExplorerConfig)(implicit ec: ExecutionContext,
                                     system: ActorSystem): Future[ExplorerState] =
     //First: Check database is available
     managed(initialiseDatabase(config.readOnly, "db", ConfigFactory.load())) { implicit dc =>

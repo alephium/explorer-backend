@@ -39,7 +39,8 @@ object Main extends StrictLogging {
 
     sideEffect {
       managed(system) { implicit system =>
-        Explorer()
+        Explorer
+          .start()
           .map { state =>
             //Successful start: Add shutdown hook.
             def awaitClose(): Unit =
