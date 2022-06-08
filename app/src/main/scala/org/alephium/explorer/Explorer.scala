@@ -48,29 +48,31 @@ import org.alephium.protocol.model.NetworkId
 object Explorer extends StrictLogging {
 
   /** Start Explorer via `application.conf` */
-  def apply()(implicit ec: ExecutionContext): Future[ExplorerState] =
+  def apply()(implicit ec: ExecutionContext, system: ActorSystem): Future[ExplorerState] =
     Try(ConfigFactory.load()) match {
       case Failure(exception) => Future.failed(exception)
       case Success(config)    => Explorer(config)
     }
 
   /** Start Explorer from parsed/loaded `application.conf` */
-  def apply(config: Config)(implicit ec: ExecutionContext): Future[ExplorerState] =
+  def apply(config: Config)(implicit ec: ExecutionContext,
+                            system: ActorSystem): Future[ExplorerState] =
     ApplicationConfig(config) match {
       case Failure(exception)         => Future.failed(exception)
       case Success(applicationConfig) => Explorer(applicationConfig)
     }
 
   /** Start Explorer from typed [[org.alephium.explorer.config.ApplicationConfig]] */
-  def apply(applicationConfig: ApplicationConfig)(
-      implicit ec: ExecutionContext): Future[ExplorerState] =
+  def apply(applicationConfig: ApplicationConfig)(implicit ec: ExecutionContext,
+                                                  system: ActorSystem): Future[ExplorerState] =
     ExplorerConfig(applicationConfig) match {
       case Failure(exception)      => Future.failed(exception)
       case Success(explorerConfig) => Explorer(explorerConfig)
     }
 
   /** Start Explorer from validated [[org.alephium.explorer.config.ExplorerConfig]] */
-  def apply(config: ExplorerConfig)(implicit ec: ExecutionContext): Future[ExplorerState] =
+  def apply(config: ExplorerConfig)(implicit ec: ExecutionContext,
+                                    system: ActorSystem): Future[ExplorerState] =
     //First: Check database is available
     managed(initialiseDatabase(config.readOnly, "db", ConfigFactory.load())) { implicit dc =>
       implicit val blockFlowClient: BlockFlowClient =
@@ -166,33 +168,34 @@ object Explorer extends StrictLogging {
         }
       }
     }
-  // scalastyle:on
 
   /** Start AkkaHttp server */
-  def startHttpServer(host: String, port: Int)(implicit ec: ExecutionContext,
-                                               dc: DatabaseConfig[PostgresProfile],
-                                               blockFlowClient: BlockFlowClient,
-                                               blockCache: BlockCache,
-                                               transactionCache: TransactionCache,
-                                               groupSetting: GroupSetting): Future[AkkaHttpServer] =
-    managed(ActorSystem("Akka-Http-Actor-System")) { implicit system =>
-      val routes =
-        AppServer.routes()
+  def startHttpServer(host: String, port: Int)(
+      implicit system: ActorSystem,
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      blockCache: BlockCache,
+      transactionCache: TransactionCache,
+      groupSetting: GroupSetting): Future[AkkaHttpServer] = {
+    val routes =
+      AppServer.routes()
 
-      val httpServer =
-        Http()
-          .newServerAt(host, port)
-          .bindFlow(routes)
+    val httpServer =
+      Http()
+        .newServerAt(host, port)
+        .bindFlow(routes)
 
-      //routes are required by test-cases.
-      httpServer map { server =>
-        AkkaHttpServer(
-          server      = server,
-          routes      = routes,
-          actorSystem = system
-        )
-      }
+    //routes are required by test-cases.
+    httpServer map { server =>
+      AkkaHttpServer(
+        server      = server,
+        routes      = routes,
+        actorSystem = system
+      )
     }
+  }
+  // scalastyle:on
 
   /** Fetch network peers */
   def getPeers(networkId: NetworkId, directCliqueAccess: Boolean, blockFlowUri: Uri)(

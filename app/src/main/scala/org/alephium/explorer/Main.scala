@@ -16,14 +16,15 @@
 
 package org.alephium.explorer
 
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
 
+import akka.actor.ActorSystem
 import com.typesafe.scalalogging.StrictLogging
 import io.prometheus.client.hotspot.DefaultExports
 
 import org.alephium.explorer.error.FatalSystemExit
+import org.alephium.explorer.util.FutureUtil._
 
 object Main extends StrictLogging {
 
@@ -33,28 +34,32 @@ object Main extends StrictLogging {
 
     DefaultExports.initialize()
 
-    //Application Level ExecutionContext not shared with Akka-Http or ActorSystem.
-    implicit val ec: ExecutionContext =
-      ExecutionContext.Implicits.global
+    val system: ActorSystem           = ActorSystem()
+    implicit val ec: ExecutionContext = system.dispatcher
 
-    //Explorer is started Asynchronously. Until the server is started Explorer
-    //Thread is daemon mode so block.
-    Try(Await.result(Explorer(), 30.seconds)) match {
-      case Failure(err) =>
-        err match {
-          case err: FatalSystemExit =>
-            logger.error("FATAL SYSTEM ERROR!", err)
+    sideEffect {
+      managed(system) { implicit system =>
+        Explorer()
+          .map { state =>
+            //Successful start: Add shutdown hook.
+            def awaitClose(): Unit =
+              Await.result(state.close(), 30.seconds)
 
-          case err =>
-            logger.error("Explorer boot-up failed!", err)
-        }
+            sideEffect(scala.sys.addShutdownHook(awaitClose()))
+            logger.info(s"Explorer boot-up successful in ${state.getClass.getSimpleName} mode!")
+          }
+          .recoverWith { err =>
+            //Error start: Log the error.
+            err match {
+              case err: FatalSystemExit =>
+                logger.error("FATAL SYSTEM ERROR!", err)
 
-      case Success(state) => //Server started
-        def awaitClose(): Unit =
-          Await.result(state.close(), 30.seconds)
-
-        sideEffect(scala.sys.addShutdownHook(awaitClose()))
-        logger.info(s"Explorer boot-up successful in ${state.getClass.getSimpleName} mode!")
+              case err =>
+                logger.error("Explorer boot-up failed!", err)
+            }
+            Future.failed(err)
+          }
+      }
     }
   }
 }
