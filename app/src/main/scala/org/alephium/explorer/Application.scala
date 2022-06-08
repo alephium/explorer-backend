@@ -45,13 +45,14 @@ class Application(host: String,
                   networkId: NetworkId,
                   maybeBlockFlowApiKey: Option[ApiKey],
                   syncPeriod: Duration,
-                  directCliqueAccess: Boolean)(implicit system: ActorSystem,
-                                               executionContext: ExecutionContext,
-                                               databaseConfig: DatabaseConfig[PostgresProfile])
+                  directCliqueAccess: Boolean,
+                  bootTimout: FiniteDuration)(implicit system: ActorSystem,
+                                              executionContext: ExecutionContext,
+                                              databaseConfig: DatabaseConfig[PostgresProfile])
     extends StrictLogging {
 
   if (!readOnly) {
-    DBInitializer.initialize().await(10.seconds)
+    DBInitializer.initialize().await(bootTimout)
   }
 
   implicit val scheduler: Scheduler =
@@ -64,7 +65,7 @@ class Application(host: String,
     BlockCache()
 
   implicit val transactionCache: TransactionCache =
-    TransactionCache().await(5.seconds)
+    TransactionCache().await(bootTimout)
 
   //Services
   implicit val blockFlowClient: BlockFlowClient =

@@ -17,6 +17,7 @@
 package org.alephium.explorer
 
 import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 import akka.actor.ActorSystem
@@ -63,10 +64,11 @@ object Main extends App with StrictLogging {
 
   val directCliqueAccess: Boolean = config.getBoolean("blockflow.direct-clique-access")
 
-  val port: Int            = config.getInt("explorer.port")
-  val host: String         = config.getString("explorer.host")
-  val readOnly: Boolean    = config.getBoolean("explorer.readOnly")
-  val syncPeriod: Duration = Duration.from(config.getDuration("explorer.syncPeriod")).get
+  val port: Int                  = config.getInt("explorer.port")
+  val host: String               = config.getString("explorer.host")
+  val readOnly: Boolean          = config.getBoolean("explorer.readOnly")
+  val syncPeriod: Duration       = Duration.from(config.getDuration("explorer.syncPeriod")).get
+  val bootTimout: FiniteDuration = 5.minutes
 
   implicit val databaseConfig: DatabaseConfig[PostgresProfile] =
     DatabaseConfig.forConfig[PostgresProfile]("db")
@@ -80,7 +82,8 @@ object Main extends App with StrictLogging {
                     networkId,
                     blockflowApiKey,
                     syncPeriod,
-                    directCliqueAccess)
+                    directCliqueAccess,
+                    bootTimout)
 
   app.start.onComplete {
     case Success(_) => ()
