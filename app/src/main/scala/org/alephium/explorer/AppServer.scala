@@ -21,7 +21,6 @@ import scala.concurrent.ExecutionContext
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
-import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -30,27 +29,22 @@ import org.alephium.explorer.service._
 import org.alephium.explorer.web._
 
 // scalastyle:off magic.number
-class AppServer(blockService: BlockService,
-                transactionService: TransactionService,
-                tokenSupplyService: TokenSupplyService)(implicit executionContext: ExecutionContext,
-                                                        dc: DatabaseConfig[PostgresProfile],
-                                                        blockFlowClient: BlockFlowClient,
-                                                        blockCache: BlockCache,
-                                                        transactionCache: TransactionCache,
-                                                        groupSetting: GroupSetting)
-    extends StrictLogging {
+object AppServer {
 
-  val blockServer: BlockServer = new BlockServer(blockService)
-  val addressServer: AddressServer =
-    new AddressServer(transactionService)
-  val transactionServer: TransactionServer =
-    new TransactionServer(transactionService)
-  val infosServer: InfosServer =
-    new InfosServer(tokenSupplyService, blockService, transactionService)
-  val utilsServer: UtilsServer   = new UtilsServer()
-  val chartsServer: ChartsServer = new ChartsServer()
+  def routes()(implicit ec: ExecutionContext,
+               dc: DatabaseConfig[PostgresProfile],
+               blockFlowClient: BlockFlowClient,
+               blockCache: BlockCache,
+               transactionCache: TransactionCache,
+               groupSetting: GroupSetting): Route = {
 
-  val route: Route =
+    val blockServer                = new BlockServer()
+    val addressServer              = new AddressServer(TransactionService)
+    val transactionServer          = new TransactionServer()
+    val infosServer                = new InfosServer(TokenSupplyService, BlockService, TransactionService)
+    val utilsServer: UtilsServer   = new UtilsServer()
+    val chartsServer: ChartsServer = new ChartsServer()
+
     cors()(
       blockServer.route ~
         addressServer.route ~
@@ -60,4 +54,5 @@ class AppServer(blockService: BlockService,
         utilsServer.route ~
         DocumentationServer.route ~
         Metrics.route)
+  }
 }

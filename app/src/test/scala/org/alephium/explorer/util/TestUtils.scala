@@ -15,6 +15,8 @@
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 package org.alephium.explorer.util
 
+import slick.basic.{BasicProfile, DatabaseConfig}
+
 object TestUtils {
 
   /**
@@ -34,4 +36,9 @@ object TestUtils {
     try code(resource)
     finally resource.close()
 
+  /** Using for DatabaseConfig */
+  def using[P <: BasicProfile, A](db: DatabaseConfig[P])(code: DatabaseConfig[P] => A): A =
+    using(db.db) { _ =>
+      code(db)
+    }
 }

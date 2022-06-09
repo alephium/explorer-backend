@@ -14,24 +14,19 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.web
+package org.alephium.explorer
 
-import scala.concurrent.ExecutionContext
+import org.scalacheck.Gen
 
-import akka.http.scaladsl.server.Route
-import slick.basic.DatabaseConfig
-import slick.jdbc.PostgresProfile
+import org.alephium.explorer.GenCommon._
+import org.alephium.protocol.model.NetworkId
 
-import org.alephium.api.ApiError
-import org.alephium.explorer.api.TransactionEndpoints
-import org.alephium.explorer.service.TransactionService
+/** Generators for types supplied by Core `org.alephium.protocol` package */
+object GenCoreProtocol {
 
-class TransactionServer(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile])
-    extends Server
-    with TransactionEndpoints {
-  val route: Route = toRoute(getTransactionById)(
-    hash =>
-      TransactionService
-        .getTransaction(hash)
-        .map(_.toRight(ApiError.NotFound(hash.value.toHexString))))
+  val genNetworkId: Gen[NetworkId] =
+    genBytePositive.map(NetworkId(_))
+
+  def genNetworkId(exclude: NetworkId): Gen[NetworkId] =
+    genNetworkId.filter(_ != exclude)
 }

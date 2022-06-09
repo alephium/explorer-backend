@@ -30,7 +30,7 @@ import org.alephium.util.Duration
   */
 object DatabaseFixture {
 
-  private val config = ConfigFactory
+  val config = ConfigFactory
     .parseMap(
       Map(
         ("db.db.url", s"jdbc:postgresql://localhost:5432/postgres")

@@ -171,6 +171,7 @@ lazy val app = mainProject("app")
     akkaStream,
     akkaStreamTest,
     scalatest,
+    scalaMock,
     scalatestplus,
     scalacheck,
     slick,

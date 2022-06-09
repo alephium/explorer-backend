@@ -24,7 +24,7 @@ import scala.io.Source
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
@@ -45,7 +45,7 @@ import org.alephium.json.Json._
 import org.alephium.protocol.model.{CliqueId, NetworkId}
 import org.alephium.util.{Duration, _}
 
-trait ApplicationSpec
+trait ExplorerSpec
     extends AlephiumSpec
     with ScalatestRouteTest
     with ScalaFutures
@@ -82,41 +82,39 @@ trait ApplicationSpec
 
   val blockFlowPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
   val blockFlowMock =
-    new ApplicationSpec.BlockFlowServerMock(groupNum,
-                                            localhost,
-                                            blockFlowPort,
-                                            blockflow,
-                                            networkId)
+    new ExplorerSpec.BlockFlowServerMock(groupNum, localhost, blockFlowPort, blockflow, networkId)
 
   val blockflowBinding = blockFlowMock.server.futureValue
 
-  def createApp(readOnly: Boolean): Application = new Application(
-    localhost.getHostAddress,
-    SocketUtil.temporaryLocalPort(),
-    readOnly,
-    Uri(s"http://${localhost.getHostAddress}:$blockFlowPort"),
-    groupNum,
-    networkId,
-    None,
-    Duration.ofSecondsUnsafe(5),
-    true
-  )
+//  def createApp(readOnly: Boolean): Application = new Application(
+//    localhost.getHostAddress,
+//    SocketUtil.temporaryLocalPort(),
+//    readOnly,
+//    Uri(s"http://${localhost.getHostAddress}:$blockFlowPort"),
+//    groupNum,
+//    networkId,
+//    None,
+//    Duration.ofSecondsUnsafe(5),
+//    true
+//  )
 
-  def initApp(app: Application): Unit = {
-    app.start.futureValue
-    //let it sync once
-//    eventually(app.blockFlowSyncService.stop().futureValue) is ()
-//    eventually(app.mempoolSyncService.stop().futureValue) is ()
-    ()
-  }
+//  def initApp(app: Application): Unit = {
+//    app.start.futureValue
+//    //let it sync once
+////    eventually(app.blockFlowSyncService.stop().futureValue) is ()
+////    eventually(app.mempoolSyncService.stop().futureValue) is ()
+//    ()
+//  }
 
-  def stopApp(app: Application): Future[Unit] = app.stop
+//  def stopApp(app: Application): Future[Unit] = app.stop
 
-  def app: Application
-  val routes = app.server.route
+//  def app: Application
+  //scalastyle:off null
+  val routes: Route = null //app.server.route
+  //scalastyle:on null
 
   ignore should "get a block by its id" in {
-    initApp(app)
+//    initApp(app)
 
     forAll(Gen.oneOf(blocks)) { block =>
       Get(s"/blocks/${block.hash.value.toHexString}") ~> routes ~> check {
@@ -306,7 +304,7 @@ trait ApplicationSpec
   }
 }
 
-object ApplicationSpec {
+object ExplorerSpec {
 
   class BlockFlowServerMock(_groupNum: Int,
                             address: InetAddress,
@@ -413,15 +411,15 @@ object ApplicationSpec {
   }
 }
 
-class ReadOnlyApplicationSpec extends ApplicationSpec {
-  override def initApp(app: Application): Unit = {
-    val rwApp: Application = createApp(false)
-    super.initApp(rwApp)
-    stopApp(rwApp).futureValue
-    app.start.futureValue
-  }
+class ReadOnlyExplorerSpec extends ExplorerSpec {
+//  override def initApp(app: Application): Unit = {
+//    val rwApp: Application = createApp(false)
+//    super.initApp(rwApp)
+//    stopApp(rwApp).futureValue
+//    app.start.futureValue
+//  }
 
-  override lazy val app: Application = createApp(true)
+//  override lazy val app: Application = createApp(true)
 
   ignore should "not have started syncing services" in {
 //    whenReady(app.blockFlowSyncService.stop().failed) { exception =>
@@ -434,6 +432,6 @@ class ReadOnlyApplicationSpec extends ApplicationSpec {
 
 }
 
-class ReadWriteApplicationSpec extends ApplicationSpec {
-  override lazy val app: Application = createApp(false)
+class ReadWriteExplorerSpec extends ExplorerSpec {
+//  override lazy val app: Application = createApp(false)
 }
