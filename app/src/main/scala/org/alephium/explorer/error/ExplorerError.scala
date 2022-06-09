@@ -18,6 +18,8 @@ package org.alephium.explorer.error
 
 import scala.concurrent.duration.FiniteDuration
 
+import akka.http.scaladsl.model.Uri
+
 import org.alephium.explorer.config.ApplicationConfig
 import org.alephium.protocol.model.NetworkId
 
@@ -45,6 +47,10 @@ object ExplorerError {
 
   final case class ImpossibleToFetchNetworkType(err: String)
       extends Exception(s"Impossible to fetch network type: $err")
+      with FatalSystemExit
+
+  final case class PeersNotFound(blockFlowUri: Uri)
+      extends Exception(s"Peers not found. blockFlowUri: $blockFlowUri")
       with FatalSystemExit
 
   /******** Group: [[ConfigError]] ********/

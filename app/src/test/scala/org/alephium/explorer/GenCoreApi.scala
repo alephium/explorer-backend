@@ -42,9 +42,9 @@ object GenCoreApi {
         minerApiPort = minerApiPort
       )
 
-  val genSelfClique: Gen[SelfClique] =
+  def genSelfClique(peers: Gen[List[PeerAddress]] = Gen.listOf(genPeerAddress)): Gen[SelfClique] =
     for {
-      peers     <- Gen.listOf(genPeerAddress)
+      peers     <- peers
       selfReady <- Arbitrary.arbitrary[Boolean]
       synced    <- Arbitrary.arbitrary[Boolean]
     } yield

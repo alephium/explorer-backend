@@ -21,7 +21,7 @@ import scala.concurrent.duration._
 import scala.util.Success
 
 import com.typesafe.config.ConfigException
-import org.scalacheck.Arbitrary
+import org.scalacheck.{Arbitrary, Gen}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.TryValues._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -35,7 +35,7 @@ import org.alephium.explorer.AlephiumSpec._
 import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.config.{ApplicationConfig, ExplorerConfig}
-import org.alephium.explorer.error.ExplorerError.{ChainIdMismatch, ImpossibleToFetchNetworkType}
+import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.util.TestUtils._
@@ -85,12 +85,12 @@ class ExplorerV2Spec
   }
 
   "getBlockFlowPeers" should {
-    "return peer URIs" when {
-      val explorerConfig: ExplorerConfig =
-        ApplicationConfig.load().flatMap(ExplorerConfig(_)).success.value
+    val explorerConfig: ExplorerConfig =
+      ApplicationConfig.load().flatMap(ExplorerConfig(_)).success.value
 
+    "return peer URIs" when {
       "directCliqueAccess = true" in {
-        forAll(genSelfClique) { selfClique =>
+        forAll(genSelfClique()) { selfClique =>
           implicit val client: BlockFlowClient = mock[BlockFlowClient]
 
           (client.fetchSelfClique _).expects() returns Future.successful(Right(selfClique))
@@ -111,6 +111,30 @@ class ExplorerV2Spec
         Explorer
           .getBlockFlowPeers(directCliqueAccess = false, blockFlowUri = explorerConfig.blockFlowUri)
           .futureValue is Seq(explorerConfig.blockFlowUri)
+      }
+    }
+
+    "fail" when {
+      "no peers" in {
+        //Generate data with no peers
+        forAll(genSelfClique(peers = Gen.const(List.empty))) { selfClique =>
+          implicit val client: BlockFlowClient = mock[BlockFlowClient]
+
+          //expect call to fetchSelfClique because directCliqueAccess = true
+          (client.fetchSelfClique _).expects() returns Future.successful(Right(selfClique))
+
+          val result =
+            Explorer
+              .getBlockFlowPeers(directCliqueAccess = true,
+                                 blockFlowUri       = explorerConfig.blockFlowUri)
+              .failed
+              .futureValue
+
+          //expect PeersNotFound exception
+          result is PeersNotFound(explorerConfig.blockFlowUri)
+          //exception message should contain the Uri
+          result.getMessage should include(explorerConfig.blockFlowUri.toString())
+        }
       }
     }
   }

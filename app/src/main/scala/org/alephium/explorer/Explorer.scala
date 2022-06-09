@@ -250,9 +250,10 @@ object Explorer extends StrictLogging {
       blockFlowClient: BlockFlowClient): Future[Seq[Uri]] =
     if (directCliqueAccess) {
       blockFlowClient.fetchSelfClique() flatMap {
+        case Right(selfClique) if selfClique.nodes.isEmpty =>
+          Future.failed(PeersNotFound(blockFlowUri))
+
         case Right(selfClique) =>
-          //TODO: What happens when peers are empty?
-          //      Should Application even be allowed to start if there were no peers?
           val peers = urisFromPeers(selfClique.nodes.toSeq)
           logger.debug(s"Syncing with clique peers: $peers")
           Future.successful(peers)
