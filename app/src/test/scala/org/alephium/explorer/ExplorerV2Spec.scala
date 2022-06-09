@@ -90,7 +90,7 @@ class ExplorerV2Spec
 
     "return peer URIs" when {
       "directCliqueAccess = true" in {
-        forAll(genSelfClique()) { selfClique =>
+        forAll(genSelfClique(Gen.nonEmptyListOf(genPeerAddress))) { selfClique =>
           implicit val client: BlockFlowClient = mock[BlockFlowClient]
 
           (client.fetchSelfClique _).expects() returns Future.successful(Right(selfClique))
