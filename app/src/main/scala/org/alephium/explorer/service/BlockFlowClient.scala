@@ -16,29 +16,26 @@
 
 package org.alephium.explorer.service
 
-import java.math.BigInteger
-import java.net.InetAddress
-
-import scala.concurrent.{ExecutionContext, Future}
-import scala.language.implicitConversions
-
 import akka.http.scaladsl.model.Uri
 import akka.util.ByteString
-import sttp.client3._
-
-import org.alephium.api
+import org.alephium.{api, protocol}
 import org.alephium.api.Endpoints
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.http.EndpointSender
-import org.alephium.protocol
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.mining.HashRate
 import org.alephium.protocol.model.{Hint, Target}
 import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.{Duration, Hex, TimeStamp}
+import sttp.client3._
+
+import java.math.BigInteger
+import java.net.InetAddress
+import scala.concurrent.{ExecutionContext, Future}
+import scala.language.implicitConversions
 
 trait BlockFlowClient {
   def fetchBlock(fromGroup: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]]
@@ -78,6 +75,8 @@ trait BlockFlowClient {
   def fetchChainParams(): Future[Either[String, ChainParams]]
 
   def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]]
+
+  def close(): Future[Unit]
 }
 
 object BlockFlowClient {
@@ -96,6 +95,18 @@ object BlockFlowClient {
 
     private implicit def groupIndexConversion(x: GroupIndex): protocol.model.GroupIndex =
       protocol.model.GroupIndex.unsafe(x.value)
+
+    /** Test for closing BlockFlowClient using private method invocation */
+    override def close(): Future[Unit] = {
+      import org.scalatest.PrivateMethodTester._
+
+      //get the backend method
+      val backendMethod = PrivateMethod[SttpBackend[Future, _]](Symbol("backend"))
+      val backend       = this invokePrivate backendMethod()
+
+      //invoke close on private method
+      backend.close()
+    }
 
     private def _send[A, B](
         endpoint: BaseEndpoint[A, B],
