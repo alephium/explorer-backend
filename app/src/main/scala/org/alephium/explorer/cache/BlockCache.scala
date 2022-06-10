@@ -130,15 +130,6 @@ class BlockCache(blockTimes: CaffeineAsyncCache[ChainIndex, Duration],
   def putLatestBlock(chainIndex: ChainIndex, block: LatestBlock): Unit =
     latestBlocks.put(chainIndex, block)
 
-  /** Operations on `rowCount` cache */
-  def getRowCount[E, U](query: Query[E, U, Seq]): Future[Int] =
-    rowCount.get(query)
-
-  def invalidateRowCount[E, U](query: Query[E, U, Seq]): Unit =
-    rowCount.invalidate(query)
-
-  def getRowCountFromCacheIfPresent[E, U](query: Query[E, U, Seq]): Option[Future[Int]] =
-    rowCount.getIfPresent(query)
   def getMainChainBlockCount(): Int =
     rowCount.get()
 }
