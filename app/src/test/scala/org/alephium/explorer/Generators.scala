@@ -63,15 +63,39 @@ trait Generators {
     unlockScript <- Gen.option(hashGen.map(_.bytes))
   } yield UInput(outputRef, unlockScript.map(Hex.toHexString(_)))
 
-  lazy val outputGen: Gen[Output] =
+  lazy val outputTypeGen: Gen[Int] = Gen.oneOf(0, 1)
+
+  lazy val tokenGen: Gen[Token] = for {
+    id     <- hashGen
+    amount <- amountGen
+  } yield Token(id, amount)
+
+  lazy val tokensGen: Gen[Seq[Token]] = Gen.listOf(tokenGen)
+
+  lazy val assetOutputGen: Gen[AssetOutput] =
     for {
-      amount   <- amountGen
-      address  <- addressGen
-      lockTime <- Gen.option(timestampGen)
-      spent    <- Gen.option(transactionHashGen)
+      amount         <- amountGen
+      address        <- addressGen
+      lockTime       <- Gen.option(timestampGen)
+      tokens         <- Gen.option(tokensGen)
+      spent          <- Gen.option(transactionHashGen)
+      additionalData <- Gen.option(bytesGen)
       hint = 0
       key <- hashGen
-    } yield Output(hint, key, amount, address, lockTime, spent)
+    } yield AssetOutput(hint, key, amount, address, tokens, lockTime, additionalData, spent)
+
+  lazy val contractOutputGen: Gen[ContractOutput] =
+    for {
+      amount  <- amountGen
+      address <- addressGen
+      tokens  <- Gen.option(tokensGen)
+      spent   <- Gen.option(transactionHashGen)
+      hint = 0
+      key <- hashGen
+    } yield ContractOutput(hint, key, amount, address, tokens, spent)
+
+  lazy val outputGen: Gen[Output] =
+    Gen.oneOf(assetOutputGen: Gen[Output], contractOutputGen: Gen[Output])
 
   def uoutputGen: Gen[UOutput] =
     for {
@@ -475,28 +499,34 @@ trait Generators {
 
   lazy val outputEntityGen: Gen[OutputEntity] =
     for {
-      blockHash <- blockEntryHashGen
-      txHash    <- transactionHashGen
-      timestamp <- timestampGen
-      hint      <- Gen.posNum[Int]
-      key       <- hashGen
-      amount    <- u256Gen
-      address   <- addressGen
-      lockTime  <- Gen.option(timestampGen)
-      mainChain <- arbitrary[Boolean]
-      order     <- arbitrary[Int]
-      txOrder   <- arbitrary[Int]
+      blockHash      <- blockEntryHashGen
+      txHash         <- transactionHashGen
+      timestamp      <- timestampGen
+      outputType     <- outputTypeGen
+      hint           <- Gen.posNum[Int]
+      key            <- hashGen
+      amount         <- u256Gen
+      address        <- addressGen
+      tokens         <- Gen.option(Gen.listOf(tokenGen))
+      lockTime       <- Gen.option(timestampGen)
+      additionalData <- Gen.option(bytesGen)
+      mainChain      <- arbitrary[Boolean]
+      order          <- arbitrary[Int]
+      txOrder        <- arbitrary[Int]
     } yield
       OutputEntity(
         blockHash      = blockHash,
         txHash         = txHash,
         timestamp      = timestamp,
+        outputType     = outputType,
         hint           = hint,
         key            = key,
         amount         = amount,
         address        = address,
+        tokens         = tokens,
         mainChain      = mainChain,
-        lockTime       = lockTime,
+        lockTime       = if (outputType == 0) lockTime else None,
+        additionalData = if (outputType == 0) additionalData else None,
         order          = order,
         txOrder        = txOrder,
         spentFinalized = None

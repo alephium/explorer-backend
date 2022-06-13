@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.api.model
 
+import org.alephium.api.UtilJson._
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.json.Json._
 
@@ -75,15 +76,47 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
-  it should "Output" in {
-    forAll(outputGen) { output =>
+  it should "Token" in {
+    forAll(tokenGen) { token =>
       val expected = s"""
      |{
+     |  "id": "${token.id.toHexString}",
+     |  "amount": "${token.amount}"
+     |}""".stripMargin
+      check(token, expected)
+    }
+  }
+
+  it should "AsetOutput" in {
+    forAll(assetOutputGen) { output =>
+      val expected = s"""
+     |{
+     |  "type": "AssetOutput",
      |  "hint": ${output.hint},
      |  "key": "${output.key.toHexString}",
      |  "amount": "${output.amount}",
      |  "address": "${output.address}"
+     |  ${output.tokens.map(tokens => s""","tokens": ${write(tokens)}""").getOrElse("")}
      |  ${output.lockTime.map(lockTime => s""","lockTime": ${lockTime.millis}""").getOrElse("")}
+     |  ${output.additionalData
+                          .map(additionalData => s""","additionalData":${write(additionalData)}""")
+                          .getOrElse("")}
+     |  ${output.spent.map(spent              => s""","spent": "${spent.value.toHexString}"""").getOrElse("")}
+     |}""".stripMargin
+      check(output, expected)
+    }
+  }
+
+  it should "ContractOutputGen" in {
+    forAll(contractOutputGen) { output =>
+      val expected = s"""
+     |{
+     |  "type": "ContractOutput",
+     |  "hint": ${output.hint},
+     |  "key": "${output.key.toHexString}",
+     |  "amount": "${output.amount}",
+     |  "address": "${output.address}"
+     |  ${output.tokens.map(tokens => s""","tokens": ${write(tokens)}""").getOrElse("")}
      |  ${output.spent.map(spent => s""","spent": "${spent.value.toHexString}"""").getOrElse("")}
      |}""".stripMargin
       check(output, expected)
