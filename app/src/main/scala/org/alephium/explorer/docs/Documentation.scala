@@ -27,6 +27,7 @@ trait Documentation
     with AddressesEndpoints
     with InfosEndpoints
     with ChartsEndpoints
+    with TokensEndpoints
     with UtilsEndpoints
     with OpenAPIDocsInterpreter {
   val docs: OpenAPI = toOpenAPI(
@@ -39,8 +40,13 @@ trait Documentation
       getTransactionsByAddress,
       getTotalTransactionsByAddress,
       getAddressBalance,
+      listAddressTokens,
+      listAddressTokenTransactions,
+      getAddressTokenBalance,
       getInfos,
       getHeights,
+      listTokens,
+      listTokenTransactions,
       listTokenSupply,
       getTotalSupply,
       getCirculatingSupply,

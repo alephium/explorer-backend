@@ -86,6 +86,7 @@ case object FinalizerService extends StrictLogging {
           (
             for {
               nb <- updateOutputs(from, to)
+              _  <- updateTokenOutputs(from, to)
               _  <- updateLastFinalizedInputTime(to)
             } yield nb
           ).transactionally
@@ -99,6 +100,18 @@ case object FinalizerService extends StrictLogging {
   private def updateOutputs(from: TimeStamp, to: TimeStamp): DBActionR[Int] =
     sqlu"""
       UPDATE outputs o
+      SET spent_finalized = i.tx_hash
+      FROM inputs i
+      WHERE i.output_ref_key = o.key
+      AND o.main_chain=true
+      AND i.main_chain=true
+      AND i.block_timestamp >= $from
+      AND i.block_timestamp < $to;
+      """
+
+  private def updateTokenOutputs(from: TimeStamp, to: TimeStamp): DBActionR[Int] =
+    sqlu"""
+      UPDATE token_outputs o
       SET spent_finalized = i.tx_hash
       FROM inputs i
       WHERE i.output_ref_key = o.key

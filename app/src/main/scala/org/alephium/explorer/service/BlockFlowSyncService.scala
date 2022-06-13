@@ -333,7 +333,7 @@ case object BlockFlowSyncService extends StrictLogging {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]) = {
     if (inputs.nonEmpty) {
-      BlockDao.updateInputs(inputs).map(_ => ())
+      BlockDao.updateInputs(inputs)
     } else {
       Future.successful(())
     }

@@ -52,6 +52,23 @@ class AddressServer(transactionService: TransactionService)(implicit ec: Executi
         for {
           (balance, locked) <- transactionService.getBalance(address)
         } yield Right(AddressBalance(balance, locked))
+      } ~
+      toRoute(getAddressTokenBalance) {
+        case (address, token) =>
+          for {
+            (balance, locked) <- transactionService.getTokenBalance(address, token)
+          } yield Right(AddressBalance(balance, locked))
+      } ~
+      toRoute(listAddressTokens) { address =>
+        for {
+          tokens <- transactionService.listAddressTokens(address)
+        } yield Right(tokens)
+      } ~
+      toRoute(listAddressTokenTransactions) {
+        case (address, token, pagination) =>
+          for {
+            tokens <- transactionService.listAddressTokenTransactions(address, token, pagination)
+          } yield Right(tokens)
       }
 
 }

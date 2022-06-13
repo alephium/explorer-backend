@@ -191,8 +191,10 @@ object BlockDao {
   }
 
   def updateInputs(inputs: Seq[InputEntity])(implicit ec: ExecutionContext,
-                                             dc: DatabaseConfig[PostgresProfile]): Future[Int] =
+                                             dc: DatabaseConfig[PostgresProfile]): Future[Unit] =
     run(
-      DBIOAction.sequence(inputs.map(insertTxPerAddressFromInput))
-    ).map(_.sum)
+      DBIOAction.sequence(inputs.map { input =>
+        insertTxPerAddressFromInput(input).andThen(insertTokenPerAddressFromInput(input))
+      })
+    ).map(_ => ())
 }
