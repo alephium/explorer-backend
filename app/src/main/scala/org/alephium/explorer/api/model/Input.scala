@@ -26,7 +26,8 @@ final case class Input(
     unlockScript: Option[String] = None,
     txHashRef: Transaction.Hash,
     address: Address,
-    amount: U256
+    amount: U256,
+    tokens: Option[Seq[Token]] = None
 )
 
 object Input {
