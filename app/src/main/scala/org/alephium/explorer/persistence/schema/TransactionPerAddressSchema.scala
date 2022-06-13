@@ -29,21 +29,21 @@ object TransactionPerAddressSchema
 
   class TransactionPerAddresses(tag: Tag) extends Table[TransactionPerAddressEntity](tag, name) {
     def address: Rep[Address]           = column[Address]("address")
-    def hash: Rep[Transaction.Hash]     = column[Transaction.Hash]("hash", O.SqlType("BYTEA"))
+    def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
     def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("block_timestamp")
     def txOrder: Rep[Int]               = column[Int]("tx_order")
     def mainChain: Rep[Boolean]         = column[Boolean]("main_chain")
 
-    def pk: PrimaryKey = primaryKey("txs_per_address_pk", (hash, blockHash, address))
+    def pk: PrimaryKey = primaryKey("txs_per_address_pk", (txHash, blockHash, address))
 
-    def hashIdx: Index      = index("txs_per_address_hash_idx", hash)
+    def hashIdx: Index      = index("txs_per_address_tx_hash_idx", txHash)
     def timestampIdx: Index = index("txs_per_address_timestamp_idx", timestamp)
     def blockHashIdx: Index = index("txs_per_address_block_hash_idx", blockHash)
     def addressIdx: Index   = index("txs_per_address_address_idx", address)
 
     def * : ProvenShape[TransactionPerAddressEntity] =
-      (address, hash, blockHash, timestamp, txOrder, mainChain)
+      (address, txHash, blockHash, timestamp, txOrder, mainChain)
         .<>((TransactionPerAddressEntity.apply _).tupled, TransactionPerAddressEntity.unapply)
   }
 

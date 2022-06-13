@@ -180,6 +180,18 @@ object BlockQueries extends StrictLogging {
           .filter(_.blockHash === hash)
           .map(_.mainChain)
           .update(isMainChain)
+        _ <- TransactionPerTokenSchema.table
+          .filter(_.blockHash === hash)
+          .map(_.mainChain)
+          .update(isMainChain)
+        _ <- TokenPerAddressSchema.table
+          .filter(_.blockHash === hash)
+          .map(_.mainChain)
+          .update(isMainChain)
+        _ <- TokenOutputSchema.table
+          .filter(_.blockHash === hash)
+          .map(_.mainChain)
+          .update(isMainChain)
       } yield ()
 
     query.transactionally
@@ -280,8 +292,8 @@ object BlockQueries extends StrictLogging {
     val query =
       insertBlockDeps(blockDeps) andThen
         insertTransactions(transactions) andThen
-        insertInputs(inputs) andThen
         insertOutputs(outputs) andThen
+        insertInputs(inputs) andThen
         insertBlockHeaders(blockHeaders)
 
     query.transactionally
