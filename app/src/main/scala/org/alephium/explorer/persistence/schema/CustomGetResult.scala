@@ -24,7 +24,8 @@ import slick.jdbc.{GetResult, PositionedResult}
 import org.alephium.explorer.{BlockHash, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.BlockHeader
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.serde._
+import org.alephium.util.{AVector, TimeStamp, U256}
 
 object CustomGetResult {
 
@@ -72,6 +73,14 @@ object CustomGetResult {
   implicit val optionByteStringGetResult: GetResult[Option[ByteString]] =
     (result: PositionedResult) =>
       result.nextBytesOption().map(bytes => ByteString.fromArrayUnsafe(bytes))
+
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  implicit val optionTokensGetResult: GetResult[Option[Seq[Token]]] =
+    (result: PositionedResult) =>
+      result
+        .nextBytesOption()
+        .map(bytes =>
+          deserialize[AVector[Token]](ByteString.fromArrayUnsafe(bytes)).toOption.get.toSeq)
 
   implicit val hashGetResult: GetResult[Hash] =
     (result: PositionedResult) => Hash.unsafe(ByteString.fromArrayUnsafe(result.nextBytes()))
