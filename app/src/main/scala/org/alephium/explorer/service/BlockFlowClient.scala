@@ -360,7 +360,7 @@ object BlockFlowClient {
       case _                                                              => None
     }
     UOutput(
-      output.alphAmount.value,
+      output.attoAlphAmount.value,
       new Address(output.address.toBase58),
       lockTime
     )
@@ -387,7 +387,7 @@ object BlockFlowClient {
       timestamp,
       hint.value,
       protocol.model.TxOutputRef.key(txId, index),
-      output.alphAmount.value,
+      output.attoAlphAmount.value,
       new Address(output.address.toBase58),
       mainChain,
       lockTime,
