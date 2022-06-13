@@ -16,24 +16,34 @@
 
 package org.alephium.explorer.persistence.model
 
+import akka.util.ByteString
+
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, BlockEntry, Output, Transaction}
+import org.alephium.explorer.api.model._
 import org.alephium.util.{TimeStamp, U256}
 
 final case class OutputEntity(
     blockHash: BlockEntry.Hash,
     txHash: Transaction.Hash,
     timestamp: TimeStamp,
+    outputType: Int, //0 Asset, 1 Contract
     hint: Int,
     key: Hash,
     amount: U256,
     address: Address,
+    tokens: Option[Seq[Token]], //None if empty list
     mainChain: Boolean,
     lockTime: Option[TimeStamp],
+    additionalData: Option[ByteString],
     order: Int,
     txOrder: Int,
     spentFinalized: Option[Transaction.Hash]
 ) {
-  def toApi(spent: Option[Transaction.Hash]): Output =
-    Output(hint, key, amount, address, lockTime, spent)
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  def toApi(spent: Option[Transaction.Hash]): Output = {
+    outputType match {
+      case 0 => AssetOutput(hint, key, amount, address, tokens, lockTime, additionalData, spent)
+      case 1 => ContractOutput(hint, key, amount, address, tokens, spent)
+    }
+  }
 }
