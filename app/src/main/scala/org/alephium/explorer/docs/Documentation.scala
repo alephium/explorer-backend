@@ -51,7 +51,9 @@ trait Documentation
       getHashrates,
       getAllChainsTxCount,
       getPerChainTxCount,
-      sanityCheck
+      sanityCheck,
+      changeGlobalLogLevel,
+      changeLogConfig
     ),
     "Alephium Explorer API",
     "1.0"

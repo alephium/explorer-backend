@@ -28,8 +28,23 @@ trait UtilsEndpoints extends BaseEndpoint with QueryParams {
       .tag("Utils")
       .in("utils")
 
+  private val logLevels    = List("TRACE", "DEBUG", "INFO", "WARN", "ERROR")
+  private val logLevelsStr = logLevels.mkString(", ")
+
   val sanityCheck: BaseEndpoint[Unit, Unit] =
     utilsEndpoint.put
       .in("sanity-check")
       .description("Perform a sanity check")
+
+  val changeGlobalLogLevel: BaseEndpoint[String, Unit] =
+    utilsEndpoint.put
+      .in("update-global-loglevel")
+      .in(plainBody[String].validate(Validator.enumeration(logLevels)))
+      .description(s"Update global log level, accepted: $logLevelsStr")
+
+  val changeLogConfig: BaseEndpoint[String, Unit] =
+    utilsEndpoint.put
+      .in("update-log-config")
+      .in(plainBody[String])
+      .description("Update logging file, only logback.xml is accepted")
 }
