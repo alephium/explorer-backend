@@ -33,8 +33,6 @@ sealed trait ConfigError extends ExplorerError
 /** Errors that lead to JVM termination */
 sealed trait FatalSystemExit extends ExplorerError
 
-//scalastyle:off null
-@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 object ExplorerError {
 
   /******** Group: [[FatalSystemExit]] ********/
