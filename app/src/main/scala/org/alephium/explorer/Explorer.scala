@@ -35,6 +35,7 @@ import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.persistence.DBInitializer
 import org.alephium.explorer.persistence.dao.HealthCheckDao
 import org.alephium.explorer.service._
+import org.alephium.explorer.util.AsyncCloseable._
 import org.alephium.explorer.util.FutureUtil._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.protocol.model.NetworkId
@@ -66,7 +67,12 @@ object Explorer extends StrictLogging {
       case Success(explorerConfig) => Explorer.start(explorerConfig)
     }
 
-  /** Start Explorer from validated [[org.alephium.explorer.config.ExplorerConfig]] */
+  /**
+    * Start Explorer from validated [[org.alephium.explorer.config.ExplorerConfig]].
+    *
+    * This function implements the sequence for starting Explorer.
+    * */
+  // scalastyle:off
   def start(config: ExplorerConfig)(implicit ec: ExecutionContext,
                                     system: ActorSystem): Future[ExplorerState] =
     //First: Check database is available
@@ -78,63 +84,70 @@ object Explorer extends StrictLogging {
           maybeApiKey = config.maybeBlockFlowApiKey
         )
 
-      implicit val groupSetting: GroupSetting =
-        GroupSetting(config.groupNum)
+      //Second: Fetch Peers and initialise Scheduler if configured for read-write mode.
+      getPeersAndScheduler(config) flatMap { peersAndScheduler =>
+        //managed termination of the scheduler during further initialisation.
+        managed(peersAndScheduler.map(_._2)) { scheduler =>
+          TransactionCache() flatMap { implicit transactionCache =>
+            implicit val groupSetting: GroupSetting =
+              GroupSetting(config.groupNum)
 
-      implicit val blockCache: BlockCache =
-        BlockCache()
+            implicit val blockCache: BlockCache =
+              BlockCache()
 
-      //Second: Start sync services
-      managed(startSyncServices(config)) { scheduler =>
-        TransactionCache() flatMap { implicit transactionCache =>
-          //Finally: Start http server
-          startHttpServer(
-            host = config.host,
-            port = config.port
-          ) mapSync { akkaHttpServer =>
-            //Return explorer's state: Either ReadOnly or ReadWrite
-            ExplorerState(
-              scheduler        = scheduler,
-              database         = dc,
-              akkaHttpServer   = akkaHttpServer,
-              blockFlowClient  = blockFlowClient,
-              groupSettings    = groupSetting,
-              blockCache       = blockCache,
-              transactionCache = transactionCache
-            )
+            def startServer() =
+              startHttpServer(
+                host = config.host,
+                port = config.port
+              )
+
+            //Third: Start the server.
+            managed(startServer()) { akkaHttpServer =>
+              //Create explorer's state: Either ReadOnly or ReadWrite
+              implicit val state: ExplorerState =
+                ExplorerState(
+                  scheduler        = scheduler,
+                  database         = dc,
+                  akkaHttpServer   = akkaHttpServer,
+                  blockFlowClient  = blockFlowClient,
+                  groupSettings    = groupSetting,
+                  blockCache       = blockCache,
+                  transactionCache = transactionCache
+                )
+
+              peersAndScheduler match {
+                case Some((peers, scheduler)) => //Is read-write mode
+                  implicit val schedulerImplicit: Scheduler = scheduler
+
+                  //Fourth/Finally: Start sync services.
+                  startSyncServices(
+                    peers                           = peers,
+                    syncPeriod                      = config.syncPeriod,
+                    tokenSupplyServiceSyncPeriod    = config.tokenSupplyServiceSyncPeriod,
+                    hashRateServiceSyncPeriod       = config.hashRateServiceSyncPeriod,
+                    finalizerServiceSyncPeriod      = config.finalizerServiceSyncPeriod,
+                    transactionHistoryServicePeriod = config.transactionHistoryServicePeriod
+                  )
+
+                  Future.successful(state)
+
+                case None => //Is read-only mode
+                  Future.successful(state)
+              }
+            }
           }
         }
       }
     }
+  // scalastyle:on
 
-  /**
-    * Start sync services from the configuration [[org.alephium.explorer.config.ExplorerConfig]]
-    *
-    * @return A `Some(Scheduler)` if configured to start in read-write else `None`.
-    */
-  def startSyncServices(config: ExplorerConfig)(
+  /** If `readOnly = true` fetches peers and initialises [[org.alephium.explorer.util.Scheduler]] else returns None */
+  def getPeersAndScheduler(config: ExplorerConfig)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile],
-      blockFlowClient: BlockFlowClient,
-      blockCache: BlockCache,
-      groupSetting: GroupSetting): Future[Option[Scheduler]] =
-    if (config.readOnly) {
-      Future.successful(None)
-    } else {
-      getPeers(
-        networkId          = config.networkId,
-        directCliqueAccess = config.directCliqueAccess,
-        blockFlowUri       = config.blockFlowUri
-      ) flatMap { peers =>
-        startSyncServices(
-          peers                           = peers,
-          syncPeriod                      = config.syncPeriod,
-          tokenSupplyServiceSyncPeriod    = config.tokenSupplyServiceSyncPeriod,
-          hashRateServiceSyncPeriod       = config.hashRateServiceSyncPeriod,
-          finalizerServiceSyncPeriod      = config.finalizerServiceSyncPeriod,
-          transactionHistoryServicePeriod = config.transactionHistoryServicePeriod
-        ).mapSync(Some(_))
-      }
+      blockFlowClient: BlockFlowClient): Future[Option[(Seq[Uri], Scheduler)]] =
+    getPeers(config) map {
+      case Some(peers) => Some((peers, Scheduler("SYNC_SERVICES")))
+      case None        => None
     }
 
   /** Start sync services given the peers */
@@ -149,21 +162,16 @@ object Explorer extends StrictLogging {
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       blockCache: BlockCache,
-      groupSetting: GroupSetting): Future[Scheduler] =
-    managed(Scheduler("SYNC_SERVICES")) { implicit scheduler =>
-      Future.fromTry {
-        Try {
-          BlockFlowSyncService.start(peers, syncPeriod)
-          MempoolSyncService.start(peers, syncPeriod)
-          TokenSupplyService.start(tokenSupplyServiceSyncPeriod)
-          HashrateService.start(hashRateServiceSyncPeriod)
-          FinalizerService.start(finalizerServiceSyncPeriod)
-          TransactionHistoryService.start(transactionHistoryServicePeriod)
-
-          scheduler
-        }
-      }
-    }
+      groupSetting: GroupSetting,
+      scheduler: Scheduler,
+      closer: ExplorerCloser): Unit = {
+    BlockFlowSyncService.start(peers, syncPeriod)
+    MempoolSyncService.start(peers, syncPeriod)
+    TokenSupplyService.start(tokenSupplyServiceSyncPeriod)
+    HashrateService.start(hashRateServiceSyncPeriod)
+    FinalizerService.start(finalizerServiceSyncPeriod)
+    TransactionHistoryService.start(transactionHistoryServicePeriod)
+  }
 
   /** Start AkkaHttp server */
   def startHttpServer(host: String, port: Int)(
@@ -192,6 +200,18 @@ object Explorer extends StrictLogging {
     }
   }
   // scalastyle:on
+
+  def getPeers(config: ExplorerConfig)(implicit ec: ExecutionContext,
+                                       blockFlowClient: BlockFlowClient): Future[Option[Seq[Uri]]] =
+    if (config.readOnly) {
+      Future.successful(None)
+    } else {
+      getPeers(
+        networkId          = config.networkId,
+        directCliqueAccess = config.directCliqueAccess,
+        blockFlowUri       = config.blockFlowUri
+      ).map(Some(_))
+    }
 
   /** Fetch network peers */
   def getPeers(networkId: NetworkId, directCliqueAccess: Boolean, blockFlowUri: Uri)(

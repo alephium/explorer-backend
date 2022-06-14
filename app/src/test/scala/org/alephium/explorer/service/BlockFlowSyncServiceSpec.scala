@@ -24,7 +24,7 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
 
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
-import org.alephium.explorer.{AlephiumSpec, BlockHash, Generators, GroupSetting}
+import org.alephium.explorer.{AlephiumSpec, BlockHash, ExplorerCloser, Generators, GroupSetting}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
@@ -70,6 +70,12 @@ class BlockFlowSyncServiceSpec
 
   it should "fetch and build timestamp range" in new Fixture {
 
+    implicit val terminator: ExplorerCloser =
+      new ExplorerCloser {
+        override def close()(implicit ec: ExecutionContext): Future[Unit] =
+          fail("Unexpected call to close")
+      }
+
     def th(ts: TimeStamp, height: Int) = Future.successful(Option((ts, height)))
 
     BlockFlowSyncService
@@ -87,6 +93,12 @@ class BlockFlowSyncServiceSpec
 
   it should "start/sync/stop" in new Fixture {
     using(Scheduler("")) { implicit scheduler =>
+      implicit val terminator: ExplorerCloser =
+        new ExplorerCloser {
+          override def close()(implicit ec: ExecutionContext): Future[Unit] =
+            fail("Unexpected call to close")
+        }
+
       checkBlocks(Seq.empty)
       BlockFlowSyncService.start(Seq(""), 1.second)
 

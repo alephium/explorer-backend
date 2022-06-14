@@ -26,6 +26,7 @@ import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
+import org.alephium.explorer.AkkaHttpServer
 import org.alephium.explorer.util.FutureUtil._
 
 /** Type-classes for things that can be terminated asynchronously */
@@ -59,10 +60,16 @@ object AsyncCloseable extends StrictLogging {
       }
   }
 
-  /** [[AsyncCloseable]] for Akka HTTP server */
-  implicit object AkkaHttpServerAsyncCloseable extends AsyncCloseable[Http.ServerBinding] {
+  /** [[AsyncCloseable]] for Akka HTTP server binding */
+  implicit object HttpServerBindingAsyncCloseable extends AsyncCloseable[Http.ServerBinding] {
     override def close(closeable: Http.ServerBinding)(implicit ec: ExecutionContext): Future[Unit] =
       closeable.unbind().mapSyncToUnit()
+  }
+
+  /** [[AsyncCloseable]] for Akka HTTP server binding */
+  implicit object AkkaHttpServerAsyncCloseable extends AsyncCloseable[AkkaHttpServer] {
+    override def close(closeable: AkkaHttpServer)(implicit ec: ExecutionContext): Future[Unit] =
+      closeable.close()
   }
 
   /** [[AsyncCloseable]] for Akka ActorSystem */

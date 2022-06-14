@@ -21,6 +21,8 @@ import scala.util.{Failure, Success, Try}
 
 import com.typesafe.scalalogging.StrictLogging
 
+import org.alephium.explorer.util.AsyncCloseable.AsyncCloseableImplicit
+
 object FutureUtil extends StrictLogging {
 
   implicit class FutureEnrichment[A](val future: Future[A]) extends AnyVal {
@@ -89,16 +91,14 @@ object FutureUtil extends StrictLogging {
     Future.fromTry(Try(resource)) flatMap { resource =>
       body(resource) recoverWith {
         case exception =>
-          AsyncCloseable
-            .close(resource)
-            .onComplete {
-              case Failure(throwable) =>
-                logger.error(s"Failed to stop resource ${resource.getClass.getName}", throwable)
-                Future.failed(throwable)
+          resource.close() onComplete {
+            case Failure(throwable) =>
+              logger.error(s"Failed to stop resource ${resource.getClass.getName}", throwable)
+              Future.failed(throwable)
 
-              case Success(_) =>
-                logger.trace(s"Resource ${resource.getClass.getName} stopped.")
-            }
+            case Success(_) =>
+              logger.trace(s"Resource ${resource.getClass.getName} stopped.")
+          }
 
           Future.failed(exception)
       }

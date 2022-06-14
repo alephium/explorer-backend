@@ -30,7 +30,7 @@ final case class AkkaHttpServer(server: Http.ServerBinding, routes: Route, actor
     extends StrictLogging {
 
   /** Stop AkkaHttp server and terminates ActorSystem */
-  def stop()(implicit ec: ExecutionContext): Future[Unit] =
+  def close()(implicit ec: ExecutionContext): Future[Unit] =
     server //Stop server to terminate receiving http requests
       .close()
       .recoverWith { throwable =>

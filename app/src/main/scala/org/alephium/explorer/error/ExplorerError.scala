@@ -23,6 +23,7 @@ import akka.http.scaladsl.model.Uri
 import org.alephium.explorer.config.ApplicationConfig
 import org.alephium.protocol.model.NetworkId
 import org.alephium.serde.SerdeError
+import org.alephium.util.TimeStamp
 
 /** All Explorer errors */
 sealed trait ExplorerError extends Throwable
@@ -54,6 +55,11 @@ object ExplorerError {
 
   final case class InvalidMigrationVersion(error: SerdeError)
       extends Exception("Invalid migration version", error)
+      with FatalSystemExit
+
+  final case class InvalidMaxRemoveTimeStamp(remote: TimeStamp, local: TimeStamp)
+      extends Exception(
+        s"Max remote timestamp ('$remote') should not be before local timestamp ('$local')")
       with FatalSystemExit
 
   /******** Group: [[ConfigError]] ********/

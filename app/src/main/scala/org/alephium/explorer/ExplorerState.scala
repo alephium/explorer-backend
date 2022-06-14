@@ -32,7 +32,7 @@ import org.alephium.explorer.util.Scheduler
   *  - ReadOnly: [[org.alephium.explorer.ExplorerState.ReadOnly]]
   *  - ReadWrite: [[org.alephium.explorer.ExplorerState.ReadWrite]]
   * */
-sealed trait ExplorerState extends StrictLogging {
+sealed trait ExplorerState extends ExplorerCloser with StrictLogging {
   def database: DatabaseConfig[PostgresProfile]
   def blockFlowClient: BlockFlowClient
   def groupSettings: GroupSetting
@@ -49,7 +49,7 @@ sealed trait ExplorerState extends StrictLogging {
         Some(state.scheduler)
     }
 
-  def close()(implicit ec: ExecutionContext): Future[Unit] =
+  override def close()(implicit ec: ExecutionContext): Future[Unit] =
     schedulerOpt()
       .close() //Close scheduler first to stop all background processes eg: sync
       .recoverWith { throwable =>
@@ -57,7 +57,7 @@ sealed trait ExplorerState extends StrictLogging {
         Future.unit
       }
       .flatMap { _ =>
-        akkaHttp.stop() //Stop server to terminate receiving http requests
+        akkaHttp.close() //Stop server to terminate receiving http requests
       }
       .flatMap { _ =>
         database

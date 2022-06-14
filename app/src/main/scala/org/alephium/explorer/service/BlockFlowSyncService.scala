@@ -27,9 +27,10 @@ import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.{foldFutures, GroupSetting}
+import org.alephium.explorer.{foldFutures, ExplorerCloser, GroupSetting}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.error.ExplorerError.InvalidMaxRemoveTimeStamp
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.{BlockEntity, InputEntity}
 import org.alephium.explorer.util.Scheduler
@@ -63,25 +64,29 @@ case object BlockFlowSyncService extends StrictLogging {
   private val initialBackStep = Duration.ofMinutesUnsafe(30L)
   // scalastyle:on magic.number
 
+  // scalastyle:off
   def start(nodeUris: Seq[Uri], interval: FiniteDuration)(implicit ec: ExecutionContext,
                                                           dc: DatabaseConfig[PostgresProfile],
                                                           blockFlowClient: BlockFlowClient,
                                                           cache: BlockCache,
                                                           groupSetting: GroupSetting,
-                                                          scheduler: Scheduler): Unit =
+                                                          scheduler: Scheduler,
+                                                          closer: ExplorerCloser): Unit =
     scheduler.scheduleLoopConditional(
       taskId        = this.productPrefix,
       firstInterval = ScalaDuration.Zero,
       loopInterval  = interval,
       state         = new AtomicBoolean()
     )(init())(state => syncOnce(nodeUris, state))
+  // scalastyle:off
 
   def syncOnce(nodeUris: Seq[Uri], initialBackStepDone: AtomicBoolean)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
-      groupSetting: GroupSetting): Future[Unit] = {
+      groupSetting: GroupSetting,
+      closer: ExplorerCloser): Future[Unit] = {
     if (initialBackStepDone.get()) {
       syncOnceWith(nodeUris, defaultStep, defaultBackStep)
     } else {
@@ -97,7 +102,8 @@ case object BlockFlowSyncService extends StrictLogging {
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
-      groupSetting: GroupSetting): Future[Unit] = {
+      groupSetting: GroupSetting,
+      closer: ExplorerCloser): Future[Unit] = {
     logger.debug("Start syncing")
     val startedAt  = TimeStamp.now()
     var downloaded = 0
@@ -175,7 +181,8 @@ case object BlockFlowSyncService extends StrictLogging {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
-      groupSetting: GroupSetting): Future[(Seq[(TimeStamp, TimeStamp)], Int)] = {
+      groupSetting: GroupSetting,
+      closer: ExplorerCloser): Future[(Seq[(TimeStamp, TimeStamp)], Int)] = {
     fetchAndBuildTimeStampRange(step, backStep, getLocalMaxTimestamp(), getRemoteMaxTimestamp())
   }
 
@@ -380,12 +387,50 @@ case object BlockFlowSyncService extends StrictLogging {
       backStep: Duration,
       fetchLocalTs:  => Future[Option[(TimeStamp, Int)]],
       fetchRemoteTs: => Future[Option[(TimeStamp, Int)]]
-  )(implicit executionContext: ExecutionContext): Future[(Seq[(TimeStamp, TimeStamp)], Int)] = {
+  )(implicit executionContext: ExecutionContext,
+    closer: ExplorerCloser): Future[(Seq[(TimeStamp, TimeStamp)], Int)] =
     for {
       localTs  <- fetchLocalTs
       remoteTs <- fetchRemoteTs
-    } yield {
-      (for {
+      result   <- buildTimeStampRange(step, backStep, localTs, remoteTs)
+    } yield result
+
+  /** Build and validate TimeStamp ranges.
+    *
+    * @note Terminates the explorer on [[org.alephium.explorer.error.ExplorerError.InvalidMaxRemoveTimeStamp]]
+    * */
+  def buildTimeStampRange(
+      step: Duration,
+      backStep: Duration,
+      localTs: Option[(TimeStamp, Int)],
+      remoteTs: Option[(TimeStamp, Int)]
+  )(implicit executionContext: ExecutionContext,
+    closer: ExplorerCloser): Future[(Seq[(TimeStamp, TimeStamp)], Int)] = {
+
+    //Validate TimeStamps. On Failure terminate Explorer
+    def validate(localTs: TimeStamp,
+                 localNbOfBlocks: Int,
+                 remoteTs: TimeStamp,
+                 remoteNbOfBlocks: Int) = {
+      if (remoteTs.isBefore(localTs)) {
+        val error = InvalidMaxRemoveTimeStamp(remote = remoteTs, local = localTs)
+        logger.error("Failed to build timestamp range", error)
+
+        closer //close Explorer and return failure.
+          .close()
+          .flatMap { _ =>
+            Future.failed(error)
+          }
+      } else {
+        val range  = buildTimestampRange(localTs.minusUnsafe(backStep), remoteTs, step)
+        val blocks = remoteNbOfBlocks - localNbOfBlocks
+        Future.successful((range, blocks))
+      }
+    }
+
+    //Build ranges
+    val ranges =
+      for {
         (localTs, localNbOfBlocks) <- localTs.map {
           case (ts, nb) => (ts.plusMillisUnsafe(1), nb)
         }
@@ -393,17 +438,16 @@ case object BlockFlowSyncService extends StrictLogging {
           case (ts, nb) => (ts.plusMillisUnsafe(1), nb)
         }
       } yield {
-        if (remoteTs.isBefore(localTs)) {
-          logger.error("max remote ts can't be before local one")
-          sys.exit(0)
-        } else {
-          (buildTimestampRange(localTs.minusUnsafe(backStep), remoteTs, step),
-           remoteNbOfBlocks - localNbOfBlocks)
-        }
-      }) match {
-        case None      => (Seq.empty, 0)
-        case Some(res) => res
+        validate(localTs          = localTs,
+                 localNbOfBlocks  = localNbOfBlocks,
+                 remoteTs         = remoteTs,
+                 remoteNbOfBlocks = remoteNbOfBlocks)
       }
+
+    //Build result
+    ranges match {
+      case None      => Future.successful((Seq.empty, 0))
+      case Some(res) => res
     }
   }
 }
