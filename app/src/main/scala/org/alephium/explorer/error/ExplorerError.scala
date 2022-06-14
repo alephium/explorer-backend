@@ -22,6 +22,7 @@ import akka.http.scaladsl.model.Uri
 
 import org.alephium.explorer.config.ApplicationConfig
 import org.alephium.protocol.model.NetworkId
+import org.alephium.serde.SerdeError
 
 /** All Explorer errors */
 sealed trait ExplorerError extends Throwable
@@ -51,6 +52,10 @@ object ExplorerError {
 
   final case class PeersNotFound(blockFlowUri: Uri)
       extends Exception(s"Peers not found. blockFlowUri: $blockFlowUri")
+      with FatalSystemExit
+
+  final case class InvalidMigrationVersion(error: SerdeError)
+      extends Exception("Invalid migration version", error)
       with FatalSystemExit
 
   /******** Group: [[ConfigError]] ********/

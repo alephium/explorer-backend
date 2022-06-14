@@ -25,7 +25,7 @@ import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.persistence._
+import org.alephium.explorer.error.ExplorerError.InvalidMigrationVersion
 import org.alephium.explorer.persistence.model.AppState
 import org.alephium.explorer.persistence.schema.AppStateSchema
 import org.alephium.explorer.persistence.schema.CustomGetResult._
@@ -53,7 +53,7 @@ object Migrations extends StrictLogging {
         _ <- addOutputStatusColumn
         _ <- resetTokenSupply
         _ <- addReservedAndLockedTopkenSupplyColumn
-      } yield (Some(1))
+      } yield Some(1)
     } else {
       DBIOAction.successful(None)
     }
@@ -72,14 +72,17 @@ object Migrations extends StrictLogging {
   def getVersion()(implicit ec: ExecutionContext): DBActionR[Int] = {
     sql"""
       SELECT value FROM app_state where key = 'migrations_version'
-    """.as[ByteString].headOption.map {
-      case None => 0
+    """.as[ByteString].headOption.flatMap {
+      case None =>
+        DBIO.successful(0)
+
       case Some(bytes) =>
         deserialize[Int](bytes) match {
-          case Left(error) =>
-            logger.error(s"Invalid migration version, closing app. $error")
-            sys.exit(1)
-          case Right(version) => version
+          case Left(error: SerdeError) =>
+            DBIO.failed(InvalidMigrationVersion(error))
+
+          case Right(version) =>
+            DBIO.successful(version)
         }
     }
   }
