@@ -60,6 +60,14 @@ sealed trait ExplorerState extends StrictLogging {
         akkaHttp.stop() //Stop server to terminate receiving http requests
       }
       .flatMap { _ =>
+        blockFlowClient //Stop BlockFlowClient
+          .close()
+          .recoverWith { throwable =>
+            logger.error("Failed to close BlockFlowClient", throwable)
+            Future.unit
+          }
+      }
+      .flatMap { _ =>
         database
           .close() //close database
           .recoverWith { throwable =>

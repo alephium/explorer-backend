@@ -281,6 +281,9 @@ class BlockFlowSyncServiceSpec
       def fetchUnconfirmedTransactions(
           uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]] =
         Future.successful(Right(Seq.empty))
+
+      override def close(): Future[Unit] =
+        Future.unit
     }
 
     def checkBlocks(blocksToCheck: Seq[BlockEntry]) = {
