@@ -93,6 +93,7 @@ class MempoolSyncServiceSpec
                               height: Height): Future[Either[String, HashesAtHeight]] = ???
       def fetchSelfClique(): Future[Either[String, SelfClique]]                       = ???
       def fetchChainParams(): Future[Either[String, ChainParams]]                     = ???
+      override def start(): Future[Unit]                                              = ???
       override def close(): Future[Unit]                                              = ???
     }
 

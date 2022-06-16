@@ -79,6 +79,8 @@ trait BlockFlowClient {
 
   def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]]
 
+  def start(): Future[Unit]
+
   def close(): Future[Unit]
 }
 
@@ -94,6 +96,9 @@ object BlockFlowClient {
       with Endpoints {
 
     private val endpointSender = new EndpointSender(maybeApiKey)
+
+    override def start(): Future[Unit] =
+      endpointSender.start()
 
     implicit lazy val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
 
@@ -179,16 +184,8 @@ object BlockFlowClient {
       }
     }
 
-    /** Temporary reflection based solution for closing stto backend.
-      *
-      * @see issue <a href="https://github.com/alephium/explorer-backend/issues/259">#259</a>
-      * */
-    @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
     override def close(): Future[Unit] = {
-      val field = this.getClass.getDeclaredField("org$alephium$http$EndpointSender$$backend")
-      field.setAccessible(true)
-      val backend = field.get(this).asInstanceOf[SttpBackend[Future, _]]
-      backend.close()
+      endpointSender.stop()
     }
   }
 

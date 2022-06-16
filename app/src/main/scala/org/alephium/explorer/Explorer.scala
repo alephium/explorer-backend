@@ -103,12 +103,15 @@ object Explorer extends StrictLogging {
     }
 
   def createBlockFlowClient(config: ExplorerConfig)(
-      implicit ec: ExecutionContext): BlockFlowClient =
-    BlockFlowClient(
+      implicit ec: ExecutionContext): Future[BlockFlowClient] = {
+    val client = BlockFlowClient(
       uri         = config.blockFlowUri,
       groupNum    = config.groupNum,
       maybeApiKey = config.maybeBlockFlowApiKey
     )
+
+    client.start().map(_ => client)
+  }
 
   /**
     * Start sync services from the configuration [[org.alephium.explorer.config.ExplorerConfig]]
