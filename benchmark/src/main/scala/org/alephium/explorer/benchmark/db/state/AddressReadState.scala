@@ -31,7 +31,6 @@ import org.alephium.explorer.{BlockHash, GroupSetting, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
-import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
@@ -191,13 +190,6 @@ class AddressReadState(val db: DBExecutor)
 
     implicit val groupSetting: GroupSetting =
       GroupSetting(4)
-
-    implicit val blockCache: BlockCache =
-      BlockCache()(
-        groupSetting = groupSetting,
-        ec           = config.db.ioExecutionContext,
-        dc           = db.config
-      )
 
     logger.info("Persisting data")
     blocks.sliding(10000).foreach { bs =>

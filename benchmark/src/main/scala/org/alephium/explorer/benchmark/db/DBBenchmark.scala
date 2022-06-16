@@ -116,7 +116,7 @@ class DBBenchmark {
     implicit val cache: BlockCache                   = state.blockCache
 
     val _ =
-      Await.result(BlockDao.listMainChainSQLCached(state.next), requestTimeout)
+      Await.result(BlockDao.listMainChain(state.next), requestTimeout)
   }
 
   @Benchmark
@@ -126,7 +126,7 @@ class DBBenchmark {
     implicit val cache: BlockCache                   = state.blockCache
 
     val _ =
-      Await.result(BlockDao.listMainChainSQLCached(state.next), requestTimeout)
+      Await.result(BlockDao.listMainChain(state.next), requestTimeout)
   }
 
   /**
@@ -142,7 +142,7 @@ class DBBenchmark {
     implicit val cache: BlockCache                   = state.blockCache
 
     val _ =
-      Await.result(BlockDao.listMainChainSQLCached(state.next), requestTimeout)
+      Await.result(BlockDao.listMainChain(state.next), requestTimeout)
   }
 
   /**
@@ -218,7 +218,6 @@ class DBBenchmark {
   def blockEntityWrite_DisabledCP(state: BlockEntityWriteState_DisabledCP): Unit = {
     implicit val ec: ExecutionContext                = state.config.db.ioExecutionContext
     implicit val dc: DatabaseConfig[PostgresProfile] = state.config
-    implicit val cache: BlockCache                   = state.blockCache
     implicit val groupSetting: GroupSetting          = state.groupSetting
 
     val _ =
@@ -229,7 +228,6 @@ class DBBenchmark {
   def blockEntityWrite_HikariCP(state: BlockEntityWriteState_HikariCP): Unit = {
     implicit val ec: ExecutionContext                = state.config.db.ioExecutionContext
     implicit val dc: DatabaseConfig[PostgresProfile] = state.config
-    implicit val cache: BlockCache                   = state.blockCache
     implicit val groupSetting: GroupSetting          = state.groupSetting
 
     val _ =

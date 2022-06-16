@@ -295,7 +295,7 @@ class BlockFlowSyncServiceSpec
 
     def checkMainChain(mainChain: Seq[BlockEntry.Hash]) = {
       val result = BlockDao
-        .listMainChainSQLCached(Pagination.unsafe(0, blocks.size))
+        .listMainChain(Pagination.unsafe(0, blocks.size))
         .futureValue
         ._1
         .filter(block =>
