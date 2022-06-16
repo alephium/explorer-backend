@@ -27,7 +27,7 @@ import org.alephium.explorer.api.UtilsEndpoints
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.service.{BlockFlowClient, SanityChecker}
 
-class UtilsServer()(implicit ec: ExecutionContext,
+class UtilsServer()(implicit val executionContext: ExecutionContext,
                     dc: DatabaseConfig[PostgresProfile],
                     blockFlowClient: BlockFlowClient,
                     blockCache: BlockCache,
@@ -36,8 +36,8 @@ class UtilsServer()(implicit ec: ExecutionContext,
     with UtilsEndpoints {
 
   val route: Route =
-    toRoute(sanityCheck) { _ =>
+    toRoute(sanityCheck.serverLogicSuccess[Future] { _ =>
       sideEffect(SanityChecker.check())
-      Future.successful(Right(()))
-    }
+      Future.successful(())
+    })
 }

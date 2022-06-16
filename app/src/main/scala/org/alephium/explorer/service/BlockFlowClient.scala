@@ -89,8 +89,9 @@ object BlockFlowClient {
   private class Impl(uri: Uri, groupNum: Int, val maybeApiKey: Option[api.model.ApiKey])(
       implicit executionContext: ExecutionContext
   ) extends BlockFlowClient
-      with Endpoints
-      with EndpointSender {
+      with Endpoints {
+
+    private val endpointSender = new EndpointSender(maybeApiKey)
 
     implicit lazy val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
 
@@ -102,7 +103,8 @@ object BlockFlowClient {
         uri: Uri,
         a: A
     ): Future[Either[String, B]] =
-      send(endpoint, a, uri"${uri.toString}")
+      endpointSender
+        .send(endpoint, a, uri"${uri.toString}")
         .map(_.left.map(_.detail))
 
     @SuppressWarnings(Array("org.wartremover.warts.ToString"))
@@ -360,7 +362,7 @@ object BlockFlowClient {
       case _                                                              => None
     }
     UOutput(
-      output.alphAmount.value,
+      output.attoAlphAmount.value,
       new Address(output.address.toBase58),
       lockTime
     )
@@ -387,7 +389,7 @@ object BlockFlowClient {
       timestamp,
       hint.value,
       protocol.model.TxOutputRef.key(txId, index),
-      output.alphAmount.value,
+      output.attoAlphAmount.value,
       new Address(output.address.toBase58),
       mainChain,
       lockTime,

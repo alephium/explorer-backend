@@ -19,7 +19,8 @@
             "description": "Page number",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "format": "int32"
             }
           },
           {
@@ -28,7 +29,8 @@
             "description": "Number per page",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "format": "int32"
             }
           },
           {
@@ -64,15 +66,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -91,6 +93,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -100,19 +115,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -160,15 +162,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -187,6 +189,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -196,19 +211,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -238,7 +240,8 @@
             "description": "Page number",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "format": "int32"
             }
           },
           {
@@ -247,7 +250,8 @@
             "description": "Number per page",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "format": "int32"
             }
           },
           {
@@ -286,15 +290,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -313,6 +317,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -322,19 +339,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -382,15 +386,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -409,6 +413,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -418,19 +435,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -478,15 +482,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -505,6 +509,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -514,19 +531,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -556,7 +560,8 @@
             "description": "Page number",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "format": "int32"
             }
           },
           {
@@ -565,7 +570,8 @@
             "description": "Number per page",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "format": "int32"
             }
           },
           {
@@ -604,15 +610,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -631,6 +637,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -640,19 +659,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -682,7 +688,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "integer"
+                  "type": "integer",
+                  "format": "int32"
                 }
               }
             }
@@ -700,15 +707,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -727,6 +734,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -736,19 +756,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -796,15 +803,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -823,6 +830,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -832,19 +852,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -882,15 +889,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -909,6 +916,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -918,19 +938,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -971,15 +978,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -998,6 +1005,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -1007,19 +1027,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1041,7 +1048,8 @@
             "description": "Page number",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "format": "int32"
             }
           },
           {
@@ -1050,7 +1058,8 @@
             "description": "Number per page",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "format": "int32"
             }
           },
           {
@@ -1089,15 +1098,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1116,6 +1125,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -1125,19 +1147,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1157,7 +1166,7 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "type": "string"
+                  "type": "number"
                 }
               }
             }
@@ -1175,15 +1184,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1202,6 +1211,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -1211,19 +1233,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1243,7 +1252,7 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "type": "string"
+                  "type": "number"
                 }
               }
             }
@@ -1261,15 +1270,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1288,6 +1297,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -1297,19 +1319,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1329,7 +1338,7 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "type": "string"
+                  "type": "number"
                 }
               }
             }
@@ -1347,15 +1356,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1374,6 +1383,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -1383,19 +1405,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1415,7 +1424,7 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "type": "string"
+                  "type": "number"
                 }
               }
             }
@@ -1433,15 +1442,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1460,6 +1469,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -1469,19 +1491,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1501,7 +1510,8 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "type": "integer"
+                  "type": "integer",
+                  "format": "int32"
                 }
               }
             }
@@ -1519,15 +1529,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1546,6 +1556,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -1555,19 +1578,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1608,15 +1618,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1635,6 +1645,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -1644,19 +1667,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1728,15 +1738,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1755,6 +1765,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -1764,19 +1787,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1848,15 +1858,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1875,6 +1885,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -1884,19 +1907,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1968,15 +1978,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -1995,6 +2005,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -2004,19 +2027,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -2048,15 +2058,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -2075,6 +2085,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -2084,19 +2107,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -2141,7 +2151,8 @@
             "format": "uint256"
           },
           "txNumber": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -2170,23 +2181,28 @@
         "type": "object",
         "properties": {
           "hash": {
-            "type": "string"
+            "type": "string",
+            "format": "block-hash"
           },
           "timestamp": {
             "type": "integer",
             "format": "int64"
           },
           "chainFrom": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           },
           "chainTo": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           },
           "height": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           },
           "txNumber": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           },
           "mainChain": {
             "type": "boolean"
@@ -2209,10 +2225,12 @@
         "type": "object",
         "properties": {
           "hash": {
-            "type": "string"
+            "type": "string",
+            "format": "32-byte-hash"
           },
           "blockHash": {
-            "type": "string"
+            "type": "string",
+            "format": "block-hash"
           },
           "timestamp": {
             "type": "integer",
@@ -2231,7 +2249,8 @@
             }
           },
           "gasAmount": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           },
           "gasPrice": {
             "type": "string",
@@ -2270,10 +2289,10 @@
             "format": "int64"
           },
           "hashrate": {
-            "type": "string"
+            "type": "number"
           },
           "value": {
-            "type": "string"
+            "type": "number"
           }
         }
       },
@@ -2293,7 +2312,8 @@
             "type": "string"
           },
           "txHashRef": {
-            "type": "string"
+            "type": "string",
+            "format": "32-byte-hash"
           },
           "address": {
             "type": "string"
@@ -2322,7 +2342,8 @@
         "type": "object",
         "properties": {
           "total": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           },
           "blocks": {
             "type": "array",
@@ -2357,10 +2378,12 @@
         "type": "object",
         "properties": {
           "hint": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           },
           "key": {
-            "type": "string"
+            "type": "string",
+            "format": "32-byte-hash"
           },
           "amount": {
             "type": "string",
@@ -2374,7 +2397,8 @@
             "format": "int64"
           },
           "spent": {
-            "type": "string"
+            "type": "string",
+            "format": "32-byte-hash"
           }
         }
       },
@@ -2386,10 +2410,12 @@
         "type": "object",
         "properties": {
           "hint": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           },
           "key": {
-            "type": "string"
+            "type": "string",
+            "format": "32-byte-hash"
           }
         }
       },
@@ -2402,10 +2428,12 @@
         "type": "object",
         "properties": {
           "chainFrom": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           },
           "chainTo": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           },
           "count": {
             "type": "integer",
@@ -2423,10 +2451,12 @@
         "type": "object",
         "properties": {
           "chainFrom": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           },
           "chainTo": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           },
           "duration": {
             "type": "integer",
@@ -2448,10 +2478,12 @@
         "type": "object",
         "properties": {
           "chainFrom": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           },
           "chainTo": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           },
           "height": {
             "type": "integer",
@@ -2557,10 +2589,12 @@
         "type": "object",
         "properties": {
           "hash": {
-            "type": "string"
+            "type": "string",
+            "format": "32-byte-hash"
           },
           "blockHash": {
-            "type": "string"
+            "type": "string",
+            "format": "block-hash"
           },
           "timestamp": {
             "type": "integer",
@@ -2579,7 +2613,8 @@
             }
           },
           "gasAmount": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           },
           "gasPrice": {
             "type": "string",
@@ -2597,7 +2632,11 @@
           }
         ],
         "discriminator": {
-          "propertyName": "type"
+          "propertyName": "type",
+          "mapping": {
+            "ConfirmedTransaction": "#/components/schemas/ConfirmedTransaction",
+            "UnconfirmedTransaction": "#/components/schemas/UnconfirmedTransaction"
+          }
         }
       },
       "UInput": {
@@ -2657,13 +2696,16 @@
         "type": "object",
         "properties": {
           "hash": {
-            "type": "string"
+            "type": "string",
+            "format": "32-byte-hash"
           },
           "chainFrom": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           },
           "chainTo": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           },
           "inputs": {
             "type": "array",
@@ -2678,7 +2720,8 @@
             }
           },
           "gasAmount": {
-            "type": "integer"
+            "type": "integer",
+            "format": "int32"
           },
           "gasPrice": {
             "type": "string",
