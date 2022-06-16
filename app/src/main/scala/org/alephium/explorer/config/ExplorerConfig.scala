@@ -46,7 +46,7 @@ object ExplorerConfig {
       groupNum                        <- validateGroupNum(config.blockFlowGroupNum)
       directCliqueAccess              <- Success(config.blockFlowDirectCliqueAccess)
       port                            <- validatePort(config.explorerPort)
-      host                            <- validateHost(config.blockFlowHost)
+      host                            <- validateHost(config.explorerHost)
       readOnly                        <- Success(config.explorerReadOnly)
       blockFlowUri                    <- validateUri(config.blockFlowHost, config.blockFlowPort)
       networkId                       <- validateNetworkId(config.blockFlowNetworkId)
