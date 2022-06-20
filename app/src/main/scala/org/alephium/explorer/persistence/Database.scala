@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence
 
+import scala.concurrent.{ExecutionContext, Future}
 import java.time.{OffsetTime, ZonedDateTime}
 import java.util.{Timer, TimerTask}
 
@@ -32,6 +33,13 @@ import org.alephium.explorer.util.Scheduler.scheduleTime
 import org.alephium.util.Service
 
 
-class Database(readOnly: Boolean, path: String, config: Config) extends Service {
-  val databaseConfig:  DatabaseConfig[PostgresProfile]
+class Database(val databaseConfig:  DatabaseConfig[PostgresProfile])(implicit ec:ExecutionContext) extends Service {
+
+  override def start():Future[Unit] = {
+      if (readOnly) {
+        HealthCheckDao.healthCheck().mapSyncToUnit
+      } else {
+        DBInitializer.initialize().mapSyncToUnit
+      }
+  }
 }
