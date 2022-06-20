@@ -26,6 +26,7 @@ import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
+import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.util.FutureUtil._
 
 /** Type-classes for things that can be terminated asynchronously */
@@ -69,6 +70,12 @@ object AsyncCloseable extends StrictLogging {
   implicit object ActorSystemAsyncCloseable extends AsyncCloseable[ActorSystem] {
     override def close(closeable: ActorSystem)(implicit ec: ExecutionContext): Future[Unit] =
       closeable.terminate().mapSyncToUnit()
+  }
+
+  /** [[AsyncCloseable]] for Akka `BlockFlowClient` */
+  implicit object BlockFlowClientAsyncCloseable extends AsyncCloseable[BlockFlowClient] {
+    override def close(closeable: BlockFlowClient)(implicit ec: ExecutionContext): Future[Unit] =
+      closeable.close()
   }
 
   /** Provides [[AsyncCloseable]] for all [[java.lang.AutoCloseable]] types */

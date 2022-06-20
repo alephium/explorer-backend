@@ -78,6 +78,10 @@ trait BlockFlowClient {
   def fetchChainParams(): Future[Either[String, ChainParams]]
 
   def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]]
+
+  def start(): Future[Unit]
+
+  def close(): Future[Unit]
 }
 
 object BlockFlowClient {
@@ -92,6 +96,9 @@ object BlockFlowClient {
       with Endpoints {
 
     private val endpointSender = new EndpointSender(maybeApiKey)
+
+    override def start(): Future[Unit] =
+      endpointSender.start()
 
     implicit lazy val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
 
@@ -175,6 +182,10 @@ object BlockFlowClient {
       } else {
         Right(selfClique.peer(group)).map(node => (node.address, node.restPort))
       }
+    }
+
+    override def close(): Future[Unit] = {
+      endpointSender.stop()
     }
   }
 

@@ -71,41 +71,47 @@ object Explorer extends StrictLogging {
                                     system: ActorSystem): Future[ExplorerState] =
     //First: Check database is available
     managed(initialiseDatabase(config.readOnly, "db", ConfigFactory.load())) { implicit dc =>
-      implicit val blockFlowClient: BlockFlowClient =
-        BlockFlowClient(
-          uri         = config.blockFlowUri,
-          groupNum    = config.groupNum,
-          maybeApiKey = config.maybeBlockFlowApiKey
-        )
+      managed(createBlockFlowClient(config)) { implicit blockFlowClient =>
+        implicit val groupSetting: GroupSetting =
+          GroupSetting(config.groupNum)
 
-      implicit val groupSetting: GroupSetting =
-        GroupSetting(config.groupNum)
+        implicit val blockCache: BlockCache =
+          BlockCache()
 
-      implicit val blockCache: BlockCache =
-        BlockCache()
-
-      //Second: Start sync services
-      managed(startSyncServices(config)) { scheduler =>
-        TransactionCache() flatMap { implicit transactionCache =>
-          //Finally: Start http server
-          startHttpServer(
-            host = config.host,
-            port = config.port
-          ) mapSync { akkaHttpServer =>
-            //Return explorer's state: Either ReadOnly or ReadWrite
-            ExplorerState(
-              scheduler        = scheduler,
-              database         = dc,
-              akkaHttpServer   = akkaHttpServer,
-              blockFlowClient  = blockFlowClient,
-              groupSettings    = groupSetting,
-              blockCache       = blockCache,
-              transactionCache = transactionCache
-            )
+        //Second: Start sync services
+        managed(startSyncServices(config)) { scheduler =>
+          TransactionCache() flatMap { implicit transactionCache =>
+            //Finally: Start http server
+            startHttpServer(
+              host = config.host,
+              port = config.port
+            ) mapSync { akkaHttpServer =>
+              //Return explorer's state: Either ReadOnly or ReadWrite
+              ExplorerState(
+                scheduler        = scheduler,
+                database         = dc,
+                akkaHttpServer   = akkaHttpServer,
+                blockFlowClient  = blockFlowClient,
+                groupSettings    = groupSetting,
+                blockCache       = blockCache,
+                transactionCache = transactionCache
+              )
+            }
           }
         }
       }
     }
+
+  def createBlockFlowClient(config: ExplorerConfig)(
+      implicit ec: ExecutionContext): Future[BlockFlowClient] = {
+    val client = BlockFlowClient(
+      uri         = config.blockFlowUri,
+      groupNum    = config.groupNum,
+      maybeApiKey = config.maybeBlockFlowApiKey
+    )
+
+    client.start().map(_ => client)
+  }
 
   /**
     * Start sync services from the configuration [[org.alephium.explorer.config.ExplorerConfig]]
