@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.service
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
@@ -33,7 +34,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.protocol.model.{ChainIndex, CliqueId, NetworkId}
-import org.alephium.util.{AVector, Duration, Hex, TimeStamp}
+import org.alephium.util.{AVector, Duration, Hex, Service, TimeStamp}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
 class BlockFlowSyncServiceSpec
@@ -229,6 +230,11 @@ class BlockFlowSyncServiceSpec
     def blocks: Seq[BlockEntry] = blockFlow.flatten
 
     implicit val blockFlowClient: BlockFlowClient = new BlockFlowClient {
+      implicit val executionContext: ExecutionContext = ExecutionContext.global
+      def startSelfOnce(): Future[Unit]               = Future.unit
+      def stopSelfOnce(): Future[Unit]                = Future.unit
+      def subServices: ArraySeq[Service]              = ArraySeq.empty
+
       def fetchBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]] =
         Future.successful(blockEntities.find(_.hash === hash).toRight(s"$hash Not Found"))
 

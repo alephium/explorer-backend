@@ -19,6 +19,7 @@ package org.alephium.explorer.service
 import java.math.BigInteger
 import java.net.InetAddress
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 
@@ -38,9 +39,9 @@ import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.mining.HashRate
 import org.alephium.protocol.model.{Hint, Target}
 import org.alephium.protocol.vm.LockupScript
-import org.alephium.util.{Duration, Hex, TimeStamp}
+import org.alephium.util.{Duration, Hex, Service, TimeStamp}
 
-trait BlockFlowClient {
+trait BlockFlowClient extends Service {
   def fetchBlock(fromGroup: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]]
 
   def fetchChainInfo(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Either[String, ChainInfo]]
@@ -91,14 +92,21 @@ object BlockFlowClient {
     new Impl(uri, groupNum, maybeApiKey)
 
   private class Impl(uri: Uri, groupNum: Int, val maybeApiKey: Option[api.model.ApiKey])(
-      implicit executionContext: ExecutionContext
+      implicit val executionContext: ExecutionContext
   ) extends BlockFlowClient
       with Endpoints {
 
     private val endpointSender = new EndpointSender(maybeApiKey)
 
-    override def start(): Future[Unit] =
+    override def startSelfOnce(): Future[Unit] = {
       endpointSender.start()
+    }
+
+    override def stopSelfOnce(): Future[Unit] = {
+      close()
+    }
+
+    override def subServices: ArraySeq[Service] = ArraySeq.empty
 
     implicit lazy val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
 

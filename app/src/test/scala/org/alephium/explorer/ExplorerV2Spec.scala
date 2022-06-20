@@ -17,28 +17,26 @@
 package org.alephium.explorer
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration._
-import scala.util.Success
+import scala.util._
 
-import com.typesafe.config.ConfigException
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.TryValues._
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.time.{Seconds, Span}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.AlephiumSpec._
 import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.config.{ApplicationConfig, ExplorerConfig}
 import org.alephium.explorer.error.ExplorerError._
-import org.alephium.explorer.persistence.DatabaseFixture
+import org.alephium.explorer.persistence.{Database, DatabaseFixture}
 import org.alephium.explorer.service.BlockFlowClient
-import org.alephium.explorer.util.TestUtils._
 
 /** Temporary placeholder. These tests should be merged into ApplicationSpec  */
 class ExplorerV2Spec
@@ -48,38 +46,27 @@ class ExplorerV2Spec
     with ScalaFutures
     with MockFactory {
 
+  override implicit val patienceConfig = PatienceConfig(timeout = Span(5, Seconds))
+
   implicit val executionContext: ExecutionContext =
     ExecutionContext.global
 
   "initialiseDatabase" should {
     "successfully connect" when {
       "readOnly mode" in {
-        val database =
-          Explorer
-            .initialiseDatabase(readOnly = true, "db", DatabaseFixture.config)
-            .futureValue(Timeout(5.seconds))
+        val databaseConfig = DatabaseConfig.forConfig[PostgresProfile]("db", DatabaseFixture.config)
+        val database: Database =
+          new Database(readOnly = true)(executionContext, databaseConfig)
 
-        using(database)(_ is a[DatabaseConfig[_]])
+        Try(database.startSelfOnce().futureValue) is Success(())
       }
 
       "readWrite mode" in {
-        val database =
-          Explorer
-            .initialiseDatabase(readOnly = false, "db", DatabaseFixture.config)
-            .futureValue(Timeout(5.seconds))
+        val databaseConfig = DatabaseConfig.forConfig[PostgresProfile]("db", DatabaseFixture.config)
+        val database: Database =
+          new Database(readOnly = false)(executionContext, databaseConfig)
 
-        using(database)(_ is a[DatabaseConfig[_]])
-      }
-    }
-
-    "fail connection" when {
-      "database path is invalid" in {
-        Seq(true, false) foreach { mode =>
-          Explorer
-            .initialiseDatabase(readOnly = mode, "invalid path", DatabaseFixture.config)
-            .failed
-            .futureValue is a[ConfigException.Missing]
-        }
+        Try(database.startSelfOnce().futureValue) is Success(())
       }
     }
   }
@@ -96,9 +83,9 @@ class ExplorerV2Spec
           (client.fetchSelfClique _).expects() returns Future.successful(Right(selfClique))
 
           val expectedPeers =
-            Explorer.urisFromPeers(selfClique.nodes.toSeq)
+            SyncServices.urisFromPeers(selfClique.nodes.toSeq)
 
-          Explorer
+          SyncServices
             .getBlockFlowPeers(directCliqueAccess = true,
                                blockFlowUri       = explorerConfig.blockFlowUri)
             .futureValue is expectedPeers
@@ -108,7 +95,7 @@ class ExplorerV2Spec
       "directCliqueAccess = false" in {
         implicit val client: BlockFlowClient = mock[BlockFlowClient]
 
-        Explorer
+        SyncServices
           .getBlockFlowPeers(directCliqueAccess = false, blockFlowUri = explorerConfig.blockFlowUri)
           .futureValue is Seq(explorerConfig.blockFlowUri)
       }
@@ -124,7 +111,7 @@ class ExplorerV2Spec
           (client.fetchSelfClique _).expects() returns Future.successful(Right(selfClique))
 
           val result =
-            Explorer
+            SyncServices
               .getBlockFlowPeers(directCliqueAccess = true,
                                  blockFlowUri       = explorerConfig.blockFlowUri)
               .failed
@@ -150,7 +137,7 @@ class ExplorerV2Spec
 
         forAll(matchingNetworkId) {
           case (networkId, chainParams) =>
-            Explorer.validateChainParams(networkId, Right(chainParams)) is Success(())
+            SyncServices.validateChainParams(networkId, Right(chainParams)) is Success(())
         }
       }
     }
@@ -165,7 +152,7 @@ class ExplorerV2Spec
 
         forAll(mismatchedNetworkId) {
           case (networkId, chainParams) =>
-            Explorer
+            SyncServices
               .validateChainParams(networkId, Right(chainParams))
               .failure
               .exception is ChainIdMismatch(remote = chainParams.networkId, local = networkId)
@@ -175,7 +162,7 @@ class ExplorerV2Spec
       "response was an error" in {
         forAll(genNetworkId, Arbitrary.arbitrary[String]) {
           case (networkId, error) =>
-            Explorer
+            SyncServices
               .validateChainParams(networkId, Left(error))
               .failure
               .exception is ImpossibleToFetchNetworkType(error)
