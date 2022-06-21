@@ -68,7 +68,7 @@ case object BlockFlowSyncService extends StrictLogging {
                                                           blockFlowClient: BlockFlowClient,
                                                           cache: BlockCache,
                                                           groupSetting: GroupSetting,
-                                                          scheduler: Scheduler): Unit =
+                                                          scheduler: Scheduler): Future[Unit] =
     scheduler.scheduleLoopConditional(
       taskId        = this.productPrefix,
       firstInterval = ScalaDuration.Zero,

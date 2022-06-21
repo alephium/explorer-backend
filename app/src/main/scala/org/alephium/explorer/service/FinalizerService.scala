@@ -51,8 +51,8 @@ case object FinalizerService extends StrictLogging {
 
   def start(interval: FiniteDuration)(implicit ec: ExecutionContext,
                                       dc: DatabaseConfig[PostgresProfile],
-                                      scheduler: Scheduler): Unit =
-    scheduler.scheduleLoopAndForget(
+                                      scheduler: Scheduler): Future[Unit] =
+    scheduler.scheduleLoop(
       taskId        = FinalizerService.productPrefix,
       firstInterval = ScalaDuration.Zero,
       loopInterval  = interval

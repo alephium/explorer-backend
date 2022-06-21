@@ -45,7 +45,7 @@ class MempoolSyncServiceSpec
 
   it should "start/sync/stop" in new Fixture {
     using(Scheduler("test")) { implicit scheduler =>
-      MempoolSyncService.start(Seq(""), 100.milliseconds) is ()
+      MempoolSyncService.start(Seq(""), 100.milliseconds)
 
       UnconfirmedTxDao.listHashes().futureValue is Seq.empty
 
