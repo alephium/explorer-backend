@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.service
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
@@ -32,7 +33,7 @@ import org.alephium.explorer.persistence.dao.UnconfirmedTxDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.TestUtils._
-import org.alephium.util.TimeStamp
+import org.alephium.util.{Service, TimeStamp}
 
 class MempoolSyncServiceSpec
     extends AlephiumSpec
@@ -79,6 +80,10 @@ class MempoolSyncServiceSpec
     var unconfirmedTransactions: Seq[UnconfirmedTransaction] = Seq.empty
 
     implicit val blockFlowClient: BlockFlowClient = new BlockFlowClient {
+      implicit val executionContext: ExecutionContext = ExecutionContext.global
+      def startSelfOnce(): Future[Unit]               = Future.unit
+      def stopSelfOnce(): Future[Unit]                = Future.unit
+      def subServices: ArraySeq[Service]              = ArraySeq.empty
       def fetchUnconfirmedTransactions(
           uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]] =
         Future.successful(Right(unconfirmedTransactions))

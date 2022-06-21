@@ -16,51 +16,71 @@
 
 package org.alephium.explorer
 
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
+import scala.util._
 
-import akka.actor.ActorSystem
+import akka.Done
+import akka.actor.{ActorSystem, CoordinatedShutdown}
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 import io.prometheus.client.hotspot.DefaultExports
+import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.error.FatalSystemExit
-import org.alephium.explorer.util.FutureUtil._
+import org.alephium.explorer.config._
 
-object Main extends StrictLogging {
+object Main extends App with StrictLogging {
+  try {
+    (new BootUp).init()
+  } catch {
+    case error: Throwable =>
+      logger.error(s"Cannot initialize system: $error")
+  }
+}
 
-  def main(args: Array[String]): Unit = {
-    logger.info("Starting Explorer")
-    logger.info(s"Build info: $BuildInfo")
+@SuppressWarnings(Array("org.wartremover.warts.TryPartial"))
+class BootUp extends StrictLogging {
+  logger.info("Starting Explorer")
+  logger.info(s"Build info: $BuildInfo")
 
-    DefaultExports.initialize()
+  DefaultExports.initialize()
 
-    val system: ActorSystem           = ActorSystem()
-    implicit val ec: ExecutionContext = system.dispatcher
+  private val typesafeConfig    = ConfigFactory.load()
+  private val applicationConfig = ApplicationConfig(typesafeConfig).get
 
-    sideEffect {
-      managed(system) { implicit system =>
-        Explorer
-          .start()
-          .map { state =>
-            //Successful start: Add shutdown hook.
-            def awaitClose(): Unit =
-              Await.result(state.close(), 30.seconds)
+  implicit val config: ExplorerConfig =
+    ExplorerConfig(applicationConfig).get
 
-            sideEffect(scala.sys.addShutdownHook(awaitClose()))
-            logger.info(s"Explorer boot-up successful in ${state.getClass.getSimpleName} mode!")
-          }
-          .recoverWith { err =>
-            //Error start: Log the error.
-            err match {
-              case err: FatalSystemExit =>
-                logger.error("FATAL SYSTEM ERROR!", err)
+  implicit val databaseConfig: DatabaseConfig[PostgresProfile] =
+    DatabaseConfig.forConfig[PostgresProfile]("db", typesafeConfig)
 
-              case err =>
-                logger.error("Explorer boot-up failed!", err)
-            }
-            Future.failed(err)
-          }
+  implicit val actorSystem: ActorSystem           = ActorSystem()
+  implicit val executionContext: ExecutionContext = actorSystem.dispatcher
+
+  private val explorer: ExplorerState = ExplorerState()
+
+  def init(): Unit = {
+    explorer
+      .start()
+      .onComplete {
+        case Success(_) => ()
+        case Failure(e) =>
+          logger.error(s"Fatal error during initialization: $e")
+          actorSystem.terminate()
       }
-    }
+
+    Runtime.getRuntime.addShutdownHook(new Thread(() => {
+      sideEffect(Await.result(actorSystem.terminate(), 10.seconds))
+    }))
+  }
+
+  CoordinatedShutdown(actorSystem).addTask(
+    CoordinatedShutdown.PhaseBeforeActorSystemTerminate,
+    "Shutdown services"
+  ) { () =>
+    for {
+      _ <- explorer.stop()
+    } yield Done
   }
 }

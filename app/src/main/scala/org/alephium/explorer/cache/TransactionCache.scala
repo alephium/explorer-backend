@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.cache
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
@@ -25,18 +26,15 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries.TransactionQueries
+import org.alephium.util.Service
 
 object TransactionCache {
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def apply(reloadAfter: FiniteDuration = 5.seconds)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[TransactionCache] =
-    AsyncReloadingCache
-      .reloadNow(reloadAfter) {
-        run(TransactionQueries.mainTransactions.length.result)
-      }
-      .map(new TransactionCache(_))
+      dc: DatabaseConfig[PostgresProfile]): TransactionCache =
+    new TransactionCache(reloadAfter)
 }
 
 /**
@@ -44,7 +42,26 @@ object TransactionCache {
   *
   * @param mainChainTxnCount Stores current total number of `main_chain` transaction.
   */
-class TransactionCache private (mainChainTxnCount: AsyncReloadingCache[Int]) {
+class TransactionCache(reloadAfter: FiniteDuration)(implicit val executionContext: ExecutionContext,
+                                                    dc: DatabaseConfig[PostgresProfile])
+    extends Service {
+
+  private val mainChainTxnCount: AsyncReloadingCache[Int] = {
+    AsyncReloadingCache(0, reloadAfter) { _ =>
+      run(TransactionQueries.mainTransactions.length.result)
+    }
+  }
+
   def getMainChainTxnCount(): Int =
     mainChainTxnCount.get()
+
+  override def startSelfOnce(): Future[Unit] = {
+    mainChainTxnCount.expireAndReloadFuture().map(_ => ())
+  }
+
+  override def stopSelfOnce(): Future[Unit] = {
+    Future.unit
+  }
+
+  override def subServices: ArraySeq[Service] = ArraySeq.empty
 }
