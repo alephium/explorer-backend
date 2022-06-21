@@ -84,22 +84,20 @@ class MempoolSyncServiceSpec
       def startSelfOnce(): Future[Unit]               = Future.unit
       def stopSelfOnce(): Future[Unit]                = Future.unit
       def subServices: ArraySeq[Service]              = ArraySeq.empty
-      def fetchUnconfirmedTransactions(
-          uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]] =
-        Future.successful(Right(unconfirmedTransactions))
-      def fetchBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]] =
+      def fetchUnconfirmedTransactions(uri: Uri): Future[Seq[UnconfirmedTransaction]] =
+        Future.successful(unconfirmedTransactions)
+      def fetchBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[BlockEntity] =
         ???
-      def fetchBlocks(fromTs: TimeStamp,
-                      toTs: TimeStamp,
-                      uri: Uri): Future[Either[String, Seq[Seq[BlockEntity]]]]                = ???
-      def fetchChainInfo(from: GroupIndex, to: GroupIndex): Future[Either[String, ChainInfo]] = ???
+      def fetchBlocks(fromTs: TimeStamp, toTs: TimeStamp, uri: Uri): Future[Seq[Seq[BlockEntity]]] =
+        ???
+      def fetchChainInfo(from: GroupIndex, to: GroupIndex): Future[ChainInfo] = ???
       def fetchHashesAtHeight(from: GroupIndex,
                               to: GroupIndex,
-                              height: Height): Future[Either[String, HashesAtHeight]] = ???
-      def fetchSelfClique(): Future[Either[String, SelfClique]]                       = ???
-      def fetchChainParams(): Future[Either[String, ChainParams]]                     = ???
-      override def start(): Future[Unit]                                              = ???
-      override def close(): Future[Unit]                                              = ???
+                              height: Height): Future[HashesAtHeight] = ???
+      def fetchSelfClique(): Future[SelfClique]                       = ???
+      def fetchChainParams(): Future[ChainParams]                     = ???
+      override def start(): Future[Unit]                              = ???
+      override def close(): Future[Unit]                              = ???
     }
 
   }

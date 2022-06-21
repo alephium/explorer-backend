@@ -32,6 +32,8 @@ import org.alephium.api.Endpoints
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.error.ExplorerError
+import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.persistence.model._
 import org.alephium.http.EndpointSender
 import org.alephium.protocol
@@ -42,43 +44,31 @@ import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.{Duration, Hex, Service, TimeStamp}
 
 trait BlockFlowClient extends Service {
-  def fetchBlock(fromGroup: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]]
+  def fetchBlock(fromGroup: GroupIndex, hash: BlockEntry.Hash): Future[BlockEntity]
 
-  def fetchChainInfo(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Either[String, ChainInfo]]
+  def fetchChainInfo(fromGroup: GroupIndex, toGroup: GroupIndex): Future[ChainInfo]
 
   def fetchHashesAtHeight(fromGroup: GroupIndex,
                           toGroup: GroupIndex,
-                          height: Height): Future[Either[String, HashesAtHeight]]
+                          height: Height): Future[HashesAtHeight]
 
-  def fetchBlocks(fromTs: TimeStamp,
-                  toTs: TimeStamp,
-                  uri: Uri): Future[Either[String, Seq[Seq[BlockEntity]]]]
+  def fetchBlocks(fromTs: TimeStamp, toTs: TimeStamp, uri: Uri): Future[Seq[Seq[BlockEntity]]]
 
   def fetchBlocksAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
-      implicit executionContext: ExecutionContext): Future[Either[Seq[String], Seq[BlockEntity]]] =
-    fetchHashesAtHeight(fromGroup, toGroup, height).flatMap {
-      case Right(hashesAtHeight) =>
-        Future
-          .sequence(
-            hashesAtHeight.headers
-              .map(hash => fetchBlock(fromGroup, new BlockEntry.Hash(hash)))
-              .toSeq)
-          .map { blocksEither =>
-            val (errors, blocks) = blocksEither.partitionMap(identity)
-            if (errors.nonEmpty) {
-              Left(errors)
-            } else {
-              Right(blocks)
-            }
-          }
-      case Left(error) => Future.successful(Left(Seq(error)))
+      implicit executionContext: ExecutionContext): Future[Seq[BlockEntity]] =
+    fetchHashesAtHeight(fromGroup, toGroup, height).flatMap { hashesAtHeight =>
+      Future
+        .sequence(
+          hashesAtHeight.headers
+            .map(hash => fetchBlock(fromGroup, new BlockEntry.Hash(hash)))
+            .toSeq)
     }
 
-  def fetchSelfClique(): Future[Either[String, SelfClique]]
+  def fetchSelfClique(): Future[SelfClique]
 
-  def fetchChainParams(): Future[Either[String, ChainParams]]
+  def fetchChainParams(): Future[ChainParams]
 
-  def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]]
+  def fetchUnconfirmedTransactions(uri: Uri): Future[Seq[UnconfirmedTransaction]]
 
   def start(): Future[Unit]
 
@@ -117,47 +107,48 @@ object BlockFlowClient {
         endpoint: BaseEndpoint[A, B],
         uri: Uri,
         a: A
-    ): Future[Either[String, B]] =
+    ): Future[B] = {
       endpointSender
         .send(endpoint, a, uri"${uri.toString}")
-        .map(_.left.map(_.detail))
+        .flatMap {
+          case Right(res) => Future.successful(res)
+          case Left(error) =>
+            logger.error(error.detail)
+            Future.failed(NodeApiError(error.detail))
+        }
+        .recoverWith { error =>
+          Future.failed(UnreachableNode(error.getMessage))
+        }
+    }
 
-    @SuppressWarnings(Array("org.wartremover.warts.ToString"))
-    //TODO Introduce monad transformer helper for more readability
-    def fetchBlock(fromGroup: GroupIndex,
-                   hash: BlockEntry.Hash): Future[Either[String, BlockEntity]] =
+    def fetchBlock(fromGroup: GroupIndex, hash: BlockEntry.Hash): Future[BlockEntity] =
       fetchSelfCliqueAndChainParams().flatMap {
-        case Left(error) => Future.successful(Left(error))
-        case Right((selfClique, chainParams)) =>
+        case (selfClique, chainParams) =>
           selfCliqueIndex(selfClique, chainParams, fromGroup) match {
-            case Left(error) => Future.successful(Left(error))
+            case Left(error) => Future.failed(new Throwable(error))
             case Right((nodeAddress, restPort)) =>
               val uri = s"http://${nodeAddress.getHostAddress}:${restPort}"
-              _send(getBlock, uri, hash.value).map(_.map(blockProtocolToEntity))
+              _send(getBlock, uri, hash.value).map(blockProtocolToEntity)
           }
       }
 
-    def fetchChainInfo(fromGroup: GroupIndex,
-                       toGroup: GroupIndex): Future[Either[String, ChainInfo]] = {
+    def fetchChainInfo(fromGroup: GroupIndex, toGroup: GroupIndex): Future[ChainInfo] = {
       _send(getChainInfo, uri, protocol.model.ChainIndex(fromGroup, toGroup))
     }
 
     def fetchHashesAtHeight(fromGroup: GroupIndex,
                             toGroup: GroupIndex,
-                            height: Height): Future[Either[String, HashesAtHeight]] =
+                            height: Height): Future[HashesAtHeight] =
       _send(getHashesAtHeight, uri, (protocol.model.ChainIndex(fromGroup, toGroup), height.value))
 
-    def fetchBlocks(fromTs: TimeStamp,
-                    toTs: TimeStamp,
-                    uri: Uri): Future[Either[String, Seq[Seq[BlockEntity]]]] = {
+    def fetchBlocks(fromTs: TimeStamp, toTs: TimeStamp, uri: Uri): Future[Seq[Seq[BlockEntity]]] = {
       _send(getBlockflow, uri, api.model.TimeInterval(fromTs, toTs))
-        .map(_.map(_.blocks.map(_.map(blockProtocolToEntity).toSeq).toSeq))
+        .map(_.blocks.map(_.map(blockProtocolToEntity).toSeq).toSeq)
     }
 
-    def fetchUnconfirmedTransactions(
-        uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]] =
+    def fetchUnconfirmedTransactions(uri: Uri): Future[Seq[UnconfirmedTransaction]] =
       _send(listUnconfirmedTransactions, uri, ())
-        .map(_.map { utxs =>
+        .map { utxs =>
           utxs.flatMap { utx =>
             utx.unconfirmedTransactions.map { tx =>
               val inputs  = tx.unsigned.inputs.map(inputToUInput).toSeq
@@ -165,28 +156,25 @@ object BlockFlowClient {
               txToUTx(tx, utx.fromGroup, utx.toGroup, inputs, outputs)
             }
           }.toSeq
-        })
+        }
 
-    def fetchSelfClique(): Future[Either[String, SelfClique]] =
+    def fetchSelfClique(): Future[SelfClique] =
       _send(getSelfClique, uri, ())
 
-    def fetchChainParams(): Future[Either[String, ChainParams]] =
+    def fetchChainParams(): Future[ChainParams] =
       _send(getChainParams, uri, ())
 
-    private def fetchSelfCliqueAndChainParams()
-      : Future[Either[String, (SelfClique, ChainParams)]] = {
-      fetchSelfClique().flatMap {
-        case Left(error) => Future.successful(Left(error))
-        case Right(selfClique) =>
-          fetchChainParams().map(_.map(chainParams => (selfClique, chainParams)))
+    private def fetchSelfCliqueAndChainParams(): Future[(SelfClique, ChainParams)] = {
+      fetchSelfClique().flatMap { selfClique =>
+        fetchChainParams().map(chainParams => (selfClique, chainParams))
       }
     }
+
     private def selfCliqueIndex(selfClique: SelfClique,
                                 chainParams: ChainParams,
-                                group: GroupIndex): Either[String, (InetAddress, Int)] = {
+                                group: GroupIndex): Either[ExplorerError, (InetAddress, Int)] = {
       if (chainParams.groupNumPerBroker <= 0) {
-        Left(
-          s"SelfClique.groupNumPerBroker ($selfClique.groupNumPerBroker) cannot be less or equal to zero")
+        Left(InvalidChainGroupNumPerBroker(chainParams.groupNumPerBroker))
       } else {
         Right(selfClique.peer(group)).map(node => (node.address, node.restPort))
       }

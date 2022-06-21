@@ -235,58 +235,49 @@ class BlockFlowSyncServiceSpec
       def stopSelfOnce(): Future[Unit]                = Future.unit
       def subServices: ArraySeq[Service]              = ArraySeq.empty
 
-      def fetchBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]] =
-        Future.successful(blockEntities.find(_.hash === hash).toRight(s"$hash Not Found"))
+      def fetchBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[BlockEntity] =
+        Future.successful(blockEntities.find(_.hash === hash).get)
 
-      def fetchBlocks(fromTs: TimeStamp,
-                      toTs: TimeStamp,
-                      uri: Uri): Future[Either[String, Seq[Seq[BlockEntity]]]] =
+      def fetchBlocks(fromTs: TimeStamp, toTs: TimeStamp, uri: Uri): Future[Seq[Seq[BlockEntity]]] =
         Future.successful(
-          Right(
-            blockEntities
-              .filter(b => b.timestamp >= fromTs && b.timestamp < toTs)
-              .groupBy(b => (b.chainFrom, b.chainTo))
-              .toSeq
-              .map(_._2)
-              .map(_.distinctBy(_.height).sortBy(_.height))))
+          blockEntities
+            .filter(b => b.timestamp >= fromTs && b.timestamp < toTs)
+            .groupBy(b => (b.chainFrom, b.chainTo))
+            .toSeq
+            .map(_._2)
+            .map(_.distinctBy(_.height).sortBy(_.height)))
 
-      def fetchChainInfo(from: GroupIndex, to: GroupIndex): Future[Either[String, ChainInfo]] =
+      def fetchChainInfo(from: GroupIndex, to: GroupIndex): Future[ChainInfo] =
         Future.successful(
-          Right(
-            ChainInfo(
-              blocks
-                .filter(block => block.chainFrom === from && block.chainTo === to)
-                .map(_.height.value)
-                .max)))
+          ChainInfo(
+            blocks
+              .filter(block => block.chainFrom === from && block.chainTo === to)
+              .map(_.height.value)
+              .max))
 
       def fetchHashesAtHeight(from: GroupIndex,
                               to: GroupIndex,
-                              height: Height): Future[Either[String, HashesAtHeight]] =
+                              height: Height): Future[HashesAtHeight] =
         Future.successful(
-          Right(
-            HashesAtHeight(
-              AVector.from(blocks
+          HashesAtHeight(
+            AVector.from(
+              blocks
                 .filter(block =>
                   block.chainFrom === from && block.chainTo === to && block.height === height)
-                .map(_.hash.value)))))
+                .map(_.hash.value))))
 
-      def fetchSelfClique(): Future[Either[String, SelfClique]] =
+      def fetchSelfClique(): Future[SelfClique] =
         Future.successful(
-          Right(
-            SelfClique(CliqueId.generate, AVector.empty, true, true)
-          )
+          SelfClique(CliqueId.generate, AVector.empty, true, true)
         )
 
-      def fetchChainParams(): Future[Either[String, ChainParams]] =
+      def fetchChainParams(): Future[ChainParams] =
         Future.successful(
-          Right(
-            ChainParams(NetworkId.AlephiumDevNet, 18, 1, 2)
-          )
+          ChainParams(NetworkId.AlephiumDevNet, 18, 1, 2)
         )
 
-      def fetchUnconfirmedTransactions(
-          uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]] =
-        Future.successful(Right(Seq.empty))
+      def fetchUnconfirmedTransactions(uri: Uri): Future[Seq[UnconfirmedTransaction]] =
+        Future.successful(Seq.empty)
 
       override def start(): Future[Unit] =
         Future.unit

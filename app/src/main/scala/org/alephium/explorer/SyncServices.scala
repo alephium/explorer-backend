@@ -97,8 +97,8 @@ object SyncServices extends StrictLogging {
       .flatMap { chainParams =>
         val validationResult =
           validateChainParams(
-            networkId = networkId,
-            response  = chainParams
+            networkId   = networkId,
+            chainParams = chainParams
           )
 
         validationResult match {
@@ -123,33 +123,25 @@ object SyncServices extends StrictLogging {
       implicit ec: ExecutionContext,
       blockFlowClient: BlockFlowClient): Future[Seq[Uri]] =
     if (directCliqueAccess) {
-      blockFlowClient.fetchSelfClique() flatMap {
-        case Right(selfClique) if selfClique.nodes.isEmpty =>
+      blockFlowClient.fetchSelfClique() flatMap { selfClique =>
+        if (selfClique.nodes.isEmpty) {
           Future.failed(PeersNotFound(blockFlowUri))
+        } else {
 
-        case Right(selfClique) =>
           val peers = urisFromPeers(selfClique.nodes.toSeq)
           logger.debug(s"Syncing with clique peers: $peers")
           Future.successful(peers)
-
-        case Left(error) =>
-          Future.failed(FailedToFetchSelfClique(error))
+        }
       }
     } else {
       logger.debug(s"Syncing with node: $blockFlowUri")
       Future.successful(Seq(blockFlowUri))
     }
 
-  def validateChainParams(networkId: NetworkId, response: Either[String, ChainParams]): Try[Unit] =
-    response match {
-      case Right(chainParams) =>
-        if (chainParams.networkId =/= networkId) {
-          Failure(ChainIdMismatch(chainParams.networkId, networkId))
-        } else {
-          Success(())
-        }
-
-      case Left(err) =>
-        Failure(ImpossibleToFetchNetworkType(err))
+  def validateChainParams(networkId: NetworkId, chainParams: ChainParams): Try[Unit] =
+    if (chainParams.networkId =/= networkId) {
+      Failure(ChainIdMismatch(chainParams.networkId, networkId))
+    } else {
+      Success(())
     }
 }

@@ -107,14 +107,12 @@ object SanityChecker extends StrictLogging {
       blockCache: BlockCache,
       groupSetting: GroupSetting): Future[Unit] = {
     logger.info(s"Downloading missing block $missing")
-    blockFlowClient.fetchBlock(chainFrom, missing).flatMap {
-      case Left(error) => Future.successful(logger.error(error))
-      case Right(block) =>
-        for {
-          _ <- BlockDao.insert(block)
-          b <- BlockDao.get(block.hash).map(_.get)
-          _ <- checkBlock(b)
-        } yield ()
+    blockFlowClient.fetchBlock(chainFrom, missing).flatMap { block =>
+      for {
+        _ <- BlockDao.insert(block)
+        b <- BlockDao.get(block.hash).map(_.get)
+        _ <- checkBlock(b)
+      } yield ()
     }
   }
 

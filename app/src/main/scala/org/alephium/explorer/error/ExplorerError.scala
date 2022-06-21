@@ -37,20 +37,25 @@ sealed trait FatalSystemExit extends ExplorerError
 object ExplorerError {
 
   /******** Group: [[FatalSystemExit]] ********/
-  final case class FailedToFetchSelfClique(remoteMessage: String)
-      extends Exception(s"Could not fetch self-clique: $remoteMessage.")
+  final case class UnreachableNode(message: String)
+      extends Exception(s"Could not reach node: $message.")
+      with FatalSystemExit
+
+  final case class NodeApiError(message: String)
+      extends Exception(s"Error on node api: $message.")
       with FatalSystemExit
 
   final case class ChainIdMismatch(remote: NetworkId, local: NetworkId)
       extends Exception(s"Chain id mismatch: $remote (remote) vs $local (local)")
       with FatalSystemExit
 
-  final case class ImpossibleToFetchNetworkType(err: String)
-      extends Exception(s"Impossible to fetch network type: $err")
-      with FatalSystemExit
-
   final case class PeersNotFound(blockFlowUri: Uri)
       extends Exception(s"Peers not found. blockFlowUri: $blockFlowUri")
+      with FatalSystemExit
+
+  final case class InvalidChainGroupNumPerBroker(groupNumPerBroker: Int)
+      extends Exception(
+        s"SelfClique.groupNumPerBroker ($groupNumPerBroker) cannot be less or equal to zero")
       with FatalSystemExit
 
   /******** Group: [[ConfigError]] ********/
