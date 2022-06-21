@@ -20,6 +20,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
@@ -39,6 +40,7 @@ object SyncServices extends StrictLogging {
 
   def startSyncServices(config: ExplorerConfig)(implicit scheduler: Scheduler,
                                                 ec: ExecutionContext,
+                                                actorSystem: ActorSystem,
                                                 dc: DatabaseConfig[PostgresProfile],
                                                 blockFlowClient: BlockFlowClient,
                                                 blockCache: BlockCache,
@@ -72,18 +74,29 @@ object SyncServices extends StrictLogging {
                         transactionHistoryServicePeriod: FiniteDuration)(
       implicit scheduler: Scheduler,
       ec: ExecutionContext,
+      actorSystem: ActorSystem,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       blockCache: BlockCache,
       groupSetting: GroupSetting): Future[Unit] = {
     Future.fromTry {
       Try {
-        BlockFlowSyncService.start(peers, syncPeriod)
-        MempoolSyncService.start(peers, syncPeriod)
-        TokenSupplyService.start(tokenSupplyServiceSyncPeriod)
-        HashrateService.start(hashRateServiceSyncPeriod)
-        FinalizerService.start(finalizerServiceSyncPeriod)
-        TransactionHistoryService.start(transactionHistoryServicePeriod)
+        Future
+          .sequence(
+            Seq(
+              BlockFlowSyncService.start(peers, syncPeriod),
+              MempoolSyncService.start(peers, syncPeriod),
+              TokenSupplyService.start(tokenSupplyServiceSyncPeriod),
+              HashrateService.start(hashRateServiceSyncPeriod),
+              FinalizerService.start(finalizerServiceSyncPeriod),
+              TransactionHistoryService.start(transactionHistoryServicePeriod)
+            )
+          )
+          //Callback to shutdown the system if one sync service fails
+          .onComplete {
+            case Failure(_) => actorSystem.terminate()
+            case Success(_) => ()
+          }
       }
     }
   }
