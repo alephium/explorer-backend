@@ -37,8 +37,8 @@ sealed trait FatalSystemExit extends ExplorerError
 object ExplorerError {
 
   /******** Group: [[FatalSystemExit]] ********/
-  final case class UnreachableNode(message: String)
-      extends Exception(s"Could not reach node: $message.")
+  final case class UnreachableNode(cause: Throwable)
+      extends Exception(s"Could not reach node: $cause.")
       with FatalSystemExit
 
   final case class NodeApiError(message: String)

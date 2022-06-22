@@ -94,7 +94,9 @@ object SyncServices extends StrictLogging {
           )
           //Callback to shutdown the system if one sync service fails
           .onComplete {
-            case Failure(_) => actorSystem.terminate()
+            case Failure(error) =>
+              logger.error(s"Fatal error while syncing: $error")
+              actorSystem.terminate()
             case Success(_) => ()
           }
       }

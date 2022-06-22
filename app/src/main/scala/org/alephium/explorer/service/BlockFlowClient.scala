@@ -113,11 +113,10 @@ object BlockFlowClient {
         .flatMap {
           case Right(res) => Future.successful(res)
           case Left(error) =>
-            logger.error(error.detail)
             Future.failed(NodeApiError(error.detail))
         }
         .recoverWith { error =>
-          Future.failed(UnreachableNode(error.getMessage))
+          Future.failed(UnreachableNode(error))
         }
     }
 
