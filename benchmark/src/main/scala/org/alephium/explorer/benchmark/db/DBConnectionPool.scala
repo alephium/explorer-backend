@@ -25,6 +25,7 @@ case object DBConnectionPool {
   }
 
   /** Disables connection-pooling */
+  @SuppressWarnings(Array("org.wartremover.warts.PlatformDefault"))
   case object Disabled extends DBConnectionPool {
     override def toString: String = this.productPrefix.toLowerCase
   }

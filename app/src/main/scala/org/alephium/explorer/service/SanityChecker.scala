@@ -34,7 +34,7 @@ import org.alephium.explorer.persistence.queries.BlockQueries._
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
-@SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.TraversableOps"))
+@SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.IterableOps"))
 object SanityChecker extends StrictLogging {
 
   private def findLatestBlock(from: GroupIndex, to: GroupIndex)(

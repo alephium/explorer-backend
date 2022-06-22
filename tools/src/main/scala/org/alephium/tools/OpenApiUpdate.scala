@@ -18,16 +18,21 @@ package org.alephium.tools
 
 import org.alephium.api.OpenAPIWriters.openApiJson
 import org.alephium.explorer.docs.Documentation
+import org.alephium.explorer.sideEffect
 
-object OpenApiUpdate extends App {
-  new Documentation {
-    private val json = openApiJson(docs, dropAuth = false)
+object OpenApiUpdate {
+  def main(args: Array[String]): Unit = {
+    sideEffect {
+      new Documentation {
+        private val json = openApiJson(docs, dropAuth = false)
 
-    import java.io.PrintWriter
-    new PrintWriter("../app/src/main/resources/explorer-backend-openapi.json") {
-      write(json)
-      write('\n')
-      close
+        import java.io.PrintWriter
+        new PrintWriter("../app/src/main/resources/explorer-backend-openapi.json") {
+          write(json)
+          write('\n')
+          close
+        }
+      }
     }
   }
 }

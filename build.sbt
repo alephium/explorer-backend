@@ -89,7 +89,7 @@ def caffeineJavaDocAPIMapping(classPath: Classpath): (sbt.File, sbt.URL) = {
 val commonSettings = Seq(
   name := "explorer-backend",
   organization := "org.alephium",
-  scalaVersion := "2.13.3",
+  scalaVersion := "2.13.8",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding",
@@ -288,7 +288,8 @@ val wartsTestExcludes = wartsCompileExcludes ++ Seq(
   Wart.OptionPartial,
   Wart.Overloading,
   Wart.NonUnitStatements,
-  Wart.TraversableOps,
+  Wart.IterableOps,
   Wart.Throw,
-  Wart.Equals
+  Wart.Equals,
+  Wart.GlobalExecutionContext
 )
