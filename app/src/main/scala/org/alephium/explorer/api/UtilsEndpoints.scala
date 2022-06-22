@@ -17,8 +17,11 @@
 package org.alephium.explorer.api
 
 import sttp.tapir._
+import sttp.tapir.generic.auto._
 
+import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.explorer.api.BaseEndpoint
+import org.alephium.explorer.api.model.LogbackValue
 
 // scalastyle:off magic.number
 trait UtilsEndpoints extends BaseEndpoint with QueryParams {
@@ -42,9 +45,9 @@ trait UtilsEndpoints extends BaseEndpoint with QueryParams {
       .in(plainBody[String].validate(Validator.enumeration(logLevels)))
       .description(s"Update global log level, accepted: $logLevelsStr")
 
-  val changeLogConfig: BaseEndpoint[String, Unit] =
+  val changeLogConfig: BaseEndpoint[Seq[LogbackValue], Unit] =
     utilsEndpoint.put
       .in("update-log-config")
-      .in(plainBody[String])
-      .description("Update logging file, only logback.xml is accepted")
+      .in(jsonBody[Seq[LogbackValue]])
+      .description("Update logback values")
 }

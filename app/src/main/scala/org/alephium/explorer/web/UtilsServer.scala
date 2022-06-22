@@ -22,8 +22,6 @@ import scala.util._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import ch.qos.logback.classic.{Level, Logger, LoggerContext}
-import ch.qos.logback.classic.joran.JoranConfigurator
-import ch.qos.logback.classic.util.ContextInitializer
 import org.slf4j.LoggerFactory
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
@@ -32,6 +30,7 @@ import sttp.model.StatusCode
 import org.alephium.api.ApiError
 import org.alephium.explorer.{sideEffect, GroupSetting}
 import org.alephium.explorer.api.UtilsEndpoints
+import org.alephium.explorer.api.model.LogbackValue
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.service.{BlockFlowClient, SanityChecker}
 
@@ -51,8 +50,8 @@ class UtilsServer()(implicit val executionContext: ExecutionContext,
       toRoute(changeGlobalLogLevel.serverLogic[Future] { level =>
         Future.successful(updateGlobalLevel(level))
       }) ~
-      toRoute(changeLogConfig.serverLogic[Future] { logbackConfig =>
-        Future.successful(updateLoggerContext(logbackConfig))
+      toRoute(changeLogConfig.serverLogic[Future] { values =>
+        Future.successful(updateLoggerContext(values))
       })
 
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
@@ -69,31 +68,26 @@ class UtilsServer()(implicit val executionContext: ExecutionContext,
     }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   private def updateLoggerContext(
-      logbackConfig: String): Either[ApiError[_ <: StatusCode], Unit] = {
-
-    val loggerFactory = LoggerFactory.getILoggerFactory()
-
+      values: Seq[LogbackValue]
+  ): Either[ApiError[_ <: StatusCode], Unit] = {
+    val loggerFactory = LoggerFactory.getILoggerFactory().asInstanceOf[LoggerContext]
     loggerFactory match {
       case logbackCtx: LoggerContext =>
-        val configurator = new JoranConfigurator();
-        logbackCtx.reset
-        configurator.setContext(logbackCtx);
-
-        val stream = new java.io.ByteArrayInputStream(
-          logbackConfig.trim().getBytes(java.nio.charset.StandardCharsets.UTF_8.name)
-        )
-
-        Try(configurator.doConfigure(stream)) match {
+        Try {
+          values.foreach { logbackValue =>
+            val level  = Level.toLevel(logbackValue.level.toString())
+            val logger = logbackCtx.getLogger(logbackValue.name)
+            logger.info(s"Updating logging level: ${logbackValue.name} -> $level")
+            logger.setLevel(level)
+          }
+        } match {
           case Success(_) =>
             logger.info("Logback configuration updated OK.")
             Right(())
           case Failure(e) =>
-            val init = new ContextInitializer(logbackCtx)
-            init.autoConfig
-            logger.warn(
-              s"Cannot apply logback configuration, Logback configuration reset to what is defined on the class path or system properties: ${e.getMessage}")
-            Left(ApiError.BadRequest(s"Cannot apply logback configuration: ${e.getMessage}"))
+            Left(ApiError.BadRequest(s"Cannot apply logback values: ${e.getMessage}"))
         }
       case _ =>
         val message = "Can't update logging configuration, only logback is supported"

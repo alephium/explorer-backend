@@ -16,8 +16,6 @@
 
 package org.alephium.explorer.web
 
-import scala.io.Source
-
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpupickle.UpickleCustomizationSupport
@@ -25,11 +23,11 @@ import org.scalamock.scalatest.MockFactory
 import org.scalatest.concurrent.ScalaFutures
 
 import org.alephium.api.ApiError
-import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting, Main}
+import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting}
+import org.alephium.explorer.api.model.LogbackValue
 import org.alephium.explorer.cache.{BlockCache, TransactionCache}
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.service._
-import org.alephium.explorer.util.TestUtils._
 import org.alephium.json.Json
 
 @SuppressWarnings(Array("org.wartremover.warts.Var"))
@@ -56,32 +54,35 @@ class UtilsServerSpec()
       val entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, level)
       Put(s"/utils/update-global-loglevel", entity) ~> server.route ~> check {
         responseAs[ApiError.BadRequest] is ApiError.BadRequest(
-          s"Invalid value for: body (expected value to be within List(TRACE, DEBUG, INFO, WARN, ERROR), but was '$level')")
+          s"Invalid value for: body (expected value to be one of (TRACE, DEBUG, INFO, WARN, ERROR), but was $level)")
       }
     }
   }
 
-  it should "update logback file" in new Fixture {
-    val logbackFile =
-      using(
-        Source.fromFile(name = Main.getClass.getResource("/logback.xml").getPath, enc = "UTF-8")
-      )(_.getLines().toList).mkString("\n")
+  it should "update logback values" in new Fixture {
 
-    val entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, logbackFile)
-    Put(s"/utils/update-log-config", entity) ~> server.route ~> check {
+    val logbackValues: Seq[LogbackValue] = Seq(
+      LogbackValue("org.test", LogbackValue.Level.Debug),
+      LogbackValue("yop", LogbackValue.Level.Trace)
+    )
+
+    Put(s"/utils/update-log-config", logbackValues) ~> server.route ~> check {
       status is StatusCodes.OK
     }
 
-    val wrongConfig = """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <configuration>
-        <configuration>
+    val json   = """
+    [
+      {
+        "name": "foo",
+        "level": "boo"
+      }
+    ]
     """
-    val wrongEntity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, wrongConfig)
+    val entity = HttpEntity(ContentTypes.`application/json`, json)
 
-    Put(s"/utils/update-log-config", wrongEntity) ~> server.route ~> check {
+    Put(s"/utils/update-log-config", entity) ~> server.route ~> check {
       responseAs[ApiError.BadRequest] is ApiError.BadRequest(
-        s"Cannot apply logback configuation: Problem parsing XML document. See previously reported errors.")
+        s"Invalid value for: body (Cannot decode level, expected one of: List(TRACE, DEBUG, INFO, WARN, ERROR) at index 55: decoding failure)")
     }
   }
 
