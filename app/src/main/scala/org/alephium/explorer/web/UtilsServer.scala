@@ -63,7 +63,7 @@ class UtilsServer()(implicit val executionContext: ExecutionContext,
         logger.info(s"Logging level updated to $level.")
         Right(())
       case Failure(error) =>
-        val errorMessage = s"Cannot apply logback configuation: $error"
+        val errorMessage = s"Cannot apply logback configuration: $error"
         logger.error(errorMessage)
         Left(ApiError.BadRequest(errorMessage))
     }
@@ -92,8 +92,8 @@ class UtilsServer()(implicit val executionContext: ExecutionContext,
             val init = new ContextInitializer(logbackCtx)
             init.autoConfig
             logger.warn(
-              s"Cannot apply logback configuation, Logback configuration reset to what is defined on the class path or system properties: ${e.getMessage}")
-            Left(ApiError.BadRequest(s"Cannot apply logback configuation: ${e.getMessage}"))
+              s"Cannot apply logback configuration, Logback configuration reset to what is defined on the class path or system properties: ${e.getMessage}")
+            Left(ApiError.BadRequest(s"Cannot apply logback configuration: ${e.getMessage}"))
         }
       case _ =>
         val message = "Can't update logging configuration, only logback is supported"
