@@ -10,6 +10,8 @@ COPY entrypoint.sh /entrypoint.sh
 # http
 EXPOSE 9090
 
+USER nobody
+
 ENV JAVA_NET_OPTS="-Djava.net.preferIPv4Stack=true"
 ENV JAVA_MEM_OPTS=""
 ENV JAVA_GC_OPTS=""
