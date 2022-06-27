@@ -40,10 +40,10 @@ final case class AssetOutput(
     key: Hash,
     amount: U256,
     address: Address,
-    tokens: Option[Seq[Token]]         = None,
-    lockTime: Option[TimeStamp]        = None,
-    additionalData: Option[ByteString] = None,
-    spent: Option[Transaction.Hash]    = None
+    tokens: Option[Seq[Token]]      = None,
+    lockTime: Option[TimeStamp]     = None,
+    message: Option[ByteString]     = None,
+    spent: Option[Transaction.Hash] = None
 ) extends Output
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))

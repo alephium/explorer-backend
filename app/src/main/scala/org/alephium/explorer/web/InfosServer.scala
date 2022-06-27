@@ -36,7 +36,7 @@ import org.alephium.util.U256
 class InfosServer(tokenSupplyService: TokenSupplyService,
                   blockService: BlockService,
                   transactionService: TransactionService)(
-    implicit executionContext: ExecutionContext,
+    implicit val executionContext: ExecutionContext,
     dc: DatabaseConfig[PostgresProfile],
     blockCache: BlockCache,
     transactionCache: TransactionCache,
@@ -44,48 +44,57 @@ class InfosServer(tokenSupplyService: TokenSupplyService,
     extends Server
     with InfosEndpoints {
 
+  // scalafmt is struggling on this one, maybe latest version wil work.
+  // format: off
   val route: Route =
-    toRoute(getInfos) { _ =>
-      Future.successful(Right(ExplorerInfo(BuildInfo.releaseVersion, BuildInfo.commitId)))
-    } ~
-      toRoute(listTokenSupply) { pagination =>
-        tokenSupplyService.listTokenSupply(pagination).map(Right(_))
-      } ~
-      toRoute(getCirculatingSupply) { _ =>
+    toRoute(getInfos.serverLogicSuccess[Future] { _ =>
+      Future.successful(ExplorerInfo(BuildInfo.releaseVersion, BuildInfo.commitId))
+    }) ~
+      toRoute(listTokenSupply.serverLogicSuccess[Future] { pagination =>
+        tokenSupplyService.listTokenSupply(pagination)
+      }) ~
+      toRoute(getCirculatingSupply.serverLogicSuccess[Future] { _ =>
         tokenSupplyService
           .getLatestTokenSupply()
           .map { supply =>
             val circulating = supply.map(_.circulating).getOrElse(U256.Zero)
-            Right(toALPH(circulating))
+            toALPH(circulating)
           }
-      } ~
-      toRoute(getTotalSupply) { _ =>
+      }) ~
+      toRoute(getTotalSupply.serverLogicSuccess[Future] { _ =>
         tokenSupplyService
           .getLatestTokenSupply()
           .map { supply =>
             val total = supply.map(_.total).getOrElse(U256.Zero)
-            Right(toALPH(total))
+            toALPH(total)
           }
-      } ~
-      toRoute(getReservedSupply) { _ =>
+      }) ~
+      toRoute(getReservedSupply.serverLogicSuccess[Future] { _ =>
         tokenSupplyService
           .getLatestTokenSupply()
           .map { supply =>
             val reserved = supply.map(_.reserved).getOrElse(U256.Zero)
-            Right(toALPH(reserved))
+            toALPH(reserved)
           }
-      } ~
-      toRoute(getLockedSupply) { _ =>
+      }) ~
+      toRoute(getLockedSupply.serverLogicSuccess[Future] { _ =>
         tokenSupplyService
           .getLatestTokenSupply()
           .map { supply =>
             val locked = supply.map(_.locked).getOrElse(U256.Zero)
-            Right(toALPH(locked))
+            toALPH(locked)
           }
-      } ~
-      toRoute(getHeights)(_           => blockService.listMaxHeights().map(Right(_))) ~
-      toRoute(getTotalTransactions)(_ => Future(Right(transactionService.getTotalNumber()))) ~
-      toRoute(getAverageBlockTime)(_  => blockService.getAverageBlockTime().map(Right(_)))
+      }) ~
+      toRoute(getHeights.serverLogicSuccess[Future]{ _ =>
+         blockService.listMaxHeights()
+      }) ~
+      toRoute(getTotalTransactions.serverLogicSuccess[Future]{ _=>
+        Future(transactionService.getTotalNumber())
+      })~
+      toRoute(getAverageBlockTime.serverLogicSuccess[Future]{ _=>
+        blockService.getAverageBlockTime()
+      })
+  // format: on
 
   private def toALPH(u256: U256): BigDecimal =
     new BigDecimal(u256.v).divide(new BigDecimal(ALPH.oneAlph.v))

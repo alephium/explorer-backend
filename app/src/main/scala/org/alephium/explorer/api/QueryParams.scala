@@ -59,9 +59,9 @@ trait QueryParams extends TapirCodecs {
         (timeInterval.from, timeInterval.to))
       .validate(Validator.custom { timeInterval =>
         if (timeInterval.from > timeInterval.to) {
-          List(ValidationError.Custom(timeInterval, s"`fromTs` must be before `toTs`"))
+          ValidationResult.Invalid(s"`fromTs` must be before `toTs`")
         } else {
-          List.empty
+          ValidationResult.Valid
         }
       })
 

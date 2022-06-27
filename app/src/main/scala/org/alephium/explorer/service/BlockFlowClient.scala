@@ -19,6 +19,7 @@ package org.alephium.explorer.service
 import java.math.BigInteger
 import java.net.InetAddress
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 
@@ -38,9 +39,9 @@ import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.mining.HashRate
 import org.alephium.protocol.model.{Hint, Target}
 import org.alephium.protocol.vm.LockupScript
-import org.alephium.util.{Duration, Hex, TimeStamp, U256}
+import org.alephium.util.{Duration, Hex, Service, TimeStamp, U256}
 
-trait BlockFlowClient {
+trait BlockFlowClient extends Service {
   def fetchBlock(fromGroup: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]]
 
   def fetchChainInfo(fromGroup: GroupIndex, toGroup: GroupIndex): Future[Either[String, ChainInfo]]
@@ -78,6 +79,10 @@ trait BlockFlowClient {
   def fetchChainParams(): Future[Either[String, ChainParams]]
 
   def fetchUnconfirmedTransactions(uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]]
+
+  def start(): Future[Unit]
+
+  def close(): Future[Unit]
 }
 
 object BlockFlowClient {
@@ -87,10 +92,21 @@ object BlockFlowClient {
     new Impl(uri, groupNum, maybeApiKey)
 
   private class Impl(uri: Uri, groupNum: Int, val maybeApiKey: Option[api.model.ApiKey])(
-      implicit executionContext: ExecutionContext
+      implicit val executionContext: ExecutionContext
   ) extends BlockFlowClient
-      with Endpoints
-      with EndpointSender {
+      with Endpoints {
+
+    private val endpointSender = new EndpointSender(maybeApiKey)
+
+    override def startSelfOnce(): Future[Unit] = {
+      endpointSender.start()
+    }
+
+    override def stopSelfOnce(): Future[Unit] = {
+      close()
+    }
+
+    override def subServices: ArraySeq[Service] = ArraySeq.empty
 
     implicit lazy val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
 
@@ -102,7 +118,8 @@ object BlockFlowClient {
         uri: Uri,
         a: A
     ): Future[Either[String, B]] =
-      send(endpoint, a, uri"${uri.toString}")
+      endpointSender
+        .send(endpoint, a, uri"${uri.toString}")
         .map(_.left.map(_.detail))
 
     @SuppressWarnings(Array("org.wartremover.warts.ToString"))
@@ -173,6 +190,10 @@ object BlockFlowClient {
       } else {
         Right(selfClique.peer(group)).map(node => (node.address, node.restPort))
       }
+    }
+
+    override def close(): Future[Unit] = {
+      endpointSender.stop()
     }
   }
 
@@ -360,7 +381,7 @@ object BlockFlowClient {
       case _                                                              => None
     }
     UOutput(
-      output.alphAmount.value,
+      output.attoAlphAmount.value,
       new Address(output.address.toBase58),
       lockTime
     )
@@ -389,8 +410,8 @@ object BlockFlowClient {
       case _: api.model.ContractOutput => 1
     }
 
-    val additionalData = output match {
-      case asset: api.model.AssetOutput => Some(asset.additionalData)
+    val message = output match {
+      case asset: api.model.AssetOutput => Some(asset.message)
       case _: api.model.ContractOutput  => None
     }
 
@@ -415,12 +436,12 @@ object BlockFlowClient {
       outputType,
       hint.value,
       protocol.model.TxOutputRef.key(txId, index),
-      output.alphAmount.value,
+      output.attoAlphAmount.value,
       new Address(output.address.toBase58),
       tokens,
       mainChain,
       lockTime,
-      additionalData,
+      message,
       index,
       txOrder,
       None

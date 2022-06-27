@@ -16,33 +16,44 @@
 
 package org.alephium.explorer
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.collection.immutable.ArraySeq
+import scala.concurrent._
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import com.typesafe.scalalogging.StrictLogging
 
-import org.alephium.explorer.util.AsyncCloseable._
+import org.alephium.util.Service
 
 /** Stores AkkaHttp related instances created on boot-up */
-final case class AkkaHttpServer(server: Http.ServerBinding, routes: Route, actorSystem: ActorSystem)
-    extends StrictLogging {
+class AkkaHttpServer(host: String, port: Int, routes: Route)(
+    implicit val executionContext: ExecutionContext,
+    actorSystem: ActorSystem)
+    extends Service
+    with StrictLogging {
+
+  private val httpBindingPromise: Promise[Http.ServerBinding] = Promise()
+
+  override def startSelfOnce(): Future[Unit] = {
+    for {
+      httpBinding <- Http().newServerAt(host, port).bindFlow(routes)
+      _           <- httpBindingPromise.success(httpBinding).future
+    } yield {
+      logger.info(s"Listening http request on ${httpBinding.localAddress}")
+    }
+  }
 
   /** Stop AkkaHttp server and terminates ActorSystem */
-  def stop()(implicit ec: ExecutionContext): Future[Unit] =
-    server //Stop server to terminate receiving http requests
-      .close()
-      .recoverWith { throwable =>
-        logger.error("Failed to unbind server", throwable)
-        Future.unit
-      }
-      .flatMap { _ =>
-        actorSystem //close actor system
-          .close()
-          .recoverWith { throwable =>
-            logger.error("Failed to close ActorSystem", throwable)
-            Future.unit
-          }
-      }
+  def stopSelfOnce(): Future[Unit] = {
+    for {
+      binding <- httpBindingPromise.future
+      _       <- binding.unbind().recover(throwable => logger.error("Failed to unbind server", throwable))
+    } yield {
+      logger.info(s"http unbound")
+    }
+  }
+
+  override def subServices: ArraySeq[Service] = ArraySeq.empty
+
 }

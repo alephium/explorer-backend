@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.web
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
@@ -27,48 +27,47 @@ import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model.{AddressBalance, AddressInfo}
 import org.alephium.explorer.service.TransactionService
 
-class AddressServer(transactionService: TransactionService)(implicit ec: ExecutionContext,
-                                                            dc: DatabaseConfig[PostgresProfile])
+class AddressServer(transactionService: TransactionService)(
+    implicit val executionContext: ExecutionContext,
+    dc: DatabaseConfig[PostgresProfile])
     extends Server
     with AddressesEndpoints {
 
   val route: Route =
-    toRoute(getTransactionsByAddress) {
+    toRoute(getTransactionsByAddress.serverLogicSuccess[Future] {
       case (address, pagination) =>
         transactionService
           .getTransactionsByAddressSQL(address, pagination)
-          .map(Right.apply)
-    } ~
-      toRoute(getAddressInfo) { address =>
+    }) ~
+      toRoute(getAddressInfo.serverLogicSuccess[Future] { address =>
         for {
           (balance, locked) <- transactionService.getBalance(address)
           txNumber          <- transactionService.getTransactionsNumberByAddress(address)
-        } yield Right(AddressInfo(balance, locked, txNumber))
-      } ~
-      toRoute(getTotalTransactionsByAddress) { address =>
+        } yield AddressInfo(balance, locked, txNumber)
+      }) ~
+      toRoute(getTotalTransactionsByAddress.serverLogic[Future] { address =>
         transactionService.getTransactionsNumberByAddress(address).map(Right(_))
-      } ~
-      toRoute(getAddressBalance) { address =>
+      }) ~
+      toRoute(getAddressBalance.serverLogicSuccess[Future] { address =>
         for {
           (balance, locked) <- transactionService.getBalance(address)
-        } yield Right(AddressBalance(balance, locked))
-      } ~
-      toRoute(getAddressTokenBalance) {
+        } yield AddressBalance(balance, locked)
+      }) ~
+      toRoute(getAddressTokenBalance.serverLogicSuccess[Future] {
         case (address, token) =>
           for {
             (balance, locked) <- transactionService.getTokenBalance(address, token)
-          } yield Right(AddressBalance(balance, locked))
-      } ~
-      toRoute(listAddressTokens) { address =>
+          } yield AddressBalance(balance, locked)
+      }) ~
+      toRoute(listAddressTokens.serverLogicSuccess[Future] { address =>
         for {
           tokens <- transactionService.listAddressTokens(address)
-        } yield Right(tokens)
-      } ~
-      toRoute(listAddressTokenTransactions) {
+        } yield tokens
+      }) ~
+      toRoute(listAddressTokenTransactions.serverLogicSuccess[Future] {
         case (address, token, pagination) =>
           for {
             tokens <- transactionService.listAddressTokenTransactions(address, token, pagination)
-          } yield Right(tokens)
-      }
-
+          } yield tokens
+      })
 }

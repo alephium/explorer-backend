@@ -38,13 +38,13 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
     def key: Rep[Hash]                  = column[Hash]("key", O.SqlType("BYTEA"))
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
-    def address: Rep[Address]                   = column[Address]("address")
-    def tokens: Rep[Option[Seq[Token]]]         = column[Option[Seq[Token]]]("tokens")
-    def mainChain: Rep[Boolean]                 = column[Boolean]("main_chain")
-    def lockTime: Rep[Option[TimeStamp]]        = column[Option[TimeStamp]]("lock_time")
-    def additionalData: Rep[Option[ByteString]] = column[Option[ByteString]]("additional_data")
-    def outputOrder: Rep[Int]                   = column[Int]("output_order")
-    def txOrder: Rep[Int]                       = column[Int]("tx_order")
+    def address: Rep[Address]            = column[Address]("address")
+    def tokens: Rep[Option[Seq[Token]]]  = column[Option[Seq[Token]]]("tokens")
+    def mainChain: Rep[Boolean]          = column[Boolean]("main_chain")
+    def lockTime: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("lock_time")
+    def message: Rep[Option[ByteString]] = column[Option[ByteString]]("message")
+    def outputOrder: Rep[Int]            = column[Int]("output_order")
+    def txOrder: Rep[Int]                = column[Int]("tx_order")
     def spentFinalized: Rep[Option[Transaction.Hash]] =
       column[Option[Transaction.Hash]]("spent_finalized", O.Default(None))
 
@@ -68,14 +68,14 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
        tokens,
        mainChain,
        lockTime,
-       additionalData,
+       message,
        outputOrder,
        txOrder,
        spentFinalized)
         .<>((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }
 
-  lazy val createNonSpentIndex: DBActionW[Int] =
+  def createNonSpentIndex(): DBActionW[Int] =
     sqlu"create unique index if not exists non_spent_output_idx on #${name} (address, main_chain, key, block_hash) where spent_finalized IS NULL;"
 
   val table: TableQuery[Outputs] = TableQuery[Outputs]

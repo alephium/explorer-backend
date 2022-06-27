@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.web
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
@@ -28,19 +28,19 @@ import org.alephium.explorer.api.BlockEndpoints
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.service.BlockService
 
-class BlockServer(implicit ec: ExecutionContext,
+class BlockServer(implicit val executionContext: ExecutionContext,
                   dc: DatabaseConfig[PostgresProfile],
                   blockCache: BlockCache)
     extends Server
     with BlockEndpoints {
   val route: Route =
-    toRoute(getBlockByHash)(
-      hash =>
-        BlockService
-          .getLiteBlockByHash(hash)
-          .map(_.toRight(ApiError.NotFound(hash.value.toHexString)))) ~
-      toRoute(getBlockTransactions) {
-        case (hash, pagination) => BlockService.getBlockTransactions(hash, pagination).map(Right(_))
-      } ~
-      toRoute(listBlocks)(BlockService.listBlocks(_).map(Right(_)))
+    toRoute(getBlockByHash.serverLogic[Future] { hash =>
+      BlockService
+        .getLiteBlockByHash(hash)
+        .map(_.toRight(ApiError.NotFound(hash.value.toHexString)))
+    }) ~
+      toRoute(getBlockTransactions.serverLogicSuccess[Future] {
+        case (hash, pagination) => BlockService.getBlockTransactions(hash, pagination)
+      }) ~
+      toRoute(listBlocks.serverLogicSuccess[Future](BlockService.listBlocks(_)))
 }

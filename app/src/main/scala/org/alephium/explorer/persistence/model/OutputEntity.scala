@@ -34,7 +34,7 @@ final case class OutputEntity(
     tokens: Option[Seq[Token]], //None if empty list
     mainChain: Boolean,
     lockTime: Option[TimeStamp],
-    additionalData: Option[ByteString],
+    message: Option[ByteString],
     order: Int,
     txOrder: Int,
     spentFinalized: Option[Transaction.Hash]
@@ -42,7 +42,7 @@ final case class OutputEntity(
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   def toApi(spent: Option[Transaction.Hash]): Output = {
     outputType match {
-      case 0 => AssetOutput(hint, key, amount, address, tokens, lockTime, additionalData, spent)
+      case 0 => AssetOutput(hint, key, amount, address, tokens, lockTime, message, spent)
       case 1 => ContractOutput(hint, key, amount, address, tokens, spent)
     }
   }

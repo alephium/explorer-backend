@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.service
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
@@ -33,7 +34,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.protocol.model.{ChainIndex, CliqueId, NetworkId}
-import org.alephium.util.{AVector, Duration, Hex, TimeStamp}
+import org.alephium.util.{AVector, Duration, Hex, Service, TimeStamp}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
 class BlockFlowSyncServiceSpec
@@ -229,6 +230,11 @@ class BlockFlowSyncServiceSpec
     def blocks: Seq[BlockEntry] = blockFlow.flatten
 
     implicit val blockFlowClient: BlockFlowClient = new BlockFlowClient {
+      implicit val executionContext: ExecutionContext = ExecutionContext.global
+      def startSelfOnce(): Future[Unit]               = Future.unit
+      def stopSelfOnce(): Future[Unit]                = Future.unit
+      def subServices: ArraySeq[Service]              = ArraySeq.empty
+
       def fetchBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[Either[String, BlockEntity]] =
         Future.successful(blockEntities.find(_.hash === hash).toRight(s"$hash Not Found"))
 
@@ -281,6 +287,12 @@ class BlockFlowSyncServiceSpec
       def fetchUnconfirmedTransactions(
           uri: Uri): Future[Either[String, Seq[UnconfirmedTransaction]]] =
         Future.successful(Right(Seq.empty))
+
+      override def start(): Future[Unit] =
+        Future.unit
+
+      override def close(): Future[Unit] =
+        Future.unit
     }
 
     def checkBlocks(blocksToCheck: Seq[BlockEntry]) = {
@@ -295,7 +307,7 @@ class BlockFlowSyncServiceSpec
 
     def checkMainChain(mainChain: Seq[BlockEntry.Hash]) = {
       val result = BlockDao
-        .listMainChainSQLCached(Pagination.unsafe(0, blocks.size))
+        .listMainChain(Pagination.unsafe(0, blocks.size))
         .futureValue
         ._1
         .filter(block =>

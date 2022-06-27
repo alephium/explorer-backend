@@ -209,7 +209,7 @@ class TransactionQueriesSpec
        output.address,
        output.tokens,
        output.lockTime,
-       output.additionalData,
+       output.message,
        input.map(_.txHash))
     }
 

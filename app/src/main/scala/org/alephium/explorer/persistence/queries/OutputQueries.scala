@@ -57,7 +57,7 @@ object OutputQueries {
            |                     "tokens",
            |                     "main_chain",
            |                     "lock_time",
-           |                     "additional_data",
+           |                     "message",
            |                     "output_order",
            |                     "tx_order")
            |VALUES $placeholder
@@ -80,7 +80,7 @@ object OutputQueries {
               params >> output.tokens
               params >> output.mainChain
               params >> output.lockTime
-              params >> output.additionalData
+              params >> output.message
               params >> output.order
               params >> output.txOrder
           }
@@ -152,7 +152,7 @@ object OutputQueries {
            |                     "address",
            |                     "main_chain",
            |                     "lock_time",
-           |                     "additional_data",
+           |                     "message",
            |                     "output_order",
            |                     "tx_order")
            |VALUES $placeholder
@@ -176,7 +176,7 @@ object OutputQueries {
                 params >> output.address
                 params >> output.mainChain
                 params >> output.lockTime
-                params >> output.additionalData
+                params >> output.message
                 params >> output.order
                 params >> output.txOrder
           }
@@ -251,7 +251,7 @@ object OutputQueries {
     }
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
+  @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
   private def insertTokenInfoFromOutputs(
       tokenOutputs: Iterable[(Token, OutputEntity)]): DBActionW[Int] = {
     val tokens = tokenOutputs
@@ -261,7 +261,7 @@ object OutputQueries {
           val timestamp = groups.map { case (_, output) => output.timestamp }.max
           (token, timestamp)
       }
-      .toIterable
+      .toSeq
 
     QuerySplitter.splitUpdates(rows = tokens, columnsPerRow = 2) { (tokens, placeholder) =>
       val query =
@@ -306,7 +306,7 @@ object OutputQueries {
       outputs.address,
       outputs.tokens,
       outputs.lock_time,
-      outputs.additional_data,
+      outputs.message,
       inputs.tx_hash
     FROM outputs
     LEFT JOIN inputs ON inputs.output_ref_key = outputs.key AND inputs.main_chain = true
@@ -333,7 +333,7 @@ object OutputQueries {
            output.address,
            output.tokens,
            output.lockTime,
-           output.additionalData,
+           output.message,
            input.map(_.txHash))
       }
   }
@@ -356,12 +356,12 @@ object OutputQueries {
      address: Address,
      tokens: Option[Seq[Token]],
      lockTime: Option[TimeStamp],
-     additionalData: Option[ByteString],
+     message: Option[ByteString],
      spent: Option[Transaction.Hash]) =>
       {
 
         outputType match {
-          case 0 => AssetOutput(hint, key, amount, address, tokens, lockTime, additionalData, spent)
+          case 0 => AssetOutput(hint, key, amount, address, tokens, lockTime, message, spent)
           case 1 => ContractOutput(hint, key, amount, address, tokens, spent)
         }
       }

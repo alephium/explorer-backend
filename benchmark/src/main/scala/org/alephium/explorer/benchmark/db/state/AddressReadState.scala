@@ -31,7 +31,6 @@ import org.alephium.explorer.{BlockHash, GroupSetting, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
-import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
@@ -47,7 +46,8 @@ class Queries(val config: DatabaseConfig[PostgresProfile])(
   */
 // scalastyle:off magic.number
 // scalastyle:off method.length
-@SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+@SuppressWarnings(
+  Array("org.wartremover.warts.OptionPartial", "org.wartremover.warts.GlobalExecutionContext"))
 class AddressReadState(val db: DBExecutor)
     extends ReadBenchmarkState[OutputEntity](testDataCount = 4000, db = db) {
 
@@ -117,7 +117,7 @@ class AddressReadState(val db: DBExecutor)
       tokens         = None,
       mainChain      = true,
       lockTime       = None,
-      additionalData = None,
+      message        = None,
       order          = 0,
       txOrder        = 0,
       spentFinalized = None
@@ -181,11 +181,11 @@ class AddressReadState(val db: DBExecutor)
         .andThen(TransactionPerAddressSchema.table.schema.create)
         .andThen(AppStateSchema.table.schema.create)
         .andThen(BlockHeaderSchema.createBlockHeadersIndexesSQL())
-        .andThen(TransactionSchema.createMainChainIndex)
-        .andThen(InputSchema.createMainChainIndex)
-        .andThen(OutputSchema.createMainChainIndex)
-        .andThen(TransactionPerAddressSchema.createMainChainIndex)
-        .andThen(OutputSchema.createNonSpentIndex)
+        .andThen(TransactionSchema.createMainChainIndex())
+        .andThen(InputSchema.createMainChainIndex())
+        .andThen(OutputSchema.createMainChainIndex())
+        .andThen(TransactionPerAddressSchema.createMainChainIndex())
+        .andThen(OutputSchema.createNonSpentIndex())
 
     val _ = db.runNow(
       action  = createTable,
@@ -194,13 +194,6 @@ class AddressReadState(val db: DBExecutor)
 
     implicit val groupSetting: GroupSetting =
       GroupSetting(4)
-
-    implicit val blockCache: BlockCache =
-      BlockCache()(
-        groupSetting = groupSetting,
-        ec           = config.db.ioExecutionContext,
-        dc           = db.config
-      )
 
     logger.info("Persisting data")
     blocks.sliding(10000).foreach { bs =>

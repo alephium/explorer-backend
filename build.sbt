@@ -89,7 +89,7 @@ def caffeineJavaDocAPIMapping(classPath: Classpath): (sbt.File, sbt.URL) = {
 val commonSettings = Seq(
   name := "explorer-backend",
   organization := "org.alephium",
-  scalaVersion := "2.13.3",
+  scalaVersion := "2.13.8",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding",
@@ -200,7 +200,7 @@ lazy val app = mainProject("app")
       }
     },
     docker / imageNames := {
-      val baseImageName = "alephium/explorer-backend"
+      val baseImageName = "alephium/dev-explorer-backend"
       val versionTag    = version.value.replace('+', '_')
       Seq(
         ImageName(baseImageName + ":" + versionTag),
@@ -222,7 +222,7 @@ lazy val app = mainProject("app")
         MergeStrategy.first
       case PathList("META-INF", "maven", "org.webjars", "swagger-ui", xs @ _*) =>
         MergeStrategy.first
-      case "module-info.class" =>
+      case x if x.endsWith("module-info.class") =>
         MergeStrategy.discard
       case other => (assembly / assemblyMergeStrategy).value(other)
     },
@@ -288,7 +288,8 @@ val wartsTestExcludes = wartsCompileExcludes ++ Seq(
   Wart.OptionPartial,
   Wart.Overloading,
   Wart.NonUnitStatements,
-  Wart.TraversableOps,
+  Wart.IterableOps,
   Wart.Throw,
-  Wart.Equals
+  Wart.Equals,
+  Wart.GlobalExecutionContext
 )

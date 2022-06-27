@@ -222,19 +222,8 @@ object TransactionQueries extends StrictLogging {
       values
         .sortBy(_._2)
         .map {
-          case (_,
-                _,
-                outputType,
-                hint,
-                key,
-                amount,
-                address,
-                tokens,
-                lockTime,
-                additionalData,
-                spent) =>
-            toApiOutput(
-              (outputType, hint, key, amount, address, tokens, lockTime, additionalData, spent))
+          case (_, _, outputType, hint, key, amount, address, tokens, lockTime, message, spent) =>
+            toApiOutput((outputType, hint, key, amount, address, tokens, lockTime, message, spent))
         }
     }
     val gasByTx = gases.groupBy(_._1).view.mapValues(_.map { case (_, s, g) => (s, g) })

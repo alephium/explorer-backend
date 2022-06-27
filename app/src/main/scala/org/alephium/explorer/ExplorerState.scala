@@ -16,107 +16,108 @@
 
 package org.alephium.explorer
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
+import akka.actor.ActorSystem
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.cache.{BlockCache, TransactionCache}
-import org.alephium.explorer.service.BlockFlowClient
-import org.alephium.explorer.util.AsyncCloseable._
+import org.alephium.explorer.config.ExplorerConfig
+import org.alephium.explorer.persistence.Database
+import org.alephium.explorer.service._
 import org.alephium.explorer.util.Scheduler
+import org.alephium.util.Service
 
 /** Boot-up states for Explorer: Explorer can be started in the following two states
   *
   *  - ReadOnly: [[org.alephium.explorer.ExplorerState.ReadOnly]]
   *  - ReadWrite: [[org.alephium.explorer.ExplorerState.ReadWrite]]
   * */
-sealed trait ExplorerState extends StrictLogging {
-  def database: DatabaseConfig[PostgresProfile]
-  def blockFlowClient: BlockFlowClient
-  def groupSettings: GroupSetting
-  def blockCache: BlockCache
-  def transactionCache: TransactionCache
-  def akkaHttp: AkkaHttpServer
+sealed trait ExplorerState extends Service with StrictLogging {
+  implicit def actorSystem: ActorSystem
+  implicit def config: ExplorerConfig
+  implicit def databaseConfig: DatabaseConfig[PostgresProfile]
 
-  def schedulerOpt(): Option[Scheduler] =
-    this match {
-      case _: ExplorerState.ReadOnly =>
-        None
+  implicit lazy val groupSettings: GroupSetting =
+    GroupSetting(config.groupNum)
 
-      case state: ExplorerState.ReadWrite =>
-        Some(state.scheduler)
-    }
+  lazy val database: Database =
+    new Database(config.readOnly)(executionContext, databaseConfig)
 
-  def close()(implicit ec: ExecutionContext): Future[Unit] =
-    schedulerOpt()
-      .close() //Close scheduler first to stop all background processes eg: sync
-      .recoverWith { throwable =>
-        logger.error("Failed to close Scheduler", throwable)
-        Future.unit
-      }
-      .flatMap { _ =>
-        akkaHttp.stop() //Stop server to terminate receiving http requests
-      }
-      .flatMap { _ =>
-        database
-          .close() //close database
-          .recoverWith { throwable =>
-            logger.error("Failed to close database", throwable)
-            Future.unit
-          }
-      }
+  implicit lazy val blockCache: BlockCache =
+    BlockCache()(groupSettings, executionContext, database.databaseConfig)
+
+  lazy val transactionCache: TransactionCache =
+    TransactionCache()(executionContext, database.databaseConfig)
+
+  implicit lazy val blockFlowClient: BlockFlowClient =
+    BlockFlowClient(
+      uri         = config.blockFlowUri,
+      groupNum    = config.groupNum,
+      maybeApiKey = config.maybeBlockFlowApiKey
+    )
+
+  lazy val akkaHttpServer: AkkaHttpServer =
+    new AkkaHttpServer(
+      config.host,
+      config.port,
+      AppServer.routes()(executionContext,
+                         database.databaseConfig,
+                         blockFlowClient,
+                         blockCache,
+                         transactionCache,
+                         groupSettings)
+    )
+
+  override def startSelfOnce(): Future[Unit] = {
+    Future.unit
+  }
+
+  override def stopSelfOnce(): Future[Unit] = {
+    Future.unit
+  }
+
+  override def subServices: ArraySeq[Service] = ArraySeq(
+    akkaHttpServer,
+    transactionCache,
+    blockFlowClient,
+    database
+  )
 }
 
 object ExplorerState {
 
-  def apply(scheduler: Option[Scheduler],
-            database: DatabaseConfig[PostgresProfile],
-            akkaHttpServer: AkkaHttpServer,
-            blockFlowClient: BlockFlowClient,
-            groupSettings: GroupSetting,
-            blockCache: BlockCache,
-            transactionCache: TransactionCache): ExplorerState =
-    scheduler match {
-      case Some(scheduler) =>
-        ReadWrite(
-          scheduler        = scheduler,
-          database         = database,
-          akkaHttp         = akkaHttpServer,
-          blockFlowClient  = blockFlowClient,
-          groupSettings    = groupSettings,
-          blockCache       = blockCache,
-          transactionCache = transactionCache
-        )
-
-      case None =>
-        ReadOnly(
-          database         = database,
-          akkaHttp         = akkaHttpServer,
-          blockFlowClient  = blockFlowClient,
-          groupSettings    = groupSettings,
-          blockCache       = blockCache,
-          transactionCache = transactionCache
-        )
+  def apply()(implicit actorSystem: ActorSystem,
+              config: ExplorerConfig,
+              databaseConfig: DatabaseConfig[PostgresProfile],
+              executionContext: ExecutionContext): ExplorerState =
+    if (config.readOnly) {
+      ReadOnly()
+    } else {
+      ReadWrite()
     }
 
   /** State of Explorer is started in read-only mode */
-  final case class ReadOnly(database: DatabaseConfig[PostgresProfile],
-                            akkaHttp: AkkaHttpServer,
-                            blockFlowClient: BlockFlowClient,
-                            groupSettings: GroupSetting,
-                            blockCache: BlockCache,
-                            transactionCache: TransactionCache)
+  final case class ReadOnly()(implicit val actorSystem: ActorSystem,
+                              val config: ExplorerConfig,
+                              val databaseConfig: DatabaseConfig[PostgresProfile],
+                              val executionContext: ExecutionContext)
       extends ExplorerState
 
   /** State of Explorer is started in read-write mode */
-  final case class ReadWrite(scheduler: Scheduler,
-                             database: DatabaseConfig[PostgresProfile],
-                             akkaHttp: AkkaHttpServer,
-                             blockFlowClient: BlockFlowClient,
-                             groupSettings: GroupSetting,
-                             blockCache: BlockCache,
-                             transactionCache: TransactionCache)
-      extends ExplorerState
+  final case class ReadWrite()(implicit val actorSystem: ActorSystem,
+                               val config: ExplorerConfig,
+                               val databaseConfig: DatabaseConfig[PostgresProfile],
+                               val executionContext: ExecutionContext)
+      extends ExplorerState {
+
+    private implicit val scheduler = Scheduler("SYNC_SERVICES")
+
+    override def startSelfOnce(): Future[Unit] = {
+      SyncServices.startSyncServices(config)
+    }
+  }
 }

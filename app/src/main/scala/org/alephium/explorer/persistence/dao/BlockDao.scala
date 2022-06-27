@@ -39,13 +39,6 @@ import org.alephium.util.{Duration, TimeStamp}
 
 object BlockDao {
 
-  def getRowCountFromCacheIfPresent[E, U](query: Query[E, U, Seq])(
-      implicit cache: BlockCache): Option[Future[Int]] =
-    cache.getRowCountFromCacheIfPresent(query)
-
-  def invalidateCacheRowCount()(implicit cache: BlockCache): Unit =
-    cache.invalidateRowCountCache()
-
   def getLite(hash: BlockEntry.Hash)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntryLite]] =
@@ -75,27 +68,22 @@ object BlockDao {
   /** Inserts a single block transactionally via SQL */
   def insert(block: BlockEntity)(implicit ec: ExecutionContext,
                                  dc: DatabaseConfig[PostgresProfile],
-                                 cache: BlockCache,
                                  groupSetting: GroupSetting): Future[Unit] =
     insertAll(Seq(block))
 
   /** Inserts a multiple blocks transactionally via SQL */
   def insertAll(blocks: Seq[BlockEntity])(implicit ec: ExecutionContext,
                                           dc: DatabaseConfig[PostgresProfile],
-                                          cache: BlockCache,
                                           groupSetting: GroupSetting): Future[Unit] =
-    run(insertBlockEntity(blocks, groupSetting.groupNum))
-      .map { _ =>
-        cache.invalidateRowCount(mainChainQuery)
-      }
+    run(insertBlockEntity(blocks, groupSetting.groupNum)).map(_ => ())
 
-  def listMainChainSQLCached(pagination: Pagination)(
+  def listMainChain(pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       cache: BlockCache): Future[(Seq[BlockEntryLite], Int)] = {
-    val blockEntries = run(listMainChainHeadersWithTxnNumberSQL(pagination))
-    val count        = cache.getRowCount(mainChainQuery)
-    blockEntries.zip(count)
+    run(listMainChainHeadersWithTxnNumberSQL(pagination)).map { blockEntries =>
+      (blockEntries, cache.getMainChainBlockCount())
+    }
   }
 
   def listIncludingForks(from: TimeStamp, to: TimeStamp)(

@@ -34,7 +34,7 @@ final case class TokenOutputEntity(
     address: Address,
     mainChain: Boolean,
     lockTime: Option[TimeStamp],
-    additionalData: Option[ByteString],
+    message: Option[ByteString],
     order: Int,
     txOrder: Int,
     spentFinalized: Option[Transaction.Hash]

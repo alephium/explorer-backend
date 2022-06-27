@@ -33,7 +33,7 @@ import org.alephium.explorer.error.ExplorerError.{EmptyApplicationConfig, Invali
   * to the rest of the application.
   *
   * [[ApplicationConfig]] can then be used to convert to a validated [[ExplorerConfig]]
-  * that is used for starting [[org.alephium.explorer.Explorer]]
+  * that is used for starting [[org.alephium.explorer.ExplorerState]]
   */
 case object ApplicationConfig {
 

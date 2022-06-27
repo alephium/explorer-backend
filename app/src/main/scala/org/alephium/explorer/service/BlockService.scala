@@ -63,7 +63,7 @@ object BlockService extends BlockService {
   def listBlocks(pagination: Pagination)(implicit ec: ExecutionContext,
                                          dc: DatabaseConfig[PostgresProfile],
                                          cache: BlockCache): Future[ListBlocks] =
-    BlockDao.listMainChainSQLCached(pagination).map {
+    BlockDao.listMainChain(pagination).map {
       case (blocks, total) =>
         ListBlocks(total, blocks)
     }

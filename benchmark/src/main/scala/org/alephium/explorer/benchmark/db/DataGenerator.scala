@@ -77,7 +77,7 @@ object DataGenerator {
           tokens         = None,
           mainChain      = transaction.mainChain,
           lockTime       = Some(TimeStamp.now()),
-          additionalData = None,
+          message        = None,
           order          = order,
           txOrder        = order,
           spentFinalized = None

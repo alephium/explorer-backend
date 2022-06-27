@@ -14,25 +14,34 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.web
+package org.alephium.explorer.persistence
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util._
 
-import akka.http.scaladsl.server.Route
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.api.ApiError
-import org.alephium.explorer.api.TransactionEndpoints
-import org.alephium.explorer.service.TransactionService
+import org.alephium.explorer.persistence.dao.HealthCheckDao
+import org.alephium.explorer.util.FutureUtil._
+import org.alephium.util.Service
 
-class TransactionServer(implicit val executionContext: ExecutionContext,
-                        dc: DatabaseConfig[PostgresProfile])
-    extends Server
-    with TransactionEndpoints {
-  val route: Route = toRoute(getTransactionById.serverLogic[Future] { hash =>
-    TransactionService
-      .getTransaction(hash)
-      .map(_.toRight(ApiError.NotFound(hash.value.toHexString)))
-  })
+class Database(readOnly: Boolean)(implicit val executionContext: ExecutionContext,
+                                  val databaseConfig: DatabaseConfig[PostgresProfile])
+    extends Service {
+
+  override def startSelfOnce(): Future[Unit] = {
+    if (readOnly) {
+      HealthCheckDao.healthCheck().mapSyncToUnit()
+    } else {
+      DBInitializer.initialize().mapSyncToUnit()
+    }
+  }
+
+  override def stopSelfOnce(): Future[Unit] = {
+    Future.fromTry(Try(databaseConfig.db.close()))
+  }
+
+  override def subServices: ArraySeq[Service] = ArraySeq.empty
 }

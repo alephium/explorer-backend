@@ -39,12 +39,12 @@ object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outpu
     def token: Rep[Hash]                = column[Hash]("token")
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
-    def address: Rep[Address]                   = column[Address]("address")
-    def mainChain: Rep[Boolean]                 = column[Boolean]("main_chain")
-    def lockTime: Rep[Option[TimeStamp]]        = column[Option[TimeStamp]]("lock_time")
-    def additionalData: Rep[Option[ByteString]] = column[Option[ByteString]]("additional_data")
-    def outputOrder: Rep[Int]                   = column[Int]("output_order")
-    def txOrder: Rep[Int]                       = column[Int]("tx_order")
+    def address: Rep[Address]            = column[Address]("address")
+    def mainChain: Rep[Boolean]          = column[Boolean]("main_chain")
+    def lockTime: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("lock_time")
+    def message: Rep[Option[ByteString]] = column[Option[ByteString]]("message")
+    def outputOrder: Rep[Int]            = column[Int]("output_order")
+    def txOrder: Rep[Int]                = column[Int]("tx_order")
     def spentFinalized: Rep[Option[Transaction.Hash]] =
       column[Option[Transaction.Hash]]("spent_finalized", O.Default(None))
 
@@ -68,7 +68,7 @@ object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outpu
        address,
        mainChain,
        lockTime,
-       additionalData,
+       message,
        outputOrder,
        txOrder,
        spentFinalized)

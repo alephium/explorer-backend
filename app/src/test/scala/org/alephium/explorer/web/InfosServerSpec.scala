@@ -227,7 +227,7 @@ class InfosServerSpec()
 
     implicit val groupSettings: GroupSetting        = GroupSetting(groupNum)
     implicit val blockCache: BlockCache             = BlockCache()
-    implicit val transactionCache: TransactionCache = TransactionCache().futureValue
+    implicit val transactionCache: TransactionCache = TransactionCache()
 
     val server =
       new InfosServer(tokenSupplyService, blockService, transactionService)

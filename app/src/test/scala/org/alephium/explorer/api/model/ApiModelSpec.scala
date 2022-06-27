@@ -98,10 +98,9 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
      |  "address": "${output.address}"
      |  ${output.tokens.map(tokens => s""","tokens": ${write(tokens)}""").getOrElse("")}
      |  ${output.lockTime.map(lockTime => s""","lockTime": ${lockTime.millis}""").getOrElse("")}
-     |  ${output.additionalData
-                          .map(additionalData => s""","additionalData":${write(additionalData)}""")
+     |  ${output.message.map(message => s""","message":${write(message)}""")
                           .getOrElse("")}
-     |  ${output.spent.map(spent              => s""","spent": "${spent.value.toHexString}"""").getOrElse("")}
+     |  ${output.spent.map(spent       => s""","spent": "${spent.value.toHexString}"""").getOrElse("")}
      |}""".stripMargin
       check(output, expected)
     }

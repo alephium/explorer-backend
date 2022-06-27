@@ -17,6 +17,7 @@
 package org.alephium.explorer.cache
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
 import scala.jdk.FutureConverters._
 
 import com.github.benmanes.caffeine.cache.{AsyncCacheLoader, Caffeine}
@@ -26,19 +27,18 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model.GroupIndex
-import org.alephium.explorer.persistence.DBRunner
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.model.LatestBlock
-import org.alephium.explorer.persistence.queries.BlockQueries.{getBlockTimes, getLatestBlock}
+import org.alephium.explorer.persistence.queries.BlockQueries
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.ChainIndex
 import org.alephium.util.{Duration, TimeStamp}
 
 object BlockCache {
 
-  @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
+  @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
   private def computeAverageBlockTime(blockTimes: Seq[TimeStamp]): Duration = {
-    if (blockTimes.size > 1) {
+    if (blockTimes.sizeIs > 1) {
       val (_, diffs) =
         blockTimes.drop(1).foldLeft((blockTimes.head, Seq.empty: Seq[Duration])) {
           case ((prev, acc), ts) =>
@@ -60,7 +60,8 @@ object BlockCache {
     val latestBlockAsyncLoader: AsyncCacheLoader[ChainIndex, LatestBlock] = {
       case (key, _) =>
         run(
-          getLatestBlock(GroupIndex.unsafe(key.from.value), GroupIndex.unsafe(key.to.value))
+          BlockQueries.getLatestBlock(GroupIndex.unsafe(key.from.value),
+                                      GroupIndex.unsafe(key.to.value))
         ).map(_.get).asJava.toCompletableFuture
     }
 
@@ -80,7 +81,7 @@ object BlockCache {
         (for {
           latestBlock <- cachedLatestBlocks.get(key)
           after = latestBlock.timestamp.minusUnsafe(Duration.ofHoursUnsafe(2))
-          blockTimes <- run(getBlockTimes(chainFrom, chainTo, after))
+          blockTimes <- run(BlockQueries.getBlockTimes(chainFrom, chainTo, after))
         } yield {
           computeAverageBlockTime(blockTimes)
         }).asJava.toCompletableFuture
@@ -95,12 +96,9 @@ object BlockCache {
           .buildAsync[ChainIndex, Duration](blockTimeAsyncLoader)
       }
 
-    val cacheRowCount: CaffeineAsyncCache[Query[_, _, Seq], Int] =
-      CaffeineAsyncCache.rowCountCache(DBRunner(dc)) {
-        Caffeine
-          .newBuilder()
-          .refreshAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
-      }
+    val cacheRowCount: AsyncReloadingCache[Int] = AsyncReloadingCache(0, 10.seconds) { _ =>
+      run(BlockQueries.mainChainQuery.length.result)
+    }
 
     new BlockCache(
       blockTimes   = cachedBlockTimes,
@@ -116,7 +114,7 @@ object BlockCache {
   * Encapsulate so the cache mutation is not directly accessible by clients.
   * */
 class BlockCache(blockTimes: CaffeineAsyncCache[ChainIndex, Duration],
-                 rowCount: CaffeineAsyncCache[Query[_, _, Seq], Int],
+                 rowCount: AsyncReloadingCache[Int],
                  latestBlocks: CaffeineAsyncCache[ChainIndex, LatestBlock]) {
 
   /** Operations on `blockTimes` cache */
@@ -132,17 +130,6 @@ class BlockCache(blockTimes: CaffeineAsyncCache[ChainIndex, Duration],
   def putLatestBlock(chainIndex: ChainIndex, block: LatestBlock): Unit =
     latestBlocks.put(chainIndex, block)
 
-  /** Operations on `rowCount` cache */
-  def getRowCount[E, U](query: Query[E, U, Seq]): Future[Int] =
-    rowCount.get(query)
-
-  def invalidateRowCount[E, U](query: Query[E, U, Seq]): Unit =
-    rowCount.invalidate(query)
-
-  def getRowCountFromCacheIfPresent[E, U](query: Query[E, U, Seq]): Option[Future[Int]] =
-    rowCount.getIfPresent(query)
-
-  def invalidateRowCountCache(): Unit =
-    rowCount.invalidateAll()
-
+  def getMainChainBlockCount(): Int =
+    rowCount.get()
 }
