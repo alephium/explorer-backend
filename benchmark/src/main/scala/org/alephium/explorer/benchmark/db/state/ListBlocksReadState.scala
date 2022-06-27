@@ -125,7 +125,7 @@ class ListBlocksReadState(reverse: Boolean,
     //Persist transactions
     val persistTransactions =
       TransactionSchema.table.schema.create
-        .andThen(TransactionSchema.createMainChainIndex)
+        .andThen(TransactionSchema.createMainChainIndex())
         .andThen(TransactionSchema.table ++= transactions)
 
     val _ = db.runNow(
