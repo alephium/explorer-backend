@@ -20,6 +20,6 @@ import slick.jdbc.PostgresProfile.api._
 import slick.sql.SqlAction
 
 abstract class SchemaMainChain[A](name: String) extends Schema[A](name) {
-  lazy val createMainChainIndex: SqlAction[Int, NoStream, Effect] =
+  def createMainChainIndex(): SqlAction[Int, NoStream, Effect] =
     sqlu"create index if not exists #${name}_main_chain_idx on #${name} (main_chain) where main_chain = true;"
 }
