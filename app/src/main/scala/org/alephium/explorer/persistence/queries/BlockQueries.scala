@@ -73,7 +73,7 @@ object BlockQueries extends StrictLogging {
     sql"""
        |SELECT *
        |FROM #$block_headers
-       |WHERE hash = '\x#${hash.toString}'
+       |WHERE hash = '\x#${hash.toString()}'
        |""".stripMargin
       .as[BlockHeader](blockHeaderGetResult)
       .headOption
@@ -89,26 +89,8 @@ object BlockQueries extends StrictLogging {
       blocks <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
     } yield blocks
 
-  def listMainChainHeaders(mainChain: Query[BlockHeaderSchema.BlockHeaders, BlockHeader, Seq],
-                           pagination: Pagination): DBActionR[Seq[BlockHeader]] = {
-    val sorted = if (pagination.reverse) {
-      mainChain
-        .sortBy(b => (b.timestamp, b.hash.desc))
-    } else {
-      mainChain
-        .sortBy(b => (b.timestamp.desc, b.hash))
-    }
-
-    sorted
-      .drop(pagination.offset * pagination.limit)
-      .take(pagination.limit)
-      .result
-  }
-
   /**
     * Order by query for [[org.alephium.explorer.persistence.schema.BlockHeaderSchema.table]]
-    *
-    * @param prefix If non-empty adds the prefix with dot to all columns.
     */
   private def orderBySQLString(reverse: Boolean): String =
     if (reverse) {
