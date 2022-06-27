@@ -30,7 +30,7 @@ object SlickSugar {
     /**
       * Fetch single row else fail.
       */
-    @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
+    @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
     def exactlyOne(implicit ec: ExecutionContext): DBActionR[A] =
       action.flatMap { rows =>
         rows.size match {

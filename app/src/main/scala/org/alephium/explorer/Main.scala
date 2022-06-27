@@ -30,12 +30,14 @@ import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.config._
 
-object Main extends App with StrictLogging {
-  try {
-    (new BootUp).init()
-  } catch {
-    case error: Throwable =>
-      logger.error(s"Cannot initialize system: $error")
+object Main extends StrictLogging {
+  def main(args: Array[String]): Unit = {
+    try {
+      (new BootUp).init()
+    } catch {
+      case error: Throwable =>
+        logger.error(s"Cannot initialize system: $error")
+    }
   }
 }
 

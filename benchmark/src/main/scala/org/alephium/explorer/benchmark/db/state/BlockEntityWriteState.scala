@@ -34,7 +34,8 @@ import org.alephium.util.Duration
   * JMH state for benchmarking block creation.
   */
 @State(Scope.Thread)
-@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+@SuppressWarnings(
+  Array("org.wartremover.warts.Overloading", "org.wartremover.warts.GlobalExecutionContext"))
 class BlockEntityWriteState(val db: DBExecutor) extends WriteBenchmarkState[BlockEntity](db) {
 
   val groupSetting: GroupSetting =
