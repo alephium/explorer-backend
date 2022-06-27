@@ -14,22 +14,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.api.model
+package org.alephium.explorer.api
 
-import org.alephium.explorer.api.Json.u256ReadWriter
-import org.alephium.json.Json._
-import org.alephium.util.U256
+// import sttp.tapir.Schema
+// import sttp.tapir.SchemaType.SString
 
-@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-final case class Input(
-    outputRef: OutputRef,
-    unlockScript: Option[String] = None,
-    txHashRef: Transaction.Hash,
-    address: Address,
-    amount: U256
-)
+// import org.alephium.explorer.api.model.LogbackValue
 
-object Input {
-  implicit val readWriter: ReadWriter[Input] = macroRW
-
+object Schemas {
+  //implicit val logbackLevel: Schema[LogbackValue.Level] = Schema(SString())
 }
