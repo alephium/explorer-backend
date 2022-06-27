@@ -103,7 +103,7 @@ object BlockCache {
     new BlockCache(
       blockTimes   = cachedBlockTimes,
       rowCount     = cacheRowCount,
-      latestBlocks = cachedLatestBlocks
+      latestBlockPerChains = cachedLatestBlocks
     )
   }
 
@@ -115,20 +115,20 @@ object BlockCache {
   * */
 class BlockCache(blockTimes: CaffeineAsyncCache[ChainIndex, Duration],
                  rowCount: AsyncReloadingCache[Int],
-                 latestBlocks: CaffeineAsyncCache[ChainIndex, LatestBlock]) {
+                 latestBlockPerChains: CaffeineAsyncCache[ChainIndex, LatestBlock]) {
 
   /** Operations on `blockTimes` cache */
   def getAllBlockTimes(chainIndexes: Iterable[ChainIndex])(
       implicit ec: ExecutionContext): Future[Seq[(ChainIndex, Duration)]] =
     blockTimes.getAll(chainIndexes)
 
-  /** Operations on `latestBlocks` cache */
+  /** Operations on `latestBlockPerChains` cache */
   def getAllLatestBlocks()(implicit ec: ExecutionContext,
                            groupSetting: GroupSetting): Future[Seq[(ChainIndex, LatestBlock)]] =
-    latestBlocks.getAll(groupSetting.chainIndexes)
+    latestBlockPerChains.getAll(groupSetting.chainIndexes)
 
   def putLatestBlock(chainIndex: ChainIndex, block: LatestBlock): Unit =
-    latestBlocks.put(chainIndex, block)
+    latestBlockPerChains.put(chainIndex, block)
 
   def getMainChainBlockCount(): Int =
     rowCount.get()
