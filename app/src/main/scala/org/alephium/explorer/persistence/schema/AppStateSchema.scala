@@ -23,7 +23,7 @@ import slick.lifted.ProvenShape
 import org.alephium.explorer.persistence.model.AppState
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
-object AppStateSchema extends SchemaMainChain[AppState]("app_state") {
+object AppStateSchema extends Schema[AppState]("app_state") {
 
   class AppStates(tag: Tag) extends Table[AppState](tag, name) {
     def key: Rep[String]       = column[String]("key", O.PrimaryKey)
