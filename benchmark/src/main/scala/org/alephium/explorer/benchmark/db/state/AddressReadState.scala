@@ -178,11 +178,11 @@ class AddressReadState(val db: DBExecutor)
         .andThen(TransactionPerAddressSchema.table.schema.create)
         .andThen(AppStateSchema.table.schema.create)
         .andThen(BlockHeaderSchema.createBlockHeadersIndexesSQL())
-        .andThen(TransactionSchema.createMainChainIndex)
-        .andThen(InputSchema.createMainChainIndex)
-        .andThen(OutputSchema.createMainChainIndex)
-        .andThen(TransactionPerAddressSchema.createMainChainIndex)
-        .andThen(OutputSchema.createNonSpentIndex)
+        .andThen(TransactionSchema.createMainChainIndex())
+        .andThen(InputSchema.createMainChainIndex())
+        .andThen(OutputSchema.createMainChainIndex())
+        .andThen(TransactionPerAddressSchema.createMainChainIndex())
+        .andThen(OutputSchema.createNonSpentIndex())
 
     val _ = db.runNow(
       action  = createTable,

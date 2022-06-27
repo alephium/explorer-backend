@@ -31,4 +31,5 @@ final case class Input(
 
 object Input {
   implicit val readWriter: ReadWriter[Input] = macroRW
+
 }

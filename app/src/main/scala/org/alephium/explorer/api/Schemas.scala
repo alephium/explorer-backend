@@ -14,12 +14,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.schema
+package org.alephium.explorer.api
 
-import slick.jdbc.PostgresProfile.api._
-import slick.sql.SqlAction
+// import sttp.tapir.Schema
+// import sttp.tapir.SchemaType.SString
 
-abstract class SchemaMainChain[A](name: String) extends Schema[A](name) {
-  def createMainChainIndex(): SqlAction[Int, NoStream, Effect] =
-    sqlu"create index if not exists #${name}_main_chain_idx on #${name} (main_chain) where main_chain = true;"
+// import org.alephium.explorer.api.model.LogbackValue
+
+object Schemas {
+  //implicit val logbackLevel: Schema[LogbackValue.Level] = Schema(SString())
 }
