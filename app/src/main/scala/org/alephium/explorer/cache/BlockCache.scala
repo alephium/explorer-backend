@@ -36,9 +36,9 @@ import org.alephium.util.{Duration, TimeStamp}
 
 object BlockCache {
 
-  @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
+  @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
   private def computeAverageBlockTime(blockTimes: Seq[TimeStamp]): Duration = {
-    if (blockTimes.size > 1) {
+    if (blockTimes.sizeIs > 1) {
       val (_, diffs) =
         blockTimes.drop(1).foldLeft((blockTimes.head, Seq.empty: Seq[Duration])) {
           case ((prev, acc), ts) =>

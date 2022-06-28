@@ -55,7 +55,7 @@ import org.alephium.util.{Duration, TimeStamp}
  * sure we have the right one in DB.
  */
 
-@SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.TraversableOps"))
+@SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.IterableOps"))
 case object BlockFlowSyncService extends StrictLogging {
   // scalastyle:off magic.number
   private val defaultStep     = Duration.ofMinutesUnsafe(30L)
@@ -228,7 +228,7 @@ case object BlockFlowSyncService extends StrictLogging {
       }
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
+  @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
   private def syncAt(
       fromGroup: GroupIndex,
       toGroup: GroupIndex,

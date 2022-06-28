@@ -17,7 +17,7 @@
 package org.alephium.explorer.persistence.dao
 
 import scala.concurrent.ExecutionContext
-import scala.io.Source
+import scala.io.{Codec, Source}
 import scala.util.Random
 
 import org.scalacheck.Arbitrary.arbitrary
@@ -107,7 +107,7 @@ class BlockDaoSpec
   }
 
   it should "Recreate issue #162 - not throw exception when inserting a big block" in new Fixture {
-    using(Source.fromResource("big_block.json")) { source =>
+    using(Source.fromResource("big_block.json")(Codec.UTF8)) { source =>
       val rawBlock   = source.getLines().mkString
       val blockEntry = read[model.BlockEntry](rawBlock)
       val block      = BlockFlowClient.blockProtocolToEntity(blockEntry)

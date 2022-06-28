@@ -21,7 +21,7 @@ import java.time.temporal.ChronoUnit
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
-import scala.io.Source
+import scala.io.{Codec, Source}
 
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
@@ -74,7 +74,8 @@ trait TokenSupplyService {
 
 case object TokenSupplyService extends TokenSupplyService with StrictLogging {
 
-  private val reservedAddresses = Source.fromResource("reserved_addresses").getLines().mkString
+  private val reservedAddresses =
+    Source.fromResource("reserved_addresses")(Codec.UTF8).getLines().mkString
 
   private val launchDay =
     Instant.ofEpochMilli(ALPH.LaunchTimestamp.millis).truncatedTo(ChronoUnit.DAYS)
@@ -213,7 +214,7 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
   private def lockedTokensQuery(at: TimeStamp)(implicit ec: ExecutionContext): DBActionR[U256] =
     lockedTokensOptionQuery(at).map(_.getOrElse(U256.Zero))
 
-  @SuppressWarnings(Array("org.wartremover.warts.TraversableOps"))
+  @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
   private def findMinimumLatestBlockTime()(implicit ec: ExecutionContext,
                                            dc: DatabaseConfig[PostgresProfile],
                                            groupSetting: GroupSetting): Future[Option[TimeStamp]] =

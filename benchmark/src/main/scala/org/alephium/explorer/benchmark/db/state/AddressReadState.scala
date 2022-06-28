@@ -46,7 +46,8 @@ class Queries(val config: DatabaseConfig[PostgresProfile])(
   */
 // scalastyle:off magic.number
 // scalastyle:off method.length
-@SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+@SuppressWarnings(
+  Array("org.wartremover.warts.OptionPartial", "org.wartremover.warts.GlobalExecutionContext"))
 class AddressReadState(val db: DBExecutor)
     extends ReadBenchmarkState[OutputEntity](testDataCount = 4000, db = db) {
 

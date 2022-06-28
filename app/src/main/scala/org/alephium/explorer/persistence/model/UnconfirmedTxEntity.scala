@@ -44,7 +44,7 @@ object UnconfirmedTxEntity {
          input.outputRef.key,
          input.unlockScript
        )
-     }.toSeq,
+     },
      utx.outputs.map { output =>
        UOutputEntity(
          utx.hash,
@@ -52,6 +52,6 @@ object UnconfirmedTxEntity {
          output.address,
          output.lockTime
        )
-     }.toSeq)
+     })
   }
 }

@@ -20,7 +20,7 @@ import java.net.InetAddress
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.io.Source
+import scala.io.{Codec, Source}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -43,7 +43,7 @@ import org.alephium.explorer.util.TestUtils._
 import org.alephium.json.Json
 import org.alephium.json.Json._
 import org.alephium.protocol.model.{CliqueId, NetworkId}
-import org.alephium.util.{Duration, _}
+import org.alephium.util.{AVector, Hex, TimeStamp, U256}
 
 trait ExplorerSpec
     extends AlephiumSpec
@@ -140,7 +140,7 @@ trait ExplorerSpec
     forAll(Gen.oneOf(blocks)) { block =>
       Get(s"/blocks/${block.hash.value.toHexString}/transactions") ~> routes ~> check {
         val txs = responseAs[Seq[Transaction]]
-        txs.size > 0 is true
+        txs.sizeIs > 0 is true
         txs.size is block.transactions.size
         txs.foreach(tx => block.transactions.contains(tx))
       }
@@ -153,7 +153,8 @@ trait ExplorerSpec
         Get(s"/blocks?page=$page&limit=$limit") ~> routes ~> check {
           val offset = page - 1
           //filter `blocks by the same timestamp as the query for better assertion`
-          val expectedBlocks = blocks.sortBy(_.timestamp).reverse.drop(offset * limit).take(limit)
+          val drop           = offset * limit
+          val expectedBlocks = blocks.sortBy(_.timestamp).reverse.slice(drop, drop + limit)
           val res            = responseAs[ListBlocks]
           val hashes         = res.blocks.map(_.hash)
           expectedBlocks.size is hashes.size
@@ -280,9 +281,7 @@ trait ExplorerSpec
 
       val lines =
         using(
-          Source.fromFile(
-            name = Main.getClass.getResource("/explorer-backend-openapi.json").getPath,
-            enc  = "UTF-8")
+          Source.fromResource("explorer-backend-openapi.json")(Codec.UTF8)
         )(_.getLines().toList)
 
       val expectedOpenapi =
@@ -291,7 +290,7 @@ trait ExplorerSpec
       val openapi =
         read[ujson.Value](
           response.entity
-            .toStrict(Duration.ofMinutesUnsafe(1).asScala)
+            .toStrict(1.seconds)
             .futureValue
             .getData
             .utf8String)
@@ -330,7 +329,7 @@ object ExplorerSpec {
         case block
             if block.chainFrom === from.value && block.chainTo === to.value && block.height === height.value =>
           block.hash
-      }.toSeq))
+      }))
 
     def getChainInfo(from: GroupIndex, to: GroupIndex): model.ChainInfo = {
       model.ChainInfo(

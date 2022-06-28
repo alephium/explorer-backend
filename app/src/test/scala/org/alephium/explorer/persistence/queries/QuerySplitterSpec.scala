@@ -215,7 +215,8 @@ class QuerySplitterSpec extends AlephiumSpec {
         //Assert each query gets 200 rows
         split.rows should have size 200
         //Assert each split has correct rows params
-        split.rows is rows.drop(index * 200).take(200)
+        val drop = index * 200
+        split.rows is rows.slice(drop, drop + 200)
         //Assert each column has 10 '?'
         split.placeholder.count(_ == '?') is (200 * 10)
     }
