@@ -36,8 +36,8 @@ case object MempoolSyncService extends StrictLogging {
   def start(nodeUris: Seq[Uri], interval: FiniteDuration)(implicit ec: ExecutionContext,
                                                           dc: DatabaseConfig[PostgresProfile],
                                                           blockFlowClient: BlockFlowClient,
-                                                          scheduler: Scheduler): Unit =
-    scheduler.scheduleLoopAndForget(
+                                                          scheduler: Scheduler): Future[Unit] =
+    scheduler.scheduleLoop(
       taskId        = this.productPrefix,
       firstInterval = ScalaDuration.Zero,
       loopInterval  = interval
@@ -55,18 +55,14 @@ case object MempoolSyncService extends StrictLogging {
   private def syncMempool(uri: Uri)(implicit ec: ExecutionContext,
                                     dc: DatabaseConfig[PostgresProfile],
                                     blockFlowClient: BlockFlowClient): Future[Unit] = {
-    blockFlowClient.fetchUnconfirmedTransactions(uri).flatMap {
-      case Right(utxs) =>
-        UnconfirmedTxDao.listHashes().flatMap { localUtxs =>
-          val localUtxsSet = localUtxs.toSet
-          val newHashes    = utxs.map(_.hash).toSet
-          val newUtxs      = utxs.filterNot(tx => localUtxsSet.contains(tx.hash))
-          val toDrop       = localUtxs.filterNot(tx => newHashes.contains(tx))
-          UnconfirmedTxDao.removeAndInsertMany(toDrop, newUtxs)
-        }
-      case Left(error) =>
-        logger.error(error)
-        Future.successful(())
+    blockFlowClient.fetchUnconfirmedTransactions(uri).flatMap { utxs =>
+      UnconfirmedTxDao.listHashes().flatMap { localUtxs =>
+        val localUtxsSet = localUtxs.toSet
+        val newHashes    = utxs.map(_.hash).toSet
+        val newUtxs      = utxs.filterNot(tx => localUtxsSet.contains(tx.hash))
+        val toDrop       = localUtxs.filterNot(tx => newHashes.contains(tx))
+        UnconfirmedTxDao.removeAndInsertMany(toDrop, newUtxs)
+      }
     }
   }
 }

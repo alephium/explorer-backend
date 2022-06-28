@@ -20,6 +20,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
@@ -39,6 +40,7 @@ object SyncServices extends StrictLogging {
 
   def startSyncServices(config: ExplorerConfig)(implicit scheduler: Scheduler,
                                                 ec: ExecutionContext,
+                                                actorSystem: ActorSystem,
                                                 dc: DatabaseConfig[PostgresProfile],
                                                 blockFlowClient: BlockFlowClient,
                                                 blockCache: BlockCache,
@@ -72,18 +74,31 @@ object SyncServices extends StrictLogging {
                         transactionHistoryServicePeriod: FiniteDuration)(
       implicit scheduler: Scheduler,
       ec: ExecutionContext,
+      actorSystem: ActorSystem,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       blockCache: BlockCache,
       groupSetting: GroupSetting): Future[Unit] = {
     Future.fromTry {
       Try {
-        BlockFlowSyncService.start(peers, syncPeriod)
-        MempoolSyncService.start(peers, syncPeriod)
-        TokenSupplyService.start(tokenSupplyServiceSyncPeriod)
-        HashrateService.start(hashRateServiceSyncPeriod)
-        FinalizerService.start(finalizerServiceSyncPeriod)
-        TransactionHistoryService.start(transactionHistoryServicePeriod)
+        Future
+          .sequence(
+            Seq(
+              BlockFlowSyncService.start(peers, syncPeriod),
+              MempoolSyncService.start(peers, syncPeriod),
+              TokenSupplyService.start(tokenSupplyServiceSyncPeriod),
+              HashrateService.start(hashRateServiceSyncPeriod),
+              FinalizerService.start(finalizerServiceSyncPeriod),
+              TransactionHistoryService.start(transactionHistoryServicePeriod)
+            )
+          )
+          //Callback to shutdown the system if one sync service fails
+          .onComplete {
+            case Failure(error) =>
+              logger.error(s"Fatal error while syncing: $error")
+              actorSystem.terminate()
+            case Success(_) => ()
+          }
       }
     }
   }
@@ -97,8 +112,8 @@ object SyncServices extends StrictLogging {
       .flatMap { chainParams =>
         val validationResult =
           validateChainParams(
-            networkId = networkId,
-            response  = chainParams
+            networkId   = networkId,
+            chainParams = chainParams
           )
 
         validationResult match {
@@ -123,33 +138,25 @@ object SyncServices extends StrictLogging {
       implicit ec: ExecutionContext,
       blockFlowClient: BlockFlowClient): Future[Seq[Uri]] =
     if (directCliqueAccess) {
-      blockFlowClient.fetchSelfClique() flatMap {
-        case Right(selfClique) if selfClique.nodes.isEmpty =>
+      blockFlowClient.fetchSelfClique() flatMap { selfClique =>
+        if (selfClique.nodes.isEmpty) {
           Future.failed(PeersNotFound(blockFlowUri))
+        } else {
 
-        case Right(selfClique) =>
           val peers = urisFromPeers(selfClique.nodes.toSeq)
           logger.debug(s"Syncing with clique peers: $peers")
           Future.successful(peers)
-
-        case Left(error) =>
-          Future.failed(FailedToFetchSelfClique(error))
+        }
       }
     } else {
       logger.debug(s"Syncing with node: $blockFlowUri")
       Future.successful(Seq(blockFlowUri))
     }
 
-  def validateChainParams(networkId: NetworkId, response: Either[String, ChainParams]): Try[Unit] =
-    response match {
-      case Right(chainParams) =>
-        if (chainParams.networkId =/= networkId) {
-          Failure(ChainIdMismatch(chainParams.networkId, networkId))
-        } else {
-          Success(())
-        }
-
-      case Left(err) =>
-        Failure(ImpossibleToFetchNetworkType(err))
+  def validateChainParams(networkId: NetworkId, chainParams: ChainParams): Try[Unit] =
+    if (chainParams.networkId =/= networkId) {
+      Failure(ChainIdMismatch(chainParams.networkId, networkId))
+    } else {
+      Success(())
     }
 }

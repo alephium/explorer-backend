@@ -19,7 +19,7 @@ package org.alephium.explorer
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util._
 
-import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.Gen
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.TryValues._
 import org.scalatest.concurrent.ScalaFutures
@@ -80,7 +80,7 @@ class ExplorerV2Spec
         forAll(genSelfClique(Gen.nonEmptyListOf(genPeerAddress))) { selfClique =>
           implicit val client: BlockFlowClient = mock[BlockFlowClient]
 
-          (client.fetchSelfClique _).expects() returns Future.successful(Right(selfClique))
+          (client.fetchSelfClique _).expects() returns Future.successful(selfClique)
 
           val expectedPeers =
             SyncServices.urisFromPeers(selfClique.nodes.toSeq)
@@ -108,7 +108,7 @@ class ExplorerV2Spec
           implicit val client: BlockFlowClient = mock[BlockFlowClient]
 
           //expect call to fetchSelfClique because directCliqueAccess = true
-          (client.fetchSelfClique _).expects() returns Future.successful(Right(selfClique))
+          (client.fetchSelfClique _).expects() returns Future.successful(selfClique)
 
           val result =
             SyncServices
@@ -137,7 +137,7 @@ class ExplorerV2Spec
 
         forAll(matchingNetworkId) {
           case (networkId, chainParams) =>
-            SyncServices.validateChainParams(networkId, Right(chainParams)) is Success(())
+            SyncServices.validateChainParams(networkId, chainParams) is Success(())
         }
       }
     }
@@ -153,19 +153,9 @@ class ExplorerV2Spec
         forAll(mismatchedNetworkId) {
           case (networkId, chainParams) =>
             SyncServices
-              .validateChainParams(networkId, Right(chainParams))
+              .validateChainParams(networkId, chainParams)
               .failure
               .exception is ChainIdMismatch(remote = chainParams.networkId, local = networkId)
-        }
-      }
-
-      "response was an error" in {
-        forAll(genNetworkId, Arbitrary.arbitrary[String]) {
-          case (networkId, error) =>
-            SyncServices
-              .validateChainParams(networkId, Left(error))
-              .failure
-              .exception is ImpossibleToFetchNetworkType(error)
         }
       }
     }

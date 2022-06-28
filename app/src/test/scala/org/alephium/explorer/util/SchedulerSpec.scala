@@ -182,22 +182,6 @@ class SchedulerSpec
     }
   }
 
-  "scheduleLoopAndForget" should {
-    "fire and forget" in {
-      val invocationsCount = new AtomicInteger(0) //# of times init was invoked
-
-      using(Scheduler("test")) { scheduler =>
-        scheduler.scheduleLoopAndForget("test", 500.milliseconds) {
-          Future(invocationsCount.incrementAndGet())
-        }
-
-        eventually(Timeout(2.seconds)) {
-          invocationsCount.get() should be >= 2
-        }
-      }
-    }
-  }
-
   "scheduleLoopConditional" should {
     "not execute block" when {
       "init is false" in {
@@ -230,21 +214,37 @@ class SchedulerSpec
         @volatile var blockExecuted = false //true if block gets executed, else false
 
         using(Scheduler("test")) { scheduler =>
-          scheduler.scheduleLoopConditional("test", 10.milliseconds, ()) {
-            initInvocations.incrementAndGet() //increment init invocation count
-            Future.failed(new Exception("I'm sorry!")) //Init is always failing. So expect block to never get executed.
-          } { _ =>
-            Future {
-              blockExecuted = true
+          scheduler
+            .scheduleLoopConditional("test", 10.milliseconds, ()) {
+              initInvocations.incrementAndGet() //increment init invocation count
+              Future.failed(new Exception("I'm sorry!")) //Init is always failing. So expect block to never get executed.
+            } { _ =>
+              Future {
+                blockExecuted = true
+              }
             }
-          }
-
-          eventually(Timeout(2.seconds)) {
-            //allow at least 50 init invocations
-            initInvocations.get() should be >= 50
-          }
+            .failed
+            .futureValue is a[Exception]
 
           blockExecuted is false //block is never executed because init is always failing with exception
+        }
+      }
+
+      "block throws exception" in {
+        @volatile var initExecuted = false //true if block gets executed, else false
+
+        using(Scheduler("test")) { scheduler =>
+          scheduler
+            .scheduleLoopConditional("test", 5.milliseconds, 0) {
+              initExecuted = true
+              Future.successful(true)
+            } { _ =>
+              Future.failed(new Exception("I'm sorry!"))
+            }
+            .failed
+            .futureValue is a[Exception]
+
+          initExecuted is true
         }
       }
     }
@@ -262,7 +262,7 @@ class SchedulerSpec
               true
             }
           } { state =>
-            Future(state.incrementAndGet())
+            Future(state.incrementAndGet()).map(_ => ())
           }
 
           eventually(Timeout(2.seconds)) {
@@ -270,36 +270,6 @@ class SchedulerSpec
           }
 
           initInvocations.get() is 1 //init gets invoked only once
-        }
-      }
-
-      "init recovers from a reoccurring exception" in {
-        forAll(Gen.posNum[Int]) { failedInits => //# of failed init attempts
-          val initInvocations = new AtomicInteger() //# of init invocations
-          val blockExecutions = new AtomicInteger() //# of block invocations
-
-          using(Scheduler("test")) { scheduler =>
-            //use blockExecutions as the state
-            scheduler.scheduleLoopConditional("test", 5.milliseconds, blockExecutions) {
-              if (initInvocations.incrementAndGet() <= failedInits) {
-                Future.failed(new Exception("I'm sorry!"))
-              } else {
-                //time to allow init pass through.
-                Future(true)
-              }
-            } { state =>
-              //increment the blockInvocation count via state
-              Future(state.incrementAndGet())
-            }
-
-            eventually(Timeout(2.seconds)) {
-              //lets have block executed multiples times
-              blockExecutions.get() should be >= 50
-            }
-
-            //init is invoked (failedInits + 1 (success)) number of times
-            initInvocations.get() is (failedInits + 1)
-          }
         }
       }
     }

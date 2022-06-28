@@ -83,8 +83,8 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
   def start(interval: FiniteDuration)(implicit executionContext: ExecutionContext,
                                       databaseConfig: DatabaseConfig[PostgresProfile],
                                       groupSetting: GroupSetting,
-                                      scheduler: Scheduler): Unit =
-    scheduler.scheduleLoopAndForget(
+                                      scheduler: Scheduler): Future[Unit] =
+    scheduler.scheduleLoop(
       taskId        = TokenSupplyService.productPrefix,
       firstInterval = ScalaDuration.Zero,
       loopInterval  = interval

@@ -107,42 +107,20 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
       implicit ec: ExecutionContext): Future[T] =
     scheduleLoop(taskId, interval, interval)(block)
 
-  /** Fires and forgets the scheduled task */
-  def scheduleLoopAndForget[T](taskId: String, interval: FiniteDuration)(block: => Future[T])(
-      implicit ec: ExecutionContext): Unit =
-    sideEffect(scheduleLoop(taskId, interval, interval)(block))
-
-  @SuppressWarnings(
-    Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Overloading"))
-  def scheduleLoopAndForget[T](
-      taskId: String,
-      firstInterval: FiniteDuration,
-      loopInterval: FiniteDuration)(block: => Future[T])(implicit ec: ExecutionContext): Unit = {
-    scheduleLoop(taskId, firstInterval, loopInterval)(block)
-    ()
-  }
-
   /** Schedules the block at given `loopInterval` with the first schedule at `firstInterval` */
   @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))
   def scheduleLoop[T](taskId: String, firstInterval: FiniteDuration, loopInterval: FiniteDuration)(
       block: => Future[T])(implicit ec: ExecutionContext): Future[T] = {
-    val initial = scheduleOnce(taskId, firstInterval)(block)
-
-    initial onComplete {
+    scheduleOnce(taskId, firstInterval)(block) andThen {
       case Failure(exception) =>
-        //Log the failure.
         logger.error(s"${logId(taskId)}: Failed executing task", exception)
-        if (!terminated) {
-          scheduleLoop(taskId, loopInterval, loopInterval)(block)
-        }
+        Future.failed(exception)
 
       case Success(_) =>
         if (!terminated) {
           scheduleLoop(taskId, loopInterval, loopInterval)(block)
         }
     }
-
-    initial
   }
 
   /**
@@ -156,11 +134,8 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
       implicit ec: ExecutionContext): Unit =
     scheduleOnce(taskId, scheduleTime(at, logId(taskId)))(block) onComplete {
       case Failure(exception) =>
-        //Log the failure.
         logger.error(s"${logId(taskId)}: Failed executing task", exception)
-        if (!terminated) {
-          scheduleDailyAt(taskId, at)(block)
-        }
+        Future.failed(exception)
 
       case Success(_) =>
         if (!terminated) {
@@ -177,11 +152,12 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
     scheduleDailyAt(taskId, TimeUtil.toZonedDateTime(at))(block)
 
   @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))
-  def scheduleLoopConditional[A, S](
+  def scheduleLoopConditional[S](
       taskId: String,
       interval: FiniteDuration,
       state: S
-  )(init: => Future[Boolean])(block: S => Future[A])(implicit ec: ExecutionContext): Unit =
+  )(init: => Future[Boolean])(block: S => Future[Unit])(
+      implicit ec: ExecutionContext): Future[Unit] =
     scheduleLoopConditional(
       taskId        = taskId,
       firstInterval = interval,
@@ -199,36 +175,35 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
     *              invocations.
     */
   @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))
-  def scheduleLoopConditional[A, S](
+  def scheduleLoopConditional[S](
       taskId: String,
       firstInterval: FiniteDuration,
       loopInterval: FiniteDuration,
       state: S
-  )(init: => Future[Boolean])(block: S => Future[A])(implicit ec: ExecutionContext): Unit = {
+  )(init: => Future[Boolean])(block: S => Future[Unit])(
+      implicit ec: ExecutionContext): Future[Unit] = {
     //false if init has not been executed or previous init attempt returned false, else true.
     @volatile var initialized: Boolean = false
 
-    sideEffect {
-      scheduleLoop(
-        taskId        = taskId,
-        firstInterval = firstInterval,
-        loopInterval  = loopInterval
-      ) {
-        if (initialized) { //Already initialised. Invoke block!
-          block(state)
-        } else { //Not initialised! Invoke init!
-          init flatMap { initResult =>
-            if (initResult) { //Init successful! Invoke block!
-              logger.debug(
-                s"${logId(taskId)}: Task initialisation result: $initResult. Executing block")
-              initialized = initResult
-              block(state)
-            } else {
-              //Init returned false. Do not execute block.
-              logger.debug(
-                s"${logId(taskId)}: Task initialisation result: $initResult. Executing block delayed.")
-              Future.unit
-            }
+    scheduleLoop(
+      taskId        = taskId,
+      firstInterval = firstInterval,
+      loopInterval  = loopInterval
+    ) {
+      if (initialized) { //Already initialised. Invoke block!
+        block(state)
+      } else { //Not initialised! Invoke init!
+        init flatMap { initResult =>
+          if (initResult) { //Init successful! Invoke block!
+            logger.debug(
+              s"${logId(taskId)}: Task initialisation result: $initResult. Executing block")
+            initialized = initResult
+            block(state)
+          } else {
+            //Init returned false. Do not execute block.
+            logger.debug(
+              s"${logId(taskId)}: Task initialisation result: $initResult. Executing block delayed.")
+            Future.unit
           }
         }
       }

@@ -68,7 +68,7 @@ case object BlockFlowSyncService extends StrictLogging {
                                                           blockFlowClient: BlockFlowClient,
                                                           cache: BlockCache,
                                                           groupSetting: GroupSetting,
-                                                          scheduler: Scheduler): Unit =
+                                                          scheduler: Scheduler): Future[Unit] =
     scheduler.scheduleLoopConditional(
       taskId        = this.productPrefix,
       firstInterval = ScalaDuration.Zero,
@@ -137,14 +137,10 @@ case object BlockFlowSyncService extends StrictLogging {
     blockFlowClient: BlockFlowClient,
     cache: BlockCache,
     groupSetting: GroupSetting): Future[Int] = {
-    blockFlowClient.fetchBlocks(from, to, uri).flatMap {
-      case Right(multiChain) =>
-        Future
-          .sequence(multiChain.map(insertBlocks))
-          .map(_.sum)
-      case Left(error) =>
-        logger.error(error)
-        Future.successful(0)
+    blockFlowClient.fetchBlocks(from, to, uri).flatMap { multiChain =>
+      Future
+        .sequence(multiChain.map(insertBlocks))
+        .map(_.sum)
     }
   }
 
@@ -216,20 +212,12 @@ case object BlockFlowSyncService extends StrictLogging {
         case (fromGroup, toGroup) =>
           blockFlowClient
             .fetchChainInfo(fromGroup, toGroup)
-            .flatMap {
-              case Right(chainInfo) =>
-                blockFlowClient
-                  .fetchBlocksAtHeight(fromGroup, toGroup, Height.unsafe(chainInfo.currentHeight))
-                  .map {
-                    case Right(blocks) =>
-                      blocks.map(_.timestamp).maxOption.map(ts => (ts, chainInfo.currentHeight))
-                    case Left(errors) =>
-                      errors.foreach(logger.error(_))
-                      None
-                  }
-              case Left(error) =>
-                logger.error(error)
-                Future.successful(None)
+            .flatMap { chainInfo =>
+              blockFlowClient
+                .fetchBlocksAtHeight(fromGroup, toGroup, Height.unsafe(chainInfo.currentHeight))
+                .map { blocks =>
+                  blocks.map(_.timestamp).maxOption.map(ts => (ts, chainInfo.currentHeight))
+                }
             }
 
       })
@@ -252,17 +240,16 @@ case object BlockFlowSyncService extends StrictLogging {
     groupSetting: GroupSetting): Future[Option[Seq[BlockEntity]]] = {
     blockFlowClient
       .fetchBlocksAtHeight(fromGroup, toGroup, height)
-      .flatMap {
-        case Right(blocks) if blocks.nonEmpty =>
+      .flatMap { blocks =>
+        if (blocks.nonEmpty) {
           val bestBlock = blocks.head // First block is the main chain one
           for {
             _ <- insert(bestBlock)
             _ <- BlockDao.updateLatestBlock(bestBlock)
           } yield Some(Seq(bestBlock))
-        case Right(_) => Future.successful(None)
-        case Left(errors) =>
-          errors.foreach(logger.error(_))
+        } else {
           Future.successful(None)
+        }
       }
   }
 
@@ -346,10 +333,8 @@ case object BlockFlowSyncService extends StrictLogging {
       cache: BlockCache,
       groupSetting: GroupSetting): Future[Unit] = {
     logger.debug(s"Downloading missing block $missing")
-    blockFlowClient.fetchBlock(chainFrom, missing).flatMap {
-      case Left(error) => Future.successful(logger.error(error))
-      case Right(block) =>
-        insert(block).map(_ => ())
+    blockFlowClient.fetchBlock(chainFrom, missing).flatMap { block =>
+      insert(block).map(_ => ())
     }
   }
 
