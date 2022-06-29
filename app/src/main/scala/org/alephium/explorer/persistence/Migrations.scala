@@ -32,41 +32,22 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.serde._
 
 object Migrations extends StrictLogging {
-  val addOutputStatusColumn: DBActionW[Int] = sqlu"""
-    ALTER TABLE outputs
-    ADD COLUMN IF NOT EXISTS "spent_finalized" BYTEA DEFAULT NULL;
-  """
 
-  val resetTokenSupply: DBActionW[Int] = sqlu"""
-    DELETE FROM token_supply
-  """
-
-  val addReservedAndLockedTopkenSupplyColumn: DBActionW[Int] = sqlu"""
-    ALTER TABLE token_supply
-    ADD COLUMN IF NOT EXISTS "reserved" numeric(80,0) NOT NULL,
-    ADD COLUMN IF NOT EXISTS "locked" numeric(80,0) NOT NULL
-  """
-
-  def migrations(version: Int)(implicit ec: ExecutionContext): DBActionW[Option[Int]] = {
-    if (version == 0) {
-      for {
-        _ <- addOutputStatusColumn
-        _ <- resetTokenSupply
-        _ <- addReservedAndLockedTopkenSupplyColumn
-      } yield (Some(1))
-    } else {
-      DBIOAction.successful(None)
-    }
+  def migrations(version: Int): DBActionWT[Option[Int]] = {
+    logger.debug(s"Current migration version: $version")
+    //noop
+    DBIOAction.successful(Some(0))
   }
 
   def migrate(databaseConfig: DatabaseConfig[PostgresProfile])(
-      implicit ec: ExecutionContext): Future[Unit] = {
+      implicit ec: ExecutionContext): Future[Option[Int]] = {
     logger.info("Migrating")
-    DBRunner.run(databaseConfig)(for {
-      version       <- getVersion()
-      newVersionOpt <- migrations(version)
-      _             <- updateVersion(newVersionOpt)
-    } yield ())
+    DBRunner
+      .run(databaseConfig)(for {
+        version       <- getVersion()
+        newVersionOpt <- migrations(version)
+        _             <- updateVersion(newVersionOpt)
+      } yield newVersionOpt)
   }
 
   def getVersion()(implicit ec: ExecutionContext): DBActionR[Int] = {
