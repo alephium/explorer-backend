@@ -166,7 +166,10 @@ class TransactionServiceSpec
                              None,
                              true,
                              0,
-                             0)
+                             0,
+                             None,
+                             None,
+                             None)
     val output1 = OutputEntity(blockHash1,
                                tx1.hash,
                                timestamp = ts1,

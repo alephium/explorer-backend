@@ -391,7 +391,10 @@ class TransactionQueriesSpec
                   None,
                   true,
                   0,
-                  0)
+                  0,
+                  None,
+                  None,
+                  None)
     def transaction(output: OutputEntity): TransactionEntity = {
       TransactionEntity(output.txHash,
                         output.blockHash,

@@ -93,7 +93,10 @@ object DataGenerator {
           unlockScript = Some(Random.alphanumeric.take(10).mkString),
           mainChain    = output.mainChain,
           order        = order,
-          txOrder      = order
+          txOrder      = order,
+          None,
+          None,
+          None
         )
     }
 

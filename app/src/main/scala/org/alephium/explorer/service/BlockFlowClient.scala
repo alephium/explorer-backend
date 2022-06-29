@@ -338,7 +338,10 @@ object BlockFlowClient {
       Some(Hex.toHexString(input.unlockScript)),
       mainChain,
       index,
-      txOrder
+      txOrder,
+      None,
+      None,
+      None
     )
   }
 
@@ -358,7 +361,10 @@ object BlockFlowClient {
       None,
       mainChain,
       index,
-      txOrder
+      txOrder,
+      None,
+      None,
+      None
     )
   }
 

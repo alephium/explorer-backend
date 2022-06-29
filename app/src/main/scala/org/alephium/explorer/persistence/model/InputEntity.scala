@@ -21,7 +21,7 @@ import org.alephium.explorer.api.model.{Address, BlockEntry, Input, OutputRef, T
 import org.alephium.protocol
 import org.alephium.protocol.vm.UnlockScript
 import org.alephium.serde.deserialize
-import org.alephium.util.{Hex, TimeStamp}
+import org.alephium.util.{Hex, TimeStamp, U256}
 
 final case class InputEntity(
     blockHash: BlockEntry.Hash,
@@ -32,7 +32,10 @@ final case class InputEntity(
     unlockScript: Option[String],
     mainChain: Boolean,
     order: Int,
-    txOrder: Int
+    txOrder: Int,
+    outputRefTxHash: Option[Transaction.Hash],
+    outputRefAddress: Option[Address],
+    outputRefAmount: Option[U256]
 ) {
   def toApi(outputRef: OutputEntity): Input =
     Input(

@@ -38,8 +38,9 @@ object InputQueries {
   private val mainOutputs = OutputSchema.table.filter(_.mainChain)
 
   /** Inserts inputs or ignore rows with primary key conflict */
+  // scalastyle:off magic.number
   def insertInputs(inputs: Iterable[InputEntity]): DBActionW[Int] =
-    QuerySplitter.splitUpdates(rows = inputs, columnsPerRow = 9) { (inputs, placeholder) =>
+    QuerySplitter.splitUpdates(rows = inputs, columnsPerRow = 12) { (inputs, placeholder) =>
       val query =
         s"""
            |INSERT INTO inputs ("block_hash",
@@ -50,7 +51,10 @@ object InputQueries {
            |                    "unlock_script",
            |                    "main_chain",
            |                    "input_order",
-           |                    "tx_order")
+           |                    "tx_order",
+           |                    "output_ref_tx_hash",
+           |                    "output_ref_address",
+           |                    "output_ref_amount")
            |VALUES $placeholder
            |ON CONFLICT
            |    ON CONSTRAINT inputs_pk
@@ -69,6 +73,9 @@ object InputQueries {
             params >> input.mainChain
             params >> input.order
             params >> input.txOrder
+            params >> input.outputRefTxHash
+            params >> input.outputRefAddress
+            params >> input.outputRefAmount
         }
 
       SQLActionBuilder(
