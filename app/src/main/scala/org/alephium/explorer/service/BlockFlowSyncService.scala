@@ -138,9 +138,12 @@ case object BlockFlowSyncService extends StrictLogging {
     cache: BlockCache,
     groupSetting: GroupSetting): Future[Int] = {
     blockFlowClient.fetchBlocks(from, to, uri).flatMap { multiChain =>
-      Future
-        .sequence(multiChain.map(insertBlocks))
-        .map(_.sum)
+      for {
+        res <- Future
+          .sequence(multiChain.map(insertBlocks))
+          .map(_.sum)
+        _ <- dc.db.run(InputUpdateQueries.updateInputs())
+      } yield res
     }
   }
 
