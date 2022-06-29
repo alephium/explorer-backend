@@ -119,7 +119,8 @@ class TransactionQueriesSpec
     val outputs = Seq(output1, output2, output3, output4)
     val inputs  = Seq(input1, input2, input3)
     run(TransactionQueries.insertAll(Seq.empty, outputs, inputs)).futureValue
-    run(TransactionQueries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
+    run(TransactionQueries.updateTransactionPerAddressAction(outputs)).futureValue
+    run(InputUpdateQueries.updateInputs()).futureValue
 
     val totalSQLNoJoin =
       run(TransactionQueries.countAddressTransactionsSQLNoJoin(address)).futureValue.head
@@ -128,7 +129,7 @@ class TransactionQueriesSpec
     totalSQLNoJoin is 3
   }
 
-  it should "return inputs to update if corresponding output is not inserted" in new Fixture {
+  it should "update inputs when corresponding output is finally inserted" in new Fixture {
 
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
@@ -140,16 +141,13 @@ class TransactionQueriesSpec
     val inputs  = Seq(input1, input2)
 
     run(TransactionQueries.insertAll(Seq.empty, outputs, inputs)).futureValue
-
-    val inputsToUpdate =
-      run(TransactionQueries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
-
-    inputsToUpdate is Seq(input2)
+    run(TransactionQueries.updateTransactionPerAddressAction(outputs)).futureValue
+    run(InputUpdateQueries.updateInputs()).futureValue
 
     run(TransactionQueries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 2
 
     run(OutputSchema.table += output2).futureValue
-    run(insertTxPerAddressFromInput(inputsToUpdate.head)).futureValue is 1
+    run(InputUpdateQueries.updateInputs()).futureValue
 
     run(TransactionQueries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 3
   }
@@ -168,7 +166,8 @@ class TransactionQueriesSpec
     val inputs  = Seq(input1, input2, input3)
 
     run(TransactionQueries.insertAll(Seq.empty, outputs, inputs)).futureValue
-    run(TransactionQueries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
+    run(TransactionQueries.updateTransactionPerAddressAction(outputs)).futureValue
+    run(InputUpdateQueries.updateInputs()).futureValue
 
     val hashesSQLNoJoin =
       run(TransactionQueries.getTxHashesByAddressQuerySQLNoJoin(address, 0, 10)).futureValue
@@ -256,7 +255,7 @@ class TransactionQueriesSpec
     val output2 = output(address, ALPH.alph(2), None)
     val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
     val input1  = input(output2.hint, output2.key)
-    val input2  = input(output3.hint, output3.key)
+    val input2  = input(output3.hint, output3.key).copy(mainChain = false)
     val output4 = output(addressGen.sample.get, ALPH.alph(3), None)
       .copy(txHash = input1.txHash, blockHash = input1.blockHash, timestamp = input1.timestamp)
 

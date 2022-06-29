@@ -30,6 +30,7 @@ import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.{BlockDao, UnconfirmedTxDao}
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.protocol.ALPH
 import org.alephium.util.{TimeStamp, U256}
 
@@ -196,9 +197,8 @@ class TransactionServiceSpec
     val blocks = Seq(block0, block1)
 
     Future.sequence(blocks.map(BlockDao.insert)).futureValue
-    val inputsToUpdate =
-      Future.sequence(blocks.map(BlockDao.updateTransactionPerAddress)).futureValue.flatten
-    BlockDao.updateInputs(inputsToUpdate).futureValue
+    Future.sequence(blocks.map(BlockDao.updateTransactionPerAddress)).futureValue
+    databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
 
     val t0 = Transaction(
       tx0.hash,
