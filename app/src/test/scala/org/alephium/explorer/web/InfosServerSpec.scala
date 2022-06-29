@@ -27,7 +27,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer.{AlephiumSpec, BuildInfo, Generators, GroupSetting}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TransactionCache}
-import org.alephium.explorer.persistence.DatabaseFixtureForEach
+import org.alephium.explorer.persistence.{Database, DatabaseFixtureForEach}
 import org.alephium.explorer.service._
 import org.alephium.json.Json
 import org.alephium.protocol.ALPH
@@ -208,7 +208,7 @@ class InfosServerSpec()
 
     implicit val groupSettings: GroupSetting        = GroupSetting(groupNum)
     implicit val blockCache: BlockCache             = BlockCache()
-    implicit val transactionCache: TransactionCache = TransactionCache()
+    implicit val transactionCache: TransactionCache = TransactionCache(new Database(false))
 
     val server =
       new InfosServer(tokenSupplyService, blockService, transactionService)
