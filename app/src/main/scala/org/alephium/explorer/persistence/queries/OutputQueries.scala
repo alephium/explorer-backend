@@ -113,6 +113,22 @@ object OutputQueries {
     }
   }
 
+  // format: off
+  def outputsFromTxsNoJoin(txHashes: Seq[Transaction.Hash]):
+  DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, U256, Address, Option[TimeStamp], Option[Transaction.Hash])]] = {
+  // format: on
+    if (txHashes.nonEmpty) {
+      val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
+      sql"""
+    SELECT outputs.tx_hash, outputs.output_order, outputs.hint, outputs.key,  outputs.amount, outputs.address, outputs.lock_time, outputs.spent_finalized
+    FROM outputs
+    WHERE outputs.tx_hash IN (#$values) AND outputs.main_chain = true
+    """.as
+    } else {
+      DBIOAction.successful(Seq.empty)
+    }
+  }
+
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
   val getOutputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
     OutputSchema.table
