@@ -99,6 +99,22 @@ object InputQueries {
     }
   }
 
+  // format: off
+  def inputsFromTxsNoJoin(txHashes: Seq[Transaction.Hash]):
+    DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Transaction.Hash, Address, U256)]] = {
+  // format: on
+    if (txHashes.nonEmpty) {
+      val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
+      sql"""
+    SELECT tx_hash, input_order, hint, output_ref_key, unlock_script, output_ref_tx_hash, output_ref_address, output_ref_amount
+    FROM inputs
+    WHERE tx_hash IN (#$values) AND main_chain = true AND output_ref_tx_hash IS NOT NULL
+    """.as
+    } else {
+      DBIOAction.successful(Seq.empty)
+    }
+  }
+
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
   val getInputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
     mainInputs

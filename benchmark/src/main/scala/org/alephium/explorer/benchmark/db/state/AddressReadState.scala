@@ -33,6 +33,7 @@ import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBEx
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.protocol.ALPH
@@ -205,6 +206,11 @@ class AddressReadState(val db: DBExecutor)
     val _ =
       Await.result(FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from)),
                    batchWriteTimeout)
+
+    val _ = db.runNow(
+      action  = InputUpdateQueries.updateInputs(),
+      timeout = batchWriteTimeout
+    )
 
     logger.info("Persisting data complete")
   }
