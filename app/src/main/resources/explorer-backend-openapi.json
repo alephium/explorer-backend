@@ -2155,15 +2155,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -2182,6 +2182,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -2194,19 +2207,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
-                }
-              }
-            }
           }
         }
       }
@@ -2216,17 +2216,20 @@
         "tags": [
           "Utils"
         ],
-        "description": "Update logging file, only logback.xml is accepted",
+        "description": "Update logback values",
         "operationId": "putUtilsUpdate-log-config",
         "requestBody": {
           "content": {
-            "text/plain": {
+            "application/json": {
               "schema": {
-                "type": "string"
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/LogbackValue"
+                }
               }
             }
           },
-          "required": true
+          "required": false
         },
         "responses": {
           "200": {
@@ -2245,15 +2248,15 @@
               }
             }
           },
-          "500": {
-            "description": "InternalServerError",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
+                  "$ref": "#/components/schemas/Unauthorized"
                 },
                 "example": {
-                  "detail": "Ouch"
+                  "detail": "You shall not pass"
                 }
               }
             }
@@ -2272,6 +2275,19 @@
               }
             }
           },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
           "503": {
             "description": "ServiceUnavailable",
             "content": {
@@ -2281,19 +2297,6 @@
                 },
                 "example": {
                   "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
                 }
               }
             }
@@ -2537,6 +2540,21 @@
             "items": {
               "$ref": "#/components/schemas/BlockEntryLite"
             }
+          }
+        }
+      },
+      "LogbackValue": {
+        "required": [
+          "name",
+          "level"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
           }
         }
       },
