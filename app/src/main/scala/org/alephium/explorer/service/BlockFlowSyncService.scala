@@ -30,7 +30,8 @@ import org.alephium.explorer.{foldFutures, GroupSetting}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.dao.BlockDao
-import org.alephium.explorer.persistence.model.{BlockEntity, InputEntity}
+import org.alephium.explorer.persistence.model.BlockEntity
+import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.explorer.util.{Scheduler, TimeUtil}
 import org.alephium.util.{Duration, TimeStamp}
 
@@ -269,7 +270,7 @@ case object BlockFlowSyncService extends StrictLogging {
                                          dc: DatabaseConfig[PostgresProfile],
                                          blockFlowClient: BlockFlowClient,
                                          cache: BlockCache,
-                                         groupSetting: GroupSetting): Future[Seq[InputEntity]] = {
+                                         groupSetting: GroupSetting): Future[Unit] = {
     (block.parent(groupSetting.groupNum) match {
       case Some(parent) =>
         //We make sure the parent is inserted before inserting the block
@@ -289,13 +290,13 @@ case object BlockFlowSyncService extends StrictLogging {
       case None                            => Future.successful(logger.error(s"${block.hash} doesn't have a parent"))
     }).flatMap { _ =>
       for {
-        _              <- BlockDao.insert(block)
-        inputsToUpdate <- BlockDao.updateTransactionPerAddress(block)
+        _ <- BlockDao.insert(block)
+        _ <- BlockDao.updateTransactionPerAddress(block)
         _ <- BlockDao.updateMainChain(block.hash,
                                       block.chainFrom,
                                       block.chainTo,
                                       groupSetting.groupNum)
-      } yield (inputsToUpdate)
+      } yield ()
     }
   }
 
@@ -306,22 +307,11 @@ case object BlockFlowSyncService extends StrictLogging {
                                                      groupSetting: GroupSetting): Future[Int] = {
     if (blocks.nonEmpty) {
       for {
-        inputsToUpdate <- foldFutures(blocks)(insert)
-        _              <- BlockDao.updateLatestBlock(blocks.last)
-        _              <- handleInputsToUpdate(inputsToUpdate.flatten)
+        _ <- foldFutures(blocks)(insert)
+        _ <- BlockDao.updateLatestBlock(blocks.last)
       } yield (blocks.size)
     } else {
       Future.successful(0)
-    }
-  }
-
-  private def handleInputsToUpdate(inputs: Seq[InputEntity])(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]) = {
-    if (inputs.nonEmpty) {
-      BlockDao.updateInputs(inputs).map(_ => ())
-    } else {
-      Future.successful(())
     }
   }
 

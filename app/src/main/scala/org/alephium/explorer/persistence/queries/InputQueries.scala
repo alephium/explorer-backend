@@ -16,8 +16,6 @@
 
 package org.alephium.explorer.persistence.queries
 
-import scala.concurrent.ExecutionContext
-
 import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
@@ -83,67 +81,6 @@ object InputQueries {
         unitPConv  = parameters
       ).asUpdate
     }
-
-  def insertTxPerAddressFromInputs(inputs: Seq[InputEntity], outputs: Seq[OutputEntity])(
-      implicit ec: ExecutionContext): DBActionW[Seq[InputEntity]] = {
-
-    val inputsAddressOption = inputs.map(in => (in.address, in))
-
-    val outputsByAddress = outputs.groupBy(out => (out.address, out.txHash))
-
-    val assets = inputsAddressOption
-      .collect {
-        case (Some(address), input) if !outputsByAddress.contains((address, input.txHash)) =>
-          (address, input)
-      }
-      .distinctBy { case (address, input) => (address, input.txHash) }
-
-    val others = inputsAddressOption.collect {
-      case (None, input) => input
-    }
-
-    for {
-      _ <- insertInputWithAddress(assets)
-      inputsToUpdate <- DBIOAction
-        .sequence(others.map { input =>
-          insertTxPerAddressFromInput(input).map { i =>
-            if (i != 1) {
-              Seq(input)
-            } else {
-              Seq.empty
-            }
-          }
-        })
-        .map(_.flatten)
-    } yield inputsToUpdate
-  }
-
-  def insertTxPerAddressFromInput(input: InputEntity): DBActionW[Int] = {
-    sqlu"""
-      INSERT INTO transaction_per_addresses (address, hash, block_hash, block_timestamp, tx_order, main_chain)
-      (SELECT address, ${input.txHash}, ${input.blockHash}, ${input.timestamp}, ${input.txOrder}, main_chain FROM outputs WHERE key = ${input.outputRefKey})
-      ON CONFLICT (hash, block_hash, address) DO NOTHING
-    """
-  }
-
-  def insertInputWithAddress(inputs: Seq[(Address, InputEntity)]): DBActionW[Int] = {
-    if (inputs.nonEmpty) {
-      val values = inputs
-        .map {
-          case (address, input) =>
-            s"('$address', '\\x${input.txHash}', '\\x${input.blockHash}', '${input.timestamp.millis}', ${input.txOrder}, ${input.mainChain}) "
-        }
-        .mkString(",\n")
-
-      sqlu"""
-      INSERT INTO transaction_per_addresses (address, hash, block_hash, block_timestamp, tx_order, main_chain)
-      VALUES #$values
-      ON CONFLICT (hash, block_hash, address) DO NOTHING
-    """
-    } else {
-      DBIOAction.successful(0)
-    }
-  }
 
   // format: off
   def inputsFromTxsSQL(txHashes: Seq[Transaction.Hash]):

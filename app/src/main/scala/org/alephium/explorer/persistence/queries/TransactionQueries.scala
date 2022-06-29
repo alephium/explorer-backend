@@ -89,12 +89,11 @@ object TransactionQueries extends StrictLogging {
         ).asUpdate
     }
 
-  def updateTransactionPerAddressAction(outputs: Seq[OutputEntity], inputs: Seq[InputEntity])(
-      implicit ec: ExecutionContext): DBActionRW[Seq[InputEntity]] = {
+  def updateTransactionPerAddressAction(outputs: Seq[OutputEntity])(
+      implicit ec: ExecutionContext): DBActionRW[Unit] = {
     for {
-      _              <- insertTxPerAddressFromOutputs(outputs)
-      inputsToUpdate <- insertTxPerAddressFromInputs(inputs, outputs)
-    } yield inputsToUpdate
+      _ <- insertTxPerAddressFromOutputs(outputs)
+    } yield ()
   }
   private val countBlockHashTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
     TransactionSchema.table.filter(_.blockHash === blockHash).length
