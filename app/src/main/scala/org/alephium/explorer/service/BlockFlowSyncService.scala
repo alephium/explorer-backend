@@ -18,7 +18,6 @@ package org.alephium.explorer.service
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 
@@ -32,7 +31,7 @@ import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.{BlockEntity, InputEntity}
-import org.alephium.explorer.util.Scheduler
+import org.alephium.explorer.util.{Scheduler, TimeUtil}
 import org.alephium.util.{Duration, TimeStamp}
 
 /*
@@ -338,28 +337,6 @@ case object BlockFlowSyncService extends StrictLogging {
     }
   }
 
-  def buildTimestampRange(localTs: TimeStamp,
-                          remoteTs: TimeStamp,
-                          step: Duration): Seq[(TimeStamp, TimeStamp)] = {
-    @tailrec
-    def rec(l: TimeStamp, seq: Seq[(TimeStamp, TimeStamp)]): Seq[(TimeStamp, TimeStamp)] = {
-      val next = l + step
-      if (next.isBefore(remoteTs)) {
-        rec(next.plusMillisUnsafe(1), seq :+ ((l, next)))
-      } else if (l == remoteTs) {
-        seq :+ ((remoteTs, remoteTs))
-      } else {
-        seq :+ ((l, remoteTs))
-      }
-    }
-
-    if (remoteTs.millis <= localTs.millis || step == Duration.zero) {
-      Seq.empty
-    } else {
-      rec(localTs, Seq.empty)
-    }
-  }
-
   def fetchAndBuildTimeStampRange(
       step: Duration,
       backStep: Duration,
@@ -382,7 +359,7 @@ case object BlockFlowSyncService extends StrictLogging {
           logger.error("max remote ts can't be before local one")
           sys.exit(0)
         } else {
-          (buildTimestampRange(localTs.minusUnsafe(backStep), remoteTs, step),
+          (TimeUtil.buildTimestampRange(localTs.minusUnsafe(backStep), remoteTs, step),
            remoteNbOfBlocks - localNbOfBlocks)
         }
       }) match {
