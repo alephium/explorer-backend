@@ -265,7 +265,11 @@ class TransactionQueriesSpec
     val transactions = outputs.map(transaction)
 
     run(TransactionQueries.insertAll(transactions, outputs, inputs)).futureValue
-    run(TransactionQueries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
+    run(TransactionQueries.updateTransactionPerAddressAction(outputs)).futureValue
+    run(InputUpdateQueries.updateInputs()).futureValue
+    val from = TimeStamp.zero
+    val to   = timestampMaxValue
+    FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from)).futureValue
 
     def tx(output: OutputEntity, spent: Option[Transaction.Hash], inputs: Seq[Input]) = {
       Transaction(
@@ -282,6 +286,9 @@ class TransactionQueriesSpec
     val txsSQL =
       run(TransactionQueries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue
 
+    val txsNoJoin =
+      run(TransactionQueries.getTransactionsByAddressNoJoin(address, Pagination.unsafe(0, 10))).futureValue
+
     val expected = Seq(
       tx(output1, None, Seq.empty),
       tx(output2, Some(input1.txHash), Seq.empty),
@@ -290,6 +297,8 @@ class TransactionQueriesSpec
 
     txsSQL.size is 3
     txsSQL is expected
+
+    txsSQL is txsNoJoin
   }
 
   it should "output's spent info should only take the input from the main chain " in new Fixture {
