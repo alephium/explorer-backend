@@ -23,7 +23,7 @@ import slick.jdbc.{GetResult, PositionedResult}
 
 import org.alephium.explorer.{BlockHash, Hash}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.model.BlockHeader
+import org.alephium.explorer.persistence.model.{BlockHeader, InputEntity, OutputEntity}
 import org.alephium.util.{TimeStamp, U256}
 
 object CustomGetResult {
@@ -79,6 +79,9 @@ object CustomGetResult {
   implicit val addressGetResult: GetResult[Address] =
     (result: PositionedResult) => Address.unsafe(result.nextString())
 
+  implicit val optionAddressGetResult: GetResult[Option[Address]] =
+    (result: PositionedResult) => result.nextStringOption().map(string => Address.unsafe(string))
+
   implicit val u256GetResult: GetResult[U256] =
     (result: PositionedResult) => {
       U256.unsafe(result.nextBigDecimal().toBigInt.bigInteger)
@@ -88,6 +91,40 @@ object CustomGetResult {
     (result: PositionedResult) => {
       result.nextBigDecimalOption().map(bigDecimal => U256.unsafe(bigDecimal.toBigInt.bigInteger))
     }
+
+  val outputGetResult: GetResult[OutputEntity] =
+    (result: PositionedResult) =>
+      OutputEntity(
+        blockHash      = result.<<,
+        txHash         = result.<<,
+        timestamp      = result.<<,
+        hint           = result.<<,
+        key            = result.<<,
+        amount         = result.<<,
+        address        = result.<<,
+        mainChain      = result.<<,
+        lockTime       = result.<<?,
+        order          = result.<<,
+        txOrder        = result.<<,
+        spentFinalized = result.<<?
+    )
+
+  val inputGetResult: GetResult[InputEntity] =
+    (result: PositionedResult) =>
+      InputEntity(
+        blockHash        = result.<<,
+        txHash           = result.<<,
+        timestamp        = result.<<,
+        hint             = result.<<,
+        outputRefKey     = result.<<,
+        unlockScript     = result.<<?,
+        mainChain        = result.<<,
+        order            = result.<<,
+        txOrder          = result.<<,
+        outputRefTxHash  = result.<<?,
+        outputRefAddress = result.<<?,
+        outputRefAmount  = result.<<?
+    )
 
   /**
     * GetResult type for BlockEntryLite
