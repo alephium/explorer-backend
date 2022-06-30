@@ -23,6 +23,7 @@ import slick.jdbc.{PositionedParameters, SetParameter}
 
 import org.alephium.explorer
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.serde._
 import org.alephium.util.{AVector, TimeStamp, U256}
 
@@ -66,6 +67,11 @@ object CustomSetParameter {
 
   implicit object IntervalTypeSetParameter extends SetParameter[IntervalType] {
     override def apply(input: IntervalType, params: PositionedParameters): Unit =
+      params setInt input.value
+  }
+
+  implicit object OutputTypeSetParameter extends SetParameter[OutputEntity.OutputType] {
+    override def apply(input: OutputEntity.OutputType, params: PositionedParameters): Unit =
       params setInt input.value
   }
 

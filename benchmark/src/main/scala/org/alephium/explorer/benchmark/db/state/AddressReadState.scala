@@ -109,7 +109,7 @@ class AddressReadState(val db: DBExecutor)
       blockHash      = blockHash,
       txHash         = txHash,
       timestamp      = timestamp,
-      outputType     = Random.nextInt(2),
+      outputType     = OutputEntity.OutputType.unsafe(Random.nextInt(2)),
       hint           = Random.nextInt(),
       key            = Hash.generate,
       amount         = ALPH.alph(1),

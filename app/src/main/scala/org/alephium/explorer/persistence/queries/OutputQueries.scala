@@ -291,7 +291,8 @@ object OutputQueries {
 
   // format: off
   def outputsFromTxsSQL(txHashes: Seq[Transaction.Hash]):
-  DBActionR[Seq[(Transaction.Hash, Int, Int, Int, Hash, U256, Address, Option[Seq[Token]],Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])]] = {
+  DBActionR[Seq[(Transaction.Hash, Int, OutputEntity.OutputType, Int, Hash, U256, Address,
+    Option[Seq[Token]],Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])]] = {
   // format: on
     if (txHashes.nonEmpty) {
       val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
@@ -340,7 +341,7 @@ object OutputQueries {
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   val toApiOutput: (
-      (Int,
+      (OutputEntity.OutputType,
        Int,
        Hash,
        U256,
@@ -349,7 +350,7 @@ object OutputQueries {
        Option[TimeStamp],
        Option[ByteString],
        Option[Transaction.Hash])) => Output = {
-    (outputType: Int,
+    (outputType: OutputEntity.OutputType,
      hint: Int,
      key: Hash,
      amount: U256,
@@ -361,8 +362,9 @@ object OutputQueries {
       {
 
         outputType match {
-          case 0 => AssetOutput(hint, key, amount, address, tokens, lockTime, message, spent)
-          case 1 => ContractOutput(hint, key, amount, address, tokens, spent)
+          case OutputEntity.Asset =>
+            AssetOutput(hint, key, amount, address, tokens, lockTime, message, spent)
+          case OutputEntity.Contract => ContractOutput(hint, key, amount, address, tokens, spent)
         }
       }
   }.tupled

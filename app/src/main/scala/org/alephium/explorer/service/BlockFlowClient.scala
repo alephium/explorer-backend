@@ -405,9 +405,9 @@ object BlockFlowClient {
       case contract: LockupScript.P2C => Hint.ofContract(contract.scriptHint)
     }
 
-    val outputType = output match {
-      case _: api.model.AssetOutput    => 0
-      case _: api.model.ContractOutput => 1
+    val outputType: OutputEntity.OutputType = output match {
+      case _: api.model.AssetOutput    => OutputEntity.Asset
+      case _: api.model.ContractOutput => OutputEntity.Contract
     }
 
     val message = output match {

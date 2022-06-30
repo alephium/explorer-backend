@@ -23,7 +23,7 @@ import slick.jdbc.{GetResult, PositionedResult}
 
 import org.alephium.explorer.{BlockHash, Hash}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.model.BlockHeader
+import org.alephium.explorer.persistence.model.{BlockHeader, OutputEntity}
 import org.alephium.serde._
 import org.alephium.util.{AVector, TimeStamp, U256}
 
@@ -97,6 +97,9 @@ object CustomGetResult {
     (result: PositionedResult) => {
       result.nextBigDecimalOption().map(bigDecimal => U256.unsafe(bigDecimal.toBigInt.bigInteger))
     }
+
+  implicit val outputTypeGetResult: GetResult[OutputEntity.OutputType] =
+    (result: PositionedResult) => OutputEntity.OutputType.unsafe(result.nextInt())
 
   /**
     * GetResult type for BlockEntryLite

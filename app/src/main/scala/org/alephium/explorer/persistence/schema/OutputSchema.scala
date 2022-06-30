@@ -30,12 +30,12 @@ import org.alephium.util.{TimeStamp, U256}
 object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
 
   class Outputs(tag: Tag) extends Table[OutputEntity](tag, name) {
-    def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
-    def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
-    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("block_timestamp")
-    def outputType: Rep[Int]            = column[Int]("output_type")
-    def hint: Rep[Int]                  = column[Int]("hint")
-    def key: Rep[Hash]                  = column[Hash]("key", O.SqlType("BYTEA"))
+    def blockHash: Rep[BlockEntry.Hash]          = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
+    def txHash: Rep[Transaction.Hash]            = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
+    def timestamp: Rep[TimeStamp]                = column[TimeStamp]("block_timestamp")
+    def outputType: Rep[OutputEntity.OutputType] = column[OutputEntity.OutputType]("output_type")
+    def hint: Rep[Int]                           = column[Int]("hint")
+    def key: Rep[Hash]                           = column[Hash]("key", O.SqlType("BYTEA"))
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
     def address: Rep[Address]            = column[Address]("address")

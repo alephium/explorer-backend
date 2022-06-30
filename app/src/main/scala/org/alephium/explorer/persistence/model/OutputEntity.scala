@@ -26,7 +26,7 @@ final case class OutputEntity(
     blockHash: BlockEntry.Hash,
     txHash: Transaction.Hash,
     timestamp: TimeStamp,
-    outputType: Int, //0 Asset, 1 Contract
+    outputType: OutputEntity.OutputType,
     hint: Int,
     key: Hash,
     amount: U256,
@@ -42,8 +42,30 @@ final case class OutputEntity(
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   def toApi(spent: Option[Transaction.Hash]): Output = {
     outputType match {
-      case 0 => AssetOutput(hint, key, amount, address, tokens, lockTime, message, spent)
-      case 1 => ContractOutput(hint, key, amount, address, tokens, spent)
+      case OutputEntity.Asset =>
+        AssetOutput(hint, key, amount, address, tokens, lockTime, message, spent)
+      case OutputEntity.Contract => ContractOutput(hint, key, amount, address, tokens, spent)
+    }
+  }
+}
+
+object OutputEntity {
+  sealed trait OutputType {
+    def value: Int
+  }
+  case object Asset extends OutputType {
+    val value = 0
+  }
+  case object Contract extends OutputType {
+    val value = 1
+  }
+
+  object OutputType {
+    def unsafe(int: Int): OutputType = {
+      int match {
+        case Asset.value    => Asset
+        case Contract.value => Contract
+      }
     }
   }
 }

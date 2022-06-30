@@ -69,7 +69,7 @@ object DataGenerator {
           blockHash      = transaction.blockHash,
           txHash         = transaction.hash,
           timestamp      = transaction.timestamp,
-          outputType     = Random.nextInt(2),
+          outputType     = OutputEntity.OutputType.unsafe(Random.nextInt(2)),
           hint           = Random.nextInt(1000),
           key            = Hash.generate,
           amount         = U256.unsafe(Random.nextInt(100)),

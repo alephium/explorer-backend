@@ -63,7 +63,8 @@ trait Generators {
     unlockScript <- Gen.option(hashGen.map(_.bytes))
   } yield UInput(outputRef, unlockScript.map(Hex.toHexString(_)))
 
-  lazy val outputTypeGen: Gen[Int] = Gen.oneOf(0, 1)
+  lazy val outputTypeGen: Gen[OutputEntity.OutputType] =
+    Gen.oneOf(0, 1).map(OutputEntity.OutputType.unsafe)
 
   lazy val tokenGen: Gen[Token] = for {
     id     <- hashGen
@@ -525,8 +526,8 @@ trait Generators {
         address        = address,
         tokens         = tokens,
         mainChain      = mainChain,
-        lockTime       = if (outputType == 0) lockTime else None,
-        message        = if (outputType == 0) message else None,
+        lockTime       = if (outputType == OutputEntity.Asset) lockTime else None,
+        message        = if (outputType == OutputEntity.Asset) message else None,
         order          = order,
         txOrder        = txOrder,
         spentFinalized = None

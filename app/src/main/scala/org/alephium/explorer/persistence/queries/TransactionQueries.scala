@@ -207,7 +207,8 @@ object TransactionQueries extends StrictLogging {
   private def buildTransaction(
       txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)],
       inputs: Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Transaction.Hash, Address, U256, Option[Seq[Token]])],
-      outputs: Seq[(Transaction.Hash, Int, Int, Int, Hash, U256, Address, Option[Seq[Token]], Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])],
+      outputs: Seq[(Transaction.Hash, Int, OutputEntity.OutputType, Int, Hash, U256, Address,
+        Option[Seq[Token]], Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])],
       gases: Seq[(Transaction.Hash, Int, U256)]) = {
   // format: on
     val insByTx = inputs.groupBy(_._1).view.mapValues { values =>

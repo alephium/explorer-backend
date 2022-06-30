@@ -27,6 +27,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer._
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.serde._
 import org.alephium.util.{AVector, TimeStamp, U256}
 
@@ -107,5 +108,11 @@ object CustomJdbcTypes {
     MappedJdbcType.base[IntervalType, Int](
       _.value,
       IntervalType.unsafe
+    )
+
+  implicit lazy val outputTypeType: JdbcType[OutputEntity.OutputType] =
+    MappedJdbcType.base[OutputEntity.OutputType, Int](
+      _.value,
+      OutputEntity.OutputType.unsafe
     )
 }
