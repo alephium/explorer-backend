@@ -44,10 +44,10 @@ object TransactionQueries extends StrictLogging {
 
   def insertAll(transactions: Seq[TransactionEntity],
                 outputs: Seq[OutputEntity],
-                inputs: Seq[InputEntity]): DBActionW[Int] = {
-    insertTransactions(transactions) andThen
-      insertInputs(inputs) andThen
-      insertOutputs(outputs)
+                inputs: Seq[InputEntity]): DBActionRWT[Unit] = {
+    DBIOAction
+      .seq(insertTransactions(transactions), insertInputs(inputs), insertOutputs(outputs))
+      .transactionally
   }
 
   /** Inserts transactions or ignore rows with primary key conflict */

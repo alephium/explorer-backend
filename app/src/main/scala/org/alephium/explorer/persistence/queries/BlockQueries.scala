@@ -255,7 +255,7 @@ object BlockQueries extends StrictLogging {
   /** Transactionally write blocks */
   @SuppressWarnings(
     Array("org.wartremover.warts.MutableDataStructures", "org.wartremover.warts.NonUnitStatements"))
-  def insertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int): DBActionRWT[Int] = {
+  def insertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int): DBActionRWT[Unit] = {
     val blockDeps    = ListBuffer.empty[BlockDepEntity]
     val transactions = ListBuffer.empty[TransactionEntity]
     val inputs       = ListBuffer.empty[InputEntity]
@@ -272,11 +272,11 @@ object BlockQueries extends StrictLogging {
     }
 
     val query =
-      insertBlockDeps(blockDeps) andThen
-        insertTransactions(transactions) andThen
-        insertOutputs(outputs) andThen
-        insertInputs(inputs) andThen
-        insertBlockHeaders(blockHeaders)
+      DBIOAction.seq(insertBlockDeps(blockDeps),
+                     insertTransactions(transactions),
+                     insertOutputs(outputs),
+                     insertInputs(inputs),
+                     insertBlockHeaders(blockHeaders))
 
     query.transactionally
   }

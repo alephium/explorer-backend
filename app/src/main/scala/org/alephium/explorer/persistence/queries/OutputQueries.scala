@@ -34,10 +34,12 @@ import org.alephium.util.{TimeStamp, U256}
 object OutputQueries {
   private val mainInputs = InputSchema.table.filter(_.mainChain)
 
-  def insertOutputs(outputs: Iterable[OutputEntity]): DBActionW[Int] =
-    insertBasicOutputs(outputs)
-      .andThen(insertTxPerAddressFromOutputs(outputs))
-      .andThen(insertTokensFromOutputs(outputs))
+  def insertOutputs(outputs: Iterable[OutputEntity]): DBActionRWT[Unit] =
+    DBIOAction
+      .seq(insertBasicOutputs(outputs),
+           insertTxPerAddressFromOutputs(outputs),
+           insertTokensFromOutputs(outputs))
+      .transactionally
 
   /** Inserts outputs or ignore rows with primary key conflict */
   // scalastyle:off magic.number
@@ -120,7 +122,7 @@ object OutputQueries {
     }
   }
 
-  private def insertTokensFromOutputs(outputs: Iterable[OutputEntity]): DBActionW[Int] = {
+  private def insertTokensFromOutputs(outputs: Iterable[OutputEntity]): DBActionRWT[Unit] = {
     val tokenOutputs = outputs.flatMap { output =>
       output.tokens match {
         case None => Iterable.empty
@@ -129,10 +131,14 @@ object OutputQueries {
       }
     }
 
-    insertTokenOutputs(tokenOutputs)
-      .andThen(insertTransactionTokenFromOutputs(tokenOutputs))
-      .andThen(insertTokenPerAddressFromOutputs(tokenOutputs))
-      .andThen(insertTokenInfoFromOutputs(tokenOutputs))
+    DBIOAction
+      .seq(
+        insertTokenOutputs(tokenOutputs),
+        insertTransactionTokenFromOutputs(tokenOutputs),
+        insertTokenPerAddressFromOutputs(tokenOutputs),
+        insertTokenInfoFromOutputs(tokenOutputs)
+      )
+      .transactionally
   }
 
   // scalastyle:off magic.number
