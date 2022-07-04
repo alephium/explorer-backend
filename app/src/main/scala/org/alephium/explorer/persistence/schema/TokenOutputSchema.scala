@@ -55,6 +55,7 @@ object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outpu
     def txHashIdx: Index    = index("token_outputs_tx_hash_idx", txHash)
     def addressIdx: Index   = index("token_outputs_address_idx", address)
     def timestampIdx: Index = index("token_outputs_timestamp_idx", timestamp)
+    def tokenIdx: Index     = index("token_outputs_token_idx", token)
 
     def * : ProvenShape[TokenOutputEntity] =
       (blockHash,
