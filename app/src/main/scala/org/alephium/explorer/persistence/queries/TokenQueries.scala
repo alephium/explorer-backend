@@ -93,7 +93,6 @@ object TokenQueries extends StrictLogging {
       SELECT DISTINCT address
       FROM token_per_addresses
       WHERE token = $token
-      ORDER BY address
       LIMIT $limit
       OFFSET $toDrop
     """.as[Address]
