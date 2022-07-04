@@ -18,12 +18,13 @@ package org.alephium.explorer.persistence.queries
 
 import scala.concurrent.ExecutionContext
 
-import slick.dbio.DBIOAction
+import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.util._
 
 object InputUpdateQueries {
@@ -48,20 +49,30 @@ object InputUpdateQueries {
   private def updateTransactionPerAddresses(
       data: Vector[(Address, Transaction.Hash, BlockEntry.Hash, TimeStamp, Int, Boolean)])
     : DBActionWT[Int] = {
-    if (data.nonEmpty) {
-      val values = data
-        .map {
-          case (address, txHash, blockHash, timestamp, txOrder, mainChain) =>
-            s"('$address', '\\x$txHash', '\\x$blockHash', '${timestamp.millis}', $txOrder, $mainChain)"
+    QuerySplitter.splitUpdates(rows = data, columnsPerRow = 6) { (data, placeholder) =>
+      val query =
+        s"""
+           | INSERT INTO transaction_per_addresses (address, hash, block_hash, block_timestamp, tx_order, main_chain)
+           | VALUES $placeholder
+           | ON CONFLICT ON CONSTRAINT txs_per_address_pk DO NOTHING
+           |""".stripMargin
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          data foreach {
+            case (address, txHash, blockHash, timestamp, txOrder, mainChain) =>
+              params >> address
+              params >> txHash
+              params >> blockHash
+              params >> timestamp
+              params >> txOrder
+              params >> mainChain
         }
-        .mkString(",\n")
-      sqlu"""
-      INSERT INTO transaction_per_addresses (address, hash, block_hash, block_timestamp, tx_order, main_chain)
-      VALUES #$values
-      ON CONFLICT (hash, block_hash, address) DO NOTHING
-      """
-    } else {
-      DBIOAction.successful(0)
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv  = parameters
+      ).asUpdate
     }
   }
 }
