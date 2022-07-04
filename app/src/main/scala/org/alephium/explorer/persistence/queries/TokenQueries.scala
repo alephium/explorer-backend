@@ -91,7 +91,7 @@ object TokenQueries extends StrictLogging {
     val toDrop = offset * limit
     sql"""
       SELECT DISTINCT address
-      FROM token_per_addresses
+      FROM token_tx_per_addresses
       WHERE token = $token
       LIMIT $limit
       OFFSET $toDrop
@@ -116,7 +116,7 @@ object TokenQueries extends StrictLogging {
   def listAddressTokensAction(address: Address): DBActionSR[Hash] =
     sql"""
       SELECT DISTINCT token
-      FROM token_per_addresses
+      FROM token_tx_per_addresses
       WHERE address = $address
       AND main_chain = true
     """.as[Hash]
@@ -139,7 +139,7 @@ object TokenQueries extends StrictLogging {
       limit: Int): DBActionSR[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)] = {
     sql"""
       SELECT hash, block_hash, block_timestamp, tx_order
-      FROM token_per_addresses
+      FROM token_tx_per_addresses
       WHERE main_chain = true
       AND address = $address
       AND token = $token

@@ -160,7 +160,7 @@ object InputQueries {
 
   def insertTokenPerAddressFromInput(input: InputEntity): DBActionW[Int] = {
     sqlu"""
-          INSERT INTO token_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
+          INSERT INTO token_tx_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
           SELECT address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token
           FROM token_outputs
           WHERE key = ${input.outputRefKey}

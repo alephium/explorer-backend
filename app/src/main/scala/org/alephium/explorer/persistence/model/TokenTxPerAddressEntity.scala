@@ -20,7 +20,7 @@ import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
 import org.alephium.protocol.Hash
 import org.alephium.util.TimeStamp
 
-final case class TokenPerAddressEntity(
+final case class TokenTxPerAddressEntity(
     address: Address,
     hash: Transaction.Hash,
     blockHash: BlockEntry.Hash,

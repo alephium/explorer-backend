@@ -231,7 +231,7 @@ object OutputQueries {
       (tokenOutputs, placeholder) =>
         val query =
           s"""
-           |INSERT INTO token_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
+           |INSERT INTO token_tx_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
            |VALUES $placeholder
            |ON CONFLICT (tx_hash, block_hash, address, token)
            |DO NOTHING
