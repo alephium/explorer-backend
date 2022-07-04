@@ -340,7 +340,6 @@ object BlockFlowClient {
       index,
       txOrder,
       None,
-      None,
       None
     )
   }
@@ -362,7 +361,6 @@ object BlockFlowClient {
       mainChain,
       index,
       txOrder,
-      None,
       None,
       None
     )

@@ -53,10 +53,9 @@ trait Generators {
   lazy val inputGen: Gen[Input] = for {
     outputRef    <- outputRefGen
     unlockScript <- Gen.option(hashGen.map(_.bytes))
-    txHashRef    <- transactionHashGen
     address      <- addressGen
     amount       <- amountGen
-  } yield Input(outputRef, unlockScript.map(Hex.toHexString(_)), txHashRef, address, amount)
+  } yield Input(outputRef, unlockScript.map(Hex.toHexString(_)), address, amount)
 
   lazy val uinputGen: Gen[UInput] = for {
     outputRef    <- outputRefGen
@@ -519,7 +518,6 @@ trait Generators {
         mainChain    = outputEntity.mainChain,
         order        = outputEntity.order,
         txOrder      = txOrder,
-        None,
         None,
         None
       )

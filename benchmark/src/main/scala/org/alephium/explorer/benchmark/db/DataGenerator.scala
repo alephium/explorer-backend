@@ -95,7 +95,6 @@ object DataGenerator {
           order        = order,
           txOrder      = order,
           None,
-          None,
           None
         )
     }

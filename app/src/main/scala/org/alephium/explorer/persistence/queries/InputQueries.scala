@@ -38,7 +38,7 @@ object InputQueries {
   /** Inserts inputs or ignore rows with primary key conflict */
   // scalastyle:off magic.number
   def insertInputs(inputs: Iterable[InputEntity]): DBActionW[Int] =
-    QuerySplitter.splitUpdates(rows = inputs, columnsPerRow = 12) { (inputs, placeholder) =>
+    QuerySplitter.splitUpdates(rows = inputs, columnsPerRow = 11) { (inputs, placeholder) =>
       val query =
         s"""
            |INSERT INTO inputs ("block_hash",
@@ -50,7 +50,6 @@ object InputQueries {
            |                    "main_chain",
            |                    "input_order",
            |                    "tx_order",
-           |                    "output_ref_tx_hash",
            |                    "output_ref_address",
            |                    "output_ref_amount")
            |VALUES $placeholder
@@ -71,7 +70,6 @@ object InputQueries {
             params >> input.mainChain
             params >> input.order
             params >> input.txOrder
-            params >> input.outputRefTxHash
             params >> input.outputRefAddress
             params >> input.outputRefAmount
         }
@@ -84,12 +82,12 @@ object InputQueries {
 
   // format: off
   def inputsFromTxsSQL(txHashes: Seq[Transaction.Hash]):
-    DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Transaction.Hash, Address, U256)]] = {
+    DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Address, U256)]] = {
   // format: on
     if (txHashes.nonEmpty) {
       val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
       sql"""
-    SELECT inputs.tx_hash, inputs.input_order, inputs.hint, inputs.output_ref_key, inputs.unlock_script, outputs.tx_hash, outputs.address, outputs.amount
+    SELECT inputs.tx_hash, inputs.input_order, inputs.hint, inputs.output_ref_key, inputs.unlock_script, outputs.address, outputs.amount
     FROM inputs
     JOIN outputs ON inputs.output_ref_key = outputs.key AND outputs.main_chain = true
     WHERE inputs.tx_hash IN (#$values) AND inputs.main_chain = true
@@ -101,14 +99,14 @@ object InputQueries {
 
   // format: off
   def inputsFromTxsNoJoin(txHashes: Seq[Transaction.Hash]):
-    DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Transaction.Hash, Address, U256)]] = {
+    DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Address, U256)]] = {
   // format: on
     if (txHashes.nonEmpty) {
       val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
       sql"""
-    SELECT tx_hash, input_order, hint, output_ref_key, unlock_script, output_ref_tx_hash, output_ref_address, output_ref_amount
+    SELECT tx_hash, input_order, hint, output_ref_key, unlock_script, output_ref_address, output_ref_amount
     FROM inputs
-    WHERE tx_hash IN (#$values) AND main_chain = true AND output_ref_tx_hash IS NOT NULL
+    WHERE tx_hash IN (#$values) AND main_chain = true AND output_ref_address IS NOT NULL
     """.as
     } else {
       DBIOAction.successful(Seq.empty)
@@ -124,23 +122,13 @@ object InputQueries {
       .sortBy(_._1.inputOrder)
       .map {
         case (input, output) =>
-          (input.hint,
-           input.outputRefKey,
-           input.unlockScript,
-           output.txHash,
-           output.address,
-           output.amount)
+          (input.hint, input.outputRefKey, input.unlockScript, output.address, output.amount)
       }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
   val toApiInput = {
-    (hint: Int,
-     key: Hash,
-     unlockScript: Option[String],
-     txHash: Transaction.Hash,
-     address: Address,
-     amount: U256) =>
-      Input(OutputRef(hint, key), unlockScript, txHash, address, amount)
+    (hint: Int, key: Hash, unlockScript: Option[String], address: Address, amount: U256) =>
+      Input(OutputRef(hint, key), unlockScript, address, amount)
   }.tupled
 }

@@ -204,7 +204,6 @@ class TokenSupplyServiceSpec
                         index,
                         0,
                         None,
-                        None,
                         None)
 
         },

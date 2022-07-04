@@ -96,7 +96,6 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
      |{
      |  "outputRef": ${write(input.outputRef)},
      |  ${input.unlockScript.map(script => s""""unlockScript": "${script}",""").getOrElse("")}
-     |  "txHashRef": "${input.txHashRef.value.toHexString}",
      |  "address": "${input.address}",
      |  "amount": "${input.amount}"
      |}""".stripMargin

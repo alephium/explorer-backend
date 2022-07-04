@@ -242,7 +242,6 @@ class TransactionQueriesSpec
          input.hint,
          input.outputRefKey,
          input.unlockScript,
-         output.txHash,
          output.address,
          output.amount)
     }
@@ -400,7 +399,6 @@ class TransactionQueriesSpec
                   true,
                   0,
                   0,
-                  None,
                   None,
                   None)
     def transaction(output: OutputEntity): TransactionEntity = {

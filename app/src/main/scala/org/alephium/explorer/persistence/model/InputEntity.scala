@@ -33,7 +33,6 @@ final case class InputEntity(
     mainChain: Boolean,
     order: Int,
     txOrder: Int,
-    outputRefTxHash: Option[Transaction.Hash],
     outputRefAddress: Option[Address],
     outputRefAmount: Option[U256]
 ) {
@@ -41,7 +40,6 @@ final case class InputEntity(
     Input(
       OutputRef(hint, outputRefKey),
       unlockScript,
-      outputRef.txHash,
       outputRef.address,
       outputRef.amount
     )

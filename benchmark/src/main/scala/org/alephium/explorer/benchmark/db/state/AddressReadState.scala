@@ -86,7 +86,6 @@ class AddressReadState(val db: DBExecutor)
                 order        = 0,
                 txOrder      = 0,
                 None,
-                None,
                 None)
   }
   private def generateTransaction(blockHash: BlockEntry.Hash,

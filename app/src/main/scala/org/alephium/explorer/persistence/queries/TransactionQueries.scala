@@ -230,7 +230,7 @@ object TransactionQueries extends StrictLogging {
   // format: off
   private def buildTransactionNoJoin(
       txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)],
-      inputs: Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Transaction.Hash, Address, U256)],
+      inputs: Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Address, U256)],
       outputs: Seq[(Transaction.Hash, Int, Int, Hash, U256, Address, Option[TimeStamp], Option[Transaction.Hash])],
       gases: Seq[(Transaction.Hash, Int, U256)]) = {
   // format: on
@@ -238,8 +238,8 @@ object TransactionQueries extends StrictLogging {
       values
         .sortBy(_._2)
         .map {
-          case (_, _, hint, key, unlockScript, txHashRef, address, amount) =>
-            toApiInput((hint, key, unlockScript, txHashRef, address, amount))
+          case (_, _, hint, key, unlockScript, address, amount) =>
+            toApiInput((hint, key, unlockScript, address, amount))
         }
     }
     val ousByTx = outputs.groupBy(_._1).view.mapValues { values =>
@@ -265,7 +265,7 @@ object TransactionQueries extends StrictLogging {
   // format: off
   private def buildTransaction(
       txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)],
-      inputs: Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Transaction.Hash, Address, U256)],
+      inputs: Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Address, U256)],
       outputs: Seq[(Transaction.Hash, Int, Int, Hash, U256, Address, Option[TimeStamp], Option[Transaction.Hash])],
       gases: Seq[(Transaction.Hash, Int, U256)]) = {
   // format: on
@@ -273,8 +273,8 @@ object TransactionQueries extends StrictLogging {
       values
         .sortBy(_._2)
         .map {
-          case (_, _, hint, key, unlockScript, txHashRef, address, amount) =>
-            toApiInput((hint, key, unlockScript, txHashRef, address, amount))
+          case (_, _, hint, key, unlockScript, address, amount) =>
+            toApiInput((hint, key, unlockScript, address, amount))
         }
     }
     val ousByTx = outputs.groupBy(_._1).view.mapValues { values =>

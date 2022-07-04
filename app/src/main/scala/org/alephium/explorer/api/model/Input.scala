@@ -24,7 +24,6 @@ import org.alephium.util.U256
 final case class Input(
     outputRef: OutputRef,
     unlockScript: Option[String] = None,
-    txHashRef: Transaction.Hash,
     address: Address,
     amount: U256
 )
