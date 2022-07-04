@@ -44,7 +44,7 @@ class BlockQueriesSpec
       run(BlockHeaderSchema.table.delete).futureValue
 
       val existing = existingAndUpdates.map(_._1) //existing blocks
-      val ingored  = existingAndUpdates.map(_._2) //ingored blocks
+      val ignored  = existingAndUpdates.map(_._2) //ignored blocks
 
       val query = BlockQueries.insertBlockHeaders(existing)
 
@@ -52,50 +52,49 @@ class BlockQueriesSpec
       run(query).futureValue is existing.size
       run(BlockHeaderSchema.table.result).futureValue should contain allElementsOf existing
 
-      //insert should ingore existing inputs
-      run(BlockQueries.insertBlockHeaders(ingored)).futureValue is 0
+      //insert should ignore existing inputs
+      run(BlockQueries.insertBlockHeaders(ignored)).futureValue is 0
       run(BlockHeaderSchema.table.result).futureValue should contain allElementsOf existing
     }
   }
 
   it should "insert deps, transactions, inputs, outputs, block_headers" in {
 
-    forAll(Gen.listOf(genBlockEntityWithOptionalParent().map(_._1))) {
-      case entities =>
-        //clear all tables
-        run(BlockHeaderSchema.table.delete).futureValue
-        run(TransactionSchema.table.delete).futureValue
-        run(InputSchema.table.delete).futureValue
-        run(OutputSchema.table.delete).futureValue
-        run(BlockDepsSchema.table.delete).futureValue
+    forAll(Gen.listOf(genBlockEntityWithOptionalParent().map(_._1))) { entities =>
+      //clear all tables
+      run(BlockHeaderSchema.table.delete).futureValue
+      run(TransactionSchema.table.delete).futureValue
+      run(InputSchema.table.delete).futureValue
+      run(OutputSchema.table.delete).futureValue
+      run(BlockDepsSchema.table.delete).futureValue
 
-        //execute insert on blocks and expect all tables get inserted
-        run(BlockQueries.insertBlockEntity(entities, groupNum)).futureValue is entities.size
+      //execute insert on blocks and expect all tables get inserted
+      run(BlockQueries.insertBlockEntity(entities, groupNum)).futureValue is entities.size
 
-        //check block_headers table
-        val actualBlockHeaders = run(BlockHeaderSchema.table.result).futureValue
-        val expectBlockHeaders = entities.map(_.toBlockHeader(groupNum))
-        actualBlockHeaders should contain allElementsOf expectBlockHeaders
+      //check block_headers table
+      val actualBlockHeaders = run(BlockHeaderSchema.table.result).futureValue
+      val expectBlockHeaders = entities.map(_.toBlockHeader(groupNum))
+      actualBlockHeaders should contain allElementsOf expectBlockHeaders
 
-        //check transactions table
-        val actualTransactions   = run(TransactionSchema.table.result).futureValue
-        val expectedTransactions = entities.flatMap(_.transactions)
-        actualTransactions should contain allElementsOf expectedTransactions
+      //check transactions table
+      val actualTransactions   = run(TransactionSchema.table.result).futureValue
+      val expectedTransactions = entities.flatMap(_.transactions)
+      actualTransactions should contain allElementsOf expectedTransactions
 
-        //check inputs table
-        val actualInputs   = run(InputSchema.table.result).futureValue
-        val expectedInputs = entities.flatMap(_.inputs)
-        actualInputs should contain allElementsOf expectedInputs
+      //check inputs table
+      val actualInputs   = run(InputSchema.table.result).futureValue
+      val expectedInputs = entities.flatMap(_.inputs)
+      actualInputs should contain allElementsOf expectedInputs
 
-        ////check outputs table
-        //val actualOutputs   = run(outputsTable.result).futureValue
-        //val expectedOutputs = entities.flatMap(_.outputs)
-        //actualOutputs should contain allElementsOf expectedOutputs
+      ////check outputs table
+      //val actualOutputs   = run(outputsTable.result).futureValue
+      //val expectedOutputs = entities.flatMap(_.outputs)
+      //actualOutputs should contain allElementsOf expectedOutputs
 
-        //check block_deps table
-        val actualDeps        = run(BlockDepsSchema.table.result).futureValue
-        val expectedBlockDeps = entities.flatMap(_.toBlockDepEntities())
-        actualDeps should contain allElementsOf expectedBlockDeps
+      //check block_deps table
+      val actualDeps        = run(BlockDepsSchema.table.result).futureValue
+      val expectedBlockDeps = entities.flatMap(_.toBlockDepEntities())
+      actualDeps should contain allElementsOf expectedBlockDeps
 
       //There is no need for testing updates here since updates are already
       //tested each table's individual test-cases.
