@@ -27,7 +27,7 @@ import org.alephium.util.{TimeStamp, U256}
 sealed trait Output {
   def hint: Int
   def key: Hash
-  def amount: U256
+  def attoAlphAmount: U256
   def address: Address
   def tokens: Option[Seq[Token]]
   def spent: Option[Transaction.Hash]
@@ -38,7 +38,7 @@ sealed trait Output {
 final case class AssetOutput(
     hint: Int,
     key: Hash,
-    amount: U256,
+    attoAlphAmount: U256,
     address: Address,
     tokens: Option[Seq[Token]]      = None,
     lockTime: Option[TimeStamp]     = None,
@@ -51,7 +51,7 @@ final case class AssetOutput(
 final case class ContractOutput(
     hint: Int,
     key: Hash,
-    amount: U256,
+    attoAlphAmount: U256,
     address: Address,
     tokens: Option[Seq[Token]]      = None,
     spent: Option[Transaction.Hash] = None

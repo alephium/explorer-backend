@@ -2939,7 +2939,7 @@
         "required": [
           "hint",
           "key",
-          "amount",
+          "attoAlphAmount",
           "address",
           "type"
         ],
@@ -2953,7 +2953,7 @@
             "type": "string",
             "format": "32-byte-hash"
           },
-          "amount": {
+          "attoAlphAmount": {
             "type": "string",
             "format": "uint256"
           },
@@ -3092,7 +3092,7 @@
         "required": [
           "hint",
           "key",
-          "amount",
+          "attoAlphAmount",
           "address",
           "type"
         ],
@@ -3106,7 +3106,7 @@
             "type": "string",
             "format": "32-byte-hash"
           },
-          "amount": {
+          "attoAlphAmount": {
             "type": "string",
             "format": "uint256"
           },
@@ -3168,7 +3168,7 @@
           "outputRef",
           "txHashRef",
           "address",
-          "amount"
+          "attoAlphAmount"
         ],
         "type": "object",
         "properties": {
@@ -3185,7 +3185,7 @@
           "address": {
             "type": "string"
           },
-          "amount": {
+          "attoAlphAmount": {
             "type": "string",
             "format": "uint256"
           },

@@ -94,7 +94,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
      |  "type": "AssetOutput",
      |  "hint": ${output.hint},
      |  "key": "${output.key.toHexString}",
-     |  "amount": "${output.amount}",
+     |  "attoAlphAmount": "${output.attoAlphAmount}",
      |  "address": "${output.address}"
      |  ${output.tokens.map(tokens => s""","tokens": ${write(tokens)}""").getOrElse("")}
      |  ${output.lockTime.map(lockTime => s""","lockTime": ${lockTime.millis}""").getOrElse("")}
@@ -113,7 +113,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
      |  "type": "ContractOutput",
      |  "hint": ${output.hint},
      |  "key": "${output.key.toHexString}",
-     |  "amount": "${output.amount}",
+     |  "attoAlphAmount": "${output.attoAlphAmount}",
      |  "address": "${output.address}"
      |  ${output.tokens.map(tokens => s""","tokens": ${write(tokens)}""").getOrElse("")}
      |  ${output.spent.map(spent => s""","spent": "${spent.value.toHexString}"""").getOrElse("")}
@@ -130,7 +130,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
      |  ${input.unlockScript.map(script => s""""unlockScript": "${script}",""").getOrElse("")}
      |  "txHashRef": "${input.txHashRef.value.toHexString}",
      |  "address": "${input.address}",
-     |  "amount": "${input.amount}"
+     |  "attoAlphAmount": "${input.attoAlphAmount}"
      |}""".stripMargin
       check(input, expected)
     }

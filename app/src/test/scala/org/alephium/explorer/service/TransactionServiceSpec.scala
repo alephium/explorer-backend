@@ -96,7 +96,13 @@ class TransactionServiceSpec
     BlockDao.updateMainChainStatus(block.hash, true).futureValue
 
     val fetchedAmout =
-      BlockDao.get(block.hash).futureValue.get.transactions.flatMap(_.outputs.map(_.amount)).head
+      BlockDao
+        .get(block.hash)
+        .futureValue
+        .get
+        .transactions
+        .flatMap(_.outputs.map(_.attoAlphAmount))
+        .head
     fetchedAmout is amount
   }
 
