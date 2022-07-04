@@ -67,7 +67,7 @@ object InputQueries {
             params >> input.outputRefKey
             params >> input.unlockScript
             params >> input.mainChain
-            params >> input.order
+            params >> input.inputOrder
             params >> input.txOrder
         }
 

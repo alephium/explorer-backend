@@ -82,7 +82,7 @@ class AddressReadState(val db: DBExecutor)
                 outputRefKey = key,
                 unlockScript = None,
                 mainChain    = true,
-                order        = 0,
+                inputOrder   = 0,
                 txOrder      = 0)
   }
   private def generateTransaction(blockHash: BlockEntry.Hash,
@@ -118,7 +118,7 @@ class AddressReadState(val db: DBExecutor)
       mainChain      = true,
       lockTime       = None,
       message        = None,
-      order          = 0,
+      outputOrder    = 0,
       txOrder        = 0,
       spentFinalized = None
     )

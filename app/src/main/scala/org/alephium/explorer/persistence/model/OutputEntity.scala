@@ -35,7 +35,7 @@ final case class OutputEntity(
     mainChain: Boolean,
     lockTime: Option[TimeStamp],
     message: Option[ByteString],
-    order: Int,
+    outputOrder: Int,
     txOrder: Int,
     spentFinalized: Option[Transaction.Hash]
 ) {

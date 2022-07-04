@@ -357,7 +357,7 @@ class TransactionServiceSpec
             .asInstanceOf[ConfirmedTransaction]
         transaction.outputs.map(_.key) is block.outputs
           .filter(_.txHash == tx.hash)
-          .sortBy(_.order)
+          .sortBy(_.outputOrder)
           .map(_.key)
       }
     }
@@ -368,7 +368,7 @@ class TransactionServiceSpec
       .map { transaction =>
         transaction.outputs.map(_.key) is outputs
           .filter(_.txHash == transaction.hash)
-          .sortBy(_.order)
+          .sortBy(_.outputOrder)
           .map(_.key)
       }
   }

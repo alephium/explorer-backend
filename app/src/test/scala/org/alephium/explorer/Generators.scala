@@ -500,20 +500,20 @@ trait Generators {
 
   lazy val outputEntityGen: Gen[OutputEntity] =
     for {
-      blockHash  <- blockEntryHashGen
-      txHash     <- transactionHashGen
-      timestamp  <- timestampGen
-      outputType <- outputTypeGen
-      hint       <- Gen.posNum[Int]
-      key        <- hashGen
-      amount     <- u256Gen
-      address    <- addressGen
-      tokens     <- Gen.option(Gen.listOf(tokenGen))
-      lockTime   <- Gen.option(timestampGen)
-      message    <- Gen.option(bytesGen)
-      mainChain  <- arbitrary[Boolean]
-      order      <- arbitrary[Int]
-      txOrder    <- arbitrary[Int]
+      blockHash   <- blockEntryHashGen
+      txHash      <- transactionHashGen
+      timestamp   <- timestampGen
+      outputType  <- outputTypeGen
+      hint        <- Gen.posNum[Int]
+      key         <- hashGen
+      amount      <- u256Gen
+      address     <- addressGen
+      tokens      <- Gen.option(Gen.listOf(tokenGen))
+      lockTime    <- Gen.option(timestampGen)
+      message     <- Gen.option(bytesGen)
+      mainChain   <- arbitrary[Boolean]
+      outputOrder <- arbitrary[Int]
+      txOrder     <- arbitrary[Int]
     } yield
       OutputEntity(
         blockHash      = blockHash,
@@ -528,7 +528,7 @@ trait Generators {
         mainChain      = mainChain,
         lockTime       = if (outputType == OutputEntity.Asset) lockTime else None,
         message        = if (outputType == OutputEntity.Asset) message else None,
-        order          = order,
+        outputOrder    = outputOrder,
         txOrder        = txOrder,
         spentFinalized = None
       )
@@ -548,7 +548,7 @@ trait Generators {
         outputRefKey = outputEntity.key,
         unlockScript = unlockScript,
         mainChain    = outputEntity.mainChain,
-        order        = outputEntity.order,
+        inputOrder   = outputEntity.outputOrder,
         txOrder      = txOrder
       )
     }

@@ -83,7 +83,7 @@ object OutputQueries {
               params >> output.mainChain
               params >> output.lockTime
               params >> output.message
-              params >> output.order
+              params >> output.outputOrder
               params >> output.txOrder
           }
 
@@ -183,7 +183,7 @@ object OutputQueries {
                 params >> output.mainChain
                 params >> output.lockTime
                 params >> output.message
-                params >> output.order
+                params >> output.outputOrder
                 params >> output.txOrder
           }
 

@@ -31,7 +31,7 @@ final case class InputEntity(
     outputRefKey: Hash,
     unlockScript: Option[String],
     mainChain: Boolean,
-    order: Int,
+    inputOrder: Int,
     txOrder: Int
 ) {
   def toApi(outputRef: OutputEntity): Input =

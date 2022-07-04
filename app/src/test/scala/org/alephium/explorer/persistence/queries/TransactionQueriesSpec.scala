@@ -201,7 +201,7 @@ class TransactionQueriesSpec
 
     def res(output: OutputEntity, input: Option[InputEntity]) = {
       (output.txHash,
-       output.order,
+       output.outputOrder,
        output.outputType,
        output.hint,
        output.key,
@@ -242,7 +242,7 @@ class TransactionQueriesSpec
     val expected = inputs.zip(outputs).map {
       case (input, output) =>
         (input.txHash,
-         input.order,
+         input.inputOrder,
          input.hint,
          input.outputRefKey,
          input.unlockScript,

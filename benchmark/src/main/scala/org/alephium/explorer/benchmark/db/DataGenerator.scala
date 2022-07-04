@@ -78,7 +78,7 @@ object DataGenerator {
           mainChain      = transaction.mainChain,
           lockTime       = Some(TimeStamp.now()),
           message        = None,
-          order          = order,
+          outputOrder    = order,
           txOrder        = order,
           spentFinalized = None
         )
@@ -95,7 +95,7 @@ object DataGenerator {
           outputRefKey = output.key,
           unlockScript = Some(Random.alphanumeric.take(10).mkString),
           mainChain    = output.mainChain,
-          order        = order,
+          inputOrder   = order,
           txOrder      = order
         )
     }
