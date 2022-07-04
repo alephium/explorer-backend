@@ -39,11 +39,12 @@ object TokenPerAddressSchema
 
     def pk: PrimaryKey = primaryKey("token_tx_per_address_pk", (txHash, blockHash, address, token))
 
-    def hashIdx: Index      = index("token_tx_per_address_hash_idx", txHash)
-    def timestampIdx: Index = index("token_tx_per_address_timestamp_idx", timestamp)
-    def blockHashIdx: Index = index("token_tx_per_address_block_hash_idx", blockHash)
-    def addressIdx: Index   = index("token_tx_per_address_address_idx", address)
-    def tokenIdx: Index     = index("token_tx_per_address_token_idx", token)
+    def hashIdx: Index         = index("token_tx_per_address_hash_idx", txHash)
+    def timestampIdx: Index    = index("token_tx_per_address_timestamp_idx", timestamp)
+    def blockHashIdx: Index    = index("token_tx_per_address_block_hash_idx", blockHash)
+    def addressIdx: Index      = index("token_tx_per_address_address_idx", address)
+    def tokenIdx: Index        = index("token_tx_per_address_token_idx", token)
+    def tokenAddressIdx: Index = index("token_tx_per_address_token_address_idx", (token, address))
 
     def * : ProvenShape[TokenTxPerAddressEntity] =
       (address, txHash, blockHash, timestamp, txOrder, mainChain, token)
