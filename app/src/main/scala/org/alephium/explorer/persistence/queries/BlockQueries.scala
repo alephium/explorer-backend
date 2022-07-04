@@ -69,15 +69,14 @@ object BlockQueries extends StrictLogging {
       blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
     } yield blocks.headOption
 
-  def getBlockHeaderAction(hash: BlockEntry.Hash): DBActionR[Option[BlockHeader]] = {
+  def getBlockHeaderAction(hash: BlockEntry.Hash): DBActionR[Option[BlockHeader]] =
     sql"""
        |SELECT *
        |FROM #$block_headers
-       |WHERE hash = '\x#${hash.toString()}'
+       |WHERE hash = decode(${hash.toString()}, 'hex')
        |""".stripMargin
       .as[BlockHeader](blockHeaderGetResult)
       .headOption
-  }
 
   def getAtHeightAction(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
       implicit ec: ExecutionContext): DBActionR[Seq[BlockEntry]] =

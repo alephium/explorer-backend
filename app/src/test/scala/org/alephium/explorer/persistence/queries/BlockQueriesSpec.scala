@@ -21,14 +21,16 @@ import scala.concurrent.ExecutionContext
 import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
+import org.scalatest.wordspec.AnyWordSpec
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.AlephiumSpec._
+import org.alephium.explorer.Generators
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.schema._
 
 class BlockQueriesSpec
-    extends AlephiumSpec
+    extends AnyWordSpec
     with DatabaseFixtureForEach
     with DBRunner
     with Generators
@@ -37,7 +39,7 @@ class BlockQueriesSpec
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1000, Minutes))
 
-  it should "insert and ignore block_headers" in {
+  "insert and ignore block_headers" in {
 
     forAll(Gen.listOf(updatedBlockHeaderGen())) { existingAndUpdates =>
       //fresh table
@@ -58,7 +60,7 @@ class BlockQueriesSpec
     }
   }
 
-  it should "insert deps, transactions, inputs, outputs, block_headers" in {
+  "insert deps, transactions, inputs, outputs, block_headers" in {
 
     forAll(Gen.listOf(genBlockEntityWithOptionalParent().map(_._1))) { entities =>
       //clear all tables
@@ -98,6 +100,35 @@ class BlockQueriesSpec
 
       //There is no need for testing updates here since updates are already
       //tested each table's individual test-cases.
+    }
+  }
+
+  "getBlockHeaderAction" should {
+    "search BlockHeader" when {
+      "hash exists" in {
+        forAll(blockHeaderGen) { expectedHeader =>
+          //clear table
+          run(BlockHeaderSchema.table.delete).futureValue
+          //insert a block_header
+          run(BlockHeaderSchema.table += expectedHeader).futureValue is 1
+          //read the inserted block_header
+          val actualHeader = run(BlockQueries.getBlockHeaderAction(expectedHeader.hash)).futureValue
+          //read block_header should be the same as the inserted block_header
+          actualHeader should contain(expectedHeader)
+        }
+      }
+
+      "hash does not exist" in {
+        //clear table
+        run(BlockHeaderSchema.table.delete).futureValue
+
+        forAll(blockEntryHashGen) { hash =>
+          //table is empty
+          run(BlockHeaderSchema.table.length.result).futureValue is 0
+          //expect None
+          run(BlockQueries.getBlockHeaderAction(hash)).futureValue is None
+        }
+      }
     }
   }
 }
