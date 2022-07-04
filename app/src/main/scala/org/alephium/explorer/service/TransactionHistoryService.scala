@@ -48,8 +48,8 @@ case object TransactionHistoryService extends StrictLogging {
   def start(interval: FiniteDuration)(implicit executionContext: ExecutionContext,
                                       databaseConfig: DatabaseConfig[PostgresProfile],
                                       scheduler: Scheduler,
-                                      gs: GroupSetting): Unit =
-    scheduler.scheduleLoopAndForget(
+                                      gs: GroupSetting): Future[Unit] =
+    scheduler.scheduleLoop(
       taskId        = TransactionHistoryService.productPrefix,
       firstInterval = ScalaDuration.Zero,
       loopInterval  = interval
