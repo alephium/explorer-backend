@@ -33,12 +33,11 @@ object InputUpdateQueries {
     sql"""
       UPDATE inputs
       SET
-        output_ref_tx_hash = outputs.tx_hash,
         output_ref_address = outputs.address,
         output_ref_amount = outputs.amount
       FROM outputs
       WHERE inputs.output_ref_key = outputs.key
-      AND inputs.output_ref_tx_hash IS NULL
+      AND inputs.output_ref_address IS NULL
       RETURNING outputs.address, inputs.tx_hash, inputs.block_hash, inputs.block_timestamp, inputs.tx_order, inputs.main_chain
     """
       .as[(Address, Transaction.Hash, BlockEntry.Hash, TimeStamp, Int, Boolean)]

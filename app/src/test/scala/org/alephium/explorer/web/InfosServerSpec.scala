@@ -24,7 +24,7 @@ import org.scalatest.concurrent.ScalaFutures
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.{AlephiumSpec, BuildInfo, Generators, GroupSetting}
+import org.alephium.explorer.{AlephiumSpec, BuildInfo, Generators, GroupSetting, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TransactionCache}
 import org.alephium.explorer.persistence.{Database, DatabaseFixtureForEach}
@@ -186,6 +186,11 @@ class InfosServerSpec()
       override def getTransaction(transactionHash: Transaction.Hash)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[Option[TransactionLike]] =
+        Future.successful(None)
+
+      override def getOutputRefTransaction(key: Hash)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Option[ConfirmedTransaction]] =
         Future.successful(None)
 
       override def getTransactionsNumberByAddress(address: Address)(

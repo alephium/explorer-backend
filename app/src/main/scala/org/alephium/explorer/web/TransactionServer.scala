@@ -18,6 +18,7 @@ package org.alephium.explorer.web
 
 import scala.concurrent.{ExecutionContext, Future}
 
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
@@ -34,5 +35,11 @@ class TransactionServer(implicit val executionContext: ExecutionContext,
     TransactionService
       .getTransaction(hash)
       .map(_.toRight(ApiError.NotFound(hash.value.toHexString)))
-  })
+  }) ~
+    toRoute(getOutputRefTransaction.serverLogic[Future] { hash =>
+      TransactionService
+        .getOutputRefTransaction(hash)
+        .map(_.toRight(ApiError.NotFound(hash.toHexString)))
+    })
+
 }

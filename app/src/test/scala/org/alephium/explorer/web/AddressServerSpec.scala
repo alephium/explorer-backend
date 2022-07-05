@@ -26,7 +26,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.ApiError
-import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.{AlephiumSpec, Generators, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
@@ -117,6 +117,11 @@ class AddressServerSpec()
       override def getTransaction(transactionHash: Transaction.Hash)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[Option[TransactionLike]] =
+        Future.successful(None)
+
+      override def getOutputRefTransaction(key: Hash)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Option[ConfirmedTransaction]] =
         Future.successful(None)
 
       override def getTransactionsNumberByAddress(address: Address)(

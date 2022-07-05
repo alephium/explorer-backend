@@ -21,6 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
+import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries.TransactionQueries._
@@ -32,6 +33,11 @@ object TransactionDao {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Option[Transaction]] =
     run(getTransactionAction(hash))
+
+  def getOutputRefTransaction(key: Hash)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Option[Transaction]] =
+    run(getOutputRefTransactionAction(key))
 
   def getByAddressSQL(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,

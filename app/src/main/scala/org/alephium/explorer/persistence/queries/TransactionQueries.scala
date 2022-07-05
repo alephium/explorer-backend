@@ -116,6 +116,26 @@ object TransactionQueries extends StrictLogging {
         getKnownTransactionAction(txHash, blockHash, timestamp, gasAmount, gasPrice).map(Some.apply)
     }
 
+  def getOutputRefTransactionAction(key: Hash)(
+      implicit ec: ExecutionContext): DBActionR[Option[Transaction]] = {
+    sql"""
+    SELECT tx_hash
+    FROM outputs
+    WHERE main_chain = true AND key = $key
+    """.as[Transaction.Hash].flatMap { txHashes =>
+      txHashes.headOption match {
+        case None => DBIOAction.successful(None)
+        case Some(txHash) =>
+          getTransactionQuery(txHash).result.headOption.flatMap {
+            case None => DBIOAction.successful(None)
+            case Some((blockHash, timestamp, gasAmount, gasPrice)) =>
+              getKnownTransactionAction(txHash, blockHash, timestamp, gasAmount, gasPrice).map(
+                Some.apply)
+          }
+      }
+    }
+  }
+
   private val getTxHashesByBlockHashQuery = Compiled { (blockHash: Rep[BlockEntry.Hash]) =>
     TransactionSchema.table
       .filter(_.blockHash === blockHash)

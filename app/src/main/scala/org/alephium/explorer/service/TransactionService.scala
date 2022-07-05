@@ -21,6 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
+import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.dao.{TransactionDao, UnconfirmedTxDao}
@@ -30,6 +31,10 @@ trait TransactionService {
   def getTransaction(transactionHash: Transaction.Hash)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Option[TransactionLike]]
+
+  def getOutputRefTransaction(hash: Hash)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Option[ConfirmedTransaction]]
 
   def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,
@@ -54,6 +59,15 @@ object TransactionService extends TransactionService {
       case None     => UnconfirmedTxDao.get(transactionHash)
       case Some(tx) => Future.successful(Some(ConfirmedTransaction.from(tx)))
     }
+
+  def getOutputRefTransaction(hash: Hash)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Option[ConfirmedTransaction]] =
+    TransactionDao
+      .getOutputRefTransaction(hash)
+      .map(_.map { tx =>
+        ConfirmedTransaction.from(tx)
+      })
 
   def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,

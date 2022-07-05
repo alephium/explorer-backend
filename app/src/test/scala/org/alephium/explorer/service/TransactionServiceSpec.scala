@@ -357,6 +357,31 @@ class TransactionServiceSpec
 
   }
 
+  it should "get output ref's transaction" in new Fixture {
+
+    val blocks = Gen
+      .listOfN(20, blockEntityGen(groupIndex, groupIndex, None))
+      .sample
+      .get
+
+    val outputRefKeys = blocks.flatMap(_.inputs.map(_.outputRefKey))
+
+    Future.sequence(blocks.map(BlockDao.insert)).futureValue
+    Future
+      .sequence(blocks.map(block => BlockDao.updateMainChainStatus(block.hash, true)))
+      .futureValue
+
+    outputRefKeys.foreach { outputRefKey =>
+      val tx = TransactionService
+        .getOutputRefTransaction(outputRefKey)
+        .futureValue
+        .asInstanceOf[Option[ConfirmedTransaction]]
+
+      //TODO Same as previous test, we need to generate a coherent blockflow.
+      tx is None
+    }
+  }
+
   trait Fixture {
     implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
     implicit val blockCache: BlockCache      = BlockCache()
