@@ -69,7 +69,7 @@ object BlockQueries extends StrictLogging {
     sql"""
        |SELECT *
        |FROM #$block_headers
-       |WHERE hash = decode(${hash.toString()}, 'hex')
+       |WHERE hash = $hash
        |""".stripMargin
       .as[BlockHeader](blockHeaderGetResult)
       .headOption
