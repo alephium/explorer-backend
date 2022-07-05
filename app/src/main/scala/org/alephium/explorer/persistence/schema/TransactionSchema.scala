@@ -45,6 +45,8 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
     def blockHashIdx: Index = index("txs_block_hash_idx", blockHash)
     def chainFromIdx: Index = index("txs_chain_from_idx", chainFrom)
     def chainToIdx: Index   = index("txs_chain_to_idx", chainTo)
+    def txsBlockHashTxHashIdx: Index =
+      index("txs_block_hash_tx_hash_idx", (blockHash, hash))
 
     def * : ProvenShape[TransactionEntity] =
       (hash, blockHash, timestamp, chainFrom, chainTo, gasAmount, gasPrice, txOrder, mainChain)

@@ -214,11 +214,12 @@ object TransactionQueries extends StrictLogging {
   def getTransactionsSQL(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)])(
       implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
     if (txHashesTs.nonEmpty) {
+      val hashes   = txHashesTs.map { case (txHash, blockHash, _, _) => (blockHash, txHash) }
       val txHashes = txHashesTs.map(_._1)
       for {
         inputs  <- inputsFromTxsSQL(txHashes)
         outputs <- outputsFromTxsSQL(txHashes)
-        gases   <- gasFromTxsSQL(txHashes)
+        gases   <- gasFromTxsSQL(hashes)
       } yield {
         buildTransaction(txHashesTs, inputs, outputs, gases)
       }
@@ -230,11 +231,11 @@ object TransactionQueries extends StrictLogging {
   def getTransactionsNoJoin(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)])(
       implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
     if (txHashesTs.nonEmpty) {
-      val txHashes = txHashesTs.map(_._1)
+      val hashes = txHashesTs.map { case (txHash, blockHash, _, _) => (blockHash, txHash) }
       for {
-        inputs  <- inputsFromTxsNoJoin(txHashes)
-        outputs <- outputsFromTxsNoJoin(txHashes)
-        gases   <- gasFromTxsSQL(txHashes)
+        inputs  <- inputsFromTxsNoJoin(hashes)
+        outputs <- outputsFromTxsNoJoin(hashes)
+        gases   <- gasFromTxsSQL(hashes)
       } yield {
         buildTransactionNoJoin(txHashesTs, inputs, outputs, gases)
       }
@@ -314,13 +315,15 @@ object TransactionQueries extends StrictLogging {
   }
 
   def gasFromTxsSQL(
-      txHashes: Seq[Transaction.Hash]): DBActionR[Seq[(Transaction.Hash, Int, U256)]] = {
-    if (txHashes.nonEmpty) {
-      val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
+      hashes: Seq[(BlockEntry.Hash, Transaction.Hash)]
+  ): DBActionR[Seq[(Transaction.Hash, Int, U256)]] = {
+    if (hashes.nonEmpty) {
+      val values =
+        hashes.map { case (blockHash, txHash) => s"('\\x$blockHash','\\x$txHash')" }.mkString(",")
       sql"""
     SELECT hash, gas_amount, gas_price
     FROM transactions
-    WHERE main_chain = true AND hash IN (#$values)
+    WHERE (block_hash, hash) IN (#$values)
     """.as
     } else {
       DBIOAction.successful(Seq.empty)
@@ -334,8 +337,8 @@ object TransactionQueries extends StrictLogging {
       gasAmount: Int,
       gasPrice: U256)(implicit ec: ExecutionContext): DBActionR[Transaction] =
     for {
-      ins  <- getInputsQuery(txHash)
-      outs <- getOutputsQuery(txHash).result
+      ins  <- getInputsQuery(blockHash, txHash)
+      outs <- getOutputsQuery(blockHash, txHash)
     } yield {
       Transaction(txHash,
                   blockHash,

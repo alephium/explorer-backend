@@ -193,7 +193,7 @@ class DBBenchmark {
   @Benchmark
   def getInputsFromTxsSQLOpt(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(inputsFromTxsNoJoin(state.txHashes), requestTimeout)
+      state.db.runNow(inputsFromTxsNoJoin(state.hashes), requestTimeout)
   }
   @Benchmark
   def getOutputsFromTxsSQL(state: Address_ReadState): Unit = {
@@ -204,13 +204,13 @@ class DBBenchmark {
   @Benchmark
   def getOutputsFromTxsSQLOpt(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(outputsFromTxsNoJoin(state.txHashes), requestTimeout)
+      state.db.runNow(outputsFromTxsNoJoin(state.hashes), requestTimeout)
   }
 
   @Benchmark
   def getGasFromTxsSQL(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(TransactionQueries.gasFromTxsSQL(state.txHashes), requestTimeout)
+      state.db.runNow(TransactionQueries.gasFromTxsSQL(state.hashes), requestTimeout)
   }
 
   @Benchmark
