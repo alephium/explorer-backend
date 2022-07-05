@@ -44,12 +44,14 @@ object AppServer {
     val infosServer                = new InfosServer(TokenSupplyService, BlockService, TransactionService)
     val utilsServer: UtilsServer   = new UtilsServer()
     val chartsServer: ChartsServer = new ChartsServer()
+    val tokenServer: TokenServer   = new TokenServer()
     val documentationServer        = new DocumentationServer()
 
     cors()(
       blockServer.route ~
         addressServer.route ~
         transactionServer.route ~
+        tokenServer.route ~
         infosServer.route ~
         chartsServer.route ~
         utilsServer.route ~

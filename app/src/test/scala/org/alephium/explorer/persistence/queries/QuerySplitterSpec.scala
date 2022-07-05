@@ -63,7 +63,7 @@ class QuerySplitterSpec extends AlephiumSpec {
       result :+ Query(rows, placeHolders)
     }
 
-  it should "empty split when parameters are empty" in {
+  "empty split when parameters are empty" in {
 
     forAll(Gen.posNum[Short]) { queryMaxParams =>
       val queries =
@@ -78,7 +78,7 @@ class QuerySplitterSpec extends AlephiumSpec {
     }
   }
 
-  it should "split queries evenly when queryColumns & queryMaxParams are even" in {
+  "split queries evenly when queryColumns & queryMaxParams are even" in {
     val queries =
       getQueriesLimitByMaxParams(
         rows           = Seq(Row(1, 1), Row(2, 2), Row(3, 3), Row(4, 4), Row(5, 5), Row(6, 6)),
@@ -97,7 +97,7 @@ class QuerySplitterSpec extends AlephiumSpec {
     queries is expectedQueries
   }
 
-  it should "split queries when queryColumns & queryMaxParams are odd" in {
+  "split queries when queryColumns & queryMaxParams are odd" in {
     val queries =
       getQueriesLimitByMaxParams(
         //7 parameters
@@ -118,7 +118,7 @@ class QuerySplitterSpec extends AlephiumSpec {
     queries is expectedQueries
   }
 
-  it should "split when queryColumns == queryMaxParams" in {
+  "split when queryColumns == queryMaxParams" in {
     val queries =
       getQueriesLimitByMaxParams(
         rows           = Seq(Row(1, 1), Row(2, 2), Row(3, 3), Row(4, 4), Row(5, 5), Row(6, 6), Row(7, 7)),
@@ -141,7 +141,7 @@ class QuerySplitterSpec extends AlephiumSpec {
     queries is expectedQueries
   }
 
-  it should "split should generate a single query when all parameter can fit in a single query" in {
+  "split should generate a single query when all parameter can fit in a single query" in {
     val queries =
       getQueriesLimitByMaxParams(
         rows           = Seq(Row(1, 1), Row(2, 2), Row(3, 3), Row(4, 4), Row(5, 5), Row(6, 6), Row(7, 7)),
@@ -159,7 +159,7 @@ class QuerySplitterSpec extends AlephiumSpec {
     queries should contain only expectedQuery
   }
 
-  it should "Test following PR review comment in #162: See link below" in {
+  "Test following PR review comment in #162: See link below" in {
 
     /**
       * Test following <a href="https://github.com/alephium/explorer-backend/pull/162#discussion_r826874299">comment</a>.
@@ -225,7 +225,7 @@ class QuerySplitterSpec extends AlephiumSpec {
     querySplits.flatMap(_.rows) is rows
   }
 
-  it should "not exceed Short.MaxValue parameter per query limit allowed by Postgres" in {
+  "not exceed Short.MaxValue parameter per query limit allowed by Postgres" in {
 
     /** In reality this test-case is not expected to occur but for the sake of totality it is tested */
     //A row. This test doesn't check for actual column values so a Row object is enough.

@@ -24,11 +24,14 @@ import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
+import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.{foldFutures, GroupSetting}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.persistence.DBActionT
+import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.persistence.queries.InputUpdateQueries

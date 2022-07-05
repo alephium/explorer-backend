@@ -27,7 +27,7 @@ import org.scalatest.time.{Minutes, Span}
 import org.alephium.explorer.{AlephiumSpec, BlockHash, Generators, GroupSetting}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
-import org.alephium.explorer.persistence.DatabaseFixtureForEach
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.dao.{BlockDao, UnconfirmedTxDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
@@ -48,7 +48,7 @@ class TransactionServiceSpec
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
-  it should "limit the number of transactions in address details" in new Fixture {
+  "limit the number of transactions in address details" in new Fixture {
 
     val address = addressGen.sample.get
 
@@ -78,7 +78,7 @@ class TransactionServiceSpec
       .size is txLimit
   }
 
-  it should "handle huge alph number" in new Fixture {
+  "handle huge alph number" in new Fixture {
 
     val amount = ALPH.MaxALPHValue.mulUnsafe(ALPH.MaxALPHValue)
 
@@ -97,11 +97,17 @@ class TransactionServiceSpec
     BlockDao.updateMainChainStatus(block.hash, true).futureValue
 
     val fetchedAmout =
-      BlockDao.get(block.hash).futureValue.get.transactions.flatMap(_.outputs.map(_.amount)).head
+      BlockDao
+        .get(block.hash)
+        .futureValue
+        .get
+        .transactions
+        .flatMap(_.outputs.map(_.attoAlphAmount))
+        .head
     fetchedAmout is amount
   }
 
-  it should "get all transactions for an address even when outputs don't contain that address" in new Fixture {
+  "get all transactions for an address even when outputs don't contain that address" in new Fixture {
 
     val address0 = addressGen.sample.get
     val address1 = addressGen.sample.get
@@ -127,11 +133,14 @@ class TransactionServiceSpec
       OutputEntity(blockHash0,
                    tx0.hash,
                    ts0,
+                   OutputEntity.Asset,
                    0,
                    hashGen.sample.get,
                    U256.One,
                    address0,
+                   None,
                    true,
+                   None,
                    None,
                    0,
                    0,
@@ -173,11 +182,14 @@ class TransactionServiceSpec
     val output1 = OutputEntity(blockHash1,
                                tx1.hash,
                                timestamp = ts1,
+                               OutputEntity.Asset,
                                0,
                                hashGen.sample.get,
                                U256.One,
                                address1,
+                               None,
                                true,
+                               None,
                                None,
                                0,
                                0,
@@ -204,7 +216,15 @@ class TransactionServiceSpec
       blockHash0,
       ts0,
       Seq.empty,
-      Seq(Output(output0.hint, output0.key, U256.One, address0, None, Some(tx1.hash))),
+      Seq(
+        AssetOutput(output0.hint,
+                    output0.key,
+                    U256.One,
+                    address0,
+                    None,
+                    None,
+                    None,
+                    Some(tx1.hash))),
       gasAmount,
       gasPrice
     )
@@ -225,7 +245,7 @@ class TransactionServiceSpec
     res2 is Seq(t1, t0)
   }
 
-  it should "get only main chain transaction for an address in case of tx in two blocks (in case of reorg)" in new Fixture {
+  "get only main chain transaction for an address in case of tx in two blocks (in case of reorg)" in new Fixture {
 
     forAll(blockEntryHashGen, blockEntryHashGen) {
       case (blockHash0, blockHash1) =>
@@ -249,11 +269,14 @@ class TransactionServiceSpec
           OutputEntity(blockHash0,
                        tx.hash,
                        ts0,
+                       OutputEntity.Asset,
                        0,
                        hashGen.sample.get,
                        U256.One,
                        address0,
+                       None,
                        true,
+                       None,
                        None,
                        0,
                        0,
@@ -298,7 +321,7 @@ class TransactionServiceSpec
     }
   }
 
-  it should "fall back on unconfirmed tx" in new Fixture {
+  "fall back on unconfirmed tx" in new Fixture {
     val utx = utransactionGen.sample.get
 
     TransactionService.getTransaction(utx.hash).futureValue is None
@@ -306,7 +329,7 @@ class TransactionServiceSpec
     TransactionService.getTransaction(utx.hash).futureValue is Some(utx)
   }
 
-  it should "preserve outputs order" in new Fixture {
+  "preserve outputs order" in new Fixture {
 
     val address = addressGen.sample.get
 
@@ -335,7 +358,7 @@ class TransactionServiceSpec
             .asInstanceOf[ConfirmedTransaction]
         transaction.outputs.map(_.key) is block.outputs
           .filter(_.txHash == tx.hash)
-          .sortBy(_.order)
+          .sortBy(_.outputOrder)
           .map(_.key)
       }
     }
@@ -346,12 +369,12 @@ class TransactionServiceSpec
       .map { transaction =>
         transaction.outputs.map(_.key) is outputs
           .filter(_.txHash == transaction.hash)
-          .sortBy(_.order)
+          .sortBy(_.outputOrder)
           .map(_.key)
       }
   }
 
-  it should "preserve inputs order" in new Fixture {
+  "preserve inputs order" in new Fixture {
     //TODO Test this please
     //We need to generate a coherent blockflow, otherwise the queries can't match the inputs with outputs
 

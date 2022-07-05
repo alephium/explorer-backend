@@ -31,7 +31,7 @@ final case class InputEntity(
     outputRefKey: Hash,
     unlockScript: Option[String],
     mainChain: Boolean,
-    order: Int,
+    inputOrder: Int,
     txOrder: Int,
     outputRefAddress: Option[Address],
     outputRefAmount: Option[U256]
@@ -41,7 +41,8 @@ final case class InputEntity(
       OutputRef(hint, outputRefKey),
       unlockScript,
       outputRef.address,
-      outputRef.amount
+      outputRef.amount,
+      outputRef.tokens
     )
 
   lazy val address: Option[Address] = {

@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.api.model
 
+import org.alephium.api.UtilJson._
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.json.Json._
 
@@ -26,12 +27,12 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     read[T](jsonRaw) is data
   }
 
-  it should "IntervalType" in {
+  "IntervalType" in {
     check[IntervalType](IntervalType.Hourly, s""""hourly"""")
     check[IntervalType](IntervalType.Daily, s""""daily"""")
   }
 
-  it should "Transaction" in {
+  "Transaction" in {
     forAll(transactionGen) { tx =>
       val expected = s"""
        |{
@@ -47,7 +48,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
-  it should "ConfirmedTransaction" in {
+  "ConfirmedTransaction" in {
     forAll(transactionGen) { tx =>
       val expected = s"""
        |{
@@ -64,7 +65,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
-  it should "Output.Ref" in {
+  "Output.Ref" in {
     forAll(outputRefGen) { outputRef =>
       val expected = s"""
      |{
@@ -75,35 +76,66 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
-  it should "Output" in {
-    forAll(outputGen) { output =>
+  "Token" in {
+    forAll(tokenGen) { token =>
       val expected = s"""
      |{
+     |  "id": "${token.id.toHexString}",
+     |  "amount": "${token.amount}"
+     |}""".stripMargin
+      check(token, expected)
+    }
+  }
+
+  "AsetOutput" in {
+    forAll(assetOutputGen) { output =>
+      val expected = s"""
+     |{
+     |  "type": "AssetOutput",
      |  "hint": ${output.hint},
      |  "key": "${output.key.toHexString}",
-     |  "amount": "${output.amount}",
+     |  "attoAlphAmount": "${output.attoAlphAmount}",
      |  "address": "${output.address}"
+     |  ${output.tokens.map(tokens => s""","tokens": ${write(tokens)}""").getOrElse("")}
      |  ${output.lockTime.map(lockTime => s""","lockTime": ${lockTime.millis}""").getOrElse("")}
+     |  ${output.message.map(message => s""","message":${write(message)}""")
+                          .getOrElse("")}
+     |  ${output.spent.map(spent       => s""","spent": "${spent.value.toHexString}"""").getOrElse("")}
+     |}""".stripMargin
+      check(output, expected)
+    }
+  }
+
+  "ContractOutputGen" in {
+    forAll(contractOutputGen) { output =>
+      val expected = s"""
+     |{
+     |  "type": "ContractOutput",
+     |  "hint": ${output.hint},
+     |  "key": "${output.key.toHexString}",
+     |  "attoAlphAmount": "${output.attoAlphAmount}",
+     |  "address": "${output.address}"
+     |  ${output.tokens.map(tokens => s""","tokens": ${write(tokens)}""").getOrElse("")}
      |  ${output.spent.map(spent => s""","spent": "${spent.value.toHexString}"""").getOrElse("")}
      |}""".stripMargin
       check(output, expected)
     }
   }
 
-  it should "Input" in {
+  "Input" in {
     forAll(inputGen) { input =>
       val expected = s"""
      |{
      |  "outputRef": ${write(input.outputRef)},
      |  ${input.unlockScript.map(script => s""""unlockScript": "${script}",""").getOrElse("")}
      |  "address": "${input.address}",
-     |  "amount": "${input.amount}"
+     |  "attoAlphAmount": "${input.attoAlphAmount}"
      |}""".stripMargin
       check(input, expected)
     }
   }
 
-  it should "UInput" in {
+  "UInput" in {
     forAll(uinputGen) { uinput =>
       val expected = uinput.unlockScript match {
         case None =>
@@ -122,7 +154,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
-  it should "UnconfirmedTx" in {
+  "UnconfirmedTx" in {
     forAll(utransactionGen) { utx =>
       val expected = s"""
      |{
@@ -139,7 +171,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
-  it should "ExplorerInfo" in {
+  "ExplorerInfo" in {
     val expected = s"""
      |{
      |  "releaseVersion": "1.2.3",

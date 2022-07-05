@@ -24,7 +24,9 @@ import slick.jdbc.{GetResult, PositionedResult}
 import org.alephium.explorer.{BlockHash, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.{BlockHeader, InputEntity, OutputEntity}
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.explorer.persistence.model.{BlockHeader, OutputEntity}
+import org.alephium.serde._
+import org.alephium.util.{AVector, TimeStamp, U256}
 
 object CustomGetResult {
 
@@ -73,6 +75,14 @@ object CustomGetResult {
     (result: PositionedResult) =>
       result.nextBytesOption().map(bytes => ByteString.fromArrayUnsafe(bytes))
 
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  implicit val optionTokensGetResult: GetResult[Option[Seq[Token]]] =
+    (result: PositionedResult) =>
+      result
+        .nextBytesOption()
+        .map(bytes =>
+          deserialize[AVector[Token]](ByteString.fromArrayUnsafe(bytes)).toOption.get.toSeq)
+
   implicit val hashGetResult: GetResult[Hash] =
     (result: PositionedResult) => Hash.unsafe(ByteString.fromArrayUnsafe(result.nextBytes()))
 
@@ -102,9 +112,11 @@ object CustomGetResult {
         key            = result.<<,
         amount         = result.<<,
         address        = result.<<,
+        tokens         = result.<<,
         mainChain      = result.<<,
         lockTime       = result.<<?,
-        order          = result.<<,
+        message        = result.<<?,
+        outputOrder    = result.<<,
         txOrder        = result.<<,
         spentFinalized = result.<<?
     )
@@ -124,6 +136,9 @@ object CustomGetResult {
         outputRefAddress = result.<<?,
         outputRefAmount  = result.<<?
     )
+
+  implicit val outputTypeGetResult: GetResult[OutputEntity.OutputType] =
+    (result: PositionedResult) => OutputEntity.OutputType.unsafe(result.nextInt())
 
   /**
     * GetResult type for BlockEntryLite

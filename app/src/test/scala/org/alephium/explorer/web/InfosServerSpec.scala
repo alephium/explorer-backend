@@ -45,7 +45,7 @@ class InfosServerSpec()
 
   override def api: Api = Json
 
-  it should "return the explorer infos" in new Fixture {
+  "return the explorer infos" in new Fixture {
     Get(s"/infos") ~> server.route ~> check {
       responseAs[ExplorerInfo] is ExplorerInfo(
         BuildInfo.releaseVersion,
@@ -54,19 +54,19 @@ class InfosServerSpec()
     }
   }
 
-  it should "return chains heights" in new Fixture {
+  "return chains heights" in new Fixture {
     Get(s"/infos/heights") ~> server.route ~> check {
       responseAs[Seq[PerChainHeight]] is Seq(chainHeight)
     }
   }
 
-  it should "return the token supply list" in new Fixture {
+  "return the token supply list" in new Fixture {
     Get(s"/infos/supply") ~> server.route ~> check {
       responseAs[Seq[TokenSupply]] is Seq(tokenSupply)
     }
   }
 
-  it should "return the token current supply" in new Fixture {
+  "return the token current supply" in new Fixture {
     Get(s"/infos/supply/circulating-alph") ~> server.route ~> check {
       val circulating = response.entity
         .toStrict(Duration.ofSecondsUnsafe(5).asScala)
@@ -77,7 +77,7 @@ class InfosServerSpec()
     }
   }
 
-  it should "return the total token supply" in new Fixture {
+  "return the total token supply" in new Fixture {
     Get(s"/infos/supply/total-alph") ~> server.route ~> check {
       val total = response.entity
         .toStrict(Duration.ofSecondsUnsafe(5).asScala)
@@ -88,7 +88,7 @@ class InfosServerSpec()
     }
   }
 
-  it should "return the reserved token supply" in new Fixture {
+  "return the reserved token supply" in new Fixture {
     Get(s"/infos/supply/reserved-alph") ~> server.route ~> check {
       val reserved = response.entity
         .toStrict(Duration.ofSecondsUnsafe(5).asScala)
@@ -99,7 +99,7 @@ class InfosServerSpec()
     }
   }
 
-  it should "return the locked token supply" in new Fixture {
+  "return the locked token supply" in new Fixture {
     Get(s"/infos/supply/locked-alph") ~> server.route ~> check {
       val locked = response.entity
         .toStrict(Duration.ofSecondsUnsafe(5).asScala)
@@ -110,7 +110,7 @@ class InfosServerSpec()
     }
   }
 
-  it should "return the total transactions number" in new Fixture {
+  "return the total transactions number" in new Fixture {
     Get(s"/infos/total-transactions") ~> server.route ~> check {
       val total = response.entity
         .toStrict(Duration.ofSecondsUnsafe(5).asScala)
@@ -121,7 +121,7 @@ class InfosServerSpec()
     }
   }
 
-  it should "return the average block times" in new Fixture {
+  "return the average block times" in new Fixture {
     Get(s"/infos/average-block-times") ~> server.route ~> check {
       responseAs[Seq[PerChainDuration]] is Seq(blockTime)
     }
@@ -209,6 +209,25 @@ class InfosServerSpec()
         Future.successful((U256.Zero, U256.Zero))
 
       def getTotalNumber()(implicit cache: TransactionCache): Int = 10
+
+      def getTokenBalance(address: Address, token: Hash)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] = ???
+      def listAddressTokenTransactions(address: Address, token: Hash, pagination: Pagination)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] = ???
+      def listAddressTokens(address: Address)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] = ???
+      def listTokenAddresses(token: Hash, pagination: Pagination)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Address]] = ???
+      def listTokenTransactions(token: Hash, pagination: Pagination)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] = ???
+      def listTokens(pagination: Pagination)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] = ???
     }
 
     implicit val groupSettings: GroupSetting        = GroupSetting(groupNum)

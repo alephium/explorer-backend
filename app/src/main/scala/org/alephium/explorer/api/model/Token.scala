@@ -16,20 +16,19 @@
 
 package org.alephium.explorer.api.model
 
-import org.alephium.explorer.api.Json.u256ReadWriter
+import org.alephium.explorer.api.Json.{hashReadWriter, u256ReadWriter}
 import org.alephium.json.Json._
+import org.alephium.protocol.Hash
+import org.alephium.serde._
 import org.alephium.util.U256
 
-@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-final case class Input(
-    outputRef: OutputRef,
-    unlockScript: Option[String] = None,
-    address: Address,
-    attoAlphAmount: U256,
-    tokens: Option[Seq[Token]] = None
-)
+final case class Token(id: Hash, amount: U256)
 
-object Input {
-  implicit val readWriter: ReadWriter[Input] = macroRW
-
+object Token {
+  implicit val readWriter: ReadWriter[Token] = macroRW
+  implicit val serde: Serde[Token] =
+    Serde.forProduct2(
+      Token.apply,
+      t => (t.id, t.amount)
+    )
 }

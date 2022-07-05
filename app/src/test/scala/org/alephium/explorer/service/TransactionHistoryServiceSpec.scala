@@ -22,11 +22,9 @@ import scala.concurrent.ExecutionContext
 
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
-import org.scalatest.wordspec.AnyWordSpec
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{Generators, GroupSetting}
-import org.alephium.explorer.AlephiumSpec._
+import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.TransactionEntity
@@ -34,7 +32,7 @@ import org.alephium.explorer.persistence.schema.TransactionSchema
 import org.alephium.util._
 
 class TransactionHistoryServiceSpec
-    extends AnyWordSpec
+    extends AlephiumSpec
     with DatabaseFixtureForEach
     with DBRunner
     with Generators

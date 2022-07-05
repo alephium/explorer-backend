@@ -25,6 +25,7 @@ import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.dao.{TransactionDao, UnconfirmedTxDao}
+import org.alephium.protocol.Hash
 import org.alephium.util.U256
 
 trait TransactionService {
@@ -51,7 +52,29 @@ trait TransactionService {
   def getBalance(address: Address)(implicit ec: ExecutionContext,
                                    dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)]
 
+  def getTokenBalance(address: Address, token: Hash)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)]
+
   def getTotalNumber()(implicit cache: TransactionCache): Int
+
+  def listTokens(pagination: Pagination)(implicit ec: ExecutionContext,
+                                         dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]]
+
+  def listTokenTransactions(token: Hash, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]]
+
+  def listTokenAddresses(token: Hash, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Address]]
+
+  def listAddressTokens(address: Address)(implicit ec: ExecutionContext,
+                                          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]]
+
+  def listAddressTokenTransactions(address: Address, token: Hash, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]]
 }
 
 object TransactionService extends TransactionService {
@@ -91,6 +114,34 @@ object TransactionService extends TransactionService {
   def getBalance(address: Address)(implicit ec: ExecutionContext,
                                    dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
     TransactionDao.getBalance(address)
+
+  def getTokenBalance(address: Address, token: Hash)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
+    TransactionDao.getTokenBalance(address, token)
+
+  def listTokens(pagination: Pagination)(implicit ec: ExecutionContext,
+                                         dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] =
+    TransactionDao.listTokens(pagination)
+
+  def listTokenTransactions(token: Hash, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
+    TransactionDao.listTokenTransactions(token, pagination)
+
+  def listAddressTokens(address: Address)(implicit ec: ExecutionContext,
+                                          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] =
+    TransactionDao.listAddressTokens(address)
+
+  def listTokenAddresses(token: Hash, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Address]] =
+    TransactionDao.listTokenAddresses(token, pagination)
+
+  def listAddressTokenTransactions(address: Address, token: Hash, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
+    TransactionDao.listAddressTokenTransactions(address, token, pagination)
 
   def getTotalNumber()(implicit cache: TransactionCache): Int =
     cache.getMainChainTxnCount()

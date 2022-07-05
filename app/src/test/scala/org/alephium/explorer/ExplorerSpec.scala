@@ -113,7 +113,7 @@ trait ExplorerSpec
   val routes: Route = null //app.server.route
   //scalastyle:on null
 
-  ignore should "get a block by its id" in {
+  "get a block by its id" ignore {
 //    initApp(app)
 
     forAll(Gen.oneOf(blocks)) { block =>
@@ -136,7 +136,7 @@ trait ExplorerSpec
     }
   }
 
-  ignore should "get block's transactions" in {
+  "get block's transactions" ignore {
     forAll(Gen.oneOf(blocks)) { block =>
       Get(s"/blocks/${block.hash.value.toHexString}/transactions") ~> routes ~> check {
         val txs = responseAs[Seq[Transaction]]
@@ -147,7 +147,7 @@ trait ExplorerSpec
     }
   }
 
-  ignore should "list blocks" in {
+  "list blocks" ignore {
     forAll(Gen.choose(1, 3), Gen.choose(2, 4)) {
       case (page, limit) =>
         Get(s"/blocks?page=$page&limit=$limit") ~> routes ~> check {
@@ -218,7 +218,7 @@ trait ExplorerSpec
     }
   }
 
-  ignore should "get a transaction by its id" in {
+  "get a transaction by its id" ignore {
     forAll(Gen.oneOf(transactions)) { transaction =>
       Get(s"/transactions/${transaction.hash.value.toHexString}") ~> routes ~> check {
         //TODO Validate full transaction when we have a valid blockchain generator
@@ -234,7 +234,7 @@ trait ExplorerSpec
     }
   }
 
-  ignore should "get address' info" in {
+  "get address' info" ignore {
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address}") ~> routes ~> check {
         val expectedTransactions =
@@ -246,7 +246,7 @@ trait ExplorerSpec
             .map(
               _.outputs
                 .filter(out => out.spent.isEmpty && out.address == address)
-                .map(_.amount)
+                .map(_.attoAlphAmount)
                 .fold(U256.Zero)(_ addUnsafe _))
             .fold(U256.Zero)(_ addUnsafe _)
 
@@ -258,7 +258,7 @@ trait ExplorerSpec
     }
   }
 
-  ignore should "get all address' transactions" in {
+  "get all address' transactions" ignore {
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address}/transactions") ~> routes ~> check {
         val expectedTransactions =
@@ -272,7 +272,7 @@ trait ExplorerSpec
     }
   }
 
-  ignore should "generate the documentation" in {
+  "generate the documentation" ignore {
     Get("/docs") ~> routes ~> check {
       status is StatusCodes.PermanentRedirect
     }
@@ -420,7 +420,7 @@ class ReadOnlyExplorerSpec extends ExplorerSpec {
 
 //  override lazy val app: Application = createApp(true)
 
-  ignore should "not have started syncing services" in {
+  "not have started syncing services" ignore {
 //    whenReady(app.blockFlowSyncService.stop().failed) { exception =>
 //      exception is a[IllegalStateException]
 //    }

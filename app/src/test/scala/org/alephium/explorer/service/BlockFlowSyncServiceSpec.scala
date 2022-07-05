@@ -45,7 +45,7 @@ class BlockFlowSyncServiceSpec
     with Eventually {
   override implicit val patienceConfig = PatienceConfig(timeout = Span(50, Seconds))
 
-  it should "fetch and build timestamp range" in new Fixture {
+  "fetch and build timestamp range" in new Fixture {
 
     def th(ts: TimeStamp, height: Int) = Future.successful(Option((ts, height)))
 
@@ -62,7 +62,7 @@ class BlockFlowSyncServiceSpec
       .futureValue is ((Seq.empty, 0))
   }
 
-  it should "start/sync/stop" in new Fixture {
+  "start/sync/stop" in new Fixture {
     using(Scheduler("")) { implicit scheduler =>
       checkBlocks(Seq.empty)
       BlockFlowSyncService.start(Seq(""), 1.second)

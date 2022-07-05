@@ -23,6 +23,7 @@ import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.api.Codecs
 import org.alephium.explorer.api.model._
+import org.alephium.protocol.Hash
 
 // scalastyle:off magic.number
 trait AddressesEndpoints extends BaseEndpoint with QueryParams {
@@ -31,6 +32,13 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
     baseEndpoint
       .tag("Addresses")
       .in("addresses")
+
+  private val addressesTokensEndpoint =
+    baseEndpoint
+      .tag("Addresses")
+      .in("addresses")
+      .in(path[Address]("address")(Codecs.addressTapirCodec))
+      .in("tokens")
 
   val getAddressInfo: BaseEndpoint[Address, AddressInfo] =
     addressesEndpoint.get
@@ -67,4 +75,24 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .in("balance")
       .out(jsonBody[AddressBalance])
       .description("Get address balance")
+
+  val listAddressTokens: BaseEndpoint[Address, Seq[Hash]] =
+    addressesTokensEndpoint.get
+      .out(jsonBody[Seq[Hash]])
+      .description("List address tokens")
+
+  val getAddressTokenBalance: BaseEndpoint[(Address, Hash), AddressBalance] =
+    addressesTokensEndpoint.get
+      .in(path[Hash]("token-id"))
+      .in("balance")
+      .out(jsonBody[AddressBalance])
+      .description("Get address balance of given token")
+
+  val listAddressTokenTransactions: BaseEndpoint[(Address, Hash, Pagination), Seq[Transaction]] =
+    addressesTokensEndpoint.get
+      .in(path[Hash]("token-id"))
+      .in("transactions")
+      .in(pagination)
+      .out(jsonBody[Seq[Transaction]])
+      .description("List address tokens")
 }

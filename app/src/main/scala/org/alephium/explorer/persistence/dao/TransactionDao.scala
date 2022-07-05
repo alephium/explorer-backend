@@ -24,7 +24,9 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DBRunner._
+import org.alephium.explorer.persistence.queries.TokenQueries._
 import org.alephium.explorer.persistence.queries.TransactionQueries._
+import org.alephium.protocol.Hash
 import org.alephium.util.U256
 
 object TransactionDao {
@@ -58,4 +60,31 @@ object TransactionDao {
                                    dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
     run(getBalanceAction(address))
 
+  def getTokenBalance(address: Address, token: Hash)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
+    run(getTokenBalanceAction(address, token))
+
+  def listTokens(pagination: Pagination)(implicit ec: ExecutionContext,
+                                         dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] =
+    run(listTokensAction(pagination))
+
+  def listTokenTransactions(token: Hash, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
+    run(getTransactionsByToken(token, pagination))
+
+  def listTokenAddresses(token: Hash, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Address]] =
+    run(getAddressesByToken(token, pagination))
+
+  def listAddressTokens(address: Address)(implicit ec: ExecutionContext,
+                                          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] =
+    run(listAddressTokensAction(address))
+
+  def listAddressTokenTransactions(address: Address, token: Hash, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
+    run(getTokenTransactionsByAddress(address, token, pagination))
 }

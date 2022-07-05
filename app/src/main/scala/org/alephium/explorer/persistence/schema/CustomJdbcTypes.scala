@@ -27,7 +27,9 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer._
 import org.alephium.explorer.api.model._
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.explorer.persistence.model.OutputEntity
+import org.alephium.serde._
+import org.alephium.util.{AVector, TimeStamp, U256}
 
 object CustomJdbcTypes {
 
@@ -95,9 +97,22 @@ object CustomJdbcTypes {
       bytes => ByteString.fromArrayUnsafe(bytes)
     )
 
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  implicit lazy val tokensType: JdbcType[Seq[Token]] =
+    MappedJdbcType.base[Seq[Token], Array[Byte]](
+      tokens => serialize(AVector.unsafe(tokens.toArray)).toArray,
+      bytes  => deserialize[AVector[Token]](ByteString.fromArrayUnsafe(bytes)).toOption.get.toSeq
+    )
+
   implicit lazy val intervalTypeType: JdbcType[IntervalType] =
     MappedJdbcType.base[IntervalType, Int](
       _.value,
       IntervalType.unsafe
+    )
+
+  implicit lazy val outputTypeType: JdbcType[OutputEntity.OutputType] =
+    MappedJdbcType.base[OutputEntity.OutputType, Int](
+      _.value,
+      OutputEntity.OutputType.unsafe
     )
 }

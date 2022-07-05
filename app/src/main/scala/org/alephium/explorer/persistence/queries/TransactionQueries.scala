@@ -18,6 +18,7 @@ package org.alephium.explorer.persistence.queries
 
 import scala.concurrent.ExecutionContext
 
+import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
@@ -43,10 +44,10 @@ object TransactionQueries extends StrictLogging {
 
   def insertAll(transactions: Seq[TransactionEntity],
                 outputs: Seq[OutputEntity],
-                inputs: Seq[InputEntity]): DBActionW[Int] = {
-    insertTransactions(transactions) andThen
-      insertInputs(inputs) andThen
-      insertOutputs(outputs)
+                inputs: Seq[InputEntity]): DBActionRWT[Unit] = {
+    DBIOAction
+      .seq(insertTransactions(transactions), insertInputs(inputs), insertOutputs(outputs))
+      .transactionally
   }
 
   /** Inserts transactions or ignore rows with primary key conflict */
@@ -95,6 +96,7 @@ object TransactionQueries extends StrictLogging {
       _ <- insertTxPerAddressFromOutputs(outputs)
     } yield ()
   }
+
   private val countBlockHashTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
     TransactionSchema.table.filter(_.blockHash === blockHash).length
   }
@@ -166,7 +168,7 @@ object TransactionQueries extends StrictLogging {
       offset: Int,
       limit: Int): DBActionSR[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)] = {
     sql"""
-      SELECT hash, block_hash, block_timestamp, tx_order
+      SELECT tx_hash, block_hash, block_timestamp, tx_order
       FROM transaction_per_addresses
       WHERE main_chain = true AND address = $address
       ORDER BY block_timestamp DESC, tx_order
@@ -251,8 +253,9 @@ object TransactionQueries extends StrictLogging {
   // format: off
   private def buildTransactionNoJoin(
       txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)],
-      inputs: Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Address, U256)],
-      outputs: Seq[(Transaction.Hash, Int, Int, Hash, U256, Address, Option[TimeStamp], Option[Transaction.Hash])],
+      inputs: Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Address, U256, Option[Seq[Token]])],
+      outputs: Seq[(Transaction.Hash, Int, OutputEntity.OutputType, Int, Hash, U256, Address,
+        Option[Seq[Token]], Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])],
       gases: Seq[(Transaction.Hash, Int, U256)]) = {
   // format: on
     val insByTx = inputs.groupBy(_._1).view.mapValues { values =>
@@ -294,16 +297,16 @@ object TransactionQueries extends StrictLogging {
       values
         .sortBy(_._2)
         .map {
-          case (_, _, hint, key, unlockScript, address, amount) =>
-            toApiInput((hint, key, unlockScript, address, amount))
+          case (_, _, hint, key, unlockScript, address, amount, tokens) =>
+            toApiInput((hint, key, unlockScript, address, amount, tokens))
         }
     }
     val ousByTx = outputs.groupBy(_._1).view.mapValues { values =>
       values
         .sortBy(_._2)
         .map {
-          case (_, _, hint, key, amount, address, lockTime, spent) =>
-            toApiOutput((hint, key, amount, address, lockTime, spent))
+          case (_, _, outputType, hint, key, amount, address, tokens, lockTime, message, spent) =>
+            toApiOutput((outputType, hint, key, amount, address, tokens, lockTime, message, spent))
         }
     }
     val gasByTx = gases.groupBy(_._1).view.mapValues(_.map { case (_, s, g) => (s, g) })

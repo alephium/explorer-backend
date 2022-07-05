@@ -27,7 +27,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries.BlockDepQueries.insertBlockDeps
+import org.alephium.explorer.persistence.queries.BlockDepQueries._
 import org.alephium.explorer.persistence.queries.InputQueries.insertInputs
 import org.alephium.explorer.persistence.queries.OutputQueries.insertOutputs
 import org.alephium.explorer.persistence.queries.TransactionQueries._
@@ -45,14 +45,10 @@ object BlockQueries extends StrictLogging {
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
   val mainChainQuery = BlockHeaderSchema.table.filter(_.mainChain)
 
-  private val blockDepsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
-    BlockDepsSchema.table.filter(_.hash === blockHash).sortBy(_.depOrder).map(_.dep)
-  }
-
   def buildBlockEntryAction(blockHeader: BlockHeader)(
       implicit ec: ExecutionContext): DBActionR[BlockEntry] =
     for {
-      deps <- blockDepsQuery(blockHeader.hash).result
+      deps <- getDepsForBlock(blockHeader.hash).result
       txs  <- getTransactionsByBlockHash(blockHeader.hash)
     } yield blockHeader.toApi(deps, txs)
 
@@ -69,15 +65,14 @@ object BlockQueries extends StrictLogging {
       blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
     } yield blocks.headOption
 
-  def getBlockHeaderAction(hash: BlockEntry.Hash): DBActionR[Option[BlockHeader]] = {
+  def getBlockHeaderAction(hash: BlockEntry.Hash): DBActionR[Option[BlockHeader]] =
     sql"""
        |SELECT *
        |FROM #$block_headers
-       |WHERE hash = '\x#${hash.toString()}'
+       |WHERE hash = $hash
        |""".stripMargin
       .as[BlockHeader](blockHeaderGetResult)
       .headOption
-  }
 
   def getAtHeightAction(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
       implicit ec: ExecutionContext): DBActionR[Seq[BlockEntry]] =
@@ -162,6 +157,18 @@ object BlockQueries extends StrictLogging {
           .filter(_.blockHash === hash)
           .map(_.mainChain)
           .update(isMainChain)
+        _ <- TransactionPerTokenSchema.table
+          .filter(_.blockHash === hash)
+          .map(_.mainChain)
+          .update(isMainChain)
+        _ <- TokenPerAddressSchema.table
+          .filter(_.blockHash === hash)
+          .map(_.mainChain)
+          .update(isMainChain)
+        _ <- TokenOutputSchema.table
+          .filter(_.blockHash === hash)
+          .map(_.mainChain)
+          .update(isMainChain)
       } yield ()
 
     query.transactionally
@@ -170,7 +177,7 @@ object BlockQueries extends StrictLogging {
   def buildBlockEntryWithoutTxsAction(blockHeader: BlockHeader)(
       implicit ec: ExecutionContext): DBActionR[BlockEntry] =
     for {
-      deps <- blockDepsQuery(blockHeader.hash).result
+      deps <- getDepsForBlock(blockHeader.hash).result
     } yield blockHeader.toApi(deps, Seq.empty)
 
   def getBlockEntryWithoutTxsAction(hash: BlockEntry.Hash)(
@@ -243,7 +250,7 @@ object BlockQueries extends StrictLogging {
   /** Transactionally write blocks */
   @SuppressWarnings(
     Array("org.wartremover.warts.MutableDataStructures", "org.wartremover.warts.NonUnitStatements"))
-  def insertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int): DBActionRWT[Int] = {
+  def insertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int): DBActionRWT[Unit] = {
     val blockDeps    = ListBuffer.empty[BlockDepEntity]
     val transactions = ListBuffer.empty[TransactionEntity]
     val inputs       = ListBuffer.empty[InputEntity]
@@ -260,11 +267,11 @@ object BlockQueries extends StrictLogging {
     }
 
     val query =
-      insertBlockDeps(blockDeps) andThen
-        insertTransactions(transactions) andThen
-        insertInputs(inputs) andThen
-        insertOutputs(outputs) andThen
-        insertBlockHeaders(blockHeaders)
+      DBIOAction.seq(insertBlockDeps(blockDeps),
+                     insertTransactions(transactions),
+                     insertOutputs(outputs),
+                     insertInputs(inputs),
+                     insertBlockHeaders(blockHeaders))
 
     query.transactionally
   }

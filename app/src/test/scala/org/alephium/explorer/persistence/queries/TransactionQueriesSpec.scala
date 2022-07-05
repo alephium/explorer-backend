@@ -45,7 +45,7 @@ class TransactionQueriesSpec
 
   implicit val executionContext: ExecutionContext = ExecutionContext.global
 
-  it should "compute locked balance when empty" in new Fixture {
+  "compute locked balance when empty" in new Fixture {
     val balanceOption = run(TransactionQueries.getBalanceActionOption(address)).futureValue
     balanceOption is ((None, None))
 
@@ -53,7 +53,7 @@ class TransactionQueriesSpec
     balance is ((U256.Zero, U256.Zero))
   }
 
-  it should "compute locked balance" in new Fixture {
+  "compute locked balance" in new Fixture {
 
     val output1 = output(address, ALPH.alph(1), None)
     val output2 =
@@ -70,7 +70,7 @@ class TransactionQueriesSpec
 
   }
 
-  it should "get balance should only return unpent outputs" in new Fixture {
+  "get balance should only return unpent outputs" in new Fixture {
 
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
@@ -92,7 +92,7 @@ class TransactionQueriesSpec
     totalFinalized is ALPH.alph(1)
   }
 
-  it should "get balance should only take main chain outputs" in new Fixture {
+  "get balance should only take main chain outputs" in new Fixture {
 
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None).copy(mainChain = false)
@@ -106,7 +106,7 @@ class TransactionQueriesSpec
     total is ALPH.alph(1)
   }
 
-  it should "txs count" in new Fixture {
+  "txs count" in new Fixture {
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
     val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
@@ -129,7 +129,7 @@ class TransactionQueriesSpec
     totalSQLNoJoin is 3
   }
 
-  it should "update inputs when corresponding output is finally inserted" in new Fixture {
+  "update inputs when corresponding output is finally inserted" in new Fixture {
 
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
@@ -152,7 +152,7 @@ class TransactionQueriesSpec
     run(TransactionQueries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 3
   }
 
-  it should "get tx hashes by address" in new Fixture {
+  "get tx hashes by address" in new Fixture {
 
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
@@ -181,7 +181,7 @@ class TransactionQueriesSpec
     hashesSQLNoJoin is expected.toVector
   }
 
-  it should "outpus for txs" in new Fixture {
+  "outpus for txs" in new Fixture {
 
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
@@ -200,12 +200,15 @@ class TransactionQueriesSpec
 
     def res(output: OutputEntity, input: Option[InputEntity]) = {
       (output.txHash,
-       output.order,
+       output.outputOrder,
+       output.outputType,
        output.hint,
        output.key,
        output.amount,
        output.address,
+       output.tokens,
        output.lockTime,
+       output.message,
        input.map(_.txHash))
     }
 
@@ -218,7 +221,7 @@ class TransactionQueriesSpec
     run(outputsFromTxsSQL(txHashes)).futureValue.sortBy(_._1.toString) is expected.toVector
   }
 
-  it should "inputs for txs" in new Fixture {
+  "inputs for txs" in new Fixture {
 
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
@@ -238,18 +241,19 @@ class TransactionQueriesSpec
     val expected = inputs.zip(outputs).map {
       case (input, output) =>
         (input.txHash,
-         input.order,
+         input.inputOrder,
          input.hint,
          input.outputRefKey,
          input.unlockScript,
          output.address,
-         output.amount)
+         output.amount,
+         output.tokens)
     }
 
     run(inputsFromTxsSQL(txHashes)).futureValue is expected.toVector
   }
 
-  it should "get tx by address" in new Fixture {
+  "get tx by address" in new Fixture {
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
     val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
@@ -299,7 +303,7 @@ class TransactionQueriesSpec
     txsSQL is txsNoJoin
   }
 
-  it should "output's spent info should only take the input from the main chain " in new Fixture {
+  "output's spent info should only take the input from the main chain " in new Fixture {
 
     val tx1 = transactionGen.sample.get
     val tx2 = transactionGen.sample.get
@@ -330,7 +334,7 @@ class TransactionQueriesSpec
     tx.outputs.size is 1 // was 2 in v1.4.1
   }
 
-  it should "insert and ignore transactions" in new Fixture {
+  "insert and ignore transactions" in new Fixture {
 
     forAll(Gen.listOf(updatedTransactionEntityGen())) { transactions =>
       run(TransactionSchema.table.delete).futureValue
@@ -349,11 +353,11 @@ class TransactionQueriesSpec
   }
 
   //https://github.com/alephium/explorer-backend/issues/174
-  it should "return an empty list when not transactions are found - Isssue 174" in new Fixture {
+  "return an empty list when not transactions are found - Isssue 174" in new Fixture {
     run(TransactionQueries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue is Seq.empty
   }
 
-  it should "get total number of main transactions" in new Fixture {
+  "get total number of main transactions" in new Fixture {
 
     val tx1 = transactionEntityGen().sample.get.copy(mainChain = true)
     val tx2 = transactionEntityGen().sample.get.copy(mainChain = true)
@@ -378,12 +382,15 @@ class TransactionQueriesSpec
         blockEntryHashGen.sample.get,
         transactionHashGen.sample.get,
         now,
+        outputTypeGen.sample.get,
         0,
         hashGen.sample.get,
         amount,
         address,
+        Gen.option(tokensGen).sample.get,
         true,
         lockTime,
+        Gen.option(bytesGen).sample.get,
         0,
         0,
         None

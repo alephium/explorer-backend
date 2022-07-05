@@ -39,7 +39,7 @@ class ChartsServerSpec()
 
   override def api: Api = Json
 
-  it should "validate hourly/daily time range " in new Fixture {
+  "validate hourly/daily time range " in new Fixture {
     val now     = TimeStamp.now().millis
     val days30  = Duration.ofDaysUnsafe(30)
     val millis1 = Duration.ofMillisUnsafe(1).millis
