@@ -302,7 +302,11 @@ object BlockFlowClient {
                          index: Int,
                          mainChain: Boolean,
                          chainFrom: Int,
-                         chainTo: Int): TransactionEntity =
+                         chainTo: Int
+    scriptExecutionOk: Boolean,
+    inputSignatures: Option[Seq[ByteString]],
+    scriptSignatures: Option[Seq[ByteString]]
+                         ): TransactionEntity =
     TransactionEntity(
       new Transaction.Hash(tx.unsigned.txId),
       blockHash,
@@ -312,7 +316,10 @@ object BlockFlowClient {
       tx.unsigned.gasAmount,
       tx.unsigned.gasPrice,
       index,
-      mainChain
+      mainChain,
+      scriptExecutionOk,
+      inputSignatures,
+      scriptSignatures
     )
 
   private def inputToUInput(input: api.model.AssetInput): UInput = {

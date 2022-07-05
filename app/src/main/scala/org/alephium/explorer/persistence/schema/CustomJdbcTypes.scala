@@ -98,6 +98,14 @@ object CustomJdbcTypes {
     )
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  implicit lazy val seqByteStringType: JdbcType[Seq[ByteString]] =
+    MappedJdbcType.base[Seq[ByteString], Array[Byte]](
+      byteStrings => serialize(AVector.unsafe(byteStrings.toArray)).toArray,
+      bytes  => deserialize[AVector[ByteString]](ByteString.fromArrayUnsafe(bytes)).toOption.get.toSeq
+    )
+
+
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   implicit lazy val tokensType: JdbcType[Seq[Token]] =
     MappedJdbcType.base[Seq[Token], Array[Byte]](
       tokens => serialize(AVector.unsafe(tokens.toArray)).toArray,

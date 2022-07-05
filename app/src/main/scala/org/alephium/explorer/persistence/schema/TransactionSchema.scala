@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.schema
 
+import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
@@ -37,6 +38,9 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
       column[U256]("gas_price", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
     def txOrder: Rep[Int]       = column[Int]("tx_order")
     def mainChain: Rep[Boolean] = column[Boolean]("main_chain")
+    def scriptExecutionOk: Rep[Boolean] = column[Boolean]("script_execution_ok")
+    def inputSignatures: Rep[Option[Seq[ByteString]]] = column[Option[Seq[ByteString]]]("message")
+    def scriptSignatures: Rep[Option[Seq[ByteString]]] = column[Option[Seq[ByteString]]]("message")
 
     def pk: PrimaryKey = primaryKey("txs_pk", (hash, blockHash))
 
@@ -49,7 +53,7 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
       index("txs_block_hash_tx_hash_idx", (blockHash, hash))
 
     def * : ProvenShape[TransactionEntity] =
-      (hash, blockHash, timestamp, chainFrom, chainTo, gasAmount, gasPrice, txOrder, mainChain)
+      (hash, blockHash, timestamp, chainFrom, chainTo, gasAmount, gasPrice, txOrder, mainChain, scriptExecutionOk, inputSignatures, scriptSignatures)
         .<>((TransactionEntity.apply _).tupled, TransactionEntity.unapply)
   }
 
