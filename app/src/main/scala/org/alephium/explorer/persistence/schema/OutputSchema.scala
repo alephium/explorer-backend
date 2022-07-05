@@ -56,7 +56,7 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
     def addressIdx: Index   = index("outputs_address_idx", address)
     def timestampIdx: Index = index("outputs_timestamp_idx", timestamp)
     def outputsBlockHashTxHashIdx: Index =
-      index("outputs_block_hash_tx_hash_idx", (blockHash, txHash))
+      index("outputs_tx_hash_block_hash_idx", (txHash, blockHash))
 
     def * : ProvenShape[OutputEntity] =
       (blockHash,

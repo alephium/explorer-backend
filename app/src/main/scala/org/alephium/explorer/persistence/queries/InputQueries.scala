@@ -101,16 +101,16 @@ object InputQueries {
   }
 
   // format: off
-  def inputsFromTxsNoJoin(hashes: Seq[(BlockEntry.Hash,Transaction.Hash)]):
+  def inputsFromTxsNoJoin(hashes: Seq[(Transaction.Hash,BlockEntry.Hash)]):
     DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Option[Address], Option[U256], Option[Seq[Token]])]] = {
   // format: on
     if (hashes.nonEmpty) {
       val values =
-        hashes.map { case (blockHash, txHash) => s"('\\x$blockHash','\\x$txHash')" }.mkString(",")
+        hashes.map { case (txHash, blockHash) => s"('\\x$txHash','\\x$blockHash')" }.mkString(",")
       sql"""
     SELECT tx_hash, input_order, hint, output_ref_key, unlock_script, output_ref_address, output_ref_amount, output_ref_tokens
     FROM inputs
-    WHERE (block_hash, tx_hash) IN (#$values)
+    WHERE (tx_hash, block_hash) IN (#$values)
     """.as
     } else {
       DBIOAction.successful(Seq.empty)
@@ -118,13 +118,13 @@ object InputQueries {
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
-  def getInputsQuery(blockHash: BlockEntry.Hash, txHash: Transaction.Hash)
+  def getInputsQuery(txHash: Transaction.Hash, blockHash: BlockEntry.Hash)
     : DBActionSR[(Int, Hash, Option[String], Option[Address], Option[U256], Option[Seq[Token]])] = {
     sql"""
     SELECT hint, output_ref_key, unlock_script, output_ref_address, output_ref_amount, output_ref_tokens
     FROM inputs
-    WHERE block_hash = $blockHash
-    AND tx_hash = $txHash
+    WHERE tx_hash = $txHash
+    AND block_hash = $blockHash
     ORDER BY input_order
     """.as
   }

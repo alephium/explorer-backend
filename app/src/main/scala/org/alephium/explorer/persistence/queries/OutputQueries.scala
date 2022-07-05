@@ -322,13 +322,13 @@ object OutputQueries {
   }
 
   // format: off
-  def outputsFromTxsNoJoin(hashes: Seq[(BlockEntry.Hash,Transaction.Hash)]):
+  def outputsFromTxsNoJoin(hashes: Seq[(Transaction.Hash,BlockEntry.Hash)]):
   DBActionR[Seq[(Transaction.Hash, Int, OutputEntity.OutputType, Int, Hash, U256, Address,
     Option[Seq[Token]],Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])]] = {
   // format: on
     if (hashes.nonEmpty) {
       val values =
-        hashes.map { case (blockHash, txHash) => s"('\\x$blockHash','\\x$txHash')" }.mkString(",")
+        hashes.map { case (txHash, blockHash) => s"('\\x$txHash','\\x$blockHash')" }.mkString(",")
       sql"""
     SELECT
       outputs.tx_hash,
@@ -343,7 +343,7 @@ object OutputQueries {
       outputs.message,
       outputs.spent_finalized
     FROM outputs
-    WHERE (outputs.block_hash, outputs.tx_hash) IN (#$values)
+    WHERE (outputs.tx_hash, outputs.block_hash) IN (#$values)
     """.as
     } else {
       DBIOAction.successful(Seq.empty)
@@ -352,15 +352,15 @@ object OutputQueries {
 
   // format: off
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
-  def getOutputsQuery(blockHash: BlockEntry.Hash, txHash: Transaction.Hash):
+  def getOutputsQuery(txHash: Transaction.Hash,blockHash: BlockEntry.Hash):
   DBActionSR[(OutputEntity.OutputType, Int, Hash, U256, Address, Option[Seq[Token]],
     Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])] = {
   // format: on
     sql"""
         SELECT output_type, hint, key, amount, address, tokens, lock_time, message, spent_finalized
         FROM outputs
-        WHERE block_hash = $blockHash
-        AND tx_hash = $txHash
+        WHERE tx_hash = $txHash
+        AND block_hash = $blockHash
         ORDER BY output_order
       """.as
   }

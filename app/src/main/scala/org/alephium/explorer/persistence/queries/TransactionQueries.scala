@@ -221,7 +221,7 @@ object TransactionQueries extends StrictLogging {
   def getTransactionsSQL(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)])(
       implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
     if (txHashesTs.nonEmpty) {
-      val hashes   = txHashesTs.map { case (txHash, blockHash, _, _) => (blockHash, txHash) }
+      val hashes   = txHashesTs.map { case (txHash, blockHash, _, _) => (txHash, blockHash) }
       val txHashes = txHashesTs.map(_._1)
       for {
         inputs  <- inputsFromTxsSQL(txHashes)
@@ -238,7 +238,7 @@ object TransactionQueries extends StrictLogging {
   def getTransactionsNoJoin(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)])(
       implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
     if (txHashesTs.nonEmpty) {
-      val hashes = txHashesTs.map { case (txHash, blockHash, _, _) => (blockHash, txHash) }
+      val hashes = txHashesTs.map { case (txHash, blockHash, _, _) => (txHash, blockHash) }
       for {
         inputs  <- inputsFromTxsNoJoin(hashes)
         outputs <- outputsFromTxsNoJoin(hashes)
@@ -322,15 +322,15 @@ object TransactionQueries extends StrictLogging {
   }
 
   def gasFromTxsSQL(
-      hashes: Seq[(BlockEntry.Hash, Transaction.Hash)]
+      hashes: Seq[(Transaction.Hash, BlockEntry.Hash)]
   ): DBActionR[Seq[(Transaction.Hash, Int, U256)]] = {
     if (hashes.nonEmpty) {
       val values =
-        hashes.map { case (blockHash, txHash) => s"('\\x$blockHash','\\x$txHash')" }.mkString(",")
+        hashes.map { case (txHash, blockHash) => s"('\\x$txHash','\\x$blockHash')" }.mkString(",")
       sql"""
     SELECT hash, gas_amount, gas_price
     FROM transactions
-    WHERE (block_hash, hash) IN (#$values)
+    WHERE (hash, block_hash) IN (#$values)
     """.as
     } else {
       DBIOAction.successful(Seq.empty)
@@ -344,8 +344,8 @@ object TransactionQueries extends StrictLogging {
       gasAmount: Int,
       gasPrice: U256)(implicit ec: ExecutionContext): DBActionR[Transaction] =
     for {
-      ins  <- getInputsQuery(blockHash, txHash)
-      outs <- getOutputsQuery(blockHash, txHash)
+      ins  <- getInputsQuery(txHash, blockHash)
+      outs <- getOutputsQuery(txHash, blockHash)
     } yield {
       Transaction(txHash,
                   blockHash,
