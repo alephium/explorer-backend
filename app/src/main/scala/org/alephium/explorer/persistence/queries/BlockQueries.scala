@@ -157,6 +157,18 @@ object BlockQueries extends StrictLogging {
           .filter(_.blockHash === hash)
           .map(_.mainChain)
           .update(isMainChain)
+        _ <- TransactionPerTokenSchema.table
+          .filter(_.blockHash === hash)
+          .map(_.mainChain)
+          .update(isMainChain)
+        _ <- TokenPerAddressSchema.table
+          .filter(_.blockHash === hash)
+          .map(_.mainChain)
+          .update(isMainChain)
+        _ <- TokenOutputSchema.table
+          .filter(_.blockHash === hash)
+          .map(_.mainChain)
+          .update(isMainChain)
       } yield ()
 
     query.transactionally
@@ -238,7 +250,7 @@ object BlockQueries extends StrictLogging {
   /** Transactionally write blocks */
   @SuppressWarnings(
     Array("org.wartremover.warts.MutableDataStructures", "org.wartremover.warts.NonUnitStatements"))
-  def insertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int): DBActionRWT[Int] = {
+  def insertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int): DBActionRWT[Unit] = {
     val blockDeps    = ListBuffer.empty[BlockDepEntity]
     val transactions = ListBuffer.empty[TransactionEntity]
     val inputs       = ListBuffer.empty[InputEntity]
@@ -255,11 +267,11 @@ object BlockQueries extends StrictLogging {
     }
 
     val query =
-      insertBlockDeps(blockDeps) andThen
-        insertTransactions(transactions) andThen
-        insertInputs(inputs) andThen
-        insertOutputs(outputs) andThen
-        insertBlockHeaders(blockHeaders)
+      DBIOAction.seq(insertBlockDeps(blockDeps),
+                     insertTransactions(transactions),
+                     insertOutputs(outputs),
+                     insertInputs(inputs),
+                     insertBlockHeaders(blockHeaders))
 
     query.transactionally
   }

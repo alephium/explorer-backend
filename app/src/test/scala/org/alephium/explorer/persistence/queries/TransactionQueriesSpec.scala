@@ -201,12 +201,15 @@ class TransactionQueriesSpec
 
     def res(output: OutputEntity, input: Option[InputEntity]) = {
       (output.txHash,
-       output.order,
+       output.outputOrder,
+       output.outputType,
        output.hint,
        output.key,
        output.amount,
        output.address,
+       output.tokens,
        output.lockTime,
+       output.message,
        input.map(_.txHash))
     }
 
@@ -239,13 +242,14 @@ class TransactionQueriesSpec
     val expected = inputs.zip(outputs).map {
       case (input, output) =>
         (input.txHash,
-         input.order,
+         input.inputOrder,
          input.hint,
          input.outputRefKey,
          input.unlockScript,
          output.txHash,
          output.address,
-         output.amount)
+         output.amount,
+         output.tokens)
     }
 
     run(inputsFromTxsSQL(txHashes)).futureValue is expected.toVector
@@ -371,12 +375,15 @@ class TransactionQueriesSpec
         blockEntryHashGen.sample.get,
         transactionHashGen.sample.get,
         now,
+        outputTypeGen.sample.get,
         0,
         hashGen.sample.get,
         amount,
         address,
+        Gen.option(tokensGen).sample.get,
         true,
         lockTime,
+        Gen.option(bytesGen).sample.get,
         0,
         0,
         None

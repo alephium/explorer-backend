@@ -23,8 +23,9 @@ import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
-import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.queries.OutputQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
@@ -75,7 +76,24 @@ class CustomJdbcTypesSpec
     run(timestampTable.filter(_.timestamp <= t1).result).futureValue is Seq(t1, t2)
   }
 
-  trait Fixture {
+  "set/get tokens" in new Fixture {
+
+    forAll(outputEntityGen) { output =>
+      run(OutputSchema.table.delete).futureValue
+
+      run(OutputQueries.insertOutputs(Seq(output))).futureValue
+      run(OutputSchema.table.result).futureValue.head is output
+
+      if (output.tokens.isEmpty) {
+        run(
+          sql"SELECT CASE WHEN tokens IS NULL THEN 'true' ELSE 'false' END FROM outputs"
+            .as[Boolean]).futureValue.head is true
+      }
+
+    }
+  }
+
+  trait Fixture extends Generators {
 
     def ts(str: String): TimeStamp = TimeStamp.unsafe(java.time.Instant.parse(str).toEpochMilli)
 

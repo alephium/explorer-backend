@@ -23,7 +23,9 @@ import slick.jdbc.{PositionedParameters, SetParameter}
 
 import org.alephium.explorer
 import org.alephium.explorer.api.model._
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.explorer.persistence.model.OutputEntity
+import org.alephium.serde._
+import org.alephium.util.{AVector, TimeStamp, U256}
 
 /** [[slick.jdbc.SetParameter]] implicits for setting values in SQL queries */
 object CustomSetParameter {
@@ -53,6 +55,11 @@ object CustomSetParameter {
       params setBytes input.value.bytes.toArray
   }
 
+  implicit object TokenSetParameter extends SetParameter[Token] {
+    override def apply(input: Token, params: PositionedParameters): Unit =
+      params setBytes input.id.bytes.toArray
+  }
+
   implicit object GroupIndexSetParameter extends SetParameter[GroupIndex] {
     override def apply(input: GroupIndex, params: PositionedParameters): Unit =
       params setInt input.value
@@ -63,9 +70,15 @@ object CustomSetParameter {
       params setInt input.value
   }
 
+  implicit object OutputTypeSetParameter extends SetParameter[OutputEntity.OutputType] {
+    override def apply(input: OutputEntity.OutputType, params: PositionedParameters): Unit =
+      params setInt input.value
+  }
+
   implicit object ExplorerHashSetParameter extends SetParameter[explorer.Hash] {
-    override def apply(input: explorer.Hash, params: PositionedParameters): Unit =
+    override def apply(input: explorer.Hash, params: PositionedParameters): Unit = {
       params setBytes input.bytes.toArray
+    }
   }
 
   implicit object U256SetParameter extends SetParameter[U256] {
@@ -81,6 +94,50 @@ object CustomSetParameter {
   implicit object ByteStringSetParameter extends SetParameter[ByteString] {
     override def apply(input: ByteString, params: PositionedParameters): Unit =
       params setBytes input.toArray
+  }
+
+  implicit object ByteStringOptionSetParameter extends SetParameter[Option[ByteString]] {
+
+    /** {{{Params.setBytesOption(input.map(_.value.bytes.toArray[Byte]))}}} sets the value
+      * to java.lang.Object instead of null which fails and requires casting at SQL level.
+      *
+      * ERROR: org.postgresql.util.PSQLException: ERROR: column "***" is of type bytea but expression is of type oid
+      * Hint: You will need to rewrite or cast the expression.
+      *
+      * To keep this simple `null` is used and which set the column value as expected.
+      */
+    override def apply(input: Option[ByteString], params: PositionedParameters): Unit =
+      input match {
+        case Some(bytes) =>
+          params setBytes bytes.toArray
+
+        case None =>
+          //scalastyle:off null
+          params setBytes null
+        //scalastyle:on null
+      }
+  }
+
+  implicit object TokensOptionSetParameter extends SetParameter[Option[Seq[Token]]] {
+
+    /** {{{Params.setBytesOption(input.map(_.value.bytes.toArray[Byte]))}}} sets the value
+      * to java.lang.Object instead of null which fails and requires casting at SQL level.
+      *
+      * ERROR: org.postgresql.util.PSQLException: ERROR: column "***" is of type bytea but expression is of type oid
+      * Hint: You will need to rewrite or cast the expression.
+      *
+      * To keep this simple `null` is used and which set the column value as expected.
+      */
+    override def apply(input: Option[Seq[Token]], params: PositionedParameters): Unit =
+      input match {
+        case Some(tokens) =>
+          params setBytes serialize(AVector.unsafe(tokens.toArray)).toArray
+
+        case None =>
+          //scalastyle:off null
+          params setBytes null
+        //scalastyle:on null
+      }
   }
 
   implicit object BigIntegerSetParameter extends SetParameter[BigInteger] {

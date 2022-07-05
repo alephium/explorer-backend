@@ -69,7 +69,7 @@ class BlockQueriesSpec
       run(BlockDepsSchema.table.delete).futureValue
 
       //execute insert on blocks and expect all tables get inserted
-      run(BlockQueries.insertBlockEntity(entities, groupNum)).futureValue is entities.size
+      run(BlockQueries.insertBlockEntity(entities, groupNum)).futureValue is ()
 
       //check block_headers table
       val actualBlockHeaders = run(BlockHeaderSchema.table.result).futureValue

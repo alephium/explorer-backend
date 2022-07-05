@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.api.model
 
+import org.alephium.api.UtilJson._
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.json.Json._
 
@@ -75,15 +76,46 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
-  "Output" in {
-    forAll(outputGen) { output =>
+  "Token" in {
+    forAll(tokenGen) { token =>
       val expected = s"""
      |{
+     |  "id": "${token.id.toHexString}",
+     |  "amount": "${token.amount}"
+     |}""".stripMargin
+      check(token, expected)
+    }
+  }
+
+  "AsetOutput" in {
+    forAll(assetOutputGen) { output =>
+      val expected = s"""
+     |{
+     |  "type": "AssetOutput",
      |  "hint": ${output.hint},
      |  "key": "${output.key.toHexString}",
-     |  "amount": "${output.amount}",
+     |  "attoAlphAmount": "${output.attoAlphAmount}",
      |  "address": "${output.address}"
+     |  ${output.tokens.map(tokens => s""","tokens": ${write(tokens)}""").getOrElse("")}
      |  ${output.lockTime.map(lockTime => s""","lockTime": ${lockTime.millis}""").getOrElse("")}
+     |  ${output.message.map(message => s""","message":${write(message)}""")
+                          .getOrElse("")}
+     |  ${output.spent.map(spent       => s""","spent": "${spent.value.toHexString}"""").getOrElse("")}
+     |}""".stripMargin
+      check(output, expected)
+    }
+  }
+
+  "ContractOutputGen" in {
+    forAll(contractOutputGen) { output =>
+      val expected = s"""
+     |{
+     |  "type": "ContractOutput",
+     |  "hint": ${output.hint},
+     |  "key": "${output.key.toHexString}",
+     |  "attoAlphAmount": "${output.attoAlphAmount}",
+     |  "address": "${output.address}"
+     |  ${output.tokens.map(tokens => s""","tokens": ${write(tokens)}""").getOrElse("")}
      |  ${output.spent.map(spent => s""","spent": "${spent.value.toHexString}"""").getOrElse("")}
      |}""".stripMargin
       check(output, expected)
@@ -98,7 +130,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
      |  ${input.unlockScript.map(script => s""""unlockScript": "${script}",""").getOrElse("")}
      |  "txHashRef": "${input.txHashRef.value.toHexString}",
      |  "address": "${input.address}",
-     |  "amount": "${input.amount}"
+     |  "attoAlphAmount": "${input.attoAlphAmount}"
      |}""".stripMargin
       check(input, expected)
     }

@@ -178,9 +178,11 @@ object BlockDao {
     }
   }
 
-  def updateInputs(inputs: Seq[InputEntity])(implicit ec: ExecutionContext): DBActionT[Int] =
+  def updateInputs(inputs: Seq[InputEntity]): DBActionT[Unit] =
     DBIOAction
-      .sequence(inputs.map(insertTxPerAddressFromInput))
-      .map(_.sum)
+      .seq(inputs.map { input =>
+        insertTxPerAddressFromInput(input)
+          .andThen(insertTokenPerAddressFromInput(input))
+      }: _*)
       .transactionally
 }

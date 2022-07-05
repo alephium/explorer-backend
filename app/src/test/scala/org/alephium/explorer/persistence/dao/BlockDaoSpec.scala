@@ -220,7 +220,7 @@ class BlockDaoSpec
       "there are no persisted outputs" in new Fixture {
         forAll(Gen.listOf(inputEntityGen())) { inputs =>
           //No persisted outputs so expect inputs to persist nothing
-          run(BlockDao.updateInputs(inputs)).futureValue is 0
+          run(BlockDao.updateInputs(inputs)).futureValue is ()
         }
       }
 
@@ -236,7 +236,7 @@ class BlockDaoSpec
           //insert outputs
           run(OutputSchema.table ++= outputs).futureValue should contain(outputs.size)
           //insert inputs
-          run(BlockDao.updateInputs(inputs)).futureValue is inputs.size
+          run(BlockDao.updateInputs(inputs)).futureValue is ()
 
           //expected rows in table TransactionPerAddressSchema
           val expected     = toTransactionPerAddressEntities(inputOutputs)

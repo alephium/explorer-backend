@@ -19,33 +19,34 @@ package org.alephium.explorer.persistence.schema
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
-import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
-import org.alephium.explorer.persistence.model.TransactionPerAddressEntity
+import org.alephium.explorer.api.model.{BlockEntry, Transaction}
+import org.alephium.explorer.persistence.model.TransactionPerTokenEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.protocol.Hash
 import org.alephium.util.TimeStamp
 
-object TransactionPerAddressSchema
-    extends SchemaMainChain[TransactionPerAddressEntity]("transaction_per_addresses") {
+object TransactionPerTokenSchema
+    extends SchemaMainChain[TransactionPerTokenEntity]("transaction_per_token") {
 
-  class TransactionPerAddresses(tag: Tag) extends Table[TransactionPerAddressEntity](tag, name) {
-    def address: Rep[Address]           = column[Address]("address")
-    def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
+  class TransactionPerTokens(tag: Tag) extends Table[TransactionPerTokenEntity](tag, name) {
+    def hash: Rep[Transaction.Hash]     = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
     def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
+    def token: Rep[Hash]                = column[Hash]("token")
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("block_timestamp")
     def txOrder: Rep[Int]               = column[Int]("tx_order")
     def mainChain: Rep[Boolean]         = column[Boolean]("main_chain")
 
-    def pk: PrimaryKey = primaryKey("txs_per_address_pk", (txHash, blockHash, address))
+    def pk: PrimaryKey = primaryKey("transaction_per_token_pk", (hash, blockHash, token))
 
-    def hashIdx: Index      = index("txs_per_address_tx_hash_idx", txHash)
-    def timestampIdx: Index = index("txs_per_address_timestamp_idx", timestamp)
-    def blockHashIdx: Index = index("txs_per_address_block_hash_idx", blockHash)
-    def addressIdx: Index   = index("txs_per_address_address_idx", address)
+    def hashIdx: Index      = index("transaction_per_token_hash_idx", hash)
+    def timestampIdx: Index = index("transaction_per_token_timestamp_idx", timestamp)
+    def blockHashIdx: Index = index("transaction_per_token_block_hash_idx", blockHash)
+    def tokenIdx: Index     = index("transaction_per_token_token_idx", token)
 
-    def * : ProvenShape[TransactionPerAddressEntity] =
-      (address, txHash, blockHash, timestamp, txOrder, mainChain)
-        .<>((TransactionPerAddressEntity.apply _).tupled, TransactionPerAddressEntity.unapply)
+    def * : ProvenShape[TransactionPerTokenEntity] =
+      (hash, blockHash, token, timestamp, txOrder, mainChain)
+        .<>((TransactionPerTokenEntity.apply _).tupled, TransactionPerTokenEntity.unapply)
   }
 
-  val table: TableQuery[TransactionPerAddresses] = TableQuery[TransactionPerAddresses]
+  val table: TableQuery[TransactionPerTokens] = TableQuery[TransactionPerTokens]
 }

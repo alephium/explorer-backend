@@ -41,7 +41,7 @@ import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.mining.HashRate
 import org.alephium.protocol.model.{Hint, Target}
 import org.alephium.protocol.vm.LockupScript
-import org.alephium.util.{Duration, Hex, Service, TimeStamp}
+import org.alephium.util.{Duration, Hex, Service, TimeStamp, U256}
 
 trait BlockFlowClient extends Service {
   def fetchBlock(fromGroup: GroupIndex, hash: BlockEntry.Hash): Future[BlockEntity]
@@ -374,6 +374,7 @@ object BlockFlowClient {
     )
   }
 
+  // scalastyle:off method.length
   private def outputToEntity(output: api.model.Output,
                              blockHash: BlockEntry.Hash,
                              txId: Hash,
@@ -385,25 +386,55 @@ object BlockFlowClient {
       case asset: api.model.AssetOutput if asset.lockTime.millis > 0 => Some(asset.lockTime)
       case _                                                         => None
     }
+
     val hint = output.address.lockupScript match {
       case asset: LockupScript.Asset  => Hint.ofAsset(asset.scriptHint)
       case contract: LockupScript.P2C => Hint.ofContract(contract.scriptHint)
     }
+
+    val outputType: OutputEntity.OutputType = output match {
+      case _: api.model.AssetOutput    => OutputEntity.Asset
+      case _: api.model.ContractOutput => OutputEntity.Contract
+    }
+
+    val message = output match {
+      case asset: api.model.AssetOutput => Some(asset.message)
+      case _: api.model.ContractOutput  => None
+    }
+
+    val tokens = if (output.tokens.isEmpty) {
+      None
+    } else {
+      Some(
+        output.tokens
+          .groupBy(_.id)
+          .map {
+            case (id, tokens) =>
+              val amount = tokens.map(_.amount).fold(U256.Zero)(_ addUnsafe _)
+              Token(id, amount)
+          }
+          .toSeq)
+    }
+
     OutputEntity(
       blockHash,
       new Transaction.Hash(txId),
       timestamp,
+      outputType,
       hint.value,
       protocol.model.TxOutputRef.key(txId, index),
       output.attoAlphAmount.value,
       new Address(output.address.toBase58),
+      tokens,
       mainChain,
       lockTime,
+      message,
       index,
       txOrder,
       None
     )
   }
+
   // scalastyle:off magic.number
   def computeHashRate(targetBytes: ByteString)(implicit groupConfig: GroupConfig): BigInteger = {
     val target          = Target.unsafe(targetBytes)

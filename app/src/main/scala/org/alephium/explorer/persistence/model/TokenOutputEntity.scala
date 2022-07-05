@@ -22,50 +22,20 @@ import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.util.{TimeStamp, U256}
 
-final case class OutputEntity(
+final case class TokenOutputEntity(
     blockHash: BlockEntry.Hash,
     txHash: Transaction.Hash,
     timestamp: TimeStamp,
-    outputType: OutputEntity.OutputType,
+    outputType: Int, //0 Asset, 1 Contract
     hint: Int,
     key: Hash,
+    token: Hash,
     amount: U256,
     address: Address,
-    tokens: Option[Seq[Token]], //None if empty list
     mainChain: Boolean,
     lockTime: Option[TimeStamp],
     message: Option[ByteString],
     outputOrder: Int,
     txOrder: Int,
     spentFinalized: Option[Transaction.Hash]
-) {
-  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-  def toApi(spent: Option[Transaction.Hash]): Output = {
-    outputType match {
-      case OutputEntity.Asset =>
-        AssetOutput(hint, key, amount, address, tokens, lockTime, message, spent)
-      case OutputEntity.Contract => ContractOutput(hint, key, amount, address, tokens, spent)
-    }
-  }
-}
-
-object OutputEntity {
-  sealed trait OutputType {
-    def value: Int
-  }
-  case object Asset extends OutputType {
-    val value = 0
-  }
-  case object Contract extends OutputType {
-    val value = 1
-  }
-
-  object OutputType {
-    def unsafe(int: Int): OutputType = {
-      int match {
-        case Asset.value    => Asset
-        case Contract.value => Contract
-      }
-    }
-  }
-}
+)

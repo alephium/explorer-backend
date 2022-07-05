@@ -14,23 +14,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.api.model
+package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.api.Json.u256ReadWriter
-import org.alephium.json.Json._
-import org.alephium.util.U256
+import org.alephium.explorer.api.model.{BlockEntry, Transaction}
+import org.alephium.protocol.Hash
+import org.alephium.util.TimeStamp
 
-@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-final case class Input(
-    outputRef: OutputRef,
-    unlockScript: Option[String] = None,
-    txHashRef: Transaction.Hash,
-    address: Address,
-    attoAlphAmount: U256,
-    tokens: Option[Seq[Token]] = None
+final case class TransactionPerTokenEntity(
+    hash: Transaction.Hash,
+    blockHash: BlockEntry.Hash,
+    token: Hash,
+    timestamp: TimeStamp,
+    txOrder: Int,
+    mainChain: Boolean
 )
-
-object Input {
-  implicit val readWriter: ReadWriter[Input] = macroRW
-
-}

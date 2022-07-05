@@ -246,7 +246,7 @@ trait ExplorerSpec
             .map(
               _.outputs
                 .filter(out => out.spent.isEmpty && out.address == address)
-                .map(_.amount)
+                .map(_.attoAlphAmount)
                 .fold(U256.Zero)(_ addUnsafe _))
             .fold(U256.Zero)(_ addUnsafe _)
 

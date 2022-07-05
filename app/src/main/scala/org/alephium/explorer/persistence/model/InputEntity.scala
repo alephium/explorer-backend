@@ -31,7 +31,7 @@ final case class InputEntity(
     outputRefKey: Hash,
     unlockScript: Option[String],
     mainChain: Boolean,
-    order: Int,
+    inputOrder: Int,
     txOrder: Int
 ) {
   def toApi(outputRef: OutputEntity): Input =
@@ -40,7 +40,8 @@ final case class InputEntity(
       unlockScript,
       outputRef.txHash,
       outputRef.address,
-      outputRef.amount
+      outputRef.amount,
+      outputRef.tokens
     )
 
   lazy val address: Option[Address] = {

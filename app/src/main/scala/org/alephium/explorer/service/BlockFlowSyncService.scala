@@ -319,10 +319,9 @@ case object BlockFlowSyncService extends StrictLogging {
     }
   }
 
-  private def handleInputsToUpdate(inputs: Seq[InputEntity])(
-      implicit ec: ExecutionContext): DBActionT[Unit] =
+  private def handleInputsToUpdate(inputs: Seq[InputEntity]): DBActionT[Unit] =
     if (inputs.nonEmpty) {
-      BlockDao.updateInputs(inputs).map(_ => ())
+      BlockDao.updateInputs(inputs)
     } else {
       DBIOAction.successful(())
     }

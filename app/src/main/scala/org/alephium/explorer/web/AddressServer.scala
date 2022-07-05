@@ -52,5 +52,22 @@ class AddressServer(transactionService: TransactionService)(
         for {
           (balance, locked) <- transactionService.getBalance(address)
         } yield AddressBalance(balance, locked)
+      }) ~
+      toRoute(getAddressTokenBalance.serverLogicSuccess[Future] {
+        case (address, token) =>
+          for {
+            (balance, locked) <- transactionService.getTokenBalance(address, token)
+          } yield AddressBalance(balance, locked)
+      }) ~
+      toRoute(listAddressTokens.serverLogicSuccess[Future] { address =>
+        for {
+          tokens <- transactionService.listAddressTokens(address)
+        } yield tokens
+      }) ~
+      toRoute(listAddressTokenTransactions.serverLogicSuccess[Future] {
+        case (address, token, pagination) =>
+          for {
+            tokens <- transactionService.listAddressTokenTransactions(address, token, pagination)
+          } yield tokens
       })
 }

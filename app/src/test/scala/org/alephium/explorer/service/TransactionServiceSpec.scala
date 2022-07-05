@@ -96,7 +96,13 @@ class TransactionServiceSpec
     BlockDao.updateMainChainStatus(block.hash, true).futureValue
 
     val fetchedAmout =
-      BlockDao.get(block.hash).futureValue.get.transactions.flatMap(_.outputs.map(_.amount)).head
+      BlockDao
+        .get(block.hash)
+        .futureValue
+        .get
+        .transactions
+        .flatMap(_.outputs.map(_.attoAlphAmount))
+        .head
     fetchedAmout is amount
   }
 
@@ -126,11 +132,14 @@ class TransactionServiceSpec
       OutputEntity(blockHash0,
                    tx0.hash,
                    ts0,
+                   OutputEntity.Asset,
                    0,
                    hashGen.sample.get,
                    U256.One,
                    address0,
+                   None,
                    true,
+                   None,
                    None,
                    0,
                    0,
@@ -170,11 +179,14 @@ class TransactionServiceSpec
     val output1 = OutputEntity(blockHash1,
                                tx1.hash,
                                timestamp = ts1,
+                               OutputEntity.Asset,
                                0,
                                hashGen.sample.get,
                                U256.One,
                                address1,
+                               None,
                                true,
+                               None,
                                None,
                                0,
                                0,
@@ -195,6 +207,7 @@ class TransactionServiceSpec
     Future.sequence(blocks.map(BlockDao.insert)).futureValue
     val inputsToUpdate =
       Future.sequence(blocks.map(BlockDao.updateTransactionPerAddress)).futureValue.flatten
+
     DBRunner.run(BlockDao.updateInputs(inputsToUpdate)).futureValue
 
     val t0 = Transaction(
@@ -202,7 +215,15 @@ class TransactionServiceSpec
       blockHash0,
       ts0,
       Seq.empty,
-      Seq(Output(output0.hint, output0.key, U256.One, address0, None, Some(tx1.hash))),
+      Seq(
+        AssetOutput(output0.hint,
+                    output0.key,
+                    U256.One,
+                    address0,
+                    None,
+                    None,
+                    None,
+                    Some(tx1.hash))),
       gasAmount,
       gasPrice
     )
@@ -212,7 +233,7 @@ class TransactionServiceSpec
       blockHash1,
       ts1,
       Seq(Input(OutputRef(0, output0.key), None, tx0.hash, address0, U256.One)),
-      Seq(Output(output1.hint, output1.key, U256.One, address1, None, None)),
+      Seq(AssetOutput(output1.hint, output1.key, U256.One, address1, None, None, None)),
       gasAmount1,
       gasPrice1
     )
@@ -247,11 +268,14 @@ class TransactionServiceSpec
           OutputEntity(blockHash0,
                        tx.hash,
                        ts0,
+                       OutputEntity.Asset,
                        0,
                        hashGen.sample.get,
                        U256.One,
                        address0,
+                       None,
                        true,
+                       None,
                        None,
                        0,
                        0,
@@ -333,7 +357,7 @@ class TransactionServiceSpec
             .asInstanceOf[ConfirmedTransaction]
         transaction.outputs.map(_.key) is block.outputs
           .filter(_.txHash == tx.hash)
-          .sortBy(_.order)
+          .sortBy(_.outputOrder)
           .map(_.key)
       }
     }
@@ -344,7 +368,7 @@ class TransactionServiceSpec
       .map { transaction =>
         transaction.outputs.map(_.key) is outputs
           .filter(_.txHash == transaction.hash)
-          .sortBy(_.order)
+          .sortBy(_.outputOrder)
           .map(_.key)
       }
   }

@@ -21,25 +21,25 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, BlockEntry, Token, Transaction}
+import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
 import org.alephium.explorer.persistence.DBActionW
-import org.alephium.explorer.persistence.model.OutputEntity
+import org.alephium.explorer.persistence.model.TokenOutputEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.util.{TimeStamp, U256}
 
-object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
+object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outputs") {
 
-  class Outputs(tag: Tag) extends Table[OutputEntity](tag, name) {
-    def blockHash: Rep[BlockEntry.Hash]          = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
-    def txHash: Rep[Transaction.Hash]            = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
-    def timestamp: Rep[TimeStamp]                = column[TimeStamp]("block_timestamp")
-    def outputType: Rep[OutputEntity.OutputType] = column[OutputEntity.OutputType]("output_type")
-    def hint: Rep[Int]                           = column[Int]("hint")
-    def key: Rep[Hash]                           = column[Hash]("key", O.SqlType("BYTEA"))
+  class TokenOutputs(tag: Tag) extends Table[TokenOutputEntity](tag, name) {
+    def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
+    def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
+    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("block_timestamp")
+    def outputType: Rep[Int]            = column[Int]("output_type")
+    def hint: Rep[Int]                  = column[Int]("hint")
+    def key: Rep[Hash]                  = column[Hash]("key", O.SqlType("BYTEA"))
+    def token: Rep[Hash]                = column[Hash]("token")
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
     def address: Rep[Address]            = column[Address]("address")
-    def tokens: Rep[Option[Seq[Token]]]  = column[Option[Seq[Token]]]("tokens")
     def mainChain: Rep[Boolean]          = column[Boolean]("main_chain")
     def lockTime: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("lock_time")
     def message: Rep[Option[ByteString]] = column[Option[ByteString]]("message")
@@ -48,35 +48,36 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
     def spentFinalized: Rep[Option[Transaction.Hash]] =
       column[Option[Transaction.Hash]]("spent_finalized", O.Default(None))
 
-    def pk: PrimaryKey = primaryKey("outputs_pk", (key, blockHash))
+    def pk: PrimaryKey = primaryKey("token_outputs_pk", (key, token, blockHash))
 
-    def keyIdx: Index       = index("outputs_key_idx", key)
-    def blockHashIdx: Index = index("outputs_block_hash_idx", blockHash)
-    def txHashIdx: Index    = index("outputs_tx_hash_idx", txHash)
-    def addressIdx: Index   = index("outputs_address_idx", address)
-    def timestampIdx: Index = index("outputs_timestamp_idx", timestamp)
+    def keyIdx: Index       = index("token_outputs_key_idx", key)
+    def blockHashIdx: Index = index("token_outputs_block_hash_idx", blockHash)
+    def txHashIdx: Index    = index("token_outputs_tx_hash_idx", txHash)
+    def addressIdx: Index   = index("token_outputs_address_idx", address)
+    def timestampIdx: Index = index("token_outputs_timestamp_idx", timestamp)
+    def tokenIdx: Index     = index("token_outputs_token_idx", token)
 
-    def * : ProvenShape[OutputEntity] =
+    def * : ProvenShape[TokenOutputEntity] =
       (blockHash,
        txHash,
        timestamp,
        outputType,
        hint,
        key,
+       token,
        amount,
        address,
-       tokens,
        mainChain,
        lockTime,
        message,
        outputOrder,
        txOrder,
        spentFinalized)
-        .<>((OutputEntity.apply _).tupled, OutputEntity.unapply)
+        .<>((TokenOutputEntity.apply _).tupled, TokenOutputEntity.unapply)
   }
 
-  def createNonSpentIndex(): DBActionW[Int] =
+  lazy val createNonSpentIndex: DBActionW[Int] =
     sqlu"create unique index if not exists non_spent_output_idx on #${name} (address, main_chain, key, block_hash) where spent_finalized IS NULL;"
 
-  val table: TableQuery[Outputs] = TableQuery[Outputs]
+  val table: TableQuery[TokenOutputs] = TableQuery[TokenOutputs]
 }
