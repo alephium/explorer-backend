@@ -27,12 +27,12 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     read[T](jsonRaw) is data
   }
 
-  it should "IntervalType" in {
+  "IntervalType" in {
     check[IntervalType](IntervalType.Hourly, s""""hourly"""")
     check[IntervalType](IntervalType.Daily, s""""daily"""")
   }
 
-  it should "Transaction" in {
+  "Transaction" in {
     forAll(transactionGen) { tx =>
       val expected = s"""
        |{
@@ -48,7 +48,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
-  it should "ConfirmedTransaction" in {
+  "ConfirmedTransaction" in {
     forAll(transactionGen) { tx =>
       val expected = s"""
        |{
@@ -65,7 +65,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
-  it should "Output.Ref" in {
+  "Output.Ref" in {
     forAll(outputRefGen) { outputRef =>
       val expected = s"""
      |{
@@ -76,7 +76,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
-  it should "Token" in {
+  "Token" in {
     forAll(tokenGen) { token =>
       val expected = s"""
      |{
@@ -87,7 +87,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
-  it should "AsetOutput" in {
+  "AsetOutput" in {
     forAll(assetOutputGen) { output =>
       val expected = s"""
      |{
@@ -106,7 +106,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
-  it should "ContractOutputGen" in {
+  "ContractOutputGen" in {
     forAll(contractOutputGen) { output =>
       val expected = s"""
      |{
@@ -122,7 +122,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
-  it should "Input" in {
+  "Input" in {
     forAll(inputGen) { input =>
       val expected = s"""
      |{
@@ -136,7 +136,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
-  it should "UInput" in {
+  "UInput" in {
     forAll(uinputGen) { uinput =>
       val expected = uinput.unlockScript match {
         case None =>
@@ -155,7 +155,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
-  it should "UnconfirmedTx" in {
+  "UnconfirmedTx" in {
     forAll(utransactionGen) { utx =>
       val expected = s"""
      |{
@@ -172,7 +172,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
-  it should "ExplorerInfo" in {
+  "ExplorerInfo" in {
     val expected = s"""
      |{
      |  "releaseVersion": "1.2.3",

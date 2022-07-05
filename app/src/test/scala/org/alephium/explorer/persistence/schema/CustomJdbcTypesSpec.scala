@@ -41,7 +41,7 @@ class CustomJdbcTypesSpec
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
-  it should "convert TimeStamp" in new Fixture {
+  "convert TimeStamp" in new Fixture {
 
     run(sqlu"DROP TABLE IF EXISTS timestamps;").futureValue
     run(timestampTable.schema.create).futureValue
@@ -76,7 +76,7 @@ class CustomJdbcTypesSpec
     run(timestampTable.filter(_.timestamp <= t1).result).futureValue is Seq(t1, t2)
   }
 
-  it should "set/get tokens" in new Fixture {
+  "set/get tokens" in new Fixture {
 
     forAll(outputEntityGen) { output =>
       run(OutputSchema.table.delete).futureValue

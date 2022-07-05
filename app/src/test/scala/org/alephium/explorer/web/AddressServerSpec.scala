@@ -46,7 +46,7 @@ class AddressServerSpec()
 
   override def api: Api = Json
 
-  it should "validate and forward `txLimit` query param " in new Fixture {
+  "validate and forward `txLimit` query param " in new Fixture {
     var testLimit = 0
     override val transactionService = new EmptyTransactionService {
       override def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
@@ -80,7 +80,7 @@ class AddressServerSpec()
     }
   }
 
-  it should "get total transactions" in new Fixture {
+  "get total transactions" in new Fixture {
     forAll(addressGen) {
       case (address) =>
         Get(s"/addresses/${address}/total-transactions") ~> server.route ~> check {
@@ -89,7 +89,7 @@ class AddressServerSpec()
     }
   }
 
-  it should "get balance" in new Fixture {
+  "get balance" in new Fixture {
     forAll(addressGen) {
       case (address) =>
         Get(s"/addresses/${address}/balance") ~> server.route ~> check {
@@ -98,7 +98,7 @@ class AddressServerSpec()
     }
   }
 
-  it should "get address info" in new Fixture {
+  "get address info" in new Fixture {
     forAll(addressGen) {
       case (address) =>
         Get(s"/addresses/${address}") ~> server.route ~> check {

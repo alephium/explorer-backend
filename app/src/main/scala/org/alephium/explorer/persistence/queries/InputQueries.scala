@@ -116,7 +116,7 @@ object InputQueries {
     sqlu"""
       INSERT INTO transaction_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain)
       (SELECT address, ${input.txHash}, ${input.blockHash}, ${input.timestamp}, ${input.txOrder}, main_chain FROM outputs WHERE key = ${input.outputRefKey})
-      ON CONFLICT (tx_hash, block_hash, address) DO NOTHING
+      ON CONFLICT ON CONSTRAINT txs_per_address_pk DO NOTHING
     """
   }
 

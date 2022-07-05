@@ -22,12 +22,12 @@ import org.scalacheck.Shrink
 import org.scalactic.Equality
 import org.scalactic.source.Position
 import org.scalatest.Assertion
-import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.dsl.ResultOfATypeInvocation
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-trait AlephiumSpec extends AnyFlatSpecLike with ScalaCheckDrivenPropertyChecks with Matchers {
+trait AlephiumSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with Matchers {
   @nowarn protected implicit def noShrink[A]: Shrink[A] = Shrink(_ => Stream.empty)
 
   // scalastyle:off no.should
@@ -40,5 +40,3 @@ trait AlephiumSpec extends AnyFlatSpecLike with ScalaCheckDrivenPropertyChecks w
     // scalastyle:on scalatest-matcher
   }
 }
-
-object AlephiumSpec extends AlephiumSpec

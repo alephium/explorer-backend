@@ -30,7 +30,7 @@ class AsyncReloadingCacheSpec extends AlephiumSpec with ScalaFutures with Eventu
 
   implicit val executionContext: ExecutionContext = ExecutionContext.global
 
-  it should "reload cache after expiration while returning existing value even during reloading" in {
+  "reload cache after expiration while returning existing value even during reloading" in {
     val reloadCount = new AtomicInteger() //number of times reload was executed
 
     //a cache with initial value as 1 and reload set to 1.second
@@ -55,7 +55,7 @@ class AsyncReloadingCacheSpec extends AlephiumSpec with ScalaFutures with Eventu
     reloadCount.get() is 3 //third reload
   }
 
-  it should "not allow multiple threads to concurrently execute reload" in {
+  "not allow multiple threads to concurrently execute reload" in {
     val reloadCount = new AtomicInteger() //number of times reload was executed
 
     //a cache with initial value as 1 and reload set to 2.seconds
@@ -81,7 +81,7 @@ class AsyncReloadingCacheSpec extends AlephiumSpec with ScalaFutures with Eventu
     }
   }
 
-  it should "expireAndReload immediately" in {
+  "expireAndReload immediately" in {
     val reloadCount = new AtomicInteger() //number of times reload was executed
 
     //long 1.hour reload timeout to test manual expireAndReload
@@ -115,7 +115,7 @@ class AsyncReloadingCacheSpec extends AlephiumSpec with ScalaFutures with Eventu
     }
   }
 
-  it should "reloadNow: should reload on boot" in {
+  "reloadNow: should reload on boot" in {
     AsyncReloadingCache
       .reloadNow(reloadAfter = 1.hour)(Future(Int.MaxValue))
       .futureValue

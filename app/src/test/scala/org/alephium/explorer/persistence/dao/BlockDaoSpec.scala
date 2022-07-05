@@ -28,6 +28,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.api.{model, ApiModelCodec}
 import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting}
+import org.alephium.explorer.GenModel._
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Pagination}
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
@@ -50,7 +51,7 @@ class BlockDaoSpec
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
-  it should "updateMainChainStatus correctly" in new Fixture {
+  "updateMainChainStatus correctly" in new Fixture {
     forAll(Gen.oneOf(blockEntities), arbitrary[Boolean]) {
       case (block, mainChainInput) =>
         BlockDao.insert(block).futureValue
@@ -74,7 +75,7 @@ class BlockDaoSpec
     }
   }
 
-  it should "not insert a block twice" in new Fixture {
+  "not insert a block twice" in new Fixture {
     forAll(Gen.oneOf(blockEntities)) { block =>
       BlockDao.insert(block).futureValue
       BlockDao.insert(block).futureValue
@@ -106,7 +107,7 @@ class BlockDaoSpec
     }
   }
 
-  it should "Recreate issue #162 - not throw exception when inserting a big block" in new Fixture {
+  "Recreate issue #162 - not throw exception when inserting a big block" in new Fixture {
     using(Source.fromResource("big_block.json")(Codec.UTF8)) { source =>
       val rawBlock   = source.getLines().mkString
       val blockEntry = read[model.BlockEntry](rawBlock)
@@ -115,7 +116,7 @@ class BlockDaoSpec
     }
   }
 
-  it should "get average block time" in new Fixture {
+  "get average block time" in new Fixture {
     val now        = TimeStamp.now()
     val from       = GroupIndex.unsafe(0)
     val to         = GroupIndex.unsafe(0)
@@ -149,7 +150,7 @@ class BlockDaoSpec
     BlockDao.getAverageBlockTime().futureValue.head is ((chainIndex, Duration.ofMinutesUnsafe(2)))
   }
 
-  it should "cache mainChainQuery's rowCount when table is non-empty" in new Fixture {
+  "cache mainChainQuery's rowCount when table is non-empty" in new Fixture {
     //generate some entities with random mainChain value
     val entitiesGenerator: Gen[List[BlockEntity]] =
       Gen
@@ -175,7 +176,7 @@ class BlockDaoSpec
     }
   }
 
-  it should "refresh row count cache of mainChainQuery when new data is inserted" in new Fixture {
+  "refresh row count cache of mainChainQuery when new data is inserted" in new Fixture {
     //generate some entities with random mainChain value
     val entitiesGenerator: Gen[List[BlockEntity]] =
       Gen
@@ -211,6 +212,39 @@ class BlockDaoSpec
             .futureValue
             ._2 is expectedMainChainCountTotal
         }
+    }
+  }
+
+  "updateInputs" should {
+    "successfully insert InputEntity" when {
+      "there are no persisted outputs" in new Fixture {
+        forAll(Gen.listOf(inputEntityGen())) { inputs =>
+          //No persisted outputs so expect inputs to persist nothing
+          run(BlockDao.updateInputs(inputs)).futureValue is ()
+        }
+      }
+
+      "there are existing outputs" in new Fixture {
+        forAll(Gen.listOf(genInputOutput())) { inputOutputs =>
+          //clear tables
+          run(OutputSchema.table.delete).futureValue
+          run(TransactionPerAddressSchema.table.delete).futureValue
+
+          val inputs  = inputOutputs.map(_._1)
+          val outputs = inputOutputs.map(_._2)
+
+          //insert outputs
+          run(OutputSchema.table ++= outputs).futureValue should contain(outputs.size)
+          //insert inputs
+          run(BlockDao.updateInputs(inputs)).futureValue is ()
+
+          //expected rows in table TransactionPerAddressSchema
+          val expected     = toTransactionPerAddressEntities(inputOutputs)
+          val transactions = run(TransactionPerAddressSchema.table.result).futureValue
+          //check rows are as expected
+          transactions should contain theSameElementsAs expected
+        }
+      }
     }
   }
 

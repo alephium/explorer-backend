@@ -36,7 +36,7 @@ class ReadBenchmarkStateSpec extends AlephiumSpec with ScalaFutures {
   //total number of rows to generate
   val testDataCount = 10
 
-  it should "beforeAll - generate & cache test data" in {
+  "beforeAll - generate & cache test data" in {
     def doTest[D, S <: ReadBenchmarkState[D]](state: => S, getRows: S => Seq[D]): Unit =
       using(state) { state =>
         //create test data
@@ -68,7 +68,7 @@ class ReadBenchmarkStateSpec extends AlephiumSpec with ScalaFutures {
     )
   }
 
-  it should "beforeEach - fetch next data incrementally" in {
+  "beforeEach - fetch next data incrementally" in {
     def doTest(state: => ReadBenchmarkState[_]): Unit =
       using(state) { state =>
         //create test data
@@ -90,7 +90,7 @@ class ReadBenchmarkStateSpec extends AlephiumSpec with ScalaFutures {
     doTest(new VarcharReadState(testDataCount, DBExecutor.forTest()))
   }
 
-  it should "afterAll - terminate connection" in {
+  "afterAll - terminate connection" in {
     def doTest(state: => ReadBenchmarkState[_]): Unit =
       using(state) { state =>
         //call beforeAll some data and establish connection

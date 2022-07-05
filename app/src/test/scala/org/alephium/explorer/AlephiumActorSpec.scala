@@ -24,9 +24,9 @@ import org.scalatest.BeforeAndAfterAll
 class AlephiumActorSpec(val name: String) extends AlephiumActorSpecLike
 
 trait AlephiumActorSpecLike
-    extends TestKitBase
+    extends AlephiumSpec
+    with TestKitBase
     with ImplicitSender
-    with AlephiumSpec
     with BeforeAndAfterAll {
 
   def name: String

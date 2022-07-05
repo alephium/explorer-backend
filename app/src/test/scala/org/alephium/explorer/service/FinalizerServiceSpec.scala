@@ -36,11 +36,11 @@ class FinalizerServiceSpec
     with DBRunner
     with ScalaFutures {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
-  it should "getStartEndTime - return nothing if there's no input" in new Fixture {
+  "getStartEndTime - return nothing if there's no input" in new Fixture {
     run(FinalizerService.getStartEndTime()).futureValue is None
   }
 
-  it should "getStartEndTime - return nothing if there's only 1 input" in new Fixture {
+  "getStartEndTime - return nothing if there's only 1 input" in new Fixture {
 
     val input1 = input(TimeStamp.now())
     run(InputQueries.insertInputs(Seq(input1))).futureValue
@@ -48,7 +48,7 @@ class FinalizerServiceSpec
     run(FinalizerService.getStartEndTime()).futureValue is None
   }
 
-  it should "getStartEndTime - return nothing if all inputs are after finalization time" in new Fixture {
+  "getStartEndTime - return nothing if all inputs are after finalization time" in new Fixture {
 
     val input1 = input(
       firstFinalizationTime.plusHoursUnsafe(1)
@@ -61,7 +61,7 @@ class FinalizerServiceSpec
     run(FinalizerService.getStartEndTime()).futureValue is None
   }
 
-  it should "getStartEndTime - return correct finalization time" in new Fixture {
+  "getStartEndTime - return correct finalization time" in new Fixture {
 
     val input1 = input(
       firstFinalizationTime.minusUnsafe(Duration.ofHoursUnsafe(10))

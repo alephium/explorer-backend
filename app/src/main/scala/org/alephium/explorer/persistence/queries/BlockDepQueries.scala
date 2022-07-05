@@ -17,12 +17,21 @@
 package org.alephium.explorer.persistence.queries
 
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
+import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.api.model.BlockEntry
 import org.alephium.explorer.persistence.DBActionW
 import org.alephium.explorer.persistence.model.BlockDepEntity
+import org.alephium.explorer.persistence.schema.BlockDepsSchema
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 
 object BlockDepQueries {
+
+  @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
+  val getDepsForBlock = Compiled { blockHash: Rep[BlockEntry.Hash] =>
+    BlockDepsSchema.table.filter(_.hash === blockHash).sortBy(_.depOrder).map(_.dep)
+  }
 
   /**
     * Insert block_deps or ignore if there is a primary key conflict.

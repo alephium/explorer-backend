@@ -39,7 +39,7 @@ class UnconfirmedTxDaoSpec
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
-  it should "insertMany" in {
+  "insertMany" in {
     forAll(Gen.listOfN(5, utransactionGen)) { txs =>
       UnconfirmedTxDao.insertMany(txs).futureValue
 
@@ -65,7 +65,7 @@ class UnconfirmedTxDaoSpec
     }
   }
 
-  it should "get" in {
+  "get" in {
     forAll(utransactionGen) { utx =>
       UnconfirmedTxDao.insertMany(Seq(utx)).futureValue
 
@@ -73,7 +73,7 @@ class UnconfirmedTxDaoSpec
     }
   }
 
-  it should "removeMany" in {
+  "removeMany" in {
     forAll(Gen.listOfN(5, utransactionGen)) { txs =>
       UnconfirmedTxDao.insertMany(txs).futureValue
       UnconfirmedTxDao.removeMany(txs.map(_.hash)).futureValue
@@ -84,7 +84,7 @@ class UnconfirmedTxDaoSpec
     }
   }
 
-  it should "listHashes" in {
+  "listHashes" in {
     var hashes = Set.empty[Transaction.Hash]
     forAll(Gen.listOfN(5, utransactionGen)) { txs =>
       UnconfirmedTxDao.insertMany(txs).futureValue
