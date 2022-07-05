@@ -204,6 +204,7 @@ object TransactionQueries extends StrictLogging {
       txs        <- getTransactionsSQL(txHashesTs)
     } yield txs
   }
+
   def getTransactionsByAddressNoJoin(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
     val offset = pagination.offset

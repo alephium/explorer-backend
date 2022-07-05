@@ -37,8 +37,13 @@ class AddressServer(transactionService: TransactionService)(
     toRoute(getTransactionsByAddress.serverLogicSuccess[Future] {
       case (address, pagination) =>
         transactionService
-          .getTransactionsByAddressSQL(address, pagination)
+          .getTransactionsByAddress(address, pagination)
     }) ~
+      toRoute(getTransactionsByAddressDEPRECATED.serverLogicSuccess[Future] {
+        case (address, pagination) =>
+          transactionService
+            .getTransactionsByAddressSQL(address, pagination)
+      }) ~
       toRoute(getAddressInfo.serverLogicSuccess[Future] { address =>
         for {
           (balance, locked) <- transactionService.getBalance(address)
