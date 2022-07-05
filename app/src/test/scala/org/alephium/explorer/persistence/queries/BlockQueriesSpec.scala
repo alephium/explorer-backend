@@ -21,16 +21,14 @@ import scala.concurrent.ExecutionContext
 import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
-import org.scalatest.wordspec.AnyWordSpec
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.AlephiumSpec._
-import org.alephium.explorer.Generators
+import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.schema._
 
 class BlockQueriesSpec
-    extends AnyWordSpec
+    extends AlephiumSpec
     with DatabaseFixtureForEach
     with DBRunner
     with Generators
