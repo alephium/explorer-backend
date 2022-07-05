@@ -37,7 +37,7 @@ class BlockQueriesSpec
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1000, Minutes))
 
-  it should "insert and ignore block_headers" in {
+  "insert and ignore block_headers" in {
 
     forAll(Gen.listOf(updatedBlockHeaderGen())) { existingAndUpdates =>
       //fresh table
@@ -58,7 +58,7 @@ class BlockQueriesSpec
     }
   }
 
-  it should "insert deps, transactions, inputs, outputs, block_headers" in {
+  "insert deps, transactions, inputs, outputs, block_headers" in {
 
     forAll(Gen.listOf(genBlockEntityWithOptionalParent().map(_._1))) {
       case entities =>

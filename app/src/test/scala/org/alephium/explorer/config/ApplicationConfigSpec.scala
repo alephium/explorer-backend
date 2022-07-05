@@ -19,16 +19,14 @@ package org.alephium.explorer.config
 import scala.compat.java8.DurationConverters.DurationOps
 
 import org.scalatest.TryValues._
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-import org.alephium.explorer.AlephiumSpec.IsOps
+import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.config.ApplicationConfig._
 import org.alephium.explorer.config.GenConfig._
 import org.alephium.explorer.error.ExplorerError.{EmptyApplicationConfig, InvalidApplicationConfig}
 
-class ApplicationConfigSpec extends AnyWordSpec with Matchers with ScalaCheckDrivenPropertyChecks {
+class ApplicationConfigSpec extends AlephiumSpec with ScalaCheckDrivenPropertyChecks {
 
   "read valid configuration" in {
     forAll(genRawConfig()) { raw =>

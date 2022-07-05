@@ -40,7 +40,7 @@ class CustomJdbcTypesSpec
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
-  it should "convert TimeStamp" in new Fixture {
+  "convert TimeStamp" in new Fixture {
 
     run(sqlu"DROP TABLE IF EXISTS timestamps;").futureValue
     run(timestampTable.schema.create).futureValue

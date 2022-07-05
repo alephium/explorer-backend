@@ -43,7 +43,7 @@ class MempoolSyncServiceSpec
     with Eventually {
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
 
-  it should "start/sync/stop" in new Fixture {
+  "start/sync/stop" in new Fixture {
     using(Scheduler("test")) { implicit scheduler =>
       MempoolSyncService.start(Seq(""), 100.milliseconds)
 

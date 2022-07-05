@@ -25,7 +25,7 @@ import org.alephium.explorer.AlephiumSpec
 
 class CaffeineAsyncCacheSpec extends AlephiumSpec with ScalaFutures {
 
-  it should "return None for getIfPresent when cache is empty (NullPointerException check)" in {
+  "return None for getIfPresent when cache is empty (NullPointerException check)" in {
     val cache =
       CaffeineAsyncCache {
         Caffeine

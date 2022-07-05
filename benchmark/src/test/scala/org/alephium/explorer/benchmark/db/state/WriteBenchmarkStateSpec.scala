@@ -32,7 +32,7 @@ class WriteBenchmarkStateSpec extends AlephiumSpec {
   //total number of rows to generate
   val testDataCount = 10
 
-  it should "beforeAll - generate a new empty table" in {
+  "beforeAll - generate a new empty table" in {
     def doTest[S <: WriteBenchmarkState[_]](state: => S, getRowCount: S => Int): Unit =
       using(state) { state =>
         state.beforeAll()
@@ -58,7 +58,7 @@ class WriteBenchmarkStateSpec extends AlephiumSpec {
     )
   }
 
-  it should "beforeEach - generate data incrementally" in {
+  "beforeEach - generate data incrementally" in {
     using(new VarcharWriteState(DBExecutor.forTest())) { state =>
       //invoking next before setNext should return null
       //Option is not used here to avoid the cost of unnecessary
