@@ -39,7 +39,7 @@ class InputQueriesSpec
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
-  it should "insert and ignore inputs" in {
+  "insert and ignore inputs" in {
 
     def runTest(existingAndUpdated: Seq[(InputEntity, InputEntity)]) = {
       //fresh table

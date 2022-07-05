@@ -47,7 +47,7 @@ class TransactionServiceSpec
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
-  it should "limit the number of transactions in address details" in new Fixture {
+  "limit the number of transactions in address details" in new Fixture {
 
     val address = addressGen.sample.get
 
@@ -77,7 +77,7 @@ class TransactionServiceSpec
       .size is txLimit
   }
 
-  it should "handle huge alph number" in new Fixture {
+  "handle huge alph number" in new Fixture {
 
     val amount = ALPH.MaxALPHValue.mulUnsafe(ALPH.MaxALPHValue)
 
@@ -100,7 +100,7 @@ class TransactionServiceSpec
     fetchedAmout is amount
   }
 
-  it should "get all transactions for an address even when outputs don't contain that address" in new Fixture {
+  "get all transactions for an address even when outputs don't contain that address" in new Fixture {
 
     val address0 = addressGen.sample.get
     val address1 = addressGen.sample.get
@@ -223,7 +223,7 @@ class TransactionServiceSpec
     res2 is Seq(t1, t0)
   }
 
-  it should "get only main chain transaction for an address in case of tx in two blocks (in case of reorg)" in new Fixture {
+  "get only main chain transaction for an address in case of tx in two blocks (in case of reorg)" in new Fixture {
 
     forAll(blockEntryHashGen, blockEntryHashGen) {
       case (blockHash0, blockHash1) =>
@@ -296,7 +296,7 @@ class TransactionServiceSpec
     }
   }
 
-  it should "fall back on unconfirmed tx" in new Fixture {
+  "fall back on unconfirmed tx" in new Fixture {
     val utx = utransactionGen.sample.get
 
     TransactionService.getTransaction(utx.hash).futureValue is None
@@ -304,7 +304,7 @@ class TransactionServiceSpec
     TransactionService.getTransaction(utx.hash).futureValue is Some(utx)
   }
 
-  it should "preserve outputs order" in new Fixture {
+  "preserve outputs order" in new Fixture {
 
     val address = addressGen.sample.get
 
@@ -349,7 +349,7 @@ class TransactionServiceSpec
       }
   }
 
-  it should "preserve inputs order" in new Fixture {
+  "preserve inputs order" in new Fixture {
     //TODO Test this please
     //We need to generate a coherent blockflow, otherwise the queries can't match the inputs with outputs
 

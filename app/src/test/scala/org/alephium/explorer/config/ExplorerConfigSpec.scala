@@ -20,17 +20,16 @@ import scala.concurrent.duration._
 
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.TryValues._
-import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import org.alephium.api.model.ApiKey
-import org.alephium.explorer.AlephiumSpec._
+import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.GenCommon._
 import org.alephium.explorer.config.ExplorerConfig._
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.protocol.model.NetworkId
 
-class ExplorerConfigSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks {
+class ExplorerConfigSpec extends AlephiumSpec with ScalaCheckDrivenPropertyChecks {
 
   "validateGroupNum" should {
     "fail validation" when {

@@ -43,7 +43,7 @@ class UtilsServerSpec()
 
   override def api: Api = Json
 
-  it should "update global loglevel" in new Fixture {
+  "update global loglevel" in new Fixture {
     List("TRACE", "DEBUG", "INFO", "WARN", "ERROR").foreach { level =>
       val entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, level)
       Put(s"/utils/update-global-loglevel", entity) ~> server.route ~> check {
@@ -59,7 +59,7 @@ class UtilsServerSpec()
     }
   }
 
-  it should "update logback values" in new Fixture {
+  "update logback values" in new Fixture {
 
     val logbackValues: Seq[LogbackValue] = Seq(
       LogbackValue("org.test", LogbackValue.Level.Debug),

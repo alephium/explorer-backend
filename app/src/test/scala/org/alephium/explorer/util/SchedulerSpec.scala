@@ -27,14 +27,13 @@ import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-import org.alephium.explorer.AlephiumSpec._
+import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.util.TestUtils._
 
 class SchedulerSpec
-    extends AnyWordSpec
+    extends AlephiumSpec
     with ScalaCheckDrivenPropertyChecks
     with Matchers
     with Eventually
