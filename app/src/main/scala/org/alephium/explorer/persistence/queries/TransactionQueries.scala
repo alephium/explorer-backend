@@ -51,8 +51,9 @@ object TransactionQueries extends StrictLogging {
   }
 
   /** Inserts transactions or ignore rows with primary key conflict */
+  // scalastyle:off magic.number
   def insertTransactions(transactions: Iterable[TransactionEntity]): DBActionW[Int] =
-    QuerySplitter.splitUpdates(rows = transactions, columnsPerRow = 9) {
+    QuerySplitter.splitUpdates(rows = transactions, columnsPerRow = 12) {
       (transactions, placeholder) =>
         val query =
           s"""
@@ -64,7 +65,10 @@ object TransactionQueries extends StrictLogging {
            |                          gas_amount,
            |                          gas_price,
            |                          tx_order,
-           |                          main_chain)
+           |                          main_chain,
+           |                          script_execution_ok,
+           |                          input_signatures,
+           |                          script_signatures)
            |values $placeholder
            |ON CONFLICT ON CONSTRAINT txs_pk
            |    DO NOTHING
@@ -82,6 +86,9 @@ object TransactionQueries extends StrictLogging {
               params >> transaction.gasPrice
               params >> transaction.order
               params >> transaction.mainChain
+              params >> transaction.scriptExecutionOk
+              params >> transaction.inputSignatures
+              params >> transaction.scriptSignatures
           }
 
         SQLActionBuilder(

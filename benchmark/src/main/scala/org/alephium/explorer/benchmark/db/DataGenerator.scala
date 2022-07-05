@@ -50,15 +50,18 @@ object DataGenerator {
                       mainChain: Boolean         = Random.nextBoolean()): Seq[TransactionEntity] =
     Seq.fill(count) {
       TransactionEntity(
-        hash      = new Transaction.Hash(Hash.generate),
-        blockHash = blockHash,
-        timestamp = blockTimestamp,
-        chainFrom = GroupIndex.unsafe(1),
-        chainTo   = GroupIndex.unsafe(3),
-        gasAmount = Random.nextInt(1000),
-        gasPrice  = U256.unsafe(0),
-        order     = Random.nextInt(1000),
-        mainChain = mainChain
+        hash              = new Transaction.Hash(Hash.generate),
+        blockHash         = blockHash,
+        timestamp         = blockTimestamp,
+        chainFrom         = GroupIndex.unsafe(1),
+        chainTo           = GroupIndex.unsafe(3),
+        gasAmount         = Random.nextInt(1000),
+        gasPrice          = U256.unsafe(0),
+        order             = Random.nextInt(1000),
+        mainChain         = mainChain,
+        scriptExecutionOk = Random.nextBoolean(),
+        inputSignatures   = None,
+        scriptSignatures  = None
       )
     }
 

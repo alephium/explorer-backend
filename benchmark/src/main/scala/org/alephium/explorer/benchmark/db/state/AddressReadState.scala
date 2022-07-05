@@ -99,15 +99,18 @@ class AddressReadState(val db: DBExecutor)
                                   txHash: Transaction.Hash,
                                   timestamp: TimeStamp): TransactionEntity =
     TransactionEntity(
-      hash      = txHash,
-      blockHash = blockHash,
-      timestamp = timestamp,
-      chainFrom = GroupIndex.unsafe(1),
-      chainTo   = GroupIndex.unsafe(3),
-      gasAmount = 0,
-      gasPrice  = U256.unsafe(0),
-      order     = 0,
-      mainChain = true
+      hash              = txHash,
+      blockHash         = blockHash,
+      timestamp         = timestamp,
+      chainFrom         = GroupIndex.unsafe(1),
+      chainTo           = GroupIndex.unsafe(3),
+      gasAmount         = 0,
+      gasPrice          = U256.unsafe(0),
+      order             = 0,
+      mainChain         = true,
+      scriptExecutionOk = Random.nextBoolean(),
+      inputSignatures   = None,
+      scriptSignatures  = None
     )
 
   def generateData(currentCacheSize: Int): OutputEntity = {

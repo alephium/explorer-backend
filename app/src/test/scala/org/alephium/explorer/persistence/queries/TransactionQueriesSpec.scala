@@ -313,7 +313,10 @@ class TransactionQueriesSpec
       tx1.gasAmount,
       tx1.gasPrice,
       0,
-      true
+      true,
+      true,
+      None,
+      None
     )
 
     val output1 =
@@ -414,7 +417,10 @@ class TransactionQueriesSpec
                         1,
                         ALPH.alph(1),
                         0,
-                        true)
+                        true,
+                        true,
+                        None,
+                        None)
     }
   }
 }

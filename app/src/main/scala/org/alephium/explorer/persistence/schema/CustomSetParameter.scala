@@ -162,6 +162,19 @@ object CustomSetParameter {
       }
   }
 
+  implicit object ByteStringsOptionSetParameter extends SetParameter[Option[Seq[ByteString]]] {
+    override def apply(input: Option[Seq[ByteString]], params: PositionedParameters): Unit =
+      input match {
+        case Some(byteStrings) =>
+          params setBytes serialize(AVector.unsafe(byteStrings.toArray)).toArray
+
+        case None =>
+          //scalastyle:off null
+          params setBytes null
+        //scalastyle:on null
+      }
+  }
+
   implicit object BigIntegerSetParameter extends SetParameter[BigInteger] {
     override def apply(input: BigInteger, params: PositionedParameters): Unit =
       params setBigDecimal BigDecimal(input)

@@ -128,26 +128,30 @@ trait Generators {
   def transactionEntityGen(
       blockHash: Gen[BlockEntry.Hash] = blockEntryHashGen): Gen[TransactionEntity] =
     for {
-      hash      <- transactionHashGen
-      blockHash <- blockHash
-      timestamp <- timestampGen
-      chainFrom <- groupIndexGen
-      chainTo   <- groupIndexGen
-      gasAmount <- Gen.posNum[Int]
-      gasPrice  <- u256Gen
-      order     <- Gen.posNum[Int]
-      mainChain <- Arbitrary.arbitrary[Boolean]
+      hash              <- transactionHashGen
+      blockHash         <- blockHash
+      timestamp         <- timestampGen
+      chainFrom         <- groupIndexGen
+      chainTo           <- groupIndexGen
+      gasAmount         <- Gen.posNum[Int]
+      gasPrice          <- u256Gen
+      order             <- Gen.posNum[Int]
+      mainChain         <- Arbitrary.arbitrary[Boolean]
+      scriptExecutionOk <- Arbitrary.arbitrary[Boolean]
     } yield
       TransactionEntity(
-        hash      = hash,
-        blockHash = blockHash,
-        timestamp = timestamp,
-        chainFrom = chainFrom,
-        chainTo   = chainTo,
-        gasAmount = gasAmount,
-        gasPrice  = gasPrice,
-        order     = order,
-        mainChain = mainChain
+        hash              = hash,
+        blockHash         = blockHash,
+        timestamp         = timestamp,
+        chainFrom         = chainFrom,
+        chainTo           = chainTo,
+        gasAmount         = gasAmount,
+        gasPrice          = gasPrice,
+        order             = order,
+        mainChain         = mainChain,
+        scriptExecutionOk = scriptExecutionOk,
+        inputSignatures   = None,
+        scriptSignatures  = None
       )
 
   lazy val blockHeaderTransactionEntityGen: Gen[(BlockHeader, List[TransactionEntity])] =

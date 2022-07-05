@@ -127,7 +127,10 @@ class TransactionServiceSpec
       gasAmount,
       gasPrice,
       0,
-      true
+      true,
+      true,
+      None,
+      None
     )
 
     val output0 =
@@ -167,7 +170,10 @@ class TransactionServiceSpec
       gasAmount1,
       gasPrice1,
       0,
-      true
+      true,
+      true,
+      None,
+      None
     )
     val input1 = InputEntity(blockHash1,
                              tx1.hash,
@@ -263,7 +269,10 @@ class TransactionServiceSpec
           Gen.posNum[Int].sample.get,
           amountGen.sample.get,
           0,
-          true
+          true,
+          true,
+          None,
+          None
         )
 
         val output0 =
