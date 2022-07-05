@@ -27,7 +27,7 @@ import org.scalatest.time.{Minutes, Span}
 import org.alephium.explorer.{AlephiumSpec, BlockHash, Generators, GroupSetting}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
-import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.{BlockDao, UnconfirmedTxDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
@@ -66,7 +66,7 @@ class TransactionServiceSpec
     Future
       .sequence(blocks.map { block =>
         for {
-          _ <- BlockDao.updateTransactionPerAddress(block)
+          _ <- databaseConfig.db.run(InputUpdateQueries.updateInputs())
           _ <- BlockDao.updateMainChainStatus(block.hash, true)
         } yield (())
       })
@@ -95,6 +95,7 @@ class TransactionServiceSpec
 
     BlockDao.insert(block).futureValue
     BlockDao.updateMainChainStatus(block.hash, true).futureValue
+    databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
 
     val fetchedAmout =
       BlockDao
@@ -178,6 +179,7 @@ class TransactionServiceSpec
                              0,
                              0,
                              None,
+                             None,
                              None)
     val output1 = OutputEntity(blockHash1,
                                tx1.hash,
@@ -208,7 +210,6 @@ class TransactionServiceSpec
     val blocks = Seq(block0, block1)
 
     Future.sequence(blocks.map(BlockDao.insert)).futureValue
-    Future.sequence(blocks.map(BlockDao.updateTransactionPerAddress)).futureValue
     databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
 
     val t0 = Transaction(
@@ -234,7 +235,7 @@ class TransactionServiceSpec
       blockHash1,
       ts1,
       Seq(Input(OutputRef(0, output0.key), None, address0, U256.One)),
-      Seq(Output(output1.hint, output1.key, U256.One, address1, None, None)),
+      Seq(AssetOutput(output1.hint, output1.key, U256.One, address1, None, None, None, None)),
       gasAmount1,
       gasPrice1
     )
@@ -305,7 +306,7 @@ class TransactionServiceSpec
         val blocks = Seq(block0, block1)
 
         Future.sequence(blocks.map(BlockDao.insert)).futureValue
-        Future.sequence(blocks.map(BlockDao.updateTransactionPerAddress)).futureValue
+        databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
 
         TransactionService
           .getTransactionsByAddressSQL(address0, Pagination.unsafe(0, 5))
@@ -380,7 +381,7 @@ class TransactionServiceSpec
 
   }
 
-  it should "get output ref's transaction" in new Fixture {
+  "get output ref's transaction" in new Fixture {
 
     val blocks = Gen
       .listOfN(20, blockEntityGen(groupIndex, groupIndex, None))

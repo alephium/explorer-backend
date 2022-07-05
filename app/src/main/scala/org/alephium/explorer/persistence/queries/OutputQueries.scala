@@ -326,12 +326,24 @@ object OutputQueries {
 
   // format: off
   def outputsFromTxsNoJoin(txHashes: Seq[Transaction.Hash]):
-  DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, U256, Address, Option[TimeStamp], Option[Transaction.Hash])]] = {
+  DBActionR[Seq[(Transaction.Hash, Int, OutputEntity.OutputType, Int, Hash, U256, Address,
+    Option[Seq[Token]],Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])]] = {
   // format: on
     if (txHashes.nonEmpty) {
       val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
       sql"""
-    SELECT outputs.tx_hash, outputs.output_order, outputs.hint, outputs.key,  outputs.amount, outputs.address, outputs.lock_time, outputs.spent_finalized
+    SELECT
+      outputs.tx_hash,
+      outputs.output_order,
+      outputs.output_type,
+      outputs.hint,
+      outputs.key,
+      outputs.amount,
+      outputs.address,
+      outputs.tokens,
+      outputs.lock_time,
+      outputs.message,
+      outputs.spent_finalized
     FROM outputs
     WHERE outputs.tx_hash IN (#$values) AND outputs.main_chain = true
     """.as

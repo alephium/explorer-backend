@@ -18,6 +18,7 @@ package org.alephium.explorer.persistence.queries
 
 import scala.concurrent.ExecutionContext
 
+import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
@@ -29,29 +30,45 @@ import org.alephium.util._
 
 object InputUpdateQueries {
 
-  def updateInputs()(implicit ec: ExecutionContext): DBActionWT[Int] = {
+  def updateInputs()(implicit ec: ExecutionContext): DBActionWT[Unit] = {
     sql"""
       UPDATE inputs
       SET
         output_ref_address = outputs.address,
-        output_ref_amount = outputs.amount
+        output_ref_amount = outputs.amount,
+        output_ref_tokens = outputs.tokens
       FROM outputs
       WHERE inputs.output_ref_key = outputs.key
       AND inputs.output_ref_address IS NULL
-      RETURNING outputs.address, inputs.tx_hash, inputs.block_hash, inputs.block_timestamp, inputs.tx_order, inputs.main_chain
+      RETURNING outputs.address, outputs.tokens, inputs.tx_hash, inputs.block_hash, inputs.block_timestamp, inputs.tx_order, inputs.main_chain
     """
-      .as[(Address, Transaction.Hash, BlockEntry.Hash, TimeStamp, Int, Boolean)]
-      .flatMap(updateTransactionPerAddresses)
+      .as[(Address, Option[Seq[Token]], Transaction.Hash, BlockEntry.Hash, TimeStamp, Int, Boolean)]
+      .flatMap(internalUpdates)
       .transactionally
   }
 
+  // format: off
+  private def internalUpdates(
+      data: Vector[(Address, Option[Seq[Token]], Transaction.Hash, BlockEntry.Hash, TimeStamp, Int, Boolean)])
+    : DBActionWT[Unit] = {
+  // format: on
+    DBIOAction
+      .seq(
+        updateTransactionPerAddresses(data),
+        updateTokenTxPerAddresses(data)
+      )
+      .transactionally
+  }
+
+  // format: off
   private def updateTransactionPerAddresses(
-      data: Vector[(Address, Transaction.Hash, BlockEntry.Hash, TimeStamp, Int, Boolean)])
+      data: Vector[(Address, Option[Seq[Token]], Transaction.Hash, BlockEntry.Hash, TimeStamp, Int, Boolean)])
     : DBActionWT[Int] = {
+  // format: on
     QuerySplitter.splitUpdates(rows = data, columnsPerRow = 6) { (data, placeholder) =>
       val query =
         s"""
-           | INSERT INTO transaction_per_addresses (address, hash, block_hash, block_timestamp, tx_order, main_chain)
+           | INSERT INTO transaction_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain)
            | VALUES $placeholder
            | ON CONFLICT ON CONSTRAINT txs_per_address_pk DO NOTHING
            |""".stripMargin
@@ -59,7 +76,7 @@ object InputUpdateQueries {
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
           data foreach {
-            case (address, txHash, blockHash, timestamp, txOrder, mainChain) =>
+            case (address, _, txHash, blockHash, timestamp, txOrder, mainChain) =>
               params >> address
               params >> txHash
               params >> blockHash
@@ -72,6 +89,51 @@ object InputUpdateQueries {
         queryParts = query,
         unitPConv  = parameters
       ).asUpdate
+    }
+  }
+
+  // format: off
+  private def updateTokenTxPerAddresses(
+      data: Vector[(Address, Option[Seq[Token]], Transaction.Hash, BlockEntry.Hash, TimeStamp, Int, Boolean)])
+    : DBActionWT[Int] = {
+  // format: on
+    val tokenTxPerAddresses = data.flatMap {
+      case (address, tokensOpt, txHash, blockHash, timestamp, txOrder, mainChain) =>
+        tokensOpt match {
+          case None => Seq.empty
+          case Some(tokens) =>
+            tokens.map { token =>
+              (address, txHash, blockHash, timestamp, txOrder, mainChain, token.id)
+            }
+        }
+    }
+
+    QuerySplitter.splitUpdates(rows = tokenTxPerAddresses, columnsPerRow = 7) {
+      (tokenTxPerAddresses, placeholder) =>
+        val query =
+          s"""
+           | INSERT INTO token_tx_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
+           | VALUES $placeholder
+           | ON CONFLICT ON CONSTRAINT token_tx_per_address_pk DO NOTHING
+           |""".stripMargin
+
+        val parameters: SetParameter[Unit] =
+          (_: Unit, params: PositionedParameters) =>
+            tokenTxPerAddresses foreach {
+              case (address, txHash, blockHash, timestamp, txOrder, mainChain, token) =>
+                params >> address
+                params >> txHash
+                params >> blockHash
+                params >> timestamp
+                params >> txOrder
+                params >> mainChain
+                params >> token
+          }
+
+        SQLActionBuilder(
+          queryParts = query,
+          unitPConv  = parameters
+        ).asUpdate
     }
   }
 }

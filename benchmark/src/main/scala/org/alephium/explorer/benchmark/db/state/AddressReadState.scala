@@ -76,18 +76,20 @@ class AddressReadState(val db: DBExecutor)
                             timestamp: TimeStamp,
                             hint: Int,
                             key: Hash): InputEntity = {
-    InputEntity(blockHash    = blockHash,
-                txHash       = txHash,
-                timestamp    = timestamp,
-                hint         = hint,
-                outputRefKey = key,
-                unlockScript = None,
-                mainChain    = true,
-                order        = 0,
-                inputOrder   = 0,
-                txOrder      = 0,
-                None,
-                None)
+    InputEntity(
+      blockHash    = blockHash,
+      txHash       = txHash,
+      timestamp    = timestamp,
+      hint         = hint,
+      outputRefKey = key,
+      unlockScript = None,
+      mainChain    = true,
+      inputOrder   = 0,
+      txOrder      = 0,
+      None,
+      None,
+      None
+    )
   }
   private def generateTransaction(blockHash: BlockEntry.Hash,
                                   txHash: Transaction.Hash,

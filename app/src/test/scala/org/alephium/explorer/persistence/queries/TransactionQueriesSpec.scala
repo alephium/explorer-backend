@@ -119,7 +119,6 @@ class TransactionQueriesSpec
     val outputs = Seq(output1, output2, output3, output4)
     val inputs  = Seq(input1, input2, input3)
     run(TransactionQueries.insertAll(Seq.empty, outputs, inputs)).futureValue
-    run(TransactionQueries.updateTransactionPerAddressAction(outputs)).futureValue
     run(InputUpdateQueries.updateInputs()).futureValue
 
     val totalSQLNoJoin =
@@ -141,7 +140,6 @@ class TransactionQueriesSpec
     val inputs  = Seq(input1, input2)
 
     run(TransactionQueries.insertAll(Seq.empty, outputs, inputs)).futureValue
-    run(TransactionQueries.updateTransactionPerAddressAction(outputs)).futureValue
     run(InputUpdateQueries.updateInputs()).futureValue
 
     run(TransactionQueries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 2
@@ -166,7 +164,6 @@ class TransactionQueriesSpec
     val inputs  = Seq(input1, input2, input3)
 
     run(TransactionQueries.insertAll(Seq.empty, outputs, inputs)).futureValue
-    run(TransactionQueries.updateTransactionPerAddressAction(outputs)).futureValue
     run(InputUpdateQueries.updateInputs()).futureValue
 
     val hashesSQLNoJoin =
@@ -267,7 +264,6 @@ class TransactionQueriesSpec
     val transactions = outputs.map(transaction)
 
     run(TransactionQueries.insertAll(transactions, outputs, inputs)).futureValue
-    run(TransactionQueries.updateTransactionPerAddressAction(outputs)).futureValue
     run(InputUpdateQueries.updateInputs()).futureValue
     val from = TimeStamp.zero
     val to   = timestampMaxValue
@@ -406,6 +402,7 @@ class TransactionQueriesSpec
                   true,
                   0,
                   0,
+                  None,
                   None,
                   None)
     def transaction(output: OutputEntity): TransactionEntity = {

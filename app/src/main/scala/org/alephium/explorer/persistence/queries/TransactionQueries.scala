@@ -90,13 +90,6 @@ object TransactionQueries extends StrictLogging {
         ).asUpdate
     }
 
-  def updateTransactionPerAddressAction(outputs: Seq[OutputEntity])(
-      implicit ec: ExecutionContext): DBActionRW[Unit] = {
-    for {
-      _ <- insertTxPerAddressFromOutputs(outputs)
-    } yield ()
-  }
-
   private val countBlockHashTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
     TransactionSchema.table.filter(_.blockHash === blockHash).length
   }
@@ -254,7 +247,7 @@ object TransactionQueries extends StrictLogging {
   private def buildTransactionNoJoin(
       txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)],
       inputs: Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Address, U256, Option[Seq[Token]])],
-      outputs: Seq[(Transaction.Hash, Int, OutputEntity.OutputType, Int, Hash, U256, Address,
+      outputs: Seq[(Transaction.Hash, Int,OutputEntity.OutputType, Int, Hash, U256, Address,
         Option[Seq[Token]], Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])],
       gases: Seq[(Transaction.Hash, Int, U256)]) = {
   // format: on
@@ -262,17 +255,16 @@ object TransactionQueries extends StrictLogging {
       values
         .sortBy(_._2)
         .map {
-          case (_, _, hint, key, unlockScript, address, amount) =>
-            toApiInput((hint, key, unlockScript, address, amount))
+          case (_, _, hint, key, unlockScript, address, amount, tokens) =>
+            toApiInput((hint, key, unlockScript, address, amount, tokens))
         }
     }
     val ousByTx = outputs.groupBy(_._1).view.mapValues { values =>
       values
         .sortBy(_._2)
         .map {
-          case (_, _, hint, key, amount, address, lockTime, spent_finalized) => {
-            toApiOutput((hint, key, amount, address, lockTime, spent_finalized))
-          }
+          case (_, _, outputType, hint, key, amount, address, tokens, lockTime, message, spent) =>
+            toApiOutput((outputType, hint, key, amount, address, tokens, lockTime, message, spent))
         }
     }
     val gasByTx = gases.groupBy(_._1).view.mapValues(_.map { case (_, s, g) => (s, g) })
@@ -289,8 +281,9 @@ object TransactionQueries extends StrictLogging {
   // format: off
   private def buildTransaction(
       txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)],
-      inputs: Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Address, U256)],
-      outputs: Seq[(Transaction.Hash, Int, Int, Hash, U256, Address, Option[TimeStamp], Option[Transaction.Hash])],
+      inputs: Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Address, U256, Option[Seq[Token]])],
+      outputs: Seq[(Transaction.Hash, Int,OutputEntity.OutputType, Int, Hash, U256, Address,
+        Option[Seq[Token]], Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])],
       gases: Seq[(Transaction.Hash, Int, U256)]) = {
   // format: on
     val insByTx = inputs.groupBy(_._1).view.mapValues { values =>

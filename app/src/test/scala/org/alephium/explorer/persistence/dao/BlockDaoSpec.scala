@@ -33,6 +33,7 @@ import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Pagination}
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.service.BlockFlowClient
@@ -218,9 +219,10 @@ class BlockDaoSpec
   "updateInputs" should {
     "successfully insert InputEntity" when {
       "there are no persisted outputs" in new Fixture {
-        forAll(Gen.listOf(inputEntityGen())) { inputs =>
+        forAll(Gen.listOf(inputEntityGen())) { _ =>
           //No persisted outputs so expect inputs to persist nothing
-          run(BlockDao.updateInputs(inputs)).futureValue is ()
+          run(InputUpdateQueries.updateInputs()).futureValue is ()
+          run(TransactionPerAddressSchema.table.result).futureValue is Seq.empty
         }
       }
 
@@ -230,13 +232,14 @@ class BlockDaoSpec
           run(OutputSchema.table.delete).futureValue
           run(TransactionPerAddressSchema.table.delete).futureValue
 
-          val inputs  = inputOutputs.map(_._1)
           val outputs = inputOutputs.map(_._2)
+          val inputs  = inputOutputs.map(_._1)
 
           //insert outputs
           run(OutputSchema.table ++= outputs).futureValue should contain(outputs.size)
           //insert inputs
-          run(BlockDao.updateInputs(inputs)).futureValue is ()
+          run(InputSchema.table ++= inputs).futureValue
+          run(InputUpdateQueries.updateInputs()).futureValue is ()
 
           //expected rows in table TransactionPerAddressSchema
           val expected     = toTransactionPerAddressEntities(inputOutputs)

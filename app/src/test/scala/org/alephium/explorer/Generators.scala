@@ -547,8 +547,9 @@ trait Generators {
         outputRefKey = outputEntity.key,
         unlockScript = unlockScript,
         mainChain    = outputEntity.mainChain,
-        inputOrder        = outputEntity.order,
+        inputOrder   = outputEntity.outputOrder,
         txOrder      = txOrder,
+        None,
         None,
         None
       )

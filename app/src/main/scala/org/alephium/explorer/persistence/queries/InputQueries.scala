@@ -80,105 +80,9 @@ object InputQueries {
       ).asUpdate
     }
 
-<<<<<<< HEAD
   // format: off
   def inputsFromTxsSQL(txHashes: Seq[Transaction.Hash]):
-    DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Address, U256)]] = {
-=======
-  def insertTxPerAddressFromInputs(inputs: Seq[InputEntity], outputs: Seq[OutputEntity])(
-      implicit ec: ExecutionContext): DBActionW[Seq[InputEntity]] = {
-
-    val inputsAddressOption = inputs.map(in => (in.address, in))
-
-    val outputsByAddress = outputs.groupBy(out => (out.address, out.txHash))
-
-    val assets = inputsAddressOption
-      .collect {
-        case (Some(address), input) if !outputsByAddress.contains((address, input.txHash)) =>
-          (address, input)
-      }
-      .distinctBy { case (address, input) => (address, input.txHash) }
-
-    val others = inputsAddressOption.collect {
-      case (None, input) => input
-    }
-
-    for {
-      _ <- insertInputWithAddress(assets)
-      inputsToUpdate <- DBIOAction
-        .sequence(others.map { input =>
-          insertTxPerAddressFromInput(input).map { i =>
-            if (i != 1) {
-              Seq(input)
-            } else {
-              Seq.empty
-            }
-          }
-        })
-        .map(_.flatten)
-      _ <- insertTokenPerAddressFromInputs(inputs)
-    } yield (inputsToUpdate).distinct
-  }
-
-  def insertTxPerAddressFromInput(input: InputEntity): DBActionW[Int] = {
-    sqlu"""
-      INSERT INTO transaction_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain)
-      (SELECT address, ${input.txHash}, ${input.blockHash}, ${input.timestamp}, ${input.txOrder}, main_chain FROM outputs WHERE key = ${input.outputRefKey})
-      ON CONFLICT ON CONSTRAINT txs_per_address_pk DO NOTHING
-    """
-  }
-
-  def insertInputWithAddress(inputs: Iterable[(Address, InputEntity)]): DBActionW[Int] = {
-    QuerySplitter
-      .splitUpdates(rows = inputs, columnsPerRow = 6) { (inputs, placeholder) =>
-        val query =
-          s"""
-          INSERT INTO transaction_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain)
-          VALUES $placeholder
-          ON CONFLICT (tx_hash, block_hash, address) DO NOTHING
-        """
-
-        val parameters: SetParameter[Unit] =
-          (_: Unit, params: PositionedParameters) =>
-            inputs foreach {
-              case (address, input) =>
-                params >> address
-                params >> input.txHash
-                params >> input.blockHash
-                params >> input.timestamp
-                params >> input.txOrder
-                params >> input.mainChain
-          }
-
-        SQLActionBuilder(
-          queryParts = query,
-          unitPConv  = parameters
-        ).asUpdate
-      }
-  }
-
-  def insertTokenPerAddressFromInputs(inputs: Iterable[InputEntity])(
-      implicit ec: ExecutionContext): DBActionW[Unit] = {
-    DBIOAction
-      .sequence(inputs.map { input =>
-        insertTokenPerAddressFromInput(input)
-      })
-      .map(_ => ())
-  }
-
-  def insertTokenPerAddressFromInput(input: InputEntity): DBActionW[Int] = {
-    sqlu"""
-          INSERT INTO token_tx_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
-          SELECT address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token
-          FROM token_outputs
-          WHERE key = ${input.outputRefKey}
-          ON CONFLICT (tx_hash, block_hash, address, token) DO NOTHING
-        """
-  }
-
-  // format: off
-  def inputsFromTxsSQL(txHashes: Seq[Transaction.Hash]):
-    DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Transaction.Hash, Address, U256, Option[Seq[Token]])]] = {
+    DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Address, U256, Option[Seq[Token]])]] = {
   // format: on
     if (txHashes.nonEmpty) {
       val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
@@ -189,7 +93,6 @@ object InputQueries {
       inputs.hint,
       inputs.output_ref_key,
       inputs.unlock_script,
-      outputs.tx_hash,
       outputs.address,
       outputs.amount,
       outputs.tokens
@@ -204,12 +107,12 @@ object InputQueries {
 
   // format: off
   def inputsFromTxsNoJoin(txHashes: Seq[Transaction.Hash]):
-    DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Address, U256)]] = {
+    DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Address, U256, Option[Seq[Token]])]] = {
   // format: on
     if (txHashes.nonEmpty) {
       val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
       sql"""
-    SELECT tx_hash, input_order, hint, output_ref_key, unlock_script, output_ref_address, output_ref_amount
+    SELECT tx_hash, input_order, hint, output_ref_key, unlock_script, output_ref_address, output_ref_amount, output_ref_tokens
     FROM inputs
     WHERE tx_hash IN (#$values) AND main_chain = true AND output_ref_address IS NOT NULL
     """.as
@@ -244,6 +147,6 @@ object InputQueries {
      address: Address,
      amount: U256,
      tokens: Option[Seq[Token]]) =>
-      Input(OutputRef(hint, key), unlockScript, txHash, address, amount, tokens)
+      Input(OutputRef(hint, key), unlockScript, address, amount, tokens)
   }.tupled
 }

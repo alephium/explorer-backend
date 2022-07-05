@@ -57,13 +57,6 @@ object BlockDao {
       dc: DatabaseConfig[PostgresProfile]): Future[Seq[BlockEntry]] =
     run(getAtHeightAction(fromGroup, toGroup, height))
 
-  def updateTransactionPerAddress(block: BlockEntity)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Unit] =
-    run(
-      updateTransactionPerAddressAction(block.outputs)
-    )
-
   /** Inserts a single block transactionally via SQL */
   def insert(block: BlockEntity)(implicit ec: ExecutionContext,
                                  dc: DatabaseConfig[PostgresProfile],
