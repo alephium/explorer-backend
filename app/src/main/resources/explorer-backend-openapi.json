@@ -3261,9 +3261,7 @@
       },
       "Input": {
         "required": [
-          "outputRef",
-          "address",
-          "attoAlphAmount"
+          "outputRef"
         ],
         "type": "object",
         "properties": {

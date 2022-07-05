@@ -53,8 +53,8 @@ trait Generators {
   lazy val inputGen: Gen[Input] = for {
     outputRef    <- outputRefGen
     unlockScript <- Gen.option(hashGen.map(_.bytes))
-    address      <- addressGen
-    amount       <- amountGen
+    address      <- Gen.option(addressGen)
+    amount       <- Gen.option(amountGen)
   } yield Input(outputRef, unlockScript.map(Hex.toHexString(_)), address, amount)
 
   lazy val uinputGen: Gen[UInput] = for {

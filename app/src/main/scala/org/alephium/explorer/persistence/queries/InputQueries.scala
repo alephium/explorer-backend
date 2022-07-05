@@ -24,16 +24,11 @@ import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.util.U256
 
 object InputQueries {
-
-  private val mainInputs  = InputSchema.table.filter(_.mainChain)
-  private val mainOutputs = OutputSchema.table.filter(_.mainChain)
 
   /** Inserts inputs or ignore rows with primary key conflict */
   // scalastyle:off magic.number
@@ -107,14 +102,14 @@ object InputQueries {
 
   // format: off
   def inputsFromTxsNoJoin(txHashes: Seq[Transaction.Hash]):
-    DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Address, U256, Option[Seq[Token]])]] = {
+    DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Option[Address], Option[U256], Option[Seq[Token]])]] = {
   // format: on
     if (txHashes.nonEmpty) {
       val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
       sql"""
     SELECT tx_hash, input_order, hint, output_ref_key, unlock_script, output_ref_address, output_ref_amount, output_ref_tokens
     FROM inputs
-    WHERE tx_hash IN (#$values) AND main_chain = true AND output_ref_address IS NOT NULL
+    WHERE tx_hash IN (#$values) AND main_chain = true
     """.as
     } else {
       DBIOAction.successful(Seq.empty)
@@ -122,21 +117,15 @@ object InputQueries {
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
-  val getInputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
-    mainInputs
-      .filter(_.txHash === txHash)
-      .join(mainOutputs)
-      .on(_.outputRefKey === _.key)
-      .sortBy(_._1.inputOrder)
-      .map {
-        case (input, output) =>
-          (input.hint,
-           input.outputRefKey,
-           input.unlockScript,
-           output.address,
-           output.amount,
-           output.tokens)
-      }
+  def getInputsQuery(txHash: Transaction.Hash)
+    : DBActionSR[(Int, Hash, Option[String], Option[Address], Option[U256], Option[Seq[Token]])] = {
+    sql"""
+    SELECT hint, output_ref_key, unlock_script, output_ref_address, output_ref_amount, output_ref_tokens
+    FROM inputs
+    WHERE main_chain = true
+    AND tx_hash = $txHash
+    ORDER BY input_order
+    """.as
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
@@ -144,8 +133,8 @@ object InputQueries {
     (hint: Int,
      key: Hash,
      unlockScript: Option[String],
-     address: Address,
-     amount: U256,
+     address: Option[Address],
+     amount: Option[U256],
      tokens: Option[Seq[Token]]) =>
       Input(OutputRef(hint, key), unlockScript, address, amount, tokens)
   }.tupled

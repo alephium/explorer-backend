@@ -246,7 +246,7 @@ object TransactionQueries extends StrictLogging {
   // format: off
   private def buildTransactionNoJoin(
       txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)],
-      inputs: Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Address, U256, Option[Seq[Token]])],
+      inputs: Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Option[Address], Option[U256], Option[Seq[Token]])],
       outputs: Seq[(Transaction.Hash, Int,OutputEntity.OutputType, Int, Hash, U256, Address,
         Option[Seq[Token]], Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])],
       gases: Seq[(Transaction.Hash, Int, U256)]) = {
@@ -291,7 +291,7 @@ object TransactionQueries extends StrictLogging {
         .sortBy(_._2)
         .map {
           case (_, _, hint, key, unlockScript, address, amount, tokens) =>
-            toApiInput((hint, key, unlockScript, address, amount, tokens))
+            toApiInput((hint, key, unlockScript, Some(address), Some(amount), tokens))
         }
     }
     val ousByTx = outputs.groupBy(_._1).view.mapValues { values =>
@@ -334,7 +334,7 @@ object TransactionQueries extends StrictLogging {
       gasAmount: Int,
       gasPrice: U256)(implicit ec: ExecutionContext): DBActionR[Transaction] =
     for {
-      ins  <- getInputsQuery(txHash).result
+      ins  <- getInputsQuery(txHash)
       outs <- getOutputsQuery(txHash).result
     } yield {
       Transaction(txHash,

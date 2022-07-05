@@ -41,8 +41,8 @@ final case class InputEntity(
     Input(
       OutputRef(hint, outputRefKey),
       unlockScript,
-      outputRef.address,
-      outputRef.amount,
+      Some(outputRef.address),
+      Some(outputRef.amount),
       outputRef.tokens
     )
 
