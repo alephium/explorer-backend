@@ -27,7 +27,7 @@ import org.scalatest.time.{Minutes, Span}
 import org.alephium.explorer.{AlephiumSpec, BlockHash, Generators, GroupSetting}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
-import org.alephium.explorer.persistence.DatabaseFixtureForEach
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.dao.{BlockDao, UnconfirmedTxDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.protocol.ALPH
@@ -195,7 +195,7 @@ class TransactionServiceSpec
     Future.sequence(blocks.map(BlockDao.insert)).futureValue
     val inputsToUpdate =
       Future.sequence(blocks.map(BlockDao.updateTransactionPerAddress)).futureValue.flatten
-    BlockDao.updateInputs(inputsToUpdate).futureValue
+    DBRunner.run(BlockDao.updateInputs(inputsToUpdate)).futureValue
 
     val t0 = Transaction(
       tx0.hash,

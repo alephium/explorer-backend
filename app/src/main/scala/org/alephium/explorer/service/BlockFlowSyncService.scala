@@ -25,11 +25,14 @@ import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
+import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.{foldFutures, GroupSetting}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.persistence.DBActionT
+import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.{BlockEntity, InputEntity}
 import org.alephium.explorer.util.Scheduler
@@ -309,22 +312,20 @@ case object BlockFlowSyncService extends StrictLogging {
       for {
         inputsToUpdate <- foldFutures(blocks)(insert)
         _              <- BlockDao.updateLatestBlock(blocks.last)
-        _              <- handleInputsToUpdate(inputsToUpdate.flatten)
-      } yield (blocks.size)
+        _              <- run(handleInputsToUpdate(inputsToUpdate.flatten))
+      } yield blocks.size
     } else {
       Future.successful(0)
     }
   }
 
   private def handleInputsToUpdate(inputs: Seq[InputEntity])(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]) = {
+      implicit ec: ExecutionContext): DBActionT[Unit] =
     if (inputs.nonEmpty) {
       BlockDao.updateInputs(inputs).map(_ => ())
     } else {
-      Future.successful(())
+      DBIOAction.successful(())
     }
-  }
 
   private def handleMissingMainChainBlock(missing: BlockEntry.Hash, chainFrom: GroupIndex)(
       implicit ec: ExecutionContext,
