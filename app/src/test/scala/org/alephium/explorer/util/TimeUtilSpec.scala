@@ -19,13 +19,12 @@ package org.alephium.explorer.util
 import java.time._
 
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
-import org.alephium.explorer.AlephiumSpec._
+import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.util.TimeUtil._
 import org.alephium.util.TimeStamp
 
-class TimeUtilSpec extends AnyWordSpec with Matchers {
+class TimeUtilSpec extends AlephiumSpec with Matchers {
 
   "toZonedDateTime" should {
     "convert OffsetTime to ZonedDateTime with today's date" in {

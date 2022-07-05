@@ -25,12 +25,10 @@ import org.scalatest.TryValues._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Seconds, Span}
-import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.AlephiumSpec._
 import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.config.{ApplicationConfig, ExplorerConfig}
@@ -40,7 +38,7 @@ import org.alephium.explorer.service.BlockFlowClient
 
 /** Temporary placeholder. These tests should be merged into ApplicationSpec  */
 class ExplorerV2Spec
-    extends AnyWordSpec
+    extends AlephiumSpec
     with Matchers
     with ScalaCheckDrivenPropertyChecks
     with ScalaFutures

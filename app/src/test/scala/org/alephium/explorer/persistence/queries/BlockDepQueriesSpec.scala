@@ -38,7 +38,7 @@ class BlockDepQueriesSpec
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
-  it should "insert and ignore block_deps" in {
+  "insert and ignore block_deps" in {
 
     forAll(Gen.listOf(blockDepUpdatedGen)) { deps =>
       //clean existing rows

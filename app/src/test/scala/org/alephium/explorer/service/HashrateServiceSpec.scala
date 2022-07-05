@@ -41,7 +41,7 @@ class HashrateServiceSpec
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
-  it should "hourly hashrates" in new Fixture {
+  "hourly hashrates" in new Fixture {
 
     val blocks = Seq(
       b("2022-01-07T23:00:00.001Z", 2),
@@ -65,7 +65,7 @@ class HashrateServiceSpec
     )
   }
 
-  it should "daily hashrates" in new Fixture {
+  "daily hashrates" in new Fixture {
 
     val blocks = Seq(
       b("2022-01-07T00:00:00.001Z", 2),
@@ -95,7 +95,7 @@ class HashrateServiceSpec
       )
   }
 
-  it should "sync, update and return correct hashrates" in new Fixture {
+  "sync, update and return correct hashrates" in new Fixture {
 
     val blocks = Seq(
       b("2022-01-06T23:45:35.300Z", 1),
@@ -149,7 +149,7 @@ class HashrateServiceSpec
     )
   }
 
-  it should "correctly step back" in new Fixture {
+  "correctly step back" in new Fixture {
     {
       val timestamp = ts("2022-01-08T12:21:34.321Z")
 

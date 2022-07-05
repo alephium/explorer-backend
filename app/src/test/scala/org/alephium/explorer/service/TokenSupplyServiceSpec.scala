@@ -46,7 +46,7 @@ class TokenSupplyServiceSpec
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(50, Seconds))
 
-  it should "Build days range" in {
+  "Build days range" in {
     val launchTime = ALPH.LaunchTimestamp //2021-11-08T11:20:06+00:00
     def ts(str: String): TimeStamp = {
       TimeStamp.unsafe(Instant.parse(str).toEpochMilli)
@@ -93,7 +93,7 @@ class TokenSupplyServiceSpec
       )
   }
 
-  it should "Token supply - only genesis - no lock" in new Fixture {
+  "Token supply - only genesis - no lock" in new Fixture {
     override val genesisLocked = false
 
     test(genesisBlock) {
@@ -101,7 +101,7 @@ class TokenSupplyServiceSpec
     }
   }
 
-  it should "Token supply - only genesis - locked" in new Fixture {
+  "Token supply - only genesis - locked" in new Fixture {
     override val genesisLocked = true
 
     test(genesisBlock) {
@@ -109,7 +109,7 @@ class TokenSupplyServiceSpec
     }
   }
 
-  it should "Token supply - block 1 not locked" in new Fixture {
+  "Token supply - block 1 not locked" in new Fixture {
     override val genesisLocked = false
 
     test(genesisBlock, block1, block2) {
@@ -120,7 +120,7 @@ class TokenSupplyServiceSpec
     }
   }
 
-  it should "Token supply - block 1 locked" in new Fixture {
+  "Token supply - block 1 locked" in new Fixture {
     override val genesisLocked = false
     override val block1Locked  = true
 
@@ -129,7 +129,7 @@ class TokenSupplyServiceSpec
     }
   }
 
-  it should "Token supply - some output spent" in new Fixture {
+  "Token supply - some output spent" in new Fixture {
     override val genesisLocked = false
 
     test(genesisBlock, block1, block2, block3) {
@@ -137,7 +137,7 @@ class TokenSupplyServiceSpec
     }
   }
 
-  it should "Token supply - genesis locked - some output spent" in new Fixture {
+  "Token supply - genesis locked - some output spent" in new Fixture {
     override val genesisLocked = true
 
     test(genesisBlock, block1, block2, block3) {
@@ -145,7 +145,7 @@ class TokenSupplyServiceSpec
     }
   }
 
-  it should "Token supply - Not count excluded addresses" in new Fixture {
+  "Token supply - Not count excluded addresses" in new Fixture {
     override val genesisLocked = true
 
     test(genesisBlock, block1, block2, block3, block4) {

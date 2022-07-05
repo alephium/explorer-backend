@@ -24,12 +24,10 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
-import org.scalatest.wordspec.AnyWordSpec
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.api.{model, ApiModelCodec}
-import org.alephium.explorer.{Generators, GroupSetting}
-import org.alephium.explorer.AlephiumSpec._
+import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting}
 import org.alephium.explorer.GenModel._
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Pagination}
 import org.alephium.explorer.cache.BlockCache
@@ -44,7 +42,7 @@ import org.alephium.protocol.model.ChainIndex
 import org.alephium.util.{Duration, TimeStamp}
 
 class BlockDaoSpec
-    extends AnyWordSpec
+    extends AlephiumSpec
     with DatabaseFixtureForEach
     with DBRunner
     with ScalaFutures
