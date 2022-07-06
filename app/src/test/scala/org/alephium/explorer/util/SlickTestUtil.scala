@@ -23,10 +23,18 @@ object SlickTestUtil {
 
   implicit class SlickTestImplicits(sql: SQLActionBuilder) {
 
-    /** Adds EXPLAIN ANALYZE to the head of the query */
-    def explain(): SqlStreamingAction[Vector[String], String, Effect.Read] =
+    private def alterHeadQuery(
+        prefix: String): SqlStreamingAction[Vector[String], String, Effect.Read] =
       sql
-        .copy(queryParts = sql.queryParts.updated(0, s"EXPLAIN ANALYZE ${sql.queryParts.head}"))
+        .copy(queryParts = sql.queryParts.updated(0, s"$prefix ${sql.queryParts.head}"))
         .as[String]
+
+    /** Adds `EXPLAIN ANALYZE` to head query */
+    def explainAnalyze(): SqlStreamingAction[Vector[String], String, Effect.Read] =
+      alterHeadQuery("EXPLAIN ANALYZE")
+
+    /** Adds `EXPLAIN` to head query */
+    def explain(): SqlStreamingAction[Vector[String], String, Effect.Read] =
+      alterHeadQuery("EXPLAIN")
   }
 }
