@@ -126,11 +126,12 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     forAll(inputGen) { input =>
       val expected = s"""
      |{
-     |  "outputRef": ${write(input.outputRef)},
-     |  ${input.unlockScript.map(script => s""""unlockScript": "${script}",""").getOrElse("")}
-     |  "txHashRef": "${input.txHashRef.value.toHexString}",
-     |  "address": "${input.address}",
-     |  "attoAlphAmount": "${input.attoAlphAmount}"
+     |  "outputRef": ${write(input.outputRef)}
+     |  ${input.unlockScript.map(script => s""","unlockScript": "${script}"""").getOrElse("")}
+     |  ${input.address.map(address => s""","address": "${address}"""").getOrElse("")}
+     |  ${input.attoAlphAmount
+                          .map(attoAlphAmount => s""","attoAlphAmount": "${attoAlphAmount}"""")
+                          .getOrElse("")}
      |}""".stripMargin
       check(input, expected)
     }

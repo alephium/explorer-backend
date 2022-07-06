@@ -85,15 +85,18 @@ class ListBlocksReadState(reverse: Boolean,
   private def generateTransactions(header: BlockHeader): Seq[TransactionEntity] =
     List.fill(transactionsPerBlock) {
       TransactionEntity(
-        hash      = new Transaction.Hash(Hash.generate),
-        blockHash = header.hash,
-        timestamp = header.timestamp,
-        chainFrom = GroupIndex.unsafe(1),
-        chainTo   = GroupIndex.unsafe(3),
-        gasAmount = 0,
-        gasPrice  = U256.unsafe(0),
-        order     = 0,
-        mainChain = header.mainChain
+        hash              = new Transaction.Hash(Hash.generate),
+        blockHash         = header.hash,
+        timestamp         = header.timestamp,
+        chainFrom         = GroupIndex.unsafe(1),
+        chainTo           = GroupIndex.unsafe(3),
+        gasAmount         = 0,
+        gasPrice          = U256.unsafe(0),
+        order             = 0,
+        mainChain         = header.mainChain,
+        scriptExecutionOk = Random.nextBoolean(),
+        inputSignatures   = None,
+        scriptSignatures  = None
       )
     }
 

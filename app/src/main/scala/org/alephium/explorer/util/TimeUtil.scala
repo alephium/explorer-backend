@@ -16,10 +16,12 @@
 
 package org.alephium.explorer.util
 
-import java.time._
+import java.time.{Instant, LocalDate, OffsetTime, ZonedDateTime}
 import java.time.temporal.ChronoUnit
 
-import org.alephium.util.TimeStamp
+import scala.annotation.tailrec
+
+import org.alephium.util.{Duration, TimeStamp}
 
 object TimeUtil {
 
@@ -42,6 +44,28 @@ object TimeUtil {
       .unsafe(
         f(instant).toEpochMilli
       )
+  }
+
+  def buildTimestampRange(localTs: TimeStamp,
+                          remoteTs: TimeStamp,
+                          step: Duration): Seq[(TimeStamp, TimeStamp)] = {
+    @tailrec
+    def rec(l: TimeStamp, seq: Seq[(TimeStamp, TimeStamp)]): Seq[(TimeStamp, TimeStamp)] = {
+      val next = l + step
+      if (next.isBefore(remoteTs)) {
+        rec(next.plusMillisUnsafe(1), seq :+ ((l, next)))
+      } else if (l == remoteTs) {
+        seq :+ ((remoteTs, remoteTs))
+      } else {
+        seq :+ ((l, remoteTs))
+      }
+    }
+
+    if (remoteTs.millis <= localTs.millis || step == Duration.zero) {
+      Seq.empty
+    } else {
+      rec(localTs, Seq.empty)
+    }
   }
 
 }

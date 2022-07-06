@@ -27,7 +27,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer.{AlephiumSpec, BuildInfo, Generators, GroupSetting, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TransactionCache}
-import org.alephium.explorer.persistence.DatabaseFixtureForEach
+import org.alephium.explorer.persistence.{Database, DatabaseFixtureForEach}
 import org.alephium.explorer.service._
 import org.alephium.json.Json
 import org.alephium.protocol.ALPH
@@ -188,12 +188,22 @@ class InfosServerSpec()
           dc: DatabaseConfig[PostgresProfile]): Future[Option[TransactionLike]] =
         Future.successful(None)
 
+      override def getOutputRefTransaction(key: Hash)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Option[ConfirmedTransaction]] =
+        Future.successful(None)
+
       override def getTransactionsNumberByAddress(address: Address)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[Int] =
         Future.successful(0)
 
       override def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
+        Future.successful(Seq.empty)
+
+      override def getTransactionsByAddress(address: Address, pagination: Pagination)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
         Future.successful(Seq.empty)
@@ -227,7 +237,7 @@ class InfosServerSpec()
 
     implicit val groupSettings: GroupSetting        = GroupSetting(groupNum)
     implicit val blockCache: BlockCache             = BlockCache()
-    implicit val transactionCache: TransactionCache = TransactionCache()
+    implicit val transactionCache: TransactionCache = TransactionCache(new Database(false))
 
     val server =
       new InfosServer(tokenSupplyService, blockService, transactionService)

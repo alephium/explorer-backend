@@ -16,13 +16,13 @@
 
 package org.alephium.explorer.util
 
-import java.time._
+import java.time.{Instant, LocalDateTime, OffsetTime, ZoneId}
 
 import org.scalatest.matchers.should.Matchers
 
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.util.TimeUtil._
-import org.alephium.util.TimeStamp
+import org.alephium.util.{Duration, TimeStamp}
 
 class TimeUtilSpec extends AlephiumSpec with Matchers {
 
@@ -59,6 +59,35 @@ class TimeUtilSpec extends AlephiumSpec with Matchers {
     }
   }
 
+  "buildTimestampRange" should {
+    "build the correct ranges" in {
+
+      buildTimestampRange(t(0), t(5), s(1)) is
+        Seq(r(0, 1), r(2, 3), r(4, 5))
+
+      buildTimestampRange(t(0), t(5), s(2)) is
+        Seq(r(0, 2), r(3, 5))
+
+      buildTimestampRange(t(0), t(6), s(2)) is
+        Seq(r(0, 2), r(3, 5), r(6, 6))
+
+      buildTimestampRange(t(0), t(7), s(2)) is
+        Seq(r(0, 2), r(3, 5), r(6, 7))
+
+      buildTimestampRange(t(1), t(1), s(1)) is
+        Seq.empty
+
+      buildTimestampRange(t(1), t(0), s(1)) is
+        Seq.empty
+
+      buildTimestampRange(t(0), t(1), s(0)) is
+        Seq.empty
+    }
+  }
+
   def ts(str: String): TimeStamp =
     TimeStamp.unsafe(Instant.parse(str).toEpochMilli)
+  def t(l: Long)            = TimeStamp.unsafe(l)
+  def s(l: Long)            = Duration.ofMillisUnsafe(l)
+  def r(l1: Long, l2: Long) = (t(l1), t(l2))
 }

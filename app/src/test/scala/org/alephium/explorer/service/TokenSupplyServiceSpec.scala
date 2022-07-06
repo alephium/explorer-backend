@@ -194,7 +194,19 @@ class TokenSupplyServiceSpec
         timestamp = timestamp,
         inputs = block1.outputs.zipWithIndex.map {
           case (out, index) =>
-            InputEntity(block.hash, txHash, timestamp, 0, out.key, None, false, index, 0)
+            InputEntity(block.hash,
+                        txHash,
+                        timestamp,
+                        0,
+                        out.key,
+                        None,
+                        false,
+                        index,
+                        0,
+                        None,
+                        None,
+                        None)
+
         },
         outputs = block.outputs.map(_.copy(timestamp = timestamp, lockTime = None))
       )

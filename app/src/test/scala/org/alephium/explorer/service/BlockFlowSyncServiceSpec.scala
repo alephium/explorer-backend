@@ -45,30 +45,6 @@ class BlockFlowSyncServiceSpec
     with Eventually {
   override implicit val patienceConfig = PatienceConfig(timeout = Span(50, Seconds))
 
-  "build timestamp range" in new Fixture {
-
-    BlockFlowSyncService.buildTimestampRange(t(0), t(5), s(1)) is
-      Seq(r(0, 1), r(2, 3), r(4, 5))
-
-    BlockFlowSyncService.buildTimestampRange(t(0), t(5), s(2)) is
-      Seq(r(0, 2), r(3, 5))
-
-    BlockFlowSyncService.buildTimestampRange(t(0), t(6), s(2)) is
-      Seq(r(0, 2), r(3, 5), r(6, 6))
-
-    BlockFlowSyncService.buildTimestampRange(t(0), t(7), s(2)) is
-      Seq(r(0, 2), r(3, 5), r(6, 7))
-
-    BlockFlowSyncService.buildTimestampRange(t(1), t(1), s(1)) is
-      Seq.empty
-
-    BlockFlowSyncService.buildTimestampRange(t(1), t(0), s(1)) is
-      Seq.empty
-
-    BlockFlowSyncService.buildTimestampRange(t(0), t(1), s(0)) is
-      Seq.empty
-  }
-
   "fetch and build timestamp range" in new Fixture {
 
     def th(ts: TimeStamp, height: Int) = Future.successful(Option((ts, height)))

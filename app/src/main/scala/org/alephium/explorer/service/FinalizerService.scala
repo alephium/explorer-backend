@@ -33,7 +33,7 @@ import org.alephium.explorer.persistence.model.AppState
 import org.alephium.explorer.persistence.schema.AppStateSchema
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.explorer.util.Scheduler
+import org.alephium.explorer.util.{Scheduler, TimeUtil}
 import org.alephium.serde._
 import org.alephium.util.{Duration, TimeStamp}
 
@@ -79,7 +79,7 @@ case object FinalizerService extends StrictLogging {
     var updateCounter = 0
     logger.debug(s"Updating outputs")
     val timeRanges =
-      BlockFlowSyncService.buildTimestampRange(start, end, step)
+      TimeUtil.buildTimestampRange(start, end, step)
     foldFutures(timeRanges) {
       case (from, to) =>
         run(

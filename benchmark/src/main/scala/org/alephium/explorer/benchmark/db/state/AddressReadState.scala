@@ -33,6 +33,7 @@ import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBEx
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.protocol.ALPH
@@ -62,7 +63,11 @@ class AddressReadState(val db: DBExecutor)
 
   var blocks: Array[BlockEntity] = _
 
-  lazy val txHashes = Random.shuffle(blocks.flatMap(_.transactions.map(_.hash))).take(100).toSeq
+  lazy val hashes = Random
+    .shuffle(blocks.flatMap(_.transactions.map(tx => (tx.hash, tx.blockHash))).toMap)
+    .take(100)
+    .toSeq
+  lazy val txHashes = hashes.map(_._1)
 
   val pagination: Pagination = Pagination.unsafe(
     offset  = 0,
@@ -75,29 +80,37 @@ class AddressReadState(val db: DBExecutor)
                             timestamp: TimeStamp,
                             hint: Int,
                             key: Hash): InputEntity = {
-    InputEntity(blockHash    = blockHash,
-                txHash       = txHash,
-                timestamp    = timestamp,
-                hint         = hint,
-                outputRefKey = key,
-                unlockScript = None,
-                mainChain    = true,
-                inputOrder   = 0,
-                txOrder      = 0)
+    InputEntity(
+      blockHash    = blockHash,
+      txHash       = txHash,
+      timestamp    = timestamp,
+      hint         = hint,
+      outputRefKey = key,
+      unlockScript = None,
+      mainChain    = true,
+      inputOrder   = 0,
+      txOrder      = 0,
+      None,
+      None,
+      None
+    )
   }
   private def generateTransaction(blockHash: BlockEntry.Hash,
                                   txHash: Transaction.Hash,
                                   timestamp: TimeStamp): TransactionEntity =
     TransactionEntity(
-      hash      = txHash,
-      blockHash = blockHash,
-      timestamp = timestamp,
-      chainFrom = GroupIndex.unsafe(1),
-      chainTo   = GroupIndex.unsafe(3),
-      gasAmount = 0,
-      gasPrice  = U256.unsafe(0),
-      order     = 0,
-      mainChain = true
+      hash              = txHash,
+      blockHash         = blockHash,
+      timestamp         = timestamp,
+      chainFrom         = GroupIndex.unsafe(1),
+      chainTo           = GroupIndex.unsafe(3),
+      gasAmount         = 0,
+      gasPrice          = U256.unsafe(0),
+      order             = 0,
+      mainChain         = true,
+      scriptExecutionOk = Random.nextBoolean(),
+      inputSignatures   = None,
+      scriptSignatures  = None
     )
 
   def generateData(currentCacheSize: Int): OutputEntity = {
@@ -205,6 +218,11 @@ class AddressReadState(val db: DBExecutor)
     val _ =
       Await.result(FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from)),
                    batchWriteTimeout)
+
+    val _ = db.runNow(
+      action  = InputUpdateQueries.updateInputs(),
+      timeout = batchWriteTimeout
+    )
 
     logger.info("Persisting data complete")
   }

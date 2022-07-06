@@ -20,10 +20,9 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
-import slick.basic.DatabaseConfig
-import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.persistence.Database
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.util.Service
@@ -31,10 +30,10 @@ import org.alephium.util.Service
 object TransactionCache {
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def apply(reloadAfter: FiniteDuration = 5.seconds)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): TransactionCache =
-    new TransactionCache(reloadAfter)
+  def apply(database: Database, reloadAfter: FiniteDuration = 5.seconds)(
+      implicit ec: ExecutionContext
+  ): TransactionCache =
+    new TransactionCache(database, reloadAfter)
 }
 
 /**
@@ -42,13 +41,14 @@ object TransactionCache {
   *
   * @param mainChainTxnCount Stores current total number of `main_chain` transaction.
   */
-class TransactionCache(reloadAfter: FiniteDuration)(implicit val executionContext: ExecutionContext,
-                                                    dc: DatabaseConfig[PostgresProfile])
+class TransactionCache(database: Database, reloadAfter: FiniteDuration)(
+    implicit val executionContext: ExecutionContext)
     extends Service {
 
   private val mainChainTxnCount: AsyncReloadingCache[Int] = {
     AsyncReloadingCache(0, reloadAfter) { _ =>
-      run(TransactionQueries.mainTransactions.length.result)
+      run(TransactionQueries.mainTransactions.length.result)(executionContext,
+                                                             database.databaseConfig)
     }
   }
 
@@ -63,5 +63,5 @@ class TransactionCache(reloadAfter: FiniteDuration)(implicit val executionContex
     Future.unit
   }
 
-  override def subServices: ArraySeq[Service] = ArraySeq.empty
+  override def subServices: ArraySeq[Service] = ArraySeq(database)
 }
