@@ -134,24 +134,25 @@ class BlockQueriesSpec
 
   "listMainChainHeadersWithTxnNumberSQLBuilder" should {
     "use block_headers_full_index" in {
-      //test-data
-      val headers = Array.fill(100)(blockHeaderGen.sample).flatten
-      //persist test-data
-      run(BlockHeaderSchema.table ++= headers).futureValue
+      forAll(Gen.listOf(blockHeaderGen)) { headers =>
+        //persist test-data
+        run(BlockHeaderSchema.table.delete).futureValue
+        run(BlockHeaderSchema.table ++= headers).futureValue
 
-      //build explain query
-      val explain =
-        BlockQueries
-          .listMainChainHeadersWithTxnNumberSQLBuilder(Pagination.unsafe(1, 10))
-          .explain() //flatten so we get single String instead of Vector[String]
+        //build explain query
+        val explain =
+          BlockQueries
+            .listMainChainHeadersWithTxnNumberSQLBuilder(Pagination.unsafe(1, 10))
+            .explain() //flatten so we get single String instead of Vector[String]
 
-      //run explain query
-      val explainResult =
-        run(explain).futureValue
+        //run explain query
+        val explainResult =
+          run(explain).futureValue
 
-      //check the query is using the index named `block_headers_full_index` in `block_headers` table
-      explainResult.mkString should
-        include("Index Scan using block_headers_full_index on block_headers")
+        //check the query is using the index named `block_headers_full_index` in `block_headers` table
+        explainResult.mkString should
+          include("Index Scan using block_headers_full_index on block_headers")
+      }
     }
   }
 }
