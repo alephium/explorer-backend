@@ -165,6 +165,9 @@ class AddressServerSpec()
       def listTokens(pagination: Pagination)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] = ???
+      def isAddressActive(address: Address)(implicit ec: ExecutionContext,
+                                            dc: DatabaseConfig[PostgresProfile]): Future[Boolean] =
+        ???
     }
   }
 }

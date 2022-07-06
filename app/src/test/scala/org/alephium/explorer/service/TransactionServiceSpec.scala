@@ -415,6 +415,25 @@ class TransactionServiceSpec
     }
   }
 
+  "check active address" in new Fixture {
+
+    val address  = addressGen.sample.get
+    val address2 = addressGen.sample.get
+
+    val block =
+      blockEntityGen(groupIndex, groupIndex, None)
+        .map { block =>
+          block.copy(outputs = block.outputs.map(_.copy(address = address)))
+        }
+        .sample
+        .get
+
+    BlockDao.insertAll(Seq(block)).futureValue
+
+    TransactionService.isAddressActive(address).futureValue is true
+    TransactionService.isAddressActive(address2).futureValue is false
+  }
+
   trait Fixture {
     implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
     implicit val blockCache: BlockCache      = BlockCache()
