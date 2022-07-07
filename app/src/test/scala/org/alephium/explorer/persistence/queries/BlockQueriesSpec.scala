@@ -24,8 +24,10 @@ import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.util.SlickTestUtil._
 
 class BlockQueriesSpec
     extends AlephiumSpec
@@ -126,6 +128,30 @@ class BlockQueriesSpec
           //expect None
           run(BlockQueries.getBlockHeaderAction(hash)).futureValue is None
         }
+      }
+    }
+  }
+
+  "listMainChainHeadersWithTxnNumberSQLBuilder" should {
+    "use block_headers_full_index" in {
+      forAll(Gen.listOf(blockHeaderGen)) { headers =>
+        //persist test-data
+        run(BlockHeaderSchema.table.delete).futureValue
+        run(BlockHeaderSchema.table ++= headers).futureValue
+
+        //build explain query
+        val explain =
+          BlockQueries
+            .listMainChainHeadersWithTxnNumberSQLBuilder(Pagination.unsafe(1, 10))
+            .explain() //flatten so we get single String instead of Vector[String]
+
+        //run explain query
+        val explainResult =
+          run(explain).futureValue
+
+        //check the query is using the index named `block_headers_full_index` in `block_headers` table
+        explainResult.mkString should
+          include("Index Scan using block_headers_full_index on block_headers")
       }
     }
   }

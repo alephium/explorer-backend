@@ -106,8 +106,11 @@ object BlockQueries extends StrictLogging {
     * Fetches all main_chain [[org.alephium.explorer.persistence.schema.BlockHeaderSchema.table]] rows
     */
   def listMainChainHeadersWithTxnNumberSQL(
-      pagination: Pagination): DBActionRWT[Vector[BlockEntryLite]] = {
+      pagination: Pagination): DBActionRWT[Vector[BlockEntryLite]] =
+    listMainChainHeadersWithTxnNumberSQLBuilder(pagination)
+      .as[BlockEntryLite](blockEntryListGetResult)
 
+  def listMainChainHeadersWithTxnNumberSQLBuilder(pagination: Pagination): SQLActionBuilder = {
     //order by for inner query
     val orderBy =
       if (pagination.reverse) {
@@ -117,20 +120,19 @@ object BlockQueries extends StrictLogging {
       }
 
     sql"""
-           |select hash,
-           |       block_timestamp,
-           |       chain_from,
-           |       chain_to,
-           |       height,
-           |       main_chain,
-           |       hashrate,
-           |       txs_count
-           |from #$block_headers
-           |where main_chain = true
-           |#$orderBy
-           |limit ${pagination.limit} offset ${pagination.limit * pagination.offset}
-           |""".stripMargin
-      .as[BlockEntryLite](blockEntryListGetResult)
+         |select hash,
+         |       block_timestamp,
+         |       chain_from,
+         |       chain_to,
+         |       height,
+         |       main_chain,
+         |       hashrate,
+         |       txs_count
+         |from #$block_headers
+         |where main_chain = true
+         |#$orderBy
+         |limit ${pagination.limit} offset ${pagination.limit * pagination.offset}
+         |""".stripMargin
   }
 
   def updateMainChainStatusAction(hash: BlockEntry.Hash, isMainChain: Boolean)(
