@@ -26,7 +26,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.ApiError
-import org.alephium.explorer.{AlephiumSpec, Generators, Hash}
+import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
@@ -117,20 +117,30 @@ class AddressServerSpec()
     }
   }
 
-  "fail if too many active addresses" in new Fixture {
+  "respect the max number of addresses" in new Fixture {
     forAll(addressGen) {
       case (address) =>
-        val json   = s"[${Seq.fill(201)(s""""$address"""").mkString(",")}]"
-        val entity = HttpEntity(ContentTypes.`application/json`, json)
-        Post(s"/addresses-active", entity) ~> server.route ~> check {
+        val size = groupNum * 20
+
+        val jsonOk   = s"[${Seq.fill(size)(s""""$address"""").mkString(",")}]"
+        val entityOk = HttpEntity(ContentTypes.`application/json`, jsonOk)
+        Post(s"/addresses-active", entityOk) ~> server.route ~> check {
+          status is StatusCodes.OK
+        }
+
+        val jsonFail   = s"[${Seq.fill(size + 1)(s""""$address"""").mkString(",")}]"
+        val entityFail = HttpEntity(ContentTypes.`application/json`, jsonFail)
+        Post(s"/addresses-active", entityFail) ~> server.route ~> check {
           status is StatusCodes.BadRequest
           responseAs[ApiError.BadRequest] is ApiError.BadRequest(
-            s"Invalid value for: body (expected size of value to be less than or equal to 200, but was 201)")
+            s"Invalid value for: body (expected size of value to be less than or equal to $size, but was ${size + 1})")
         }
     }
   }
 
   trait Fixture {
+
+    implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
 
     val transactionService = new EmptyTransactionService {}
 

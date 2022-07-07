@@ -23,15 +23,19 @@ import akka.http.scaladsl.server.Route
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
+import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model.{AddressBalance, AddressInfo}
 import org.alephium.explorer.service.TransactionService
 
 class AddressServer(transactionService: TransactionService)(
     implicit val executionContext: ExecutionContext,
+    groupSetting: GroupSetting,
     dc: DatabaseConfig[PostgresProfile])
     extends Server
     with AddressesEndpoints {
+
+  val groupNum = groupSetting.groupNum
 
   val route: Route =
     toRoute(getTransactionsByAddress.serverLogicSuccess[Future] {

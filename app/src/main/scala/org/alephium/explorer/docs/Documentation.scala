@@ -30,7 +30,7 @@ trait Documentation
     with TokensEndpoints
     with UtilsEndpoints
     with OpenAPIDocsInterpreter {
-  val docs: OpenAPI = toOpenAPI(
+  lazy val docs: OpenAPI = toOpenAPI(
     List(
       listBlocks,
       getBlockByHash,

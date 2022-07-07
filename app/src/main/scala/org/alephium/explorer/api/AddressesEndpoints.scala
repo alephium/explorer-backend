@@ -28,7 +28,12 @@ import org.alephium.protocol.Hash
 // scalastyle:off magic.number
 trait AddressesEndpoints extends BaseEndpoint with QueryParams {
 
-  private val activeAddressesMaxSize: Int = 200
+  def groupNum: Int
+
+  //As defined in https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#address-gap-limit
+  private val gapLimit = 20
+
+  private lazy val activeAddressesMaxSize: Int = groupNum * gapLimit
 
   private val addressesEndpoint =
     baseEndpoint
@@ -98,7 +103,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[Seq[Transaction]])
       .description("List address tokens")
 
-  val areAddressesActive: BaseEndpoint[Seq[Address], Seq[Boolean]] =
+  lazy val areAddressesActive: BaseEndpoint[Seq[Address], Seq[Boolean]] =
     baseEndpoint
       .tag("Addresses")
       .in("addresses-active")

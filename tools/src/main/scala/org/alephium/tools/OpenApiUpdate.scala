@@ -24,6 +24,9 @@ object OpenApiUpdate {
   def main(args: Array[String]): Unit = {
     sideEffect {
       new Documentation {
+
+        val groupNum = 4
+
         private val json = openApiJson(docs, dropAuth = false)
 
         import java.io.PrintWriter

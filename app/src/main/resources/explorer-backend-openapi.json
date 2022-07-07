@@ -1310,7 +1310,7 @@
                 "items": {
                   "type": "string"
                 },
-                "maxItems": 200
+                "maxItems": 80
               }
             }
           },
