@@ -15,26 +15,65 @@
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 package org.alephium.explorer.util
 
+import scala.concurrent.ExecutionContext
+
+import org.scalatest.matchers.should.Matchers._
 import slick.dbio.Effect
+import slick.jdbc.PostgresProfile.api._
 import slick.jdbc.SQLActionBuilder
-import slick.sql.SqlStreamingAction
+import slick.sql.{FixedSqlStreamingAction, SqlStreamingAction}
+
+import org.alephium.explorer.persistence.DBActionR
 
 object SlickTestUtil {
 
-  implicit class SlickTestImplicits(sql: SQLActionBuilder) {
-
-    private def alterHeadQuery(
-        prefix: String): SqlStreamingAction[Vector[String], String, Effect.Read] =
-      sql
-        .copy(queryParts = sql.queryParts.updated(0, s"$prefix ${sql.queryParts.head}"))
-        .as[String]
+  /** For SQL queries */
+  implicit class SQLActionBuilderImplicits(sql: SQLActionBuilder) {
 
     /** Adds `EXPLAIN ANALYZE` to head query */
     def explainAnalyze(): SqlStreamingAction[Vector[String], String, Effect.Read] =
-      alterHeadQuery("EXPLAIN ANALYZE")
+      alterHeadQuery(sql, "EXPLAIN ANALYZE")
 
     /** Adds `EXPLAIN` to head query */
     def explain(): SqlStreamingAction[Vector[String], String, Effect.Read] =
-      alterHeadQuery("EXPLAIN")
+      alterHeadQuery(sql, "EXPLAIN")
   }
+
+  /** For typed static queries  */
+  implicit class FixedSqlStreamingActionImplicits[+R, +T, -E <: Effect](
+      sql: FixedSqlStreamingAction[R, T, E]) {
+
+    /** Adds `EXPLAIN ANALYZE` to head query */
+    def explainAnalyze(): SqlStreamingAction[Vector[String], String, Effect.Read] =
+      alterHeadQuery(sql, "EXPLAIN ANALYZE")
+
+    /** Adds `EXPLAIN` to head query */
+    def explain(): SqlStreamingAction[Vector[String], String, Effect.Read] =
+      alterHeadQuery(sql, "EXPLAIN")
+
+    def explainFlatten()(implicit ec: ExecutionContext): DBActionR[String] =
+      alterHeadQuery(sql, "EXPLAIN").map(_.mkString("\n"))
+  }
+
+  /** Alter's first query with the prefix. */
+  def alterHeadQuery(sql: SQLActionBuilder,
+                     prefix: String): SqlStreamingAction[Vector[String], String, Effect.Read] =
+    sql
+      .copy(queryParts = sql.queryParts.updated(0, s"$prefix ${sql.queryParts.head}"))
+      .as[String]
+
+  /** Alter's first query with the prefix. */
+  def alterHeadQuery[R, T, E <: Effect](
+      sql: FixedSqlStreamingAction[R, T, E],
+      prefix: String): SqlStreamingAction[Vector[String], String, Effect.Read] =
+    if (sql.statements.sizeIs == 1) {
+      alterHeadQuery(sql"#${sql.statements.head}", prefix)
+    } else if (sql.statements.sizeIs <= 0) {
+      fail(s"$prefix cannot be implemented for empty SQL. Statement size: ${sql.statements.size}")
+    } else {
+      fail(
+        s"TODO: $prefix not yet implemented for nested queries. Statement size: ${sql.statements.size}"
+      )
+    }
+
 }

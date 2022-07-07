@@ -17,14 +17,15 @@ package org.alephium.explorer
 
 import org.scalacheck.Gen
 
+import org.alephium.explorer.GenCommon._
 import org.alephium.explorer.persistence.model._
 
 /** Test-data generators for types in package [[org.alephium.explorer.persistence.model]]  */
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 object GenModel extends Generators {
 
   /** Generates and [[org.alephium.explorer.persistence.model.InputEntity]] for the given
     * [[org.alephium.explorer.persistence.model.OutputEntity]] generator */
-  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def genInputOutput(
       outputGen: Gen[OutputEntity] = outputEntityGen): Gen[(InputEntity, OutputEntity)] =
     for {
@@ -51,5 +52,12 @@ object GenModel extends Generators {
       case (input, output) =>
         toTransactionPerAddressEntity(input, output)
     }
+
+  /** Can be used to limit the number of generated blockHeaders */
+  def genBlockHeaders(size: Gen[Int] = Gen.posNum[Int]): Gen[List[BlockHeader]] =
+    genOfSize(
+      limit = size,
+      data = blockHeaderGen
+    )
 
 }

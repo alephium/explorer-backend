@@ -24,9 +24,12 @@ import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.GenModel._
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.tag.IndexCheck
 import org.alephium.explorer.util.SlickTestUtil._
 
 class BlockQueriesSpec
@@ -133,7 +136,7 @@ class BlockQueriesSpec
   }
 
   "listMainChainHeadersWithTxnNumberSQLBuilder" should {
-    "use block_headers_full_index" in {
+    "use block_headers_full_index" taggedAs IndexCheck in {
       forAll(Gen.listOf(blockHeaderGen)) { headers =>
         //persist test-data
         run(BlockHeaderSchema.table.delete).futureValue
@@ -152,6 +155,44 @@ class BlockQueriesSpec
         //check the query is using the index named `block_headers_full_index` in `block_headers` table
         explainResult.mkString should
           include("Index Scan using block_headers_full_index on block_headers")
+      }
+    }
+  }
+
+  "mainChainQuery" should {
+
+    //Build database state for headers and run explain on mainChainQuery
+    def runExplain(headers: Seq[BlockHeader]) = {
+      //Clear table persist test-data
+      run(BlockHeaderSchema.table.delete).futureValue
+      run(BlockHeaderSchema.table ++= headers).futureValue
+
+      //build explain query for mainChainQuery
+      run(BlockQueries.mainChainQuery.result.explainFlatten()).futureValue
+    }
+
+    "use block_headers_main_chain_idx" when {
+      "data size is large" taggedAs IndexCheck in {
+        /*
+         * This test is flaky. Postgres randomly choose not to use `block_headers_main_chain_idx`.
+         * Even if more data gets added after the first fail, Postgres still does sequential scan
+         * after multiple attempts of writing more data.
+         *
+         * Query planner uses sequential scan:
+         * Seq Scan on block_headers  (cost=0.00..1652.67 rows=3606 width=235)
+         *    Filter: main_chain
+         */
+        forAll(genBlockHeaders(Gen.const(20000))) { headers =>
+          runExplain(headers) should include("Index Scan on block_headers_main_chain_idx")
+        }
+      }
+    }
+
+    "not use block_headers_main_chain_idx" when {
+      "data size is small" taggedAs IndexCheck in {
+        forAll(genBlockHeaders(Gen.choose(0, 10))) { headers =>
+          runExplain(headers) should not include "block_headers_main_chain_idx"
+        }
       }
     }
   }

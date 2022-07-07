@@ -72,4 +72,11 @@ object GenCommon {
       genStringOfLength(length, charGen)
     }
 
+  /** Can be used to limit the number of data to generate eg: Gen.posNum or Gen.choose(1, 1000) */
+  def genOfSize[T](limit: Gen[Int], data: Gen[T]): Gen[List[T]] =
+    for {
+      size     <- limit
+      testData <- Gen.listOfN(size, data)
+    } yield testData
+
 }
