@@ -44,7 +44,7 @@ trait Documentation
       listAddressTokens,
       listAddressTokenTransactions,
       getAddressTokenBalance,
-      isAddressActive,
+      areAddressesActive,
       getInfos,
       getHeights,
       listTokens,

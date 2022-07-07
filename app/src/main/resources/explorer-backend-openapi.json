@@ -1295,29 +1295,35 @@
         }
       }
     },
-    "/addresses/{address}/active": {
-      "get": {
+    "/addresses-active": {
+      "post": {
         "tags": [
           "Addresses"
         ],
-        "description": "Is the address active (at least 1 tx)",
-        "operationId": "getAddressesAddressActive",
-        "parameters": [
-          {
-            "name": "address",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
+        "description": "Are the addresses active (at least 1 transaction)",
+        "operationId": "postAddresses-active",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
             }
-          }
-        ],
+          },
+          "required": false
+        },
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "boolean"
+                  "type": "array",
+                  "items": {
+                    "type": "boolean"
+                  }
                 }
               }
             }

@@ -96,10 +96,12 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[Seq[Transaction]])
       .description("List address tokens")
 
-  val isAddressActive: BaseEndpoint[Address, Boolean] =
-    addressesEndpoint.get
-      .in(path[Address]("address")(Codecs.addressTapirCodec))
-      .in("active")
-      .out(jsonBody[Boolean])
-      .description("Is the address active (at least 1 tx)")
+  val areAddressesActive: BaseEndpoint[Seq[Address], Seq[Boolean]] =
+    baseEndpoint
+      .tag("Addresses")
+      .in("addresses-active")
+      .post
+      .in(jsonBody[Seq[Address]])
+      .out(jsonBody[Seq[Boolean]])
+      .description("Are the addresses active (at least 1 transaction)")
 }

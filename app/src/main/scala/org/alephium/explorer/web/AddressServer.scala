@@ -75,8 +75,8 @@ class AddressServer(transactionService: TransactionService)(
             tokens <- transactionService.listAddressTokenTransactions(address, token, pagination)
           } yield tokens
       }) ~
-      toRoute(isAddressActive.serverLogicSuccess[Future] { address =>
-        transactionService.isAddressActive(address)
+      toRoute(areAddressesActive.serverLogicSuccess[Future] { addresses =>
+        transactionService.areAddressesActive(addresses)
       })
 
 }

@@ -356,10 +356,13 @@ object TransactionQueries extends StrictLogging {
                   gasPrice)
     }
 
-  def isAddressActiveAction(address: Address)(implicit ec: ExecutionContext): DBActionR[Boolean] = {
-    sql"""
-       SELECT EXISTS (SELECT 1 FROM transaction_per_addresses WHERE address = $address)
-         """.as[Boolean].exactlyOne
+  def areAddressesActiveAction(addresses: Seq[Address])(
+      implicit ec: ExecutionContext): DBActionR[Seq[Boolean]] = {
+    DBIOAction.sequence(addresses.map { address =>
+      sql"""
+         SELECT EXISTS (SELECT 1 FROM transaction_per_addresses WHERE address = $address)
+           """.as[Boolean].exactlyOne
+    })
   }
 
   def getBalanceAction(address: Address)(implicit ec: ExecutionContext): DBActionR[(U256, U256)] =

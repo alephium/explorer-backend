@@ -57,8 +57,9 @@ trait TransactionService {
 
   def getTotalNumber()(implicit cache: TransactionCache): Int
 
-  def isAddressActive(address: Address)(implicit ec: ExecutionContext,
-                                        dc: DatabaseConfig[PostgresProfile]): Future[Boolean]
+  def areAddressesActive(addresses: Seq[Address])(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Boolean]]
 
   def listTokens(pagination: Pagination)(implicit ec: ExecutionContext,
                                          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]]
@@ -145,9 +146,10 @@ object TransactionService extends TransactionService {
       dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
     TransactionDao.listAddressTokenTransactions(address, token, pagination)
 
-  def isAddressActive(address: Address)(implicit ec: ExecutionContext,
-                                        dc: DatabaseConfig[PostgresProfile]): Future[Boolean] =
-    TransactionDao.isAddressActive(address)
+  def areAddressesActive(addresses: Seq[Address])(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Boolean]] =
+    TransactionDao.areAddressesActive(addresses)
 
   def getTotalNumber()(implicit cache: TransactionCache): Int =
     cache.getMainChainTxnCount()

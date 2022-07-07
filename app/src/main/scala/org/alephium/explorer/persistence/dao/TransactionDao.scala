@@ -64,9 +64,10 @@ object TransactionDao {
       dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
     run(getTokenBalanceAction(address, token))
 
-  def isAddressActive(address: Address)(implicit ec: ExecutionContext,
-                                        dc: DatabaseConfig[PostgresProfile]): Future[Boolean] =
-    run(isAddressActiveAction(address))
+  def areAddressesActive(addresses: Seq[Address])(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Boolean]] =
+    run(areAddressesActiveAction(addresses))
 
   def listTokens(pagination: Pagination)(implicit ec: ExecutionContext,
                                          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] =

@@ -430,8 +430,7 @@ class TransactionServiceSpec
 
     BlockDao.insertAll(Seq(block)).futureValue
 
-    TransactionService.isAddressActive(address).futureValue is true
-    TransactionService.isAddressActive(address2).futureValue is false
+    TransactionService.areAddressesActive(Seq(address, address2)).futureValue is Seq(true, false)
   }
 
   trait Fixture {
