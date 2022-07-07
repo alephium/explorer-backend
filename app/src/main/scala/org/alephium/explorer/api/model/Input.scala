@@ -24,10 +24,9 @@ import org.alephium.util.U256
 final case class Input(
     outputRef: OutputRef,
     unlockScript: Option[String] = None,
-    txHashRef: Transaction.Hash,
-    address: Address,
-    attoAlphAmount: U256,
-    tokens: Option[Seq[Token]] = None
+    address: Option[Address]     = None,
+    attoAlphAmount: Option[U256] = None,
+    tokens: Option[Seq[Token]]   = None
 )
 
 object Input {

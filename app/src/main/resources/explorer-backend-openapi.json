@@ -442,6 +442,102 @@
         }
       }
     },
+    "/transaction-by-output-ref-key/{output-ref-key}": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "description": "Get a transaction from a output reference key",
+        "operationId": "getTransaction-by-output-ref-keyOutput-ref-key",
+        "parameters": [
+          {
+            "name": "output-ref-key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmedTransaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/addresses/{address}": {
       "get": {
         "tags": [
@@ -3165,10 +3261,7 @@
       },
       "Input": {
         "required": [
-          "outputRef",
-          "txHashRef",
-          "address",
-          "attoAlphAmount"
+          "outputRef"
         ],
         "type": "object",
         "properties": {
@@ -3177,10 +3270,6 @@
           },
           "unlockScript": {
             "type": "string"
-          },
-          "txHashRef": {
-            "type": "string",
-            "format": "32-byte-hash"
           },
           "address": {
             "type": "string"

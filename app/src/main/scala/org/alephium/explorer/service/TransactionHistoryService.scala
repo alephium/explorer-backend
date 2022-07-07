@@ -157,7 +157,7 @@ case object TransactionHistoryService extends StrictLogging {
         case IntervalType.Hourly => Duration.ofHoursUnsafe(1)
       }).-(oneMillis).get
 
-      BlockFlowSyncService.buildTimestampRange(start, end, step)
+      buildTimestampRange(start, end, step)
     }
   }
 

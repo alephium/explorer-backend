@@ -46,6 +46,14 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[AddressInfo])
       .description("Get address information")
 
+  val getTransactionsByAddressDEPRECATED: BaseEndpoint[(Address, Pagination), Seq[Transaction]] =
+    addressesEndpoint.get
+      .in(path[Address]("address")(Codecs.addressTapirCodec))
+      .in("transactions-DEPRECATED")
+      .in(pagination)
+      .out(jsonBody[Seq[Transaction]])
+      .description("List transactions of a given address")
+
   val getTransactionsByAddress: BaseEndpoint[(Address, Pagination), Seq[Transaction]] =
     addressesEndpoint.get
       .in(path[Address]("address")(Codecs.addressTapirCodec))

@@ -30,7 +30,6 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.BlockQueries._
-import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
@@ -57,13 +56,6 @@ object BlockDao {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Seq[BlockEntry]] =
     run(getAtHeightAction(fromGroup, toGroup, height))
-
-  def updateTransactionPerAddress(block: BlockEntity)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Seq[InputEntity]] =
-    run(
-      updateTransactionPerAddressAction(block.outputs, block.inputs)
-    )
 
   /** Inserts a single block transactionally via SQL */
   def insert(block: BlockEntity)(implicit ec: ExecutionContext,
@@ -177,12 +169,4 @@ object BlockDao {
       cache.putLatestBlock(chainIndex, latestBlock)
     }
   }
-
-  def updateInputs(inputs: Seq[InputEntity]): DBActionT[Unit] =
-    DBIOAction
-      .seq(inputs.map { input =>
-        insertTxPerAddressFromInput(input)
-          .andThen(insertTokenPerAddressFromInput(input))
-      }: _*)
-      .transactionally
 }

@@ -119,7 +119,7 @@ class TransactionQueriesSpec
     val outputs = Seq(output1, output2, output3, output4)
     val inputs  = Seq(input1, input2, input3)
     run(TransactionQueries.insertAll(Seq.empty, outputs, inputs)).futureValue
-    run(TransactionQueries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
+    run(InputUpdateQueries.updateInputs()).futureValue
 
     val totalSQLNoJoin =
       run(TransactionQueries.countAddressTransactionsSQLNoJoin(address)).futureValue.head
@@ -128,7 +128,7 @@ class TransactionQueriesSpec
     totalSQLNoJoin is 3
   }
 
-  "return inputs to update if corresponding output is not inserted" in new Fixture {
+  "update inputs when corresponding output is finally inserted" in new Fixture {
 
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
@@ -140,16 +140,12 @@ class TransactionQueriesSpec
     val inputs  = Seq(input1, input2)
 
     run(TransactionQueries.insertAll(Seq.empty, outputs, inputs)).futureValue
-
-    val inputsToUpdate =
-      run(TransactionQueries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
-
-    inputsToUpdate is Seq(input2)
+    run(InputUpdateQueries.updateInputs()).futureValue
 
     run(TransactionQueries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 2
 
     run(OutputSchema.table += output2).futureValue
-    run(insertTxPerAddressFromInput(inputsToUpdate.head)).futureValue is 1
+    run(InputUpdateQueries.updateInputs()).futureValue
 
     run(TransactionQueries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 3
   }
@@ -168,7 +164,7 @@ class TransactionQueriesSpec
     val inputs  = Seq(input1, input2, input3)
 
     run(TransactionQueries.insertAll(Seq.empty, outputs, inputs)).futureValue
-    run(TransactionQueries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
+    run(InputUpdateQueries.updateInputs()).futureValue
 
     val hashesSQLNoJoin =
       run(TransactionQueries.getTxHashesByAddressQuerySQLNoJoin(address, 0, 10)).futureValue
@@ -246,7 +242,6 @@ class TransactionQueriesSpec
          input.hint,
          input.outputRefKey,
          input.unlockScript,
-         output.txHash,
          output.address,
          output.amount,
          output.tokens)
@@ -260,7 +255,7 @@ class TransactionQueriesSpec
     val output2 = output(address, ALPH.alph(2), None)
     val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
     val input1  = input(output2.hint, output2.key)
-    val input2  = input(output3.hint, output3.key)
+    val input2  = input(output3.hint, output3.key).copy(mainChain = false)
     val output4 = output(addressGen.sample.get, ALPH.alph(3), None)
       .copy(txHash = input1.txHash, blockHash = input1.blockHash, timestamp = input1.timestamp)
 
@@ -269,7 +264,10 @@ class TransactionQueriesSpec
     val transactions = outputs.map(transaction)
 
     run(TransactionQueries.insertAll(transactions, outputs, inputs)).futureValue
-    run(TransactionQueries.updateTransactionPerAddressAction(outputs, inputs)).futureValue
+    run(InputUpdateQueries.updateInputs()).futureValue
+    val from = TimeStamp.zero
+    val to   = timestampMaxValue
+    FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from)).futureValue
 
     def tx(output: OutputEntity, spent: Option[Transaction.Hash], inputs: Seq[Input]) = {
       Transaction(
@@ -286,6 +284,9 @@ class TransactionQueriesSpec
     val txsSQL =
       run(TransactionQueries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue
 
+    val txsNoJoin =
+      run(TransactionQueries.getTransactionsByAddressNoJoin(address, Pagination.unsafe(0, 10))).futureValue
+
     val expected = Seq(
       tx(output1, None, Seq.empty),
       tx(output2, Some(input1.txHash), Seq.empty),
@@ -294,6 +295,8 @@ class TransactionQueriesSpec
 
     txsSQL.size is 3
     txsSQL is expected
+
+    txsSQL is txsNoJoin
   }
 
   "output's spent info should only take the input from the main chain " in new Fixture {
@@ -310,7 +313,10 @@ class TransactionQueriesSpec
       tx1.gasAmount,
       tx1.gasPrice,
       0,
-      true
+      true,
+      true,
+      None,
+      None
     )
 
     val output1 =
@@ -398,7 +404,10 @@ class TransactionQueriesSpec
                   None,
                   true,
                   0,
-                  0)
+                  0,
+                  None,
+                  None,
+                  None)
     def transaction(output: OutputEntity): TransactionEntity = {
       TransactionEntity(output.txHash,
                         output.blockHash,
@@ -408,7 +417,10 @@ class TransactionQueriesSpec
                         1,
                         ALPH.alph(1),
                         0,
-                        true)
+                        true,
+                        true,
+                        None,
+                        None)
     }
   }
 }

@@ -35,6 +35,16 @@ object TransactionDao {
       dc: DatabaseConfig[PostgresProfile]): Future[Option[Transaction]] =
     run(getTransactionAction(hash))
 
+  def getOutputRefTransaction(key: Hash)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Option[Transaction]] =
+    run(getOutputRefTransactionAction(key))
+
+  def getByAddress(address: Address, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
+    run(getTransactionsByAddressNoJoin(address, pagination))
+
   def getByAddressSQL(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =

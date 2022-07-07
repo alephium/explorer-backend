@@ -86,9 +86,31 @@ object CustomSetParameter {
       params setBigDecimal BigDecimal(input.toBigInt)
   }
 
+  implicit object OptionU256SetParameter extends SetParameter[Option[U256]] {
+    override def apply(option: Option[U256], params: PositionedParameters): Unit =
+      option match {
+        case Some(u256) =>
+          U256SetParameter(u256, params)
+
+        case None =>
+          params setBigDecimalOption None
+      }
+  }
+
   implicit object AddressSetParameter extends SetParameter[Address] {
     override def apply(input: Address, params: PositionedParameters): Unit =
       params setString input.value
+  }
+
+  implicit object OptionAddressSetParameter extends SetParameter[Option[Address]] {
+    override def apply(option: Option[Address], params: PositionedParameters): Unit =
+      option match {
+        case Some(address) =>
+          AddressSetParameter(address, params)
+
+        case None =>
+          params setStringOption None
+      }
   }
 
   implicit object ByteStringSetParameter extends SetParameter[ByteString] {
@@ -140,6 +162,19 @@ object CustomSetParameter {
       }
   }
 
+  implicit object ByteStringsOptionSetParameter extends SetParameter[Option[Seq[ByteString]]] {
+    override def apply(input: Option[Seq[ByteString]], params: PositionedParameters): Unit =
+      input match {
+        case Some(byteStrings) =>
+          params setBytes serialize(AVector.unsafe(byteStrings.toArray)).toArray
+
+        case None =>
+          //scalastyle:off null
+          params setBytes null
+        //scalastyle:on null
+      }
+  }
+
   implicit object BigIntegerSetParameter extends SetParameter[BigInteger] {
     override def apply(input: BigInteger, params: PositionedParameters): Unit =
       params setBigDecimal BigDecimal(input)
@@ -177,6 +212,18 @@ object CustomSetParameter {
       }
   }
 
+  implicit object TransationHashOptionSetParameter extends SetParameter[Option[Transaction.Hash]] {
+    override def apply(input: Option[Transaction.Hash], params: PositionedParameters): Unit =
+      input match {
+        case Some(value) =>
+          params setBytes value.value.bytes.toArray
+
+        case None =>
+          //scalastyle:off null
+          params setBytes null
+        //scalastyle:on null
+      }
+  }
   implicit object TimeStampSetParameter extends SetParameter[TimeStamp] {
     override def apply(input: TimeStamp, params: PositionedParameters): Unit =
       params setLong input.millis

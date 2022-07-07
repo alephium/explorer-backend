@@ -49,7 +49,7 @@ class AddressServerSpec()
   "validate and forward `txLimit` query param " in new Fixture {
     var testLimit = 0
     override val transactionService = new EmptyTransactionService {
-      override def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
+      override def getTransactionsByAddress(address: Address, pagination: Pagination)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] = {
         testLimit = pagination.limit
@@ -119,12 +119,22 @@ class AddressServerSpec()
           dc: DatabaseConfig[PostgresProfile]): Future[Option[TransactionLike]] =
         Future.successful(None)
 
+      override def getOutputRefTransaction(key: Hash)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Option[ConfirmedTransaction]] =
+        Future.successful(None)
+
       override def getTransactionsNumberByAddress(address: Address)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[Int] =
         Future.successful(0)
 
       override def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
+        Future.successful(Seq.empty)
+
+      override def getTransactionsByAddress(address: Address, pagination: Pagination)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
         Future.successful(Seq.empty)

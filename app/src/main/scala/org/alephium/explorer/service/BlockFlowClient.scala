@@ -312,7 +312,10 @@ object BlockFlowClient {
       tx.unsigned.gasAmount,
       tx.unsigned.gasPrice,
       index,
-      mainChain
+      mainChain,
+      tx.scriptExecutionOk,
+      if (tx.inputSignatures.isEmpty) None else Some(tx.inputSignatures.toSeq),
+      if (tx.scriptSignatures.isEmpty) None else Some(tx.scriptSignatures.toSeq)
     )
 
   private def inputToUInput(input: api.model.AssetInput): UInput = {
@@ -338,7 +341,10 @@ object BlockFlowClient {
       Some(Hex.toHexString(input.unlockScript)),
       mainChain,
       index,
-      txOrder
+      txOrder,
+      None,
+      None,
+      None
     )
   }
 
@@ -358,7 +364,10 @@ object BlockFlowClient {
       None,
       mainChain,
       index,
-      txOrder
+      txOrder,
+      None,
+      None,
+      None
     )
   }
 

@@ -26,7 +26,7 @@ import org.alephium.api.ApiError
 import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting}
 import org.alephium.explorer.api.model.LogbackValue
 import org.alephium.explorer.cache.{BlockCache, TransactionCache}
-import org.alephium.explorer.persistence.DatabaseFixtureForEach
+import org.alephium.explorer.persistence.{Database, DatabaseFixtureForEach}
 import org.alephium.explorer.service._
 import org.alephium.json.Json
 
@@ -90,7 +90,7 @@ class UtilsServerSpec()
     implicit val blockFlowClient: BlockFlowClient   = mock[BlockFlowClient]
     implicit val groupSettings: GroupSetting        = GroupSetting(groupNum)
     implicit val blockCache: BlockCache             = BlockCache()
-    implicit val transactionCache: TransactionCache = TransactionCache()
+    implicit val transactionCache: TransactionCache = TransactionCache(new Database(false))
 
     val server =
       new UtilsServer()

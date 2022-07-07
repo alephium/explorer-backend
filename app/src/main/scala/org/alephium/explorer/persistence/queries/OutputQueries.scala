@@ -25,14 +25,11 @@ import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputQueries {
-  private val mainInputs = InputSchema.table.filter(_.mainChain)
 
   def insertOutputs(outputs: Iterable[OutputEntity]): DBActionRWT[Unit] =
     DBIOAction
@@ -324,25 +321,48 @@ object OutputQueries {
     }
   }
 
+  // format: off
+  def outputsFromTxsNoJoin(hashes: Seq[(Transaction.Hash,BlockEntry.Hash)]):
+  DBActionR[Seq[(Transaction.Hash, Int, OutputEntity.OutputType, Int, Hash, U256, Address,
+    Option[Seq[Token]],Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])]] = {
+  // format: on
+    if (hashes.nonEmpty) {
+      val values =
+        hashes.map { case (txHash, blockHash) => s"('\\x$txHash','\\x$blockHash')" }.mkString(",")
+      sql"""
+    SELECT
+      outputs.tx_hash,
+      outputs.output_order,
+      outputs.output_type,
+      outputs.hint,
+      outputs.key,
+      outputs.amount,
+      outputs.address,
+      outputs.tokens,
+      outputs.lock_time,
+      outputs.message,
+      outputs.spent_finalized
+    FROM outputs
+    WHERE (outputs.tx_hash, outputs.block_hash) IN (#$values)
+    """.as
+    } else {
+      DBIOAction.successful(Seq.empty)
+    }
+  }
+
+  // format: off
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
-  val getOutputsQuery = Compiled { (txHash: Rep[Transaction.Hash]) =>
-    OutputSchema.table
-      .filter(output => output.mainChain && output.txHash === txHash)
-      .joinLeft(mainInputs)
-      .on(_.key === _.outputRefKey)
-      .sortBy(_._1.outputOrder)
-      .map {
-        case (output, input) =>
-          (output.outputType,
-           output.hint,
-           output.key,
-           output.amount,
-           output.address,
-           output.tokens,
-           output.lockTime,
-           output.message,
-           input.map(_.txHash))
-      }
+  def getOutputsQuery(txHash: Transaction.Hash,blockHash: BlockEntry.Hash):
+  DBActionSR[(OutputEntity.OutputType, Int, Hash, U256, Address, Option[Seq[Token]],
+    Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])] = {
+  // format: on
+    sql"""
+        SELECT output_type, hint, key, amount, address, tokens, lock_time, message, spent_finalized
+        FROM outputs
+        WHERE tx_hash = $txHash
+        AND block_hash = $blockHash
+        ORDER BY output_order
+      """.as
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))

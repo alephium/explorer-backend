@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.persistence.model
 
+import akka.util.ByteString
+
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Transaction}
 import org.alephium.util.{TimeStamp, U256}
 
@@ -28,5 +30,8 @@ final case class TransactionEntity(
     gasAmount: Int,
     gasPrice: U256,
     order: Int,
-    mainChain: Boolean
+    mainChain: Boolean,
+    scriptExecutionOk: Boolean,
+    inputSignatures: Option[Seq[ByteString]],
+    scriptSignatures: Option[Seq[ByteString]]
 )
