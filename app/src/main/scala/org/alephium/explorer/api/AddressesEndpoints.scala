@@ -28,6 +28,8 @@ import org.alephium.protocol.Hash
 // scalastyle:off magic.number
 trait AddressesEndpoints extends BaseEndpoint with QueryParams {
 
+  private val activeAddressesMaxSize: Int = 200
+
   private val addressesEndpoint =
     baseEndpoint
       .tag("Addresses")
@@ -101,7 +103,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .tag("Addresses")
       .in("addresses-active")
       .post
-      .in(jsonBody[Seq[Address]])
+      .in(jsonBody[Seq[Address]].validate(Validator.maxSize(activeAddressesMaxSize)))
       .out(jsonBody[Seq[Boolean]])
       .description("Are the addresses active (at least 1 transaction)")
 }
