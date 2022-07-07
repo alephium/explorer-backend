@@ -18,7 +18,7 @@ package org.alephium.explorer.web
 
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpupickle.UpickleCustomizationSupport
 import org.scalacheck.Gen
@@ -26,7 +26,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.ApiError
-import org.alephium.explorer.{AlephiumSpec, Generators, Hash}
+import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
@@ -107,7 +107,40 @@ class AddressServerSpec()
     }
   }
 
+  "check if addresses are active" in new Fixture {
+    forAll(addressGen) {
+      case (address) =>
+        val entity = HttpEntity(ContentTypes.`application/json`, s"""["$address"]""")
+        Post(s"/addresses-active", entity) ~> server.route ~> check {
+          responseAs[Seq[Boolean]] is Seq(true)
+        }
+    }
+  }
+
+  "respect the max number of addresses" in new Fixture {
+    forAll(addressGen) {
+      case (address) =>
+        val size = groupNum * 20
+
+        val jsonOk   = s"[${Seq.fill(size)(s""""$address"""").mkString(",")}]"
+        val entityOk = HttpEntity(ContentTypes.`application/json`, jsonOk)
+        Post(s"/addresses-active", entityOk) ~> server.route ~> check {
+          status is StatusCodes.OK
+        }
+
+        val jsonFail   = s"[${Seq.fill(size + 1)(s""""$address"""").mkString(",")}]"
+        val entityFail = HttpEntity(ContentTypes.`application/json`, jsonFail)
+        Post(s"/addresses-active", entityFail) ~> server.route ~> check {
+          status is StatusCodes.BadRequest
+          responseAs[ApiError.BadRequest] is ApiError.BadRequest(
+            s"Invalid value for: body (expected size of value to be less than or equal to $size, but was ${size + 1})")
+        }
+    }
+  }
+
   trait Fixture {
+
+    implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
 
     val transactionService = new EmptyTransactionService {}
 
@@ -165,6 +198,11 @@ class AddressServerSpec()
       def listTokens(pagination: Pagination)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] = ???
+      def areAddressesActive(addresses: Seq[Address])(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Boolean]] = {
+        Future.successful(Seq(true))
+      }
     }
   }
 }
