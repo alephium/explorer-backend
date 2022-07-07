@@ -53,11 +53,11 @@ object GenModel extends Generators {
         toTransactionPerAddressEntity(input, output)
     }
 
-  /** Can be used to limit the number of generated blockHeaders */
+  /** Limits the number of generated blockHeaders */
   def genBlockHeaders(size: Gen[Int] = Gen.posNum[Int]): Gen[List[BlockHeader]] =
     genOfSize(
       limit = size,
-      data = blockHeaderGen
+      data  = blockHeaderGen
     )
 
 }

@@ -174,8 +174,8 @@ class BlockQueriesSpec
     "use block_headers_main_chain_idx" when {
       "data size is large" taggedAs IndexCheck in {
         /*
-         * This test is flaky. Postgres randomly choose not to use `block_headers_main_chain_idx`.
-         * Even if more data gets added after the first fail, Postgres still does sequential scan
+         * Flaky test. Postgres randomly (not very often) chooses not to use `block_headers_main_chain_idx`,
+         * even if more data gets persisted after the first query, Postgres still does sequential scan
          * after multiple attempts of writing more data.
          *
          * Query planner uses sequential scan:
