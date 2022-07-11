@@ -29,6 +29,7 @@ import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
+import org.alephium.explorer.persistence.queries.result.InputsFromTxnQR
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.protocol.ALPH
@@ -237,14 +238,16 @@ class TransactionQueriesSpec
 
     val expected = inputs.zip(outputs).map {
       case (input, output) =>
-        (input.txHash,
-         input.inputOrder,
-         input.hint,
-         input.outputRefKey,
-         input.unlockScript,
-         output.address,
-         output.amount,
-         output.tokens)
+        InputsFromTxnQR(
+          txHash       = input.txHash,
+          inputOrder   = input.inputOrder,
+          hint         = input.hint,
+          outputRefKey = input.outputRefKey,
+          unlockScript = input.unlockScript,
+          address      = Some(output.address),
+          amount       = Some(output.amount),
+          token        = output.tokens
+        )
     }
 
     run(inputsFromTxsSQL(txHashes)).futureValue is expected.toVector

@@ -40,19 +40,27 @@ object SlickUtil {
       }
   }
 
-  /**
-    * Builds '?' placeholders for generating parameterised SQL queries.
-    *
-    * Example: If rows = 2, columns = 3 this function will return
-    *          comma separated rows (?, ?, ?),(?, ?, ?).
-    */
+  def paramPlaceholderTuple2(rows: Int, columns: Int): String =
+    paramPlaceholder(rows, columns, "(?, ?)")
+
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def paramPlaceholder(rows: Int, columns: Int): String =
+    paramPlaceholder(rows, columns, "?")
+
+  /**
+    * Builds placeholders for generating parameterised SQL queries.
+    *
+    * Example: If rows = 2, columns = 3 & placeHolder = "?" this
+    *          returns comma separated rows (?, ?, ?),(?, ?, ?).
+    */
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  def paramPlaceholder(rows: Int, columns: Int, placeHolder: String): String =
     if (rows <= 0 || columns <= 0) {
       ""
     } else {
       val placeholders =
         Array
-          .fill(columns)("?")
+          .fill(columns)(placeHolder)
           .mkString("(", ", ", ")")
 
       Array
