@@ -332,7 +332,7 @@ object TransactionQueries extends StrictLogging {
                   blockHash,
                   timestamp,
                   ins.map(_.toApiInput()),
-                  outs.map(toApiOutput),
+                  outs.map(_.toApiOutput()),
                   gasAmount,
                   gasPrice)
     }

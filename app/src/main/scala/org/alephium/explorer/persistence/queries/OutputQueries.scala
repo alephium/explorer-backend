@@ -16,20 +16,16 @@
 
 package org.alephium.explorer.persistence.queries
 
-import akka.util.ByteString
 import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries.result.OutputsFromTxsQR
-import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.explorer.persistence.queries.result.{OutputsFromTxsQR, OutputsQR}
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil.paramPlaceholderTuple2
-import org.alephium.util.{TimeStamp, U256}
 
 object OutputQueries {
 
@@ -358,48 +354,20 @@ object OutputQueries {
       DBIOAction.successful(Seq.empty)
     }
 
-  // format: off
-  @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
-  def getOutputsQuery(txHash: Transaction.Hash,blockHash: BlockEntry.Hash):
-  DBActionSR[(OutputEntity.OutputType, Int, Hash, U256, Address, Option[Seq[Token]],
-    Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])] = {
-  // format: on
+  def getOutputsQuery(txHash: Transaction.Hash, blockHash: BlockEntry.Hash): DBActionSR[OutputsQR] =
     sql"""
-        SELECT output_type, hint, key, amount, address, tokens, lock_time, message, spent_finalized
+        SELECT output_type,
+               hint,
+               key,
+               amount,
+               address,
+               tokens,
+               lock_time,
+               message,
+               spent_finalized
         FROM outputs
         WHERE tx_hash = $txHash
-        AND block_hash = $blockHash
+          AND block_hash = $blockHash
         ORDER BY output_order
-      """.as
-  }
-
-  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-  val toApiOutput: (
-      (OutputEntity.OutputType,
-       Int,
-       Hash,
-       U256,
-       Address,
-       Option[Seq[Token]],
-       Option[TimeStamp],
-       Option[ByteString],
-       Option[Transaction.Hash])) => Output = {
-    (outputType: OutputEntity.OutputType,
-     hint: Int,
-     key: Hash,
-     amount: U256,
-     address: Address,
-     tokens: Option[Seq[Token]],
-     lockTime: Option[TimeStamp],
-     message: Option[ByteString],
-     spent: Option[Transaction.Hash]) =>
-      {
-
-        outputType match {
-          case OutputEntity.Asset =>
-            AssetOutput(hint, key, amount, address, tokens, lockTime, message, spent)
-          case OutputEntity.Contract => ContractOutput(hint, key, amount, address, tokens, spent)
-        }
-      }
-  }.tupled
+      """.as[OutputsQR]
 }

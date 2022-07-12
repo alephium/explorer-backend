@@ -26,7 +26,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.queries.OutputQueries._
-import org.alephium.explorer.persistence.queries.result.OutputsFromTxsQR
+import org.alephium.explorer.persistence.queries.result.{OutputsFromTxsQR, OutputsQR}
 import org.alephium.explorer.persistence.schema.OutputSchema
 
 class OutputQueriesSpec
@@ -105,6 +105,53 @@ class OutputQueriesSpec
             }
 
           actual should contain theSameElementsAs expected
+        }
+      }
+    }
+  }
+
+  "getOutputsQuery" should {
+    "read outputs table" when {
+      "empty" in {
+        //table is empty
+        run(OutputSchema.table.length.result).futureValue is 0
+
+        forAll(outputEntityGen) { output =>
+          //run query
+          val actual =
+            run(OutputQueries.getOutputsQuery(output.txHash, output.blockHash)).futureValue
+
+          //query output size is 0
+          actual.size is 0
+        }
+      }
+    }
+
+    "non-empty" in {
+      forAll(Gen.listOf(outputEntityGen)) { outputs =>
+        //no-need to clear the table for each iteration.
+        run(OutputSchema.table ++= outputs).futureValue
+
+        //run query for each output
+        outputs foreach { output =>
+          val actual =
+            run(OutputQueries.getOutputsQuery(output.txHash, output.blockHash)).futureValue
+
+          //expected query result
+          val expected: OutputsQR =
+            OutputsQR(
+              outputType     = output.outputType,
+              hint           = output.hint,
+              key            = output.key,
+              amount         = output.amount,
+              address        = output.address,
+              tokens         = output.tokens,
+              lockTime       = output.lockTime,
+              message        = output.message,
+              spentFinalized = output.spentFinalized
+            )
+
+          actual contains only(expected)
         }
       }
     }
