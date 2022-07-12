@@ -25,6 +25,7 @@ import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.persistence.queries.result.OutputsFromTxsQR
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.util.{TimeStamp, U256}
@@ -292,11 +293,7 @@ object OutputQueries {
     }
   }
 
-  // format: off
-  def outputsFromTxsSQL(txHashes: Seq[Transaction.Hash]):
-  DBActionR[Seq[(Transaction.Hash, Int, OutputEntity.OutputType, Int, Hash, U256, Address,
-    Option[Seq[Token]],Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])]] = {
-  // format: on
+  def outputsFromTxsSQL(txHashes: Seq[Transaction.Hash]): DBActionR[Seq[OutputsFromTxsQR]] =
     if (txHashes.nonEmpty) {
       val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
       sql"""
@@ -315,17 +312,13 @@ object OutputQueries {
     FROM outputs
     LEFT JOIN inputs ON inputs.output_ref_key = outputs.key AND inputs.main_chain = true
     WHERE outputs.tx_hash IN (#$values) AND outputs.main_chain = true
-    """.as
+    """.as[OutputsFromTxsQR]
     } else {
       DBIOAction.successful(Seq.empty)
     }
-  }
 
-  // format: off
-  def outputsFromTxsNoJoin(hashes: Seq[(Transaction.Hash,BlockEntry.Hash)]):
-  DBActionR[Seq[(Transaction.Hash, Int, OutputEntity.OutputType, Int, Hash, U256, Address,
-    Option[Seq[Token]],Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])]] = {
-  // format: on
+  def outputsFromTxsNoJoin(
+      hashes: Seq[(Transaction.Hash, BlockEntry.Hash)]): DBActionR[Seq[OutputsFromTxsQR]] =
     if (hashes.nonEmpty) {
       val values =
         hashes.map { case (txHash, blockHash) => s"('\\x$txHash','\\x$blockHash')" }.mkString(",")
@@ -344,11 +337,10 @@ object OutputQueries {
       outputs.spent_finalized
     FROM outputs
     WHERE (outputs.tx_hash, outputs.block_hash) IN (#$values)
-    """.as
+    """.as[OutputsFromTxsQR]
     } else {
       DBIOAction.successful(Seq.empty)
     }
-  }
 
   // format: off
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))

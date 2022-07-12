@@ -29,7 +29,7 @@ import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
-import org.alephium.explorer.persistence.queries.result.InputsFromTxnQR
+import org.alephium.explorer.persistence.queries.result.{InputsFromTxnQR, OutputsFromTxsQR}
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.protocol.ALPH
@@ -196,27 +196,28 @@ class TransactionQueriesSpec
 
     val txHashes = outputs.map(_.txHash)
 
-    def res(output: OutputEntity, input: Option[InputEntity]) = {
-      (output.txHash,
-       output.outputOrder,
-       output.outputType,
-       output.hint,
-       output.key,
-       output.amount,
-       output.address,
-       output.tokens,
-       output.lockTime,
-       output.message,
-       input.map(_.txHash))
-    }
+    def res(output: OutputEntity, input: Option[InputEntity]) =
+      OutputsFromTxsQR(
+        output.txHash,
+        output.outputOrder,
+        output.outputType,
+        output.hint,
+        output.key,
+        output.amount,
+        output.address,
+        output.tokens,
+        output.lockTime,
+        output.message,
+        input.map(_.txHash)
+      )
 
     val expected = Seq(
       res(output1, None),
       res(output2, Some(input1)),
       res(output3, None)
-    ).sortBy(_._1.toString)
+    ).sortBy(_.txHash.toString())
 
-    run(outputsFromTxsSQL(txHashes)).futureValue.sortBy(_._1.toString) is expected.toVector
+    run(outputsFromTxsSQL(txHashes)).futureValue.sortBy(_.txHash.toString()) is expected.toVector
   }
 
   "inputs for txs" in new Fixture {

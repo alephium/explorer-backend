@@ -18,7 +18,6 @@ package org.alephium.explorer.persistence.queries
 
 import scala.concurrent.ExecutionContext
 
-import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
@@ -30,7 +29,7 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
-import org.alephium.explorer.persistence.queries.result.InputsFromTxnQR
+import org.alephium.explorer.persistence.queries.result.{InputsFromTxnQR, OutputsFromTxsQR}
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
@@ -252,26 +251,20 @@ object TransactionQueries extends StrictLogging {
     }
   }
 
-  // format: off
   private def buildTransactionNoJoin(
       txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)],
       inputs: Seq[InputsFromTxnQR],
-      outputs: Seq[(Transaction.Hash, Int,OutputEntity.OutputType, Int, Hash, U256, Address,
-        Option[Seq[Token]], Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])],
+      outputs: Seq[OutputsFromTxsQR],
       gases: Seq[(Transaction.Hash, Int, U256)]) = {
-  // format: on
     val insByTx = inputs.groupBy(_.txHash).view.mapValues { values =>
       values
         .sortBy(_.inputOrder)
         .map(_.toApiInput())
     }
-    val ousByTx = outputs.groupBy(_._1).view.mapValues { values =>
+    val ousByTx = outputs.groupBy(_.txHash).view.mapValues { values =>
       values
-        .sortBy(_._2)
-        .map {
-          case (_, _, outputType, hint, key, amount, address, tokens, lockTime, message, spent) =>
-            toApiOutput((outputType, hint, key, amount, address, tokens, lockTime, message, spent))
-        }
+        .sortBy(_.outputOrder)
+        .map(_.toApiOutput())
     }
     val gasByTx = gases.groupBy(_._1).view.mapValues(_.map { case (_, s, g) => (s, g) })
     txHashesTs.map {
@@ -284,26 +277,19 @@ object TransactionQueries extends StrictLogging {
     }
   }
 
-  // format: off
-  private def buildTransaction(
-      txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)],
-      inputs: Seq[InputsFromTxnQR],
-      outputs: Seq[(Transaction.Hash, Int,OutputEntity.OutputType, Int, Hash, U256, Address,
-        Option[Seq[Token]], Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])],
-      gases: Seq[(Transaction.Hash, Int, U256)]) = {
-  // format: on
+  private def buildTransaction(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)],
+                               inputs: Seq[InputsFromTxnQR],
+                               outputs: Seq[OutputsFromTxsQR],
+                               gases: Seq[(Transaction.Hash, Int, U256)]) = {
     val insByTx = inputs.groupBy(_.txHash).view.mapValues { values =>
       values
         .sortBy(_.inputOrder)
         .map(_.toApiInput())
     }
-    val ousByTx = outputs.groupBy(_._1).view.mapValues { values =>
+    val ousByTx = outputs.groupBy(_.txHash).view.mapValues { values =>
       values
-        .sortBy(_._2)
-        .map {
-          case (_, _, outputType, hint, key, amount, address, tokens, lockTime, message, spent) =>
-            toApiOutput((outputType, hint, key, amount, address, tokens, lockTime, message, spent))
-        }
+        .sortBy(_.outputOrder)
+        .map(_.toApiOutput())
     }
     val gasByTx = gases.groupBy(_._1).view.mapValues(_.map { case (_, s, g) => (s, g) })
     txHashesTs.map {
