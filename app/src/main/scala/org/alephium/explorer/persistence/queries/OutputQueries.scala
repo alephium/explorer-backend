@@ -28,6 +28,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.result.OutputsFromTxsQR
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.util.SlickUtil.paramPlaceholderTuple2
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputQueries {
@@ -297,22 +298,24 @@ object OutputQueries {
     if (txHashes.nonEmpty) {
       val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
       sql"""
-    SELECT
-      outputs.tx_hash,
-      outputs.output_order,
-      outputs.output_type,
-      outputs.hint,
-      outputs.key,
-      outputs.amount,
-      outputs.address,
-      outputs.tokens,
-      outputs.lock_time,
-      outputs.message,
-      inputs.tx_hash
-    FROM outputs
-    LEFT JOIN inputs ON inputs.output_ref_key = outputs.key AND inputs.main_chain = true
-    WHERE outputs.tx_hash IN (#$values) AND outputs.main_chain = true
-    """.as[OutputsFromTxsQR]
+          SELECT outputs.tx_hash,
+                 outputs.output_order,
+                 outputs.output_type,
+                 outputs.hint,
+                 outputs.key,
+                 outputs.amount,
+                 outputs.address,
+                 outputs.tokens,
+                 outputs.lock_time,
+                 outputs.message,
+                 inputs.tx_hash
+          FROM outputs
+                   LEFT JOIN inputs
+                       ON inputs.output_ref_key = outputs.key
+                              AND inputs.main_chain = true
+          WHERE outputs.tx_hash IN (#$values)
+            AND outputs.main_chain = true
+        """.as[OutputsFromTxsQR]
     } else {
       DBIOAction.successful(Seq.empty)
     }
@@ -320,24 +323,37 @@ object OutputQueries {
   def outputsFromTxsNoJoin(
       hashes: Seq[(Transaction.Hash, BlockEntry.Hash)]): DBActionR[Seq[OutputsFromTxsQR]] =
     if (hashes.nonEmpty) {
-      val values =
-        hashes.map { case (txHash, blockHash) => s"('\\x$txHash','\\x$blockHash')" }.mkString(",")
-      sql"""
-    SELECT
-      outputs.tx_hash,
-      outputs.output_order,
-      outputs.output_type,
-      outputs.hint,
-      outputs.key,
-      outputs.amount,
-      outputs.address,
-      outputs.tokens,
-      outputs.lock_time,
-      outputs.message,
-      outputs.spent_finalized
-    FROM outputs
-    WHERE (outputs.tx_hash, outputs.block_hash) IN (#$values)
-    """.as[OutputsFromTxsQR]
+      val params = paramPlaceholderTuple2(1, hashes.size)
+
+      val query =
+        s"""
+           |SELECT outputs.tx_hash,
+           |       outputs.output_order,
+           |       outputs.output_type,
+           |       outputs.hint,
+           |       outputs.key,
+           |       outputs.amount,
+           |       outputs.address,
+           |       outputs.tokens,
+           |       outputs.lock_time,
+           |       outputs.message,
+           |       outputs.spent_finalized
+           |FROM outputs
+           |WHERE (outputs.tx_hash, outputs.block_hash) IN $params
+           |""".stripMargin
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          hashes foreach {
+            case (txnHash, blockHash) =>
+              params >> txnHash
+              params >> blockHash
+        }
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv  = parameters
+      ).as[OutputsFromTxsQR]
     } else {
       DBIOAction.successful(Seq.empty)
     }

@@ -26,6 +26,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.queries.OutputQueries._
+import org.alephium.explorer.persistence.queries.result.OutputsFromTxsQR
 import org.alephium.explorer.persistence.schema.OutputSchema
 
 class OutputQueriesSpec
@@ -56,5 +57,56 @@ class OutputQueriesSpec
     run(insertOutputs(ignored)).futureValue
     run(OutputSchema.table.result).futureValue.toSet is existing.toSet
     //}
+  }
+
+  "outputsFromTxsNoJoin" should {
+    "read from outputs table" when {
+      "empty" in {
+        //clear table
+        run(OutputSchema.table.delete).futureValue
+        run(OutputSchema.table.length.result).futureValue is 0
+
+        forAll(Gen.listOf(outputEntityGen)) { outputs =>
+          //run query
+          val hashes = outputs.map(output => (output.txHash, output.blockHash))
+          val actual = run(OutputQueries.outputsFromTxsNoJoin(hashes)).futureValue
+
+          //query output size is 0
+          actual.size is 0
+        }
+      }
+
+      "non-empty" in {
+        forAll(Gen.listOf(outputEntityGen)) { outputs =>
+          //persist test-data
+          run(OutputSchema.table.delete).futureValue
+          run(OutputSchema.table ++= outputs).futureValue
+
+          //run query
+          val hashes = outputs.map(output => (output.txHash, output.blockHash))
+          val actual = run(OutputQueries.outputsFromTxsNoJoin(hashes)).futureValue
+
+          //expected query result
+          val expected =
+            outputs.map { entity =>
+              OutputsFromTxsQR(
+                txHash      = entity.txHash,
+                outputOrder = entity.outputOrder,
+                outputType  = entity.outputType,
+                hint        = entity.hint,
+                key         = entity.key,
+                amount      = entity.amount,
+                address     = entity.address,
+                tokens      = entity.tokens,
+                lockTime    = entity.lockTime,
+                message     = entity.message,
+                spent       = entity.spentFinalized
+              )
+            }
+
+          actual should contain theSameElementsAs expected
+        }
+      }
+    }
   }
 }
