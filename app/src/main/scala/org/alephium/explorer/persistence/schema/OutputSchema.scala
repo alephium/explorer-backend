@@ -50,7 +50,6 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
 
     def pk: PrimaryKey = primaryKey("outputs_pk", (key, blockHash))
 
-    def keyIdx: Index       = index("outputs_key_idx", key)
     def blockHashIdx: Index = index("outputs_block_hash_idx", blockHash)
     def addressIdx: Index   = index("outputs_address_idx", address)
     def timestampIdx: Index = index("outputs_timestamp_idx", timestamp)
