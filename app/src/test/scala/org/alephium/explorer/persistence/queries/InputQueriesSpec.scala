@@ -28,7 +28,9 @@ import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.InputEntity
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.result.{InputsFromTxnQR, InputsQR}
+import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.persistence.schema.InputSchema
+import org.alephium.explorer.util.SlickTestUtil._
 
 class InputQueriesSpec
     extends AlephiumSpec
@@ -168,6 +170,30 @@ class InputQueriesSpec
             )
 
           actual contains only(expected)
+        }
+      }
+    }
+  }
+
+  "index 'inputs_tx_hash_block_hash_idx'" should {
+    "get used" when {
+      "accessing column tx_hash" in {
+        forAll(Gen.listOf(inputEntityGen())) { inputs =>
+          run(InputSchema.table.delete).futureValue
+          run(InputSchema.table ++= inputs).futureValue
+
+          inputs foreach { input =>
+            val query =
+              sql"""
+                   |SELECT *
+                   |FROM inputs
+                   |where tx_hash = ${input.txHash}
+                   |""".stripMargin
+
+            val explain = run(query.explain()).futureValue.mkString("\n")
+
+            explain should include("Index Scan using inputs_tx_hash_block_hash_idx on inputs")
+          }
         }
       }
     }
