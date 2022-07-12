@@ -198,4 +198,28 @@ class InputQueriesSpec
       }
     }
   }
+
+  "index 'inputs_pk'" should {
+    "get used" when {
+      "accessing column output_ref_key" in {
+        forAll(Gen.listOf(inputEntityGen())) { inputs =>
+          run(InputSchema.table.delete).futureValue
+          run(InputSchema.table ++= inputs).futureValue
+
+          inputs foreach { input =>
+            val query =
+              sql"""
+                   |SELECT *
+                   |FROM inputs
+                   |where output_ref_key = ${input.outputRefKey}
+                   |""".stripMargin
+
+            val explain = run(query.explain()).futureValue.mkString("\n")
+
+            explain should include("Index Scan using inputs_pk on inputs")
+          }
+        }
+      }
+    }
+  }
 }
