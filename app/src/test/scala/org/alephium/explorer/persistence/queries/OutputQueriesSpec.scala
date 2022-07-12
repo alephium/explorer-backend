@@ -27,7 +27,9 @@ import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.queries.result.{OutputsFromTxsQR, OutputsQR}
+import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.persistence.schema.OutputSchema
+import org.alephium.explorer.util.SlickTestUtil._
 
 class OutputQueriesSpec
     extends AlephiumSpec
@@ -152,6 +154,30 @@ class OutputQueriesSpec
             )
 
           actual contains only(expected)
+        }
+      }
+    }
+  }
+
+  "index 'outputs_tx_hash_block_hash_idx'" should {
+    "get used" when {
+      "accessing column tx_hash" in {
+        forAll(Gen.listOf(outputEntityGen)) { outputs =>
+          run(OutputSchema.table.delete).futureValue
+          run(OutputSchema.table ++= outputs).futureValue
+
+          outputs foreach { output =>
+            val query =
+              sql"""
+                   |SELECT *
+                   |FROM outputs
+                   |where tx_hash = ${output.txHash}
+                   |""".stripMargin
+
+            val explain = run(query.explain()).futureValue.mkString("\n")
+
+            explain should include("outputs_tx_hash_block_hash_idx")
+          }
         }
       }
     }
