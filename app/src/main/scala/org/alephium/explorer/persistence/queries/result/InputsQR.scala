@@ -32,7 +32,7 @@ object InputsQR {
         unlockScript     = result.<<?,
         outputRefAddress = result.<<?,
         outputRefAmount  = result.<<?,
-        outputRefToken   = result.<<?
+        outputRefTokens  = result.<<?
     )
 }
 
@@ -42,12 +42,12 @@ final case class InputsQR(hint: Int,
                           unlockScript: Option[String],
                           outputRefAddress: Option[Address],
                           outputRefAmount: Option[U256],
-                          outputRefToken: Option[Seq[Token]]) {
+                          outputRefTokens: Option[Seq[Token]]) {
 
   def toApiInput(): Input =
     Input(outputRef      = OutputRef(hint, outputRefKey),
           unlockScript   = unlockScript,
           address        = outputRefAddress,
           attoAlphAmount = outputRefAmount,
-          tokens         = outputRefToken)
+          tokens         = outputRefTokens)
 }

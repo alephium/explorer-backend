@@ -27,7 +27,7 @@ import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.InputEntity
 import org.alephium.explorer.persistence.queries.InputQueries._
-import org.alephium.explorer.persistence.queries.result.InputsFromTxnQR
+import org.alephium.explorer.persistence.queries.result.{InputsFromTxnQR, InputsQR}
 import org.alephium.explorer.persistence.schema.InputSchema
 
 class InputQueriesSpec
@@ -123,7 +123,51 @@ class InputQueriesSpec
               )
             }
 
-          actual is expected
+          actual should contain theSameElementsAs expected
+        }
+      }
+    }
+  }
+
+  "getInputsQuery" should {
+    "read inputs table" when {
+      "empty" in {
+        //table is empty
+        run(InputSchema.table.length.result).futureValue is 0
+
+        forAll(inputEntityGen()) { input =>
+          //run query
+          val actual =
+            run(InputQueries.getInputsQuery(input.txHash, input.blockHash)).futureValue
+
+          //query output size is 0
+          actual.size is 0
+        }
+      }
+    }
+
+    "non-empty" in {
+      forAll(Gen.listOf(inputEntityGen())) { inputs =>
+        //no-need to clear the table for each iteration.
+        run(InputSchema.table ++= inputs).futureValue
+
+        //run query for each input
+        inputs foreach { input =>
+          val actual =
+            run(InputQueries.getInputsQuery(input.txHash, input.blockHash)).futureValue
+
+          //expected query result
+          val expected: InputsQR =
+            InputsQR(
+              hint             = input.hint,
+              outputRefKey     = input.outputRefKey,
+              unlockScript     = input.unlockScript,
+              outputRefAddress = input.outputRefAddress,
+              outputRefAmount  = input.outputRefAmount,
+              outputRefTokens  = input.outputRefTokens
+            )
+
+          actual contains only(expected)
         }
       }
     }
