@@ -31,7 +31,9 @@ import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, OutputsFromTxQR}
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.service.FinalizerService
+import org.alephium.explorer.util.SlickTestUtil._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
@@ -367,6 +369,30 @@ class TransactionQueriesSpec
 
     val total = run(TransactionQueries.mainTransactions.length.result).futureValue
     total is 2
+  }
+
+  "index 'txs_pk'" should {
+    "get used" when {
+      "accessing column hash" in {
+        forAll(Gen.listOf(transactionEntityGen())) { transactions =>
+          run(TransactionSchema.table.delete).futureValue
+          run(TransactionSchema.table ++= transactions).futureValue
+
+          transactions foreach { transaction =>
+            val query =
+              sql"""
+                   |SELECT *
+                   |FROM #${TransactionSchema.name}
+                   |where hash = ${transaction.hash}
+                   |""".stripMargin
+
+            val explain = run(query.explain()).futureValue.mkString("\n")
+
+            explain should include("Index Scan on txs_pk")
+          }
+        }
+      }
+    }
   }
 
   trait Fixture {
