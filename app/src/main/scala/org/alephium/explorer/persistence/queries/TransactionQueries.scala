@@ -120,11 +120,7 @@ object TransactionQueries extends StrictLogging {
 
   def getOutputRefTransactionAction(key: Hash)(
       implicit ec: ExecutionContext): DBActionR[Option[Transaction]] = {
-    sql"""
-    SELECT tx_hash
-    FROM outputs
-    WHERE main_chain = true AND key = $key
-    """.as[Transaction.Hash].flatMap { txHashes =>
+    OutputQueries.getTxnHash(key).flatMap { txHashes =>
       txHashes.headOption match {
         case None => DBIOAction.successful(None)
         case Some(txHash) =>

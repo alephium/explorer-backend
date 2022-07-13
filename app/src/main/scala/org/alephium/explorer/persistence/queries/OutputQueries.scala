@@ -20,10 +20,12 @@ import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.result.{OutputsFromTxsQR, OutputsQR}
+import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil.paramPlaceholderTuple2
 
@@ -370,4 +372,16 @@ object OutputQueries {
           AND block_hash = $blockHash
         ORDER BY output_order
       """.as[OutputsQR]
+
+  def getTxnHash(key: Hash): DBActionR[Vector[Transaction.Hash]] =
+    getTxnHashSQL(key).as[Transaction.Hash]
+
+  /** Fetch `tx_hash` for keys where `main_chain` is true */
+  def getTxnHashSQL(key: Hash): SQLActionBuilder =
+    sql"""
+      SELECT tx_hash
+      FROM outputs
+      WHERE main_chain = true
+        AND key = $key
+    """
 }
