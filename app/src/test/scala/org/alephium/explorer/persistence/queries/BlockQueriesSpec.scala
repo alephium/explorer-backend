@@ -24,7 +24,6 @@ import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators}
-import org.alephium.explorer.GenModel._
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.BlockHeader
@@ -182,7 +181,7 @@ class BlockQueriesSpec
          * Seq Scan on block_headers  (cost=0.00..1652.67 rows=3606 width=235)
          *    Filter: main_chain
          */
-        forAll(genBlockHeaders(Gen.const(20000))) { headers =>
+        forAll(Gen.listOfN(20000, blockHeaderGen)) { headers =>
           runExplain(headers) should include("Index Scan on block_headers_main_chain_idx")
         }
       }
@@ -190,7 +189,9 @@ class BlockQueriesSpec
 
     "not use block_headers_main_chain_idx" when {
       "data size is small" taggedAs IndexCheck in {
-        forAll(genBlockHeaders(Gen.choose(0, 10))) { headers =>
+        val headers = Gen.choose(0, 10) flatMap (Gen.listOfN(_, blockHeaderGen))
+
+        forAll(headers) { headers =>
           runExplain(headers) should not include "block_headers_main_chain_idx"
         }
       }

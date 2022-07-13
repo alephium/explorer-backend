@@ -17,7 +17,6 @@ package org.alephium.explorer
 
 import org.scalacheck.Gen
 
-import org.alephium.explorer.GenCommon._
 import org.alephium.explorer.persistence.model._
 
 /** Test-data generators for types in package [[org.alephium.explorer.persistence.model]]  */
@@ -52,12 +51,5 @@ object GenModel extends Generators {
       case (input, output) =>
         toTransactionPerAddressEntity(input, output)
     }
-
-  /** Limits the number of generated blockHeaders */
-  def genBlockHeaders(size: Gen[Int] = Gen.posNum[Int]): Gen[List[BlockHeader]] =
-    genOfSize(
-      limit = size,
-      data  = blockHeaderGen
-    )
 
 }

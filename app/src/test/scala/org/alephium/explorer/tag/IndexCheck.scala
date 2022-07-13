@@ -18,5 +18,5 @@ package org.alephium.explorer.tag
 
 import org.scalatest.Tag
 
-/** Tag indicating the test asserts for SQL index used by a query */
+/** Tag indicating tests for SQL indexes */
 object IndexCheck extends Tag("org.alephium.explorer.tag.IndexCheck")
