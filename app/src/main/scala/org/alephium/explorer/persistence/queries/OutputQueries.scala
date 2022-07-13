@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.persistence.queries
 
+import scala.concurrent.ExecutionContext
+
 import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
@@ -27,7 +29,8 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.result.{OutputsFromTxsQR, OutputsQR}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.explorer.util.SlickUtil.paramPlaceholderTuple2
+import org.alephium.explorer.util.SlickUtil._
+import org.alephium.util.{TimeStamp, U256}
 
 object OutputQueries {
 
@@ -384,4 +387,29 @@ object OutputQueries {
       WHERE main_chain = true
         AND key = $key
     """
+
+  def getBalanceActionOption(address: Address)(
+      implicit ec: ExecutionContext): DBActionR[(Option[U256], Option[U256])] =
+    getBalanceUntilLockTime(
+      address  = address,
+      lockTime = TimeStamp.now()
+    )
+
+  def getBalanceUntilLockTime(address: Address, lockTime: TimeStamp)(
+      implicit ec: ExecutionContext): DBActionR[(Option[U256], Option[U256])] =
+    sql"""
+      SELECT sum(outputs.amount),
+             sum(CASE
+                     WHEN outputs.lock_time is NULL or outputs.lock_time < ${lockTime.millis} THEN 0
+                     ELSE outputs.amount
+                 END)
+      FROM outputs
+               LEFT JOIN inputs
+                         ON outputs.key = inputs.output_ref_key
+                             AND inputs.main_chain = true
+      WHERE outputs.spent_finalized IS NULL
+        AND outputs.address = $address
+        AND outputs.main_chain = true
+        AND inputs.block_hash IS NULL;
+    """.as[(Option[U256], Option[U256])].exactlyOne
 }

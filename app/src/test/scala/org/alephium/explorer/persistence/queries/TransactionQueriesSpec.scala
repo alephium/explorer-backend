@@ -47,9 +47,6 @@ class TransactionQueriesSpec
   implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   "compute locked balance when empty" in new Fixture {
-    val balanceOption = run(TransactionQueries.getBalanceActionOption(address)).futureValue
-    balanceOption is ((None, None))
-
     val balance = run(TransactionQueries.getBalanceAction(address)).futureValue
     balance is ((U256.Zero, U256.Zero))
   }

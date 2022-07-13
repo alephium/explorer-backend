@@ -185,6 +185,15 @@ class OutputQueriesSpec
     }
   }
 
+  "getBalanceActionOption" should {
+    "return None" when {
+      "address does not exist" in {
+        val address = addressGen.sample getOrElse fail("Failed to sample address")
+        run(getBalanceActionOption(address)).futureValue is ((None, None))
+      }
+    }
+  }
+
   "index 'outputs_tx_hash_block_hash_idx'" should {
     "get used" when {
       "accessing column tx_hash" in {
