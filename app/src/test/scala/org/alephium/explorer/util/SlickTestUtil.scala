@@ -47,12 +47,15 @@ object SlickTestUtil {
     def explainAnalyze(): SqlStreamingAction[Vector[String], String, Effect.Read] =
       alterHeadQuery(sql, "EXPLAIN ANALYZE")
 
+    def explainAnalyzeFlatten()(implicit ec: ExecutionContext): DBActionR[String] =
+      explainAnalyze().map(_.mkString("\n"))
+
     /** Adds `EXPLAIN` to head query */
     def explain(): SqlStreamingAction[Vector[String], String, Effect.Read] =
       alterHeadQuery(sql, "EXPLAIN")
 
     def explainFlatten()(implicit ec: ExecutionContext): DBActionR[String] =
-      alterHeadQuery(sql, "EXPLAIN").map(_.mkString("\n"))
+      explain().map(_.mkString("\n"))
   }
 
   /** Alter's first query with the prefix. */
