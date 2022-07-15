@@ -99,10 +99,9 @@ object TokenQueries extends StrictLogging {
     """.as[Address]
   }
 
-  def listTokenTransactionsAction(
-      token: Hash,
-      limit: Int,
-      offset: Int): DBActionSR[TxByAddressQR] = {
+  def listTokenTransactionsAction(token: Hash,
+                                  limit: Int,
+                                  offset: Int): DBActionSR[TxByAddressQR] = {
     sql"""
       SELECT hash, block_hash, block_timestamp, tx_order
       FROM transaction_per_token
@@ -133,11 +132,10 @@ object TokenQueries extends StrictLogging {
     } yield txs
   }
 
-  def getTokenTxHashesByAddressQuery(
-      address: Address,
-      token: Hash,
-      offset: Int,
-      limit: Int): DBActionSR[TxByAddressQR] = {
+  def getTokenTxHashesByAddressQuery(address: Address,
+                                     token: Hash,
+                                     offset: Int,
+                                     limit: Int): DBActionSR[TxByAddressQR] = {
     sql"""
       SELECT hash, block_hash, block_timestamp, tx_order
       FROM token_tx_per_addresses

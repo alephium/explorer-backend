@@ -29,13 +29,8 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
-import org.alephium.explorer.persistence.queries.result.{
-  InputsFromTxQR,
-  OutputsFromTxQR,
-  TxByAddressQR
-}
+import org.alephium.explorer.persistence.queries.result._
 import org.alephium.explorer.persistence.schema._
-import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
@@ -253,7 +248,7 @@ object TransactionQueries extends StrictLogging {
   private def buildTransactionNoJoin(txHashesTs: Seq[TxByAddressQR],
                                      inputs: Seq[InputsFromTxQR],
                                      outputs: Seq[OutputsFromTxQR],
-                                     gases: Seq[(Transaction.Hash, Int, U256)]) = {
+                                     gases: Seq[GasFromTxsQR]) = {
     val insByTx = inputs.groupBy(_.txHash).view.mapValues { values =>
       values
         .sortBy(_.inputOrder)
@@ -264,7 +259,7 @@ object TransactionQueries extends StrictLogging {
         .sortBy(_.outputOrder)
         .map(_.toApiOutput())
     }
-    val gasByTx = gases.groupBy(_._1).view.mapValues(_.map { case (_, s, g) => (s, g) })
+    val gasByTx = gases.groupBy(_.txHash).view.mapValues(_.map(_.gasInfo()))
     txHashesTs.map { txn =>
       val ins                   = insByTx.getOrElse(txn.txHash, Seq.empty)
       val ous                   = ousByTx.getOrElse(txn.txHash, Seq.empty)
@@ -277,7 +272,7 @@ object TransactionQueries extends StrictLogging {
   private def buildTransaction(txHashesTs: Seq[TxByAddressQR],
                                inputs: Seq[InputsFromTxQR],
                                outputs: Seq[OutputsFromTxQR],
-                               gases: Seq[(Transaction.Hash, Int, U256)]) = {
+                               gases: Seq[GasFromTxsQR]) = {
     val insByTx = inputs.groupBy(_.txHash).view.mapValues { values =>
       values
         .sortBy(_.inputOrder)
@@ -288,7 +283,7 @@ object TransactionQueries extends StrictLogging {
         .sortBy(_.outputOrder)
         .map(_.toApiOutput())
     }
-    val gasByTx = gases.groupBy(_._1).view.mapValues(_.map { case (_, s, g) => (s, g) })
+    val gasByTx = gases.groupBy(_.txHash).view.mapValues(_.map(_.gasInfo()))
     txHashesTs.map { txn =>
       val ins                   = insByTx.getOrElse(txn.txHash, Seq.empty)
       val ous                   = ousByTx.getOrElse(txn.txHash, Seq.empty)
@@ -299,8 +294,7 @@ object TransactionQueries extends StrictLogging {
   }
 
   def gasFromTxsSQL(
-      hashes: Seq[(Transaction.Hash, BlockEntry.Hash)]
-  ): DBActionR[Seq[(Transaction.Hash, Int, U256)]] = {
+      hashes: Seq[(Transaction.Hash, BlockEntry.Hash)]): DBActionR[Seq[GasFromTxsQR]] = {
     if (hashes.nonEmpty) {
       val values =
         hashes.map { case (txHash, blockHash) => s"('\\x$txHash','\\x$blockHash')" }.mkString(",")
