@@ -29,7 +29,7 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
-import org.alephium.explorer.persistence.queries.result.{InputsFromTxnQR, OutputsFromTxsQR}
+import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, OutputsFromTxQR}
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
@@ -249,8 +249,8 @@ object TransactionQueries extends StrictLogging {
 
   private def buildTransactionNoJoin(
       txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)],
-      inputs: Seq[InputsFromTxnQR],
-      outputs: Seq[OutputsFromTxsQR],
+      inputs: Seq[InputsFromTxQR],
+      outputs: Seq[OutputsFromTxQR],
       gases: Seq[(Transaction.Hash, Int, U256)]) = {
     val insByTx = inputs.groupBy(_.txHash).view.mapValues { values =>
       values
@@ -274,8 +274,8 @@ object TransactionQueries extends StrictLogging {
   }
 
   private def buildTransaction(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)],
-                               inputs: Seq[InputsFromTxnQR],
-                               outputs: Seq[OutputsFromTxsQR],
+                               inputs: Seq[InputsFromTxQR],
+                               outputs: Seq[OutputsFromTxQR],
                                gases: Seq[(Transaction.Hash, Int, U256)]) = {
     val insByTx = inputs.groupBy(_.txHash).view.mapValues { values =>
       values

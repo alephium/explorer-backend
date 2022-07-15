@@ -26,7 +26,7 @@ import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries.result.{OutputsFromTxsQR, OutputsQR}
+import org.alephium.explorer.persistence.queries.result.{OutputsFromTxQR, OutputsQR}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
@@ -295,7 +295,7 @@ object OutputQueries {
     }
   }
 
-  def outputsFromTxsSQL(txHashes: Seq[Transaction.Hash]): DBActionR[Seq[OutputsFromTxsQR]] =
+  def outputsFromTxsSQL(txHashes: Seq[Transaction.Hash]): DBActionR[Seq[OutputsFromTxQR]] =
     if (txHashes.nonEmpty) {
       val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
       sql"""
@@ -316,13 +316,13 @@ object OutputQueries {
                               AND inputs.main_chain = true
           WHERE outputs.tx_hash IN (#$values)
             AND outputs.main_chain = true
-        """.as[OutputsFromTxsQR]
+        """.as[OutputsFromTxQR]
     } else {
       DBIOAction.successful(Seq.empty)
     }
 
   def outputsFromTxsNoJoin(
-      hashes: Seq[(Transaction.Hash, BlockEntry.Hash)]): DBActionR[Seq[OutputsFromTxsQR]] =
+      hashes: Seq[(Transaction.Hash, BlockEntry.Hash)]): DBActionR[Seq[OutputsFromTxQR]] =
     if (hashes.nonEmpty) {
       val params = paramPlaceholderTuple2(1, hashes.size)
 
@@ -354,7 +354,7 @@ object OutputQueries {
       SQLActionBuilder(
         queryParts = query,
         unitPConv  = parameters
-      ).as[OutputsFromTxsQR]
+      ).as[OutputsFromTxQR]
     } else {
       DBIOAction.successful(Seq.empty)
     }

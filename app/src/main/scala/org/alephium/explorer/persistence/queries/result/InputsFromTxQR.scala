@@ -23,10 +23,10 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.util.U256
 
-object InputsFromTxnQR {
-  implicit val inputsFromTxnQRGetResult: GetResult[InputsFromTxnQR] =
+object InputsFromTxQR {
+  implicit val inputsFromTxQRGetResult: GetResult[InputsFromTxQR] =
     (result: PositionedResult) =>
-      InputsFromTxnQR(
+      InputsFromTxQR(
         txHash       = result.<<,
         inputOrder   = result.<<,
         hint         = result.<<,
@@ -39,14 +39,14 @@ object InputsFromTxnQR {
 }
 
 /** Query result for [[org.alephium.explorer.persistence.queries.InputQueries.inputsFromTxsNoJoin]] */
-final case class InputsFromTxnQR(txHash: Transaction.Hash,
-                                 inputOrder: Int,
-                                 hint: Int,
-                                 outputRefKey: Hash,
-                                 unlockScript: Option[String],
-                                 address: Option[Address],
-                                 amount: Option[U256],
-                                 token: Option[Seq[Token]]) {
+final case class InputsFromTxQR(txHash: Transaction.Hash,
+                                inputOrder: Int,
+                                hint: Int,
+                                outputRefKey: Hash,
+                                unlockScript: Option[String],
+                                address: Option[Address],
+                                amount: Option[U256],
+                                token: Option[Seq[Token]]) {
 
   def toApiInput(): Input =
     Input(outputRef      = OutputRef(hint, outputRefKey),

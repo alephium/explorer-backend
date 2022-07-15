@@ -29,7 +29,7 @@ import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
-import org.alephium.explorer.persistence.queries.result.{InputsFromTxnQR, OutputsFromTxsQR}
+import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, OutputsFromTxQR}
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.protocol.ALPH
@@ -194,7 +194,7 @@ class TransactionQueriesSpec
     val txHashes = outputs.map(_.txHash)
 
     def res(output: OutputEntity, input: Option[InputEntity]) =
-      OutputsFromTxsQR(
+      OutputsFromTxQR(
         output.txHash,
         output.outputOrder,
         output.outputType,
@@ -236,7 +236,7 @@ class TransactionQueriesSpec
 
     val expected = inputs.zip(outputs).map {
       case (input, output) =>
-        InputsFromTxnQR(
+        InputsFromTxQR(
           txHash       = input.txHash,
           inputOrder   = input.inputOrder,
           hint         = input.hint,

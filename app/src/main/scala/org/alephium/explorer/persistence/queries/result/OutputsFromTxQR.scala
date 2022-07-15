@@ -25,10 +25,10 @@ import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.util.{TimeStamp, U256}
 
-object OutputsFromTxsQR {
-  implicit val outputsFromTxsQRGetResult: GetResult[OutputsFromTxsQR] =
+object OutputsFromTxQR {
+  implicit val outputsFromTxQRGetResult: GetResult[OutputsFromTxQR] =
     (result: PositionedResult) =>
-      OutputsFromTxsQR(
+      OutputsFromTxQR(
         txHash      = result.<<,
         outputOrder = result.<<,
         outputType  = result.<<,
@@ -44,17 +44,17 @@ object OutputsFromTxsQR {
 }
 
 /** Query result for [[org.alephium.explorer.persistence.queries.OutputQueries.outputsFromTxsNoJoin]] */
-final case class OutputsFromTxsQR(txHash: Transaction.Hash,
-                                  outputOrder: Int,
-                                  outputType: OutputEntity.OutputType,
-                                  hint: Int,
-                                  key: Hash,
-                                  amount: U256,
-                                  address: Address,
-                                  tokens: Option[Seq[Token]],
-                                  lockTime: Option[TimeStamp],
-                                  message: Option[ByteString],
-                                  spent: Option[Transaction.Hash]) {
+final case class OutputsFromTxQR(txHash: Transaction.Hash,
+                                 outputOrder: Int,
+                                 outputType: OutputEntity.OutputType,
+                                 hint: Int,
+                                 key: Hash,
+                                 amount: U256,
+                                 address: Address,
+                                 tokens: Option[Seq[Token]],
+                                 lockTime: Option[TimeStamp],
+                                 message: Option[ByteString],
+                                 spent: Option[Transaction.Hash]) {
   def toApiOutput(): Output =
     outputType match {
       case OutputEntity.Asset =>

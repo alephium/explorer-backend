@@ -27,7 +27,7 @@ import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.InputEntity
 import org.alephium.explorer.persistence.queries.InputQueries._
-import org.alephium.explorer.persistence.queries.result.{InputsFromTxnQR, InputsQR}
+import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, InputsQR}
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.persistence.schema.InputSchema
 import org.alephium.explorer.util.SlickTestUtil._
@@ -113,7 +113,7 @@ class InputQueriesSpec
           //expected query result
           val expected =
             inputs.map { entity =>
-              InputsFromTxnQR(
+              InputsFromTxQR(
                 txHash       = entity.txHash,
                 inputOrder   = entity.inputOrder,
                 hint         = entity.hint,

@@ -26,7 +26,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.queries.OutputQueries._
-import org.alephium.explorer.persistence.queries.result.{OutputsFromTxsQR, OutputsQR}
+import org.alephium.explorer.persistence.queries.result.{OutputsFromTxQR, OutputsQR}
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.persistence.schema.OutputSchema
 import org.alephium.explorer.util.SlickTestUtil._
@@ -91,7 +91,7 @@ class OutputQueriesSpec
           //expected query result
           val expected =
             outputs.map { entity =>
-              OutputsFromTxsQR(
+              OutputsFromTxQR(
                 txHash      = entity.txHash,
                 outputOrder = entity.outputOrder,
                 outputType  = entity.outputType,

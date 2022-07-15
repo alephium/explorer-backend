@@ -23,7 +23,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries.result.{InputsFromTxnQR, InputsQR}
+import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, InputsQR}
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
 
@@ -74,7 +74,7 @@ object InputQueries {
       ).asUpdate
     }
 
-  def inputsFromTxsSQL(txHashes: Seq[Transaction.Hash]): DBActionR[Seq[InputsFromTxnQR]] =
+  def inputsFromTxsSQL(txHashes: Seq[Transaction.Hash]): DBActionR[Seq[InputsFromTxQR]] =
     if (txHashes.nonEmpty) {
       val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
       sql"""
@@ -92,13 +92,13 @@ object InputQueries {
                             AND outputs.main_chain = true
           WHERE inputs.tx_hash IN (#$values)
             AND inputs.main_chain = true
-    """.as[InputsFromTxnQR]
+    """.as[InputsFromTxQR]
     } else {
       DBIOAction.successful(Seq.empty)
     }
 
   def inputsFromTxsNoJoin(
-      hashes: Seq[(Transaction.Hash, BlockEntry.Hash)]): DBActionR[Seq[InputsFromTxnQR]] =
+      hashes: Seq[(Transaction.Hash, BlockEntry.Hash)]): DBActionR[Seq[InputsFromTxQR]] =
     if (hashes.nonEmpty) {
       val params = paramPlaceholderTuple2(1, hashes.size)
 
@@ -128,7 +128,7 @@ object InputQueries {
       SQLActionBuilder(
         queryParts = query,
         unitPConv  = parameters
-      ).as[InputsFromTxnQR]
+      ).as[InputsFromTxQR]
     } else {
       DBIOAction.successful(Seq.empty)
     }
