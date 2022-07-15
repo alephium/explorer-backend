@@ -29,7 +29,11 @@ import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
-import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, OutputsFromTxQR}
+import org.alephium.explorer.persistence.queries.result.{
+  InputsFromTxQR,
+  OutputsFromTxQR,
+  TxByAddressQR
+}
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.service.FinalizerService
@@ -170,10 +174,10 @@ class TransactionQueriesSpec
       run(TransactionQueries.getTxHashesByAddressQuerySQLNoJoin(address, 0, 10)).futureValue
 
     val expected = Seq(
-      (output1.txHash, output1.blockHash, output1.timestamp, 0),
-      (output2.txHash, output2.blockHash, output2.timestamp, 0),
-      (input1.txHash, input1.blockHash, input1.timestamp, 0)
-    ).sortBy(_._3).reverse
+      TxByAddressQR(output1.txHash, output1.blockHash, output1.timestamp, 0),
+      TxByAddressQR(output2.txHash, output2.blockHash, output2.timestamp, 0),
+      TxByAddressQR(input1.txHash, input1.blockHash, input1.timestamp, 0)
+    ).sortBy(_.blockTimestamp).reverse
 
     hashesSQLNoJoin is expected.toVector
   }

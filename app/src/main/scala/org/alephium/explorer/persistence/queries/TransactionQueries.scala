@@ -29,7 +29,11 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
-import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, OutputsFromTxQR}
+import org.alephium.explorer.persistence.queries.result.{
+  InputsFromTxQR,
+  OutputsFromTxQR,
+  TxByAddressQR
+}
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
@@ -159,10 +163,9 @@ object TransactionQueries extends StrictLogging {
     """.as[Int]
   }
 
-  def getTxHashesByAddressQuerySQLNoJoin(
-      address: Address,
-      offset: Int,
-      limit: Int): DBActionSR[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)] = {
+  def getTxHashesByAddressQuerySQLNoJoin(address: Address,
+                                         offset: Int,
+                                         limit: Int): DBActionSR[TxByAddressQR] = {
     sql"""
       SELECT tx_hash, block_hash, block_timestamp, tx_order
       FROM transaction_per_addresses
@@ -177,7 +180,7 @@ object TransactionQueries extends StrictLogging {
       implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
     for {
       txHashesTs <- getTxHashesByBlockHashQuery(blockHash).result
-      txs        <- getTransactionsSQL(txHashesTs)
+      txs        <- getTransactionsSQL(TxByAddressQR(txHashesTs))
     } yield txs
   }
 
@@ -188,7 +191,7 @@ object TransactionQueries extends StrictLogging {
     val toDrop = offset * limit
     for {
       txHashesTs <- getTxHashesByBlockHashWithPaginationQuery((blockHash, toDrop, limit)).result
-      txs        <- getTransactionsSQL(txHashesTs)
+      txs        <- getTransactionsSQL(TxByAddressQR(txHashesTs))
     } yield txs
   }
 
@@ -214,11 +217,11 @@ object TransactionQueries extends StrictLogging {
     } yield txs
   }
 
-  def getTransactionsSQL(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)])(
+  def getTransactionsSQL(txHashesTs: Seq[TxByAddressQR])(
       implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
     if (txHashesTs.nonEmpty) {
-      val hashes   = txHashesTs.map { case (txHash, blockHash, _, _) => (txHash, blockHash) }
-      val txHashes = txHashesTs.map(_._1)
+      val hashes   = txHashesTs.map(_.hashes())
+      val txHashes = txHashesTs.map(_.txHash)
       for {
         inputs  <- inputsFromTxsSQL(txHashes)
         outputs <- outputsFromTxsSQL(txHashes)
@@ -231,10 +234,10 @@ object TransactionQueries extends StrictLogging {
     }
   }
 
-  def getTransactionsNoJoin(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)])(
+  def getTransactionsNoJoin(txHashesTs: Seq[TxByAddressQR])(
       implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
     if (txHashesTs.nonEmpty) {
-      val hashes = txHashesTs.map { case (txHash, blockHash, _, _) => (txHash, blockHash) }
+      val hashes = txHashesTs.map(_.hashes())
       for {
         inputs  <- inputsFromTxsNoJoin(hashes)
         outputs <- outputsFromTxsNoJoin(hashes)
@@ -247,11 +250,10 @@ object TransactionQueries extends StrictLogging {
     }
   }
 
-  private def buildTransactionNoJoin(
-      txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)],
-      inputs: Seq[InputsFromTxQR],
-      outputs: Seq[OutputsFromTxQR],
-      gases: Seq[(Transaction.Hash, Int, U256)]) = {
+  private def buildTransactionNoJoin(txHashesTs: Seq[TxByAddressQR],
+                                     inputs: Seq[InputsFromTxQR],
+                                     outputs: Seq[OutputsFromTxQR],
+                                     gases: Seq[(Transaction.Hash, Int, U256)]) = {
     val insByTx = inputs.groupBy(_.txHash).view.mapValues { values =>
       values
         .sortBy(_.inputOrder)
@@ -263,17 +265,16 @@ object TransactionQueries extends StrictLogging {
         .map(_.toApiOutput())
     }
     val gasByTx = gases.groupBy(_._1).view.mapValues(_.map { case (_, s, g) => (s, g) })
-    txHashesTs.map {
-      case (tx, bh, ts, _) =>
-        val ins                   = insByTx.getOrElse(tx, Seq.empty)
-        val ous                   = ousByTx.getOrElse(tx, Seq.empty)
-        val gas                   = gasByTx.getOrElse(tx, Seq.empty)
-        val (gasAmount, gasPrice) = gas.headOption.getOrElse((0, U256.Zero))
-        Transaction(tx, bh, ts, ins, ous, gasAmount, gasPrice)
+    txHashesTs.map { txn =>
+      val ins                   = insByTx.getOrElse(txn.txHash, Seq.empty)
+      val ous                   = ousByTx.getOrElse(txn.txHash, Seq.empty)
+      val gas                   = gasByTx.getOrElse(txn.txHash, Seq.empty)
+      val (gasAmount, gasPrice) = gas.headOption.getOrElse((0, U256.Zero))
+      Transaction(txn.txHash, txn.blockHash, txn.blockTimestamp, ins, ous, gasAmount, gasPrice)
     }
   }
 
-  private def buildTransaction(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)],
+  private def buildTransaction(txHashesTs: Seq[TxByAddressQR],
                                inputs: Seq[InputsFromTxQR],
                                outputs: Seq[OutputsFromTxQR],
                                gases: Seq[(Transaction.Hash, Int, U256)]) = {
@@ -288,13 +289,12 @@ object TransactionQueries extends StrictLogging {
         .map(_.toApiOutput())
     }
     val gasByTx = gases.groupBy(_._1).view.mapValues(_.map { case (_, s, g) => (s, g) })
-    txHashesTs.map {
-      case (tx, bh, ts, _) =>
-        val ins                   = insByTx.getOrElse(tx, Seq.empty)
-        val ous                   = ousByTx.getOrElse(tx, Seq.empty)
-        val gas                   = gasByTx.getOrElse(tx, Seq.empty)
-        val (gasAmount, gasPrice) = gas.headOption.getOrElse((0, U256.Zero))
-        Transaction(tx, bh, ts, ins, ous, gasAmount, gasPrice)
+    txHashesTs.map { txn =>
+      val ins                   = insByTx.getOrElse(txn.txHash, Seq.empty)
+      val ous                   = ousByTx.getOrElse(txn.txHash, Seq.empty)
+      val gas                   = gasByTx.getOrElse(txn.txHash, Seq.empty)
+      val (gasAmount, gasPrice) = gas.headOption.getOrElse((0, U256.Zero))
+      Transaction(txn.txHash, txn.blockHash, txn.blockTimestamp, ins, ous, gasAmount, gasPrice)
     }
   }
 
