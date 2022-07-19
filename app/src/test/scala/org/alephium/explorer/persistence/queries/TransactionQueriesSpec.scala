@@ -17,6 +17,7 @@
 package org.alephium.explorer.persistence.queries
 
 import scala.concurrent.ExecutionContext
+import scala.util.Random
 
 import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
@@ -24,6 +25,7 @@ import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators, Hash}
+import org.alephium.explorer.GenModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._
@@ -366,6 +368,44 @@ class TransactionQueriesSpec
 
     val total = run(TransactionQueries.mainTransactions.length.result).futureValue
     total is 2
+  }
+
+  "filterExistingAddresses & areAddressesActiveActionNonConcurrent" should {
+    "return address that exist in DB" in {
+      //generate two lists: Left to be persisted/existing & right as non-existing.
+      forAll(Gen.listOf(genTransactionPerAddressEntity()),
+             Gen.listOf(genTransactionPerAddressEntity())) {
+        case (existing, nonExisting) =>
+          //clear the table
+          run(TransactionPerAddressSchema.table.delete).futureValue
+          //persist existing entities
+          run(TransactionPerAddressSchema.table ++= existing).futureValue
+
+          //join existing and nonExisting entities and shuffle
+          val allEntities  = Random.shuffle(existing ++ nonExisting)
+          val allAddresses = allEntities.map(_.address)
+
+          //get persisted entities to assert against actual query results
+          val existingAddresses = existing.map(_.address)
+
+          //fetch actual persisted addresses that exists
+          val actualExisting =
+            run(TransactionQueries.filterExistingAddresses(allAddresses)).futureValue
+
+          //actual address should contain all of existingAddresses
+          actualExisting should contain theSameElementsAs existingAddresses
+
+          //run the boolean query
+          val booleanExistingResult =
+            run(TransactionQueries.areAddressesActiveAction(allAddresses)).futureValue
+
+          //boolean query should output results in the same order as the input addresses
+          (allAddresses.map(actualExisting.contains): Seq[Boolean]) is booleanExistingResult
+
+          //check the boolean query with the existing concurrent query
+          run(TransactionQueries.areAddressesActiveAction(allAddresses)).futureValue is booleanExistingResult
+      }
+    }
   }
 
   trait Fixture {

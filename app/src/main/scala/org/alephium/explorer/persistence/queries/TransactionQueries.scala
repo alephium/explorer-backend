@@ -365,6 +365,36 @@ object TransactionQueries extends StrictLogging {
     })
   }
 
+  def areAddressesActiveActionUnion(addresses: Seq[Address])(
+      implicit ec: ExecutionContext): DBActionR[Seq[Boolean]] =
+    filterExistingAddresses(addresses) map { existing =>
+      addresses map existing.contains
+    }
+
+  /** Filters input addresses that exist in DB */
+  def filterExistingAddresses(addresses: Seq[Address]): DBActionR[Seq[Address]] =
+    if (addresses.isEmpty) {
+      DBIO.successful(Seq.empty)
+    } else {
+      val query =
+        List
+          .fill(addresses.size) {
+            "SELECT address FROM transaction_per_addresses WHERE address = ?"
+          }
+          .mkString("\nUNION\n")
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          addresses foreach { address =>
+            params >> address
+        }
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv  = parameters
+      ).as[Address]
+    }
+
   def getBalanceAction(address: Address)(implicit ec: ExecutionContext): DBActionR[(U256, U256)] =
     getBalanceUntilLockTime(
       address  = address,
