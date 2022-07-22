@@ -169,7 +169,7 @@ class InputQueriesSpec
               outputRefTokens  = input.outputRefTokens
             )
 
-          actual contains only(expected)
+          actual.toList contains only(expected)
         }
       }
     }
@@ -192,7 +192,7 @@ class InputQueriesSpec
 
             val explain = run(query.explain()).futureValue.mkString("\n")
 
-            explain should include("Index Scan using inputs_tx_hash_block_hash_idx on inputs")
+            explain should include("inputs_tx_hash_block_hash_idx")
           }
         }
       }
@@ -216,7 +216,7 @@ class InputQueriesSpec
 
             val explain = run(query.explain()).futureValue.mkString("\n")
 
-            explain should include("Index Scan using inputs_pk on inputs")
+            explain should include("inputs_pk")
           }
         }
       }
