@@ -238,34 +238,10 @@ object TransactionQueries extends StrictLogging {
         outputs <- outputsFromTxsNoJoin(hashes)
         gases   <- gasFromTxsSQL(hashes)
       } yield {
-        buildTransactionNoJoin(txHashesTs, inputs, outputs, gases)
+        buildTransaction(txHashesTs, inputs, outputs, gases)
       }
     } else {
       DBIOAction.successful(Seq.empty)
-    }
-  }
-
-  private def buildTransactionNoJoin(txHashesTs: Seq[TxByAddressQR],
-                                     inputs: Seq[InputsFromTxQR],
-                                     outputs: Seq[OutputsFromTxQR],
-                                     gases: Seq[GasFromTxsQR]) = {
-    val insByTx = inputs.groupBy(_.txHash).view.mapValues { values =>
-      values
-        .sortBy(_.inputOrder)
-        .map(_.toApiInput())
-    }
-    val ousByTx = outputs.groupBy(_.txHash).view.mapValues { values =>
-      values
-        .sortBy(_.outputOrder)
-        .map(_.toApiOutput())
-    }
-    val gasByTx = gases.groupBy(_.txHash).view.mapValues(_.map(_.gasInfo()))
-    txHashesTs.map { txn =>
-      val ins                   = insByTx.getOrElse(txn.txHash, Seq.empty)
-      val ous                   = ousByTx.getOrElse(txn.txHash, Seq.empty)
-      val gas                   = gasByTx.getOrElse(txn.txHash, Seq.empty)
-      val (gasAmount, gasPrice) = gas.headOption.getOrElse((0, U256.Zero))
-      Transaction(txn.txHash, txn.blockHash, txn.blockTimestamp, ins, ous, gasAmount, gasPrice)
     }
   }
 
