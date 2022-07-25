@@ -56,28 +56,34 @@ class AsyncReloadingCacheSpec extends AlephiumSpec with ScalaFutures with Eventu
   }
 
   "not allow multiple threads to concurrently execute reload" in {
-    val reloadCount = new AtomicInteger() //number of times reload was executed
+    forAll { cacheValue: Int =>
+      //1 atomic and 1 non-atomic counter. If the cache is thread-safe then
+      //the output of both counters will be same when the cache is concurrently
+      //read and dropped by multiple threads
+      val reloadAtomicCount    = new AtomicInteger(0)
+      var reloadNonAtomicCount = 0
 
-    //a cache with initial value as 1 and reload set to 2.seconds
-    val cache =
-      AsyncReloadingCache(initial = 1, reloadAfter = 2.seconds) { currentValue =>
-        Future {
-          reloadCount.incrementAndGet()
-          currentValue + 1
+      //set reloadAfter to 1.millisecond so cache gets dropped and reloaded frequently
+      val cache =
+        AsyncReloadingCache(initial = cacheValue, reloadAfter = 1.millisecond) { currentValue =>
+          Future {
+            reloadAtomicCount.incrementAndGet()
+            reloadNonAtomicCount += 1
+            currentValue is cacheValue //cache value is always the same
+            cacheValue
+          }
         }
-      }
 
-    //dispatch multiple threads to concurrently execute cache.get() which triggers reload
-    def concurrentlyReadCache(expectedCachedValue: Int) =
-      Future.sequence(List.fill(100)(Future(cache.get()))).futureValue is
-        List.fill(100)(expectedCachedValue)
+      //dispatch multiple concurrent cache reads.
+      Future
+        .sequence(List.fill(100000)(Future(cache.get())))
+        .futureValue
+        .distinct should contain only cacheValue
 
-    concurrentlyReadCache(1)
-    reloadCount.get() is 0 //Initial value gets returned so not reload occur.
-
-    eventually(Timeout(3.seconds)) {
-      concurrentlyReadCache(2)
-      reloadCount.get() is 1
+      //Because the cache is thread-safe both atomic and non-atomic counts should result in same output.
+      reloadAtomicCount.get() is reloadNonAtomicCount
+      //final cache value remains the same
+      cache.get() is cacheValue
     }
   }
 

@@ -150,8 +150,7 @@ class BlockQueriesSpec
           run(explain).futureValue
 
         //check the query is using the index named `block_headers_full_index` in `block_headers` table
-        explainResult.mkString should
-          include("Index Scan using block_headers_full_index on block_headers")
+        explainResult.mkString should include("block_headers_full_index")
       }
     }
   }
