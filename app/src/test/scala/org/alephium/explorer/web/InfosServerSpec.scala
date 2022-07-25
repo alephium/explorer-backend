@@ -233,6 +233,10 @@ class InfosServerSpec()
       def listTokens(pagination: Pagination)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] = ???
+      def areAddressesActive(addresses: Seq[Address])(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Boolean]] =
+        ???
     }
 
     implicit val groupSettings: GroupSetting        = GroupSetting(groupNum)

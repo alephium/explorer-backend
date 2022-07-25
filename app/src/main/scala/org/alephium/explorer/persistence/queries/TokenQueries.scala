@@ -24,9 +24,10 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
+import org.alephium.explorer.persistence.queries.result.TxByAddressQR
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.explorer.util.SlickSugar._
+import org.alephium.explorer.util.SlickUtil._
 import org.alephium.util.{TimeStamp, U256}
 
 object TokenQueries extends StrictLogging {
@@ -98,10 +99,9 @@ object TokenQueries extends StrictLogging {
     """.as[Address]
   }
 
-  def listTokenTransactionsAction(
-      token: Hash,
-      limit: Int,
-      offset: Int): DBActionSR[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)] = {
+  def listTokenTransactionsAction(token: Hash,
+                                  limit: Int,
+                                  offset: Int): DBActionSR[TxByAddressQR] = {
     sql"""
       SELECT hash, block_hash, block_timestamp, tx_order
       FROM transaction_per_token
@@ -110,7 +110,7 @@ object TokenQueries extends StrictLogging {
       ORDER BY block_timestamp DESC, tx_order
       LIMIT $limit
       OFFSET $offset
-    """.as[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)]
+    """.as[TxByAddressQR]
   }
 
   def listAddressTokensAction(address: Address): DBActionSR[Hash] =
@@ -132,11 +132,10 @@ object TokenQueries extends StrictLogging {
     } yield txs
   }
 
-  def getTokenTxHashesByAddressQuery(
-      address: Address,
-      token: Hash,
-      offset: Int,
-      limit: Int): DBActionSR[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)] = {
+  def getTokenTxHashesByAddressQuery(address: Address,
+                                     token: Hash,
+                                     offset: Int,
+                                     limit: Int): DBActionSR[TxByAddressQR] = {
     sql"""
       SELECT hash, block_hash, block_timestamp, tx_order
       FROM token_tx_per_addresses

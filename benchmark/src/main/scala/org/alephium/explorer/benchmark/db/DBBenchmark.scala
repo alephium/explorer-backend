@@ -175,8 +175,7 @@ class DBBenchmark {
 
   @Benchmark
   def getAddressInfoWithTxAddressTable(state: Address_ReadState): Unit = {
-    import state.executionContext
-    import state.databaseConfig
+    import state.{databaseConfig, executionContext}
 
     val _ = Await.result(for {
       _ <- TransactionDao.getBalance(state.address)
@@ -243,5 +242,38 @@ class DBBenchmark {
 
     val _ =
       Await.result(BlockDao.insert(state.next), requestTimeout)
+  }
+
+  @Benchmark
+  def areAddressesActiveAction_DisabledCP(state: AreAddressesActiveReadState_DisabledCP): Unit = {
+    implicit val ec: ExecutionContext = state.config.db.ioExecutionContext
+
+    val _ =
+      state.db.runNow(TransactionQueries.areAddressesActiveAction(state.next), requestTimeout)
+  }
+
+  @Benchmark
+  def areAddressesActiveAction_HikariCP(state: AreAddressesActiveReadState_HikariCP): Unit = {
+    implicit val ec: ExecutionContext = state.config.db.ioExecutionContext
+
+    val _ =
+      state.db.runNow(TransactionQueries.areAddressesActiveAction(state.next), requestTimeout)
+  }
+
+  @Benchmark
+  def areAddressesActiveActionUnion_DisabledCP(
+      state: AreAddressesActiveReadState_DisabledCP): Unit = {
+    implicit val ec: ExecutionContext = state.config.db.ioExecutionContext
+
+    val _ =
+      state.db.runNow(TransactionQueries.areAddressesActiveActionUnion(state.next), requestTimeout)
+  }
+
+  @Benchmark
+  def areAddressesActiveActionUnion_HikariCP(state: AreAddressesActiveReadState_HikariCP): Unit = {
+    implicit val ec: ExecutionContext = state.config.db.ioExecutionContext
+
+    val _ =
+      state.db.runNow(TransactionQueries.areAddressesActiveActionUnion(state.next), requestTimeout)
   }
 }

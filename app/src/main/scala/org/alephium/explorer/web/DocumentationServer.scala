@@ -22,11 +22,16 @@ import akka.http.scaladsl.server.Route
 import sttp.tapir.swagger.{SwaggerUI, SwaggerUIOptions}
 
 import org.alephium.api.OpenAPIWriters.openApiJson
+import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.docs.Documentation
 
-class DocumentationServer()(implicit val executionContext: ExecutionContext)
+class DocumentationServer()(implicit val executionContext: ExecutionContext,
+                            groupSetting: GroupSetting)
     extends Server
     with Documentation {
+
+  val groupNum = groupSetting.groupNum
+
   val route: Route = toRoute(
     SwaggerUI[Future](openApiJson(docs, dropAuth             = false),
                       SwaggerUIOptions.default.copy(yamlName = "explorer-backend-openapi.json")))

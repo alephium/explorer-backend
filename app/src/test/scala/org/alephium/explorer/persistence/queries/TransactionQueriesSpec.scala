@@ -17,6 +17,7 @@
 package org.alephium.explorer.persistence.queries
 
 import scala.concurrent.ExecutionContext
+import scala.util.Random
 
 import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
@@ -24,13 +25,17 @@ import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators, Hash}
+import org.alephium.explorer.GenModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
+import org.alephium.explorer.persistence.queries.result._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.service.FinalizerService
+import org.alephium.explorer.util.SlickTestUtil._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
@@ -46,9 +51,6 @@ class TransactionQueriesSpec
   implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   "compute locked balance when empty" in new Fixture {
-    val balanceOption = run(TransactionQueries.getBalanceActionOption(address)).futureValue
-    balanceOption is ((None, None))
-
     val balance = run(TransactionQueries.getBalanceAction(address)).futureValue
     balance is ((U256.Zero, U256.Zero))
   }
@@ -170,10 +172,10 @@ class TransactionQueriesSpec
       run(TransactionQueries.getTxHashesByAddressQuerySQLNoJoin(address, 0, 10)).futureValue
 
     val expected = Seq(
-      (output1.txHash, output1.blockHash, output1.timestamp, 0),
-      (output2.txHash, output2.blockHash, output2.timestamp, 0),
-      (input1.txHash, input1.blockHash, input1.timestamp, 0)
-    ).sortBy(_._3).reverse
+      TxByAddressQR(output1.txHash, output1.blockHash, output1.timestamp, 0),
+      TxByAddressQR(output2.txHash, output2.blockHash, output2.timestamp, 0),
+      TxByAddressQR(input1.txHash, input1.blockHash, input1.timestamp, 0)
+    ).sortBy(_.blockTimestamp).reverse
 
     hashesSQLNoJoin is expected.toVector
   }
@@ -195,27 +197,28 @@ class TransactionQueriesSpec
 
     val txHashes = outputs.map(_.txHash)
 
-    def res(output: OutputEntity, input: Option[InputEntity]) = {
-      (output.txHash,
-       output.outputOrder,
-       output.outputType,
-       output.hint,
-       output.key,
-       output.amount,
-       output.address,
-       output.tokens,
-       output.lockTime,
-       output.message,
-       input.map(_.txHash))
-    }
+    def res(output: OutputEntity, input: Option[InputEntity]) =
+      OutputsFromTxQR(
+        output.txHash,
+        output.outputOrder,
+        output.outputType,
+        output.hint,
+        output.key,
+        output.amount,
+        output.address,
+        output.tokens,
+        output.lockTime,
+        output.message,
+        input.map(_.txHash)
+      )
 
     val expected = Seq(
       res(output1, None),
       res(output2, Some(input1)),
       res(output3, None)
-    ).sortBy(_._1.toString)
+    ).sortBy(_.txHash.toString())
 
-    run(outputsFromTxsSQL(txHashes)).futureValue.sortBy(_._1.toString) is expected.toVector
+    run(outputsFromTxsSQL(txHashes)).futureValue.sortBy(_.txHash.toString()) is expected.toVector
   }
 
   "inputs for txs" in new Fixture {
@@ -237,14 +240,16 @@ class TransactionQueriesSpec
 
     val expected = inputs.zip(outputs).map {
       case (input, output) =>
-        (input.txHash,
-         input.inputOrder,
-         input.hint,
-         input.outputRefKey,
-         input.unlockScript,
-         output.address,
-         output.amount,
-         output.tokens)
+        InputsFromTxQR(
+          txHash       = input.txHash,
+          inputOrder   = input.inputOrder,
+          hint         = input.hint,
+          outputRefKey = input.outputRefKey,
+          unlockScript = input.unlockScript,
+          address      = Some(output.address),
+          amount       = Some(output.amount),
+          token        = output.tokens
+        )
     }
 
     run(inputsFromTxsSQL(txHashes)).futureValue is expected.toVector
@@ -366,6 +371,68 @@ class TransactionQueriesSpec
 
     val total = run(TransactionQueries.mainTransactions.length.result).futureValue
     total is 2
+  }
+
+  "index 'txs_pk'" should {
+    "get used" when {
+      "accessing column hash" in {
+        forAll(Gen.listOf(transactionEntityGen())) { transactions =>
+          run(TransactionSchema.table.delete).futureValue
+          run(TransactionSchema.table ++= transactions).futureValue
+
+          transactions foreach { transaction =>
+            val query =
+              sql"""
+                   |SELECT *
+                   |FROM #${TransactionSchema.name}
+                   |where hash = ${transaction.hash}
+                   |""".stripMargin
+
+            val explain = run(query.explain()).futureValue.mkString("\n")
+
+            explain should include("Index Scan on txs_pk")
+          }
+        }
+      }
+    }
+  }
+
+  "filterExistingAddresses & areAddressesActiveActionNonConcurrent" should {
+    "return address that exist in DB" in {
+      //generate two lists: Left to be persisted/existing & right as non-existing.
+      forAll(Gen.listOf(genTransactionPerAddressEntity()),
+             Gen.listOf(genTransactionPerAddressEntity())) {
+        case (existing, nonExisting) =>
+          //clear the table
+          run(TransactionPerAddressSchema.table.delete).futureValue
+          //persist existing entities
+          run(TransactionPerAddressSchema.table ++= existing).futureValue
+
+          //join existing and nonExisting entities and shuffle
+          val allEntities  = Random.shuffle(existing ++ nonExisting)
+          val allAddresses = allEntities.map(_.address)
+
+          //get persisted entities to assert against actual query results
+          val existingAddresses = existing.map(_.address)
+
+          //fetch actual persisted addresses that exists
+          val actualExisting =
+            run(TransactionQueries.filterExistingAddresses(allAddresses)).futureValue
+
+          //actual address should contain all of existingAddresses
+          actualExisting should contain theSameElementsAs existingAddresses
+
+          //run the boolean query
+          val booleanExistingResult =
+            run(TransactionQueries.areAddressesActiveAction(allAddresses)).futureValue
+
+          //boolean query should output results in the same order as the input addresses
+          (allAddresses.map(actualExisting.contains): Seq[Boolean]) is booleanExistingResult
+
+          //check the boolean query with the existing concurrent query
+          run(TransactionQueries.areAddressesActiveAction(allAddresses)).futureValue is booleanExistingResult
+      }
+    }
   }
 
   trait Fixture {

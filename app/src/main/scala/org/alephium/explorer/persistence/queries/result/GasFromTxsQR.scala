@@ -14,28 +14,30 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.tools
+package org.alephium.explorer.persistence.queries.result
 
-import org.alephium.api.OpenAPIWriters.openApiJson
-import org.alephium.explorer.docs.Documentation
-import org.alephium.explorer.sideEffect
+import slick.jdbc.{GetResult, PositionedResult}
 
-object OpenApiUpdate {
-  def main(args: Array[String]): Unit = {
-    sideEffect {
-      new Documentation {
+import org.alephium.explorer.api.model.Transaction
+import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.util.U256
 
-        val groupNum = 4
+object GasFromTxsQR {
 
-        private val json = openApiJson(docs, dropAuth = false)
+  implicit val gasFromTxsQRGetResult: GetResult[GasFromTxsQR] =
+    (result: PositionedResult) =>
+      GasFromTxsQR(
+        txHash    = result.<<,
+        gasAmount = result.<<,
+        gasPrice  = result.<<
+    )
 
-        import java.io.PrintWriter
-        new PrintWriter("../app/src/main/resources/explorer-backend-openapi.json") {
-          write(json)
-          write('\n')
-          close
-        }
-      }
-    }
-  }
+}
+
+/** Query result for [[org.alephium.explorer.persistence.queries.TransactionQueries.gasFromTxsSQL]] */
+final case class GasFromTxsQR(txHash: Transaction.Hash, gasAmount: Int, gasPrice: U256) {
+
+  def gasInfo(): (Int, U256) =
+    (gasAmount, gasPrice)
+
 }

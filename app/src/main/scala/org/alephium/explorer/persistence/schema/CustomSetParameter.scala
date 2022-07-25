@@ -30,26 +30,6 @@ import org.alephium.util.{AVector, TimeStamp, U256}
 /** [[slick.jdbc.SetParameter]] implicits for setting values in SQL queries */
 object CustomSetParameter {
 
-  /**
-    * Builds '?' placeholders for generating parameterised SQL queries.
-    *
-    * Example: If rows = 2, columns = 3 this function will return
-    *          comma separated rows (?, ?, ?),(?, ?, ?).
-    */
-  def paramPlaceholder(rows: Int, columns: Int): String =
-    if (rows <= 0 || columns <= 0) {
-      ""
-    } else {
-      val placeholders =
-        Array
-          .fill(columns)("?")
-          .mkString("(", ", ", ")")
-
-      Array
-        .fill(rows)(placeholders)
-        .mkString(",")
-    }
-
   implicit object BlockEntryHashSetParameter extends SetParameter[BlockEntry.Hash] {
     override def apply(input: BlockEntry.Hash, params: PositionedParameters): Unit =
       params setBytes input.value.bytes.toArray

@@ -21,7 +21,7 @@ import scala.annotation.tailrec
 import slick.dbio.DBIOAction
 
 import org.alephium.explorer.persistence.DBActionW
-import org.alephium.explorer.persistence.schema.CustomSetParameter.paramPlaceholder
+import org.alephium.explorer.util.SlickUtil.paramPlaceholder
 
 object QuerySplitter {
 

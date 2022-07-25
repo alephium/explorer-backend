@@ -18,7 +18,6 @@ package org.alephium.explorer.persistence.queries
 
 import scala.concurrent.ExecutionContext
 
-import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
@@ -30,11 +29,12 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
+import org.alephium.explorer.persistence.queries.result._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.explorer.util.SlickSugar._
+import org.alephium.explorer.util.SlickUtil._
 import org.alephium.util.{TimeStamp, U256}
 
 object TransactionQueries extends StrictLogging {
@@ -120,11 +120,7 @@ object TransactionQueries extends StrictLogging {
 
   def getOutputRefTransactionAction(key: Hash)(
       implicit ec: ExecutionContext): DBActionR[Option[Transaction]] = {
-    sql"""
-    SELECT tx_hash
-    FROM outputs
-    WHERE main_chain = true AND key = $key
-    """.as[Transaction.Hash].flatMap { txHashes =>
+    OutputQueries.getTxnHash(key).flatMap { txHashes =>
       txHashes.headOption match {
         case None => DBIOAction.successful(None)
         case Some(txHash) =>
@@ -163,10 +159,9 @@ object TransactionQueries extends StrictLogging {
     """.as[Int]
   }
 
-  def getTxHashesByAddressQuerySQLNoJoin(
-      address: Address,
-      offset: Int,
-      limit: Int): DBActionSR[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)] = {
+  def getTxHashesByAddressQuerySQLNoJoin(address: Address,
+                                         offset: Int,
+                                         limit: Int): DBActionSR[TxByAddressQR] = {
     sql"""
       SELECT tx_hash, block_hash, block_timestamp, tx_order
       FROM transaction_per_addresses
@@ -181,7 +176,7 @@ object TransactionQueries extends StrictLogging {
       implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
     for {
       txHashesTs <- getTxHashesByBlockHashQuery(blockHash).result
-      txs        <- getTransactionsSQL(txHashesTs)
+      txs        <- getTransactionsSQL(TxByAddressQR(txHashesTs))
     } yield txs
   }
 
@@ -192,7 +187,7 @@ object TransactionQueries extends StrictLogging {
     val toDrop = offset * limit
     for {
       txHashesTs <- getTxHashesByBlockHashWithPaginationQuery((blockHash, toDrop, limit)).result
-      txs        <- getTransactionsSQL(txHashesTs)
+      txs        <- getTransactionsSQL(TxByAddressQR(txHashesTs))
     } yield txs
   }
 
@@ -218,11 +213,11 @@ object TransactionQueries extends StrictLogging {
     } yield txs
   }
 
-  def getTransactionsSQL(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)])(
+  def getTransactionsSQL(txHashesTs: Seq[TxByAddressQR])(
       implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
     if (txHashesTs.nonEmpty) {
-      val hashes   = txHashesTs.map { case (txHash, blockHash, _, _) => (txHash, blockHash) }
-      val txHashes = txHashesTs.map(_._1)
+      val hashes   = txHashesTs.map(_.hashes())
+      val txHashes = txHashesTs.map(_.txHash)
       for {
         inputs  <- inputsFromTxsSQL(txHashes)
         outputs <- outputsFromTxsSQL(txHashes)
@@ -235,95 +230,48 @@ object TransactionQueries extends StrictLogging {
     }
   }
 
-  def getTransactionsNoJoin(txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)])(
+  def getTransactionsNoJoin(txHashesTs: Seq[TxByAddressQR])(
       implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
     if (txHashesTs.nonEmpty) {
-      val hashes = txHashesTs.map { case (txHash, blockHash, _, _) => (txHash, blockHash) }
+      val hashes = txHashesTs.map(_.hashes())
       for {
         inputs  <- inputsFromTxsNoJoin(hashes)
         outputs <- outputsFromTxsNoJoin(hashes)
         gases   <- gasFromTxsSQL(hashes)
       } yield {
-        buildTransactionNoJoin(txHashesTs, inputs, outputs, gases)
+        buildTransaction(txHashesTs, inputs, outputs, gases)
       }
     } else {
       DBIOAction.successful(Seq.empty)
     }
   }
 
-  // format: off
-  private def buildTransactionNoJoin(
-      txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)],
-      inputs: Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Option[Address], Option[U256], Option[Seq[Token]])],
-      outputs: Seq[(Transaction.Hash, Int,OutputEntity.OutputType, Int, Hash, U256, Address,
-        Option[Seq[Token]], Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])],
-      gases: Seq[(Transaction.Hash, Int, U256)]) = {
-  // format: on
-    val insByTx = inputs.groupBy(_._1).view.mapValues { values =>
+  private def buildTransaction(txHashesTs: Seq[TxByAddressQR],
+                               inputs: Seq[InputsFromTxQR],
+                               outputs: Seq[OutputsFromTxQR],
+                               gases: Seq[GasFromTxsQR]) = {
+    val insByTx = inputs.groupBy(_.txHash).view.mapValues { values =>
       values
-        .sortBy(_._2)
-        .map {
-          case (_, _, hint, key, unlockScript, address, amount, tokens) =>
-            toApiInput((hint, key, unlockScript, address, amount, tokens))
-        }
+        .sortBy(_.inputOrder)
+        .map(_.toApiInput())
     }
-    val ousByTx = outputs.groupBy(_._1).view.mapValues { values =>
+    val ousByTx = outputs.groupBy(_.txHash).view.mapValues { values =>
       values
-        .sortBy(_._2)
-        .map {
-          case (_, _, outputType, hint, key, amount, address, tokens, lockTime, message, spent) =>
-            toApiOutput((outputType, hint, key, amount, address, tokens, lockTime, message, spent))
-        }
+        .sortBy(_.outputOrder)
+        .map(_.toApiOutput())
     }
-    val gasByTx = gases.groupBy(_._1).view.mapValues(_.map { case (_, s, g) => (s, g) })
-    txHashesTs.map {
-      case (tx, bh, ts, _) =>
-        val ins                   = insByTx.getOrElse(tx, Seq.empty)
-        val ous                   = ousByTx.getOrElse(tx, Seq.empty)
-        val gas                   = gasByTx.getOrElse(tx, Seq.empty)
-        val (gasAmount, gasPrice) = gas.headOption.getOrElse((0, U256.Zero))
-        Transaction(tx, bh, ts, ins, ous, gasAmount, gasPrice)
-    }
-  }
-
-  // format: off
-  private def buildTransaction(
-      txHashesTs: Seq[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)],
-      inputs: Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Address, U256, Option[Seq[Token]])],
-      outputs: Seq[(Transaction.Hash, Int,OutputEntity.OutputType, Int, Hash, U256, Address,
-        Option[Seq[Token]], Option[TimeStamp], Option[ByteString], Option[Transaction.Hash])],
-      gases: Seq[(Transaction.Hash, Int, U256)]) = {
-  // format: on
-    val insByTx = inputs.groupBy(_._1).view.mapValues { values =>
-      values
-        .sortBy(_._2)
-        .map {
-          case (_, _, hint, key, unlockScript, address, amount, tokens) =>
-            toApiInput((hint, key, unlockScript, Some(address), Some(amount), tokens))
-        }
-    }
-    val ousByTx = outputs.groupBy(_._1).view.mapValues { values =>
-      values
-        .sortBy(_._2)
-        .map {
-          case (_, _, outputType, hint, key, amount, address, tokens, lockTime, message, spent) =>
-            toApiOutput((outputType, hint, key, amount, address, tokens, lockTime, message, spent))
-        }
-    }
-    val gasByTx = gases.groupBy(_._1).view.mapValues(_.map { case (_, s, g) => (s, g) })
-    txHashesTs.map {
-      case (tx, bh, ts, _) =>
-        val ins                   = insByTx.getOrElse(tx, Seq.empty)
-        val ous                   = ousByTx.getOrElse(tx, Seq.empty)
-        val gas                   = gasByTx.getOrElse(tx, Seq.empty)
-        val (gasAmount, gasPrice) = gas.headOption.getOrElse((0, U256.Zero))
-        Transaction(tx, bh, ts, ins, ous, gasAmount, gasPrice)
+    val gasByTx = gases.groupBy(_.txHash).view.mapValues(_.map(_.gasInfo()))
+    txHashesTs.map { txn =>
+      val ins                   = insByTx.getOrElse(txn.txHash, Seq.empty)
+      val ous                   = ousByTx.getOrElse(txn.txHash, Seq.empty)
+      val gas                   = gasByTx.getOrElse(txn.txHash, Seq.empty)
+      val (gasAmount, gasPrice) = gas.headOption.getOrElse((0, U256.Zero))
+      Transaction(txn.txHash, txn.blockHash, txn.blockTimestamp, ins, ous, gasAmount, gasPrice)
     }
   }
 
   def gasFromTxsSQL(
-      hashes: Seq[(Transaction.Hash, BlockEntry.Hash)]
-  ): DBActionR[Seq[(Transaction.Hash, Int, U256)]] = {
+      hashes: Seq[(Transaction.Hash, BlockEntry.Hash)]): DBActionR[Seq[GasFromTxsQR]] = {
     if (hashes.nonEmpty) {
       val values =
         hashes.map { case (txHash, blockHash) => s"('\\x$txHash','\\x$blockHash')" }.mkString(",")
@@ -350,10 +298,49 @@ object TransactionQueries extends StrictLogging {
       Transaction(txHash,
                   blockHash,
                   timestamp,
-                  ins.map(toApiInput),
-                  outs.map(toApiOutput),
+                  ins.map(_.toApiInput()),
+                  outs.map(_.toApiOutput()),
                   gasAmount,
                   gasPrice)
+    }
+
+  def areAddressesActiveAction(addresses: Seq[Address])(
+      implicit ec: ExecutionContext): DBActionR[Seq[Boolean]] = {
+    DBIOAction.sequence(addresses.map { address =>
+      sql"""
+         SELECT EXISTS (SELECT 1 FROM transaction_per_addresses WHERE address = $address)
+           """.as[Boolean].exactlyOne
+    })
+  }
+
+  def areAddressesActiveActionUnion(addresses: Seq[Address])(
+      implicit ec: ExecutionContext): DBActionR[Seq[Boolean]] =
+    filterExistingAddresses(addresses) map { existing =>
+      addresses map existing.contains
+    }
+
+  /** Filters input addresses that exist in DB */
+  def filterExistingAddresses(addresses: Seq[Address]): DBActionR[Seq[Address]] =
+    if (addresses.isEmpty) {
+      DBIO.successful(Seq.empty)
+    } else {
+      val query =
+        List
+          .fill(addresses.size) {
+            "SELECT address FROM transaction_per_addresses WHERE address = ?"
+          }
+          .mkString("\nUNION\n")
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          addresses foreach { address =>
+            params >> address
+        }
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv  = parameters
+      ).as[Address]
     }
 
   def getBalanceAction(address: Address)(implicit ec: ExecutionContext): DBActionR[(U256, U256)] =
@@ -364,31 +351,6 @@ object TransactionQueries extends StrictLogging {
       case (total, locked) =>
         (total.getOrElse(U256.Zero), locked.getOrElse(U256.Zero))
     }
-
-  def getBalanceActionOption(address: Address)(
-      implicit ec: ExecutionContext): DBActionR[(Option[U256], Option[U256])] =
-    getBalanceUntilLockTime(
-      address  = address,
-      lockTime = TimeStamp.now()
-    )
-
-  def getBalanceUntilLockTime(address: Address, lockTime: TimeStamp)(
-      implicit ec: ExecutionContext): DBActionR[(Option[U256], Option[U256])] =
-    sql"""
-      SELECT sum(outputs.amount),
-             sum(CASE
-                     WHEN outputs.lock_time is NULL or outputs.lock_time < ${lockTime.millis} THEN 0
-                     ELSE outputs.amount
-                 END)
-      FROM outputs
-               LEFT JOIN inputs
-                         ON outputs.key = inputs.output_ref_key
-                             AND inputs.main_chain = true
-      WHERE outputs.spent_finalized IS NULL
-        AND outputs.address = $address
-        AND outputs.main_chain = true
-        AND inputs.block_hash IS NULL;
-    """.as[(Option[U256], Option[U256])].exactlyOne
 
   // switch logger.trace when we can disable debugging mode
   protected def debugShow(query: slickProfile.ProfileAction[_, _, _]) = {
