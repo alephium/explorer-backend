@@ -117,3 +117,38 @@ apiMappings ++=
     )
   )
 ```
+
+## Node Customization
+
+The steps below are for developers who want to reference a full node on another computer, such as a Raspberry Pi, that is on the same subnet.
+
+### Explorer: `/app/src/main/resources/application.conf`
+
+```shell
+blockflow {
+    host = "full-node-ip-address"
+    port = 12973
+
+    direct-clique-access = false
+    direct-clique-access = ${?BLOCKFLOW_DIRECT_CLIQUE_ACCESS}
+
+    network-id = 0
+    network-id = ${?BLOCKFLOW_NETWORK_ID}
+    groupNum = 4
+    api-key = "full-node-api-key"
+}
+```
+
+### Full Node: `user.conf`
+
+```shell
+alephium.api.api-key = "full-node-api-key"
+alephium.api.network-interface = "0.0.0.0"
+
+alephium.network.bind-address  = "0.0.0.0:9973"
+alephium.network.internal-address  = "full-node-ip-address:9973"
+alephium.network.coordinator-address  = "full-node-ip-address:9973"
+```
+
+
+
