@@ -46,7 +46,6 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
 
     def pk: PrimaryKey = primaryKey("txs_pk", (hash, blockHash))
 
-    def hashIdx: Index      = index("txs_hash_idx", hash)
     def timestampIdx: Index = index("txs_timestamp_idx", timestamp)
     def blockHashIdx: Index = index("txs_block_hash_idx", blockHash)
     def chainFromIdx: Index = index("txs_chain_from_idx", chainFrom)

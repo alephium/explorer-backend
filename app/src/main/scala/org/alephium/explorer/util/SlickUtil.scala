@@ -23,7 +23,7 @@ import slick.dbio.DBIO
 import org.alephium.explorer.persistence.{DBActionR, DBActionSR}
 
 /** Convenience functions for Slick */
-object SlickSugar {
+object SlickUtil {
 
   implicit class ResultEnrichment[A](val action: DBActionSR[A]) extends AnyVal {
 
@@ -39,4 +39,32 @@ object SlickSugar {
         }
       }
   }
+
+  def paramPlaceholderTuple2(rows: Int, columns: Int): String =
+    paramPlaceholder(rows, columns, "(?, ?)")
+
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  def paramPlaceholder(rows: Int, columns: Int): String =
+    paramPlaceholder(rows, columns, "?")
+
+  /**
+    * Builds placeholders for generating parameterised SQL queries.
+    *
+    * Example: If rows = 2, columns = 3 & placeHolder = "?" this
+    *          returns comma separated rows (?, ?, ?),(?, ?, ?).
+    */
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  def paramPlaceholder(rows: Int, columns: Int, placeHolder: String): String =
+    if (rows <= 0 || columns <= 0) {
+      ""
+    } else {
+      val placeholders =
+        Array
+          .fill(columns)(placeHolder)
+          .mkString("(", ", ", ")")
+
+      Array
+        .fill(rows)(placeholders)
+        .mkString(",")
+    }
 }

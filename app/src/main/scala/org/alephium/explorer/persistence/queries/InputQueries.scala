@@ -20,13 +20,12 @@ import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, InputsQR}
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.util.U256
+import org.alephium.explorer.util.SlickUtil._
 
 object InputQueries {
 
@@ -75,68 +74,76 @@ object InputQueries {
       ).asUpdate
     }
 
-  // format: off
-  def inputsFromTxsSQL(txHashes: Seq[Transaction.Hash]):
-    DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Address, U256, Option[Seq[Token]])]] = {
-  // format: on
+  def inputsFromTxsSQL(txHashes: Seq[Transaction.Hash]): DBActionR[Seq[InputsFromTxQR]] =
     if (txHashes.nonEmpty) {
       val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
       sql"""
-    SELECT
-      inputs.tx_hash,
-      inputs.input_order,
-      inputs.hint,
-      inputs.output_ref_key,
-      inputs.unlock_script,
-      outputs.address,
-      outputs.amount,
-      outputs.tokens
-    FROM inputs
-    JOIN outputs ON inputs.output_ref_key = outputs.key AND outputs.main_chain = true
-    WHERE inputs.tx_hash IN (#$values) AND inputs.main_chain = true
-    """.as
+          SELECT inputs.tx_hash,
+                 inputs.input_order,
+                 inputs.hint,
+                 inputs.output_ref_key,
+                 inputs.unlock_script,
+                 outputs.address,
+                 outputs.amount,
+                 outputs.tokens
+          FROM inputs
+                   JOIN outputs
+                        ON inputs.output_ref_key = outputs.KEY
+                            AND outputs.main_chain = true
+          WHERE inputs.tx_hash IN (#$values)
+            AND inputs.main_chain = true
+    """.as[InputsFromTxQR]
     } else {
       DBIOAction.successful(Seq.empty)
     }
-  }
 
-  // format: off
-  def inputsFromTxsNoJoin(hashes: Seq[(Transaction.Hash,BlockEntry.Hash)]):
-    DBActionR[Seq[(Transaction.Hash, Int, Int, Hash, Option[String], Option[Address], Option[U256], Option[Seq[Token]])]] = {
-  // format: on
+  def inputsFromTxsNoJoin(
+      hashes: Seq[(Transaction.Hash, BlockEntry.Hash)]): DBActionR[Seq[InputsFromTxQR]] =
     if (hashes.nonEmpty) {
-      val values =
-        hashes.map { case (txHash, blockHash) => s"('\\x$txHash','\\x$blockHash')" }.mkString(",")
-      sql"""
-    SELECT tx_hash, input_order, hint, output_ref_key, unlock_script, output_ref_address, output_ref_amount, output_ref_tokens
-    FROM inputs
-    WHERE (tx_hash, block_hash) IN (#$values)
-    """.as
+      val params = paramPlaceholderTuple2(1, hashes.size)
+
+      val query =
+        s"""
+           |SELECT tx_hash,
+           |       input_order,
+           |       hint,
+           |       output_ref_key,
+           |       unlock_script,
+           |       output_ref_address,
+           |       output_ref_amount,
+           |       output_ref_tokens
+           |FROM inputs
+           |WHERE (tx_hash, block_hash) IN $params
+           |
+           |""".stripMargin
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          hashes foreach {
+            case (txnHash, blockHash) =>
+              params >> txnHash
+              params >> blockHash
+        }
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv  = parameters
+      ).as[InputsFromTxQR]
     } else {
       DBIOAction.successful(Seq.empty)
     }
-  }
 
-  @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
-  def getInputsQuery(txHash: Transaction.Hash, blockHash: BlockEntry.Hash)
-    : DBActionSR[(Int, Hash, Option[String], Option[Address], Option[U256], Option[Seq[Token]])] = {
+  def getInputsQuery(txHash: Transaction.Hash, blockHash: BlockEntry.Hash): DBActionSR[InputsQR] =
     sql"""
-    SELECT hint, output_ref_key, unlock_script, output_ref_address, output_ref_amount, output_ref_tokens
-    FROM inputs
-    WHERE tx_hash = $txHash
-    AND block_hash = $blockHash
-    ORDER BY input_order
-    """.as
-  }
-
-  @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
-  val toApiInput = {
-    (hint: Int,
-     key: Hash,
-     unlockScript: Option[String],
-     address: Option[Address],
-     amount: Option[U256],
-     tokens: Option[Seq[Token]]) =>
-      Input(OutputRef(hint, key), unlockScript, address, amount, tokens)
-  }.tupled
+        SELECT hint,
+               output_ref_key,
+               unlock_script,
+               output_ref_address,
+               output_ref_amount,
+               output_ref_tokens
+        FROM inputs
+        WHERE tx_hash = $txHash
+          AND block_hash = $blockHash
+        ORDER BY input_order
+    """.as[InputsQR]
 }
