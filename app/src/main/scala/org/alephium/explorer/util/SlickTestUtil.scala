@@ -17,7 +17,6 @@ package org.alephium.explorer.util
 
 import scala.concurrent.ExecutionContext
 
-import org.scalatest.matchers.should.Matchers._
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
 import slick.jdbc.SQLActionBuilder
@@ -59,6 +58,7 @@ object SlickTestUtil {
   }
 
   /** Alter's first query with the prefix. */
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading", "org.wartremover.warts.IterableOps"))
   def alterHeadQuery(sql: SQLActionBuilder,
                      prefix: String): SqlStreamingAction[Vector[String], String, Effect.Read] =
     sql
@@ -66,15 +66,17 @@ object SlickTestUtil {
       .as[String]
 
   /** Alter's first query with the prefix. */
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading", "org.wartremover.warts.IterableOps"))
   def alterHeadQuery[R, T, E <: Effect](
       sql: FixedSqlStreamingAction[R, T, E],
       prefix: String): SqlStreamingAction[Vector[String], String, Effect.Read] =
     if (sql.statements.sizeIs == 1) {
       alterHeadQuery(sql"#${sql.statements.head}", prefix)
     } else if (sql.statements.sizeIs <= 0) {
-      fail(s"$prefix cannot be implemented for empty SQL. Statement size: ${sql.statements.size}")
+      throw new Exception(
+        s"$prefix cannot be implemented for empty SQL. Statement size: ${sql.statements.size}")
     } else {
-      fail(
+      throw new Exception(
         s"TODO: $prefix not yet implemented for nested queries. Statement size: ${sql.statements.size}"
       )
     }

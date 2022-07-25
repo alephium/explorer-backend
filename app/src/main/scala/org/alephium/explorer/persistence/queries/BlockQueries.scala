@@ -35,6 +35,7 @@ import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.util.SlickTestUtil._
 import org.alephium.util.TimeStamp
 
 object BlockQueries extends StrictLogging {
@@ -44,6 +45,16 @@ object BlockQueries extends StrictLogging {
 
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
   val mainChainQuery = BlockHeaderSchema.table.filter(_.mainChain)
+
+  def explainMainChainQuery()(implicit ec: ExecutionContext): DBActionR[ExplainResult] =
+    mainChainQuery.result.explainAnalyze() map { explain =>
+      ExplainResult(
+        queryName  = "mainChainQuery",
+        queryInput = "Unit",
+        explain    = explain,
+        passed     = explain.mkString contains "block_headers_main_chain_idx"
+      )
+    }
 
   def buildBlockEntryAction(blockHeader: BlockHeader)(
       implicit ec: ExecutionContext): DBActionR[BlockEntry] =
@@ -109,6 +120,17 @@ object BlockQueries extends StrictLogging {
       pagination: Pagination): DBActionRWT[Vector[BlockEntryLite]] =
     listMainChainHeadersWithTxnNumberSQLBuilder(pagination)
       .as[BlockEntryLite](blockEntryListGetResult)
+
+  def explainListMainChainHeadersWithTxnNumber(pagination: Pagination)(
+      implicit ec: ExecutionContext): DBActionR[ExplainResult] =
+    listMainChainHeadersWithTxnNumberSQLBuilder(pagination).explainAnalyze() map { explain =>
+      ExplainResult(
+        queryName  = "listMainChainHeadersWithTxnNumber",
+        queryInput = pagination.toString,
+        explain    = explain,
+        passed     = explain.mkString contains "block_headers_full_index"
+      )
+    }
 
   def listMainChainHeadersWithTxnNumberSQLBuilder(pagination: Pagination): SQLActionBuilder = {
     //order by for inner query
