@@ -15,7 +15,7 @@
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 package org.alephium.explorer
 
-import org.scalacheck.Gen
+import org.scalacheck.{Arbitrary, Gen}
 
 import org.alephium.explorer.persistence.model._
 
@@ -51,5 +51,23 @@ object GenModel extends Generators {
       case (input, output) =>
         toTransactionPerAddressEntity(input, output)
     }
+
+  def genTransactionPerAddressEntity(): Gen[TransactionPerAddressEntity] =
+    for {
+      address   <- addressGen
+      hash      <- transactionHashGen
+      blockHash <- blockEntryHashGen
+      timestamp <- timestampGen
+      txOrder   <- Gen.posNum[Int]
+      mainChain <- Arbitrary.arbitrary[Boolean]
+    } yield
+      TransactionPerAddressEntity(
+        address   = address,
+        hash      = hash,
+        blockHash = blockHash,
+        timestamp = timestamp,
+        txOrder   = txOrder,
+        mainChain = mainChain
+      )
 
 }

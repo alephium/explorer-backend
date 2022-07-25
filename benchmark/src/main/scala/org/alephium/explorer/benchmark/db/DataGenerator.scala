@@ -24,13 +24,8 @@ import akka.util.ByteString
 
 import org.alephium.explorer.{BlockHash, Hash}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.model.{
-  BlockEntity,
-  InputEntity,
-  OutputEntity,
-  TransactionEntity
-}
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.explorer.persistence.model._
+import org.alephium.util.{Base58, TimeStamp, U256}
 
 /**
   * Data generators for JMH benchmarks.
@@ -143,4 +138,17 @@ object DataGenerator {
       hashrate     = BigInteger.valueOf(Random.nextLong(Long.MaxValue))
     )
   }
+
+  def genAddress(): Address =
+    Address.unsafe(Base58.encode(Hash.generate.bytes))
+
+  def genTransactionPerAddressEntity(address: Address = genAddress()): TransactionPerAddressEntity =
+    TransactionPerAddressEntity(
+      address   = address,
+      hash      = new Transaction.Hash(Hash.generate),
+      blockHash = new BlockEntry.Hash(BlockHash.generate),
+      timestamp = TimeStamp.now(),
+      txOrder   = Random.nextInt(100),
+      mainChain = Random.nextBoolean()
+    )
 }
