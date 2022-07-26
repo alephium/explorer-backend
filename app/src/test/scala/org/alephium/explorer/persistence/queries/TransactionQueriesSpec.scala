@@ -375,7 +375,7 @@ class TransactionQueriesSpec
 
   "index 'txs_pk'" should {
     "get used" when {
-      "accessing column hash" in {
+      "accessing column hash" ignore {
         forAll(Gen.listOf(transactionEntityGen())) { transactions =>
           run(TransactionSchema.table.delete).futureValue
           run(TransactionSchema.table ++= transactions).futureValue
