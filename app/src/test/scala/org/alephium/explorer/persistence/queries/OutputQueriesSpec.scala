@@ -196,7 +196,7 @@ class OutputQueriesSpec
 
   "index 'outputs_tx_hash_block_hash_idx'" should {
     "get used" when {
-      "accessing column tx_hash" in {
+      "accessing column tx_hash" ignore {
         forAll(Gen.listOf(outputEntityGen)) { outputs =>
           run(OutputSchema.table.delete).futureValue
           run(OutputSchema.table ++= outputs).futureValue
@@ -220,7 +220,7 @@ class OutputQueriesSpec
 
   "index 'outputs_pk'" should {
     "get used" when {
-      "accessing column output_ref_key" in {
+      "accessing column output_ref_key" ignore {
         forAll(Gen.listOf(outputEntityGen)) { outputs =>
           run(OutputSchema.table.delete).futureValue
           run(OutputSchema.table ++= outputs).futureValue

@@ -177,7 +177,7 @@ class InputQueriesSpec
 
   "index 'inputs_tx_hash_block_hash_idx'" should {
     "get used" when {
-      "accessing column tx_hash" in {
+      "accessing column tx_hash" ignore {
         forAll(Gen.listOf(inputEntityGen())) { inputs =>
           run(InputSchema.table.delete).futureValue
           run(InputSchema.table ++= inputs).futureValue
@@ -201,7 +201,7 @@ class InputQueriesSpec
 
   "index 'inputs_pk'" should {
     "get used" when {
-      "accessing column output_ref_key" in {
+      "accessing column output_ref_key" ignore {
         forAll(Gen.listOf(inputEntityGen())) { inputs =>
           run(InputSchema.table.delete).futureValue
           run(InputSchema.table ++= inputs).futureValue
