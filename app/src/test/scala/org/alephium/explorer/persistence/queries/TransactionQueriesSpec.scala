@@ -299,9 +299,9 @@ class TransactionQueriesSpec
     ).sortBy(_.timestamp).reverse
 
     txsSQL.size is 3
-    txsSQL is expected
+    txsSQL should contain allElementsOf expected
 
-    txsSQL is txsNoJoin
+    txsSQL should contain allElementsOf txsNoJoin
   }
 
   "output's spent info should only take the input from the main chain " in new Fixture {
