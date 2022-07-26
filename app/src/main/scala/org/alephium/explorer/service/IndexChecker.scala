@@ -36,9 +36,9 @@ object IndexChecker {
 
   def checkAction()(implicit ec: ExecutionContext): DBActionR[Seq[ExplainResult]] =
     for {
-      a <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(0, 10)) //first page
+      a <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(0, 20)) //first page
       b <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(10000, 20)) //far page
       c <- BlockQueries.explainMainChainQuery()
-    } yield Seq(a, b, c)
+    } yield Seq(a, b, c).sortBy(_.passed)
 
 }
