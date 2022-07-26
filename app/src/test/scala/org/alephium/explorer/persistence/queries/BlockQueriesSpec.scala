@@ -133,7 +133,7 @@ class BlockQueriesSpec
   }
 
   "listMainChainHeadersWithTxnNumberSQLBuilder" should {
-    "use block_headers_full_index" in {
+    "use block_headers_full_index" ignore {
       forAll(Gen.listOf(blockHeaderGen)) { headers =>
         //persist test-data
         run(BlockHeaderSchema.table.delete).futureValue
