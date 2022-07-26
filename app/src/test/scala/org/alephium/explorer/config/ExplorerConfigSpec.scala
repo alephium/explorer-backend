@@ -17,7 +17,10 @@
 package org.alephium.explorer.config
 
 import scala.concurrent.duration._
+import scala.util.{Success, Try}
 
+import com.typesafe.config.ConfigFactory
+import net.ceedubs.ficus.Ficus._
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.TryValues._
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
@@ -30,6 +33,13 @@ import org.alephium.explorer.error.ExplorerError._
 import org.alephium.protocol.model.NetworkId
 
 class ExplorerConfigSpec extends AlephiumSpec with ScalaCheckDrivenPropertyChecks {
+
+  "ficus" should {
+    "load config" in {
+      val typesafeConfig = ConfigFactory.load()
+      Try(typesafeConfig.as[ExplorerConfig]("alephium")) is a[Success[ExplorerConfig]]
+    }
+  }
 
   "validateGroupNum" should {
     "fail validation" when {

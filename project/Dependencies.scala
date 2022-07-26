@@ -36,6 +36,7 @@ object Dependencies {
   lazy val alephiumApi      = "org.alephium" %% "alephium-api"      % Version.common
   lazy val alephiumJson     = "org.alephium" %% "alephium-json"     % Version.common
   lazy val alephiumHttp     = "org.alephium" %% "alephium-http"     % Version.common
+  lazy val alephiumConf     = "org.alephium" %% "alephium-conf"     % Version.common
 
   lazy val akkaTest       = "com.typesafe.akka" %% "akka-testkit"        % Version.akka % Test
   lazy val akkaHttptest   = "com.typesafe.akka" %% "akka-http-testkit"   % "10.2.9" % Test
@@ -56,6 +57,8 @@ object Dependencies {
   lazy val `upickle`    = "com.lihaoyi"       %% "upickle"           % "1.3.8"
 
   lazy val caffeine = "com.github.ben-manes.caffeine" % "caffeine" % "3.0.5"
+
+  lazy val ficus = "com.iheart" %% "ficus" % "1.5.2"
 
   lazy val scalatest     = "org.scalatest"              %% "scalatest"       % "3.1.1" % Test
   lazy val scalacheck    = "org.scalacheck"             %% "scalacheck"      % "1.14.3" % Test

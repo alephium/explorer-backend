@@ -54,12 +54,12 @@ object SyncServices extends StrictLogging {
         blockFlowUri       = config.blockFlowUri
       ) flatMap { peers =>
         startSyncServices(
-          peers                           = peers,
-          syncPeriod                      = config.syncPeriod,
-          tokenSupplyServiceSyncPeriod    = config.tokenSupplyServiceSyncPeriod,
-          hashRateServiceSyncPeriod       = config.hashRateServiceSyncPeriod,
-          finalizerServiceSyncPeriod      = config.finalizerServiceSyncPeriod,
-          transactionHistoryServicePeriod = config.transactionHistoryServicePeriod
+          peers                               = peers,
+          syncPeriod                          = config.syncPeriod,
+          tokenSupplyServiceSyncPeriod        = config.tokenSupplyServiceSyncPeriod,
+          hashRateServiceSyncPeriod           = config.hashRateServiceSyncPeriod,
+          finalizerServiceSyncPeriod          = config.finalizerServiceSyncPeriod,
+          transactionHistoryServiceSyncPeriod = config.transactionHistoryServiceSyncPeriod
         )
       }
     }
@@ -71,7 +71,7 @@ object SyncServices extends StrictLogging {
                         tokenSupplyServiceSyncPeriod: FiniteDuration,
                         hashRateServiceSyncPeriod: FiniteDuration,
                         finalizerServiceSyncPeriod: FiniteDuration,
-                        transactionHistoryServicePeriod: FiniteDuration)(
+                        transactionHistoryServiceSyncPeriod: FiniteDuration)(
       implicit scheduler: Scheduler,
       ec: ExecutionContext,
       actorSystem: ActorSystem,
@@ -89,7 +89,7 @@ object SyncServices extends StrictLogging {
               TokenSupplyService.start(tokenSupplyServiceSyncPeriod),
               HashrateService.start(hashRateServiceSyncPeriod),
               FinalizerService.start(finalizerServiceSyncPeriod),
-              TransactionHistoryService.start(transactionHistoryServicePeriod)
+              TransactionHistoryService.start(transactionHistoryServiceSyncPeriod)
             )
           )
           //Callback to shutdown the system if one sync service fails
