@@ -93,8 +93,7 @@ object BlockDao {
   }
 
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Option[Height]] = {
+      implicit dc: DatabaseConfig[PostgresProfile]): Future[Option[Height]] = {
     val query =
       BlockHeaderSchema.table
         .filter(header => header.chainFrom === fromGroup && header.chainTo === toGroup)

@@ -32,9 +32,6 @@ sealed trait ConfigError extends ExplorerError
 /** Errors that lead to JVM termination */
 sealed trait FatalSystemExit extends ExplorerError
 
-/** Errors executing database related operations */
-sealed trait DatabaseError extends ExplorerError
-
 //scalastyle:off null
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 object ExplorerError {
@@ -94,8 +91,4 @@ object ExplorerError {
       extends Exception(s"Invalid syncPeriod: ${syncPeriod.toString}. Sync-period must be > 0.")
       with ConfigError
 
-  /******** Group: [[DatabaseError]] ********/
-  final case class DBRunnerFailed(cause: Throwable)
-      extends Exception("Failed database query", cause)
-      with DatabaseError
 }
