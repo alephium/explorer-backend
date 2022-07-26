@@ -22,14 +22,16 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.error.ExplorerError.DBRunnerFailed
+
 trait DBRunner {
   def databaseConfig: DatabaseConfig[PostgresProfile]
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   def run[R, E <: Effect](action: DBAction[R, E])(
       implicit executionContext: ExecutionContext): Future[R] =
-    databaseConfig.db.run(action).recover {
-      case error => throw new RuntimeException(error)
+    databaseConfig.db.run(action).recoverWith {
+      case error => Future.failed(DBRunnerFailed(error))
     }
 }
 
@@ -42,8 +44,8 @@ object DBRunner {
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   def run[R, E <: Effect](databaseConfig: DatabaseConfig[PostgresProfile])(action: DBAction[R, E])(
       implicit executionContext: ExecutionContext): Future[R] =
-    databaseConfig.db.run(action).recover {
-      case error => throw new RuntimeException(error)
+    databaseConfig.db.run(action).recoverWith {
+      case error => Future.failed(DBRunnerFailed(error))
     }
 
   /** Temporary function until all things are made stateless */
@@ -52,7 +54,7 @@ object DBRunner {
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[R] =
     databaseConfig.db.run(action).recoverWith {
-      case error => Future.failed(new RuntimeException(error))
+      case error => Future.failed(DBRunnerFailed(error))
     }
 
 }
