@@ -1,41 +1,76 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <!-- log directory -->
-    <property name="LOG_HOME" value="logs"/>
-
-    <!-- Console log pattern with funky colours -->
-    <property name="consolePattern"
+    <property name="defaultPattern"
               value="%-63(%yellow(%date{ISO8601}) %green([%.13thread])) %highlight(%-5level) %-50(%cyan(%logger{20})) - %msg%n"/>
 
-    <!-- File log pattern without colours -->
-    <property name="filePattern"
-              value="%-63(%date{ISO8601} [%.13thread]) %-5level %-50(%logger{20}) - %msg%n"/>
-
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_HOME}/explorer.log</file>
-
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>DEBUG</level>
-        </filter>
-
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_HOME}/archived/explorer.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
-            <!-- max log file size before starting a new log file -->
-            <maxFileSize>10MB</maxFileSize>
-        </rollingPolicy>
-
+    <appender name="ERRFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${EXPLORER_HOME:-${user.home}/.explorer}/logs/explorer-errors.log</file>
+        <append>true</append>
         <encoder>
-            <pattern>${filePattern}</pattern>
+            <pattern>${defaultPattern}</pattern>
         </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${EXPLORER_HOME:-${user.home}/.explorer}/logs/explorer-errors.%i.log</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>10</maxIndex>
+        </rollingPolicy>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>100MB</maxFileSize>
+        </triggeringPolicy>
     </appender>
+
+    <appender name="INFOFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${EXPLORER_HOME:-${user.home}/.explorer}/logs/explorer-info.log</file>
+        <append>true</append>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <encoder>
+            <pattern>${defaultPattern}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${EXPLORER_HOME:-${user.home}/.explorer}/logs/explorer-info.%i.log</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>10</maxIndex>
+        </rollingPolicy>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>100MB</maxFileSize>
+        </triggeringPolicy>
+    </appender>
+
+    <if condition='Boolean.valueOf(property("EXPLORER_ENABLE_DEBUG_LOGGING"))'>
+        <then>
+            <appender name="DEBUGFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+                <file>${EXPLORER_HOME:-${user.home}/.explorer}/logs/explorer-debug.log</file>
+                <append>true</append>
+                <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                    <level>DEBUG</level>
+                </filter>
+                <encoder>
+                    <pattern>${defaultPattern}</pattern>
+                </encoder>
+                <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                    <fileNamePattern>
+                        ${EXPLORER_HOME:-${user.home}/.explorer}/logs/explorer-debug.%d{yyyy-MM-dd}.%i.log
+                    </fileNamePattern>
+                    <maxFileSize>100MB</maxFileSize>
+                    <maxHistory>60</maxHistory>
+                    <totalSizeCap>1GB</totalSizeCap>
+                </rollingPolicy>
+            </appender>
+        </then>
+    </if>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>DEBUG</level>
+            <level>${EXPLORER_LOG_LEVEL:-INFO}</level>
         </filter>
 
         <encoder>
-            <pattern>${consolePattern}</pattern>
+            <pattern>${defaultPattern}</pattern>
         </encoder>
     </appender>
 
@@ -47,6 +82,8 @@
 
     <root>
         <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="FILE"/>
+        <appender-ref ref="ERRFILE"/>
+        <appender-ref ref="INFOFILE"/>
+        <appender-ref ref="DEBUGFILE"/>
     </root>
 </configuration>
