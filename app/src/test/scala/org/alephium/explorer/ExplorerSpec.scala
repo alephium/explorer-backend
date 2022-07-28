@@ -42,7 +42,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.api.{model, ApiError, ApiModelCodec}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.config.ExplorerConfig
-import org.alephium.explorer.persistence.{DatabaseFixture}
+import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.util.TestUtils._

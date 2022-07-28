@@ -27,18 +27,15 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Seconds, Span}
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
-import slick.basic.DatabaseConfig
-import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.error.ExplorerError._
-import org.alephium.explorer.persistence.{Database, DatabaseFixture}
 import org.alephium.explorer.service.BlockFlowClient
 
 /** Temporary placeholder. These tests should be merged into ApplicationSpec  */
-class ExplorerV2Spec
+class SyncServicesSpec
     extends AlephiumSpec
     with Matchers
     with ScalaCheckDrivenPropertyChecks
@@ -49,26 +46,6 @@ class ExplorerV2Spec
 
   implicit val executionContext: ExecutionContext =
     ExecutionContext.global
-
-  "initialiseDatabase" should {
-    "successfully connect" when {
-      "readOnly mode" in {
-        val databaseConfig = DatabaseConfig.forConfig[PostgresProfile]("db", DatabaseFixture.config)
-        val database: Database =
-          new Database(readOnly = true)(executionContext, databaseConfig)
-
-        Try(database.startSelfOnce().futureValue) is Success(())
-      }
-
-      "readWrite mode" in {
-        val databaseConfig = DatabaseConfig.forConfig[PostgresProfile]("db", DatabaseFixture.config)
-        val database: Database =
-          new Database(readOnly = false)(executionContext, databaseConfig)
-
-        Try(database.startSelfOnce().futureValue) is Success(())
-      }
-    }
-  }
 
   "getBlockFlowPeers" should {
     val explorerConfig: ExplorerConfig =
