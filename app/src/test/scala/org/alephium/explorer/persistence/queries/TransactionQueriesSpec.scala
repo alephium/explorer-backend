@@ -417,7 +417,7 @@ class TransactionQueriesSpec
 
           //fetch actual persisted addresses that exists
           val actualExisting =
-            run(TransactionQueries.filterExistingAddresses(allAddresses)).futureValue
+            run(TransactionQueries.filterExistingAddresses(allAddresses.toSet)).futureValue
 
           //actual address should contain all of existingAddresses
           actualExisting should contain theSameElementsAs existingAddresses

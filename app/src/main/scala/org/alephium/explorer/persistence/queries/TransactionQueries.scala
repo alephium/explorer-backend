@@ -305,12 +305,12 @@ object TransactionQueries extends StrictLogging {
 
   def areAddressesActiveAction(addresses: Seq[Address])(
       implicit ec: ExecutionContext): DBActionR[Seq[Boolean]] =
-    filterExistingAddresses(addresses) map { existing =>
+    filterExistingAddresses(addresses.toSet) map { existing =>
       addresses map existing.contains
     }
 
   /** Filters input addresses that exist in DB */
-  def filterExistingAddresses(addresses: Seq[Address]): DBActionR[Seq[Address]] =
+  def filterExistingAddresses(addresses: Set[Address]): DBActionR[Seq[Address]] =
     if (addresses.isEmpty) {
       DBIO.successful(Seq.empty)
     } else {
