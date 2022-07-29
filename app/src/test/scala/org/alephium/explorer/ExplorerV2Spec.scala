@@ -19,6 +19,7 @@ package org.alephium.explorer
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util._
 
+import com.typesafe.config.ConfigFactory
 import org.scalacheck.Gen
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.TryValues._
@@ -31,7 +32,7 @@ import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenCoreProtocol._
-import org.alephium.explorer.config.{ApplicationConfig, ExplorerConfig}
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.persistence.{Database, DatabaseFixture}
 import org.alephium.explorer.service.BlockFlowClient
@@ -71,7 +72,7 @@ class ExplorerV2Spec
 
   "getBlockFlowPeers" should {
     val explorerConfig: ExplorerConfig =
-      ApplicationConfig.load().flatMap(ExplorerConfig(_)).success.value
+      ExplorerConfig.load(ConfigFactory.load())
 
     "return peer URIs" when {
       "directCliqueAccess = true" in {

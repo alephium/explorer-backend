@@ -20,7 +20,6 @@ import scala.concurrent.duration.FiniteDuration
 
 import akka.http.scaladsl.model.Uri
 
-import org.alephium.explorer.config.ApplicationConfig
 import org.alephium.protocol.model.NetworkId
 
 /** All Explorer errors */
@@ -59,14 +58,6 @@ object ExplorerError {
       with FatalSystemExit
 
   /******** Group: [[ConfigError]] ********/
-  final case class InvalidApplicationConfig(field: String, cause: Throwable)
-      extends Exception(s"Invalid ${ApplicationConfig.productPrefix}: $field", cause)
-      with ConfigError
-
-  final case class EmptyApplicationConfig()
-      extends Exception(s"Empty ${ApplicationConfig.productPrefix}")
-      with ConfigError
-
   final case class InvalidGroupNumber(groupNum: Int)
       extends Exception(s"Invalid groupNum: $groupNum. It should be > 0")
       with ConfigError
