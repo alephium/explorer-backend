@@ -48,11 +48,9 @@ class BootUp extends StrictLogging {
 
   DefaultExports.initialize()
 
-  private val typesafeConfig    = ConfigFactory.load()
-  private val applicationConfig = ApplicationConfig(typesafeConfig).get
+  private val typesafeConfig = ConfigFactory.load()
 
-  implicit val config: ExplorerConfig =
-    ExplorerConfig(applicationConfig).get
+  implicit val config: ExplorerConfig = ExplorerConfig.load(typesafeConfig)
 
   implicit val databaseConfig: DatabaseConfig[PostgresProfile] =
     DatabaseConfig.forConfig[PostgresProfile]("db", typesafeConfig)

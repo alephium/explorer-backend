@@ -22,56 +22,19 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 import akka.http.scaladsl.model.Uri
+import com.typesafe.config.Config
+import net.ceedubs.ficus.Ficus
+import net.ceedubs.ficus.Ficus.{finiteDurationReader => _, _}
+import net.ceedubs.ficus.readers.ArbitraryTypeReader._
+import net.ceedubs.ficus.readers.ValueReader
 
 import org.alephium.api.model.ApiKey
+import org.alephium.conf._
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.protocol.model.NetworkId
 
+@SuppressWarnings(Array("org.wartremover.warts.TryPartial"))
 object ExplorerConfig {
-
-  /**
-    * Validates raw configurations read from `application.conf` via [[ApplicationConfig]]
-    * and converts it to [[ExplorerConfig]].
-    *
-    * Validates all [[ApplicationConfig]] values before creating [[ExplorerConfig]]
-    * which ensures that Explorer does not get started with invalid configurations.
-    *
-    * @param config Raw `application.conf` properties and values.
-    *
-    * @return A validated [[ExplorerConfig]].
-    */
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def apply(config: ApplicationConfig): Try[ExplorerConfig] =
-    for {
-      groupNum                        <- validateGroupNum(config.blockFlowGroupNum)
-      directCliqueAccess              <- Success(config.blockFlowDirectCliqueAccess)
-      port                            <- validatePort(config.explorerPort)
-      host                            <- validateHost(config.explorerHost)
-      readOnly                        <- Success(config.explorerReadOnly)
-      blockFlowUri                    <- validateUri(config.blockFlowHost, config.blockFlowPort)
-      networkId                       <- validateNetworkId(config.blockFlowNetworkId)
-      blockFlowApiKey                 <- validateApiKey(config.blockFlowApiKey)
-      syncPeriod                      <- validateSyncPeriod(config.explorerSyncPeriod)
-      tokenSupplyServiceSyncPeriod    <- validateSyncPeriod(config.tokenSupplyServiceSyncPeriod)
-      hashRateServiceSyncPeriod       <- validateSyncPeriod(config.hashRateServiceSyncPeriod)
-      finalizerServiceSyncPeriod      <- validateSyncPeriod(config.finalizerServiceSyncPeriod)
-      transactionHistoryServicePeriod <- validateSyncPeriod(config.transactionHistoryServicePeriod)
-    } yield
-      ExplorerConfig(
-        groupNum                        = groupNum,
-        directCliqueAccess              = directCliqueAccess,
-        blockFlowUri                    = blockFlowUri,
-        networkId                       = networkId,
-        maybeBlockFlowApiKey            = blockFlowApiKey,
-        host                            = host,
-        port                            = port,
-        readOnly                        = readOnly,
-        syncPeriod                      = syncPeriod,
-        tokenSupplyServiceSyncPeriod    = tokenSupplyServiceSyncPeriod,
-        hashRateServiceSyncPeriod       = hashRateServiceSyncPeriod,
-        finalizerServiceSyncPeriod      = finalizerServiceSyncPeriod,
-        transactionHistoryServicePeriod = transactionHistoryServicePeriod
-      )
 
   def validateGroupNum(groupNum: Int): Try[Int] =
     if (groupNum < 0) {
@@ -105,22 +68,10 @@ object ExplorerConfig {
     NetworkId.from(networkId) match {
       case Some(networkId) =>
         Success(networkId)
-
       case None =>
         Failure(InvalidNetworkId(networkId))
     }
 
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def validateApiKey(apiKey: Option[String]): Try[Option[ApiKey]] =
-    apiKey match {
-      case Some(apiKey) =>
-        validateApiKey(apiKey).map(Some(_))
-
-      case None =>
-        Success(None)
-    }
-
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def validateApiKey(apiKey: String): Try[ApiKey] =
     ApiKey.from(apiKey) match {
       case Left(err) =>
@@ -136,6 +87,69 @@ object ExplorerConfig {
     } else {
       Success(interval)
     }
+
+  implicit val networkIdReader: ValueReader[NetworkId] =
+    ValueReader[Int].map { id =>
+      validateNetworkId(id).get
+    }
+
+  implicit val apiKeyReader: ValueReader[ApiKey] =
+    ValueReader[String].map { input =>
+      validateApiKey(input).get
+    }
+
+  implicit val validateFiniteDuration: ValueReader[FiniteDuration] =
+    ValueReader[FiniteDuration](Ficus.finiteDurationReader).map { input =>
+      validateSyncPeriod(input).get
+    }
+
+  implicit val explorerConfigReader: ValueReader[ExplorerConfig] =
+    valueReader { implicit cfg =>
+      val explorer  = as[Explorer]("explorer")
+      val blockflow = as[BlockFlow]("blockflow")
+
+      (for {
+        groupNum     <- validateGroupNum(blockflow.groupNum)
+        blockflowUri <- validateUri(blockflow.host, blockflow.port)
+        host         <- validateHost(explorer.host)
+        port         <- validatePort(explorer.port)
+      } yield {
+        ExplorerConfig(
+          groupNum,
+          blockflow.directCliqueAccess,
+          blockflowUri,
+          blockflow.networkId,
+          blockflow.apiKey,
+          host,
+          port,
+          explorer.readOnly,
+          explorer.syncPeriod,
+          explorer.tokenSupplyServiceSyncPeriod,
+          explorer.hashRateServiceSyncPeriod,
+          explorer.finalizerServiceSyncPeriod,
+          explorer.transactionHistoryServiceSyncPeriod
+        )
+      }).get
+    }
+
+  def load(config: Config): ExplorerConfig =
+    config.as[ExplorerConfig]("alephium")
+
+  private final case class BlockFlow(groupNum: Int,
+                                     directCliqueAccess: Boolean,
+                                     host: String,
+                                     port: Int,
+                                     networkId: NetworkId,
+                                     apiKey: Option[ApiKey])
+
+  private final case class Explorer(host: String,
+                                    port: Int,
+                                    readOnly: Boolean,
+                                    syncPeriod: FiniteDuration,
+                                    tokenSupplyServiceSyncPeriod: FiniteDuration,
+                                    hashRateServiceSyncPeriod: FiniteDuration,
+                                    finalizerServiceSyncPeriod: FiniteDuration,
+                                    transactionHistoryServiceSyncPeriod: FiniteDuration)
 }
 
 /**
@@ -156,4 +170,4 @@ final case class ExplorerConfig private (groupNum: Int,
                                          tokenSupplyServiceSyncPeriod: FiniteDuration,
                                          hashRateServiceSyncPeriod: FiniteDuration,
                                          finalizerServiceSyncPeriod: FiniteDuration,
-                                         transactionHistoryServicePeriod: FiniteDuration)
+                                         transactionHistoryServiceSyncPeriod: FiniteDuration)
