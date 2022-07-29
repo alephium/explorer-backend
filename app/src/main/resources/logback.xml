@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <property name="defaultPattern"
+    <property name="consolePattern"
               value="%-63(%yellow(%date{ISO8601}) %green([%.13thread])) %highlight(%-5level) %-50(%cyan(%logger{20})) - %msg%n"/>
+
+    <!-- File log pattern without colours -->
+    <property name="filePattern"
+              value="%-63(%date{ISO8601} [%.13thread]) %-5level %-50(%logger{20}) - %msg%n"/>
 
     <appender name="ERRFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${EXPLORER_HOME:-${user.home}/.explorer}/logs/explorer-errors.log</file>
         <append>true</append>
         <encoder>
-            <pattern>${defaultPattern}</pattern>
+            <pattern>${filePattern}</pattern>
         </encoder>
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>WARN</level>
@@ -29,7 +33,7 @@
             <level>INFO</level>
         </filter>
         <encoder>
-            <pattern>${defaultPattern}</pattern>
+            <pattern>${filePattern}</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
             <fileNamePattern>${EXPLORER_HOME:-${user.home}/.explorer}/logs/explorer-info.%i.log</fileNamePattern>
@@ -50,7 +54,7 @@
                     <level>DEBUG</level>
                 </filter>
                 <encoder>
-                    <pattern>${defaultPattern}</pattern>
+                    <pattern>${filePattern}</pattern>
                 </encoder>
                 <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
                     <fileNamePattern>
@@ -70,7 +74,7 @@
         </filter>
 
         <encoder>
-            <pattern>${defaultPattern}</pattern>
+            <pattern>${consolePattern}</pattern>
         </encoder>
     </appender>
 
