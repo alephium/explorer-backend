@@ -20,8 +20,8 @@ import sttp.tapir._
 import sttp.tapir.generic.auto._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
-import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.api.model.LogbackValue
+import org.alephium.explorer.persistence.queries.ExplainResult
 
 // scalastyle:off magic.number
 trait UtilsEndpoints extends BaseEndpoint with QueryParams {
@@ -38,6 +38,12 @@ trait UtilsEndpoints extends BaseEndpoint with QueryParams {
     utilsEndpoint.put
       .in("sanity-check")
       .description("Perform a sanity check")
+
+  val indexCheck: BaseEndpoint[Unit, Seq[ExplainResult]] =
+    utilsEndpoint.get
+      .in("index-check")
+      .out(jsonBody[Seq[ExplainResult]])
+      .description("Perform index check")
 
   val changeGlobalLogLevel: BaseEndpoint[String, Unit] =
     utilsEndpoint.put
