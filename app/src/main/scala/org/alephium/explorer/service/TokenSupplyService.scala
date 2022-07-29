@@ -292,8 +292,8 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
   private def insert(tokenSupply: TokenSupplyEntity) =
     TokenSupplySchema.table.insertOrUpdate(tokenSupply)
 
-  private def getLatestTimestamp()(implicit ec: ExecutionContext,
-                                   dc: DatabaseConfig[PostgresProfile]): Future[Option[TimeStamp]] =
+  private def getLatestTimestamp()(
+      implicit dc: DatabaseConfig[PostgresProfile]): Future[Option[TimeStamp]] =
     run(
       TokenSupplySchema.table
         .sortBy { _.timestamp.desc }
