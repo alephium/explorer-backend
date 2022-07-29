@@ -20,11 +20,11 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.alephium.explorer.persistence.model._
 
 /** Test-data generators for types in package [[org.alephium.explorer.persistence.model]]  */
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 object GenModel extends Generators {
 
   /** Generates and [[org.alephium.explorer.persistence.model.InputEntity]] for the given
     * [[org.alephium.explorer.persistence.model.OutputEntity]] generator */
-  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def genInputOutput(
       outputGen: Gen[OutputEntity] = outputEntityGen): Gen[(InputEntity, OutputEntity)] =
     for {

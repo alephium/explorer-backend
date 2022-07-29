@@ -70,9 +70,14 @@ class BlockHeaderMainChainReadState(dropMainChainIndex: Boolean,
         .andThen {
           //drop main_chain if dropMainChainIndex is true
           if (dropMainChainIndex) {
-            sqlu"drop index blocks_main_chain_idx"
+            DBIO.seq(
+              sqlu"drop index #${BlockHeaderSchema.name + "_main_chain_idx"}",
+              sqlu"drop index #${BlockHeaderSchema.name + "_full_index"}"
+            )
           } else {
-            DBIO.successful(0)
+            DBIO.seq(
+              sqlu"drop index #${BlockHeaderSchema.name + "_full_index"}"
+            )
           }
         }
         .andThen(BlockHeaderSchema.table ++= data)
@@ -94,7 +99,7 @@ class BlockHeaderWithoutMainChainReadState(testDataCount: Int, override val db: 
                                           testDataCount      = testDataCount,
                                           db                 = db) {
   def this() = {
-    this(readDataCount, DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.HikariCP))
+    this(readDataCount, DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.Disabled))
   }
 }
 
@@ -108,6 +113,6 @@ class BlockHeaderWithMainChainReadState(testDataCount: Int, override val db: DBE
                                           testDataCount      = testDataCount,
                                           db                 = db) {
   def this() = {
-    this(readDataCount, DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.HikariCP))
+    this(readDataCount, DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.Disabled))
   }
 }

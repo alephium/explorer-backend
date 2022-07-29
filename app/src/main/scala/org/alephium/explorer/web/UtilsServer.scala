@@ -32,7 +32,7 @@ import org.alephium.explorer.{sideEffect, GroupSetting}
 import org.alephium.explorer.api.UtilsEndpoints
 import org.alephium.explorer.api.model.LogbackValue
 import org.alephium.explorer.cache.BlockCache
-import org.alephium.explorer.service.{BlockFlowClient, SanityChecker}
+import org.alephium.explorer.service.{BlockFlowClient, IndexChecker, SanityChecker}
 
 class UtilsServer()(implicit val executionContext: ExecutionContext,
                     dc: DatabaseConfig[PostgresProfile],
@@ -47,6 +47,9 @@ class UtilsServer()(implicit val executionContext: ExecutionContext,
       sideEffect(SanityChecker.check())
       Future.successful(())
     }) ~
+      toRoute(indexCheck.serverLogic[Future] { _ =>
+        IndexChecker.check().map(Right(_))
+      }) ~
       toRoute(changeGlobalLogLevel.serverLogic[Future] { level =>
         Future.successful(updateGlobalLevel(level))
       }) ~
