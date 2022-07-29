@@ -69,8 +69,8 @@ object TransactionDao {
       dc: DatabaseConfig[PostgresProfile]): Future[Seq[Boolean]] =
     run(areAddressesActiveAction(addresses))
 
-  def listTokens(pagination: Pagination)(implicit ec: ExecutionContext,
-                                         dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] =
+  def listTokens(pagination: Pagination)(
+      implicit dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] =
     run(listTokensAction(pagination))
 
   def listTokenTransactions(token: Hash, pagination: Pagination)(
@@ -79,12 +79,11 @@ object TransactionDao {
     run(getTransactionsByToken(token, pagination))
 
   def listTokenAddresses(token: Hash, pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Address]] =
+      implicit dc: DatabaseConfig[PostgresProfile]): Future[Seq[Address]] =
     run(getAddressesByToken(token, pagination))
 
-  def listAddressTokens(address: Address)(implicit ec: ExecutionContext,
-                                          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] =
+  def listAddressTokens(address: Address)(
+      implicit dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] =
     run(listAddressTokensAction(address))
 
   def listAddressTokenTransactions(address: Address, token: Hash, pagination: Pagination)(

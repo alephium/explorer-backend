@@ -38,8 +38,7 @@ import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 object SanityChecker extends StrictLogging {
 
   private def findLatestBlock(from: GroupIndex, to: GroupIndex)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntry.Hash]] = {
+      implicit dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntry.Hash]] = {
     run(
       BlockHeaderSchema.table
         .filter(header => header.mainChain && header.chainFrom === from && header.chainTo === to)

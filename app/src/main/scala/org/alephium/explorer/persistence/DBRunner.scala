@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.persistence
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
@@ -26,11 +26,8 @@ trait DBRunner {
   def databaseConfig: DatabaseConfig[PostgresProfile]
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
-  def run[R, E <: Effect](action: DBAction[R, E])(
-      implicit executionContext: ExecutionContext): Future[R] =
-    databaseConfig.db.run(action).recover {
-      case error => throw new RuntimeException(error)
-    }
+  def run[R, E <: Effect](action: DBAction[R, E]): Future[R] =
+    databaseConfig.db.run(action)
 }
 
 object DBRunner {
@@ -40,19 +37,14 @@ object DBRunner {
     }
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
-  def run[R, E <: Effect](databaseConfig: DatabaseConfig[PostgresProfile])(action: DBAction[R, E])(
-      implicit executionContext: ExecutionContext): Future[R] =
-    databaseConfig.db.run(action).recover {
-      case error => throw new RuntimeException(error)
-    }
+  def run[R, E <: Effect](databaseConfig: DatabaseConfig[PostgresProfile])(
+      action: DBAction[R, E]): Future[R] =
+    databaseConfig.db.run(action)
 
   /** Temporary function until all things are made stateless */
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def run[R, E <: Effect](action: DBAction[R, E])(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[R] =
-    databaseConfig.db.run(action).recoverWith {
-      case error => Future.failed(new RuntimeException(error))
-    }
+      implicit databaseConfig: DatabaseConfig[PostgresProfile]): Future[R] =
+    databaseConfig.db.run(action)
 
 }

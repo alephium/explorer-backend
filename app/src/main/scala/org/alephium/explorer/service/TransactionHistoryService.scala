@@ -85,8 +85,7 @@ case object TransactionHistoryService extends StrictLogging {
   }
 
   def getAllChains(from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Seq[(TimeStamp, Long)]] = {
+      implicit dc: DatabaseConfig[PostgresProfile]): Future[Seq[(TimeStamp, Long)]] = {
     run(
       getAllChainsQuery(intervalType, from, to)
     )
