@@ -259,21 +259,4 @@ class DBBenchmark {
     val _ =
       state.db.runNow(TransactionQueries.areAddressesActiveAction(state.next), requestTimeout)
   }
-
-  @Benchmark
-  def areAddressesActiveActionUnion_DisabledCP(
-      state: AreAddressesActiveReadState_DisabledCP): Unit = {
-    implicit val ec: ExecutionContext = state.config.db.ioExecutionContext
-
-    val _ =
-      state.db.runNow(TransactionQueries.areAddressesActiveActionUnion(state.next), requestTimeout)
-  }
-
-  @Benchmark
-  def areAddressesActiveActionUnion_HikariCP(state: AreAddressesActiveReadState_HikariCP): Unit = {
-    implicit val ec: ExecutionContext = state.config.db.ioExecutionContext
-
-    val _ =
-      state.db.runNow(TransactionQueries.areAddressesActiveActionUnion(state.next), requestTimeout)
-  }
 }
