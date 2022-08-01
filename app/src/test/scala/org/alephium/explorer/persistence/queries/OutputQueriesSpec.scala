@@ -29,7 +29,7 @@ import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.queries.result.{OutputsFromTxQR, OutputsQR}
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.persistence.schema.OutputSchema
-import org.alephium.explorer.util.SlickTestUtil._
+import org.alephium.explorer.util.SlickExplainUtil._
 
 class OutputQueriesSpec
     extends AlephiumSpec

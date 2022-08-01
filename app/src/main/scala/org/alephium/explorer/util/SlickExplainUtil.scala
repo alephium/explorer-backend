@@ -24,7 +24,7 @@ import slick.sql.{FixedSqlStreamingAction, SqlStreamingAction}
 
 import org.alephium.explorer.persistence.DBActionR
 
-object SlickTestUtil {
+object SlickExplainUtil {
 
   /** For SQL queries */
   implicit class SQLActionBuilderImplicits(sql: SQLActionBuilder) {

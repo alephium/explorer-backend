@@ -35,7 +35,7 @@ import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.explorer.util.SlickTestUtil._
+import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.util.TimeStamp
 
 object BlockQueries extends StrictLogging {
