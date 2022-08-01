@@ -401,7 +401,7 @@ object OutputQueries {
       val message =
         Seq(
           s"Used outputs_main_chain_idx = $outputs_main_chain_idx_used",
-          s"Used outputs_pk_used        = $outputs_pk_used"
+          s"Used outputs_pk             = $outputs_pk_used"
         )
 
       ExplainResult(
