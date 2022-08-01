@@ -52,6 +52,7 @@ object BlockQueries extends StrictLogging {
         queryName  = "mainChainQuery",
         queryInput = "Unit",
         explain    = explain,
+        message    = None,
         passed     = explain.mkString contains "block_headers_main_chain_idx"
       )
     }
@@ -128,6 +129,7 @@ object BlockQueries extends StrictLogging {
         queryName  = "listMainChainHeadersWithTxnNumber",
         queryInput = pagination.toString,
         explain    = explain,
+        message    = None,
         passed     = explain.mkString contains "block_headers_full_index"
       )
     }
