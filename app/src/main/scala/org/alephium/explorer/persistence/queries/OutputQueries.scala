@@ -28,7 +28,9 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.result.{OutputsFromTxQR, OutputsQR}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.persistence.schema.OutputSchema
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.util.{TimeStamp, U256}
 
@@ -375,6 +377,18 @@ object OutputQueries {
           AND block_hash = $blockHash
         ORDER BY output_order
       """.as[OutputsQR]
+
+  /** Get main chain [[OutputEntity]]s ordered by timestamp */
+  def getMainChainOutputs(
+      ascendingOrder: Boolean): Query[OutputSchema.Outputs, OutputEntity, Seq] = {
+    val mainChain = OutputSchema.table.filter(_.mainChain === true)
+
+    if (ascendingOrder) {
+      mainChain.sortBy(_.timestamp.asc)
+    } else {
+      mainChain.sortBy(_.timestamp.desc)
+    }
+  }
 
   def getTxnHash(key: Hash): DBActionR[Vector[Transaction.Hash]] =
     getTxnHashSQL(key).as[Transaction.Hash]

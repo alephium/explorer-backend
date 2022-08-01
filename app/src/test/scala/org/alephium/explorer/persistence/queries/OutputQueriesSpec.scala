@@ -159,6 +159,32 @@ class OutputQueriesSpec
     }
   }
 
+  "getMainChainOutputs" should {
+    "all OutputEntities" when {
+      "order is ascending" in {
+        forAll(Gen.listOf(outputEntityGen)) { outputs =>
+          run(OutputSchema.table.delete).futureValue
+          run(OutputSchema.table ++= outputs).futureValue
+
+          val expected = outputs.filter(_.mainChain).sortBy(_.timestamp)
+
+          //Ascending order
+          locally {
+            val actual = run(OutputQueries.getMainChainOutputs(true).result).futureValue
+            actual should contain inOrderElementsOf expected
+          }
+
+          //Descending order
+          locally {
+            val expectedReversed = expected.reverse
+            val actual           = run(OutputQueries.getMainChainOutputs(false).result).futureValue
+            actual should contain inOrderElementsOf expectedReversed
+          }
+        }
+      }
+    }
+  }
+
   "getTxnHash" should {
     "fetch tx_hash and use outputs_pk index" when {
       "main_chain = true" in {
