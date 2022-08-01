@@ -20,11 +20,12 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.DBActionR
 import org.alephium.explorer.persistence.DBRunner._
-import org.alephium.explorer.persistence.queries.{BlockQueries, ExplainResult}
+import org.alephium.explorer.persistence.queries.{BlockQueries, ExplainResult, OutputQueries}
 
 // scalastyle:off magic.number
 object IndexChecker {
@@ -36,9 +37,13 @@ object IndexChecker {
 
   def checkAction()(implicit ec: ExecutionContext): DBActionR[Seq[ExplainResult]] =
     for {
-      a <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(0, 20)) //first page
-      b <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(10000, 20)) //far page
-      c <- BlockQueries.explainMainChainQuery()
-    } yield Seq(a, b, c).sortBy(_.passed)
+      a                  <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(0, 20)) //first page
+      b                  <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(10000, 20)) //far page
+      c                  <- BlockQueries.explainMainChainQuery()
+      oldestOutputEntity <- OutputQueries.getMainChainOutputs(ascendingOrder = true).result.head
+      latestOutputEntity <- OutputQueries.getMainChainOutputs(ascendingOrder = false).result.head
+      d                  <- OutputQueries.explainGetTxnHash(oldestOutputEntity.key)
+      e                  <- OutputQueries.explainGetTxnHash(latestOutputEntity.key)
+    } yield Seq(a, b, c, d, e).sortBy(_.passed)
 
 }

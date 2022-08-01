@@ -185,32 +185,6 @@ class OutputQueriesSpec
     }
   }
 
-  "getTxnHash" should {
-    "fetch tx_hash and use outputs_pk index" when {
-      "main_chain = true" in {
-        forAll(Gen.listOf(outputEntityGen)) { outputs =>
-          //no-need to clear the table for each iteration.
-          run(OutputSchema.table ++= outputs).futureValue
-
-          //run query for each output.
-          outputs foreach { output =>
-            val actual =
-              run(getTxnHash(output.txHash.value)).futureValue
-
-            run(getTxnHashSQL(output.txHash.value).explain()).futureValue
-              .mkString("\n") should include("outputs_pk")
-
-            if (output.mainChain) { //when main_chain = true expect hash to be fetched
-              actual.toList contains only(output.txHash.value)
-            } else { //else expect empty
-              actual.size is 0
-            }
-          }
-        }
-      }
-    }
-  }
-
   "getBalanceActionOption" should {
     "return None" when {
       "address does not exist" in {

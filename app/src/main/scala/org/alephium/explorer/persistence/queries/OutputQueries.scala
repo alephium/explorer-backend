@@ -31,6 +31,7 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.persistence.schema.OutputSchema
+import org.alephium.explorer.util.SlickTestUtil._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.util.{TimeStamp, U256}
 
@@ -378,7 +379,7 @@ object OutputQueries {
         ORDER BY output_order
       """.as[OutputsQR]
 
-  /** Get main chain [[OutputEntity]]s ordered by timestamp */
+  /** Get main chain [[org.alephium.explorer.persistence.model.OutputEntity]]s ordered by timestamp */
   def getMainChainOutputs(
       ascendingOrder: Boolean): Query[OutputSchema.Outputs, OutputEntity, Seq] = {
     val mainChain = OutputSchema.table.filter(_.mainChain === true)
@@ -389,6 +390,28 @@ object OutputQueries {
       mainChain.sortBy(_.timestamp.desc)
     }
   }
+
+  /** Checks that [[getTxnHash]] uses both indexes for the given key */
+  def explainGetTxnHash(key: Hash)(implicit ec: ExecutionContext): DBActionR[ExplainResult] =
+    getTxnHashSQL(key).explainAnalyze() map { explain =>
+      val explainString               = explain.mkString
+      val outputs_pk_used             = explainString contains "outputs_pk"
+      val outputs_main_chain_idx_used = explainString contains "outputs_main_chain_idx"
+      val passed                      = outputs_pk_used && outputs_main_chain_idx_used
+      val message =
+        Seq(
+          s"Used outputs_main_chain_idx = $outputs_main_chain_idx_used",
+          s"Used outputs_pk_used        = $outputs_pk_used"
+        )
+
+      ExplainResult(
+        queryName  = "getTxnHashSQL",
+        queryInput = key.toString(),
+        explain    = explain,
+        message    = message,
+        passed     = passed
+      )
+    }
 
   def getTxnHash(key: Hash): DBActionR[Vector[Transaction.Hash]] =
     getTxnHashSQL(key).as[Transaction.Hash]
