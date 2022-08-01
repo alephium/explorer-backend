@@ -217,28 +217,4 @@ class OutputQueriesSpec
       }
     }
   }
-
-  "index 'outputs_pk'" should {
-    "get used" when {
-      "accessing column output_ref_key" ignore {
-        forAll(Gen.listOf(outputEntityGen)) { outputs =>
-          run(OutputSchema.table.delete).futureValue
-          run(OutputSchema.table ++= outputs).futureValue
-
-          outputs foreach { output =>
-            val query =
-              sql"""
-                   |SELECT *
-                   |FROM outputs
-                   |where key = ${output.key}
-                   |""".stripMargin
-
-            val explain = run(query.explain()).futureValue.mkString("\n")
-
-            explain should include("outputs_pk")
-          }
-        }
-      }
-    }
-  }
 }
