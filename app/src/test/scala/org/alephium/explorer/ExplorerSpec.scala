@@ -21,6 +21,7 @@ import java.net.InetAddress
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.io.{Codec, Source}
+import scala.jdk.CollectionConverters._
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -29,14 +30,19 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.testkit.SocketUtil
+import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import de.heikoseeberger.akkahttpupickle.UpickleCustomizationSupport
 import org.scalacheck.Gen
+import org.scalatest.Assertion
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
+import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
 
 import org.alephium.api.{model, ApiError, ApiModelCodec}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.DatabaseFixtureForAll
+import org.alephium.explorer.config.ExplorerConfig
+import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.util.TestUtils._
@@ -49,7 +55,6 @@ trait ExplorerSpec
     extends AlephiumSpec
     with ScalatestRouteTest
     with ScalaFutures
-    with DatabaseFixtureForAll
     with Generators
     with Eventually
     with UpickleCustomizationSupport {
@@ -86,35 +91,45 @@ trait ExplorerSpec
 
   val blockflowBinding = blockFlowMock.server.futureValue
 
-//  def createApp(readOnly: Boolean): Application = new Application(
-//    localhost.getHostAddress,
-//    SocketUtil.temporaryLocalPort(),
-//    readOnly,
-//    Uri(s"http://${localhost.getHostAddress}:$blockFlowPort"),
-//    groupNum,
-//    networkId,
-//    None,
-//    Duration.ofSecondsUnsafe(5),
-//    true
-//  )
+  def createApp(readOnly: Boolean): ExplorerState = {
+    implicit val databaseConfig: DatabaseConfig[PostgresProfile] =
+      DatabaseFixture.createDatabaseConfig()
 
-//  def initApp(app: Application): Unit = {
-//    app.start.futureValue
-//    //let it sync once
-////    eventually(app.blockFlowSyncService.stop().futureValue) is ()
-////    eventually(app.mempoolSyncService.stop().futureValue) is ()
-//    ()
-//  }
+    DatabaseFixture.dropCreateTables()
 
-//  def stopApp(app: Application): Future[Unit] = app.stop
+    val explorerPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
+    @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
+    implicit val explorerConfig: ExplorerConfig = ExplorerConfig.load(
+      ConfigFactory
+        .parseMap(Map(
+          ("alephium.explorer.read-only", readOnly),
+          ("alephium.explorer.port", explorerPort),
+          ("alephium.blockflow.port", blockFlowPort),
+          ("alephium.blockflow.network-id", networkId.id),
+          ("alephium.blockflow.group-num", groupNum)
+        ).view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava)
+        .withFallback(DatabaseFixture.config))
 
-//  def app: Application
+    if (readOnly) {
+      ExplorerState.ReadOnly()
+    } else {
+      ExplorerState.ReadWrite()
+    }
+  }
+  @SuppressWarnings(Array("org.wartremover.warts.ThreadSleep"))
+  def initApp(app: ExplorerState): Assertion = {
+    app.start().futureValue
+    //let it sync
+    eventually(app.blockCache.getMainChainBlockCount() is blocks.size)
+  }
+
+  def app: ExplorerState
   //scalastyle:off null
-  val routes: Route = null //app.server.route
+  lazy val routes: Route = app.akkaHttpServer.routes
   //scalastyle:on null
 
-  "get a block by its id" ignore {
-//    initApp(app)
+  "get a block by its id" in {
+    initApp(app)
 
     forAll(Gen.oneOf(blocks)) { block =>
       Get(s"/blocks/${block.hash.value.toHexString}") ~> routes ~> check {
@@ -136,7 +151,7 @@ trait ExplorerSpec
     }
   }
 
-  "get block's transactions" ignore {
+  "get block's transactions" in {
     forAll(Gen.oneOf(blocks)) { block =>
       Get(s"/blocks/${block.hash.value.toHexString}/transactions") ~> routes ~> check {
         val txs = responseAs[Seq[Transaction]]
@@ -147,7 +162,7 @@ trait ExplorerSpec
     }
   }
 
-  "list blocks" ignore {
+  "list blocks" in {
     forAll(Gen.choose(1, 3), Gen.choose(2, 4)) {
       case (page, limit) =>
         Get(s"/blocks?page=$page&limit=$limit") ~> routes ~> check {
@@ -218,7 +233,7 @@ trait ExplorerSpec
     }
   }
 
-  "get a transaction by its id" ignore {
+  "get a transaction by its id" in {
     forAll(Gen.oneOf(transactions)) { transaction =>
       Get(s"/transactions/${transaction.hash.value.toHexString}") ~> routes ~> check {
         //TODO Validate full transaction when we have a valid blockchain generator
@@ -234,7 +249,7 @@ trait ExplorerSpec
     }
   }
 
-  "get address' info" ignore {
+  "get address' info" in {
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address}") ~> routes ~> check {
         val expectedTransactions =
@@ -258,7 +273,7 @@ trait ExplorerSpec
     }
   }
 
-  "get all address' transactions" ignore {
+  "get all address' transactions" in {
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address}/transactions") ~> routes ~> check {
         val expectedTransactions =
@@ -272,20 +287,24 @@ trait ExplorerSpec
     }
   }
 
-  "generate the documentation" ignore {
+  "generate the documentation" in {
     Get("/docs") ~> routes ~> check {
       status is StatusCodes.PermanentRedirect
     }
     Get("/docs/explorer-backend-openapi.json") ~> routes ~> check {
       status is StatusCodes.OK
 
-      val lines =
+      val openApiFile =
         using(
           Source.fromResource("explorer-backend-openapi.json")(Codec.UTF8)
-        )(_.getLines().toList)
+        )(
+          _.getLines().toList
+            .mkString("\n")
+            //updating address discovery gap limit according to group number
+            .replace(""""maxItems": 80""", s""""maxItems": ${groupNum * 20}"""))
 
       val expectedOpenapi =
-        read[ujson.Value](lines.mkString("\n"))
+        read[ujson.Value](openApiFile)
 
       val openapi =
         read[ujson.Value](
@@ -410,27 +429,17 @@ object ExplorerSpec {
   }
 }
 
-class ReadOnlyExplorerSpec extends ExplorerSpec {
-//  override def initApp(app: Application): Unit = {
-//    val rwApp: Application = createApp(false)
-//    super.initApp(rwApp)
-//    stopApp(rwApp).futureValue
-//    app.start.futureValue
-//  }
-
-//  override lazy val app: Application = createApp(true)
-
-  "not have started syncing services" ignore {
-//    whenReady(app.blockFlowSyncService.stop().failed) { exception =>
-//      exception is a[IllegalStateException]
-//    }
-//    whenReady(app.mempoolSyncService.stop().failed) { exception =>
-//      exception is a[IllegalStateException]
-//    }
+class ExplorerReadOnlySpec extends ExplorerSpec {
+  override lazy val app: ExplorerState = createApp(true)
+  override def initApp(app: ExplorerState): Assertion = {
+    val rwApp: ExplorerState = createApp(false)
+    super.initApp(rwApp)
+    rwApp.stop().futureValue is ()
+    super.initApp(app)
   }
-
+  //TODO how to test that sync services aren't started?
 }
 
-class ReadWriteExplorerSpec extends ExplorerSpec {
-//  override lazy val app: Application = createApp(false)
+class ExplorerReadWriteSpec extends ExplorerSpec {
+  override lazy val app: ExplorerState = createApp(false)
 }
