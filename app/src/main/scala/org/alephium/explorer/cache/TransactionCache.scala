@@ -47,8 +47,7 @@ class TransactionCache(database: Database, reloadAfter: FiniteDuration)(
 
   private val mainChainTxnCount: AsyncReloadingCache[Int] = {
     AsyncReloadingCache(0, reloadAfter) { _ =>
-      run(TransactionQueries.mainTransactions.length.result)(executionContext,
-                                                             database.databaseConfig)
+      run(TransactionQueries.mainTransactions.length.result)(database.databaseConfig)
     }
   }
 

@@ -34,7 +34,6 @@ import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.explorer.util.SlickUtil._
 import org.alephium.util.{TimeStamp, U256}
 
 object TransactionQueries extends StrictLogging {
@@ -305,22 +304,13 @@ object TransactionQueries extends StrictLogging {
     }
 
   def areAddressesActiveAction(addresses: Seq[Address])(
-      implicit ec: ExecutionContext): DBActionR[Seq[Boolean]] = {
-    DBIOAction.sequence(addresses.map { address =>
-      sql"""
-         SELECT EXISTS (SELECT 1 FROM transaction_per_addresses WHERE address = $address)
-           """.as[Boolean].exactlyOne
-    })
-  }
-
-  def areAddressesActiveActionUnion(addresses: Seq[Address])(
       implicit ec: ExecutionContext): DBActionR[Seq[Boolean]] =
-    filterExistingAddresses(addresses) map { existing =>
+    filterExistingAddresses(addresses.toSet) map { existing =>
       addresses map existing.contains
     }
 
   /** Filters input addresses that exist in DB */
-  def filterExistingAddresses(addresses: Seq[Address]): DBActionR[Seq[Address]] =
+  def filterExistingAddresses(addresses: Set[Address]): DBActionR[Seq[Address]] =
     if (addresses.isEmpty) {
       DBIO.successful(Seq.empty)
     } else {

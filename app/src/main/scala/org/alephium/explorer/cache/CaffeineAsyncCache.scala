@@ -58,8 +58,8 @@ object CaffeineAsyncCache {
     * @param builder Pre-configured [[com.github.benmanes.caffeine.cache.Caffeine]]'s cache instance.
     */
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
-  def rowCountCache(runner: DBRunner)(builder: Caffeine[AnyRef, AnyRef])(
-      implicit ec: ExecutionContext): CaffeineAsyncCache[Query[_, _, Seq], Int] =
+  def rowCountCache(runner: DBRunner)(
+      builder: Caffeine[AnyRef, AnyRef]): CaffeineAsyncCache[Query[_, _, Seq], Int] =
     CaffeineAsyncCache {
       builder
         .asInstanceOf[Caffeine[Query[_, _, Seq], Int]]
