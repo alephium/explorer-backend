@@ -173,6 +173,79 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
     }
   }
 
+  "BlockEntryLite" in {
+    forAll(blockEntryLiteGen) { block =>
+      val expected = s"""
+       |{
+       |  "hash": "${block.hash.value.toHexString}",
+       |  "timestamp": ${block.timestamp.millis},
+       |  "chainFrom": ${block.chainFrom.value},
+       |  "chainTo": ${block.chainTo.value},
+       |  "height": ${block.height.value},
+       |  "txNumber": ${block.txNumber},
+       |  "mainChain": ${block.mainChain},
+       |  "hashRate": "${block.hashRate}"
+       |}""".stripMargin
+      check(block, expected)
+    }
+  }
+
+  "BlockEntry" in {
+    forAll(blockEntryGen) { block =>
+      val expected = s"""
+       |{
+       |  "hash": "${block.hash.value.toHexString}",
+       |  "timestamp": ${block.timestamp.millis},
+       |  "chainFrom": ${block.chainFrom.value},
+       |  "chainTo": ${block.chainTo.value},
+       |  "height": ${block.height.value},
+       |  "deps": ${write(block.deps)},
+       |  "transactions": ${write(block.transactions)},
+       |  "mainChain": ${block.mainChain},
+       |  "hashRate": "${block.hashRate}"
+       |}""".stripMargin
+      check(block, expected)
+    }
+  }
+
+  "TokenSupply" in {
+    forAll(tokenSupplyGen) { tokenSupply =>
+      val expected = s"""
+       |{
+       | "timestamp": ${tokenSupply.timestamp.millis},
+       | "total": "${tokenSupply.total}",
+       | "circulating": "${tokenSupply.circulating}",
+       | "reserved": "${tokenSupply.reserved}",
+       | "locked": "${tokenSupply.locked}",
+       | "maximum": "${tokenSupply.maximum}"
+       |}""".stripMargin
+      check(tokenSupply, expected)
+    }
+  }
+
+  "AddressInfo" in {
+    forAll(addressInfoGen) { addressInfo =>
+      val expected = s"""
+       |{
+       | "balance": "${addressInfo.balance}",
+       | "lockedBalance": "${addressInfo.lockedBalance}",
+       | "txNumber": ${addressInfo.txNumber}
+       |}""".stripMargin
+      check(addressInfo, expected)
+    }
+  }
+
+  "ListBlocks" in {
+    forAll(listBlocksGen) { listBlocks =>
+      val expected = s"""
+       |{
+       | "total": ${listBlocks.total},
+       | "blocks": ${write(listBlocks.blocks)}
+       |}""".stripMargin
+      check(listBlocks, expected)
+    }
+  }
+
   "ExplorerInfo" in {
     val expected = s"""
      |{

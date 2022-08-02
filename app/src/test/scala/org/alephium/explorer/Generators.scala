@@ -654,4 +654,106 @@ trait Generators {
           (child, parent)
       }
     }
+
+  val blockEntryLiteGen: Gen[BlockEntryLite] =
+    for {
+      hash      <- blockEntryHashGen
+      timestamp <- timestampGen
+      chainFrom <- groupIndexGen
+      chainTo   <- groupIndexGen
+      height    <- heightGen
+      txNumber  <- Gen.posNum[Int]
+      mainChain <- Arbitrary.arbitrary[Boolean]
+      hashrate  <- arbitrary[Long].map(BigInteger.valueOf)
+    } yield {
+      BlockEntryLite(
+        hash,
+        timestamp,
+        chainFrom,
+        chainTo,
+        height,
+        txNumber,
+        mainChain,
+        hashrate
+      )
+    }
+
+  val blockEntryGen: Gen[BlockEntry] =
+    for {
+      hash         <- blockEntryHashGen
+      timestamp    <- timestampGen
+      chainFrom    <- groupIndexGen
+      chainTo      <- groupIndexGen
+      height       <- heightGen
+      deps         <- Gen.listOfN(2 * groupNum - 1, blockEntryHashGen)
+      transactions <- Gen.listOfN(2, transactionGen)
+      mainChain    <- Arbitrary.arbitrary[Boolean]
+      hashrate     <- arbitrary[Long].map(BigInteger.valueOf)
+    } yield {
+      BlockEntry(
+        hash,
+        timestamp,
+        chainFrom,
+        chainTo,
+        height,
+        deps,
+        transactions,
+        mainChain,
+        hashrate
+      )
+    }
+
+  val tokenSupplyGen: Gen[TokenSupply] =
+    for {
+      timestamp   <- timestampGen
+      total       <- u256Gen
+      circulating <- u256Gen
+      reserved    <- u256Gen
+      locked      <- u256Gen
+      maximum     <- u256Gen
+    } yield {
+      TokenSupply(
+        timestamp,
+        total,
+        circulating,
+        reserved,
+        locked,
+        maximum
+      )
+    }
+
+  val addressBalanceGen: Gen[AddressBalance] =
+    for {
+      balance       <- u256Gen
+      lockedBalance <- u256Gen
+    } yield {
+      AddressBalance(
+        balance,
+        lockedBalance
+      )
+    }
+
+  val addressInfoGen: Gen[AddressInfo] =
+    for {
+      balance       <- u256Gen
+      lockedBalance <- u256Gen
+      txNumber      <- Gen.posNum[Int]
+    } yield {
+      AddressInfo(
+        balance,
+        lockedBalance,
+        txNumber
+      )
+    }
+
+  val listBlocksGen: Gen[ListBlocks] =
+    for {
+      total  <- Gen.choose[Int](1, 10)
+      blocks <- Gen.listOfN(total, blockEntryLiteGen)
+    } yield {
+      ListBlocks(
+        total,
+        blocks
+      )
+    }
 }
