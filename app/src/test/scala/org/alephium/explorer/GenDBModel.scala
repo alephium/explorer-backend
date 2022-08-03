@@ -23,7 +23,7 @@ import org.alephium.explorer.persistence.model._
 
 /** Test-data generators for types in package [[org.alephium.explorer.persistence.model]]  */
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-object GenModel {
+object GenDBModel {
 
   /** Generates and [[org.alephium.explorer.persistence.model.InputEntity]] for the given
     * [[org.alephium.explorer.persistence.model.OutputEntity]] generator */
