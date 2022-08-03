@@ -30,7 +30,7 @@ import sttp.client3._
 import org.alephium.api
 import org.alephium.api.Endpoints
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
-import org.alephium.explorer.Hash
+import org.alephium.explorer.{GroupSetting, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.error.ExplorerError
 import org.alephium.explorer.error.ExplorerError._
@@ -98,7 +98,9 @@ object BlockFlowClient {
 
     override def subServices: ArraySeq[Service] = ArraySeq.empty
 
-    implicit lazy val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
+    implicit val groupSetting: GroupSetting = GroupSetting(groupNum)
+
+    implicit val groupConfig: GroupConfig = groupSetting.groupConfig
 
     private implicit def groupIndexConversion(x: GroupIndex): protocol.model.GroupIndex =
       protocol.model.GroupIndex.unsafe(x.value)
@@ -250,7 +252,7 @@ object BlockFlowClient {
     outputs ++ generatedOutputs
   }
   def blockProtocolToEntity(block: api.model.BlockEntry)(
-      implicit groupConfig: GroupConfig): BlockEntity = {
+      implicit groupSetting: GroupSetting): BlockEntity = {
     val hash         = new BlockEntry.Hash(block.hash)
     val mainChain    = false
     val transactions = block.transactions.toSeq.zipWithIndex
@@ -445,10 +447,10 @@ object BlockFlowClient {
   }
 
   // scalastyle:off magic.number
-  def computeHashRate(targetBytes: ByteString)(implicit groupConfig: GroupConfig): BigInteger = {
+  def computeHashRate(targetBytes: ByteString)(implicit groupSetting: GroupSetting): BigInteger = {
     val target          = Target.unsafe(targetBytes)
     val blockTargetTime = Duration.ofSecondsUnsafe(64) //TODO add this to config
-    HashRate.from(target, blockTargetTime).value
+    HashRate.from(target, blockTargetTime)(groupSetting.groupConfig).value
   }
   // scalastyle:on magic.number
 }

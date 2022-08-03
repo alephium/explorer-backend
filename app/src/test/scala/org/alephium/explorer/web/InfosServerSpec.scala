@@ -239,7 +239,7 @@ class InfosServerSpec()
         ???
     }
 
-    implicit val groupSettings: GroupSetting        = GroupSetting(groupNum)
+    implicit val groupSetting: GroupSetting         = groupSettingGen.sample.get
     implicit val blockCache: BlockCache             = BlockCache()
     implicit val transactionCache: TransactionCache = TransactionCache(new Database(false))
 

@@ -122,7 +122,7 @@ class BlockDaoSpec
     val now        = TimeStamp.now()
     val from       = GroupIndex.unsafe(0)
     val to         = GroupIndex.unsafe(0)
-    val chainIndex = ChainIndex.unsafe(0, 0)
+    val chainIndex = ChainIndex.unsafe(0, 0)(groupSettings.groupConfig)
     val block1 = blockHeaderGen.sample.get.copy(mainChain = true,
                                                 chainFrom = from,
                                                 chainTo   = to,
@@ -253,7 +253,7 @@ class BlockDaoSpec
   }
 
   trait Fixture extends ApiModelCodec {
-    implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
+    implicit val groupSettings: GroupSetting = groupSettingGen.sample.get
     implicit val blockCache: BlockCache      = BlockCache()
 
     val blockflow: Seq[Seq[model.BlockEntry]] =

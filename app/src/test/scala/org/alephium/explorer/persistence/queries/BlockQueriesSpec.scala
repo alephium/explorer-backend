@@ -23,7 +23,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting}
 import org.alephium.explorer.GenApiModel.blockEntryHashGen
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.schema._
@@ -61,6 +61,8 @@ class BlockQueriesSpec
 
   "insert deps, transactions, inputs, outputs, block_headers" in {
 
+    implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
+
     forAll(Gen.listOf(genBlockEntityWithOptionalParent().map(_._1))) { entities =>
       //clear all tables
       run(BlockHeaderSchema.table.delete).futureValue
@@ -70,11 +72,11 @@ class BlockQueriesSpec
       run(BlockDepsSchema.table.delete).futureValue
 
       //execute insert on blocks and expect all tables get inserted
-      run(BlockQueries.insertBlockEntity(entities, groupNum)).futureValue is ()
+      run(BlockQueries.insertBlockEntity(entities, groupSetting.groupNum)).futureValue is ()
 
       //check block_headers table
       val actualBlockHeaders = run(BlockHeaderSchema.table.result).futureValue
-      val expectBlockHeaders = entities.map(_.toBlockHeader(groupNum))
+      val expectBlockHeaders = entities.map(_.toBlockHeader(groupSetting.groupNum))
       actualBlockHeaders should contain allElementsOf expectBlockHeaders
 
       //check transactions table

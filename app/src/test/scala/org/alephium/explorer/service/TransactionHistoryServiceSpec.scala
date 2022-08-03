@@ -95,7 +95,7 @@ class TransactionHistoryServiceSpec
   "countAndInsert" should {
     "handle per chains and all chains counting" in {
 
-      implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
+      implicit val groupSettings: GroupSetting = groupSettingGen.sample.get
 
       val group0 = GroupIndex.unsafe(0)
       val group1 = GroupIndex.unsafe(1)

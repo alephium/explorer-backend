@@ -121,7 +121,7 @@ class AddressServerSpec()
   "respect the max number of addresses" in new Fixture {
     forAll(addressGen) {
       case (address) =>
-        val size = groupNum * 20
+        val size = groupSetting.groupNum * 20
 
         val jsonOk   = s"[${Seq.fill(size)(s""""$address"""").mkString(",")}]"
         val entityOk = HttpEntity(ContentTypes.`application/json`, jsonOk)
@@ -141,7 +141,7 @@ class AddressServerSpec()
 
   trait Fixture {
 
-    implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
+    implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
 
     val transactionService = new EmptyTransactionService {}
 

@@ -161,7 +161,7 @@ class TokenSupplyServiceSpec
     val genesisLocked: Boolean
     val block1Locked: Boolean = false
 
-    implicit val groupSettings: GroupSetting = GroupSetting(groupNum = 1)
+    implicit val groupSettings: GroupSetting = GroupSetting(1)
     implicit val blockCache: BlockCache      = BlockCache()
 
     val genesisAddress = Address.unsafe("122uvHwwcaWoXR1ryub9VK1yh2CZvYCqXxzsYDHRb2jYB")

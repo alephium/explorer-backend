@@ -211,7 +211,7 @@ class TransactionServiceSpec
       transactions = Seq(tx1),
       inputs       = Seq(input1),
       outputs      = Seq(output1),
-      deps         = Seq.fill(2 * groupNum - 1)(new BlockEntry.Hash(BlockHash.generate))
+      deps         = Seq.fill(2 * groupSetting.groupNum - 1)(new BlockEntry.Hash(BlockHash.generate))
     )
 
     val blocks = Seq(block0, block1)
@@ -435,8 +435,8 @@ class TransactionServiceSpec
   }
 
   trait Fixture {
-    implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
-    implicit val blockCache: BlockCache      = BlockCache()
+    implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
+    implicit val blockCache: BlockCache     = BlockCache()
 
     val groupIndex = GroupIndex.unsafe(0)
 

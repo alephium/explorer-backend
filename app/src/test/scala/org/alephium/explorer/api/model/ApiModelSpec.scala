@@ -192,7 +192,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
   }
 
   "BlockEntry" in {
-    forAll(blockEntryGen(Generators.groupConfig)) { block =>
+    forAll(blockEntryGen(Generators.groupSettingGen.sample.get)) { block =>
       val expected = s"""
        |{
        |  "hash": "${block.hash.value.toHexString}",

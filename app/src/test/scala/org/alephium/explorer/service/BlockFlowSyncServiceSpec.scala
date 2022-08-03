@@ -121,6 +121,7 @@ class BlockFlowSyncServiceSpec
     def r(l1: Long, l2: Long) = (t(l1), t(l2))
 
     implicit val executionContext: ExecutionContext = ExecutionContext.global
+    implicit val groupSetting: GroupSetting         = groupSettingGen.sample.get
 
     def blockEntity(parent: Option[BlockEntity],
                     chainFrom: GroupIndex = GroupIndex.unsafe(0),
@@ -200,8 +201,7 @@ class BlockFlowSyncServiceSpec
     def blockFlow: Seq[Seq[BlockEntry]] =
       blockEntitiesToBlockEntries(blockFlowEntity)
 
-    implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
-    implicit val blockCache: BlockCache      = BlockCache()
+    implicit val blockCache: BlockCache = BlockCache()
 
     def blockEntities = blockFlowEntity.flatten
 
@@ -291,7 +291,9 @@ class BlockFlowSyncServiceSpec
         BlockDao
           .latestBlocks()
           .futureValue
-          .find { case (chainIndex, _) => chainIndex == ChainIndex.unsafe(0, 0) }
+          .find {
+            case (chainIndex, _) => chainIndex == ChainIndex.unsafe(0, 0)(groupSetting.groupConfig)
+          }
           .get
           ._2
           .height

@@ -29,13 +29,11 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.protocol.{model => protocol, ALPH}
-import org.alephium.protocol.config.GroupConfig
 import org.alephium.util.{AVector, Duration, TimeStamp, U256}
 
 trait Generators {
 
-  lazy val groupNum: Int                     = Gen.choose(2, 4).sample.get
-  implicit lazy val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
+  def groupSettingGen: Gen[GroupSetting] = Gen.choose(2, 4).map(groupNum => GroupSetting(groupNum))
 
   lazy val outputTypeGen: Gen[OutputEntity.OutputType] =
     Gen.oneOf(0, 1).map(OutputEntity.OutputType.unsafe)
@@ -110,14 +108,15 @@ trait Generators {
         parent       = parent
       )
 
-  private def parentIndex(chainTo: GroupIndex) = groupNum - 1 + chainTo.value
+  private def parentIndex(chainTo: GroupIndex)(implicit groupSettings: GroupSetting) =
+    groupSettings.groupNum - 1 + chainTo.value
 
-  lazy val addressAssetProtocolGen: Gen[protocol.Address.Asset] =
+  def addressAssetProtocolGen(implicit groupSettings: GroupSetting): Gen[protocol.Address.Asset] =
     for {
-      group <- Gen.choose(0, groupConfig.groups - 1)
+      group <- Gen.choose(0, groupSettings.groupNum - 1)
     } yield {
-      val groupIndex     = protocol.GroupIndex.unsafe(group)
-      val (_, publicKey) = groupIndex.generateKey
+      val groupIndex     = protocol.GroupIndex.unsafe(group)(groupSettings.groupConfig)
+      val (_, publicKey) = groupIndex.generateKey(groupSettings.groupConfig)
       protocol.Address.p2pkh(publicKey)
     }
 
@@ -138,7 +137,8 @@ trait Generators {
     unlockScript <- hashGen.map(_.bytes)
   } yield protocolApi.AssetInput(outputRef, unlockScript)
 
-  def fixedOutputAssetProtocolGen: Gen[protocolApi.FixedAssetOutput] =
+  def fixedOutputAssetProtocolGen(
+      implicit groupSettings: GroupSetting): Gen[protocolApi.FixedAssetOutput] =
     for {
       hint     <- Gen.posNum[Int]
       key      <- hashGen
@@ -154,7 +154,7 @@ trait Generators {
                                    lockTime,
                                    ByteString.empty)
 
-  def outputAssetProtocolGen: Gen[protocolApi.AssetOutput] =
+  def outputAssetProtocolGen(implicit groupSettings: GroupSetting): Gen[protocolApi.AssetOutput] =
     fixedOutputAssetProtocolGen.map(_.upCast())
 
   def outputContractProtocolGen: Gen[protocolApi.ContractOutput] =
@@ -166,12 +166,12 @@ trait Generators {
     } yield
       protocolApi.ContractOutput(hint, key, protocolApi.Amount(amount), address, AVector.empty)
 
-  def outputProtocolGen: Gen[protocolApi.Output] =
+  def outputProtocolGen(implicit groupSettings: GroupSetting): Gen[protocolApi.Output] =
     Gen.oneOf(outputAssetProtocolGen: Gen[protocolApi.Output],
               outputContractProtocolGen: Gen[protocolApi.Output])
 
   def scriptGen: Gen[protocolApi.Script] = Gen.hexStr.map(protocolApi.Script.apply)
-  def unsignedTxGen: Gen[protocolApi.UnsignedTx] =
+  def unsignedTxGen(implicit groupSettings: GroupSetting): Gen[protocolApi.UnsignedTx] =
     for {
       hash       <- transactionHashGen
       version    <- Gen.posNum[Byte]
@@ -193,7 +193,7 @@ trait Generators {
                              AVector.from(inputs),
                              AVector.from(outputs))
 
-  def transactionProtocolGen: Gen[protocolApi.Transaction] =
+  def transactionProtocolGen(implicit groupSettings: GroupSetting): Gen[protocolApi.Transaction] =
     for {
       unsigned             <- unsignedTxGen
       scriptExecutionOk    <- arbitrary[Boolean]
@@ -211,7 +211,8 @@ trait Generators {
                               AVector.from(inputSignatures),
                               AVector.from(scriptSignatures))
 
-  def transactionTemplateProtocolGen: Gen[protocolApi.TransactionTemplate] =
+  def transactionTemplateProtocolGen(
+      implicit groupSettings: GroupSetting): Gen[protocolApi.TransactionTemplate] =
     for {
       unsigned         <- unsignedTxGen
       inputSignatures  <- Gen.listOfN(2, bytesGen)
@@ -221,14 +222,14 @@ trait Generators {
                                       AVector.from(inputSignatures),
                                       AVector.from(scriptSignatures))
 
-  def blockEntryProtocolGen: Gen[protocolApi.BlockEntry] =
+  def blockEntryProtocolGen(implicit groupSettings: GroupSetting): Gen[protocolApi.BlockEntry] =
     for {
       hash            <- blockEntryHashGen
       timestamp       <- timestampGen
       chainFrom       <- groupIndexGen
       chainTo         <- groupIndexGen
       height          <- heightGen
-      deps            <- Gen.listOfN(2 * groupNum - 1, blockEntryHashGen)
+      deps            <- Gen.listOfN(2 * groupSettings.groupNum - 1, blockEntryHashGen)
       transactionSize <- Gen.choose(1, 10)
       transactions    <- Gen.listOfN(transactionSize, transactionProtocolGen)
       nonce           <- bytesGen
@@ -257,9 +258,8 @@ trait Generators {
       )
     }
 
-  def blockEntityGen(chainFrom: GroupIndex,
-                     chainTo: GroupIndex,
-                     parent: Option[BlockEntity]): Gen[BlockEntity] =
+  def blockEntityGen(chainFrom: GroupIndex, chainTo: GroupIndex, parent: Option[BlockEntity])(
+      implicit groupSettings: GroupSetting): Gen[BlockEntity] =
     blockEntryProtocolGen.map { entry =>
       val deps = parent
         .map(p => entry.deps.replace(parentIndex(chainTo), p.hash.value))
@@ -276,10 +276,8 @@ trait Generators {
 
     }
 
-  def chainGen(size: Int,
-               startTimestamp: TimeStamp,
-               chainFrom: GroupIndex,
-               chainTo: GroupIndex): Gen[Seq[protocolApi.BlockEntry]] =
+  def chainGen(size: Int, startTimestamp: TimeStamp, chainFrom: GroupIndex, chainTo: GroupIndex)(
+      implicit groupSettings: GroupSetting): Gen[Seq[protocolApi.BlockEntry]] =
     Gen.listOfN(size, blockEntryProtocolGen).map { blocks =>
       blocks
         .foldLeft((Seq.empty[protocolApi.BlockEntry], Height.genesis, startTimestamp)) {
@@ -299,8 +297,8 @@ trait Generators {
         } match { case (block, _, _) => block }
     }
 
-  def blockFlowGen(maxChainSize: Int,
-                   startTimestamp: TimeStamp): Gen[Seq[Seq[protocolApi.BlockEntry]]] = {
+  def blockFlowGen(maxChainSize: Int, startTimestamp: TimeStamp)(
+      implicit groupSettings: GroupSetting): Gen[Seq[Seq[protocolApi.BlockEntry]]] = {
     val indexes = chainIndexes
     Gen
       .listOfN(indexes.size, Gen.choose(1, maxChainSize))
@@ -537,9 +535,10 @@ trait Generators {
     *                           The generated boolean mainChain is set for both parent and child [[BlockEntity]].
     */
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def genBlockEntityWithOptionalParent(
-      groupIndexGen: Gen[GroupIndex]           = Gen.const(GroupIndex.unsafe(0)),
-      randomMainChainGen: Option[Gen[Boolean]] = None): Gen[(BlockEntity, Option[BlockEntity])] =
+  def genBlockEntityWithOptionalParent(groupIndexGen: Gen[GroupIndex] =
+                                         Gen.const(GroupIndex.unsafe(0)),
+                                       randomMainChainGen: Option[Gen[Boolean]] = None)(
+      implicit groupSettings: GroupSetting): Gen[(BlockEntity, Option[BlockEntity])] =
     for {
       groupIndex <- groupIndexGen
       parent     <- Gen.option(blockEntityGen(groupIndex, groupIndex, None))
