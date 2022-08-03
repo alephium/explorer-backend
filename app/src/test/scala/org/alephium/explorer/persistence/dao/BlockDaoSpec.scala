@@ -28,6 +28,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.api.{model, ApiModelCodec}
 import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting}
+import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenModel._
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Pagination}
 import org.alephium.explorer.cache.BlockCache

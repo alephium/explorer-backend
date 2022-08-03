@@ -40,6 +40,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.{model, ApiError, ApiModelCodec}
+import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.persistence.DatabaseFixture

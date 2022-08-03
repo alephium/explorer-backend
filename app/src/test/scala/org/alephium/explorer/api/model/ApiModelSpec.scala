@@ -18,6 +18,7 @@ package org.alephium.explorer.api.model
 
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.GenApiModel._
 import org.alephium.json.Json._
 
 class ApiModelSpec() extends AlephiumSpec with Generators {
@@ -191,7 +192,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
   }
 
   "BlockEntry" in {
-    forAll(blockEntryGen) { block =>
+    forAll(blockEntryGen(Generators.groupConfig)) { block =>
       val expected = s"""
        |{
        |  "hash": "${block.hash.value.toHexString}",
