@@ -49,7 +49,7 @@ class AddressServerSpec()
 
   "validate and forward `txLimit` query param " in new Fixture {
     var testLimit = 0
-    override val transactionService = new EmptyTransactionService {
+    override lazy val transactionService = new EmptyTransactionService {
       override def getTransactionsByAddress(address: Address, pagination: Pagination)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] = {
@@ -143,9 +143,9 @@ class AddressServerSpec()
 
     implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
 
-    val transactionService = new EmptyTransactionService {}
+    lazy val transactionService = new EmptyTransactionService {}
 
-    val server = new AddressServer(transactionService)
+    lazy val server = new AddressServer(transactionService)
 
     trait EmptyTransactionService extends TransactionService {
       override def getTransaction(transactionHash: Transaction.Hash)(
