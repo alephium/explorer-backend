@@ -25,7 +25,9 @@ import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators, Hash}
-import org.alephium.explorer.GenModel._
+import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.GenCoreUtil.timestampMaxValue
+import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._

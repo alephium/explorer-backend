@@ -23,106 +23,22 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
 
 import org.alephium.api.{model => protocolApi}
+import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.protocol.{model => protocol, ALPH}
 import org.alephium.protocol.config.GroupConfig
-import org.alephium.util.{AVector, Base58, Duration, Hex, Number, TimeStamp, U256}
+import org.alephium.util.{AVector, Duration, TimeStamp, U256}
 
 trait Generators {
 
   lazy val groupNum: Int                     = Gen.choose(2, 4).sample.get
   implicit lazy val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
 
-  //java.sql.timestamp is out of range with Long.MaxValue
-  lazy val timestampMaxValue: TimeStamp = TimeStamp.unsafe(253370764800000L) //Jan 01 9999 00:00:00
-
-  lazy val u256Gen: Gen[U256] = Gen.posNum[Long].map(U256.unsafe)
-  lazy val timestampGen: Gen[TimeStamp] =
-    Gen.choose[Long](0, timestampMaxValue.millis).map(TimeStamp.unsafe)
-  lazy val hashGen: Gen[Hash]                        = Gen.const(()).map(_ => Hash.generate)
-  lazy val blockHashGen: Gen[BlockHash]              = Gen.const(()).map(_ => BlockHash.generate)
-  lazy val blockEntryHashGen: Gen[BlockEntry.Hash]   = blockHashGen.map(new BlockEntry.Hash(_))
-  lazy val transactionHashGen: Gen[Transaction.Hash] = hashGen.map(new Transaction.Hash(_))
-  lazy val groupIndexGen: Gen[GroupIndex]            = Gen.posNum[Int].map(GroupIndex.unsafe(_))
-  lazy val heightGen: Gen[Height]                    = Gen.posNum[Int].map(Height.unsafe(_))
-  lazy val addressGen: Gen[Address]                  = hashGen.map(hash => Address.unsafe(Base58.encode(hash.bytes)))
-  lazy val bytesGen: Gen[ByteString]                 = hashGen.map(_.bytes)
-
-  lazy val inputGen: Gen[Input] = for {
-    outputRef    <- outputRefGen
-    unlockScript <- Gen.option(hashGen.map(_.bytes))
-    address      <- Gen.option(addressGen)
-    amount       <- Gen.option(amountGen)
-  } yield Input(outputRef, unlockScript.map(Hex.toHexString(_)), address, amount)
-
-  lazy val uinputGen: Gen[UInput] = for {
-    outputRef    <- outputRefGen
-    unlockScript <- Gen.option(hashGen.map(_.bytes))
-  } yield UInput(outputRef, unlockScript.map(Hex.toHexString(_)))
-
   lazy val outputTypeGen: Gen[OutputEntity.OutputType] =
     Gen.oneOf(0, 1).map(OutputEntity.OutputType.unsafe)
-
-  lazy val tokenGen: Gen[Token] = for {
-    id     <- hashGen
-    amount <- amountGen
-  } yield Token(id, amount)
-
-  lazy val tokensGen: Gen[Seq[Token]] = Gen.listOf(tokenGen)
-
-  lazy val assetOutputGen: Gen[AssetOutput] =
-    for {
-      amount   <- amountGen
-      address  <- addressGen
-      lockTime <- Gen.option(timestampGen)
-      tokens   <- Gen.option(tokensGen)
-      spent    <- Gen.option(transactionHashGen)
-      message  <- Gen.option(bytesGen)
-      hint = 0
-      key <- hashGen
-    } yield AssetOutput(hint, key, amount, address, tokens, lockTime, message, spent)
-
-  lazy val contractOutputGen: Gen[ContractOutput] =
-    for {
-      amount  <- amountGen
-      address <- addressGen
-      tokens  <- Gen.option(tokensGen)
-      spent   <- Gen.option(transactionHashGen)
-      hint = 0
-      key <- hashGen
-    } yield ContractOutput(hint, key, amount, address, tokens, spent)
-
-  lazy val outputGen: Gen[Output] =
-    Gen.oneOf(assetOutputGen: Gen[Output], contractOutputGen: Gen[Output])
-
-  def uoutputGen: Gen[UOutput] =
-    for {
-      amount   <- amountGen
-      address  <- addressGen
-      lockTime <- Gen.option(timestampGen)
-    } yield UOutput(amount, address, lockTime)
-
-  lazy val transactionGen: Gen[Transaction] =
-    for {
-      hash      <- transactionHashGen
-      blockHash <- blockEntryHashGen
-      timestamp <- timestampGen
-      gasAmount <- Gen.posNum[Int]
-      gasPrice  <- u256Gen
-    } yield Transaction(hash, blockHash, timestamp, Seq.empty, Seq.empty, gasAmount, gasPrice)
-
-  lazy val utransactionGen: Gen[UnconfirmedTransaction] =
-    for {
-      hash      <- transactionHashGen
-      chainFrom <- groupIndexGen
-      chainTo   <- groupIndexGen
-      inputs    <- Gen.listOfN(3, uinputGen)
-      outputs   <- Gen.listOfN(3, uoutputGen)
-      gasAmount <- Gen.posNum[Int]
-      gasPrice  <- u256Gen
-    } yield UnconfirmedTransaction(hash, chainFrom, chainTo, inputs, outputs, gasAmount, gasPrice)
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def transactionEntityGen(
@@ -211,19 +127,6 @@ trait Generators {
     } yield {
       protocol.Address.contract(contractId)
     }
-
-  lazy val amountGen: Gen[U256] = Gen.choose(1000L, Number.quadrillion).map(ALPH.nanoAlph)
-
-  lazy val chainIndexes: Seq[(GroupIndex, GroupIndex)] =
-    for {
-      i <- 0 to groupConfig.groups - 1
-      j <- 0 to groupConfig.groups - 1
-    } yield (GroupIndex.unsafe(i), GroupIndex.unsafe(j))
-
-  lazy val outputRefGen: Gen[OutputRef] = for {
-    hint <- arbitrary[Int]
-    key  <- hashGen
-  } yield OutputRef(hint, key)
 
   lazy val outputRefProtocolGen: Gen[protocolApi.OutputRef] = for {
     hint <- arbitrary[Int]
@@ -655,3 +558,5 @@ trait Generators {
       }
     }
 }
+
+object Generators extends Generators

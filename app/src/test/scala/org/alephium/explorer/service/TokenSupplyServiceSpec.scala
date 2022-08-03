@@ -25,6 +25,7 @@ import org.scalatest.time.{Seconds, Span}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting}
+import org.alephium.explorer.GenApiModel.transactionHashGen
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence._

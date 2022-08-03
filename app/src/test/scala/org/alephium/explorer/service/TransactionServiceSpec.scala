@@ -25,6 +25,7 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.explorer.{AlephiumSpec, BlockHash, Generators, GroupSetting}
+import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.DatabaseFixtureForEach

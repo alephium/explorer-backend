@@ -17,19 +17,21 @@ package org.alephium.explorer
 
 import org.scalacheck.{Arbitrary, Gen}
 
+import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.persistence.model._
 
 /** Test-data generators for types in package [[org.alephium.explorer.persistence.model]]  */
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-object GenModel extends Generators {
+object GenDBModel {
 
   /** Generates and [[org.alephium.explorer.persistence.model.InputEntity]] for the given
     * [[org.alephium.explorer.persistence.model.OutputEntity]] generator */
   def genInputOutput(
-      outputGen: Gen[OutputEntity] = outputEntityGen): Gen[(InputEntity, OutputEntity)] =
+      outputGen: Gen[OutputEntity] = Generators.outputEntityGen): Gen[(InputEntity, OutputEntity)] =
     for {
       output <- outputGen
-      input  <- inputEntityGen(output)
+      input  <- Generators.inputEntityGen(output)
     } yield (input, output)
 
   /** Convert input-output to [[org.alephium.explorer.persistence.model.TransactionPerAddressEntity]] */
