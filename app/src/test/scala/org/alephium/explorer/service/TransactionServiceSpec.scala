@@ -24,8 +24,9 @@ import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.explorer.{AlephiumSpec, BlockHash, Generators, GroupSetting}
+import org.alephium.explorer.{AlephiumSpec, BlockHash, GroupSetting}
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
@@ -42,7 +43,6 @@ import org.alephium.util.{TimeStamp, U256}
 class TransactionServiceSpec
     extends AlephiumSpec
     with DatabaseFixtureForEach
-    with Generators
     with ScalaFutures
     with Eventually {
 

@@ -31,7 +31,7 @@ import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.protocol.{model => protocol, ALPH}
 import org.alephium.util.{AVector, Duration, TimeStamp, U256}
 
-trait Generators {
+object Generators {
 
   def groupSettingGen: Gen[GroupSetting] = Gen.choose(2, 4).map(groupNum => GroupSetting(groupNum))
 
@@ -557,5 +557,3 @@ trait Generators {
       }
     }
 }
-
-object Generators extends Generators

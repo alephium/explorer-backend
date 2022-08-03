@@ -24,7 +24,8 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting}
+import org.alephium.explorer.{AlephiumSpec, GroupSetting}
+import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.TransactionEntity
@@ -35,7 +36,6 @@ class TransactionHistoryServiceSpec
     extends AlephiumSpec
     with DatabaseFixtureForEach
     with DBRunner
-    with Generators
     with ScalaFutures
     with Eventually {
   implicit val executionContext: ExecutionContext = ExecutionContext.global

@@ -17,11 +17,12 @@
 package org.alephium.explorer.api.model
 
 import org.alephium.api.UtilJson._
-import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.Generators._
 import org.alephium.json.Json._
 
-class ApiModelSpec() extends AlephiumSpec with Generators {
+class ApiModelSpec() extends AlephiumSpec {
 
   def check[T: Reader: Writer](data: T, jsonRaw: String) = {
     write(data) is jsonRaw.filterNot(_.isWhitespace)
@@ -192,7 +193,7 @@ class ApiModelSpec() extends AlephiumSpec with Generators {
   }
 
   "BlockEntry" in {
-    forAll(blockEntryGen(Generators.groupSettingGen.sample.get)) { block =>
+    forAll(blockEntryGen(groupSettingGen.sample.get)) { block =>
       val expected = s"""
        |{
        |  "hash": "${block.hash.value.toHexString}",

@@ -24,7 +24,8 @@ import org.scalatest.concurrent.ScalaFutures
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.{AlephiumSpec, BuildInfo, Generators, GroupSetting, Hash}
+import org.alephium.explorer.{AlephiumSpec, BuildInfo, GroupSetting, Hash}
+import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TransactionCache}
 import org.alephium.explorer.persistence.{Database, DatabaseFixtureForEach}
@@ -126,7 +127,7 @@ class InfosServerSpec()
       responseAs[Seq[PerChainDuration]] is Seq(blockTime)
     }
   }
-  trait Fixture extends Generators {
+  trait Fixture {
     val tokenSupply = TokenSupply(TimeStamp.zero,
                                   ALPH.alph(1),
                                   ALPH.alph(2),

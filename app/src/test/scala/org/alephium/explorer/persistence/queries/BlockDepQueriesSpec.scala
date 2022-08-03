@@ -32,7 +32,6 @@ class BlockDepQueriesSpec
     extends AlephiumSpec
     with DatabaseFixtureForEach
     with DBRunner
-    with Generators
     with ScalaFutures {
 
   implicit val executionContext: ExecutionContext = ExecutionContext.global
@@ -40,7 +39,7 @@ class BlockDepQueriesSpec
 
   "insert and ignore block_deps" in {
 
-    forAll(Gen.listOf(blockDepUpdatedGen)) { deps =>
+    forAll(Gen.listOf(Generators.blockDepUpdatedGen)) { deps =>
       //clean existing rows
       run(BlockDepsSchema.table.delete).futureValue
 

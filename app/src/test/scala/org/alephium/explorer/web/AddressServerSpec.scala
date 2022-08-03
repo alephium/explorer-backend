@@ -26,8 +26,9 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.ApiError
-import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting, Hash}
+import org.alephium.explorer.{AlephiumSpec, GroupSetting, Hash}
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
@@ -40,7 +41,6 @@ class AddressServerSpec()
     extends AlephiumSpec
     with AkkaDecodeFailureHandler
     with DatabaseFixtureForEach
-    with Generators
     with ScalatestRouteTest
     with UpickleCustomizationSupport {
   override type Api = Json.type

@@ -41,6 +41,7 @@ import slick.jdbc.PostgresProfile
 
 import org.alephium.api.{model, ApiError, ApiModelCodec}
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.persistence.DatabaseFixture
@@ -56,7 +57,6 @@ trait ExplorerSpec
     extends AlephiumSpec
     with ScalatestRouteTest
     with ScalaFutures
-    with Generators
     with Eventually
     with UpickleCustomizationSupport {
 
@@ -333,7 +333,6 @@ object ExplorerSpec {
       blockflow: Seq[Seq[model.BlockEntry]],
       networkId: NetworkId)(implicit groupSetting: GroupSetting, system: ActorSystem)
       extends ApiModelCodec
-      with Generators
       with UpickleCustomizationSupport {
 
     val blocks = blockflow.flatten

@@ -24,10 +24,11 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AlephiumSpec, Generators, Hash}
+import org.alephium.explorer.{AlephiumSpec, Hash}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreUtil.timestampMaxValue
 import org.alephium.explorer.GenDBModel._
+import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._
@@ -45,7 +46,6 @@ class TransactionQueriesSpec
     extends AlephiumSpec
     with DatabaseFixtureForEach
     with DBRunner
-    with Generators
     with ScalaFutures {
 
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))

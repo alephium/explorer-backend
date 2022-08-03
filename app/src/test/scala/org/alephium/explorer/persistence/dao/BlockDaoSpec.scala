@@ -27,9 +27,10 @@ import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.api.{model, ApiModelCodec}
-import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting}
+import org.alephium.explorer.{AlephiumSpec, GroupSetting}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
+import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Pagination}
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
@@ -48,7 +49,6 @@ class BlockDaoSpec
     with DatabaseFixtureForEach
     with DBRunner
     with ScalaFutures
-    with Generators
     with Eventually {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
