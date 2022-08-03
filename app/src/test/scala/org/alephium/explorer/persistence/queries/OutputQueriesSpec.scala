@@ -29,7 +29,7 @@ import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.queries.result.{OutputsFromTxQR, OutputsQR}
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.persistence.schema.OutputSchema
-import org.alephium.explorer.util.SlickTestUtil._
+import org.alephium.explorer.util.SlickExplainUtil._
 
 class OutputQueriesSpec
     extends AlephiumSpec
@@ -159,26 +159,26 @@ class OutputQueriesSpec
     }
   }
 
-  "getTxnHash" should {
-    "fetch tx_hash and use outputs_pk index" when {
-      "main_chain = true" in {
+  "getMainChainOutputs" should {
+    "all OutputEntities" when {
+      "order is ascending" in {
         forAll(Gen.listOf(outputEntityGen)) { outputs =>
-          //no-need to clear the table for each iteration.
+          run(OutputSchema.table.delete).futureValue
           run(OutputSchema.table ++= outputs).futureValue
 
-          //run query for each output.
-          outputs foreach { output =>
-            val actual =
-              run(getTxnHash(output.txHash.value)).futureValue
+          val expected = outputs.filter(_.mainChain).sortBy(_.timestamp)
 
-            run(getTxnHashSQL(output.txHash.value).explain()).futureValue
-              .mkString("\n") should include("outputs_pk")
+          //Ascending order
+          locally {
+            val actual = run(OutputQueries.getMainChainOutputs(true).result).futureValue
+            actual should contain inOrderElementsOf expected
+          }
 
-            if (output.mainChain) { //when main_chain = true expect hash to be fetched
-              actual.toList contains only(output.txHash.value)
-            } else { //else expect empty
-              actual.size is 0
-            }
+          //Descending order
+          locally {
+            val expectedReversed = expected.reverse
+            val actual           = run(OutputQueries.getMainChainOutputs(false).result).futureValue
+            actual should contain inOrderElementsOf expectedReversed
           }
         }
       }
@@ -212,30 +212,6 @@ class OutputQueriesSpec
             val explain = run(query.explain()).futureValue.mkString("\n")
 
             explain should include("outputs_tx_hash_block_hash_idx")
-          }
-        }
-      }
-    }
-  }
-
-  "index 'outputs_pk'" should {
-    "get used" when {
-      "accessing column output_ref_key" ignore {
-        forAll(Gen.listOf(outputEntityGen)) { outputs =>
-          run(OutputSchema.table.delete).futureValue
-          run(OutputSchema.table ++= outputs).futureValue
-
-          outputs foreach { output =>
-            val query =
-              sql"""
-                   |SELECT *
-                   |FROM outputs
-                   |where key = ${output.key}
-                   |""".stripMargin
-
-            val explain = run(query.explain()).futureValue.mkString("\n")
-
-            explain should include("outputs_pk")
           }
         }
       }

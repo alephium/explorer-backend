@@ -30,7 +30,7 @@ import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, InputsQR}
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.persistence.schema.InputSchema
-import org.alephium.explorer.util.SlickTestUtil._
+import org.alephium.explorer.util.SlickExplainUtil._
 
 class InputQueriesSpec
     extends AlephiumSpec
