@@ -25,5 +25,5 @@ object ExplainResult {
 final case class ExplainResult(queryName: String,
                                queryInput: String,
                                explain: Vector[String],
-                               message: Iterable[String],
+                               messages: Iterable[String],
                                passed: Boolean)

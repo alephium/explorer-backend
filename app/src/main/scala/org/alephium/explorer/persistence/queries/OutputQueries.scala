@@ -408,7 +408,7 @@ object OutputQueries {
         queryName  = "getTxnHashSQL",
         queryInput = key.toString(),
         explain    = explain,
-        message    = message,
+        messages   = message,
         passed     = passed
       )
     }
