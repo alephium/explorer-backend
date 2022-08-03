@@ -27,7 +27,7 @@ import com.typesafe.scalalogging.StrictLogging
 import org.alephium.util.Service
 
 /** Stores AkkaHttp related instances created on boot-up */
-class AkkaHttpServer(host: String, port: Int, routes: Route)(
+class AkkaHttpServer(host: String, port: Int, val routes: Route)(
     implicit val executionContext: ExecutionContext,
     actorSystem: ActorSystem)
     extends Service
