@@ -166,7 +166,7 @@ class TokenSupplyServiceSpec
 
     val genesisAddress = Address.unsafe("122uvHwwcaWoXR1ryub9VK1yh2CZvYCqXxzsYDHRb2jYB")
 
-    lazy val genesisBlock = {
+    val genesisBlock = {
       val lockTime =
         if (genesisLocked) Some(TimeStamp.now().plusUnsafe(Duration.ofHoursUnsafe(1))) else None
       val block = blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), None).sample.get
@@ -175,7 +175,7 @@ class TokenSupplyServiceSpec
           _.copy(timestamp = block.timestamp, lockTime = lockTime, address = genesisAddress)))
     }
 
-    lazy val block1 = {
+    val block1 = {
       val lockTime =
         if (block1Locked) Some(TimeStamp.now().plusUnsafe(Duration.ofHoursUnsafe(2))) else None
       val timestamp = ALPH.LaunchTimestamp.plusHoursUnsafe(1)
@@ -186,7 +186,7 @@ class TokenSupplyServiceSpec
                  inputs    = block.inputs.map(_.copy(timestamp = timestamp)))
     }
 
-    lazy val block2 = {
+    val block2 = {
       val block =
         blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block1)).sample.get
       val txHash    = transactionHashGen.sample.get
@@ -213,7 +213,7 @@ class TokenSupplyServiceSpec
       )
     }
 
-    lazy val block3 = {
+    val block3 = {
       val block =
         blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block2)).sample.get
       val timestamp = block.timestamp.plusHoursUnsafe(24)
@@ -224,7 +224,7 @@ class TokenSupplyServiceSpec
                  outputs   = block.outputs.map(_.copy(timestamp = timestamp, address = address)))
     }
 
-    lazy val block4 = {
+    val block4 = {
       val block =
         blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block3)).sample.get
       val timestamp = block.timestamp.plusHoursUnsafe(24)

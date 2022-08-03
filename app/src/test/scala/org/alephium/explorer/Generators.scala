@@ -35,7 +35,7 @@ object Generators {
 
   def groupSettingGen: Gen[GroupSetting] = Gen.choose(2, 4).map(groupNum => GroupSetting(groupNum))
 
-  lazy val outputTypeGen: Gen[OutputEntity.OutputType] =
+  val outputTypeGen: Gen[OutputEntity.OutputType] =
     Gen.oneOf(0, 1).map(OutputEntity.OutputType.unsafe)
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -68,13 +68,7 @@ object Generators {
         scriptSignatures  = None
       )
 
-  lazy val blockHeaderTransactionEntityGen: Gen[(BlockHeader, List[TransactionEntity])] =
-    for {
-      blockHeader <- blockHeaderGen
-      transaction <- Gen.listOf(transactionEntityGen(Gen.const(blockHeader.hash)))
-    } yield (blockHeader, transaction)
-
-  lazy val blockHeaderGen: Gen[BlockHeader] =
+  val blockHeaderGen: Gen[BlockHeader] =
     for {
       hash         <- blockEntryHashGen
       timestamp    <- timestampGen
@@ -108,6 +102,12 @@ object Generators {
         parent       = parent
       )
 
+  val blockHeaderTransactionEntityGen: Gen[(BlockHeader, List[TransactionEntity])] =
+    for {
+      blockHeader <- blockHeaderGen
+      transaction <- Gen.listOf(transactionEntityGen(Gen.const(blockHeader.hash)))
+    } yield (blockHeader, transaction)
+
   private def parentIndex(chainTo: GroupIndex)(implicit groupSettings: GroupSetting) =
     groupSettings.groupNum - 1 + chainTo.value
 
@@ -120,19 +120,19 @@ object Generators {
       protocol.Address.p2pkh(publicKey)
     }
 
-  lazy val addressContractProtocolGen: Gen[protocol.Address.Contract] =
+  val addressContractProtocolGen: Gen[protocol.Address.Contract] =
     for {
       contractId <- hashGen
     } yield {
       protocol.Address.contract(contractId)
     }
 
-  lazy val outputRefProtocolGen: Gen[protocolApi.OutputRef] = for {
+  val outputRefProtocolGen: Gen[protocolApi.OutputRef] = for {
     hint <- arbitrary[Int]
     key  <- hashGen
   } yield protocolApi.OutputRef(hint, key)
 
-  lazy val inputProtocolGen: Gen[protocolApi.AssetInput] = for {
+  val inputProtocolGen: Gen[protocolApi.AssetInput] = for {
     outputRef    <- outputRefProtocolGen
     unlockScript <- hashGen.map(_.bytes)
   } yield protocolApi.AssetInput(outputRef, unlockScript)
@@ -380,7 +380,7 @@ object Generators {
       dep  = original.dep
     )
 
-  lazy val blockDepGen: Gen[BlockDepEntity] =
+  val blockDepGen: Gen[BlockDepEntity] =
     for {
       hash  <- blockEntryHashGen
       dep   <- blockEntryHashGen
@@ -394,7 +394,7 @@ object Generators {
 
   /** Generates a tuple2 of [[BlockDepEntity]] where the second one has
     * the same primary key as the first one but with different values */
-  lazy val blockDepUpdatedGen: Gen[(BlockDepEntity, BlockDepEntity)] =
+  val blockDepUpdatedGen: Gen[(BlockDepEntity, BlockDepEntity)] =
     for {
       dep1 <- blockDepGen
       dep2 <- blockDepGen
@@ -402,7 +402,7 @@ object Generators {
       (dep1, copyPrimaryKeys(dep1, dep2))
     }
 
-  lazy val outputEntityGen: Gen[OutputEntity] =
+  val outputEntityGen: Gen[OutputEntity] =
     for {
       blockHash   <- blockEntryHashGen
       txHash      <- transactionHashGen

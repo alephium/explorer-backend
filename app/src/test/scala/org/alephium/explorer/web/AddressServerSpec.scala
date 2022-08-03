@@ -145,7 +145,7 @@ class AddressServerSpec()
 
     val transactionService = new EmptyTransactionService {}
 
-    lazy val server = new AddressServer(transactionService)
+    val server = new AddressServer(transactionService)
 
     trait EmptyTransactionService extends TransactionService {
       override def getTransaction(transactionHash: Transaction.Hash)(
