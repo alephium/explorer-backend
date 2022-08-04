@@ -77,7 +77,7 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
     with StrictLogging {
 
   /** Prefix used in logs to differentiate schedulers and tasks submitted to the scheduler */
-  @inline def logId(taskId: String): String =
+  @inline final def logId(taskId: String): String =
     s"Scheduler '$name', Task '$taskId'"
 
   /**
