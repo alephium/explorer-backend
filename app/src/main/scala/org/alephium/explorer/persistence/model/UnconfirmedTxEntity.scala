@@ -45,13 +45,15 @@ object UnconfirmedTxEntity {
          input.unlockScript
        )
      },
-     utx.outputs.map { output =>
-       UOutputEntity(
-         utx.hash,
-         output.amount,
-         output.address,
-         output.lockTime
-       )
+     utx.outputs.zipWithIndex.map {
+       case (output, order) =>
+         UOutputEntity(
+           utx.hash,
+           output.amount,
+           output.address,
+           output.lockTime,
+           order
+         )
      })
   }
 }

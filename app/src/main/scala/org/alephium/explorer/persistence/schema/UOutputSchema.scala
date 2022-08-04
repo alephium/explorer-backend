@@ -32,13 +32,14 @@ object UOutputSchema extends Schema[UOutputEntity]("uoutputs") {
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
     def address: Rep[Address]            = column[Address]("address")
     def lockTime: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("lock_time")
+    def uoutputOrder: Rep[Int]           = column[Int]("uoutput_order")
 
-    def pk: PrimaryKey = primaryKey("uoutputs_pk", (txHash, address))
+    def pk: PrimaryKey = primaryKey("uoutputs_pk", (txHash, address, uoutputOrder))
 
     def txHashIdx: Index = index("uoutputs_tx_hash_idx", txHash)
 
     def * : ProvenShape[UOutputEntity] =
-      (txHash, amount, address, lockTime)
+      (txHash, amount, address, lockTime, uoutputOrder)
         .<>((UOutputEntity.apply _).tupled, UOutputEntity.unapply)
   }
 

@@ -82,8 +82,7 @@ class UnconfirmedTxDaoSpec
 
         UnconfirmedTxDao.insertMany(Seq(utx.copy(outputs = outputs))).futureValue
 
-        //TODO Fix me, this is wrong, should be `outputSize`
-        UnconfirmedTxDao.get(utx.hash).futureValue.get.outputs.size is 1
+        UnconfirmedTxDao.get(utx.hash).futureValue.get.outputs.size is outputSize
     }
   }
 

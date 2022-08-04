@@ -33,10 +33,28 @@ import org.alephium.serde._
 
 object Migrations extends StrictLogging {
 
-  def migrations(version: Int): DBActionWT[Option[Int]] = {
+  private val addUOutputOrderColumn: DBActionW[Int] = sqlu"""
+    ALTER TABLE uoutputs
+    ADD COLUMN IF NOT EXISTS "uoutput_order" INTEGER DEFAULT 0;
+  """
+
+  private val updateUOutputPK =
+    sqlu"""
+      ALTER TABLE uoutputs
+      DROP CONSTRAINT uoutputs_pk CASCADE,
+      ADD PRIMARY KEY(tx_hash, address, uoutput_order);
+    """
+
+  def migrations(version: Int)(implicit ec: ExecutionContext): DBActionWT[Option[Int]] = {
     logger.debug(s"Current migration version: $version")
-    //noop
-    DBIOAction.successful(Some(0))
+    if (version == 0) {
+      for {
+        _ <- addUOutputOrderColumn
+        _ <- updateUOutputPK
+      } yield Some(1)
+    } else {
+      DBIOAction.successful(None)
+    }
   }
 
   def migrate(databaseConfig: DatabaseConfig[PostgresProfile])(

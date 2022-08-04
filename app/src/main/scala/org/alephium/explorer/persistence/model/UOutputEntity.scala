@@ -23,7 +23,8 @@ final case class UOutputEntity(
     txHash: Transaction.Hash,
     amount: U256,
     address: Address,
-    lockTime: Option[TimeStamp]
+    lockTime: Option[TimeStamp],
+    uoutputOrder: Int
 ) {
   val toApi: UOutput =
     UOutput(
