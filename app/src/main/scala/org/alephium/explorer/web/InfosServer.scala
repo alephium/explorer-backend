@@ -19,6 +19,7 @@ package org.alephium.explorer.web
 import java.math.BigDecimal
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
@@ -27,8 +28,8 @@ import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.{BuildInfo, GroupSetting}
 import org.alephium.explorer.api.InfosEndpoints
-import org.alephium.explorer.api.model.ExplorerInfo
-import org.alephium.explorer.cache.{BlockCache, TransactionCache}
+import org.alephium.explorer.api.model.{ExplorerInfo, TokenSupply}
+import org.alephium.explorer.cache.{AsyncReloadingCache, BlockCache, TransactionCache}
 import org.alephium.explorer.service.{BlockService, TokenSupplyService, TransactionService}
 import org.alephium.protocol.ALPH
 import org.alephium.util.U256
@@ -54,32 +55,28 @@ class InfosServer(tokenSupplyService: TokenSupplyService,
         tokenSupplyService.listTokenSupply(pagination)
       }) ~
       toRoute(getCirculatingSupply.serverLogicSuccess[Future] { _ =>
-        tokenSupplyService
-          .getLatestTokenSupply()
+          getLatestTokenSupply()
           .map { supply =>
             val circulating = supply.map(_.circulating).getOrElse(U256.Zero)
             toALPH(circulating)
           }
       }) ~
       toRoute(getTotalSupply.serverLogicSuccess[Future] { _ =>
-        tokenSupplyService
-          .getLatestTokenSupply()
+          getLatestTokenSupply()
           .map { supply =>
             val total = supply.map(_.total).getOrElse(U256.Zero)
             toALPH(total)
           }
       }) ~
       toRoute(getReservedSupply.serverLogicSuccess[Future] { _ =>
-        tokenSupplyService
-          .getLatestTokenSupply()
+          getLatestTokenSupply()
           .map { supply =>
             val reserved = supply.map(_.reserved).getOrElse(U256.Zero)
             toALPH(reserved)
           }
       }) ~
       toRoute(getLockedSupply.serverLogicSuccess[Future] { _ =>
-        tokenSupplyService
-          .getLatestTokenSupply()
+          getLatestTokenSupply()
           .map { supply =>
             val locked = supply.map(_.locked).getOrElse(U256.Zero)
             toALPH(locked)
@@ -98,4 +95,18 @@ class InfosServer(tokenSupplyService: TokenSupplyService,
 
   private def toALPH(u256: U256): BigDecimal =
     new BigDecimal(u256.v).divide(new BigDecimal(ALPH.oneAlph.v))
+
+  private val latestTokenSupplyCache: AsyncReloadingCache[Option[TokenSupply]] =
+    AsyncReloadingCache[Option[TokenSupply]](None, 1.minutes) { _ =>
+      tokenSupplyService.getLatestTokenSupply()
+    }
+
+  private def getLatestTokenSupply(): Future[Option[TokenSupply]] =
+    latestTokenSupplyCache.get() match {
+      case Some(tokenSupply) => Future.successful(Some(tokenSupply))
+      case None =>
+        latestTokenSupplyCache.expireAndReloadFuture().map { _ =>
+          latestTokenSupplyCache.get()
+        }
+    }
 }
