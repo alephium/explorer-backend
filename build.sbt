@@ -86,6 +86,15 @@ def caffeineJavaDocAPIMapping(classPath: Classpath): (sbt.File, sbt.URL) = {
   slickJar -> docsURL
 }
 
+val inliningOptions =
+  Seq(
+    "-opt-warnings",
+    "-opt:l:inline",
+    "-opt-inline-from:org.alephium.explorer.**",
+    "-Yopt-log-inline",
+    "_"
+  )
+
 val commonSettings = Seq(
   name := "explorer-backend",
   organization := "org.alephium",
@@ -124,7 +133,7 @@ val commonSettings = Seq(
     "-Ywarn-unused:patvars",
     "-Ywarn-unused:privates",
     "-Ywarn-value-discard"
-  ),
+  ) ++ inliningOptions,
   Test / envVars += "ALEPHIUM_ENV" -> "test",
   Compile / compile / wartremoverErrors := Warts.allBut(wartsCompileExcludes: _*),
   Test / compile / wartremoverErrors := Warts.allBut(wartsTestExcludes: _*),
