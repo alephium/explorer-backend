@@ -41,6 +41,7 @@ import slick.jdbc.PostgresProfile
 
 import org.alephium.api.{model, ApiError, ApiModelCodec}
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.persistence.DatabaseFixture
@@ -56,7 +57,6 @@ trait ExplorerSpec
     extends AlephiumSpec
     with ScalatestRouteTest
     with ScalaFutures
-    with Generators
     with Eventually
     with UpickleCustomizationSupport {
 
@@ -65,6 +65,8 @@ trait ExplorerSpec
 
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
   implicit val defaultTimeout          = RouteTestTimeout(5.seconds)
+
+  implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
 
   val networkId: NetworkId = NetworkId.AlephiumDevNet
 
@@ -88,7 +90,7 @@ trait ExplorerSpec
 
   val blockFlowPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
   val blockFlowMock =
-    new ExplorerSpec.BlockFlowServerMock(groupNum, localhost, blockFlowPort, blockflow, networkId)
+    new ExplorerSpec.BlockFlowServerMock(localhost, blockFlowPort, blockflow, networkId)
 
   val blockflowBinding = blockFlowMock.server.futureValue
 
@@ -107,7 +109,7 @@ trait ExplorerSpec
           ("alephium.explorer.port", explorerPort),
           ("alephium.blockflow.port", blockFlowPort),
           ("alephium.blockflow.network-id", networkId.id),
-          ("alephium.blockflow.group-num", groupNum)
+          ("alephium.blockflow.group-num", groupSetting.groupNum)
         ).view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava)
         .withFallback(DatabaseFixture.config))
 
@@ -302,7 +304,7 @@ trait ExplorerSpec
           _.getLines().toList
             .mkString("\n")
             //updating address discovery gap limit according to group number
-            .replace(""""maxItems": 80""", s""""maxItems": ${groupNum * 20}"""))
+            .replace(""""maxItems": 80""", s""""maxItems": ${groupSetting.groupNum * 20}"""))
 
       val expectedOpenapi =
         read[ujson.Value](openApiFile)
@@ -325,16 +327,13 @@ trait ExplorerSpec
 
 object ExplorerSpec {
 
-  class BlockFlowServerMock(_groupNum: Int,
-                            address: InetAddress,
-                            port: Int,
-                            blockflow: Seq[Seq[model.BlockEntry]],
-                            networkId: NetworkId)(implicit system: ActorSystem)
+  class BlockFlowServerMock(
+      address: InetAddress,
+      port: Int,
+      blockflow: Seq[Seq[model.BlockEntry]],
+      networkId: NetworkId)(implicit groupSetting: GroupSetting, system: ActorSystem)
       extends ApiModelCodec
-      with Generators
       with UpickleCustomizationSupport {
-
-    override lazy val groupNum = _groupNum
 
     val blocks = blockflow.flatten
 
@@ -423,7 +422,7 @@ object ExplorerSpec {
           complete(model.SelfClique(cliqueId, AVector(peer), true, true))
         } ~
         path("infos" / "chain-params") {
-          complete(model.ChainParams(networkId, 18, groupNum, groupNum))
+          complete(model.ChainParams(networkId, 18, groupSetting.groupNum, groupSetting.groupNum))
         }
 
     val server = Http().newServerAt(address.getHostAddress, port).bindFlow(routes)

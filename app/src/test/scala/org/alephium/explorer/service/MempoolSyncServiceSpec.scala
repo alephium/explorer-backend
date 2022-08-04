@@ -26,7 +26,7 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
-import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.GenApiModel.utransactionGen
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, UnconfirmedTransaction}
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
@@ -39,7 +39,6 @@ import org.alephium.util.{Service, TimeStamp}
 class MempoolSyncServiceSpec
     extends AlephiumSpec
     with DatabaseFixtureForEach
-    with Generators
     with ScalaFutures
     with Eventually {
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))

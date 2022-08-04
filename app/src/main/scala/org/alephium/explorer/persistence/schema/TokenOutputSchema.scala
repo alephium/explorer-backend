@@ -76,7 +76,7 @@ object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outpu
         .<>((TokenOutputEntity.apply _).tupled, TokenOutputEntity.unapply)
   }
 
-  lazy val createNonSpentIndex: DBActionW[Int] =
+  val createNonSpentIndex: DBActionW[Int] =
     sqlu"create unique index if not exists non_spent_output_idx on #${name} (address, main_chain, key, block_hash) where spent_finalized IS NULL;"
 
   val table: TableQuery[TokenOutputs] = TableQuery[TokenOutputs]

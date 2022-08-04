@@ -46,78 +46,78 @@ object CustomJdbcTypes {
       raw => from(BlockHash.unsafe(ByteString.fromArrayUnsafe(raw)))
     )
 
-  implicit lazy val hashType: JdbcType[Hash] = buildHashTypes(identity, identity)
+  implicit val hashType: JdbcType[Hash] = buildHashTypes(identity, identity)
 
-  implicit lazy val blockEntryHashType: JdbcType[BlockEntry.Hash] =
+  implicit val blockEntryHashType: JdbcType[BlockEntry.Hash] =
     buildBlockHashTypes(
       new BlockEntry.Hash(_),
       _.value
     )
 
-  implicit lazy val transactionHashType: JdbcType[Transaction.Hash] =
+  implicit val transactionHashType: JdbcType[Transaction.Hash] =
     buildHashTypes(
       new Transaction.Hash(_),
       _.value
     )
 
-  implicit lazy val groupIndexType: JdbcType[GroupIndex] = MappedJdbcType.base[GroupIndex, Int](
+  implicit val groupIndexType: JdbcType[GroupIndex] = MappedJdbcType.base[GroupIndex, Int](
     _.value,
     int => GroupIndex.unsafe(int)
   )
 
-  implicit lazy val heightType: JdbcType[Height] = MappedJdbcType.base[Height, Int](
+  implicit val heightType: JdbcType[Height] = MappedJdbcType.base[Height, Int](
     _.value,
     int => Height.unsafe(int)
   )
 
-  implicit lazy val addressType: JdbcType[Address] = MappedJdbcType.base[Address, String](
+  implicit val addressType: JdbcType[Address] = MappedJdbcType.base[Address, String](
     _.value,
     string => Address.unsafe(string)
   )
 
-  implicit lazy val timestampType: JdbcType[TimeStamp] = MappedJdbcType.base[TimeStamp, Long](
+  implicit val timestampType: JdbcType[TimeStamp] = MappedJdbcType.base[TimeStamp, Long](
     _.millis,
     long => TimeStamp.unsafe(long)
   )
 
-  implicit lazy val u256Type: JdbcType[U256] = MappedJdbcType.base[U256, BigDecimal](
+  implicit val u256Type: JdbcType[U256] = MappedJdbcType.base[U256, BigDecimal](
     u256       => BigDecimal(u256.v),
     bigDecimal => U256.unsafe(bigDecimal.toBigInt.bigInteger)
   )
 
-  implicit lazy val bigIntegerType: JdbcType[BigInteger] =
+  implicit val bigIntegerType: JdbcType[BigInteger] =
     MappedJdbcType.base[BigInteger, BigDecimal](
       bigInteger => BigDecimal(bigInteger),
       bigDecimal => bigDecimal.toBigInt.bigInteger
     )
 
-  implicit lazy val bytestringType: JdbcType[ByteString] =
+  implicit val bytestringType: JdbcType[ByteString] =
     MappedJdbcType.base[ByteString, Array[Byte]](
       _.toArray,
       bytes => ByteString.fromArrayUnsafe(bytes)
     )
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-  implicit lazy val seqByteStringType: JdbcType[Seq[ByteString]] =
+  implicit val seqByteStringType: JdbcType[Seq[ByteString]] =
     MappedJdbcType.base[Seq[ByteString], Array[Byte]](
       byteStrings => serialize(AVector.unsafe(byteStrings.toArray)).toArray,
       bytes =>
         deserialize[AVector[ByteString]](ByteString.fromArrayUnsafe(bytes)).toOption.get.toSeq
     )
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-  implicit lazy val tokensType: JdbcType[Seq[Token]] =
+  implicit val tokensType: JdbcType[Seq[Token]] =
     MappedJdbcType.base[Seq[Token], Array[Byte]](
       tokens => serialize(AVector.unsafe(tokens.toArray)).toArray,
       bytes  => deserialize[AVector[Token]](ByteString.fromArrayUnsafe(bytes)).toOption.get.toSeq
     )
 
-  implicit lazy val intervalTypeType: JdbcType[IntervalType] =
+  implicit val intervalTypeType: JdbcType[IntervalType] =
     MappedJdbcType.base[IntervalType, Int](
       _.value,
       IntervalType.unsafe
     )
 
-  implicit lazy val outputTypeType: JdbcType[OutputEntity.OutputType] =
+  implicit val outputTypeType: JdbcType[OutputEntity.OutputType] =
     MappedJdbcType.base[OutputEntity.OutputType, Int](
       _.value,
       OutputEntity.OutputType.unsafe

@@ -25,7 +25,7 @@ final case class UInputEntity(
     outputRefKey: Hash,
     unlockScript: Option[String]
 ) {
-  lazy val toApi: UInput = UInput(
+  val toApi: UInput = UInput(
     OutputRef(hint, outputRefKey),
     unlockScript
   )

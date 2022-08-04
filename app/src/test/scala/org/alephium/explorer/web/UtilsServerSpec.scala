@@ -86,9 +86,9 @@ class UtilsServerSpec()
     }
   }
 
-  trait Fixture extends Generators {
+  trait Fixture {
     implicit val blockFlowClient: BlockFlowClient   = mock[BlockFlowClient]
-    implicit val groupSettings: GroupSetting        = GroupSetting(groupNum)
+    implicit val groupSettings: GroupSetting        = Generators.groupSettingGen.sample.get
     implicit val blockCache: BlockCache             = BlockCache()
     implicit val transactionCache: TransactionCache = TransactionCache(new Database(false))
 

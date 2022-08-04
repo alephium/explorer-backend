@@ -63,11 +63,11 @@ class AddressReadState(val db: DBExecutor)
 
   var blocks: Array[BlockEntity] = _
 
-  lazy val hashes = Random
+  val hashes: Seq[(Transaction.Hash, BlockEntry.Hash)] = Random
     .shuffle(blocks.flatMap(_.transactions.map(tx => (tx.hash, tx.blockHash))).toMap)
     .take(100)
     .toSeq
-  lazy val txHashes = hashes.map(_._1)
+  val txHashes: Seq[Transaction.Hash] = hashes.map(_._1)
 
   val pagination: Pagination = Pagination.unsafe(
     offset  = 0,

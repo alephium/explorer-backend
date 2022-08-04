@@ -27,9 +27,10 @@ import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.api.{model, ApiModelCodec}
-import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting}
+import org.alephium.explorer.{AlephiumSpec, GroupSetting}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
+import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Pagination}
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
@@ -48,7 +49,6 @@ class BlockDaoSpec
     with DatabaseFixtureForEach
     with DBRunner
     with ScalaFutures
-    with Generators
     with Eventually {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
@@ -122,7 +122,7 @@ class BlockDaoSpec
     val now        = TimeStamp.now()
     val from       = GroupIndex.unsafe(0)
     val to         = GroupIndex.unsafe(0)
-    val chainIndex = ChainIndex.unsafe(0, 0)
+    val chainIndex = ChainIndex.unsafe(0, 0)(groupSettings.groupConfig)
     val block1 = blockHeaderGen.sample.get.copy(mainChain = true,
                                                 chainFrom = from,
                                                 chainTo   = to,
@@ -253,7 +253,7 @@ class BlockDaoSpec
   }
 
   trait Fixture extends ApiModelCodec {
-    implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
+    implicit val groupSettings: GroupSetting = groupSettingGen.sample.get
     implicit val blockCache: BlockCache      = BlockCache()
 
     val blockflow: Seq[Seq[model.BlockEntry]] =

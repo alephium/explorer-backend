@@ -78,7 +78,7 @@ class CustomJdbcTypesSpec
 
   "set/get tokens" in new Fixture {
 
-    forAll(outputEntityGen) { output =>
+    forAll(Generators.outputEntityGen) { output =>
       run(OutputSchema.table.delete).futureValue
 
       run(OutputQueries.insertOutputs(Seq(output))).futureValue
@@ -93,7 +93,7 @@ class CustomJdbcTypesSpec
     }
   }
 
-  trait Fixture extends Generators {
+  trait Fixture {
 
     def ts(str: String): TimeStamp = TimeStamp.unsafe(java.time.Instant.parse(str).toEpochMilli)
 

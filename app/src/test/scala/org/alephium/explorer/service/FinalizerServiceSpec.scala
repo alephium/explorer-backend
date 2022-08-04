@@ -21,7 +21,8 @@ import scala.concurrent.ExecutionContext
 import org.scalatest.concurrent.ScalaFutures
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.Generators._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.{AppState, InputEntity}
 import org.alephium.explorer.persistence.queries.InputQueries
@@ -31,7 +32,6 @@ import org.alephium.util.{Duration, TimeStamp}
 
 class FinalizerServiceSpec
     extends AlephiumSpec
-    with Generators
     with DatabaseFixtureForEach
     with DBRunner
     with ScalaFutures {

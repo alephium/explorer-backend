@@ -25,7 +25,7 @@ final case class UOutputEntity(
     address: Address,
     lockTime: Option[TimeStamp]
 ) {
-  lazy val toApi: UOutput =
+  val toApi: UOutput =
     UOutput(
       amount,
       address,

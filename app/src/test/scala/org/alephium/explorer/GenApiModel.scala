@@ -25,7 +25,6 @@ import org.scalacheck.Gen
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.config.GroupConfig
 import org.alephium.util.{Base58, Hex, Number, U256}
 
 /** Generators for types supplied by `org.alephium.explorer.api.model` package */
@@ -118,10 +117,10 @@ object GenApiModel {
       gasPrice  <- u256Gen
     } yield UnconfirmedTransaction(hash, chainFrom, chainTo, inputs, outputs, gasAmount, gasPrice)
 
-  def chainIndexes(implicit groupConfig: GroupConfig): Seq[(GroupIndex, GroupIndex)] =
+  def chainIndexes(implicit groupSetting: GroupSetting): Seq[(GroupIndex, GroupIndex)] =
     for {
-      i <- 0 to groupConfig.groups - 1
-      j <- 0 to groupConfig.groups - 1
+      i <- 0 to groupSetting.groupNum - 1
+      j <- 0 to groupSetting.groupNum - 1
     } yield (GroupIndex.unsafe(i), GroupIndex.unsafe(j))
 
   val blockEntryLiteGen: Gen[BlockEntryLite] =
@@ -147,14 +146,14 @@ object GenApiModel {
       )
     }
 
-  def blockEntryGen(implicit groupConfig: GroupConfig): Gen[BlockEntry] =
+  def blockEntryGen(implicit groupSetting: GroupSetting): Gen[BlockEntry] =
     for {
       hash         <- blockEntryHashGen
       timestamp    <- timestampGen
       chainFrom    <- groupIndexGen
       chainTo      <- groupIndexGen
       height       <- heightGen
-      deps         <- Gen.listOfN(2 * groupConfig.groups - 1, blockEntryHashGen)
+      deps         <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockEntryHashGen)
       transactions <- Gen.listOfN(2, transactionGen)
       mainChain    <- arbitrary[Boolean]
       hashrate     <- arbitrary[Long].map(BigInteger.valueOf)

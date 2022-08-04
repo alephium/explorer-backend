@@ -26,8 +26,9 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.ApiError
-import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting, Hash}
+import org.alephium.explorer.{AlephiumSpec, GroupSetting, Hash}
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
@@ -40,7 +41,6 @@ class AddressServerSpec()
     extends AlephiumSpec
     with AkkaDecodeFailureHandler
     with DatabaseFixtureForEach
-    with Generators
     with ScalatestRouteTest
     with UpickleCustomizationSupport {
   override type Api = Json.type
@@ -49,7 +49,7 @@ class AddressServerSpec()
 
   "validate and forward `txLimit` query param " in new Fixture {
     var testLimit = 0
-    override val transactionService = new EmptyTransactionService {
+    override lazy val transactionService = new EmptyTransactionService {
       override def getTransactionsByAddress(address: Address, pagination: Pagination)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] = {
@@ -121,7 +121,7 @@ class AddressServerSpec()
   "respect the max number of addresses" in new Fixture {
     forAll(addressGen) {
       case (address) =>
-        val size = groupNum * 20
+        val size = groupSetting.groupNum * 20
 
         val jsonOk   = s"[${Seq.fill(size)(s""""$address"""").mkString(",")}]"
         val entityOk = HttpEntity(ContentTypes.`application/json`, jsonOk)
@@ -141,9 +141,9 @@ class AddressServerSpec()
 
   trait Fixture {
 
-    implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
+    implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
 
-    val transactionService = new EmptyTransactionService {}
+    lazy val transactionService = new EmptyTransactionService {}
 
     lazy val server = new AddressServer(transactionService)
 

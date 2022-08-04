@@ -24,8 +24,9 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting}
+import org.alephium.explorer.{AlephiumSpec, GroupSetting}
 import org.alephium.explorer.GenApiModel.transactionHashGen
+import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence._
@@ -41,7 +42,6 @@ class TokenSupplyServiceSpec
     extends AlephiumSpec
     with DatabaseFixtureForEach
     with DBRunner
-    with Generators
     with ScalaFutures
     with Eventually {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
@@ -161,7 +161,7 @@ class TokenSupplyServiceSpec
     val genesisLocked: Boolean
     val block1Locked: Boolean = false
 
-    implicit val groupSettings: GroupSetting = GroupSetting(groupNum = 1)
+    implicit val groupSettings: GroupSetting = GroupSetting(1)
     implicit val blockCache: BlockCache      = BlockCache()
 
     val genesisAddress = Address.unsafe("122uvHwwcaWoXR1ryub9VK1yh2CZvYCqXxzsYDHRb2jYB")

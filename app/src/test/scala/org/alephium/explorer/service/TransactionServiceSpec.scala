@@ -24,8 +24,9 @@ import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.explorer.{AlephiumSpec, BlockHash, Generators, GroupSetting}
+import org.alephium.explorer.{AlephiumSpec, BlockHash, GroupSetting}
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
@@ -42,7 +43,6 @@ import org.alephium.util.{TimeStamp, U256}
 class TransactionServiceSpec
     extends AlephiumSpec
     with DatabaseFixtureForEach
-    with Generators
     with ScalaFutures
     with Eventually {
 
@@ -211,7 +211,7 @@ class TransactionServiceSpec
       transactions = Seq(tx1),
       inputs       = Seq(input1),
       outputs      = Seq(output1),
-      deps         = Seq.fill(2 * groupNum - 1)(new BlockEntry.Hash(BlockHash.generate))
+      deps         = Seq.fill(2 * groupSetting.groupNum - 1)(new BlockEntry.Hash(BlockHash.generate))
     )
 
     val blocks = Seq(block0, block1)
@@ -435,8 +435,8 @@ class TransactionServiceSpec
   }
 
   trait Fixture {
-    implicit val groupSettings: GroupSetting = GroupSetting(groupNum)
-    implicit val blockCache: BlockCache      = BlockCache()
+    implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
+    implicit val blockCache: BlockCache     = BlockCache()
 
     val groupIndex = GroupIndex.unsafe(0)
 

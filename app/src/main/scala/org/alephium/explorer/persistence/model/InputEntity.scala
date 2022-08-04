@@ -18,10 +18,7 @@ package org.alephium.explorer.persistence.model
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{Address, BlockEntry, Input, OutputRef, Token, Transaction}
-import org.alephium.protocol
-import org.alephium.protocol.vm.UnlockScript
-import org.alephium.serde.deserialize
-import org.alephium.util.{Hex, TimeStamp, U256}
+import org.alephium.util.{TimeStamp, U256}
 
 final case class InputEntity(
     blockHash: BlockEntry.Hash,
@@ -45,14 +42,4 @@ final case class InputEntity(
       Some(outputRef.amount),
       outputRef.tokens
     )
-
-  lazy val address: Option[Address] = {
-    unlockScript.flatMap { unlockScript =>
-      Hex.from(unlockScript).flatMap(us => deserialize[UnlockScript](us).toOption).flatMap {
-        case UnlockScript.P2PKH(pubKey) =>
-          Some(Address.unsafe(protocol.model.Address.p2pkh(pubKey).toBase58))
-        case _ => None
-      }
-    }
-  }
 }
