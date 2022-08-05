@@ -19,15 +19,13 @@ package org.alephium.explorer.service
 import scala.concurrent.ExecutionContext
 
 import org.scalatest.concurrent.ScalaFutures
-import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
-import org.alephium.explorer.persistence.model.{AppState, InputEntity}
-import org.alephium.explorer.persistence.queries.InputQueries
-import org.alephium.explorer.persistence.schema.AppStateSchema
-import org.alephium.serde._
+import org.alephium.explorer.persistence.model.AppState.LastFinalizedInputTime
+import org.alephium.explorer.persistence.model.InputEntity
+import org.alephium.explorer.persistence.queries.{AppStateQueries, InputQueries}
 import org.alephium.util.{Duration, TimeStamp}
 
 class FinalizerServiceSpec
@@ -86,9 +84,7 @@ class FinalizerServiceSpec
     firstFinalizationTime.isBefore(end2)
     end2.isBefore(FinalizerService.finalizationTime)
 
-    run(
-      AppStateSchema.table.insertOrUpdate(
-        AppState("last_finalized_input_time", serialize(input2.timestamp)))).futureValue
+    run(AppStateQueries.insertOrUpdate(LastFinalizedInputTime(input2.timestamp))).futureValue
 
     val Some((start3, _)) = run(FinalizerService.getStartEndTime()).futureValue
 

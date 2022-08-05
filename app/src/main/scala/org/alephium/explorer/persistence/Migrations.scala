@@ -25,9 +25,8 @@ import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.persistence._
-import org.alephium.explorer.persistence.model.AppState
-import org.alephium.explorer.persistence.schema.AppStateSchema
+import org.alephium.explorer.persistence.model.AppState.MigrationVersion
+import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.serde._
 
@@ -69,8 +68,8 @@ object Migrations extends StrictLogging {
     versionOpt match {
       case None => DBIOAction.successful(())
       case Some(version) =>
-        AppStateSchema.table
-          .insertOrUpdate(AppState("migrations_version", serialize(version)))
+        AppStateQueries
+          .insertOrUpdate(MigrationVersion(version))
           .map(_ => ())
     }
   }
