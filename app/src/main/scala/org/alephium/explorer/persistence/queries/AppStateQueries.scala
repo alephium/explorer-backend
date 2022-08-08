@@ -14,24 +14,24 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.schema
+package org.alephium.explorer.persistence.queries
 
-import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
-import slick.lifted.ProvenShape
 
+import org.alephium.explorer.persistence.{DBActionR, DBActionW}
 import org.alephium.explorer.persistence.model.{AppState, AppStateKey}
+import org.alephium.explorer.persistence.schema.AppStateSchema
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
-object AppStateSchema extends Schema[AppState]("app_state") {
+/** Queries for table [[org.alephium.explorer.persistence.schema.AppStateSchema.table]] */
+object AppStateQueries {
 
-  class AppStates(tag: Tag) extends Table[AppState](tag, name) {
-    def key: Rep[AppStateKey]  = column[AppStateKey]("key", O.PrimaryKey)
-    def value: Rep[ByteString] = column[ByteString]("value")
+  @inline def insert(appState: AppState): DBActionW[Int] =
+    AppStateSchema.table += appState
 
-    def * : ProvenShape[AppState] =
-      (key, value).<>((AppState.applyOrThrow _).tupled, AppState.unapplyOpt)
-  }
+  @inline def insertOrUpdate(appState: AppState): DBActionW[Int] =
+    AppStateSchema.table insertOrUpdate appState
 
-  val table: TableQuery[AppStates] = TableQuery[AppStates]
+  @inline def get(appState: AppStateKey): DBActionR[Option[AppState]] =
+    AppStateSchema.table.filter(_.key === appState).result.headOption
 }

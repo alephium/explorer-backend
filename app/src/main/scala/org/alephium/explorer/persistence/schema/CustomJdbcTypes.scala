@@ -27,7 +27,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.model.OutputEntity
+import org.alephium.explorer.persistence.model.{AppState, AppStateKey, OutputEntity}
 import org.alephium.serde._
 import org.alephium.util.{AVector, TimeStamp, U256}
 
@@ -121,5 +121,15 @@ object CustomJdbcTypes {
     MappedJdbcType.base[OutputEntity.OutputType, Int](
       _.value,
       OutputEntity.OutputType.unsafe
+    )
+
+  implicit val appStateKey: JdbcType[AppStateKey] =
+    MappedJdbcType.base[AppStateKey, String](
+      state => state.key,
+      key =>
+        AppState
+          .keys()
+          .find(_.key == key)
+          .getOrElse(throw new Exception(s"Invalid ${classOf[AppStateKey].getSimpleName}: $key"))
     )
 }

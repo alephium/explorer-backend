@@ -29,8 +29,8 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.DBRunner._
-import org.alephium.explorer.persistence.model.AppState
-import org.alephium.explorer.persistence.schema.AppStateSchema
+import org.alephium.explorer.persistence.model.AppState.LastFinalizedInputTime
+import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.{Scheduler, TimeUtil}
@@ -163,5 +163,5 @@ case object FinalizerService extends StrictLogging {
       })
 
   private def updateLastFinalizedInputTime(time: TimeStamp) =
-    AppStateSchema.table.insertOrUpdate(AppState("last_finalized_input_time", serialize(time)))
+    AppStateQueries.insertOrUpdate(LastFinalizedInputTime(time))
 }
