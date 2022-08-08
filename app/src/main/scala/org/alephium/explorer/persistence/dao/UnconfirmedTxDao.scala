@@ -60,7 +60,7 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
     run(for {
       maybeTx <- UnconfirmedTxSchema.table.filter(_.hash === hash).result.headOption
       inputs  <- UInputSchema.table.filter(_.txHash === hash).result
-      outputs <- UOutputSchema.table.filter(_.txHash === hash).result
+      outputs <- UOutputSchema.table.filter(_.txHash === hash).sortBy(_.uoutputOrder).result
     } yield {
       maybeTx.map { tx =>
         UnconfirmedTransaction(

@@ -24,7 +24,8 @@ import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AlephiumSpec
-import org.alephium.explorer.GenApiModel.utransactionGen
+import org.alephium.explorer.GenApiModel.{uoutputGen, utransactionGen}
+import org.alephium.explorer.GenCoreUtil.timestampGen
 import org.alephium.explorer.api.model.Transaction
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.schema._
@@ -70,6 +71,18 @@ class UnconfirmedTxDaoSpec
       UnconfirmedTxDao.insertMany(Seq(utx)).futureValue
 
       UnconfirmedTxDao.get(utx.hash).futureValue is Some(utx)
+    }
+  }
+
+  "get utx with multiple outputs with same address but different lock time. Issue #142 " in {
+    forAll(Gen.choose(2, 6), uoutputGen, utransactionGen) {
+      case (outputSize, out, utx) =>
+        //outputs with same address but different lockTime
+        val outputs = Seq.fill(outputSize)(out.copy(lockTime = Some(timestampGen.sample.get)))
+
+        UnconfirmedTxDao.insertMany(Seq(utx.copy(outputs = outputs))).futureValue
+
+        UnconfirmedTxDao.get(utx.hash).futureValue.get.outputs.size is outputSize
     }
   }
 
