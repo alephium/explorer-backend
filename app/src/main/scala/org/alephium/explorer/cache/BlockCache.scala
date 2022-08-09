@@ -26,7 +26,7 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.GroupSetting
-import org.alephium.explorer.api.model.GroupIndex
+import org.alephium.explorer.api.model.{BlockEntryLite, GroupIndex, Pagination}
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.model.LatestBlock
 import org.alephium.explorer.persistence.queries.BlockQueries
@@ -57,7 +57,7 @@ object BlockCache {
     val groupConfig: GroupConfig = groupSetting.groupConfig
 
     @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-    val latestBlockAsyncLoader: AsyncCacheLoader[ChainIndex, LatestBlock] = {
+    val latestBlockPerChainsAsyncLoader: AsyncCacheLoader[ChainIndex, LatestBlock] = {
       case (key, _) =>
         run(
           BlockQueries.getLatestBlock(GroupIndex.unsafe(key.from.value),
@@ -65,13 +65,19 @@ object BlockCache {
         ).map(_.get).asJava.toCompletableFuture
     }
 
-    val cachedLatestBlocks: CaffeineAsyncCache[ChainIndex, LatestBlock] =
+    @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+    val latestBlockAsyncLoader: AsyncCacheLoader[Pagination, Seq[BlockEntryLite]] = {
+      case (pagination, _) =>
+        run(BlockQueries.listMainChainHeadersSQL(pagination)).asJava.toCompletableFuture
+    }
+
+    val cachedLatestBlocksPerChains: CaffeineAsyncCache[ChainIndex, LatestBlock] =
       CaffeineAsyncCache {
         Caffeine
           .newBuilder()
           .maximumSize(groupConfig.chainNum.toLong)
           .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
-          .buildAsync[ChainIndex, LatestBlock](latestBlockAsyncLoader)
+          .buildAsync[ChainIndex, LatestBlock](latestBlockPerChainsAsyncLoader)
       }
 
     val blockTimeAsyncLoader: AsyncCacheLoader[ChainIndex, Duration] = {
@@ -79,7 +85,7 @@ object BlockCache {
         val chainFrom = GroupIndex.fromProtocol(key.from)
         val chainTo   = GroupIndex.fromProtocol(key.to)
         (for {
-          latestBlock <- cachedLatestBlocks.get(key)
+          latestBlock <- cachedLatestBlocksPerChains.get(key)
           after = latestBlock.timestamp.minusUnsafe(Duration.ofHoursUnsafe(2))
           blockTimes <- run(BlockQueries.getBlockTimes(chainFrom, chainTo, after))
         } yield {
@@ -96,14 +102,24 @@ object BlockCache {
           .buildAsync[ChainIndex, Duration](blockTimeAsyncLoader)
       }
 
+    val cachedLatestBlocks: CaffeineAsyncCache[Pagination, Seq[BlockEntryLite]] =
+      CaffeineAsyncCache {
+        Caffeine
+          .newBuilder()
+          .maximumSize(25)
+          .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
+          .buildAsync[Pagination, Seq[BlockEntryLite]](latestBlockAsyncLoader)
+      }
+
     val cacheRowCount: AsyncReloadingCache[Int] = AsyncReloadingCache(0, 10.seconds) { _ =>
       run(BlockQueries.mainChainQuery.length.result)
     }
 
     new BlockCache(
-      blockTimes   = cachedBlockTimes,
-      rowCount     = cacheRowCount,
-      latestBlockPerChains = cachedLatestBlocks
+      blockTimes           = cachedBlockTimes,
+      rowCount             = cacheRowCount,
+      latestBlockPerChains = cachedLatestBlocksPerChains,
+      latestBlocks         = cachedLatestBlocks
     )
   }
 
@@ -115,7 +131,8 @@ object BlockCache {
   * */
 class BlockCache(blockTimes: CaffeineAsyncCache[ChainIndex, Duration],
                  rowCount: AsyncReloadingCache[Int],
-                 latestBlockPerChains: CaffeineAsyncCache[ChainIndex, LatestBlock]) {
+                 latestBlockPerChains: CaffeineAsyncCache[ChainIndex, LatestBlock],
+                 latestBlocks: CaffeineAsyncCache[Pagination, Seq[BlockEntryLite]]) {
 
   /** Operations on `blockTimes` cache */
   def getAllBlockTimes(chainIndexes: Iterable[ChainIndex])(
@@ -132,4 +149,7 @@ class BlockCache(blockTimes: CaffeineAsyncCache[ChainIndex, Duration],
 
   def getMainChainBlockCount(): Int =
     rowCount.get()
+
+  def listMainChainHeaders(pagination: Pagination): Future[Seq[BlockEntryLite]] =
+    latestBlocks.get(pagination)
 }

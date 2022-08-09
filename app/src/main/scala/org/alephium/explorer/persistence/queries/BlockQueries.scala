@@ -117,14 +117,13 @@ object BlockQueries extends StrictLogging {
   /**
     * Fetches all main_chain [[org.alephium.explorer.persistence.schema.BlockHeaderSchema.table]] rows
     */
-  def listMainChainHeadersWithTxnNumberSQL(
-      pagination: Pagination): DBActionRWT[Vector[BlockEntryLite]] =
-    listMainChainHeadersWithTxnNumberSQLBuilder(pagination)
+  def listMainChainHeadersSQL(pagination: Pagination): DBActionRWT[Vector[BlockEntryLite]] =
+    listMainChainHeadersSQLBuilder(pagination)
       .as[BlockEntryLite](blockEntryListGetResult)
 
   def explainListMainChainHeadersWithTxnNumber(pagination: Pagination)(
       implicit ec: ExecutionContext): DBActionR[ExplainResult] =
-    listMainChainHeadersWithTxnNumberSQLBuilder(pagination).explainAnalyze() map { explain =>
+    listMainChainHeadersSQLBuilder(pagination).explainAnalyze() map { explain =>
       ExplainResult(
         queryName  = "listMainChainHeadersWithTxnNumber",
         queryInput = pagination.toString,
@@ -134,7 +133,7 @@ object BlockQueries extends StrictLogging {
       )
     }
 
-  def listMainChainHeadersWithTxnNumberSQLBuilder(pagination: Pagination): SQLActionBuilder = {
+  def listMainChainHeadersSQLBuilder(pagination: Pagination): SQLActionBuilder = {
     //order by for inner query
     val orderBy =
       if (pagination.reverse) {

@@ -111,9 +111,8 @@ class DBBenchmark {
     */
   @Benchmark
   def listBlocks_Forward_DisabledCP_SQL(state: ListBlocks_Forward_DisabledCP_ReadState): Unit = {
-    implicit val ec: ExecutionContext                = state.config.db.ioExecutionContext
-    implicit val dc: DatabaseConfig[PostgresProfile] = state.config
-    implicit val cache: BlockCache                   = state.blockCache
+    implicit val ec: ExecutionContext = state.config.db.ioExecutionContext
+    implicit val cache: BlockCache    = state.blockCache
 
     val _ =
       Await.result(BlockDao.listMainChain(state.next), requestTimeout)
@@ -121,9 +120,8 @@ class DBBenchmark {
 
   @Benchmark
   def listBlocks_Reverse_DisabledCP_SQL(state: ListBlocks_Reverse_DisabledCP_ReadState): Unit = {
-    implicit val ec: ExecutionContext                = state.config.db.ioExecutionContext
-    implicit val dc: DatabaseConfig[PostgresProfile] = state.config
-    implicit val cache: BlockCache                   = state.blockCache
+    implicit val ec: ExecutionContext = state.config.db.ioExecutionContext
+    implicit val cache: BlockCache    = state.blockCache
 
     val _ =
       Await.result(BlockDao.listMainChain(state.next), requestTimeout)
@@ -137,9 +135,8 @@ class DBBenchmark {
     */
   @Benchmark
   def listBlocks_Forward_HikariCP_SQL_Cached(state: ListBlocks_Forward_HikariCP_ReadState): Unit = {
-    implicit val ec: ExecutionContext                = state.config.db.ioExecutionContext
-    implicit val dc: DatabaseConfig[PostgresProfile] = state.config
-    implicit val cache: BlockCache                   = state.blockCache
+    implicit val ec: ExecutionContext = state.config.db.ioExecutionContext
+    implicit val cache: BlockCache    = state.blockCache
 
     val _ =
       Await.result(BlockDao.listMainChain(state.next), requestTimeout)

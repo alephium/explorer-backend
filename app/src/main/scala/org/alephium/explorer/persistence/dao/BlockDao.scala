@@ -71,9 +71,8 @@ object BlockDao {
 
   def listMainChain(pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile],
       cache: BlockCache): Future[(Seq[BlockEntryLite], Int)] = {
-    run(listMainChainHeadersWithTxnNumberSQL(pagination)).map { blockEntries =>
+    cache.listMainChainHeaders(pagination).map { blockEntries =>
       (blockEntries, cache.getMainChainBlockCount())
     }
   }
