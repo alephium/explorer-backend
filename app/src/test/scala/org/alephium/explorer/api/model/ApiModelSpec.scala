@@ -169,7 +169,8 @@ class ApiModelSpec() extends AlephiumSpec {
      |  "inputs": ${write(utx.inputs)},
      |  "outputs": ${write(utx.outputs)},
      |  "gasAmount": ${utx.gasAmount},
-     |  "gasPrice": "${utx.gasPrice}"
+     |  "gasPrice": "${utx.gasPrice}",
+     |  "lastSeen": ${utx.lastSeen.millis}
      |}""".stripMargin
       check(utx, expected)
     }
