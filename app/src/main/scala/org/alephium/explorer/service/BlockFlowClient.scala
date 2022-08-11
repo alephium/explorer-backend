@@ -154,7 +154,7 @@ object BlockFlowClient {
             utx.unconfirmedTransactions.map { tx =>
               val inputs  = tx.unsigned.inputs.map(inputToUInput).toSeq
               val outputs = tx.unsigned.fixedOutputs.map(outputToUOutput).toSeq
-              txToUTx(tx, utx.fromGroup, utx.toGroup, inputs, outputs)
+              txToUTx(tx, utx.fromGroup, utx.toGroup, inputs, outputs, TimeStamp.now())
             }
           }.toSeq
         }
@@ -287,7 +287,8 @@ object BlockFlowClient {
                       chainFrom: Int,
                       chainTo: Int,
                       inputs: Seq[UInput],
-                      outputs: Seq[UOutput]): UnconfirmedTransaction =
+                      outputs: Seq[UOutput],
+                      timestamp: TimeStamp): UnconfirmedTransaction =
     UnconfirmedTransaction(
       new Transaction.Hash(tx.unsigned.txId),
       GroupIndex.unsafe(chainFrom),
@@ -295,7 +296,8 @@ object BlockFlowClient {
       inputs,
       outputs,
       tx.unsigned.gasAmount,
-      tx.unsigned.gasPrice
+      tx.unsigned.gasPrice,
+      timestamp
     )
 
   private def txToEntity(tx: api.model.Transaction,

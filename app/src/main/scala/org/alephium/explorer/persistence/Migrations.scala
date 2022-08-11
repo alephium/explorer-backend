@@ -40,9 +40,14 @@ object Migrations extends StrictLogging {
   private val updateUOutputPK =
     sqlu"""
       ALTER TABLE uoutputs
-      DROP CONSTRAINT uoutputs_pk CASCADE,
-      ADD PRIMARY KEY(tx_hash, address, uoutput_order);
+      DROP CONSTRAINT IF EXISTS uoutputs_pk CASCADE,
+      ADD CONSTRAINT uoutputs_pk PRIMARY KEY(tx_hash, address, uoutput_order)
     """
+
+  private val addUTransactionLastSeenColumn: DBActionW[Int] = sqlu"""
+    ALTER TABLE utransactions
+    ADD COLUMN IF NOT EXISTS "last_seen" BIGINT DEFAULT 0;
+  """
 
   def migrations(version: Int)(implicit ec: ExecutionContext): DBActionWT[Option[Int]] = {
     logger.debug(s"Current migration version: $version")
@@ -50,6 +55,7 @@ object Migrations extends StrictLogging {
       for {
         _ <- addUOutputOrderColumn
         _ <- updateUOutputPK
+        _ <- addUTransactionLastSeenColumn
       } yield Some(1)
     } else {
       DBIOAction.successful(None)

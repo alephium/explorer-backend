@@ -28,6 +28,7 @@ trait Documentation
     with InfosEndpoints
     with ChartsEndpoints
     with TokensEndpoints
+    with UnconfirmedTransactionEndpoints
     with UtilsEndpoints
     with OpenAPIDocsInterpreter {
   lazy val docs: OpenAPI = toOpenAPI(
@@ -47,6 +48,7 @@ trait Documentation
       areAddressesActive,
       getInfos,
       getHeights,
+      listUnconfirmedTransactions,
       listTokens,
       listTokenTransactions,
       listTokenSupply,

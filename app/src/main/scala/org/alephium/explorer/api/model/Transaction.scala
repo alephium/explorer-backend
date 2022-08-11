@@ -85,7 +85,8 @@ final case class UnconfirmedTransaction(
     inputs: Seq[UInput],
     outputs: Seq[UOutput],
     gasAmount: Int,
-    gasPrice: U256
+    gasPrice: U256,
+    lastSeen: TimeStamp
 ) extends TransactionLike
 
 object UnconfirmedTransaction {
