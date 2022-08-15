@@ -25,7 +25,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.DBActionR
 import org.alephium.explorer.persistence.DBRunner._
-import org.alephium.explorer.persistence.queries.{BlockQueries, ExplainResult, OutputQueries}
+import org.alephium.explorer.persistence.queries._
 
 // scalastyle:off magic.number
 object IndexChecker {
@@ -44,6 +44,10 @@ object IndexChecker {
       latestOutputEntity <- OutputQueries.getMainChainOutputs(false).result.headOption
       d                  <- OutputQueries.explainGetTxnHash(oldestOutputEntity.map(_.key))
       e                  <- OutputQueries.explainGetTxnHash(latestOutputEntity.map(_.key))
-    } yield Seq(a, b, c, d, e).sortBy(_.passed)
+      oldestInputEntity  <- InputQueries.getMainChainInputs(true).result.headOption
+      latestInputEntity  <- InputQueries.getMainChainInputs(false).result.headOption
+      f                  <- InputQueries.explainInputsFromTxsNoJoin(oldestInputEntity.map(_.hashes()).toList)
+      g                  <- InputQueries.explainInputsFromTxsNoJoin(latestInputEntity.map(_.hashes()).toList)
+    } yield Seq(a, b, c, d, e, f, g).sortBy(_.passed)
 
 }
