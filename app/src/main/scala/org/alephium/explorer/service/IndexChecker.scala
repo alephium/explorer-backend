@@ -40,10 +40,10 @@ object IndexChecker {
       a                  <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(0, 20)) //first page
       b                  <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(10000, 20)) //far page
       c                  <- BlockQueries.explainMainChainQuery()
-      oldestOutputEntity <- OutputQueries.getMainChainOutputs(ascendingOrder = true).result.head
-      latestOutputEntity <- OutputQueries.getMainChainOutputs(ascendingOrder = false).result.head
-      d                  <- OutputQueries.explainGetTxnHash(oldestOutputEntity.key)
-      e                  <- OutputQueries.explainGetTxnHash(latestOutputEntity.key)
+      oldestOutputEntity <- OutputQueries.getMainChainOutputs(true).result.headOption
+      latestOutputEntity <- OutputQueries.getMainChainOutputs(false).result.headOption
+      d                  <- OutputQueries.explainGetTxnHash(oldestOutputEntity.map(_.key))
+      e                  <- OutputQueries.explainGetTxnHash(latestOutputEntity.map(_.key))
     } yield Seq(a, b, c, d, e).sortBy(_.passed)
 
 }
