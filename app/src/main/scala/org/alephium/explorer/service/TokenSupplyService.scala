@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.service
 
-import java.time.Instant
+import java.time.{Instant, OffsetTime, ZoneOffset}
 import java.time.temporal.ChronoUnit
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -84,11 +84,16 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
                                       databaseConfig: DatabaseConfig[PostgresProfile],
                                       groupSetting: GroupSetting,
                                       scheduler: Scheduler): Future[Unit] =
-    scheduler.scheduleLoop(
-      taskId        = TokenSupplyService.productPrefix,
-      firstInterval = ScalaDuration.Zero,
-      loopInterval  = interval
+
+    scheduler.scheduleOnce(
+      taskId = TokenSupplyService.productPrefix,
+      delay = ScalaDuration.Zero
+    )(syncOnce()).map{ _=>
+    scheduler.scheduleDailyAt(
+      taskId = TokenSupplyService.productPrefix,
+      at = OffsetTime.of(0,0,0,0,ZoneOffset.UTC).plusSeconds(FinalizerService.finalizationDuration.toSeconds)
     )(syncOnce())
+    }
 
   def syncOnce()(implicit ec: ExecutionContext,
                  dc: DatabaseConfig[PostgresProfile],
