@@ -25,7 +25,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.DBActionR
 import org.alephium.explorer.persistence.DBRunner._
-import org.alephium.explorer.persistence.queries.{BlockQueries, ExplainResult, OutputQueries}
+import org.alephium.explorer.persistence.queries._
 
 // scalastyle:off magic.number
 object IndexChecker {
@@ -40,10 +40,14 @@ object IndexChecker {
       a                  <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(0, 20)) //first page
       b                  <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(10000, 20)) //far page
       c                  <- BlockQueries.explainMainChainQuery()
-      oldestOutputEntity <- OutputQueries.getMainChainOutputs(ascendingOrder = true).result.head
-      latestOutputEntity <- OutputQueries.getMainChainOutputs(ascendingOrder = false).result.head
-      d                  <- OutputQueries.explainGetTxnHash(oldestOutputEntity.key)
-      e                  <- OutputQueries.explainGetTxnHash(latestOutputEntity.key)
-    } yield Seq(a, b, c, d, e).sortBy(_.passed)
+      oldestOutputEntity <- OutputQueries.getMainChainOutputs(true).result.headOption
+      latestOutputEntity <- OutputQueries.getMainChainOutputs(false).result.headOption
+      d                  <- OutputQueries.explainGetTxnHash(oldestOutputEntity.map(_.key))
+      e                  <- OutputQueries.explainGetTxnHash(latestOutputEntity.map(_.key))
+      oldestInputEntity  <- InputQueries.getMainChainInputs(true).result.headOption
+      latestInputEntity  <- InputQueries.getMainChainInputs(false).result.headOption
+      f                  <- InputQueries.explainInputsFromTxsNoJoin(oldestInputEntity.map(_.hashes()).toList)
+      g                  <- InputQueries.explainInputsFromTxsNoJoin(latestInputEntity.map(_.hashes()).toList)
+    } yield Seq(a, b, c, d, e, f, g).sortBy(_.passed)
 
 }

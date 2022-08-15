@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.persistence.queries
 
+import scala.concurrent.ExecutionContext
+
 import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
@@ -24,7 +26,10 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, InputsQR}
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.persistence.schema.InputSchema
+import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
 
 object InputQueries {
@@ -100,10 +105,17 @@ object InputQueries {
   def inputsFromTxsNoJoin(
       hashes: Seq[(Transaction.Hash, BlockEntry.Hash)]): DBActionR[Seq[InputsFromTxQR]] =
     if (hashes.nonEmpty) {
-      val params = paramPlaceholderTuple2(1, hashes.size)
+      inputsFromTxsNoJoinSQLBuilder(hashes).as[InputsFromTxQR]
+    } else {
+      DBIOAction.successful(Seq.empty)
+    }
 
-      val query =
-        s"""
+  private def inputsFromTxsNoJoinSQLBuilder(
+      hashes: Seq[(Transaction.Hash, BlockEntry.Hash)]): SQLActionBuilder = {
+    val params = paramPlaceholderTuple2(1, hashes.size)
+
+    val query =
+      s"""
            |SELECT tx_hash,
            |       input_order,
            |       hint,
@@ -117,21 +129,19 @@ object InputQueries {
            |
            |""".stripMargin
 
-      val parameters: SetParameter[Unit] =
-        (_: Unit, params: PositionedParameters) =>
-          hashes foreach {
-            case (txnHash, blockHash) =>
-              params >> txnHash
-              params >> blockHash
-        }
+    val parameters: SetParameter[Unit] =
+      (_: Unit, params: PositionedParameters) =>
+        hashes foreach {
+          case (txnHash, blockHash) =>
+            params >> txnHash
+            params >> blockHash
+      }
 
-      SQLActionBuilder(
-        queryParts = query,
-        unitPConv  = parameters
-      ).as[InputsFromTxQR]
-    } else {
-      DBIOAction.successful(Seq.empty)
-    }
+    SQLActionBuilder(
+      queryParts = query,
+      unitPConv  = parameters
+    )
+  }
 
   def getInputsQuery(txHash: Transaction.Hash, blockHash: BlockEntry.Hash): DBActionSR[InputsQR] =
     sql"""
@@ -146,4 +156,34 @@ object InputQueries {
           AND block_hash = $blockHash
         ORDER BY input_order
     """.as[InputsQR]
+
+  def getMainChainInputs(ascendingOrder: Boolean): Query[InputSchema.Inputs, InputEntity, Seq] = {
+    val mainChain = InputSchema.table.filter(_.mainChain === true)
+
+    if (ascendingOrder) {
+      mainChain.sortBy(_.timestamp.asc)
+    } else {
+      mainChain.sortBy(_.timestamp.desc)
+    }
+  }
+
+  /** Runs explain on query `inputsFromTxsNoJoin` and checks the index `inputs_tx_hash_block_hash_idx`
+    * is being used */
+  def explainInputsFromTxsNoJoin(hashes: Seq[(Transaction.Hash, BlockEntry.Hash)])(
+      implicit ec: ExecutionContext): DBActionR[ExplainResult] = {
+    val queryName = "inputsFromTxsNoJoin"
+    if (hashes.isEmpty) {
+      DBIOAction.successful(ExplainResult.emptyInput(queryName))
+    } else {
+      inputsFromTxsNoJoinSQLBuilder(hashes).explainAnalyze() map { explain =>
+        ExplainResult(
+          queryName  = queryName,
+          queryInput = hashes.toString(),
+          explain    = explain,
+          messages   = Iterable.empty,
+          passed     = explain.exists(_.contains("inputs_tx_hash_block_hash_idx"))
+        )
+      }
+    }
+  }
 }
