@@ -14,12 +14,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.benchmark.db.state
+package org.alephium.explorer.benchmark.db.state.spec
 
 import scala.concurrent.duration._
 
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.benchmark.db.DBExecutor
+import org.alephium.explorer.benchmark.db.state.{ByteaWriteState, VarcharWriteState, WriteBenchmarkState}
 import org.alephium.explorer.util.TestUtils._
 
 /**
