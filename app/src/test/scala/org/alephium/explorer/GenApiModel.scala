@@ -115,7 +115,16 @@ object GenApiModel {
       outputs   <- Gen.listOfN(3, uoutputGen)
       gasAmount <- Gen.posNum[Int]
       gasPrice  <- u256Gen
-    } yield UnconfirmedTransaction(hash, chainFrom, chainTo, inputs, outputs, gasAmount, gasPrice)
+      lastSeen  <- timestampGen
+    } yield
+      UnconfirmedTransaction(hash,
+                             chainFrom,
+                             chainTo,
+                             inputs,
+                             outputs,
+                             gasAmount,
+                             gasPrice,
+                             lastSeen)
 
   def chainIndexes(implicit groupSetting: GroupSetting): Seq[(GroupIndex, GroupIndex)] =
     for {

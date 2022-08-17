@@ -216,6 +216,9 @@ class InfosServerSpec()
 
       def getTotalNumber()(implicit cache: TransactionCache): Int = 10
 
+      def listUnconfirmedTransactions(pagination: Pagination)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]] = ???
       def getTokenBalance(address: Address, token: Hash)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] = ???

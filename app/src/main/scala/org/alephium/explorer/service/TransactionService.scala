@@ -61,6 +61,10 @@ trait TransactionService {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Seq[Boolean]]
 
+  def listUnconfirmedTransactions(pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]]
+
   def listTokens(pagination: Pagination)(implicit ec: ExecutionContext,
                                          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]]
 
@@ -122,6 +126,12 @@ object TransactionService extends TransactionService {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
     TransactionDao.getTokenBalance(address, token)
+
+  def listUnconfirmedTransactions(pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]] = {
+    UnconfirmedTxDao.list(pagination)
+  }
 
   def listTokens(pagination: Pagination)(implicit ec: ExecutionContext,
                                          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] =
