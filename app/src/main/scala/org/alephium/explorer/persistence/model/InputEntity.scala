@@ -42,4 +42,8 @@ final case class InputEntity(
       Some(outputRef.amount),
       outputRef.tokens
     )
+
+  /** @return All hash types associated with this [[InputEntity]] */
+  def hashes(): (Transaction.Hash, BlockEntry.Hash) =
+    (txHash, blockHash)
 }

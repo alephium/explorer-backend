@@ -29,9 +29,7 @@ import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.InputEntity
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, InputsQR}
-import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.persistence.schema.InputSchema
-import org.alephium.explorer.util.SlickExplainUtil._
 
 class InputQueriesSpec
     extends AlephiumSpec
@@ -175,49 +173,25 @@ class InputQueriesSpec
     }
   }
 
-  "index 'inputs_tx_hash_block_hash_idx'" should {
-    "get used" when {
-      "accessing column tx_hash" ignore {
-        forAll(Gen.listOf(inputEntityGen())) { inputs =>
-          run(InputSchema.table.delete).futureValue
-          run(InputSchema.table ++= inputs).futureValue
+  "getMainChainInputs" should {
+    "return main_chain InputEntities in order" in {
+      forAll(Gen.listOf(inputEntityGen())) { inputs =>
+        run(InputSchema.table.delete).futureValue
+        run(InputSchema.table ++= inputs).futureValue
 
-          inputs foreach { input =>
-            val query =
-              sql"""
-                   |SELECT *
-                   |FROM inputs
-                   |where tx_hash = ${input.txHash}
-                   |""".stripMargin
+        val expected = inputs.filter(_.mainChain).sortBy(_.timestamp)
 
-            val explain = run(query.explain()).futureValue.mkString("\n")
-
-            explain should include("inputs_tx_hash_block_hash_idx")
-          }
+        //Ascending order
+        locally {
+          val actual = run(InputQueries.getMainChainInputs(true).result).futureValue
+          actual should contain inOrderElementsOf expected
         }
-      }
-    }
-  }
 
-  "index 'inputs_pk'" should {
-    "get used" when {
-      "accessing column output_ref_key" ignore {
-        forAll(Gen.listOf(inputEntityGen())) { inputs =>
-          run(InputSchema.table.delete).futureValue
-          run(InputSchema.table ++= inputs).futureValue
-
-          inputs foreach { input =>
-            val query =
-              sql"""
-                   |SELECT *
-                   |FROM inputs
-                   |where output_ref_key = ${input.outputRefKey}
-                   |""".stripMargin
-
-            val explain = run(query.explain()).futureValue.mkString("\n")
-
-            explain should include("inputs_pk")
-          }
+        //Descending order
+        locally {
+          val expectedReversed = expected.reverse
+          val actual           = run(InputQueries.getMainChainInputs(false).result).futureValue
+          actual should contain inOrderElementsOf expectedReversed
         }
       }
     }

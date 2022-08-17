@@ -392,26 +392,36 @@ object OutputQueries {
   }
 
   /** Checks that [[getTxnHash]] uses both indexes for the given key */
-  def explainGetTxnHash(key: Hash)(implicit ec: ExecutionContext): DBActionR[ExplainResult] =
-    getTxnHashSQL(key).explainAnalyze() map { explain =>
-      val explainString               = explain.mkString
-      val outputs_pk_used             = explainString contains "outputs_pk"
-      val outputs_main_chain_idx_used = explainString contains "outputs_main_chain_idx"
-      val passed                      = outputs_pk_used && outputs_main_chain_idx_used
-      val message =
-        Seq(
-          s"Used outputs_main_chain_idx = $outputs_main_chain_idx_used",
-          s"Used outputs_pk             = $outputs_pk_used"
-        )
+  def explainGetTxnHash(key: Option[Hash])(
+      implicit ec: ExecutionContext): DBActionR[ExplainResult] = {
+    val queryName = "getTxnHashSQL"
 
-      ExplainResult(
-        queryName  = "getTxnHashSQL",
-        queryInput = key.toString(),
-        explain    = explain,
-        messages   = message,
-        passed     = passed
-      )
+    key match {
+      case Some(key) =>
+        getTxnHashSQL(key).explainAnalyze() map { explain =>
+          val explainString               = explain.mkString
+          val outputs_pk_used             = explainString contains "outputs_pk"
+          val outputs_main_chain_idx_used = explainString contains "outputs_main_chain_idx"
+          val passed                      = outputs_pk_used && outputs_main_chain_idx_used
+          val message =
+            Seq(
+              s"Used outputs_main_chain_idx = $outputs_main_chain_idx_used",
+              s"Used outputs_pk             = $outputs_pk_used"
+            )
+
+          ExplainResult(
+            queryName  = queryName,
+            queryInput = key.toString(),
+            explain    = explain,
+            messages   = message,
+            passed     = passed
+          )
+        }
+
+      case None =>
+        DBIOAction.successful(ExplainResult.emptyInput(queryName))
     }
+  }
 
   def getTxnHash(key: Hash): DBActionR[Vector[Transaction.Hash]] =
     getTxnHashSQL(key).as[Transaction.Hash]
