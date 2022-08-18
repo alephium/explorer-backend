@@ -204,6 +204,11 @@ class InfosServerSpec()
           dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
         Future.successful(Seq.empty)
 
+      override def listP2pkhTransactionsByAddress(address: Address)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]] =
+        Future.successful(Seq.empty)
+
       override def getTransactionsByAddress(address: Address, pagination: Pagination)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =

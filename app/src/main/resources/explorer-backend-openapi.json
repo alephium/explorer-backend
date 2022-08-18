@@ -859,6 +859,105 @@
         }
       }
     },
+    "/addresses/{address}/p2pkh-unconfirmed-transactions": {
+      "get": {
+        "tags": [
+          "Addresses"
+        ],
+        "description": "List unconfirmed transactions of a given address",
+        "operationId": "getAddressesAddressP2pkh-unconfirmed-transactions",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnconfirmedTransaction"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/addresses/{address}/balance": {
       "get": {
         "tags": [
@@ -3482,6 +3581,22 @@
           }
         }
       },
+      "IndexedAddress": {
+        "required": [
+          "address",
+          "index"
+        ],
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "index": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "Input": {
         "required": [
           "outputRef"
@@ -3492,7 +3607,7 @@
             "$ref": "#/components/schemas/OutputRef"
           },
           "unlockScript": {
-            "type": "string"
+            "$ref": "#/components/schemas/UnlockScript"
           },
           "address": {
             "type": "string"
@@ -3599,6 +3714,59 @@
           "key": {
             "type": "string",
             "format": "32-byte-hash"
+          }
+        }
+      },
+      "P2MPKH": {
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "indexedAddresses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IndexedAddress"
+            }
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "P2PKH": {
+        "required": [
+          "address",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "P2SH": {
+        "required": [
+          "script",
+          "params",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "script": {
+            "type": "string",
+            "format": "hex-string"
+          },
+          "params": {
+            "type": "string",
+            "format": "hex-string"
+          },
+          "type": {
+            "type": "string"
           }
         }
       },
@@ -3841,7 +4009,8 @@
       },
       "UInput": {
         "required": [
-          "outputRef"
+          "outputRef",
+          "unlockScript"
         ],
         "type": "object",
         "properties": {
@@ -3849,7 +4018,7 @@
             "$ref": "#/components/schemas/OutputRef"
           },
           "unlockScript": {
-            "type": "string"
+            "$ref": "#/components/schemas/UnlockScript"
           }
         }
       },
@@ -3934,6 +4103,27 @@
           },
           "type": {
             "type": "string"
+          }
+        }
+      },
+      "UnlockScript": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/P2MPKH"
+          },
+          {
+            "$ref": "#/components/schemas/P2PKH"
+          },
+          {
+            "$ref": "#/components/schemas/P2SH"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "P2MPKH": "#/components/schemas/P2MPKH",
+            "P2PKH": "#/components/schemas/P2PKH",
+            "P2SH": "#/components/schemas/P2SH"
           }
         }
       }

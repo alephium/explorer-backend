@@ -175,7 +175,9 @@ trait ExplorerSpec
           val expectedBlocks = blocks.sortBy(_.timestamp).reverse.slice(drop, drop + limit)
           val res            = responseAs[ListBlocks]
           val hashes         = res.blocks.map(_.hash)
+
           expectedBlocks.size is hashes.size
+
           res.total is blocks.size
         }
     }

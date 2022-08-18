@@ -41,6 +41,7 @@ trait Documentation
       getAddressInfo,
       getTransactionsByAddress,
       getTotalTransactionsByAddress,
+      p2pkhUnconfirmedTransactions,
       getAddressBalance,
       listAddressTokens,
       listAddressTokenTransactions,

@@ -40,6 +40,10 @@ trait UnconfirmedTxDao {
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]]
 
+  def listByP2PKHAddress(address: Address)(
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]]
+
   def insertMany(utxs: Seq[UnconfirmedTransaction])(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit]
@@ -99,7 +103,35 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
           tx.hash,
           tx.chainFrom,
           tx.chainTo,
-          inputs.filter(_.txHash == tx.hash).map(_.toApi),
+          inputs.filter(_.txHash == tx.hash).sortBy(_.uinputOrder).map(_.toApi),
+          outputs.filter(_.txHash == tx.hash).sortBy(_.uoutputOrder).map(_.toApi),
+          tx.gasAmount,
+          tx.gasPrice,
+          tx.lastSeen
+        )
+      }
+    })
+  }
+
+  def listByP2PKHAddress(address: Address)(
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]] = {
+    run(for {
+      txHashes <- UInputSchema.table
+        .filter(_.p2pkhAddress === address)
+        .map(_.txHash)
+        .distinct
+        .result
+      txs     <- UnconfirmedTxSchema.table.filter(_.hash inSet txHashes).sortBy(_.lastSeen.desc).result
+      inputs  <- UInputSchema.table.filter(_.txHash inSet txHashes).result
+      outputs <- UOutputSchema.table.filter(_.txHash inSet txHashes).result
+    } yield {
+      txs.map { tx =>
+        UnconfirmedTransaction(
+          tx.hash,
+          tx.chainFrom,
+          tx.chainTo,
+          inputs.filter(_.txHash == tx.hash).sortBy(_.uinputOrder).map(_.toApi),
           outputs.filter(_.txHash == tx.hash).sortBy(_.uoutputOrder).map(_.toApi),
           tx.gasAmount,
           tx.gasPrice,

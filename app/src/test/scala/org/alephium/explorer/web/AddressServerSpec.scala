@@ -139,6 +139,15 @@ class AddressServerSpec()
     }
   }
 
+  "list unconfirmed transactions for a given address" in new Fixture {
+    forAll(addressGen) {
+      case (address) =>
+        Get(s"/addresses/${address}/p2pkh-unconfirmed-transactions") ~> server.route ~> check {
+          responseAs[Seq[UnconfirmedTransaction]] is Seq(unconfirmedTx)
+        }
+    }
+  }
+
   trait Fixture {
 
     implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
@@ -146,6 +155,8 @@ class AddressServerSpec()
     lazy val transactionService = new EmptyTransactionService {}
 
     lazy val server = new AddressServer(transactionService)
+
+    val unconfirmedTx = utransactionGen.sample.get
 
     trait EmptyTransactionService extends TransactionService {
       override def getTransaction(transactionHash: Transaction.Hash)(
@@ -167,6 +178,12 @@ class AddressServerSpec()
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
         Future.successful(Seq.empty)
+
+      override def listP2pkhTransactionsByAddress(address: Address)(
+          implicit ec: ExecutionContext,
+          dc: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]] = {
+        Future.successful(Seq(unconfirmedTx))
+      }
 
       override def getTransactionsByAddress(address: Address, pagination: Pagination)(
           implicit ec: ExecutionContext,

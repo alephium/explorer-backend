@@ -48,6 +48,10 @@ class AddressServer(transactionService: TransactionService)(
           transactionService
             .getTransactionsByAddressSQL(address, pagination)
       }) ~
+      toRoute(p2pkhUnconfirmedTransactions.serverLogicSuccess[Future] { address =>
+        transactionService
+          .listP2pkhTransactionsByAddress(address)
+      }) ~
       toRoute(getAddressInfo.serverLogicSuccess[Future] { address =>
         for {
           (balance, locked) <- transactionService.getBalance(address)
