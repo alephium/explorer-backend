@@ -43,7 +43,7 @@ final case class InputsFromTxQR(txHash: Transaction.Hash,
                                 inputOrder: Int,
                                 hint: Int,
                                 outputRefKey: Hash,
-                                unlockScript: Option[String],
+                                unlockScript: Option[UnlockScript],
                                 address: Option[Address],
                                 amount: Option[U256],
                                 token: Option[Seq[Token]]) {

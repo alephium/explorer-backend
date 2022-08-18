@@ -129,7 +129,7 @@ class ApiModelSpec() extends AlephiumSpec {
       val expected = s"""
      |{
      |  "outputRef": ${write(input.outputRef)}
-     |  ${input.unlockScript.map(script => s""","unlockScript": "${script}"""").getOrElse("")}
+     |  ${input.unlockScript.map(script => s""","unlockScript": ${write(script)}""").getOrElse("")}
      |  ${input.address.map(address => s""","address": "${address}"""").getOrElse("")}
      |  ${input.attoAlphAmount
                           .map(attoAlphAmount => s""","attoAlphAmount": "${attoAlphAmount}"""")

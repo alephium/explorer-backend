@@ -23,10 +23,10 @@ import org.alephium.util.U256
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 final case class Input(
     outputRef: OutputRef,
-    unlockScript: Option[String] = None,
-    address: Option[Address]     = None,
-    attoAlphAmount: Option[U256] = None,
-    tokens: Option[Seq[Token]]   = None
+    unlockScript: Option[UnlockScript] = None,
+    address: Option[Address]           = None,
+    attoAlphAmount: Option[U256]       = None,
+    tokens: Option[Seq[Token]]         = None
 )
 
 object Input {

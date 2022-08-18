@@ -39,7 +39,7 @@ object InputsQR {
 /** Query result for [[org.alephium.explorer.persistence.queries.InputQueries.getInputsQuery]] */
 final case class InputsQR(hint: Int,
                           outputRefKey: Hash,
-                          unlockScript: Option[String],
+                          unlockScript: Option[UnlockScript],
                           outputRefAddress: Option[Address],
                           outputRefAmount: Option[U256],
                           outputRefTokens: Option[Seq[Token]]) {

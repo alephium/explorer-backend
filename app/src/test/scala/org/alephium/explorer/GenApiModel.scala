@@ -70,10 +70,10 @@ object GenApiModel {
 
   val inputGen: Gen[Input] = for {
     outputRef    <- outputRefGen
-    unlockScript <- Gen.option(hashGen.map(_.bytes))
+    unlockScript <- Gen.option(unlockScriptGen)
     address      <- Gen.option(addressGen)
     amount       <- Gen.option(amountGen)
-  } yield Input(outputRef, unlockScript.map(Hex.toHexString(_)), address, amount)
+  } yield Input(outputRef, unlockScript, address, amount)
 
   val uinputGen: Gen[UInput] = for {
     outputRef    <- outputRefGen

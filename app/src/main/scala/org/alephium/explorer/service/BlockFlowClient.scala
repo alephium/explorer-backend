@@ -329,6 +329,7 @@ object BlockFlowClient {
     )
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   private def inputToEntity(input: api.model.AssetInput,
                             blockHash: BlockEntry.Hash,
                             txId: Hash,
@@ -336,13 +337,14 @@ object BlockFlowClient {
                             mainChain: Boolean,
                             index: Int,
                             txOrder: Int): InputEntity = {
+    val unlockScript = input.toProtocol().toOption.get.unlockScript
     InputEntity(
       blockHash,
       new Transaction.Hash(txId),
       timestamp,
       input.outputRef.hint,
       input.outputRef.key,
-      Some(Hex.toHexString(input.unlockScript)),
+      Some(UnlockScript.fromProtocol(unlockScript)),
       mainChain,
       index,
       txOrder,
