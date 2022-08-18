@@ -25,7 +25,7 @@ import org.scalacheck.Gen
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.ALPH
-import org.alephium.util.{Base58, Hex, Number, U256}
+import org.alephium.util.{Base58, Number, U256}
 
 /** Generators for types supplied by `org.alephium.explorer.api.model` package */
 object GenApiModel {
@@ -77,8 +77,8 @@ object GenApiModel {
 
   val uinputGen: Gen[UInput] = for {
     outputRef    <- outputRefGen
-    unlockScript <- Gen.option(hashGen.map(_.bytes))
-  } yield UInput(outputRef, unlockScript.map(Hex.toHexString(_)))
+    unlockScript <- unlockScriptGen
+  } yield UInput(outputRef, unlockScript)
 
   val tokenGen: Gen[Token] = for {
     id     <- hashGen

@@ -17,13 +17,15 @@
 package org.alephium.explorer.persistence.model
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{OutputRef, Transaction, UInput}
+import org.alephium.explorer.api.model.{Address, OutputRef, Transaction, UInput, UnlockScript}
 
 final case class UInputEntity(
     txHash: Transaction.Hash,
     hint: Int,
     outputRefKey: Hash,
-    unlockScript: Option[String]
+    unlockScript: UnlockScript,
+    p2pkhAddress: Option[Address],
+    uinputOrder: Int
 ) {
   val toApi: UInput = UInput(
     OutputRef(hint, outputRefKey),

@@ -41,7 +41,7 @@ import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.mining.HashRate
 import org.alephium.protocol.model.{Hint, Target}
 import org.alephium.protocol.vm.LockupScript
-import org.alephium.util.{Duration, Hex, Service, TimeStamp, U256}
+import org.alephium.util.{Duration, Service, TimeStamp, U256}
 
 trait BlockFlowClient extends Service {
   def fetchBlock(fromGroup: GroupIndex, hash: BlockEntry.Hash): Future[BlockEntity]
@@ -322,10 +322,12 @@ object BlockFlowClient {
       if (tx.scriptSignatures.isEmpty) None else Some(tx.scriptSignatures.toSeq)
     )
 
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   private def inputToUInput(input: api.model.AssetInput): UInput = {
+    val unlockScript = input.toProtocol().toOption.get.unlockScript
     UInput(
       OutputRef(input.outputRef.hint, input.outputRef.key),
-      Some(Hex.toHexString(input.unlockScript))
+      UnlockScript.fromProtocol(unlockScript)
     )
   }
 
