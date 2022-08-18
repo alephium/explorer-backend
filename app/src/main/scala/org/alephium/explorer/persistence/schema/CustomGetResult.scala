@@ -82,6 +82,18 @@ object CustomGetResult {
         .map(bytes =>
           deserialize[AVector[Token]](ByteString.fromArrayUnsafe(bytes)).toOption.get.toSeq)
 
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  implicit val unlockScriptGetResult: GetResult[UnlockScript] =
+    (result: PositionedResult) =>
+      deserialize[UnlockScript](ByteString.fromArrayUnsafe(result.nextBytes())).toOption.get
+
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  implicit val unlockOptionScriptGetResult: GetResult[Option[UnlockScript]] =
+    (result: PositionedResult) =>
+      result.nextBytesOption().map { bytes =>
+        deserialize[UnlockScript](ByteString.fromArrayUnsafe(bytes)).toOption.get
+    }
+
   implicit val hashGetResult: GetResult[Hash] =
     (result: PositionedResult) => Hash.unsafe(ByteString.fromArrayUnsafe(result.nextBytes()))
 

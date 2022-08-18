@@ -111,6 +111,13 @@ object CustomJdbcTypes {
       bytes  => deserialize[AVector[Token]](ByteString.fromArrayUnsafe(bytes)).toOption.get.toSeq
     )
 
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  implicit val unlockScriptType: JdbcType[UnlockScript] =
+    MappedJdbcType.base[UnlockScript, Array[Byte]](
+      unlockScript => serialize(unlockScript).toArray,
+      bytes        => deserialize[UnlockScript](ByteString.fromArrayUnsafe(bytes)).toOption.get
+    )
+
   implicit val intervalTypeType: JdbcType[IntervalType] =
     MappedJdbcType.base[IntervalType, Int](
       _.value,

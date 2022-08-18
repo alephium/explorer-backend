@@ -46,6 +46,28 @@ object GenApiModel {
     key  <- hashGen
   } yield OutputRef(hint, key)
 
+  val unlockScriptP2PKHGen: Gen[UnlockScript.P2PKH] =
+    addressGen.map(UnlockScript.P2PKH.apply)
+
+  val unlockScriptP2MPKHGen: Gen[UnlockScript.P2MPKH] =
+    Gen
+      .listOf(addressGen)
+      .map(addresses =>
+        UnlockScript.P2MPKH.apply(addresses.zipWithIndex.map {
+          case (address, index) => UnlockScript.P2MPKH.IndexedAddress(address, index)
+        }))
+
+  val unlockScriptP2SHGen: Gen[UnlockScript.P2SH] =
+    for {
+      script <- bytesGen
+      params <- bytesGen
+    } yield UnlockScript.P2SH(script, params)
+
+  val unlockScriptGen: Gen[UnlockScript] =
+    Gen.oneOf(unlockScriptP2PKHGen: Gen[UnlockScript],
+              unlockScriptP2MPKHGen: Gen[UnlockScript],
+              unlockScriptP2SHGen: Gen[UnlockScript])
+
   val inputGen: Gen[Input] = for {
     outputRef    <- outputRefGen
     unlockScript <- Gen.option(hashGen.map(_.bytes))
