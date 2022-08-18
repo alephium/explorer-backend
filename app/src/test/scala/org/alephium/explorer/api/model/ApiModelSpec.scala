@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.api.model
 
+import org.scalacheck.Gen
+
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.GenApiModel._
@@ -139,21 +141,55 @@ class ApiModelSpec() extends AlephiumSpec {
     }
   }
 
+  "UnlockScript.P2MPKH.IndexedAddress" in {
+    forAll(addressGen, Gen.posNum[Int]) {
+      case (address, index) =>
+        val indexedAddress = UnlockScript.P2MPKH.IndexedAddress(address, index)
+        val expected =
+          s"""
+        |{
+        |  "address": "$address",
+        |  "index": $index
+        |}""".stripMargin
+        check(indexedAddress, expected)
+    }
+  }
+
+  "UnlockScript" in {
+    forAll(unlockScriptGen) { unlockScript =>
+      val expected = unlockScript match {
+        case UnlockScript.P2PKH(address) =>
+          s"""
+            |{
+            |  "type": "p2pkh",
+            |  "address": "$address"
+            |}""".stripMargin
+        case UnlockScript.P2MPKH(addresses) =>
+          s"""
+            |{
+            |  "type": "p2mpkh",
+            |  "indexedAddresses": ${write(addresses)}
+            |}""".stripMargin
+        case UnlockScript.P2SH(script, params) =>
+          s"""
+            |{
+            |  "type": "p2sh",
+            |  "script": ${write(script)},
+            |  "params": ${write(params)}
+            |}""".stripMargin
+      }
+      check(unlockScript, expected)
+    }
+  }
+
   "UInput" in {
     forAll(uinputGen) { uinput =>
-      val expected = uinput.unlockScript match {
-        case None =>
-          s"""
-          |{
-          |  "outputRef": ${write(uinput.outputRef)}
-          |}""".stripMargin
-        case Some(unlockScript) =>
-          s"""
-          |{
-          |  "outputRef": ${write(uinput.outputRef)},
-          |  "unlockScript": "${unlockScript}"
-          |}""".stripMargin
-      }
+      val expected =
+        s"""
+        |{
+        |  "outputRef": ${write(uinput.outputRef)},
+        |  "unlockScript": ${write(uinput.unlockScript)}
+        |}""".stripMargin
       check(uinput, expected)
     }
   }
