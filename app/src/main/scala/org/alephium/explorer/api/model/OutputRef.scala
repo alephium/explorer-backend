@@ -19,9 +19,15 @@ package org.alephium.explorer.api.model
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.Json.hashReadWriter
 import org.alephium.json.Json._
+import org.alephium.serde._
 
 final case class OutputRef(hint: Int, key: Hash)
 
 object OutputRef {
   implicit val readWriter: ReadWriter[OutputRef] = macroRW
+
+  implicit val serde: Serde[OutputRef] = Serde.forProduct2(
+    OutputRef.apply,
+    or => (or.hint, or.key)
+  )
 }

@@ -18,9 +18,10 @@ package org.alephium.explorer.api.model
 
 import org.alephium.api.UtilJson.{timestampReader, timestampWriter}
 import org.alephium.explorer
-import org.alephium.explorer.HashCompanion
+import org.alephium.explorer.{seqSerde, HashCompanion}
 import org.alephium.explorer.api.Json.{hashReadWriter, u256ReadWriter}
 import org.alephium.json.Json._
+import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
 
 final case class Transaction(
@@ -91,4 +92,19 @@ final case class UnconfirmedTransaction(
 
 object UnconfirmedTransaction {
   implicit val utxRW: ReadWriter[UnconfirmedTransaction] = macroRW
+
+  implicit val serde: Serde[UnconfirmedTransaction] = Serde.forProduct8(
+    UnconfirmedTransaction.apply,
+    utx =>
+      (
+        utx.hash,
+        utx.chainFrom,
+        utx.chainTo,
+        utx.inputs,
+        utx.outputs,
+        utx.gasAmount,
+        utx.gasPrice,
+        utx.lastSeen
+    )
+  )
 }

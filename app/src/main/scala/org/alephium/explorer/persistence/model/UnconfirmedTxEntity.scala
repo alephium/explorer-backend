@@ -25,7 +25,8 @@ final case class UnconfirmedTxEntity(
     chainTo: GroupIndex,
     gasAmount: Int,
     gasPrice: U256,
-    lastSeen: TimeStamp
+    lastSeen: TimeStamp,
+    transaction: UnconfirmedTransaction
 )
 
 object UnconfirmedTxEntity {
@@ -37,7 +38,8 @@ object UnconfirmedTxEntity {
        utx.chainTo,
        utx.gasAmount,
        utx.gasPrice,
-       utx.lastSeen
+       utx.lastSeen,
+       utx
      ),
      utx.inputs.zipWithIndex.map {
        case (input, order) =>

@@ -127,6 +127,16 @@ object CustomJdbcTypes {
       }
     )
 
+  implicit val unconfirmedTxType: JdbcType[UnconfirmedTransaction] =
+    MappedJdbcType.base[UnconfirmedTransaction, Array[Byte]](
+      utx => serialize(utx).toArray,
+      bytes =>
+        deserialize[UnconfirmedTransaction](ByteString.fromArrayUnsafe(bytes)) match {
+          case Left(error)  => throw error
+          case Right(value) => value
+      }
+    )
+
   implicit val intervalTypeType: JdbcType[IntervalType] =
     MappedJdbcType.base[IntervalType, Int](
       _.value,

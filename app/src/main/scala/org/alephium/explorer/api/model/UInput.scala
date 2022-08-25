@@ -17,6 +17,7 @@
 package org.alephium.explorer.api.model
 
 import org.alephium.json.Json._
+import org.alephium.serde._
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 final case class UInput(
@@ -26,4 +27,9 @@ final case class UInput(
 
 object UInput {
   implicit val readWriter: ReadWriter[UInput] = macroRW
+
+  implicit val serde: Serde[UInput] = Serde.forProduct2(
+    UInput.apply,
+    ui => (ui.outputRef, ui.unlockScript)
+  )
 }

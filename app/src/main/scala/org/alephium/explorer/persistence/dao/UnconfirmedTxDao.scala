@@ -67,21 +67,8 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Option[UnconfirmedTransaction]] = {
     run(for {
       maybeTx <- UnconfirmedTxSchema.table.filter(_.hash === hash).result.headOption
-      inputs  <- UInputSchema.table.filter(_.txHash === hash).result
-      outputs <- UOutputSchema.table.filter(_.txHash === hash).sortBy(_.uoutputOrder).result
     } yield {
-      maybeTx.map { tx =>
-        UnconfirmedTransaction(
-          tx.hash,
-          tx.chainFrom,
-          tx.chainTo,
-          inputs.map(_.toApi),
-          outputs.map(_.toApi),
-          tx.gasAmount,
-          tx.gasPrice,
-          tx.lastSeen
-        )
-      }
+      maybeTx.map(_.transaction)
     })
   }
 
@@ -93,23 +80,8 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
     val toDrop = offset * limit
     run(for {
       txs <- UnconfirmedTxSchema.table.sortBy(_.lastSeen.desc).drop(toDrop).take(limit).result
-      txHashes = txs.map(_.hash)
-      inputs  <- UInputSchema.table.filter(_.txHash inSet txHashes).result
-      outputs <- UOutputSchema.table.filter(_.txHash inSet txHashes).result
     } yield {
-
-      txs.map { tx =>
-        UnconfirmedTransaction(
-          tx.hash,
-          tx.chainFrom,
-          tx.chainTo,
-          inputs.filter(_.txHash == tx.hash).sortBy(_.uinputOrder).map(_.toApi),
-          outputs.filter(_.txHash == tx.hash).sortBy(_.uoutputOrder).map(_.toApi),
-          tx.gasAmount,
-          tx.gasPrice,
-          tx.lastSeen
-        )
-      }
+      txs.map(_.transaction)
     })
   }
 
@@ -122,22 +94,9 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
         .map(_.txHash)
         .distinct
         .result
-      txs     <- UnconfirmedTxSchema.table.filter(_.hash inSet txHashes).sortBy(_.lastSeen.desc).result
-      inputs  <- UInputSchema.table.filter(_.txHash inSet txHashes).result
-      outputs <- UOutputSchema.table.filter(_.txHash inSet txHashes).result
+      txs <- UnconfirmedTxSchema.table.filter(_.hash inSet txHashes).sortBy(_.lastSeen.desc).result
     } yield {
-      txs.map { tx =>
-        UnconfirmedTransaction(
-          tx.hash,
-          tx.chainFrom,
-          tx.chainTo,
-          inputs.filter(_.txHash == tx.hash).sortBy(_.uinputOrder).map(_.toApi),
-          outputs.filter(_.txHash == tx.hash).sortBy(_.uoutputOrder).map(_.toApi),
-          tx.gasAmount,
-          tx.gasPrice,
-          tx.lastSeen
-        )
-      }
+      txs.map(_.transaction)
     })
   }
 

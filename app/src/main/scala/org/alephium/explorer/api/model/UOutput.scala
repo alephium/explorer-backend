@@ -19,6 +19,7 @@ package org.alephium.explorer.api.model
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.api.Json.u256ReadWriter
 import org.alephium.json.Json._
+import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -30,4 +31,9 @@ final case class UOutput(
 
 object UOutput {
   implicit val readWriter: ReadWriter[UOutput] = macroRW
+
+  implicit val serde: Serde[UOutput] = Serde.forProduct3(
+    UOutput.apply,
+    uo => (uo.amount, uo.address, uo.lockTime)
+  )
 }

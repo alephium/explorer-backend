@@ -19,6 +19,7 @@ package org.alephium.explorer.api.model
 import upickle.core.Abort
 
 import org.alephium.json.Json._
+import org.alephium.serde._
 
 final class GroupIndex(val value: Int) extends AnyVal {
   override def toString(): String = value.toString
@@ -44,4 +45,6 @@ object GroupIndex {
                                           case Right(groupIndex) => groupIndex
                                           case Left(error)       => throw new Abort(error)
                                       })
+
+  implicit val serde: Serde[GroupIndex] = intSerde.xmap(unsafe, _.value)
 }

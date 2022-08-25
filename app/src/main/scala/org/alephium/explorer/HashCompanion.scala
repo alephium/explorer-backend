@@ -17,11 +17,14 @@
 package org.alephium.explorer
 
 import org.alephium.json.Json._
-import org.alephium.serde.RandomBytes
+import org.alephium.serde._
 
 abstract class HashCompanion[A <: RandomBytes, H](fromHash: A => H, toHash: H => A)(
-    implicit aReadWriter: ReadWriter[A]) {
+    implicit aReadWriter: ReadWriter[A],
+    aSerde: Serde[A]) {
 
   implicit val codec: ReadWriter[H] =
     ReadWriter.join(aReadWriter.map(fromHash), aReadWriter.comap(toHash))
+
+  implicit val serde: Serde[H] = aSerde.xmap(fromHash, toHash)
 }
