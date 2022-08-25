@@ -322,16 +322,18 @@ object BlockFlowClient {
       if (tx.scriptSignatures.isEmpty) None else Some(tx.scriptSignatures.toSeq)
     )
 
-  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   private def inputToUInput(input: api.model.AssetInput): UInput = {
-    val unlockScript = input.toProtocol().toOption.get.unlockScript
+    val unlockScript = input.toProtocol() match {
+      case Left(error)  => throw new ExplorerError.InvalidProtocolInput(error)
+      case Right(value) => value.unlockScript
+    }
+
     UInput(
       OutputRef(input.outputRef.hint, input.outputRef.key),
       UnlockScript.fromProtocol(unlockScript)
     )
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   private def inputToEntity(input: api.model.AssetInput,
                             blockHash: BlockEntry.Hash,
                             txId: Hash,
@@ -339,7 +341,10 @@ object BlockFlowClient {
                             mainChain: Boolean,
                             index: Int,
                             txOrder: Int): InputEntity = {
-    val unlockScript = input.toProtocol().toOption.get.unlockScript
+    val unlockScript = input.toProtocol() match {
+      case Left(error)  => throw new ExplorerError.InvalidProtocolInput(error)
+      case Right(value) => value.unlockScript
+    }
     InputEntity(
       blockHash,
       new Transaction.Hash(txId),

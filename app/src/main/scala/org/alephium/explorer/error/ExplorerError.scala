@@ -57,6 +57,10 @@ object ExplorerError {
         s"SelfClique.groupNumPerBroker ($groupNumPerBroker) cannot be less or equal to zero")
       with FatalSystemExit
 
+  final case class InvalidProtocolInput(error: String)
+      extends Exception(s"Cannot decode protocol input: $error")
+      with FatalSystemExit
+
   /******** Group: [[ConfigError]] ********/
   final case class InvalidGroupNumber(groupNum: Int)
       extends Exception(s"Invalid groupNum: $groupNum. It should be > 0")
