@@ -79,7 +79,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
   val p2pkhUnconfirmedTransactions: BaseEndpoint[Address, Seq[UnconfirmedTransaction]] =
     addressesEndpoint.get
       .in(path[Address]("address")(Codecs.addressTapirCodec))
-      .in("p2pkh-unconfirmed-transactions")
+      .in("p2pkh-input-unconfirmed-transactions")
       .out(jsonBody[Seq[UnconfirmedTransaction]])
       .description("List unconfirmed transactions of a given address")
 

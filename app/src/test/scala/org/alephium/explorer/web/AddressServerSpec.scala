@@ -142,7 +142,7 @@ class AddressServerSpec()
   "list unconfirmed transactions for a given address" in new Fixture {
     forAll(addressGen) {
       case (address) =>
-        Get(s"/addresses/${address}/p2pkh-unconfirmed-transactions") ~> server.route ~> check {
+        Get(s"/addresses/${address}/p2pkh-input-unconfirmed-transactions") ~> server.route ~> check {
           responseAs[Seq[UnconfirmedTransaction]] is Seq(unconfirmedTx)
         }
     }
