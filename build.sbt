@@ -91,8 +91,11 @@ val inliningOptions =
     "-opt-warnings",
     "-opt:l:inline",
     "-opt-inline-from:org.alephium.explorer.**",
+    //Uncomment to debug inlining
+    /*
     "-Yopt-log-inline",
     "_"
+   */
   )
 
 val commonSettings = Seq(
