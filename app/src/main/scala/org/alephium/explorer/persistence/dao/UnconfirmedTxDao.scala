@@ -24,9 +24,10 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.DBActionW
+import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.persistence.queries.UnconfirmedTransactionQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
@@ -84,20 +85,16 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
       }
     })
   }
-
   def list(pagination: Pagination)(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]] = {
-    val offset = pagination.offset.toLong
-    val limit  = pagination.limit.toLong
-    val toDrop = offset * limit
-    run(for {
-      txs <- UnconfirmedTxSchema.table.sortBy(_.lastSeen.desc).drop(toDrop).take(limit).result
-      txHashes = txs.map(_.hash)
-      inputs  <- UInputSchema.table.filter(_.txHash inSet txHashes).result
-      outputs <- UOutputSchema.table.filter(_.txHash inSet txHashes).result
-    } yield {
 
+    run(for {
+      txs <- listUnconfirmedTransactionsQuery(pagination)
+      txHashes = txs.map(_.hash)
+      inputs  <- uinputsFromTxs(txHashes)
+      outputs <- uoutputsFromTxs(txHashes)
+    } yield {
       txs.map { tx =>
         UnconfirmedTransaction(
           tx.hash,
@@ -112,7 +109,6 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
       }
     })
   }
-
   def listByP2PKHAddress(address: Address)(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]] = {
@@ -122,9 +118,9 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
         .map(_.txHash)
         .distinct
         .result
-      txs     <- UnconfirmedTxSchema.table.filter(_.hash inSet txHashes).sortBy(_.lastSeen.desc).result
-      inputs  <- UInputSchema.table.filter(_.txHash inSet txHashes).result
-      outputs <- UOutputSchema.table.filter(_.txHash inSet txHashes).result
+      txs     <- utxsFromTxs(txHashes)
+      inputs  <- uinputsFromTxs(txHashes)
+      outputs <- uoutputsFromTxs(txHashes)
     } yield {
       txs.map { tx =>
         UnconfirmedTransaction(

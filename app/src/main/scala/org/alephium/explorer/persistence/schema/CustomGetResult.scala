@@ -23,7 +23,7 @@ import slick.jdbc.{GetResult, PositionedResult}
 
 import org.alephium.explorer.{BlockHash, Hash}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.model.{BlockHeader, InputEntity, OutputEntity}
+import org.alephium.explorer.persistence.model._
 import org.alephium.serde._
 import org.alephium.util.{AVector, TimeStamp, U256}
 
@@ -198,4 +198,35 @@ object CustomGetResult {
         parent       = result.<<?
     )
 
+  val unconfirmedTransactionGetResult: GetResult[UnconfirmedTxEntity] =
+    (result: PositionedResult) =>
+      UnconfirmedTxEntity(
+        hash      = result.<<,
+        chainFrom = result.<<,
+        chainTo   = result.<<,
+        gasAmount = result.<<,
+        gasPrice  = result.<<,
+        lastSeen  = result.<<
+    )
+
+  val uinputGetResult: GetResult[UInputEntity] =
+    (result: PositionedResult) =>
+      UInputEntity(
+        txHash       = result.<<,
+        hint         = result.<<,
+        outputRefKey = result.<<,
+        unlockScript = result.<<,
+        p2pkhAddress = result.<<?,
+        uinputOrder  = result.<<
+    )
+
+  val uoutputGetResult: GetResult[UOutputEntity] =
+    (result: PositionedResult) =>
+      UOutputEntity(
+        txHash       = result.<<,
+        amount       = result.<<,
+        address      = result.<<,
+        lockTime     = result.<<?,
+        uoutputOrder = result.<<
+    )
 }
