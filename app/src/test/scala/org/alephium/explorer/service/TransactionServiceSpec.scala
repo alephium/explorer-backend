@@ -355,7 +355,7 @@ class TransactionServiceSpec
           updatedUtxs.filter(_.inputs.exists(_.address === Some(address)))
 
         TransactionService
-          .listP2pkhTransactionsByAddress(address)
+          .listUnconfirmedTransactionsByAddress(address)
           .futureValue should contain allElementsOf expected
 
         UnconfirmedTxDao.removeMany(updatedUtxs.map(_.hash)).futureValue

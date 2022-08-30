@@ -859,13 +859,13 @@
         }
       }
     },
-    "/addresses/{address}/p2pkh-input-unconfirmed-transactions": {
+    "/addresses/{address}/unconfirmed-transactions": {
       "get": {
         "tags": [
           "Addresses"
         ],
         "description": "List unconfirmed transactions of a given address",
-        "operationId": "getAddressesAddressP2pkh-input-unconfirmed-transactions",
+        "operationId": "getAddressesAddressUnconfirmed-transactions",
         "parameters": [
           {
             "name": "address",

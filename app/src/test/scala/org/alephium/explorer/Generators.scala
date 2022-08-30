@@ -133,7 +133,7 @@ object Generators {
     key  <- hashGen
   } yield protocolApi.OutputRef(hint, key)
 
-  lazy val keypairGen: Gen[(PrivateKey, PublicKey)] =
+  val keypairGen: Gen[(PrivateKey, PublicKey)] =
     Gen.const(()).map(_ => SignatureSchema.secureGeneratePriPub())
 
   val publicKeyGen: Gen[PublicKey] =

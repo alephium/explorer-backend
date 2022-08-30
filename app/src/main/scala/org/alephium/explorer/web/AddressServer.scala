@@ -48,9 +48,9 @@ class AddressServer(transactionService: TransactionService)(
           transactionService
             .getTransactionsByAddressSQL(address, pagination)
       }) ~
-      toRoute(p2pkhUnconfirmedTransactions.serverLogicSuccess[Future] { address =>
+      toRoute(addressUnconfirmedTransactions.serverLogicSuccess[Future] { address =>
         transactionService
-          .listP2pkhTransactionsByAddress(address)
+          .listUnconfirmedTransactionsByAddress(address)
       }) ~
       toRoute(getAddressInfo.serverLogicSuccess[Future] { address =>
         for {

@@ -47,6 +47,14 @@ object UnconfirmedTransactionQueries {
     """.as[UnconfirmedTxEntity](unconfirmedTransactionGetResult)
   }
 
+  def listUnconfirmedTransactionHashesByAddress(address: Address): DBActionSR[Transaction.Hash] = {
+    sql"""
+      SELECT DISTINCT tx_hash
+      FROM uinputs
+      WHERE address = $address
+    """.as[Transaction.Hash]
+  }
+
   def utxsFromTxs(hashes: Seq[Transaction.Hash]): DBActionR[Seq[UnconfirmedTxEntity]] = {
     if (hashes.nonEmpty) {
       val params = paramPlaceholder(1, hashes.size)

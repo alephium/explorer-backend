@@ -41,7 +41,7 @@ trait UnconfirmedTxDao {
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]]
 
-  def listByP2PKHAddress(address: Address)(
+  def listByAddress(address: Address)(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]]
 
@@ -109,7 +109,7 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
       }
     })
   }
-  def listByP2PKHAddress(address: Address)(
+  def listByAddress(address: Address)(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]] = {
     run(for {
