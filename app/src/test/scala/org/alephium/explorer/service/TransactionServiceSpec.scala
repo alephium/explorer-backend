@@ -345,19 +345,14 @@ class TransactionServiceSpec
       case (address, utxs) =>
         val updatedUtxs = utxs.map { utx =>
           utx.copy(inputs = utx.inputs.map { input =>
-            input.unlockScript match {
-              case UnlockScript.P2PKH(_) =>
-                input.copy(unlockScript = UnlockScript.P2PKH(address))
-              case _ =>
-                input
-            }
+            input.copy(address = Some(address))
           })
         }
 
         UnconfirmedTxDao.insertMany(updatedUtxs).futureValue
 
         val expected =
-          updatedUtxs.filter(_.inputs.exists(_.unlockScript == UnlockScript.P2PKH(address)))
+          updatedUtxs.filter(_.inputs.exists(_.address === Some(address)))
 
         TransactionService
           .listP2pkhTransactionsByAddress(address)

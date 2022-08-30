@@ -155,40 +155,16 @@ class ApiModelSpec() extends AlephiumSpec {
     }
   }
 
-  "UnlockScript" in {
-    forAll(unlockScriptGen) { unlockScript =>
-      val expected = unlockScript match {
-        case UnlockScript.P2PKH(address) =>
-          s"""
-            |{
-            |  "type": "p2pkh",
-            |  "address": "$address"
-            |}""".stripMargin
-        case UnlockScript.P2MPKH(addresses) =>
-          s"""
-            |{
-            |  "type": "p2mpkh",
-            |  "indexedAddresses": ${write(addresses)}
-            |}""".stripMargin
-        case UnlockScript.P2SH(script, params) =>
-          s"""
-            |{
-            |  "type": "p2sh",
-            |  "script": ${write(script)},
-            |  "params": ${write(params)}
-            |}""".stripMargin
-      }
-      check(unlockScript, expected)
-    }
-  }
-
   "UInput" in {
     forAll(uinputGen) { uinput =>
       val expected =
         s"""
         |{
-        |  "outputRef": ${write(uinput.outputRef)},
-        |  "unlockScript": ${write(uinput.unlockScript)}
+        |  "outputRef": ${write(uinput.outputRef)}
+        |${uinput.address.map(address => s""","address": "$address"""").getOrElse("")}
+        |${uinput.unlockScript
+             .map(script              => s""","unlockScript": ${write(script)}""")
+             .getOrElse("")}
         |}""".stripMargin
       check(uinput, expected)
     }

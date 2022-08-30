@@ -63,10 +63,7 @@ object GenApiModel {
       params <- bytesGen
     } yield UnlockScript.P2SH(script, params)
 
-  val unlockScriptGen: Gen[UnlockScript] =
-    Gen.oneOf(unlockScriptP2PKHGen: Gen[UnlockScript],
-              unlockScriptP2MPKHGen: Gen[UnlockScript],
-              unlockScriptP2SHGen: Gen[UnlockScript])
+  val unlockScriptGen: Gen[ByteString] = hashGen.map(_.bytes)
 
   val inputGen: Gen[Input] = for {
     outputRef    <- outputRefGen
@@ -77,8 +74,9 @@ object GenApiModel {
 
   val uinputGen: Gen[UInput] = for {
     outputRef    <- outputRefGen
-    unlockScript <- unlockScriptGen
-  } yield UInput(outputRef, unlockScript)
+    address      <- Gen.option(addressGen)
+    unlockScript <- Gen.option(unlockScriptGen)
+  } yield UInput(outputRef, address, unlockScript)
 
   val tokenGen: Gen[Token] = for {
     id     <- hashGen

@@ -215,8 +215,8 @@ object CustomGetResult {
         txHash       = result.<<,
         hint         = result.<<,
         outputRefKey = result.<<,
-        unlockScript = result.<<,
-        p2pkhAddress = result.<<?,
+        unlockScript = result.<<?,
+        address      = result.<<?,
         uinputOrder  = result.<<
     )
 

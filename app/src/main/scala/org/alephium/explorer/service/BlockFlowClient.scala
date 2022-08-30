@@ -322,15 +322,26 @@ object BlockFlowClient {
       if (tx.scriptSignatures.isEmpty) None else Some(tx.scriptSignatures.toSeq)
     )
 
+  private def addressFromProtocol(unlockScript: protocol.vm.UnlockScript): Option[Address] =
+    unlockScript match {
+      case protocol.vm.UnlockScript.P2PKH(pk) =>
+        Some(Address.unsafe(protocol.model.Address.p2pkh(pk).toBase58)): Option[Address]
+      case protocol.vm.UnlockScript.P2SH(script, _) =>
+        val lockup = protocol.vm.LockupScript.p2sh(protocol.Hash.hash(script))
+        Some(Address.unsafe(protocol.model.Address.from(lockup).toBase58)): Option[Address]
+      case protocol.vm.UnlockScript.P2MPKH(_) =>
+        None
+    }
+
   private def inputToUInput(input: api.model.AssetInput): UInput = {
     val unlockScript = input.toProtocol() match {
       case Left(error)  => throw new ExplorerError.InvalidProtocolInput(error)
       case Right(value) => value.unlockScript
     }
-
     UInput(
       OutputRef(input.outputRef.hint, input.outputRef.key),
-      UnlockScript.fromProtocol(unlockScript)
+      addressFromProtocol(unlockScript),
+      Some(input.unlockScript)
     )
   }
 
@@ -341,17 +352,13 @@ object BlockFlowClient {
                             mainChain: Boolean,
                             index: Int,
                             txOrder: Int): InputEntity = {
-    val unlockScript = input.toProtocol() match {
-      case Left(error)  => throw new ExplorerError.InvalidProtocolInput(error)
-      case Right(value) => value.unlockScript
-    }
     InputEntity(
       blockHash,
       new Transaction.Hash(txId),
       timestamp,
       input.outputRef.hint,
       input.outputRef.key,
-      Some(UnlockScript.fromProtocol(unlockScript)),
+      Some(input.unlockScript),
       mainChain,
       index,
       txOrder,

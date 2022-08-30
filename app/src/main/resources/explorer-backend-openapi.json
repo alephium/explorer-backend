@@ -3581,22 +3581,6 @@
           }
         }
       },
-      "IndexedAddress": {
-        "required": [
-          "address",
-          "index"
-        ],
-        "type": "object",
-        "properties": {
-          "address": {
-            "type": "string"
-          },
-          "index": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
       "Input": {
         "required": [
           "outputRef"
@@ -3607,7 +3591,8 @@
             "$ref": "#/components/schemas/OutputRef"
           },
           "unlockScript": {
-            "$ref": "#/components/schemas/UnlockScript"
+            "type": "string",
+            "format": "hex-string"
           },
           "address": {
             "type": "string"
@@ -3714,59 +3699,6 @@
           "key": {
             "type": "string",
             "format": "32-byte-hash"
-          }
-        }
-      },
-      "P2MPKH": {
-        "required": [
-          "type"
-        ],
-        "type": "object",
-        "properties": {
-          "indexedAddresses": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/IndexedAddress"
-            }
-          },
-          "type": {
-            "type": "string"
-          }
-        }
-      },
-      "P2PKH": {
-        "required": [
-          "address",
-          "type"
-        ],
-        "type": "object",
-        "properties": {
-          "address": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
-          }
-        }
-      },
-      "P2SH": {
-        "required": [
-          "script",
-          "params",
-          "type"
-        ],
-        "type": "object",
-        "properties": {
-          "script": {
-            "type": "string",
-            "format": "hex-string"
-          },
-          "params": {
-            "type": "string",
-            "format": "hex-string"
-          },
-          "type": {
-            "type": "string"
           }
         }
       },
@@ -4009,16 +3941,19 @@
       },
       "UInput": {
         "required": [
-          "outputRef",
-          "unlockScript"
+          "outputRef"
         ],
         "type": "object",
         "properties": {
           "outputRef": {
             "$ref": "#/components/schemas/OutputRef"
           },
+          "address": {
+            "type": "string"
+          },
           "unlockScript": {
-            "$ref": "#/components/schemas/UnlockScript"
+            "type": "string",
+            "format": "hex-string"
           }
         }
       },
@@ -4103,27 +4038,6 @@
           },
           "type": {
             "type": "string"
-          }
-        }
-      },
-      "UnlockScript": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/P2MPKH"
-          },
-          {
-            "$ref": "#/components/schemas/P2PKH"
-          },
-          {
-            "$ref": "#/components/schemas/P2SH"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "type",
-          "mapping": {
-            "P2MPKH": "#/components/schemas/P2MPKH",
-            "P2PKH": "#/components/schemas/P2PKH",
-            "P2SH": "#/components/schemas/P2SH"
           }
         }
       }

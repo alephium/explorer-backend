@@ -16,6 +16,9 @@
 
 package org.alephium.explorer.api.model
 
+import akka.util.ByteString
+
+import org.alephium.api.UtilJson._
 import org.alephium.explorer.api.Json.u256ReadWriter
 import org.alephium.json.Json._
 import org.alephium.util.U256
@@ -23,10 +26,10 @@ import org.alephium.util.U256
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 final case class Input(
     outputRef: OutputRef,
-    unlockScript: Option[UnlockScript] = None,
-    address: Option[Address]           = None,
-    attoAlphAmount: Option[U256]       = None,
-    tokens: Option[Seq[Token]]         = None
+    unlockScript: Option[ByteString] = None,
+    address: Option[Address]         = None,
+    attoAlphAmount: Option[U256]     = None,
+    tokens: Option[Seq[Token]]       = None
 )
 
 object Input {

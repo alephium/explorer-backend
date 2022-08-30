@@ -118,7 +118,7 @@ object UnconfirmedTransactionQueries {
            |       hint,
            |       output_ref_key,
            |       unlock_script,
-           |       p2pkh_address,
+           |       address,
            |       uinput_order
            |FROM uinputs
            |WHERE tx_hash IN $params

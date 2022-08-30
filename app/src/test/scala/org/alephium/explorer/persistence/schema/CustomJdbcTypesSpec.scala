@@ -23,10 +23,8 @@ import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
-import org.alephium.explorer.{AlephiumSpec, GenApiModel, Generators}
-import org.alephium.explorer.api.model.UnlockScript
+import org.alephium.explorer.{AlephiumSpec, Generators}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
-import org.alephium.explorer.persistence.model.UInputEntity
 import org.alephium.explorer.persistence.queries.OutputQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
@@ -92,27 +90,6 @@ class CustomJdbcTypesSpec
             .as[Boolean]).futureValue.head is true
       }
 
-    }
-  }
-
-  "set/get UnlockScript" in new Fixture {
-
-    forAll(GenApiModel.uinputGen, GenApiModel.transactionHashGen) {
-      case (uinput, txHash) =>
-        val entity = UInputEntity(
-          txHash,
-          uinput.outputRef.hint,
-          uinput.outputRef.key,
-          uinput.unlockScript,
-          uinput.unlockScript.p2pkhAddress,
-          0
-        )
-        run(UInputSchema.table.delete).futureValue
-        run(UInputSchema.table.insertOrUpdate(entity)).futureValue
-
-        run(
-          sql"SELECT unlock_script FROM uinputs"
-            .as[UnlockScript]).futureValue.head is uinput.unlockScript
     }
   }
 

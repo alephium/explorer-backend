@@ -114,7 +114,7 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]] = {
     run(for {
       txHashes <- UInputSchema.table
-        .filter(_.p2pkhAddress === address)
+        .filter(_.address === address)
         .map(_.txHash)
         .distinct
         .result

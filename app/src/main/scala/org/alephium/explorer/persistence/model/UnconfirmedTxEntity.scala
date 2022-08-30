@@ -46,7 +46,7 @@ object UnconfirmedTxEntity {
            input.outputRef.hint,
            input.outputRef.key,
            input.unlockScript,
-           input.unlockScript.p2pkhAddress,
+           input.address,
            order
          )
      },
