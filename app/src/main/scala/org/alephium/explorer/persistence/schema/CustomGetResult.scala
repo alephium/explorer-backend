@@ -85,22 +85,6 @@ object CustomGetResult {
           }
       }
 
-  implicit val unlockScriptGetResult: GetResult[UnlockScript] =
-    (result: PositionedResult) =>
-      deserialize[UnlockScript](ByteString.fromArrayUnsafe(result.nextBytes())) match {
-        case Left(error)  => throw error
-        case Right(value) => value
-    }
-
-  implicit val unlockOptionScriptGetResult: GetResult[Option[UnlockScript]] =
-    (result: PositionedResult) =>
-      result.nextBytesOption().map { bytes =>
-        deserialize[UnlockScript](ByteString.fromArrayUnsafe(bytes)) match {
-          case Left(error)  => throw error
-          case Right(value) => value
-        }
-    }
-
   implicit val hashGetResult: GetResult[Hash] =
     (result: PositionedResult) => Hash.unsafe(ByteString.fromArrayUnsafe(result.nextBytes()))
 

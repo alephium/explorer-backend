@@ -16,8 +16,6 @@
 
 package org.alephium.explorer.api.model
 
-import org.scalacheck.Gen
-
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.GenApiModel._
@@ -138,20 +136,6 @@ class ApiModelSpec() extends AlephiumSpec {
                           .getOrElse("")}
      |}""".stripMargin
       check(input, expected)
-    }
-  }
-
-  "UnlockScript.P2MPKH.IndexedAddress" in {
-    forAll(addressGen, Gen.posNum[Int]) {
-      case (address, index) =>
-        val indexedAddress = UnlockScript.P2MPKH.IndexedAddress(address, index)
-        val expected =
-          s"""
-        |{
-        |  "address": "$address",
-        |  "index": $index
-        |}""".stripMargin
-        check(indexedAddress, expected)
     }
   }
 

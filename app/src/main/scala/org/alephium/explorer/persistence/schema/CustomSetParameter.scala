@@ -142,19 +142,6 @@ object CustomSetParameter {
       }
   }
 
-  implicit object UnlockScriptOptionSetParameter extends SetParameter[Option[UnlockScript]] {
-    override def apply(input: Option[UnlockScript], params: PositionedParameters): Unit =
-      input match {
-        case Some(unlockScript) =>
-          params setBytes serialize(unlockScript).toArray
-
-        case None =>
-          //scalastyle:off null
-          params setBytes null
-        //scalastyle:on null
-      }
-  }
-
   implicit object ByteStringsOptionSetParameter extends SetParameter[Option[Seq[ByteString]]] {
     override def apply(input: Option[Seq[ByteString]], params: PositionedParameters): Unit =
       input match {

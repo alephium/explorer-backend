@@ -117,16 +117,6 @@ object CustomJdbcTypes {
       }
     )
 
-  implicit val unlockScriptType: JdbcType[UnlockScript] =
-    MappedJdbcType.base[UnlockScript, Array[Byte]](
-      unlockScript => serialize(unlockScript).toArray,
-      bytes =>
-        deserialize[UnlockScript](ByteString.fromArrayUnsafe(bytes)) match {
-          case Left(error)  => throw error
-          case Right(value) => value
-      }
-    )
-
   implicit val intervalTypeType: JdbcType[IntervalType] =
     MappedJdbcType.base[IntervalType, Int](
       _.value,
