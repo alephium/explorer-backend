@@ -25,6 +25,7 @@ import scala.language.implicitConversions
 
 import akka.http.scaladsl.model.Uri
 import akka.util.ByteString
+import com.typesafe.scalalogging.StrictLogging
 import sttp.client3._
 
 import org.alephium.api
@@ -75,7 +76,7 @@ trait BlockFlowClient extends Service {
   def close(): Future[Unit]
 }
 
-object BlockFlowClient {
+object BlockFlowClient extends StrictLogging {
   def apply(uri: Uri, groupNum: Int, maybeApiKey: Option[api.model.ApiKey])(
       implicit executionContext: ExecutionContext
   ): BlockFlowClient =
@@ -322,25 +323,27 @@ object BlockFlowClient {
       if (tx.scriptSignatures.isEmpty) None else Some(tx.scriptSignatures.toSeq)
     )
 
-  private def addressFromProtocol(unlockScript: protocol.vm.UnlockScript): Option[Address] =
-    unlockScript match {
-      case protocol.vm.UnlockScript.P2PKH(pk) =>
-        Some(Address.unsafe(protocol.model.Address.p2pkh(pk).toBase58)): Option[Address]
-      case protocol.vm.UnlockScript.P2SH(script, _) =>
-        val lockup = protocol.vm.LockupScript.p2sh(protocol.Hash.hash(script))
-        Some(Address.unsafe(protocol.model.Address.from(lockup).toBase58)): Option[Address]
-      case protocol.vm.UnlockScript.P2MPKH(_) =>
+  private def addressFromProtocolInput(input: api.model.AssetInput): Option[Address] =
+    input.toProtocol() match {
+      case Right(value) =>
+        value.unlockScript match {
+          case protocol.vm.UnlockScript.P2PKH(pk) =>
+            Some(Address.unsafe(protocol.model.Address.p2pkh(pk).toBase58)): Option[Address]
+          case protocol.vm.UnlockScript.P2SH(script, _) =>
+            val lockup = protocol.vm.LockupScript.p2sh(protocol.Hash.hash(script))
+            Some(Address.unsafe(protocol.model.Address.from(lockup).toBase58)): Option[Address]
+          case protocol.vm.UnlockScript.P2MPKH(_) =>
+            None
+        }
+      case Left(error) =>
+        logger.error(s"Cannot decode protocol input: $error")
         None
     }
 
   private def inputToUInput(input: api.model.AssetInput): UInput = {
-    val unlockScript = input.toProtocol() match {
-      case Left(error)  => throw new ExplorerError.InvalidProtocolInput(error)
-      case Right(value) => value.unlockScript
-    }
     UInput(
       OutputRef(input.outputRef.hint, input.outputRef.key),
-      addressFromProtocol(unlockScript),
+      addressFromProtocolInput(input),
       Some(input.unlockScript)
     )
   }
@@ -362,7 +365,7 @@ object BlockFlowClient {
       mainChain,
       index,
       txOrder,
-      None,
+      addressFromProtocolInput(input),
       None,
       None
     )
