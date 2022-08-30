@@ -23,6 +23,9 @@ import org.alephium.protocol.ALPH
 
 final class Height(val value: Int) extends AnyVal {
   override def toString(): String = value.toString
+
+  def +(right: Height): Height =
+    Height.unsafe(value + right.value)
 }
 
 object Height {

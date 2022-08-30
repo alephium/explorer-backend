@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.dao
 
+import scala.collection.IterableOnce.iterableOnceExtensionMethods
 import scala.concurrent.{ExecutionContext, Future}
 
 import slick.basic.DatabaseConfig
@@ -168,4 +169,22 @@ object BlockDao {
       cache.putLatestBlock(chainIndex, latestBlock)
     }
   }
+
+  def maxTimeStampAndHeight()(implicit groupSetting: GroupSetting,
+                              dc: DatabaseConfig[PostgresProfile],
+                              ec: ExecutionContext): Future[Option[(Height, Option[TimeStamp])]] =
+    maxTimestampsAndHeightForGroups() match {
+      case Some(query) =>
+        run(query.result) map { result =>
+          result.reduceLeftOption[(Height, Option[TimeStamp])] {
+            case ((leftHeight, leftTimestamp), (rightHeight, rightTimestamp)) =>
+              val sumHeight = leftHeight + rightHeight
+              val max = leftTimestamp max rightTimestamp
+              (sumHeight, max)
+          }
+        }
+
+      case None =>
+        Future.successful(None)
+    }
 }

@@ -24,9 +24,10 @@ import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, GroupSetting}
-import org.alephium.explorer.GenApiModel.blockEntryHashGen
+import org.alephium.explorer.GenApiModel.{blockEntryHashGen, groupIndexGen}
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema._
 
 class BlockQueriesSpec
@@ -129,6 +130,48 @@ class BlockQueriesSpec
           //expect None
           run(BlockQueries.getBlockHeaderAction(hash)).futureValue is None
         }
+      }
+    }
+  }
+
+  "maxHeightQuery" should {
+    "return maximum height and within the chain" in {
+      forAll(Gen.listOf(blockHeaderGen), groupIndexGen, groupIndexGen) {
+        case (blocks, chainFrom, chainTo) =>
+          run(BlockHeaderSchema.table.delete).futureValue //clear table
+          run(BlockHeaderSchema.table ++= blocks).futureValue //persist test data
+
+          val expectedMaxHeight = //expected max height with in the chain
+            BlockHeader.maxHeight(blocks, chainFrom, chainTo)
+
+          val maxHeight = run(BlockQueries.maxHeight(chainFrom, chainTo).result).futureValue
+          maxHeight is expectedMaxHeight
+      }
+    }
+  }
+
+  "maxHeightBlocks" should {
+    "return blocks with maximum height and within the chain" in {
+      forAll(Gen.listOf(blockHeaderGen), groupIndexGen, groupIndexGen) {
+        case (blocks, chainFrom, chainTo) =>
+          run(BlockHeaderSchema.table.delete).futureValue //clear table
+          run(BlockHeaderSchema.table ++= blocks).futureValue //persist test data
+
+          val expectedMaxHeight = //expected max height with in the chain
+            BlockHeader.maxHeight(blocks, chainFrom, chainTo)
+
+          val expectedBlocks = //expected blocks with maxHeight and within the chain
+            expectedMaxHeight match {
+              case Some(height) =>
+                BlockHeader.blocksOfHeight(blocks, height, chainFrom, chainTo)
+
+              case None =>
+                Iterable.empty
+            }
+
+          val actualBlocks =
+            run(BlockQueries.maxHeightBlocks(chainFrom, chainTo).result).futureValue
+          actualBlocks should contain theSameElementsAs expectedBlocks
       }
     }
   }

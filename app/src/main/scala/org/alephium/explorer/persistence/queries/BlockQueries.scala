@@ -24,6 +24,7 @@ import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
@@ -310,5 +311,50 @@ object BlockQueries extends StrictLogging {
       WHERE chain_from = $fromGroup AND chain_to = $toGroup AND block_timestamp > $after
       ORDER BY block_timestamp
     """.as[TimeStamp]
+  }
+
+  /** Fetch maximum height */
+  def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex): Rep[Option[Height]] =
+    BlockHeaderSchema.table
+      .filter(header => header.chainFrom === fromGroup && header.chainTo === toGroup)
+      .map(_.height)
+      .max
+
+  def maxHeightBlocks(
+      fromGroup: GroupIndex,
+      toGroup: GroupIndex): Query[BlockHeaderSchema.BlockHeaders, BlockHeader, Seq] =
+    BlockHeaderSchema.table
+      .filter { header =>
+        header.height === maxHeight(fromGroup, toGroup) &&
+        header.chainFrom === fromGroup &&
+        header.chainTo === toGroup
+      }
+
+  def maxTimestampForMaxHeight(fromGroup: GroupIndex, toGroup: GroupIndex)
+    : Query[(Rep[Height], Rep[Option[TimeStamp]]), (Height, Option[TimeStamp]), Seq] =
+    maxHeightBlocks(fromGroup, toGroup)
+      .groupBy(_.height)
+      .map {
+        case (height, blocks) =>
+          (height, blocks.map(_.timestamp).max)
+      }
+
+  def maxTimestampsAndHeightForGroups()(implicit groupSetting: GroupSetting)
+    : Option[Query[(Rep[Height], Rep[Option[TimeStamp]]), (Height, Option[TimeStamp]), Seq]] = {
+    val emptyResult =
+      Option.empty[Query[(Rep[Height], Rep[Option[TimeStamp]]), (Height, Option[TimeStamp]), Seq]]
+
+    groupSetting.groupIndexes.foldLeft(emptyResult) {
+      case (previous, (fromGroup, toGroup)) =>
+        val nextQuery = maxTimestampForMaxHeight(fromGroup, toGroup)
+
+        previous match {
+          case Some(previousQuery) =>
+            Some(previousQuery unionAll nextQuery)
+
+          case None =>
+            Some(nextQuery)
+        }
+    }
   }
 }

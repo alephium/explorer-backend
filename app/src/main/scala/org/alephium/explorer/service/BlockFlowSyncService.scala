@@ -19,7 +19,7 @@ package org.alephium.explorer.service
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
+import scala.concurrent.duration.{FiniteDuration, Duration => ScalaDuration}
 
 import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.StrictLogging
@@ -31,7 +31,7 @@ import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockEntity
-import org.alephium.explorer.persistence.queries.InputUpdateQueries
+import org.alephium.explorer.persistence.queries.{BlockQueries, InputUpdateQueries}
 import org.alephium.explorer.util.{Scheduler, TimeUtil}
 import org.alephium.util.{Duration, TimeStamp}
 
@@ -230,6 +230,20 @@ case object BlockFlowSyncService extends StrictLogging {
         tsHeights.map { case (ts, _) => ts }.maxOption.map(max => (max, nbOfBlocks))
       }
   }
+
+  def getLocalMaxTimestampV2()(implicit ec: ExecutionContext,
+                               dc: DatabaseConfig[PostgresProfile],
+                               groupSetting: GroupSetting): Future[Option[(TimeStamp, Int)]] =
+    BlockQueries.maxTimeStampAndHeight() map {
+      case Some((height, Some(timestamp))) =>
+        Some((timestamp, height.value))
+
+      case Some((_, None)) =>
+        None
+
+      case None =>
+        None
+    }
 
   @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
   private def syncAt(

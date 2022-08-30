@@ -18,10 +18,12 @@ package org.alephium.explorer.persistence.model
 
 import java.math.BigInteger
 
+import scala.math.Ordering.Implicits.infixOrderingOps
+
 import akka.util.ByteString
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{BlockEntry, BlockEntryLite, GroupIndex, Height, Transaction}
+import org.alephium.explorer.api.model._
 import org.alephium.util.TimeStamp
 
 final case class BlockHeader(
@@ -65,4 +67,33 @@ object BlockHeader {
       blockEntity.hashrate,
       blockEntity.parent(groupNum)
     )
+
+  /** Fetches max-height within the chain range for the given blocks */
+  def maxHeight(blocks: Iterable[BlockHeader],
+                chainFrom: GroupIndex,
+                chainTo: GroupIndex): Option[Height] =
+    blocks.foldLeft(Option.empty[Height]) {
+      case (currentMax, header) =>
+        if (header.chainFrom == chainFrom && header.chainTo == chainTo) {
+          currentMax match {
+            case Some(currentMax) =>
+              Some(currentMax max header.height)
+
+            case None =>
+              Some(header.height)
+          }
+        } else {
+          currentMax
+        }
+    }
+
+  def blocksOfHeight(blocks: Iterable[BlockHeader],
+                     height: Height,
+                     chainFrom: GroupIndex,
+                     chainTo: GroupIndex): Iterable[BlockHeader] =
+    blocks.filter { header =>
+      header.height == height &&
+      header.chainFrom == chainFrom &&
+      header.chainTo == chainTo
+    }
 }
