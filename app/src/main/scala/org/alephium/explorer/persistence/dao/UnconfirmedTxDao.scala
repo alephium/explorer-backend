@@ -67,11 +67,11 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Option[UnconfirmedTransaction]] = {
     run(for {
-      maybeTx <- UnconfirmedTxSchema.table.filter(_.hash === hash).result.headOption
-      inputs  <- UInputSchema.table.filter(_.txHash === hash).result
-      outputs <- UOutputSchema.table.filter(_.txHash === hash).sortBy(_.uoutputOrder).result
+      maybeTx <- utxFromTxHash(hash)
+      inputs  <- uinputsFromTx(hash)
+      outputs <- uoutputsFromTx(hash)
     } yield {
-      maybeTx.map { tx =>
+      maybeTx.headOption.map { tx =>
         UnconfirmedTransaction(
           tx.hash,
           tx.chainFrom,
@@ -113,14 +113,10 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]] = {
     run(for {
-      txHashes <- UInputSchema.table
-        .filter(_.address === address)
-        .map(_.txHash)
-        .distinct
-        .result
-      txs     <- utxsFromTxs(txHashes)
-      inputs  <- uinputsFromTxs(txHashes)
-      outputs <- uoutputsFromTxs(txHashes)
+      txHashes <- listUTXHashesByAddress(address)
+      txs      <- utxsFromTxs(txHashes)
+      inputs   <- uinputsFromTxs(txHashes)
+      outputs  <- uoutputsFromTxs(txHashes)
     } yield {
       txs.map { tx =>
         UnconfirmedTransaction(

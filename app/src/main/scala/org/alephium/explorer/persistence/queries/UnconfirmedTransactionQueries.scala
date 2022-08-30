@@ -47,7 +47,7 @@ object UnconfirmedTransactionQueries {
     """.as[UnconfirmedTxEntity](unconfirmedTransactionGetResult)
   }
 
-  def listUnconfirmedTransactionHashesByAddress(address: Address): DBActionSR[Transaction.Hash] = {
+  def listUTXHashesByAddress(address: Address): DBActionSR[Transaction.Hash] = {
     sql"""
       SELECT DISTINCT tx_hash
       FROM uinputs
@@ -86,6 +86,7 @@ object UnconfirmedTransactionQueries {
       DBIOAction.successful(Seq.empty)
     }
   }
+
   def uoutputsFromTxs(hashes: Seq[Transaction.Hash]): DBActionR[Seq[UOutputEntity]] = {
     if (hashes.nonEmpty) {
       val params = paramPlaceholder(1, hashes.size)
@@ -145,5 +146,45 @@ object UnconfirmedTransactionQueries {
     } else {
       DBIOAction.successful(Seq.empty)
     }
+  }
+
+  def utxFromTxHash(hash: Transaction.Hash): DBActionR[Seq[UnconfirmedTxEntity]] = {
+    sql"""
+           |SELECT hash,
+           |       chain_from,
+           |       chain_to,
+           |       gas_amount,
+           |       gas_price,
+           |       last_seen
+           |FROM utransactions
+           |WHERE hash = $hash
+           |""".stripMargin.as[UnconfirmedTxEntity](unconfirmedTransactionGetResult)
+  }
+
+  def uoutputsFromTx(hash: Transaction.Hash): DBActionR[Seq[UOutputEntity]] = {
+    sql"""
+           |SELECT tx_hash,
+           |       amount,
+           |       address,
+           |       lock_time,
+           |       uoutput_order
+           |FROM uoutputs
+           |WHERE tx_hash = $hash
+           |ORDER BY uoutput_order
+           |""".stripMargin.as[UOutputEntity](uoutputGetResult)
+  }
+
+  def uinputsFromTx(hash: Transaction.Hash): DBActionR[Seq[UInputEntity]] = {
+    sql"""
+           |SELECT tx_hash,
+           |       hint,
+           |       output_ref_key,
+           |       unlock_script,
+           |       address,
+           |       uinput_order
+           |FROM uinputs
+           |WHERE tx_hash = $hash
+           |ORDER BY uinput_order
+           |""".stripMargin.as[UInputEntity](uinputGetResult)
   }
 }
