@@ -26,7 +26,9 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.{AlephiumSpec, GroupSetting}
 import org.alephium.explorer.GenApiModel.blockEntryHashGen
 import org.alephium.explorer.Generators._
+import org.alephium.explorer.api.model.GroupIndex
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema._
 
 class BlockQueriesSpec
@@ -128,6 +130,72 @@ class BlockQueriesSpec
           run(BlockHeaderSchema.table.length.result).futureValue is 0
           //expect None
           run(BlockQueries.getBlockHeaderAction(hash)).futureValue is None
+        }
+      }
+    }
+  }
+
+  "noOfBlocksAndMaxBlockTimestamp" should {
+    "return None" when {
+      "there is no data" in {
+        forAll(groupSettingGen) { implicit groupSetting =>
+          run(BlockQueries.noOfBlocksAndMaxBlockTimestamp()).futureValue is None
+        }
+      }
+
+      "chains being queries do not exists in database" in {
+        forAll(Gen.listOf(blockHeaderGen), groupSettingGen) {
+          case (blocks, groupSetting) =>
+            //fetch the maximum chain-index from the groupSetting
+            val maxChainIndex = groupSetting.chainIndexes.map(_.to.value).max
+
+            //set the block's chainFrom to maxChainIndex + 1 so no blocks match the groupSetting
+            val updatedBlocks = blocks.map { block =>
+              block.copy(chainFrom = GroupIndex.unsafe(maxChainIndex + 1),
+                         chainTo   = GroupIndex.unsafe(maxChainIndex + 10))
+            }
+
+            run(BlockHeaderSchema.table.delete).futureValue //clear table
+            run(BlockHeaderSchema.table ++= updatedBlocks).futureValue //persist test data
+
+            implicit val implicitGroupSetting: GroupSetting = groupSetting
+            //No blocks exists for the groupSetting so result is None
+            run(BlockQueries.noOfBlocksAndMaxBlockTimestamp()).futureValue is None
+
+        }
+      }
+    }
+
+    "return total number of blocks and max timeStamp" in {
+      forAll(Gen.listOf(blockHeaderGen)) { blocks =>
+        run(BlockHeaderSchema.table.delete).futureValue //clear table
+        run(BlockHeaderSchema.table ++= blocks).futureValue //persist test data
+
+        //run multiple tests for different groupsSettings on the same persisted data
+        forAll(groupSettingGen) { implicit groupSetting =>
+          //All blocks with maximum height
+          val maxHeightBlocks =
+            groupSetting.groupIndexes
+              .flatMap {
+                case (from, to) =>
+                  val blocksInThisChain = BlockHeader.filterBlocksInChain(blocks, from, to)
+                  BlockHeader.maxHeight(blocksInThisChain)
+              }
+
+          //expected total number of blocks
+          val expectedNumberOfBlocks =
+            BlockHeader.sumHeight(maxHeightBlocks)
+
+          //expected maximum timestamp
+          val expectedMaxTimeStamp =
+            BlockHeader.maxTimeStamp(maxHeightBlocks).map(_.timestamp)
+
+          //Queried result Option[(TimeStamp, Height)]
+          val actualTimeStampAndNumberOfBlocks =
+            run(BlockQueries.noOfBlocksAndMaxBlockTimestamp()).futureValue
+
+          actualTimeStampAndNumberOfBlocks.map(_._1) is expectedMaxTimeStamp
+          actualTimeStampAndNumberOfBlocks.map(_._2) is expectedNumberOfBlocks
         }
       }
     }

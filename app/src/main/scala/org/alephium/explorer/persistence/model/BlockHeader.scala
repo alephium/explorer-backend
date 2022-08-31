@@ -18,10 +18,12 @@ package org.alephium.explorer.persistence.model
 
 import java.math.BigInteger
 
+import scala.math.Ordering.Implicits.infixOrderingOps
+
 import akka.util.ByteString
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{BlockEntry, BlockEntryLite, GroupIndex, Height, Transaction}
+import org.alephium.explorer.api.model._
 import org.alephium.util.TimeStamp
 
 final case class BlockHeader(
@@ -65,4 +67,62 @@ object BlockHeader {
       blockEntity.hashrate,
       blockEntity.parent(groupNum)
     )
+
+  /**
+    * Finds a block with maximum height. If two blocks have the same
+    * height, returns the one with maximum timestamp.
+    * */
+  def maxHeight(blocks: Iterable[BlockHeader]): Option[BlockHeader] =
+    blocks.foldLeft(Option.empty[BlockHeader]) {
+      case (currentMax, header) =>
+        currentMax match {
+          case Some(current) =>
+            if (header.height > current.height) {
+              Some(header)
+            } else if (header.height == current.height) {
+              maxTimeStamp(currentMax ++ Some(header))
+            } else {
+              currentMax
+            }
+
+          case None =>
+            Some(header)
+        }
+    }
+
+  /** Finds a block with maximum timestamp */
+  def maxTimeStamp(blocks: Iterable[BlockHeader]): Option[BlockHeader] =
+    blocks.foldLeft(Option.empty[BlockHeader]) {
+      case (currentMax, header) =>
+        currentMax match {
+          case Some(current) =>
+            if (header.timestamp > current.timestamp) {
+              Some(header)
+            } else {
+              currentMax
+            }
+
+          case None =>
+            Some(header)
+        }
+    }
+
+  /** Filter blocks within the given chain */
+  @inline def filterBlocksInChain(blocks: Iterable[BlockHeader],
+                                  chainFrom: GroupIndex,
+                                  chainTo: GroupIndex): Iterable[BlockHeader] =
+    blocks.filter { header =>
+      header.chainFrom == chainFrom &&
+      header.chainTo == chainTo
+    }
+
+  /** Sum height of the given blocks */
+  def sumHeight(blocks: Iterable[BlockHeader]): Option[Height] =
+    blocks.foldLeft(Option.empty[Height]) {
+      case (currentSum, header) =>
+        currentSum match {
+          case Some(sum) => Some(Height.unsafe(sum.value + header.height.value))
+          case None      => Some(header.height)
+        }
+    }
 }

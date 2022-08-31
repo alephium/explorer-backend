@@ -24,6 +24,7 @@ import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
@@ -36,6 +37,7 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
+import org.alephium.explorer.util.SlickUtil._
 import org.alephium.util.TimeStamp
 
 object BlockQueries extends StrictLogging {
@@ -310,5 +312,62 @@ object BlockQueries extends StrictLogging {
       WHERE chain_from = $fromGroup AND chain_to = $toGroup AND block_timestamp > $after
       ORDER BY block_timestamp
     """.as[TimeStamp]
+  }
+
+  /**
+    * Fetches the maximum `block_timestamp` from blocks
+    * with maximum height within the given chain.
+    */
+  val maxBlockTimestampForMaxHeightForChainSQL: String =
+    s"""
+       |SELECT max(block_timestamp) as block_timestamp,
+       |       height
+       |FROM $block_headers
+       |WHERE height = (SELECT max(height)
+       |                FROM $block_headers
+       |                WHERE chain_from = ?
+       |                  AND chain_to = ?)
+       |  AND chain_from = ?
+       |  AND chain_to = ?
+       |GROUP BY height
+       |""".stripMargin
+
+  /**
+    * Fetches the maximum `block_timestamp` and sum height of
+    * all blocks filtered with maximum height for all input chain
+    * chains provided by [[GroupSetting.groupIndexes]]
+    *
+    * @param groupSetting Provides the list of chains to run this query on
+    * @return Maximum timestamp and sum of all heights i.e. the total number of blocks.
+    */
+  def noOfBlocksAndMaxBlockTimestamp()(
+      implicit groupSetting: GroupSetting,
+      ec: ExecutionContext): DBActionR[Option[(TimeStamp, Height)]] = {
+    val unions: String =
+      Array
+        .fill(groupSetting.groupIndexes.size)(maxBlockTimestampForMaxHeightForChainSQL)
+        .mkString("UNION")
+
+    val query =
+      s"""
+        |SELECT max(block_timestamp),
+        |       sum(height)
+        |FROM ($unions) as max_block_timestamps_and_num_of_blocks;
+        |""".stripMargin
+
+    val parameters: SetParameter[Unit] =
+      (_: Unit, params: PositionedParameters) =>
+        groupSetting.groupIndexes foreach {
+          case (fromGroup, toGroup) =>
+            params >> fromGroup
+            params >> toGroup
+            params >> fromGroup
+            params >> toGroup
+      }
+
+    SQLActionBuilder(
+      queryParts = query,
+      unitPConv  = parameters
+    ).as[Option[(TimeStamp, Height)]].oneOrNone
   }
 }
