@@ -49,6 +49,7 @@ object SlickUtil {
       * return only one row or none. If the more than one rows are return then there
       * is a problem in the query itself.
       * */
+    @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
     def oneOrNone(implicit ec: ExecutionContext): DBActionR[Option[A]] =
       action.flatMap { rows =>
         rows.size match {

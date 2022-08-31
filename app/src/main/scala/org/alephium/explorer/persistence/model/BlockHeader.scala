@@ -80,7 +80,7 @@ object BlockHeader {
             if (header.height > current.height) {
               Some(header)
             } else if (header.height == current.height) {
-              maxTimeStamp(currentMax ++ Some(header))
+              maxTimeStamp(Array(current, header))
             } else {
               currentMax
             }
@@ -116,7 +116,7 @@ object BlockHeader {
       header.chainTo == chainTo
     }
 
-  /** Sum height of the given blocks */
+  /** Sum height of all blocks */
   def sumHeight(blocks: Iterable[BlockHeader]): Option[Height] =
     blocks.foldLeft(Option.empty[Height]) {
       case (currentSum, header) =>

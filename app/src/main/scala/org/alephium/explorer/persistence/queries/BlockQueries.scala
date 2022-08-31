@@ -343,11 +343,13 @@ object BlockQueries extends StrictLogging {
   def noOfBlocksAndMaxBlockTimestamp()(
       implicit groupSetting: GroupSetting,
       ec: ExecutionContext): DBActionR[Option[(TimeStamp, Height)]] = {
+    //build queries for each chainFrom-chainTo and merge them into a single UNION query
     val unions: String =
       Array
         .fill(groupSetting.groupIndexes.size)(maxBlockTimestampForMaxHeightForChainSQL)
         .mkString("UNION")
 
+    //fetch maximum `block_timestamp` and sum all `heights` for all unions
     val query =
       s"""
         |SELECT max(block_timestamp),

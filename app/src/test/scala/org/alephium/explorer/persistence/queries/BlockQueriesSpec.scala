@@ -30,6 +30,7 @@ import org.alephium.explorer.api.model.GroupIndex
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.service.BlockFlowSyncService
 
 class BlockQueriesSpec
     extends AlephiumSpec
@@ -171,7 +172,7 @@ class BlockQueriesSpec
         run(BlockHeaderSchema.table.delete).futureValue //clear table
         run(BlockHeaderSchema.table ++= blocks).futureValue //persist test data
 
-        //run multiple tests for different groupsSettings on the same persisted data
+        //To cover more cases, run multiple tests for different groupsSettings on the same persisted blocks.
         forAll(groupSettingGen) { implicit groupSetting =>
           //All blocks with maximum height
           val maxHeightBlocks =
@@ -196,6 +197,25 @@ class BlockQueriesSpec
 
           actualTimeStampAndNumberOfBlocks.map(_._1) is expectedMaxTimeStamp
           actualTimeStampAndNumberOfBlocks.map(_._2) is expectedNumberOfBlocks
+
+          /**
+            * Checks that replacement query returns the same result as
+            * original code.
+            *
+            * TODO: Remove this and deprecated code before merge.
+            */
+          locally {
+            val deprecatedResult =
+              BlockFlowSyncService.getLocalMaxTimestampDEPRECATED().futureValue
+
+            val replacementResult =
+              actualTimeStampAndNumberOfBlocks map {
+                case (timestamp, height) =>
+                  (timestamp, height.value)
+              }
+
+            replacementResult is deprecatedResult
+          }
         }
       }
     }
