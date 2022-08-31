@@ -205,14 +205,11 @@ class BlockQueriesSpec
             * TODO: Remove this and deprecated code before merge.
             */
           locally {
+            val replacementResult =
+              BlockFlowSyncService.getLocalMaxTimestamp().futureValue
+
             val deprecatedResult =
               BlockFlowSyncService.getLocalMaxTimestampDEPRECATED().futureValue
-
-            val replacementResult =
-              actualTimeStampAndNumberOfBlocks map {
-                case (timestamp, height) =>
-                  (timestamp, height.value)
-              }
 
             replacementResult is deprecatedResult
           }
