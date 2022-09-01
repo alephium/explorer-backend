@@ -69,11 +69,16 @@ object Generators {
       )
 
   val blockHeaderGen: Gen[BlockHeader] =
+    blockHeaderGenWithDefaults()
+
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def blockHeaderGenWithDefaults(chainFrom: Gen[GroupIndex] = groupIndexGen,
+                                 chainTo: Gen[GroupIndex]   = groupIndexGen): Gen[BlockHeader] =
     for {
       hash         <- blockEntryHashGen
       timestamp    <- timestampGen
-      chainFrom    <- groupIndexGen
-      chainTo      <- groupIndexGen
+      chainFrom    <- chainFrom
+      chainTo      <- chainTo
       height       <- heightGen
       version      <- Gen.posNum[Byte]
       depStateHash <- hashGen

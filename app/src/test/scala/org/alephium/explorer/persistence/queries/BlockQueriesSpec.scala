@@ -217,4 +217,49 @@ class BlockQueriesSpec
       }
     }
   }
+
+  "maxHeight" should {
+    "return empty List" when {
+      "input is empty" in {
+        run(BlockQueries.maxHeight(Iterable.empty)).futureValue is Vector.empty
+      }
+    }
+
+    "return non-empty List with None values" when {
+      "there is no data" in {
+        forAll(groupSettingGen) { implicit groupSetting =>
+          val expected = Vector.fill(groupSetting.groupIndexes.size)(None)
+          run(BlockQueries.maxHeight(groupSetting.groupIndexes)).futureValue is expected
+        }
+      }
+    }
+
+    "return non-empty list with Some values" when {
+      "there is data" in {
+        //short range GroupIndex so there are enough valid groups for this test
+        val genGroupIndex = Gen.choose(1, 5).map(GroupIndex.unsafe)
+
+        forAll(Gen.listOf(blockHeaderGenWithDefaults(genGroupIndex, genGroupIndex))) { blocks =>
+          run(BlockHeaderSchema.table.delete).futureValue //clear table
+          run(BlockHeaderSchema.table ++= blocks).futureValue //persist test data
+
+          forAll(groupSettingGen) { implicit groupSetting =>
+            //All blocks with maximum height
+            val expectedHeights =
+              groupSetting.groupIndexes
+                .map {
+                  case (from, to) =>
+                    val blocksInThisChain = BlockHeader.filterBlocksInChain(blocks, from, to)
+                    BlockHeader.maxHeight(blocksInThisChain).map(_.height)
+                }
+
+            val actualHeights =
+              run(BlockQueries.maxHeight(groupSetting.groupIndexes)).futureValue
+
+            actualHeights is expectedHeights.toVector
+          }
+        }
+      }
+    }
+  }
 }

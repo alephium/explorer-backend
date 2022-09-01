@@ -372,4 +372,57 @@ object BlockQueries extends StrictLogging {
       unitPConv  = parameters
     ).as[Option[(TimeStamp, Height)]].oneOrNone
   }
+
+  /**
+    * Fetches maximum `Height` for each `GroupIndex` pair.
+    *
+    * @see [[maxHeightZipped]] for paired output with input.
+    *
+    * @return A collection of optional `Height` values in
+    *         the same order as the input `GroupIndex` pair.
+    *         Collection items will be `Some(height)` when
+    *         `GroupIndex` pair exists, else `None`.
+    * */
+  def maxHeight(chainIndexes: Iterable[(GroupIndex, GroupIndex)])(
+      implicit ec: ExecutionContext): DBActionR[Vector[Option[Height]]] =
+    if (chainIndexes.isEmpty) {
+      DBIOAction.successful(Vector.empty)
+    } else {
+      //Parameter index is used for ordering the output collection
+      def maxHeightSQL(index: Int): String =
+        s"""
+           |SELECT max(height), $index
+           |FROM $block_headers
+           |WHERE chain_from = ?
+           |  AND chain_to = ?
+           |""".stripMargin
+
+      val query =
+        Array
+          .tabulate(chainIndexes.size)(maxHeightSQL)
+          .mkString("UNION ALL")
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          chainIndexes foreach {
+            case (from, to) =>
+              params >> from
+              params >> to
+        }
+
+      val queryResult =
+        SQLActionBuilder(
+          queryParts = query,
+          unitPConv  = parameters
+        ).as[(Option[Height], Int)]
+
+      //Sort by index and then return just the heights
+      queryResult.map(_.sortBy(_._2).map(_._1))
+    }
+
+  /** Pairs input to it's output value */
+  def maxHeightZipped(chainIndexes: Iterable[(GroupIndex, GroupIndex)])(
+      implicit ec: ExecutionContext)
+    : DBActionR[Vector[(Option[Height], (GroupIndex, GroupIndex))]] =
+    maxHeight(chainIndexes).map(_.zip(chainIndexes))
 }
