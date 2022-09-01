@@ -19,6 +19,7 @@ package org.alephium.explorer.api.model
 import upickle.core.Abort
 
 import org.alephium.json.Json._
+import org.alephium.serde._
 import org.alephium.util.Base58
 
 final class Address(val value: String) extends AnyVal {
@@ -41,4 +42,6 @@ object Address {
     }
 
   implicit val readWriter: ReadWriter[Address] = ReadWriter.join(reader, writer)
+
+  implicit val serde: Serde[Address] = stringSerde.xmap(Address.unsafe, _.value)
 }

@@ -340,6 +340,28 @@ class TransactionServiceSpec
     TransactionService.getTransaction(utx.hash).futureValue is Some(utx)
   }
 
+  "return unconfirmed txs of an address" in new Fixture {
+    forAll(addressGen, Gen.listOf(utransactionGen)) {
+      case (address, utxs) =>
+        val updatedUtxs = utxs.map { utx =>
+          utx.copy(inputs = utx.inputs.map { input =>
+            input.copy(address = Some(address))
+          })
+        }
+
+        UnconfirmedTxDao.insertMany(updatedUtxs).futureValue
+
+        val expected =
+          updatedUtxs.filter(_.inputs.exists(_.address === Some(address)))
+
+        TransactionService
+          .listUnconfirmedTransactionsByAddress(address)
+          .futureValue should contain allElementsOf expected
+
+        UnconfirmedTxDao.removeMany(updatedUtxs.map(_.hash)).futureValue
+    }
+  }
+
   "preserve outputs order" in new Fixture {
 
     val address = addressGen.sample.get

@@ -16,12 +16,16 @@
 
 package org.alephium.explorer.api.model
 
+import akka.util.ByteString
+
+import org.alephium.api.UtilJson._
 import org.alephium.json.Json._
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 final case class UInput(
     outputRef: OutputRef,
-    unlockScript: Option[String] = None
+    address: Option[Address]         = None,
+    unlockScript: Option[ByteString] = None
 )
 
 object UInput {

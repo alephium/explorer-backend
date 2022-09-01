@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.schema
 
+import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
@@ -33,7 +34,7 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
     def timestamp: Rep[TimeStamp]              = column[TimeStamp]("block_timestamp")
     def hint: Rep[Int]                         = column[Int]("hint")
     def outputRefKey: Rep[Hash]                = column[Hash]("output_ref_key", O.SqlType("BYTEA"))
-    def unlockScript: Rep[Option[String]]      = column[Option[String]]("unlock_script")
+    def unlockScript: Rep[Option[ByteString]]  = column[Option[ByteString]]("unlock_script")
     def mainChain: Rep[Boolean]                = column[Boolean]("main_chain")
     def inputOrder: Rep[Int]                   = column[Int]("input_order")
     def txOrder: Rep[Int]                      = column[Int]("tx_order")

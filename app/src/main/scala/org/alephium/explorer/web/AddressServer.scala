@@ -48,6 +48,10 @@ class AddressServer(transactionService: TransactionService)(
           transactionService
             .getTransactionsByAddressSQL(address, pagination)
       }) ~
+      toRoute(addressUnconfirmedTransactions.serverLogicSuccess[Future] { address =>
+        transactionService
+          .listUnconfirmedTransactionsByAddress(address)
+      }) ~
       toRoute(getAddressInfo.serverLogicSuccess[Future] { address =>
         for {
           (balance, locked) <- transactionService.getBalance(address)

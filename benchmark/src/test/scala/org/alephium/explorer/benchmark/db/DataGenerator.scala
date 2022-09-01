@@ -22,7 +22,7 @@ import scala.util.Random
 
 import akka.util.ByteString
 
-import org.alephium.explorer.{BlockHash, Hash}
+import org.alephium.explorer.{BlockHash, GenApiModel, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.util.{Base58, TimeStamp, U256}
@@ -91,7 +91,7 @@ object DataGenerator {
           timestamp    = output.timestamp,
           hint         = Random.nextInt(1000),
           outputRefKey = output.key,
-          unlockScript = Some(Random.alphanumeric.take(10).mkString),
+          unlockScript = Some(GenApiModel.unlockScriptGen.sample.get),
           mainChain    = output.mainChain,
           inputOrder   = order,
           txOrder      = order,
