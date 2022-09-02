@@ -256,22 +256,6 @@ class BlockQueriesSpec
 
           actualTimeStampAndNumberOfBlocks.map(_._1) is expectedMaxTimeStamp
           actualTimeStampAndNumberOfBlocks.map(_._2) is expectedNumberOfBlocks
-
-          /**
-            * Checks that replacement query returns the same result as
-            * original code.
-            *
-            * TODO: Remove this and deprecated code before merge.
-            */
-          locally {
-            val replacementResult =
-              BlockFlowSyncService.getLocalMaxTimestamp().futureValue
-
-            val deprecatedResult =
-              BlockFlowSyncService.getLocalMaxTimestampDEPRECATED().futureValue
-
-            replacementResult is deprecatedResult
-          }
         }
       }
     }
