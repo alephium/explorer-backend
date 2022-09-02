@@ -82,7 +82,7 @@ final case class UnconfirmedTransaction(
     hash: Transaction.Hash,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
-    inputs: Seq[UInput],
+    inputs: Seq[Input],
     outputs: Seq[UOutput],
     gasAmount: Int,
     gasPrice: U256,

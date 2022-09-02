@@ -55,12 +55,6 @@ object GenApiModel {
     amount       <- Gen.option(amountGen)
   } yield Input(outputRef, unlockScript, address, amount)
 
-  val uinputGen: Gen[UInput] = for {
-    outputRef    <- outputRefGen
-    address      <- Gen.option(addressGen)
-    unlockScript <- Gen.option(unlockScriptGen)
-  } yield UInput(outputRef, address, unlockScript)
-
   val tokenGen: Gen[Token] = for {
     id     <- hashGen
     amount <- amountGen
@@ -114,7 +108,7 @@ object GenApiModel {
       hash      <- transactionHashGen
       chainFrom <- groupIndexGen
       chainTo   <- groupIndexGen
-      inputs    <- Gen.listOfN(3, uinputGen)
+      inputs    <- Gen.listOfN(3, inputGen.map(_.copy(attoAlphAmount = None)))
       outputs   <- Gen.listOfN(3, uoutputGen)
       gasAmount <- Gen.posNum[Int]
       gasPrice  <- u256Gen

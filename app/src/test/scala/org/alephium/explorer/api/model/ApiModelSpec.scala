@@ -139,21 +139,6 @@ class ApiModelSpec() extends AlephiumSpec {
     }
   }
 
-  "UInput" in {
-    forAll(uinputGen) { uinput =>
-      val expected =
-        s"""
-        |{
-        |  "outputRef": ${write(uinput.outputRef)}
-        |${uinput.address.map(address => s""","address": "$address"""").getOrElse("")}
-        |${uinput.unlockScript
-             .map(script              => s""","unlockScript": ${write(script)}""")
-             .getOrElse("")}
-        |}""".stripMargin
-      check(uinput, expected)
-    }
-  }
-
   "UnconfirmedTx" in {
     forAll(utransactionGen) { utx =>
       val expected = s"""

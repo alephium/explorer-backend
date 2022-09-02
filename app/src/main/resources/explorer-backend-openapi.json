@@ -3939,24 +3939,6 @@
           }
         }
       },
-      "UInput": {
-        "required": [
-          "outputRef"
-        ],
-        "type": "object",
-        "properties": {
-          "outputRef": {
-            "$ref": "#/components/schemas/OutputRef"
-          },
-          "address": {
-            "type": "string"
-          },
-          "unlockScript": {
-            "type": "string",
-            "format": "hex-string"
-          }
-        }
-      },
       "UOutput": {
         "required": [
           "amount",
@@ -4015,7 +3997,7 @@
           "inputs": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/UInput"
+              "$ref": "#/components/schemas/Input"
             }
           },
           "outputs": {
