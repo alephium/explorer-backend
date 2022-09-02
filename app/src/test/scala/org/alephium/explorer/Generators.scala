@@ -28,7 +28,8 @@ import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.service.BlockFlowClient
-import org.alephium.protocol.{model => protocol, ALPH}
+import org.alephium.protocol.{model => protocol, _}
+import org.alephium.serde._
 import org.alephium.util.{AVector, Duration, TimeStamp, U256}
 
 object Generators {
@@ -137,10 +138,34 @@ object Generators {
     key  <- hashGen
   } yield protocolApi.OutputRef(hint, key)
 
+  val keypairGen: Gen[(PrivateKey, PublicKey)] =
+    Gen.const(()).map(_ => SignatureSchema.secureGeneratePriPub())
+
+  val publicKeyGen: Gen[PublicKey] =
+    keypairGen.map(_._2)
+
+  val unlockScriptProtocolP2PKHGen: Gen[vm.UnlockScript.P2PKH] =
+    publicKeyGen.map(vm.UnlockScript.p2pkh)
+
+  val unlockScriptProtocolP2MPKHGen: Gen[vm.UnlockScript.P2MPKH] =
+    for {
+      n          <- Gen.choose(5, 8)
+      m          <- Gen.choose(2, 4)
+      publicKey0 <- publicKeyGen
+      moreKeys   <- Gen.listOfN(n, publicKeyGen)
+      indexedKey <- Gen.pick(m, (publicKey0 +: moreKeys).zipWithIndex).map(AVector.from)
+    } yield {
+      vm.UnlockScript.p2mpkh(indexedKey.sortBy(_._2))
+    }
+
+  val unlockScriptProtocolGen: Gen[vm.UnlockScript] =
+    Gen.oneOf(unlockScriptProtocolP2PKHGen: Gen[vm.UnlockScript],
+              unlockScriptProtocolP2MPKHGen: Gen[vm.UnlockScript])
+
   val inputProtocolGen: Gen[protocolApi.AssetInput] = for {
     outputRef    <- outputRefProtocolGen
-    unlockScript <- hashGen.map(_.bytes)
-  } yield protocolApi.AssetInput(outputRef, unlockScript)
+    unlockScript <- unlockScriptProtocolGen
+  } yield protocolApi.AssetInput(outputRef, serialize(unlockScript))
 
   def fixedOutputAssetProtocolGen(
       implicit groupSettings: GroupSetting): Gen[protocolApi.FixedAssetOutput] =
@@ -446,7 +471,7 @@ object Generators {
   def inputEntityGen(outputEntityGen: Gen[OutputEntity] = outputEntityGen): Gen[InputEntity] =
     for {
       outputEntity <- outputEntityGen
-      unlockScript <- Gen.option(Gen.hexStr)
+      unlockScript <- Gen.option(unlockScriptGen)
       txOrder      <- arbitrary[Int]
     } yield {
       InputEntity(

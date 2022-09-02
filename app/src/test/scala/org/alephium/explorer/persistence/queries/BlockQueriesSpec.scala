@@ -17,6 +17,7 @@
 package org.alephium.explorer.persistence.queries
 
 import scala.concurrent.ExecutionContext
+import scala.math.Ordering.Implicits.infixOrderingOps
 
 import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
@@ -26,11 +27,10 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.{AlephiumSpec, GroupSetting}
 import org.alephium.explorer.GenApiModel.blockEntryHashGen
 import org.alephium.explorer.Generators._
-import org.alephium.explorer.api.model.GroupIndex
+import org.alephium.explorer.api.model.{GroupIndex, Height}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema._
-import org.alephium.explorer.service.BlockFlowSyncService
 
 class BlockQueriesSpec
     extends AlephiumSpec
@@ -40,6 +40,64 @@ class BlockQueriesSpec
 
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   override implicit val patienceConfig            = PatienceConfig(timeout = Span(1000, Minutes))
+
+  /**
+    * Finds a block with maximum height. If two blocks have the same
+    * height, returns the one with maximum timestamp.
+    * */
+  def maxHeight(blocks: Iterable[BlockHeader]): Option[BlockHeader] =
+    blocks.foldLeft(Option.empty[BlockHeader]) {
+      case (currentMax, header) =>
+        currentMax match {
+          case Some(current) =>
+            if (header.height > current.height) {
+              Some(header)
+            } else if (header.height == current.height) {
+              maxTimeStamp(Array(current, header))
+            } else {
+              currentMax
+            }
+
+          case None =>
+            Some(header)
+        }
+    }
+
+  /** Finds a block with maximum timestamp */
+  def maxTimeStamp(blocks: Iterable[BlockHeader]): Option[BlockHeader] =
+    blocks.foldLeft(Option.empty[BlockHeader]) {
+      case (currentMax, header) =>
+        currentMax match {
+          case Some(current) =>
+            if (header.timestamp > current.timestamp) {
+              Some(header)
+            } else {
+              currentMax
+            }
+
+          case None =>
+            Some(header)
+        }
+    }
+
+  /** Filter blocks within the given chain */
+  def filterBlocksInChain(blocks: Iterable[BlockHeader],
+                          chainFrom: GroupIndex,
+                          chainTo: GroupIndex): Iterable[BlockHeader] =
+    blocks.filter { header =>
+      header.chainFrom == chainFrom &&
+      header.chainTo == chainTo
+    }
+
+  /** Sum height of all blocks */
+  def sumHeight(blocks: Iterable[BlockHeader]): Option[Height] =
+    blocks.foldLeft(Option.empty[Height]) {
+      case (currentSum, header) =>
+        currentSum match {
+          case Some(sum) => Some(Height.unsafe(sum.value + header.height.value))
+          case None      => Some(header.height)
+        }
+    }
 
   "insert and ignore block_headers" in {
 
@@ -140,7 +198,7 @@ class BlockQueriesSpec
     "return None" when {
       "there is no data" in {
         forAll(groupSettingGen) { implicit groupSetting =>
-          run(BlockQueries.noOfBlocksAndMaxBlockTimestamp()).futureValue is None
+          run(BlockQueries.numOfBlocksAndMaxBlockTimestamp()).futureValue is None
         }
       }
 
@@ -161,7 +219,7 @@ class BlockQueriesSpec
 
             implicit val implicitGroupSetting: GroupSetting = groupSetting
             //No blocks exists for the groupSetting so result is None
-            run(BlockQueries.noOfBlocksAndMaxBlockTimestamp()).futureValue is None
+            run(BlockQueries.numOfBlocksAndMaxBlockTimestamp()).futureValue is None
 
         }
       }
@@ -179,40 +237,24 @@ class BlockQueriesSpec
             groupSetting.groupIndexes
               .flatMap {
                 case (from, to) =>
-                  val blocksInThisChain = BlockHeader.filterBlocksInChain(blocks, from, to)
-                  BlockHeader.maxHeight(blocksInThisChain)
+                  val blocksInThisChain = filterBlocksInChain(blocks, from, to)
+                  maxHeight(blocksInThisChain)
               }
 
           //expected total number of blocks
           val expectedNumberOfBlocks =
-            BlockHeader.sumHeight(maxHeightBlocks)
+            sumHeight(maxHeightBlocks)
 
           //expected maximum timestamp
           val expectedMaxTimeStamp =
-            BlockHeader.maxTimeStamp(maxHeightBlocks).map(_.timestamp)
+            maxTimeStamp(maxHeightBlocks).map(_.timestamp)
 
           //Queried result Option[(TimeStamp, Height)]
           val actualTimeStampAndNumberOfBlocks =
-            run(BlockQueries.noOfBlocksAndMaxBlockTimestamp()).futureValue
+            run(BlockQueries.numOfBlocksAndMaxBlockTimestamp()).futureValue
 
           actualTimeStampAndNumberOfBlocks.map(_._1) is expectedMaxTimeStamp
           actualTimeStampAndNumberOfBlocks.map(_._2) is expectedNumberOfBlocks
-
-          /**
-            * Checks that replacement query returns the same result as
-            * original code.
-            *
-            * TODO: Remove this and deprecated code before merge.
-            */
-          locally {
-            val replacementResult =
-              BlockFlowSyncService.getLocalMaxTimestamp().futureValue
-
-            val deprecatedResult =
-              BlockFlowSyncService.getLocalMaxTimestampDEPRECATED().futureValue
-
-            replacementResult is deprecatedResult
-          }
         }
       }
     }

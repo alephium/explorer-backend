@@ -180,41 +180,13 @@ case object BlockFlowSyncService extends StrictLogging {
     fetchAndBuildTimeStampRange(step, backStep, getLocalMaxTimestamp(), getRemoteMaxTimestamp())
   }
 
-  def getLocalMaxTimestampDEPRECATED()(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile],
-      groupSetting: GroupSetting): Future[Option[(TimeStamp, Int)]] = {
-    Future
-      .traverse(groupSetting.groupIndexes) {
-        case (fromGroup, toGroup) =>
-          BlockDao
-            .maxHeight(fromGroup, toGroup)
-            .flatMap {
-              case Some(height) =>
-                BlockDao
-                  .getAtHeight(fromGroup, toGroup, height)
-                  .map { blocks =>
-                    blocks.map(_.timestamp).maxOption.map(ts => (ts, height))
-                  }
-              case None =>
-                Future.successful(None)
-            }
-
-      }
-      .map { res =>
-        val tsHeights  = res.flatten
-        val nbOfBlocks = tsHeights.map { case (_, height) => height.value }.sum
-        tsHeights.map { case (ts, _) => ts }.maxOption.map(max => (max, nbOfBlocks))
-      }
-  }
-
-  /** @see [[org.alephium.explorer.persistence.queries.BlockQueries.noOfBlocksAndMaxBlockTimestamp]] */
+  /** @see [[org.alephium.explorer.persistence.queries.BlockQueries.numOfBlocksAndMaxBlockTimestamp]] */
   def getLocalMaxTimestamp()(implicit ec: ExecutionContext,
                              dc: DatabaseConfig[PostgresProfile],
                              groupSetting: GroupSetting): Future[Option[(TimeStamp, Int)]] = {
     //Convert query result to return `Height` as `Int` value.
     val queryResultToIntHeight =
-      BlockQueries.noOfBlocksAndMaxBlockTimestamp() map { optionResult =>
+      BlockQueries.numOfBlocksAndMaxBlockTimestamp() map { optionResult =>
         optionResult map {
           case (timestamp, height) =>
             (timestamp, height.value)

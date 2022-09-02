@@ -129,7 +129,7 @@ class ApiModelSpec() extends AlephiumSpec {
       val expected = s"""
      |{
      |  "outputRef": ${write(input.outputRef)}
-     |  ${input.unlockScript.map(script => s""","unlockScript": "${script}"""").getOrElse("")}
+     |  ${input.unlockScript.map(script => s""","unlockScript": ${write(script)}""").getOrElse("")}
      |  ${input.address.map(address => s""","address": "${address}"""").getOrElse("")}
      |  ${input.attoAlphAmount
                           .map(attoAlphAmount => s""","attoAlphAmount": "${attoAlphAmount}"""")
@@ -141,19 +141,15 @@ class ApiModelSpec() extends AlephiumSpec {
 
   "UInput" in {
     forAll(uinputGen) { uinput =>
-      val expected = uinput.unlockScript match {
-        case None =>
-          s"""
-          |{
-          |  "outputRef": ${write(uinput.outputRef)}
-          |}""".stripMargin
-        case Some(unlockScript) =>
-          s"""
-          |{
-          |  "outputRef": ${write(uinput.outputRef)},
-          |  "unlockScript": "${unlockScript}"
-          |}""".stripMargin
-      }
+      val expected =
+        s"""
+        |{
+        |  "outputRef": ${write(uinput.outputRef)}
+        |${uinput.address.map(address => s""","address": "$address"""").getOrElse("")}
+        |${uinput.unlockScript
+             .map(script              => s""","unlockScript": ${write(script)}""")
+             .getOrElse("")}
+        |}""".stripMargin
       check(uinput, expected)
     }
   }

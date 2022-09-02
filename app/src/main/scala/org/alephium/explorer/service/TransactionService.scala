@@ -44,6 +44,10 @@ trait TransactionService {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]]
 
+  def listUnconfirmedTransactionsByAddress(address: Address)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]]
+
   def getTransactionsNumberByAddress(address: Address)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Int]
@@ -112,6 +116,12 @@ object TransactionService extends TransactionService {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
     TransactionDao.getByAddressSQL(address, pagination)
+
+  def listUnconfirmedTransactionsByAddress(address: Address)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]] = {
+    UnconfirmedTxDao.listByAddress(address)
+  }
 
   def getTransactionsNumberByAddress(address: Address)(
       implicit ec: ExecutionContext,

@@ -340,7 +340,7 @@ object BlockQueries extends StrictLogging {
     * @param groupSetting Provides the list of chains to run this query on
     * @return Maximum timestamp and sum of all heights i.e. the total number of blocks.
     */
-  def noOfBlocksAndMaxBlockTimestamp()(
+  def numOfBlocksAndMaxBlockTimestamp()(
       implicit groupSetting: GroupSetting,
       ec: ExecutionContext): DBActionR[Option[(TimeStamp, Height)]] = {
     //build queries for each chainFrom-chainTo and merge them into a single UNION query

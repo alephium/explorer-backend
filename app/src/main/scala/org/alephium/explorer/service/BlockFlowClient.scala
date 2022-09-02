@@ -25,6 +25,7 @@ import scala.language.implicitConversions
 
 import akka.http.scaladsl.model.Uri
 import akka.util.ByteString
+import com.typesafe.scalalogging.StrictLogging
 import sttp.client3._
 
 import org.alephium.api
@@ -41,7 +42,7 @@ import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.mining.HashRate
 import org.alephium.protocol.model.{Hint, Target}
 import org.alephium.protocol.vm.LockupScript
-import org.alephium.util.{Duration, Hex, Service, TimeStamp, U256}
+import org.alephium.util.{Duration, Service, TimeStamp, U256}
 
 trait BlockFlowClient extends Service {
   def fetchBlock(fromGroup: GroupIndex, hash: BlockEntry.Hash): Future[BlockEntity]
@@ -75,7 +76,7 @@ trait BlockFlowClient extends Service {
   def close(): Future[Unit]
 }
 
-object BlockFlowClient {
+object BlockFlowClient extends StrictLogging {
   def apply(uri: Uri, groupNum: Int, maybeApiKey: Option[api.model.ApiKey])(
       implicit executionContext: ExecutionContext
   ): BlockFlowClient =
@@ -322,10 +323,28 @@ object BlockFlowClient {
       if (tx.scriptSignatures.isEmpty) None else Some(tx.scriptSignatures.toSeq)
     )
 
+  private def addressFromProtocolInput(input: api.model.AssetInput): Option[Address] =
+    input.toProtocol() match {
+      case Right(value) =>
+        value.unlockScript match {
+          case protocol.vm.UnlockScript.P2PKH(pk) =>
+            Some(Address.unsafe(protocol.model.Address.p2pkh(pk).toBase58)): Option[Address]
+          case protocol.vm.UnlockScript.P2SH(script, _) =>
+            val lockup = protocol.vm.LockupScript.p2sh(protocol.Hash.hash(script))
+            Some(Address.unsafe(protocol.model.Address.from(lockup).toBase58)): Option[Address]
+          case protocol.vm.UnlockScript.P2MPKH(_) =>
+            None
+        }
+      case Left(error) =>
+        logger.error(s"Cannot decode protocol input: $error")
+        None
+    }
+
   private def inputToUInput(input: api.model.AssetInput): UInput = {
     UInput(
       OutputRef(input.outputRef.hint, input.outputRef.key),
-      Some(Hex.toHexString(input.unlockScript))
+      addressFromProtocolInput(input),
+      Some(input.unlockScript)
     )
   }
 
@@ -342,11 +361,11 @@ object BlockFlowClient {
       timestamp,
       input.outputRef.hint,
       input.outputRef.key,
-      Some(Hex.toHexString(input.unlockScript)),
+      Some(input.unlockScript),
       mainChain,
       index,
       txOrder,
-      None,
+      addressFromProtocolInput(input),
       None,
       None
     )
