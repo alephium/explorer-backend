@@ -179,13 +179,13 @@ case object BlockFlowSyncService extends StrictLogging {
     fetchAndBuildTimeStampRange(step, backStep, getLocalMaxTimestamp(), getRemoteMaxTimestamp())
   }
 
-  /** @see [[org.alephium.explorer.persistence.queries.BlockQueries.noOfBlocksAndMaxBlockTimestamp]] */
+  /** @see [[org.alephium.explorer.persistence.queries.BlockQueries.numOfBlocksAndMaxBlockTimestamp]] */
   def getLocalMaxTimestamp()(implicit ec: ExecutionContext,
                              dc: DatabaseConfig[PostgresProfile],
                              groupSetting: GroupSetting): Future[Option[(TimeStamp, Int)]] = {
     //Convert query result to return `Height` as `Int` value.
     val queryResultToIntHeight =
-      BlockQueries.noOfBlocksAndMaxBlockTimestamp() map { optionResult =>
+      BlockQueries.numOfBlocksAndMaxBlockTimestamp() map { optionResult =>
         optionResult map {
           case (timestamp, height) =>
             (timestamp, height.value)

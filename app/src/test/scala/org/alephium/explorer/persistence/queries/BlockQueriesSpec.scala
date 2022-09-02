@@ -31,7 +31,6 @@ import org.alephium.explorer.api.model.{GroupIndex, Height}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema._
-import org.alephium.explorer.service.BlockFlowSyncService
 
 class BlockQueriesSpec
     extends AlephiumSpec
@@ -82,9 +81,9 @@ class BlockQueriesSpec
     }
 
   /** Filter blocks within the given chain */
-  @inline def filterBlocksInChain(blocks: Iterable[BlockHeader],
-                                  chainFrom: GroupIndex,
-                                  chainTo: GroupIndex): Iterable[BlockHeader] =
+  def filterBlocksInChain(blocks: Iterable[BlockHeader],
+                          chainFrom: GroupIndex,
+                          chainTo: GroupIndex): Iterable[BlockHeader] =
     blocks.filter { header =>
       header.chainFrom == chainFrom &&
       header.chainTo == chainTo
@@ -199,7 +198,7 @@ class BlockQueriesSpec
     "return None" when {
       "there is no data" in {
         forAll(groupSettingGen) { implicit groupSetting =>
-          run(BlockQueries.noOfBlocksAndMaxBlockTimestamp()).futureValue is None
+          run(BlockQueries.numOfBlocksAndMaxBlockTimestamp()).futureValue is None
         }
       }
 
@@ -220,7 +219,7 @@ class BlockQueriesSpec
 
             implicit val implicitGroupSetting: GroupSetting = groupSetting
             //No blocks exists for the groupSetting so result is None
-            run(BlockQueries.noOfBlocksAndMaxBlockTimestamp()).futureValue is None
+            run(BlockQueries.numOfBlocksAndMaxBlockTimestamp()).futureValue is None
 
         }
       }
@@ -252,7 +251,7 @@ class BlockQueriesSpec
 
           //Queried result Option[(TimeStamp, Height)]
           val actualTimeStampAndNumberOfBlocks =
-            run(BlockQueries.noOfBlocksAndMaxBlockTimestamp()).futureValue
+            run(BlockQueries.numOfBlocksAndMaxBlockTimestamp()).futureValue
 
           actualTimeStampAndNumberOfBlocks.map(_._1) is expectedMaxTimeStamp
           actualTimeStampAndNumberOfBlocks.map(_._2) is expectedNumberOfBlocks
