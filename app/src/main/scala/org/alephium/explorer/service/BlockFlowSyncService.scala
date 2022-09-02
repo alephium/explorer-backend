@@ -153,23 +153,24 @@ case object BlockFlowSyncService extends StrictLogging {
              dc: DatabaseConfig[PostgresProfile],
              blockFlowClient: BlockFlowClient,
              cache: BlockCache,
-             groupSetting: GroupSetting): Future[Boolean] = {
-    Future
-      .traverse(groupSetting.groupIndexes) {
-        case (fromGroup, toGroup) =>
-          BlockDao.maxHeight(fromGroup, toGroup).flatMap {
-            case Some(height) if height.value == 0 =>
-              syncAt(fromGroup, toGroup, Height.unsafe(1)).map(_.nonEmpty)
-            case None =>
-              for {
-                _      <- syncAt(fromGroup, toGroup, Height.unsafe(0))
-                blocks <- syncAt(fromGroup, toGroup, Height.unsafe(1))
-              } yield blocks.nonEmpty
-            case _ => Future.successful(true)
-          }
-      }
-      .map(_.contains(true))
-  }
+             groupSetting: GroupSetting): Future[Boolean] =
+    run(BlockQueries.maxHeightZipped(groupSetting.groupIndexes)) flatMap { heightAndGroups =>
+      Future
+        .traverse(heightAndGroups) {
+          case (height, (fromGroup, toGroup)) =>
+            height match {
+              case Some(height) if height.value == 0 =>
+                syncAt(fromGroup, toGroup, Height.unsafe(1)).map(_.nonEmpty)
+              case None =>
+                for {
+                  _      <- syncAt(fromGroup, toGroup, Height.unsafe(0))
+                  blocks <- syncAt(fromGroup, toGroup, Height.unsafe(1))
+                } yield blocks.nonEmpty
+              case _ => Future.successful(true)
+            }
+        }
+        .map(_.contains(true))
+    }
 
   private def getTimeStampRange(step: Duration, backStep: Duration)(
       implicit ec: ExecutionContext,
