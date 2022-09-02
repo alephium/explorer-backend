@@ -16,20 +16,32 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.api.model.{Address, Transaction, UOutput}
+import akka.util.ByteString
+
+import org.alephium.explorer.Hash
+import org.alephium.explorer.api.model.{Address, AssetOutput, Token, Transaction}
 import org.alephium.util.{TimeStamp, U256}
 
 final case class UOutputEntity(
     txHash: Transaction.Hash,
+    hint: Int,
+    key: Hash,
     amount: U256,
     address: Address,
+    tokens: Option[Seq[Token]],
     lockTime: Option[TimeStamp],
+    message: Option[ByteString],
     uoutputOrder: Int
 ) {
-  val toApi: UOutput =
-    UOutput(
+  val toApi: AssetOutput =
+    AssetOutput(
+      hint,
+      key,
       amount,
       address,
-      lockTime
+      tokens,
+      lockTime,
+      message,
+      None
     )
 }

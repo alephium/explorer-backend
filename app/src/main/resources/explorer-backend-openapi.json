@@ -3939,26 +3939,6 @@
           }
         }
       },
-      "UOutput": {
-        "required": [
-          "amount",
-          "address"
-        ],
-        "type": "object",
-        "properties": {
-          "amount": {
-            "type": "string",
-            "format": "uint256"
-          },
-          "address": {
-            "type": "string"
-          },
-          "lockTime": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
       "Unauthorized": {
         "required": [
           "detail"
@@ -4003,7 +3983,7 @@
           "outputs": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/UOutput"
+              "$ref": "#/components/schemas/AssetOutput"
             }
           },
           "gasAmount": {

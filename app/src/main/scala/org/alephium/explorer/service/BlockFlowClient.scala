@@ -42,7 +42,7 @@ import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.mining.HashRate
 import org.alephium.protocol.model.{Hint, Target}
 import org.alephium.protocol.vm.LockupScript
-import org.alephium.util.{Duration, Service, TimeStamp, U256}
+import org.alephium.util.{AVector, Duration, Service, TimeStamp, U256}
 
 trait BlockFlowClient extends Service {
   def fetchBlock(fromGroup: GroupIndex, hash: BlockEntry.Hash): Future[BlockEntity]
@@ -154,7 +154,7 @@ object BlockFlowClient extends StrictLogging {
           utxs.flatMap { utx =>
             utx.unconfirmedTransactions.map { tx =>
               val inputs  = tx.unsigned.inputs.map(protocolInputInput).toSeq
-              val outputs = tx.unsigned.fixedOutputs.map(outputToUOutput).toSeq
+              val outputs = tx.unsigned.fixedOutputs.map(protocolOutputToAssetOutput).toSeq
               txToUTx(tx, utx.fromGroup, utx.toGroup, inputs, outputs, TimeStamp.now())
             }
           }.toSeq
@@ -288,7 +288,7 @@ object BlockFlowClient extends StrictLogging {
                       chainFrom: Int,
                       chainTo: Int,
                       inputs: Seq[Input],
-                      outputs: Seq[UOutput],
+                      outputs: Seq[AssetOutput],
                       timestamp: TimeStamp): UnconfirmedTransaction =
     UnconfirmedTransaction(
       new Transaction.Hash(tx.unsigned.txId),
@@ -396,16 +396,37 @@ object BlockFlowClient extends StrictLogging {
     )
   }
 
-  private def outputToUOutput(output: api.model.FixedAssetOutput): UOutput = {
+  private def protocolOutputToAssetOutput(output: api.model.FixedAssetOutput): AssetOutput = {
     val lockTime = output match {
       case asset: api.model.FixedAssetOutput if asset.lockTime.millis > 0 => Some(asset.lockTime)
       case _                                                              => None
     }
-    UOutput(
+    AssetOutput(
+      output.hint,
+      output.key,
       output.attoAlphAmount.value,
       new Address(output.address.toBase58),
-      lockTime
+      protocolTokensToTokens(output.tokens),
+      lockTime,
+      Some(output.message),
+      None
     )
+  }
+
+  private def protocolTokensToTokens(tokens: AVector[api.model.Token]): Option[Seq[Token]] = {
+    if (tokens.isEmpty) {
+      None
+    } else {
+      Some(
+        tokens
+          .groupBy(_.id)
+          .map {
+            case (id, tokens) =>
+              val amount = tokens.map(_.amount).fold(U256.Zero)(_ addUnsafe _)
+              Token(id, amount)
+          }
+          .toSeq)
+    }
   }
 
   // scalastyle:off method.length
@@ -436,19 +457,7 @@ object BlockFlowClient extends StrictLogging {
       case _: api.model.ContractOutput  => None
     }
 
-    val tokens = if (output.tokens.isEmpty) {
-      None
-    } else {
-      Some(
-        output.tokens
-          .groupBy(_.id)
-          .map {
-            case (id, tokens) =>
-              val amount = tokens.map(_.amount).fold(U256.Zero)(_ addUnsafe _)
-              Token(id, amount)
-          }
-          .toSeq)
-    }
+    val tokens = protocolTokensToTokens(output.tokens)
 
     OutputEntity(
       blockHash,

@@ -24,7 +24,7 @@ import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AlephiumSpec
-import org.alephium.explorer.GenApiModel.{uoutputGen, utransactionGen}
+import org.alephium.explorer.GenApiModel.{assetOutputGen, utransactionGen}
 import org.alephium.explorer.GenCoreUtil.timestampGen
 import org.alephium.explorer.api.model.Transaction
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
@@ -75,7 +75,7 @@ class UnconfirmedTxDaoSpec
   }
 
   "get utx with multiple outputs with same address but different lock time. Issue #142 " in {
-    forAll(Gen.choose(2, 6), uoutputGen, utransactionGen) {
+    forAll(Gen.choose(2, 6), assetOutputGen, utransactionGen) {
       case (outputSize, out, utx) =>
         //outputs with same address but different lockTime
         val outputs = Seq.fill(outputSize)(out.copy(lockTime = Some(timestampGen.sample.get)))

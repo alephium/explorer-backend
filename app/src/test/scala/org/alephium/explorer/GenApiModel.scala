@@ -87,13 +87,6 @@ object GenApiModel {
   val outputGen: Gen[Output] =
     Gen.oneOf(assetOutputGen: Gen[Output], contractOutputGen: Gen[Output])
 
-  def uoutputGen: Gen[UOutput] =
-    for {
-      amount   <- amountGen
-      address  <- addressGen
-      lockTime <- Gen.option(timestampGen)
-    } yield UOutput(amount, address, lockTime)
-
   val transactionGen: Gen[Transaction] =
     for {
       hash      <- transactionHashGen
@@ -109,7 +102,7 @@ object GenApiModel {
       chainFrom <- groupIndexGen
       chainTo   <- groupIndexGen
       inputs    <- Gen.listOfN(3, inputGen.map(_.copy(attoAlphAmount = None)))
-      outputs   <- Gen.listOfN(3, uoutputGen)
+      outputs   <- Gen.listOfN(3, assetOutputGen.map(_.copy(spent = None)))
       gasAmount <- Gen.posNum[Int]
       gasPrice  <- u256Gen
       lastSeen  <- timestampGen
