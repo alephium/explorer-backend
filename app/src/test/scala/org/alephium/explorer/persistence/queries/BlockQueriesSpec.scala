@@ -291,8 +291,8 @@ class BlockQueriesSpec
               groupSetting.groupIndexes
                 .map {
                   case (from, to) =>
-                    val blocksInThisChain = BlockHeader.filterBlocksInChain(blocks, from, to)
-                    BlockHeader.maxHeight(blocksInThisChain).map(_.height)
+                    val blocksInThisChain = filterBlocksInChain(blocks, from, to)
+                    maxHeight(blocksInThisChain).map(_.height)
                 }
 
             val actualHeights =
