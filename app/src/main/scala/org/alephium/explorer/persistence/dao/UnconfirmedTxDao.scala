@@ -24,9 +24,10 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.DBActionW
+import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.persistence.queries.UnconfirmedTransactionQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
@@ -37,6 +38,10 @@ trait UnconfirmedTxDao {
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Option[UnconfirmedTransaction]]
 
   def list(pagination: Pagination)(
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]]
+
+  def listByAddress(address: Address)(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]]
 
@@ -62,11 +67,11 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Option[UnconfirmedTransaction]] = {
     run(for {
-      maybeTx <- UnconfirmedTxSchema.table.filter(_.hash === hash).result.headOption
-      inputs  <- UInputSchema.table.filter(_.txHash === hash).result
-      outputs <- UOutputSchema.table.filter(_.txHash === hash).sortBy(_.uoutputOrder).result
+      maybeTx <- utxFromTxHash(hash)
+      inputs  <- uinputsFromTx(hash)
+      outputs <- uoutputsFromTx(hash)
     } yield {
-      maybeTx.map { tx =>
+      maybeTx.headOption.map { tx =>
         UnconfirmedTransaction(
           tx.hash,
           tx.chainFrom,
@@ -80,26 +85,45 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
       }
     })
   }
-
   def list(pagination: Pagination)(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]] = {
-    val offset = pagination.offset.toLong
-    val limit  = pagination.limit.toLong
-    val toDrop = offset * limit
-    run(for {
-      txs <- UnconfirmedTxSchema.table.sortBy(_.lastSeen.desc).drop(toDrop).take(limit).result
-      txHashes = txs.map(_.hash)
-      inputs  <- UInputSchema.table.filter(_.txHash inSet txHashes).result
-      outputs <- UOutputSchema.table.filter(_.txHash inSet txHashes).result
-    } yield {
 
+    run(for {
+      txs <- listUnconfirmedTransactionsQuery(pagination)
+      txHashes = txs.map(_.hash)
+      inputs  <- uinputsFromTxs(txHashes)
+      outputs <- uoutputsFromTxs(txHashes)
+    } yield {
       txs.map { tx =>
         UnconfirmedTransaction(
           tx.hash,
           tx.chainFrom,
           tx.chainTo,
-          inputs.filter(_.txHash == tx.hash).map(_.toApi),
+          inputs.filter(_.txHash == tx.hash).sortBy(_.uinputOrder).map(_.toApi),
+          outputs.filter(_.txHash == tx.hash).sortBy(_.uoutputOrder).map(_.toApi),
+          tx.gasAmount,
+          tx.gasPrice,
+          tx.lastSeen
+        )
+      }
+    })
+  }
+  def listByAddress(address: Address)(
+      implicit executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]] = {
+    run(for {
+      txHashes <- listUTXHashesByAddress(address)
+      txs      <- utxsFromTxs(txHashes)
+      inputs   <- uinputsFromTxs(txHashes)
+      outputs  <- uoutputsFromTxs(txHashes)
+    } yield {
+      txs.map { tx =>
+        UnconfirmedTransaction(
+          tx.hash,
+          tx.chainFrom,
+          tx.chainTo,
+          inputs.filter(_.txHash == tx.hash).sortBy(_.uinputOrder).map(_.toApi),
           outputs.filter(_.txHash == tx.hash).sortBy(_.uoutputOrder).map(_.toApi),
           tx.gasAmount,
           tx.gasPrice,

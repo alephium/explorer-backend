@@ -45,6 +45,7 @@ object AppServer {
     val utilsServer: UtilsServer   = new UtilsServer()
     val chartsServer: ChartsServer = new ChartsServer()
     val tokenServer: TokenServer   = new TokenServer()
+    val unconfirmedTxServer        = new UnconfirmedTransactionServer()
     val documentationServer        = new DocumentationServer()
 
     cors()(
@@ -55,6 +56,7 @@ object AppServer {
         infosServer.route ~
         chartsServer.route ~
         utilsServer.route ~
+        unconfirmedTxServer.route ~
         documentationServer.route ~
         Metrics.route)
   }

@@ -76,6 +76,13 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[Int])
       .description("Get total transactions of a given address")
 
+  val addressUnconfirmedTransactions: BaseEndpoint[Address, Seq[UnconfirmedTransaction]] =
+    addressesEndpoint.get
+      .in(path[Address]("address")(Codecs.addressTapirCodec))
+      .in("unconfirmed-transactions")
+      .out(jsonBody[Seq[UnconfirmedTransaction]])
+      .description("List unconfirmed transactions of a given address")
+
   val getAddressBalance: BaseEndpoint[Address, AddressBalance] =
     addressesEndpoint.get
       .in(path[Address]("address")(Codecs.addressTapirCodec))

@@ -16,8 +16,10 @@
 
 package org.alephium.explorer.persistence.model
 
+import akka.util.ByteString
+
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, BlockEntry, Input, OutputRef, Token, Transaction}
+import org.alephium.explorer.api.model._
 import org.alephium.util.{TimeStamp, U256}
 
 final case class InputEntity(
@@ -26,7 +28,7 @@ final case class InputEntity(
     timestamp: TimeStamp,
     hint: Int,
     outputRefKey: Hash,
-    unlockScript: Option[String],
+    unlockScript: Option[ByteString],
     mainChain: Boolean,
     inputOrder: Int,
     txOrder: Int,

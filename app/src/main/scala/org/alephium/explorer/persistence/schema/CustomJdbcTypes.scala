@@ -97,18 +97,24 @@ object CustomJdbcTypes {
       bytes => ByteString.fromArrayUnsafe(bytes)
     )
 
-  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   implicit val seqByteStringType: JdbcType[Seq[ByteString]] =
     MappedJdbcType.base[Seq[ByteString], Array[Byte]](
       byteStrings => serialize(AVector.unsafe(byteStrings.toArray)).toArray,
       bytes =>
-        deserialize[AVector[ByteString]](ByteString.fromArrayUnsafe(bytes)).toOption.get.toSeq
+        deserialize[AVector[ByteString]](ByteString.fromArrayUnsafe(bytes)) match {
+          case Left(error)  => throw error
+          case Right(value) => value.toSeq
+      }
     )
-  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+
   implicit val tokensType: JdbcType[Seq[Token]] =
     MappedJdbcType.base[Seq[Token], Array[Byte]](
       tokens => serialize(AVector.unsafe(tokens.toArray)).toArray,
-      bytes  => deserialize[AVector[Token]](ByteString.fromArrayUnsafe(bytes)).toOption.get.toSeq
+      bytes =>
+        deserialize[AVector[Token]](ByteString.fromArrayUnsafe(bytes)) match {
+          case Left(error)  => throw error
+          case Right(value) => value.toSeq
+      }
     )
 
   implicit val intervalTypeType: JdbcType[IntervalType] =

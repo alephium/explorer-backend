@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.api.model.{GroupIndex, Transaction, UnconfirmedTransaction}
+import org.alephium.explorer.api.model._
 import org.alephium.util.{TimeStamp, U256}
 
 final case class UnconfirmedTxEntity(
@@ -39,13 +39,16 @@ object UnconfirmedTxEntity {
        utx.gasPrice,
        utx.lastSeen
      ),
-     utx.inputs.map { input =>
-       UInputEntity(
-         utx.hash,
-         input.outputRef.hint,
-         input.outputRef.key,
-         input.unlockScript
-       )
+     utx.inputs.zipWithIndex.map {
+       case (input, order) =>
+         UInputEntity(
+           utx.hash,
+           input.outputRef.hint,
+           input.outputRef.key,
+           input.unlockScript,
+           input.address,
+           order
+         )
      },
      utx.outputs.zipWithIndex.map {
        case (output, order) =>
