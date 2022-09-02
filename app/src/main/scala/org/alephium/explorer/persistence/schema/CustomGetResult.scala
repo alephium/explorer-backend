@@ -64,6 +64,16 @@ object CustomGetResult {
   implicit val heightGetResult: GetResult[Height] =
     (result: PositionedResult) => Height.unsafe(result.nextInt())
 
+  implicit val heightOptionGetResult: GetResult[Option[Height]] =
+    (result: PositionedResult) => result.nextIntOption().map(Height.unsafe)
+
+  implicit val timeStampHeightOptionGetResult: GetResult[Option[(TimeStamp, Height)]] =
+    (result: PositionedResult) =>
+      for {
+        timestamp <- optionTimestampGetResult(result)
+        height    <- heightOptionGetResult(result)
+      } yield (timestamp, height)
+
   implicit val bigIntegerGetResult: GetResult[BigInteger] =
     (result: PositionedResult) => result.nextBigDecimal().toBigInt.bigInteger
 

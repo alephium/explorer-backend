@@ -40,6 +40,26 @@ object SlickUtil {
       }
   }
 
+  implicit class OptionResultEnrichment[A](val action: DBActionSR[Option[A]]) extends AnyVal {
+
+    /**
+      * Expects query to return less than or equal to 1. Fails is the result is greater than 1.
+      *
+      * This is used to ensure queries selecting on SQL functions like `sum` and `max`
+      * return only one row or none. If the more than one rows are return then there
+      * is a problem in the query itself.
+      * */
+    @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
+    def oneOrNone(implicit ec: ExecutionContext): DBActionR[Option[A]] =
+      action.flatMap { rows =>
+        rows.size match {
+          case 0 => DBIO.successful(None)
+          case 1 => DBIO.successful(rows.head)
+          case n => DBIO.failed(new RuntimeException(s"Expected 1 result, actual $n"))
+        }
+      }
+  }
+
   def paramPlaceholderTuple2(rows: Int, columns: Int): String =
     paramPlaceholder(rows, columns, "(?, ?)")
 

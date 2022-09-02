@@ -29,9 +29,10 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer.{foldFutures, GroupSetting}
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockEntity
-import org.alephium.explorer.persistence.queries.InputUpdateQueries
+import org.alephium.explorer.persistence.queries.{BlockQueries, InputUpdateQueries}
 import org.alephium.explorer.util.{Scheduler, TimeUtil}
 import org.alephium.util.{Duration, TimeStamp}
 
@@ -178,32 +179,20 @@ case object BlockFlowSyncService extends StrictLogging {
     fetchAndBuildTimeStampRange(step, backStep, getLocalMaxTimestamp(), getRemoteMaxTimestamp())
   }
 
-  private def getLocalMaxTimestamp()(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile],
-      groupSetting: GroupSetting): Future[Option[(TimeStamp, Int)]] = {
-    Future
-      .traverse(groupSetting.groupIndexes) {
-        case (fromGroup, toGroup) =>
-          BlockDao
-            .maxHeight(fromGroup, toGroup)
-            .flatMap {
-              case Some(height) =>
-                BlockDao
-                  .getAtHeight(fromGroup, toGroup, height)
-                  .map { blocks =>
-                    blocks.map(_.timestamp).maxOption.map(ts => (ts, height))
-                  }
-              case None =>
-                Future.successful(None)
-            }
+  /** @see [[org.alephium.explorer.persistence.queries.BlockQueries.numOfBlocksAndMaxBlockTimestamp]] */
+  def getLocalMaxTimestamp()(implicit ec: ExecutionContext,
+                             dc: DatabaseConfig[PostgresProfile],
+                             groupSetting: GroupSetting): Future[Option[(TimeStamp, Int)]] = {
+    //Convert query result to return `Height` as `Int` value.
+    val queryResultToIntHeight =
+      BlockQueries.numOfBlocksAndMaxBlockTimestamp() map { optionResult =>
+        optionResult map {
+          case (timestamp, height) =>
+            (timestamp, height.value)
+        }
+      }
 
-      }
-      .map { res =>
-        val tsHeights  = res.flatten
-        val nbOfBlocks = tsHeights.map { case (_, height) => height.value }.sum
-        tsHeights.map { case (ts, _) => ts }.maxOption.map(max => (max, nbOfBlocks))
-      }
+    run(queryResultToIntHeight)
   }
 
   private def getRemoteMaxTimestamp()(
