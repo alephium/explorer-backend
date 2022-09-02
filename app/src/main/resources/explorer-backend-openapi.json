@@ -3939,44 +3939,6 @@
           }
         }
       },
-      "UInput": {
-        "required": [
-          "outputRef"
-        ],
-        "type": "object",
-        "properties": {
-          "outputRef": {
-            "$ref": "#/components/schemas/OutputRef"
-          },
-          "address": {
-            "type": "string"
-          },
-          "unlockScript": {
-            "type": "string",
-            "format": "hex-string"
-          }
-        }
-      },
-      "UOutput": {
-        "required": [
-          "amount",
-          "address"
-        ],
-        "type": "object",
-        "properties": {
-          "amount": {
-            "type": "string",
-            "format": "uint256"
-          },
-          "address": {
-            "type": "string"
-          },
-          "lockTime": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
       "Unauthorized": {
         "required": [
           "detail"
@@ -4015,13 +3977,13 @@
           "inputs": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/UInput"
+              "$ref": "#/components/schemas/Input"
             }
           },
           "outputs": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/UOutput"
+              "$ref": "#/components/schemas/AssetOutput"
             }
           },
           "gasAmount": {

@@ -125,7 +125,7 @@ object CustomGetResult {
         key            = result.<<,
         amount         = result.<<,
         address        = result.<<,
-        tokens         = result.<<,
+        tokens         = result.<<?,
         mainChain      = result.<<,
         lockTime       = result.<<?,
         message        = result.<<?,
@@ -218,9 +218,13 @@ object CustomGetResult {
     (result: PositionedResult) =>
       UOutputEntity(
         txHash       = result.<<,
+        hint         = result.<<,
+        key          = result.<<,
         amount       = result.<<,
         address      = result.<<,
+        tokens       = result.<<?,
         lockTime     = result.<<?,
+        message      = result.<<?,
         uoutputOrder = result.<<
     )
 }

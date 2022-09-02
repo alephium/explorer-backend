@@ -94,9 +94,13 @@ object UnconfirmedTransactionQueries {
       val query =
         s"""
            |SELECT tx_hash,
+           |       hint,
+           |       key,
            |       amount,
            |       address,
+           |       tokens,
            |       lock_time,
+           |       message,
            |       uoutput_order
            |FROM uoutputs
            |WHERE tx_hash IN $params
@@ -164,9 +168,13 @@ object UnconfirmedTransactionQueries {
   def uoutputsFromTx(hash: Transaction.Hash): DBActionR[Seq[UOutputEntity]] = {
     sql"""
            |SELECT tx_hash,
+           |       hint,
+           |       key,
            |       amount,
            |       address,
+           |       tokens,
            |       lock_time,
+           |       message,
            |       uoutput_order
            |FROM uoutputs
            |WHERE tx_hash = $hash

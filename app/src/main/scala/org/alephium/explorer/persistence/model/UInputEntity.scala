@@ -19,7 +19,7 @@ package org.alephium.explorer.persistence.model
 import akka.util.ByteString
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, OutputRef, Transaction, UInput}
+import org.alephium.explorer.api.model.{Address, Input, OutputRef, Transaction}
 
 final case class UInputEntity(
     txHash: Transaction.Hash,
@@ -29,9 +29,11 @@ final case class UInputEntity(
     address: Option[Address],
     uinputOrder: Int
 ) {
-  val toApi: UInput = UInput(
+  val toApi: Input = Input(
     OutputRef(hint, outputRefKey),
+    unlockScript,
     address,
-    unlockScript
+    None,
+    None
   )
 }

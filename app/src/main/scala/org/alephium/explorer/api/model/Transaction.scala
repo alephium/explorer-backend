@@ -82,8 +82,8 @@ final case class UnconfirmedTransaction(
     hash: Transaction.Hash,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
-    inputs: Seq[UInput],
-    outputs: Seq[UOutput],
+    inputs: Seq[Input],
+    outputs: Seq[AssetOutput],
     gasAmount: Int,
     gasPrice: U256,
     lastSeen: TimeStamp

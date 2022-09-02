@@ -54,9 +54,13 @@ object UnconfirmedTxEntity {
        case (output, order) =>
          UOutputEntity(
            utx.hash,
-           output.amount,
+           output.hint,
+           output.key,
+           output.attoAlphAmount,
            output.address,
+           output.tokens,
            output.lockTime,
+           output.message,
            order
          )
      })
