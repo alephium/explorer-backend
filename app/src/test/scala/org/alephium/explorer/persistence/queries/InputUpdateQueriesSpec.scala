@@ -59,8 +59,7 @@ class InputUpdateQueriesSpec
             run(InputSchema.table.filter(_.outputRefKey === output.key).result.head).futureValue
 
           updatedInput.outputRefAddress is Some(output.address)
-          //FIXME: it should be: Some(output.amount)
-          updatedInput.outputRefAmount is None
+          updatedInput.outputRefAmount is Some(output.amount)
       }
     }
   }
