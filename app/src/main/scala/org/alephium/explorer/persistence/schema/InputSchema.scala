@@ -22,6 +22,7 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{Address, BlockEntry, Token, Transaction}
+import org.alephium.explorer.persistence.DBActionW
 import org.alephium.explorer.persistence.model.InputEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.util.{TimeStamp, U256}
@@ -66,6 +67,11 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
        outputRefTokens)
         .<>((InputEntity.apply _).tupled, InputEntity.unapply)
   }
+
+  def createOutputRefAddressNullIndex(): DBActionW[Int] =
+    sqlu"""CREATE INDEX IF NOT EXISTS inputs_output_ref_amount_null_idx
+      ON #${name} (output_ref_address, output_ref_amount, output_ref_tokens)
+      WHERE output_ref_amount IS NULL"""
 
   val table: TableQuery[Inputs] = TableQuery[Inputs]
 }

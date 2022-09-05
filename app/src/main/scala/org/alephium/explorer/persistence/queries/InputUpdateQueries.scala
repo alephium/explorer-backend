@@ -39,7 +39,7 @@ object InputUpdateQueries {
         output_ref_tokens = outputs.tokens
       FROM outputs
       WHERE inputs.output_ref_key = outputs.key
-      AND inputs.output_ref_address IS NULL
+      AND inputs.output_ref_amount IS NULL
       RETURNING outputs.address, outputs.tokens, inputs.tx_hash, inputs.block_hash, inputs.block_timestamp, inputs.tx_order, inputs.main_chain
     """
       .as[(Address, Option[Seq[Token]], Transaction.Hash, BlockEntry.Hash, TimeStamp, Int, Boolean)]
