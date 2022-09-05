@@ -50,7 +50,7 @@ class SchedulerSpec
         forAll(Gen.oneOf(zoneIds)) { zoneId =>
           //Time is now! Expect hours and minutes to be zero. Add 2 seconds to account for execution time.
           val timeLeft =
-            Scheduler.scheduleTime(ZonedDateTime.now(zoneId).plusSeconds(2), "test-scheduler")
+            Scheduler.scheduleTime(ZonedDateTime.now(zoneId).plusSeconds(20), "test-scheduler")
 
           timeLeft.toHours is 0
           timeLeft.toMinutes is 0
@@ -67,12 +67,12 @@ class SchedulerSpec
             .toHours is 2
           //Minutes
           Scheduler
-            .scheduleTime(ZonedDateTime.now(zoneId).plusMinutes(10).plusSeconds(2),
+            .scheduleTime(ZonedDateTime.now(zoneId).plusMinutes(10).plusSeconds(20),
                           "test-scheduler")
             .toMinutes is 10
           //Days
           Scheduler
-            .scheduleTime(ZonedDateTime.now(zoneId).plusDays(10).plusSeconds(2), "test-scheduler")
+            .scheduleTime(ZonedDateTime.now(zoneId).plusDays(10).plusSeconds(20), "test-scheduler")
             .toDays is 10
         }
       }
@@ -83,7 +83,7 @@ class SchedulerSpec
         forAll(Gen.oneOf(zoneIds)) { zoneId =>
           //Time is 1 hour in the past so schedule happens 23 hours later
           Scheduler
-            .scheduleTime(ZonedDateTime.now(zoneId).minusHours(1).plusSeconds(2), "test-scheduler")
+            .scheduleTime(ZonedDateTime.now(zoneId).minusHours(1).plusSeconds(20), "test-scheduler")
             .toHours is 23
           //Time is 1 minute in the past so schedule happens after 23 hours (next day)
           Scheduler
@@ -91,8 +91,17 @@ class SchedulerSpec
             .toHours is 23
           //Time is few seconds in the past so schedule happens after 23 hours (next day)
           Scheduler
-            .scheduleTime(ZonedDateTime.now(zoneId).minusSeconds(3), "test-scheduler")
+            .scheduleTime(ZonedDateTime.now(zoneId).minusSeconds(30), "test-scheduler")
             .toHours is 23
+        }
+
+        /**
+          * <a href="https://github.com/alephium/explorer-backend/issues/335">#335</a>:
+          * The following test is invalid for timezones in daylight savings.
+          *
+          * Restricting this test to run for known timezones only (Sydney & Switzerland).
+          * */
+        Seq(ZoneId.of("Australia/Sydney"), ZoneId.of("CET")) foreach { zoneId =>
           //1 year behind will still return 23 hours schedule time.
           Scheduler
             .scheduleTime(ZonedDateTime.now(zoneId).minusYears(1), "test-scheduler")
