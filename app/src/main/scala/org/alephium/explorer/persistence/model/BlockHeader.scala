@@ -18,6 +18,8 @@ package org.alephium.explorer.persistence.model
 
 import java.math.BigInteger
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 
 import org.alephium.explorer.Hash
@@ -40,7 +42,7 @@ final case class BlockHeader(
     hashrate: BigInteger,
     parent: Option[BlockEntry.Hash]
 ) {
-  def toApi(deps: Seq[BlockEntry.Hash], transactions: Seq[Transaction]): BlockEntry =
+  def toApi(deps: ArraySeq[BlockEntry.Hash], transactions: ArraySeq[Transaction]): BlockEntry =
     BlockEntry(hash, timestamp, chainFrom, chainTo, height, deps, transactions, mainChain, hashrate)
 
   val toLiteApi: BlockEntryLite =

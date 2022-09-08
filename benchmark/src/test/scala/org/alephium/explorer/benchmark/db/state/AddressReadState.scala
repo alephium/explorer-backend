@@ -18,6 +18,7 @@ package org.alephium.explorer.benchmark.db.state
 
 import java.math.BigInteger
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{Await, ExecutionContext}
 import scala.util.Random
 
@@ -61,13 +62,14 @@ class AddressReadState(val db: DBExecutor)
 
   val address: Address = Address.unsafe(Base58.encode(Hash.generate.bytes))
 
-  var blocks: Array[BlockEntity] = _
+  var blocks: ArraySeq[BlockEntity] = _
 
-  val hashes: Seq[(Transaction.Hash, BlockEntry.Hash)] = Random
-    .shuffle(blocks.flatMap(_.transactions.map(tx => (tx.hash, tx.blockHash))).toMap)
-    .take(100)
-    .toSeq
-  val txHashes: Seq[Transaction.Hash] = hashes.map(_._1)
+  lazy val hashes: ArraySeq[(Transaction.Hash, BlockEntry.Hash)] = ArraySeq.from(
+    Random
+      .shuffle(blocks.flatMap(_.transactions.map(tx => (tx.hash, tx.blockHash))).toMap)
+      .take(100))
+
+  lazy val txHashes: ArraySeq[Transaction.Hash] = hashes.map(_._1)
 
   val pagination: Pagination = Pagination.unsafe(
     offset  = 0,
@@ -145,7 +147,7 @@ class AddressReadState(val db: DBExecutor)
     // 80% of outputs will be spent
     var spent = testDataCount * 0.8
 
-    blocks = cache.map { output =>
+    blocks = ArraySeq.from(cache.map { output =>
       val blockHash = output.blockHash
       val txHash    = output.txHash
       val timestamp = output.timestamp
@@ -153,9 +155,9 @@ class AddressReadState(val db: DBExecutor)
         spent = spent - 1
         val output = outputs(Random.nextInt(outputs.length))
         outputs = outputs.filter(_ != output)
-        Seq(generateInput(blockHash, txHash, timestamp, output.hint, output.key))
+        ArraySeq(generateInput(blockHash, txHash, timestamp, output.hint, output.key))
       } else {
-        Seq.empty
+        ArraySeq.empty
       }
 
       BlockEntity(
@@ -164,10 +166,10 @@ class AddressReadState(val db: DBExecutor)
         chainFrom    = GroupIndex.unsafe(1),
         chainTo      = GroupIndex.unsafe(16),
         height       = Height.genesis,
-        deps         = Seq.empty,
-        transactions = Seq(generateTransaction(blockHash, txHash, timestamp)),
+        deps         = ArraySeq.empty,
+        transactions = ArraySeq(generateTransaction(blockHash, txHash, timestamp)),
         inputs       = inputs,
-        outputs      = Seq(output),
+        outputs      = ArraySeq(output),
         mainChain    = true,
         nonce        = ByteString.emptyByteString,
         version      = 0,
@@ -176,7 +178,7 @@ class AddressReadState(val db: DBExecutor)
         target       = ByteString.emptyByteString,
         hashrate     = BigInteger.ONE
       )
-    }
+    })
 
     //drop existing tables
     val _ = db.dropTableIfExists(BlockHeaderSchema.table)
@@ -210,7 +212,7 @@ class AddressReadState(val db: DBExecutor)
 
     logger.info("Persisting data")
     blocks.sliding(10000).foreach { bs =>
-      Await.result(BlockDao.insertAll(bs.toSeq), batchWriteTimeout)
+      Await.result(BlockDao.insertAll(bs), batchWriteTimeout)
     }
 
     val from = ALPH.LaunchTimestamp

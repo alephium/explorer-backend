@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.service
 
+import scala.collection.immutable.ArraySeq
+
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.util.TimeStamp
 
@@ -25,7 +27,7 @@ trait FlowEntity {
   def chainFrom: GroupIndex
   def chainTo: GroupIndex
   def height: Height
-  def deps: Seq[BlockEntry.Hash]
+  def deps: ArraySeq[BlockEntry.Hash]
   def mainChain: Boolean
 
   def parent(groupNum: Int): Option[BlockEntry.Hash] =

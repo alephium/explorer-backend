@@ -14,26 +14,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.model
+package org.alephium.explorer
 
 import scala.collection.immutable.ArraySeq
 
-import akka.util.ByteString
+import org.alephium.util.AVector
 
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Transaction}
-import org.alephium.util.{TimeStamp, U256}
-
-final case class TransactionEntity(
-    hash: Transaction.Hash,
-    blockHash: BlockEntry.Hash,
-    timestamp: TimeStamp,
-    chainFrom: GroupIndex,
-    chainTo: GroupIndex,
-    gasAmount: Int,
-    gasPrice: U256,
-    order: Int,
-    mainChain: Boolean,
-    scriptExecutionOk: Boolean,
-    inputSignatures: Option[ArraySeq[ByteString]],
-    scriptSignatures: Option[ArraySeq[ByteString]]
-)
+//TODO Add this to `org.alephium.util.AVector`
+object RichAVector {
+  implicit class Impl[A](val avector: AVector[A]) extends AnyVal {
+    def toArraySeq: ArraySeq[A] = {
+      ArraySeq.unsafeWrapArray(avector.toArray)
+    }
+  }
+}

@@ -53,59 +53,59 @@ class BlockFlowSyncServiceSpec
 
     BlockFlowSyncService
       .fetchAndBuildTimeStampRange(s(10), s(5), th(t(20), 5), th(t(40), 8))
-      .futureValue is ((Seq(r(16, 26), r(27, 37), r(38, 41)), 3))
+      .futureValue is ((ArraySeq(r(16, 26), r(27, 37), r(38, 41)), 3))
 
     BlockFlowSyncService
       .fetchAndBuildTimeStampRange(s(10), s(5), Future.successful(None), th(t(40), 8))
-      .futureValue is ((Seq.empty, 0))
+      .futureValue is ((ArraySeq.empty, 0))
 
     BlockFlowSyncService
       .fetchAndBuildTimeStampRange(s(10), s(5), th(t(20), 5), Future.successful(None))
-      .futureValue is ((Seq.empty, 0))
+      .futureValue is ((ArraySeq.empty, 0))
   }
 
   "start/sync/stop" in new Fixture {
     using(Scheduler("")) { implicit scheduler =>
-      checkBlocks(Seq.empty)
-      BlockFlowSyncService.start(Seq(""), 1.second)
+      checkBlocks(ArraySeq.empty)
+      BlockFlowSyncService.start(ArraySeq(""), 1.second)
 
-      chainOToO = Seq(block0, block1, block2)
-      eventually(checkMainChain(Seq(block0.hash, block1.hash, block2.hash)))
+      chainOToO = ArraySeq(block0, block1, block2)
+      eventually(checkMainChain(ArraySeq(block0.hash, block1.hash, block2.hash)))
 
       checkLatestHeight(2)
 
-      chainOToO = Seq(block0, block1, block3, block4)
-      eventually(checkMainChain(Seq(block0.hash, block1.hash, block3.hash, block4.hash)))
+      chainOToO = ArraySeq(block0, block1, block3, block4)
+      eventually(checkMainChain(ArraySeq(block0.hash, block1.hash, block3.hash, block4.hash)))
 
       checkLatestHeight(3)
 
-      chainOToO = Seq(block0, block1, block3, block4, block5, block7, block8, block14)
+      chainOToO = ArraySeq(block0, block1, block3, block4, block5, block7, block8, block14)
       eventually(
         checkMainChain(
-          Seq(block0.hash,
-              block1.hash,
-              block3.hash,
-              block4.hash,
-              block5.hash,
-              block7.hash,
-              block8.hash,
-              block14.hash)))
+          ArraySeq(block0.hash,
+                   block1.hash,
+                   block3.hash,
+                   block4.hash,
+                   block5.hash,
+                   block7.hash,
+                   block8.hash,
+                   block14.hash)))
 
       checkLatestHeight(7)
 
-      chainOToO = Seq(block0, block1, block3, block4, block5, block6, block10, block12)
+      chainOToO = ArraySeq(block0, block1, block3, block4, block5, block6, block10, block12)
       eventually(
         checkMainChain(
-          Seq(block0.hash,
-              block1.hash,
-              block3.hash,
-              block4.hash,
-              block5.hash,
-              block6.hash,
-              block10.hash,
-              block12.hash)))
+          ArraySeq(block0.hash,
+                   block1.hash,
+                   block3.hash,
+                   block4.hash,
+                   block5.hash,
+                   block6.hash,
+                   block10.hash,
+                   block12.hash)))
 
-      chainOToO = Seq(block0, block1, block3, block4, block5, block6, block9, block11, block13)
+      chainOToO = ArraySeq(block0, block1, block3, block4, block5, block6, block9, block11, block13)
       eventually(checkMainChain(mainChain))
 
       checkLatestHeight(8)
@@ -174,7 +174,7 @@ class BlockFlowSyncServiceSpec
     val block14 = blockEntity(Some(block8))
       .copy(hash = h("1414141414141414141414141414141414141414141414141414141414141414"))
 
-    val mainChain = Seq(
+    val mainChain = ArraySeq(
       block0.hash,
       block1.hash,
       block3.hash,
@@ -187,25 +187,25 @@ class BlockFlowSyncServiceSpec
     )
 
     // format: off
-    var chainOToO = Seq(block0, block1, block2, block3, block4, block5, block6, block7, block8, block9, block10, block11, block12, block13, block14)
+    var chainOToO = ArraySeq(block0, block1, block2, block3, block4, block5, block6, block7, block8, block9, block10, block11, block12, block13, block14)
     // format: on
 
     val chains = chainIndexes.map {
       case (from, to) =>
-        Seq(blockEntity(None, from, to))
+        ArraySeq(blockEntity(None, from, to))
     }.tail
 
-    def blockFlowEntity: Seq[Seq[BlockEntity]] =
+    def blockFlowEntity: ArraySeq[ArraySeq[BlockEntity]] =
       chains :+ chainOToO
 
-    def blockFlow: Seq[Seq[BlockEntry]] =
+    def blockFlow: ArraySeq[ArraySeq[BlockEntry]] =
       blockEntitiesToBlockEntries(blockFlowEntity)
 
     implicit val blockCache: BlockCache = BlockCache()
 
-    def blockEntities = blockFlowEntity.flatten
+    def blockEntities = ArraySeq.from(blockFlowEntity.flatten)
 
-    def blocks: Seq[BlockEntry] = blockFlow.flatten
+    def blocks: ArraySeq[BlockEntry] = blockFlow.flatten
 
     implicit val blockFlowClient: BlockFlowClient = new BlockFlowClient {
       implicit val executionContext: ExecutionContext = ExecutionContext.global
@@ -216,12 +216,13 @@ class BlockFlowSyncServiceSpec
       def fetchBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[BlockEntity] =
         Future.successful(blockEntities.find(_.hash === hash).get)
 
-      def fetchBlocks(fromTs: TimeStamp, toTs: TimeStamp, uri: Uri): Future[Seq[Seq[BlockEntity]]] =
+      def fetchBlocks(fromTs: TimeStamp,
+                      toTs: TimeStamp,
+                      uri: Uri): Future[ArraySeq[ArraySeq[BlockEntity]]] =
         Future.successful(
           blockEntities
             .filter(b => b.timestamp >= fromTs && b.timestamp < toTs)
             .groupBy(b => (b.chainFrom, b.chainTo))
-            .toSeq
             .map(_._2)
             .map(_.distinctBy(_.height).sortBy(_.height)))
 
@@ -254,8 +255,8 @@ class BlockFlowSyncServiceSpec
           ChainParams(NetworkId.AlephiumDevNet, 18, 1, 2)
         )
 
-      def fetchUnconfirmedTransactions(uri: Uri): Future[Seq[UnconfirmedTransaction]] =
-        Future.successful(Seq.empty)
+      def fetchUnconfirmedTransactions(uri: Uri): Future[ArraySeq[UnconfirmedTransaction]] =
+        Future.successful(ArraySeq.empty)
 
       override def start(): Future[Unit] =
         Future.unit
@@ -264,7 +265,7 @@ class BlockFlowSyncServiceSpec
         Future.unit
     }
 
-    def checkBlocks(blocksToCheck: Seq[BlockEntry]) = {
+    def checkBlocks(blocksToCheck: ArraySeq[BlockEntry]) = {
       val result = BlockDao
         .listIncludingForks(TimeStamp.unsafe(0), timestampMaxValue)
         .futureValue
@@ -274,7 +275,7 @@ class BlockFlowSyncServiceSpec
       result.toSet is blocksToCheck.map(_.hash).toSet
     }
 
-    def checkMainChain(mainChain: Seq[BlockEntry.Hash]) = {
+    def checkMainChain(mainChain: ArraySeq[BlockEntry.Hash]) = {
       val result = BlockDao
         .listMainChain(Pagination.unsafe(0, blocks.size))
         .futureValue

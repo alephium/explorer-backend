@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.api.model
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 
 import org.alephium.api.UtilJson._
@@ -29,7 +31,7 @@ final case class Input(
     unlockScript: Option[ByteString] = None,
     address: Option[Address]         = None,
     attoAlphAmount: Option[U256]     = None,
-    tokens: Option[Seq[Token]]       = None
+    tokens: Option[ArraySeq[Token]]  = None
 )
 
 object Input {

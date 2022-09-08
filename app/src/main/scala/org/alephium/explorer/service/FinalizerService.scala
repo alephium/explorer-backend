@@ -34,6 +34,7 @@ import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.{Scheduler, TimeUtil}
+import org.alephium.explorer.util.SlickUtil._
 import org.alephium.serde._
 import org.alephium.util.{Duration, TimeStamp}
 
@@ -145,14 +146,14 @@ case object FinalizerService extends StrictLogging {
   private val getMinMaxInputsTs: DBActionSR[(TimeStamp, TimeStamp)] =
     sql"""
     SELECT MIN(block_timestamp),Max(block_timestamp) FROM inputs WHERE main_chain = true
-    """.as[(TimeStamp, TimeStamp)]
+    """.asAS[(TimeStamp, TimeStamp)]
 
   private def getLastFinalizedInputTime()(
       implicit executionContext: ExecutionContext): DBActionR[Option[TimeStamp]] =
     sql"""
     SELECT value FROM app_state where key = 'last_finalized_input_time'
     """
-      .as[ByteString]
+      .asAS[ByteString]
       .map(_.headOption.flatMap { bytes =>
         deserialize[TimeStamp](bytes) match {
           case Left(error) =>

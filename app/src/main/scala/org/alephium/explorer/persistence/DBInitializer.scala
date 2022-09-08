@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import com.typesafe.scalalogging.StrictLogging
@@ -36,7 +37,7 @@ object DBInitializer extends StrictLogging {
           "org.wartremover.warts.Product",
           "org.wartremover.warts.Serializable"))
   private val allTables =
-    Seq(
+    ArraySeq(
       BlockHeaderSchema.table,
       BlockDepsSchema.table,
       TransactionSchema.table,

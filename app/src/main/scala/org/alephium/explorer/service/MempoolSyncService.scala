@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.service
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 
@@ -33,19 +34,19 @@ import org.alephium.explorer.util.Scheduler
 
 case object MempoolSyncService extends StrictLogging {
 
-  def start(nodeUris: Seq[Uri], interval: FiniteDuration)(implicit ec: ExecutionContext,
-                                                          dc: DatabaseConfig[PostgresProfile],
-                                                          blockFlowClient: BlockFlowClient,
-                                                          scheduler: Scheduler): Future[Unit] =
+  def start(nodeUris: ArraySeq[Uri], interval: FiniteDuration)(implicit ec: ExecutionContext,
+                                                               dc: DatabaseConfig[PostgresProfile],
+                                                               blockFlowClient: BlockFlowClient,
+                                                               scheduler: Scheduler): Future[Unit] =
     scheduler.scheduleLoop(
       taskId        = this.productPrefix,
       firstInterval = ScalaDuration.Zero,
       loopInterval  = interval
     )(syncOnce(nodeUris))
 
-  def syncOnce(nodeUris: Seq[Uri])(implicit ec: ExecutionContext,
-                                   dc: DatabaseConfig[PostgresProfile],
-                                   blockFlowClient: BlockFlowClient): Future[Unit] = {
+  def syncOnce(nodeUris: ArraySeq[Uri])(implicit ec: ExecutionContext,
+                                        dc: DatabaseConfig[PostgresProfile],
+                                        blockFlowClient: BlockFlowClient): Future[Unit] = {
     logger.debug("Syncing mempol")
     Future.sequence(nodeUris.map(syncMempool)).map { _ =>
       logger.debug("Mempool synced")

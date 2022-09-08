@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.queries
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 import scala.math.Ordering.Implicits.infixOrderingOps
 
@@ -263,14 +264,14 @@ class BlockQueriesSpec
   "maxHeight" should {
     "return empty List" when {
       "input is empty" in {
-        run(BlockQueries.maxHeight(Iterable.empty)).futureValue is Vector.empty
+        run(BlockQueries.maxHeight(Iterable.empty)).futureValue is ArraySeq.empty
       }
     }
 
     "return non-empty List with None values" when {
       "there is no data" in {
         forAll(groupSettingGen) { implicit groupSetting =>
-          val expected = Vector.fill(groupSetting.groupIndexes.size)(None)
+          val expected = ArraySeq.fill(groupSetting.groupIndexes.size)(None)
           run(BlockQueries.maxHeight(groupSetting.groupIndexes)).futureValue is expected
         }
       }
@@ -298,7 +299,7 @@ class BlockQueriesSpec
             val actualHeights =
               run(BlockQueries.maxHeight(groupSetting.groupIndexes)).futureValue
 
-            actualHeights is expectedHeights.toVector
+            actualHeights is expectedHeights
           }
         }
       }

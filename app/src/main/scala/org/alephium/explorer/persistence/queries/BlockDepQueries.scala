@@ -22,15 +22,20 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.api.model.BlockEntry
 import org.alephium.explorer.persistence.DBActionW
 import org.alephium.explorer.persistence.model.BlockDepEntity
-import org.alephium.explorer.persistence.schema.BlockDepsSchema
-import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.util.SlickUtil._
 
 object BlockDepQueries {
 
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
-  val getDepsForBlock = Compiled { blockHash: Rep[BlockEntry.Hash] =>
-    BlockDepsSchema.table.filter(_.hash === blockHash).sortBy(_.depOrder).map(_.dep)
+  def getDepsForBlock(blockHash: BlockEntry.Hash) = {
+    sql"""
+      SELECT dep
+      FROM block_deps
+      WHERE hash = $blockHash
+      ORDER BY dep_order
+    """.asAS[BlockEntry.Hash]
   }
 
   /**

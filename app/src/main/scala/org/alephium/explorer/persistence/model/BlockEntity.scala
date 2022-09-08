@@ -18,6 +18,8 @@ package org.alephium.explorer.persistence.model
 
 import java.math.BigInteger
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 
 import org.alephium.explorer.Hash
@@ -31,10 +33,10 @@ final case class BlockEntity(
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     height: Height,
-    deps: Seq[BlockEntry.Hash],
-    transactions: Seq[TransactionEntity],
-    inputs: Seq[InputEntity],
-    outputs: Seq[OutputEntity],
+    deps: ArraySeq[BlockEntry.Hash],
+    transactions: ArraySeq[TransactionEntity],
+    inputs: ArraySeq[InputEntity],
+    outputs: ArraySeq[OutputEntity],
     mainChain: Boolean,
     nonce: ByteString,
     version: Byte,
@@ -53,7 +55,7 @@ final case class BlockEntity(
   }
 
   /** Builds entries for block_deps table */
-  def toBlockDepEntities(): Seq[BlockDepEntity] =
+  def toBlockDepEntities(): ArraySeq[BlockDepEntity] =
     deps.zipWithIndex map {
       case (dep, i) =>
         BlockDepEntity(hash = hash, dep = dep, order = i)

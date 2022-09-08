@@ -16,7 +16,9 @@
 
 package org.alephium
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.ClassTag
 
 import org.alephium.crypto.{Blake2b, Blake3}
 
@@ -37,9 +39,9 @@ package object explorer {
   type BlockHash = Blake3
   val BlockHash: Blake3.type = Blake3
 
-  def foldFutures[A, B](seqA: Seq[A])(f: A => Future[B])(
-      implicit executionContext: ExecutionContext): Future[Seq[B]] =
-    seqA.foldLeft(Future.successful(Seq.empty[B])) {
+  def foldFutures[A, B: ClassTag](seqA: ArraySeq[A])(f: A => Future[B])(
+      implicit executionContext: ExecutionContext): Future[ArraySeq[B]] =
+    seqA.foldLeft(Future.successful(ArraySeq.empty[B])) {
       case (acc, a) => acc.flatMap(p => f(a).map(b => p :+ b))
     }
 }

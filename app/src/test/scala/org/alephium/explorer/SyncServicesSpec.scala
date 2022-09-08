@@ -16,6 +16,7 @@
 
 package org.alephium.explorer
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util._
 
@@ -59,7 +60,7 @@ class SyncServicesSpec
           (client.fetchSelfClique _).expects() returns Future.successful(selfClique)
 
           val expectedPeers =
-            SyncServices.urisFromPeers(selfClique.nodes.toSeq)
+            SyncServices.urisFromPeers(selfClique.nodes)
 
           SyncServices
             .getBlockFlowPeers(directCliqueAccess = true,
@@ -73,7 +74,7 @@ class SyncServicesSpec
 
         SyncServices
           .getBlockFlowPeers(directCliqueAccess = false, blockFlowUri = explorerConfig.blockFlowUri)
-          .futureValue is Seq(explorerConfig.blockFlowUri)
+          .futureValue is ArraySeq(explorerConfig.blockFlowUri)
       }
     }
 

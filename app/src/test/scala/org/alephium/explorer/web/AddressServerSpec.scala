@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.web
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
@@ -52,9 +53,9 @@ class AddressServerSpec()
     override lazy val transactionService = new EmptyTransactionService {
       override def getTransactionsByAddress(address: Address, pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] = {
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] = {
         testLimit = pagination.limit
-        Future.successful(Seq.empty)
+        Future.successful(ArraySeq.empty)
       }
     }
 
@@ -113,7 +114,7 @@ class AddressServerSpec()
       case (address) =>
         val entity = HttpEntity(ContentTypes.`application/json`, s"""["$address"]""")
         Post(s"/addresses-active", entity) ~> server.route ~> check {
-          responseAs[Seq[Boolean]] is Seq(true)
+          responseAs[ArraySeq[Boolean]] is ArraySeq(true)
         }
     }
   }
@@ -123,13 +124,13 @@ class AddressServerSpec()
       case (address) =>
         val size = groupSetting.groupNum * 20
 
-        val jsonOk   = s"[${Seq.fill(size)(s""""$address"""").mkString(",")}]"
+        val jsonOk   = s"[${ArraySeq.fill(size)(s""""$address"""").mkString(",")}]"
         val entityOk = HttpEntity(ContentTypes.`application/json`, jsonOk)
         Post(s"/addresses-active", entityOk) ~> server.route ~> check {
           status is StatusCodes.OK
         }
 
-        val jsonFail   = s"[${Seq.fill(size + 1)(s""""$address"""").mkString(",")}]"
+        val jsonFail   = s"[${ArraySeq.fill(size + 1)(s""""$address"""").mkString(",")}]"
         val entityFail = HttpEntity(ContentTypes.`application/json`, jsonFail)
         Post(s"/addresses-active", entityFail) ~> server.route ~> check {
           status is StatusCodes.BadRequest
@@ -143,7 +144,7 @@ class AddressServerSpec()
     forAll(addressGen) {
       case (address) =>
         Get(s"/addresses/${address}/unconfirmed-transactions") ~> server.route ~> check {
-          responseAs[Seq[UnconfirmedTransaction]] is Seq(unconfirmedTx)
+          responseAs[ArraySeq[UnconfirmedTransaction]] is ArraySeq(unconfirmedTx)
         }
     }
   }
@@ -176,19 +177,19 @@ class AddressServerSpec()
 
       override def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
-        Future.successful(Seq.empty)
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+        Future.successful(ArraySeq.empty)
 
       override def listUnconfirmedTransactionsByAddress(address: Address)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]] = {
-        Future.successful(Seq(unconfirmedTx))
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]] = {
+        Future.successful(ArraySeq(unconfirmedTx))
       }
 
       override def getTransactionsByAddress(address: Address, pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
-        Future.successful(Seq.empty)
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+        Future.successful(ArraySeq.empty)
 
       override def getBalance(address: Address)(
           implicit ec: ExecutionContext,
@@ -200,29 +201,29 @@ class AddressServerSpec()
 
       def listUnconfirmedTransactions(pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]] = ???
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]] = ???
       def getTokenBalance(address: Address, token: Hash)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] = ???
       def listAddressTokenTransactions(address: Address, token: Hash, pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] = ???
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] = ???
       def listAddressTokens(address: Address)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] = ???
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Hash]] = ???
       def listTokenAddresses(token: Hash, pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Address]] = ???
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Address]] = ???
       def listTokenTransactions(token: Hash, pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] = ???
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] = ???
       def listTokens(pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] = ???
-      def areAddressesActive(addresses: Seq[Address])(
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Hash]] = ???
+      def areAddressesActive(addresses: ArraySeq[Address])(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Boolean]] = {
-        Future.successful(Seq(true))
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]] = {
+        Future.successful(ArraySeq(true))
       }
     }
   }

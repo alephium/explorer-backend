@@ -18,6 +18,7 @@ package org.alephium.explorer.benchmark.db
 
 import java.math.BigInteger
 
+import scala.collection.immutable.ArraySeq
 import scala.util.Random
 
 import akka.util.ByteString
@@ -42,8 +43,8 @@ object DataGenerator {
   def genTransactions(count: Int                 = 10,
                       blockHash: BlockEntry.Hash = new BlockEntry.Hash(BlockHash.generate),
                       blockTimestamp: TimeStamp  = TimeStamp.now(),
-                      mainChain: Boolean         = Random.nextBoolean()): Seq[TransactionEntity] =
-    Seq.fill(count) {
+                      mainChain: Boolean         = Random.nextBoolean()): ArraySeq[TransactionEntity] =
+    ArraySeq.fill(count) {
       TransactionEntity(
         hash              = new Transaction.Hash(Hash.generate),
         blockHash         = blockHash,
@@ -60,7 +61,7 @@ object DataGenerator {
       )
     }
 
-  def genOutputEntity(transactions: Seq[TransactionEntity]): Seq[OutputEntity] =
+  def genOutputEntity(transactions: ArraySeq[TransactionEntity]): ArraySeq[OutputEntity] =
     transactions.zipWithIndex map {
       case (transaction, order) =>
         OutputEntity(
@@ -82,7 +83,7 @@ object DataGenerator {
         )
     }
 
-  def genInputEntity(outputs: Seq[OutputEntity]): Seq[InputEntity] =
+  def genInputEntity(outputs: ArraySeq[OutputEntity]): ArraySeq[InputEntity] =
     outputs.zipWithIndex map {
       case (output, order) =>
         InputEntity(
@@ -125,7 +126,7 @@ object DataGenerator {
       chainFrom    = GroupIndex.unsafe(0),
       chainTo      = GroupIndex.unsafe(3),
       height       = Height.genesis,
-      deps         = Seq.fill(5)(new BlockEntry.Hash(BlockHash.generate)),
+      deps         = ArraySeq.fill(5)(new BlockEntry.Hash(BlockHash.generate)),
       transactions = transactions,
       inputs       = inputs,
       outputs      = outputs,

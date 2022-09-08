@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.cache
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.jdk.FutureConverters._
@@ -37,10 +38,10 @@ import org.alephium.util.{Duration, TimeStamp}
 object BlockCache {
 
   @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
-  private def computeAverageBlockTime(blockTimes: Seq[TimeStamp]): Duration = {
+  private def computeAverageBlockTime(blockTimes: ArraySeq[TimeStamp]): Duration = {
     if (blockTimes.sizeIs > 1) {
       val (_, diffs) =
-        blockTimes.drop(1).foldLeft((blockTimes.head, Seq.empty: Seq[Duration])) {
+        blockTimes.drop(1).foldLeft((blockTimes.head, ArraySeq.empty: ArraySeq[Duration])) {
           case ((prev, acc), ts) =>
             (ts, acc :+ ts.deltaUnsafe(prev))
         }
@@ -119,12 +120,13 @@ class BlockCache(blockTimes: CaffeineAsyncCache[ChainIndex, Duration],
 
   /** Operations on `blockTimes` cache */
   def getAllBlockTimes(chainIndexes: Iterable[ChainIndex])(
-      implicit ec: ExecutionContext): Future[Seq[(ChainIndex, Duration)]] =
+      implicit ec: ExecutionContext): Future[ArraySeq[(ChainIndex, Duration)]] =
     blockTimes.getAll(chainIndexes)
 
   /** Operations on `latestBlocks` cache */
-  def getAllLatestBlocks()(implicit ec: ExecutionContext,
-                           groupSetting: GroupSetting): Future[Seq[(ChainIndex, LatestBlock)]] =
+  def getAllLatestBlocks()(
+      implicit ec: ExecutionContext,
+      groupSetting: GroupSetting): Future[ArraySeq[(ChainIndex, LatestBlock)]] =
     latestBlocks.getAll(groupSetting.chainIndexes)
 
   def putLatestBlock(chainIndex: ChainIndex, block: LatestBlock): Unit =

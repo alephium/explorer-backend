@@ -16,7 +16,9 @@
 
 package org.alephium.explorer
 
-import slick.dbio.{DBIOAction, Effect, NoStream, Streaming}
+import scala.collection.immutable.ArraySeq
+
+import slick.dbio.{DBIOAction, Effect, NoStream}
 
 package object persistence {
 
@@ -30,6 +32,7 @@ package object persistence {
   type DBActionRWT[A] =
     DBIOAction[A, NoStream, Effect.Read with Effect.Write with Effect.Transactional]
 
-  type DBActionS[A, E <: Effect] = DBIOAction[Vector[A], Streaming[A], E]
-  type DBActionSR[A]             = DBIOAction[Vector[A], Streaming[A], Effect.Read]
+  //type DBActionS[A, E <: Effect] = DBIOAction[Vector[A], Streaming[A], E]
+  //type DBActionSR[A]             = DBIOAction[Vector[A], Streaming[A], Effect.Read]
+  type DBActionSR[A] = DBIOAction[ArraySeq[A], NoStream, Effect.Read]
 }

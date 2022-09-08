@@ -18,6 +18,8 @@ package org.alephium.explorer.util
 
 import java.time.{Instant, LocalDateTime, OffsetTime, ZoneId}
 
+import scala.collection.immutable.ArraySeq
+
 import org.scalatest.matchers.should.Matchers
 
 import org.alephium.explorer.AlephiumSpec
@@ -63,25 +65,25 @@ class TimeUtilSpec extends AlephiumSpec with Matchers {
     "build the correct ranges" in {
 
       buildTimestampRange(t(0), t(5), s(1)) is
-        Seq(r(0, 1), r(2, 3), r(4, 5))
+        ArraySeq(r(0, 1), r(2, 3), r(4, 5))
 
       buildTimestampRange(t(0), t(5), s(2)) is
-        Seq(r(0, 2), r(3, 5))
+        ArraySeq(r(0, 2), r(3, 5))
 
       buildTimestampRange(t(0), t(6), s(2)) is
-        Seq(r(0, 2), r(3, 5), r(6, 6))
+        ArraySeq(r(0, 2), r(3, 5), r(6, 6))
 
       buildTimestampRange(t(0), t(7), s(2)) is
-        Seq(r(0, 2), r(3, 5), r(6, 7))
+        ArraySeq(r(0, 2), r(3, 5), r(6, 7))
 
       buildTimestampRange(t(1), t(1), s(1)) is
-        Seq.empty
+        ArraySeq.empty
 
       buildTimestampRange(t(1), t(0), s(1)) is
-        Seq.empty
+        ArraySeq.empty
 
       buildTimestampRange(t(0), t(1), s(0)) is
-        Seq.empty
+        ArraySeq.empty
     }
   }
 

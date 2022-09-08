@@ -16,6 +16,7 @@
 
 package org.alephium.explorer
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
@@ -27,6 +28,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.model.{ChainParams, PeerAddress}
+import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.error.ExplorerError._
@@ -66,7 +68,7 @@ object SyncServices extends StrictLogging {
 
   /** Start sync services given the peers */
   // scalastyle:off
-  def startSyncServices(peers: Seq[Uri],
+  def startSyncServices(peers: ArraySeq[Uri],
                         syncPeriod: FiniteDuration,
                         tokenSupplyServiceSyncPeriod: FiniteDuration,
                         hashRateServiceSyncPeriod: FiniteDuration,
@@ -83,7 +85,7 @@ object SyncServices extends StrictLogging {
       Try {
         Future
           .sequence(
-            Seq(
+            ArraySeq(
               BlockFlowSyncService.start(peers, syncPeriod),
               MempoolSyncService.start(peers, syncPeriod),
               TokenSupplyService.start(tokenSupplyServiceSyncPeriod),
@@ -106,7 +108,7 @@ object SyncServices extends StrictLogging {
   /** Fetch network peers */
   def getPeers(networkId: NetworkId, directCliqueAccess: Boolean, blockFlowUri: Uri)(
       implicit ec: ExecutionContext,
-      blockFlowClient: BlockFlowClient): Future[Seq[Uri]] =
+      blockFlowClient: BlockFlowClient): Future[ArraySeq[Uri]] =
     blockFlowClient
       .fetchChainParams()
       .flatMap { chainParams =>
@@ -129,28 +131,28 @@ object SyncServices extends StrictLogging {
       }
 
   /** Converts `PeerAddress` to `Uri` */
-  def urisFromPeers(peers: Seq[PeerAddress]): Seq[Uri] =
+  def urisFromPeers(peers: ArraySeq[PeerAddress]): ArraySeq[Uri] =
     peers.map { peer =>
       s"http://${peer.address.getHostAddress}:${peer.restPort}"
     }
 
   def getBlockFlowPeers(directCliqueAccess: Boolean, blockFlowUri: Uri)(
       implicit ec: ExecutionContext,
-      blockFlowClient: BlockFlowClient): Future[Seq[Uri]] =
+      blockFlowClient: BlockFlowClient): Future[ArraySeq[Uri]] =
     if (directCliqueAccess) {
       blockFlowClient.fetchSelfClique() flatMap { selfClique =>
         if (selfClique.nodes.isEmpty) {
           Future.failed(PeersNotFound(blockFlowUri))
         } else {
 
-          val peers = urisFromPeers(selfClique.nodes.toSeq)
+          val peers = urisFromPeers(selfClique.nodes.toArraySeq)
           logger.debug(s"Syncing with clique peers: $peers")
           Future.successful(peers)
         }
       }
     } else {
       logger.debug(s"Syncing with node: $blockFlowUri")
-      Future.successful(Seq(blockFlowUri))
+      Future.successful(ArraySeq(blockFlowUri))
     }
 
   def validateChainParams(networkId: NetworkId, chainParams: ChainParams): Try[Unit] =

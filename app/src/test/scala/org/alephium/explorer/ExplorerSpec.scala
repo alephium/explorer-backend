@@ -18,6 +18,7 @@ package org.alephium.explorer
 
 import java.net.InetAddress
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.io.{Codec, Source}
@@ -72,17 +73,18 @@ trait ExplorerSpec
 
   val txLimit = 20
 
-  val blockflow: Seq[Seq[model.BlockEntry]] =
+  val blockflow: ArraySeq[ArraySeq[model.BlockEntry]] =
     blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
 
-  val blocksProtocol: Seq[model.BlockEntry] = blockflow.flatten
-  val blockEntities: Seq[BlockEntity]       = blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
+  val blocksProtocol: ArraySeq[model.BlockEntry] = blockflow.flatten
+  val blockEntities: ArraySeq[BlockEntity] =
+    blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
 
-  val blocks: Seq[BlockEntry] = blockEntitiesToBlockEntries(Seq(blockEntities)).flatten
+  val blocks: ArraySeq[BlockEntry] = blockEntitiesToBlockEntries(ArraySeq(blockEntities)).flatten
 
-  val transactions: Seq[Transaction] = blocks.flatMap(_.transactions)
+  val transactions: ArraySeq[Transaction] = blocks.flatMap(_.transactions)
 
-  val addresses: Seq[Address] = blocks
+  val addresses: ArraySeq[Address] = blocks
     .flatMap(_.transactions.flatMap(_.outputs.map(_.address)))
     .distinct
 
@@ -157,7 +159,7 @@ trait ExplorerSpec
   "get block's transactions" in {
     forAll(Gen.oneOf(blocks)) { block =>
       Get(s"/blocks/${block.hash.value.toHexString}/transactions") ~> routes ~> check {
-        val txs = responseAs[Seq[Transaction]]
+        val txs = responseAs[ArraySeq[Transaction]]
         txs.sizeIs > 0 is true
         txs.size is block.transactions.size
         txs.foreach(tx => block.transactions.contains(tx))
@@ -193,12 +195,12 @@ trait ExplorerSpec
       blocks.foreach(block => res.contains(block.hash) is true)
     }
 
-    var blocksPage1: Seq[BlockEntry.Hash] = Seq.empty
+    var blocksPage1: ArraySeq[BlockEntry.Hash] = ArraySeq.empty
     Get(s"/blocks?page=1&limit=${blocks.size / 2 + 1}") ~> routes ~> check {
       blocksPage1 = responseAs[ListBlocks].blocks.map(_.hash)
     }
 
-    var allBlocks: Seq[BlockEntry.Hash] = Seq.empty
+    var allBlocks: ArraySeq[BlockEntry.Hash] = ArraySeq.empty
     Get(s"/blocks?page=2&limit=${blocks.size / 2 + 1}") ~> routes ~> check {
       val res = responseAs[ListBlocks].blocks.map(_.hash)
 
@@ -283,7 +285,7 @@ trait ExplorerSpec
       Get(s"/addresses/${address}/transactions") ~> routes ~> check {
         val expectedTransactions =
           transactions.filter(_.outputs.exists(_.address == address)).take(txLimit)
-        val res = responseAs[Seq[Transaction]]
+        val res = responseAs[ArraySeq[Transaction]]
 
         res.size is expectedTransactions.size
         expectedTransactions.foreach(transaction =>
@@ -332,7 +334,7 @@ object ExplorerSpec {
   class BlockFlowServerMock(
       address: InetAddress,
       port: Int,
-      blockflow: Seq[Seq[model.BlockEntry]],
+      blockflow: ArraySeq[ArraySeq[model.BlockEntry]],
       networkId: NetworkId)(implicit groupSetting: GroupSetting, system: ActorSystem)
       extends ApiModelCodec
       with UpickleCustomizationSupport {
@@ -417,7 +419,7 @@ object ExplorerSpec {
           val from = groupIndexGen.sample.get.value
           val to   = groupIndexGen.sample.get.value
           complete(
-            Seq(model.UnconfirmedTransactions(from, to, AVector.from(txs)))
+            ArraySeq(model.UnconfirmedTransactions(from, to, AVector.from(txs)))
           )
         } ~
         path("infos" / "self-clique") {

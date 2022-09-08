@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.persistence.queries.result
 
+import scala.collection.immutable.ArraySeq
+
 import slick.jdbc.{GetResult, PositionedResult}
 
 import org.alephium.explorer.api.model.{BlockEntry, Transaction}
@@ -45,7 +47,7 @@ object TxByAddressQR {
     )
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def apply(tuples: Seq[Tuple]): Seq[TxByAddressQR] =
+  def apply(tuples: ArraySeq[Tuple]): ArraySeq[TxByAddressQR] =
     tuples map apply
 
 }

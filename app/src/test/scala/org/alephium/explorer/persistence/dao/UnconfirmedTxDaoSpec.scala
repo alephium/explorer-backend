@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.dao
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
 import org.scalacheck.Gen
@@ -68,7 +69,7 @@ class UnconfirmedTxDaoSpec
 
   "get" in {
     forAll(utransactionGen) { utx =>
-      UnconfirmedTxDao.insertMany(Seq(utx)).futureValue
+      UnconfirmedTxDao.insertMany(ArraySeq(utx)).futureValue
 
       UnconfirmedTxDao.get(utx.hash).futureValue is Some(utx)
     }
@@ -78,9 +79,9 @@ class UnconfirmedTxDaoSpec
     forAll(Gen.choose(2, 6), assetOutputGen, utransactionGen) {
       case (outputSize, out, utx) =>
         //outputs with same address but different lockTime
-        val outputs = Seq.fill(outputSize)(out.copy(lockTime = Some(timestampGen.sample.get)))
+        val outputs = ArraySeq.fill(outputSize)(out.copy(lockTime = Some(timestampGen.sample.get)))
 
-        UnconfirmedTxDao.insertMany(Seq(utx.copy(outputs = outputs))).futureValue
+        UnconfirmedTxDao.insertMany(ArraySeq(utx.copy(outputs = outputs))).futureValue
 
         UnconfirmedTxDao.get(utx.hash).futureValue.get.outputs.size is outputSize
     }

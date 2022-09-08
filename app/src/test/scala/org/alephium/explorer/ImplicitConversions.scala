@@ -14,26 +14,24 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.model
+package org.alephium.explorer
 
 import scala.collection.immutable.ArraySeq
+import scala.language.implicitConversions
+import scala.reflect.ClassTag
 
-import akka.util.ByteString
+import org.alephium.util.AVector
 
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Transaction}
-import org.alephium.util.{TimeStamp, U256}
+@SuppressWarnings(Array("org.wartremover.warts.ImplicitConversion"))
+trait ImplicitConversions {
 
-final case class TransactionEntity(
-    hash: Transaction.Hash,
-    blockHash: BlockEntry.Hash,
-    timestamp: TimeStamp,
-    chainFrom: GroupIndex,
-    chainTo: GroupIndex,
-    gasAmount: Int,
-    gasPrice: U256,
-    order: Int,
-    mainChain: Boolean,
-    scriptExecutionOk: Boolean,
-    inputSignatures: Option[ArraySeq[ByteString]],
-    scriptSignatures: Option[ArraySeq[ByteString]]
-)
+  implicit def avectorToArraySeq[A](avector: AVector[A]): ArraySeq[A] =
+    ArraySeq.unsafeWrapArray(avector.toArray)
+
+  implicit def iterableToArraySeq[A: ClassTag](iterable: Iterable[A]): ArraySeq[A] =
+    ArraySeq.from(iterable)
+
+  implicit def optionIterableToArraySeq[A: ClassTag](
+      iterableOpt: Option[Iterable[A]]): Option[ArraySeq[A]] =
+    iterableOpt.map(ArraySeq.from(_))
+}

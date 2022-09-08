@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.web
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util._
 
@@ -73,7 +74,7 @@ class UtilsServer()(implicit val executionContext: ExecutionContext,
 
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   private def updateLoggerContext(
-      values: Seq[LogbackValue]
+      values: ArraySeq[LogbackValue]
   ): Either[ApiError[_ <: StatusCode], Unit] = {
     val loggerFactory = LoggerFactory.getILoggerFactory().asInstanceOf[LoggerContext]
     loggerFactory match {

@@ -183,14 +183,14 @@ class InputQueriesSpec
 
         //Ascending order
         locally {
-          val actual = run(InputQueries.getMainChainInputs(true).result).futureValue
+          val actual = run(InputQueries.getMainChainInputs(true)).futureValue
           actual should contain inOrderElementsOf expected
         }
 
         //Descending order
         locally {
           val expectedReversed = expected.reverse
-          val actual           = run(InputQueries.getMainChainInputs(false).result).futureValue
+          val actual           = run(InputQueries.getMainChainInputs(false)).futureValue
           actual should contain inOrderElementsOf expectedReversed
         }
       }

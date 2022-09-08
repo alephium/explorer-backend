@@ -20,6 +20,7 @@ import java.time.{Instant, LocalDate, OffsetTime, ZonedDateTime}
 import java.time.temporal.ChronoUnit
 
 import scala.annotation.tailrec
+import scala.collection.immutable.ArraySeq
 
 import org.alephium.util.{Duration, TimeStamp}
 
@@ -48,9 +49,10 @@ object TimeUtil {
 
   def buildTimestampRange(localTs: TimeStamp,
                           remoteTs: TimeStamp,
-                          step: Duration): Seq[(TimeStamp, TimeStamp)] = {
+                          step: Duration): ArraySeq[(TimeStamp, TimeStamp)] = {
     @tailrec
-    def rec(l: TimeStamp, seq: Seq[(TimeStamp, TimeStamp)]): Seq[(TimeStamp, TimeStamp)] = {
+    def rec(l: TimeStamp,
+            seq: ArraySeq[(TimeStamp, TimeStamp)]): ArraySeq[(TimeStamp, TimeStamp)] = {
       val next = l + step
       if (next.isBefore(remoteTs)) {
         rec(next.plusMillisUnsafe(1), seq :+ ((l, next)))
@@ -62,9 +64,9 @@ object TimeUtil {
     }
 
     if (remoteTs.millis <= localTs.millis || step == Duration.zero) {
-      Seq.empty
+      ArraySeq.empty
     } else {
-      rec(localTs, Seq.empty)
+      rec(localTs, ArraySeq.empty)
     }
   }
 

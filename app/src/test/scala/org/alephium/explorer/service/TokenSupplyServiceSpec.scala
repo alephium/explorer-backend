@@ -18,6 +18,7 @@ package org.alephium.explorer.service
 
 import java.time.Instant
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
@@ -57,19 +58,19 @@ class TokenSupplyServiceSpec
       launchTime,
       launchTime.plusUnsafe(Duration.ofHoursUnsafe(8))
     ) is
-      Seq.empty
+      ArraySeq.empty
 
     TokenSupplyService.buildDaysRange(
       launchTime.plusUnsafe(Duration.ofHoursUnsafe(8)),
       launchTime
     ) is
-      Seq.empty
+      ArraySeq.empty
 
     TokenSupplyService.buildDaysRange(
       launchTime,
       launchTime.plusUnsafe(Duration.ofDaysUnsafe(1))
     ) is
-      Seq(
+      ArraySeq(
         ts("2021-11-08T23:59:59.999Z")
       )
 
@@ -77,7 +78,7 @@ class TokenSupplyServiceSpec
       launchTime,
       launchTime.plusUnsafe(Duration.ofDaysUnsafe(3))
     ) is
-      Seq(
+      ArraySeq(
         ts("2021-11-08T23:59:59.999Z"),
         ts("2021-11-09T23:59:59.999Z"),
         ts("2021-11-10T23:59:59.999Z")
@@ -87,7 +88,7 @@ class TokenSupplyServiceSpec
       launchTime,
       ts("2021-11-11T10:39:53.100Z")
     ) is
-      Seq(
+      ArraySeq(
         ts("2021-11-08T23:59:59.999Z"),
         ts("2021-11-09T23:59:59.999Z"),
         ts("2021-11-10T23:59:59.999Z")
@@ -98,7 +99,7 @@ class TokenSupplyServiceSpec
     override val genesisLocked = false
 
     test(genesisBlock) {
-      Seq(U256.Zero)
+      ArraySeq(U256.Zero)
     }
   }
 
@@ -106,7 +107,7 @@ class TokenSupplyServiceSpec
     override val genesisLocked = true
 
     test(genesisBlock) {
-      Seq(U256.Zero)
+      ArraySeq(U256.Zero)
     }
   }
 
@@ -114,7 +115,7 @@ class TokenSupplyServiceSpec
     override val genesisLocked = false
 
     test(genesisBlock, block1, block2) {
-      Seq(
+      ArraySeq(
         blockAmount(block1),
         U256.Zero
       )
@@ -126,7 +127,7 @@ class TokenSupplyServiceSpec
     override val block1Locked  = true
 
     test(genesisBlock, block1, block2) {
-      Seq(U256.Zero, U256.Zero)
+      ArraySeq(U256.Zero, U256.Zero)
     }
   }
 
@@ -134,7 +135,7 @@ class TokenSupplyServiceSpec
     override val genesisLocked = false
 
     test(genesisBlock, block1, block2, block3) {
-      Seq(blockAmount(block2), blockAmount(block1), U256.Zero)
+      ArraySeq(blockAmount(block2), blockAmount(block1), U256.Zero)
     }
   }
 
@@ -142,7 +143,7 @@ class TokenSupplyServiceSpec
     override val genesisLocked = true
 
     test(genesisBlock, block1, block2, block3) {
-      Seq(blockAmount(block2), blockAmount(block1), U256.Zero)
+      ArraySeq(blockAmount(block2), blockAmount(block1), U256.Zero)
     }
   }
 
@@ -150,7 +151,7 @@ class TokenSupplyServiceSpec
     override val genesisLocked = true
 
     test(genesisBlock, block1, block2, block3, block4) {
-      Seq(blockAmount(block2), blockAmount(block2), blockAmount(block1), U256.Zero)
+      ArraySeq(blockAmount(block2), blockAmount(block2), blockAmount(block1), U256.Zero)
     }
   }
 
@@ -231,8 +232,8 @@ class TokenSupplyServiceSpec
       block.copy(timestamp = timestamp, outputs = block.outputs.map(_.copy(timestamp = timestamp)))
     }
 
-    def test(blocks: BlockEntity*)(amounts: Seq[U256]) = {
-      BlockDao.insertAll(Seq.from(blocks)).futureValue
+    def test(blocks: BlockEntity*)(amounts: ArraySeq[U256]) = {
+      BlockDao.insertAll(ArraySeq.from(blocks)).futureValue
       blocks.foreach { block =>
         BlockDao.updateMainChainStatus(block.hash, true).futureValue
       }
@@ -248,10 +249,10 @@ class TokenSupplyServiceSpec
         TokenSupplyService
           .listTokenSupply(Pagination.unsafe(0, 1))
           .futureValue
-          .map(_.circulating) is Seq(amounts.head)
+          .map(_.circulating) is ArraySeq(amounts.head)
         TokenSupplyService
           .listTokenSupply(Pagination.unsafe(0, 0))
-          .futureValue is Seq.empty
+          .futureValue is ArraySeq.empty
 
         TokenSupplyService
           .getLatestTokenSupply()

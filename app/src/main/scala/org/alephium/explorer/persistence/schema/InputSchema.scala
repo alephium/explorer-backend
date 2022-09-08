@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.persistence.schema
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
@@ -42,7 +44,8 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
     def outputRefAddress: Rep[Option[Address]] = column[Option[Address]]("output_ref_address")
     def outputRefAmount: Rep[Option[U256]] =
       column[Option[U256]]("output_ref_amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
-    def outputRefTokens: Rep[Option[Seq[Token]]] = column[Option[Seq[Token]]]("output_ref_tokens")
+    def outputRefTokens: Rep[Option[ArraySeq[Token]]] =
+      column[Option[ArraySeq[Token]]]("output_ref_tokens")
 
     def pk: PrimaryKey = primaryKey("inputs_pk", (outputRefKey, blockHash))
 

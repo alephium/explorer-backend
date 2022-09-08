@@ -18,10 +18,13 @@ package org.alephium.explorer.persistence.schema
 
 import java.math.BigInteger
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 import slick.jdbc.{GetResult, PositionedResult}
 
 import org.alephium.explorer.{BlockHash, Hash}
+import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.serde._
@@ -84,14 +87,14 @@ object CustomGetResult {
     (result: PositionedResult) =>
       result.nextBytesOption().map(bytes => ByteString.fromArrayUnsafe(bytes))
 
-  implicit val optionTokensGetResult: GetResult[Option[Seq[Token]]] =
+  implicit val optionTokensGetResult: GetResult[Option[ArraySeq[Token]]] =
     (result: PositionedResult) =>
       result
         .nextBytesOption()
         .map { bytes =>
           deserialize[AVector[Token]](ByteString.fromArrayUnsafe(bytes)) match {
             case Left(error)  => throw error
-            case Right(value) => value.toSeq
+            case Right(value) => value.toArraySeq
           }
       }
 
@@ -226,5 +229,15 @@ object CustomGetResult {
         lockTime     = result.<<?,
         message      = result.<<?,
         uoutputOrder = result.<<
+    )
+
+  val tokenSupplyGetResult: GetResult[TokenSupplyEntity] =
+    (result: PositionedResult) =>
+      TokenSupplyEntity(
+        timestamp   = result.<<,
+        total       = result.<<,
+        circulating = result.<<,
+        reserved    = result.<<,
+        locked      = result.<<
     )
 }

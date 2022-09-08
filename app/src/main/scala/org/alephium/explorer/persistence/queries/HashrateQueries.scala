@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.queries
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
 import slick.jdbc.PostgresProfile.api._
@@ -24,6 +25,7 @@ import org.alephium.explorer.api.model.IntervalType
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.util.SlickUtil._
 import org.alephium.util.TimeStamp
 
 object HashrateQueries {
@@ -39,7 +41,7 @@ object HashrateQueries {
         AND block_timestamp >= $from
         AND block_timestamp <= $to
         ORDER BY block_timestamp
-      """.as[(TimeStamp, BigDecimal)]
+      """.asAS[(TimeStamp, BigDecimal)]
   }
 
   def computeHashratesAndInsert(from: TimeStamp, intervalType: IntervalType): DBActionW[Int] = {
@@ -91,7 +93,7 @@ object HashrateQueries {
   }
 
   def computeHourlyHashrate(from: TimeStamp)(
-      implicit ec: ExecutionContext): DBActionR[Vector[(TimeStamp, BigDecimal)]] = {
+      implicit ec: ExecutionContext): DBActionR[ArraySeq[(TimeStamp, BigDecimal)]] = {
     computeHourlyHashrateRawString(from).map(_.map { case (ts, v, _) => (ts, v) })
   }
 
@@ -104,7 +106,7 @@ object HashrateQueries {
   }
 
   def computeDailyHashrate(from: TimeStamp)(
-      implicit ec: ExecutionContext): DBActionR[Vector[(TimeStamp, BigDecimal)]] = {
+      implicit ec: ExecutionContext): DBActionR[ArraySeq[(TimeStamp, BigDecimal)]] = {
     val sql = computeDailyHashrateRawString(from)
     sql.map(_.map { case (ts, v, _) => (ts, v) })
   }
@@ -121,6 +123,6 @@ object HashrateQueries {
         WHERE block_timestamp >= $from
         AND main_chain = true
         GROUP BY ts
-      """.as[(TimeStamp, BigDecimal, Int)]
+      """.asAS[(TimeStamp, BigDecimal, Int)]
   }
 }

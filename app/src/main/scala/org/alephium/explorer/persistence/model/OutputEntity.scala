@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.persistence.model
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 
 import org.alephium.explorer.Hash
@@ -31,7 +33,7 @@ final case class OutputEntity(
     key: Hash,
     amount: U256,
     address: Address,
-    tokens: Option[Seq[Token]], //None if empty list
+    tokens: Option[ArraySeq[Token]], //None if empty list
     mainChain: Boolean,
     lockTime: Option[TimeStamp],
     message: Option[ByteString],

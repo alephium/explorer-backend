@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.api
 
+import scala.collection.immutable.ArraySeq
+
 import sttp.tapir._
 import sttp.tapir.generic.auto._
 
@@ -37,12 +39,12 @@ trait BlockEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[BlockEntryLite])
       .description("Get a block with hash")
 
-  val getBlockTransactions: BaseEndpoint[(BlockEntry.Hash, Pagination), Seq[Transaction]] =
+  val getBlockTransactions: BaseEndpoint[(BlockEntry.Hash, Pagination), ArraySeq[Transaction]] =
     blocksEndpoint.get
       .in(path[BlockEntry.Hash]("block-hash"))
       .in("transactions")
       .in(pagination)
-      .out(jsonBody[Seq[Transaction]])
+      .out(jsonBody[ArraySeq[Transaction]])
       .description("Get block's transactions")
 
   val listBlocks: BaseEndpoint[Pagination, ListBlocks] =

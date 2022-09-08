@@ -16,38 +16,39 @@
 
 package org.alephium.explorer.service
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
-import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.DBActionR
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries._
+import org.alephium.explorer.util.SlickUtil._
 
 // scalastyle:off magic.number
 object IndexChecker {
 
   /** Run query checks */
   def check()(implicit ec: ExecutionContext,
-              dc: DatabaseConfig[PostgresProfile]): Future[Seq[ExplainResult]] =
+              dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[ExplainResult]] =
     run(checkAction())
 
-  def checkAction()(implicit ec: ExecutionContext): DBActionR[Seq[ExplainResult]] =
+  def checkAction()(implicit ec: ExecutionContext): DBActionR[ArraySeq[ExplainResult]] =
     for {
       a                  <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(0, 20)) //first page
       b                  <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(10000, 20)) //far page
       c                  <- BlockQueries.explainMainChainQuery()
-      oldestOutputEntity <- OutputQueries.getMainChainOutputs(true).result.headOption
-      latestOutputEntity <- OutputQueries.getMainChainOutputs(false).result.headOption
-      d                  <- OutputQueries.explainGetTxnHash(oldestOutputEntity.map(_.key))
-      e                  <- OutputQueries.explainGetTxnHash(latestOutputEntity.map(_.key))
-      oldestInputEntity  <- InputQueries.getMainChainInputs(true).result.headOption
-      latestInputEntity  <- InputQueries.getMainChainInputs(false).result.headOption
-      f                  <- InputQueries.explainInputsFromTxsNoJoin(oldestInputEntity.map(_.hashes()).toList)
-      g                  <- InputQueries.explainInputsFromTxsNoJoin(latestInputEntity.map(_.hashes()).toList)
-    } yield Seq(a, b, c, d, e, f, g).sortBy(_.passed)
+      oldestOutputEntity <- OutputQueries.getMainChainOutputs(true).headOrEmpty
+      latestOutputEntity <- OutputQueries.getMainChainOutputs(false).headOrEmpty
+      d                  <- OutputQueries.explainGetTxnHash(oldestOutputEntity.map(_.key).headOption)
+      e                  <- OutputQueries.explainGetTxnHash(latestOutputEntity.map(_.key).headOption)
+      oldestInputEntity  <- InputQueries.getMainChainInputs(true).headOrEmpty
+      latestInputEntity  <- InputQueries.getMainChainInputs(false).headOrEmpty
+      f                  <- InputQueries.explainInputsFromTxsNoJoin(oldestInputEntity.map(_.hashes()))
+      g                  <- InputQueries.explainInputsFromTxsNoJoin(latestInputEntity.map(_.hashes()))
+    } yield ArraySeq(a, b, c, d, e, f, g).sortBy(_.passed)
 
 }

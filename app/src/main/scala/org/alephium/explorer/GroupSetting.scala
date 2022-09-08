@@ -16,7 +16,7 @@
 
 package org.alephium.explorer
 
-import scala.collection.Seq
+import scala.collection.immutable.ArraySeq
 
 import org.alephium.explorer.api.model.GroupIndex
 import org.alephium.protocol.config.GroupConfig
@@ -27,15 +27,15 @@ object GroupSetting {
   def apply(groupNum: Int): GroupSetting = {
     implicit val groupConfig: GroupConfig = new GroupConfig { val groups = groupNum }
 
-    val chainIndexes: IndexedSeq[ChainIndex] = for {
+    val chainIndexes: ArraySeq[ChainIndex] = ArraySeq.from(for {
       i <- 0 until groupNum
       j <- 0 until groupNum
-    } yield ChainIndex.unsafe(i, j)
+    } yield ChainIndex.unsafe(i, j))
 
-    val groupIndexes: Seq[(GroupIndex, GroupIndex)] = for {
+    val groupIndexes: ArraySeq[(GroupIndex, GroupIndex)] = ArraySeq.from(for {
       i <- 0 until groupNum
       j <- 0 until groupNum
-    } yield (GroupIndex.unsafe(i), GroupIndex.unsafe(j))
+    } yield (GroupIndex.unsafe(i), GroupIndex.unsafe(j)))
 
     new GroupSetting(
       groupConfig  = groupConfig,
@@ -47,7 +47,7 @@ object GroupSetting {
 
 /** Stores group related settings */
 class GroupSetting private (val groupConfig: GroupConfig,
-                            val chainIndexes: IndexedSeq[ChainIndex],
-                            val groupIndexes: Seq[(GroupIndex, GroupIndex)]) {
+                            val chainIndexes: ArraySeq[ChainIndex],
+                            val groupIndexes: ArraySeq[(GroupIndex, GroupIndex)]) {
   def groupNum: Int = groupConfig.groups
 }

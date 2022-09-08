@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.persistence.queries.result
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 import slick.jdbc.{GetResult, PositionedResult}
 
@@ -51,7 +53,7 @@ final case class OutputsFromTxQR(txHash: Transaction.Hash,
                                  key: Hash,
                                  amount: U256,
                                  address: Address,
-                                 tokens: Option[Seq[Token]],
+                                 tokens: Option[ArraySeq[Token]],
                                  lockTime: Option[TimeStamp],
                                  message: Option[ByteString],
                                  spent: Option[Transaction.Hash]) {

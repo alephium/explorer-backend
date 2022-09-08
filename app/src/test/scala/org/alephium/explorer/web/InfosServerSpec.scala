@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.web
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
@@ -57,13 +58,13 @@ class InfosServerSpec()
 
   "return chains heights" in new Fixture {
     Get(s"/infos/heights") ~> server.route ~> check {
-      responseAs[Seq[PerChainHeight]] is Seq(chainHeight)
+      responseAs[ArraySeq[PerChainHeight]] is ArraySeq(chainHeight)
     }
   }
 
   "return the token supply list" in new Fixture {
     Get(s"/infos/supply") ~> server.route ~> check {
-      responseAs[Seq[TokenSupply]] is Seq(tokenSupply)
+      responseAs[ArraySeq[TokenSupply]] is ArraySeq(tokenSupply)
     }
   }
 
@@ -124,7 +125,7 @@ class InfosServerSpec()
 
   "return the average block times" in new Fixture {
     Get(s"/infos/average-block-times") ~> server.route ~> check {
-      responseAs[Seq[PerChainDuration]] is Seq(blockTime)
+      responseAs[ArraySeq[PerChainDuration]] is ArraySeq(blockTime)
     }
   }
   trait Fixture {
@@ -137,9 +138,9 @@ class InfosServerSpec()
     val tokenSupplyService = new TokenSupplyService {
       def listTokenSupply(pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[TokenSupply]] =
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenSupply]] =
         Future.successful(
-          Seq(
+          ArraySeq(
             tokenSupply
           ))
 
@@ -163,7 +164,7 @@ class InfosServerSpec()
 
       def getBlockTransactions(hash: BlockEntry.Hash, pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
         ???
 
       def listBlocks(pagination: Pagination)(implicit ec: ExecutionContext,
@@ -173,13 +174,13 @@ class InfosServerSpec()
 
       def listMaxHeights()(implicit cache: BlockCache,
                            groupSetting: GroupSetting,
-                           ec: ExecutionContext): Future[Seq[PerChainHeight]] =
-        Future.successful(Seq(chainHeight))
+                           ec: ExecutionContext): Future[ArraySeq[PerChainHeight]] =
+        Future.successful(ArraySeq(chainHeight))
 
       def getAverageBlockTime()(implicit cache: BlockCache,
                                 groupSetting: GroupSetting,
-                                ec: ExecutionContext): Future[Seq[PerChainDuration]] =
-        Future.successful(Seq(blockTime))
+                                ec: ExecutionContext): Future[ArraySeq[PerChainDuration]] =
+        Future.successful(ArraySeq(blockTime))
 
     }
 
@@ -201,18 +202,18 @@ class InfosServerSpec()
 
       override def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
-        Future.successful(Seq.empty)
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+        Future.successful(ArraySeq.empty)
 
       override def listUnconfirmedTransactionsByAddress(address: Address)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]] =
-        Future.successful(Seq.empty)
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]] =
+        Future.successful(ArraySeq.empty)
 
       override def getTransactionsByAddress(address: Address, pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
-        Future.successful(Seq.empty)
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+        Future.successful(ArraySeq.empty)
 
       override def getBalance(address: Address)(
           implicit ec: ExecutionContext,
@@ -223,28 +224,28 @@ class InfosServerSpec()
 
       def listUnconfirmedTransactions(pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[UnconfirmedTransaction]] = ???
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]] = ???
       def getTokenBalance(address: Address, token: Hash)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] = ???
       def listAddressTokenTransactions(address: Address, token: Hash, pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] = ???
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] = ???
       def listAddressTokens(address: Address)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] = ???
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Hash]] = ???
       def listTokenAddresses(token: Hash, pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Address]] = ???
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Address]] = ???
       def listTokenTransactions(token: Hash, pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] = ???
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] = ???
       def listTokens(pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] = ???
-      def areAddressesActive(addresses: Seq[Address])(
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Hash]] = ???
+      def areAddressesActive(addresses: ArraySeq[Address])(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Seq[Boolean]] =
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]] =
         ???
     }
 
