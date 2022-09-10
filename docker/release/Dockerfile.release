@@ -1,11 +1,6 @@
 FROM adoptopenjdk/openjdk11:jre-11.0.11_9
-#FROM eclipse-temurin:11
-#RUN  apk update \
-#  && apk upgrade \
-#  && apk add --update openjdk11 tzdata curl unzip bash \
-#  && rm -rf /var/cache/apk/*
 
-ARG RELEASE=1.8.0
+ARG RELEASE=0.0.0
 
 RUN curl -L https://github.com/alephium/explorer-backend/releases/download/v${RELEASE}/explorer-backend-${RELEASE}.jar -o /explorer-backend.jar && \
  mkdir -p /alephium-home && usermod -d /alephium-home nobody && chown nobody /alephium-home && \
