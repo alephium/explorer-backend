@@ -72,4 +72,41 @@ object GenDBModel {
         mainChain = mainChain
       )
 
+  def transactionPerTokenEntityGen(): Gen[TransactionPerTokenEntity] =
+    for {
+      hash      <- transactionHashGen
+      blockHash <- blockEntryHashGen
+      token     <- hashGen
+      timestamp <- timestampGen
+      txOrder   <- Gen.posNum[Int]
+      mainChain <- Arbitrary.arbitrary[Boolean]
+    } yield
+      TransactionPerTokenEntity(
+        hash      = hash,
+        blockHash = blockHash,
+        token     = token,
+        timestamp = timestamp,
+        txOrder   = txOrder,
+        mainChain = mainChain
+      )
+
+  def tokenTxPerAddressEntityGen(): Gen[TokenTxPerAddressEntity] =
+    for {
+      address   <- addressGen
+      hash      <- transactionHashGen
+      blockHash <- blockEntryHashGen
+      timestamp <- timestampGen
+      txOrder   <- Gen.posNum[Int]
+      mainChain <- Arbitrary.arbitrary[Boolean]
+      token     <- hashGen
+    } yield
+      TokenTxPerAddressEntity(
+        address   = address,
+        hash      = hash,
+        blockHash = blockHash,
+        timestamp = timestamp,
+        txOrder   = txOrder,
+        mainChain = mainChain,
+        token     = token
+      )
 }

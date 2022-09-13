@@ -81,7 +81,7 @@ object TokenQueries extends StrictLogging {
     val limit  = pagination.limit
     val toDrop = offset * limit
     for {
-      txHashesTs <- listTokenTransactionsAction(token, limit, toDrop)
+      txHashesTs <- listTokenTransactionsAction(token, toDrop, limit)
       txs        <- TransactionQueries.getTransactionsSQL(txHashesTs)
     } yield txs
   }
@@ -100,10 +100,10 @@ object TokenQueries extends StrictLogging {
   }
 
   def listTokenTransactionsAction(token: Hash,
-                                  limit: Int,
-                                  offset: Int): DBActionSR[TxByAddressQR] = {
+                                  offset: Int,
+                                  limit: Int): DBActionSR[TxByAddressQR] = {
     sql"""
-      SELECT hash, block_hash, block_timestamp, tx_order
+      SELECT tx_hash, block_hash, block_timestamp, tx_order
       FROM transaction_per_token
       WHERE main_chain = true
       AND token = $token
@@ -137,7 +137,7 @@ object TokenQueries extends StrictLogging {
                                      offset: Int,
                                      limit: Int): DBActionSR[TxByAddressQR] = {
     sql"""
-      SELECT hash, block_hash, block_timestamp, tx_order
+      SELECT tx_hash, block_hash, block_timestamp, tx_order
       FROM token_tx_per_addresses
       WHERE main_chain = true
       AND address = $address
