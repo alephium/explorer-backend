@@ -16,7 +16,6 @@
 
 package org.alephium.explorer.web
 
-import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
@@ -25,6 +24,7 @@ import org.scalatest.concurrent.ScalaFutures
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
+import org.alephium.api.UtilJson._
 import org.alephium.explorer.{AlephiumSpec, BuildInfo, GroupSetting, Hash}
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
@@ -33,7 +33,7 @@ import org.alephium.explorer.persistence.{Database, DatabaseFixtureForEach}
 import org.alephium.explorer.service._
 import org.alephium.json.Json
 import org.alephium.protocol.ALPH
-import org.alephium.util.{Duration, TimeStamp, U256}
+import org.alephium.util.{AVector, Duration, TimeStamp, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var"))
 class InfosServerSpec()
@@ -58,13 +58,13 @@ class InfosServerSpec()
 
   "return chains heights" in new Fixture {
     Get(s"/infos/heights") ~> server.route ~> check {
-      responseAs[ArraySeq[PerChainHeight]] is ArraySeq(chainHeight)
+      responseAs[AVector[PerChainHeight]] is AVector(chainHeight)
     }
   }
 
   "return the token supply list" in new Fixture {
     Get(s"/infos/supply") ~> server.route ~> check {
-      responseAs[ArraySeq[TokenSupply]] is ArraySeq(tokenSupply)
+      responseAs[AVector[TokenSupply]] is AVector(tokenSupply)
     }
   }
 
@@ -125,7 +125,7 @@ class InfosServerSpec()
 
   "return the average block times" in new Fixture {
     Get(s"/infos/average-block-times") ~> server.route ~> check {
-      responseAs[ArraySeq[PerChainDuration]] is ArraySeq(blockTime)
+      responseAs[AVector[PerChainDuration]] is AVector(blockTime)
     }
   }
   trait Fixture {
@@ -138,9 +138,9 @@ class InfosServerSpec()
     val tokenSupplyService = new TokenSupplyService {
       def listTokenSupply(pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenSupply]] =
+          dc: DatabaseConfig[PostgresProfile]): Future[AVector[TokenSupply]] =
         Future.successful(
-          ArraySeq(
+          AVector(
             tokenSupply
           ))
 
@@ -164,7 +164,7 @@ class InfosServerSpec()
 
       def getBlockTransactions(hash: BlockEntry.Hash, pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+          dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]] =
         ???
 
       def listBlocks(pagination: Pagination)(implicit ec: ExecutionContext,
@@ -174,13 +174,13 @@ class InfosServerSpec()
 
       def listMaxHeights()(implicit cache: BlockCache,
                            groupSetting: GroupSetting,
-                           ec: ExecutionContext): Future[ArraySeq[PerChainHeight]] =
-        Future.successful(ArraySeq(chainHeight))
+                           ec: ExecutionContext): Future[AVector[PerChainHeight]] =
+        Future.successful(AVector(chainHeight))
 
       def getAverageBlockTime()(implicit cache: BlockCache,
                                 groupSetting: GroupSetting,
-                                ec: ExecutionContext): Future[ArraySeq[PerChainDuration]] =
-        Future.successful(ArraySeq(blockTime))
+                                ec: ExecutionContext): Future[AVector[PerChainDuration]] =
+        Future.successful(AVector(blockTime))
 
     }
 
@@ -202,18 +202,18 @@ class InfosServerSpec()
 
       override def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
-        Future.successful(ArraySeq.empty)
+          dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]] =
+        Future.successful(AVector.empty)
 
       override def listUnconfirmedTransactionsByAddress(address: Address)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]] =
-        Future.successful(ArraySeq.empty)
+          dc: DatabaseConfig[PostgresProfile]): Future[AVector[UnconfirmedTransaction]] =
+        Future.successful(AVector.empty)
 
       override def getTransactionsByAddress(address: Address, pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
-        Future.successful(ArraySeq.empty)
+          dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]] =
+        Future.successful(AVector.empty)
 
       override def getBalance(address: Address)(
           implicit ec: ExecutionContext,
@@ -224,28 +224,28 @@ class InfosServerSpec()
 
       def listUnconfirmedTransactions(pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]] = ???
+          dc: DatabaseConfig[PostgresProfile]): Future[AVector[UnconfirmedTransaction]] = ???
       def getTokenBalance(address: Address, token: Hash)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] = ???
       def listAddressTokenTransactions(address: Address, token: Hash, pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] = ???
+          dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]] = ???
       def listAddressTokens(address: Address)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Hash]] = ???
+          dc: DatabaseConfig[PostgresProfile]): Future[AVector[Hash]] = ???
       def listTokenAddresses(token: Hash, pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Address]] = ???
+          dc: DatabaseConfig[PostgresProfile]): Future[AVector[Address]] = ???
       def listTokenTransactions(token: Hash, pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] = ???
+          dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]] = ???
       def listTokens(pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Hash]] = ???
-      def areAddressesActive(addresses: ArraySeq[Address])(
+          dc: DatabaseConfig[PostgresProfile]): Future[AVector[Hash]] = ???
+      def areAddressesActive(addresses: AVector[Address])(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]] =
+          dc: DatabaseConfig[PostgresProfile]): Future[AVector[Boolean]] =
         ???
     }
 

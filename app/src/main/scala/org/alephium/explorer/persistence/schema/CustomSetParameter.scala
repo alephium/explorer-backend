@@ -18,8 +18,6 @@ package org.alephium.explorer.persistence.schema
 
 import java.math.BigInteger
 
-import scala.collection.immutable.ArraySeq
-
 import akka.util.ByteString
 import slick.jdbc.{PositionedParameters, SetParameter}
 
@@ -122,7 +120,7 @@ object CustomSetParameter {
       }
   }
 
-  implicit object TokensOptionSetParameter extends SetParameter[Option[ArraySeq[Token]]] {
+  implicit object TokensOptionSetParameter extends SetParameter[Option[AVector[Token]]] {
 
     /** {{{Params.setBytesOption(input.map(_.value.bytes.toArray[Byte]))}}} sets the value
       * to java.lang.Object instead of null which fails and requires casting at SQL level.
@@ -132,7 +130,7 @@ object CustomSetParameter {
       *
       * To keep this simple `null` is used and which set the column value as expected.
       */
-    override def apply(input: Option[ArraySeq[Token]], params: PositionedParameters): Unit =
+    override def apply(input: Option[AVector[Token]], params: PositionedParameters): Unit =
       input match {
         case Some(tokens) =>
           params setBytes serialize(AVector.unsafe(tokens.toArray)).toArray
@@ -144,8 +142,8 @@ object CustomSetParameter {
       }
   }
 
-  implicit object ByteStringsOptionSetParameter extends SetParameter[Option[ArraySeq[ByteString]]] {
-    override def apply(input: Option[ArraySeq[ByteString]], params: PositionedParameters): Unit =
+  implicit object ByteStringsOptionSetParameter extends SetParameter[Option[AVector[ByteString]]] {
+    override def apply(input: Option[AVector[ByteString]], params: PositionedParameters): Unit =
       input match {
         case Some(byteStrings) =>
           params setBytes serialize(AVector.unsafe(byteStrings.toArray)).toArray

@@ -48,7 +48,7 @@ class ReadBenchmarkStateSpec extends AlephiumSpec with ScalaFutures {
         state.cache.length is testDataCount
 
         //cached and persisted data should be the same
-        getRows(state) should contain theSameElementsAs state.cache
+        getRows(state) containsTheSameElementsAs state.cache
         ()
       }
 

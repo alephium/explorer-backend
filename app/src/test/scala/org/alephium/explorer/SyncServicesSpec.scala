@@ -16,7 +16,6 @@
 
 package org.alephium.explorer
 
-import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util._
 
@@ -34,6 +33,7 @@ import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.service.BlockFlowClient
+import org.alephium.util.AVector
 
 /** Temporary placeholder. These tests should be merged into ApplicationSpec  */
 class SyncServicesSpec
@@ -74,7 +74,7 @@ class SyncServicesSpec
 
         SyncServices
           .getBlockFlowPeers(directCliqueAccess = false, blockFlowUri = explorerConfig.blockFlowUri)
-          .futureValue is ArraySeq(explorerConfig.blockFlowUri)
+          .futureValue is AVector(explorerConfig.blockFlowUri)
       }
     }
 

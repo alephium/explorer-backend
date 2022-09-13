@@ -18,7 +18,6 @@ package org.alephium.explorer.benchmark.db.state
 
 import java.math.BigInteger
 
-import scala.collection.immutable.ArraySeq
 import scala.concurrent.{Await, ExecutionContext}
 import scala.util.Random
 
@@ -38,7 +37,7 @@ import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.protocol.ALPH
-import org.alephium.util.{Base58, TimeStamp, U256}
+import org.alephium.util.{AVector, Base58, TimeStamp, U256}
 
 class Queries(val config: DatabaseConfig[PostgresProfile])(
     implicit val executionContext: ExecutionContext)
@@ -62,14 +61,14 @@ class AddressReadState(val db: DBExecutor)
 
   val address: Address = Address.unsafe(Base58.encode(Hash.generate.bytes))
 
-  var blocks: ArraySeq[BlockEntity] = _
+  var blocks: AVector[BlockEntity] = _
 
-  lazy val hashes: ArraySeq[(Transaction.Hash, BlockEntry.Hash)] = ArraySeq.from(
+  lazy val hashes: AVector[(Transaction.Hash, BlockEntry.Hash)] = AVector.from(
     Random
-      .shuffle(blocks.flatMap(_.transactions.map(tx => (tx.hash, tx.blockHash))).toMap)
+      .shuffle(blocks.flatMap(_.transactions.map(tx => (tx.hash, tx.blockHash))).iterator.toMap)
       .take(100))
 
-  lazy val txHashes: ArraySeq[Transaction.Hash] = hashes.map(_._1)
+  lazy val txHashes: AVector[Transaction.Hash] = hashes.map(_._1)
 
   val pagination: Pagination = Pagination.unsafe(
     offset  = 0,
@@ -147,7 +146,7 @@ class AddressReadState(val db: DBExecutor)
     // 80% of outputs will be spent
     var spent = testDataCount * 0.8
 
-    blocks = ArraySeq.from(cache.map { output =>
+    blocks = AVector.from(cache.map { output =>
       val blockHash = output.blockHash
       val txHash    = output.txHash
       val timestamp = output.timestamp
@@ -155,9 +154,9 @@ class AddressReadState(val db: DBExecutor)
         spent = spent - 1
         val output = outputs(Random.nextInt(outputs.length))
         outputs = outputs.filter(_ != output)
-        ArraySeq(generateInput(blockHash, txHash, timestamp, output.hint, output.key))
+        AVector(generateInput(blockHash, txHash, timestamp, output.hint, output.key))
       } else {
-        ArraySeq.empty
+        AVector.empty[InputEntity]
       }
 
       BlockEntity(
@@ -166,10 +165,10 @@ class AddressReadState(val db: DBExecutor)
         chainFrom    = GroupIndex.unsafe(1),
         chainTo      = GroupIndex.unsafe(16),
         height       = Height.genesis,
-        deps         = ArraySeq.empty,
-        transactions = ArraySeq(generateTransaction(blockHash, txHash, timestamp)),
+        deps         = AVector.empty,
+        transactions = AVector(generateTransaction(blockHash, txHash, timestamp)),
         inputs       = inputs,
-        outputs      = ArraySeq(output),
+        outputs      = AVector(output),
         mainChain    = true,
         nonce        = ByteString.emptyByteString,
         version      = 0,
@@ -211,8 +210,10 @@ class AddressReadState(val db: DBExecutor)
       GroupSetting(4)
 
     logger.info("Persisting data")
-    blocks.sliding(10000).foreach { bs =>
-      Await.result(BlockDao.insertAll(bs), batchWriteTimeout)
+    blocks.toIterable.sliding(10000).foreach { blocks =>
+      blocks.foreach { block =>
+        Await.result(BlockDao.insert(block), batchWriteTimeout)
+      }
     }
 
     val from = ALPH.LaunchTimestamp

@@ -16,15 +16,15 @@
 
 package org.alephium.explorer.api
 
-import scala.collection.immutable.ArraySeq
-
 import sttp.tapir._
 import sttp.tapir.generic.auto._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
+import org.alephium.api.UtilJson._
 import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.Hash
+import org.alephium.util.AVector
 
 // scalastyle:off magic.number
 trait TokensEndpoints extends BaseEndpoint with QueryParams {
@@ -34,25 +34,25 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .tag("Tokens")
       .in("tokens")
 
-  val listTokens: BaseEndpoint[Pagination, ArraySeq[Hash]] =
+  val listTokens: BaseEndpoint[Pagination, AVector[Hash]] =
     tokensEndpoint.get
       .in(pagination)
-      .out(jsonBody[ArraySeq[Hash]])
+      .out(jsonBody[AVector[Hash]])
       .description("List tokens")
 
-  val listTokenTransactions: BaseEndpoint[(Hash, Pagination), ArraySeq[Transaction]] =
+  val listTokenTransactions: BaseEndpoint[(Hash, Pagination), AVector[Transaction]] =
     tokensEndpoint.get
       .in(path[Hash]("token-id"))
       .in("transactions")
       .in(pagination)
-      .out(jsonBody[ArraySeq[Transaction]])
+      .out(jsonBody[AVector[Transaction]])
       .description("List token transactions")
 
-  val listTokenAddresses: BaseEndpoint[(Hash, Pagination), ArraySeq[Address]] =
+  val listTokenAddresses: BaseEndpoint[(Hash, Pagination), AVector[Address]] =
     tokensEndpoint.get
       .in(path[Hash]("token-id"))
       .in("addresses")
       .in(pagination)
-      .out(jsonBody[ArraySeq[Address]])
+      .out(jsonBody[AVector[Address]])
       .description("List token addresses")
 }

@@ -16,7 +16,6 @@
 
 package org.alephium.explorer
 
-import scala.collection.immutable.ArraySeq
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
@@ -25,13 +24,19 @@ import org.alephium.util.AVector
 @SuppressWarnings(Array("org.wartremover.warts.ImplicitConversion"))
 trait ImplicitConversions {
 
-  implicit def avectorToArraySeq[A](avector: AVector[A]): ArraySeq[A] =
-    ArraySeq.unsafeWrapArray(avector.toArray)
+  implicit def avectorToIterable[A](avector: AVector[A]): Iterable[A] =
+    avector.toIterable
 
-  implicit def iterableToArraySeq[A: ClassTag](iterable: Iterable[A]): ArraySeq[A] =
-    ArraySeq.from(iterable)
+  implicit def iterableToAVector[A: ClassTag](iterable: Iterable[A]): AVector[A] =
+    AVector.from(iterable)
 
-  implicit def optionIterableToArraySeq[A: ClassTag](
-      iterableOpt: Option[Iterable[A]]): Option[ArraySeq[A]] =
-    iterableOpt.map(ArraySeq.from(_))
+  implicit def optionIterableToAVector[A: ClassTag](
+      iterableOpt: Option[Iterable[A]]): Option[AVector[A]] =
+    iterableOpt.map(AVector.from(_))
+
+  implicit def optionToAVector[A: ClassTag](opt: Option[A]): AVector[A] =
+    opt match {
+      case None    => AVector.empty
+      case Some(a) => AVector(a)
+    }
 }

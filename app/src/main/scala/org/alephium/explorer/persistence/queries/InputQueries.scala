@@ -16,7 +16,6 @@
 
 package org.alephium.explorer.persistence.queries
 
-import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
 import slick.dbio.DBIOAction
@@ -31,12 +30,13 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
+import org.alephium.util.AVector
 
 object InputQueries {
 
   /** Inserts inputs or ignore rows with primary key conflict */
   // scalastyle:off magic.number
-  def insertInputs(inputs: Iterable[InputEntity]): DBActionW[Int] =
+  def insertInputs(inputs: AVector[InputEntity]): DBActionW[Int] =
     QuerySplitter.splitUpdates(rows = inputs, columnsPerRow = 11) { (inputs, placeholder) =>
       val query =
         s"""
@@ -79,7 +79,7 @@ object InputQueries {
       ).asUpdate
     }
 
-  def inputsFromTxsSQL(txHashes: ArraySeq[Transaction.Hash]): DBActionR[ArraySeq[InputsFromTxQR]] =
+  def inputsFromTxsSQL(txHashes: AVector[Transaction.Hash]): DBActionR[AVector[InputsFromTxQR]] =
     if (txHashes.nonEmpty) {
       val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
       sql"""
@@ -92,17 +92,17 @@ object InputQueries {
                  outputs.amount,
                  outputs.tokens
           FROM inputs
-                   JOIN outputs
-                        ON inputs.output_ref_key = outputs.KEY
-                            AND outputs.main_chain = true
+          JOIN outputs
+          ON inputs.output_ref_key = outputs.KEY
+          AND outputs.main_chain = true
           WHERE inputs.tx_hash IN (#$values)
             AND inputs.main_chain = true
-    """.asAS[InputsFromTxQR]
+    """.asAV[InputsFromTxQR]
     } else {
-      DBIOAction.successful(ArraySeq.empty)
+      DBIOAction.successful(AVector.empty)
     }
 
-  def inputsFromTxsSQLAS(txHashes: ArraySeq[Transaction.Hash]): DBActionSR[InputsFromTxQR] =
+  def inputsFromTxsSQLAS(txHashes: AVector[Transaction.Hash]): DBActionSR[InputsFromTxQR] =
     if (txHashes.nonEmpty) {
       val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
       sql"""
@@ -115,27 +115,27 @@ object InputQueries {
                  outputs.amount,
                  outputs.tokens
           FROM inputs
-                   JOIN outputs
-                        ON inputs.output_ref_key = outputs.KEY
-                            AND outputs.main_chain = true
+          JOIN outputs
+          ON inputs.output_ref_key = outputs.KEY
+          AND outputs.main_chain = true
           WHERE inputs.tx_hash IN (#$values)
             AND inputs.main_chain = true
-    """.asAS[InputsFromTxQR]
+    """.asAV[InputsFromTxQR]
     } else {
-      DBIOAction.successful(ArraySeq.empty[InputsFromTxQR])
+      DBIOAction.successful(AVector.empty[InputsFromTxQR])
     }
 
   def inputsFromTxsNoJoin(
-      hashes: ArraySeq[(Transaction.Hash, BlockEntry.Hash)]): DBActionR[ArraySeq[InputsFromTxQR]] =
+      hashes: AVector[(Transaction.Hash, BlockEntry.Hash)]): DBActionR[AVector[InputsFromTxQR]] =
     if (hashes.nonEmpty) {
-      inputsFromTxsNoJoinSQLBuilder(hashes).asAS[InputsFromTxQR]
+      inputsFromTxsNoJoinSQLBuilder(hashes).asAV[InputsFromTxQR]
     } else {
-      DBIOAction.successful(ArraySeq.empty)
+      DBIOAction.successful(AVector.empty)
     }
 
   private def inputsFromTxsNoJoinSQLBuilder(
-      hashes: ArraySeq[(Transaction.Hash, BlockEntry.Hash)]): SQLActionBuilder = {
-    val params = paramPlaceholderTuple2(1, hashes.size)
+      hashes: AVector[(Transaction.Hash, BlockEntry.Hash)]): SQLActionBuilder = {
+    val params = paramPlaceholderTuple2(1, hashes.length)
 
     val query =
       s"""
@@ -176,9 +176,9 @@ object InputQueries {
                output_ref_tokens
         FROM inputs
         WHERE tx_hash = $txHash
-          AND block_hash = $blockHash
+        AND block_hash = $blockHash
         ORDER BY input_order
-    """.asAS[InputsQR]
+    """.asAV[InputsQR]
 
   def getMainChainInputs(ascendingOrder: Boolean): DBActionSR[InputEntity] =
     sql"""
@@ -198,11 +198,11 @@ object InputQueries {
         FROM inputs
         WHERE main_chain = true
         ORDER BY block_timestamp #${if (ascendingOrder) "" else "DESC"}
-    """.asASE[InputEntity](inputGetResult)
+    """.asAV[InputEntity]
 
   /** Runs explain on query `inputsFromTxsNoJoin` and checks the index `inputs_tx_hash_block_hash_idx`
     * is being used */
-  def explainInputsFromTxsNoJoin(hashes: ArraySeq[(Transaction.Hash, BlockEntry.Hash)])(
+  def explainInputsFromTxsNoJoin(hashes: AVector[(Transaction.Hash, BlockEntry.Hash)])(
       implicit ec: ExecutionContext): DBActionR[ExplainResult] = {
     val queryName = "inputsFromTxsNoJoin"
     if (hashes.isEmpty) {
@@ -213,7 +213,7 @@ object InputQueries {
           queryName  = queryName,
           queryInput = hashes.toString(),
           explain    = explain,
-          messages   = Iterable.empty,
+          messages   = AVector.empty,
           passed     = explain.exists(_.contains("inputs_tx_hash_block_hash_idx"))
         )
       }

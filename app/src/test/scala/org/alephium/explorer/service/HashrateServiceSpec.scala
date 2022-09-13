@@ -18,7 +18,6 @@ package org.alephium.explorer.service
 
 import java.time.Instant
 
-import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
@@ -59,7 +58,7 @@ class HashrateServiceSpec
 
     run(
       computeHourlyHashrate(from)
-    ).futureValue.sortBy(_._1) is ArraySeq(
+    ).futureValue.sortBy(_._1) is AVector(
       v("2022-01-08T00:00:00.000Z", 3),
       v("2022-01-08T01:00:00.000Z", 30),
       v("2022-01-09T00:00:00.000Z", 100)
@@ -83,7 +82,7 @@ class HashrateServiceSpec
     run(
       computeDailyHashrate(from)
     ).futureValue.sortBy(_._1) is
-      ArraySeq(
+      AVector(
         v("2022-01-08T00:00:00.000Z", 3),
         v("2022-01-09T00:00:00.000Z", 20),
         v("2022-01-10T00:00:00.000Z", 100)
@@ -91,7 +90,7 @@ class HashrateServiceSpec
     run(
       computeDailyHashrate(ts("2022-01-09T10:00:00.000Z"))
     ).futureValue.sortBy(_._1) is
-      ArraySeq(
+      AVector(
         v("2022-01-10T00:00:00.000Z", 100)
       )
   }
@@ -108,18 +107,18 @@ class HashrateServiceSpec
 
     run(BlockHeaderSchema.table ++= blocks).futureValue
 
-    HashrateService.get(from, to, IntervalType.Hourly).futureValue is ArraySeq.empty
+    HashrateService.get(from, to, IntervalType.Hourly).futureValue is AVector.empty[Hashrate]
 
     HashrateService.syncOnce().futureValue
 
-    HashrateService.get(from, to, IntervalType.Hourly).futureValue is ArraySeq(
+    HashrateService.get(from, to, IntervalType.Hourly).futureValue is AVector(
       hr("2022-01-07T00:00:00.000Z", 1),
       hr("2022-01-07T13:00:00.000Z", 3),
       hr("2022-01-08T00:00:00.000Z", 12),
       hr("2022-01-08T01:00:00.000Z", 100)
     )
 
-    HashrateService.get(from, to, IntervalType.Daily).futureValue is ArraySeq(
+    HashrateService.get(from, to, IntervalType.Daily).futureValue is AVector(
       hr("2022-01-07T00:00:00.000Z", 1),
       hr("2022-01-08T00:00:00.000Z", 6),
       hr("2022-01-09T00:00:00.000Z", 100)
@@ -134,7 +133,7 @@ class HashrateServiceSpec
 
     HashrateService.syncOnce().futureValue
 
-    HashrateService.get(from, to, IntervalType.Hourly).futureValue is ArraySeq(
+    HashrateService.get(from, to, IntervalType.Hourly).futureValue is AVector(
       hr("2022-01-07T00:00:00.000Z", 1),
       hr("2022-01-07T13:00:00.000Z", 3),
       hr("2022-01-08T00:00:00.000Z", 12),
@@ -143,7 +142,7 @@ class HashrateServiceSpec
       hr("2022-01-08T21:00:00.000Z", 4)
     )
 
-    HashrateService.get(from, to, IntervalType.Daily).futureValue is ArraySeq(
+    HashrateService.get(from, to, IntervalType.Daily).futureValue is AVector(
       hr("2022-01-07T00:00:00.000Z", 1),
       hr("2022-01-08T00:00:00.000Z", 6),
       hr("2022-01-09T00:00:00.000Z", 38)

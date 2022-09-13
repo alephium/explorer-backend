@@ -16,14 +16,14 @@
 
 package org.alephium.explorer.api
 
-import scala.collection.immutable.ArraySeq
-
 import sttp.tapir._
 import sttp.tapir.generic.auto._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
+import org.alephium.api.UtilJson._
 import org.alephium.explorer.api.model.LogbackValue
 import org.alephium.explorer.persistence.queries.ExplainResult
+import org.alephium.util.AVector
 
 // scalastyle:off magic.number
 trait UtilsEndpoints extends BaseEndpoint with QueryParams {
@@ -41,10 +41,10 @@ trait UtilsEndpoints extends BaseEndpoint with QueryParams {
       .in("sanity-check")
       .description("Perform a sanity check")
 
-  val indexCheck: BaseEndpoint[Unit, ArraySeq[ExplainResult]] =
+  val indexCheck: BaseEndpoint[Unit, AVector[ExplainResult]] =
     utilsEndpoint.get
       .in("index-check")
-      .out(jsonBody[ArraySeq[ExplainResult]])
+      .out(jsonBody[AVector[ExplainResult]])
       .description("Perform index check")
 
   val changeGlobalLogLevel: BaseEndpoint[String, Unit] =
@@ -53,9 +53,9 @@ trait UtilsEndpoints extends BaseEndpoint with QueryParams {
       .in(plainBody[String].validate(Validator.enumeration(logLevels)))
       .description(s"Update global log level, accepted: $logLevelsStr")
 
-  val changeLogConfig: BaseEndpoint[ArraySeq[LogbackValue], Unit] =
+  val changeLogConfig: BaseEndpoint[AVector[LogbackValue], Unit] =
     utilsEndpoint.put
       .in("update-log-config")
-      .in(jsonBody[ArraySeq[LogbackValue]])
+      .in(jsonBody[AVector[LogbackValue]])
       .description("Update logback values")
 }

@@ -18,7 +18,6 @@ package org.alephium.explorer.service
 
 import java.time.Instant
 
-import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
@@ -53,7 +52,7 @@ class TransactionHistoryServiceSpec
         ts("2022-01-10T12:34:56.789Z"),
         IntervalType.Daily
       ) is
-        ArraySeq(
+        AVector(
           (ts("2022-01-08T00:00:00.000Z"), ts("2022-01-08T23:59:59.999Z")),
           (ts("2022-01-09T00:00:00.000Z"), ts("2022-01-09T23:59:59.999Z"))
           //2022-01-10 isn't done, so we don't count it
@@ -66,7 +65,7 @@ class TransactionHistoryServiceSpec
         ts("2022-01-08T12:34:56.789Z"),
         IntervalType.Hourly
       ) is
-        ArraySeq(
+        AVector(
           (ts("2022-01-08T09:00:00.000Z"), ts("2022-01-08T09:59:59.999Z")),
           (ts("2022-01-08T10:00:00.000Z"), ts("2022-01-08T10:59:59.999Z")),
           (ts("2022-01-08T11:00:00.000Z"), ts("2022-01-08T11:59:59.999Z"))
@@ -80,7 +79,7 @@ class TransactionHistoryServiceSpec
         ts("2022-01-08T00:00:00.000Z"),
         ts("2022-01-07T00:00:00.000Z"),
         IntervalType.Hourly
-      ) is ArraySeq.empty
+      ) is AVector.empty[(TimeStamp, TimeStamp)]
     }
 
     "return empty range when end == start" in {
@@ -89,7 +88,7 @@ class TransactionHistoryServiceSpec
         ts("2022-01-08T00:00:00.000Z"),
         ts("2022-01-08T00:00:00.000Z"),
         IntervalType.Hourly
-      ) is ArraySeq.empty
+      ) is AVector.empty[(TimeStamp, TimeStamp)]
     }
   }
 
@@ -123,17 +122,17 @@ class TransactionHistoryServiceSpec
       val tx11 = txGroup("2021-11-10T01:00:00.000Z", group0)
 
       run(
-        TransactionSchema.table ++= ArraySeq(tx1,
-                                             tx2,
-                                             tx3,
-                                             tx4,
-                                             tx5,
-                                             tx6,
-                                             tx7,
-                                             tx8,
-                                             tx9,
-                                             tx10,
-                                             tx11)).futureValue
+        TransactionSchema.table ++= AVector(tx1,
+                                            tx2,
+                                            tx3,
+                                            tx4,
+                                            tx5,
+                                            tx6,
+                                            tx7,
+                                            tx8,
+                                            tx9,
+                                            tx10,
+                                            tx11)).futureValue
 
       TransactionHistoryService.syncOnce().futureValue
 
@@ -155,13 +154,13 @@ class TransactionHistoryServiceSpec
           perChainTime.totalCountPerChain.filter(_.count != 0)
         )
       } is
-        ArraySeq(
+        AVector(
           PerChainTimedCount(ts("2021-11-08T00:00:00.000Z"),
-                             ArraySeq(PerChainCount(group0.value, group0.value, 3),
-                                      PerChainCount(group1.value, group1.value, 2))),
+                             AVector(PerChainCount(group0.value, group0.value, 3),
+                                     PerChainCount(group1.value, group1.value, 2))),
           PerChainTimedCount(ts("2021-11-09T00:00:00.000Z"),
-                             ArraySeq(PerChainCount(group0.value, group0.value, 4),
-                                      PerChainCount(group1.value, group1.value, 1)))
+                             AVector(PerChainCount(group0.value, group0.value, 4),
+                                     PerChainCount(group1.value, group1.value, 1)))
         )
 
       /*
@@ -184,17 +183,17 @@ class TransactionHistoryServiceSpec
           )
         }
         .filter(_.totalCountPerChain.nonEmpty) is
-        ArraySeq(
+        AVector(
           PerChainTimedCount(ts("2021-11-08T14:00:00.000Z"),
-                             ArraySeq(PerChainCount(group0.value, group0.value, 2),
-                                      PerChainCount(group1.value, group1.value, 2))),
+                             AVector(PerChainCount(group0.value, group0.value, 2),
+                                     PerChainCount(group1.value, group1.value, 2))),
           PerChainTimedCount(ts("2021-11-08T15:00:00.000Z"),
-                             ArraySeq(PerChainCount(group0.value, group0.value, 1))),
+                             AVector(PerChainCount(group0.value, group0.value, 1))),
           PerChainTimedCount(ts("2021-11-09T08:00:00.000Z"),
-                             ArraySeq(PerChainCount(group0.value, group0.value, 2),
-                                      PerChainCount(group1.value, group1.value, 1))),
+                             AVector(PerChainCount(group0.value, group0.value, 2),
+                                     PerChainCount(group1.value, group1.value, 1))),
           PerChainTimedCount(ts("2021-11-09T12:00:00.000Z"),
-                             ArraySeq(PerChainCount(group0.value, group0.value, 2)))
+                             AVector(PerChainCount(group0.value, group0.value, 2)))
         )
 
       /*
@@ -210,7 +209,7 @@ class TransactionHistoryServiceSpec
         .futureValue
 
       allChainsDaily is
-        ArraySeq(
+        AVector(
           (ts("2021-11-08T00:00:00.000Z"), 5L),
           (ts("2021-11-09T00:00:00.000Z"), 5L)
         )
@@ -228,7 +227,7 @@ class TransactionHistoryServiceSpec
         .futureValue
 
       allChainsHourly.filter(_._2 != 0) is
-        ArraySeq(
+        AVector(
           (ts("2021-11-08T14:00:00.000Z"), 4L),
           (ts("2021-11-08T15:00:00.000Z"), 1L),
           (ts("2021-11-09T08:00:00.000Z"), 3L),

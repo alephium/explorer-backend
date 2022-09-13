@@ -54,7 +54,7 @@ class TokenQueriesSpec
             run(TokenQueries.listTokenTransactionsAction(token, 0, txPerTokens.size)).futureValue
 
           result.size is expected.size
-          result should contain allElementsOf expected
+          result containsAllElementsOf expected
       }
     }
 
@@ -77,7 +77,7 @@ class TokenQueriesSpec
                                                           txPerAddressTokens.size)).futureValue
 
           result.size is expected.size
-          result should contain allElementsOf expected
+          result containsAllElementsOf expected
       }
     }
   }

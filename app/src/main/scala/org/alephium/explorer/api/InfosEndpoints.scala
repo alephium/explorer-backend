@@ -18,14 +18,14 @@ package org.alephium.explorer.api
 
 import java.math.BigDecimal
 
-import scala.collection.immutable.ArraySeq
-
 import sttp.tapir._
 import sttp.tapir.generic.auto._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
+import org.alephium.api.UtilJson._
 import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.api.model._
+import org.alephium.util.AVector
 
 // scalastyle:off magic.number
 trait InfosEndpoints extends BaseEndpoint with QueryParams {
@@ -44,10 +44,10 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ExplorerInfo])
       .description("Get explorer informations")
 
-  val listTokenSupply: BaseEndpoint[Pagination, ArraySeq[TokenSupply]] =
+  val listTokenSupply: BaseEndpoint[Pagination, AVector[TokenSupply]] =
     supplyEndpoint.get
       .in(pagination)
-      .out(jsonBody[ArraySeq[TokenSupply]])
+      .out(jsonBody[AVector[TokenSupply]])
       .description("Get token supply list")
 
   val getCirculatingSupply: BaseEndpoint[Unit, BigDecimal] =
@@ -74,10 +74,10 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
       .out(plainBody[BigDecimal])
       .description("Get the ALPH locked supply")
 
-  val getHeights: BaseEndpoint[Unit, ArraySeq[PerChainHeight]] =
+  val getHeights: BaseEndpoint[Unit, AVector[PerChainHeight]] =
     infosEndpoint.get
       .in("heights")
-      .out(jsonBody[ArraySeq[PerChainHeight]])
+      .out(jsonBody[AVector[PerChainHeight]])
       .description("List latest height for each chain")
 
   val getTotalTransactions: BaseEndpoint[Unit, Int] =
@@ -86,9 +86,9 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
       .out(plainBody[Int])
       .description("Get the total number of transactions")
 
-  val getAverageBlockTime: BaseEndpoint[Unit, ArraySeq[PerChainDuration]] =
+  val getAverageBlockTime: BaseEndpoint[Unit, AVector[PerChainDuration]] =
     infosEndpoint.get
       .in("average-block-times")
-      .out(jsonBody[ArraySeq[PerChainDuration]])
+      .out(jsonBody[AVector[PerChainDuration]])
       .description("Get the average block time for each chain")
 }

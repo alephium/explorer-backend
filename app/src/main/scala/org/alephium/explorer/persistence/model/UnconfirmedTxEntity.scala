@@ -16,10 +16,8 @@
 
 package org.alephium.explorer.persistence.model
 
-import scala.collection.immutable.ArraySeq
-
 import org.alephium.explorer.api.model._
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.util.{AVector, TimeStamp, U256}
 
 final case class UnconfirmedTxEntity(
     hash: Transaction.Hash,
@@ -32,7 +30,7 @@ final case class UnconfirmedTxEntity(
 
 object UnconfirmedTxEntity {
   def from(utx: UnconfirmedTransaction)
-    : (UnconfirmedTxEntity, ArraySeq[UInputEntity], ArraySeq[UOutputEntity]) = {
+    : (UnconfirmedTxEntity, AVector[UInputEntity], AVector[UOutputEntity]) = {
     (UnconfirmedTxEntity(
        utx.hash,
        utx.chainFrom,

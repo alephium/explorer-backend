@@ -18,7 +18,6 @@ package org.alephium.explorer.service
 
 import java.time.Instant
 
-import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
@@ -36,7 +35,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.ALPH
-import org.alephium.util.{Duration, TimeStamp, U256}
+import org.alephium.util.{AVector, Duration, TimeStamp, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
 class TokenSupplyServiceSpec
@@ -58,19 +57,19 @@ class TokenSupplyServiceSpec
       launchTime,
       launchTime.plusUnsafe(Duration.ofHoursUnsafe(8))
     ) is
-      ArraySeq.empty
+      AVector.empty[TimeStamp]
 
     TokenSupplyService.buildDaysRange(
       launchTime.plusUnsafe(Duration.ofHoursUnsafe(8)),
       launchTime
     ) is
-      ArraySeq.empty
+      AVector.empty[TimeStamp]
 
     TokenSupplyService.buildDaysRange(
       launchTime,
       launchTime.plusUnsafe(Duration.ofDaysUnsafe(1))
     ) is
-      ArraySeq(
+      AVector(
         ts("2021-11-08T23:59:59.999Z")
       )
 
@@ -78,7 +77,7 @@ class TokenSupplyServiceSpec
       launchTime,
       launchTime.plusUnsafe(Duration.ofDaysUnsafe(3))
     ) is
-      ArraySeq(
+      AVector(
         ts("2021-11-08T23:59:59.999Z"),
         ts("2021-11-09T23:59:59.999Z"),
         ts("2021-11-10T23:59:59.999Z")
@@ -88,7 +87,7 @@ class TokenSupplyServiceSpec
       launchTime,
       ts("2021-11-11T10:39:53.100Z")
     ) is
-      ArraySeq(
+      AVector(
         ts("2021-11-08T23:59:59.999Z"),
         ts("2021-11-09T23:59:59.999Z"),
         ts("2021-11-10T23:59:59.999Z")
@@ -99,7 +98,7 @@ class TokenSupplyServiceSpec
     override val genesisLocked = false
 
     test(genesisBlock) {
-      ArraySeq(U256.Zero)
+      AVector(U256.Zero)
     }
   }
 
@@ -107,7 +106,7 @@ class TokenSupplyServiceSpec
     override val genesisLocked = true
 
     test(genesisBlock) {
-      ArraySeq(U256.Zero)
+      AVector(U256.Zero)
     }
   }
 
@@ -115,7 +114,7 @@ class TokenSupplyServiceSpec
     override val genesisLocked = false
 
     test(genesisBlock, block1, block2) {
-      ArraySeq(
+      AVector(
         blockAmount(block1),
         U256.Zero
       )
@@ -127,7 +126,7 @@ class TokenSupplyServiceSpec
     override val block1Locked  = true
 
     test(genesisBlock, block1, block2) {
-      ArraySeq(U256.Zero, U256.Zero)
+      AVector(U256.Zero, U256.Zero)
     }
   }
 
@@ -135,7 +134,7 @@ class TokenSupplyServiceSpec
     override val genesisLocked = false
 
     test(genesisBlock, block1, block2, block3) {
-      ArraySeq(blockAmount(block2), blockAmount(block1), U256.Zero)
+      AVector(blockAmount(block2), blockAmount(block1), U256.Zero)
     }
   }
 
@@ -143,7 +142,7 @@ class TokenSupplyServiceSpec
     override val genesisLocked = true
 
     test(genesisBlock, block1, block2, block3) {
-      ArraySeq(blockAmount(block2), blockAmount(block1), U256.Zero)
+      AVector(blockAmount(block2), blockAmount(block1), U256.Zero)
     }
   }
 
@@ -151,7 +150,7 @@ class TokenSupplyServiceSpec
     override val genesisLocked = true
 
     test(genesisBlock, block1, block2, block3, block4) {
-      ArraySeq(blockAmount(block2), blockAmount(block2), blockAmount(block1), U256.Zero)
+      AVector(blockAmount(block2), blockAmount(block2), blockAmount(block1), U256.Zero)
     }
   }
 
@@ -232,8 +231,10 @@ class TokenSupplyServiceSpec
       block.copy(timestamp = timestamp, outputs = block.outputs.map(_.copy(timestamp = timestamp)))
     }
 
-    def test(blocks: BlockEntity*)(amounts: ArraySeq[U256]) = {
-      BlockDao.insertAll(ArraySeq.from(blocks)).futureValue
+    def test(blocks: BlockEntity*)(amounts: AVector[U256]) = {
+      blocks.foreach { block =>
+        BlockDao.insert(block).futureValue
+      }
       blocks.foreach { block =>
         BlockDao.updateMainChainStatus(block.hash, true).futureValue
       }
@@ -244,15 +245,15 @@ class TokenSupplyServiceSpec
         val tokenSupply =
           run(TokenSupplySchema.table.sortBy(_.timestamp).result).futureValue.reverse
 
-        tokenSupply.map(_.circulating) is amounts
+        tokenSupply.map(_.circulating) is amounts.toSeq
 
         TokenSupplyService
           .listTokenSupply(Pagination.unsafe(0, 1))
           .futureValue
-          .map(_.circulating) is ArraySeq(amounts.head)
+          .map(_.circulating) is AVector(amounts.head)
         TokenSupplyService
           .listTokenSupply(Pagination.unsafe(0, 0))
-          .futureValue is ArraySeq.empty
+          .futureValue is AVector.empty[TokenSupply]
 
         TokenSupplyService
           .getLatestTokenSupply()

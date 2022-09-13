@@ -16,7 +16,6 @@
 
 package org.alephium.explorer.service
 
-import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 
@@ -35,7 +34,7 @@ import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.TimeUtil._
 import org.alephium.protocol.ALPH
-import org.alephium.util.{Duration, TimeStamp}
+import org.alephium.util.{AVector, Duration, TimeStamp}
 
 case object HashrateService extends StrictLogging {
 
@@ -63,7 +62,7 @@ case object HashrateService extends StrictLogging {
 
   def get(from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Hashrate]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Hashrate]] =
     run(getHashratesQuery(from, to, intervalType)).map(_.map {
       case (timestamp, hashrate) =>
         Hashrate(timestamp, hashrate, hashrate)

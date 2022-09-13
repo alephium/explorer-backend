@@ -16,8 +16,6 @@
 
 package org.alephium.explorer.persistence.schema
 
-import scala.collection.immutable.ArraySeq
-
 import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
@@ -26,7 +24,7 @@ import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{Address, Token, Transaction}
 import org.alephium.explorer.persistence.model.UOutputEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.util.{AVector, TimeStamp, U256}
 
 object UOutputSchema extends Schema[UOutputEntity]("uoutputs") {
 
@@ -36,11 +34,11 @@ object UOutputSchema extends Schema[UOutputEntity]("uoutputs") {
     def key: Rep[Hash]                = column[Hash]("key", O.SqlType("BYTEA"))
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
-    def address: Rep[Address]                = column[Address]("address")
-    def tokens: Rep[Option[ArraySeq[Token]]] = column[Option[ArraySeq[Token]]]("tokens")
-    def lockTime: Rep[Option[TimeStamp]]     = column[Option[TimeStamp]]("lock_time")
-    def message: Rep[Option[ByteString]]     = column[Option[ByteString]]("message")
-    def uoutputOrder: Rep[Int]               = column[Int]("uoutput_order")
+    def address: Rep[Address]               = column[Address]("address")
+    def tokens: Rep[Option[AVector[Token]]] = column[Option[AVector[Token]]]("tokens")
+    def lockTime: Rep[Option[TimeStamp]]    = column[Option[TimeStamp]]("lock_time")
+    def message: Rep[Option[ByteString]]    = column[Option[ByteString]]("message")
+    def uoutputOrder: Rep[Int]              = column[Int]("uoutput_order")
 
     def pk: PrimaryKey = primaryKey("uoutputs_pk", (txHash, address, uoutputOrder))
 

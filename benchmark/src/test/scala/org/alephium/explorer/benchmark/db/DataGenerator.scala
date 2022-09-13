@@ -18,7 +18,6 @@ package org.alephium.explorer.benchmark.db
 
 import java.math.BigInteger
 
-import scala.collection.immutable.ArraySeq
 import scala.util.Random
 
 import akka.util.ByteString
@@ -26,7 +25,7 @@ import akka.util.ByteString
 import org.alephium.explorer.{BlockHash, GenApiModel, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
-import org.alephium.util.{Base58, TimeStamp, U256}
+import org.alephium.util.{AVector, Base58, TimeStamp, U256}
 
 /**
   * Data generators for JMH benchmarks.
@@ -43,8 +42,8 @@ object DataGenerator {
   def genTransactions(count: Int                 = 10,
                       blockHash: BlockEntry.Hash = new BlockEntry.Hash(BlockHash.generate),
                       blockTimestamp: TimeStamp  = TimeStamp.now(),
-                      mainChain: Boolean         = Random.nextBoolean()): ArraySeq[TransactionEntity] =
-    ArraySeq.fill(count) {
+                      mainChain: Boolean         = Random.nextBoolean()): AVector[TransactionEntity] =
+    AVector.fill(count) {
       TransactionEntity(
         hash              = new Transaction.Hash(Hash.generate),
         blockHash         = blockHash,
@@ -61,7 +60,7 @@ object DataGenerator {
       )
     }
 
-  def genOutputEntity(transactions: ArraySeq[TransactionEntity]): ArraySeq[OutputEntity] =
+  def genOutputEntity(transactions: AVector[TransactionEntity]): AVector[OutputEntity] =
     transactions.zipWithIndex map {
       case (transaction, order) =>
         OutputEntity(
@@ -83,7 +82,7 @@ object DataGenerator {
         )
     }
 
-  def genInputEntity(outputs: ArraySeq[OutputEntity]): ArraySeq[InputEntity] =
+  def genInputEntity(outputs: AVector[OutputEntity]): AVector[InputEntity] =
     outputs.zipWithIndex map {
       case (output, order) =>
         InputEntity(
@@ -126,7 +125,7 @@ object DataGenerator {
       chainFrom    = GroupIndex.unsafe(0),
       chainTo      = GroupIndex.unsafe(3),
       height       = Height.genesis,
-      deps         = ArraySeq.fill(5)(new BlockEntry.Hash(BlockHash.generate)),
+      deps         = AVector.fill(5)(new BlockEntry.Hash(BlockHash.generate)),
       transactions = transactions,
       inputs       = inputs,
       outputs      = outputs,

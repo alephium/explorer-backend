@@ -16,8 +16,6 @@
 
 package org.alephium.explorer.persistence.queries
 
-import scala.collection.immutable.ArraySeq
-
 import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
@@ -28,6 +26,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
+import org.alephium.util.AVector
 
 object UnconfirmedTransactionQueries {
 
@@ -35,7 +34,7 @@ object UnconfirmedTransactionQueries {
     sql"""
       SELECT hash
       FROM utransactions
-    """.asAS[Transaction.Hash]
+    """.asAV[Transaction.Hash]
   }
 
   def listPaginatedUnconfirmedTransactionsQuery(
@@ -54,7 +53,7 @@ object UnconfirmedTransactionQueries {
       ORDER BY last_seen DESC
       LIMIT $limit
       OFFSET $toDrop
-    """.asASE[UnconfirmedTxEntity](unconfirmedTransactionGetResult)
+    """.asAV[UnconfirmedTxEntity]
   }
 
   def listUTXHashesByAddress(address: Address): DBActionSR[Transaction.Hash] = {
@@ -62,12 +61,12 @@ object UnconfirmedTransactionQueries {
       SELECT DISTINCT tx_hash
       FROM uinputs
       WHERE address = $address
-    """.asAS[Transaction.Hash]
+    """.asAV[Transaction.Hash]
   }
 
-  def utxsFromTxs(hashes: ArraySeq[Transaction.Hash]): DBActionSR[UnconfirmedTxEntity] = {
+  def utxsFromTxs(hashes: AVector[Transaction.Hash]): DBActionSR[UnconfirmedTxEntity] = {
     if (hashes.nonEmpty) {
-      val params = paramPlaceholder(1, hashes.size)
+      val params = paramPlaceholder(1, hashes.length)
 
       val query =
         s"""
@@ -91,15 +90,15 @@ object UnconfirmedTransactionQueries {
       SQLActionBuilder(
         queryParts = query,
         unitPConv  = parameters
-      ).asASE[UnconfirmedTxEntity](unconfirmedTransactionGetResult)
+      ).asAV[UnconfirmedTxEntity]
     } else {
-      DBIOAction.successful(ArraySeq.empty)
+      DBIOAction.successful(AVector.empty)
     }
   }
 
-  def uoutputsFromTxs(hashes: ArraySeq[Transaction.Hash]): DBActionSR[UOutputEntity] = {
+  def uoutputsFromTxs(hashes: AVector[Transaction.Hash]): DBActionSR[UOutputEntity] = {
     if (hashes.nonEmpty) {
-      val params = paramPlaceholder(1, hashes.size)
+      val params = paramPlaceholder(1, hashes.length)
 
       val query =
         s"""
@@ -125,15 +124,15 @@ object UnconfirmedTransactionQueries {
       SQLActionBuilder(
         queryParts = query,
         unitPConv  = parameters
-      ).asASE[UOutputEntity](uoutputGetResult)
+      ).asAV[UOutputEntity]
     } else {
-      DBIOAction.successful(ArraySeq.empty)
+      DBIOAction.successful(AVector.empty)
     }
   }
 
-  def uinputsFromTxs(hashes: ArraySeq[Transaction.Hash]): DBActionSR[UInputEntity] = {
+  def uinputsFromTxs(hashes: AVector[Transaction.Hash]): DBActionSR[UInputEntity] = {
     if (hashes.nonEmpty) {
-      val params = paramPlaceholder(1, hashes.size)
+      val params = paramPlaceholder(1, hashes.length)
 
       val query =
         s"""
@@ -156,9 +155,9 @@ object UnconfirmedTransactionQueries {
       SQLActionBuilder(
         queryParts = query,
         unitPConv  = parameters
-      ).asASE[UInputEntity](uinputGetResult)
+      ).asAV[UInputEntity]
     } else {
-      DBIOAction.successful(ArraySeq.empty)
+      DBIOAction.successful(AVector.empty)
     }
   }
 
@@ -172,7 +171,7 @@ object UnconfirmedTransactionQueries {
            |       last_seen
            |FROM utransactions
            |WHERE hash = $hash
-           |""".stripMargin.asASE[UnconfirmedTxEntity](unconfirmedTransactionGetResult)
+           |""".stripMargin.asAV[UnconfirmedTxEntity]
   }
 
   def uoutputsFromTx(hash: Transaction.Hash): DBActionSR[UOutputEntity] = {
@@ -189,7 +188,7 @@ object UnconfirmedTransactionQueries {
            |FROM uoutputs
            |WHERE tx_hash = $hash
            |ORDER BY uoutput_order
-           |""".stripMargin.asASE[UOutputEntity](uoutputGetResult)
+           |""".stripMargin.asAV[UOutputEntity]
   }
 
   def uinputsFromTx(hash: Transaction.Hash): DBActionSR[UInputEntity] = {
@@ -203,6 +202,6 @@ object UnconfirmedTransactionQueries {
            |FROM uinputs
            |WHERE tx_hash = $hash
            |ORDER BY uinput_order
-           |""".stripMargin.asASE[UInputEntity](uinputGetResult)
+           |""".stripMargin.asAV[UInputEntity]
   }
 }

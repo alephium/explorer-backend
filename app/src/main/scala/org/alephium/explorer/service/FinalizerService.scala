@@ -146,14 +146,14 @@ case object FinalizerService extends StrictLogging {
   private val getMinMaxInputsTs: DBActionSR[(TimeStamp, TimeStamp)] =
     sql"""
     SELECT MIN(block_timestamp),Max(block_timestamp) FROM inputs WHERE main_chain = true
-    """.asAS[(TimeStamp, TimeStamp)]
+    """.asAV[(TimeStamp, TimeStamp)]
 
   private def getLastFinalizedInputTime()(
       implicit executionContext: ExecutionContext): DBActionR[Option[TimeStamp]] =
     sql"""
     SELECT value FROM app_state where key = 'last_finalized_input_time'
     """
-      .asAS[ByteString]
+      .asAV[ByteString]
       .map(_.headOption.flatMap { bytes =>
         deserialize[TimeStamp](bytes) match {
           case Left(error) =>

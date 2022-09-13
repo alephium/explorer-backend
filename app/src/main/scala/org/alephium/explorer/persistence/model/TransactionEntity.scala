@@ -16,12 +16,10 @@
 
 package org.alephium.explorer.persistence.model
 
-import scala.collection.immutable.ArraySeq
-
 import akka.util.ByteString
 
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Transaction}
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.util.{AVector, TimeStamp, U256}
 
 final case class TransactionEntity(
     hash: Transaction.Hash,
@@ -34,6 +32,6 @@ final case class TransactionEntity(
     order: Int,
     mainChain: Boolean,
     scriptExecutionOk: Boolean,
-    inputSignatures: Option[ArraySeq[ByteString]],
-    scriptSignatures: Option[ArraySeq[ByteString]]
+    inputSignatures: Option[AVector[ByteString]],
+    scriptSignatures: Option[AVector[ByteString]]
 )

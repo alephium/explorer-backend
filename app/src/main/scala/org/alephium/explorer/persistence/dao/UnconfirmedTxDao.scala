@@ -16,7 +16,6 @@
 
 package org.alephium.explorer.persistence.dao
 
-import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import slick.basic.DatabaseConfig
@@ -31,6 +30,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.UnconfirmedTransactionQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.util.AVector
 
 trait UnconfirmedTxDao {
 
@@ -40,26 +40,26 @@ trait UnconfirmedTxDao {
 
   def list(pagination: Pagination)(
       implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]]
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[AVector[UnconfirmedTransaction]]
 
   def listByAddress(address: Address)(
       implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]]
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[AVector[UnconfirmedTransaction]]
 
-  def insertMany(utxs: ArraySeq[UnconfirmedTransaction])(
+  def insertMany(utxs: AVector[UnconfirmedTransaction])(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit]
 
   def listHashes()(
       implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction.Hash]]
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction.Hash]]
 
-  def removeMany(txs: ArraySeq[Transaction.Hash])(
+  def removeMany(txs: AVector[Transaction.Hash])(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit]
 
-  def removeAndInsertMany(toRemove: ArraySeq[Transaction.Hash],
-                          toInsert: ArraySeq[UnconfirmedTransaction])(
+  def removeAndInsertMany(toRemove: AVector[Transaction.Hash],
+                          toInsert: AVector[UnconfirmedTransaction])(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit]
 }
@@ -90,7 +90,7 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
   }
   def list(pagination: Pagination)(
       implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]] = {
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[AVector[UnconfirmedTransaction]] = {
 
     run(for {
       txs <- listPaginatedUnconfirmedTransactionsQuery(pagination)
@@ -114,7 +114,7 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
   }
   def listByAddress(address: Address)(
       implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]] = {
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[AVector[UnconfirmedTransaction]] = {
     run(for {
       txHashes <- listUTXHashesByAddress(address)
       txs      <- utxsFromTxs(txHashes)
@@ -136,20 +136,20 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
     })
   }
 
-  private def insertManyAction(utxs: ArraySeq[UnconfirmedTransaction])(
+  private def insertManyAction(utxs: AVector[UnconfirmedTransaction])(
       implicit executionContext: ExecutionContext): DBActionW[Unit] = {
     val entities = utxs.map(UnconfirmedTxEntity.from)
     val txs      = entities.map { case (tx, _, _) => tx }
     val inputs   = entities.flatMap { case (_, in, _) => in }
     val outputs  = entities.flatMap { case (_, _, out) => out }
     for {
-      _ <- DBIOAction.sequence(txs.map(UnconfirmedTxSchema.table.insertOrUpdate))
-      _ <- DBIOAction.sequence(inputs.map(UInputSchema.table.insertOrUpdate))
-      _ <- DBIOAction.sequence(outputs.map(UOutputSchema.table.insertOrUpdate))
+      _ <- DBIOAction.sequence(txs.map(UnconfirmedTxSchema.table.insertOrUpdate).toIterable)
+      _ <- DBIOAction.sequence(inputs.map(UInputSchema.table.insertOrUpdate).toIterable)
+      _ <- DBIOAction.sequence(outputs.map(UOutputSchema.table.insertOrUpdate).toIterable)
     } yield ()
   }
 
-  def insertMany(utxs: ArraySeq[UnconfirmedTransaction])(
+  def insertMany(utxs: AVector[UnconfirmedTransaction])(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
     run(insertManyAction(utxs))
@@ -157,27 +157,27 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
 
   def listHashes()(
       implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction.Hash]] = {
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction.Hash]] = {
     run(listHashesQuery)
   }
 
-  private def removeManyAction(txs: ArraySeq[Transaction.Hash])(
+  private def removeManyAction(txs: AVector[Transaction.Hash])(
       implicit executionContext: ExecutionContext): DBActionW[Unit] = {
     for {
-      _ <- UnconfirmedTxSchema.table.filter(_.hash inSet txs).delete
-      _ <- UOutputSchema.table.filter(_.txHash inSet txs).delete
-      _ <- UInputSchema.table.filter(_.txHash inSet txs).delete
+      _ <- UnconfirmedTxSchema.table.filter(_.hash inSet txs.toIterable).delete
+      _ <- UOutputSchema.table.filter(_.txHash inSet txs.toIterable).delete
+      _ <- UInputSchema.table.filter(_.txHash inSet txs.toIterable).delete
     } yield ()
   }
 
-  def removeMany(txs: ArraySeq[Transaction.Hash])(
+  def removeMany(txs: AVector[Transaction.Hash])(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
     run(removeManyAction(txs))
   }
 
-  def removeAndInsertMany(toRemove: ArraySeq[Transaction.Hash],
-                          toInsert: ArraySeq[UnconfirmedTransaction])(
+  def removeAndInsertMany(toRemove: AVector[Transaction.Hash],
+                          toInsert: AVector[UnconfirmedTransaction])(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
     run((for {

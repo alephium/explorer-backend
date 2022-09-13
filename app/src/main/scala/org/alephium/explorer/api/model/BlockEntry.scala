@@ -18,15 +18,13 @@ package org.alephium.explorer.api.model
 
 import java.math.BigInteger
 
-import scala.collection.immutable.ArraySeq
-
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.BlockHash
 import org.alephium.explorer.HashCompanion
 import org.alephium.explorer.api.Json.blockHashReadWriter
 import org.alephium.explorer.service.FlowEntity
 import org.alephium.json.Json._
-import org.alephium.util.TimeStamp
+import org.alephium.util.{AVector, TimeStamp}
 
 final case class BlockEntry(
     hash: BlockEntry.Hash,
@@ -34,8 +32,8 @@ final case class BlockEntry(
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     height: Height,
-    deps: ArraySeq[BlockEntry.Hash],
-    transactions: ArraySeq[Transaction],
+    deps: AVector[BlockEntry.Hash],
+    transactions: AVector[Transaction],
     mainChain: Boolean,
     hashRate: BigInteger
 ) extends FlowEntity

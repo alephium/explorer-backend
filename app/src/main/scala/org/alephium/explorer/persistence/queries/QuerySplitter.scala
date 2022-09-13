@@ -22,6 +22,7 @@ import slick.dbio.DBIOAction
 
 import org.alephium.explorer.persistence.DBActionW
 import org.alephium.explorer.util.SlickUtil.paramPlaceholder
+import org.alephium.util.AVector
 
 object QuerySplitter {
 
@@ -42,10 +43,10 @@ object QuerySplitter {
 
   /** Splits update queries into batches limited by the total number parameters allowed per query */
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def splitUpdates[R](rows: Iterable[R],
+  def splitUpdates[R](rows: AVector[R],
                       columnsPerRow: Short,
                       maxRowsPerQuery: Short = defaultMaxRowsPerQuery)(
-      queryBuilder: (Iterable[R], String) => DBActionW[Int]): DBActionW[Int] =
+      queryBuilder: (AVector[R], String) => DBActionW[Int]): DBActionW[Int] =
     splitFoldLeft[R, DBActionW[Int]](initialQuery    = emptyUpdates,
                                      columnsPerRow   = columnsPerRow,
                                      maxRowsPerQuery = maxRowsPerQuery,
@@ -70,10 +71,10 @@ object QuerySplitter {
     * @tparam Q type of query
     * @return A single batched query
     */
-  def splitFoldLeft[R, Q](rows: Iterable[R],
+  def splitFoldLeft[R, Q](rows: AVector[R],
                           initialQuery: Q,
                           columnsPerRow: Short,
-                          maxRowsPerQuery: Short)(foldLeft: (Iterable[R], String, Q) => Q): Q = {
+                          maxRowsPerQuery: Short)(foldLeft: (AVector[R], String, Q) => Q): Q = {
     //calculate maximum number of parameters to allow per query
     val maxParamsPerQuery =
       maxRowsPerQuery * columnsPerRow
@@ -108,10 +109,10 @@ object QuerySplitter {
     * @return A single batched query
     */
   def splitFoldLeftLimitByMaxParams[R, Q](
-      rows: Iterable[R],
+      rows: AVector[R],
       initialQuery: Q,
       columnsPerRow: Short,
-      maxParamsPerQuery: Short)(foldLeft: (Iterable[R], String, Q) => Q): Q = {
+      maxParamsPerQuery: Short)(foldLeft: (AVector[R], String, Q) => Q): Q = {
 
     //maximum number of rows per query
     val maxRows = maxParamsPerQuery / columnsPerRow
@@ -119,19 +120,21 @@ object QuerySplitter {
     val columnsPerRowInt = columnsPerRow.toInt
 
     @tailrec
-    def build(rowsRemaining: Iterable[R], previousQuery: Q): Q =
+    def build(rowsRemaining: AVector[R], previousQuery: Q): Q =
       if (rowsRemaining.isEmpty) {
         previousQuery
       } else {
         //number of rows for this query
-        val queryRows = rowsRemaining.size min maxRows
+        val queryRows = rowsRemaining.length min maxRows
         //generate placeholder string
         val placeholder = paramPlaceholder(rows = queryRows, columns = columnsPerRowInt)
 
         //thisBatch = rows for this query
         //remaining = rows not processed in this query
-        val (thisBatch, remaining) = rowsRemaining.splitAt(queryRows)
-        val nextResult             = foldLeft(thisBatch, placeholder, previousQuery)
+        //TODO introduce `splitAt` to `AVector`
+        val (thisBatch, remaining) =
+          (rowsRemaining.takeUpto(queryRows), rowsRemaining.dropUpto(queryRows))
+        val nextResult = foldLeft(thisBatch, placeholder, previousQuery)
 
         //process remaining
         build(rowsRemaining = remaining, previousQuery = nextResult)

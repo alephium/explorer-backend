@@ -16,7 +16,6 @@
 
 package org.alephium.explorer.service
 
-import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 
@@ -39,7 +38,7 @@ import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.explorer.util.TimeUtil._
 import org.alephium.protocol.ALPH
-import org.alephium.util.{Duration, TimeStamp}
+import org.alephium.util.{AVector, Duration, TimeStamp}
 
 case object TransactionHistoryService extends StrictLogging {
 
@@ -69,11 +68,11 @@ case object TransactionHistoryService extends StrictLogging {
 
   def getPerChain(from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[PerChainTimedCount]] = {
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[PerChainTimedCount]] = {
     run(getPerChainQuery(intervalType, from, to)).map(
       res =>
-        ArraySeq
-          .unsafeWrapArray(res
+        AVector
+          .from(res
             .groupBy {
               case (timestamp, _, _, _) => timestamp
             }
@@ -84,13 +83,12 @@ case object TransactionHistoryService extends StrictLogging {
                     PerChainCount(chainFrom.value, chainTo.value, count)
                 }
                 PerChainTimedCount(timestamp, perChainCounts)
-            }
-            .toArray)
+            })
           .sortBy(_.timestamp)) //We need to sort because `groupBy` doesn't preserve order
   }
 
   def getAllChains(from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(
-      implicit dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[(TimeStamp, Long)]] = {
+      implicit dc: DatabaseConfig[PostgresProfile]): Future[AVector[(TimeStamp, Long)]] = {
     run(
       getAllChainsQuery(intervalType, from, to)
     )
@@ -127,10 +125,10 @@ case object TransactionHistoryService extends StrictLogging {
           run(
             DBIO
               .sequence(
-                gs.groupIndexes.map {
+                (gs.groupIndexes.map {
                   case (chainFrom, chainTo) =>
                     countAndInsertPerChain(intervalType, from, to, chainFrom, chainTo)
-                } :+ countAndInsertAllChains(intervalType, from, to)
+                } :+ countAndInsertAllChains(intervalType, from, to)).toIterable
               )
               .transactionally
           )
@@ -147,14 +145,14 @@ case object TransactionHistoryService extends StrictLogging {
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   def getTimeRanges(histTs: TimeStamp,
                     latestTxTs: TimeStamp,
-                    intervalType: IntervalType): ArraySeq[(TimeStamp, TimeStamp)] = {
+                    intervalType: IntervalType): AVector[(TimeStamp, TimeStamp)] = {
 
     val oneMillis = Duration.ofMillisUnsafe(1)
     val start     = truncate(histTs, intervalType)
     val end       = truncate(latestTxTs, intervalType).minusUnsafe(oneMillis)
 
     if (start == end || end.isBefore(start)) {
-      ArraySeq.empty
+      AVector.empty
     } else {
       val step = (intervalType match {
         case IntervalType.Daily  => Duration.ofDaysUnsafe(1)
@@ -181,7 +179,7 @@ case object TransactionHistoryService extends StrictLogging {
       dc: DatabaseConfig[PostgresProfile]): Future[Option[TimeStamp]] = {
     run(sql"""
     SELECT MAX(block_timestamp) FROM transactions WHERE main_chain = true
-    """.asAS[Option[TimeStamp]].exactlyOne)
+    """.asAV[Option[TimeStamp]].exactlyOne)
   }
 
   private def findLatestHistoryTimestamp(intervalType: IntervalType)(
@@ -242,7 +240,7 @@ case object TransactionHistoryService extends StrictLogging {
         AND chain_from <> -1
         AND chain_to <> -1
         ORDER BY timestamp
-      """.asAS[(TimeStamp, GroupIndex, GroupIndex, Long)]
+      """.asAV[(TimeStamp, GroupIndex, GroupIndex, Long)]
   }
 
   def getAllChainsQuery(intervalType: IntervalType,
@@ -256,6 +254,6 @@ case object TransactionHistoryService extends StrictLogging {
         AND chain_from = -1
         AND chain_to = -1
         ORDER BY timestamp
-      """.asAS[(TimeStamp, Long)]
+      """.asAV[(TimeStamp, Long)]
   }
 }

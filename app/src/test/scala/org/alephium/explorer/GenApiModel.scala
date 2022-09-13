@@ -18,8 +18,6 @@ package org.alephium.explorer
 
 import java.math.BigInteger
 
-import scala.collection.immutable.ArraySeq
-
 import akka.util.ByteString
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
@@ -27,7 +25,7 @@ import org.scalacheck.Gen
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.ALPH
-import org.alephium.util.{Base58, Number, U256}
+import org.alephium.util.{AVector, Base58, Number, U256}
 
 /** Generators for types supplied by `org.alephium.explorer.api.model` package */
 object GenApiModel extends ImplicitConversions {
@@ -97,7 +95,7 @@ object GenApiModel extends ImplicitConversions {
       gasAmount <- Gen.posNum[Int]
       gasPrice  <- u256Gen
     } yield
-      Transaction(hash, blockHash, timestamp, ArraySeq.empty, ArraySeq.empty, gasAmount, gasPrice)
+      Transaction(hash, blockHash, timestamp, AVector.empty, AVector.empty, gasAmount, gasPrice)
 
   val utransactionGen: Gen[UnconfirmedTransaction] =
     for {

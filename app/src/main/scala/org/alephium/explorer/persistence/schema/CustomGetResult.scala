@@ -18,13 +18,10 @@ package org.alephium.explorer.persistence.schema
 
 import java.math.BigInteger
 
-import scala.collection.immutable.ArraySeq
-
 import akka.util.ByteString
 import slick.jdbc.{GetResult, PositionedResult}
 
 import org.alephium.explorer.{BlockHash, Hash}
-import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.serde._
@@ -87,14 +84,14 @@ object CustomGetResult {
     (result: PositionedResult) =>
       result.nextBytesOption().map(bytes => ByteString.fromArrayUnsafe(bytes))
 
-  implicit val optionTokensGetResult: GetResult[Option[ArraySeq[Token]]] =
+  implicit val optionTokensGetResult: GetResult[Option[AVector[Token]]] =
     (result: PositionedResult) =>
       result
         .nextBytesOption()
         .map { bytes =>
           deserialize[AVector[Token]](ByteString.fromArrayUnsafe(bytes)) match {
             case Left(error)  => throw error
-            case Right(value) => value.toArraySeq
+            case Right(value) => value
           }
       }
 
@@ -117,7 +114,7 @@ object CustomGetResult {
       result.nextBigDecimalOption().map(bigDecimal => U256.unsafe(bigDecimal.toBigInt.bigInteger))
     }
 
-  val outputGetResult: GetResult[OutputEntity] =
+  implicit val outputGetResult: GetResult[OutputEntity] =
     (result: PositionedResult) =>
       OutputEntity(
         blockHash      = result.<<,
@@ -137,7 +134,7 @@ object CustomGetResult {
         spentFinalized = result.<<?
     )
 
-  val inputGetResult: GetResult[InputEntity] =
+  implicit val inputGetResult: GetResult[InputEntity] =
     (result: PositionedResult) =>
       InputEntity(
         blockHash        = result.<<,
@@ -165,7 +162,7 @@ object CustomGetResult {
     *       `chainFrom` is before `chainTo` in the query result would compile
     *       but would result in incorrect data.
     */
-  val blockEntryListGetResult: GetResult[BlockEntryLite] =
+  implicit val blockEntryListGetResult: GetResult[BlockEntryLite] =
     (result: PositionedResult) =>
       BlockEntryLite(hash      = result.<<,
                      timestamp = result.<<,
@@ -176,7 +173,7 @@ object CustomGetResult {
                      hashRate  = result.<<,
                      txNumber  = result.<<)
 
-  val blockHeaderGetResult: GetResult[BlockHeader] =
+  implicit val blockHeaderGetResult: GetResult[BlockHeader] =
     (result: PositionedResult) =>
       BlockHeader(
         hash         = result.<<,
@@ -195,7 +192,7 @@ object CustomGetResult {
         parent       = result.<<?
     )
 
-  val unconfirmedTransactionGetResult: GetResult[UnconfirmedTxEntity] =
+  implicit val unconfirmedTransactionGetResult: GetResult[UnconfirmedTxEntity] =
     (result: PositionedResult) =>
       UnconfirmedTxEntity(
         hash      = result.<<,
@@ -206,7 +203,7 @@ object CustomGetResult {
         lastSeen  = result.<<
     )
 
-  val uinputGetResult: GetResult[UInputEntity] =
+  implicit val uinputGetResult: GetResult[UInputEntity] =
     (result: PositionedResult) =>
       UInputEntity(
         txHash       = result.<<,
@@ -217,7 +214,7 @@ object CustomGetResult {
         uinputOrder  = result.<<
     )
 
-  val uoutputGetResult: GetResult[UOutputEntity] =
+  implicit val uoutputGetResult: GetResult[UOutputEntity] =
     (result: PositionedResult) =>
       UOutputEntity(
         txHash       = result.<<,
@@ -231,7 +228,7 @@ object CustomGetResult {
         uoutputOrder = result.<<
     )
 
-  val tokenSupplyGetResult: GetResult[TokenSupplyEntity] =
+  implicit val tokenSupplyGetResult: GetResult[TokenSupplyEntity] =
     (result: PositionedResult) =>
       TokenSupplyEntity(
         timestamp   = result.<<,

@@ -16,7 +16,9 @@
 
 package org.alephium.explorer.persistence.queries
 
+import org.alephium.api.UtilJson._
 import org.alephium.json.Json._
+import org.alephium.util.AVector
 
 object ExplainResult {
   implicit val readWriter: ReadWriter[ExplainResult] = macroRW
@@ -25,14 +27,14 @@ object ExplainResult {
   def emptyInput(queryName: String): ExplainResult =
     new ExplainResult(queryName  = queryName,
                       queryInput = "empty",
-                      explain    = Vector.empty,
-                      messages   = Vector("Empty input"),
+                      explain    = AVector.empty,
+                      messages   = AVector("Empty input"),
                       passed     = false)
 
 }
 
 final case class ExplainResult(queryName: String,
                                queryInput: String,
-                               explain: Vector[String],
-                               messages: Iterable[String],
+                               explain: AVector[String],
+                               messages: AVector[String],
                                passed: Boolean)

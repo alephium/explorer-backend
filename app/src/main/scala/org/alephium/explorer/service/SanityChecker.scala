@@ -25,6 +25,7 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AnyOps, GroupSetting}
+import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex}
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence._
@@ -137,7 +138,8 @@ object SanityChecker extends StrictLogging {
               blocks
                 .map(_.hash)
                 .filterNot(_ === block.hash)
-                .map(updateMainChainStatusAction(_, false)))
+                .map(updateMainChainStatusAction(_, false))
+                .toIterable)
             _ <- updateMainChainStatusAction(hash, true)
           } yield {
             block.parent(groupNum).map(Right(_))

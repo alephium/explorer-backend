@@ -75,7 +75,7 @@ class OutputQueriesSpec
           val actual = run(OutputQueries.outputsFromTxsNoJoin(hashes)).futureValue
 
           //query output size is 0
-          actual.size is 0
+          actual.length is 0
         }
       }
 
@@ -107,7 +107,7 @@ class OutputQueriesSpec
               )
             }
 
-          actual should contain theSameElementsAs expected
+          actual containsTheSameElementsAs expected
         }
       }
     }
@@ -125,7 +125,7 @@ class OutputQueriesSpec
             run(OutputQueries.getOutputsQuery(output.txHash, output.blockHash)).futureValue
 
           //query output size is 0
-          actual.size is 0
+          actual.length is 0
         }
       }
     }
@@ -172,14 +172,14 @@ class OutputQueriesSpec
           //Ascending order
           locally {
             val actual = run(OutputQueries.getMainChainOutputs(true)).futureValue
-            actual should contain inOrderElementsOf expected
+            actual.toSeq should contain inOrderElementsOf expected
           }
 
           //Descending order
           locally {
             val expectedReversed = expected.reverse
             val actual           = run(OutputQueries.getMainChainOutputs(false)).futureValue
-            actual should contain inOrderElementsOf expectedReversed
+            actual.toSeq should contain inOrderElementsOf expectedReversed
           }
         }
       }

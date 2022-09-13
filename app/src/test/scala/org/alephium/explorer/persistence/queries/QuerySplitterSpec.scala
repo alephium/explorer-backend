@@ -19,6 +19,7 @@ package org.alephium.explorer.persistence.queries
 import org.scalacheck.Gen
 
 import org.alephium.explorer.AlephiumSpec
+import org.alephium.util.AVector
 
 class QuerySplitterSpec extends AlephiumSpec {
 
@@ -28,11 +29,11 @@ class QuerySplitterSpec extends AlephiumSpec {
   object Query {
     //empty or initial Query
     val empty: Query =
-      Query(rows = Seq.empty, placeHolders = "")
+      Query(rows = AVector.empty[Row], placeHolders = "")
 
     //helper function
     def apply(row: Row, placeHolders: String) =
-      new Query(Seq(row), placeHolders)
+      new Query(AVector(row), placeHolders)
   }
 
   /**
@@ -41,7 +42,7 @@ class QuerySplitterSpec extends AlephiumSpec {
     * @param rows parameters for the query
     * @param placeHolders placeholder for the query
     */
-  case class Query(rows: Iterable[Row], placeHolders: String)
+  case class Query(rows: AVector[Row], placeHolders: String)
 
   /**
     * Calls [[QuerySplitter.splitFoldLeft]] and simple returns the result returned by it to test
@@ -49,10 +50,10 @@ class QuerySplitterSpec extends AlephiumSpec {
     *
     * Each split is a single [[Query]] object which contains its [[Row]] and a placeholder String.
     */
-  def getQueriesLimitByMaxParams(rows: Seq[Row],
-                                 initialResult: Seq[Query],
-                                 queryMaxParams: Short): Seq[Query] =
-    QuerySplitter.splitFoldLeftLimitByMaxParams[Row, Seq[Query]](
+  def getQueriesLimitByMaxParams(rows: AVector[Row],
+                                 initialResult: AVector[Query],
+                                 queryMaxParams: Short): AVector[Query] =
+    QuerySplitter.splitFoldLeftLimitByMaxParams[Row, AVector[Query]](
       rows         = rows,
       initialQuery = initialResult,
       //Number of parameters in Row. For this test it's param1 & param2 = 2
@@ -68,30 +69,30 @@ class QuerySplitterSpec extends AlephiumSpec {
     forAll(Gen.posNum[Short]) { queryMaxParams =>
       val queries =
         getQueriesLimitByMaxParams(
-          rows           = Seq.empty,
-          initialResult  = Seq.empty,
+          rows           = AVector.empty,
+          initialResult  = AVector.empty,
           queryMaxParams = queryMaxParams
         )
 
       //parameters are empty so queries should be empty
-      queries is List.empty
+      queries is AVector.empty[Query]
     }
   }
 
   "split queries evenly when queryColumns & queryMaxParams are even" in {
     val queries =
       getQueriesLimitByMaxParams(
-        rows           = Seq(Row(1, 1), Row(2, 2), Row(3, 3), Row(4, 4), Row(5, 5), Row(6, 6)),
-        initialResult  = Seq.empty,
+        rows           = AVector(Row(1, 1), Row(2, 2), Row(3, 3), Row(4, 4), Row(5, 5), Row(6, 6)),
+        initialResult  = AVector.empty,
         queryMaxParams = 4 //max number of params per query
       )
 
     //expect 4 parameters per query
     val expectedQueries =
-      Seq(
-        Query(List(Row(1, 1), Row(2, 2)), "(?, ?),(?, ?)"),
-        Query(List(Row(3, 3), Row(4, 4)), "(?, ?),(?, ?)"),
-        Query(List(Row(5, 5), Row(6, 6)), "(?, ?),(?, ?)")
+      AVector(
+        Query(AVector(Row(1, 1), Row(2, 2)), "(?, ?),(?, ?)"),
+        Query(AVector(Row(3, 3), Row(4, 4)), "(?, ?),(?, ?)"),
+        Query(AVector(Row(5, 5), Row(6, 6)), "(?, ?),(?, ?)")
       )
 
     queries is expectedQueries
@@ -101,18 +102,18 @@ class QuerySplitterSpec extends AlephiumSpec {
     val queries =
       getQueriesLimitByMaxParams(
         //7 parameters
-        rows           = Seq(Row(1, 1), Row(2, 2), Row(3, 3), Row(4, 4), Row(5, 5), Row(6, 6), Row(7, 7)),
-        initialResult  = Seq.empty,
+        rows           = AVector(Row(1, 1), Row(2, 2), Row(3, 3), Row(4, 4), Row(5, 5), Row(6, 6), Row(7, 7)),
+        initialResult  = AVector.empty,
         queryMaxParams = 4 //max number of params per query
       )
 
     //expect 4 parameters per query but the last/odd gets it own query
     val expectedQueries =
-      List(
-        Query(Seq(Row(1, 1), Row(2, 2)), "(?, ?),(?, ?)"),
-        Query(Seq(Row(3, 3), Row(4, 4)), "(?, ?),(?, ?)"),
-        Query(Seq(Row(5, 5), Row(6, 6)), "(?, ?),(?, ?)"),
-        Query(Seq(Row(7, 7)), "(?, ?)")
+      AVector(
+        Query(AVector(Row(1, 1), Row(2, 2)), "(?, ?),(?, ?)"),
+        Query(AVector(Row(3, 3), Row(4, 4)), "(?, ?),(?, ?)"),
+        Query(AVector(Row(5, 5), Row(6, 6)), "(?, ?),(?, ?)"),
+        Query(AVector(Row(7, 7)), "(?, ?)")
       )
 
     queries is expectedQueries
@@ -121,14 +122,14 @@ class QuerySplitterSpec extends AlephiumSpec {
   "split when queryColumns == queryMaxParams" in {
     val queries =
       getQueriesLimitByMaxParams(
-        rows           = Seq(Row(1, 1), Row(2, 2), Row(3, 3), Row(4, 4), Row(5, 5), Row(6, 6), Row(7, 7)),
-        initialResult  = Seq.empty,
+        rows           = AVector(Row(1, 1), Row(2, 2), Row(3, 3), Row(4, 4), Row(5, 5), Row(6, 6), Row(7, 7)),
+        initialResult  = AVector.empty,
         queryMaxParams = 2 //2 parameters per row
       )
 
     //expect each query to get a single row
     val expectedQueries =
-      List(
+      AVector(
         Query(Row(1, 1), "(?, ?)"),
         Query(Row(2, 2), "(?, ?)"),
         Query(Row(3, 3), "(?, ?)"),
@@ -144,19 +145,19 @@ class QuerySplitterSpec extends AlephiumSpec {
   "split should generate a single query when all parameter can fit in a single query" in {
     val queries =
       getQueriesLimitByMaxParams(
-        rows           = Seq(Row(1, 1), Row(2, 2), Row(3, 3), Row(4, 4), Row(5, 5), Row(6, 6), Row(7, 7)),
-        initialResult  = Seq.empty,
+        rows           = AVector(Row(1, 1), Row(2, 2), Row(3, 3), Row(4, 4), Row(5, 5), Row(6, 6), Row(7, 7)),
+        initialResult  = AVector.empty,
         queryMaxParams = 7 * 2 //allow all parameters to fit in a single query
       )
 
     //Expected a single query
     val expectedQuery =
       Query(
-        rows         = List(Row(1, 1), Row(2, 2), Row(3, 3), Row(4, 4), Row(5, 5), Row(6, 6), Row(7, 7)),
+        rows         = AVector(Row(1, 1), Row(2, 2), Row(3, 3), Row(4, 4), Row(5, 5), Row(6, 6), Row(7, 7)),
         placeHolders = "(?, ?),(?, ?),(?, ?),(?, ?),(?, ?),(?, ?),(?, ?)"
       )
 
-    queries should contain only expectedQuery
+    queries containsOnly expectedQuery
   }
 
   "Test following PR review comment in #162: See link below" in {
@@ -183,7 +184,7 @@ class QuerySplitterSpec extends AlephiumSpec {
 
     //The foldLeft function below simply returns the rows and placeholder
     //generated per batch/chunk. This data type holds that information.
-    case class Query(rows: Iterable[Row], placeholder: String)
+    case class Query(rows: AVector[Row], placeholder: String)
 
     //let's generate some data - 10,000 rows
     val rows = (1 to 10000).map(i => Row(i, i, i, i, i, i, i, i, i, i))
@@ -195,10 +196,10 @@ class QuerySplitterSpec extends AlephiumSpec {
     //Check that maxParametersPerQuery is 2000 and valid to use in this test case
     QuerySplitter.defaultMaxRowsPerQuery is 200.toShort
 
-    val querySplits: Seq[Query] =
-      QuerySplitter.splitFoldLeft[Row, Seq[Query]](
+    val querySplits: AVector[Query] =
+      QuerySplitter.splitFoldLeft[Row, AVector[Query]](
         rows            = rows,
-        initialQuery    = Seq.empty,
+        initialQuery    = AVector.empty,
         columnsPerRow   = columnsPerRows,
         maxRowsPerQuery = QuerySplitter.defaultMaxRowsPerQuery
       ) { (rowsForThisQuery, placeholderForThisQuery, allQueries) =>
@@ -207,13 +208,13 @@ class QuerySplitterSpec extends AlephiumSpec {
       }
 
     //From comment: then each batch would insert 200 rows
-    querySplits.size is (10000 / 200)
+    querySplits.length is (10000 / 200)
 
     querySplits.zipWithIndex foreach {
       case (split, index) =>
         //From comment: then each batch would insert 200 rows
         //Assert each query gets 200 rows
-        split.rows should have size 200
+        split.rows should have length 200
         //Assert each split has correct rows params
         val drop = index * 200
         split.rows is rows.slice(drop, drop + 200)
@@ -233,7 +234,7 @@ class QuerySplitterSpec extends AlephiumSpec {
 
     //The foldLeft function below simply returns the rows and placeholder
     //generated per batch/chunk. This data type holds that information.
-    case class Query(rows: Iterable[Row.type], placeholder: String)
+    case class Query(rows: AVector[Row.type], placeholder: String)
 
     //let's generate some data - 10,000 rows
     val rows = (1 to 10000).map(_ => Row)
@@ -245,10 +246,10 @@ class QuerySplitterSpec extends AlephiumSpec {
     //Check that maxParametersPerQuery is 200 and valid to use in this test case
     QuerySplitter.defaultMaxRowsPerQuery is 200.toShort
 
-    val querySplits: Seq[Query] =
-      QuerySplitter.splitFoldLeft[Row.type, Seq[Query]](
+    val querySplits: AVector[Query] =
+      QuerySplitter.splitFoldLeft[Row.type, AVector[Query]](
         rows            = rows,
-        initialQuery    = Seq.empty,
+        initialQuery    = AVector.empty,
         columnsPerRow   = columnsPerRows,
         maxRowsPerQuery = QuerySplitter.defaultMaxRowsPerQuery
       ) { (rowsForThisQuery, placeholderForThisQuery, allQueries) =>
@@ -256,18 +257,18 @@ class QuerySplitterSpec extends AlephiumSpec {
         allQueries :+ Query(rowsForThisQuery, placeholderForThisQuery)
       }
 
-    querySplits.size is (rows.size / 4)
+    querySplits.length is (rows.length / 4)
 
     querySplits foreach { split =>
       //Assert each query gets 4 rows because 4 rows satisfy max params limit set by Postgres configured
       //via QuerySplitter.postgresDefaultParameterLimit
-      split.rows.size is 4
+      split.rows.length is 4
       //Assert each column has ((columnsPerRows * 4) * '?') = 32764
       split.placeholder.count(_ == '?') is (columnsPerRows * 4)
     }
 
     //all rows get assigned
-    querySplits.foldLeft(0)(_ + _.rows.size) is rows.size
+    querySplits.foldLeft(0)(_ + _.rows.length) is rows.length
   }
 
 }

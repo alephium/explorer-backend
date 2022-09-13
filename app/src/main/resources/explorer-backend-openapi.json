@@ -3236,7 +3236,7 @@
               }
             }
           },
-          "required": false
+          "required": true
         },
         "responses": {
           "200": {
@@ -3463,6 +3463,8 @@
           "hash",
           "blockHash",
           "timestamp",
+          "inputs",
+          "outputs",
           "gasAmount",
           "gasPrice",
           "type"
@@ -3622,7 +3624,8 @@
       },
       "ListBlocks": {
         "required": [
-          "total"
+          "total",
+          "blocks"
         ],
         "type": "object",
         "properties": {
@@ -3780,7 +3783,8 @@
       },
       "PerChainTimedCount": {
         "required": [
-          "timestamp"
+          "timestamp",
+          "totalCountPerChain"
         ],
         "type": "object",
         "properties": {
@@ -3883,6 +3887,8 @@
           "hash",
           "blockHash",
           "timestamp",
+          "inputs",
+          "outputs",
           "gasAmount",
           "gasPrice"
         ],
@@ -3955,6 +3961,8 @@
           "hash",
           "chainFrom",
           "chainTo",
+          "inputs",
+          "outputs",
           "gasAmount",
           "gasPrice",
           "lastSeen",

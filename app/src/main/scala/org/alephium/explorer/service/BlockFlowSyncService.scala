@@ -18,7 +18,6 @@ package org.alephium.explorer.service
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 
@@ -28,6 +27,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.{foldFutures, GroupSetting}
+import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.DBRunner._
@@ -35,7 +35,7 @@ import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.persistence.queries.{BlockQueries, InputUpdateQueries}
 import org.alephium.explorer.util.{Scheduler, TimeUtil}
-import org.alephium.util.{Duration, TimeStamp}
+import org.alephium.util.{AVector, Duration, TimeStamp}
 
 /*
  * Syncing main chains blocks
@@ -65,12 +65,12 @@ case object BlockFlowSyncService extends StrictLogging {
   private val initialBackStep = Duration.ofMinutesUnsafe(30L)
   // scalastyle:on magic.number
 
-  def start(nodeUris: ArraySeq[Uri], interval: FiniteDuration)(implicit ec: ExecutionContext,
-                                                               dc: DatabaseConfig[PostgresProfile],
-                                                               blockFlowClient: BlockFlowClient,
-                                                               cache: BlockCache,
-                                                               groupSetting: GroupSetting,
-                                                               scheduler: Scheduler): Future[Unit] =
+  def start(nodeUris: AVector[Uri], interval: FiniteDuration)(implicit ec: ExecutionContext,
+                                                              dc: DatabaseConfig[PostgresProfile],
+                                                              blockFlowClient: BlockFlowClient,
+                                                              cache: BlockCache,
+                                                              groupSetting: GroupSetting,
+                                                              scheduler: Scheduler): Future[Unit] =
     scheduler.scheduleLoopConditional(
       taskId        = this.productPrefix,
       firstInterval = ScalaDuration.Zero,
@@ -78,7 +78,7 @@ case object BlockFlowSyncService extends StrictLogging {
       state         = new AtomicBoolean()
     )(init())(state => syncOnce(nodeUris, state))
 
-  def syncOnce(nodeUris: ArraySeq[Uri], initialBackStepDone: AtomicBoolean)(
+  def syncOnce(nodeUris: AVector[Uri], initialBackStepDone: AtomicBoolean)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
@@ -94,7 +94,7 @@ case object BlockFlowSyncService extends StrictLogging {
   }
 
   // scalastyle:off magic.number
-  private def syncOnceWith(nodeUris: ArraySeq[Uri], step: Duration, backStep: Duration)(
+  private def syncOnceWith(nodeUris: AVector[Uri], step: Duration, backStep: Duration)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
@@ -177,7 +177,7 @@ case object BlockFlowSyncService extends StrictLogging {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
-      groupSetting: GroupSetting): Future[(ArraySeq[(TimeStamp, TimeStamp)], Int)] = {
+      groupSetting: GroupSetting): Future[(AVector[(TimeStamp, TimeStamp)], Int)] = {
     fetchAndBuildTimeStampRange(step, backStep, getLocalMaxTimestamp(), getRemoteMaxTimestamp())
   }
 
@@ -210,15 +210,19 @@ case object BlockFlowSyncService extends StrictLogging {
               blockFlowClient
                 .fetchBlocksAtHeight(fromGroup, toGroup, Height.unsafe(chainInfo.currentHeight))
                 .map { blocks =>
-                  blocks.map(_.timestamp).maxOption.map(ts => (ts, chainInfo.currentHeight))
+                  Option.when(blocks.nonEmpty) {
+                    (blocks.map(_.timestamp).max, chainInfo.currentHeight)
+                  }
                 }
             }
 
       })
       .map { res =>
-        val tsHeights  = res.flatten
+        val tsHeights  = res.collect { case Some(v) => v }
         val nbOfBlocks = tsHeights.map { case (_, height) => height }.sum
-        tsHeights.map { case (ts, _) => ts }.maxOption.map(max => (max, nbOfBlocks))
+        Option.when(tsHeights.nonEmpty) {
+          (tsHeights.map { case (ts, _) => ts }.max, nbOfBlocks)
+        }
       }
   }
 
@@ -231,7 +235,7 @@ case object BlockFlowSyncService extends StrictLogging {
     dc: DatabaseConfig[PostgresProfile],
     blockFlowClient: BlockFlowClient,
     cache: BlockCache,
-    groupSetting: GroupSetting): Future[Option[ArraySeq[BlockEntity]]] = {
+    groupSetting: GroupSetting): Future[Option[AVector[BlockEntity]]] = {
     blockFlowClient
       .fetchBlocksAtHeight(fromGroup, toGroup, height)
       .flatMap { blocks =>
@@ -240,7 +244,7 @@ case object BlockFlowSyncService extends StrictLogging {
           for {
             _ <- insert(bestBlock)
             _ <- BlockDao.updateLatestBlock(bestBlock)
-          } yield Some(ArraySeq(bestBlock))
+          } yield Some(AVector(bestBlock))
         } else {
           Future.successful(None)
         }
@@ -293,7 +297,7 @@ case object BlockFlowSyncService extends StrictLogging {
     }
   }
 
-  private def insertBlocks(blocks: ArraySeq[BlockEntity])(
+  private def insertBlocks(blocks: AVector[BlockEntity])(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
@@ -303,7 +307,7 @@ case object BlockFlowSyncService extends StrictLogging {
       for {
         _ <- foldFutures(blocks)(insert)
         _ <- BlockDao.updateLatestBlock(blocks.last)
-      } yield (blocks.size)
+      } yield (blocks.length)
     } else {
       Future.successful(0)
     }
@@ -326,8 +330,7 @@ case object BlockFlowSyncService extends StrictLogging {
       backStep: Duration,
       fetchLocalTs:  => Future[Option[(TimeStamp, Int)]],
       fetchRemoteTs: => Future[Option[(TimeStamp, Int)]]
-  )(implicit executionContext: ExecutionContext)
-    : Future[(ArraySeq[(TimeStamp, TimeStamp)], Int)] = {
+  )(implicit executionContext: ExecutionContext): Future[(AVector[(TimeStamp, TimeStamp)], Int)] = {
     for {
       localTs  <- fetchLocalTs
       remoteTs <- fetchRemoteTs
@@ -348,7 +351,7 @@ case object BlockFlowSyncService extends StrictLogging {
            remoteNbOfBlocks - localNbOfBlocks)
         }
       }) match {
-        case None      => (ArraySeq.empty, 0)
+        case None      => (AVector.empty, 0)
         case Some(res) => res
       }
     }

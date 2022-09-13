@@ -16,7 +16,6 @@
 
 package org.alephium.explorer.cache
 
-import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.jdk.FutureConverters._
@@ -33,19 +32,19 @@ import org.alephium.explorer.persistence.model.LatestBlock
 import org.alephium.explorer.persistence.queries.BlockQueries
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.ChainIndex
-import org.alephium.util.{Duration, TimeStamp}
+import org.alephium.util.{AVector, Duration, TimeStamp}
 
 object BlockCache {
 
   @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
-  private def computeAverageBlockTime(blockTimes: ArraySeq[TimeStamp]): Duration = {
-    if (blockTimes.sizeIs > 1) {
+  private def computeAverageBlockTime(blockTimes: AVector[TimeStamp]): Duration = {
+    if (blockTimes.length > 1) {
       val (_, diffs) =
-        blockTimes.drop(1).foldLeft((blockTimes.head, ArraySeq.empty: ArraySeq[Duration])) {
+        blockTimes.dropUpto(1).fold((blockTimes.head, AVector.empty: AVector[Duration])) {
           case ((prev, acc), ts) =>
             (ts, acc :+ ts.deltaUnsafe(prev))
         }
-      diffs.fold(Duration.zero)(_ + _).divUnsafe(diffs.size.toLong)
+      diffs.fold(Duration.zero)(_ + _).divUnsafe(diffs.length.toLong)
     } else {
       Duration.zero
     }
@@ -119,14 +118,13 @@ class BlockCache(blockTimes: CaffeineAsyncCache[ChainIndex, Duration],
                  latestBlocks: CaffeineAsyncCache[ChainIndex, LatestBlock]) {
 
   /** Operations on `blockTimes` cache */
-  def getAllBlockTimes(chainIndexes: Iterable[ChainIndex])(
-      implicit ec: ExecutionContext): Future[ArraySeq[(ChainIndex, Duration)]] =
+  def getAllBlockTimes(chainIndexes: AVector[ChainIndex])(
+      implicit ec: ExecutionContext): Future[AVector[(ChainIndex, Duration)]] =
     blockTimes.getAll(chainIndexes)
 
   /** Operations on `latestBlocks` cache */
-  def getAllLatestBlocks()(
-      implicit ec: ExecutionContext,
-      groupSetting: GroupSetting): Future[ArraySeq[(ChainIndex, LatestBlock)]] =
+  def getAllLatestBlocks()(implicit ec: ExecutionContext,
+                           groupSetting: GroupSetting): Future[AVector[(ChainIndex, LatestBlock)]] =
     latestBlocks.getAll(groupSetting.chainIndexes)
 
   def putLatestBlock(chainIndex: ChainIndex, block: LatestBlock): Unit =

@@ -16,7 +16,6 @@
 
 package org.alephium.explorer.persistence.dao
 
-import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
 import org.scalacheck.Gen
@@ -31,6 +30,7 @@ import org.alephium.explorer.api.model.Transaction
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.util.AVector
 
 class UnconfirmedTxDaoSpec
     extends AlephiumSpec
@@ -48,7 +48,7 @@ class UnconfirmedTxDaoSpec
       txs.foreach { tx =>
         val dbTx =
           run(UnconfirmedTxSchema.table.filter(_.hash === tx.hash).result).futureValue
-        dbTx.size is 1
+        dbTx.length is 1
         dbTx.head.hash is tx.hash
         dbTx.head.chainFrom is tx.chainFrom
         dbTx.head.chainTo is tx.chainTo
@@ -69,7 +69,7 @@ class UnconfirmedTxDaoSpec
 
   "get" in {
     forAll(utransactionGen) { utx =>
-      UnconfirmedTxDao.insertMany(ArraySeq(utx)).futureValue
+      UnconfirmedTxDao.insertMany(AVector(utx)).futureValue
 
       UnconfirmedTxDao.get(utx.hash).futureValue is Some(utx)
     }
@@ -79,9 +79,9 @@ class UnconfirmedTxDaoSpec
     forAll(Gen.choose(2, 6), assetOutputGen, utransactionGen) {
       case (outputSize, out, utx) =>
         //outputs with same address but different lockTime
-        val outputs = ArraySeq.fill(outputSize)(out.copy(lockTime = Some(timestampGen.sample.get)))
+        val outputs = AVector.fill(outputSize)(out.copy(lockTime = Some(timestampGen.sample.get)))
 
-        UnconfirmedTxDao.insertMany(ArraySeq(utx.copy(outputs = outputs))).futureValue
+        UnconfirmedTxDao.insertMany(AVector(utx.copy(outputs = outputs))).futureValue
 
         UnconfirmedTxDao.get(utx.hash).futureValue.get.outputs.size is outputSize
     }

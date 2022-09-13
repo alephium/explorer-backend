@@ -18,8 +18,6 @@ package org.alephium.explorer
 
 import java.math.BigInteger
 
-import scala.collection.immutable.ArraySeq
-
 import akka.util.ByteString
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
@@ -309,10 +307,10 @@ object Generators {
     }
 
   def chainGen(size: Int, startTimestamp: TimeStamp, chainFrom: GroupIndex, chainTo: GroupIndex)(
-      implicit groupSettings: GroupSetting): Gen[ArraySeq[protocolApi.BlockEntry]] =
+      implicit groupSettings: GroupSetting): Gen[AVector[protocolApi.BlockEntry]] =
     Gen.listOfN(size, blockEntryProtocolGen).map { blocks =>
       blocks
-        .foldLeft((ArraySeq.empty[protocolApi.BlockEntry], Height.genesis, startTimestamp)) {
+        .foldLeft((AVector.empty[protocolApi.BlockEntry], Height.genesis, startTimestamp)) {
           case ((acc, height, timestamp), block) =>
             val deps: AVector[BlockHash] =
               if (acc.isEmpty) {
@@ -330,10 +328,10 @@ object Generators {
     }
 
   def blockFlowGen(maxChainSize: Int, startTimestamp: TimeStamp)(
-      implicit groupSettings: GroupSetting): Gen[ArraySeq[ArraySeq[protocolApi.BlockEntry]]] = {
+      implicit groupSettings: GroupSetting): Gen[AVector[AVector[protocolApi.BlockEntry]]] = {
     val indexes = chainIndexes
     Gen
-      .listOfN(indexes.size, Gen.choose(1, maxChainSize))
+      .listOfN(indexes.length, Gen.choose(1, maxChainSize))
       .map(_.zip(indexes).map {
         case (size, (from, to)) =>
           chainGen(size, startTimestamp, from, to).sample.get
@@ -341,8 +339,8 @@ object Generators {
   }
 
   def blockEntitiesToBlockEntries(
-      blocks: ArraySeq[ArraySeq[BlockEntity]]): ArraySeq[ArraySeq[BlockEntry]] = {
-    val outputs: ArraySeq[OutputEntity] = blocks.flatMap(_.flatMap(_.outputs))
+      blocks: AVector[AVector[BlockEntity]]): AVector[AVector[BlockEntry]] = {
+    val outputs: AVector[OutputEntity] = blocks.flatMap(_.flatMap(_.outputs))
 
     blocks.map(_.map { block =>
       val transactions =

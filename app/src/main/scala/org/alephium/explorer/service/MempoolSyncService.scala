@@ -16,7 +16,6 @@
 
 package org.alephium.explorer.service
 
-import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 
@@ -25,8 +24,10 @@ import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
+import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.persistence.dao.UnconfirmedTxDao
 import org.alephium.explorer.util.Scheduler
+import org.alephium.util.AVector
 
 /*
  * Syncing mempool
@@ -34,19 +35,19 @@ import org.alephium.explorer.util.Scheduler
 
 case object MempoolSyncService extends StrictLogging {
 
-  def start(nodeUris: ArraySeq[Uri], interval: FiniteDuration)(implicit ec: ExecutionContext,
-                                                               dc: DatabaseConfig[PostgresProfile],
-                                                               blockFlowClient: BlockFlowClient,
-                                                               scheduler: Scheduler): Future[Unit] =
+  def start(nodeUris: AVector[Uri], interval: FiniteDuration)(implicit ec: ExecutionContext,
+                                                              dc: DatabaseConfig[PostgresProfile],
+                                                              blockFlowClient: BlockFlowClient,
+                                                              scheduler: Scheduler): Future[Unit] =
     scheduler.scheduleLoop(
       taskId        = this.productPrefix,
       firstInterval = ScalaDuration.Zero,
       loopInterval  = interval
     )(syncOnce(nodeUris))
 
-  def syncOnce(nodeUris: ArraySeq[Uri])(implicit ec: ExecutionContext,
-                                        dc: DatabaseConfig[PostgresProfile],
-                                        blockFlowClient: BlockFlowClient): Future[Unit] = {
+  def syncOnce(nodeUris: AVector[Uri])(implicit ec: ExecutionContext,
+                                       dc: DatabaseConfig[PostgresProfile],
+                                       blockFlowClient: BlockFlowClient): Future[Unit] = {
     logger.debug("Syncing mempol")
     Future.sequence(nodeUris.map(syncMempool)).map { _ =>
       logger.debug("Mempool synced")

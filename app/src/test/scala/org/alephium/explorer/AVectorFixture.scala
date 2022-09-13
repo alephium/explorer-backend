@@ -14,27 +14,19 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.api
+package org.alephium.explorer
 
-import sttp.tapir._
-import sttp.tapir.generic.auto._
+import scala.reflect.ClassTag
 
-import org.alephium.api.{alphJsonBody => jsonBody}
-import org.alephium.api.UtilJson._
-import org.alephium.explorer.api.BaseEndpoint
-import org.alephium.explorer.api.model.{Pagination, UnconfirmedTransaction}
 import org.alephium.util.AVector
 
-trait UnconfirmedTransactionEndpoints extends BaseEndpoint with QueryParams {
+object AVectorFixture {
+  implicit class Impl[A](val avector: AVector[A]) extends AnyVal {
 
-  private val unconfirmedTransactionsEndpoint =
-    baseEndpoint
-      .tag("Unconfirmed Transactions")
-      .in("unconfirmed-transactions")
+    def distinct(implicit tagA: ClassTag[A]): AVector[A] =
+      AVector.from(avector.toSeq.distinct)
 
-  val listUnconfirmedTransactions: BaseEndpoint[Pagination, AVector[UnconfirmedTransaction]] =
-    unconfirmedTransactionsEndpoint.get
-      .in(pagination)
-      .out(jsonBody[AVector[UnconfirmedTransaction]])
-      .description("list unconfirmed transactions")
+    def distinctBy[B](f: (A) => B)(implicit tagA: ClassTag[A]): AVector[A] =
+      AVector.from(avector.toSeq.distinctBy(f))
+  }
 }

@@ -18,7 +18,6 @@ package org.alephium.explorer.persistence.schema
 
 import java.math.BigInteger
 
-import scala.collection.immutable.ArraySeq
 import scala.reflect.ClassTag
 
 import akka.util.ByteString
@@ -27,7 +26,6 @@ import slick.jdbc.PostgresProfile._
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer._
-import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.{AppState, AppStateKey, OutputEntity}
 import org.alephium.serde._
@@ -99,23 +97,23 @@ object CustomJdbcTypes {
       bytes => ByteString.fromArrayUnsafe(bytes)
     )
 
-  implicit val seqByteStringType: JdbcType[ArraySeq[ByteString]] =
-    MappedJdbcType.base[ArraySeq[ByteString], Array[Byte]](
+  implicit val seqByteStringType: JdbcType[AVector[ByteString]] =
+    MappedJdbcType.base[AVector[ByteString], Array[Byte]](
       byteStrings => serialize(AVector.unsafe(byteStrings.toArray)).toArray,
       bytes =>
         deserialize[AVector[ByteString]](ByteString.fromArrayUnsafe(bytes)) match {
           case Left(error)  => throw error
-          case Right(value) => value.toArraySeq
+          case Right(value) => value
       }
     )
 
-  implicit val tokensType: JdbcType[ArraySeq[Token]] =
-    MappedJdbcType.base[ArraySeq[Token], Array[Byte]](
+  implicit val tokensType: JdbcType[AVector[Token]] =
+    MappedJdbcType.base[AVector[Token], Array[Byte]](
       tokens => serialize(AVector.unsafe(tokens.toArray)).toArray,
       bytes =>
         deserialize[AVector[Token]](ByteString.fromArrayUnsafe(bytes)) match {
           case Left(error)  => throw error
-          case Right(value) => value.toArraySeq
+          case Right(value) => value
       }
     )
 

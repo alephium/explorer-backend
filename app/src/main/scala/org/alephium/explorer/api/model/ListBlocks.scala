@@ -16,11 +16,11 @@
 
 package org.alephium.explorer.api.model
 
-import scala.collection.immutable.ArraySeq
-
+import org.alephium.api.UtilJson._
 import org.alephium.json.Json._
+import org.alephium.util.AVector
 
-final case class ListBlocks(total: Int, blocks: ArraySeq[BlockEntryLite])
+final case class ListBlocks(total: Int, blocks: AVector[BlockEntryLite])
 
 object ListBlocks {
   implicit val readWriter: ReadWriter[ListBlocks] = macroRW

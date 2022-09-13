@@ -16,11 +16,10 @@
 
 package org.alephium.explorer.api.model
 
-import scala.collection.immutable.ArraySeq
-
 import upickle.core.Abort
 
 import org.alephium.json.Json._
+import org.alephium.util.AVector
 
 sealed trait IntervalType {
   def value: Int
@@ -37,7 +36,7 @@ object IntervalType {
     val string: String = "daily"
   }
 
-  val all: ArraySeq[IntervalType] = ArraySeq(Hourly: IntervalType, Daily: IntervalType)
+  val all: AVector[IntervalType] = AVector(Hourly: IntervalType, Daily: IntervalType)
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   implicit val reader: Reader[IntervalType] =

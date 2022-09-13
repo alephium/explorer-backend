@@ -28,13 +28,13 @@ import org.scalatest.time.{Minutes, Span}
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.GenApiModel.utransactionGen
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, UnconfirmedTransaction}
+import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.UnconfirmedTxDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.TestUtils._
-import org.alephium.util.{Service, TimeStamp}
+import org.alephium.util.{AVector, Service, TimeStamp}
 
 class MempoolSyncServiceSpec
     extends AlephiumSpec
@@ -45,9 +45,9 @@ class MempoolSyncServiceSpec
 
   "start/sync/stop" in new Fixture {
     using(Scheduler("test")) { implicit scheduler =>
-      MempoolSyncService.start(ArraySeq(""), 100.milliseconds)
+      MempoolSyncService.start(AVector(""), 100.milliseconds)
 
-      UnconfirmedTxDao.listHashes().futureValue is ArraySeq.empty
+      UnconfirmedTxDao.listHashes().futureValue is AVector.empty[Transaction.Hash]
 
       unconfirmedTransactions = Gen.listOfN(10, utransactionGen).sample.get
 
@@ -77,20 +77,20 @@ class MempoolSyncServiceSpec
   trait Fixture {
     implicit val executionContext: ExecutionContext = ExecutionContext.global
 
-    var unconfirmedTransactions: ArraySeq[UnconfirmedTransaction] = ArraySeq.empty
+    var unconfirmedTransactions: AVector[UnconfirmedTransaction] = AVector.empty
 
     implicit val blockFlowClient: BlockFlowClient = new BlockFlowClient {
       implicit val executionContext: ExecutionContext = ExecutionContext.global
       def startSelfOnce(): Future[Unit]               = Future.unit
       def stopSelfOnce(): Future[Unit]                = Future.unit
       def subServices: ArraySeq[Service]              = ArraySeq.empty
-      def fetchUnconfirmedTransactions(uri: Uri): Future[ArraySeq[UnconfirmedTransaction]] =
+      def fetchUnconfirmedTransactions(uri: Uri): Future[AVector[UnconfirmedTransaction]] =
         Future.successful(unconfirmedTransactions)
       def fetchBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[BlockEntity] =
         ???
       def fetchBlocks(fromTs: TimeStamp,
                       toTs: TimeStamp,
-                      uri: Uri): Future[ArraySeq[ArraySeq[BlockEntity]]] =
+                      uri: Uri): Future[AVector[AVector[BlockEntity]]] =
         ???
       def fetchChainInfo(from: GroupIndex, to: GroupIndex): Future[ChainInfo] = ???
       def fetchHashesAtHeight(from: GroupIndex,

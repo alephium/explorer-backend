@@ -16,8 +16,6 @@
 
 package org.alephium.explorer.persistence.queries
 
-import scala.collection.immutable.ArraySeq
-import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext
 
 import com.typesafe.scalalogging.StrictLogging
@@ -39,7 +37,7 @@ import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.util.TimeStamp
+import org.alephium.util.{AVector, TimeStamp}
 
 object BlockQueries extends StrictLogging {
 
@@ -55,8 +53,8 @@ object BlockQueries extends StrictLogging {
         queryName  = "mainChainQuery",
         queryInput = "Unit",
         explain    = explain,
-        messages   = Iterable.empty,
-        passed     = explain.mkString contains "block_headers_main_chain_idx"
+        messages   = AVector.empty,
+        passed     = explain.mkString("") contains "block_headers_main_chain_idx"
       )
     }
 
@@ -86,7 +84,7 @@ object BlockQueries extends StrictLogging {
        |FROM #$block_headers
        |WHERE hash = $hash
        |""".stripMargin
-      .asASE[BlockHeader](blockHeaderGetResult)
+      .asAV[BlockHeader]
       .headOption
 
   private def getHeadersAtHeightQuery(fromGroup: GroupIndex,
@@ -99,14 +97,14 @@ object BlockQueries extends StrictLogging {
        |AND chain_to = $toGroup
        |AND height = $height
        |""".stripMargin
-      .asASE[BlockHeader](blockHeaderGetResult)
+      .asAV[BlockHeader]
 
   def getAtHeightAction(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
-      implicit ec: ExecutionContext): DBActionR[ArraySeq[BlockEntry]] =
+      implicit ec: ExecutionContext): DBActionR[AVector[BlockEntry]] =
     for {
       headers <- getHeadersAtHeightQuery(fromGroup, toGroup, height)
-      blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
-    } yield blocks
+      blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction).toIterable)
+    } yield AVector.from(blocks)
 
   /**
     * Order by query for [[org.alephium.explorer.persistence.schema.BlockHeaderSchema.table]]
@@ -130,9 +128,9 @@ object BlockQueries extends StrictLogging {
     * Fetches all main_chain [[org.alephium.explorer.persistence.schema.BlockHeaderSchema.table]] rows
     */
   def listMainChainHeadersWithTxnNumberSQL(
-      pagination: Pagination): DBActionRWT[ArraySeq[BlockEntryLite]] =
+      pagination: Pagination): DBActionRWT[AVector[BlockEntryLite]] =
     listMainChainHeadersWithTxnNumberSQLBuilder(pagination)
-      .asASE[BlockEntryLite](blockEntryListGetResult)
+      .asAV[BlockEntryLite]
 
   def explainListMainChainHeadersWithTxnNumber(pagination: Pagination)(
       implicit ec: ExecutionContext): DBActionR[ExplainResult] =
@@ -141,8 +139,8 @@ object BlockQueries extends StrictLogging {
         queryName  = "listMainChainHeadersWithTxnNumber",
         queryInput = pagination.toString,
         explain    = explain,
-        messages   = Iterable.empty,
-        passed     = explain.mkString contains "block_headers_full_index"
+        messages   = AVector.empty,
+        passed     = explain.mkString("") contains "block_headers_full_index"
       )
     }
 
@@ -216,7 +214,7 @@ object BlockQueries extends StrictLogging {
       implicit ec: ExecutionContext): DBActionR[BlockEntry] =
     for {
       deps <- getDepsForBlock(blockHeader.hash)
-    } yield blockHeader.toApi(deps, ArraySeq.empty)
+    } yield blockHeader.toApi(deps, AVector.empty)
 
   def getBlockEntryWithoutTxsAction(hash: BlockEntry.Hash)(
       implicit ec: ExecutionContext): DBActionR[Option[BlockEntry]] =
@@ -236,7 +234,7 @@ object BlockQueries extends StrictLogging {
 
   /** Inserts block_headers or ignore them if there is a primary key conflict */
   // scalastyle:off magic.number
-  def insertBlockHeaders(blocks: Iterable[BlockHeader]): DBActionW[Int] =
+  def insertBlockHeaders(blocks: AVector[BlockHeader]): DBActionW[Int] =
     QuerySplitter.splitUpdates(rows = blocks, columnsPerRow = 14) { (blocks, placeholder) =>
       val query =
         s"""
@@ -288,28 +286,15 @@ object BlockQueries extends StrictLogging {
   /** Transactionally write blocks */
   @SuppressWarnings(
     Array("org.wartremover.warts.MutableDataStructures", "org.wartremover.warts.NonUnitStatements"))
-  def insertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int): DBActionRWT[Unit] = {
-    val blockDeps    = ListBuffer.empty[BlockDepEntity]
-    val transactions = ListBuffer.empty[TransactionEntity]
-    val inputs       = ListBuffer.empty[InputEntity]
-    val outputs      = ListBuffer.empty[OutputEntity]
-    val blockHeaders = ListBuffer.empty[BlockHeader]
-
-    //build data for all insert queries in single iteration
-    blocks foreach { block =>
-      if (block.height.value != 0) blockDeps addAll block.toBlockDepEntities()
-      transactions addAll block.transactions
-      inputs addAll block.inputs
-      outputs addAll block.outputs
-      blockHeaders addOne block.toBlockHeader(groupNum)
-    }
-
+  def insertBlockEntity(block: BlockEntity, groupNum: Int): DBActionRWT[Unit] = {
     val query =
-      DBIOAction.seq(insertBlockDeps(blockDeps),
-                     insertTransactions(transactions),
-                     insertOutputs(outputs),
-                     insertInputs(inputs),
-                     insertBlockHeaders(blockHeaders))
+      DBIOAction.seq(
+        insertBlockDeps(block.toBlockDepEntities()),
+        insertTransactions(block.transactions),
+        insertOutputs(block.outputs),
+        insertInputs(block.inputs),
+        insertBlockHeaders(AVector(block.toBlockHeader(groupNum)))
+      )
 
     query.transactionally
   }
@@ -321,7 +306,7 @@ object BlockQueries extends StrictLogging {
       SELECT block_timestamp FROM  block_headers
       WHERE chain_from = $fromGroup AND chain_to = $toGroup AND block_timestamp > $after
       ORDER BY block_timestamp
-    """.asAS[TimeStamp]
+    """.asAV[TimeStamp]
   }
 
   /**
@@ -356,7 +341,7 @@ object BlockQueries extends StrictLogging {
     //build queries for each chainFrom-chainTo and merge them into a single UNION query
     val unions: String =
       Array
-        .fill(groupSetting.groupIndexes.size)(maxBlockTimestampForMaxHeightForChainSQL)
+        .fill(groupSetting.groupIndexes.length)(maxBlockTimestampForMaxHeightForChainSQL)
         .mkString("UNION")
 
     //fetch maximum `block_timestamp` and sum all `heights` for all unions
@@ -380,7 +365,7 @@ object BlockQueries extends StrictLogging {
     SQLActionBuilder(
       queryParts = query,
       unitPConv  = parameters
-    ).asAS[Option[(TimeStamp, Height)]].oneOrNone
+    ).asAV[Option[(TimeStamp, Height)]].oneOrNone
   }
 
   /**
@@ -393,10 +378,10 @@ object BlockQueries extends StrictLogging {
     *         Collection items will be `Some(height)` when
     *         `GroupIndex` pair exists, else `None`.
     * */
-  def maxHeight(chainIndexes: Iterable[(GroupIndex, GroupIndex)])(
-      implicit ec: ExecutionContext): DBActionR[ArraySeq[Option[Height]]] =
+  def maxHeight(chainIndexes: AVector[(GroupIndex, GroupIndex)])(
+      implicit ec: ExecutionContext): DBActionR[AVector[Option[Height]]] =
     if (chainIndexes.isEmpty) {
-      DBIOAction.successful(ArraySeq.empty)
+      DBIOAction.successful(AVector.empty)
     } else {
       //Parameter index is used for ordering the output collection
       def maxHeightSQL(index: Int): String =
@@ -409,7 +394,7 @@ object BlockQueries extends StrictLogging {
 
       val query =
         Array
-          .tabulate(chainIndexes.size)(maxHeightSQL)
+          .tabulate(chainIndexes.length)(maxHeightSQL)
           .mkString("UNION ALL")
 
       val parameters: SetParameter[Unit] =
@@ -424,15 +409,16 @@ object BlockQueries extends StrictLogging {
         SQLActionBuilder(
           queryParts = query,
           unitPConv  = parameters
-        ).asAS[(Option[Height], Int)]
+        ).asAV[(Option[Height], Int)]
 
       //Sort by index and then return just the heights
       queryResult.map(_.sortBy(_._2).map(_._1))
     }
 
   /** Pairs input to it's output value */
-  def maxHeightZipped(chainIndexes: Iterable[(GroupIndex, GroupIndex)])(
+  def maxHeightZipped(chainIndexes: AVector[(GroupIndex, GroupIndex)])(
       implicit ec: ExecutionContext)
-    : DBActionR[ArraySeq[(Option[Height], (GroupIndex, GroupIndex))]] =
-    maxHeight(chainIndexes).map(_.zip(chainIndexes))
+    : DBActionR[AVector[(Option[Height], (GroupIndex, GroupIndex))]] =
+    //TODO Add `zip` to `AVector`
+    maxHeight(chainIndexes).map(avector => AVector.from(avector.toIterable.zip(chainIndexes)))
 }

@@ -16,7 +16,6 @@
 
 package org.alephium.explorer.service
 
-import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import slick.basic.DatabaseConfig
@@ -26,6 +25,7 @@ import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.dao.BlockDao
+import org.alephium.util.AVector
 
 trait BlockService {
   def getLiteBlockByHash(hash: BlockEntry.Hash)(
@@ -34,7 +34,7 @@ trait BlockService {
 
   def getBlockTransactions(hash: BlockEntry.Hash, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]]
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]]
 
   def listBlocks(pagination: Pagination)(implicit ec: ExecutionContext,
                                          dc: DatabaseConfig[PostgresProfile],
@@ -42,11 +42,11 @@ trait BlockService {
 
   def listMaxHeights()(implicit cache: BlockCache,
                        groupSetting: GroupSetting,
-                       ec: ExecutionContext): Future[ArraySeq[PerChainHeight]]
+                       ec: ExecutionContext): Future[AVector[PerChainHeight]]
 
   def getAverageBlockTime()(implicit cache: BlockCache,
                             groupSetting: GroupSetting,
-                            ec: ExecutionContext): Future[ArraySeq[PerChainDuration]]
+                            ec: ExecutionContext): Future[AVector[PerChainDuration]]
 }
 
 object BlockService extends BlockService {
@@ -58,7 +58,7 @@ object BlockService extends BlockService {
 
   def getBlockTransactions(hash: BlockEntry.Hash, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]] =
     BlockDao.getTransactions(hash, pagination)
 
   def listBlocks(pagination: Pagination)(implicit ec: ExecutionContext,
@@ -71,7 +71,7 @@ object BlockService extends BlockService {
 
   def listMaxHeights()(implicit cache: BlockCache,
                        groupSetting: GroupSetting,
-                       ec: ExecutionContext): Future[ArraySeq[PerChainHeight]] =
+                       ec: ExecutionContext): Future[AVector[PerChainHeight]] =
     BlockDao
       .latestBlocks()
       .map(_.map {
@@ -82,7 +82,7 @@ object BlockService extends BlockService {
 
   def getAverageBlockTime()(implicit cache: BlockCache,
                             groupSetting: GroupSetting,
-                            ec: ExecutionContext): Future[ArraySeq[PerChainDuration]] =
+                            ec: ExecutionContext): Future[AVector[PerChainDuration]] =
     BlockDao
       .getAverageBlockTime()
       .map(_.map {

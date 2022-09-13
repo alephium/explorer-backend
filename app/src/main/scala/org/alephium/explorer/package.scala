@@ -16,11 +16,11 @@
 
 package org.alephium
 
-import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
 import org.alephium.crypto.{Blake2b, Blake3}
+import org.alephium.util.AVector
 
 package object explorer {
   @inline @specialized def sideEffect[E](effect: E): Unit = {
@@ -39,9 +39,9 @@ package object explorer {
   type BlockHash = Blake3
   val BlockHash: Blake3.type = Blake3
 
-  def foldFutures[A, B: ClassTag](seqA: ArraySeq[A])(f: A => Future[B])(
-      implicit executionContext: ExecutionContext): Future[ArraySeq[B]] =
-    seqA.foldLeft(Future.successful(ArraySeq.empty[B])) {
+  def foldFutures[A, B: ClassTag](seqA: AVector[A])(f: A => Future[B])(
+      implicit executionContext: ExecutionContext): Future[AVector[B]] =
+    seqA.fold(Future.successful(AVector.empty[B])) {
       case (acc, a) => acc.flatMap(p => f(a).map(b => p :+ b))
     }
 }

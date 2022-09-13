@@ -16,7 +16,6 @@
 
 package org.alephium.explorer.service
 
-import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import slick.basic.DatabaseConfig
@@ -26,7 +25,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.dao.{TransactionDao, UnconfirmedTxDao}
 import org.alephium.protocol.Hash
-import org.alephium.util.U256
+import org.alephium.util.{AVector, U256}
 
 trait TransactionService {
   def getTransaction(transactionHash: Transaction.Hash)(
@@ -39,15 +38,15 @@ trait TransactionService {
 
   def getTransactionsByAddress(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]]
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]]
 
   def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]]
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]]
 
   def listUnconfirmedTransactionsByAddress(address: Address)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]]
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[UnconfirmedTransaction]]
 
   def getTransactionsNumberByAddress(address: Address)(
       implicit ec: ExecutionContext,
@@ -62,33 +61,32 @@ trait TransactionService {
 
   def getTotalNumber()(implicit cache: TransactionCache): Int
 
-  def areAddressesActive(addresses: ArraySeq[Address])(
+  def areAddressesActive(addresses: AVector[Address])(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]]
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Boolean]]
 
   def listUnconfirmedTransactions(pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]]
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[UnconfirmedTransaction]]
 
-  def listTokens(pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Hash]]
+  def listTokens(pagination: Pagination)(implicit ec: ExecutionContext,
+                                         dc: DatabaseConfig[PostgresProfile]): Future[AVector[Hash]]
 
   def listTokenTransactions(token: Hash, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]]
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]]
 
   def listTokenAddresses(token: Hash, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Address]]
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Address]]
 
   def listAddressTokens(address: Address)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Hash]]
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Hash]]
 
   def listAddressTokenTransactions(address: Address, token: Hash, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]]
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]]
 }
 
 object TransactionService extends TransactionService {
@@ -112,17 +110,17 @@ object TransactionService extends TransactionService {
 
   def getTransactionsByAddress(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]] =
     TransactionDao.getByAddress(address, pagination)
 
   def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]] =
     TransactionDao.getByAddressSQL(address, pagination)
 
   def listUnconfirmedTransactionsByAddress(address: Address)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]] = {
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[UnconfirmedTransaction]] = {
     UnconfirmedTxDao.listByAddress(address)
   }
 
@@ -142,38 +140,38 @@ object TransactionService extends TransactionService {
 
   def listUnconfirmedTransactions(pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]] = {
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[UnconfirmedTransaction]] = {
     UnconfirmedTxDao.list(pagination)
   }
 
   def listTokens(pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Hash]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Hash]] =
     TransactionDao.listTokens(pagination)
 
   def listTokenTransactions(token: Hash, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]] =
     TransactionDao.listTokenTransactions(token, pagination)
 
   def listAddressTokens(address: Address)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Hash]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Hash]] =
     TransactionDao.listAddressTokens(address)
 
   def listTokenAddresses(token: Hash, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Address]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Address]] =
     TransactionDao.listTokenAddresses(token, pagination)
 
   def listAddressTokenTransactions(address: Address, token: Hash, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]] =
     TransactionDao.listAddressTokenTransactions(address, token, pagination)
 
-  def areAddressesActive(addresses: ArraySeq[Address])(
+  def areAddressesActive(addresses: AVector[Address])(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Boolean]] =
     TransactionDao.areAddressesActive(addresses)
 
   def getTotalNumber()(implicit cache: TransactionCache): Int =
