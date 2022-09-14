@@ -16,21 +16,38 @@
 
 package org.alephium.explorer.persistence
 
+import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
+
 import scala.concurrent.Future
 
+import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
-trait DBRunner {
+trait DBRunner extends StrictLogging {
   def databaseConfig: DatabaseConfig[PostgresProfile]
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
-  def run[R, E <: Effect](action: DBAction[R, E]): Future[R] =
+  def run[R, E <: Effect](action: DBAction[R, E]): Future[R] = {
+    DBRunner.incrementCount()
     databaseConfig.db.run(action)
+  }
 }
 
-object DBRunner {
+object DBRunner extends StrictLogging {
+
+  private val ioCount     = new AtomicInteger(0)
+  private val lastLogTime = new AtomicLong(System.currentTimeMillis())
+
+  def incrementCount() = {
+    val count    = ioCount.incrementAndGet()
+    val lastLog  = lastLogTime.get()
+    val timePast = System.currentTimeMillis() - lastLog
+    if (timePast / 1000D > 1 && lastLogTime.compareAndSet(lastLog, System.currentTimeMillis()))
+      logger.info(s"IO Count: $count")
+  }
+
   @inline def apply(dc: DatabaseConfig[PostgresProfile]): DBRunner =
     new DBRunner {
       override def databaseConfig = dc
@@ -38,13 +55,17 @@ object DBRunner {
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   def run[R, E <: Effect](databaseConfig: DatabaseConfig[PostgresProfile])(
-      action: DBAction[R, E]): Future[R] =
+      action: DBAction[R, E]): Future[R] = {
+    DBRunner.incrementCount()
     databaseConfig.db.run(action)
+  }
 
   /** Temporary function until all things are made stateless */
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def run[R, E <: Effect](action: DBAction[R, E])(
-      implicit databaseConfig: DatabaseConfig[PostgresProfile]): Future[R] =
+      implicit databaseConfig: DatabaseConfig[PostgresProfile]): Future[R] = {
+    DBRunner.incrementCount()
     databaseConfig.db.run(action)
+  }
 
 }
