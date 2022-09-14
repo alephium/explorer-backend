@@ -1,11 +1,13 @@
 FROM adoptopenjdk/openjdk11:jre-11.0.11_9
-# adoptopenjdk/openjdk11:jre is no longer available for arm/v7?
 
 ARG RELEASE=0.0.0
 
-RUN curl -L https://github.com/alephium/explorer-backend/releases/download/v${RELEASE}/explorer-backend-${RELEASE}.jar -o /explorer-backend.jar
+RUN curl -L https://github.com/alephium/explorer-backend/releases/download/v${RELEASE}/explorer-backend-${RELEASE}.jar -o /explorer-backend.jar && \
+ mkdir -p /alephium-home && usermod -d /alephium-home nobody && chown nobody /alephium-home && \
+  mkdir -p ~nobody/.explorer && chown nobody ~nobody/.explorer
 
 COPY entrypoint.sh /entrypoint.sh
+
 
 # http
 EXPOSE 9090
@@ -18,3 +20,4 @@ ENV JAVA_GC_OPTS=""
 ENV JAVA_EXTRA_OPTS=""
 
 ENTRYPOINT /entrypoint.sh
+
