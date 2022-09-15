@@ -16,11 +16,13 @@
 
 package org.alephium.explorer.persistence.queries.result
 
+import scala.collection.immutable.ArraySeq
+
 import slick.jdbc.{GetResult, PositionedResult}
 
 import org.alephium.explorer.api.model.{BlockEntry, Transaction}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.util.{AVector, TimeStamp}
+import org.alephium.util.TimeStamp
 
 object TxByAddressQR {
 
@@ -45,7 +47,7 @@ object TxByAddressQR {
     )
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def apply(tuples: AVector[Tuple]): AVector[TxByAddressQR] =
+  def apply(tuples: ArraySeq[Tuple]): ArraySeq[TxByAddressQR] =
     tuples map apply
 
 }

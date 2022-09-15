@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.web
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util._
 
@@ -33,7 +34,6 @@ import org.alephium.explorer.api.UtilsEndpoints
 import org.alephium.explorer.api.model.LogbackValue
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.service.{BlockFlowClient, IndexChecker, SanityChecker}
-import org.alephium.util.AVector
 
 class UtilsServer()(implicit val executionContext: ExecutionContext,
                     dc: DatabaseConfig[PostgresProfile],
@@ -74,7 +74,7 @@ class UtilsServer()(implicit val executionContext: ExecutionContext,
 
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   private def updateLoggerContext(
-      values: AVector[LogbackValue]
+      values: ArraySeq[LogbackValue]
   ): Either[ApiError[_ <: StatusCode], Unit] = {
     val loggerFactory = LoggerFactory.getILoggerFactory().asInstanceOf[LoggerContext]
     loggerFactory match {

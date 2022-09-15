@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.persistence.schema
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
@@ -25,7 +27,7 @@ import org.alephium.explorer.api.model.{Address, BlockEntry, Token, Transaction}
 import org.alephium.explorer.persistence.DBActionW
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.util.{AVector, TimeStamp, U256}
+import org.alephium.util.{TimeStamp, U256}
 
 object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
 
@@ -38,13 +40,13 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
     def key: Rep[Hash]                           = column[Hash]("key", O.SqlType("BYTEA"))
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
-    def address: Rep[Address]               = column[Address]("address")
-    def tokens: Rep[Option[AVector[Token]]] = column[Option[AVector[Token]]]("tokens")
-    def mainChain: Rep[Boolean]             = column[Boolean]("main_chain")
-    def lockTime: Rep[Option[TimeStamp]]    = column[Option[TimeStamp]]("lock_time")
-    def message: Rep[Option[ByteString]]    = column[Option[ByteString]]("message")
-    def outputOrder: Rep[Int]               = column[Int]("output_order")
-    def txOrder: Rep[Int]                   = column[Int]("tx_order")
+    def address: Rep[Address]                = column[Address]("address")
+    def tokens: Rep[Option[ArraySeq[Token]]] = column[Option[ArraySeq[Token]]]("tokens")
+    def mainChain: Rep[Boolean]              = column[Boolean]("main_chain")
+    def lockTime: Rep[Option[TimeStamp]]     = column[Option[TimeStamp]]("lock_time")
+    def message: Rep[Option[ByteString]]     = column[Option[ByteString]]("message")
+    def outputOrder: Rep[Int]                = column[Int]("output_order")
+    def txOrder: Rep[Int]                    = column[Int]("tx_order")
     def spentFinalized: Rep[Option[Transaction.Hash]] =
       column[Option[Transaction.Hash]]("spent_finalized", O.Default(None))
 

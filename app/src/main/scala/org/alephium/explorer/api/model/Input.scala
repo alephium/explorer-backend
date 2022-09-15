@@ -16,19 +16,22 @@
 
 package org.alephium.explorer.api.model
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.api.Json.u256ReadWriter
 import org.alephium.json.Json._
-import org.alephium.util.{AVector, U256}
+import org.alephium.util.U256
+
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 final case class Input(
     outputRef: OutputRef,
     unlockScript: Option[ByteString] = None,
     address: Option[Address]         = None,
     attoAlphAmount: Option[U256]     = None,
-    tokens: Option[AVector[Token]]   = None
+    tokens: Option[ArraySeq[Token]]  = None
 )
 
 object Input {

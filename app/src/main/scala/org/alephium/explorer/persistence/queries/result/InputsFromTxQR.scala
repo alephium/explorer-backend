@@ -16,13 +16,15 @@
 
 package org.alephium.explorer.persistence.queries.result
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 import slick.jdbc.{GetResult, PositionedResult}
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.util.{AVector, U256}
+import org.alephium.util.U256
 
 object InputsFromTxQR {
   implicit val inputsFromTxQRGetResult: GetResult[InputsFromTxQR] =
@@ -47,7 +49,7 @@ final case class InputsFromTxQR(txHash: Transaction.Hash,
                                 unlockScript: Option[ByteString],
                                 address: Option[Address],
                                 amount: Option[U256],
-                                token: Option[AVector[Token]]) {
+                                token: Option[ArraySeq[Token]]) {
 
   def toApiInput(): Input =
     Input(outputRef      = OutputRef(hint, outputRefKey),

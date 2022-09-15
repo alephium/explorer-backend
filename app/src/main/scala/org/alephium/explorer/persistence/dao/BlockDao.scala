@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.dao
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import slick.basic.DatabaseConfig
@@ -37,7 +38,7 @@ import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.model.ChainIndex
-import org.alephium.util.{AVector, Duration, TimeStamp}
+import org.alephium.util.{Duration, TimeStamp}
 
 object BlockDao {
 
@@ -48,7 +49,7 @@ object BlockDao {
 
   def getTransactions(hash: BlockEntry.Hash, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     run(getTransactionsByBlockHashWithPagination(hash, pagination))
 
   def get(hash: BlockEntry.Hash)(implicit ec: ExecutionContext,
@@ -57,19 +58,25 @@ object BlockDao {
 
   def getAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[AVector[BlockEntry]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[BlockEntry]] =
     run(getAtHeightAction(fromGroup, toGroup, height))
 
   /** Inserts a single block transactionally via SQL */
   def insert(block: BlockEntity)(implicit ec: ExecutionContext,
                                  dc: DatabaseConfig[PostgresProfile],
                                  groupSetting: GroupSetting): Future[Unit] =
-    run(insertBlockEntity(block, groupSetting.groupNum)).map(_ => ())
+    insertAll(ArraySeq(block))
+
+  /** Inserts a multiple blocks transactionally via SQL */
+  def insertAll(blocks: ArraySeq[BlockEntity])(implicit ec: ExecutionContext,
+                                               dc: DatabaseConfig[PostgresProfile],
+                                               groupSetting: GroupSetting): Future[Unit] =
+    run(insertBlockEntity(blocks, groupSetting.groupNum)).map(_ => ())
 
   def listMainChain(pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
-      cache: BlockCache): Future[(AVector[BlockEntryLite], Int)] = {
+      cache: BlockCache): Future[(ArraySeq[BlockEntryLite], Int)] = {
     run(listMainChainHeadersWithTxnNumberSQL(pagination)).map { blockEntries =>
       (blockEntries, cache.getMainChainBlockCount())
     }
@@ -77,14 +84,15 @@ object BlockDao {
 
   def listIncludingForks(from: TimeStamp, to: TimeStamp)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[AVector[BlockEntryLite]] = {
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[BlockEntryLite]] = {
     run(sql"""
       SELECT *
       FROM block_headers
       WHERE block_timestamp >= $from
       AND block_timestamp <= $to
       ORDER BY block_timestamp DESC, hash
-      """.asAV[BlockHeader]).map(_.map(_.toLiteApi))
+
+      """.asASE[BlockHeader](blockHeaderGetResult)).map(_.map(_.toLiteApi))
   }
 
   def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex)(
@@ -115,8 +123,7 @@ object BlockDao {
               blocks
                 .map(_.hash)
                 .filterNot(_ === block.hash)
-                .map(updateMainChainStatusAction(_, false))
-                .toIterable)
+                .map(updateMainChainStatusAction(_, false)))
             _ <- updateMainChainStatusAction(hash, true)
           } yield {
             block.parent.map(Right(_))
@@ -145,12 +152,12 @@ object BlockDao {
 
   def latestBlocks()(implicit cache: BlockCache,
                      groupSetting: GroupSetting,
-                     ec: ExecutionContext): Future[AVector[(ChainIndex, LatestBlock)]] =
+                     ec: ExecutionContext): Future[ArraySeq[(ChainIndex, LatestBlock)]] =
     cache.getAllLatestBlocks()
 
   def getAverageBlockTime()(implicit cache: BlockCache,
                             groupSetting: GroupSetting,
-                            ec: ExecutionContext): Future[AVector[(ChainIndex, Duration)]] =
+                            ec: ExecutionContext): Future[ArraySeq[(ChainIndex, Duration)]] =
     cache.getAllBlockTimes(groupSetting.chainIndexes)
 
   def updateLatestBlock(block: BlockEntity)(implicit ec: ExecutionContext,

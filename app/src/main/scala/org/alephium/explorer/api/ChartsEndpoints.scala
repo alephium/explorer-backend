@@ -16,15 +16,15 @@
 
 package org.alephium.explorer.api
 
+import scala.collection.immutable.ArraySeq
+
 import sttp.tapir._
 import sttp.tapir.generic.auto._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
-import org.alephium.api.UtilJson._
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.api.model.{Hashrate, IntervalType, PerChainTimedCount, TimedCount}
-import org.alephium.util.AVector
 
 // scalastyle:off magic.number
 trait ChartsEndpoints extends BaseEndpoint with QueryParams {
@@ -36,30 +36,30 @@ trait ChartsEndpoints extends BaseEndpoint with QueryParams {
       .tag("Charts")
       .in("charts")
 
-  val getHashrates: BaseEndpoint[(TimeInterval, IntervalType), AVector[Hashrate]] =
+  val getHashrates: BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[Hashrate]] =
     chartsEndpoint.get
       .in("hashrates")
       .in(timeIntervalQuery)
       .in(intervalTypeQuery)
-      .out(jsonBody[AVector[Hashrate]])
+      .out(jsonBody[ArraySeq[Hashrate]])
       .description(s"`interval-type` query param: $intervalTypes")
       .summary("Get hashrate chart in H/s")
 
-  val getAllChainsTxCount: BaseEndpoint[(TimeInterval, IntervalType), AVector[TimedCount]] =
+  val getAllChainsTxCount: BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[TimedCount]] =
     chartsEndpoint.get
       .in("transactions-count")
       .in(timeIntervalQuery)
       .in(intervalTypeQuery)
-      .out(jsonBody[AVector[TimedCount]])
+      .out(jsonBody[ArraySeq[TimedCount]])
       .description(s"`interval-type` query param: ${intervalTypes}")
       .summary("Get transaction count history")
 
-  val getPerChainTxCount: BaseEndpoint[(TimeInterval, IntervalType), AVector[PerChainTimedCount]] =
+  val getPerChainTxCount: BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[PerChainTimedCount]] =
     chartsEndpoint.get
       .in("transactions-count-per-chain")
       .in(timeIntervalQuery)
       .in(intervalTypeQuery)
-      .out(jsonBody[AVector[PerChainTimedCount]])
+      .out(jsonBody[ArraySeq[PerChainTimedCount]])
       .description(s"`interval-type` query param: ${intervalTypes}")
       .summary("Get transaction count history per chain")
 }

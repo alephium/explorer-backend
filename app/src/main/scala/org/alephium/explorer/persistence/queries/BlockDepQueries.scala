@@ -25,7 +25,6 @@ import org.alephium.explorer.persistence.model.BlockDepEntity
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.util.AVector
 
 object BlockDepQueries {
 
@@ -36,7 +35,7 @@ object BlockDepQueries {
       FROM block_deps
       WHERE hash = $blockHash
       ORDER BY dep_order
-    """.asAV[BlockEntry.Hash]
+    """.asAS[BlockEntry.Hash]
   }
 
   /**
@@ -49,7 +48,7 @@ object BlockDepQueries {
     * <a href="https://scala-slick.org/doc/3.3.3/sql.html#splicing-literal-values">Splicing</a>
     * is not used to insert values so these queries are still cacheable prepared-statements.
     */
-  def insertBlockDeps(deps: AVector[BlockDepEntity]): DBActionW[Int] =
+  def insertBlockDeps(deps: Iterable[BlockDepEntity]): DBActionW[Int] =
     //generate '?' placeholders for the parameterised SQL query
     QuerySplitter.splitUpdates(rows = deps, columnsPerRow = 3) { (deps, placeholder) =>
       val query =

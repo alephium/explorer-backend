@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.queries
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 import scala.util.Random
 
@@ -40,7 +41,7 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.protocol.ALPH
-import org.alephium.util.{AVector, Duration, TimeStamp, U256}
+import org.alephium.util.{Duration, TimeStamp, U256}
 
 class TransactionQueriesSpec
     extends AlephiumSpec
@@ -65,7 +66,7 @@ class TransactionQueriesSpec
     val output3 = output(address, ALPH.alph(3), Some(TimeStamp.now().plusMinutesUnsafe(10)))
     val output4 = output(address, ALPH.alph(4), Some(TimeStamp.now().plusMinutesUnsafe(10)))
 
-    run(OutputSchema.table ++= AVector(output1, output2, output3, output4)).futureValue
+    run(OutputSchema.table ++= ArraySeq(output1, output2, output3, output4)).futureValue
 
     val (total, locked) = run(TransactionQueries.getBalanceAction(address)).futureValue
 
@@ -80,7 +81,7 @@ class TransactionQueriesSpec
     val output2 = output(address, ALPH.alph(2), None)
     val input1  = input(output2.hint, output2.key)
 
-    run(OutputSchema.table ++= AVector(output1, output2)).futureValue
+    run(OutputSchema.table ++= ArraySeq(output1, output2)).futureValue
     run(InputSchema.table += input1).futureValue
 
     val (total, _) = run(TransactionQueries.getBalanceAction(address)).futureValue
@@ -102,7 +103,7 @@ class TransactionQueriesSpec
     val output2 = output(address, ALPH.alph(2), None).copy(mainChain = false)
     val input1  = input(output2.hint, output2.key).copy(mainChain = false)
 
-    run(OutputSchema.table ++= AVector(output1, output2)).futureValue
+    run(OutputSchema.table ++= ArraySeq(output1, output2)).futureValue
     run(InputSchema.table += input1).futureValue
 
     val (total, _) = run(TransactionQueries.getBalanceAction(address)).futureValue
@@ -120,9 +121,9 @@ class TransactionQueriesSpec
     val input2 = input(output3.hint, output3.key).copy(mainChain = false)
     val input3 = input(output4.hint, output4.key)
 
-    val outputs = AVector(output1, output2, output3, output4)
-    val inputs  = AVector(input1, input2, input3)
-    run(TransactionQueries.insertAll(AVector.empty, outputs, inputs)).futureValue
+    val outputs = ArraySeq(output1, output2, output3, output4)
+    val inputs  = ArraySeq(input1, input2, input3)
+    run(TransactionQueries.insertAll(ArraySeq.empty, outputs, inputs)).futureValue
     run(InputUpdateQueries.updateInputs()).futureValue
 
     val totalSQLNoJoin =
@@ -140,10 +141,10 @@ class TransactionQueriesSpec
     val input1 = input(output1.hint, output1.key)
     val input2 = input(output2.hint, output2.key)
 
-    val outputs = AVector(output1)
-    val inputs  = AVector(input1, input2)
+    val outputs = ArraySeq(output1)
+    val inputs  = ArraySeq(input1, input2)
 
-    run(TransactionQueries.insertAll(AVector.empty, outputs, inputs)).futureValue
+    run(TransactionQueries.insertAll(ArraySeq.empty, outputs, inputs)).futureValue
     run(InputUpdateQueries.updateInputs()).futureValue
 
     run(TransactionQueries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 2
@@ -164,16 +165,16 @@ class TransactionQueriesSpec
     val input2  = input(output3.hint, output3.key).copy(mainChain = false)
     val input3  = input(output4.hint, output4.key)
 
-    val outputs = AVector(output1, output2, output3, output4)
-    val inputs  = AVector(input1, input2, input3)
+    val outputs = ArraySeq(output1, output2, output3, output4)
+    val inputs  = ArraySeq(input1, input2, input3)
 
-    run(TransactionQueries.insertAll(AVector.empty, outputs, inputs)).futureValue
+    run(TransactionQueries.insertAll(ArraySeq.empty, outputs, inputs)).futureValue
     run(InputUpdateQueries.updateInputs()).futureValue
 
     val hashesSQLNoJoin =
       run(TransactionQueries.getTxHashesByAddressQuerySQLNoJoin(address, 0, 10)).futureValue
 
-    val expected = AVector(
+    val expected = ArraySeq(
       TxByAddressQR(output1.txHash, output1.blockHash, output1.timestamp, 0),
       TxByAddressQR(output2.txHash, output2.blockHash, output2.timestamp, 0),
       TxByAddressQR(input1.txHash, input1.blockHash, input1.timestamp, 0)
@@ -191,8 +192,8 @@ class TransactionQueriesSpec
     val input1  = input(output2.hint, output2.key)
     val input2  = input(output3.hint, output3.key).copy(mainChain = false)
 
-    val outputs = AVector(output1, output2, output3, output4)
-    val inputs  = AVector(input1, input2)
+    val outputs = ArraySeq(output1, output2, output3, output4)
+    val inputs  = ArraySeq(input1, input2)
 
     run(OutputSchema.table ++= outputs).futureValue
     run(InputSchema.table ++= inputs).futureValue
@@ -214,7 +215,7 @@ class TransactionQueriesSpec
         input.map(_.txHash)
       )
 
-    val expected = AVector(
+    val expected = ArraySeq(
       res(output1, None),
       res(output2, Some(input1)),
       res(output3, None)
@@ -232,13 +233,13 @@ class TransactionQueriesSpec
     val input2  = input(output2.hint, output2.key)
     val input3  = input(output3.hint, output3.key)
 
-    val inputs  = AVector(input1, input2)
-    val outputs = AVector(output1, output2)
+    val inputs  = ArraySeq(input1, input2)
+    val outputs = ArraySeq(output1, output2)
 
     run(OutputSchema.table ++= (outputs :+ output3)).futureValue
     run(InputSchema.table ++= (inputs :+ input3)).futureValue
 
-    val txHashes = AVector(input1.txHash, input2.txHash)
+    val txHashes = ArraySeq(input1.txHash, input2.txHash)
 
     val expected = inputs.zip(outputs).map {
       case (input, output) =>
@@ -266,8 +267,8 @@ class TransactionQueriesSpec
     val output4 = output(addressGen.sample.get, ALPH.alph(3), None)
       .copy(txHash = input1.txHash, blockHash = input1.blockHash, timestamp = input1.timestamp)
 
-    val outputs      = AVector(output1, output2, output3, output4)
-    val inputs       = AVector(input1, input2)
+    val outputs      = ArraySeq(output1, output2, output3, output4)
+    val inputs       = ArraySeq(input1, input2)
     val transactions = outputs.map(transaction)
 
     run(TransactionQueries.insertAll(transactions, outputs, inputs)).futureValue
@@ -276,13 +277,13 @@ class TransactionQueriesSpec
     val to   = timestampMaxValue
     FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from)).futureValue
 
-    def tx(output: OutputEntity, spent: Option[Transaction.Hash], inputs: AVector[Input]) = {
+    def tx(output: OutputEntity, spent: Option[Transaction.Hash], inputs: ArraySeq[Input]) = {
       Transaction(
         output.txHash,
         output.blockHash,
         output.timestamp,
         inputs,
-        AVector(output.toApi(spent)),
+        ArraySeq(output.toApi(spent)),
         1,
         ALPH.alph(1)
       )
@@ -294,16 +295,16 @@ class TransactionQueriesSpec
     val txsNoJoin =
       run(TransactionQueries.getTransactionsByAddressNoJoin(address, Pagination.unsafe(0, 10))).futureValue
 
-    val expected = AVector(
-      tx(output1, None, AVector.empty),
-      tx(output2, Some(input1.txHash), AVector.empty),
-      tx(output4, None, AVector(input1.toApi(output2)))
+    val expected = ArraySeq(
+      tx(output1, None, ArraySeq.empty),
+      tx(output2, Some(input1.txHash), ArraySeq.empty),
+      tx(output4, None, ArraySeq(input1.toApi(output2)))
     ).sortBy(_.timestamp).reverse
 
-    txsSQL.length is 3
-    txsSQL containsAllElementsOf expected
+    txsSQL.size is 3
+    txsSQL should contain allElementsOf expected
 
-    txsSQL containsAllElementsOf txsNoJoin
+    txsSQL should contain allElementsOf txsNoJoin
   }
 
   "output's spent info should only take the input from the main chain " in new Fixture {
@@ -332,8 +333,8 @@ class TransactionQueriesSpec
     val input2 = input(output1.hint, output1.key).copy(txHash = tx2.hash).copy(mainChain = false)
 
     run(OutputSchema.table += output1).futureValue
-    run(InputSchema.table ++= AVector(input1, input2)).futureValue
-    run(TransactionSchema.table ++= AVector(txEntity1)).futureValue
+    run(InputSchema.table ++= ArraySeq(input1, input2)).futureValue
+    run(TransactionSchema.table ++= ArraySeq(txEntity1)).futureValue
 
     val tx = run(TransactionQueries.getTransactionAction(tx1.hash)).futureValue.get
 
@@ -350,18 +351,17 @@ class TransactionQueriesSpec
 
       //insert
       run(TransactionQueries.insertTransactions(existingTransactions)).futureValue is existingTransactions.size
-      run(TransactionSchema.table.result).futureValue containsAllElementsOf existingTransactions
+      run(TransactionSchema.table.result).futureValue should contain allElementsOf existingTransactions
 
       //ignore
       run(TransactionQueries.insertTransactions(updatedTransactions)).futureValue is 0
-      run(TransactionSchema.table.result).futureValue containsAllElementsOf existingTransactions
+      run(TransactionSchema.table.result).futureValue should contain allElementsOf existingTransactions
     }
   }
 
   //https://github.com/alephium/explorer-backend/issues/174
   "return an empty list when not transactions are found - Isssue 174" in new Fixture {
-    run(TransactionQueries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue is AVector
-      .empty[Transaction]
+    run(TransactionQueries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue is ArraySeq.empty
   }
 
   "get total number of main transactions" in new Fixture {
@@ -370,7 +370,7 @@ class TransactionQueriesSpec
     val tx2 = transactionEntityGen().sample.get.copy(mainChain = true)
     val tx3 = transactionEntityGen().sample.get.copy(mainChain = false)
 
-    run(TransactionSchema.table ++= AVector(tx1, tx2, tx3)).futureValue
+    run(TransactionSchema.table ++= ArraySeq(tx1, tx2, tx3)).futureValue
 
     val total = run(TransactionQueries.mainTransactions.length.result).futureValue
     total is 2
@@ -423,14 +423,14 @@ class TransactionQueriesSpec
             run(TransactionQueries.filterExistingAddresses(allAddresses.toSet)).futureValue
 
           //actual address should contain all of existingAddresses
-          actualExisting containsTheSameElementsAs existingAddresses
+          actualExisting should contain theSameElementsAs existingAddresses
 
           //run the boolean query
           val booleanExistingResult =
             run(TransactionQueries.areAddressesActiveAction(allAddresses)).futureValue
 
           //boolean query should output results in the same order as the input addresses
-          (allAddresses.map(actualExisting.contains): AVector[Boolean]) is booleanExistingResult
+          (allAddresses.map(actualExisting.contains): ArraySeq[Boolean]) is booleanExistingResult
 
           //check the boolean query with the existing concurrent query
           run(TransactionQueries.areAddressesActiveAction(allAddresses)).futureValue is booleanExistingResult

@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.queries
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 import scala.math.Ordering.Implicits.infixOrderingOps
 
@@ -31,7 +32,6 @@ import org.alephium.explorer.api.model.{GroupIndex, Height}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema._
-import org.alephium.util.AVector
 
 class BlockQueriesSpec
     extends AlephiumSpec
@@ -46,7 +46,7 @@ class BlockQueriesSpec
     * Finds a block with maximum height. If two blocks have the same
     * height, returns the one with maximum timestamp.
     * */
-  def maxHeight(blocks: AVector[BlockHeader]): Option[BlockHeader] =
+  def maxHeight(blocks: Iterable[BlockHeader]): Option[BlockHeader] =
     blocks.foldLeft(Option.empty[BlockHeader]) {
       case (currentMax, header) =>
         currentMax match {
@@ -54,7 +54,7 @@ class BlockQueriesSpec
             if (header.height > current.height) {
               Some(header)
             } else if (header.height == current.height) {
-              maxTimeStamp(AVector(current, header))
+              maxTimeStamp(Array(current, header))
             } else {
               currentMax
             }
@@ -65,7 +65,7 @@ class BlockQueriesSpec
     }
 
   /** Finds a block with maximum timestamp */
-  def maxTimeStamp(blocks: AVector[BlockHeader]): Option[BlockHeader] =
+  def maxTimeStamp(blocks: Iterable[BlockHeader]): Option[BlockHeader] =
     blocks.foldLeft(Option.empty[BlockHeader]) {
       case (currentMax, header) =>
         currentMax match {
@@ -82,16 +82,16 @@ class BlockQueriesSpec
     }
 
   /** Filter blocks within the given chain */
-  def filterBlocksInChain(blocks: AVector[BlockHeader],
+  def filterBlocksInChain(blocks: Iterable[BlockHeader],
                           chainFrom: GroupIndex,
-                          chainTo: GroupIndex): AVector[BlockHeader] =
+                          chainTo: GroupIndex): Iterable[BlockHeader] =
     blocks.filter { header =>
       header.chainFrom == chainFrom &&
       header.chainTo == chainTo
     }
 
   /** Sum height of all blocks */
-  def sumHeight(blocks: AVector[BlockHeader]): Option[Height] =
+  def sumHeight(blocks: Iterable[BlockHeader]): Option[Height] =
     blocks.foldLeft(Option.empty[Height]) {
       case (currentSum, header) =>
         currentSum match {
@@ -113,11 +113,11 @@ class BlockQueriesSpec
 
       //insert existing
       run(query).futureValue is existing.size
-      run(BlockHeaderSchema.table.result).futureValue containsAllElementsOf existing
+      run(BlockHeaderSchema.table.result).futureValue should contain allElementsOf existing
 
       //insert should ignore existing inputs
       run(BlockQueries.insertBlockHeaders(ignored)).futureValue is 0
-      run(BlockHeaderSchema.table.result).futureValue containsAllElementsOf existing
+      run(BlockHeaderSchema.table.result).futureValue should contain allElementsOf existing
     }
   }
 
@@ -134,34 +134,32 @@ class BlockQueriesSpec
       run(BlockDepsSchema.table.delete).futureValue
 
       //execute insert on blocks and expect all tables get inserted
-      entities.foreach { entity =>
-        run(BlockQueries.insertBlockEntity(entity, groupSetting.groupNum)).futureValue is ()
-      }
+      run(BlockQueries.insertBlockEntity(entities, groupSetting.groupNum)).futureValue is ()
 
       //check block_headers table
       val actualBlockHeaders = run(BlockHeaderSchema.table.result).futureValue
       val expectBlockHeaders = entities.map(_.toBlockHeader(groupSetting.groupNum))
-      actualBlockHeaders containsAllElementsOf expectBlockHeaders
+      actualBlockHeaders should contain allElementsOf expectBlockHeaders
 
       //check transactions table
       val actualTransactions   = run(TransactionSchema.table.result).futureValue
       val expectedTransactions = entities.flatMap(_.transactions)
-      actualTransactions containsAllElementsOf expectedTransactions
+      actualTransactions should contain allElementsOf expectedTransactions
 
       //check inputs table
       val actualInputs   = run(InputSchema.table.result).futureValue
       val expectedInputs = entities.flatMap(_.inputs)
-      actualInputs containsAllElementsOf expectedInputs
+      actualInputs should contain allElementsOf expectedInputs
 
       ////check outputs table
       //val actualOutputs   = run(outputsTable.result).futureValue
       //val expectedOutputs = entities.flatMap(_.outputs)
-      //actualOutputs containsAllElementsOf expectedOutputs
+      //actualOutputs should contain allElementsOf expectedOutputs
 
       //check block_deps table
       val actualDeps        = run(BlockDepsSchema.table.result).futureValue
       val expectedBlockDeps = entities.flatMap(_.toBlockDepEntities())
-      actualDeps containsAllElementsOf expectedBlockDeps
+      actualDeps should contain allElementsOf expectedBlockDeps
 
       //There is no need for testing updates here since updates are already
       //tested each table's individual test-cases.
@@ -266,14 +264,14 @@ class BlockQueriesSpec
   "maxHeight" should {
     "return empty List" when {
       "input is empty" in {
-        run(BlockQueries.maxHeight(AVector.empty)).futureValue is AVector.empty[Option[Height]]
+        run(BlockQueries.maxHeight(Iterable.empty)).futureValue is ArraySeq.empty
       }
     }
 
     "return non-empty List with None values" when {
       "there is no data" in {
         forAll(groupSettingGen) { implicit groupSetting =>
-          val expected: AVector[Option[Height]] = AVector.fill(groupSetting.groupIndexes.size)(None)
+          val expected = ArraySeq.fill(groupSetting.groupIndexes.size)(None)
           run(BlockQueries.maxHeight(groupSetting.groupIndexes)).futureValue is expected
         }
       }

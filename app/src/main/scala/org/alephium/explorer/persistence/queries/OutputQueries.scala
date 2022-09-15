@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.queries
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
 import slick.dbio.DBIOAction
@@ -31,11 +32,11 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.util.{AVector, TimeStamp, U256}
+import org.alephium.util.{TimeStamp, U256}
 
 object OutputQueries {
 
-  def insertOutputs(outputs: AVector[OutputEntity]): DBActionRWT[Unit] =
+  def insertOutputs(outputs: Iterable[OutputEntity]): DBActionRWT[Unit] =
     DBIOAction
       .seq(insertBasicOutputs(outputs),
            insertTxPerAddressFromOutputs(outputs),
@@ -44,7 +45,7 @@ object OutputQueries {
 
   /** Inserts outputs or ignore rows with primary key conflict */
   // scalastyle:off magic.number
-  private def insertBasicOutputs(outputs: AVector[OutputEntity]): DBActionW[Int] =
+  private def insertBasicOutputs(outputs: Iterable[OutputEntity]): DBActionW[Int] =
     QuerySplitter
       .splitUpdates(rows = outputs, columnsPerRow = 14) { (outputs, placeholder) =>
         val query =
@@ -95,7 +96,7 @@ object OutputQueries {
       }
   // scalastyle:on magic.number
 
-  private def insertTxPerAddressFromOutputs(outputs: AVector[OutputEntity]): DBActionW[Int] = {
+  private def insertTxPerAddressFromOutputs(outputs: Iterable[OutputEntity]): DBActionW[Int] = {
     QuerySplitter.splitUpdates(rows = outputs, columnsPerRow = 6) { (outputs, placeholder) =>
       val query =
         s"""
@@ -123,10 +124,10 @@ object OutputQueries {
     }
   }
 
-  private def insertTokensFromOutputs(outputs: AVector[OutputEntity]): DBActionRWT[Unit] = {
+  private def insertTokensFromOutputs(outputs: Iterable[OutputEntity]): DBActionRWT[Unit] = {
     val tokenOutputs = outputs.flatMap { output =>
       output.tokens match {
-        case None => AVector.empty[(Token, OutputEntity)]
+        case None => Iterable.empty
         case Some(tokens) =>
           tokens.map(token => (token, output))
       }
@@ -143,7 +144,7 @@ object OutputQueries {
   }
 
   // scalastyle:off magic.number
-  private def insertTokenOutputs(tokenOutputs: AVector[(Token, OutputEntity)]): DBActionW[Int] = {
+  private def insertTokenOutputs(tokenOutputs: Iterable[(Token, OutputEntity)]): DBActionW[Int] = {
     QuerySplitter.splitUpdates(rows = tokenOutputs, columnsPerRow = 14) {
       (tokenOutputs, placeholder) =>
         val query =
@@ -197,7 +198,7 @@ object OutputQueries {
   // scalastyle:on magic.number
 
   private def insertTransactionTokenFromOutputs(
-      tokenOutputs: AVector[(Token, OutputEntity)]): DBActionW[Int] = {
+      tokenOutputs: Iterable[(Token, OutputEntity)]): DBActionW[Int] = {
     QuerySplitter.splitUpdates(rows = tokenOutputs, columnsPerRow = 6) {
       (tokenOutputs, placeholder) =>
         val query =
@@ -227,7 +228,7 @@ object OutputQueries {
   }
 
   private def insertTokenPerAddressFromOutputs(
-      tokenOutputs: AVector[(Token, OutputEntity)]): DBActionW[Int] = {
+      tokenOutputs: Iterable[(Token, OutputEntity)]): DBActionW[Int] = {
     QuerySplitter.splitUpdates(rows = tokenOutputs, columnsPerRow = 7) {
       (tokenOutputs, placeholder) =>
         val query =
@@ -260,16 +261,14 @@ object OutputQueries {
 
   @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
   private def insertTokenInfoFromOutputs(
-      tokenOutputs: AVector[(Token, OutputEntity)]): DBActionW[Int] = {
-    //TODO introduce a `groupBy` that return an `AVector`?
-    val tokens = AVector.from(
-      tokenOutputs
-        .groupBy { case (token, _) => token.id }
-        .map {
-          case (token, groups) =>
-            val timestamp = groups.map { case (_, output) => output.timestamp }.max
-            (token, timestamp)
-        })
+      tokenOutputs: Iterable[(Token, OutputEntity)]): DBActionW[Int] = {
+    val tokens = tokenOutputs
+      .groupBy { case (token, _) => token.id }
+      .map {
+        case (token, groups) =>
+          val timestamp = groups.map { case (_, output) => output.timestamp }.max
+          (token, timestamp)
+      }
 
     QuerySplitter.splitUpdates(rows = tokens, columnsPerRow = 2) { (tokens, placeholder) =>
       val query =
@@ -297,7 +296,8 @@ object OutputQueries {
     }
   }
 
-  def outputsFromTxsSQL(txHashes: AVector[Transaction.Hash]): DBActionR[AVector[OutputsFromTxQR]] =
+  def outputsFromTxsSQL(
+      txHashes: ArraySeq[Transaction.Hash]): DBActionR[ArraySeq[OutputsFromTxQR]] =
     if (txHashes.nonEmpty) {
       val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
       sql"""
@@ -318,12 +318,12 @@ object OutputQueries {
                               AND inputs.main_chain = true
           WHERE outputs.tx_hash IN (#$values)
             AND outputs.main_chain = true
-        """.asAV[OutputsFromTxQR]
+        """.asAS[OutputsFromTxQR]
     } else {
-      DBIOAction.successful(AVector.empty)
+      DBIOAction.successful(ArraySeq.empty)
     }
 
-  def outputsFromTxsSQLAS(txHashes: AVector[Transaction.Hash]): DBActionSR[OutputsFromTxQR] =
+  def outputsFromTxsSQLAS(txHashes: ArraySeq[Transaction.Hash]): DBActionSR[OutputsFromTxQR] =
     if (txHashes.nonEmpty) {
       val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
       sql"""
@@ -344,15 +344,15 @@ object OutputQueries {
                               AND inputs.main_chain = true
           WHERE outputs.tx_hash IN (#$values)
             AND outputs.main_chain = true
-        """.asAV[OutputsFromTxQR]
+        """.asAS[OutputsFromTxQR]
     } else {
-      DBIOAction.successful(AVector.empty)
+      DBIOAction.successful(ArraySeq.empty)
     }
 
   def outputsFromTxsNoJoin(
-      hashes: AVector[(Transaction.Hash, BlockEntry.Hash)]): DBActionR[AVector[OutputsFromTxQR]] =
+      hashes: ArraySeq[(Transaction.Hash, BlockEntry.Hash)]): DBActionR[ArraySeq[OutputsFromTxQR]] =
     if (hashes.nonEmpty) {
-      val params = paramPlaceholderTuple2(1, hashes.length)
+      val params = paramPlaceholderTuple2(1, hashes.size)
 
       val query =
         s"""
@@ -382,9 +382,9 @@ object OutputQueries {
       SQLActionBuilder(
         queryParts = query,
         unitPConv  = parameters
-      ).asAV[OutputsFromTxQR]
+      ).asAS[OutputsFromTxQR]
     } else {
-      DBIOAction.successful(AVector.empty)
+      DBIOAction.successful(ArraySeq.empty)
     }
 
   def getOutputsQuery(txHash: Transaction.Hash, blockHash: BlockEntry.Hash): DBActionSR[OutputsQR] =
@@ -402,7 +402,7 @@ object OutputQueries {
         WHERE tx_hash = $txHash
           AND block_hash = $blockHash
         ORDER BY output_order
-      """.asAV[OutputsQR]
+      """.asAS[OutputsQR]
 
   /** Get main chain [[org.alephium.explorer.persistence.model.OutputEntity]]s ordered by timestamp */
   def getMainChainOutputs(ascendingOrder: Boolean): DBActionSR[OutputEntity] = {
@@ -426,7 +426,7 @@ object OutputQueries {
       FROM outputs
       WHERE main_chain = true
       ORDER BY block_timestamp #${if (ascendingOrder) "" else "DESC"}
-      """.asAV[OutputEntity]
+      """.asASE[OutputEntity](outputGetResult)
   }
 
   /** Checks that [[getTxnHash]] uses both indexes for the given key */
@@ -437,12 +437,12 @@ object OutputQueries {
     key match {
       case Some(key) =>
         getTxnHashSQL(key).explainAnalyze() map { explain =>
-          val explainString               = explain.mkString("")
+          val explainString               = explain.mkString
           val outputs_pk_used             = explainString contains "outputs_pk"
           val outputs_main_chain_idx_used = explainString contains "outputs_main_chain_idx"
           val passed                      = outputs_pk_used && outputs_main_chain_idx_used
           val message =
-            AVector(
+            ArraySeq(
               s"Used outputs_main_chain_idx = $outputs_main_chain_idx_used",
               s"Used outputs_pk             = $outputs_pk_used"
             )
@@ -462,7 +462,7 @@ object OutputQueries {
   }
 
   def getTxnHash(key: Hash): DBActionSR[Transaction.Hash] =
-    getTxnHashSQL(key).asAV[Transaction.Hash]
+    getTxnHashSQL(key).asAS[Transaction.Hash]
 
   /** Fetch `tx_hash` for keys where `main_chain` is true */
   def getTxnHashSQL(key: Hash): SQLActionBuilder =
@@ -496,5 +496,5 @@ object OutputQueries {
         AND outputs.address = $address
         AND outputs.main_chain = true
         AND inputs.block_hash IS NULL;
-    """.asAV[(Option[U256], Option[U256])].exactlyOne
+    """.asAS[(Option[U256], Option[U256])].exactlyOne
 }

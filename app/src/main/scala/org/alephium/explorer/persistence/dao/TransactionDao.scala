@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.dao
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import slick.basic.DatabaseConfig
@@ -26,7 +27,7 @@ import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries.TokenQueries._
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.protocol.Hash
-import org.alephium.util.{AVector, U256}
+import org.alephium.util.U256
 
 object TransactionDao {
 
@@ -42,12 +43,12 @@ object TransactionDao {
 
   def getByAddress(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     run(getTransactionsByAddressNoJoin(address, pagination))
 
   def getByAddressSQL(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     run(getTransactionsByAddressSQL(address, pagination))
 
   def getNumberByAddressSQLNoJoin(address: Address)(
@@ -64,30 +65,30 @@ object TransactionDao {
       dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
     run(getTokenBalanceAction(address, token))
 
-  def areAddressesActive(addresses: AVector[Address])(
+  def areAddressesActive(addresses: ArraySeq[Address])(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Boolean]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]] =
     run(areAddressesActiveAction(addresses))
 
   def listTokens(pagination: Pagination)(
-      implicit dc: DatabaseConfig[PostgresProfile]): Future[AVector[Hash]] =
+      implicit dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Hash]] =
     run(listTokensAction(pagination))
 
   def listTokenTransactions(token: Hash, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     run(getTransactionsByToken(token, pagination))
 
   def listTokenAddresses(token: Hash, pagination: Pagination)(
-      implicit dc: DatabaseConfig[PostgresProfile]): Future[AVector[Address]] =
+      implicit dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Address]] =
     run(getAddressesByToken(token, pagination))
 
   def listAddressTokens(address: Address)(
-      implicit dc: DatabaseConfig[PostgresProfile]): Future[AVector[Hash]] =
+      implicit dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Hash]] =
     run(listAddressTokensAction(address))
 
   def listAddressTokenTransactions(address: Address, token: Hash, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[AVector[Transaction]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     run(getTokenTransactionsByAddress(address, token, pagination))
 }

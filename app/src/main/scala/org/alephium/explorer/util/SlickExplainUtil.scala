@@ -23,8 +23,6 @@ import slick.jdbc.SQLActionBuilder
 import slick.sql.{FixedSqlStreamingAction, SqlStreamingAction}
 
 import org.alephium.explorer.persistence.DBActionR
-import org.alephium.explorer.util.SlickUtil._
-import org.alephium.util.AVector
 
 object SlickExplainUtil {
 
@@ -32,11 +30,11 @@ object SlickExplainUtil {
   implicit class SQLActionBuilderImplicits(sql: SQLActionBuilder) {
 
     /** Adds `EXPLAIN ANALYZE` to head query */
-    def explainAnalyze(): SqlStreamingAction[AVector[String], String, Effect.Read] =
+    def explainAnalyze(): SqlStreamingAction[Vector[String], String, Effect.Read] =
       alterHeadQuery(sql, "EXPLAIN ANALYZE")
 
     /** Adds `EXPLAIN` to head query */
-    def explain(): SqlStreamingAction[AVector[String], String, Effect.Read] =
+    def explain(): SqlStreamingAction[Vector[String], String, Effect.Read] =
       alterHeadQuery(sql, "EXPLAIN")
   }
 
@@ -45,14 +43,14 @@ object SlickExplainUtil {
       sql: FixedSqlStreamingAction[R, T, E]) {
 
     /** Adds `EXPLAIN ANALYZE` to head query */
-    def explainAnalyze(): SqlStreamingAction[AVector[String], String, Effect.Read] =
+    def explainAnalyze(): SqlStreamingAction[Vector[String], String, Effect.Read] =
       alterHeadQuery(sql, "EXPLAIN ANALYZE")
 
     def explainAnalyzeFlatten()(implicit ec: ExecutionContext): DBActionR[String] =
       explainAnalyze().map(_.mkString("\n"))
 
     /** Adds `EXPLAIN` to head query */
-    def explain(): SqlStreamingAction[AVector[String], String, Effect.Read] =
+    def explain(): SqlStreamingAction[Vector[String], String, Effect.Read] =
       alterHeadQuery(sql, "EXPLAIN")
 
     def explainFlatten()(implicit ec: ExecutionContext): DBActionR[String] =
@@ -62,16 +60,16 @@ object SlickExplainUtil {
   /** Alter's first query with the prefix. */
   @SuppressWarnings(Array("org.wartremover.warts.Overloading", "org.wartremover.warts.IterableOps"))
   def alterHeadQuery(sql: SQLActionBuilder,
-                     prefix: String): SqlStreamingAction[AVector[String], String, Effect.Read] =
+                     prefix: String): SqlStreamingAction[Vector[String], String, Effect.Read] =
     sql
       .copy(queryParts = sql.queryParts.updated(0, s"$prefix ${sql.queryParts.head}"))
-      .asAV[String]
+      .as[String]
 
   /** Alter's first query with the prefix. */
   @SuppressWarnings(Array("org.wartremover.warts.Overloading", "org.wartremover.warts.IterableOps"))
   def alterHeadQuery[R, T, E <: Effect](
       sql: FixedSqlStreamingAction[R, T, E],
-      prefix: String): SqlStreamingAction[AVector[String], String, Effect.Read] =
+      prefix: String): SqlStreamingAction[Vector[String], String, Effect.Read] =
     if (sql.statements.sizeIs == 1) {
       alterHeadQuery(sql"#${sql.statements.head}", prefix)
     } else if (sql.statements.sizeIs <= 0) {

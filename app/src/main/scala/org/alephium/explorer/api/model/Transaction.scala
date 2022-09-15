@@ -16,19 +16,21 @@
 
 package org.alephium.explorer.api.model
 
-import org.alephium.api.UtilJson._
+import scala.collection.immutable.ArraySeq
+
+import org.alephium.api.UtilJson.{timestampReader, timestampWriter}
 import org.alephium.explorer
 import org.alephium.explorer.HashCompanion
 import org.alephium.explorer.api.Json.{hashReadWriter, u256ReadWriter}
 import org.alephium.json.Json._
-import org.alephium.util.{AVector, TimeStamp, U256}
+import org.alephium.util.{TimeStamp, U256}
 
 final case class Transaction(
     hash: Transaction.Hash,
     blockHash: BlockEntry.Hash,
     timestamp: TimeStamp,
-    inputs: AVector[Input],
-    outputs: AVector[Output],
+    inputs: ArraySeq[Input],
+    outputs: ArraySeq[Output],
     gasAmount: Int,
     gasPrice: U256
 )
@@ -58,8 +60,8 @@ final case class ConfirmedTransaction(
     hash: Transaction.Hash,
     blockHash: BlockEntry.Hash,
     timestamp: TimeStamp,
-    inputs: AVector[Input],
-    outputs: AVector[Output],
+    inputs: ArraySeq[Input],
+    outputs: ArraySeq[Output],
     gasAmount: Int,
     gasPrice: U256
 ) extends TransactionLike
@@ -82,8 +84,8 @@ final case class UnconfirmedTransaction(
     hash: Transaction.Hash,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
-    inputs: AVector[Input],
-    outputs: AVector[AssetOutput],
+    inputs: ArraySeq[Input],
+    outputs: ArraySeq[AssetOutput],
     gasAmount: Int,
     gasPrice: U256,
     lastSeen: TimeStamp

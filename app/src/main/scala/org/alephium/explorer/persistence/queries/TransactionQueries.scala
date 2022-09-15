@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.queries
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
 import com.typesafe.scalalogging.StrictLogging
@@ -35,16 +36,16 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.util.{AVector, TimeStamp, U256}
+import org.alephium.util.{TimeStamp, U256}
 
 object TransactionQueries extends StrictLogging {
 
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
   val mainTransactions = TransactionSchema.table.filter(_.mainChain)
 
-  def insertAll(transactions: AVector[TransactionEntity],
-                outputs: AVector[OutputEntity],
-                inputs: AVector[InputEntity]): DBActionRWT[Unit] = {
+  def insertAll(transactions: ArraySeq[TransactionEntity],
+                outputs: ArraySeq[OutputEntity],
+                inputs: ArraySeq[InputEntity]): DBActionRWT[Unit] = {
     DBIOAction
       .seq(insertTransactions(transactions), insertInputs(inputs), insertOutputs(outputs))
       .transactionally
@@ -52,7 +53,7 @@ object TransactionQueries extends StrictLogging {
 
   /** Inserts transactions or ignore rows with primary key conflict */
   // scalastyle:off magic.number
-  def insertTransactions(transactions: AVector[TransactionEntity]): DBActionW[Int] =
+  def insertTransactions(transactions: Iterable[TransactionEntity]): DBActionW[Int] =
     QuerySplitter.splitUpdates(rows = transactions, columnsPerRow = 12) {
       (transactions, placeholder) =>
         val query =
@@ -141,7 +142,7 @@ object TransactionQueries extends StrictLogging {
       FROM transactions
       WHERE block_hash = $blockHash
       ORDER BY tx_order
-    """.asAV[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)]
+    """.asAS[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)]
 
   private def getTxHashesByBlockHashWithPaginationQuery(blockHash: BlockEntry.Hash,
                                                         offset: Long,
@@ -153,14 +154,14 @@ object TransactionQueries extends StrictLogging {
       ORDER BY tx_order
       LIMIT $limit
       OFFSET $offset
-    """.asAV[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)]
+    """.asAS[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)]
 
   def countAddressTransactionsSQLNoJoin(address: Address): DBActionSR[Int] = {
     sql"""
     SELECT COUNT(*)
     FROM transaction_per_addresses
     WHERE main_chain = true AND address = $address
-    """.asAV[Int]
+    """.asAS[Int]
   }
 
   def getTxHashesByAddressQuerySQLNoJoin(address: Address,
@@ -173,7 +174,7 @@ object TransactionQueries extends StrictLogging {
       ORDER BY block_timestamp DESC, tx_order
       LIMIT $limit
       OFFSET $offset
-    """.asAV[TxByAddressQR]
+    """.asAS[TxByAddressQR]
   }
 
   def getTransactionsByBlockHash(blockHash: BlockEntry.Hash)(
@@ -185,7 +186,7 @@ object TransactionQueries extends StrictLogging {
   }
 
   def getTransactionsByBlockHashWithPagination(blockHash: BlockEntry.Hash, pagination: Pagination)(
-      implicit ec: ExecutionContext): DBActionR[AVector[Transaction]] = {
+      implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     val offset = pagination.offset.toLong
     val limit  = pagination.limit.toLong
     val toDrop = offset * limit
@@ -196,7 +197,7 @@ object TransactionQueries extends StrictLogging {
   }
 
   def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
-      implicit ec: ExecutionContext): DBActionR[AVector[Transaction]] = {
+      implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     val offset = pagination.offset
     val limit  = pagination.limit
     val toDrop = offset * limit
@@ -207,7 +208,7 @@ object TransactionQueries extends StrictLogging {
   }
 
   def getTransactionsByAddressNoJoin(address: Address, pagination: Pagination)(
-      implicit ec: ExecutionContext): DBActionR[AVector[Transaction]] = {
+      implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     val offset = pagination.offset
     val limit  = pagination.limit
     val toDrop = offset * limit
@@ -217,8 +218,8 @@ object TransactionQueries extends StrictLogging {
     } yield txs
   }
 
-  def getTransactionsSQL(txHashesTs: AVector[TxByAddressQR])(
-      implicit ec: ExecutionContext): DBActionR[AVector[Transaction]] = {
+  def getTransactionsSQL(txHashesTs: ArraySeq[TxByAddressQR])(
+      implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     if (txHashesTs.nonEmpty) {
       val hashes   = txHashesTs.map(_.hashes())
       val txHashes = txHashesTs.map(_.txHash)
@@ -230,12 +231,12 @@ object TransactionQueries extends StrictLogging {
         buildTransaction(txHashesTs, inputs, outputs, gases)
       }
     } else {
-      DBIOAction.successful(AVector.empty)
+      DBIOAction.successful(ArraySeq.empty)
     }
   }
 
-  def getTransactionsNoJoin(txHashesTs: AVector[TxByAddressQR])(
-      implicit ec: ExecutionContext): DBActionR[AVector[Transaction]] = {
+  def getTransactionsNoJoin(txHashesTs: ArraySeq[TxByAddressQR])(
+      implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     if (txHashesTs.nonEmpty) {
       val hashes = txHashesTs.map(_.hashes())
       for {
@@ -246,14 +247,14 @@ object TransactionQueries extends StrictLogging {
         buildTransaction(txHashesTs, inputs, outputs, gases)
       }
     } else {
-      DBIOAction.successful(AVector.empty)
+      DBIOAction.successful(ArraySeq.empty)
     }
   }
 
-  private def buildTransaction(txHashesTs: AVector[TxByAddressQR],
-                               inputs: AVector[InputsFromTxQR],
-                               outputs: AVector[OutputsFromTxQR],
-                               gases: AVector[GasFromTxsQR]) = {
+  private def buildTransaction(txHashesTs: ArraySeq[TxByAddressQR],
+                               inputs: ArraySeq[InputsFromTxQR],
+                               outputs: ArraySeq[OutputsFromTxQR],
+                               gases: ArraySeq[GasFromTxsQR]) = {
     val insByTx = inputs.groupBy(_.txHash).view.mapValues { values =>
       values
         .sortBy(_.inputOrder)
@@ -266,16 +267,16 @@ object TransactionQueries extends StrictLogging {
     }
     val gasByTx = gases.groupBy(_.txHash).view.mapValues(_.map(_.gasInfo()))
     txHashesTs.map { txn =>
-      val ins                   = insByTx.getOrElse(txn.txHash, AVector.empty)
-      val ous                   = ousByTx.getOrElse(txn.txHash, AVector.empty)
-      val gas                   = gasByTx.getOrElse(txn.txHash, AVector.empty)
+      val ins                   = insByTx.getOrElse(txn.txHash, ArraySeq.empty)
+      val ous                   = ousByTx.getOrElse(txn.txHash, ArraySeq.empty)
+      val gas                   = gasByTx.getOrElse(txn.txHash, ArraySeq.empty)
       val (gasAmount, gasPrice) = gas.headOption.getOrElse((0, U256.Zero))
       Transaction(txn.txHash, txn.blockHash, txn.blockTimestamp, ins, ous, gasAmount, gasPrice)
     }
   }
 
   def gasFromTxsSQL(
-      hashes: AVector[(Transaction.Hash, BlockEntry.Hash)]): DBActionSR[GasFromTxsQR] = {
+      hashes: ArraySeq[(Transaction.Hash, BlockEntry.Hash)]): DBActionSR[GasFromTxsQR] = {
     if (hashes.nonEmpty) {
       val values =
         hashes.map { case (txHash, blockHash) => s"('\\x$txHash','\\x$blockHash')" }.mkString(",")
@@ -283,9 +284,9 @@ object TransactionQueries extends StrictLogging {
     SELECT hash, gas_amount, gas_price
     FROM transactions
     WHERE (hash, block_hash) IN (#$values)
-    """.asAV[GasFromTxsQR]
+    """.asAS[GasFromTxsQR]
     } else {
-      DBIOAction.successful(AVector.empty)
+      DBIOAction.successful(ArraySeq.empty)
     }
   }
 
@@ -308,16 +309,16 @@ object TransactionQueries extends StrictLogging {
                   gasPrice)
     }
 
-  def areAddressesActiveAction(addresses: AVector[Address])(
-      implicit ec: ExecutionContext): DBActionR[AVector[Boolean]] =
+  def areAddressesActiveAction(addresses: ArraySeq[Address])(
+      implicit ec: ExecutionContext): DBActionR[ArraySeq[Boolean]] =
     filterExistingAddresses(addresses.toSet) map { existing =>
       addresses map existing.contains
     }
 
   /** Filters input addresses that exist in DB */
-  def filterExistingAddresses(addresses: Set[Address]): DBActionR[AVector[Address]] =
+  def filterExistingAddresses(addresses: Set[Address]): DBActionR[ArraySeq[Address]] =
     if (addresses.isEmpty) {
-      DBIO.successful(AVector.empty)
+      DBIO.successful(ArraySeq.empty)
     } else {
       val query =
         List
@@ -335,7 +336,7 @@ object TransactionQueries extends StrictLogging {
       SQLActionBuilder(
         queryParts = query,
         unitPConv  = parameters
-      ).asAV[Address]
+      ).asAS[Address]
     }
 
   def getBalanceAction(address: Address)(implicit ec: ExecutionContext): DBActionR[(U256, U256)] =

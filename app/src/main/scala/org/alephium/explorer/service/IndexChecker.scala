@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.service
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import slick.basic.DatabaseConfig
@@ -26,17 +27,16 @@ import org.alephium.explorer.persistence.DBActionR
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.util.AVector
 
 // scalastyle:off magic.number
 object IndexChecker {
 
   /** Run query checks */
   def check()(implicit ec: ExecutionContext,
-              dc: DatabaseConfig[PostgresProfile]): Future[AVector[ExplainResult]] =
+              dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[ExplainResult]] =
     run(checkAction())
 
-  def checkAction()(implicit ec: ExecutionContext): DBActionR[AVector[ExplainResult]] =
+  def checkAction()(implicit ec: ExecutionContext): DBActionR[ArraySeq[ExplainResult]] =
     for {
       a                  <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(0, 20)) //first page
       b                  <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(10000, 20)) //far page
@@ -49,6 +49,6 @@ object IndexChecker {
       latestInputEntity  <- InputQueries.getMainChainInputs(false).headOrEmpty
       f                  <- InputQueries.explainInputsFromTxsNoJoin(oldestInputEntity.map(_.hashes()))
       g                  <- InputQueries.explainInputsFromTxsNoJoin(latestInputEntity.map(_.hashes()))
-    } yield AVector(a, b, c, d, e, f, g).sortBy(_.passed)
+    } yield ArraySeq(a, b, c, d, e, f, g).sortBy(_.passed)
 
 }

@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.persistence.queries.result
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 import slick.jdbc.{GetResult, PositionedResult}
 
@@ -23,7 +25,7 @@ import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.util.{AVector, TimeStamp, U256}
+import org.alephium.util.{TimeStamp, U256}
 
 object OutputsFromTxQR {
   implicit val outputsFromTxQRGetResult: GetResult[OutputsFromTxQR] =
@@ -51,7 +53,7 @@ final case class OutputsFromTxQR(txHash: Transaction.Hash,
                                  key: Hash,
                                  amount: U256,
                                  address: Address,
-                                 tokens: Option[AVector[Token]],
+                                 tokens: Option[ArraySeq[Token]],
                                  lockTime: Option[TimeStamp],
                                  message: Option[ByteString],
                                  spent: Option[Transaction.Hash]) {

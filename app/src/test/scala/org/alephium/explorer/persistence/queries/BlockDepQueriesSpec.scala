@@ -52,8 +52,7 @@ class BlockDepQueriesSpec
       //Ignore the same data with do nothing order
       run(insertBlockDeps(ignored)).futureValue is 0
       //it should contain original rows
-
-      run(BlockDepsSchema.table.result).futureValue containsAllElementsOf original
+      run(BlockDepsSchema.table.result).futureValue should contain allElementsOf original
     }
   }
 

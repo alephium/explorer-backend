@@ -16,20 +16,22 @@
 
 package org.alephium.explorer.api.model
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.Json.{hashReadWriter, u256ReadWriter}
 import org.alephium.json.Json._
-import org.alephium.util.{AVector, TimeStamp, U256}
+import org.alephium.util.{TimeStamp, U256}
 
 sealed trait Output {
   def hint: Int
   def key: Hash
   def attoAlphAmount: U256
   def address: Address
-  def tokens: Option[AVector[Token]]
+  def tokens: Option[ArraySeq[Token]]
   def spent: Option[Transaction.Hash]
 }
 
@@ -40,7 +42,7 @@ final case class AssetOutput(
     key: Hash,
     attoAlphAmount: U256,
     address: Address,
-    tokens: Option[AVector[Token]]  = None,
+    tokens: Option[ArraySeq[Token]] = None,
     lockTime: Option[TimeStamp]     = None,
     message: Option[ByteString]     = None,
     spent: Option[Transaction.Hash] = None
@@ -53,7 +55,7 @@ final case class ContractOutput(
     key: Hash,
     attoAlphAmount: U256,
     address: Address,
-    tokens: Option[AVector[Token]]  = None,
+    tokens: Option[ArraySeq[Token]] = None,
     spent: Option[Transaction.Hash] = None
 ) extends Output
 

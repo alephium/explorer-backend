@@ -18,6 +18,7 @@ package org.alephium.explorer
 
 import java.net.InetAddress
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.io.{Codec, Source}
@@ -40,8 +41,6 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.{model, ApiError, ApiModelCodec}
-import org.alephium.api.UtilJson._
-import org.alephium.explorer.AVectorFixture._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
@@ -74,19 +73,18 @@ trait ExplorerSpec
 
   val txLimit = 20
 
-  val blockflow: AVector[AVector[model.BlockEntry]] =
+  val blockflow: ArraySeq[ArraySeq[model.BlockEntry]] =
     blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
 
-  val blocksProtocol: AVector[model.BlockEntry] = blockflow.flatMap(identity)
-  val blockEntities: AVector[BlockEntity] =
+  val blocksProtocol: ArraySeq[model.BlockEntry] = blockflow.flatten
+  val blockEntities: ArraySeq[BlockEntity] =
     blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
 
-  val blocks: AVector[BlockEntry] =
-    blockEntitiesToBlockEntries(AVector(blockEntities)).flatMap(identity)
+  val blocks: ArraySeq[BlockEntry] = blockEntitiesToBlockEntries(ArraySeq(blockEntities)).flatten
 
-  val transactions: AVector[Transaction] = blocks.flatMap(_.transactions)
+  val transactions: ArraySeq[Transaction] = blocks.flatMap(_.transactions)
 
-  val addresses: AVector[Address] = blocks
+  val addresses: ArraySeq[Address] = blocks
     .flatMap(_.transactions.flatMap(_.outputs.map(_.address)))
     .distinct
 
@@ -127,7 +125,7 @@ trait ExplorerSpec
   def initApp(app: ExplorerState): Assertion = {
     app.start().futureValue
     //let it sync
-    eventually(app.blockCache.getMainChainBlockCount() is blocks.length)
+    eventually(app.blockCache.getMainChainBlockCount() is blocks.size)
   }
 
   def app: ExplorerState
@@ -138,7 +136,7 @@ trait ExplorerSpec
   "get a block by its id" in {
     initApp(app)
 
-    forAll(Gen.oneOf(blocks.toIterable)) { block =>
+    forAll(Gen.oneOf(blocks)) { block =>
       Get(s"/blocks/${block.hash.value.toHexString}") ~> routes ~> check {
         val blockResult = responseAs[BlockEntryLite]
         blockResult.hash is block.hash
@@ -146,7 +144,7 @@ trait ExplorerSpec
         blockResult.chainFrom is block.chainFrom
         blockResult.chainTo is block.chainTo
         blockResult.height is block.height
-        blockResult.txNumber is block.transactions.length
+        blockResult.txNumber is block.transactions.size
       }
     }
 
@@ -159,11 +157,11 @@ trait ExplorerSpec
   }
 
   "get block's transactions" in {
-    forAll(Gen.oneOf(blocks.toIterable)) { block =>
+    forAll(Gen.oneOf(blocks)) { block =>
       Get(s"/blocks/${block.hash.value.toHexString}/transactions") ~> routes ~> check {
-        val txs = responseAs[AVector[Transaction]]
-        txs.length > 0 is true
-        txs.length is block.transactions.length
+        val txs = responseAs[ArraySeq[Transaction]]
+        txs.sizeIs > 0 is true
+        txs.size is block.transactions.size
         txs.foreach(tx => block.transactions.contains(tx))
       }
     }
@@ -180,41 +178,41 @@ trait ExplorerSpec
           val res            = responseAs[ListBlocks]
           val hashes         = res.blocks.map(_.hash)
 
-          expectedBlocks.length is hashes.length
+          expectedBlocks.size is hashes.size
 
-          res.total is blocks.length
+          res.total is blocks.size
         }
     }
 
     Get(s"/blocks") ~> routes ~> check {
       val res = responseAs[ListBlocks].blocks.map(_.hash)
-      res.length is scala.math.min(Pagination.defaultLimit, blocks.length)
+      res.size is scala.math.min(Pagination.defaultLimit, blocks.size)
     }
 
-    Get(s"/blocks?limit=${blocks.length}") ~> routes ~> check {
+    Get(s"/blocks?limit=${blocks.size}") ~> routes ~> check {
       val res = responseAs[ListBlocks].blocks.map(_.hash)
-      res.length is blocks.length
+      res.size is blocks.size
       blocks.foreach(block => res.contains(block.hash) is true)
     }
 
-    var blocksPage1: AVector[BlockEntry.Hash] = AVector.empty
-    Get(s"/blocks?page=1&limit=${blocks.length / 2 + 1}") ~> routes ~> check {
+    var blocksPage1: ArraySeq[BlockEntry.Hash] = ArraySeq.empty
+    Get(s"/blocks?page=1&limit=${blocks.size / 2 + 1}") ~> routes ~> check {
       blocksPage1 = responseAs[ListBlocks].blocks.map(_.hash)
     }
 
-    var allBlocks: AVector[BlockEntry.Hash] = AVector.empty
-    Get(s"/blocks?page=2&limit=${blocks.length / 2 + 1}") ~> routes ~> check {
+    var allBlocks: ArraySeq[BlockEntry.Hash] = ArraySeq.empty
+    Get(s"/blocks?page=2&limit=${blocks.size / 2 + 1}") ~> routes ~> check {
       val res = responseAs[ListBlocks].blocks.map(_.hash)
 
       allBlocks = blocksPage1 ++ res
 
-      allBlocks.length is blocks.length
-      allBlocks.distinct.length is allBlocks.length
+      allBlocks.size is blocks.size
+      allBlocks.distinct.size is allBlocks.size
 
       blocks.foreach(block => allBlocks.contains(block.hash) is true)
     }
 
-    Get(s"/blocks?limit=${blocks.length}&reverse=true") ~> routes ~> check {
+    Get(s"/blocks?limit=${blocks.size}&reverse=true") ~> routes ~> check {
       val res = responseAs[ListBlocks].blocks.map(_.hash)
 
       res is allBlocks.reverse
@@ -276,24 +274,23 @@ trait ExplorerSpec
 
         val res = responseAs[AddressInfo]
 
-        res.txNumber is expectedTransactions.length
+        res.txNumber is expectedTransactions.size
         res.balance is expectedBalance
       }
     }
   }
 
   "get all address' transactions" in {
-    //forAll(Gen.oneOf(addresses)) { address =>
-    val address = Gen.oneOf(addresses).sample.get
-    Get(s"/addresses/${address}/transactions") ~> routes ~> check {
-      val expectedTransactions =
-        transactions.filter(_.outputs.exists(_.address == address)).takeUpto(txLimit)
-      val res = responseAs[AVector[Transaction]]
+    forAll(Gen.oneOf(addresses)) { address =>
+      Get(s"/addresses/${address}/transactions") ~> routes ~> check {
+        val expectedTransactions =
+          transactions.filter(_.outputs.exists(_.address == address)).take(txLimit)
+        val res = responseAs[ArraySeq[Transaction]]
 
-      res.length is expectedTransactions.length
-      expectedTransactions.foreach(transaction =>
-        res.map(_.hash).contains(transaction.hash) is true)
-      //}
+        res.size is expectedTransactions.size
+        expectedTransactions.foreach(transaction =>
+          res.map(_.hash).contains(transaction.hash) is true)
+      }
     }
   }
 
@@ -337,7 +334,7 @@ object ExplorerSpec {
   class BlockFlowServerMock(
       address: InetAddress,
       port: Int,
-      blockflow: AVector[AVector[model.BlockEntry]],
+      blockflow: ArraySeq[ArraySeq[model.BlockEntry]],
       networkId: NetworkId)(implicit groupSetting: GroupSetting, system: ActorSystem)
       extends ApiModelCodec
       with UpickleCustomizationSupport {
@@ -422,7 +419,7 @@ object ExplorerSpec {
           val from = groupIndexGen.sample.get.value
           val to   = groupIndexGen.sample.get.value
           complete(
-            AVector(model.UnconfirmedTransactions(from, to, AVector.from(txs)))
+            ArraySeq(model.UnconfirmedTransactions(from, to, AVector.from(txs)))
           )
         } ~
         path("infos" / "self-clique") {

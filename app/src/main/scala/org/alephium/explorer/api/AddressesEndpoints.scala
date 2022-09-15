@@ -16,16 +16,16 @@
 
 package org.alephium.explorer.api
 
+import scala.collection.immutable.ArraySeq
+
 import sttp.tapir._
 import sttp.tapir.generic.auto._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
-import org.alephium.api.UtilJson._
 import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.api.Codecs
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.Hash
-import org.alephium.util.AVector
 
 // scalastyle:off magic.number
 trait AddressesEndpoints extends BaseEndpoint with QueryParams {
@@ -56,20 +56,20 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .description("Get address information")
 
   val getTransactionsByAddressDEPRECATED
-    : BaseEndpoint[(Address, Pagination), AVector[Transaction]] =
+    : BaseEndpoint[(Address, Pagination), ArraySeq[Transaction]] =
     addressesEndpoint.get
       .in(path[Address]("address")(Codecs.addressTapirCodec))
       .in("transactions-DEPRECATED")
       .in(pagination)
-      .out(jsonBody[AVector[Transaction]])
+      .out(jsonBody[ArraySeq[Transaction]])
       .description("List transactions of a given address")
 
-  val getTransactionsByAddress: BaseEndpoint[(Address, Pagination), AVector[Transaction]] =
+  val getTransactionsByAddress: BaseEndpoint[(Address, Pagination), ArraySeq[Transaction]] =
     addressesEndpoint.get
       .in(path[Address]("address")(Codecs.addressTapirCodec))
       .in("transactions")
       .in(pagination)
-      .out(jsonBody[AVector[Transaction]])
+      .out(jsonBody[ArraySeq[Transaction]])
       .description("List transactions of a given address")
 
   val getTotalTransactionsByAddress: BaseEndpoint[Address, Int] =
@@ -79,11 +79,11 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[Int])
       .description("Get total transactions of a given address")
 
-  val addressUnconfirmedTransactions: BaseEndpoint[Address, AVector[UnconfirmedTransaction]] =
+  val addressUnconfirmedTransactions: BaseEndpoint[Address, ArraySeq[UnconfirmedTransaction]] =
     addressesEndpoint.get
       .in(path[Address]("address")(Codecs.addressTapirCodec))
       .in("unconfirmed-transactions")
-      .out(jsonBody[AVector[UnconfirmedTransaction]])
+      .out(jsonBody[ArraySeq[UnconfirmedTransaction]])
       .description("List unconfirmed transactions of a given address")
 
   val getAddressBalance: BaseEndpoint[Address, AddressBalance] =
@@ -93,9 +93,9 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[AddressBalance])
       .description("Get address balance")
 
-  val listAddressTokens: BaseEndpoint[Address, AVector[Hash]] =
+  val listAddressTokens: BaseEndpoint[Address, ArraySeq[Hash]] =
     addressesTokensEndpoint.get
-      .out(jsonBody[AVector[Hash]])
+      .out(jsonBody[ArraySeq[Hash]])
       .description("List address tokens")
 
   val getAddressTokenBalance: BaseEndpoint[(Address, Hash), AddressBalance] =
@@ -106,25 +106,20 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .description("Get address balance of given token")
 
   val listAddressTokenTransactions
-    : BaseEndpoint[(Address, Hash, Pagination), AVector[Transaction]] =
+    : BaseEndpoint[(Address, Hash, Pagination), ArraySeq[Transaction]] =
     addressesTokensEndpoint.get
       .in(path[Hash]("token-id"))
       .in("transactions")
       .in(pagination)
-      .out(jsonBody[AVector[Transaction]])
+      .out(jsonBody[ArraySeq[Transaction]])
       .description("List address tokens")
 
-  lazy val areAddressesActive: BaseEndpoint[AVector[Address], AVector[Boolean]] =
+  lazy val areAddressesActive: BaseEndpoint[ArraySeq[Address], ArraySeq[Boolean]] =
     baseEndpoint
       .tag("Addresses")
       .in("addresses-active")
       .post
-      .in(
-        //We have to go through a Seq in order to have the `MaxSize` validator,
-        //we can't have it on `AVector` as it needs to be an `Iterable`
-        jsonBody[Seq[Address]]
-          .validate(Validator.MaxSize(activeAddressesMaxSize))
-          .map[AVector[Address]]((seq: Seq[Address]) => AVector.from(seq))(_.toSeq))
-      .out(jsonBody[AVector[Boolean]])
+      .in(jsonBody[ArraySeq[Address]].validate(Validator.maxSize(activeAddressesMaxSize)))
+      .out(jsonBody[ArraySeq[Boolean]])
       .description("Are the addresses active (at least 1 transaction)")
 }

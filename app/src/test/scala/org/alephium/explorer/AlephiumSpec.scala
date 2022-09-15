@@ -17,7 +17,6 @@
 package org.alephium.explorer
 
 import scala.annotation.nowarn
-import scala.collection.{Iterable, IterableOnce}
 
 import org.scalacheck.Shrink
 import org.scalactic.Equality
@@ -42,22 +41,6 @@ trait AlephiumSpec
     def is(right: ResultOfATypeInvocation[_]): Assertion    = left shouldBe right
     def isnot(right: A): Assertion                          = left should not equal right
     def isnot(right: ResultOfATypeInvocation[_]): Assertion = left should not be right
-    // scalastyle:on scalatest-matcher
-  }
-
-  implicit class AVectorIsOps[A: Equality](left: IterableOnce[A])(implicit pos: Position) {
-    // scalastyle:off scalatest-matcher
-    def containsAllElementsOf(right: IterableOnce[A]): Assertion = {
-      Iterable.from(left) should contain allElementsOf Iterable.from(right)
-    }
-
-    def containsTheSameElementsAs(right: IterableOnce[A]): Assertion = {
-      Iterable.from(left) should contain theSameElementsAs Iterable.from(right)
-    }
-
-    def containsOnly(right: A): Assertion = {
-      Iterable.from(left) should contain only right
-    }
     // scalastyle:on scalatest-matcher
   }
 }

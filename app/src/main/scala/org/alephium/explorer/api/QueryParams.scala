@@ -67,4 +67,5 @@ trait QueryParams extends TapirCodecs {
 
   val intervalTypeQuery: EndpointInput[IntervalType] =
     query[IntervalType]("interval-type")
+
 }

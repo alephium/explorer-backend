@@ -18,6 +18,7 @@ package org.alephium.explorer.service
 
 import java.math.BigInteger
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import org.scalacheck.Gen
@@ -34,7 +35,7 @@ import org.alephium.explorer.persistence.dao.{BlockDao, UnconfirmedTxDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.protocol.ALPH
-import org.alephium.util.{AVector, TimeStamp, U256}
+import org.alephium.util.{TimeStamp, U256}
 
 @SuppressWarnings(
   Array("org.wartremover.warts.Var",
@@ -63,9 +64,7 @@ class TransactionServiceSpec
 
     val txLimit = 5
 
-    blocks.foreach { block =>
-      BlockDao.insert(block).futureValue
-    }
+    BlockDao.insertAll(blocks).futureValue
     Future
       .sequence(blocks.map { block =>
         for {
@@ -78,7 +77,7 @@ class TransactionServiceSpec
     TransactionService
       .getTransactionsByAddressSQL(address, Pagination.unsafe(0, txLimit))
       .futureValue
-      .length is txLimit
+      .size is txLimit
   }
 
   "handle huge alph number" in new Fixture {
@@ -88,7 +87,7 @@ class TransactionServiceSpec
     val block = blockEntityGen(groupIndex, groupIndex, None)
       .map { block =>
         block.copy(
-          outputs = block.outputs.takeUpto(1).map(_.copy(amount = amount))
+          outputs = block.outputs.take(1).map(_.copy(amount = amount))
         )
       }
       .sample
@@ -156,8 +155,8 @@ class TransactionServiceSpec
     val block0 = defaultBlockEntity.copy(
       hash         = blockHash0,
       timestamp    = ts0,
-      transactions = AVector(tx0),
-      outputs      = AVector(output0)
+      transactions = ArraySeq(tx0),
+      outputs      = ArraySeq(output0)
     )
 
     val ts1        = TimeStamp.unsafe(1)
@@ -210,25 +209,23 @@ class TransactionServiceSpec
       hash         = blockHash1,
       timestamp    = ts1,
       height       = Height.unsafe(1),
-      transactions = AVector(tx1),
-      inputs       = AVector(input1),
-      outputs      = AVector(output1),
-      deps         = AVector.fill(2 * groupSetting.groupNum - 1)(new BlockEntry.Hash(BlockHash.generate))
+      transactions = ArraySeq(tx1),
+      inputs       = ArraySeq(input1),
+      outputs      = ArraySeq(output1),
+      deps         = ArraySeq.fill(2 * groupSetting.groupNum - 1)(new BlockEntry.Hash(BlockHash.generate))
     )
 
-    val blocks = AVector(block0, block1)
+    val blocks = ArraySeq(block0, block1)
 
-    blocks.foreach { block =>
-      BlockDao.insert(block).futureValue
-    }
+    Future.sequence(blocks.map(BlockDao.insert)).futureValue
     databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
 
     val t0 = Transaction(
       tx0.hash,
       blockHash0,
       ts0,
-      AVector.empty,
-      AVector(
+      ArraySeq.empty,
+      ArraySeq(
         AssetOutput(output0.hint,
                     output0.key,
                     U256.One,
@@ -245,8 +242,8 @@ class TransactionServiceSpec
       tx1.hash,
       blockHash1,
       ts1,
-      AVector(Input(OutputRef(0, output0.key), None, Some(address0), Some(U256.One))),
-      AVector(AssetOutput(output1.hint, output1.key, U256.One, address1, None, None, None, None)),
+      ArraySeq(Input(OutputRef(0, output0.key), None, Some(address0), Some(U256.One))),
+      ArraySeq(AssetOutput(output1.hint, output1.key, U256.One, address1, None, None, None, None)),
       gasAmount1,
       gasPrice1
     )
@@ -254,7 +251,7 @@ class TransactionServiceSpec
     val res2 =
       TransactionService.getTransactionsByAddressSQL(address0, Pagination.unsafe(0, 5)).futureValue
 
-    res2 is AVector(t1, t0)
+    res2 is ArraySeq(t1, t0)
   }
 
   "get only main chain transaction for an address in case of tx in two blocks (in case of reorg)" in new Fixture {
@@ -300,8 +297,8 @@ class TransactionServiceSpec
         val block0 = defaultBlockEntity.copy(
           hash         = blockHash0,
           timestamp    = ts0,
-          transactions = AVector(tx),
-          outputs      = AVector(output0)
+          transactions = ArraySeq(tx),
+          outputs      = ArraySeq(output0)
         )
 
         val ts1 = TimeStamp.unsafe(1)
@@ -317,11 +314,9 @@ class TransactionServiceSpec
           mainChain = false
         )
 
-        val blocks = AVector(block0, block1)
+        val blocks = ArraySeq(block0, block1)
 
-        blocks.foreach { block =>
-          BlockDao.insert(block).futureValue
-        }
+        Future.sequence(blocks.map(BlockDao.insert)).futureValue
         databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
 
         TransactionService
@@ -342,7 +337,7 @@ class TransactionServiceSpec
     val utx = utransactionGen.sample.get
 
     TransactionService.getTransaction(utx.hash).futureValue is None
-    UnconfirmedTxDao.insertMany(AVector(utx)).futureValue
+    UnconfirmedTxDao.insertMany(ArraySeq(utx)).futureValue
     TransactionService.getTransaction(utx.hash).futureValue is Some(utx)
   }
 
@@ -362,7 +357,7 @@ class TransactionServiceSpec
 
         TransactionService
           .listUnconfirmedTransactionsByAddress(address)
-          .futureValue containsAllElementsOf expected
+          .futureValue should contain allElementsOf expected
 
         UnconfirmedTxDao.removeMany(updatedUtxs.map(_.hash)).futureValue
     }
@@ -457,10 +452,11 @@ class TransactionServiceSpec
         .sample
         .get
 
-    BlockDao.insert(block).futureValue
+    BlockDao.insertAll(ArraySeq(block)).futureValue
 
-    TransactionService.areAddressesActive(AVector(address, address2)).futureValue is AVector(true,
-                                                                                             false)
+    TransactionService.areAddressesActive(ArraySeq(address, address2)).futureValue is ArraySeq(
+      true,
+      false)
   }
 
   trait Fixture {
@@ -476,10 +472,10 @@ class TransactionServiceSpec
         chainFrom    = groupIndex,
         chainTo      = groupIndex,
         height       = Height.unsafe(0),
-        deps         = AVector.empty,
-        transactions = AVector.empty,
-        inputs       = AVector.empty,
-        outputs      = AVector.empty,
+        deps         = ArraySeq.empty,
+        transactions = ArraySeq.empty,
+        inputs       = ArraySeq.empty,
+        outputs      = ArraySeq.empty,
         true,
         nonce        = bytesGen.sample.get,
         version      = 1.toByte,

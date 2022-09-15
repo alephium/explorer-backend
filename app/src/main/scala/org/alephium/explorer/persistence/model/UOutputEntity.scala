@@ -16,11 +16,13 @@
 
 package org.alephium.explorer.persistence.model
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{Address, AssetOutput, Token, Transaction}
-import org.alephium.util.{AVector, TimeStamp, U256}
+import org.alephium.util.{TimeStamp, U256}
 
 final case class UOutputEntity(
     txHash: Transaction.Hash,
@@ -28,7 +30,7 @@ final case class UOutputEntity(
     key: Hash,
     amount: U256,
     address: Address,
-    tokens: Option[AVector[Token]],
+    tokens: Option[ArraySeq[Token]],
     lockTime: Option[TimeStamp],
     message: Option[ByteString],
     uoutputOrder: Int

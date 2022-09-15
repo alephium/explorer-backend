@@ -16,11 +16,12 @@
 
 package org.alephium.explorer.api.model
 
+import scala.collection.immutable.ArraySeq
+
 import sttp.tapir.{Schema, Validator}
 import upickle.core.Abort
 
 import org.alephium.json.Json._
-import org.alephium.util.AVector
 
 final case class LogbackValue(
     name: String,
@@ -53,7 +54,7 @@ object LogbackValue {
       Array("org.wartremover.warts.JavaSerializable",
             "org.wartremover.warts.Product",
             "org.wartremover.warts.Serializable")) // Wartremover is complaining, don't now why :/
-    val levels: AVector[Level] = AVector(Trace, Debug, Info, Warn, Error)
+    val levels: ArraySeq[Level] = ArraySeq(Trace, Debug, Info, Warn, Error)
 
     implicit val levelReadWriter: ReadWriter[Level] = readwriter[String].bimap(
       _.toString, {
@@ -67,6 +68,6 @@ object LogbackValue {
     )
 
     implicit def levelSchema: Schema[Level] =
-      Schema.string.validate(Validator.enumeration(levels.toIterable.toList))
+      Schema.string.validate(Validator.enumeration(levels.toList))
   }
 }

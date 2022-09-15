@@ -42,7 +42,7 @@ import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.json.Json._
 import org.alephium.protocol.model.ChainIndex
-import org.alephium.util.{AVector, Duration, TimeStamp}
+import org.alephium.util.{Duration, TimeStamp}
 
 class BlockDaoSpec
     extends AlephiumSpec
@@ -68,11 +68,11 @@ class BlockDaoSpec
         val outputQuery =
           OutputSchema.table.filter(_.blockHash === block.hash).map(_.mainChain).result
 
-        val inputs: AVector[Boolean]  = run(inputQuery).futureValue
-        val outputs: AVector[Boolean] = run(outputQuery).futureValue
+        val inputs: Seq[Boolean]  = run(inputQuery).futureValue
+        val outputs: Seq[Boolean] = run(outputQuery).futureValue
 
-        inputs.length is block.inputs.length
-        outputs.length is block.outputs.length
+        inputs.size is block.inputs.size
+        outputs.size is block.outputs.size
         (inputs ++ outputs).foreach(isMainChain => isMainChain is mainChainInput)
     }
   }
@@ -84,8 +84,8 @@ class BlockDaoSpec
 
       val blockheadersQuery =
         BlockHeaderSchema.table.filter(_.hash === block.hash).map(_.hash).result
-      val headerHash: AVector[BlockEntry.Hash] = run(blockheadersQuery).futureValue
-      headerHash.length is 1
+      val headerHash: Seq[BlockEntry.Hash] = run(blockheadersQuery).futureValue
+      headerHash.size is 1
       headerHash.foreach(_.is(block.hash))
       block.transactions.nonEmpty is true
 
@@ -95,18 +95,17 @@ class BlockDaoSpec
         BlockDepsSchema.table.filter(_.hash === block.hash).map(_.dep).result
       val transactionsQuery =
         TransactionSchema.table.filter(_.blockHash === block.hash).result
-      AVector(inputQuery, outputQuery, blockDepsQuery, transactionsQuery)
-      AVector(block.inputs, block.outputs, block.deps, block.transactions)
+      val queries  = Seq(inputQuery, outputQuery, blockDepsQuery, transactionsQuery)
+      val dbInputs = Seq(block.inputs, block.outputs, block.deps, block.transactions)
 
-      def checkDuplicates[T](dbInput: AVector[T], dbOutput: AVector[T]) = {
-        dbOutput.length is dbInput.length
+      def checkDuplicates[T](dbInput: Seq[T], dbOutput: Seq[T]) = {
+        dbOutput.size is dbInput.size
         dbOutput.foreach(output => dbInput.contains(output) is true)
       }
 
-      checkDuplicates(block.inputs, run(inputQuery).futureValue)
-      checkDuplicates(block.outputs, run(outputQuery).futureValue)
-      checkDuplicates(block.deps, run(blockDepsQuery).futureValue)
-      checkDuplicates(block.transactions, run(transactionsQuery).futureValue)
+      dbInputs
+        .zip(queries)
+        .foreach { case (dbInput, query) => checkDuplicates(dbInput, run(query).futureValue) }
     }
   }
 
@@ -164,9 +163,7 @@ class BlockDaoSpec
       //clear existing data
       run(BlockHeaderSchema.table.delete).futureValue
 
-      blockEntities.foreach { block =>
-        BlockDao.insert(block).futureValue
-      }
+      BlockDao.insertAll(blockEntities).futureValue
 
       //expected row count in cache
       val expectedMainChainCount = blockEntities.count(_.mainChain)
@@ -194,9 +191,7 @@ class BlockDaoSpec
         run(BlockHeaderSchema.table.delete).futureValue
 
         /** INSERT BATCH 1 - [[entities1]] */
-        entities1.foreach { entity =>
-          BlockDao.insert(entity).futureValue
-        }
+        BlockDao.insertAll(entities1).futureValue
         //expected count
         val expectedMainChainCount = entities1.count(_.mainChain)
         //Assert the query return expected count
@@ -209,9 +204,7 @@ class BlockDaoSpec
 
         /** INSERT BATCH 2 - [[entities2]] */
         //insert the next batch of block entities
-        entities2.foreach { entity =>
-          BlockDao.insert(entity).futureValue
-        }
+        BlockDao.insertAll(entities2).futureValue
         //Expected total row count in cache
         val expectedMainChainCountTotal = entities2.count(_.mainChain) + expectedMainChainCount
         //Dispatch a query so the cache get populated
@@ -244,7 +237,7 @@ class BlockDaoSpec
           val inputs  = inputOutputs.map(_._1)
 
           //insert outputs
-          run(OutputSchema.table ++= outputs).futureValue should contain(outputs.length)
+          run(OutputSchema.table ++= outputs).futureValue should contain(outputs.size)
           //insert inputs
           run(InputSchema.table ++= inputs).futureValue
           run(InputUpdateQueries.updateInputs()).futureValue is ()
@@ -253,7 +246,7 @@ class BlockDaoSpec
           val expected     = toTransactionPerAddressEntities(inputOutputs)
           val transactions = run(TransactionPerAddressSchema.table.result).futureValue
           //check rows are as expected
-          transactions containsTheSameElementsAs expected
+          transactions should contain theSameElementsAs expected
         }
       }
     }
@@ -263,10 +256,9 @@ class BlockDaoSpec
     implicit val groupSettings: GroupSetting = groupSettingGen.sample.get
     implicit val blockCache: BlockCache      = BlockCache()
 
-    val blockflow: AVector[AVector[model.BlockEntry]] =
+    val blockflow: Seq[Seq[model.BlockEntry]] =
       blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
-    val blocksProtocol: AVector[model.BlockEntry] = blockflow.flatMap(identity)
-    val blockEntities: AVector[BlockEntity] =
-      blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
+    val blocksProtocol: Seq[model.BlockEntry] = blockflow.flatten
+    val blockEntities: Seq[BlockEntity]       = blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
   }
 }

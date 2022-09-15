@@ -18,6 +18,7 @@ package org.alephium.explorer.cache
 
 import java.util.concurrent.{CompletableFuture, Executor}
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
@@ -26,7 +27,6 @@ import com.github.benmanes.caffeine.cache.{AsyncCacheLoader, AsyncLoadingCache, 
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.persistence.DBRunner
-import org.alephium.util.AVector
 
 object CaffeineAsyncCache {
 
@@ -60,13 +60,13 @@ object CaffeineAsyncCache {
     */
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   def rowCountCache(runner: DBRunner)(
-      builder: Caffeine[AnyRef, AnyRef]): CaffeineAsyncCache[Query[_, _, AVector], Int] =
+      builder: Caffeine[AnyRef, AnyRef]): CaffeineAsyncCache[Query[_, _, ArraySeq], Int] =
     CaffeineAsyncCache {
       builder
-        .asInstanceOf[Caffeine[Query[_, _, AVector], Int]]
-        .buildAsync[Query[_, _, AVector], Int] {
-          new AsyncCacheLoader[Query[_, _, AVector], Int] {
-            override def asyncLoad(table: Query[_, _, AVector],
+        .asInstanceOf[Caffeine[Query[_, _, ArraySeq], Int]]
+        .buildAsync[Query[_, _, ArraySeq], Int] {
+          new AsyncCacheLoader[Query[_, _, ArraySeq], Int] {
+            override def asyncLoad(table: Query[_, _, ArraySeq],
                                    executor: Executor): CompletableFuture[Int] =
               runner.run(table.length.result).asJava.toCompletableFuture
           }
@@ -80,9 +80,8 @@ class CaffeineAsyncCache[K, V](cache: AsyncLoadingCache[K, V]) {
   def get(key: K): Future[V] =
     cache.get(key).asScala
 
-  //TODO add `asJava` to `AVector`
-  def getAll(keys: AVector[K])(implicit ec: ExecutionContext): Future[AVector[(K, V)]] =
-    cache.getAll(keys.toSeq.asJava).asScala.map(mp => AVector.unsafe(mp.asScala.toArray))
+  def getAll(keys: Iterable[K])(implicit ec: ExecutionContext): Future[ArraySeq[(K, V)]] =
+    cache.getAll(keys.asJava).asScala.map(mp => ArraySeq.unsafeWrapArray(mp.asScala.toArray))
 
   def getIfPresent(key: K): Option[Future[V]] = {
     val valueOrNull = cache.getIfPresent(key)

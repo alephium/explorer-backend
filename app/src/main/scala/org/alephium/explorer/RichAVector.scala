@@ -16,19 +16,15 @@
 
 package org.alephium.explorer
 
-import scala.collection.BuildFrom
-import scala.collection.mutable
-import scala.reflect.ClassTag
+import scala.collection.immutable.ArraySeq
 
 import org.alephium.util.AVector
 
 //TODO Add this to `org.alephium.util.AVector`
 object RichAVector {
-  @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
-  implicit def buildFromAVector[A: ClassTag]: BuildFrom[AVector[_], A, AVector[A]] =
-    new BuildFrom[AVector[_], A, AVector[A]] {
-      def newBuilder(from: AVector[_]): mutable.Builder[A, AVector[A]] =
-        mutable.ArrayBuffer.newBuilder[A].mapResult(b => AVector.unsafe[A](b.toArray))
-      def fromSpecific(from: AVector[_])(it: IterableOnce[A]): AVector[A] = AVector.from(it)
+  implicit class Impl[A](val avector: AVector[A]) extends AnyVal {
+    def toArraySeq: ArraySeq[A] = {
+      ArraySeq.unsafeWrapArray(avector.toArray)
     }
+  }
 }
