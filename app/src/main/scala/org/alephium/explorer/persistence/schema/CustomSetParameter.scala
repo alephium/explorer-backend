@@ -27,7 +27,7 @@ import org.alephium.explorer
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.serde._
-import org.alephium.util.{AVector, TimeStamp, U256}
+import org.alephium.util.{TimeStamp, U256}
 
 /** [[slick.jdbc.SetParameter]] implicits for setting values in SQL queries */
 object CustomSetParameter {
@@ -135,7 +135,7 @@ object CustomSetParameter {
     override def apply(input: Option[ArraySeq[Token]], params: PositionedParameters): Unit =
       input match {
         case Some(tokens) =>
-          params setBytes serialize(AVector.unsafe(tokens.toArray)).toArray
+          params setBytes serialize(tokens).toArray
 
         case None =>
           //scalastyle:off null
@@ -148,7 +148,7 @@ object CustomSetParameter {
     override def apply(input: Option[ArraySeq[ByteString]], params: PositionedParameters): Unit =
       input match {
         case Some(byteStrings) =>
-          params setBytes serialize(AVector.unsafe(byteStrings.toArray)).toArray
+          params setBytes serialize(byteStrings).toArray
 
         case None =>
           //scalastyle:off null

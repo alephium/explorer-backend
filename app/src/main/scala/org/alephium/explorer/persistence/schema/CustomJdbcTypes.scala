@@ -27,11 +27,10 @@ import slick.jdbc.PostgresProfile._
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer._
-import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.{AppState, AppStateKey, OutputEntity}
 import org.alephium.serde._
-import org.alephium.util.{AVector, TimeStamp, U256}
+import org.alephium.util.{TimeStamp, U256}
 
 object CustomJdbcTypes {
 
@@ -101,21 +100,21 @@ object CustomJdbcTypes {
 
   implicit val seqByteStringType: JdbcType[ArraySeq[ByteString]] =
     MappedJdbcType.base[ArraySeq[ByteString], Array[Byte]](
-      byteStrings => serialize(AVector.unsafe(byteStrings.toArray)).toArray,
+      byteStrings => serialize(byteStrings).toArray,
       bytes =>
-        deserialize[AVector[ByteString]](ByteString.fromArrayUnsafe(bytes)) match {
+        deserialize[ArraySeq[ByteString]](ByteString.fromArrayUnsafe(bytes)) match {
           case Left(error)  => throw error
-          case Right(value) => value.toArraySeq
+          case Right(value) => value
       }
     )
 
   implicit val tokensType: JdbcType[ArraySeq[Token]] =
     MappedJdbcType.base[ArraySeq[Token], Array[Byte]](
-      tokens => serialize(AVector.unsafe(tokens.toArray)).toArray,
+      tokens => serialize(tokens).toArray,
       bytes =>
-        deserialize[AVector[Token]](ByteString.fromArrayUnsafe(bytes)) match {
+        deserialize[ArraySeq[Token]](ByteString.fromArrayUnsafe(bytes)) match {
           case Left(error)  => throw error
-          case Right(value) => value.toArraySeq
+          case Right(value) => value
       }
     )
 

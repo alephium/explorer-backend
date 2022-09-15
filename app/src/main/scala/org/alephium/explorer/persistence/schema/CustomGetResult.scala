@@ -24,11 +24,10 @@ import akka.util.ByteString
 import slick.jdbc.{GetResult, PositionedResult}
 
 import org.alephium.explorer.{BlockHash, Hash}
-import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.serde._
-import org.alephium.util.{AVector, TimeStamp, U256}
+import org.alephium.util.{TimeStamp, U256}
 
 object CustomGetResult {
 
@@ -92,9 +91,9 @@ object CustomGetResult {
       result
         .nextBytesOption()
         .map { bytes =>
-          deserialize[AVector[Token]](ByteString.fromArrayUnsafe(bytes)) match {
+          deserialize[ArraySeq[Token]](ByteString.fromArrayUnsafe(bytes)) match {
             case Left(error)  => throw error
-            case Right(value) => value.toArraySeq
+            case Right(value) => value
           }
       }
 
