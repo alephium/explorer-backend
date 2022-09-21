@@ -24,12 +24,12 @@ import akka.util.ByteString
 import org.openjdk.jmh.annotations.{Scope, State}
 
 import org.alephium.crypto.Blake2b
-import org.alephium.explorer.BlockHash
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.explorer.api.model.{GroupIndex, Height}
 import org.alephium.explorer.benchmark.db.{DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
+import org.alephium.protocol.model.BlockHash
 import org.alephium.util.TimeStamp
 
 /**
@@ -45,7 +45,7 @@ class BlockHeaderMainChainReadState(dropMainChainIndex: Boolean,
 
   def generateData(currentCacheSize: Int): BlockHeader =
     BlockHeader(
-      hash         = new BlockEntry.Hash(BlockHash.generate),
+      hash         = BlockHash.generate,
       timestamp    = TimeStamp.now(),
       chainFrom    = GroupIndex.unsafe(1),
       chainTo      = GroupIndex.unsafe(16),
@@ -58,7 +58,7 @@ class BlockHeaderMainChainReadState(dropMainChainIndex: Boolean,
       txsCount     = Random.nextInt(),
       target       = ByteString.emptyByteString,
       hashrate     = BigInteger.ONE,
-      parent       = Some(new BlockEntry.Hash(BlockHash.generate))
+      parent       = Some(BlockHash.generate)
     )
 
   def persist(data: Array[BlockHeader]): Unit = {

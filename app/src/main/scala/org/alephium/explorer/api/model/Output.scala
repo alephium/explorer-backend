@@ -22,8 +22,9 @@ import akka.util.ByteString
 
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.Json.{hashReadWriter, u256ReadWriter}
+import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
+import org.alephium.protocol.model.TransactionId
 import org.alephium.util.{TimeStamp, U256}
 
 sealed trait Output {
@@ -32,7 +33,7 @@ sealed trait Output {
   def attoAlphAmount: U256
   def address: Address
   def tokens: Option[ArraySeq[Token]]
-  def spent: Option[Transaction.Hash]
+  def spent: Option[TransactionId]
 }
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -45,7 +46,8 @@ final case class AssetOutput(
     tokens: Option[ArraySeq[Token]] = None,
     lockTime: Option[TimeStamp]     = None,
     message: Option[ByteString]     = None,
-    spent: Option[Transaction.Hash] = None
+    spent: Option[TransactionId]    = None,
+    `type`: String                  = "AssetOutput"
 ) extends Output
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -56,7 +58,8 @@ final case class ContractOutput(
     attoAlphAmount: U256,
     address: Address,
     tokens: Option[ArraySeq[Token]] = None,
-    spent: Option[Transaction.Hash] = None
+    spent: Option[TransactionId]    = None,
+    `type`: String                  = "ContractOutput"
 ) extends Output
 
 object Output {

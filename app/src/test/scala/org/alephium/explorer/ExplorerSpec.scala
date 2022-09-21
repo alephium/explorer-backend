@@ -51,7 +51,7 @@ import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.json.Json
 import org.alephium.json.Json._
-import org.alephium.protocol.model.{CliqueId, NetworkId}
+import org.alephium.protocol.model.{BlockHash, CliqueId, NetworkId}
 import org.alephium.util.{AVector, Hex, TimeStamp, U256}
 
 trait ExplorerSpec
@@ -195,12 +195,12 @@ trait ExplorerSpec
       blocks.foreach(block => res.contains(block.hash) is true)
     }
 
-    var blocksPage1: ArraySeq[BlockEntry.Hash] = ArraySeq.empty
+    var blocksPage1: ArraySeq[BlockHash] = ArraySeq.empty
     Get(s"/blocks?page=1&limit=${blocks.size / 2 + 1}") ~> routes ~> check {
       blocksPage1 = responseAs[ListBlocks].blocks.map(_.hash)
     }
 
-    var allBlocks: ArraySeq[BlockEntry.Hash] = ArraySeq.empty
+    var allBlocks: ArraySeq[BlockHash] = ArraySeq.empty
     Get(s"/blocks?page=2&limit=${blocks.size / 2 + 1}") ~> routes ~> check {
       val res = responseAs[ListBlocks].blocks.map(_.hash)
 
@@ -368,13 +368,13 @@ object ExplorerSpec {
     private val peer = model.PeerAddress(address, port, 0, 0)
     val HashSegment  = Segment.map(raw => BlockHash.unsafe(Hex.unsafe(raw)))
     val routes: Route =
-      path("blockflow") {
+      path("blockflow" / "blocks") {
         parameters("fromTs".as[Long]) { fromTs =>
           parameters("toTs".as[Long]) { toTs =>
             get {
               complete(
                 Future.successful(
-                  model.FetchResponse(
+                  model.BlocksPerTimeStampRange(
                     AVector.from(
                       blockflow
                         .map(

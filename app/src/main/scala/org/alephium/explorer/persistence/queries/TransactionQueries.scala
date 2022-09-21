@@ -36,6 +36,7 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object TransactionQueries extends StrictLogging {
@@ -98,20 +99,20 @@ object TransactionQueries extends StrictLogging {
         ).asUpdate
     }
 
-  private val countBlockHashTransactionsQuery = Compiled { blockHash: Rep[BlockEntry.Hash] =>
+  private val countBlockHashTransactionsQuery = Compiled { blockHash: Rep[BlockHash] =>
     TransactionSchema.table.filter(_.blockHash === blockHash).length
   }
 
-  def countBlockHashTransactions(blockHash: BlockEntry.Hash): DBActionR[Int] =
+  def countBlockHashTransactions(blockHash: BlockHash): DBActionR[Int] =
     countBlockHashTransactionsQuery(blockHash).result
 
-  private val getTransactionQuery = Compiled { txHash: Rep[Transaction.Hash] =>
+  private val getTransactionQuery = Compiled { txHash: Rep[TransactionId] =>
     mainTransactions
       .filter(_.hash === txHash)
       .map(tx => (tx.blockHash, tx.timestamp, tx.gasAmount, tx.gasPrice))
   }
 
-  def getTransactionAction(txHash: Transaction.Hash)(
+  def getTransactionAction(txHash: TransactionId)(
       implicit ec: ExecutionContext): DBActionR[Option[Transaction]] =
     getTransactionQuery(txHash).result.headOption.flatMap {
       case None => DBIOAction.successful(None)
@@ -136,15 +137,15 @@ object TransactionQueries extends StrictLogging {
   }
 
   private def getTxHashesByBlockHashQuery(
-      blockHash: BlockEntry.Hash): DBActionSR[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)] =
+      blockHash: BlockHash): DBActionSR[(TransactionId, BlockHash, TimeStamp, Int)] =
     sql"""
       SELECT hash, block_hash, block_timestamp, tx_order
       FROM transactions
       WHERE block_hash = $blockHash
       ORDER BY tx_order
-    """.asAS[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)]
+    """.asAS[(TransactionId, BlockHash, TimeStamp, Int)]
 
-  private def getTxHashesByBlockHashWithPaginationQuery(blockHash: BlockEntry.Hash,
+  private def getTxHashesByBlockHashWithPaginationQuery(blockHash: BlockHash,
                                                         offset: Long,
                                                         limit: Long) =
     sql"""
@@ -154,7 +155,7 @@ object TransactionQueries extends StrictLogging {
       ORDER BY tx_order
       LIMIT $limit
       OFFSET $offset
-    """.asAS[(Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)]
+    """.asAS[(TransactionId, BlockHash, TimeStamp, Int)]
 
   def countAddressTransactionsSQLNoJoin(address: Address): DBActionSR[Int] = {
     sql"""
@@ -177,7 +178,7 @@ object TransactionQueries extends StrictLogging {
     """.asAS[TxByAddressQR]
   }
 
-  def getTransactionsByBlockHash(blockHash: BlockEntry.Hash)(
+  def getTransactionsByBlockHash(blockHash: BlockHash)(
       implicit ec: ExecutionContext): DBActionSR[Transaction] = {
     for {
       txHashesTs <- getTxHashesByBlockHashQuery(blockHash)
@@ -185,7 +186,7 @@ object TransactionQueries extends StrictLogging {
     } yield txs
   }
 
-  def getTransactionsByBlockHashWithPagination(blockHash: BlockEntry.Hash, pagination: Pagination)(
+  def getTransactionsByBlockHashWithPagination(blockHash: BlockHash, pagination: Pagination)(
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     val offset = pagination.offset.toLong
     val limit  = pagination.limit.toLong
@@ -275,11 +276,15 @@ object TransactionQueries extends StrictLogging {
     }
   }
 
-  def gasFromTxsSQL(
-      hashes: ArraySeq[(Transaction.Hash, BlockEntry.Hash)]): DBActionSR[GasFromTxsQR] = {
+  def gasFromTxsSQL(hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionSR[GasFromTxsQR] = {
     if (hashes.nonEmpty) {
       val values =
-        hashes.map { case (txHash, blockHash) => s"('\\x$txHash','\\x$blockHash')" }.mkString(",")
+        hashes
+          .map {
+            case (txHash, blockHash) =>
+              s"('\\x${txHash.toHexString}','\\x${blockHash.toHexString}')"
+          }
+          .mkString(",")
       sql"""
     SELECT hash, gas_amount, gas_price
     FROM transactions
@@ -291,8 +296,8 @@ object TransactionQueries extends StrictLogging {
   }
 
   private def getKnownTransactionAction(
-      txHash: Transaction.Hash,
-      blockHash: BlockEntry.Hash,
+      txHash: TransactionId,
+      blockHash: BlockHash,
       timestamp: TimeStamp,
       gasAmount: Int,
       gasPrice: U256)(implicit ec: ExecutionContext): DBActionR[Transaction] =

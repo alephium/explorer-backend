@@ -41,6 +41,7 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.protocol.ALPH
+import org.alephium.protocol.model.TransactionId
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 class TransactionQueriesSpec
@@ -277,7 +278,7 @@ class TransactionQueriesSpec
     val to   = timestampMaxValue
     FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from)).futureValue
 
-    def tx(output: OutputEntity, spent: Option[Transaction.Hash], inputs: ArraySeq[Input]) = {
+    def tx(output: OutputEntity, spent: Option[TransactionId], inputs: ArraySeq[Input]) = {
       Transaction(
         output.txHash,
         output.blockHash,

@@ -28,13 +28,14 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.{foldFutures, GroupSetting}
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.explorer.api.model.{GroupIndex, Height}
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.persistence.queries.{BlockQueries, InputUpdateQueries}
 import org.alephium.explorer.util.{Scheduler, TimeUtil}
+import org.alephium.protocol.model.BlockHash
 import org.alephium.util.{Duration, TimeStamp}
 
 /*
@@ -247,7 +248,7 @@ case object BlockFlowSyncService extends StrictLogging {
       }
   }
 
-  private def updateMainChain(hash: BlockEntry.Hash, chainFrom: GroupIndex, chainTo: GroupIndex)(
+  private def updateMainChain(hash: BlockHash, chainFrom: GroupIndex, chainTo: GroupIndex)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
@@ -309,7 +310,7 @@ case object BlockFlowSyncService extends StrictLogging {
     }
   }
 
-  private def handleMissingMainChainBlock(missing: BlockEntry.Hash, chainFrom: GroupIndex)(
+  private def handleMissingMainChainBlock(missing: BlockHash, chainFrom: GroupIndex)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,

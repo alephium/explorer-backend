@@ -27,25 +27,29 @@ import org.scalacheck.Gen
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.ALPH
+import org.alephium.protocol.model.{BlockHash, ContractId, TokenId, TransactionId, TxOutputRef}
 import org.alephium.util.{Base58, Number, U256}
 
 /** Generators for types supplied by `org.alephium.explorer.api.model` package */
 object GenApiModel extends ImplicitConversions {
 
-  val hashGen: Gen[Hash]                        = Gen.const(()).map(_ => Hash.generate)
-  val blockHashGen: Gen[BlockHash]              = Gen.const(()).map(_ => BlockHash.generate)
-  val blockEntryHashGen: Gen[BlockEntry.Hash]   = blockHashGen.map(new BlockEntry.Hash(_))
-  val transactionHashGen: Gen[Transaction.Hash] = hashGen.map(new Transaction.Hash(_))
-  val groupIndexGen: Gen[GroupIndex]            = Gen.posNum[Int].map(GroupIndex.unsafe(_))
-  val heightGen: Gen[Height]                    = Gen.posNum[Int].map(Height.unsafe(_))
-  val addressGen: Gen[Address]                  = hashGen.map(hash => Address.unsafe(Base58.encode(hash.bytes)))
-  val bytesGen: Gen[ByteString]                 = hashGen.map(_.bytes)
-  val hashrateGen: Gen[BigInteger]              = arbitrary[Long].map(BigInteger.valueOf)
-  val amountGen: Gen[U256]                      = Gen.choose(1000L, Number.quadrillion).map(ALPH.nanoAlph)
+  val hashGen: Gen[Hash]                     = Gen.const(()).map(_ => Hash.generate)
+  val blockHashGen: Gen[BlockHash]           = Gen.const(()).map(_ => BlockHash.generate)
+  val blockEntryHashGen: Gen[BlockHash]      = blockHashGen
+  val transactionHashGen: Gen[TransactionId] = hashGen.map(TransactionId.unsafe)
+  val tokenIdGen: Gen[TokenId]               = hashGen.map(TokenId.unsafe)
+  val outputRefKeyGen: Gen[TxOutputRef.Key]  = hashGen.map(new TxOutputRef.Key(_))
+  val contractIdGen: Gen[ContractId]         = hashGen.map(ContractId.unsafe)
+  val groupIndexGen: Gen[GroupIndex]         = Gen.posNum[Int].map(GroupIndex.unsafe(_))
+  val heightGen: Gen[Height]                 = Gen.posNum[Int].map(Height.unsafe(_))
+  val addressGen: Gen[Address]               = hashGen.map(hash => Address.unsafe(Base58.encode(hash.bytes)))
+  val bytesGen: Gen[ByteString]              = hashGen.map(_.bytes)
+  val hashrateGen: Gen[BigInteger]           = arbitrary[Long].map(BigInteger.valueOf)
+  val amountGen: Gen[U256]                   = Gen.choose(1000L, Number.quadrillion).map(ALPH.nanoAlph)
 
   val outputRefGen: Gen[OutputRef] = for {
     hint <- arbitrary[Int]
-    key  <- hashGen
+    key  <- outputRefKeyGen.map(_.value)
   } yield OutputRef(hint, key)
 
   val unlockScriptGen: Gen[ByteString] = hashGen.map(_.bytes)
@@ -58,7 +62,7 @@ object GenApiModel extends ImplicitConversions {
   } yield Input(outputRef, unlockScript, address, amount)
 
   val tokenGen: Gen[Token] = for {
-    id     <- hashGen
+    id     <- tokenIdGen
     amount <- amountGen
   } yield Token(id, amount)
 
@@ -73,7 +77,7 @@ object GenApiModel extends ImplicitConversions {
       spent    <- Gen.option(transactionHashGen)
       message  <- Gen.option(bytesGen)
       hint = 0
-      key <- hashGen
+      key <- outputRefKeyGen.map(_.value)
     } yield AssetOutput(hint, key, amount, address, tokens, lockTime, message, spent)
 
   val contractOutputGen: Gen[ContractOutput] =
@@ -83,7 +87,7 @@ object GenApiModel extends ImplicitConversions {
       tokens  <- Gen.option(tokensGen)
       spent   <- Gen.option(transactionHashGen)
       hint = 0
-      key <- hashGen
+      key <- outputRefKeyGen.map(_.value)
     } yield ContractOutput(hint, key, amount, address, tokens, spent)
 
   val outputGen: Gen[Output] =

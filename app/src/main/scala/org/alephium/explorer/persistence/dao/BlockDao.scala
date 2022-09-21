@@ -37,23 +37,23 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.ChainIndex
+import org.alephium.protocol.model.{BlockHash, ChainIndex}
 import org.alephium.util.{Duration, TimeStamp}
 
 object BlockDao {
 
-  def getLite(hash: BlockEntry.Hash)(
+  def getLite(hash: BlockHash)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntryLite]] =
     run(getBlockEntryLiteAction(hash))
 
-  def getTransactions(hash: BlockEntry.Hash, pagination: Pagination)(
+  def getTransactions(hash: BlockHash, pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     run(getTransactionsByBlockHashWithPagination(hash, pagination))
 
-  def get(hash: BlockEntry.Hash)(implicit ec: ExecutionContext,
-                                 dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntry]] =
+  def get(hash: BlockHash)(implicit ec: ExecutionContext,
+                           dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntry]] =
     run(getBlockEntryAction(hash))
 
   def getAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
@@ -107,12 +107,12 @@ object BlockDao {
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
-  private def updateMainChainAction(hash: BlockEntry.Hash,
+  private def updateMainChainAction(hash: BlockHash,
                                     chainFrom: GroupIndex,
                                     chainTo: GroupIndex,
                                     groupNum: Int)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): DBActionRWT[Option[BlockEntry.Hash]] =
+      dc: DatabaseConfig[PostgresProfile]): DBActionRWT[Option[BlockHash]] =
     getBlockHeaderAction(hash)
       .flatMap {
         case Some(block) if !block.mainChain =>
@@ -137,15 +137,12 @@ object BlockDao {
         case None                => DBIOAction.successful(None)
       }
 
-  def updateMainChain(hash: BlockEntry.Hash,
-                      chainFrom: GroupIndex,
-                      chainTo: GroupIndex,
-                      groupNum: Int)(
+  def updateMainChain(hash: BlockHash, chainFrom: GroupIndex, chainTo: GroupIndex, groupNum: Int)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntry.Hash]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockHash]] =
     run(updateMainChainAction(hash, chainFrom, chainTo, groupNum))
 
-  def updateMainChainStatus(hash: BlockEntry.Hash, isMainChain: Boolean)(
+  def updateMainChainStatus(hash: BlockHash, isMainChain: Boolean)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Unit] =
     run(updateMainChainStatusAction(hash, isMainChain))

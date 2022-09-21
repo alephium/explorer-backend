@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.api.model
 
-import org.alephium.explorer.api.Json.u256ReadWriter
+import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
 import org.alephium.util.U256
 

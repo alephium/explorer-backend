@@ -20,6 +20,7 @@ import org.alephium.api.UtilJson._
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.Generators._
+import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
 
 class ApiModelSpec() extends AlephiumSpec {
@@ -39,7 +40,7 @@ class ApiModelSpec() extends AlephiumSpec {
       val expected = s"""
        |{
        |  "hash": "${tx.hash.value.toHexString}",
-       |  "blockHash": "${tx.blockHash}",
+       |  "blockHash": "${tx.blockHash.value.toHexString}",
        |  "timestamp": ${tx.timestamp.millis},
        |  "inputs": [],
        |  "outputs": [],
@@ -56,7 +57,7 @@ class ApiModelSpec() extends AlephiumSpec {
        |{
        |  "type": "Confirmed",
        |  "hash": "${tx.hash.value.toHexString}",
-       |  "blockHash": "${tx.blockHash}",
+       |  "blockHash": "${tx.blockHash.value.toHexString}",
        |  "timestamp": ${tx.timestamp.millis},
        |  "inputs": [],
        |  "outputs": [],

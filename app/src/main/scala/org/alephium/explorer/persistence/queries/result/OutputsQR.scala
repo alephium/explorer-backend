@@ -25,6 +25,7 @@ import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.protocol.model.TransactionId
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputsQR {
@@ -52,7 +53,7 @@ final case class OutputsQR(outputType: OutputEntity.OutputType,
                            tokens: Option[ArraySeq[Token]],
                            lockTime: Option[TimeStamp],
                            message: Option[ByteString],
-                           spentFinalized: Option[Transaction.Hash]) {
+                           spentFinalized: Option[TransactionId]) {
 
   def toApiOutput(): Output =
     outputType match {

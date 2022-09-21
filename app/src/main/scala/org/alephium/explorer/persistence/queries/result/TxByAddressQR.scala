@@ -20,13 +20,13 @@ import scala.collection.immutable.ArraySeq
 
 import slick.jdbc.{GetResult, PositionedResult}
 
-import org.alephium.explorer.api.model.{BlockEntry, Transaction}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.TimeStamp
 
 object TxByAddressQR {
 
-  private type Tuple = (Transaction.Hash, BlockEntry.Hash, TimeStamp, Int)
+  private type Tuple = (TransactionId, BlockHash, TimeStamp, Int)
 
   implicit val transactionByAddressQRGetResult: GetResult[TxByAddressQR] =
     (result: PositionedResult) =>
@@ -53,12 +53,12 @@ object TxByAddressQR {
 }
 
 /** Query result for [[org.alephium.explorer.persistence.queries.TransactionQueries.getTransactionsByAddressNoJoin]] */
-final case class TxByAddressQR(txHash: Transaction.Hash,
-                               blockHash: BlockEntry.Hash,
+final case class TxByAddressQR(txHash: TransactionId,
+                               blockHash: BlockHash,
                                blockTimestamp: TimeStamp,
                                txOrder: Int) {
 
-  def hashes(): (Transaction.Hash, BlockEntry.Hash) =
+  def hashes(): (TransactionId, BlockHash) =
     (txHash, blockHash)
 
 }

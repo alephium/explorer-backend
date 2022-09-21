@@ -19,10 +19,11 @@ package org.alephium.explorer.persistence.model
 import scala.collection.immutable.ArraySeq
 
 import org.alephium.explorer.api.model._
+import org.alephium.protocol.model.TransactionId
 import org.alephium.util.{TimeStamp, U256}
 
 final case class UnconfirmedTxEntity(
-    hash: Transaction.Hash,
+    hash: TransactionId,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     gasAmount: Int,

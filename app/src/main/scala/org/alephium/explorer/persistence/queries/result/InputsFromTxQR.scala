@@ -24,6 +24,7 @@ import slick.jdbc.{GetResult, PositionedResult}
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.protocol.model.TransactionId
 import org.alephium.util.U256
 
 object InputsFromTxQR {
@@ -42,7 +43,7 @@ object InputsFromTxQR {
 }
 
 /** Query result for [[org.alephium.explorer.persistence.queries.InputQueries.inputsFromTxsNoJoin]] */
-final case class InputsFromTxQR(txHash: Transaction.Hash,
+final case class InputsFromTxQR(txHash: TransactionId,
                                 inputOrder: Int,
                                 hint: Int,
                                 outputRefKey: Hash,

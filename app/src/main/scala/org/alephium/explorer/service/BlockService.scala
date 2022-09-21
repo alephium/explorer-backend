@@ -26,13 +26,14 @@ import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.dao.BlockDao
+import org.alephium.protocol.model.BlockHash
 
 trait BlockService {
-  def getLiteBlockByHash(hash: BlockEntry.Hash)(
+  def getLiteBlockByHash(hash: BlockHash)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntryLite]]
 
-  def getBlockTransactions(hash: BlockEntry.Hash, pagination: Pagination)(
+  def getBlockTransactions(hash: BlockHash, pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]]
 
@@ -51,12 +52,12 @@ trait BlockService {
 
 object BlockService extends BlockService {
 
-  def getLiteBlockByHash(hash: BlockEntry.Hash)(
+  def getLiteBlockByHash(hash: BlockHash)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntryLite]] =
     BlockDao.getLite(hash)
 
-  def getBlockTransactions(hash: BlockEntry.Hash, pagination: Pagination)(
+  def getBlockTransactions(hash: BlockHash, pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     BlockDao.getTransactions(hash, pagination)

@@ -21,11 +21,12 @@ import scala.collection.immutable.ArraySeq
 import akka.util.ByteString
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, AssetOutput, Token, Transaction}
+import org.alephium.explorer.api.model.{Address, AssetOutput, Token}
+import org.alephium.protocol.model.TransactionId
 import org.alephium.util.{TimeStamp, U256}
 
 final case class UOutputEntity(
-    txHash: Transaction.Hash,
+    txHash: TransactionId,
     hint: Int,
     key: Hash,
     amount: U256,

@@ -29,6 +29,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.{AppState, AppStateKey, OutputEntity}
+import org.alephium.protocol.model.{BlockHash, TokenId, TransactionId}
 import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
 
@@ -40,24 +41,23 @@ object CustomJdbcTypes {
       raw => from(Hash.unsafe(ByteString.fromArrayUnsafe(raw)))
     )
 
-  private def buildBlockHashTypes[H: ClassTag](from: BlockHash => H,
-                                               to: H           => BlockHash): JdbcType[H] =
-    MappedJdbcType.base[H, Array[Byte]](
-      to(_).bytes.toArray,
-      raw => from(BlockHash.unsafe(ByteString.fromArrayUnsafe(raw)))
-    )
-
   implicit val hashType: JdbcType[Hash] = buildHashTypes(identity, identity)
 
-  implicit val blockEntryHashType: JdbcType[BlockEntry.Hash] =
-    buildBlockHashTypes(
-      new BlockEntry.Hash(_),
+  implicit val blockEntryHashType: JdbcType[BlockHash] =
+    MappedJdbcType.base[BlockHash, Array[Byte]](
+      _.bytes.toArray,
+      raw => BlockHash.unsafe(ByteString.fromArrayUnsafe(raw))
+    )
+
+  implicit val transactionIdType: JdbcType[TransactionId] =
+    buildHashTypes(
+      TransactionId.unsafe(_),
       _.value
     )
 
-  implicit val transactionHashType: JdbcType[Transaction.Hash] =
+  implicit val tokenIdType: JdbcType[TokenId] =
     buildHashTypes(
-      new Transaction.Hash(_),
+      TokenId.unsafe(_),
       _.value
     )
 

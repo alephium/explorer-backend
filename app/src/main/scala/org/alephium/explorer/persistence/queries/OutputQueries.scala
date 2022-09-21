@@ -32,6 +32,7 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputQueries {
@@ -296,10 +297,9 @@ object OutputQueries {
     }
   }
 
-  def outputsFromTxsSQL(
-      txHashes: ArraySeq[Transaction.Hash]): DBActionR[ArraySeq[OutputsFromTxQR]] =
+  def outputsFromTxsSQL(txHashes: ArraySeq[TransactionId]): DBActionR[ArraySeq[OutputsFromTxQR]] =
     if (txHashes.nonEmpty) {
-      val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
+      val values = txHashes.map(hash => s"'\\x${hash.toHexString}'").mkString(",")
       sql"""
           SELECT outputs.tx_hash,
                  outputs.output_order,
@@ -323,9 +323,9 @@ object OutputQueries {
       DBIOAction.successful(ArraySeq.empty)
     }
 
-  def outputsFromTxsSQLAS(txHashes: ArraySeq[Transaction.Hash]): DBActionSR[OutputsFromTxQR] =
+  def outputsFromTxsSQLAS(txHashes: ArraySeq[TransactionId]): DBActionSR[OutputsFromTxQR] =
     if (txHashes.nonEmpty) {
-      val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
+      val values = txHashes.map(hash => s"'\\x${hash.toHexString}'").mkString(",")
       sql"""
           SELECT outputs.tx_hash,
                  outputs.output_order,
@@ -350,7 +350,7 @@ object OutputQueries {
     }
 
   def outputsFromTxsNoJoin(
-      hashes: ArraySeq[(Transaction.Hash, BlockEntry.Hash)]): DBActionR[ArraySeq[OutputsFromTxQR]] =
+      hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionR[ArraySeq[OutputsFromTxQR]] =
     if (hashes.nonEmpty) {
       val params = paramPlaceholderTuple2(1, hashes.size)
 
@@ -387,7 +387,7 @@ object OutputQueries {
       DBIOAction.successful(ArraySeq.empty)
     }
 
-  def getOutputsQuery(txHash: Transaction.Hash, blockHash: BlockEntry.Hash): DBActionSR[OutputsQR] =
+  def getOutputsQuery(txHash: TransactionId, blockHash: BlockHash): DBActionSR[OutputsQR] =
     sql"""
         SELECT output_type,
                hint,
@@ -461,8 +461,8 @@ object OutputQueries {
     }
   }
 
-  def getTxnHash(key: Hash): DBActionSR[Transaction.Hash] =
-    getTxnHashSQL(key).asAS[Transaction.Hash]
+  def getTxnHash(key: Hash): DBActionSR[TransactionId] =
+    getTxnHashSQL(key).asAS[TransactionId]
 
   /** Fetch `tx_hash` for keys where `main_chain` is true */
   def getTxnHashSQL(key: Hash): SQLActionBuilder =

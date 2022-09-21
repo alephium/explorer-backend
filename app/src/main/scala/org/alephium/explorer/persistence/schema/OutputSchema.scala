@@ -23,17 +23,18 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, BlockEntry, Token, Transaction}
+import org.alephium.explorer.api.model.{Address, Token}
 import org.alephium.explorer.persistence.DBActionW
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
 
   class Outputs(tag: Tag) extends Table[OutputEntity](tag, name) {
-    def blockHash: Rep[BlockEntry.Hash]          = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
-    def txHash: Rep[Transaction.Hash]            = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
+    def blockHash: Rep[BlockHash]                = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
+    def txHash: Rep[TransactionId]               = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
     def timestamp: Rep[TimeStamp]                = column[TimeStamp]("block_timestamp")
     def outputType: Rep[OutputEntity.OutputType] = column[OutputEntity.OutputType]("output_type")
     def hint: Rep[Int]                           = column[Int]("hint")
@@ -47,8 +48,8 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
     def message: Rep[Option[ByteString]]     = column[Option[ByteString]]("message")
     def outputOrder: Rep[Int]                = column[Int]("output_order")
     def txOrder: Rep[Int]                    = column[Int]("tx_order")
-    def spentFinalized: Rep[Option[Transaction.Hash]] =
-      column[Option[Transaction.Hash]]("spent_finalized", O.Default(None))
+    def spentFinalized: Rep[Option[TransactionId]] =
+      column[Option[TransactionId]]("spent_finalized", O.Default(None))
 
     def pk: PrimaryKey = primaryKey("outputs_pk", (key, blockHash))
 

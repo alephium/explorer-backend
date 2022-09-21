@@ -16,14 +16,13 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.api.model.{BlockEntry, Transaction}
-import org.alephium.protocol.Hash
+import org.alephium.protocol.model.{BlockHash, TokenId, TransactionId}
 import org.alephium.util.TimeStamp
 
 final case class TransactionPerTokenEntity(
-    hash: Transaction.Hash,
-    blockHash: BlockEntry.Hash,
-    token: Hash,
+    hash: TransactionId,
+    blockHash: BlockHash,
+    token: TokenId,
     timestamp: TimeStamp,
     txOrder: Int,
     mainChain: Boolean

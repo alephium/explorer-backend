@@ -25,7 +25,7 @@ import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.api.Codecs
 import org.alephium.explorer.api.model._
-import org.alephium.protocol.Hash
+import org.alephium.protocol.model.TokenId
 
 // scalastyle:off magic.number
 trait AddressesEndpoints extends BaseEndpoint with QueryParams {
@@ -46,19 +46,19 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
     baseEndpoint
       .tag("Addresses")
       .in("addresses")
-      .in(path[Address]("address")(Codecs.addressTapirCodec))
+      .in(path[Address]("address")(Codecs.explorerAddressTapirCodec))
       .in("tokens")
 
   val getAddressInfo: BaseEndpoint[Address, AddressInfo] =
     addressesEndpoint.get
-      .in(path[Address]("address")(Codecs.addressTapirCodec))
+      .in(path[Address]("address")(Codecs.explorerAddressTapirCodec))
       .out(jsonBody[AddressInfo])
       .description("Get address information")
 
   val getTransactionsByAddressDEPRECATED
     : BaseEndpoint[(Address, Pagination), ArraySeq[Transaction]] =
     addressesEndpoint.get
-      .in(path[Address]("address")(Codecs.addressTapirCodec))
+      .in(path[Address]("address")(Codecs.explorerAddressTapirCodec))
       .in("transactions-DEPRECATED")
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])
@@ -66,7 +66,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
 
   val getTransactionsByAddress: BaseEndpoint[(Address, Pagination), ArraySeq[Transaction]] =
     addressesEndpoint.get
-      .in(path[Address]("address")(Codecs.addressTapirCodec))
+      .in(path[Address]("address")(Codecs.explorerAddressTapirCodec))
       .in("transactions")
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])
@@ -74,41 +74,41 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
 
   val getTotalTransactionsByAddress: BaseEndpoint[Address, Int] =
     addressesEndpoint.get
-      .in(path[Address]("address")(Codecs.addressTapirCodec))
+      .in(path[Address]("address")(Codecs.explorerAddressTapirCodec))
       .in("total-transactions")
       .out(jsonBody[Int])
       .description("Get total transactions of a given address")
 
   val addressUnconfirmedTransactions: BaseEndpoint[Address, ArraySeq[UnconfirmedTransaction]] =
     addressesEndpoint.get
-      .in(path[Address]("address")(Codecs.addressTapirCodec))
+      .in(path[Address]("address")(Codecs.explorerAddressTapirCodec))
       .in("unconfirmed-transactions")
       .out(jsonBody[ArraySeq[UnconfirmedTransaction]])
       .description("List unconfirmed transactions of a given address")
 
   val getAddressBalance: BaseEndpoint[Address, AddressBalance] =
     addressesEndpoint.get
-      .in(path[Address]("address")(Codecs.addressTapirCodec))
+      .in(path[Address]("address")(Codecs.explorerAddressTapirCodec))
       .in("balance")
       .out(jsonBody[AddressBalance])
       .description("Get address balance")
 
-  val listAddressTokens: BaseEndpoint[Address, ArraySeq[Hash]] =
+  val listAddressTokens: BaseEndpoint[Address, ArraySeq[TokenId]] =
     addressesTokensEndpoint.get
-      .out(jsonBody[ArraySeq[Hash]])
+      .out(jsonBody[ArraySeq[TokenId]])
       .description("List address tokens")
 
-  val getAddressTokenBalance: BaseEndpoint[(Address, Hash), AddressBalance] =
+  val getAddressTokenBalance: BaseEndpoint[(Address, TokenId), AddressBalance] =
     addressesTokensEndpoint.get
-      .in(path[Hash]("token-id"))
+      .in(path[TokenId]("token-id"))
       .in("balance")
       .out(jsonBody[AddressBalance])
       .description("Get address balance of given token")
 
   val listAddressTokenTransactions
-    : BaseEndpoint[(Address, Hash, Pagination), ArraySeq[Transaction]] =
+    : BaseEndpoint[(Address, TokenId, Pagination), ArraySeq[Transaction]] =
     addressesTokensEndpoint.get
-      .in(path[Hash]("token-id"))
+      .in(path[TokenId]("token-id"))
       .in("transactions")
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])

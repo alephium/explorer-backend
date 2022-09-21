@@ -33,12 +33,13 @@ import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.queries.BlockQueries._
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.protocol.model.BlockHash
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.IterableOps"))
 object SanityChecker extends StrictLogging {
 
   private def findLatestBlock(from: GroupIndex, to: GroupIndex)(
-      implicit dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntry.Hash]] = {
+      implicit dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockHash]] = {
     run(
       BlockHeaderSchema.table
         .filter(header => header.mainChain && header.chainFrom === from && header.chainTo === to)
@@ -99,7 +100,7 @@ object SanityChecker extends StrictLogging {
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-  private def handleMissingBlock(missing: BlockEntry.Hash, chainFrom: GroupIndex)(
+  private def handleMissingBlock(missing: BlockHash, chainFrom: GroupIndex)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
@@ -116,12 +117,12 @@ object SanityChecker extends StrictLogging {
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
-  private def updateMainChainAction(hash: BlockEntry.Hash,
+  private def updateMainChainAction(hash: BlockHash,
                                     chainFrom: GroupIndex,
                                     chainTo: GroupIndex,
                                     groupNum: Int)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): DBActionRWT[Option[BlockEntry.Hash]] = {
+      dc: DatabaseConfig[PostgresProfile]): DBActionRWT[Option[BlockHash]] = {
     i = i + 1
     if (i % 10000 == 0) {
       logger.debug(s"Checked $i blocks , progress ${(i.toFloat / totalNbOfBlocks * 100.0).toInt}%")
@@ -152,11 +153,8 @@ object SanityChecker extends StrictLogging {
       }
   }
 
-  def updateMainChain(hash: BlockEntry.Hash,
-                      chainFrom: GroupIndex,
-                      chainTo: GroupIndex,
-                      groupNum: Int)(
+  def updateMainChain(hash: BlockHash, chainFrom: GroupIndex, chainTo: GroupIndex, groupNum: Int)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntry.Hash]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockHash]] =
     run(updateMainChainAction(hash, chainFrom, chainTo, groupNum))
 }

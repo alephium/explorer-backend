@@ -23,17 +23,18 @@ import scala.collection.immutable.ArraySeq
 import akka.util.ByteString
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.explorer.api.model.{GroupIndex, Height}
 import org.alephium.explorer.service.FlowEntity
+import org.alephium.protocol.model.BlockHash
 import org.alephium.util.TimeStamp
 
 final case class BlockEntity(
-    hash: BlockEntry.Hash,
+    hash: BlockHash,
     timestamp: TimeStamp,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     height: Height,
-    deps: ArraySeq[BlockEntry.Hash],
+    deps: ArraySeq[BlockHash],
     transactions: ArraySeq[TransactionEntity],
     inputs: ArraySeq[InputEntity],
     outputs: ArraySeq[OutputEntity],

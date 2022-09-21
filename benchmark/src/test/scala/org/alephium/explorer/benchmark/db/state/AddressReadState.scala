@@ -28,7 +28,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.crypto.Blake2b
-import org.alephium.explorer.{BlockHash, GroupSetting, Hash}
+import org.alephium.explorer.{GroupSetting, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
@@ -38,6 +38,7 @@ import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.protocol.ALPH
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.{Base58, TimeStamp, U256}
 
 class Queries(val config: DatabaseConfig[PostgresProfile])(
@@ -64,12 +65,12 @@ class AddressReadState(val db: DBExecutor)
 
   var blocks: ArraySeq[BlockEntity] = _
 
-  lazy val hashes: ArraySeq[(Transaction.Hash, BlockEntry.Hash)] = ArraySeq.from(
+  lazy val hashes: ArraySeq[(TransactionId, BlockHash)] = ArraySeq.from(
     Random
       .shuffle(blocks.flatMap(_.transactions.map(tx => (tx.hash, tx.blockHash))).toMap)
       .take(100))
 
-  lazy val txHashes: ArraySeq[Transaction.Hash] = hashes.map(_._1)
+  lazy val txHashes: ArraySeq[TransactionId] = hashes.map(_._1)
 
   val pagination: Pagination = Pagination.unsafe(
     offset  = 0,
@@ -77,8 +78,8 @@ class AddressReadState(val db: DBExecutor)
     reverse = false
   )
 
-  private def generateInput(blockHash: BlockEntry.Hash,
-                            txHash: Transaction.Hash,
+  private def generateInput(blockHash: BlockHash,
+                            txHash: TransactionId,
                             timestamp: TimeStamp,
                             hint: Int,
                             key: Hash): InputEntity = {
@@ -97,8 +98,8 @@ class AddressReadState(val db: DBExecutor)
       None
     )
   }
-  private def generateTransaction(blockHash: BlockEntry.Hash,
-                                  txHash: Transaction.Hash,
+  private def generateTransaction(blockHash: BlockHash,
+                                  txHash: TransactionId,
                                   timestamp: TimeStamp): TransactionEntity =
     TransactionEntity(
       hash              = txHash,
@@ -116,8 +117,8 @@ class AddressReadState(val db: DBExecutor)
     )
 
   def generateData(currentCacheSize: Int): OutputEntity = {
-    val blockHash = new BlockEntry.Hash(BlockHash.generate)
-    val txHash    = new Transaction.Hash(Hash.generate)
+    val blockHash = BlockHash.generate
+    val txHash    = TransactionId.generate
     val timestamp = TimeStamp.now()
 
     OutputEntity(

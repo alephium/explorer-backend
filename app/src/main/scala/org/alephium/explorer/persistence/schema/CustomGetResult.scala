@@ -23,9 +23,10 @@ import scala.collection.immutable.ArraySeq
 import akka.util.ByteString
 import slick.jdbc.{GetResult, PositionedResult}
 
-import org.alephium.explorer.{BlockHash, Hash}
+import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
+import org.alephium.protocol.model.{BlockHash, TokenId, TransactionId}
 import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
 
@@ -34,25 +35,28 @@ object CustomGetResult {
   /**
     * GetResult types
     */
-  implicit val blockEntryHashGetResult: GetResult[BlockEntry.Hash] =
-    (result: PositionedResult) =>
-      new BlockEntry.Hash(new BlockHash(ByteString.fromArrayUnsafe(result.nextBytes())))
+  implicit val blockEntryHashGetResult: GetResult[BlockHash] =
+    (result: PositionedResult) => BlockHash.unsafe(ByteString.fromArrayUnsafe(result.nextBytes()))
 
-  implicit val txHashGetResult: GetResult[Transaction.Hash] =
+  implicit val txHashGetResult: GetResult[TransactionId] =
     (result: PositionedResult) =>
-      new Transaction.Hash(new Hash(ByteString.fromArrayUnsafe(result.nextBytes())))
+      TransactionId.unsafe(new Hash(ByteString.fromArrayUnsafe(result.nextBytes())))
 
-  implicit val optionTxHashGetResult: GetResult[Option[Transaction.Hash]] =
+  implicit val tokenIdGetResult: GetResult[TokenId] =
+    (result: PositionedResult) =>
+      TokenId.unsafe(new Hash(ByteString.fromArrayUnsafe(result.nextBytes())))
+
+  implicit val optionTxHashGetResult: GetResult[Option[TransactionId]] =
     (result: PositionedResult) =>
       result
         .nextBytesOption()
-        .map(bytes => new Transaction.Hash(new Hash(ByteString.fromArrayUnsafe(bytes))))
+        .map(bytes => TransactionId.unsafe(new Hash(ByteString.fromArrayUnsafe(bytes))))
 
-  implicit val optionBlockEntryHashGetResult: GetResult[Option[BlockEntry.Hash]] =
+  implicit val optionBlockEntryHashGetResult: GetResult[Option[BlockHash]] =
     (result: PositionedResult) =>
       result
         .nextBytesOption()
-        .map(bytes => new BlockEntry.Hash(new BlockHash(ByteString.fromArrayUnsafe(bytes))))
+        .map(bytes => BlockHash.unsafe(ByteString.fromArrayUnsafe(bytes)))
 
   implicit val timestampGetResult: GetResult[TimeStamp] =
     (result: PositionedResult) => TimeStamp.unsafe(result.nextLong())

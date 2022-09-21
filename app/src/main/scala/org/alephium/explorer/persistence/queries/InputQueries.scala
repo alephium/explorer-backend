@@ -23,7 +23,6 @@ import slick.dbio.DBIOAction
 import slick.jdbc._
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, InputsQR}
@@ -31,6 +30,7 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 
 object InputQueries {
 
@@ -79,9 +79,9 @@ object InputQueries {
       ).asUpdate
     }
 
-  def inputsFromTxsSQL(txHashes: ArraySeq[Transaction.Hash]): DBActionR[ArraySeq[InputsFromTxQR]] =
+  def inputsFromTxsSQL(txHashes: ArraySeq[TransactionId]): DBActionR[ArraySeq[InputsFromTxQR]] =
     if (txHashes.nonEmpty) {
-      val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
+      val values = txHashes.map(hash => s"'\\x${hash.toHexString}'").mkString(",")
       sql"""
           SELECT inputs.tx_hash,
                  inputs.input_order,
@@ -102,9 +102,9 @@ object InputQueries {
       DBIOAction.successful(ArraySeq.empty)
     }
 
-  def inputsFromTxsSQLAS(txHashes: ArraySeq[Transaction.Hash]): DBActionSR[InputsFromTxQR] =
+  def inputsFromTxsSQLAS(txHashes: ArraySeq[TransactionId]): DBActionSR[InputsFromTxQR] =
     if (txHashes.nonEmpty) {
-      val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
+      val values = txHashes.map(hash => s"'\\x${hash.toHexString}'").mkString(",")
       sql"""
           SELECT inputs.tx_hash,
                  inputs.input_order,
@@ -126,7 +126,7 @@ object InputQueries {
     }
 
   def inputsFromTxsNoJoin(
-      hashes: ArraySeq[(Transaction.Hash, BlockEntry.Hash)]): DBActionR[ArraySeq[InputsFromTxQR]] =
+      hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionR[ArraySeq[InputsFromTxQR]] =
     if (hashes.nonEmpty) {
       inputsFromTxsNoJoinSQLBuilder(hashes).asAS[InputsFromTxQR]
     } else {
@@ -134,7 +134,7 @@ object InputQueries {
     }
 
   private def inputsFromTxsNoJoinSQLBuilder(
-      hashes: ArraySeq[(Transaction.Hash, BlockEntry.Hash)]): SQLActionBuilder = {
+      hashes: ArraySeq[(TransactionId, BlockHash)]): SQLActionBuilder = {
     val params = paramPlaceholderTuple2(1, hashes.size)
 
     val query =
@@ -166,7 +166,7 @@ object InputQueries {
     )
   }
 
-  def getInputsQuery(txHash: Transaction.Hash, blockHash: BlockEntry.Hash): DBActionSR[InputsQR] =
+  def getInputsQuery(txHash: TransactionId, blockHash: BlockHash): DBActionSR[InputsQR] =
     sql"""
         SELECT hint,
                output_ref_key,
@@ -202,7 +202,7 @@ object InputQueries {
 
   /** Runs explain on query `inputsFromTxsNoJoin` and checks the index `inputs_tx_hash_block_hash_idx`
     * is being used */
-  def explainInputsFromTxsNoJoin(hashes: ArraySeq[(Transaction.Hash, BlockEntry.Hash)])(
+  def explainInputsFromTxsNoJoin(hashes: ArraySeq[(TransactionId, BlockHash)])(
       implicit ec: ExecutionContext): DBActionR[ExplainResult] = {
     val queryName = "inputsFromTxsNoJoin"
     if (hashes.isEmpty) {

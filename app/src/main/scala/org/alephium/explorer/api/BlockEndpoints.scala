@@ -23,8 +23,8 @@ import sttp.tapir.generic.auto._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.explorer.api.BaseEndpoint
-import org.alephium.explorer.api.Codecs.blockEntryHashTapirCodec
 import org.alephium.explorer.api.model._
+import org.alephium.protocol.model.BlockHash
 
 trait BlockEndpoints extends BaseEndpoint with QueryParams {
 
@@ -33,15 +33,15 @@ trait BlockEndpoints extends BaseEndpoint with QueryParams {
       .tag("Blocks")
       .in("blocks")
 
-  val getBlockByHash: BaseEndpoint[BlockEntry.Hash, BlockEntryLite] =
+  val getBlockByHash: BaseEndpoint[BlockHash, BlockEntryLite] =
     blocksEndpoint.get
-      .in(path[BlockEntry.Hash]("block-hash"))
+      .in(path[BlockHash]("block-hash"))
       .out(jsonBody[BlockEntryLite])
       .description("Get a block with hash")
 
-  val getBlockTransactions: BaseEndpoint[(BlockEntry.Hash, Pagination), ArraySeq[Transaction]] =
+  val getBlockTransactions: BaseEndpoint[(BlockHash, Pagination), ArraySeq[Transaction]] =
     blocksEndpoint.get
-      .in(path[BlockEntry.Hash]("block-hash"))
+      .in(path[BlockHash]("block-hash"))
       .in("transactions")
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])

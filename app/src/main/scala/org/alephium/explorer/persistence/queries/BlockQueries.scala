@@ -39,6 +39,7 @@ import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
+import org.alephium.protocol.model.BlockHash
 import org.alephium.util.TimeStamp
 
 object BlockQueries extends StrictLogging {
@@ -67,20 +68,20 @@ object BlockQueries extends StrictLogging {
       txs  <- getTransactionsByBlockHash(blockHeader.hash)
     } yield blockHeader.toApi(deps, txs)
 
-  def getBlockEntryLiteAction(hash: BlockEntry.Hash)(
+  def getBlockEntryLiteAction(hash: BlockHash)(
       implicit ec: ExecutionContext): DBActionR[Option[BlockEntryLite]] =
     for {
       header <- BlockHeaderSchema.table.filter(_.hash === hash).result.headOption
     } yield header.map(_.toLiteApi)
 
-  def getBlockEntryAction(hash: BlockEntry.Hash)(
+  def getBlockEntryAction(hash: BlockHash)(
       implicit ec: ExecutionContext): DBActionR[Option[BlockEntry]] =
     for {
       headers <- BlockHeaderSchema.table.filter(_.hash === hash).result
       blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
     } yield blocks.headOption
 
-  def getBlockHeaderAction(hash: BlockEntry.Hash): DBActionR[Option[BlockHeader]] =
+  def getBlockHeaderAction(hash: BlockHash): DBActionR[Option[BlockHeader]] =
     sql"""
        |SELECT *
        |FROM #$block_headers
@@ -171,7 +172,7 @@ object BlockQueries extends StrictLogging {
          |""".stripMargin
   }
 
-  def updateMainChainStatusAction(hash: BlockEntry.Hash, isMainChain: Boolean)(
+  def updateMainChainStatusAction(hash: BlockHash, isMainChain: Boolean)(
       implicit ec: ExecutionContext): DBActionRWT[Unit] = {
     val query =
       for {
@@ -218,7 +219,7 @@ object BlockQueries extends StrictLogging {
       deps <- getDepsForBlock(blockHeader.hash)
     } yield blockHeader.toApi(deps, ArraySeq.empty)
 
-  def getBlockEntryWithoutTxsAction(hash: BlockEntry.Hash)(
+  def getBlockEntryWithoutTxsAction(hash: BlockHash)(
       implicit ec: ExecutionContext): DBActionR[Option[BlockEntry]] =
     for {
       headers <- BlockHeaderSchema.table.filter(_.hash === hash).result

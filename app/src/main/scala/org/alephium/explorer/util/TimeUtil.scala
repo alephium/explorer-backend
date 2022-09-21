@@ -57,7 +57,7 @@ object TimeUtil {
       if (next.isBefore(remoteTs)) {
         rec(next.plusMillisUnsafe(1), seq :+ ((l, next)))
       } else if (l == remoteTs) {
-        seq :+ ((remoteTs, remoteTs))
+        seq :+ ((remoteTs, remoteTs.plusMillisUnsafe(1)))
       } else {
         seq :+ ((l, remoteTs))
       }

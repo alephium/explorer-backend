@@ -21,14 +21,15 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, Transaction}
+import org.alephium.explorer.api.model.Address
 import org.alephium.explorer.persistence.model.UInputEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.protocol.model.TransactionId
 
 object UInputSchema extends Schema[UInputEntity]("uinputs") {
 
   class UInputs(tag: Tag) extends Table[UInputEntity](tag, name) {
-    def txHash: Rep[Transaction.Hash]         = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
+    def txHash: Rep[TransactionId]            = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
     def hint: Rep[Int]                        = column[Int]("hint")
     def outputRefKey: Rep[Hash]               = column[Hash]("output_ref_key", O.SqlType("BYTEA"))
     def unlockScript: Rep[Option[ByteString]] = column[Option[ByteString]]("unlock_script")

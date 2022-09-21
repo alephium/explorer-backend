@@ -17,14 +17,19 @@
 package org.alephium.explorer.api
 
 import sttp.tapir._
+import sttp.tapir.CodecFormat.TextPlain
 
 import org.alephium.api.TapirCodecs
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.Codecs._
 import org.alephium.explorer.api.model.{IntervalType, Pagination}
+import org.alephium.protocol.model.TokenId
 import org.alephium.util.TimeStamp
 
 trait QueryParams extends TapirCodecs {
+
+  implicit val tokenIdTapirCodec: Codec[String, TokenId, TextPlain] =
+    fromJson[TokenId]
 
   val pagination: EndpointInput[Pagination] =
     query[Option[Int]]("page")

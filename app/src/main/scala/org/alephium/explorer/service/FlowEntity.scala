@@ -18,19 +18,20 @@ package org.alephium.explorer.service
 
 import scala.collection.immutable.ArraySeq
 
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.explorer.api.model.{GroupIndex, Height}
+import org.alephium.protocol.model.BlockHash
 import org.alephium.util.TimeStamp
 
 trait FlowEntity {
-  def hash: BlockEntry.Hash
+  def hash: BlockHash
   def timestamp: TimeStamp
   def chainFrom: GroupIndex
   def chainTo: GroupIndex
   def height: Height
-  def deps: ArraySeq[BlockEntry.Hash]
+  def deps: ArraySeq[BlockHash]
   def mainChain: Boolean
 
-  def parent(groupNum: Int): Option[BlockEntry.Hash] =
+  def parent(groupNum: Int): Option[BlockHash] =
     if (isGenesis) {
       None
     } else {

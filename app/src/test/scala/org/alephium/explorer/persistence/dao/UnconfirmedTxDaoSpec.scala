@@ -27,10 +27,10 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.GenApiModel.{assetOutputGen, utransactionGen}
 import org.alephium.explorer.GenCoreUtil.timestampGen
-import org.alephium.explorer.api.model.Transaction
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.protocol.model.TransactionId
 
 class UnconfirmedTxDaoSpec
     extends AlephiumSpec
@@ -99,7 +99,7 @@ class UnconfirmedTxDaoSpec
   }
 
   "listHashes" in {
-    var hashes = Set.empty[Transaction.Hash]
+    var hashes = Set.empty[TransactionId]
     forAll(Gen.listOfN(5, utransactionGen)) { txs =>
       UnconfirmedTxDao.insertMany(txs).futureValue
       hashes = hashes ++ txs.map(_.hash)

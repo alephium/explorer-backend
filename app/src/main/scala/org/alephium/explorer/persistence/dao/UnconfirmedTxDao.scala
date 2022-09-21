@@ -31,10 +31,11 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.UnconfirmedTransactionQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.protocol.model.TransactionId
 
 trait UnconfirmedTxDao {
 
-  def get(hash: Transaction.Hash)(
+  def get(hash: TransactionId)(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Option[UnconfirmedTransaction]]
 
@@ -50,15 +51,14 @@ trait UnconfirmedTxDao {
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit]
 
-  def listHashes()(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction.Hash]]
+  def listHashes()(implicit executionContext: ExecutionContext,
+                   databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TransactionId]]
 
-  def removeMany(txs: ArraySeq[Transaction.Hash])(
+  def removeMany(txs: ArraySeq[TransactionId])(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit]
 
-  def removeAndInsertMany(toRemove: ArraySeq[Transaction.Hash],
+  def removeAndInsertMany(toRemove: ArraySeq[TransactionId],
                           toInsert: ArraySeq[UnconfirmedTransaction])(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit]
@@ -66,7 +66,7 @@ trait UnconfirmedTxDao {
 
 object UnconfirmedTxDao extends UnconfirmedTxDao {
 
-  def get(hash: Transaction.Hash)(
+  def get(hash: TransactionId)(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Option[UnconfirmedTransaction]] = {
     run(for {
@@ -157,11 +157,11 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
 
   def listHashes()(
       implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction.Hash]] = {
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TransactionId]] = {
     run(listHashesQuery)
   }
 
-  private def removeManyAction(txs: ArraySeq[Transaction.Hash])(
+  private def removeManyAction(txs: ArraySeq[TransactionId])(
       implicit executionContext: ExecutionContext): DBActionW[Unit] = {
     for {
       _ <- UnconfirmedTxSchema.table.filter(_.hash inSet txs).delete
@@ -170,13 +170,13 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
     } yield ()
   }
 
-  def removeMany(txs: ArraySeq[Transaction.Hash])(
+  def removeMany(txs: ArraySeq[TransactionId])(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
     run(removeManyAction(txs))
   }
 
-  def removeAndInsertMany(toRemove: ArraySeq[Transaction.Hash],
+  def removeAndInsertMany(toRemove: ArraySeq[TransactionId],
                           toInsert: ArraySeq[UnconfirmedTransaction])(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {

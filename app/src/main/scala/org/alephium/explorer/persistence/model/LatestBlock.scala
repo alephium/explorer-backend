@@ -20,11 +20,12 @@ import java.math.BigInteger
 
 import akka.util.ByteString
 
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.explorer.api.model.{GroupIndex, Height}
+import org.alephium.protocol.model.BlockHash
 import org.alephium.util.TimeStamp
 
 final case class LatestBlock(
-    hash: BlockEntry.Hash,
+    hash: BlockHash,
     timestamp: TimeStamp,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,

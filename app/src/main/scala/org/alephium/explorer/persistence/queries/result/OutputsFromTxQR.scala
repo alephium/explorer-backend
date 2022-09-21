@@ -25,6 +25,7 @@ import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.protocol.model.TransactionId
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputsFromTxQR {
@@ -46,7 +47,7 @@ object OutputsFromTxQR {
 }
 
 /** Query result for [[org.alephium.explorer.persistence.queries.OutputQueries.outputsFromTxsNoJoin]] */
-final case class OutputsFromTxQR(txHash: Transaction.Hash,
+final case class OutputsFromTxQR(txHash: TransactionId,
                                  outputOrder: Int,
                                  outputType: OutputEntity.OutputType,
                                  hint: Int,
@@ -56,7 +57,7 @@ final case class OutputsFromTxQR(txHash: Transaction.Hash,
                                  tokens: Option[ArraySeq[Token]],
                                  lockTime: Option[TimeStamp],
                                  message: Option[ByteString],
-                                 spent: Option[Transaction.Hash]) {
+                                 spent: Option[TransactionId]) {
   def toApiOutput(): Output =
     outputType match {
       case OutputEntity.Asset =>

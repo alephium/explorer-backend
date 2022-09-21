@@ -35,6 +35,7 @@ import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.service.TransactionService
 import org.alephium.json.Json
+import org.alephium.protocol.model.{TokenId, TransactionId}
 import org.alephium.util.U256
 
 @SuppressWarnings(Array("org.wartremover.warts.Var"))
@@ -160,7 +161,7 @@ class AddressServerSpec()
     val unconfirmedTx = utransactionGen.sample.get
 
     trait EmptyTransactionService extends TransactionService {
-      override def getTransaction(transactionHash: Transaction.Hash)(
+      override def getTransaction(transactionHash: TransactionId)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[Option[TransactionLike]] =
         Future.successful(None)
@@ -202,24 +203,24 @@ class AddressServerSpec()
       def listUnconfirmedTransactions(pagination: Pagination)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]] = ???
-      def getTokenBalance(address: Address, token: Hash)(
+      def getTokenBalance(address: Address, token: TokenId)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] = ???
-      def listAddressTokenTransactions(address: Address, token: Hash, pagination: Pagination)(
+      def listAddressTokenTransactions(address: Address, token: TokenId, pagination: Pagination)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] = ???
       def listAddressTokens(address: Address)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Hash]] = ???
-      def listTokenAddresses(token: Hash, pagination: Pagination)(
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenId]] = ???
+      def listTokenAddresses(token: TokenId, pagination: Pagination)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Address]] = ???
-      def listTokenTransactions(token: Hash, pagination: Pagination)(
+      def listTokenTransactions(token: TokenId, pagination: Pagination)(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] = ???
       def listTokens(pagination: Pagination)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Hash]] = ???
+          dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenId]] = ???
       def areAddressesActive(addresses: ArraySeq[Address])(
           implicit ec: ExecutionContext,
           dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]] = {

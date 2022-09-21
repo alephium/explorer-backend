@@ -25,7 +25,7 @@ import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.explorer.{AlephiumSpec, BlockHash, GroupSetting}
+import org.alephium.explorer.{AlephiumSpec, GroupSetting}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
@@ -35,6 +35,7 @@ import org.alephium.explorer.persistence.dao.{BlockDao, UnconfirmedTxDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.protocol.ALPH
+import org.alephium.protocol.model.BlockHash
 import org.alephium.util.{TimeStamp, U256}
 
 @SuppressWarnings(
@@ -212,7 +213,7 @@ class TransactionServiceSpec
       transactions = ArraySeq(tx1),
       inputs       = ArraySeq(input1),
       outputs      = ArraySeq(output1),
-      deps         = ArraySeq.fill(2 * groupSetting.groupNum - 1)(new BlockEntry.Hash(BlockHash.generate))
+      deps         = ArraySeq.fill(2 * groupSetting.groupNum - 1)(BlockHash.generate)
     )
 
     val blocks = ArraySeq(block0, block1)

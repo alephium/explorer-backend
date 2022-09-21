@@ -23,17 +23,18 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, Token, Transaction}
+import org.alephium.explorer.api.model.{Address, Token}
 import org.alephium.explorer.persistence.model.UOutputEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.protocol.model.TransactionId
 import org.alephium.util.{TimeStamp, U256}
 
 object UOutputSchema extends Schema[UOutputEntity]("uoutputs") {
 
   class UOutputs(tag: Tag) extends Table[UOutputEntity](tag, name) {
-    def txHash: Rep[Transaction.Hash] = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
-    def hint: Rep[Int]                = column[Int]("hint")
-    def key: Rep[Hash]                = column[Hash]("key", O.SqlType("BYTEA"))
+    def txHash: Rep[TransactionId] = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
+    def hint: Rep[Int]             = column[Int]("hint")
+    def key: Rep[Hash]             = column[Hash]("key", O.SqlType("BYTEA"))
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
     def address: Rep[Address]                = column[Address]("address")

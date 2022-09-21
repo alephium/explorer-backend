@@ -25,7 +25,7 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
 
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
-import org.alephium.explorer.{AlephiumSpec, BlockHash, GroupSetting}
+import org.alephium.explorer.{AlephiumSpec, GroupSetting}
 import org.alephium.explorer.GenApiModel.chainIndexes
 import org.alephium.explorer.GenCoreUtil.timestampMaxValue
 import org.alephium.explorer.Generators._
@@ -36,7 +36,7 @@ import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.TestUtils._
-import org.alephium.protocol.model.{ChainIndex, CliqueId, NetworkId}
+import org.alephium.protocol.model.{BlockHash, ChainIndex, CliqueId, NetworkId}
 import org.alephium.util.{AVector, Duration, Hex, Service, TimeStamp}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
@@ -140,7 +140,7 @@ class BlockFlowSyncServiceSpec
     //                                           +---+     +---+   +---+
     //    0       1        2       3       4       5         6       7      8
 
-    def h(str: String) = new BlockEntry.Hash(BlockHash.unsafe(Hex.unsafe(str)))
+    def h(str: String) = BlockHash.unsafe(Hex.unsafe(str))
 
     val block0 = blockEntity(None)
       .copy(timestamp = TimeStamp.now())
@@ -213,7 +213,7 @@ class BlockFlowSyncServiceSpec
       def stopSelfOnce(): Future[Unit]                = Future.unit
       def subServices: ArraySeq[Service]              = ArraySeq.empty
 
-      def fetchBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[BlockEntity] =
+      def fetchBlock(from: GroupIndex, hash: BlockHash): Future[BlockEntity] =
         Future.successful(blockEntities.find(_.hash === hash).get)
 
       def fetchBlocks(fromTs: TimeStamp,
@@ -243,7 +243,7 @@ class BlockFlowSyncServiceSpec
               blocks
                 .filter(block =>
                   block.chainFrom === from && block.chainTo === to && block.height === height)
-                .map(_.hash.value))))
+                .map(_.hash))))
 
       def fetchSelfClique(): Future[SelfClique] =
         Future.successful(
@@ -275,7 +275,7 @@ class BlockFlowSyncServiceSpec
       result.toSet is blocksToCheck.map(_.hash).toSet
     }
 
-    def checkMainChain(mainChain: ArraySeq[BlockEntry.Hash]) = {
+    def checkMainChain(mainChain: ArraySeq[BlockHash]) = {
       val result = BlockDao
         .listMainChain(Pagination.unsafe(0, blocks.size))
         .futureValue
