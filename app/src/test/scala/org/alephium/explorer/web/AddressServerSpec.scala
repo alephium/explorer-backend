@@ -168,7 +168,7 @@ class AddressServerSpec()
 
       override def getOutputRefTransaction(key: Hash)(
           implicit ec: ExecutionContext,
-          dc: DatabaseConfig[PostgresProfile]): Future[Option[ConfirmedTransaction]] =
+          dc: DatabaseConfig[PostgresProfile]): Future[Option[Transaction]] =
         Future.successful(None)
 
       override def getTransactionsNumberByAddress(address: Address)(

@@ -464,7 +464,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ConfirmedTransaction"
+                  "$ref": "#/components/schemas/Transaction"
                 }
               }
             }
@@ -883,7 +883,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/UnconfirmedTransaction"
+                    "$ref": "#/components/schemas/TransactionLike"
                   }
                 }
               }
@@ -1717,7 +1717,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/UnconfirmedTransaction"
+                    "$ref": "#/components/schemas/TransactionLike"
                   }
                 }
               }
@@ -3983,7 +3983,7 @@
           "outputs": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AssetOutput"
+              "$ref": "#/components/schemas/Output"
             }
           },
           "gasAmount": {

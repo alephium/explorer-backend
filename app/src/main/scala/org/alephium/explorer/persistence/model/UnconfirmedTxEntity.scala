@@ -55,6 +55,14 @@ object UnconfirmedTxEntity {
      },
      utx.outputs.zipWithIndex.map {
        case (output, order) =>
+         val lockTime = output match {
+           case asset: AssetOutput => asset.lockTime
+           case _: ContractOutput  => None
+         }
+         val message = output match {
+           case asset: AssetOutput => asset.message
+           case _: ContractOutput  => None
+         }
          UOutputEntity(
            utx.hash,
            output.hint,
@@ -62,8 +70,8 @@ object UnconfirmedTxEntity {
            output.attoAlphAmount,
            output.address,
            output.tokens,
-           output.lockTime,
-           output.message,
+           lockTime,
+           message,
            order
          )
      })

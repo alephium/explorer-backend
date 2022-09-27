@@ -58,8 +58,7 @@ final case class ConfirmedTransaction(
     inputs: ArraySeq[Input],
     outputs: ArraySeq[Output],
     gasAmount: Int,
-    gasPrice: U256,
-    `type`: String = "Confirmed"
+    gasPrice: U256
 ) extends TransactionLike
 
 object ConfirmedTransaction {
@@ -82,11 +81,10 @@ final case class UnconfirmedTransaction(
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     inputs: ArraySeq[Input],
-    outputs: ArraySeq[AssetOutput],
+    outputs: ArraySeq[Output],
     gasAmount: Int,
     gasPrice: U256,
-    lastSeen: TimeStamp,
-    `type`: String = "Unconfirmed"
+    lastSeen: TimeStamp
 ) extends TransactionLike
 
 object UnconfirmedTransaction {

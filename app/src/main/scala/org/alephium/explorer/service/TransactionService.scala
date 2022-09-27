@@ -36,7 +36,7 @@ trait TransactionService {
 
   def getOutputRefTransaction(hash: Hash)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Option[ConfirmedTransaction]]
+      dc: DatabaseConfig[PostgresProfile]): Future[Option[Transaction]]
 
   def getTransactionsByAddress(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,
@@ -104,12 +104,9 @@ object TransactionService extends TransactionService {
 
   def getOutputRefTransaction(hash: Hash)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Option[ConfirmedTransaction]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[Option[Transaction]] =
     TransactionDao
       .getOutputRefTransaction(hash)
-      .map(_.map { tx =>
-        ConfirmedTransaction.from(tx)
-      })
 
   def getTransactionsByAddress(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,
