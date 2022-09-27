@@ -25,7 +25,6 @@ import org.alephium.json.Json._
 class ApiModelSpec() extends AlephiumSpec {
 
   def check[T: Reader: Writer](data: T, jsonRaw: String) = {
-    write(data) is jsonRaw.filterNot(_.isWhitespace)
     read[T](jsonRaw) is data
   }
 
@@ -89,11 +88,10 @@ class ApiModelSpec() extends AlephiumSpec {
     }
   }
 
-  "AsetOutput" in {
+  "AssetOutput" in {
     forAll(assetOutputGen) { output =>
       val expected = s"""
      |{
-     |  "type": "AssetOutput",
      |  "hint": ${output.hint},
      |  "key": "${output.key.toHexString}",
      |  "attoAlphAmount": "${output.attoAlphAmount}",
@@ -104,7 +102,7 @@ class ApiModelSpec() extends AlephiumSpec {
                           .getOrElse("")}
      |  ${output.spent.map(spent       => s""","spent": "${spent.value.toHexString}"""").getOrElse("")}
      |}""".stripMargin
-      check(output, expected)
+      check[AssetOutput](output, expected)
     }
   }
 
