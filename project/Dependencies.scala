@@ -20,7 +20,7 @@ object Version {
   lazy val common = "1.4.5"
 
   lazy val akka       = "2.6.19"
-  lazy val tapir      = "1.0.0"
+  lazy val tapir      = "1.0.6"
   lazy val slick      = "3.3.2"
   lazy val postgresql = "42.2.12"
   lazy val sttp       = "3.5.2"

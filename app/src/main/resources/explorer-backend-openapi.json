@@ -464,7 +464,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ConfirmedTransaction"
+                  "$ref": "#/components/schemas/ConfirmedTransaction1"
                 }
               }
             }
@@ -883,7 +883,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/UnconfirmedTransaction"
+                    "$ref": "#/components/schemas/UnconfirmedTransaction1"
                   }
                 }
               }
@@ -1717,7 +1717,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/UnconfirmedTransaction"
+                    "$ref": "#/components/schemas/UnconfirmedTransaction1"
                   }
                 }
               }
@@ -3401,6 +3401,50 @@
           }
         }
       },
+      "AssetOutput1": {
+        "required": [
+          "hint",
+          "key",
+          "attoAlphAmount",
+          "address"
+        ],
+        "type": "object",
+        "properties": {
+          "hint": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "key": {
+            "type": "string",
+            "format": "32-byte-hash"
+          },
+          "attoAlphAmount": {
+            "type": "string",
+            "format": "uint256"
+          },
+          "address": {
+            "type": "string"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Token"
+            }
+          },
+          "lockTime": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "message": {
+            "type": "string",
+            "format": "hex-string"
+          },
+          "spent": {
+            "type": "string",
+            "format": "32-byte-hash"
+          }
+        }
+      },
       "BadRequest": {
         "required": [
           "detail"
@@ -3503,6 +3547,50 @@
           },
           "type": {
             "type": "string"
+          }
+        }
+      },
+      "ConfirmedTransaction1": {
+        "required": [
+          "hash",
+          "blockHash",
+          "timestamp",
+          "gasAmount",
+          "gasPrice"
+        ],
+        "type": "object",
+        "properties": {
+          "hash": {
+            "type": "string",
+            "format": "32-byte-hash"
+          },
+          "blockHash": {
+            "type": "string",
+            "format": "block-hash"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Input"
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Output"
+            }
+          },
+          "gasAmount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "gasPrice": {
+            "type": "string",
+            "format": "uint256"
           }
         }
       },
@@ -3983,7 +4071,7 @@
           "outputs": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AssetOutput"
+              "$ref": "#/components/schemas/AssetOutput1"
             }
           },
           "gasAmount": {
@@ -4000,6 +4088,55 @@
           },
           "type": {
             "type": "string"
+          }
+        }
+      },
+      "UnconfirmedTransaction1": {
+        "required": [
+          "hash",
+          "chainFrom",
+          "chainTo",
+          "gasAmount",
+          "gasPrice",
+          "lastSeen"
+        ],
+        "type": "object",
+        "properties": {
+          "hash": {
+            "type": "string",
+            "format": "32-byte-hash"
+          },
+          "chainFrom": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "chainTo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Input"
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetOutput1"
+            }
+          },
+          "gasAmount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "gasPrice": {
+            "type": "string",
+            "format": "uint256"
+          },
+          "lastSeen": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       }
