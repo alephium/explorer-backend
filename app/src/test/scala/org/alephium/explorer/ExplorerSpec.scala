@@ -32,7 +32,6 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.testkit.SocketUtil
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
-import de.heikoseeberger.akkahttpupickle.UpickleCustomizationSupport
 import org.scalacheck.Gen
 import org.scalatest.Assertion
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
@@ -59,10 +58,7 @@ trait ExplorerSpec
     with ScalatestRouteTest
     with ScalaFutures
     with Eventually
-    with UpickleCustomizationSupport {
-
-  override type Api = Json.type
-  override def api: Api = Json
+    with HttpJsonSupport {
 
   override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
   implicit val defaultTimeout          = RouteTestTimeout(5.seconds)
@@ -337,7 +333,7 @@ object ExplorerSpec {
       blockflow: ArraySeq[ArraySeq[model.BlockEntry]],
       networkId: NetworkId)(implicit groupSetting: GroupSetting, system: ActorSystem)
       extends ApiModelCodec
-      with UpickleCustomizationSupport {
+      with HttpJsonSupport {
 
     val blocks = blockflow.flatten
 

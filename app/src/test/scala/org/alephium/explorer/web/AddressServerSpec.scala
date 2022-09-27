@@ -21,20 +21,18 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import de.heikoseeberger.akkahttpupickle.UpickleCustomizationSupport
 import org.scalacheck.Gen
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.ApiError
-import org.alephium.explorer.{AlephiumSpec, GroupSetting, Hash}
+import org.alephium.explorer.{AlephiumSpec, GroupSetting, Hash, HttpJsonSupport}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.service.TransactionService
-import org.alephium.json.Json
 import org.alephium.protocol.model.{TokenId, TransactionId}
 import org.alephium.util.U256
 
@@ -44,10 +42,7 @@ class AddressServerSpec()
     with AkkaDecodeFailureHandler
     with DatabaseFixtureForEach
     with ScalatestRouteTest
-    with UpickleCustomizationSupport {
-  override type Api = Json.type
-
-  override def api: Api = Json
+    with HttpJsonSupport {
 
   "validate and forward `txLimit` query param " in new Fixture {
     var testLimit = 0

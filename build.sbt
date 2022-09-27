@@ -173,7 +173,6 @@ lazy val app = mainProject("app")
     tapirSwaggerUi,
     tapirClient,
     sttpAkkaBackend,
-    akkaHttpJson,
     upickle,
     akkaHttpCors,
     caffeine,

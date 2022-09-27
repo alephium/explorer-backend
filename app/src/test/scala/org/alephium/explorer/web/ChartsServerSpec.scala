@@ -17,11 +17,10 @@
 package org.alephium.explorer.web
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import de.heikoseeberger.akkahttpupickle.UpickleCustomizationSupport
 import org.scalatest.concurrent.ScalaFutures
 
 import org.alephium.api.ApiError
-import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.{AlephiumSpec, HttpJsonSupport}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.json.Json
@@ -34,7 +33,7 @@ class ChartsServerSpec()
     with DatabaseFixtureForEach
     with ScalaFutures
     with ScalatestRouteTest
-    with UpickleCustomizationSupport {
+    with HttpJsonSupport {
   override type Api = Json.type
 
   override def api: Api = Json

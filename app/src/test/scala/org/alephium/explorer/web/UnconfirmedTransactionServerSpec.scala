@@ -19,12 +19,11 @@ package org.alephium.explorer.web
 import scala.concurrent.duration._
 
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-import de.heikoseeberger.akkahttpupickle.UpickleCustomizationSupport
 import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.{AlephiumSpec, HttpJsonSupport}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
@@ -39,7 +38,7 @@ class UnconfirmedTransactionServerSpec()
     with ScalatestRouteTest
     with ScalaFutures
     with Eventually
-    with UpickleCustomizationSupport {
+    with HttpJsonSupport {
   override type Api = Json.type
 
   override def api: Api = Json

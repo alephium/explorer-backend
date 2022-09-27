@@ -20,12 +20,11 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import de.heikoseeberger.akkahttpupickle.UpickleCustomizationSupport
 import org.scalatest.concurrent.ScalaFutures
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.{AlephiumSpec, BuildInfo, GroupSetting, Hash}
+import org.alephium.explorer.{AlephiumSpec, BuildInfo, GroupSetting, Hash, HttpJsonSupport}
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TransactionCache}
@@ -43,7 +42,7 @@ class InfosServerSpec()
     with DatabaseFixtureForEach
     with ScalaFutures
     with ScalatestRouteTest
-    with UpickleCustomizationSupport {
+    with HttpJsonSupport {
   override type Api = Json.type
 
   override def api: Api = Json

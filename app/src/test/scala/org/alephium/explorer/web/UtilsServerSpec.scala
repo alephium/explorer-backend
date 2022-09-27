@@ -18,12 +18,11 @@ package org.alephium.explorer.web
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import de.heikoseeberger.akkahttpupickle.UpickleCustomizationSupport
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.concurrent.ScalaFutures
 
 import org.alephium.api.ApiError
-import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting}
+import org.alephium.explorer.{AlephiumSpec, Generators, GroupSetting, HttpJsonSupport}
 import org.alephium.explorer.api.model.LogbackValue
 import org.alephium.explorer.cache.{BlockCache, TransactionCache}
 import org.alephium.explorer.persistence.{Database, DatabaseFixtureForEach}
@@ -37,7 +36,7 @@ class UtilsServerSpec()
     with DatabaseFixtureForEach
     with ScalaFutures
     with ScalatestRouteTest
-    with UpickleCustomizationSupport
+    with HttpJsonSupport
     with MockFactory {
   override type Api = Json.type
 

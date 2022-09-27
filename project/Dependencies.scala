@@ -53,8 +53,7 @@ object Dependencies {
   lazy val tapirClient       = "com.softwaremill.sttp.tapir"   %% "tapir-sttp-client"      % Version.tapir
   lazy val sttpAkkaBackend   = "com.softwaremill.sttp.client3" %% "akka-http-backend"      % Version.sttp
 
-  lazy val akkaHttpJson = "de.heikoseeberger" %% "akka-http-upickle" % "1.39.2"
-  lazy val `upickle`    = "com.lihaoyi"       %% "upickle"           % "2.0.0"
+  lazy val `upickle` = "com.lihaoyi" %% "upickle" % "1.6.0"
 
   lazy val caffeine = "com.github.ben-manes.caffeine" % "caffeine" % "3.0.5"
 
