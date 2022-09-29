@@ -16,12 +16,12 @@
 
 package org.alephium.explorer
 
+import scala.concurrent.ExecutionContext
+
 import akka.actor.ActorSystem
 import akka.testkit.{ImplicitSender, TestKit, TestKitBase}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
-
-class AlephiumActorSpec(val name: String) extends AlephiumActorSpecLike
 
 trait AlephiumActorSpecLike
     extends AlephiumSpec
@@ -29,10 +29,12 @@ trait AlephiumActorSpecLike
     with ImplicitSender
     with BeforeAndAfterAll {
 
-  def name: String
+  val name: String = this.getClass.getSimpleName
 
   implicit lazy val system: ActorSystem =
     ActorSystem(name, ConfigFactory.parseString(AlephiumActorSpec.config))
+
+  implicit lazy val executionContext: ExecutionContext = system.dispatcher
 
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)

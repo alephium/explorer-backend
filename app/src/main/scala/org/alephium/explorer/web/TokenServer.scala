@@ -16,10 +16,10 @@
 
 package org.alephium.explorer.web
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -31,19 +31,21 @@ class TokenServer()(implicit val executionContext: ExecutionContext,
     extends Server
     with TokensEndpoints {
 
-  val route: Route =
-    toRoute(listTokens.serverLogicSuccess[Future] { pagination =>
-      TransactionService
-        .listTokens(pagination)
-    }) ~
-      toRoute(listTokenTransactions.serverLogicSuccess[Future] {
+  val routes: ArraySeq[Router => Route] =
+    ArraySeq(
+      route(listTokens.serverLogicSuccess[Future] { pagination =>
+        TransactionService
+          .listTokens(pagination)
+      }),
+      route(listTokenTransactions.serverLogicSuccess[Future] {
         case (token, pagination) =>
           TransactionService
             .listTokenTransactions(token, pagination)
-      }) ~
-      toRoute(listTokenAddresses.serverLogicSuccess[Future] {
+      }),
+      route(listTokenAddresses.serverLogicSuccess[Future] {
         case (token, pagination) =>
           TransactionService
             .listTokenAddresses(token, pagination)
       })
+    )
 }

@@ -16,57 +16,45 @@
 
 package org.alephium.explorer.web
 
-import scala.concurrent.duration._
-
-import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.explorer.{AlephiumSpec, HttpJsonSupport}
+import org.alephium.explorer.{AlephiumActorSpecLike, HttpServerFixture}
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.DatabaseFixtureForEach
+import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.persistence.dao.UnconfirmedTxDao
-import org.alephium.json.Json
 
 @SuppressWarnings(Array("org.wartremover.warts.ThreadSleep", "org.wartremover.warts.Var"))
 class UnconfirmedTransactionServerSpec()
-    extends AlephiumSpec
-    with AkkaDecodeFailureHandler
-    with DatabaseFixtureForEach
-    with ScalatestRouteTest
+    extends AlephiumActorSpecLike
+    with HttpServerFixture
+    with DatabaseFixtureForAll
     with ScalaFutures
-    with Eventually
-    with HttpJsonSupport {
-  override type Api = Json.type
+    with Eventually {
 
-  override def api: Api = Json
+  val utxServer = new UnconfirmedTransactionServer()
 
-  override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
-  implicit val defaultTimeout          = RouteTestTimeout(5.seconds)
+  val routes = utxServer.routes
 
-  "listUnconfirmedTransactions" in new Fixture {
-    Get(s"/unconfirmed-transactions") ~> server.route ~> check {
-      responseAs[Seq[UnconfirmedTransaction]] is Seq.empty
+  "listUnconfirmedTransactions" in {
+    Get(s"/unconfirmed-transactions") check { response =>
+      response.as[Seq[UnconfirmedTransaction]] is Seq.empty
     }
 
     forAll(Gen.listOf(utransactionGen), Gen.choose(1, 2), Gen.choose(2, 4)) {
       case (utxs, page, limit) =>
         UnconfirmedTxDao.insertMany(utxs).futureValue
-        Get(s"/unconfirmed-transactions?page=$page&limit=$limit") ~> server.route ~> check {
+        Get(s"/unconfirmed-transactions?page=$page&limit=$limit") check { response =>
           val offset = page - 1
           val drop   = offset * limit
-          responseAs[Seq[UnconfirmedTransaction]] is utxs
+          response.as[Seq[UnconfirmedTransaction]] is utxs
             .sortBy(_.lastSeen)
             .reverse
             .slice(drop, drop + limit)
         }
         UnconfirmedTxDao.removeMany(utxs.map(_.hash)).futureValue
     }
-  }
-
-  trait Fixture {
-    lazy val server = new UnconfirmedTransactionServer()
   }
 }

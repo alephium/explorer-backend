@@ -16,10 +16,10 @@
 
 package org.alephium.explorer.web
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -37,54 +37,56 @@ class AddressServer(transactionService: TransactionService)(
 
   val groupNum = groupSetting.groupNum
 
-  val route: Route =
-    toRoute(getTransactionsByAddress.serverLogicSuccess[Future] {
-      case (address, pagination) =>
-        transactionService
-          .getTransactionsByAddress(address, pagination)
-    }) ~
-      toRoute(getTransactionsByAddressDEPRECATED.serverLogicSuccess[Future] {
+  val routes: ArraySeq[Router => Route] =
+    ArraySeq(
+      route(getTransactionsByAddress.serverLogicSuccess[Future] {
+        case (address, pagination) =>
+          transactionService
+            .getTransactionsByAddress(address, pagination)
+      }),
+      route(getTransactionsByAddressDEPRECATED.serverLogicSuccess[Future] {
         case (address, pagination) =>
           transactionService
             .getTransactionsByAddressSQL(address, pagination)
-      }) ~
-      toRoute(addressUnconfirmedTransactions.serverLogicSuccess[Future] { address =>
+      }),
+      route(addressUnconfirmedTransactions.serverLogicSuccess[Future] { address =>
         transactionService
           .listUnconfirmedTransactionsByAddress(address)
-      }) ~
-      toRoute(getAddressInfo.serverLogicSuccess[Future] { address =>
+      }),
+      route(getAddressInfo.serverLogicSuccess[Future] { address =>
         for {
           (balance, locked) <- transactionService.getBalance(address)
           txNumber          <- transactionService.getTransactionsNumberByAddress(address)
         } yield AddressInfo(balance, locked, txNumber)
-      }) ~
-      toRoute(getTotalTransactionsByAddress.serverLogic[Future] { address =>
+      }),
+      route(getTotalTransactionsByAddress.serverLogic[Future] { address =>
         transactionService.getTransactionsNumberByAddress(address).map(Right(_))
-      }) ~
-      toRoute(getAddressBalance.serverLogicSuccess[Future] { address =>
+      }),
+      route(getAddressBalance.serverLogicSuccess[Future] { address =>
         for {
           (balance, locked) <- transactionService.getBalance(address)
         } yield AddressBalance(balance, locked)
-      }) ~
-      toRoute(getAddressTokenBalance.serverLogicSuccess[Future] {
+      }),
+      route(getAddressTokenBalance.serverLogicSuccess[Future] {
         case (address, token) =>
           for {
             (balance, locked) <- transactionService.getTokenBalance(address, token)
           } yield AddressBalance(balance, locked)
-      }) ~
-      toRoute(listAddressTokens.serverLogicSuccess[Future] { address =>
+      }),
+      route(listAddressTokens.serverLogicSuccess[Future] { address =>
         for {
           tokens <- transactionService.listAddressTokens(address)
         } yield tokens
-      }) ~
-      toRoute(listAddressTokenTransactions.serverLogicSuccess[Future] {
+      }),
+      route(listAddressTokenTransactions.serverLogicSuccess[Future] {
         case (address, token, pagination) =>
           for {
             tokens <- transactionService.listAddressTokenTransactions(address, token, pagination)
           } yield tokens
-      }) ~
-      toRoute(areAddressesActive.serverLogicSuccess[Future] { addresses =>
+      }),
+      route(areAddressesActive.serverLogicSuccess[Future] { addresses =>
         transactionService.areAddressesActive(addresses)
       })
+    )
 
 }

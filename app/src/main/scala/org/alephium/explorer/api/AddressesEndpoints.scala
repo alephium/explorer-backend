@@ -100,7 +100,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
 
   val getAddressTokenBalance: BaseEndpoint[(Address, TokenId), AddressBalance] =
     addressesTokensEndpoint.get
-      .in(path[TokenId]("token-id"))
+      .in(path[TokenId]("token_id"))
       .in("balance")
       .out(jsonBody[AddressBalance])
       .description("Get address balance of given token")
@@ -108,7 +108,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
   val listAddressTokenTransactions
     : BaseEndpoint[(Address, TokenId, Pagination), ArraySeq[Transaction]] =
     addressesTokensEndpoint.get
-      .in(path[TokenId]("token-id"))
+      .in(path[TokenId]("token_id"))
       .in("transactions")
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])

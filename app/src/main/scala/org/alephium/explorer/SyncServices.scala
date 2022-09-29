@@ -22,10 +22,10 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
+import sttp.model.Uri
 
 import org.alephium.api.model.{ChainParams, PeerAddress}
 import org.alephium.explorer.RichAVector._
@@ -133,7 +133,7 @@ object SyncServices extends StrictLogging {
   /** Converts `PeerAddress` to `Uri` */
   def urisFromPeers(peers: ArraySeq[PeerAddress]): ArraySeq[Uri] =
     peers.map { peer =>
-      s"http://${peer.address.getHostAddress}:${peer.restPort}"
+      Uri(peer.address.getHostAddress, peer.restPort)
     }
 
   def getBlockFlowPeers(directCliqueAccess: Boolean, blockFlowUri: Uri)(

@@ -20,10 +20,10 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
-import akka.http.scaladsl.model.Uri
 import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
+import sttp.model.Uri
 
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.AlephiumSpec
@@ -46,7 +46,7 @@ class MempoolSyncServiceSpec
 
   "start/sync/stop" in new Fixture {
     using(Scheduler("test")) { implicit scheduler =>
-      MempoolSyncService.start(ArraySeq(""), 100.milliseconds)
+      MempoolSyncService.start(ArraySeq(Uri("")), 100.milliseconds)
 
       UnconfirmedTxDao.listHashes().futureValue is ArraySeq.empty
 

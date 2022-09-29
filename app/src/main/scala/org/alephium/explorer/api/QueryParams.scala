@@ -62,13 +62,7 @@ trait QueryParams extends TapirCodecs {
       .and(query[TimeStamp]("toTs"))
       .map({ case (from, to) => TimeInterval(from, to) })(timeInterval =>
         (timeInterval.from, timeInterval.to))
-      .validate(Validator.custom { timeInterval =>
-        if (timeInterval.from > timeInterval.to) {
-          ValidationResult.Invalid(s"`fromTs` must be before `toTs`")
-        } else {
-          ValidationResult.Valid
-        }
-      })
+      .validate(TimeInterval.validator)
 
   val intervalTypeQuery: EndpointInput[IntervalType] =
     query[IntervalType]("interval-type")

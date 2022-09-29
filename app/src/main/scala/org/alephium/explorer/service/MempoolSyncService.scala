@@ -20,10 +20,10 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 
-import akka.http.scaladsl.model.Uri
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
+import sttp.model.Uri
 
 import org.alephium.explorer.persistence.dao.UnconfirmedTxDao
 import org.alephium.explorer.util.Scheduler

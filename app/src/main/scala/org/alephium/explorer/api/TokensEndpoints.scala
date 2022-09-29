@@ -42,7 +42,7 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
 
   val listTokenTransactions: BaseEndpoint[(TokenId, Pagination), ArraySeq[Transaction]] =
     tokensEndpoint.get
-      .in(path[TokenId]("token-id"))
+      .in(path[TokenId]("token_id"))
       .in("transactions")
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])
@@ -50,7 +50,7 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
 
   val listTokenAddresses: BaseEndpoint[(TokenId, Pagination), ArraySeq[Address]] =
     tokensEndpoint.get
-      .in(path[TokenId]("token-id"))
+      .in(path[TokenId]("token_id"))
       .in("addresses")
       .in(pagination)
       .out(jsonBody[ArraySeq[Address]])

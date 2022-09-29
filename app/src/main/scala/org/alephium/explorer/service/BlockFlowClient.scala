@@ -23,10 +23,9 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 
-import akka.http.scaladsl.model.Uri
 import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
-import sttp.client3._
+import sttp.model.Uri
 
 import org.alephium.api
 import org.alephium.api.Endpoints
@@ -115,7 +114,7 @@ object BlockFlowClient extends StrictLogging {
         a: A
     ): Future[B] = {
       endpointSender
-        .send(endpoint, a, uri"${uri.toString}")
+        .send(endpoint, a, uri)
         .flatMap {
           case Right(res) => Future.successful(res)
           case Left(error) =>
@@ -132,7 +131,7 @@ object BlockFlowClient extends StrictLogging {
           selfCliqueIndex(selfClique, chainParams, fromGroup) match {
             case Left(error) => Future.failed(new Throwable(error))
             case Right((nodeAddress, restPort)) =>
-              val uri = s"http://${nodeAddress.getHostAddress}:${restPort}"
+              val uri = Uri(nodeAddress.getHostAddress, restPort)
               _send(getBlock, uri, hash).map(blockProtocolToEntity)
           }
       }

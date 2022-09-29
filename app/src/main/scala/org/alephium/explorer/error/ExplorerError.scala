@@ -18,7 +18,7 @@ package org.alephium.explorer.error
 
 import scala.concurrent.duration.FiniteDuration
 
-import akka.http.scaladsl.model.Uri
+import sttp.model.Uri
 
 import org.alephium.protocol.model.NetworkId
 

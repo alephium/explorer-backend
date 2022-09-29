@@ -60,8 +60,8 @@ sealed trait ExplorerState extends Service with StrictLogging {
       maybeApiKey = config.maybeBlockFlowApiKey
     )
 
-  lazy val akkaHttpServer: AkkaHttpServer =
-    new AkkaHttpServer(
+  lazy val httpServer: ExplorerHttpServer =
+    new ExplorerHttpServer(
       config.host,
       config.port,
       AppServer.routes()(executionContext,
@@ -81,7 +81,7 @@ sealed trait ExplorerState extends Service with StrictLogging {
   }
 
   override def subServices: ArraySeq[Service] = ArraySeq(
-    akkaHttpServer,
+    httpServer,
     transactionCache,
     blockFlowClient,
     database

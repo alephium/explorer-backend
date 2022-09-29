@@ -16,16 +16,22 @@
 
 package org.alephium.explorer.web
 
-import akka.http.scaladsl.server.Route
-import sttp.tapir.server.akkahttp.{AkkaHttpServerInterpreter, AkkaHttpServerOptions}
+import scala.collection.immutable.ArraySeq
 
+import io.vertx.ext.web._
+import sttp.tapir.server.vertx.{VertxFutureServerInterpreter, VertxFutureServerOptions}
+
+import org.alephium.api.DecodeFailureHandler
 import org.alephium.explorer.Metrics
 
-trait Server extends AkkaHttpServerInterpreter with AkkaDecodeFailureHandler {
-  override def akkaHttpServerOptions: AkkaHttpServerOptions =
-    AkkaHttpServerOptions.customiseInterceptors
-      .decodeFailureHandler(decodeFailureHandler)
+trait Server extends DecodeFailureHandler with VertxFutureServerInterpreter {
+  override def vertxFutureServerOptions: VertxFutureServerOptions =
+    VertxFutureServerOptions.customiseInterceptors
+      .decodeFailureHandler(
+        myDecodeFailureHandler
+      )
       .metricsInterceptor(Metrics.prometheus.metricsInterceptor())
       .options
-  def route: Route
+
+  def routes: ArraySeq[Router => Route]
 }

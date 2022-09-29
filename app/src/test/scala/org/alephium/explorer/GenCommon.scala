@@ -19,8 +19,8 @@ import java.net.InetAddress
 
 import scala.concurrent.duration._
 
-import akka.http.scaladsl.model.Uri
 import org.scalacheck.{Arbitrary, Gen}
+import sttp.model.Uri
 
 /** Generators for types supplied by libraries outside Alephium eg: java or scala packages */
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -42,7 +42,7 @@ object GenCommon {
     for {
       address <- genInetAddress
       port    <- genPortNum
-    } yield s"http://$address:$port"
+    } yield Uri(address.toString, port)
 
   val genTimeDurationUnit: Gen[String] =
     Gen.oneOf("seconds", "minutes", "hours", "days")

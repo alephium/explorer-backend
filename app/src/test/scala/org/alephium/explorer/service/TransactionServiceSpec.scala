@@ -220,6 +220,7 @@ class TransactionServiceSpec
 
     Future.sequence(blocks.map(BlockDao.insert)).futureValue
     databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
+    FinalizerService.finalizeOutputs().futureValue
 
     val t0 = Transaction(
       tx0.hash,

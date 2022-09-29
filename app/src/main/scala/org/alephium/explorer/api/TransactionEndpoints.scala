@@ -34,7 +34,7 @@ trait TransactionEndpoints extends BaseEndpoint {
 
   val getTransactionById: BaseEndpoint[TransactionId, TransactionLike] =
     transactionsEndpoint.get
-      .in(path[TransactionId]("transaction-hash"))
+      .in(path[TransactionId]("transaction_hash"))
       .out(jsonBody[TransactionLike])
       .description("Get a transaction with hash")
 
@@ -43,7 +43,7 @@ trait TransactionEndpoints extends BaseEndpoint {
       .tag("Transactions")
       .in("transaction-by-output-ref-key")
       .get
-      .in(path[Hash]("output-ref-key"))
+      .in(path[Hash]("output_ref_key"))
       .out(jsonBody[Transaction])
       .description("Get a transaction from a output reference key")
 }

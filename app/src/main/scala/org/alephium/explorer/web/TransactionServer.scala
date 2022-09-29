@@ -16,10 +16,10 @@
 
 package org.alephium.explorer.web
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -31,15 +31,17 @@ class TransactionServer(implicit val executionContext: ExecutionContext,
                         dc: DatabaseConfig[PostgresProfile])
     extends Server
     with TransactionEndpoints {
-  val route: Route = toRoute(getTransactionById.serverLogic[Future] { hash =>
-    TransactionService
-      .getTransaction(hash)
-      .map(_.toRight(ApiError.NotFound(hash.value.toHexString)))
-  }) ~
-    toRoute(getOutputRefTransaction.serverLogic[Future] { hash =>
+  val routes: ArraySeq[Router => Route] = ArraySeq(
+    route(getTransactionById.serverLogic[Future] { hash =>
+      TransactionService
+        .getTransaction(hash)
+        .map(_.toRight(ApiError.NotFound(hash.value.toHexString)))
+    }),
+    route(getOutputRefTransaction.serverLogic[Future] { hash =>
       TransactionService
         .getOutputRefTransaction(hash)
         .map(_.toRight(ApiError.NotFound(hash.toHexString)))
     })
+  )
 
 }

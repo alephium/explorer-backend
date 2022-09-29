@@ -20,9 +20,9 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
-import akka.http.scaladsl.model.Uri
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
+import sttp.model.Uri
 
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.{AlephiumSpec, GroupSetting}
@@ -31,7 +31,7 @@ import org.alephium.explorer.GenCoreUtil.timestampMaxValue
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
-import org.alephium.explorer.persistence.DatabaseFixtureForEach
+import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.util.Scheduler
@@ -42,7 +42,7 @@ import org.alephium.util.{AVector, Duration, Hex, Service, TimeStamp}
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
 class BlockFlowSyncServiceSpec
     extends AlephiumSpec
-    with DatabaseFixtureForEach
+    with DatabaseFixtureForAll
     with ScalaFutures
     with Eventually {
   override implicit val patienceConfig = PatienceConfig(timeout = Span(50, Seconds))
@@ -67,7 +67,7 @@ class BlockFlowSyncServiceSpec
   "start/sync/stop" in new Fixture {
     using(Scheduler("")) { implicit scheduler =>
       checkBlocks(ArraySeq.empty)
-      BlockFlowSyncService.start(ArraySeq(""), 1.second)
+      BlockFlowSyncService.start(ArraySeq(Uri("")), 1.second)
 
       chainOToO = ArraySeq(block0, block1, block2)
       eventually(checkMainChain(ArraySeq(block0.hash, block1.hash, block2.hash)))
