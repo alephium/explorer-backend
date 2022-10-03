@@ -35,37 +35,41 @@ class ExplorerHttpServer(host: String, port: Int, val routes: ArraySeq[Router =>
 ) extends Service
     with StrictLogging {
 
-  private val vertx  = Vertx.vertx()
-  private val router = Router.router(vertx)
-  vertx
-    .fileSystem()
-    .existsBlocking(
-      "META-INF/resources/webjars/swagger-ui/"
-    ) // Fix swagger ui being not found on the first call
-  private val server = vertx.createHttpServer().requestHandler(router)
-
-  //scalastyle:off magic.number
-  router
-    .route()
-    .handler(
-      CorsHandler
-        .create(".*.")
-        .allowedMethod(HttpMethod.GET)
-        .allowedMethod(HttpMethod.POST)
-        .allowedMethod(HttpMethod.PUT)
-        .allowedMethod(HttpMethod.HEAD)
-        .allowedMethod(HttpMethod.OPTIONS)
-        .allowedHeader("*")
-        .allowCredentials(true)
-        .maxAgeSeconds(1800)
-    )
-
-  routes.foreach(route => route(router))
-
+  private var vertx: Vertx = _
   // scalastyle:on magic.number
   private val httpBindingPromise: Promise[HttpServer] = Promise()
 
   override def startSelfOnce(): Future[Unit] = {
+    vertx = Vertx.vertx()
+
+    val router = Router.router(vertx)
+
+    vertx
+      .fileSystem()
+      .existsBlocking(
+        "META-INF/resources/webjars/swagger-ui/"
+      ) // Fix swagger ui being not found on the first call
+
+    val server = vertx.createHttpServer().requestHandler(router)
+
+    //scalastyle:off magic.number
+    router
+      .route()
+      .handler(
+        CorsHandler
+          .create(".*.")
+          .allowedMethod(HttpMethod.GET)
+          .allowedMethod(HttpMethod.POST)
+          .allowedMethod(HttpMethod.PUT)
+          .allowedMethod(HttpMethod.HEAD)
+          .allowedMethod(HttpMethod.OPTIONS)
+          .allowedHeader("*")
+          .allowCredentials(true)
+          .maxAgeSeconds(1800)
+      )
+
+    routes.foreach(route => route(router))
+
     for {
       httpBinding <- server.listen(port, host).asScala
     } yield {
@@ -79,6 +83,7 @@ class ExplorerHttpServer(host: String, port: Int, val routes: ArraySeq[Router =>
     for {
       binding <- httpBindingPromise.future
       _       <- binding.close().asScala
+      _       <- vertx.close().asScala
     } yield {
       logger.info(s"http unbound")
     }
