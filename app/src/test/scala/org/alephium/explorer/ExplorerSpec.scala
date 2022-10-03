@@ -334,6 +334,8 @@ object ExplorerSpec {
       with QueryParams
       with Server {
 
+    override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
+
     val blocks = blockflow.flatten
 
     val cliqueId = CliqueId.generate
