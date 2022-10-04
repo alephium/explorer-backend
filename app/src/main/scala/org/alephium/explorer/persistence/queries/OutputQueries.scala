@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.queries
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
 import slick.dbio.DBIOAction
@@ -28,11 +29,10 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.result.{OutputsFromTxQR, OutputsQR}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.explorer.persistence.schema.OutputSchema
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputQueries {
@@ -270,7 +270,6 @@ object OutputQueries {
           val timestamp = groups.map { case (_, output) => output.timestamp }.max
           (token, timestamp)
       }
-      .toSeq
 
     QuerySplitter.splitUpdates(rows = tokens, columnsPerRow = 2) { (tokens, placeholder) =>
       val query =
@@ -298,9 +297,9 @@ object OutputQueries {
     }
   }
 
-  def outputsFromTxsSQL(txHashes: Seq[Transaction.Hash]): DBActionR[Seq[OutputsFromTxQR]] =
+  def outputsFromTxsSQL(txHashes: ArraySeq[TransactionId]): DBActionR[ArraySeq[OutputsFromTxQR]] =
     if (txHashes.nonEmpty) {
-      val values = txHashes.map(hash => s"'\\x$hash'").mkString(",")
+      val values = txHashes.map(hash => s"'\\x${hash.toHexString}'").mkString(",")
       sql"""
           SELECT outputs.tx_hash,
                  outputs.output_order,
@@ -319,13 +318,39 @@ object OutputQueries {
                               AND inputs.main_chain = true
           WHERE outputs.tx_hash IN (#$values)
             AND outputs.main_chain = true
-        """.as[OutputsFromTxQR]
+        """.asAS[OutputsFromTxQR]
     } else {
-      DBIOAction.successful(Seq.empty)
+      DBIOAction.successful(ArraySeq.empty)
+    }
+
+  def outputsFromTxsSQLAS(txHashes: ArraySeq[TransactionId]): DBActionSR[OutputsFromTxQR] =
+    if (txHashes.nonEmpty) {
+      val values = txHashes.map(hash => s"'\\x${hash.toHexString}'").mkString(",")
+      sql"""
+          SELECT outputs.tx_hash,
+                 outputs.output_order,
+                 outputs.output_type,
+                 outputs.hint,
+                 outputs.key,
+                 outputs.amount,
+                 outputs.address,
+                 outputs.tokens,
+                 outputs.lock_time,
+                 outputs.message,
+                 inputs.tx_hash
+          FROM outputs
+                   LEFT JOIN inputs
+                       ON inputs.output_ref_key = outputs.key
+                              AND inputs.main_chain = true
+          WHERE outputs.tx_hash IN (#$values)
+            AND outputs.main_chain = true
+        """.asAS[OutputsFromTxQR]
+    } else {
+      DBIOAction.successful(ArraySeq.empty)
     }
 
   def outputsFromTxsNoJoin(
-      hashes: Seq[(Transaction.Hash, BlockEntry.Hash)]): DBActionR[Seq[OutputsFromTxQR]] =
+      hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionR[ArraySeq[OutputsFromTxQR]] =
     if (hashes.nonEmpty) {
       val params = paramPlaceholderTuple2(1, hashes.size)
 
@@ -357,12 +382,12 @@ object OutputQueries {
       SQLActionBuilder(
         queryParts = query,
         unitPConv  = parameters
-      ).as[OutputsFromTxQR]
+      ).asAS[OutputsFromTxQR]
     } else {
-      DBIOAction.successful(Seq.empty)
+      DBIOAction.successful(ArraySeq.empty)
     }
 
-  def getOutputsQuery(txHash: Transaction.Hash, blockHash: BlockEntry.Hash): DBActionSR[OutputsQR] =
+  def getOutputsQuery(txHash: TransactionId, blockHash: BlockHash): DBActionSR[OutputsQR] =
     sql"""
         SELECT output_type,
                hint,
@@ -377,18 +402,31 @@ object OutputQueries {
         WHERE tx_hash = $txHash
           AND block_hash = $blockHash
         ORDER BY output_order
-      """.as[OutputsQR]
+      """.asAS[OutputsQR]
 
   /** Get main chain [[org.alephium.explorer.persistence.model.OutputEntity]]s ordered by timestamp */
-  def getMainChainOutputs(
-      ascendingOrder: Boolean): Query[OutputSchema.Outputs, OutputEntity, Seq] = {
-    val mainChain = OutputSchema.table.filter(_.mainChain === true)
-
-    if (ascendingOrder) {
-      mainChain.sortBy(_.timestamp.asc)
-    } else {
-      mainChain.sortBy(_.timestamp.desc)
-    }
+  def getMainChainOutputs(ascendingOrder: Boolean): DBActionSR[OutputEntity] = {
+    sql"""
+      SELECT
+        block_hash,
+        tx_hash,
+        block_timestamp,
+        output_type,
+        hint,
+        key,
+        amount,
+        address,
+        tokens,
+        main_chain,
+        lock_time,
+        message,
+        output_order,
+        tx_order,
+        spent_finalized
+      FROM outputs
+      WHERE main_chain = true
+      ORDER BY block_timestamp #${if (ascendingOrder) "" else "DESC"}
+      """.asASE[OutputEntity](outputGetResult)
   }
 
   /** Checks that [[getTxnHash]] uses both indexes for the given key */
@@ -404,7 +442,7 @@ object OutputQueries {
           val outputs_main_chain_idx_used = explainString contains "outputs_main_chain_idx"
           val passed                      = outputs_pk_used && outputs_main_chain_idx_used
           val message =
-            Seq(
+            ArraySeq(
               s"Used outputs_main_chain_idx = $outputs_main_chain_idx_used",
               s"Used outputs_pk             = $outputs_pk_used"
             )
@@ -423,8 +461,8 @@ object OutputQueries {
     }
   }
 
-  def getTxnHash(key: Hash): DBActionR[Vector[Transaction.Hash]] =
-    getTxnHashSQL(key).as[Transaction.Hash]
+  def getTxnHash(key: Hash): DBActionSR[TransactionId] =
+    getTxnHashSQL(key).asAS[TransactionId]
 
   /** Fetch `tx_hash` for keys where `main_chain` is true */
   def getTxnHashSQL(key: Hash): SQLActionBuilder =
@@ -458,5 +496,5 @@ object OutputQueries {
         AND outputs.address = $address
         AND outputs.main_chain = true
         AND inputs.block_hash IS NULL;
-    """.as[(Option[U256], Option[U256])].exactlyOne
+    """.asAS[(Option[U256], Option[U256])].exactlyOne
 }

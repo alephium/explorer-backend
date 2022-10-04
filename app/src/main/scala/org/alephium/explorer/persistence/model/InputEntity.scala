@@ -16,15 +16,18 @@
 
 package org.alephium.explorer.persistence.model
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 final case class InputEntity(
-    blockHash: BlockEntry.Hash,
-    txHash: Transaction.Hash,
+    blockHash: BlockHash,
+    txHash: TransactionId,
     timestamp: TimeStamp,
     hint: Int,
     outputRefKey: Hash,
@@ -34,7 +37,7 @@ final case class InputEntity(
     txOrder: Int,
     outputRefAddress: Option[Address],
     outputRefAmount: Option[U256],
-    outputRefTokens: Option[Seq[Token]] //None if empty list
+    outputRefTokens: Option[ArraySeq[Token]] //None if empty list
 ) {
   def toApi(outputRef: OutputEntity): Input =
     Input(
@@ -46,6 +49,6 @@ final case class InputEntity(
     )
 
   /** @return All hash types associated with this [[InputEntity]] */
-  def hashes(): (Transaction.Hash, BlockEntry.Hash) =
+  def hashes(): (TransactionId, BlockHash) =
     (txHash, blockHash)
 }

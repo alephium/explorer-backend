@@ -18,6 +18,8 @@ package org.alephium.explorer.api
 
 import java.math.BigDecimal
 
+import scala.collection.immutable.ArraySeq
+
 import sttp.tapir._
 import sttp.tapir.generic.auto._
 
@@ -42,10 +44,10 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ExplorerInfo])
       .description("Get explorer informations")
 
-  val listTokenSupply: BaseEndpoint[Pagination, Seq[TokenSupply]] =
+  val listTokenSupply: BaseEndpoint[Pagination, ArraySeq[TokenSupply]] =
     supplyEndpoint.get
       .in(pagination)
-      .out(jsonBody[Seq[TokenSupply]])
+      .out(jsonBody[ArraySeq[TokenSupply]])
       .description("Get token supply list")
 
   val getCirculatingSupply: BaseEndpoint[Unit, BigDecimal] =
@@ -72,10 +74,10 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
       .out(plainBody[BigDecimal])
       .description("Get the ALPH locked supply")
 
-  val getHeights: BaseEndpoint[Unit, Seq[PerChainHeight]] =
+  val getHeights: BaseEndpoint[Unit, ArraySeq[PerChainHeight]] =
     infosEndpoint.get
       .in("heights")
-      .out(jsonBody[Seq[PerChainHeight]])
+      .out(jsonBody[ArraySeq[PerChainHeight]])
       .description("List latest height for each chain")
 
   val getTotalTransactions: BaseEndpoint[Unit, Int] =
@@ -84,9 +86,9 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
       .out(plainBody[Int])
       .description("Get the total number of transactions")
 
-  val getAverageBlockTime: BaseEndpoint[Unit, Seq[PerChainDuration]] =
+  val getAverageBlockTime: BaseEndpoint[Unit, ArraySeq[PerChainDuration]] =
     infosEndpoint.get
       .in("average-block-times")
-      .out(jsonBody[Seq[PerChainDuration]])
+      .out(jsonBody[ArraySeq[PerChainDuration]])
       .description("Get the average block time for each chain")
 }

@@ -27,7 +27,11 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-trait AlephiumSpec extends AnyWordSpec with ScalaCheckDrivenPropertyChecks with Matchers {
+trait AlephiumSpec
+    extends AnyWordSpec
+    with ImplicitConversions
+    with ScalaCheckDrivenPropertyChecks
+    with Matchers {
   @nowarn protected implicit def noShrink[A]: Shrink[A] = Shrink(_ => Stream.empty)
 
   // scalastyle:off no.should

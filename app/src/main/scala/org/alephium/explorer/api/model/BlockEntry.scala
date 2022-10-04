@@ -18,38 +18,33 @@ package org.alephium.explorer.api.model
 
 import java.math.BigInteger
 
+import scala.collection.immutable.ArraySeq
+
 import org.alephium.api.UtilJson._
-import org.alephium.explorer.BlockHash
-import org.alephium.explorer.HashCompanion
-import org.alephium.explorer.api.Json.blockHashReadWriter
+import org.alephium.explorer.api.Codecs._
 import org.alephium.explorer.service.FlowEntity
 import org.alephium.json.Json._
+import org.alephium.protocol.model.BlockHash
 import org.alephium.util.TimeStamp
 
 final case class BlockEntry(
-    hash: BlockEntry.Hash,
+    hash: BlockHash,
     timestamp: TimeStamp,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     height: Height,
-    deps: Seq[BlockEntry.Hash],
-    transactions: Seq[Transaction],
+    deps: ArraySeq[BlockHash],
+    transactions: ArraySeq[Transaction],
     mainChain: Boolean,
     hashRate: BigInteger
 ) extends FlowEntity
 
 object BlockEntry {
-
-  final class Hash(val value: BlockHash) extends AnyVal {
-    override def toString(): String = value.toHexString
-  }
-  object Hash extends HashCompanion[BlockHash, Hash](new Hash(_), _.value)
-
   implicit val codec: ReadWriter[BlockEntry] = macroRW
 }
 
 final case class BlockEntryLite(
-    hash: BlockEntry.Hash,
+    hash: BlockHash,
     timestamp: TimeStamp,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,

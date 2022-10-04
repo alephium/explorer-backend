@@ -19,16 +19,16 @@ package org.alephium.explorer.persistence.schema
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
-import org.alephium.explorer.api.model.BlockEntry
 import org.alephium.explorer.persistence.model.BlockDepEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.protocol.model.BlockHash
 
 object BlockDepsSchema extends Schema[BlockDepEntity]("block_deps") {
 
   class BlockDeps(tag: Tag) extends Table[BlockDepEntity](tag, name) {
-    def hash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("hash", O.SqlType("BYTEA"))
-    def dep: Rep[BlockEntry.Hash]  = column[BlockEntry.Hash]("dep", O.SqlType("BYTEA"))
-    def depOrder: Rep[Int]         = column[Int]("dep_order")
+    def hash: Rep[BlockHash] = column[BlockHash]("hash", O.SqlType("BYTEA"))
+    def dep: Rep[BlockHash]  = column[BlockHash]("dep", O.SqlType("BYTEA"))
+    def depOrder: Rep[Int]   = column[Int]("dep_order")
 
     def pk: PrimaryKey = primaryKey("hash_deps_pk", (hash, dep))
     def depIdx: Index  = index("deps_dep_idx", dep)

@@ -16,12 +16,12 @@
 
 package org.alephium.explorer.web
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util._
 
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
 import ch.qos.logback.classic.{Level, Logger, LoggerContext}
+import io.vertx.ext.web._
 import org.slf4j.LoggerFactory
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
@@ -42,20 +42,22 @@ class UtilsServer()(implicit val executionContext: ExecutionContext,
     extends Server
     with UtilsEndpoints {
 
-  val route: Route =
-    toRoute(sanityCheck.serverLogicSuccess[Future] { _ =>
-      sideEffect(SanityChecker.check())
-      Future.successful(())
-    }) ~
-      toRoute(indexCheck.serverLogic[Future] { _ =>
+  val routes: ArraySeq[Router => Route] =
+    ArraySeq(
+      route(sanityCheck.serverLogicSuccess[Future] { _ =>
+        sideEffect(SanityChecker.check())
+        Future.successful(())
+      }),
+      route(indexCheck.serverLogic[Future] { _ =>
         IndexChecker.check().map(Right(_))
-      }) ~
-      toRoute(changeGlobalLogLevel.serverLogic[Future] { level =>
+      }),
+      route(changeGlobalLogLevel.serverLogic[Future] { level =>
         Future.successful(updateGlobalLevel(level))
-      }) ~
-      toRoute(changeLogConfig.serverLogic[Future] { values =>
+      }),
+      route(changeLogConfig.serverLogic[Future] { values =>
         Future.successful(updateLoggerContext(values))
       })
+    )
 
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   private def updateGlobalLevel(level: String): Either[ApiError[_ <: StatusCode], Unit] = {
@@ -73,7 +75,7 @@ class UtilsServer()(implicit val executionContext: ExecutionContext,
 
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   private def updateLoggerContext(
-      values: Seq[LogbackValue]
+      values: ArraySeq[LogbackValue]
   ): Either[ApiError[_ <: StatusCode], Unit] = {
     val loggerFactory = LoggerFactory.getILoggerFactory().asInstanceOf[LoggerContext]
     loggerFactory match {

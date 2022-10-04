@@ -16,10 +16,10 @@
 
 package org.alephium.explorer.web
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.StatusCode
@@ -40,14 +40,15 @@ class ChartsServer()(implicit val executionContext: ExecutionContext,
   private val maxHourlyTimeSpan = Duration.ofDaysUnsafe(30)
   // scalastyle:on magic.number
 
-  val route: Route =
-    toRoute(getHashrates.serverLogic[Future] {
-      case (timeInterval, interval) =>
-        validateTimeInterval(timeInterval, interval) {
-          HashrateService.get(timeInterval.from, timeInterval.to, interval)
-        }
-    }) ~
-      toRoute(getAllChainsTxCount.serverLogic[Future] {
+  val routes: ArraySeq[Router => Route] =
+    ArraySeq(
+      route(getHashrates.serverLogic[Future] {
+        case (timeInterval, interval) =>
+          validateTimeInterval(timeInterval, interval) {
+            HashrateService.get(timeInterval.from, timeInterval.to, interval)
+          }
+      }),
+      route(getAllChainsTxCount.serverLogic[Future] {
         case (timeInterval, interval) =>
           validateTimeInterval(timeInterval, interval) {
             TransactionHistoryService
@@ -58,14 +59,15 @@ class ChartsServer()(implicit val executionContext: ExecutionContext,
                 }
               }
           }
-      }) ~
-      toRoute(getPerChainTxCount.serverLogic[Future] {
+      }),
+      route(getPerChainTxCount.serverLogic[Future] {
         case (timeInterval, interval) =>
           validateTimeInterval(timeInterval, interval) {
             TransactionHistoryService
               .getPerChain(timeInterval.from, timeInterval.to, interval)
           }
       })
+    )
 
   private def validateTimeInterval[A](timeInterval: TimeInterval, intervalType: IntervalType)(
       contd: => Future[A]): Future[Either[ApiError[_ <: StatusCode], A]] = {

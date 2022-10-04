@@ -18,20 +18,23 @@ package org.alephium.explorer.persistence.schema
 
 import java.math.BigInteger
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 import slick.jdbc.{PositionedParameters, SetParameter}
 
 import org.alephium.explorer
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.OutputEntity
+import org.alephium.protocol.model.{BlockHash, TokenId, TransactionId}
 import org.alephium.serde._
-import org.alephium.util.{AVector, TimeStamp, U256}
+import org.alephium.util.{TimeStamp, U256}
 
 /** [[slick.jdbc.SetParameter]] implicits for setting values in SQL queries */
 object CustomSetParameter {
 
-  implicit object BlockEntryHashSetParameter extends SetParameter[BlockEntry.Hash] {
-    override def apply(input: BlockEntry.Hash, params: PositionedParameters): Unit =
+  implicit object BlockEntryHashSetParameter extends SetParameter[BlockHash] {
+    override def apply(input: BlockHash, params: PositionedParameters): Unit =
       params setBytes input.value.bytes.toArray
   }
 
@@ -120,7 +123,7 @@ object CustomSetParameter {
       }
   }
 
-  implicit object TokensOptionSetParameter extends SetParameter[Option[Seq[Token]]] {
+  implicit object TokensOptionSetParameter extends SetParameter[Option[ArraySeq[Token]]] {
 
     /** {{{Params.setBytesOption(input.map(_.value.bytes.toArray[Byte]))}}} sets the value
       * to java.lang.Object instead of null which fails and requires casting at SQL level.
@@ -130,10 +133,10 @@ object CustomSetParameter {
       *
       * To keep this simple `null` is used and which set the column value as expected.
       */
-    override def apply(input: Option[Seq[Token]], params: PositionedParameters): Unit =
+    override def apply(input: Option[ArraySeq[Token]], params: PositionedParameters): Unit =
       input match {
         case Some(tokens) =>
-          params setBytes serialize(AVector.unsafe(tokens.toArray)).toArray
+          params setBytes serialize(tokens).toArray
 
         case None =>
           //scalastyle:off null
@@ -142,11 +145,11 @@ object CustomSetParameter {
       }
   }
 
-  implicit object ByteStringsOptionSetParameter extends SetParameter[Option[Seq[ByteString]]] {
-    override def apply(input: Option[Seq[ByteString]], params: PositionedParameters): Unit =
+  implicit object ByteStringsOptionSetParameter extends SetParameter[Option[ArraySeq[ByteString]]] {
+    override def apply(input: Option[ArraySeq[ByteString]], params: PositionedParameters): Unit =
       input match {
         case Some(byteStrings) =>
-          params setBytes serialize(AVector.unsafe(byteStrings.toArray)).toArray
+          params setBytes serialize(byteStrings).toArray
 
         case None =>
           //scalastyle:off null
@@ -165,12 +168,17 @@ object CustomSetParameter {
       params setInt input.value
   }
 
-  implicit object TransactionHashSetParameter extends SetParameter[Transaction.Hash] {
-    override def apply(input: Transaction.Hash, params: PositionedParameters): Unit =
-      params setBytes input.value.bytes.toArray
+  implicit object TransactionIdSetParameter extends SetParameter[TransactionId] {
+    override def apply(input: TransactionId, params: PositionedParameters): Unit =
+      params setBytes input.bytes.toArray
   }
 
-  implicit object BlockEntryHashOptionSetParameter extends SetParameter[Option[BlockEntry.Hash]] {
+  implicit object TokenIdSetParameter extends SetParameter[TokenId] {
+    override def apply(input: TokenId, params: PositionedParameters): Unit =
+      params setBytes input.bytes.toArray
+  }
+
+  implicit object BlockEntryHashOptionSetParameter extends SetParameter[Option[BlockHash]] {
 
     /** {{{Params.setBytesOption(input.map(_.value.bytes.toArray[Byte]))}}} sets the value
       * to java.lang.Object instead of null which fails and requires casting at SQL level.
@@ -180,7 +188,7 @@ object CustomSetParameter {
       *
       * To keep this simple `null` is used and which set the column value as expected.
       */
-    override def apply(input: Option[BlockEntry.Hash], params: PositionedParameters): Unit =
+    override def apply(input: Option[BlockHash], params: PositionedParameters): Unit =
       input match {
         case Some(value) =>
           params setBytes value.value.bytes.toArray
@@ -192,8 +200,8 @@ object CustomSetParameter {
       }
   }
 
-  implicit object TransationHashOptionSetParameter extends SetParameter[Option[Transaction.Hash]] {
-    override def apply(input: Option[Transaction.Hash], params: PositionedParameters): Unit =
+  implicit object TransationHashOptionSetParameter extends SetParameter[Option[TransactionId]] {
+    override def apply(input: Option[TransactionId], params: PositionedParameters): Unit =
       input match {
         case Some(value) =>
           params setBytes value.value.bytes.toArray

@@ -31,7 +31,7 @@ import org.alephium.explorer.{AlephiumSpec, GroupSetting}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.Generators._
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Pagination}
+import org.alephium.explorer.api.model.{GroupIndex, Pagination}
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._
@@ -41,9 +41,13 @@ import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.json.Json._
-import org.alephium.protocol.model.ChainIndex
+import org.alephium.protocol.model.{BlockHash, ChainIndex}
 import org.alephium.util.{Duration, TimeStamp}
 
+@SuppressWarnings(
+  Array("org.wartremover.warts.JavaSerializable",
+        "org.wartremover.warts.Product",
+        "org.wartremover.warts.Serializable")) // Wartremover is complaining, don't now why :/
 class BlockDaoSpec
     extends AlephiumSpec
     with DatabaseFixtureForEach
@@ -84,7 +88,7 @@ class BlockDaoSpec
 
       val blockheadersQuery =
         BlockHeaderSchema.table.filter(_.hash === block.hash).map(_.hash).result
-      val headerHash: Seq[BlockEntry.Hash] = run(blockheadersQuery).futureValue
+      val headerHash: Seq[BlockHash] = run(blockheadersQuery).futureValue
       headerHash.size is 1
       headerHash.foreach(_.is(block.hash))
       block.transactions.nonEmpty is true

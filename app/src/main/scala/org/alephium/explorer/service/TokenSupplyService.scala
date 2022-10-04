@@ -19,6 +19,7 @@ package org.alephium.explorer.service
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 import scala.io.{Codec, Source}
@@ -66,7 +67,7 @@ import org.alephium.util.{Duration, TimeStamp, U256}
 trait TokenSupplyService {
   def listTokenSupply(pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Seq[TokenSupply]]
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenSupply]]
 
   def getLatestTokenSupply()(implicit ec: ExecutionContext,
                              dc: DatabaseConfig[PostgresProfile]): Future[Option[TokenSupply]]
@@ -101,16 +102,18 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
 
   def listTokenSupply(pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Seq[TokenSupply]] = {
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenSupply]] = {
     val offset = pagination.offset.toLong
     val limit  = pagination.limit.toLong
     val toDrop = offset * limit
     run(
-      TokenSupplySchema.table
-        .sortBy { _.timestamp.desc }
-        .drop(toDrop)
-        .take(limit)
-        .result
+      sql"""
+        SELECT *
+        FROM token_supply
+        ORDER BY block_timestamp DESC
+        LIMIT $limit
+        OFFSET $toDrop
+      """.asASE[TokenSupplyEntity](tokenSupplyGetResult)
     ).map(_.map { entity =>
       TokenSupply(
         entity.timestamp,
@@ -126,10 +129,11 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
   def getLatestTokenSupply()(implicit ec: ExecutionContext,
                              dc: DatabaseConfig[PostgresProfile]): Future[Option[TokenSupply]] =
     run(
-      TokenSupplySchema.table
-        .sortBy { _.timestamp.desc }
-        .result
-        .headOption
+      sql"""
+        SELECT *
+        FROM token_supply
+        ORDER BY block_timestamp DESC
+      """.asASE[TokenSupplyEntity](tokenSupplyGetResult).headOrNone
     ).map(_.map { entity =>
       TokenSupply(
         entity.timestamp,
@@ -155,7 +159,7 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
       AND outputs.main_chain = true
       AND outputs.address NOT IN (#$reservedAddresses) /* We exclude the reserved wallets */
       AND inputs.block_hash IS NULL;
-        """.as[Option[U256]].exactlyOne
+        """.asAS[Option[U256]].exactlyOne
 
   def circulatingTokensQuery(at: TimeStamp)(implicit ec: ExecutionContext): DBActionR[U256] =
     circulatingTokensOptionQuery(at).map(_.getOrElse(U256.Zero))
@@ -172,7 +176,7 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
         WHERE outputs.main_chain = true
         AND outputs.block_timestamp <= $at
         AND inputs.block_hash IS NULL;
-      """.as[Option[U256]].exactlyOne
+      """.asAS[Option[U256]].exactlyOne
 
   def allUnspentTokensQuery(at: TimeStamp)(implicit ec: ExecutionContext): DBActionR[U256] =
     allUnspentTokensOption(at).map(_.getOrElse(U256.Zero))
@@ -190,7 +194,7 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
        AND outputs.main_chain = true
       AND outputs.address IN (#$reservedAddresses) /* We only take the reserved wallets */
       AND inputs.block_hash IS NULL;
-        """.as[Option[U256]].exactlyOne
+        """.asAS[Option[U256]].exactlyOne
 
   private def reservedTokensQuery(at: TimeStamp)(implicit ec: ExecutionContext): DBActionR[U256] =
     reservedTokensOptionQuery(at).map(_.getOrElse(U256.Zero))
@@ -209,7 +213,7 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
        AND outputs.main_chain = true
       AND outputs.address NOT IN (#$reservedAddresses) /* We exclude the reserved wallets */
       AND inputs.block_hash IS NULL;
-        """.as[Option[U256]].exactlyOne
+        """.asAS[Option[U256]].exactlyOne
 
   private def lockedTokensQuery(at: TimeStamp)(implicit ec: ExecutionContext): DBActionR[U256] =
     lockedTokensOptionQuery(at).map(_.getOrElse(U256.Zero))
@@ -302,16 +306,16 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
         .headOption
     )
 
-  private[service] def buildDaysRange(from: TimeStamp, until: TimeStamp): Seq[TimeStamp] = {
+  private[service] def buildDaysRange(from: TimeStamp, until: TimeStamp): ArraySeq[TimeStamp] = {
     val fromDay  = Instant.ofEpochMilli(from.millis).truncatedTo(ChronoUnit.DAYS)
     val untilDay = Instant.ofEpochMilli(until.millis).truncatedTo(ChronoUnit.DAYS)
 
     val nbOfDays = fromDay.until(untilDay, ChronoUnit.DAYS)
 
     if (nbOfDays <= 0) {
-      Seq.empty
+      ArraySeq.empty
     } else {
-      (1L to nbOfDays).map { day =>
+      ArraySeq.range(1L, nbOfDays + 1).map { day =>
         TimeStamp
           .unsafe(fromDay.toEpochMilli)
           .plusUnsafe(Duration.ofDaysUnsafe(day))

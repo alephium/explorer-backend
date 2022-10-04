@@ -14,16 +14,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.model
+package org.alephium.explorer
 
-import org.alephium.protocol.model.{BlockHash, TokenId, TransactionId}
-import org.alephium.util.TimeStamp
+import scala.collection.immutable.ArraySeq
 
-final case class TransactionPerTokenEntity(
-    hash: TransactionId,
-    blockHash: BlockHash,
-    token: TokenId,
-    timestamp: TimeStamp,
-    txOrder: Int,
-    mainChain: Boolean
-)
+import org.alephium.util.AVector
+
+//TODO Add this to `org.alephium.util.AVector`
+object RichAVector {
+  implicit class Impl[A](val avector: AVector[A]) extends AnyVal {
+    def toArraySeq: ArraySeq[A] = {
+      ArraySeq.unsafeWrapArray(avector.toArray)
+    }
+  }
+}

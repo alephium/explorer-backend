@@ -122,16 +122,16 @@
         }
       }
     },
-    "/blocks/{block-hash}": {
+    "/blocks/{block_hash}": {
       "get": {
         "tags": [
           "Blocks"
         ],
         "description": "Get a block with hash",
-        "operationId": "getBlocksBlock-hash",
+        "operationId": "getBlocksBlock_hash",
         "parameters": [
           {
-            "name": "block-hash",
+            "name": "block_hash",
             "in": "path",
             "required": true,
             "schema": {
@@ -218,16 +218,16 @@
         }
       }
     },
-    "/blocks/{block-hash}/transactions": {
+    "/blocks/{block_hash}/transactions": {
       "get": {
         "tags": [
           "Blocks"
         ],
         "description": "Get block's transactions",
-        "operationId": "getBlocksBlock-hashTransactions",
+        "operationId": "getBlocksBlock_hashTransactions",
         "parameters": [
           {
-            "name": "block-hash",
+            "name": "block_hash",
             "in": "path",
             "required": true,
             "schema": {
@@ -346,16 +346,16 @@
         }
       }
     },
-    "/transactions/{transaction-hash}": {
+    "/transactions/{transaction_hash}": {
       "get": {
         "tags": [
           "Transactions"
         ],
         "description": "Get a transaction with hash",
-        "operationId": "getTransactionsTransaction-hash",
+        "operationId": "getTransactionsTransaction_hash",
         "parameters": [
           {
-            "name": "transaction-hash",
+            "name": "transaction_hash",
             "in": "path",
             "required": true,
             "schema": {
@@ -442,16 +442,16 @@
         }
       }
     },
-    "/transaction-by-output-ref-key/{output-ref-key}": {
+    "/transaction-by-output-ref-key/{output_ref_key}": {
       "get": {
         "tags": [
           "Transactions"
         ],
         "description": "Get a transaction from a output reference key",
-        "operationId": "getTransaction-by-output-ref-keyOutput-ref-key",
+        "operationId": "getTransaction-by-output-ref-keyOutput_ref_key",
         "parameters": [
           {
-            "name": "output-ref-key",
+            "name": "output_ref_key",
             "in": "path",
             "required": true,
             "schema": {
@@ -464,7 +464,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ConfirmedTransaction"
+                  "$ref": "#/components/schemas/Transaction"
                 }
               }
             }
@@ -883,7 +883,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/UnconfirmedTransaction"
+                    "$ref": "#/components/schemas/TransactionLike"
                   }
                 }
               }
@@ -1154,13 +1154,13 @@
         }
       }
     },
-    "/addresses/{address}/tokens/{token-id}/transactions": {
+    "/addresses/{address}/tokens/{token_id}/transactions": {
       "get": {
         "tags": [
           "Addresses"
         ],
         "description": "List address tokens",
-        "operationId": "getAddressesAddressTokensToken-idTransactions",
+        "operationId": "getAddressesAddressTokensToken_idTransactions",
         "parameters": [
           {
             "name": "address",
@@ -1171,7 +1171,7 @@
             }
           },
           {
-            "name": "token-id",
+            "name": "token_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1290,13 +1290,13 @@
         }
       }
     },
-    "/addresses/{address}/tokens/{token-id}/balance": {
+    "/addresses/{address}/tokens/{token_id}/balance": {
       "get": {
         "tags": [
           "Addresses"
         ],
         "description": "Get address balance of given token",
-        "operationId": "getAddressesAddressTokensToken-idBalance",
+        "operationId": "getAddressesAddressTokensToken_idBalance",
         "parameters": [
           {
             "name": "address",
@@ -1307,7 +1307,7 @@
             }
           },
           {
-            "name": "token-id",
+            "name": "token_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1717,7 +1717,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/UnconfirmedTransaction"
+                    "$ref": "#/components/schemas/TransactionLike"
                   }
                 }
               }
@@ -1913,16 +1913,16 @@
         }
       }
     },
-    "/tokens/{token-id}/transactions": {
+    "/tokens/{token_id}/transactions": {
       "get": {
         "tags": [
           "Tokens"
         ],
         "description": "List token transactions",
-        "operationId": "getTokensToken-idTransactions",
+        "operationId": "getTokensToken_idTransactions",
         "parameters": [
           {
-            "name": "token-id",
+            "name": "token_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -3983,7 +3983,7 @@
           "outputs": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AssetOutput"
+              "$ref": "#/components/schemas/Output"
             }
           },
           "gasAmount": {

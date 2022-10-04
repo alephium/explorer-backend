@@ -76,7 +76,7 @@ object GenDBModel {
     for {
       hash      <- transactionHashGen
       blockHash <- blockEntryHashGen
-      token     <- hashGen
+      token     <- tokenIdGen
       timestamp <- timestampGen
       txOrder   <- Gen.posNum[Int]
       mainChain <- Arbitrary.arbitrary[Boolean]
@@ -98,7 +98,7 @@ object GenDBModel {
       timestamp <- timestampGen
       txOrder   <- Gen.posNum[Int]
       mainChain <- Arbitrary.arbitrary[Boolean]
-      token     <- hashGen
+      token     <- tokenIdGen
     } yield
       TokenTxPerAddressEntity(
         address   = address,

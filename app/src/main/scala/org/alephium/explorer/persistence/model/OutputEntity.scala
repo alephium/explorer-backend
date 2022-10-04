@@ -16,31 +16,34 @@
 
 package org.alephium.explorer.persistence.model
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 final case class OutputEntity(
-    blockHash: BlockEntry.Hash,
-    txHash: Transaction.Hash,
+    blockHash: BlockHash,
+    txHash: TransactionId,
     timestamp: TimeStamp,
     outputType: OutputEntity.OutputType,
     hint: Int,
     key: Hash,
     amount: U256,
     address: Address,
-    tokens: Option[Seq[Token]], //None if empty list
+    tokens: Option[ArraySeq[Token]], //None if empty list
     mainChain: Boolean,
     lockTime: Option[TimeStamp],
     message: Option[ByteString],
     outputOrder: Int,
     txOrder: Int,
-    spentFinalized: Option[Transaction.Hash]
+    spentFinalized: Option[TransactionId]
 ) {
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-  def toApi(spent: Option[Transaction.Hash]): Output = {
+  def toApi(spent: Option[TransactionId]): Output = {
     outputType match {
       case OutputEntity.Asset =>
         AssetOutput(hint, key, amount, address, tokens, lockTime, message, spent)

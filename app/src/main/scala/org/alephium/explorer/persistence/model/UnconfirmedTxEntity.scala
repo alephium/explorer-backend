@@ -16,11 +16,14 @@
 
 package org.alephium.explorer.persistence.model
 
+import scala.collection.immutable.ArraySeq
+
 import org.alephium.explorer.api.model._
+import org.alephium.protocol.model.TransactionId
 import org.alephium.util.{TimeStamp, U256}
 
 final case class UnconfirmedTxEntity(
-    hash: Transaction.Hash,
+    hash: TransactionId,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     gasAmount: Int,
@@ -29,8 +32,8 @@ final case class UnconfirmedTxEntity(
 )
 
 object UnconfirmedTxEntity {
-  def from(
-      utx: UnconfirmedTransaction): (UnconfirmedTxEntity, Seq[UInputEntity], Seq[UOutputEntity]) = {
+  def from(utx: UnconfirmedTransaction)
+    : (UnconfirmedTxEntity, ArraySeq[UInputEntity], ArraySeq[UOutputEntity]) = {
     (UnconfirmedTxEntity(
        utx.hash,
        utx.chainFrom,
@@ -52,6 +55,14 @@ object UnconfirmedTxEntity {
      },
      utx.outputs.zipWithIndex.map {
        case (output, order) =>
+         val lockTime = output match {
+           case asset: AssetOutput => asset.lockTime
+           case _: ContractOutput  => None
+         }
+         val message = output match {
+           case asset: AssetOutput => asset.message
+           case _: ContractOutput  => None
+         }
          UOutputEntity(
            utx.hash,
            output.hint,
@@ -59,8 +70,8 @@ object UnconfirmedTxEntity {
            output.attoAlphAmount,
            output.address,
            output.tokens,
-           output.lockTime,
-           output.message,
+           lockTime,
+           message,
            order
          )
      })

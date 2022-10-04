@@ -19,23 +19,23 @@ package org.alephium.explorer.persistence.schema
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
-import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
+import org.alephium.explorer.api.model.Address
 import org.alephium.explorer.persistence.model.TokenTxPerAddressEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.protocol.Hash
+import org.alephium.protocol.model.{BlockHash, TokenId, TransactionId}
 import org.alephium.util.TimeStamp
 
 object TokenPerAddressSchema
     extends SchemaMainChain[TokenTxPerAddressEntity]("token_tx_per_addresses") {
 
   class TokenPerAddresses(tag: Tag) extends Table[TokenTxPerAddressEntity](tag, name) {
-    def address: Rep[Address]           = column[Address]("address")
-    def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
-    def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
-    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("block_timestamp")
-    def txOrder: Rep[Int]               = column[Int]("tx_order")
-    def mainChain: Rep[Boolean]         = column[Boolean]("main_chain")
-    def token: Rep[Hash]                = column[Hash]("token")
+    def address: Rep[Address]      = column[Address]("address")
+    def txHash: Rep[TransactionId] = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
+    def blockHash: Rep[BlockHash]  = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
+    def timestamp: Rep[TimeStamp]  = column[TimeStamp]("block_timestamp")
+    def txOrder: Rep[Int]          = column[Int]("tx_order")
+    def mainChain: Rep[Boolean]    = column[Boolean]("main_chain")
+    def token: Rep[TokenId]        = column[TokenId]("token")
 
     def pk: PrimaryKey = primaryKey("token_tx_per_address_pk", (txHash, blockHash, address, token))
 

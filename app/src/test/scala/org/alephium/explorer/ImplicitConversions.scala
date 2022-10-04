@@ -14,14 +14,24 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.web
+package org.alephium.explorer
 
-import sttp.tapir.server.interceptor.decodefailure.{
-  DecodeFailureHandler => TapirDecodeFailureHandler
-}
+import scala.collection.immutable.ArraySeq
+import scala.language.implicitConversions
+import scala.reflect.ClassTag
 
-import org.alephium.api.DecodeFailureHandler
+import org.alephium.util.AVector
 
-trait AkkaDecodeFailureHandler extends DecodeFailureHandler {
-  val decodeFailureHandler: TapirDecodeFailureHandler = myDecodeFailureHandler
+@SuppressWarnings(Array("org.wartremover.warts.ImplicitConversion"))
+trait ImplicitConversions {
+
+  implicit def avectorToArraySeq[A](avector: AVector[A]): ArraySeq[A] =
+    ArraySeq.unsafeWrapArray(avector.toArray)
+
+  implicit def iterableToArraySeq[A: ClassTag](iterable: Iterable[A]): ArraySeq[A] =
+    ArraySeq.from(iterable)
+
+  implicit def optionIterableToArraySeq[A: ClassTag](
+      iterableOpt: Option[Iterable[A]]): Option[ArraySeq[A]] =
+    iterableOpt.map(ArraySeq.from(_))
 }

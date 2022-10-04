@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.queries
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
 import slick.dbio.DBIOAction
@@ -26,6 +27,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util._
 
 object InputUpdateQueries {
@@ -42,14 +44,14 @@ object InputUpdateQueries {
       AND inputs.output_ref_amount IS NULL
       RETURNING outputs.address, outputs.tokens, inputs.tx_hash, inputs.block_hash, inputs.block_timestamp, inputs.tx_order, inputs.main_chain
     """
-      .as[(Address, Option[Seq[Token]], Transaction.Hash, BlockEntry.Hash, TimeStamp, Int, Boolean)]
+      .as[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean)]
       .flatMap(internalUpdates)
       .transactionally
   }
 
   // format: off
   private def internalUpdates(
-      data: Vector[(Address, Option[Seq[Token]], Transaction.Hash, BlockEntry.Hash, TimeStamp, Int, Boolean)])
+      data: Vector[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean)])
     : DBActionWT[Unit] = {
   // format: on
     DBIOAction
@@ -62,7 +64,7 @@ object InputUpdateQueries {
 
   // format: off
   private def updateTransactionPerAddresses(
-      data: Vector[(Address, Option[Seq[Token]], Transaction.Hash, BlockEntry.Hash, TimeStamp, Int, Boolean)])
+      data: Vector[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean)])
     : DBActionWT[Int] = {
   // format: on
     QuerySplitter.splitUpdates(rows = data, columnsPerRow = 6) { (data, placeholder) =>
@@ -94,13 +96,13 @@ object InputUpdateQueries {
 
   // format: off
   private def updateTokenTxPerAddresses(
-      data: Vector[(Address, Option[Seq[Token]], Transaction.Hash, BlockEntry.Hash, TimeStamp, Int, Boolean)])
+      data: Vector[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean)])
     : DBActionWT[Int] = {
   // format: on
     val tokenTxPerAddresses = data.flatMap {
       case (address, tokensOpt, txHash, blockHash, timestamp, txOrder, mainChain) =>
         tokensOpt match {
-          case None => Seq.empty
+          case None => ArraySeq.empty
           case Some(tokens) =>
             tokens.map { token =>
               (address, txHash, blockHash, timestamp, txOrder, mainChain, token.id)

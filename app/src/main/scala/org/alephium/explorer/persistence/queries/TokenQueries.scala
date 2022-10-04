@@ -16,23 +16,24 @@
 
 package org.alephium.explorer.persistence.queries
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
 import com.typesafe.scalalogging.StrictLogging
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.queries.result.TxByAddressQR
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
+import org.alephium.protocol.model.TokenId
 import org.alephium.util.{TimeStamp, U256}
 
 object TokenQueries extends StrictLogging {
 
-  def getTokenBalanceAction(address: Address, token: Hash)(
+  def getTokenBalanceAction(address: Address, token: TokenId)(
       implicit ec: ExecutionContext): DBActionR[(U256, U256)] =
     getTokenBalanceUntilLockTime(
       address = address,
@@ -43,7 +44,7 @@ object TokenQueries extends StrictLogging {
         (total.getOrElse(U256.Zero), locked.getOrElse(U256.Zero))
     }
 
-  def getTokenBalanceUntilLockTime(address: Address, token: Hash, lockTime: TimeStamp)(
+  def getTokenBalanceUntilLockTime(address: Address, token: TokenId, lockTime: TimeStamp)(
       implicit ec: ExecutionContext): DBActionR[(Option[U256], Option[U256])] =
     sql"""
       SELECT sum(token_outputs.amount),
@@ -60,9 +61,9 @@ object TokenQueries extends StrictLogging {
         AND token_outputs.token = $token
         AND token_outputs.main_chain = true
         AND inputs.block_hash IS NULL;
-    """.as[(Option[U256], Option[U256])].exactlyOne
+    """.asAS[(Option[U256], Option[U256])].exactlyOne
 
-  def listTokensAction(pagination: Pagination): DBActionSR[Hash] = {
+  def listTokensAction(pagination: Pagination): DBActionSR[TokenId] = {
     val offset = pagination.offset
     val limit  = pagination.limit
     val toDrop = offset * limit
@@ -72,11 +73,11 @@ object TokenQueries extends StrictLogging {
       ORDER BY last_used DESC
       LIMIT $limit
       OFFSET $toDrop
-    """.as[Hash]
+    """.asAS[TokenId]
   }
 
-  def getTransactionsByToken(token: Hash, pagination: Pagination)(
-      implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
+  def getTransactionsByToken(token: TokenId, pagination: Pagination)(
+      implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     val offset = pagination.offset
     val limit  = pagination.limit
     val toDrop = offset * limit
@@ -86,7 +87,7 @@ object TokenQueries extends StrictLogging {
     } yield txs
   }
 
-  def getAddressesByToken(token: Hash, pagination: Pagination): DBActionR[Seq[Address]] = {
+  def getAddressesByToken(token: TokenId, pagination: Pagination): DBActionR[ArraySeq[Address]] = {
     val offset = pagination.offset
     val limit  = pagination.limit
     val toDrop = offset * limit
@@ -96,10 +97,10 @@ object TokenQueries extends StrictLogging {
       WHERE token = $token
       LIMIT $limit
       OFFSET $toDrop
-    """.as[Address]
+    """.asAS[Address]
   }
 
-  def listTokenTransactionsAction(token: Hash,
+  def listTokenTransactionsAction(token: TokenId,
                                   offset: Int,
                                   limit: Int): DBActionSR[TxByAddressQR] = {
     sql"""
@@ -110,19 +111,19 @@ object TokenQueries extends StrictLogging {
       ORDER BY block_timestamp DESC, tx_order
       LIMIT $limit
       OFFSET $offset
-    """.as[TxByAddressQR]
+    """.asAS[TxByAddressQR]
   }
 
-  def listAddressTokensAction(address: Address): DBActionSR[Hash] =
+  def listAddressTokensAction(address: Address): DBActionSR[TokenId] =
     sql"""
       SELECT DISTINCT token
       FROM token_tx_per_addresses
       WHERE address = $address
       AND main_chain = true
-    """.as[Hash]
+    """.asAS[TokenId]
 
-  def getTokenTransactionsByAddress(address: Address, token: Hash, pagination: Pagination)(
-      implicit ec: ExecutionContext): DBActionR[Seq[Transaction]] = {
+  def getTokenTransactionsByAddress(address: Address, token: TokenId, pagination: Pagination)(
+      implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     val offset = pagination.offset
     val limit  = pagination.limit
     val toDrop = offset * limit
@@ -133,7 +134,7 @@ object TokenQueries extends StrictLogging {
   }
 
   def getTokenTxHashesByAddressQuery(address: Address,
-                                     token: Hash,
+                                     token: TokenId,
                                      offset: Int,
                                      limit: Int): DBActionSR[TxByAddressQR] = {
     sql"""
@@ -145,6 +146,6 @@ object TokenQueries extends StrictLogging {
       ORDER BY block_timestamp DESC, tx_order
       LIMIT $limit
       OFFSET $offset
-    """.as
+    """.asAS[TxByAddressQR]
   }
 }

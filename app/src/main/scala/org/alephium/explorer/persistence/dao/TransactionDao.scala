@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.dao
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import slick.basic.DatabaseConfig
@@ -26,13 +27,13 @@ import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries.TokenQueries._
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.protocol.Hash
+import org.alephium.protocol.model.{TokenId, TransactionId}
 import org.alephium.util.U256
 
 object TransactionDao {
 
-  def get(hash: Transaction.Hash)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Option[Transaction]] =
+  def get(hash: TransactionId)(implicit ec: ExecutionContext,
+                               dc: DatabaseConfig[PostgresProfile]): Future[Option[Transaction]] =
     run(getTransactionAction(hash))
 
   def getOutputRefTransaction(key: Hash)(
@@ -42,12 +43,12 @@ object TransactionDao {
 
   def getByAddress(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     run(getTransactionsByAddressNoJoin(address, pagination))
 
   def getByAddressSQL(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     run(getTransactionsByAddressSQL(address, pagination))
 
   def getNumberByAddressSQLNoJoin(address: Address)(
@@ -59,35 +60,35 @@ object TransactionDao {
                                    dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
     run(getBalanceAction(address))
 
-  def getTokenBalance(address: Address, token: Hash)(
+  def getTokenBalance(address: Address, token: TokenId)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
     run(getTokenBalanceAction(address, token))
 
-  def areAddressesActive(addresses: Seq[Address])(
+  def areAddressesActive(addresses: ArraySeq[Address])(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Boolean]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]] =
     run(areAddressesActiveAction(addresses))
 
   def listTokens(pagination: Pagination)(
-      implicit dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] =
+      implicit dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenId]] =
     run(listTokensAction(pagination))
 
-  def listTokenTransactions(token: Hash, pagination: Pagination)(
+  def listTokenTransactions(token: TokenId, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     run(getTransactionsByToken(token, pagination))
 
-  def listTokenAddresses(token: Hash, pagination: Pagination)(
-      implicit dc: DatabaseConfig[PostgresProfile]): Future[Seq[Address]] =
+  def listTokenAddresses(token: TokenId, pagination: Pagination)(
+      implicit dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Address]] =
     run(getAddressesByToken(token, pagination))
 
   def listAddressTokens(address: Address)(
-      implicit dc: DatabaseConfig[PostgresProfile]): Future[Seq[Hash]] =
+      implicit dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenId]] =
     run(listAddressTokensAction(address))
 
-  def listAddressTokenTransactions(address: Address, token: Hash, pagination: Pagination)(
+  def listAddressTokenTransactions(address: Address, token: TokenId, pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Seq[Transaction]] =
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     run(getTokenTransactionsByAddress(address, token, pagination))
 }

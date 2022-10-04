@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.api.model
 
+import scala.collection.immutable.ArraySeq
+
 import sttp.tapir.{Schema, Validator}
 import upickle.core.Abort
 
@@ -52,7 +54,7 @@ object LogbackValue {
       Array("org.wartremover.warts.JavaSerializable",
             "org.wartremover.warts.Product",
             "org.wartremover.warts.Serializable")) // Wartremover is complaining, don't now why :/
-    val levels: Seq[Level] = Seq(Trace, Debug, Info, Warn, Error)
+    val levels: ArraySeq[Level] = ArraySeq(Trace, Debug, Info, Warn, Error)
 
     implicit val levelReadWriter: ReadWriter[Level] = readwriter[String].bimap(
       _.toString, {

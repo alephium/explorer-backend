@@ -18,6 +18,7 @@ package org.alephium.explorer.cache
 
 import java.util.concurrent.{CompletableFuture, Executor}
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
@@ -59,13 +60,13 @@ object CaffeineAsyncCache {
     */
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   def rowCountCache(runner: DBRunner)(
-      builder: Caffeine[AnyRef, AnyRef]): CaffeineAsyncCache[Query[_, _, Seq], Int] =
+      builder: Caffeine[AnyRef, AnyRef]): CaffeineAsyncCache[Query[_, _, ArraySeq], Int] =
     CaffeineAsyncCache {
       builder
-        .asInstanceOf[Caffeine[Query[_, _, Seq], Int]]
-        .buildAsync[Query[_, _, Seq], Int] {
-          new AsyncCacheLoader[Query[_, _, Seq], Int] {
-            override def asyncLoad(table: Query[_, _, Seq],
+        .asInstanceOf[Caffeine[Query[_, _, ArraySeq], Int]]
+        .buildAsync[Query[_, _, ArraySeq], Int] {
+          new AsyncCacheLoader[Query[_, _, ArraySeq], Int] {
+            override def asyncLoad(table: Query[_, _, ArraySeq],
                                    executor: Executor): CompletableFuture[Int] =
               runner.run(table.length.result).asJava.toCompletableFuture
           }
@@ -79,8 +80,8 @@ class CaffeineAsyncCache[K, V](cache: AsyncLoadingCache[K, V]) {
   def get(key: K): Future[V] =
     cache.get(key).asScala
 
-  def getAll(keys: Iterable[K])(implicit ec: ExecutionContext): Future[Seq[(K, V)]] =
-    cache.getAll(keys.asJava).asScala.map(_.asScala.toSeq)
+  def getAll(keys: Iterable[K])(implicit ec: ExecutionContext): Future[ArraySeq[(K, V)]] =
+    cache.getAll(keys.asJava).asScala.map(mp => ArraySeq.unsafeWrapArray(mp.asScala.toArray))
 
   def getIfPresent(key: K): Option[Future[V]] = {
     val valueOrNull = cache.getIfPresent(key)

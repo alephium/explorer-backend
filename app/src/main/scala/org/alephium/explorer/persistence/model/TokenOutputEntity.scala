@@ -20,16 +20,17 @@ import akka.util.ByteString
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
+import org.alephium.protocol.model.{BlockHash, TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 final case class TokenOutputEntity(
-    blockHash: BlockEntry.Hash,
-    txHash: Transaction.Hash,
+    blockHash: BlockHash,
+    txHash: TransactionId,
     timestamp: TimeStamp,
     outputType: Int, //0 Asset, 1 Contract
     hint: Int,
     key: Hash,
-    token: Hash,
+    token: TokenId,
     amount: U256,
     address: Address,
     mainChain: Boolean,
@@ -37,5 +38,5 @@ final case class TokenOutputEntity(
     message: Option[ByteString],
     outputOrder: Int,
     txOrder: Int,
-    spentFinalized: Option[Transaction.Hash]
+    spentFinalized: Option[TransactionId]
 )

@@ -19,21 +19,22 @@ package org.alephium.explorer.persistence.schema
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
-import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
+import org.alephium.explorer.api.model.Address
 import org.alephium.explorer.persistence.model.TransactionPerAddressEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.TimeStamp
 
 object TransactionPerAddressSchema
     extends SchemaMainChain[TransactionPerAddressEntity]("transaction_per_addresses") {
 
   class TransactionPerAddresses(tag: Tag) extends Table[TransactionPerAddressEntity](tag, name) {
-    def address: Rep[Address]           = column[Address]("address")
-    def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
-    def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
-    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("block_timestamp")
-    def txOrder: Rep[Int]               = column[Int]("tx_order")
-    def mainChain: Rep[Boolean]         = column[Boolean]("main_chain")
+    def address: Rep[Address]      = column[Address]("address")
+    def txHash: Rep[TransactionId] = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
+    def blockHash: Rep[BlockHash]  = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
+    def timestamp: Rep[TimeStamp]  = column[TimeStamp]("block_timestamp")
+    def txOrder: Rep[Int]          = column[Int]("tx_order")
+    def mainChain: Rep[Boolean]    = column[Boolean]("main_chain")
 
     def pk: PrimaryKey = primaryKey("txs_per_address_pk", (txHash, blockHash, address))
 

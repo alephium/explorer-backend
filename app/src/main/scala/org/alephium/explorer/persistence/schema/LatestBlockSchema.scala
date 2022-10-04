@@ -22,15 +22,16 @@ import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{PrimaryKey, ProvenShape}
 
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.explorer.api.model.{GroupIndex, Height}
 import org.alephium.explorer.persistence.model.LatestBlock
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.protocol.model.BlockHash
 import org.alephium.util.TimeStamp
 
 object LatestBlockSchema extends Schema[LatestBlock]("latest_blocks") {
 
   class LatestBlocks(tag: Tag) extends Table[LatestBlock](tag, name) {
-    def hash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("hash", O.SqlType("bytea"))
+    def hash: Rep[BlockHash]       = column[BlockHash]("hash", O.SqlType("bytea"))
     def timestamp: Rep[TimeStamp]  = column[TimeStamp]("block_timestamp")
     def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")

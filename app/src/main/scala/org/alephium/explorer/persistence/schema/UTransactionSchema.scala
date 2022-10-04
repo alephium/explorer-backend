@@ -19,16 +19,17 @@ package org.alephium.explorer.persistence.schema
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, ProvenShape}
 
-import org.alephium.explorer.api.model.{GroupIndex, Transaction}
+import org.alephium.explorer.api.model.GroupIndex
 import org.alephium.explorer.persistence.model.UnconfirmedTxEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.protocol.model.TransactionId
 import org.alephium.util.{TimeStamp, U256}
 
 object UnconfirmedTxSchema extends Schema[UnconfirmedTxEntity]("utransactions") {
 
   class UnconfirmedTxs(tag: Tag) extends Table[UnconfirmedTxEntity](tag, name) {
-    def hash: Rep[Transaction.Hash] =
-      column[Transaction.Hash]("hash", O.PrimaryKey, O.SqlType("BYTEA"))
+    def hash: Rep[TransactionId] =
+      column[TransactionId]("hash", O.PrimaryKey, O.SqlType("BYTEA"))
     def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
     def gasAmount: Rep[Int]        = column[Int]("gas_amount")

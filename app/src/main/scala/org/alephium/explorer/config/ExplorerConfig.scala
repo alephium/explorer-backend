@@ -21,12 +21,12 @@ import java.net.InetAddress
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
-import akka.http.scaladsl.model.Uri
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus
 import net.ceedubs.ficus.Ficus.{finiteDurationReader => _, _}
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
 import net.ceedubs.ficus.readers.ValueReader
+import sttp.model.Uri
 
 import org.alephium.api.model.ApiKey
 import org.alephium.conf._
@@ -62,7 +62,7 @@ object ExplorerConfig {
     for {
       host <- validateHost(blockFlowHost)
       port <- validatePort(blockFlowPort)
-    } yield Uri(s"http://$host:$port")
+    } yield Uri(host, port)
 
   def validateNetworkId(networkId: Int): Try[NetworkId] =
     NetworkId.from(networkId) match {

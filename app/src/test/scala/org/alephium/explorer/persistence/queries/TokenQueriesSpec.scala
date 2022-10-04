@@ -42,7 +42,7 @@ class TokenQueriesSpec
 
   "Token Queries" should {
     "list token transactions" in {
-      forAll(Gen.listOfN(30, transactionPerTokenEntityGen()), hashGen) {
+      forAll(Gen.listOfN(30, transactionPerTokenEntityGen()), tokenIdGen) {
         case (txPerTokens, token) =>
           run(TransactionPerTokenSchema.table.delete).futureValue
           run(TransactionPerTokenSchema.table ++= txPerTokens.map(_.copy(token = token))).futureValue
@@ -59,7 +59,7 @@ class TokenQueriesSpec
     }
 
     "get token tx hashes by address query" in {
-      forAll(Gen.listOfN(30, tokenTxPerAddressEntityGen()), addressGen, hashGen) {
+      forAll(Gen.listOfN(30, tokenTxPerAddressEntityGen()), addressGen, tokenIdGen) {
         case (txPerAddressTokens, address, token) =>
           run(TokenPerAddressSchema.table.delete).futureValue
           run(

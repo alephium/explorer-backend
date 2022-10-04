@@ -24,16 +24,17 @@ import slick.lifted.{Index, ProvenShape}
 import slick.sql.SqlAction
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.explorer.api.model.{GroupIndex, Height}
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.protocol.model.BlockHash
 import org.alephium.util.TimeStamp
 
 object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
 
   class BlockHeaders(tag: Tag) extends Table[BlockHeader](tag, name) {
-    def hash: Rep[BlockEntry.Hash] =
-      column[BlockEntry.Hash]("hash", O.PrimaryKey, O.SqlType("bytea"))
+    def hash: Rep[BlockHash] =
+      column[BlockHash]("hash", O.PrimaryKey, O.SqlType("bytea"))
     def timestamp: Rep[TimeStamp]  = column[TimeStamp]("block_timestamp")
     def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
     def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
@@ -47,7 +48,7 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
     def target: Rep[ByteString]    = column[ByteString]("target")
     def hashrate: Rep[BigInteger] =
       column[BigInteger]("hashrate", O.SqlType("DECIMAL(80,0)")) //TODO How much decimal we need? this one is the same as for U256
-    def parent: Rep[Option[BlockEntry.Hash]] = column[Option[BlockEntry.Hash]]("parent")
+    def parent: Rep[Option[BlockHash]] = column[Option[BlockHash]]("parent")
 
     def timestampIdx: Index = index("blocks_timestamp_idx", timestamp)
     def heightIdx: Index    = index("blocks_height_idx", height)

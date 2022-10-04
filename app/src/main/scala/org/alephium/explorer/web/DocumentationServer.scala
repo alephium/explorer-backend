@@ -16,23 +16,23 @@
 
 package org.alephium.explorer.web
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.collection.immutable.ArraySeq
+import scala.concurrent.Future
 
-import akka.http.scaladsl.server.Route
+import io.vertx.ext.web._
 import sttp.tapir.swagger.{SwaggerUI, SwaggerUIOptions}
 
 import org.alephium.api.OpenAPIWriters.openApiJson
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.docs.Documentation
 
-class DocumentationServer()(implicit val executionContext: ExecutionContext,
-                            groupSetting: GroupSetting)
-    extends Server
-    with Documentation {
+class DocumentationServer()(implicit groupSetting: GroupSetting) extends Server with Documentation {
 
   val groupNum = groupSetting.groupNum
 
-  val route: Route = toRoute(
-    SwaggerUI[Future](openApiJson(docs, dropAuth             = false),
-                      SwaggerUIOptions.default.copy(yamlName = "explorer-backend-openapi.json")))
+  val routes: ArraySeq[Router => Route] =
+    ArraySeq.from(
+      SwaggerUI[Future](
+        openApiJson(docs, dropAuth             = false),
+        SwaggerUIOptions.default.copy(yamlName = "explorer-backend-openapi.json")).map(route(_)))
 }

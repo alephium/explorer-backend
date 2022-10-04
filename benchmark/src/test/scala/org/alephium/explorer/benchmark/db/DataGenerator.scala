@@ -18,13 +18,15 @@ package org.alephium.explorer.benchmark.db
 
 import java.math.BigInteger
 
+import scala.collection.immutable.ArraySeq
 import scala.util.Random
 
 import akka.util.ByteString
 
-import org.alephium.explorer.{BlockHash, GenApiModel, Hash}
+import org.alephium.explorer.{GenApiModel, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.{Base58, TimeStamp, U256}
 
 /**
@@ -39,13 +41,13 @@ object DataGenerator {
 
   val timestampMaxValue: TimeStamp = TimeStamp.unsafe(253370764800000L) //Jan 01 9999 00:00:00
 
-  def genTransactions(count: Int                 = 10,
-                      blockHash: BlockEntry.Hash = new BlockEntry.Hash(BlockHash.generate),
-                      blockTimestamp: TimeStamp  = TimeStamp.now(),
-                      mainChain: Boolean         = Random.nextBoolean()): Seq[TransactionEntity] =
-    Seq.fill(count) {
+  def genTransactions(count: Int                = 10,
+                      blockHash: BlockHash      = BlockHash.generate,
+                      blockTimestamp: TimeStamp = TimeStamp.now(),
+                      mainChain: Boolean        = Random.nextBoolean()): ArraySeq[TransactionEntity] =
+    ArraySeq.fill(count) {
       TransactionEntity(
-        hash              = new Transaction.Hash(Hash.generate),
+        hash              = TransactionId.generate,
         blockHash         = blockHash,
         timestamp         = blockTimestamp,
         chainFrom         = GroupIndex.unsafe(1),
@@ -60,7 +62,7 @@ object DataGenerator {
       )
     }
 
-  def genOutputEntity(transactions: Seq[TransactionEntity]): Seq[OutputEntity] =
+  def genOutputEntity(transactions: ArraySeq[TransactionEntity]): ArraySeq[OutputEntity] =
     transactions.zipWithIndex map {
       case (transaction, order) =>
         OutputEntity(
@@ -82,7 +84,7 @@ object DataGenerator {
         )
     }
 
-  def genInputEntity(outputs: Seq[OutputEntity]): Seq[InputEntity] =
+  def genInputEntity(outputs: ArraySeq[OutputEntity]): ArraySeq[InputEntity] =
     outputs.zipWithIndex map {
       case (output, order) =>
         InputEntity(
@@ -101,10 +103,10 @@ object DataGenerator {
         )
     }
 
-  def genBlockEntity(transactionsCount: Int     = 10,
-                     blockHash: BlockEntry.Hash = new BlockEntry.Hash(BlockHash.generate),
-                     timestamp: TimeStamp       = TimeStamp.now(),
-                     mainChain: Boolean         = Random.nextBoolean()): BlockEntity = {
+  def genBlockEntity(transactionsCount: Int = 10,
+                     blockHash: BlockHash   = BlockHash.generate,
+                     timestamp: TimeStamp   = TimeStamp.now(),
+                     mainChain: Boolean     = Random.nextBoolean()): BlockEntity = {
     val transactions =
       genTransactions(
         count          = transactionsCount,
@@ -125,7 +127,7 @@ object DataGenerator {
       chainFrom    = GroupIndex.unsafe(0),
       chainTo      = GroupIndex.unsafe(3),
       height       = Height.genesis,
-      deps         = Seq.fill(5)(new BlockEntry.Hash(BlockHash.generate)),
+      deps         = ArraySeq.fill(5)(BlockHash.generate),
       transactions = transactions,
       inputs       = inputs,
       outputs      = outputs,
@@ -145,8 +147,8 @@ object DataGenerator {
   def genTransactionPerAddressEntity(address: Address = genAddress()): TransactionPerAddressEntity =
     TransactionPerAddressEntity(
       address   = address,
-      hash      = new Transaction.Hash(Hash.generate),
-      blockHash = new BlockEntry.Hash(BlockHash.generate),
+      hash      = TransactionId.generate,
+      blockHash = BlockHash.generate,
       timestamp = TimeStamp.now(),
       txOrder   = Random.nextInt(100),
       mainChain = Random.nextBoolean()

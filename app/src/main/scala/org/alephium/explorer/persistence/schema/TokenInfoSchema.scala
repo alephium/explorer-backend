@@ -21,13 +21,13 @@ import slick.lifted.ProvenShape
 
 import org.alephium.explorer.persistence.model.TokenInfoEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.protocol.Hash
+import org.alephium.protocol.model.TokenId
 import org.alephium.util.TimeStamp
 
 object TokenInfoSchema extends SchemaMainChain[TokenInfoEntity]("token_info") {
 
   class TokenInfos(tag: Tag) extends Table[TokenInfoEntity](tag, name) {
-    def token: Rep[Hash]         = column[Hash]("token", O.PrimaryKey)
+    def token: Rep[TokenId]      = column[TokenId]("token", O.PrimaryKey)
     def lastUsed: Rep[TimeStamp] = column[TimeStamp]("last_used")
 
     def * : ProvenShape[TokenInfoEntity] =

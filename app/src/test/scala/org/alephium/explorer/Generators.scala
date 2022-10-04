@@ -18,6 +18,8 @@ package org.alephium.explorer
 
 import java.math.BigInteger
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
@@ -29,6 +31,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.protocol.{model => protocol, _}
+import org.alephium.protocol.model.BlockHash
 import org.alephium.serde._
 import org.alephium.util.{AVector, Duration, TimeStamp, U256}
 
@@ -40,8 +43,7 @@ object Generators {
     Gen.oneOf(0, 1).map(OutputEntity.OutputType.unsafe)
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def transactionEntityGen(
-      blockHash: Gen[BlockEntry.Hash] = blockEntryHashGen): Gen[TransactionEntity] =
+  def transactionEntityGen(blockHash: Gen[BlockHash] = blockEntryHashGen): Gen[TransactionEntity] =
     for {
       hash              <- transactionHashGen
       blockHash         <- blockHash
@@ -128,7 +130,7 @@ object Generators {
 
   val addressContractProtocolGen: Gen[protocol.Address.Contract] =
     for {
-      contractId <- hashGen
+      contractId <- contractIdGen
     } yield {
       protocol.Address.contract(contractId)
     }
@@ -214,7 +216,7 @@ object Generators {
       gasAmount  <- Gen.posNum[Int]
       gasPrice   <- Gen.posNum[Long].map(U256.unsafe)
     } yield
-      protocolApi.UnsignedTx(hash.value,
+      protocolApi.UnsignedTx(hash,
                              version,
                              networkId,
                              scriptOpt,
@@ -273,12 +275,12 @@ object Generators {
         BigInteger.ONE.shiftLeft(256 - numZerosAtLeastInHash).subtract(BigInteger.ONE))
 
       protocolApi.BlockEntry(
-        hash.value,
+        hash,
         timestamp,
         chainFrom.value,
         chainTo.value,
         height.value,
-        AVector.from(deps.map(_.value)),
+        AVector.from(deps),
         AVector.from(transactions),
         nonce,
         version,
@@ -292,7 +294,7 @@ object Generators {
       implicit groupSettings: GroupSetting): Gen[BlockEntity] =
     blockEntryProtocolGen.map { entry =>
       val deps = parent
-        .map(p => entry.deps.replace(parentIndex(chainTo), p.hash.value))
+        .map(p => entry.deps.replace(parentIndex(chainTo), p.hash))
         .getOrElse(AVector.empty)
       val height    = Height.unsafe(parent.map(_.height.value + 1).getOrElse(0))
       val timestamp = parent.map(_.timestamp.plusHoursUnsafe(1)).getOrElse(ALPH.GenesisTimestamp)
@@ -307,10 +309,10 @@ object Generators {
     }
 
   def chainGen(size: Int, startTimestamp: TimeStamp, chainFrom: GroupIndex, chainTo: GroupIndex)(
-      implicit groupSettings: GroupSetting): Gen[Seq[protocolApi.BlockEntry]] =
+      implicit groupSettings: GroupSetting): Gen[ArraySeq[protocolApi.BlockEntry]] =
     Gen.listOfN(size, blockEntryProtocolGen).map { blocks =>
       blocks
-        .foldLeft((Seq.empty[protocolApi.BlockEntry], Height.genesis, startTimestamp)) {
+        .foldLeft((ArraySeq.empty[protocolApi.BlockEntry], Height.genesis, startTimestamp)) {
           case ((acc, height, timestamp), block) =>
             val deps: AVector[BlockHash] =
               if (acc.isEmpty) {
@@ -328,7 +330,7 @@ object Generators {
     }
 
   def blockFlowGen(maxChainSize: Int, startTimestamp: TimeStamp)(
-      implicit groupSettings: GroupSetting): Gen[Seq[Seq[protocolApi.BlockEntry]]] = {
+      implicit groupSettings: GroupSetting): Gen[ArraySeq[ArraySeq[protocolApi.BlockEntry]]] = {
     val indexes = chainIndexes
     Gen
       .listOfN(indexes.size, Gen.choose(1, maxChainSize))
@@ -338,8 +340,9 @@ object Generators {
       })
   }
 
-  def blockEntitiesToBlockEntries(blocks: Seq[Seq[BlockEntity]]): Seq[Seq[BlockEntry]] = {
-    val outputs: Seq[OutputEntity] = blocks.flatMap(_.flatMap(_.outputs))
+  def blockEntitiesToBlockEntries(
+      blocks: ArraySeq[ArraySeq[BlockEntity]]): ArraySeq[ArraySeq[BlockEntry]] = {
+    val outputs: ArraySeq[OutputEntity] = blocks.flatMap(_.flatMap(_.outputs))
 
     blocks.map(_.map { block =>
       val transactions =
@@ -532,8 +535,8 @@ object Generators {
 
   /** Generates a [[BlockEntity]] with optional parent */
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def updatedTransactionEntityGen(blockHash: Gen[BlockEntry.Hash] = blockEntryHashGen)
-    : Gen[(TransactionEntity, TransactionEntity)] =
+  def updatedTransactionEntityGen(
+      blockHash: Gen[BlockHash] = blockEntryHashGen): Gen[(TransactionEntity, TransactionEntity)] =
     for {
       transaction1 <- transactionEntityGen(blockHash)
       transaction2 <- transactionEntityGen(blockHash)

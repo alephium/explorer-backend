@@ -18,8 +18,8 @@ package org.alephium.explorer.persistence.queries.result
 
 import slick.jdbc.{GetResult, PositionedResult}
 
-import org.alephium.explorer.api.model.Transaction
 import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.protocol.model.TransactionId
 import org.alephium.util.U256
 
 object GasFromTxsQR {
@@ -35,7 +35,7 @@ object GasFromTxsQR {
 }
 
 /** Query result for [[org.alephium.explorer.persistence.queries.TransactionQueries.gasFromTxsSQL]] */
-final case class GasFromTxsQR(txHash: Transaction.Hash, gasAmount: Int, gasPrice: U256) {
+final case class GasFromTxsQR(txHash: TransactionId, gasAmount: Int, gasPrice: U256) {
 
   def gasInfo(): (Int, U256) =
     (gasAmount, gasPrice)

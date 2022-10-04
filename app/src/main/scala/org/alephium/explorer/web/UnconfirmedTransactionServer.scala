@@ -16,9 +16,10 @@
 
 package org.alephium.explorer.web
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.http.scaladsl.server.Route
+import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -29,8 +30,9 @@ class UnconfirmedTransactionServer(implicit val executionContext: ExecutionConte
                                    dc: DatabaseConfig[PostgresProfile])
     extends Server
     with UnconfirmedTransactionEndpoints {
-  val route: Route = toRoute(listUnconfirmedTransactions.serverLogicSuccess[Future] { pagination =>
-    TransactionService
-      .listUnconfirmedTransactions(pagination)
-  })
+  val routes: ArraySeq[Router => Route] = ArraySeq(
+    route(listUnconfirmedTransactions.serverLogicSuccess[Future] { pagination =>
+      TransactionService
+        .listUnconfirmedTransactions(pagination)
+    }))
 }

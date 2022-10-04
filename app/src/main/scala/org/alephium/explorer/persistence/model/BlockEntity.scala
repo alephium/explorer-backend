@@ -18,23 +18,26 @@ package org.alephium.explorer.persistence.model
 
 import java.math.BigInteger
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height}
+import org.alephium.explorer.api.model.{GroupIndex, Height}
 import org.alephium.explorer.service.FlowEntity
+import org.alephium.protocol.model.BlockHash
 import org.alephium.util.TimeStamp
 
 final case class BlockEntity(
-    hash: BlockEntry.Hash,
+    hash: BlockHash,
     timestamp: TimeStamp,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     height: Height,
-    deps: Seq[BlockEntry.Hash],
-    transactions: Seq[TransactionEntity],
-    inputs: Seq[InputEntity],
-    outputs: Seq[OutputEntity],
+    deps: ArraySeq[BlockHash],
+    transactions: ArraySeq[TransactionEntity],
+    inputs: ArraySeq[InputEntity],
+    outputs: ArraySeq[OutputEntity],
     mainChain: Boolean,
     nonce: ByteString,
     version: Byte,
@@ -53,7 +56,7 @@ final case class BlockEntity(
   }
 
   /** Builds entries for block_deps table */
-  def toBlockDepEntities(): Seq[BlockDepEntity] =
+  def toBlockDepEntities(): ArraySeq[BlockDepEntity] =
     deps.zipWithIndex map {
       case (dep, i) =>
         BlockDepEntity(hash = hash, dep = dep, order = i)

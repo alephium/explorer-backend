@@ -16,22 +16,25 @@
 
 package org.alephium.explorer.persistence.schema
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, BlockEntry, Token, Transaction}
+import org.alephium.explorer.api.model.{Address, Token}
 import org.alephium.explorer.persistence.DBActionW
 import org.alephium.explorer.persistence.model.InputEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
 
   class Inputs(tag: Tag) extends Table[InputEntity](tag, name) {
-    def blockHash: Rep[BlockEntry.Hash]        = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
-    def txHash: Rep[Transaction.Hash]          = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
+    def blockHash: Rep[BlockHash]              = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
+    def txHash: Rep[TransactionId]             = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
     def timestamp: Rep[TimeStamp]              = column[TimeStamp]("block_timestamp")
     def hint: Rep[Int]                         = column[Int]("hint")
     def outputRefKey: Rep[Hash]                = column[Hash]("output_ref_key", O.SqlType("BYTEA"))
@@ -42,7 +45,8 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
     def outputRefAddress: Rep[Option[Address]] = column[Option[Address]]("output_ref_address")
     def outputRefAmount: Rep[Option[U256]] =
       column[Option[U256]]("output_ref_amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
-    def outputRefTokens: Rep[Option[Seq[Token]]] = column[Option[Seq[Token]]]("output_ref_tokens")
+    def outputRefTokens: Rep[Option[ArraySeq[Token]]] =
+      column[Option[ArraySeq[Token]]]("output_ref_tokens")
 
     def pk: PrimaryKey = primaryKey("inputs_pk", (outputRefKey, blockHash))
 

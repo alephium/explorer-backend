@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.api
 
+import scala.collection.immutable.ArraySeq
+
 import sttp.tapir._
 import sttp.tapir.generic.auto._
 
@@ -39,10 +41,10 @@ trait UtilsEndpoints extends BaseEndpoint with QueryParams {
       .in("sanity-check")
       .description("Perform a sanity check")
 
-  val indexCheck: BaseEndpoint[Unit, Seq[ExplainResult]] =
+  val indexCheck: BaseEndpoint[Unit, ArraySeq[ExplainResult]] =
     utilsEndpoint.get
       .in("index-check")
-      .out(jsonBody[Seq[ExplainResult]])
+      .out(jsonBody[ArraySeq[ExplainResult]])
       .description("Perform index check")
 
   val changeGlobalLogLevel: BaseEndpoint[String, Unit] =
@@ -51,9 +53,9 @@ trait UtilsEndpoints extends BaseEndpoint with QueryParams {
       .in(plainBody[String].validate(Validator.enumeration(logLevels)))
       .description(s"Update global log level, accepted: $logLevelsStr")
 
-  val changeLogConfig: BaseEndpoint[Seq[LogbackValue], Unit] =
+  val changeLogConfig: BaseEndpoint[ArraySeq[LogbackValue], Unit] =
     utilsEndpoint.put
       .in("update-log-config")
-      .in(jsonBody[Seq[LogbackValue]])
+      .in(jsonBody[ArraySeq[LogbackValue]])
       .description("Update logback values")
 }

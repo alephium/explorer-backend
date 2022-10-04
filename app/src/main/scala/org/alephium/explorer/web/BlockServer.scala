@@ -16,10 +16,10 @@
 
 package org.alephium.explorer.web
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -33,14 +33,16 @@ class BlockServer(implicit val executionContext: ExecutionContext,
                   blockCache: BlockCache)
     extends Server
     with BlockEndpoints {
-  val route: Route =
-    toRoute(getBlockByHash.serverLogic[Future] { hash =>
-      BlockService
-        .getLiteBlockByHash(hash)
-        .map(_.toRight(ApiError.NotFound(hash.value.toHexString)))
-    }) ~
-      toRoute(getBlockTransactions.serverLogicSuccess[Future] {
+  val routes: ArraySeq[Router => Route] =
+    ArraySeq(
+      route(listBlocks.serverLogicSuccess[Future](BlockService.listBlocks(_))),
+      route(getBlockByHash.serverLogic[Future] { hash =>
+        BlockService
+          .getLiteBlockByHash(hash)
+          .map(_.toRight(ApiError.NotFound(hash.value.toHexString)))
+      }),
+      route(getBlockTransactions.serverLogicSuccess[Future] {
         case (hash, pagination) => BlockService.getBlockTransactions(hash, pagination)
-      }) ~
-      toRoute(listBlocks.serverLogicSuccess[Future](BlockService.listBlocks(_)))
+      })
+    )
 }

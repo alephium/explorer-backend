@@ -24,7 +24,7 @@ import akka.util.ByteString
 import org.openjdk.jmh.annotations.{Scope, State}
 
 import org.alephium.crypto.Blake2b
-import org.alephium.explorer.{BlockHash, GroupSetting, Hash}
+import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.benchmark.db.{DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
@@ -32,6 +32,7 @@ import org.alephium.explorer.benchmark.db.state.ListBlocksReadStateSettings._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.model.{BlockHeader, TransactionEntity}
 import org.alephium.explorer.persistence.schema.{BlockHeaderSchema, TransactionSchema}
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 /**
@@ -66,7 +67,7 @@ class ListBlocksReadState(reverse: Boolean,
 
   private def generateBlockHeader(): BlockHeader =
     BlockHeader(
-      hash         = new BlockEntry.Hash(BlockHash.generate),
+      hash         = BlockHash.generate,
       timestamp    = TimeStamp.now(),
       chainFrom    = GroupIndex.unsafe(0),
       chainTo      = GroupIndex.unsafe(3),
@@ -79,13 +80,13 @@ class ListBlocksReadState(reverse: Boolean,
       txsCount     = scala.math.abs(Random.nextInt()),
       target       = ByteString.emptyByteString,
       hashrate     = BigInteger.ONE,
-      parent       = Some(new BlockEntry.Hash(BlockHash.generate))
+      parent       = Some(BlockHash.generate)
     )
 
   private def generateTransactions(header: BlockHeader): Seq[TransactionEntity] =
     List.fill(transactionsPerBlock) {
       TransactionEntity(
-        hash              = new Transaction.Hash(Hash.generate),
+        hash              = TransactionId.generate,
         blockHash         = header.hash,
         timestamp         = header.timestamp,
         chainFrom         = GroupIndex.unsafe(1),

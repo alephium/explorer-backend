@@ -16,34 +16,30 @@
 
 package org.alephium.explorer.api.model
 
+import scala.collection.immutable.ArraySeq
+
 import org.alephium.api.UtilJson.{timestampReader, timestampWriter}
-import org.alephium.explorer
-import org.alephium.explorer.HashCompanion
-import org.alephium.explorer.api.Json.{hashReadWriter, u256ReadWriter}
+import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 final case class Transaction(
-    hash: Transaction.Hash,
-    blockHash: BlockEntry.Hash,
+    hash: TransactionId,
+    blockHash: BlockHash,
     timestamp: TimeStamp,
-    inputs: Seq[Input],
-    outputs: Seq[Output],
+    inputs: ArraySeq[Input],
+    outputs: ArraySeq[Output],
     gasAmount: Int,
     gasPrice: U256
 )
 
 object Transaction {
-  final class Hash(val value: explorer.Hash) extends AnyVal {
-    override def toString(): String = value.toHexString
-  }
-  object Hash extends HashCompanion[explorer.Hash, Hash](new Hash(_), _.value)
-
   implicit val txRW: ReadWriter[Transaction] = macroRW
 }
 
 sealed trait TransactionLike {
-  def hash: Transaction.Hash
+  def hash: TransactionId
   def gasAmount: Int
   def gasPrice: U256
 }
@@ -53,13 +49,14 @@ object TransactionLike {
     ReadWriter.merge(ConfirmedTransaction.txRW, UnconfirmedTransaction.utxRW)
 }
 
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 @upickle.implicits.key("Confirmed")
 final case class ConfirmedTransaction(
-    hash: Transaction.Hash,
-    blockHash: BlockEntry.Hash,
+    hash: TransactionId,
+    blockHash: BlockHash,
     timestamp: TimeStamp,
-    inputs: Seq[Input],
-    outputs: Seq[Output],
+    inputs: ArraySeq[Input],
+    outputs: ArraySeq[Output],
     gasAmount: Int,
     gasPrice: U256
 ) extends TransactionLike
@@ -77,13 +74,14 @@ object ConfirmedTransaction {
   )
 }
 
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 @upickle.implicits.key("Unconfirmed")
 final case class UnconfirmedTransaction(
-    hash: Transaction.Hash,
+    hash: TransactionId,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
-    inputs: Seq[Input],
-    outputs: Seq[AssetOutput],
+    inputs: ArraySeq[Input],
+    outputs: ArraySeq[Output],
     gasAmount: Int,
     gasPrice: U256,
     lastSeen: TimeStamp

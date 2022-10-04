@@ -21,31 +21,18 @@ import scala.util.{Failure, Success, Try}
 import sttp.tapir.{Codec, DecodeResult}
 import sttp.tapir.CodecFormat.TextPlain
 
-import org.alephium.explorer.{BlockHash, Hash}
-import org.alephium.explorer.api.Json._
-import org.alephium.explorer.api.model.{Address, BlockEntry, IntervalType, Transaction}
+import org.alephium.api.TapirCodecs
+import org.alephium.explorer.api.model.{Address, IntervalType}
 import org.alephium.json.Json._
 
-object Codecs {
-  private val hashTapirCodec: Codec[String, Hash, TextPlain] =
-    fromJson[Hash]
-
-  private val blockHashTapirCodec: Codec[String, BlockHash, TextPlain] =
-    fromJson[BlockHash]
-
-  implicit val addressTapirCodec: Codec[String, Address, TextPlain] =
+object Codecs extends TapirCodecs {
+  implicit val explorerAddressTapirCodec: Codec[String, Address, TextPlain] =
     fromJson[Address]
-
-  implicit val blockEntryHashTapirCodec: Codec[String, BlockEntry.Hash, TextPlain] =
-    blockHashTapirCodec.map(new BlockEntry.Hash(_))(_.value)
-
-  implicit val transactionHashTapirCodec: Codec[String, Transaction.Hash, TextPlain] =
-    hashTapirCodec.map(new Transaction.Hash(_))(_.value)
 
   implicit val timeIntervalCodec: Codec[String, IntervalType, TextPlain] =
     fromJson[IntervalType]
 
-  def fromJson[A: ReadWriter]: Codec[String, A, TextPlain] =
+  def explorerFromJson[A: ReadWriter]: Codec[String, A, TextPlain] =
     Codec.string.mapDecode[A] { raw =>
       Try(read[A](ujson.Str(raw))) match {
         case Success(a) => DecodeResult.Value(a)

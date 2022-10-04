@@ -16,13 +16,13 @@
 
 package org.alephium.explorer
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
-import akka.http.scaladsl.server.Route
 import io.prometheus.client.CollectorRegistry
-import sttp.tapir.server.akkahttp.AkkaHttpServerInterpreter
+import io.vertx.ext.web._
 import sttp.tapir.server.metrics.MetricLabels
 import sttp.tapir.server.metrics.prometheus.PrometheusMetrics
+import sttp.tapir.server.vertx.VertxFutureServerInterpreter
 
 object Metrics {
   val defaultRegistry: CollectorRegistry = CollectorRegistry.defaultRegistry
@@ -37,6 +37,6 @@ object Metrics {
     )
   )
 
-  def route(implicit ec: ExecutionContext): Route =
-    AkkaHttpServerInterpreter().toRoute(prometheus.metricsEndpoint)
+  val route: Router => Route =
+    VertxFutureServerInterpreter().route(prometheus.metricsEndpoint)
 }

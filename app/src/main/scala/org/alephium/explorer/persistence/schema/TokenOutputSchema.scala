@@ -21,22 +21,23 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, BlockEntry, Transaction}
+import org.alephium.explorer.api.model.Address
 import org.alephium.explorer.persistence.DBActionW
 import org.alephium.explorer.persistence.model.TokenOutputEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.protocol.model.{BlockHash, TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outputs") {
 
   class TokenOutputs(tag: Tag) extends Table[TokenOutputEntity](tag, name) {
-    def blockHash: Rep[BlockEntry.Hash] = column[BlockEntry.Hash]("block_hash", O.SqlType("BYTEA"))
-    def txHash: Rep[Transaction.Hash]   = column[Transaction.Hash]("tx_hash", O.SqlType("BYTEA"))
-    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("block_timestamp")
-    def outputType: Rep[Int]            = column[Int]("output_type")
-    def hint: Rep[Int]                  = column[Int]("hint")
-    def key: Rep[Hash]                  = column[Hash]("key", O.SqlType("BYTEA"))
-    def token: Rep[Hash]                = column[Hash]("token")
+    def blockHash: Rep[BlockHash]  = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
+    def txHash: Rep[TransactionId] = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
+    def timestamp: Rep[TimeStamp]  = column[TimeStamp]("block_timestamp")
+    def outputType: Rep[Int]       = column[Int]("output_type")
+    def hint: Rep[Int]             = column[Int]("hint")
+    def key: Rep[Hash]             = column[Hash]("key", O.SqlType("BYTEA"))
+    def token: Rep[TokenId]        = column[TokenId]("token")
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
     def address: Rep[Address]            = column[Address]("address")
@@ -45,8 +46,8 @@ object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outpu
     def message: Rep[Option[ByteString]] = column[Option[ByteString]]("message")
     def outputOrder: Rep[Int]            = column[Int]("output_order")
     def txOrder: Rep[Int]                = column[Int]("tx_order")
-    def spentFinalized: Rep[Option[Transaction.Hash]] =
-      column[Option[Transaction.Hash]]("spent_finalized", O.Default(None))
+    def spentFinalized: Rep[Option[TransactionId]] =
+      column[Option[TransactionId]]("spent_finalized", O.Default(None))
 
     def pk: PrimaryKey = primaryKey("token_outputs_pk", (key, token, blockHash))
 

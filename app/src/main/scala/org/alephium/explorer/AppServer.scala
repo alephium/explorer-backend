@@ -16,11 +16,10 @@
 
 package org.alephium.explorer
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
-import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
+import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -36,7 +35,7 @@ object AppServer {
                blockFlowClient: BlockFlowClient,
                blockCache: BlockCache,
                transactionCache: TransactionCache,
-               groupSetting: GroupSetting): Route = {
+               groupSetting: GroupSetting): ArraySeq[Router => Route] = {
 
     val blockServer                = new BlockServer()
     val addressServer              = new AddressServer(TransactionService)
@@ -48,16 +47,15 @@ object AppServer {
     val unconfirmedTxServer        = new UnconfirmedTransactionServer()
     val documentationServer        = new DocumentationServer()
 
-    cors()(
-      blockServer.route ~
-        addressServer.route ~
-        transactionServer.route ~
-        tokenServer.route ~
-        infosServer.route ~
-        chartsServer.route ~
-        utilsServer.route ~
-        unconfirmedTxServer.route ~
-        documentationServer.route ~
-        Metrics.route)
+    blockServer.routes ++
+      addressServer.routes ++
+      transactionServer.routes ++
+      tokenServer.routes ++
+      infosServer.routes ++
+      chartsServer.routes ++
+      utilsServer.routes ++
+      unconfirmedTxServer.routes ++
+      documentationServer.routes :+
+      Metrics.route
   }
 }

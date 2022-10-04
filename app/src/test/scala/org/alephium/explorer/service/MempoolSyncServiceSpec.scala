@@ -20,20 +20,21 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
-import akka.http.scaladsl.model.Uri
 import org.scalacheck.Gen
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Minutes, Span}
+import sttp.model.Uri
 
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.GenApiModel.utransactionGen
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex, Height, UnconfirmedTransaction}
+import org.alephium.explorer.api.model.{GroupIndex, Height, UnconfirmedTransaction}
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.UnconfirmedTxDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.TestUtils._
+import org.alephium.protocol.model.BlockHash
 import org.alephium.util.{Service, TimeStamp}
 
 class MempoolSyncServiceSpec
@@ -45,9 +46,9 @@ class MempoolSyncServiceSpec
 
   "start/sync/stop" in new Fixture {
     using(Scheduler("test")) { implicit scheduler =>
-      MempoolSyncService.start(Seq(""), 100.milliseconds)
+      MempoolSyncService.start(ArraySeq(Uri("")), 100.milliseconds)
 
-      UnconfirmedTxDao.listHashes().futureValue is Seq.empty
+      UnconfirmedTxDao.listHashes().futureValue is ArraySeq.empty
 
       unconfirmedTransactions = Gen.listOfN(10, utransactionGen).sample.get
 
@@ -77,18 +78,20 @@ class MempoolSyncServiceSpec
   trait Fixture {
     implicit val executionContext: ExecutionContext = ExecutionContext.global
 
-    var unconfirmedTransactions: Seq[UnconfirmedTransaction] = Seq.empty
+    var unconfirmedTransactions: ArraySeq[UnconfirmedTransaction] = ArraySeq.empty
 
     implicit val blockFlowClient: BlockFlowClient = new BlockFlowClient {
       implicit val executionContext: ExecutionContext = ExecutionContext.global
       def startSelfOnce(): Future[Unit]               = Future.unit
       def stopSelfOnce(): Future[Unit]                = Future.unit
       def subServices: ArraySeq[Service]              = ArraySeq.empty
-      def fetchUnconfirmedTransactions(uri: Uri): Future[Seq[UnconfirmedTransaction]] =
+      def fetchUnconfirmedTransactions(uri: Uri): Future[ArraySeq[UnconfirmedTransaction]] =
         Future.successful(unconfirmedTransactions)
-      def fetchBlock(from: GroupIndex, hash: BlockEntry.Hash): Future[BlockEntity] =
+      def fetchBlock(from: GroupIndex, hash: BlockHash): Future[BlockEntity] =
         ???
-      def fetchBlocks(fromTs: TimeStamp, toTs: TimeStamp, uri: Uri): Future[Seq[Seq[BlockEntity]]] =
+      def fetchBlocks(fromTs: TimeStamp,
+                      toTs: TimeStamp,
+                      uri: Uri): Future[ArraySeq[ArraySeq[BlockEntity]]] =
         ???
       def fetchChainInfo(from: GroupIndex, to: GroupIndex): Future[ChainInfo] = ???
       def fetchHashesAtHeight(from: GroupIndex,

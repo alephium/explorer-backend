@@ -16,9 +16,16 @@
 
 package org.alephium.explorer.util
 
+import java.sql.PreparedStatement
+
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
+import scala.reflect.ClassTag
 
 import slick.dbio.DBIO
+import slick.jdbc._
+import slick.jdbc.PostgresProfile.api._
+import slick.sql._
 
 import org.alephium.explorer.persistence.{DBActionR, DBActionSR}
 
@@ -36,6 +43,27 @@ object SlickUtil {
         rows.size match {
           case 1 => DBIO.successful(rows.head)
           case n => DBIO.failed(new RuntimeException(s"Expected 1 result, actual $n"))
+        }
+      }
+
+    /**
+      * Expects query to return headOption
+      * */
+    @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
+    def headOrEmpty(implicit ec: ExecutionContext): DBActionR[ArraySeq[A]] =
+      action.flatMap { rows =>
+        rows.size match {
+          case 0 => DBIO.successful(ArraySeq.empty)
+          case _ => DBIO.successful(rows.take(1))
+        }
+      }
+
+    @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
+    def headOrNone(implicit ec: ExecutionContext): DBActionR[Option[A]] =
+      action.flatMap { rows =>
+        rows.size match {
+          case 0 => DBIO.successful(None)
+          case _ => DBIO.successful(rows.headOption)
         }
       }
   }
@@ -58,6 +86,55 @@ object SlickUtil {
           case n => DBIO.failed(new RuntimeException(s"Expected 1 result, actual $n"))
         }
       }
+  }
+
+  implicit class RichSqlActionBuilder[A](val action: SQLActionBuilder) extends AnyVal {
+    @SuppressWarnings(
+      Array("org.wartremover.warts.AsInstanceOf",
+            "org.wartremover.warts.IsInstanceOf",
+            "org.wartremover.warts.IterableOps"))
+    def asAS[R: ClassTag](
+        implicit rconv: GetResult[R]): SqlStreamingAction[ArraySeq[R], R, Effect] = {
+      val query =
+        if (action.queryParts.lengthIs == 1 && action.queryParts(0).isInstanceOf[String]) {
+          action.queryParts(0).asInstanceOf[String]
+        } else {
+          action.queryParts.iterator.map(String.valueOf).mkString
+        }
+      new StreamingInvokerAction[ArraySeq[R], R, Effect] {
+        def statements = List(query)
+        protected[this] def createInvoker(statements: Iterable[String]) = new StatementInvoker[R] {
+          val getStatement = statements.head
+          protected def setParam(st: PreparedStatement) =
+            action.unitPConv((), new PositionedParameters(st))
+          protected def extractValue(rs: PositionedResult): R = rconv(rs)
+        }
+        protected[this] def createBuilder = ArraySeq.newBuilder[R]
+      }
+    }
+
+    @SuppressWarnings(
+      Array("org.wartremover.warts.AsInstanceOf",
+            "org.wartremover.warts.IsInstanceOf",
+            "org.wartremover.warts.IterableOps"))
+    def asASE[R: ClassTag](rconv: GetResult[R]): SqlStreamingAction[ArraySeq[R], R, Effect] = {
+      val query =
+        if (action.queryParts.lengthIs == 1 && action.queryParts(0).isInstanceOf[String]) {
+          action.queryParts(0).asInstanceOf[String]
+        } else {
+          action.queryParts.iterator.map(String.valueOf).mkString
+        }
+      new StreamingInvokerAction[ArraySeq[R], R, Effect] {
+        def statements = List(query)
+        protected[this] def createInvoker(statements: Iterable[String]) = new StatementInvoker[R] {
+          val getStatement = statements.head
+          protected def setParam(st: PreparedStatement) =
+            action.unitPConv((), new PositionedParameters(st))
+          protected def extractValue(rs: PositionedResult): R = rconv(rs)
+        }
+        protected[this] def createBuilder = ArraySeq.newBuilder[R]
+      }
+    }
   }
 
   def paramPlaceholderTuple2(rows: Int, columns: Int): String =
