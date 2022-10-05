@@ -290,6 +290,16 @@ object Generators {
       )
     }
 
+  /** TODO: Need a proper test function that can easily create a parent/child block hierarchy */
+  def blockEntityGen(parent: Option[BlockEntity])(implicit groupSettings: GroupSetting): Gen[BlockEntity] =
+    for {
+      //choose from 0 to groupNum
+      from <- Gen.chooseNum(0, groupSettings.groupNum).map(GroupIndex.unsafe)
+      //choose to between from and max groupNum
+      to <- Gen.chooseNum(from.value, groupSettings.groupNum).map(GroupIndex.unsafe)
+      entity <- blockEntityGen(from, to, parent)
+    } yield entity
+
   def blockEntityGen(chainFrom: GroupIndex, chainTo: GroupIndex, parent: Option[BlockEntity])(
       implicit groupSettings: GroupSetting): Gen[BlockEntity] =
     blockEntryProtocolGen.map { entry =>

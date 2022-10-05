@@ -18,15 +18,12 @@ package org.alephium.explorer.service
 
 import java.math.BigInteger
 import java.net.InetAddress
-
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
-
 import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import sttp.model.Uri
-
 import org.alephium.api
 import org.alephium.api.Endpoints
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
@@ -36,6 +33,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.error.ExplorerError
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.service.sync.SyncRemoteAction
 import org.alephium.http.EndpointSender
 import org.alephium.protocol
 import org.alephium.protocol.config.GroupConfig
@@ -66,6 +64,37 @@ trait BlockFlowClient extends Service {
             .map(hash => fetchBlock(fromGroup, hash))
             .toArraySeq)
     }
+
+  /**
+    * This function is a placeholder for the future when and if the node can support
+    * returning multiple blocks within a single request.
+    *
+    * Regardless, as far as explorer and testing is concerned this a single API.
+    */
+  def fetchMissingBlocks(command: ArraySeq[SyncRemoteAction.GetMissingBlock])(implicit executionContext: ExecutionContext): Future[ArraySeq[BlockEntity]] =
+    Future.traverse(command) {
+      command =>
+        fetchBlock(command.chainFrom, command.hash)
+    }
+
+  /**
+    * This function is a placeholder for the future when and if the node can support
+    * returning multiple blocks within a single request.
+    *
+    * Regardless, as far as explorer and testing is concerned this a single API.
+    */
+  def fetchRootBlockAtHeights(tasks: ArraySeq[SyncRemoteAction.GetRootBlockAtHeights])(implicit executionContext: ExecutionContext): Future[ArraySeq[BlockEntity]] = {
+    val blocks =
+      Future.traverse(tasks) {
+        task =>
+          Future.traverse(task.heights) {
+            height =>
+              fetchBlocksAtHeight(task.chainFrom, task.chainTo, height).map(_.headOption)
+          }.map(_.flatten)
+      }
+
+    blocks.map(_.flatten)
+  }
 
   def fetchSelfClique(): Future[SelfClique]
 

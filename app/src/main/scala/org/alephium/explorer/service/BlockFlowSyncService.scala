@@ -16,27 +16,23 @@
 
 package org.alephium.explorer.service
 
-import java.util.concurrent.atomic.AtomicBoolean
-
-import scala.collection.immutable.ArraySeq
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
-
 import com.typesafe.scalalogging.StrictLogging
+import org.alephium.explorer.{foldFutures, GroupSetting}
+import org.alephium.explorer.api.model.Height
+import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.persistence.DBRunner._
+import org.alephium.explorer.persistence.queries.{BlockQueries, InputUpdateQueries}
+import org.alephium.explorer.service.sync.SimersSyncPlayground
+import org.alephium.explorer.util.{Scheduler, TimeUtil}
+import org.alephium.util.{Duration, TimeStamp}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.Uri
 
-import org.alephium.explorer.{foldFutures, GroupSetting}
-import org.alephium.explorer.api.model.{GroupIndex, Height}
-import org.alephium.explorer.cache.BlockCache
-import org.alephium.explorer.persistence.DBRunner._
-import org.alephium.explorer.persistence.dao.BlockDao
-import org.alephium.explorer.persistence.model.BlockEntity
-import org.alephium.explorer.persistence.queries.{BlockQueries, InputUpdateQueries}
-import org.alephium.explorer.util.{Scheduler, TimeUtil}
-import org.alephium.protocol.model.BlockHash
-import org.alephium.util.{Duration, TimeStamp}
+import java.util.concurrent.atomic.AtomicBoolean
+import scala.collection.immutable.ArraySeq
+import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.{FiniteDuration, Duration => ScalaDuration}
 
 /*
  * Syncing main chains blocks
@@ -77,7 +73,7 @@ case object BlockFlowSyncService extends StrictLogging {
       firstInterval = ScalaDuration.Zero,
       loopInterval  = interval,
       state         = new AtomicBoolean()
-    )(init())(state => syncOnce(nodeUris, state))
+    )(SimersSyncPlayground.initIgnoreError())(state => syncOnce(nodeUris, state))
 
   def syncOnce(nodeUris: ArraySeq[Uri], initialBackStepDone: AtomicBoolean)(
       implicit ec: ExecutionContext,
@@ -143,36 +139,13 @@ case object BlockFlowSyncService extends StrictLogging {
     blockFlowClient.fetchBlocks(from, to, uri).flatMap { multiChain =>
       for {
         res <- Future
-          .sequence(multiChain.map(insertBlocks))
-          .map(_.sum)
+          .sequence(multiChain.map(SimersSyncPlayground.insert))
+          .map(_ => 0) //TODO should return the number of blocks synced
+//          .map(_.sum)
         _ <- dc.db.run(InputUpdateQueries.updateInputs())
       } yield res
     }
   }
-
-  //We need at least one TimeStamp other than a genesis one
-  def init()(implicit ec: ExecutionContext,
-             dc: DatabaseConfig[PostgresProfile],
-             blockFlowClient: BlockFlowClient,
-             cache: BlockCache,
-             groupSetting: GroupSetting): Future[Boolean] =
-    run(BlockQueries.maxHeightZipped(groupSetting.groupIndexes)) flatMap { heightAndGroups =>
-      Future
-        .traverse(heightAndGroups) {
-          case (height, (fromGroup, toGroup)) =>
-            height match {
-              case Some(height) if height.value == 0 =>
-                syncAt(fromGroup, toGroup, Height.unsafe(1)).map(_.nonEmpty)
-              case None =>
-                for {
-                  _      <- syncAt(fromGroup, toGroup, Height.unsafe(0))
-                  blocks <- syncAt(fromGroup, toGroup, Height.unsafe(1))
-                } yield blocks.nonEmpty
-              case _ => Future.successful(true)
-            }
-        }
-        .map(_.contains(true))
-    }
 
   private def getTimeStampRange(step: Duration, backStep: Duration)(
       implicit ec: ExecutionContext,
@@ -221,105 +194,6 @@ case object BlockFlowSyncService extends StrictLogging {
         val nbOfBlocks = tsHeights.map { case (_, height) => height }.sum
         tsHeights.map { case (ts, _) => ts }.maxOption.map(max => (max, nbOfBlocks))
       }
-  }
-
-  @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
-  private def syncAt(
-      fromGroup: GroupIndex,
-      toGroup: GroupIndex,
-      height: Height
-  )(implicit ec: ExecutionContext,
-    dc: DatabaseConfig[PostgresProfile],
-    blockFlowClient: BlockFlowClient,
-    cache: BlockCache,
-    groupSetting: GroupSetting): Future[Option[ArraySeq[BlockEntity]]] = {
-    blockFlowClient
-      .fetchBlocksAtHeight(fromGroup, toGroup, height)
-      .flatMap { blocks =>
-        if (blocks.nonEmpty) {
-          val bestBlock = blocks.head // First block is the main chain one
-          for {
-            _ <- insert(bestBlock)
-            _ <- BlockDao.updateLatestBlock(bestBlock)
-          } yield Some(ArraySeq(bestBlock))
-        } else {
-          Future.successful(None)
-        }
-      }
-  }
-
-  private def updateMainChain(hash: BlockHash, chainFrom: GroupIndex, chainTo: GroupIndex)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile],
-      blockFlowClient: BlockFlowClient,
-      cache: BlockCache,
-      groupSetting: GroupSetting): Future[Unit] = {
-    BlockDao.updateMainChain(hash, chainFrom, chainTo, groupSetting.groupNum).flatMap {
-      case None          => Future.successful(())
-      case Some(missing) => handleMissingMainChainBlock(missing, chainFrom)
-    }
-  }
-
-  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
-  private def insert(block: BlockEntity)(implicit ec: ExecutionContext,
-                                         dc: DatabaseConfig[PostgresProfile],
-                                         blockFlowClient: BlockFlowClient,
-                                         cache: BlockCache,
-                                         groupSetting: GroupSetting): Future[Unit] = {
-    (block.parent(groupSetting.groupNum) match {
-      case Some(parent) =>
-        //We make sure the parent is inserted before inserting the block
-        BlockDao
-          .get(parent)
-          .flatMap {
-            case None =>
-              handleMissingMainChainBlock(parent, block.chainFrom)
-            case Some(parentBlock) if !parentBlock.mainChain =>
-              logger.debug(s"Parent $parent exist but is not mainChain")
-              assert(
-                block.chainFrom == parentBlock.chainFrom && block.chainTo == parentBlock.chainTo)
-              updateMainChain(parentBlock.hash, block.chainFrom, block.chainTo)
-            case Some(_) => Future.successful(())
-          }
-      case None if block.height.value == 0 => Future.successful(())
-      case None                            => Future.successful(logger.error(s"${block.hash} doesn't have a parent"))
-    }).flatMap { _ =>
-      for {
-        _ <- BlockDao.insert(block)
-        _ <- BlockDao.updateMainChain(block.hash,
-                                      block.chainFrom,
-                                      block.chainTo,
-                                      groupSetting.groupNum)
-      } yield ()
-    }
-  }
-
-  private def insertBlocks(blocks: ArraySeq[BlockEntity])(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile],
-      blockFlowClient: BlockFlowClient,
-      cache: BlockCache,
-      groupSetting: GroupSetting): Future[Int] = {
-    if (blocks.nonEmpty) {
-      for {
-        _ <- foldFutures(blocks)(insert)
-        _ <- BlockDao.updateLatestBlock(blocks.last)
-      } yield (blocks.size)
-    } else {
-      Future.successful(0)
-    }
-  }
-
-  private def handleMissingMainChainBlock(missing: BlockHash, chainFrom: GroupIndex)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile],
-      blockFlowClient: BlockFlowClient,
-      cache: BlockCache,
-      groupSetting: GroupSetting): Future[Unit] = {
-    logger.debug(s"Downloading missing block $missing")
-    blockFlowClient.fetchBlock(chainFrom, missing).flatMap { block =>
-      insert(block).map(_ => ())
-    }
   }
 
   def fetchAndBuildTimeStampRange(
