@@ -19,6 +19,7 @@ package org.alephium.explorer.persistence.queries
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 import scala.math.Ordering.Implicits.infixOrderingOps
+import scala.util.Random
 
 import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
@@ -26,7 +27,7 @@ import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, GroupSetting}
-import org.alephium.explorer.GenApiModel.blockEntryHashGen
+import org.alephium.explorer.GenApiModel.{blockEntryHashGen, groupIndexGen, heightGen}
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.{GroupIndex, Height}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
@@ -302,6 +303,54 @@ class BlockQueriesSpec
             actualHeights is expectedHeights
           }
         }
+      }
+    }
+  }
+
+  "getHeadersAtHeightIgnoringOne" should {
+    "return empty" when {
+      "data is empty" in {
+        val query =
+          BlockQueries.getHashesAtHeightIgnoringOne(fromGroup    = GroupIndex.unsafe(0),
+                                                    toGroup      = GroupIndex.unsafe(0),
+                                                    height       = Height.unsafe(19),
+                                                    hashToIgnore = blockEntryHashGen.sample.get)
+
+        run(query).futureValue.size is 0
+      }
+    }
+
+    "fetch hashes ignoring/filter-out an existing hash" in {
+      //same groupIndex and height for all blocks
+      val groupIndex = groupIndexGen.sample.get
+      val height     = heightGen.sample.get
+
+      //build a blockHeader generator with constant chain and height data
+      val blockGen =
+        blockHeaderGenWithDefaults(
+          chainFrom = Gen.const(groupIndex),
+          chainTo   = Gen.const(groupIndex),
+          height    = Gen.const(height)
+        )
+
+      forAll(Gen.nonEmptyListOf(blockGen)) { blocks =>
+        run(BlockHeaderSchema.table.delete).futureValue //clear table
+        run(BlockHeaderSchema.table ++= blocks).futureValue //persist test data
+
+        //randomly select a block to ignore
+        val hashToIgnore = Random.shuffle(blocks).head
+
+        val query =
+          BlockQueries.getHashesAtHeightIgnoringOne(fromGroup    = groupIndex,
+                                                    toGroup      = groupIndex,
+                                                    height       = height,
+                                                    hashToIgnore = hashToIgnore.hash)
+
+        val actualResult   = run(query).futureValue //actual result
+        val expectedResult = blocks.filter(_ != hashToIgnore).map(_.hash) //expected result
+
+        actualResult should not contain hashToIgnore //ignored hash is not included
+        actualResult should contain theSameElementsAs expectedResult
       }
     }
   }
