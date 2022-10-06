@@ -102,6 +102,29 @@ object BlockQueries extends StrictLogging {
        |""".stripMargin
       .asASE[BlockHeader](blockHeaderGetResult)
 
+  /**
+    * Fetch bloch-hashes belonging to the input chain-index at a height, ignoring/filtering-out
+    * one block-hash.
+    *
+    * @param fromGroup    `chain_from` of the blocks
+    * @param toGroup      `chain_to` of the blocks
+    * @param height       `height` of the blocks
+    * @param hashToIgnore  the `block-hash` to ignore or filter-out.
+    */
+  def getHeadersAtHeightIgnoringOne(fromGroup: GroupIndex,
+                                    toGroup: GroupIndex,
+                                    height: Height,
+                                    hashToIgnore: BlockHash): DBActionSR[BlockHash] =
+    sql"""
+         |SELECT hash
+         |FROM #$block_headers
+         |WHERE chain_from = $fromGroup
+         |AND chain_to = $toGroup
+         |AND height = $height
+         |AND "hash" != $hashToIgnore
+         |""".stripMargin
+      .asASE[BlockHash](blockEntryHashGetResult)
+
   def getAtHeightAction(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
       implicit ec: ExecutionContext): DBActionR[ArraySeq[BlockEntry]] =
     for {

@@ -76,13 +76,14 @@ object Generators {
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def blockHeaderGenWithDefaults(chainFrom: Gen[GroupIndex] = groupIndexGen,
-                                 chainTo: Gen[GroupIndex]   = groupIndexGen): Gen[BlockHeader] =
+                                 chainTo: Gen[GroupIndex]   = groupIndexGen,
+                                 height: Gen[Height]        = heightGen): Gen[BlockHeader] =
     for {
       hash         <- blockEntryHashGen
       timestamp    <- timestampGen
       chainFrom    <- chainFrom
       chainTo      <- chainTo
-      height       <- heightGen
+      height       <- height
       version      <- Gen.posNum[Byte]
       depStateHash <- hashGen
       txsHash      <- hashGen
