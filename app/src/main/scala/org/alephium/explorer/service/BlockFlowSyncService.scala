@@ -178,9 +178,11 @@ case object BlockFlowSyncService extends StrictLogging {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
-      groupSetting: GroupSetting): Future[(ArraySeq[(TimeStamp, TimeStamp)], Int)] = {
-    fetchAndBuildTimeStampRange(step, backStep, getLocalMaxTimestamp(), getRemoteMaxTimestamp())
-  }
+      groupSetting: GroupSetting): Future[(ArraySeq[(TimeStamp, TimeStamp)], Int)] =
+    for {
+      localTs  <- getLocalMaxTimestamp()
+      remoteTs <- getRemoteMaxTimestamp()
+    } yield fetchAndBuildTimeStampRange(step, backStep, localTs, remoteTs)
 
   /** @see [[org.alephium.explorer.persistence.queries.BlockQueries.numOfBlocksAndMaxBlockTimestamp]] */
   def getLocalMaxTimestamp()(implicit ec: ExecutionContext,
@@ -325,33 +327,26 @@ case object BlockFlowSyncService extends StrictLogging {
   def fetchAndBuildTimeStampRange(
       step: Duration,
       backStep: Duration,
-      fetchLocalTs:  => Future[Option[(TimeStamp, Int)]],
-      fetchRemoteTs: => Future[Option[(TimeStamp, Int)]]
-  )(implicit executionContext: ExecutionContext)
-    : Future[(ArraySeq[(TimeStamp, TimeStamp)], Int)] = {
-    for {
-      localTs  <- fetchLocalTs
-      remoteTs <- fetchRemoteTs
-    } yield {
-      (for {
-        (localTs, localNbOfBlocks) <- localTs.map {
-          case (ts, nb) => (ts.plusMillisUnsafe(1), nb)
-        }
-        (remoteTs, remoteNbOfBlocks) <- remoteTs.map {
-          case (ts, nb) => (ts.plusMillisUnsafe(1), nb)
-        }
-      } yield {
-        if (remoteTs.isBefore(localTs)) {
-          logger.error("max remote ts can't be before local one")
-          sys.exit(0)
-        } else {
-          (TimeUtil.buildTimestampRange(localTs.minusUnsafe(backStep), remoteTs, step),
-           remoteNbOfBlocks - localNbOfBlocks)
-        }
-      }) match {
-        case None      => (ArraySeq.empty, 0)
-        case Some(res) => res
+      localTs: Option[(TimeStamp, Int)],
+      remoteTs: Option[(TimeStamp, Int)]): (ArraySeq[(TimeStamp, TimeStamp)], Int) = {
+    (for {
+      (localTs, localNbOfBlocks) <- localTs.map {
+        case (ts, nb) => (ts.plusMillisUnsafe(1), nb)
       }
+      (remoteTs, remoteNbOfBlocks) <- remoteTs.map {
+        case (ts, nb) => (ts.plusMillisUnsafe(1), nb)
+      }
+    } yield {
+      if (remoteTs.isBefore(localTs)) {
+        logger.error("max remote ts can't be before local one")
+        sys.exit(0)
+      } else {
+        (TimeUtil.buildTimestampRange(localTs.minusUnsafe(backStep), remoteTs, step),
+         remoteNbOfBlocks - localNbOfBlocks)
+      }
+    }) match {
+      case None      => (ArraySeq.empty, 0)
+      case Some(res) => res
     }
   }
 }

@@ -49,19 +49,19 @@ class BlockFlowSyncServiceSpec
 
   "fetch and build timestamp range" in new Fixture {
 
-    def th(ts: TimeStamp, height: Int) = Future.successful(Option((ts, height)))
+    def th(ts: TimeStamp, height: Int) = Option((ts, height))
 
     BlockFlowSyncService
       .fetchAndBuildTimeStampRange(s(10), s(5), th(t(20), 5), th(t(40), 8))
-      .futureValue is ((ArraySeq(r(16, 26), r(27, 37), r(38, 41)), 3))
+      .is((ArraySeq(r(16, 26), r(27, 37), r(38, 41)), 3))
 
     BlockFlowSyncService
-      .fetchAndBuildTimeStampRange(s(10), s(5), Future.successful(None), th(t(40), 8))
-      .futureValue is ((ArraySeq.empty, 0))
+      .fetchAndBuildTimeStampRange(s(10), s(5), None, th(t(40), 8))
+      .is((ArraySeq.empty, 0))
 
     BlockFlowSyncService
-      .fetchAndBuildTimeStampRange(s(10), s(5), th(t(20), 5), Future.successful(None))
-      .futureValue is ((ArraySeq.empty, 0))
+      .fetchAndBuildTimeStampRange(s(10), s(5), th(t(20), 5), None)
+      .is((ArraySeq.empty, 0))
   }
 
   "start/sync/stop" in new Fixture {
