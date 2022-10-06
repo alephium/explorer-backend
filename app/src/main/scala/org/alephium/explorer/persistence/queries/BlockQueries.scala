@@ -111,17 +111,17 @@ object BlockQueries extends StrictLogging {
     * @param height       `height` of the blocks
     * @param hashToIgnore  the `block-hash` to ignore or filter-out.
     */
-  def getHeadersAtHeightIgnoringOne(fromGroup: GroupIndex,
-                                    toGroup: GroupIndex,
-                                    height: Height,
-                                    hashToIgnore: BlockHash): DBActionSR[BlockHash] =
+  def getHashesAtHeightIgnoringOne(fromGroup: GroupIndex,
+                                   toGroup: GroupIndex,
+                                   height: Height,
+                                   hashToIgnore: BlockHash): DBActionSR[BlockHash] =
     sql"""
          |SELECT hash
          |FROM #$block_headers
          |WHERE chain_from = $fromGroup
          |AND chain_to = $toGroup
          |AND height = $height
-         |AND "hash" != $hashToIgnore
+         |AND hash != $hashToIgnore
          |""".stripMargin
       .asASE[BlockHash](blockEntryHashGetResult)
 

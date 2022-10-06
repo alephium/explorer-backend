@@ -311,10 +311,10 @@ class BlockQueriesSpec
     "return empty" when {
       "data is empty" in {
         val query =
-          BlockQueries.getHeadersAtHeightIgnoringOne(fromGroup    = GroupIndex.unsafe(0),
-                                                     toGroup      = GroupIndex.unsafe(0),
-                                                     height       = Height.unsafe(19),
-                                                     hashToIgnore = blockEntryHashGen.sample.get)
+          BlockQueries.getHashesAtHeightIgnoringOne(fromGroup    = GroupIndex.unsafe(0),
+                                                    toGroup      = GroupIndex.unsafe(0),
+                                                    height       = Height.unsafe(19),
+                                                    hashToIgnore = blockEntryHashGen.sample.get)
 
         run(query).futureValue.size is 0
       }
@@ -341,10 +341,10 @@ class BlockQueriesSpec
         val hashToIgnore = Random.shuffle(blocks).head
 
         val query =
-          BlockQueries.getHeadersAtHeightIgnoringOne(fromGroup    = groupIndex,
-                                                     toGroup      = groupIndex,
-                                                     height       = height,
-                                                     hashToIgnore = hashToIgnore.hash)
+          BlockQueries.getHashesAtHeightIgnoringOne(fromGroup    = groupIndex,
+                                                    toGroup      = groupIndex,
+                                                    height       = height,
+                                                    hashToIgnore = hashToIgnore.hash)
 
         val actualResult   = run(query).futureValue //actual result
         val expectedResult = blocks.filter(_ != hashToIgnore).map(_.hash) //expected result
