@@ -30,6 +30,7 @@ import sttp.model.Uri
 import org.alephium.explorer.{foldFutures, GroupSetting}
 import org.alephium.explorer.api.model.{GroupIndex, Height}
 import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.error.ExplorerError.BlocksInDifferentChains
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockEntity
@@ -271,16 +272,22 @@ case object BlockFlowSyncService extends StrictLogging {
     (block.parent(groupSetting.groupNum) match {
       case Some(parent) =>
         //We make sure the parent is inserted before inserting the block
-        BlockDao
-          .get(parent)
+        run(BlockQueries.getBlockChainInfo(parent))
           .flatMap {
             case None =>
               handleMissingMainChainBlock(parent, block.chainFrom)
-            case Some(parentBlock) if !parentBlock.mainChain =>
+            case Some((chainFrom, chainTo, mainChain)) if !mainChain =>
               logger.debug(s"Parent $parent exist but is not mainChain")
-              assert(
-                block.chainFrom == parentBlock.chainFrom && block.chainTo == parentBlock.chainTo)
-              updateMainChain(parentBlock.hash, block.chainFrom, block.chainTo)
+              if (block.chainFrom == chainFrom && block.chainTo == chainTo) {
+                updateMainChain(parent, block.chainFrom, block.chainTo)
+              } else {
+                val error =
+                  BlocksInDifferentChains(parent          = parent,
+                                          parentChainFrom = chainFrom,
+                                          parentChainTo   = chainTo,
+                                          child           = block)
+                Future.failed(error)
+              }
             case Some(_) => Future.successful(())
           }
       case None if block.height.value == 0 => Future.successful(())

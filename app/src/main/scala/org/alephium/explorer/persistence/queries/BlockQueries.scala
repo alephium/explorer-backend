@@ -74,6 +74,16 @@ object BlockQueries extends StrictLogging {
       header <- BlockHeaderSchema.table.filter(_.hash === hash).result.headOption
     } yield header.map(_.toLiteApi)
 
+  /** For a given `BlockHash` returns its basic chain information */
+  def getBlockChainInfo(hash: BlockHash): DBActionR[Option[(GroupIndex, GroupIndex, Boolean)]] =
+    BlockHeaderSchema.table
+      .filter(_.hash === hash)
+      .map { block =>
+        (block.chainFrom, block.chainTo, block.mainChain)
+      }
+      .result
+      .headOption
+
   def getBlockEntryAction(hash: BlockHash)(
       implicit ec: ExecutionContext): DBActionR[Option[BlockEntry]] =
     for {
