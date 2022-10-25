@@ -243,4 +243,12 @@ object CustomGetResult {
         reserved    = result.<<,
         locked      = result.<<
     )
+
+  implicit val chainFromToAndMainChain: GetResult[(GroupIndex, GroupIndex, Boolean)] =
+    (result: PositionedResult) => {
+      val chainFrom = groupIndexGetResult(result)
+      val chainTo   = groupIndexGetResult(result)
+      val mainChain = result.nextBoolean()
+      (chainFrom, chainTo, mainChain)
+    }
 }

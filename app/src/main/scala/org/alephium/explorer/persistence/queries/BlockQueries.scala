@@ -76,12 +76,14 @@ object BlockQueries extends StrictLogging {
 
   /** For a given `BlockHash` returns its basic chain information */
   def getBlockChainInfo(hash: BlockHash): DBActionR[Option[(GroupIndex, GroupIndex, Boolean)]] =
-    BlockHeaderSchema.table
-      .filter(_.hash === hash)
-      .map { block =>
-        (block.chainFrom, block.chainTo, block.mainChain)
-      }
-      .result
+    sql"""
+       |SELECT chain_from,
+       |       chain_to,
+       |       main_chain
+       |FROM block_headers
+       |WHERE hash = $hash
+       |""".stripMargin
+      .asAS[(GroupIndex, GroupIndex, Boolean)]
       .headOption
 
   def getBlockEntryAction(hash: BlockHash)(

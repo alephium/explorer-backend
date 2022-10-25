@@ -365,10 +365,10 @@ class BlockQueriesSpec
 
     "return chainInfo for existing blocks or else None" in {
       forAll(Gen.nonEmptyListOf(blockHeaderGen)) { blockHeaders =>
-        val blockToRemove  = Random.shuffle(blockHeaders).head //the block to remove
+        val blockToRemove  = Random.shuffle(blockHeaders).head //block to remove
         val blocksToInsert = blockHeaders.filter(_ != blockToRemove) //blocks to insert
 
-        //insert only the blocks
+        //insert blocks
         run(BlockQueries.insertBlockHeaders(blocksToInsert)).futureValue is blocksToInsert.size
 
         //returns None for non-existing block
