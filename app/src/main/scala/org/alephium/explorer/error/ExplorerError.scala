@@ -23,6 +23,7 @@ import sttp.model.Uri
 import org.alephium.explorer.api.model.GroupIndex
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.protocol.model.{BlockHash, NetworkId}
+import org.alephium.util.TimeStamp
 
 /** All Explorer errors */
 sealed trait ExplorerError extends Throwable
@@ -64,6 +65,11 @@ object ExplorerError {
 
   final case class InvalidProtocolInput(error: String)
       extends Exception(s"Cannot decode protocol input: $error")
+      with FatalSystemExit
+
+  final case class RemoteTimeStampIsBeforeLocal(localTs: TimeStamp, remoteTs: TimeStamp)
+      extends Exception(
+        s"Max remote timestamp ($remoteTs) cannot be be before local timestamp ($localTs)")
       with FatalSystemExit
 
   /******** Group: [[ConfigError]] ********/

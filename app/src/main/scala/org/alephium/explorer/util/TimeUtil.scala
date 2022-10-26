@@ -21,7 +21,9 @@ import java.time.temporal.ChronoUnit
 
 import scala.annotation.tailrec
 import scala.collection.immutable.ArraySeq
+import scala.util.{Failure, Success, Try}
 
+import org.alephium.explorer.error.ExplorerError.RemoteTimeStampIsBeforeLocal
 import org.alephium.util.{Duration, TimeStamp}
 
 object TimeUtil {
@@ -70,4 +72,60 @@ object TimeUtil {
     }
   }
 
+  /**
+    * Returns timestamp ranges built via [[buildTimestampRange]].
+    *
+    * @return - Valid ranges if localTs is greater than remoteTs.
+    *         - [[org.alephium.explorer.error.ExplorerError.RemoteTimeStampIsBeforeLocal]] If inputs are invalid.
+    *         - Empty ranges if either one of the TimeStamps are empty.
+    */
+  def buildTimeStampRangeOrEmpty(
+      step: Duration,
+      backStep: Duration,
+      localTs: Option[(TimeStamp, Int)],
+      remoteTs: Option[(TimeStamp, Int)]): Try[(ArraySeq[(TimeStamp, TimeStamp)], Int)] =
+    buildTimeStampRangeOption(
+      step     = step,
+      backStep = backStep,
+      localTs  = localTs,
+      remoteTs = remoteTs
+    ) match {
+      case None         => Success((ArraySeq.empty, 0))
+      case Some(result) => result
+    }
+
+  /** @see [[buildTimeStampRangeOrEmpty]] */
+  def buildTimeStampRangeOption(
+      step: Duration,
+      backStep: Duration,
+      localTs: Option[(TimeStamp, Int)],
+      remoteTs: Option[(TimeStamp, Int)]): Option[Try[(ArraySeq[(TimeStamp, TimeStamp)], Int)]] =
+    localTs.zip(remoteTs) map {
+      case ((localTs, localNbOfBlocks), (remoteTs, remoteNbOfBlocks)) =>
+        buildTimeStampRange(
+          step     = step,
+          backStep = backStep,
+          localTs  = localTs,
+          remoteTs = remoteTs
+        ) map { result =>
+          val numOfBlocks = remoteNbOfBlocks - localNbOfBlocks
+          (result, numOfBlocks)
+        }
+    }
+
+  /** @see [[buildTimeStampRangeOrEmpty]] */
+  def buildTimeStampRange(step: Duration,
+                          backStep: Duration,
+                          localTs: TimeStamp,
+                          remoteTs: TimeStamp): Try[ArraySeq[(TimeStamp, TimeStamp)]] = {
+    val localTsPlus1  = localTs.plusMillisUnsafe(1)
+    val remoteTsPlus1 = remoteTs.plusMillisUnsafe(1)
+    if (remoteTsPlus1.isBefore(localTsPlus1)) {
+      Failure(RemoteTimeStampIsBeforeLocal(localTs = localTs, remoteTs = remoteTs))
+    } else {
+      val localTsBackStep = localTsPlus1.minusUnsafe(backStep)
+      val range           = buildTimestampRange(localTsBackStep, remoteTsPlus1, step)
+      Success(range)
+    }
+  }
 }
