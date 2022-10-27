@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
+import scala.util.{Failure, Success}
 
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
@@ -183,7 +184,17 @@ case object BlockFlowSyncService extends StrictLogging {
     for {
       localTs  <- getLocalMaxTimestamp()
       remoteTs <- getRemoteMaxTimestamp()
-    } yield fetchAndBuildTimeStampRange(step, backStep, localTs, remoteTs)
+    } yield {
+      TimeUtil.buildTimeStampRangeOrEmpty(step, backStep, localTs, remoteTs) match {
+        case Failure(exception) =>
+          logger.error("Failed to get TimeStamp range", exception)
+          //See issue #246. sys.exit need to be removed for graceful termination.
+          sys.exit(0)
+
+        case Success(result) =>
+          result
+      }
+    }
 
   /** @see [[org.alephium.explorer.persistence.queries.BlockQueries.numOfBlocksAndMaxBlockTimestamp]] */
   def getLocalMaxTimestamp()(implicit ec: ExecutionContext,
@@ -328,32 +339,6 @@ case object BlockFlowSyncService extends StrictLogging {
     logger.debug(s"Downloading missing block $missing")
     blockFlowClient.fetchBlock(chainFrom, missing).flatMap { block =>
       insert(block).map(_ => ())
-    }
-  }
-
-  def fetchAndBuildTimeStampRange(
-      step: Duration,
-      backStep: Duration,
-      localTs: Option[(TimeStamp, Int)],
-      remoteTs: Option[(TimeStamp, Int)]): (ArraySeq[(TimeStamp, TimeStamp)], Int) = {
-    (for {
-      (localTs, localNbOfBlocks) <- localTs.map {
-        case (ts, nb) => (ts.plusMillisUnsafe(1), nb)
-      }
-      (remoteTs, remoteNbOfBlocks) <- remoteTs.map {
-        case (ts, nb) => (ts.plusMillisUnsafe(1), nb)
-      }
-    } yield {
-      if (remoteTs.isBefore(localTs)) {
-        logger.error("max remote ts can't be before local one")
-        sys.exit(0)
-      } else {
-        (TimeUtil.buildTimestampRange(localTs.minusUnsafe(backStep), remoteTs, step),
-         remoteNbOfBlocks - localNbOfBlocks)
-      }
-    }) match {
-      case None      => (ArraySeq.empty, 0)
-      case Some(res) => res
     }
   }
 }
