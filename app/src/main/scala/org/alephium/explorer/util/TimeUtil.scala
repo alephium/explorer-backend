@@ -84,12 +84,7 @@ object TimeUtil {
       backStep: Duration,
       localTs: Option[(TimeStamp, Int)],
       remoteTs: Option[(TimeStamp, Int)]): Try[(ArraySeq[(TimeStamp, TimeStamp)], Int)] =
-    buildTimeStampRangeOption(
-      step     = step,
-      backStep = backStep,
-      localTs  = localTs,
-      remoteTs = remoteTs
-    ) match {
+    buildTimeStampRangeOption(step, backStep, localTs, remoteTs) match {
       case None         => Success((ArraySeq.empty, 0))
       case Some(result) => result
     }
@@ -102,12 +97,7 @@ object TimeUtil {
       remoteTs: Option[(TimeStamp, Int)]): Option[Try[(ArraySeq[(TimeStamp, TimeStamp)], Int)]] =
     localTs.zip(remoteTs) map {
       case ((localTs, localNbOfBlocks), (remoteTs, remoteNbOfBlocks)) =>
-        buildTimeStampRange(
-          step     = step,
-          backStep = backStep,
-          localTs  = localTs,
-          remoteTs = remoteTs
-        ) map { result =>
+        buildTimeStampRange(step, backStep, localTs, remoteTs) map { result =>
           val numOfBlocks = remoteNbOfBlocks - localNbOfBlocks
           (result, numOfBlocks)
         }
