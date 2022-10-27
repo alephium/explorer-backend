@@ -20,7 +20,10 @@ import scala.concurrent.duration.FiniteDuration
 
 import sttp.model.Uri
 
-import org.alephium.protocol.model.NetworkId
+import org.alephium.explorer.api.model.GroupIndex
+import org.alephium.explorer.persistence.model.BlockEntity
+import org.alephium.protocol.model.{BlockHash, NetworkId}
+import org.alephium.util.TimeStamp
 
 /** All Explorer errors */
 sealed trait ExplorerError extends Throwable
@@ -30,6 +33,9 @@ sealed trait ConfigError extends ExplorerError
 
 /** Errors that lead to JVM termination */
 sealed trait FatalSystemExit extends ExplorerError
+
+/** Application runtime errors */
+sealed trait RuntimeError extends Throwable
 
 //scalastyle:off null
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -61,6 +67,11 @@ object ExplorerError {
       extends Exception(s"Cannot decode protocol input: $error")
       with FatalSystemExit
 
+  final case class RemoteTimeStampIsBeforeLocal(localTs: TimeStamp, remoteTs: TimeStamp)
+      extends Exception(
+        s"Max remote timestamp ($remoteTs) cannot be be before local timestamp ($localTs)")
+      with FatalSystemExit
+
   /******** Group: [[ConfigError]] ********/
   final case class InvalidGroupNumber(groupNum: Int)
       extends Exception(s"Invalid groupNum: $groupNum. It should be > 0")
@@ -86,4 +97,32 @@ object ExplorerError {
       extends Exception(s"Invalid syncPeriod: ${syncPeriod.toString}. Sync-period must be > 0.")
       with ConfigError
 
+  object BlocksInDifferentChains {
+
+    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+    @inline def apply(parent: BlockHash,
+                      parentChainFrom: GroupIndex,
+                      parentChainTo: GroupIndex,
+                      child: BlockEntity): BlocksInDifferentChains =
+      new BlocksInDifferentChains(
+        parent          = parent,
+        parentChainFrom = parentChainFrom,
+        parentChainTo   = parentChainTo,
+        child           = child.hash,
+        childChainFrom  = child.chainFrom,
+        childChainTo    = child.chainTo
+      )
+  }
+
+  /******** Group: [[RuntimeError]] ********/
+  final case class BlocksInDifferentChains(parent: BlockHash,
+                                           parentChainFrom: GroupIndex,
+                                           parentChainTo: GroupIndex,
+                                           child: BlockHash,
+                                           childChainFrom: GroupIndex,
+                                           childChainTo: GroupIndex)
+      extends Exception(
+        s"Parent ($parent) and child ($child) blocks belongs to different chains. " +
+          s"ParentChain: ($parentChainFrom, $parentChainTo). ChildChain: ($childChainFrom, $childChainTo)")
+      with RuntimeError
 }

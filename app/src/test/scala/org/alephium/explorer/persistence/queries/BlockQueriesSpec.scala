@@ -27,7 +27,7 @@ import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumSpec, GroupSetting}
-import org.alephium.explorer.GenApiModel.{blockEntryHashGen, groupIndexGen, heightGen}
+import org.alephium.explorer.GenApiModel.{blockEntryHashGen, blockHashGen, groupIndexGen, heightGen}
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.{GroupIndex, Height}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
@@ -351,6 +351,37 @@ class BlockQueriesSpec
 
         actualResult should not contain hashToIgnore //ignored hash is not included
         actualResult should contain theSameElementsAs expectedResult
+      }
+    }
+  }
+
+  "getBlockChainInfo" should {
+    "return none" when {
+      "database is empty" in {
+        val blockHash = blockHashGen.sample.get
+        run(BlockQueries.getBlockChainInfo(blockHash)).futureValue is None
+      }
+    }
+
+    "return chainInfo for existing blocks or else None" in {
+      forAll(Gen.nonEmptyListOf(blockHeaderGen)) { blockHeaders =>
+        val blockToRemove  = Random.shuffle(blockHeaders).head //block to remove
+        val blocksToInsert = blockHeaders.filter(_ != blockToRemove) //blocks to insert
+
+        //insert blocks
+        run(BlockQueries.insertBlockHeaders(blocksToInsert)).futureValue is blocksToInsert.size
+
+        //returns None for non-existing block
+        run(BlockQueries.getBlockChainInfo(blockToRemove.hash)).futureValue is None
+
+        //inserted blocks should return expected chainFrom, chainTo and mainChain information
+        blocksToInsert foreach { block =>
+          val (chainFrom, chainTo, mainChain) =
+            run(BlockQueries.getBlockChainInfo(block.hash)).futureValue.get
+          block.chainFrom is chainFrom
+          block.chainTo is chainTo
+          block.mainChain is mainChain
+        }
       }
     }
   }

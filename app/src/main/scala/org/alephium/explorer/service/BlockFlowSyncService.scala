@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
+import scala.util.{Failure, Success}
 
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
@@ -30,6 +31,7 @@ import sttp.model.Uri
 import org.alephium.explorer.{foldFutures, GroupSetting}
 import org.alephium.explorer.api.model.{GroupIndex, Height}
 import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.error.ExplorerError.BlocksInDifferentChains
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.BlockEntity
@@ -182,7 +184,17 @@ case object BlockFlowSyncService extends StrictLogging {
     for {
       localTs  <- getLocalMaxTimestamp()
       remoteTs <- getRemoteMaxTimestamp()
-    } yield fetchAndBuildTimeStampRange(step, backStep, localTs, remoteTs)
+    } yield {
+      TimeUtil.buildTimeStampRangeOrEmpty(step, backStep, localTs, remoteTs) match {
+        case Failure(exception) =>
+          logger.error("Failed to get TimeStamp range", exception)
+          //See issue #246. sys.exit need to be removed for graceful termination.
+          sys.exit(0)
+
+        case Success(result) =>
+          result
+      }
+    }
 
   /** @see [[org.alephium.explorer.persistence.queries.BlockQueries.numOfBlocksAndMaxBlockTimestamp]] */
   def getLocalMaxTimestamp()(implicit ec: ExecutionContext,
@@ -271,16 +283,22 @@ case object BlockFlowSyncService extends StrictLogging {
     (block.parent(groupSetting.groupNum) match {
       case Some(parent) =>
         //We make sure the parent is inserted before inserting the block
-        BlockDao
-          .get(parent)
+        run(BlockQueries.getBlockChainInfo(parent))
           .flatMap {
             case None =>
               handleMissingMainChainBlock(parent, block.chainFrom)
-            case Some(parentBlock) if !parentBlock.mainChain =>
+            case Some((chainFrom, chainTo, mainChain)) if !mainChain =>
               logger.debug(s"Parent $parent exist but is not mainChain")
-              assert(
-                block.chainFrom == parentBlock.chainFrom && block.chainTo == parentBlock.chainTo)
-              updateMainChain(parentBlock.hash, block.chainFrom, block.chainTo)
+              if (block.chainFrom == chainFrom && block.chainTo == chainTo) {
+                updateMainChain(parent, block.chainFrom, block.chainTo)
+              } else {
+                val error =
+                  BlocksInDifferentChains(parent          = parent,
+                                          parentChainFrom = chainFrom,
+                                          parentChainTo   = chainTo,
+                                          child           = block)
+                Future.failed(error)
+              }
             case Some(_) => Future.successful(())
           }
       case None if block.height.value == 0 => Future.successful(())
@@ -321,32 +339,6 @@ case object BlockFlowSyncService extends StrictLogging {
     logger.debug(s"Downloading missing block $missing")
     blockFlowClient.fetchBlock(chainFrom, missing).flatMap { block =>
       insert(block).map(_ => ())
-    }
-  }
-
-  def fetchAndBuildTimeStampRange(
-      step: Duration,
-      backStep: Duration,
-      localTs: Option[(TimeStamp, Int)],
-      remoteTs: Option[(TimeStamp, Int)]): (ArraySeq[(TimeStamp, TimeStamp)], Int) = {
-    (for {
-      (localTs, localNbOfBlocks) <- localTs.map {
-        case (ts, nb) => (ts.plusMillisUnsafe(1), nb)
-      }
-      (remoteTs, remoteNbOfBlocks) <- remoteTs.map {
-        case (ts, nb) => (ts.plusMillisUnsafe(1), nb)
-      }
-    } yield {
-      if (remoteTs.isBefore(localTs)) {
-        logger.error("max remote ts can't be before local one")
-        sys.exit(0)
-      } else {
-        (TimeUtil.buildTimestampRange(localTs.minusUnsafe(backStep), remoteTs, step),
-         remoteNbOfBlocks - localNbOfBlocks)
-      }
-    }) match {
-      case None      => (ArraySeq.empty, 0)
-      case Some(res) => res
     }
   }
 }
