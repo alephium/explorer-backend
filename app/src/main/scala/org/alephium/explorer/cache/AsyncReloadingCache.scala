@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{Deadline, FiniteDuration}
-import scala.util.{Failure, Success}
 
 import com.typesafe.scalalogging.LazyLogging
 
@@ -140,25 +139,31 @@ class AsyncReloadingCache[T](@volatile private var value: T,
   private def reloadFuture()(implicit ec: ExecutionContext): Future[Boolean] =
     //Reload if expired and not already being reloaded by another thread
     if (deadline.isOverdue() && reloading.compareAndSet(false, true)) {
-      val loadedFuture = loader(value)
-      //fetch and set next cache state
-      loadedFuture.onComplete { result =>
-        result match {
-          case Success(value) =>
-            this.value = value
+      val cacheFuture =
+        loader(value)
+          .map { newValue =>
+            //Set the next value immediately after the future is complete
+            this.value = newValue
+            true
+          }
+          .recoverWith { error =>
+            //Log the error and return the same error
+            logger.error("Failed to reload cache", error)
+            Future.failed(error)
+          }
 
-          case Failure(exception) =>
-            //Fatal error: Log for debugging.
-            logger.error("Failed to reload cache", exception)
-        }
-
+      //Release cache for next cache update run only after
+      // - current newCacheValue is set
+      // - OR if the Future fails
+      cacheFuture onComplete { _ =>
         //set next deadline
         deadline = reloadAfter.fromNow
         //release to allow next reload
         reloading.set(false)
       }
 
-      loadedFuture.map(_ => true)
+      cacheFuture
+
     } else {
       Future.successful(false)
     }
