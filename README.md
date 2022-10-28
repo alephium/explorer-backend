@@ -13,7 +13,7 @@ You need to have [Postgresql][postgresql] and [sbt][sbt] installed in your syste
    ```shell
    psql postgres # or `psql -U postgres` depending on your OS
    ```
-3. Ensure that the `postgres` role exists, and if not, create it.  
+3. Ensure that the `postgres` role exists, and if not, create it.
    List all roles:
    ```shell
    postgres=# \du
@@ -41,6 +41,18 @@ sbt app/assembly
 
 The resulting assembly file will appear in `app/target/scala-2.13/` directory.
 
+
+### 5. Restore archived database
+
+Syncing all data from scratch can take a while, you can choose to start from a snapshot instead.
+Snapshots are available at https://archives.alephium.org/
+Download the `explore-db` dump you want and simply run:
+
+```shell
+psql database_name < dump_file
+```
+
+Please note that `database_name` must have been created before, see point 2 on how to do it.
 
 ### Querying hashes
 
