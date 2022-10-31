@@ -28,6 +28,7 @@ trait Documentation
     with InfosEndpoints
     with ChartsEndpoints
     with TokensEndpoints
+    with EventsEndpoints
     with UnconfirmedTransactionEndpoints
     with UtilsEndpoints
     with OpenAPIDocsInterpreter {
@@ -63,6 +64,9 @@ trait Documentation
       getHashrates,
       getAllChainsTxCount,
       getPerChainTxCount,
+      getEventsByTxId,
+      getEventsByContractAddress,
+      getEventsByContractAndInputAddress,
       sanityCheck,
       changeGlobalLogLevel,
       changeLogConfig
