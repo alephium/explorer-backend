@@ -327,28 +327,11 @@ object BlockFlowClient extends StrictLogging {
       if (tx.scriptSignatures.isEmpty) None else Some(tx.scriptSignatures.toArraySeq)
     )
 
-  private def addressFromProtocolInput(input: api.model.AssetInput): Option[Address] =
-    input.toProtocol() match {
-      case Right(value) =>
-        value.unlockScript match {
-          case protocol.vm.UnlockScript.P2PKH(pk) =>
-            Some(Address.unsafe(protocol.model.Address.p2pkh(pk).toBase58)): Option[Address]
-          case protocol.vm.UnlockScript.P2SH(script, _) =>
-            val lockup = protocol.vm.LockupScript.p2sh(protocol.Hash.hash(script))
-            Some(Address.unsafe(protocol.model.Address.from(lockup).toBase58)): Option[Address]
-          case protocol.vm.UnlockScript.P2MPKH(_) =>
-            None
-        }
-      case Left(error) =>
-        logger.error(s"Cannot decode protocol input: $error")
-        None
-    }
-
   private def protocolInputToInput(input: api.model.AssetInput): Input = {
     Input(
       OutputRef(input.outputRef.hint, input.outputRef.key),
       Some(input.unlockScript),
-      addressFromProtocolInput(input),
+      InputAddressUtil.addressFromProtocolInput(input),
       None,
       None
     )
@@ -371,7 +354,7 @@ object BlockFlowClient extends StrictLogging {
       mainChain,
       index,
       txOrder,
-      addressFromProtocolInput(input),
+      InputAddressUtil.addressFromProtocolInput(input),
       None,
       None
     )
