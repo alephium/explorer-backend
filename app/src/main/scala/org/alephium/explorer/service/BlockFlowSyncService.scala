@@ -34,7 +34,7 @@ import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.error.ExplorerError.BlocksInDifferentChains
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.BlockDao
-import org.alephium.explorer.persistence.model.BlockEntity
+import org.alephium.explorer.persistence.model.{BlockEntity, BlockEntityWithEvents}
 import org.alephium.explorer.persistence.queries.{BlockQueries, InputUpdateQueries}
 import org.alephium.explorer.util.{Scheduler, TimeUtil}
 import org.alephium.protocol.model.BlockHash
@@ -274,6 +274,17 @@ case object BlockFlowSyncService extends StrictLogging {
     }
   }
 
+  private def insertWithEvents(blockWithEvents: BlockEntityWithEvents)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      cache: BlockCache,
+      groupSetting: GroupSetting): Future[Unit] = {
+    for {
+      _ <- insert(blockWithEvents.block)
+      _ <- BlockDao.insertEvents(blockWithEvents.events)
+    } yield ()
+  }
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   private def insert(block: BlockEntity)(implicit ec: ExecutionContext,
                                          dc: DatabaseConfig[PostgresProfile],
@@ -314,17 +325,17 @@ case object BlockFlowSyncService extends StrictLogging {
     }
   }
 
-  private def insertBlocks(blocks: ArraySeq[BlockEntity])(
+  private def insertBlocks(blocksWithEvents: ArraySeq[BlockEntityWithEvents])(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
       groupSetting: GroupSetting): Future[Int] = {
-    if (blocks.nonEmpty) {
+    if (blocksWithEvents.nonEmpty) {
       for {
-        _ <- foldFutures(blocks)(insert)
-        _ <- BlockDao.updateLatestBlock(blocks.last)
-      } yield (blocks.size)
+        _ <- foldFutures(blocksWithEvents)(insertWithEvents)
+        _ <- BlockDao.updateLatestBlock(blocksWithEvents.last.block)
+      } yield (blocksWithEvents.size)
     } else {
       Future.successful(0)
     }
@@ -337,8 +348,6 @@ case object BlockFlowSyncService extends StrictLogging {
       cache: BlockCache,
       groupSetting: GroupSetting): Future[Unit] = {
     logger.debug(s"Downloading missing block $missing")
-    blockFlowClient.fetchBlock(chainFrom, missing).flatMap { block =>
-      insert(block).map(_ => ())
-    }
+    blockFlowClient.fetchBlockAndEvents(chainFrom, missing).flatMap(insertWithEvents)
   }
 }

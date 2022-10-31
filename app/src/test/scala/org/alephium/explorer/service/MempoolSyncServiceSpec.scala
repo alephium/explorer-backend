@@ -89,9 +89,12 @@ class MempoolSyncServiceSpec
         Future.successful(unconfirmedTransactions)
       def fetchBlock(from: GroupIndex, hash: BlockHash): Future[BlockEntity] =
         ???
+      def fetchBlockAndEvents(fromGroup: GroupIndex,
+                              hash: BlockHash): Future[BlockEntityWithEvents] =
+        ???
       def fetchBlocks(fromTs: TimeStamp,
                       toTs: TimeStamp,
-                      uri: Uri): Future[ArraySeq[ArraySeq[BlockEntity]]] =
+                      uri: Uri): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]] =
         ???
       def fetchChainInfo(from: GroupIndex, to: GroupIndex): Future[ChainInfo] = ???
       def fetchHashesAtHeight(from: GroupIndex,

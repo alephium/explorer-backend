@@ -28,7 +28,7 @@ import com.typesafe.scalalogging.StrictLogging
 import sttp.model.Uri
 
 import org.alephium.api
-import org.alephium.api.Endpoints
+import org.alephium.api.{ApiModelCodec, Endpoints}
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.RichAVector._
@@ -36,6 +36,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.error.ExplorerError
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.util.InputAddressUtil
 import org.alephium.http.EndpointSender
 import org.alephium.protocol
 import org.alephium.protocol.config.GroupConfig
@@ -47,6 +48,8 @@ import org.alephium.util.{AVector, Duration, Service, TimeStamp, U256}
 trait BlockFlowClient extends Service {
   def fetchBlock(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntity]
 
+  def fetchBlockAndEvents(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntityWithEvents]
+
   def fetchChainInfo(fromGroup: GroupIndex, toGroup: GroupIndex): Future[ChainInfo]
 
   def fetchHashesAtHeight(fromGroup: GroupIndex,
@@ -55,7 +58,7 @@ trait BlockFlowClient extends Service {
 
   def fetchBlocks(fromTs: TimeStamp,
                   toTs: TimeStamp,
-                  uri: Uri): Future[ArraySeq[ArraySeq[BlockEntity]]]
+                  uri: Uri): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]]
 
   def fetchBlocksAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
       implicit executionContext: ExecutionContext): Future[ArraySeq[BlockEntity]] =
@@ -64,6 +67,16 @@ trait BlockFlowClient extends Service {
         .sequence(
           hashesAtHeight.headers
             .map(hash => fetchBlock(fromGroup, hash))
+            .toArraySeq)
+    }
+
+  def fetchBlocksAndEventsAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
+      implicit executionContext: ExecutionContext): Future[ArraySeq[BlockEntityWithEvents]] =
+    fetchHashesAtHeight(fromGroup, toGroup, height).flatMap { hashesAtHeight =>
+      Future
+        .sequence(
+          hashesAtHeight.headers
+            .map(hash => fetchBlockAndEvents(fromGroup, hash))
             .toArraySeq)
     }
 
@@ -87,7 +100,8 @@ object BlockFlowClient extends StrictLogging {
   private class Impl(uri: Uri, groupNum: Int, val maybeApiKey: Option[api.model.ApiKey])(
       implicit val executionContext: ExecutionContext
   ) extends BlockFlowClient
-      with Endpoints {
+      with Endpoints
+      with ApiModelCodec {
 
     private val endpointSender = new EndpointSender(maybeApiKey)
 
@@ -136,6 +150,16 @@ object BlockFlowClient extends StrictLogging {
           }
       }
 
+    def fetchBlockAndEvents(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntityWithEvents] =
+      fetchSelfCliqueAndChainParams().flatMap {
+        case (selfClique, chainParams) =>
+          selfCliqueIndex(selfClique, chainParams, fromGroup) match {
+            case Left(error) => Future.failed(new Throwable(error))
+            case Right((nodeAddress, restPort)) =>
+              val uri = Uri(nodeAddress.getHostAddress, restPort)
+              _send(getBlockAndEvents, uri, hash).map(blockAndEventsToEntities)
+          }
+      }
     def fetchChainInfo(fromGroup: GroupIndex, toGroup: GroupIndex): Future[ChainInfo] = {
       _send(getChainInfo, uri, protocol.model.ChainIndex(fromGroup, toGroup))
     }
@@ -147,9 +171,12 @@ object BlockFlowClient extends StrictLogging {
 
     def fetchBlocks(fromTs: TimeStamp,
                     toTs: TimeStamp,
-                    uri: Uri): Future[ArraySeq[ArraySeq[BlockEntity]]] = {
-      _send(getBlocks, uri, api.model.TimeInterval(fromTs, toTs))
-        .map(_.blocks.map(_.map(blockProtocolToEntity).toArraySeq).toArraySeq)
+                    uri: Uri): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]] = {
+      _send(getBlocksAndEvents, uri, api.model.TimeInterval(fromTs, toTs))
+        .map(
+          _.blocksAndEvents
+            .map(_.map(blockAndEventsToEntities).toArraySeq)
+            .toArraySeq)
     }
 
     def fetchUnconfirmedTransactions(uri: Uri): Future[ArraySeq[UnconfirmedTransaction]] =
@@ -256,6 +283,12 @@ object BlockFlowClient extends StrictLogging {
       }
     outputs ++ generatedOutputs
   }
+  def blockAndEventsToEntities(blockAndEvents: api.model.BlockAndEvents)(
+      implicit groupSetting: GroupSetting): BlockEntityWithEvents = {
+    BlockEntityWithEvents(blockProtocolToEntity(blockAndEvents.block),
+                          blockProtocolToEventEntities(blockAndEvents))
+  }
+
   def blockProtocolToEntity(block: api.model.BlockEntry)(
       implicit groupSetting: GroupSetting): BlockEntity = {
     val hash         = block.hash
@@ -286,6 +319,32 @@ object BlockFlowClient extends StrictLogging {
       block.target,
       computeHashRate(block.target)
     )
+  }
+
+  def blockProtocolToEventEntities(
+      blockAndEvents: api.model.BlockAndEvents): ArraySeq[EventEntity] = {
+    val block = blockAndEvents.block
+    val hash  = block.hash
+    val transactionAndInputAddress: Map[TransactionId, Option[Address]] =
+      block.transactions
+        .map { tx =>
+          val address = InputAddressUtil.addressFromProtocolInputs(tx.unsigned.inputs.toArraySeq)
+          (tx.unsigned.txId, address)
+        }
+        .iterator
+        .to(Map)
+
+    blockAndEvents.events.map { event =>
+      EventEntity.from(
+        hash,
+        event.txId,
+        Address.unsafe(event.contractAddress.toBase58),
+        transactionAndInputAddress.getOrElse(event.txId, None),
+        block.timestamp,
+        event.eventIndex,
+        event.fields.toArraySeq
+      )
+    }.toArraySeq
   }
 
   private def txToUTx(tx: api.model.TransactionTemplate,
