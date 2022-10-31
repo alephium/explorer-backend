@@ -384,6 +384,16 @@ object ExplorerSpec {
         route(
           baseEndpoint.get
             .in("blockflow")
+            .in("blocks-with-events")
+            .in(path[BlockHash])
+            .out(jsonBody[model.BlockAndEvents])
+            .serverLogicSuccess[Future] { hash =>
+              Future.successful(
+                model.BlockAndEvents(blocks.find(_.hash === hash).get, AVector.empty))
+            }),
+        route(
+          baseEndpoint.get
+            .in("blockflow")
             .in("blocks")
             .in(timeIntervalQuery)
             .out(jsonBody[model.BlocksPerTimeStampRange])
@@ -397,6 +407,25 @@ object ExplorerSpec {
                           b.timestamp >= timeInterval.from && b.timestamp <= timeInterval.to)
                       )
                       .map(AVector.from(_)))))
+            }),
+        route(
+          baseEndpoint.get
+            .in("blockflow")
+            .in("blocks-with-events")
+            .in(timeIntervalQuery)
+            .out(jsonBody[model.BlocksAndEventsPerTimeStampRange])
+            .serverLogicSuccess[Future] { timeInterval =>
+              Future.successful(
+                model.BlocksAndEventsPerTimeStampRange(
+                  AVector.from(
+                    blockflow
+                      .map(
+                        _.filter(b =>
+                          b.timestamp >= timeInterval.from && b.timestamp <= timeInterval.to)
+                      )
+                      .map(blocks =>
+                        AVector.from(blocks.map(block =>
+                          model.BlockAndEvents(block, AVector.empty)))))))
             }),
         route(
           baseEndpoint.get
