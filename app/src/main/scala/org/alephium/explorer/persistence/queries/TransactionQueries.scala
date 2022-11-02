@@ -178,6 +178,33 @@ object TransactionQueries extends StrictLogging {
     """.asAS[TxByAddressQR]
   }
 
+  /**
+    * Get transactions by address for a given time-range
+    *
+    * @param address   Address to query
+    * @param fromTime  From TimeStamp of the time-range
+    * @param toTime    To TimeStamp of the time-range
+    * @param offset    Page number (starting from 0)
+    * @param limit     Maximum rows
+    * @return          [[TxByAddressQR]]
+    */
+  def getTxHashesByAddressQuerySQLNoJoinTimeRanged(address: Address,
+                                                   fromTime: TimeStamp,
+                                                   toTime: TimeStamp,
+                                                   offset: Int,
+                                                   limit: Int): DBActionSR[TxByAddressQR] = {
+    sql"""
+      SELECT tx_hash, block_hash, block_timestamp, tx_order
+      FROM transaction_per_addresses
+      WHERE main_chain = true
+        AND address = $address
+        AND block_timestamp between $fromTime AND $toTime
+      ORDER BY block_timestamp DESC, tx_order
+      LIMIT $limit
+      OFFSET $offset
+    """.asAS[TxByAddressQR]
+  }
+
   def getTransactionsByBlockHash(blockHash: BlockHash)(
       implicit ec: ExecutionContext): DBActionSR[Transaction] = {
     for {

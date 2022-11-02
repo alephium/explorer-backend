@@ -19,7 +19,9 @@ import org.scalacheck.{Arbitrary, Gen}
 
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreUtil._
+import org.alephium.explorer.api.model.Address
 import org.alephium.explorer.persistence.model._
+import org.alephium.util.TimeStamp
 
 /** Test-data generators for types in package [[org.alephium.explorer.persistence.model]]  */
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -54,14 +56,17 @@ object GenDBModel {
         toTransactionPerAddressEntity(input, output)
     }
 
-  def genTransactionPerAddressEntity(): Gen[TransactionPerAddressEntity] =
+  def genTransactionPerAddressEntity(
+      addressGen: Gen[Address]     = addressGen,
+      timestampGen: Gen[TimeStamp] = timestampGen,
+      mainChain: Gen[Boolean]      = Arbitrary.arbitrary[Boolean]): Gen[TransactionPerAddressEntity] =
     for {
       address   <- addressGen
       hash      <- transactionHashGen
       blockHash <- blockEntryHashGen
       timestamp <- timestampGen
       txOrder   <- Gen.posNum[Int]
-      mainChain <- Arbitrary.arbitrary[Boolean]
+      mainChain <- mainChain
     } yield
       TransactionPerAddressEntity(
         address   = address,

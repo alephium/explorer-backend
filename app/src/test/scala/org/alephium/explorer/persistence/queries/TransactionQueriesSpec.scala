@@ -25,9 +25,9 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AlephiumSpec, Hash}
+import org.alephium.explorer.{AlephiumSpec, Hash, TestQueries}
 import org.alephium.explorer.GenApiModel._
-import org.alephium.explorer.GenCoreUtil.timestampMaxValue
+import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
@@ -435,6 +435,118 @@ class TransactionQueriesSpec
 
           //check the boolean query with the existing concurrent query
           run(TransactionQueries.areAddressesActiveAction(allAddresses)).futureValue is booleanExistingResult
+      }
+    }
+  }
+
+  "getTxHashesByAddressQuerySQLNoJoinTimeRanged" should {
+    "return empty" when {
+      "database is empty" in {
+        forAll(addressGen, timestampGen, timestampGen, Gen.posNum[Int], Gen.posNum[Int]) {
+          (address, fromTime, toTime, offset, limit) =>
+            val query =
+              TransactionQueries.getTxHashesByAddressQuerySQLNoJoinTimeRanged(address,
+                                                                              fromTime,
+                                                                              toTime,
+                                                                              offset,
+                                                                              limit)
+
+            run(query).futureValue.size is 0
+        }
+      }
+    }
+
+    "return transactions_per_address within the range" when {
+      "there is exactly one transaction per address (each address and timestamp belong to only one transaction)" in {
+        forAll(Gen.listOf(genTransactionPerAddressEntity(mainChain = Gen.const(true)))) {
+          entities =>
+            //clear table and insert entities
+            run(TestQueries.clearAndInsert(entities)).futureValue
+
+            entities foreach { entity =>
+              //run the query for each entity and expect the entity to be returned
+              val query =
+                TransactionQueries
+                  .getTxHashesByAddressQuerySQLNoJoinTimeRanged(address  = entity.address,
+                                                                fromTime = entity.timestamp,
+                                                                toTime   = entity.timestamp,
+                                                                offset   = 0,
+                                                                limit    = Int.MaxValue)
+
+              val actualResult = run(query).futureValue
+
+              val expectedResult =
+                TxByAddressQR(entity.hash, entity.blockHash, entity.timestamp, entity.txOrder)
+
+              actualResult should contain only expectedResult
+            }
+        }
+      }
+
+      "there are multiple transactions per address" in {
+        //a narrowed time range so there is overlap between transaction timestamps
+        val timeStampGen =
+          Gen.chooseNum(0L, 10L).map(TimeStamp.unsafe)
+
+        val genTransactionsPerAddress =
+          addressGen flatMap { address =>
+            //for a single address generate multiple `TransactionPerAddressEntity`
+            val entityGen =
+              genTransactionPerAddressEntity(addressGen   = Gen.const(address),
+                                             timestampGen = timeStampGen)
+
+            Gen.listOf(entityGen)
+          }
+
+        forAll(genTransactionsPerAddress) { entities =>
+          //clear table and insert entities
+          run(TestQueries.clearAndInsert(entities)).futureValue
+
+          //for each address run the query for randomly selected time-range and expect entities
+          //only for that time-range to be returned
+          entities.groupBy(_.address) foreach {
+            case (address, entities) =>
+              val minTime = entities.map(_.timestamp).min.millis //minimum time
+              val maxTime = entities.map(_.timestamp).max.millis //maximum time
+
+              //randomly select time range from the above minimum and maximum time range
+              val timeRangeGen =
+                for {
+                  fromTime <- Gen.chooseNum(minTime, maxTime)
+                  toTime   <- Gen.chooseNum(fromTime, maxTime)
+                } yield (TimeStamp.unsafe(fromTime), TimeStamp.unsafe(toTime))
+
+              //Run test on multiple randomly generated time-ranges on the same test data persisted
+              forAll(timeRangeGen) {
+                case (fromTime, toTime) =>
+                  //run the query for the generated time-range
+                  val query =
+                    TransactionQueries
+                      .getTxHashesByAddressQuerySQLNoJoinTimeRanged(address  = address,
+                                                                    fromTime = fromTime,
+                                                                    toTime   = toTime,
+                                                                    offset   = 0,
+                                                                    limit    = Int.MaxValue)
+
+                  val actualResult = run(query).futureValue
+
+                  //expect only main_chain entities within the queried time-range
+                  val expectedEntities =
+                    entities filter { entity =>
+                      entity.mainChain && entity.timestamp >= fromTime && entity.timestamp <= toTime
+                    }
+
+                  //transform query result TxByAddressQR
+                  val expectedResult =
+                    expectedEntities map { entity =>
+                      TxByAddressQR(entity.hash, entity.blockHash, entity.timestamp, entity.txOrder)
+                    }
+
+                  //only the main_chain entities within the time-range is expected
+                  actualResult should contain theSameElementsAs expectedResult
+              }
+          }
+        }
       }
     }
   }
