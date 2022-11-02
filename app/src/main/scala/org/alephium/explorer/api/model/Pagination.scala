@@ -23,6 +23,7 @@ object Pagination {
   val defaultPage: Int  = 1
   val defaultLimit: Int = 20
   val maxLimit: Int     = 100
+  val `100K`: Int     = 100_000
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def unsafe(offset: Int, limit: Int, reverse: Boolean = false): Pagination = {

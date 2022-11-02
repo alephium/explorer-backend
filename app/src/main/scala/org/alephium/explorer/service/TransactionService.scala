@@ -27,7 +27,7 @@ import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.dao.{TransactionDao, UnconfirmedTxDao}
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{TokenId, TransactionId}
-import org.alephium.util.U256
+import org.alephium.util.{TimeStamp, U256}
 
 trait TransactionService {
   def getTransaction(transactionHash: TransactionId)(
@@ -43,6 +43,13 @@ trait TransactionService {
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]]
 
   def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]]
+
+  def getTransactionsByAddressTimeRangedSQL(address: Address,
+                                            fromTime: TimeStamp,
+                                            toTime: TimeStamp,
+                                            pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]]
 
@@ -117,6 +124,14 @@ object TransactionService extends TransactionService {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     TransactionDao.getByAddressSQL(address, pagination)
+
+  def getTransactionsByAddressTimeRangedSQL(address: Address,
+                                            fromTime: TimeStamp,
+                                            toTime: TimeStamp,
+                                            pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+    TransactionDao.getByAddressTimeRangedSQL(address, fromTime, toTime, pagination)
 
   def listUnconfirmedTransactionsByAddress(address: Address)(
       implicit ec: ExecutionContext,

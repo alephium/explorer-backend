@@ -235,6 +235,24 @@ object TransactionQueries extends StrictLogging {
     } yield txs
   }
 
+  def getTransactionsByAddressTimeRangedSQL(
+      address: Address,
+      fromTime: TimeStamp,
+      toTime: TimeStamp,
+      pagination: Pagination)(implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
+    val offset = pagination.offset
+    val limit  = pagination.limit
+    val toDrop = offset * limit
+    for {
+      txHashesTs <- getTxHashesByAddressQuerySQLNoJoinTimeRanged(address,
+                                                                 fromTime,
+                                                                 toTime,
+                                                                 toDrop,
+                                                                 limit)
+      txs <- getTransactionsSQL(txHashesTs)
+    } yield txs
+  }
+
   def getTransactionsByAddressNoJoin(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     val offset = pagination.offset

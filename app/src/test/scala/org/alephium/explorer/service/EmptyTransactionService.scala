@@ -25,9 +25,8 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
-import org.alephium.explorer.service.TransactionService
 import org.alephium.protocol.model.{TokenId, TransactionId}
-import org.alephium.util.U256
+import org.alephium.util.{TimeStamp, U256}
 
 trait EmptyTransactionService extends TransactionService {
   override def getTransaction(transactionHash: TransactionId)(
@@ -46,6 +45,14 @@ trait EmptyTransactionService extends TransactionService {
     Future.successful(0)
 
   override def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+    Future.successful(ArraySeq.empty)
+
+  override def getTransactionsByAddressTimeRangedSQL(address: Address,
+                                                     fromTime: TimeStamp,
+                                                     toTime: TimeStamp,
+                                                     pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     Future.successful(ArraySeq.empty)

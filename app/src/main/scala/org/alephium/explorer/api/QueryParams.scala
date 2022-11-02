@@ -32,6 +32,9 @@ trait QueryParams extends TapirCodecs {
     fromJson[TokenId]
 
   val pagination: EndpointInput[Pagination] =
+    paginator(Pagination.maxLimit)
+
+  def paginator(maxLimit: Int): EndpointInput[Pagination] =
     query[Option[Int]]("page")
       .description("Page number")
       .map({
@@ -47,7 +50,7 @@ trait QueryParams extends TapirCodecs {
             case None        => Pagination.defaultLimit
           })(Some(_))
           .validate(Validator.min(0))
-          .validate(Validator.max(Pagination.maxLimit)))
+          .validate(Validator.max(maxLimit)))
       .and(query[Option[Boolean]]("reverse")
         .description("Reverse pagination")
         .map({
