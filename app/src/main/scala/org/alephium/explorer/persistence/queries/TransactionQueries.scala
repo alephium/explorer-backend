@@ -186,7 +186,6 @@ object TransactionQueries extends StrictLogging {
     * @param toTime    To TimeStamp of the time-range
     * @param offset    Page number (starting from 0)
     * @param limit     Maximum rows
-    * @return          [[TxByAddressQR]]
     */
   def getTxHashesByAddressQuerySQLNoJoinTimeRanged(address: Address,
                                                    fromTime: TimeStamp,

@@ -26,6 +26,7 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.GroupSetting
+import org.alephium.explorer.api.model.Address
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.state._
 import org.alephium.explorer.cache.BlockCache
@@ -34,6 +35,7 @@ import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
+import org.alephium.util.TimeStamp
 
 /**
   * Implements all JMH functions executing benchmarks on Postgres.
@@ -258,5 +260,20 @@ class DBBenchmark {
 
     val _ =
       state.db.runNow(TransactionQueries.areAddressesActiveAction(state.next), requestTimeout)
+  }
+
+  @Benchmark
+  def transactions_per_address_read_state(state: TransactionsPerAddressReadState): Unit = {
+    val query =
+      TransactionQueries.getTxHashesByAddressQuerySQLNoJoinTimeRanged(
+        address  = Address.unsafe(state.next),
+        fromTime = TimeStamp.zero,
+        toTime   = TimeStamp.unsafe(Long.MaxValue),
+        offset   = 0,
+        limit    = Int.MaxValue
+      )
+
+    val _ =
+      Await.result(state.config.db.run(query), requestTimeout)
   }
 }
