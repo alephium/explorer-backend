@@ -178,6 +178,32 @@ object TransactionQueries extends StrictLogging {
     """.asAS[TxByAddressQR]
   }
 
+  /**
+    * Get transactions by address for a given time-range
+    *
+    * @param address   Address to query
+    * @param fromTime  From TimeStamp of the time-range
+    * @param toTime    To TimeStamp of the time-range
+    * @param offset    Page number (starting from 0)
+    * @param limit     Maximum rows
+    */
+  def getTxHashesByAddressQuerySQLNoJoinTimeRanged(address: Address,
+                                                   fromTime: TimeStamp,
+                                                   toTime: TimeStamp,
+                                                   offset: Int,
+                                                   limit: Int): DBActionSR[TxByAddressQR] = {
+    sql"""
+      SELECT tx_hash, block_hash, block_timestamp, tx_order
+      FROM transaction_per_addresses
+      WHERE main_chain = true
+        AND address = $address
+        AND block_timestamp BETWEEN $fromTime AND $toTime
+      ORDER BY block_timestamp DESC, tx_order
+      LIMIT $limit
+      OFFSET $offset
+    """.asAS[TxByAddressQR]
+  }
+
   def getTransactionsByBlockHash(blockHash: BlockHash)(
       implicit ec: ExecutionContext): DBActionSR[Transaction] = {
     for {
@@ -205,6 +231,24 @@ object TransactionQueries extends StrictLogging {
     for {
       txHashesTs <- getTxHashesByAddressQuerySQLNoJoin(address, toDrop, limit)
       txs        <- getTransactionsSQL(txHashesTs)
+    } yield txs
+  }
+
+  def getTransactionsByAddressTimeRangedSQL(
+      address: Address,
+      fromTime: TimeStamp,
+      toTime: TimeStamp,
+      pagination: Pagination)(implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
+    val offset = pagination.offset
+    val limit  = pagination.limit
+    val toDrop = offset * limit
+    for {
+      txHashesTs <- getTxHashesByAddressQuerySQLNoJoinTimeRanged(address,
+                                                                 fromTime,
+                                                                 toTime,
+                                                                 toDrop,
+                                                                 limit)
+      txs <- getTransactionsSQL(txHashesTs)
     } yield txs
   }
 

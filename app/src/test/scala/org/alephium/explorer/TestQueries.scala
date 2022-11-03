@@ -14,19 +14,22 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.api.model
+package org.alephium.explorer
 
-final case class Pagination private (offset: Int, limit: Int, reverse: Boolean)
+import slick.jdbc.PostgresProfile.api._
 
-object Pagination {
+import org.alephium.explorer.persistence._
+import org.alephium.explorer.persistence.model.TransactionPerAddressEntity
+import org.alephium.explorer.persistence.schema.TransactionPerAddressSchema
 
-  val defaultPage: Int  = 1
-  val defaultLimit: Int = 20
-  val maxLimit: Int     = 100
-  val thousand: Int     = 1000
+object TestQueries {
 
-  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def unsafe(offset: Int, limit: Int, reverse: Boolean = false): Pagination = {
-    Pagination(offset, limit, reverse)
-  }
+  def insert(entities: Seq[TransactionPerAddressEntity]): DBActionW[Option[Int]] =
+    TransactionPerAddressSchema.table ++= entities
+
+  def clearTransactionPerAddressTable(): DBActionW[Int] =
+    TransactionPerAddressSchema.table.delete
+
+  def clearAndInsert(entities: Seq[TransactionPerAddressEntity]): DBActionW[Option[Int]] =
+    clearTransactionPerAddressTable() andThen insert(entities)
 }

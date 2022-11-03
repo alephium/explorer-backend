@@ -49,6 +49,14 @@ class AddressServer(transactionService: TransactionService)(
           transactionService
             .getTransactionsByAddressSQL(address, pagination)
       }),
+      route(getTransactionsByAddressTimeRanged.serverLogicSuccess[Future] {
+        case (address, timeInterval, pagination) =>
+          transactionService
+            .getTransactionsByAddressTimeRangedSQL(address,
+                                                   timeInterval.from,
+                                                   timeInterval.to,
+                                                   pagination)
+      }),
       route(addressUnconfirmedTransactions.serverLogicSuccess[Future] { address =>
         transactionService
           .listUnconfirmedTransactionsByAddress(address)

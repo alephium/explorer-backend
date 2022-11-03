@@ -28,7 +28,7 @@ import org.alephium.explorer.persistence.queries.TokenQueries._
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{TokenId, TransactionId}
-import org.alephium.util.U256
+import org.alephium.util.{TimeStamp, U256}
 
 object TransactionDao {
 
@@ -50,6 +50,14 @@ object TransactionDao {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     run(getTransactionsByAddressSQL(address, pagination))
+
+  def getByAddressTimeRangedSQL(address: Address,
+                                fromTime: TimeStamp,
+                                toTime: TimeStamp,
+                                pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+    run(getTransactionsByAddressTimeRangedSQL(address, fromTime, toTime, pagination))
 
   def getNumberByAddressSQLNoJoin(address: Address)(
       implicit ec: ExecutionContext,

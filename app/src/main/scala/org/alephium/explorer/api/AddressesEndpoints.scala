@@ -22,8 +22,7 @@ import sttp.tapir._
 import sttp.tapir.generic.auto._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
-import org.alephium.explorer.api.BaseEndpoint
-import org.alephium.explorer.api.Codecs
+import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.TokenId
 
@@ -71,6 +70,16 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])
       .description("List transactions of a given address")
+
+  val getTransactionsByAddressTimeRanged
+    : BaseEndpoint[(Address, TimeInterval, Pagination), ArraySeq[Transaction]] =
+    addressesEndpoint.get
+      .in(path[Address]("address")(Codecs.explorerAddressTapirCodec))
+      .in("timeranged-transactions")
+      .in(timeIntervalQuery)
+      .in(paginator(Pagination.thousand))
+      .out(jsonBody[ArraySeq[Transaction]])
+      .description("List transactions of a given address within a time-range")
 
   val getTotalTransactionsByAddress: BaseEndpoint[Address, Int] =
     addressesEndpoint.get
