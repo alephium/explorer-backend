@@ -464,7 +464,7 @@ class TransactionQueriesSpec
             run(TestQueries.clearAndInsert(entities)).futureValue
 
             entities foreach { entity =>
-              //run the query for each entity and expect the entity to be returned
+              //run the query for each entity and expect that same entity to be returned
               val query =
                 TransactionQueries
                   .getTxHashesByAddressQuerySQLNoJoinTimeRanged(address  = entity.address,

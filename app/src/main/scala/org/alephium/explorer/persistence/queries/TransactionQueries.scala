@@ -197,7 +197,7 @@ object TransactionQueries extends StrictLogging {
       FROM transaction_per_addresses
       WHERE main_chain = true
         AND address = $address
-        AND block_timestamp between $fromTime AND $toTime
+        AND block_timestamp BETWEEN $fromTime AND $toTime
       ORDER BY block_timestamp DESC, tx_order
       LIMIT $limit
       OFFSET $offset

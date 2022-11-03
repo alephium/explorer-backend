@@ -77,7 +77,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .in(path[Address]("address")(Codecs.explorerAddressTapirCodec))
       .in("timeranged-transactions")
       .in(timeIntervalQuery)
-      .in(paginator(Pagination.`100K`))
+      .in(paginator(Pagination.thousand))
       .out(jsonBody[ArraySeq[Transaction]])
       .description("List transactions of a given address within a time-range")
 
