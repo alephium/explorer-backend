@@ -21,6 +21,7 @@ import scala.concurrent.duration.FiniteDuration
 import sttp.model.Uri
 
 import org.alephium.explorer.api.model.GroupIndex
+import org.alephium.explorer.config.BootMode
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.protocol.model.{BlockHash, NetworkId}
 import org.alephium.util.TimeStamp
@@ -95,6 +96,11 @@ object ExplorerError {
 
   final case class InvalidSyncPeriod(syncPeriod: FiniteDuration)
       extends Exception(s"Invalid syncPeriod: ${syncPeriod.toString}. Sync-period must be > 0.")
+      with ConfigError
+
+  final case class InvalidBootMode(mode: String)
+      extends Exception(
+        s"Invalid boot-mode: $mode. Valid modes are: ${BootMode.all.map(_.productPrefix).mkString(", ")}.")
       with ConfigError
 
   object BlocksInDifferentChains {

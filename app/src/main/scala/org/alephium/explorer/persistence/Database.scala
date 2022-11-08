@@ -23,21 +23,23 @@ import scala.util._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
+import org.alephium.explorer.config.BootMode
 import org.alephium.explorer.persistence.dao.HealthCheckDao
 import org.alephium.explorer.util.FutureUtil._
 import org.alephium.util.Service
 
-class Database(readOnly: Boolean)(implicit val executionContext: ExecutionContext,
-                                  val databaseConfig: DatabaseConfig[PostgresProfile])
+class Database(bootMode: BootMode)(implicit val executionContext: ExecutionContext,
+                                   val databaseConfig: DatabaseConfig[PostgresProfile])
     extends Service {
 
-  override def startSelfOnce(): Future[Unit] = {
-    if (readOnly) {
-      HealthCheckDao.healthCheck().mapSyncToUnit()
-    } else {
-      DBInitializer.initialize().mapSyncToUnit()
+  override def startSelfOnce(): Future[Unit] =
+    bootMode match {
+      case BootMode.ReadOnly =>
+        HealthCheckDao.healthCheck().mapSyncToUnit()
+
+      case BootMode.ReadWrite | BootMode.WriteOnly =>
+        DBInitializer.initialize().mapSyncToUnit()
     }
-  }
 
   override def stopSelfOnce(): Future[Unit] = {
     Future.fromTry(Try(databaseConfig.db.close()))

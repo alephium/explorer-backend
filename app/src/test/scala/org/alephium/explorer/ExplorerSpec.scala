@@ -46,7 +46,7 @@ import org.alephium.explorer.Generators._
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.config.ExplorerConfig
+import org.alephium.explorer.config.{BootMode, ExplorerConfig}
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service.BlockFlowClient
@@ -94,7 +94,7 @@ trait ExplorerSpec
 
   val blockflowBinding = blockFlowMock.server
 
-  def createApp(readOnly: Boolean): ExplorerState = {
+  def createApp(bootMode: BootMode.Readable): ExplorerState = {
     implicit val databaseConfig: DatabaseConfig[PostgresProfile] =
       DatabaseFixture.createDatabaseConfig()
 
@@ -105,7 +105,7 @@ trait ExplorerSpec
     implicit val explorerConfig: ExplorerConfig = ExplorerConfig.load(
       ConfigFactory
         .parseMap(Map(
-          ("alephium.explorer.read-only", readOnly),
+          ("alephium.explorer.boot-mode", bootMode.productPrefix),
           ("alephium.explorer.port", explorerPort),
           ("alephium.blockflow.port", blockFlowPort),
           ("alephium.blockflow.network-id", networkId.id),
@@ -113,10 +113,9 @@ trait ExplorerSpec
         ).view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava)
         .withFallback(DatabaseFixture.config))
 
-    if (readOnly) {
-      ExplorerState.ReadOnly()
-    } else {
-      ExplorerState.ReadWrite()
+    bootMode match {
+      case BootMode.ReadOnly  => ExplorerState.ReadOnly()
+      case BootMode.ReadWrite => ExplorerState.ReadWrite()
     }
   }
 
@@ -472,9 +471,9 @@ object ExplorerSpec {
 }
 
 class ExplorerReadOnlySpec extends ExplorerSpec {
-  override lazy val app: ExplorerState = createApp(true)
+  override lazy val app: ExplorerState = createApp(BootMode.ReadOnly)
   override def initApp(app: ExplorerState): Assertion = {
-    val rwApp: ExplorerState = createApp(false)
+    val rwApp: ExplorerState = createApp(BootMode.ReadWrite)
     super.initApp(rwApp)
     rwApp.stop().futureValue is ()
     super.initApp(app)
@@ -483,5 +482,5 @@ class ExplorerReadOnlySpec extends ExplorerSpec {
 }
 
 class ExplorerReadWriteSpec extends ExplorerSpec {
-  override lazy val app: ExplorerState = createApp(false)
+  override lazy val app: ExplorerState = createApp(BootMode.ReadWrite)
 }

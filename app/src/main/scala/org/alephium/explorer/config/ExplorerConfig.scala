@@ -103,6 +103,11 @@ object ExplorerConfig {
       validateSyncPeriod(input).get
     }
 
+  implicit val bootUpMode: ValueReader[BootMode] =
+    ValueReader[String](Ficus.stringValueReader).map { input =>
+      BootMode.validate(input).get
+    }
+
   implicit val explorerConfigReader: ValueReader[ExplorerConfig] =
     valueReader { implicit cfg =>
       val explorer  = as[Explorer]("explorer")
@@ -122,7 +127,7 @@ object ExplorerConfig {
           blockflow.apiKey,
           host,
           port,
-          explorer.readOnly,
+          explorer.bootMode,
           explorer.syncPeriod,
           explorer.tokenSupplyServiceSyncPeriod,
           explorer.hashRateServiceSyncPeriod,
@@ -144,7 +149,7 @@ object ExplorerConfig {
 
   private final case class Explorer(host: String,
                                     port: Int,
-                                    readOnly: Boolean,
+                                    bootMode: BootMode,
                                     syncPeriod: FiniteDuration,
                                     tokenSupplyServiceSyncPeriod: FiniteDuration,
                                     hashRateServiceSyncPeriod: FiniteDuration,
@@ -165,7 +170,7 @@ final case class ExplorerConfig private (groupNum: Int,
                                          maybeBlockFlowApiKey: Option[ApiKey],
                                          host: String,
                                          port: Int,
-                                         readOnly: Boolean,
+                                         bootMode: BootMode,
                                          syncPeriod: FiniteDuration,
                                          tokenSupplyServiceSyncPeriod: FiniteDuration,
                                          hashRateServiceSyncPeriod: FiniteDuration,

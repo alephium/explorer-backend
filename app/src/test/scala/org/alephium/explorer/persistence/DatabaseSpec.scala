@@ -25,6 +25,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.config.BootMode
 
 /** Temporary placeholder. These tests should be merged into ApplicationSpec  */
 class DatabaseSpec extends AlephiumSpec with ScalaFutures {
@@ -39,7 +40,7 @@ class DatabaseSpec extends AlephiumSpec with ScalaFutures {
       "readOnly mode" in {
         val databaseConfig = DatabaseConfig.forConfig[PostgresProfile]("db", DatabaseFixture.config)
         val database: Database =
-          new Database(readOnly = true)(executionContext, databaseConfig)
+          new Database(BootMode.ReadOnly)(executionContext, databaseConfig)
 
         Try(database.startSelfOnce().futureValue) is Success(())
       }
@@ -47,7 +48,7 @@ class DatabaseSpec extends AlephiumSpec with ScalaFutures {
       "readWrite mode" in {
         val databaseConfig = DatabaseConfig.forConfig[PostgresProfile]("db", DatabaseFixture.config)
         val database: Database =
-          new Database(readOnly = false)(executionContext, databaseConfig)
+          new Database(BootMode.ReadWrite)(executionContext, databaseConfig)
 
         Try(database.startSelfOnce().futureValue) is Success(())
       }

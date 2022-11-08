@@ -25,7 +25,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.cache.{BlockCache, TransactionCache}
-import org.alephium.explorer.config.ExplorerConfig
+import org.alephium.explorer.config.{BootMode, ExplorerConfig}
 import org.alephium.explorer.persistence.Database
 import org.alephium.explorer.service._
 import org.alephium.explorer.util.Scheduler
@@ -37,7 +37,6 @@ import org.alephium.util.Service
   *  - ReadWrite: [[org.alephium.explorer.ExplorerState.ReadWrite]]
   * */
 sealed trait ExplorerState extends Service with StrictLogging {
-  implicit def actorSystem: ActorSystem
   implicit def config: ExplorerConfig
   implicit def databaseConfig: DatabaseConfig[PostgresProfile]
 
@@ -45,7 +44,7 @@ sealed trait ExplorerState extends Service with StrictLogging {
     GroupSetting(config.groupNum)
 
   lazy val database: Database =
-    new Database(config.readOnly)(executionContext, databaseConfig)
+    new Database(config.bootMode)(executionContext, databaseConfig)
 
   implicit lazy val blockCache: BlockCache =
     BlockCache()(groupSettings, executionContext, database.databaseConfig)
@@ -80,25 +79,27 @@ sealed trait ExplorerState extends Service with StrictLogging {
     Future.unit
   }
 
-  override def subServices: ArraySeq[Service] = ArraySeq(
-    httpServer,
-    transactionCache,
-    blockFlowClient,
-    database
-  )
+  override def subServices: ArraySeq[Service] = {
+    val writeOnlyServices =
+      ArraySeq(
+        transactionCache,
+        blockFlowClient,
+        database
+      )
+
+    config.bootMode match {
+      case BootMode.ReadOnly | BootMode.ReadWrite =>
+        //prepend httpServer to services
+        httpServer +: writeOnlyServices
+
+      case BootMode.WriteOnly =>
+        writeOnlyServices
+    }
+  }
+
 }
 
 object ExplorerState {
-
-  def apply()(implicit actorSystem: ActorSystem,
-              config: ExplorerConfig,
-              databaseConfig: DatabaseConfig[PostgresProfile],
-              executionContext: ExecutionContext): ExplorerState =
-    if (config.readOnly) {
-      ReadOnly()
-    } else {
-      ReadWrite()
-    }
 
   /** State of Explorer is started in read-only mode */
   final case class ReadOnly()(implicit val actorSystem: ActorSystem,
@@ -114,6 +115,20 @@ object ExplorerState {
                                val executionContext: ExecutionContext)
       extends ExplorerState {
 
+    private implicit val scheduler = Scheduler("SYNC_SERVICES")
+
+    override def startSelfOnce(): Future[Unit] = {
+      SyncServices.startSyncServices(config)
+    }
+  }
+
+  /** State of Explorer is started in Sync only mode */
+  final case class WriteOnly()(implicit val config: ExplorerConfig,
+                               val databaseConfig: DatabaseConfig[PostgresProfile],
+                               val executionContext: ExecutionContext)
+      extends ExplorerState {
+
+    //See issue #356
     private implicit val scheduler = Scheduler("SYNC_SERVICES")
 
     override def startSelfOnce(): Future[Unit] = {
