@@ -29,7 +29,7 @@ trait UnconfirmedTransactionEndpoints extends BaseEndpoint with QueryParams {
 
   private val unconfirmedTransactionsEndpoint =
     baseEndpoint
-      .tag("Unconfirmed Transactions")
+      .tag("Transactions")
       .in("unconfirmed-transactions")
 
   val listUnconfirmedTransactions: BaseEndpoint[Pagination, ArraySeq[TransactionLike]] =
