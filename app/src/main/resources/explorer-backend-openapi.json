@@ -442,13 +442,13 @@
         }
       }
     },
-    "/transaction-by-output-ref-key/{output_ref_key}": {
+    "/transactions/by/output-ref-key/{output_ref_key}": {
       "get": {
         "tags": [
           "Transactions"
         ],
         "description": "Get a transaction from a output reference key",
-        "operationId": "getTransaction-by-output-ref-keyOutput_ref_key",
+        "operationId": "getTransactionsByOutput-ref-keyOutput_ref_key",
         "parameters": [
           {
             "name": "output_ref_key",
@@ -1823,7 +1823,7 @@
     "/unconfirmed-transactions": {
       "get": {
         "tags": [
-          "Unconfirmed Transactions"
+          "Transactions"
         ],
         "description": "list unconfirmed transactions",
         "operationId": "getUnconfirmed-transactions",
@@ -3198,6 +3198,7 @@
         "operationId": "putUtilsSanity-check",
         "responses": {
           "200": {
+            
           },
           "400": {
             "description": "BadRequest",
@@ -3294,6 +3295,7 @@
         },
         "responses": {
           "200": {
+            
           },
           "400": {
             "description": "BadRequest",
@@ -3386,6 +3388,7 @@
         },
         "responses": {
           "200": {
+            
           },
           "400": {
             "description": "BadRequest",
