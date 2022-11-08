@@ -36,7 +36,7 @@ object Main extends StrictLogging {
       (new BootUp).init()
     } catch {
       case error: Throwable =>
-        logger.error(s"Cannot initialize system: $error")
+        logger.error("Cannot initialize system", error)
     }
   }
 }
@@ -55,32 +55,70 @@ class BootUp extends StrictLogging {
   implicit val databaseConfig: DatabaseConfig[PostgresProfile] =
     DatabaseConfig.forConfig[PostgresProfile]("db", typesafeConfig)
 
-  implicit val actorSystem: ActorSystem           = ActorSystem()
-  implicit val executionContext: ExecutionContext = actorSystem.dispatcher
+  def init(): Unit =
+    config.bootMode match {
+      case mode: BootMode.Readable =>
+        initInReadableMode(mode)
 
-  private val explorer: ExplorerState = ExplorerState()
+      case BootMode.WriteOnly =>
+        initInWriteOnlyMode()
+    }
 
-  def init(): Unit = {
+  def initInReadableMode(mode: BootMode.Readable): Unit = {
+    implicit val actorSystem: ActorSystem           = ActorSystem()
+    implicit val executionContext: ExecutionContext = actorSystem.dispatcher
+
+    val explorer: ExplorerState =
+      mode match {
+        case BootMode.ReadOnly  => ExplorerState.ReadOnly()
+        case BootMode.ReadWrite => ExplorerState.ReadWrite()
+      }
+
     explorer
       .start()
       .onComplete {
         case Success(_) => ()
         case Failure(e) =>
-          logger.error(s"Fatal error during initialization: $e")
+          logger.error(s"Fatal error during initialization", e)
           actorSystem.terminate()
       }
 
     Runtime.getRuntime.addShutdownHook(new Thread(() => {
       sideEffect(Await.result(actorSystem.terminate(), 10.seconds))
     }))
+
+    CoordinatedShutdown(actorSystem).addTask(
+      CoordinatedShutdown.PhaseBeforeActorSystemTerminate,
+      "Shutdown services"
+    ) { () =>
+      for {
+        _ <- explorer.stop()
+      } yield Done
+    }
   }
 
-  CoordinatedShutdown(actorSystem).addTask(
-    CoordinatedShutdown.PhaseBeforeActorSystemTerminate,
-    "Shutdown services"
-  ) { () =>
-    for {
-      _ <- explorer.stop()
-    } yield Done
+  @SuppressWarnings(Array("org.wartremover.warts.GlobalExecutionContext"))
+  def initInWriteOnlyMode(): Unit = {
+    implicit val ec: ExecutionContext =
+      scala.concurrent.ExecutionContext.Implicits.global
+
+    val explorer: ExplorerState =
+      ExplorerState.WriteOnly()
+
+    explorer
+      .start()
+      .onComplete {
+        case Success(_) => ()
+        case Failure(error) =>
+          logger.error("Fatal error during initialization", error)
+          explorer.stop().failed foreach { error =>
+            logger.error("Failed to stop explorer", error)
+          }
+      }
+
+    Runtime.getRuntime.addShutdownHook(new Thread(() => {
+      sideEffect(Await.result(explorer.stop(), 10.seconds))
+    }))
   }
+
 }

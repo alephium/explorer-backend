@@ -21,7 +21,6 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
-import akka.actor.ActorSystem
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
@@ -30,7 +29,7 @@ import sttp.model.Uri
 import org.alephium.api.model.{ChainParams, PeerAddress}
 import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.cache.BlockCache
-import org.alephium.explorer.config.ExplorerConfig
+import org.alephium.explorer.config.{BootMode, ExplorerConfig}
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.service._
 import org.alephium.explorer.util.Scheduler
@@ -42,28 +41,29 @@ object SyncServices extends StrictLogging {
 
   def startSyncServices(config: ExplorerConfig)(implicit scheduler: Scheduler,
                                                 ec: ExecutionContext,
-                                                actorSystem: ActorSystem,
                                                 dc: DatabaseConfig[PostgresProfile],
                                                 blockFlowClient: BlockFlowClient,
                                                 blockCache: BlockCache,
                                                 groupSetting: GroupSetting): Future[Unit] =
-    if (config.readOnly) {
-      Future.unit
-    } else {
-      getPeers(
-        networkId          = config.networkId,
-        directCliqueAccess = config.directCliqueAccess,
-        blockFlowUri       = config.blockFlowUri
-      ) flatMap { peers =>
-        startSyncServices(
-          peers                               = peers,
-          syncPeriod                          = config.syncPeriod,
-          tokenSupplyServiceSyncPeriod        = config.tokenSupplyServiceSyncPeriod,
-          hashRateServiceSyncPeriod           = config.hashRateServiceSyncPeriod,
-          finalizerServiceSyncPeriod          = config.finalizerServiceSyncPeriod,
-          transactionHistoryServiceSyncPeriod = config.transactionHistoryServiceSyncPeriod
-        )
-      }
+    config.bootMode match {
+      case BootMode.ReadOnly =>
+        Future.unit
+
+      case BootMode.ReadWrite | BootMode.WriteOnly =>
+        getPeers(
+          networkId          = config.networkId,
+          directCliqueAccess = config.directCliqueAccess,
+          blockFlowUri       = config.blockFlowUri
+        ) flatMap { peers =>
+          startSyncServices(
+            peers                               = peers,
+            syncPeriod                          = config.syncPeriod,
+            tokenSupplyServiceSyncPeriod        = config.tokenSupplyServiceSyncPeriod,
+            hashRateServiceSyncPeriod           = config.hashRateServiceSyncPeriod,
+            finalizerServiceSyncPeriod          = config.finalizerServiceSyncPeriod,
+            transactionHistoryServiceSyncPeriod = config.transactionHistoryServiceSyncPeriod
+          )
+        }
     }
 
   /** Start sync services given the peers */
@@ -76,11 +76,10 @@ object SyncServices extends StrictLogging {
                         transactionHistoryServiceSyncPeriod: FiniteDuration)(
       implicit scheduler: Scheduler,
       ec: ExecutionContext,
-      actorSystem: ActorSystem,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       blockCache: BlockCache,
-      groupSetting: GroupSetting): Future[Unit] = {
+      groupSetting: GroupSetting): Future[Unit] =
     Future.fromTry {
       Try {
         Future
@@ -94,16 +93,14 @@ object SyncServices extends StrictLogging {
               TransactionHistoryService.start(transactionHistoryServiceSyncPeriod)
             )
           )
-          //Callback to shutdown the system if one sync service fails
           .onComplete {
             case Failure(error) =>
               logger.error(s"Fatal error while syncing: $error")
-              actorSystem.terminate()
+
             case Success(_) => ()
           }
       }
     }
-  }
 
   /** Fetch network peers */
   def getPeers(networkId: NetworkId, directCliqueAccess: Boolean, blockFlowUri: Uri)(
