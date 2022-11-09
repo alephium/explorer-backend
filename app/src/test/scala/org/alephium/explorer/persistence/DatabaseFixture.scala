@@ -16,34 +16,51 @@
 
 package org.alephium.explorer.persistence
 
-import scala.concurrent.{Await, ExecutionContext}
 import scala.jdk.CollectionConverters._
 
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.util.Duration
+import org.alephium.explorer.AlephiumFutures
+import org.alephium.explorer.util.TestUtils._
 
 /**
   * Implements functions for managing test database connections.
   */
-object DatabaseFixture {
+object DatabaseFixture extends AlephiumFutures {
 
-  val config = ConfigFactory
-    .parseMap(
-      Map(
-        ("db.db.url", s"jdbc:postgresql://localhost:5432/postgres")
-      ).view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava)
-    .withFallback(ConfigFactory.load())
+  def config(dbName: String) =
+    ConfigFactory
+      .parseMap(
+        Map(
+          ("db.db.url", s"jdbc:postgresql://localhost:5432/$dbName")
+        ).view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava)
+      .withFallback(ConfigFactory.load())
 
-  def createDatabaseConfig(): DatabaseConfig[PostgresProfile] =
-    DatabaseConfig.forConfig[PostgresProfile]("db", config)
+  def createDatabaseConfig(dbName: String): DatabaseConfig[PostgresProfile] =
+    DatabaseConfig.forConfig[PostgresProfile]("db", config(dbName))
 
   def dropCreateTables()(implicit databaseConfig: DatabaseConfig[PostgresProfile]) = {
-    implicit val ec: ExecutionContext = ExecutionContext.global
+    eventually {
+      DBInitializer.dropTables().futureValue
+      DBInitializer.initialize().futureValue
+    }
+  }
 
-    Await.result(DBInitializer.dropTables(), Duration.ofSecondsUnsafe(10).asScala)
-    Await.result(DBInitializer.initialize(), Duration.ofSecondsUnsafe(10).asScala)
+  def createDb(dbName: String) = {
+    using(DatabaseConfig.forConfig[PostgresProfile]("db", config(""))) { databaseConfig =>
+      eventually {
+        databaseConfig.db.run(sqlu"DROP DATABASE IF EXISTS #$dbName").futureValue
+        databaseConfig.db.run(sqlu"CREATE DATABASE #$dbName").futureValue
+      }
+    }
+  }
+
+  def dropDb(dbName: String) = {
+    using(DatabaseConfig.forConfig[PostgresProfile]("db", config(""))) { databaseConfig =>
+      eventually(databaseConfig.db.run(sqlu"DROP DATABASE #$dbName")).futureValue
+    }
   }
 }

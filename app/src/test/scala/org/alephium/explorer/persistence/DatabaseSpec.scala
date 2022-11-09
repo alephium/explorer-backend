@@ -18,8 +18,6 @@ package org.alephium.explorer.persistence
 
 import scala.util._
 
-import slick.basic.DatabaseConfig
-import slick.jdbc.PostgresProfile
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.config.BootMode
 
@@ -29,7 +27,6 @@ class DatabaseSpec extends AlephiumFutureSpec with DatabaseFixtureForEach {
   "initialiseDatabase" should {
     "successfully connect" when {
       "readOnly mode" in {
-        val databaseConfig = DatabaseConfig.forConfig[PostgresProfile]("db", DatabaseFixture.config)
         val database: Database =
           new Database(BootMode.ReadOnly)(executionContext, databaseConfig)
 
@@ -37,7 +34,6 @@ class DatabaseSpec extends AlephiumFutureSpec with DatabaseFixtureForEach {
       }
 
       "readWrite mode" in {
-        val databaseConfig = DatabaseConfig.forConfig[PostgresProfile]("db", DatabaseFixture.config)
         val database: Database =
           new Database(BootMode.ReadWrite)(executionContext, databaseConfig)
 
