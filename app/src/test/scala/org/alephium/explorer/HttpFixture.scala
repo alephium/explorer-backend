@@ -24,8 +24,7 @@ import io.vertx.core.Vertx
 import io.vertx.core.http.HttpServer
 import io.vertx.ext.web._
 import org.scalatest.{Assertion, BeforeAndAfterAll, Suite}
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Seconds, Span}
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import sttp.client3._
 import sttp.client3.asynchttpclient.future.AsyncHttpClientFutureBackend
 import sttp.model.{Method, Uri}
@@ -173,11 +172,13 @@ trait HttpRouteFixture extends HttpFixture with BeforeAndAfterAll with ScalaFutu
 
 @SuppressWarnings(
   Array("org.wartremover.warts.DefaultArguments", "org.wartremover.warts.NonUnitStatements"))
-trait HttpServerFixture extends HttpRouteFixture with BeforeAndAfterAll with ScalaFutures {
+trait HttpServerFixture
+    extends HttpRouteFixture
+    with BeforeAndAfterAll
+    with ScalaFutures
+    with IntegrationPatience {
   this: Suite =>
-
   implicit def executionContext: ExecutionContext
-  override implicit val patienceConfig = PatienceConfig(timeout = Span(5, Seconds))
   def routes: ArraySeq[Router => Route]
   val port: Int = SocketUtil.temporaryLocalPort(SocketUtil.Both)
 

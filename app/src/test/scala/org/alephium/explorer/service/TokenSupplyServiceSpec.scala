@@ -21,11 +21,9 @@ import java.time.Instant
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Seconds, Span}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AlephiumSpec, GroupSetting}
+import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
 import org.alephium.explorer.GenApiModel.transactionHashGen
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
@@ -39,14 +37,8 @@ import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
-class TokenSupplyServiceSpec
-    extends AlephiumSpec
-    with DatabaseFixtureForEach
-    with DBRunner
-    with ScalaFutures
-    with Eventually {
+class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
-  override implicit val patienceConfig            = PatienceConfig(timeout = Span(50, Seconds))
 
   "Build days range" in {
     val launchTime = ALPH.LaunchTimestamp //2021-11-08T11:20:06+00:00

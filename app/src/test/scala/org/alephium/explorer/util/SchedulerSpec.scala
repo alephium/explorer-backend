@@ -24,20 +24,13 @@ import scala.concurrent.duration._
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 import org.scalacheck.Gen
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.util.TestUtils._
 
-class SchedulerSpec
-    extends AlephiumSpec
-    with ScalaCheckDrivenPropertyChecks
-    with Matchers
-    with Eventually
-    with ScalaFutures {
+class SchedulerSpec extends AlephiumFutureSpec with ScalaCheckDrivenPropertyChecks with Matchers {
 
   implicit val executionContext: ExecutionContext = ExecutionContext.global
 
@@ -122,7 +115,7 @@ class SchedulerSpec
           Future(scheduleTimes.add(System.nanoTime()))
         }
 
-        eventually(Timeout(10.seconds)) {
+        eventually {
           //wait until at least 6 schedules have occurs
           scheduleTimes.size() should be > 6
         }
@@ -157,7 +150,7 @@ class SchedulerSpec
             }
 
             //scheduledTime - testStartTime is 3 seconds
-            eventually(Timeout(5.seconds)) {
+            eventually {
               //expect the task to be executed between [2.5 .. 3.9] seconds.
               (executionTime - startTime) should (be >= 2500L and be <= 3900L)
             }
@@ -180,7 +173,7 @@ class SchedulerSpec
               }
             }
 
-            eventually(Timeout(10.seconds)) {
+            eventually {
               //expect the task to be executed between [2.9 .. 4.9] seconds.
               (executionTime - startTime) should (be >= 2900L and be <= 4900L)
             }
@@ -208,7 +201,7 @@ class SchedulerSpec
             }
           }
 
-          eventually(Timeout(2.seconds)) {
+          eventually {
             //allow at least 50 init invocations
             initInvocations.get() should be >= 50
           }
@@ -273,7 +266,7 @@ class SchedulerSpec
             Future(state.incrementAndGet()).map(_ => ())
           }
 
-          eventually(Timeout(2.seconds)) {
+          eventually {
             blockExecuted.get() should be >= 50 //allow block to get executed a number of times
           }
 

@@ -18,24 +18,17 @@ package org.alephium.explorer.persistence.queries
 
 import scala.concurrent.ExecutionContext
 
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.schema.{InputSchema, OutputSchema}
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
-class InputUpdateQueriesSpec
-    extends AlephiumSpec
-    with DatabaseFixtureForEach
-    with DBRunner
-    with ScalaFutures {
+class InputUpdateQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
   implicit val executionContext: ExecutionContext = ExecutionContext.global
-  override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
   "Input Update" should {
     "update inputs when address is already set" in {

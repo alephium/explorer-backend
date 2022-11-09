@@ -19,18 +19,13 @@ package org.alephium.explorer.persistence
 import scala.concurrent.ExecutionContext
 import scala.util._
 
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Seconds, Span}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
-
-import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.config.BootMode
 
 /** Temporary placeholder. These tests should be merged into ApplicationSpec  */
-class DatabaseSpec extends AlephiumSpec with ScalaFutures {
-
-  override implicit val patienceConfig = PatienceConfig(timeout = Span(5, Seconds))
+class DatabaseSpec extends AlephiumFutureSpec with DatabaseFixtureForEach {
 
   implicit val executionContext: ExecutionContext =
     ExecutionContext.global

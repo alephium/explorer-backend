@@ -18,9 +18,7 @@ package org.alephium.explorer.service
 
 import scala.concurrent.ExecutionContext
 
-import org.scalatest.concurrent.ScalaFutures
-
-import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.AppState.LastFinalizedInputTime
@@ -28,11 +26,7 @@ import org.alephium.explorer.persistence.model.InputEntity
 import org.alephium.explorer.persistence.queries.{AppStateQueries, InputQueries}
 import org.alephium.util.{Duration, TimeStamp}
 
-class FinalizerServiceSpec
-    extends AlephiumSpec
-    with DatabaseFixtureForEach
-    with DBRunner
-    with ScalaFutures {
+class FinalizerServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
   "getStartEndTime - return nothing if there's no input" in new Fixture {
     run(FinalizerService.getStartEndTime()).futureValue is None

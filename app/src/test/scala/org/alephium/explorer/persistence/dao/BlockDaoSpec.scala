@@ -22,12 +22,10 @@ import scala.util.Random
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.api.{model, ApiModelCodec}
-import org.alephium.explorer.{AlephiumSpec, GroupSetting}
+import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.Generators._
@@ -48,14 +46,8 @@ import org.alephium.util.{Duration, TimeStamp}
   Array("org.wartremover.warts.JavaSerializable",
         "org.wartremover.warts.Product",
         "org.wartremover.warts.Serializable")) // Wartremover is complaining, don't now why :/
-class BlockDaoSpec
-    extends AlephiumSpec
-    with DatabaseFixtureForEach
-    with DBRunner
-    with ScalaFutures
-    with Eventually {
+class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
-  override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
   "updateMainChainStatus correctly" in new Fixture {
     forAll(Gen.oneOf(blockEntities), arbitrary[Boolean]) {

@@ -21,12 +21,9 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import org.alephium.explorer.AlephiumFutureSpec
 
-import org.alephium.explorer.AlephiumSpec
-
-class AsyncReloadingCacheSpec extends AlephiumSpec with ScalaFutures with Eventually {
+class AsyncReloadingCacheSpec extends AlephiumFutureSpec {
 
   implicit val executionContext: ExecutionContext = ExecutionContext.global
 
@@ -45,13 +42,13 @@ class AsyncReloadingCacheSpec extends AlephiumSpec with ScalaFutures with Eventu
     cache.get() is 1 //Returns initial cached value. There is time left to expiration
     reloadCount.get() is 0 //No reload yet
 
-    eventually(Timeout(1.5.seconds))(cache.get() is 2) //eventually reload occurs with cache updated
+    eventually(cache.get() is 2) //eventually reload occurs with cache updated
     reloadCount.get() is 1 //first reload
 
-    eventually(Timeout(1.5.seconds))(cache.get() is 3) //another reload & cache updated
+    eventually(cache.get() is 3) //another reload & cache updated
     reloadCount.get() is 2 //second reload
 
-    eventually(Timeout(1.5.seconds))(cache.get() is 4) //another reload & cache updated
+    eventually(cache.get() is 4) //another reload & cache updated
     reloadCount.get() is 3 //third reload
   }
 
@@ -109,13 +106,13 @@ class AsyncReloadingCacheSpec extends AlephiumSpec with ScalaFutures with Eventu
     reloadCount.get() is 1 //Initial value gets returned so not reload occur.
 
     cache.expireAndReload()
-    eventually(Timeout(1.second)) {
+    eventually {
       concurrentlyReadCache(3)
       reloadCount.get() is 2
     }
 
     cache.expireAndReload()
-    eventually(Timeout(1.second)) {
+    eventually {
       concurrentlyReadCache(4)
       reloadCount.get() is 3
     }

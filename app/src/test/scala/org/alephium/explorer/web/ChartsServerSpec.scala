@@ -16,8 +16,6 @@
 
 package org.alephium.explorer.web
 
-import org.scalatest.concurrent.ScalaFutures
-
 import org.alephium.api.ApiError
 import org.alephium.explorer._
 import org.alephium.explorer.HttpFixture._
@@ -29,7 +27,6 @@ import org.alephium.util.{Duration, TimeStamp}
 class ChartsServerSpec()
     extends AlephiumActorSpecLike
     with DatabaseFixtureForAll
-    with ScalaFutures
     with HttpServerFixture {
 
   val chartServer     = new ChartsServer()

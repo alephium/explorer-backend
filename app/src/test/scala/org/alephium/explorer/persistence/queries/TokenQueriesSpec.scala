@@ -19,11 +19,9 @@ package org.alephium.explorer.persistence.queries
 import scala.concurrent.ExecutionContext
 
 import org.scalacheck.Gen
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
@@ -31,14 +29,9 @@ import org.alephium.explorer.persistence.queries.TokenQueries
 import org.alephium.explorer.persistence.queries.result.TxByAddressQR
 import org.alephium.explorer.persistence.schema._
 
-class TokenQueriesSpec
-    extends AlephiumSpec
-    with DatabaseFixtureForEach
-    with DBRunner
-    with ScalaFutures {
+class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
   implicit val executionContext: ExecutionContext = ExecutionContext.global
-  override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
   "Token Queries" should {
     "list token transactions" in {

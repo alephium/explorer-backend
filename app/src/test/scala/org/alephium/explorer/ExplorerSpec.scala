@@ -30,8 +30,7 @@ import io.vertx.ext.web._
 import org.scalacheck.Gen
 import org.scalatest.Assertion
 import org.scalatest.Inspectors
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Minutes, Span}
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.StatusCode
@@ -56,14 +55,9 @@ import org.alephium.json.Json._
 import org.alephium.protocol.model.{BlockHash, CliqueId, NetworkId}
 import org.alephium.util.{AVector, TimeStamp, U256}
 
-trait ExplorerSpec
-    extends AlephiumActorSpecLike
-    with ScalaFutures
-    with HttpRouteFixture
-    with Eventually {
+trait ExplorerSpec extends AlephiumActorSpecLike with AlephiumFutureSpec with HttpRouteFixture {
 
-  override val name: String            = "ExploreSpec"
-  override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
+  override val name: String = "ExploreSpec"
 
   implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
 
@@ -331,9 +325,8 @@ object ExplorerSpec {
       with BaseEndpoint
       with ScalaFutures
       with QueryParams
-      with Server {
-
-    override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
+      with Server
+      with IntegrationPatience {
 
     val blocks = blockflow.flatten
 

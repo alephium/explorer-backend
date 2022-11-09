@@ -20,12 +20,10 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Seconds, Span}
 import sttp.model.Uri
 
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
-import org.alephium.explorer.{AlephiumSpec, GroupSetting}
+import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
 import org.alephium.explorer.GenApiModel.chainIndexes
 import org.alephium.explorer.GenCoreUtil.timestampMaxValue
 import org.alephium.explorer.Generators._
@@ -40,12 +38,7 @@ import org.alephium.protocol.model.{BlockHash, ChainIndex, CliqueId, NetworkId}
 import org.alephium.util.{AVector, Duration, Hex, Service, TimeStamp}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
-class BlockFlowSyncServiceSpec
-    extends AlephiumSpec
-    with DatabaseFixtureForAll
-    with ScalaFutures
-    with Eventually {
-  override implicit val patienceConfig = PatienceConfig(timeout = Span(50, Seconds))
+class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForAll {
 
   "start/sync/stop" in new Fixture {
     using(Scheduler("")) { implicit scheduler =>

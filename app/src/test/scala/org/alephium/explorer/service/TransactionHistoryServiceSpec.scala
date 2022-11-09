@@ -21,11 +21,9 @@ import java.time.Instant
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AlephiumSpec, GroupSetting}
+import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
@@ -34,13 +32,10 @@ import org.alephium.explorer.persistence.schema.TransactionSchema
 import org.alephium.util._
 
 class TransactionHistoryServiceSpec
-    extends AlephiumSpec
+    extends AlephiumFutureSpec
     with DatabaseFixtureForEach
-    with DBRunner
-    with ScalaFutures
-    with Eventually {
+    with DBRunner {
   implicit val executionContext: ExecutionContext = ExecutionContext.global
-  override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
 
   def ts(str: String): TimeStamp = {
     TimeStamp.unsafe(Instant.parse(str).toEpochMilli)
