@@ -18,14 +18,12 @@ package org.alephium.explorer.cache
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 import org.alephium.explorer.AlephiumFutureSpec
 
 class AsyncReloadingCacheSpec extends AlephiumFutureSpec {
-
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   "reload cache after expiration while returning existing value even during reloading" in {
     val reloadCount = new AtomicInteger() //number of times reload was executed

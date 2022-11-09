@@ -17,7 +17,6 @@
 package org.alephium.explorer.persistence.queries
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.ExecutionContext
 import scala.math.Ordering.Implicits.infixOrderingOps
 import scala.util.Random
 
@@ -33,8 +32,6 @@ import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema._
 
 class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
-
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   /**
     * Finds a block with maximum height. If two blocks have the same

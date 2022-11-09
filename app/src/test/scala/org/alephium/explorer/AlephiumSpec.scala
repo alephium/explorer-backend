@@ -17,6 +17,7 @@
 package org.alephium.explorer
 
 import scala.annotation.nowarn
+import scala.concurrent.ExecutionContext
 
 import org.scalacheck.Shrink
 import org.scalactic.Equality
@@ -46,6 +47,8 @@ trait AlephiumSpec
   }
 }
 
-trait AlephiumFutures extends ScalaFutures with Eventually with IntegrationPatience
+trait AlephiumFutures extends ScalaFutures with Eventually with IntegrationPatience {
+  implicit def executionContext: ExecutionContext = ExecutionContext.Implicits.global
+}
 
 trait AlephiumFutureSpec extends AlephiumSpec with AlephiumFutures

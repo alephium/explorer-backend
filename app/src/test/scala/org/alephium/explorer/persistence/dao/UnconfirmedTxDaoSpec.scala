@@ -17,7 +17,6 @@
 package org.alephium.explorer.persistence.dao
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.ExecutionContext
 
 import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
@@ -31,7 +30,6 @@ import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.model.TransactionId
 
 class UnconfirmedTxDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   "insertMany" in {
     forAll(Gen.listOfN(5, utransactionGen)) { txs =>

@@ -16,8 +16,6 @@
 
 package org.alephium.explorer.persistence.queries
 
-import scala.concurrent.ExecutionContext
-
 import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
 
@@ -27,8 +25,6 @@ import org.alephium.explorer.persistence.queries.BlockDepQueries._
 import org.alephium.explorer.persistence.schema.BlockDepsSchema
 
 class BlockDepQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
-
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   "insert and ignore block_deps" in {
 

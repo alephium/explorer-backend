@@ -16,8 +16,6 @@
 
 package org.alephium.explorer.persistence.queries
 
-import scala.concurrent.ExecutionContext
-
 import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
 
@@ -30,8 +28,6 @@ import org.alephium.explorer.persistence.queries.result.TxByAddressQR
 import org.alephium.explorer.persistence.schema._
 
 class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
-
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   "Token Queries" should {
     "list token transactions" in {

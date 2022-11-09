@@ -16,7 +16,6 @@
 
 package org.alephium.explorer.persistence
 
-import scala.concurrent.ExecutionContext
 import scala.util._
 
 import slick.basic.DatabaseConfig
@@ -26,9 +25,6 @@ import org.alephium.explorer.config.BootMode
 
 /** Temporary placeholder. These tests should be merged into ApplicationSpec  */
 class DatabaseSpec extends AlephiumFutureSpec with DatabaseFixtureForEach {
-
-  implicit val executionContext: ExecutionContext =
-    ExecutionContext.global
 
   "initialiseDatabase" should {
     "successfully connect" when {

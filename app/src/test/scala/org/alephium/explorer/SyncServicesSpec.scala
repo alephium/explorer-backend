@@ -17,7 +17,7 @@
 package org.alephium.explorer
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.util._
 
 import com.typesafe.config.ConfigFactory
@@ -39,9 +39,6 @@ class SyncServicesSpec
     with Matchers
     with ScalaCheckDrivenPropertyChecks
     with MockFactory {
-
-  implicit val executionContext: ExecutionContext =
-    ExecutionContext.global
 
   "getBlockFlowPeers" should {
     val explorerConfig: ExplorerConfig =

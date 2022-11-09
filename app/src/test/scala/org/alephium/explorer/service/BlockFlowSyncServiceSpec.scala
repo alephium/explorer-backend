@@ -94,8 +94,7 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     def s(l: Long)            = Duration.ofMillisUnsafe(l)
     def r(l1: Long, l2: Long) = (t(l1), t(l2))
 
-    implicit val executionContext: ExecutionContext = ExecutionContext.global
-    implicit val groupSetting: GroupSetting         = groupSettingGen.sample.get
+    implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
 
     def blockEntity(parent: Option[BlockEntity],
                     chainFrom: GroupIndex = GroupIndex.unsafe(0),
@@ -182,7 +181,7 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     def blocks: ArraySeq[BlockEntry] = blockFlow.flatten
 
     implicit val blockFlowClient: BlockFlowClient = new BlockFlowClient {
-      implicit val executionContext: ExecutionContext = ExecutionContext.global
+      implicit val executionContext: ExecutionContext = implicitly
       def startSelfOnce(): Future[Unit]               = Future.unit
       def stopSelfOnce(): Future[Unit]                = Future.unit
       def subServices: ArraySeq[Service]              = ArraySeq.empty

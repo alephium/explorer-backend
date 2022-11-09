@@ -19,7 +19,6 @@ package org.alephium.explorer.service
 import java.time.Instant
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.ExecutionContext
 
 import slick.jdbc.PostgresProfile.api._
 
@@ -38,7 +37,6 @@ import org.alephium.util.{Duration, TimeStamp, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
 class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   "Build days range" in {
     val launchTime = ALPH.LaunchTimestamp //2021-11-08T11:20:06+00:00

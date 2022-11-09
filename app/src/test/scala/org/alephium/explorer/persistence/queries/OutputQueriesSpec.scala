@@ -16,8 +16,6 @@
 
 package org.alephium.explorer.persistence.queries
 
-import scala.concurrent.ExecutionContext
-
 import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
 
@@ -32,8 +30,6 @@ import org.alephium.explorer.persistence.schema.OutputSchema
 import org.alephium.explorer.util.SlickExplainUtil._
 
 class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
-
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   "insert and ignore outputs" in {
 

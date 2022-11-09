@@ -16,8 +16,6 @@
 
 package org.alephium.explorer.persistence.queries
 
-import scala.concurrent.ExecutionContext
-
 import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
 
@@ -30,8 +28,6 @@ import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, InputsQ
 import org.alephium.explorer.persistence.schema.InputSchema
 
 class InputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
-
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   "insertInputs" should {
     "insert and ignore inputs" in {

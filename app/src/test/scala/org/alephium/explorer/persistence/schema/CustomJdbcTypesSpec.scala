@@ -16,8 +16,6 @@
 
 package org.alephium.explorer.persistence.schema
 
-import scala.concurrent.ExecutionContext
-
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
@@ -31,7 +29,6 @@ import org.alephium.protocol.ALPH
 import org.alephium.util._
 
 class CustomJdbcTypesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   "convert TimeStamp" in new Fixture {
 

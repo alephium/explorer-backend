@@ -19,7 +19,6 @@ package org.alephium.explorer.service
 import java.time.Instant
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.ExecutionContext
 
 import slick.jdbc.PostgresProfile.api._
 
@@ -35,7 +34,6 @@ class TransactionHistoryServiceSpec
     extends AlephiumFutureSpec
     with DatabaseFixtureForEach
     with DBRunner {
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   def ts(str: String): TimeStamp = {
     TimeStamp.unsafe(Instant.parse(str).toEpochMilli)

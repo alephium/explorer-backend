@@ -19,7 +19,6 @@ package org.alephium.explorer.service
 import java.time.Instant
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.ExecutionContext
 
 import slick.jdbc.PostgresProfile.api._
 
@@ -32,7 +31,6 @@ import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.util._
 
 class HashrateServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   "hourly hashrates" in new Fixture {
 

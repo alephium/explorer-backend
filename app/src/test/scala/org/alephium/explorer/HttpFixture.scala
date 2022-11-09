@@ -24,12 +24,12 @@ import io.vertx.core.Vertx
 import io.vertx.core.http.HttpServer
 import io.vertx.ext.web._
 import org.scalatest.{Assertion, BeforeAndAfterAll, Suite}
-import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import sttp.client3._
 import sttp.client3.asynchttpclient.future.AsyncHttpClientFutureBackend
 import sttp.model.{Method, Uri}
 import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 
+import org.alephium.explorer.AlephiumFutures
 import org.alephium.json.Json._
 
 object HttpFixture {
@@ -132,7 +132,8 @@ trait HttpFixture {
 }
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-trait HttpRouteFixture extends HttpFixture with BeforeAndAfterAll with ScalaFutures { this: Suite =>
+trait HttpRouteFixture extends HttpFixture with BeforeAndAfterAll with AlephiumFutures {
+  this: Suite =>
 
   def port: Int
 
@@ -172,13 +173,8 @@ trait HttpRouteFixture extends HttpFixture with BeforeAndAfterAll with ScalaFutu
 
 @SuppressWarnings(
   Array("org.wartremover.warts.DefaultArguments", "org.wartremover.warts.NonUnitStatements"))
-trait HttpServerFixture
-    extends HttpRouteFixture
-    with BeforeAndAfterAll
-    with ScalaFutures
-    with IntegrationPatience {
+trait HttpServerFixture extends HttpRouteFixture {
   this: Suite =>
-  implicit def executionContext: ExecutionContext
   def routes: ArraySeq[Router => Route]
   val port: Int = SocketUtil.temporaryLocalPort(SocketUtil.Both)
 

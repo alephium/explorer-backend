@@ -16,8 +16,6 @@
 
 package org.alephium.explorer.persistence.queries
 
-import scala.concurrent.ExecutionContext
-
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AlephiumFutureSpec
@@ -27,8 +25,6 @@ import org.alephium.explorer.persistence.schema.{InputSchema, OutputSchema}
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
 class InputUpdateQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
-
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   "Input Update" should {
     "update inputs when address is already set" in {

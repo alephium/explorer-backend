@@ -67,12 +67,10 @@ class MempoolSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
   }
 
   trait Fixture {
-    implicit val executionContext: ExecutionContext = ExecutionContext.global
-
     var unconfirmedTransactions: ArraySeq[UnconfirmedTransaction] = ArraySeq.empty
 
     implicit val blockFlowClient: BlockFlowClient = new BlockFlowClient {
-      implicit val executionContext: ExecutionContext = ExecutionContext.global
+      implicit val executionContext: ExecutionContext = implicitly
       def startSelfOnce(): Future[Unit]               = Future.unit
       def stopSelfOnce(): Future[Unit]                = Future.unit
       def subServices: ArraySeq[Service]              = ArraySeq.empty

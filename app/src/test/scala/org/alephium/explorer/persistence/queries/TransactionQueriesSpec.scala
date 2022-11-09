@@ -17,7 +17,6 @@
 package org.alephium.explorer.persistence.queries
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.ExecutionContext
 import scala.util.Random
 
 import org.scalacheck.Gen
@@ -43,8 +42,6 @@ import org.alephium.protocol.model.TransactionId
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
-
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   "compute locked balance when empty" in new Fixture {
     val balance = run(TransactionQueries.getBalanceAction(address)).futureValue

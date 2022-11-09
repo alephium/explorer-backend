@@ -19,7 +19,7 @@ import java.time._
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -31,8 +31,6 @@ import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.util.TestUtils._
 
 class SchedulerSpec extends AlephiumFutureSpec with ScalaCheckDrivenPropertyChecks with Matchers {
-
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   val zoneIds: Iterable[ZoneId] =
     ZoneId.getAvailableZoneIds.asScala.map(ZoneId.of)

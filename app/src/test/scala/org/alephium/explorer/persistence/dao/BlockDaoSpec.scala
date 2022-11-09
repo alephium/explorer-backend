@@ -16,7 +16,6 @@
 
 package org.alephium.explorer.persistence.dao
 
-import scala.concurrent.ExecutionContext
 import scala.io.{Codec, Source}
 import scala.util.Random
 
@@ -47,7 +46,6 @@ import org.alephium.util.{Duration, TimeStamp}
         "org.wartremover.warts.Product",
         "org.wartremover.warts.Serializable")) // Wartremover is complaining, don't now why :/
 class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   "updateMainChainStatus correctly" in new Fixture {
     forAll(Gen.oneOf(blockEntities), arbitrary[Boolean]) {

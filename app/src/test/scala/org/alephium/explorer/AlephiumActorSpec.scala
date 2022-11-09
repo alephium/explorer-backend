@@ -24,7 +24,7 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 
 trait AlephiumActorSpecLike
-    extends AlephiumSpec
+    extends AlephiumFutureSpec
     with TestKitBase
     with ImplicitSender
     with BeforeAndAfterAll {
@@ -34,7 +34,7 @@ trait AlephiumActorSpecLike
   implicit lazy val system: ActorSystem =
     ActorSystem(name, ConfigFactory.parseString(AlephiumActorSpec.config))
 
-  implicit lazy val executionContext: ExecutionContext = system.dispatcher
+  override implicit lazy val executionContext: ExecutionContext = system.dispatcher
 
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
