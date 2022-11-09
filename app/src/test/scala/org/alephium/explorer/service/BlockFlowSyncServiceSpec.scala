@@ -85,8 +85,6 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
       eventually(checkMainChain(mainChain))
 
       checkLatestHeight(8)
-
-      databaseConfig.db.close
     }
   }
 

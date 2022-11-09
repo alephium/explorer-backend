@@ -251,8 +251,6 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
           .futureValue
           .map(_.circulating) is Some(amounts.head)
       }
-
-      databaseConfig.db.close
     }
 
     def blockAmount(blockEntity: BlockEntity): U256 =

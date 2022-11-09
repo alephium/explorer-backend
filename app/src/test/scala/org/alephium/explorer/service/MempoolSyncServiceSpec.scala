@@ -63,8 +63,6 @@ class MempoolSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
           .map(_.hash)
           .toSet
       }
-
-      databaseConfig.db.close
     }
   }
 
