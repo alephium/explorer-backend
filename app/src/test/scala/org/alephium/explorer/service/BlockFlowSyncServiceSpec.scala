@@ -20,12 +20,10 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Seconds, Span}
 import sttp.model.Uri
 
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
-import org.alephium.explorer.{AlephiumSpec, GroupSetting}
+import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
 import org.alephium.explorer.GenApiModel.chainIndexes
 import org.alephium.explorer.GenCoreUtil.timestampMaxValue
 import org.alephium.explorer.Generators._
@@ -40,12 +38,7 @@ import org.alephium.protocol.model.{BlockHash, ChainIndex, CliqueId, NetworkId}
 import org.alephium.util.{AVector, Duration, Hex, Service, TimeStamp}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
-class BlockFlowSyncServiceSpec
-    extends AlephiumSpec
-    with DatabaseFixtureForAll
-    with ScalaFutures
-    with Eventually {
-  override implicit val patienceConfig = PatienceConfig(timeout = Span(50, Seconds))
+class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForAll {
 
   "start/sync/stop" in new Fixture {
     using(Scheduler("")) { implicit scheduler =>
@@ -92,8 +85,6 @@ class BlockFlowSyncServiceSpec
       eventually(checkMainChain(mainChain))
 
       checkLatestHeight(8)
-
-      databaseConfig.db.close
     }
   }
 
@@ -103,8 +94,7 @@ class BlockFlowSyncServiceSpec
     def s(l: Long)            = Duration.ofMillisUnsafe(l)
     def r(l1: Long, l2: Long) = (t(l1), t(l2))
 
-    implicit val executionContext: ExecutionContext = ExecutionContext.global
-    implicit val groupSetting: GroupSetting         = groupSettingGen.sample.get
+    implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
 
     def blockEntity(parent: Option[BlockEntity],
                     chainFrom: GroupIndex = GroupIndex.unsafe(0),
@@ -191,7 +181,7 @@ class BlockFlowSyncServiceSpec
     def blocks: ArraySeq[BlockEntry] = blockFlow.flatten
 
     implicit val blockFlowClient: BlockFlowClient = new BlockFlowClient {
-      implicit val executionContext: ExecutionContext = ExecutionContext.global
+      implicit val executionContext: ExecutionContext = implicitly
       def startSelfOnce(): Future[Unit]               = Future.unit
       def stopSelfOnce(): Future[Unit]                = Future.unit
       def subServices: ArraySeq[Service]              = ArraySeq.empty

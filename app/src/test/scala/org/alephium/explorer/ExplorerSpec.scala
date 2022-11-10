@@ -30,8 +30,7 @@ import io.vertx.ext.web._
 import org.scalacheck.Gen
 import org.scalatest.Assertion
 import org.scalatest.Inspectors
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Minutes, Span}
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.StatusCode
@@ -48,6 +47,7 @@ import org.alephium.explorer.api._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.config.{BootMode, ExplorerConfig}
 import org.alephium.explorer.persistence.DatabaseFixture
+import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.util.TestUtils._
@@ -58,12 +58,11 @@ import org.alephium.util.{AVector, TimeStamp, U256}
 
 trait ExplorerSpec
     extends AlephiumActorSpecLike
-    with ScalaFutures
-    with HttpRouteFixture
-    with Eventually {
+    with AlephiumFutureSpec
+    with DatabaseFixtureForAll
+    with HttpRouteFixture {
 
-  override val name: String            = "ExploreSpec"
-  override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
+  override val name: String = "ExploreSpec"
 
   implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
 
@@ -95,11 +94,11 @@ trait ExplorerSpec
   val blockflowBinding = blockFlowMock.server
 
   def createApp(bootMode: BootMode.Readable): ExplorerState = {
+    //We create a `databaseConfig` for each `ExplorerState`. If we use
+    //the one from `DatabaseFixture`, the connection might get closed by
+    //one of the `ExplorerState` and not available anymore for others.
     implicit val databaseConfig: DatabaseConfig[PostgresProfile] =
-      DatabaseFixture.createDatabaseConfig()
-
-    DatabaseFixture.dropCreateTables()
-
+      DatabaseFixture.createDatabaseConfig(dbName)
     val explorerPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
     @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
     implicit val explorerConfig: ExplorerConfig = ExplorerConfig.load(
@@ -111,7 +110,7 @@ trait ExplorerSpec
           ("alephium.blockflow.network-id", networkId.id),
           ("alephium.blockflow.group-num", groupSetting.groupNum)
         ).view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava)
-        .withFallback(DatabaseFixture.config))
+        .withFallback(DatabaseFixture.config(dbName)))
 
     bootMode match {
       case BootMode.ReadOnly  => ExplorerState.ReadOnly()
@@ -331,9 +330,8 @@ object ExplorerSpec {
       with BaseEndpoint
       with ScalaFutures
       with QueryParams
-      with Server {
-
-    override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
+      with Server
+      with IntegrationPatience {
 
     val blocks = blockflow.flatten
 

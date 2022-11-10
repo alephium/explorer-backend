@@ -19,13 +19,10 @@ package org.alephium.explorer.service
 import java.time.Instant
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.ExecutionContext
 
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.{Hashrate, IntervalType}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
@@ -33,14 +30,7 @@ import org.alephium.explorer.persistence.queries.HashrateQueries._
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.util._
 
-class HashrateServiceSpec
-    extends AlephiumSpec
-    with DatabaseFixtureForEach
-    with DBRunner
-    with ScalaFutures
-    with Eventually {
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
-  override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
+class HashrateServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
   "hourly hashrates" in new Fixture {
 

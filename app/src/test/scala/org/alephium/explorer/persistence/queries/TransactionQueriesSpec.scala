@@ -17,15 +17,12 @@
 package org.alephium.explorer.persistence.queries
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.ExecutionContext
 import scala.util.Random
 
 import org.scalacheck.Gen
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AlephiumSpec, Hash, TestQueries}
+import org.alephium.explorer.{AlephiumFutureSpec, Hash, TestQueries}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.GenDBModel._
@@ -44,15 +41,7 @@ import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.TransactionId
 import org.alephium.util.{Duration, TimeStamp, U256}
 
-class TransactionQueriesSpec
-    extends AlephiumSpec
-    with DatabaseFixtureForEach
-    with DBRunner
-    with ScalaFutures {
-
-  override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
-
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
+class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
   "compute locked balance when empty" in new Fixture {
     val balance = run(TransactionQueries.getBalanceAction(address)).futureValue

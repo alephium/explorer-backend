@@ -21,12 +21,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
 import org.scalacheck.Gen
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Minutes, Span}
 import sttp.model.Uri
 
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
-import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel.utransactionGen
 import org.alephium.explorer.api.model.{GroupIndex, Height, UnconfirmedTransaction}
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
@@ -37,12 +35,7 @@ import org.alephium.explorer.util.TestUtils._
 import org.alephium.protocol.model.BlockHash
 import org.alephium.util.{Service, TimeStamp}
 
-class MempoolSyncServiceSpec
-    extends AlephiumSpec
-    with DatabaseFixtureForEach
-    with ScalaFutures
-    with Eventually {
-  override implicit val patienceConfig = PatienceConfig(timeout = Span(1, Minutes))
+class MempoolSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach {
 
   "start/sync/stop" in new Fixture {
     using(Scheduler("test")) { implicit scheduler =>
@@ -70,18 +63,14 @@ class MempoolSyncServiceSpec
           .map(_.hash)
           .toSet
       }
-
-      databaseConfig.db.close
     }
   }
 
   trait Fixture {
-    implicit val executionContext: ExecutionContext = ExecutionContext.global
-
     var unconfirmedTransactions: ArraySeq[UnconfirmedTransaction] = ArraySeq.empty
 
     implicit val blockFlowClient: BlockFlowClient = new BlockFlowClient {
-      implicit val executionContext: ExecutionContext = ExecutionContext.global
+      implicit val executionContext: ExecutionContext = implicitly
       def startSelfOnce(): Future[Unit]               = Future.unit
       def stopSelfOnce(): Future[Unit]                = Future.unit
       def subServices: ArraySeq[Service]              = ArraySeq.empty
