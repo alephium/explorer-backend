@@ -16,25 +16,46 @@
 
 package org.alephium.explorer.persistence
 
-import org.scalatest.{BeforeAndAfterEach, Suite}
+import com.typesafe.scalalogging.StrictLogging
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
+
+import org.alephium.explorer.AlephiumFutures
 
 /**
   * Creates and drops a new database connection for each test-case.
   */
-trait DatabaseFixtureForEach extends BeforeAndAfterEach { this: Suite =>
+@SuppressWarnings(Array("org.wartremover.warts.PlatformDefault"))
+trait DatabaseFixtureForEach
+    extends BeforeAndAfterEach
+    with BeforeAndAfterAll
+    with AlephiumFutures
+    with StrictLogging {
+  this: Suite =>
 
-  implicit var databaseConfig: DatabaseConfig[PostgresProfile] = _
+  val dbName: String = getClass.getSimpleName.toLowerCase
+  implicit val databaseConfig: DatabaseConfig[PostgresProfile] =
+    DatabaseFixture.createDatabaseConfig(dbName)
 
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    DatabaseFixture.createDb(dbName)
+    logger.debug(s"Test database $dbName created")
+  }
   override def beforeEach(): Unit = {
     super.beforeEach()
-    databaseConfig = DatabaseFixture.createDatabaseConfig()
     DatabaseFixture.dropCreateTables()
   }
 
   override def afterEach(): Unit = {
     super.afterEach()
+  }
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    DatabaseFixture.dropDb(dbName)
+    logger.debug(s"Test database $dbName dropped")
     databaseConfig.db.close()
   }
 }

@@ -17,16 +17,13 @@
 package org.alephium.explorer.persistence.queries
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.ExecutionContext
 import scala.math.Ordering.Implicits.infixOrderingOps
 import scala.util.Random
 
 import org.scalacheck.Gen
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AlephiumSpec, GroupSetting}
+import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
 import org.alephium.explorer.GenApiModel.{blockEntryHashGen, blockHashGen, groupIndexGen, heightGen}
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.{GroupIndex, Height}
@@ -34,14 +31,7 @@ import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema._
 
-class BlockQueriesSpec
-    extends AlephiumSpec
-    with DatabaseFixtureForEach
-    with DBRunner
-    with ScalaFutures {
-
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
-  override implicit val patienceConfig            = PatienceConfig(timeout = Span(1000, Minutes))
+class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
   /**
     * Finds a block with maximum height. If two blocks have the same

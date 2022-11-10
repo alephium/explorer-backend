@@ -19,13 +19,11 @@ package org.alephium.explorer.service
 import java.math.BigInteger
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 import org.scalacheck.Gen
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Minutes, Span}
 
-import org.alephium.explorer.{AlephiumSpec, GroupSetting}
+import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
@@ -42,14 +40,7 @@ import org.alephium.util.{TimeStamp, U256}
   Array("org.wartremover.warts.Var",
         "org.wartremover.warts.DefaultArguments",
         "org.wartremover.warts.AsInstanceOf"))
-class TransactionServiceSpec
-    extends AlephiumSpec
-    with DatabaseFixtureForEach
-    with ScalaFutures
-    with Eventually {
-
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
-  override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
+class TransactionServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach {
 
   "limit the number of transactions in address details" in new Fixture {
 

@@ -20,9 +20,7 @@ import java.util.concurrent.RejectedExecutionException
 
 import scala.concurrent.duration._
 
-import org.scalatest.concurrent.ScalaFutures
-
-import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.benchmark.db.DBExecutor
 import org.alephium.explorer.benchmark.db.state._
 import org.alephium.explorer.util.TestUtils._
@@ -32,7 +30,7 @@ import org.alephium.explorer.util.TestUtils._
   *   - [[ByteaReadState]]
   *   - [[VarcharReadState]]
   */
-class ReadBenchmarkStateSpec extends AlephiumSpec with ScalaFutures {
+class ReadBenchmarkStateSpec extends AlephiumFutureSpec {
 
   //total number of rows to generate
   val testDataCount = 10

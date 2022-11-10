@@ -17,16 +17,14 @@
 package org.alephium.explorer
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.util._
 
 import com.typesafe.config.ConfigFactory
 import org.scalacheck.Gen
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.TryValues._
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{Seconds, Span}
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import org.alephium.explorer.GenCoreApi._
@@ -37,16 +35,10 @@ import org.alephium.explorer.service.BlockFlowClient
 
 /** Temporary placeholder. These tests should be merged into ApplicationSpec  */
 class SyncServicesSpec
-    extends AlephiumSpec
+    extends AlephiumFutureSpec
     with Matchers
     with ScalaCheckDrivenPropertyChecks
-    with ScalaFutures
     with MockFactory {
-
-  override implicit val patienceConfig = PatienceConfig(timeout = Span(5, Seconds))
-
-  implicit val executionContext: ExecutionContext =
-    ExecutionContext.global
 
   "getBlockFlowPeers" should {
     val explorerConfig: ExplorerConfig =
