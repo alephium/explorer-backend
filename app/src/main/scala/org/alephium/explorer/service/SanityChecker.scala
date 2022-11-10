@@ -16,7 +16,10 @@
 
 package org.alephium.explorer.service
 
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
+
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
@@ -50,68 +53,86 @@ object SanityChecker extends StrictLogging {
     )
   }
 
-  private var running: Boolean = false
-  private var i                = 0
-  private var totalNbOfBlocks  = 0
+  private val running = new AtomicBoolean(false)
 
   def check()(implicit ec: ExecutionContext,
               dc: DatabaseConfig[PostgresProfile],
               blockFlowClient: BlockFlowClient,
               blockCache: BlockCache,
               groupSetting: GroupSetting): Future[Unit] = {
-    if (running) {
+    if (!running.compareAndSet(false, true)) {
       Future.successful(logger.error("Sanity check already running"))
     } else {
-      running = true
-      i       = 0
-      run(BlockHeaderSchema.table.size.result).flatMap { nbOfBlocks =>
-        totalNbOfBlocks = nbOfBlocks
-        logger.info(s"Starting sanity check $totalNbOfBlocks to check")
-        Future
-          .sequence(groupSetting.groupIndexes.map {
-            case (from, to) =>
-              findLatestBlock(from, to).flatMap {
-                case None => Future.successful(())
-                case Some(hash) =>
-                  BlockDao.get(hash).flatMap {
+      val blockNum = new AtomicInteger(0)
+
+      val result =
+        run(BlockHeaderSchema.table.size.result)
+          .flatMap { nbOfBlocks =>
+            logger.info(s"Starting sanity check $nbOfBlocks to check")
+            Future
+              .sequence(groupSetting.groupIndexes.map {
+                case (from, to) =>
+                  findLatestBlock(from, to).flatMap {
                     case None => Future.successful(())
-                    case Some(block) =>
-                      checkBlock(block)
+                    case Some(hash) =>
+                      BlockDao.get(hash).flatMap {
+                        case None => Future.successful(())
+                        case Some(block) =>
+                          checkBlock(block, blockNum, nbOfBlocks)
+                      }
                   }
-              }
-          })
-          .map { _ =>
-            running = false
-            logger.info(s"Sanity Check done")
+              })
           }
+
+      result onComplete { result =>
+        result match {
+          case Failure(exception) => logger.error("Failed to complete SanityChecker", exception)
+          case Success(_)         => logger.info("Sanity Check done")
+        }
+
+        running.set(false)
+
       }
+
+      result.map(_ => ())
     }
   }
 
-  private def checkBlock(block: BlockEntry)(implicit ec: ExecutionContext,
-                                            dc: DatabaseConfig[PostgresProfile],
-                                            blockFlowClient: BlockFlowClient,
-                                            blockCache: BlockCache,
-                                            groupSetting: GroupSetting): Future[Unit] = {
-    updateMainChain(block.hash, block.chainFrom, block.chainTo, groupSetting.groupNum).flatMap {
-      case None          => Future.successful(())
-      case Some(missing) => handleMissingBlock(missing, block.chainFrom)
-    }
-  }
-
-  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-  private def handleMissingBlock(missing: BlockHash, chainFrom: GroupIndex)(
+  private def checkBlock(block: BlockEntry, blockNum: AtomicInteger, totalNbOfBlocks: Int)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       blockCache: BlockCache,
       groupSetting: GroupSetting): Future[Unit] = {
+    updateMainChain(block.hash,
+                    block.chainFrom,
+                    block.chainTo,
+                    groupSetting.groupNum,
+                    blockNum,
+                    totalNbOfBlocks).flatMap {
+      case None => Future.successful(())
+      case Some(missing) =>
+        handleMissingBlock(missing, block.chainFrom, blockNum, totalNbOfBlocks)
+    }
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  //scalastyle:off
+  private def handleMissingBlock(missing: BlockHash,
+                                 chainFrom: GroupIndex,
+                                 blockNum: AtomicInteger,
+                                 totalNbOfBlocks: Int)(implicit ec: ExecutionContext,
+                                                       dc: DatabaseConfig[PostgresProfile],
+                                                       blockFlowClient: BlockFlowClient,
+                                                       blockCache: BlockCache,
+                                                       groupSetting: GroupSetting): Future[Unit] = {
+    //scalastyle:on
     logger.info(s"Downloading missing block $missing")
     blockFlowClient.fetchBlock(chainFrom, missing).flatMap { block =>
       for {
         _ <- BlockDao.insert(block)
         b <- BlockDao.get(block.hash).map(_.get)
-        _ <- checkBlock(b)
+        _ <- checkBlock(b, blockNum, totalNbOfBlocks)
       } yield ()
     }
   }
@@ -120,19 +141,22 @@ object SanityChecker extends StrictLogging {
   private def updateMainChainAction(hash: BlockHash,
                                     chainFrom: GroupIndex,
                                     chainTo: GroupIndex,
-                                    groupNum: Int)(
+                                    groupNum: Int,
+                                    blockNum: AtomicInteger,
+                                    totalNbOfBlocks: Int)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): DBActionRWT[Option[BlockHash]] = {
-    i = i + 1
-    if (i % 10000 == 0) {
-      logger.debug(s"Checked $i blocks , progress ${(i.toFloat / totalNbOfBlocks * 100.0).toInt}%")
+    val nextBlockNum = blockNum.incrementAndGet()
+    if (nextBlockNum % 10000 == 0) {
+      logger.debug(
+        s"Checked $blockNum blocks , progress ${(nextBlockNum.toFloat / totalNbOfBlocks * 100.0).toInt}%")
     }
     getBlockEntryWithoutTxsAction(hash)
       .flatMap {
         case Some(block) if !block.mainChain =>
           logger.debug(s"Updating block ${block.hash} which should be on the mainChain")
           assert(block.chainFrom == chainFrom && block.chainTo == chainTo)
-          (for {
+          for {
             blocks <- getAtHeightAction(block.chainFrom, block.chainTo, block.height)
             _ <- DBIOAction.sequence(
               blocks
@@ -142,19 +166,25 @@ object SanityChecker extends StrictLogging {
             _ <- updateMainChainStatusAction(hash, true)
           } yield {
             block.parent(groupNum).map(Right(_))
-          })
+          }
         case None        => DBIOAction.successful(Some(Left(hash)))
         case Some(block) => DBIOAction.successful(block.parent(groupNum).map(Right(_)))
       }
       .flatMap {
-        case Some(Right(parent)) => updateMainChainAction(parent, chainFrom, chainTo, groupNum)
+        case Some(Right(parent)) =>
+          updateMainChainAction(parent, chainFrom, chainTo, groupNum, blockNum, totalNbOfBlocks)
         case Some(Left(missing)) => DBIOAction.successful(Some(missing))
         case None                => DBIOAction.successful(None) //No parent, we reach the genesis blocks
       }
   }
 
-  def updateMainChain(hash: BlockHash, chainFrom: GroupIndex, chainTo: GroupIndex, groupNum: Int)(
+  def updateMainChain(hash: BlockHash,
+                      chainFrom: GroupIndex,
+                      chainTo: GroupIndex,
+                      groupNum: Int,
+                      blockNum: AtomicInteger,
+                      totalNbOfBlocks: Int)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockHash]] =
-    run(updateMainChainAction(hash, chainFrom, chainTo, groupNum))
+    run(updateMainChainAction(hash, chainFrom, chainTo, groupNum, blockNum, totalNbOfBlocks))
 }
