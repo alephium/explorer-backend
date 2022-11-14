@@ -139,30 +139,27 @@ class AsyncReloadingCache[T](@volatile private var value: T,
   private def reloadFuture()(implicit ec: ExecutionContext): Future[Boolean] =
     //Reload if expired and not already being reloaded by another thread
     if (deadline.isOverdue() && reloading.compareAndSet(false, true)) {
-      val cacheFuture =
-        loader(value)
-          .map { newValue =>
-            //Set the next value immediately after the future is complete
-            this.value = newValue
-            true
-          }
-          .recoverWith { error =>
-            //Log the error and return the same error
-            logger.error("Failed to reload cache", error)
-            Future.failed(error)
-          }
 
-      //Release cache for next cache update run only after
-      // - current newCacheValue is set
-      // - OR if the Future fails
-      cacheFuture onComplete { _ =>
+      @inline def setFree() = {
         //set next deadline
         deadline = reloadAfter.fromNow
         //release to allow next reload
         reloading.set(false)
       }
 
-      cacheFuture
+      loader(value)
+        .map { newValue =>
+          //Set the next value immediately after the future is complete
+          this.value = newValue
+          setFree()
+          true
+        }
+        .recoverWith { error =>
+          //Log the error and return the same error
+          logger.error("Failed to reload cache", error)
+          setFree()
+          Future.failed(error)
+        }
 
     } else {
       Future.successful(false)
