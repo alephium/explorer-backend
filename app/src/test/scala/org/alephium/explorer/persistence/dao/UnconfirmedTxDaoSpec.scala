@@ -17,14 +17,11 @@
 package org.alephium.explorer.persistence.dao
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.ExecutionContext
 
 import org.scalacheck.Gen
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel.{assetOutputGen, utransactionGen}
 import org.alephium.explorer.GenCoreUtil.timestampGen
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
@@ -32,14 +29,7 @@ import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.model.TransactionId
 
-class UnconfirmedTxDaoSpec
-    extends AlephiumSpec
-    with DatabaseFixtureForEach
-    with DBRunner
-    with ScalaFutures
-    with Eventually {
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
-  override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
+class UnconfirmedTxDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
   "insertMany" in {
     forAll(Gen.listOfN(5, utransactionGen)) { txs =>

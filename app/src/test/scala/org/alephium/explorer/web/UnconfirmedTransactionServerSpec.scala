@@ -17,7 +17,6 @@
 package org.alephium.explorer.web
 
 import org.scalacheck.Gen
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
 
 import org.alephium.explorer.{AlephiumActorSpecLike, HttpServerFixture}
 import org.alephium.explorer.GenApiModel._
@@ -30,9 +29,7 @@ import org.alephium.explorer.persistence.dao.UnconfirmedTxDao
 class UnconfirmedTransactionServerSpec()
     extends AlephiumActorSpecLike
     with HttpServerFixture
-    with DatabaseFixtureForAll
-    with ScalaFutures
-    with Eventually {
+    with DatabaseFixtureForAll {
 
   val utxServer = new UnconfirmedTransactionServer()
 

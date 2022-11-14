@@ -16,14 +16,10 @@
 
 package org.alephium.explorer.persistence.schema
 
-import scala.concurrent.ExecutionContext
-
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Minutes, Span}
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
-import org.alephium.explorer.{AlephiumSpec, Generators}
+import org.alephium.explorer.{AlephiumFutureSpec, Generators}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.queries.OutputQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
@@ -32,14 +28,7 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.protocol.ALPH
 import org.alephium.util._
 
-class CustomJdbcTypesSpec
-    extends AlephiumSpec
-    with DatabaseFixtureForEach
-    with DBRunner
-    with ScalaFutures
-    with Eventually {
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
-  override implicit val patienceConfig            = PatienceConfig(timeout = Span(1, Minutes))
+class CustomJdbcTypesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
   "convert TimeStamp" in new Fixture {
 

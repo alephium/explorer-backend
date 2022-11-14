@@ -17,7 +17,6 @@
 package org.alephium.explorer.web
 
 import org.scalamock.scalatest.MockFactory
-import org.scalatest.concurrent.ScalaFutures
 import sttp.model.StatusCode
 
 import org.alephium.api.ApiError
@@ -34,7 +33,6 @@ import org.alephium.json.Json
 class UtilsServerSpec()
     extends AlephiumActorSpecLike
     with DatabaseFixtureForAll
-    with ScalaFutures
     with HttpServerFixture
     with MockFactory {
 

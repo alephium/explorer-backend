@@ -19,11 +19,10 @@ package org.alephium.explorer.cache
 import java.util.concurrent.{CompletableFuture, Executor, TimeUnit}
 
 import com.github.benmanes.caffeine.cache.{AsyncCacheLoader, Caffeine}
-import org.scalatest.concurrent.ScalaFutures
 
-import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.AlephiumFutureSpec
 
-class CaffeineAsyncCacheSpec extends AlephiumSpec with ScalaFutures {
+class CaffeineAsyncCacheSpec extends AlephiumFutureSpec {
 
   "return None for getIfPresent when cache is empty (NullPointerException check)" in {
     val cache =

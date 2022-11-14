@@ -17,11 +17,13 @@
 package org.alephium.explorer
 
 import scala.annotation.nowarn
+import scala.concurrent.ExecutionContext
 
 import org.scalacheck.Shrink
 import org.scalactic.Equality
 import org.scalactic.source.Position
 import org.scalatest.Assertion
+import org.scalatest.concurrent.{Eventually, IntegrationPatience, ScalaFutures}
 import org.scalatest.matchers.dsl.ResultOfATypeInvocation
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -44,3 +46,9 @@ trait AlephiumSpec
     // scalastyle:on scalatest-matcher
   }
 }
+
+trait AlephiumFutures extends ScalaFutures with Eventually with IntegrationPatience {
+  implicit def executionContext: ExecutionContext = ExecutionContext.Implicits.global
+}
+
+trait AlephiumFutureSpec extends AlephiumSpec with AlephiumFutures
