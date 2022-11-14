@@ -56,6 +56,7 @@ object Generators {
       order             <- Gen.posNum[Int]
       mainChain         <- Arbitrary.arbitrary[Boolean]
       scriptExecutionOk <- Arbitrary.arbitrary[Boolean]
+      coinbase          <- Arbitrary.arbitrary[Boolean]
     } yield
       TransactionEntity(
         hash              = hash,
@@ -69,7 +70,8 @@ object Generators {
         mainChain         = mainChain,
         scriptExecutionOk = scriptExecutionOk,
         inputSignatures   = None,
-        scriptSignatures  = None
+        scriptSignatures  = None,
+        coinbase          = coinbase
       )
 
   val blockHeaderGen: Gen[BlockHeader] =
@@ -93,6 +95,7 @@ object Generators {
       target       <- bytesGen
       hashrate     <- arbitrary[Long].map(BigInteger.valueOf)
       mainChain    <- Arbitrary.arbitrary[Boolean]
+      coinbaseTxId <- transactionHashGen
       parent       <- Gen.option(blockEntryHashGen)
     } yield
       BlockHeader(
@@ -109,6 +112,7 @@ object Generators {
         txsCount     = txsCount,
         target       = target,
         hashrate     = hashrate,
+        coinbaseTxId = coinbaseTxId,
         parent       = parent
       )
 
@@ -423,6 +427,7 @@ object Generators {
       txsCount     <- Gen.posNum[Int]
       target       <- bytesGen
       parent       <- Gen.option(blockEntryHashGen)
+      coinbaseTxId <- transactionHashGen
     } yield {
       BlockHeader(
         hash,
@@ -438,6 +443,7 @@ object Generators {
         txsCount,
         target,
         BigDecimal(hashrate).toBigInt.bigInteger,
+        coinbaseTxId,
         parent
       )
     }

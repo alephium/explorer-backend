@@ -254,5 +254,27 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
       blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
     val blocksProtocol: Seq[model.BlockEntry] = blockflow.flatten
     val blockEntities: Seq[BlockEntity]       = blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
+
+    /** Convert input-output to [[org.alephium.explorer.persistence.model.TransactionPerAddressEntity]] */
+    def toTransactionPerAddressEntity(input: InputEntity,
+                                      output: OutputEntity): TransactionPerAddressEntity =
+      TransactionPerAddressEntity(
+        hash      = output.txHash,
+        address   = output.address,
+        blockHash = output.blockHash,
+        timestamp = output.timestamp,
+        txOrder   = input.txOrder,
+        mainChain = output.mainChain,
+        coinbase  = output.coinbase
+      )
+
+    /** Convert multiple input-outputs to [[org.alephium.explorer.persistence.model.TransactionPerAddressEntity]] */
+    def toTransactionPerAddressEntities(inputOutputs: Iterable[(InputEntity, OutputEntity)])
+      : Iterable[TransactionPerAddressEntity] =
+      inputOutputs map {
+        case (input, output) =>
+          toTransactionPerAddressEntity(input, output)
+      }
+
   }
 }

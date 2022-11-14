@@ -26,5 +26,6 @@ final case class TransactionPerAddressEntity(
     blockHash: BlockHash,
     timestamp: TimeStamp,
     txOrder: Int,
-    mainChain: Boolean
+    mainChain: Boolean,
+    coinbase: Boolean
 )

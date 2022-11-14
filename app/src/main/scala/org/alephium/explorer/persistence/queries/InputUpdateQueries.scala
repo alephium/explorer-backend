@@ -42,16 +42,23 @@ object InputUpdateQueries {
       FROM outputs
       WHERE inputs.output_ref_key = outputs.key
       AND inputs.output_ref_amount IS NULL
-      RETURNING outputs.address, outputs.tokens, inputs.tx_hash, inputs.block_hash, inputs.block_timestamp, inputs.tx_order, inputs.main_chain
+      RETURNING outputs.address, outputs.tokens, inputs.tx_hash, inputs.block_hash, inputs.block_timestamp, inputs.tx_order, inputs.main_chain, outputs.coinbase
     """
-      .as[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean)]
+      .as[(Address,
+           Option[ArraySeq[Token]],
+           TransactionId,
+           BlockHash,
+           TimeStamp,
+           Int,
+           Boolean,
+           Boolean)]
       .flatMap(internalUpdates)
       .transactionally
   }
 
   // format: off
   private def internalUpdates(
-      data: Vector[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean)])
+      data: Vector[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean, Boolean)])
     : DBActionWT[Unit] = {
   // format: on
     DBIOAction
@@ -64,13 +71,13 @@ object InputUpdateQueries {
 
   // format: off
   private def updateTransactionPerAddresses(
-      data: Vector[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean)])
+      data: Vector[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean, Boolean)])
     : DBActionWT[Int] = {
   // format: on
-    QuerySplitter.splitUpdates(rows = data, columnsPerRow = 6) { (data, placeholder) =>
+    QuerySplitter.splitUpdates(rows = data, columnsPerRow = 7) { (data, placeholder) =>
       val query =
         s"""
-           | INSERT INTO transaction_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain)
+           | INSERT INTO transaction_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, coinbase)
            | VALUES $placeholder
            | ON CONFLICT ON CONSTRAINT txs_per_address_pk DO NOTHING
            |""".stripMargin
@@ -78,13 +85,14 @@ object InputUpdateQueries {
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
           data foreach {
-            case (address, _, txHash, blockHash, timestamp, txOrder, mainChain) =>
+            case (address, _, txHash, blockHash, timestamp, txOrder, mainChain, coinbase) =>
               params >> address
               params >> txHash
               params >> blockHash
               params >> timestamp
               params >> txOrder
               params >> mainChain
+              params >> coinbase
         }
 
       SQLActionBuilder(
@@ -96,11 +104,11 @@ object InputUpdateQueries {
 
   // format: off
   private def updateTokenTxPerAddresses(
-      data: Vector[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean)])
+      data: Vector[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean, Boolean)])
     : DBActionWT[Int] = {
   // format: on
     val tokenTxPerAddresses = data.flatMap {
-      case (address, tokensOpt, txHash, blockHash, timestamp, txOrder, mainChain) =>
+      case (address, tokensOpt, txHash, blockHash, timestamp, txOrder, mainChain, _) =>
         tokensOpt match {
           case None => ArraySeq.empty
           case Some(tokens) =>

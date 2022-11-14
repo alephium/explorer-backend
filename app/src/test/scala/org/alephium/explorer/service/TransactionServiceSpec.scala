@@ -126,7 +126,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       true,
       true,
       None,
-      None
+      None,
+      coinbase = false
     )
 
     val output0 =
@@ -169,7 +170,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       true,
       true,
       None,
-      None
+      None,
+      coinbase = false
     )
     val input1 = InputEntity(blockHash1,
                              tx1.hash,
@@ -269,7 +271,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
           true,
           true,
           None,
-          None
+          None,
+          coinbase = false
         )
 
         val output0 =
@@ -527,7 +530,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
         depStateHash = hashGen.sample.get,
         txsHash      = hashGen.sample.get,
         target       = bytesGen.sample.get,
-        hashrate     = BigInteger.ZERO
+        hashrate     = BigInteger.ZERO,
+        coinbaseTxId = transactionHashGen.sample.get
       )
 
   }

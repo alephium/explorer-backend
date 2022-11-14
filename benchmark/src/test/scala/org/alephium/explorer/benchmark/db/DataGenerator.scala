@@ -58,11 +58,13 @@ object DataGenerator {
         mainChain         = mainChain,
         scriptExecutionOk = Random.nextBoolean(),
         inputSignatures   = None,
-        scriptSignatures  = None
+        scriptSignatures  = None,
+        coinbase          = false
       )
     }
 
-  def genOutputEntity(transactions: ArraySeq[TransactionEntity]): ArraySeq[OutputEntity] =
+  def genOutputEntity(transactions: ArraySeq[TransactionEntity]): ArraySeq[OutputEntity] = {
+    val coinbaseTxHash = transactions.last.hash
     transactions.zipWithIndex map {
       case (transaction, order) =>
         OutputEntity(
@@ -80,9 +82,11 @@ object DataGenerator {
           message        = None,
           outputOrder    = order,
           txOrder        = order,
+          coinbase       = transaction.hash == coinbaseTxHash,
           spentFinalized = None
         )
     }
+  }
 
   def genInputEntity(outputs: ArraySeq[OutputEntity]): ArraySeq[InputEntity] =
     outputs.zipWithIndex map {
@@ -121,6 +125,8 @@ object DataGenerator {
     val inputs =
       genInputEntity(outputs)
 
+    val coinbaseTxId = transactions.last.hash
+
     BlockEntity(
       hash         = blockHash,
       timestamp    = timestamp,
@@ -137,7 +143,8 @@ object DataGenerator {
       depStateHash = Hash.generate,
       txsHash      = Hash.generate,
       target       = ByteString.fromString(Random.alphanumeric.take(10).mkString),
-      hashrate     = BigInteger.valueOf(Random.nextLong(Long.MaxValue))
+      hashrate     = BigInteger.valueOf(Random.nextLong(Long.MaxValue)),
+      coinbaseTxId = coinbaseTxId
     )
   }
 
@@ -151,6 +158,7 @@ object DataGenerator {
       blockHash = BlockHash.generate,
       timestamp = TimeStamp.now(),
       txOrder   = Random.nextInt(100),
-      mainChain = Random.nextBoolean()
+      mainChain = Random.nextBoolean(),
+      coinbase  = false
     )
 }
