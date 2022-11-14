@@ -40,7 +40,7 @@ class EventQueriesSpec
   implicit val groupSetting = groupSettingGen.sample.get
 
   "Event Queries" should {
-    "get event by tx hash" in new Fixture {
+    "get event by tx hash" in {
       forAll(Gen.nonEmptyListOf(eventEntityGen)) { events =>
         insert(events)
 
@@ -52,7 +52,7 @@ class EventQueriesSpec
       }
     }
 
-    "get all events with same tx hash" in new Fixture {
+    "get all events with same tx hash" in {
       forAll(Gen.nonEmptyListOf(eventEntityGen)) { events =>
         val txHash = transactionHashGen.sample.get
         val uniqueTxHashEvents = events.zipWithIndex.map {
@@ -71,7 +71,7 @@ class EventQueriesSpec
       }
     }
 
-    "get event by contract address" in new Fixture {
+    "get event by contract address" in {
       forAll(Gen.nonEmptyListOf(eventEntityGen)) { events =>
         insert(events)
 
@@ -84,7 +84,7 @@ class EventQueriesSpec
       }
     }
 
-    "get all events with same contractAddress" in new Fixture {
+    "get all events with same contractAddress" in {
       forAll(Gen.nonEmptyListOf(eventEntityGen)) { events =>
         val contractAddress = addressGen.sample.get
         val uniqueContractAddressEvents = events.map { event =>
@@ -104,7 +104,7 @@ class EventQueriesSpec
       }
     }
 
-    "get event by contract address and input address" in new Fixture {
+    "get event by contract address and input address" in {
       forAll(Gen.nonEmptyListOf(eventEntityGen)) { events =>
         insert(events)
 
@@ -129,7 +129,7 @@ class EventQueriesSpec
       }
     }
 
-    "get all events with same contractAddress and input address" in new Fixture {
+    "get all events with same contractAddress and input address" in {
       forAll(Gen.nonEmptyListOf(eventEntityGen)) { events =>
         val contractAddress = addressGen.sample.get
         val inputAddress    = addressGen.sample.get
@@ -151,10 +151,8 @@ class EventQueriesSpec
     }
   }
 
-  trait Fixture {
-    def insert(events: ArraySeq[EventEntity]) = {
-      run(EventSchema.table.delete).futureValue
-      run(EventSchema.table ++= events).futureValue
-    }
+  def insert(events: ArraySeq[EventEntity]) = {
+    run(EventSchema.table.delete).futureValue
+    run(EventSchema.table ++= events).futureValue
   }
 }

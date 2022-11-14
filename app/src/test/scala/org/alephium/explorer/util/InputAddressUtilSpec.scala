@@ -33,7 +33,7 @@ class InputAddressUtilSpec extends AlephiumSpec with Matchers {
   implicit val groupSetting = groupSettingGen.sample.get
 
   "addressFromProtocolInput" should {
-    "convert P2PKH input into the right address" in new Fixture {
+    "convert P2PKH input into the right address" in {
       forAll(unlockScriptProtocolP2PKHGen, outputRefProtocolGen) {
         case (p2pkh, outputRef) =>
           val assetInput = buildAssetInput(outputRef, p2pkh)
@@ -47,7 +47,7 @@ class InputAddressUtilSpec extends AlephiumSpec with Matchers {
       }
     }
 
-    "convert P2SH input into the right address" in new Fixture {
+    "convert P2SH input into the right address" in {
       forAll(unlockScriptProtocolP2SHGen, outputRefProtocolGen) {
         case (p2sh, outputRef) =>
           val assetInput = buildAssetInput(outputRef, p2sh)
@@ -62,7 +62,7 @@ class InputAddressUtilSpec extends AlephiumSpec with Matchers {
       }
     }
 
-    "fail to convert P2MPKH input into an address" in new Fixture {
+    "fail to convert P2MPKH input into an address" in {
       forAll(unlockScriptProtocolP2MPKHGen, outputRefProtocolGen) {
         case (p2mpkhUnlock, outputRef) =>
           val assetInput = buildAssetInput(outputRef, p2mpkhUnlock)
@@ -74,11 +74,11 @@ class InputAddressUtilSpec extends AlephiumSpec with Matchers {
   }
 
   "addressFromProtocolInputs" should {
-    "return None if list is empty" in new Fixture {
+    "return None if list is empty" in {
       InputAddressUtil.addressFromProtocolInputs(ArraySeq.empty) is None
     }
 
-    "return a single address if all inputs have the same p2pkh address" in new Fixture {
+    "return a single address if all inputs have the same p2pkh address" in {
       forAll(Gen.nonEmptyListOf(outputRefProtocolGen)) { outputRefs =>
         val p2pkh       = unlockScriptProtocolP2PKHGen.sample.get
         val assetInputs = outputRefs.map(buildAssetInput(_, p2pkh))
@@ -89,7 +89,7 @@ class InputAddressUtilSpec extends AlephiumSpec with Matchers {
       }
     }
 
-    "return None if > 1 address" in new Fixture {
+    "return None if > 1 address" in {
       forAll(Gen.nonEmptyListOf(outputRefProtocolGen), outputRefProtocolGen) {
         case (outputRefs, outputRef) =>
           val p2pkh       = unlockScriptProtocolP2PKHGen.sample.get
@@ -104,7 +104,7 @@ class InputAddressUtilSpec extends AlephiumSpec with Matchers {
       }
     }
 
-    "return None if one of the address isn't extractable" in new Fixture {
+    "return None if one of the address isn't extractable" in {
       forAll(Gen.nonEmptyListOf(outputRefProtocolGen), outputRefProtocolGen) {
         case (outputRefs, outputRef) =>
           val p2pkh       = unlockScriptProtocolP2PKHGen.sample.get
@@ -120,12 +120,10 @@ class InputAddressUtilSpec extends AlephiumSpec with Matchers {
     }
   }
 
-  trait Fixture {
-    def buildAssetInput(outputRef: api.model.OutputRef, unlockScript: protocol.vm.UnlockScript) = {
-      api.model.AssetInput(
-        outputRef,
-        serialize(unlockScript)
-      )
-    }
+  def buildAssetInput(outputRef: api.model.OutputRef, unlockScript: protocol.vm.UnlockScript) = {
+    api.model.AssetInput(
+      outputRef,
+      serialize(unlockScript)
+    )
   }
 }
