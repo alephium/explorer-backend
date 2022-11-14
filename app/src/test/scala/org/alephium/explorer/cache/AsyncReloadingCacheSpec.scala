@@ -99,21 +99,17 @@ class AsyncReloadingCacheSpec extends AlephiumFutureSpec {
       Future.sequence(List.fill(100)(Future(cache.get()))).futureValue is
         List.fill(100)(expectedCachedValue)
 
-    cache.expireAndReload()
+    cache.expireAndReloadFuture().futureValue is true
     concurrentlyReadCache(2)
     reloadCount.get() is 1 //Initial value gets returned so not reload occur.
 
-    cache.expireAndReload()
-    eventually {
-      concurrentlyReadCache(3)
-      reloadCount.get() is 2
-    }
+    cache.expireAndReloadFuture().futureValue is true
+    concurrentlyReadCache(3)
+    reloadCount.get() is 2
 
-    cache.expireAndReload()
-    eventually {
-      concurrentlyReadCache(4)
-      reloadCount.get() is 3
-    }
+    cache.expireAndReloadFuture().futureValue is true
+    concurrentlyReadCache(4)
+    reloadCount.get() is 3
   }
 
   "reloadNow: should reload on boot" in {
