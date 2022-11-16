@@ -40,6 +40,7 @@ trait Documentation
       getOutputRefTransaction,
       getAddressInfo,
       getTransactionsByAddress,
+      getTransactionsByAddresses,
       getTransactionsByAddressTimeRanged,
       getTotalTransactionsByAddress,
       addressUnconfirmedTransactions,
