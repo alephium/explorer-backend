@@ -73,11 +73,11 @@ class AddressServerSpec()
           if (txLimit < 0) {
             response.code is StatusCode.BadRequest
             response.as[ApiError.BadRequest] is ApiError.BadRequest(
-              s"Invalid value for: query parameter limit (expected value to be greater than or equal to 0, but was $txLimit)")
+              s"Invalid value for: query parameter limit (expected value to be greater than or equal to 0, but got $txLimit)")
           } else if (txLimit > 100) {
             response.code is StatusCode.BadRequest
             response.as[ApiError.BadRequest] is ApiError.BadRequest(
-              s"Invalid value for: query parameter limit (expected value to be less than or equal to 100, but was $txLimit)")
+              s"Invalid value for: query parameter limit (expected value to be less than or equal to 100, but got $txLimit)")
           } else {
             response.code is StatusCode.Ok
             testLimit is txLimit
@@ -141,7 +141,7 @@ class AddressServerSpec()
         Post(s"/addresses-active", Some(jsonFail)) check { response =>
           response.code is StatusCode.BadRequest
           response.as[ApiError.BadRequest] is ApiError.BadRequest(
-            s"Invalid value for: body (expected size of value to be less than or equal to $size, but was ${size + 1})")
+            s"Invalid value for: body (expected size of value to be less than or equal to $size, but got ${size + 1})")
         }
     }
   }

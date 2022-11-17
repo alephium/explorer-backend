@@ -126,7 +126,6 @@ trait ExplorerSpec
 
   def app: ExplorerState
 
-  lazy val routes: ArraySeq[Router => Route] = app.httpServer.routes
   lazy val port = app.config.port
 
   "get a block by its id" in {
@@ -219,21 +218,21 @@ trait ExplorerSpec
     Get(s"/blocks?page=0") check { response =>
       response.code is StatusCode.BadRequest
       response.as[ApiError.BadRequest] is ApiError.BadRequest(
-        "Invalid value for: query parameter page (expected value to be greater than or equal to 1, but was 0)"
+        "Invalid value for: query parameter page (expected value to be greater than or equal to 1, but got 0)"
       )
     }
 
     Get(s"/blocks?limit=-1") check { response =>
       response.code is StatusCode.BadRequest
       response.as[ApiError.BadRequest] is ApiError.BadRequest(
-        "Invalid value for: query parameter limit (expected value to be greater than or equal to 0, but was -1)"
+        "Invalid value for: query parameter limit (expected value to be greater than or equal to 0, but got -1)"
       )
     }
 
     Get(s"/blocks?limit=-1&page=0") check { response =>
       response.code is StatusCode.BadRequest
       response.as[ApiError.BadRequest] is ApiError.BadRequest(
-        "Invalid value for: query parameter page (expected value to be greater than or equal to 1, but was 0)"
+        "Invalid value for: query parameter page (expected value to be greater than or equal to 1, but got 0)"
       )
     }
   }

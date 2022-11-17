@@ -56,7 +56,7 @@ class UtilsServerSpec()
     List("Trace", "debug", "yop").foreach { level =>
       Put(s"/utils/update-global-loglevel", level) check { response =>
         response.as[ApiError.BadRequest] is ApiError.BadRequest(
-          s"Invalid value for: body (expected value to be one of (TRACE, DEBUG, INFO, WARN, ERROR), but was $level)")
+          s"""Invalid value for: body (expected value to be one of (TRACE, DEBUG, INFO, WARN, ERROR), but got: "$level")""")
       }
     }
   }
