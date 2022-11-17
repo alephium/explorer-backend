@@ -16,11 +16,15 @@
 
 package org.alephium.explorer.api.model
 
+import java.time.Instant
+
 import scala.collection.immutable.ArraySeq
 
 import org.alephium.api.UtilJson.{timestampReader, timestampWriter}
 import org.alephium.explorer.api.Json._
+import org.alephium.explorer.util.UtxoUtil
 import org.alephium.json.Json._
+import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
@@ -32,10 +36,29 @@ final case class Transaction(
     outputs: ArraySeq[Output],
     gasAmount: Int,
     gasPrice: U256
-)
+) {
+  def toCsv(address: Address): String = {
+    val dateTime = Instant.ofEpochMilli(timestamp.millis)
+    val fromAddresses =
+      inputs.map(_.address).collect { case Some(address) => address }.distinct.mkString("-")
+    val toAddresses =
+      outputs.map(_.address).distinct.mkString("-")
+    val deltaAmount = UtxoUtil.deltaAmountForAddress(address, inputs, outputs)
+    val amount      = deltaAmount.map(_.toString).getOrElse("")
+    val amountHint = deltaAmount
+      .map(delta =>
+        new java.math.BigDecimal(delta.v).divide(new java.math.BigDecimal(ALPH.oneAlph.v)))
+      .map(_.toString)
+      .getOrElse("")
+    s"${hash.toHexString},${blockHash.toHexString},${timestamp.millis},$dateTime,$fromAddresses,$toAddresses,$amount,$amountHint\n"
+  }
+}
 
 object Transaction {
   implicit val txRW: ReadWriter[Transaction] = macroRW
+
+  val csvHeader: String =
+    "hash,blockHash,unixTimestamp,dateTime,fromAddresses,toAddresses,amount,hintAmount\n"
 }
 
 sealed trait TransactionLike {

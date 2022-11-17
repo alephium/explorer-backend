@@ -263,6 +263,17 @@ object TransactionQueries extends StrictLogging {
     } yield txs
   }
 
+  def streamTxIds(address: Address, from: TimeStamp, to: TimeStamp): StreamAction[TransactionId] = {
+    sql"""
+      SELECT tx_hash
+      FROM transaction_per_addresses
+      WHERE address = $address
+      AND block_timestamp >= $from
+      AND block_timestamp <= $to
+      ORDER BY block_timestamp DESC
+    """.asAS[TransactionId]
+  }
+
   def getTransactionsSQL(txHashesTs: ArraySeq[TxByAddressQR])(
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     if (txHashesTs.nonEmpty) {

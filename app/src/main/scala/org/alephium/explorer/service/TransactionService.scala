@@ -19,17 +19,26 @@ package org.alephium.explorer.service
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
+import akka.NotUsed
+import akka.actor.ActorSystem
+import akka.stream.scaladsl._
+import io.vertx.core.buffer.Buffer
+import org.reactivestreams.Publisher
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
+import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.{TransactionDao, UnconfirmedTxDao}
+import org.alephium.explorer.persistence.queries.TransactionQueries._
+import org.alephium.json.Json.write
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 trait TransactionService {
+
   def getTransaction(transactionHash: TransactionId)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Option[TransactionLike]]
@@ -97,6 +106,14 @@ trait TransactionService {
   def listAddressTokenTransactions(address: Address, token: TokenId, pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]]
+
+  def exportTransactionsByAddress(address: Address,
+                                  from: TimeStamp,
+                                  to: TimeStamp,
+                                  exportType: ExportType)(
+      implicit ec: ExecutionContext,
+      ac: ActorSystem,
+      dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer]
 }
 
 object TransactionService extends TransactionService {
@@ -191,4 +208,44 @@ object TransactionService extends TransactionService {
 
   def getTotalNumber()(implicit cache: TransactionCache): Int =
     cache.getMainChainTxnCount()
+
+  def exportTransactionsByAddress(address: Address,
+                                  fromTime: TimeStamp,
+                                  toTime: TimeStamp,
+                                  exportType: ExportType)(
+      implicit ec: ExecutionContext,
+      ac: ActorSystem,
+      dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
+
+    val txSource = transactionSource(address, fromTime, toTime)
+
+    val source = exportType match {
+      case ExportType.CSV =>
+        val headerSource = Source(ArraySeq(Transaction.csvHeader))
+        val csvSource    = txSource.map(_.toCsv(address))
+        headerSource ++ csvSource
+      case ExportType.JSON =>
+        txSource
+          .map(write(_))
+          .intersperse("[", ",\n", "]")
+    }
+
+    bufferPublisher(source)
+  }
+
+  private def transactionSource(address: Address, from: TimeStamp, to: TimeStamp)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Source[Transaction, NotUsed] =
+    Source
+      .fromPublisher(stream(streamTxIds(address, from, to)))
+      .mapAsync(1)(TransactionDao.get)
+      .collect { case Some(tx) => tx }
+
+  private def bufferPublisher(source: Source[String, NotUsed])(
+      implicit ac: ActorSystem): Publisher[Buffer] = {
+    source
+      .map(Buffer.buffer)
+      .toMat(Sink.asPublisher[Buffer](false))(Keep.right)
+      .run()
+  }
 }
