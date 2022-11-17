@@ -128,22 +128,7 @@ class AddressServerSpec()
   }
 
   "respect the max number of addresses" in {
-    forAll(addressGen) {
-      case (address) =>
-        val size = groupSetting.groupNum * 20
-
-        val jsonOk = s"[${ArraySeq.fill(size)(s""""$address"""").mkString(",")}]"
-        Post(s"/addresses-active", Some(jsonOk)) check { response =>
-          response.code is StatusCode.Ok
-        }
-
-        val jsonFail = s"[${ArraySeq.fill(size + 1)(s""""$address"""").mkString(",")}]"
-        Post(s"/addresses-active", Some(jsonFail)) check { response =>
-          response.code is StatusCode.BadRequest
-          response.as[ApiError.BadRequest] is ApiError.BadRequest(
-            s"Invalid value for: body (expected size of value to be less than or equal to $size, but was ${size + 1})")
-        }
-    }
+    forAll(addressGen)(respectMaxNumberOfAddresses("/addresses-active", _))
   }
 
   "list unconfirmed transactions for a given address" in {
@@ -152,6 +137,36 @@ class AddressServerSpec()
         Get(s"/addresses/${address}/unconfirmed-transactions") check { response =>
           response.as[ArraySeq[UnconfirmedTransaction]] is ArraySeq(unconfirmedTx)
         }
+    }
+  }
+
+  "getTransactionsByAddresses" should {
+    "list transactions for an array of addresses" in {
+      forAll(addressGen) { address =>
+        Post("/addresses/transactions", s"""["$address"]""") check { response =>
+          response.as[ArraySeq[Transaction]] is ArraySeq.empty[Transaction]
+        }
+      }
+    }
+
+    "respect the max number of addresses" in {
+      forAll(addressGen)(respectMaxNumberOfAddresses("/addresses/transactions", _))
+    }
+  }
+
+  def respectMaxNumberOfAddresses(endpoint: String, address: Address) = {
+    val size = groupSetting.groupNum * 20
+
+    val jsonOk = s"[${ArraySeq.fill(size)(s""""$address"""").mkString(",")}]"
+    Post(endpoint, Some(jsonOk)) check { response =>
+      response.code is StatusCode.Ok
+    }
+
+    val jsonFail = s"[${ArraySeq.fill(size + 1)(s""""$address"""").mkString(",")}]"
+    Post(endpoint, Some(jsonFail)) check { response =>
+      response.code is StatusCode.BadRequest
+      response.as[ApiError.BadRequest] is ApiError.BadRequest(
+        s"Invalid value for: body (expected size of value to be less than or equal to $size, but was ${size + 1})")
     }
   }
 }
