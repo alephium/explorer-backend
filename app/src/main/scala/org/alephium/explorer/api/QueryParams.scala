@@ -24,7 +24,7 @@ import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.Codecs._
 import org.alephium.explorer.api.model.{IntervalType, Pagination}
 import org.alephium.protocol.model.TokenId
-import org.alephium.util.TimeStamp
+import org.alephium.util.{Duration, TimeStamp}
 
 trait QueryParams extends TapirCodecs {
 
@@ -66,6 +66,16 @@ trait QueryParams extends TapirCodecs {
       .map({ case (from, to) => TimeInterval(from, to) })(timeInterval =>
         (timeInterval.from, timeInterval.to))
       .validate(TimeInterval.validator)
+
+  def timeIntervalWithMaxQuery(duration: Duration): EndpointInput[TimeInterval] =
+    timeIntervalQuery
+      .validate(Validator.custom { timeInterval =>
+        if (timeInterval.durationUnsafe() > duration) {
+          ValidationResult.Invalid(s"Time interval cannot be greater than: $duration")
+        } else {
+          ValidationResult.Valid
+        }
+      })
 
   val intervalTypeQuery: EndpointInput[IntervalType] =
     query[IntervalType]("interval-type")

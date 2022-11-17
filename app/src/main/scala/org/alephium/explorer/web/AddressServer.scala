@@ -19,17 +19,23 @@ package org.alephium.explorer.web
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
+import akka.actor.ActorSystem
+import io.vertx.core.buffer.Buffer
+import io.vertx.core.streams.ReadStream
+import io.vertx.ext.reactivestreams.ReactiveReadStream
 import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
+import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.AddressesEndpoints
-import org.alephium.explorer.api.model.{AddressBalance, AddressInfo}
+import org.alephium.explorer.api.model.{Address, AddressBalance, AddressInfo, ExportType}
 import org.alephium.explorer.service.TransactionService
 
 class AddressServer(transactionService: TransactionService)(
     implicit val executionContext: ExecutionContext,
+    ac: ActorSystem,
     groupSetting: GroupSetting,
     dc: DatabaseConfig[PostgresProfile])
     extends Server
@@ -94,7 +100,27 @@ class AddressServer(transactionService: TransactionService)(
       }),
       route(areAddressesActive.serverLogicSuccess[Future] { addresses =>
         transactionService.areAddressesActive(addresses)
+      }),
+      route(exportTransactionsCsvByAddress.serverLogicSuccess[Future] {
+        case (address, timeInterval) =>
+          exportTransactions(address, timeInterval, ExportType.CSV)
+      }),
+      route(exportTransactionsJsonByAddress.serverLogicSuccess[Future] {
+        case (address, timeInterval) =>
+          exportTransactions(address, timeInterval, ExportType.JSON)
       })
     )
+
+  private def exportTransactions(address: Address,
+                                 timeInterval: TimeInterval,
+                                 exportType: ExportType): Future[ReadStream[Buffer]] = {
+    val readStream: ReactiveReadStream[Buffer] = ReactiveReadStream.readStream();
+    val pub = transactionService.exportTransactionsByAddress(address,
+                                                             timeInterval.from,
+                                                             timeInterval.to,
+                                                             exportType)
+    pub.subscribe(readStream)
+    Future.successful(readStream)
+  }
 
 }

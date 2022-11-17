@@ -18,13 +18,18 @@ package org.alephium.explorer.api
 
 import scala.collection.immutable.ArraySeq
 
+import io.vertx.core.buffer.Buffer
+import io.vertx.core.streams.ReadStream
+import sttp.model.MediaType
 import sttp.tapir._
 import sttp.tapir.generic.auto._
+import sttp.tapir.server.vertx.streams.VertxStreams
 
 import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.TokenId
+import org.alephium.util.Duration
 
 // scalastyle:off magic.number
 trait AddressesEndpoints extends BaseEndpoint with QueryParams {
@@ -35,6 +40,8 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
   private val gapLimit = 20
 
   private lazy val activeAddressesMaxSize: Int = groupNum * gapLimit
+
+  private val oneYear = Duration.ofDaysUnsafe(365)
 
   private val addressesEndpoint =
     baseEndpoint
@@ -125,4 +132,22 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .in(jsonBody[ArraySeq[Address]].validate(Validator.maxSize(activeAddressesMaxSize)))
       .out(jsonBody[ArraySeq[Boolean]])
       .description("Are the addresses active (at least 1 transaction)")
+
+  val exportTransactionsCsvByAddress: BaseEndpoint[(Address, TimeInterval), ReadStream[Buffer]] =
+    addressesEndpoint.get
+      .in("export-transactions")
+      .in("csv")
+      .in(timeIntervalWithMaxQuery(oneYear))
+      .out(streamTextBody(VertxStreams)(TextCsv()))
+
+  val exportTransactionsJsonByAddress: BaseEndpoint[(Address, TimeInterval), ReadStream[Buffer]] =
+    addressesEndpoint.get
+      .in("export-transactions")
+      .in("json")
+      .in(timeIntervalWithMaxQuery(oneYear))
+      .out(streamBody(VertxStreams)(implicitly[Schema[ArraySeq[Transaction]]], CodecFormat.Json()))
+
+  private case class TextCsv() extends CodecFormat {
+    override val mediaType: MediaType = MediaType.TextCsv
+  }
 }

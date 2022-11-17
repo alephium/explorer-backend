@@ -48,6 +48,8 @@ trait Documentation
       listAddressTokenTransactions,
       getAddressTokenBalance,
       areAddressesActive,
+      exportTransactionsCsvByAddress,
+      exportTransactionsJsonByAddress,
       getInfos,
       getHeights,
       listUnconfirmedTransactions,
