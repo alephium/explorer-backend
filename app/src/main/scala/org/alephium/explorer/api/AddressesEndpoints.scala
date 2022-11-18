@@ -71,6 +71,15 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[Transaction]])
       .description("List transactions of a given address")
 
+  lazy val getTransactionsByAddresses
+    : BaseEndpoint[(ArraySeq[Address], Pagination), ArraySeq[Transaction]] =
+    addressesEndpoint.post
+      .in(jsonBody[ArraySeq[Address]].validate(Validator.maxSize(activeAddressesMaxSize)))
+      .in("transactions")
+      .in(pagination)
+      .out(jsonBody[ArraySeq[Transaction]])
+      .description("List transactions for given addresses")
+
   val getTransactionsByAddressTimeRanged
     : BaseEndpoint[(Address, TimeInterval, Pagination), ArraySeq[Transaction]] =
     addressesEndpoint.get

@@ -44,6 +44,11 @@ class AddressServer(transactionService: TransactionService)(
           transactionService
             .getTransactionsByAddress(address, pagination)
       }),
+      route(getTransactionsByAddresses.serverLogicSuccess[Future] {
+        case (addresses, pagination) =>
+          transactionService
+            .getTransactionsByAddresses(addresses, pagination)
+      }),
       route(getTransactionsByAddressDEPRECATED.serverLogicSuccess[Future] {
         case (address, pagination) =>
           transactionService
