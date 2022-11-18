@@ -46,6 +46,8 @@ object GenApiModel extends ImplicitConversions {
   val bytesGen: Gen[ByteString]              = hashGen.map(_.bytes)
   val hashrateGen: Gen[BigInteger]           = arbitrary[Long].map(BigInteger.valueOf)
   val amountGen: Gen[U256]                   = Gen.choose(1000L, Number.quadrillion).map(ALPH.nanoAlph)
+  val exportTypeGen: Gen[ExportType] =
+    Gen.oneOf(ArraySeq(ExportType.CSV: ExportType, ExportType.JSON: ExportType))
 
   val outputRefGen: Gen[OutputRef] = for {
     hint <- arbitrary[Int]

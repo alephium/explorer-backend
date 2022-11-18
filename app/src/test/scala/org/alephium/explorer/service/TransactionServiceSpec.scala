@@ -21,9 +21,11 @@ import java.math.BigInteger
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.Future
 
+import akka.stream.scaladsl._
+import io.vertx.core.buffer.Buffer
 import org.scalacheck.Gen
 
-import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
+import org.alephium.explorer.{AlephiumActorSpecLike, GroupSetting}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
@@ -34,13 +36,13 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.BlockHash
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.util.{Duration, TimeStamp, U256}
 
 @SuppressWarnings(
   Array("org.wartremover.warts.Var",
         "org.wartremover.warts.DefaultArguments",
         "org.wartremover.warts.AsInstanceOf"))
-class TransactionServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach {
+class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureForEach {
 
   "limit the number of transactions in address details" in new Fixture {
 
@@ -450,6 +452,52 @@ class TransactionServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     TransactionService.areAddressesActive(ArraySeq(address, address2)).futureValue is ArraySeq(
       true,
       false)
+  }
+
+  "export transactions by address" in new Fixture {
+
+    val address = addressGen.sample.get
+
+    val blocks = Gen
+      .listOfN(1, blockEntityGen(groupIndex, groupIndex, None))
+      .map(_.zipWithIndex.map {
+        case (block, index) =>
+          block.copy(timestamp = TimeStamp.now() + Duration.ofDaysUnsafe(index.toLong),
+                     outputs   = block.outputs.map(_.copy(address = address)))
+      })
+      .sample
+      .get
+
+    BlockDao.insertAll(blocks).futureValue
+    Future
+      .sequence(blocks.map { block =>
+        for {
+          _ <- databaseConfig.db.run(InputUpdateQueries.updateInputs())
+          _ <- BlockDao.updateMainChainStatus(block.hash, true)
+        } yield (())
+      })
+      .futureValue
+
+    val transactions = blocks.flatMap(_.transactions).sortBy(_.timestamp)
+    val timestamps   = transactions.map(_.timestamp)
+    val fromTs       = timestamps.head
+    val toTs         = timestamps.last
+
+    forAll(exportTypeGen) { exportType =>
+      val publisher = TransactionService
+        .exportTransactionsByAddress(address, fromTs, toTs, exportType)
+
+      val result: Seq[Buffer] =
+        Source.fromPublisher(publisher).runWith(Sink.seq).futureValue
+
+      //TODO Check data format and not only the size
+      exportType match {
+        case ExportType.JSON =>
+          result.size is transactions.size + 2 + (transactions.size - 1) // [ ] and all , from the `intersperse`
+        case ExportType.CSV =>
+          result.size is (transactions.size + 1) //header
+      }
+    }
   }
 
   trait Fixture {

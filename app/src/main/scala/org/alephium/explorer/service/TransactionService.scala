@@ -217,20 +217,12 @@ object TransactionService extends TransactionService {
       ac: ActorSystem,
       dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
 
-    val txSource = transactionSource(address, fromTime, toTime)
+    transactionsPublisher(
+      address,
+      exportType,
+      transactionSource(address, fromTime, toTime)
+    )
 
-    val source = exportType match {
-      case ExportType.CSV =>
-        val headerSource = Source(ArraySeq(Transaction.csvHeader))
-        val csvSource    = txSource.map(_.toCsv(address))
-        headerSource ++ csvSource
-      case ExportType.JSON =>
-        txSource
-          .map(write(_))
-          .intersperse("[", ",\n", "]")
-    }
-
-    bufferPublisher(source)
   }
 
   private def transactionSource(address: Address, from: TimeStamp, to: TimeStamp)(
@@ -247,5 +239,23 @@ object TransactionService extends TransactionService {
       .map(Buffer.buffer)
       .toMat(Sink.asPublisher[Buffer](false))(Keep.right)
       .run()
+  }
+
+  def transactionsPublisher(address: Address,
+                            exportType: ExportType,
+                            source: Source[Transaction, NotUsed])(
+      implicit actorSystem: ActorSystem): Publisher[Buffer] = {
+    bufferPublisher {
+      exportType match {
+        case ExportType.CSV =>
+          val headerSource = Source(ArraySeq(Transaction.csvHeader))
+          val csvSource    = source.map(_.toCsv(address))
+          headerSource ++ csvSource
+        case ExportType.JSON =>
+          source
+            .map(write(_))
+            .intersperse("[", ",\n", "]")
+      }
+    }
   }
 }

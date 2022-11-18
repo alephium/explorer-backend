@@ -19,6 +19,10 @@ package org.alephium.explorer.web
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
+import akka.actor.ActorSystem
+import akka.stream.scaladsl._
+import io.vertx.core.buffer.Buffer
+import org.reactivestreams.Publisher
 import org.scalacheck.Gen
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
@@ -31,10 +35,10 @@ import org.alephium.explorer.Generators._
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
-import org.alephium.explorer.service.EmptyTransactionService
-import org.alephium.util.U256
+import org.alephium.explorer.service.{EmptyTransactionService, TransactionService}
+import org.alephium.util.{Duration, TimeStamp, U256}
 
-@SuppressWarnings(Array("org.wartremover.warts.Var"))
+@SuppressWarnings(Array("org.wartremover.warts.PlatformDefault", "org.wartremover.warts.Var"))
 class AddressServerSpec()
     extends AlephiumActorSpecLike
     with DatabaseFixtureForAll
@@ -42,6 +46,10 @@ class AddressServerSpec()
 
   implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
 
+  val transactions = Gen.listOfN(30, transactionGen).sample.get.zipWithIndex.map {
+    case (tx, index) =>
+      tx.copy(timestamp = TimeStamp.now() + Duration.ofDaysUnsafe(index.toLong))
+  }
   val unconfirmedTx = utransactionGen.sample.get
 
   var testLimit = 0
@@ -58,6 +66,20 @@ class AddressServerSpec()
         dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] = {
       testLimit = pagination.limit
       Future.successful(ArraySeq.empty)
+    }
+
+    override def exportTransactionsByAddress(address: Address,
+                                             from: TimeStamp,
+                                             to: TimeStamp,
+                                             exportType: ExportType)(
+        implicit ec: ExecutionContext,
+        ac: ActorSystem,
+        dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
+      TransactionService.transactionsPublisher(
+        address,
+        exportType,
+        Source(transactions)
+      )(system)
     }
   }
 
@@ -152,6 +174,49 @@ class AddressServerSpec()
         Get(s"/addresses/${address}/unconfirmed-transactions") check { response =>
           response.as[ArraySeq[UnconfirmedTransaction]] is ArraySeq(unconfirmedTx)
         }
+    }
+  }
+
+  "/addresses/<address>/export-transactions/" should {
+    "handle both json and csv format" in {
+      forAll(addressGen, exportTypeGen) {
+        case (address, exportType) =>
+          val timestamps = transactions.map(_.timestamp.millis).sorted
+          val fromTs     = timestamps.head
+          val toTs       = timestamps.last
+          val format     = exportType.toString.toLowerCase
+
+          Get(s"/addresses/${address}/export-transactions/$format?fromTs=$fromTs&toTs=$toTs") check {
+            response =>
+              exportType match {
+                case ExportType.JSON =>
+                  response.as[ArraySeq[Transaction]] is ArraySeq.from(transactions)
+                case ExportType.CSV =>
+                  response.body is Right(
+                    Transaction.csvHeader ++ transactions.map(_.toCsv(address)).mkString
+                  )
+              }
+          }
+      }
+    }
+    "restrict time range to 1 year" in {
+      forAll(addressGen, exportTypeGen, Gen.posNum[Long]) {
+        case (address, exportType, long) =>
+          val fromTs = TimeStamp.now().millis
+          val toTs   = fromTs + Duration.ofDaysUnsafe(365).millis
+          val format = exportType.toString.toLowerCase
+
+          Get(s"/addresses/${address}/export-transactions/$format?fromTs=$fromTs&toTs=$toTs") check {
+            response =>
+              response.code is StatusCode.Ok
+          }
+
+          val toMore = toTs + Duration.ofMillisUnsafe(long).millis
+          Get(s"/addresses/${address}/export-transactions/$format?fromTs=$fromTs&toTs=$toMore") check {
+            response =>
+              response.code is StatusCode.BadRequest
+          }
+      }
     }
   }
 }
