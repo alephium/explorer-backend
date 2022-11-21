@@ -52,9 +52,11 @@ object BlockCache {
   }
 
   // scalastyle:off
-  def apply()(implicit groupSetting: GroupSetting,
-              ec: ExecutionContext,
-              dc: DatabaseConfig[PostgresProfile]): BlockCache = {
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def apply(cacheRowCountReloadTime: FiniteDuration = 10.seconds)(
+      implicit groupSetting: GroupSetting,
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): BlockCache = {
     val groupConfig: GroupConfig = groupSetting.groupConfig
 
     @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
@@ -97,8 +99,9 @@ object BlockCache {
           .buildAsync[ChainIndex, Duration](blockTimeAsyncLoader)
       }
 
-    val cacheRowCount: AsyncReloadingCache[Int] = AsyncReloadingCache(0, 10.seconds) { _ =>
-      run(BlockQueries.mainChainQuery.length.result)
+    val cacheRowCount: AsyncReloadingCache[Int] = AsyncReloadingCache(0, cacheRowCountReloadTime) {
+      _ =>
+        run(BlockQueries.mainChainQuery.length.result)
     }
 
     new BlockCache(
