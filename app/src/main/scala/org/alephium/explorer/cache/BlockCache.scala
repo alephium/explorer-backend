@@ -52,8 +52,9 @@ object BlockCache {
   }
 
   // scalastyle:off
-  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def apply(cacheRowCountReloadTime: FiniteDuration = 10.seconds)(
+  def apply(cacheRowCountReloadPeriod: FiniteDuration,
+            cacheBlockTimesReloadPeriod: FiniteDuration,
+            cacheLatestBlocksReloadPeriod: FiniteDuration)(
       implicit groupSetting: GroupSetting,
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): BlockCache = {
@@ -73,7 +74,8 @@ object BlockCache {
         Caffeine
           .newBuilder()
           .maximumSize(groupConfig.chainNum.toLong)
-          .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
+          .expireAfterWrite(cacheLatestBlocksReloadPeriod.toNanos,
+                            java.util.concurrent.TimeUnit.NANOSECONDS)
           .buildAsync[ChainIndex, LatestBlock](latestBlockAsyncLoader)
       }
 
@@ -95,14 +97,15 @@ object BlockCache {
         Caffeine
           .newBuilder()
           .maximumSize(groupConfig.chainNum.toLong)
-          .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
+          .expireAfterWrite(cacheBlockTimesReloadPeriod.toNanos,
+                            java.util.concurrent.TimeUnit.NANOSECONDS)
           .buildAsync[ChainIndex, Duration](blockTimeAsyncLoader)
       }
 
-    val cacheRowCount: AsyncReloadingCache[Int] = AsyncReloadingCache(0, cacheRowCountReloadTime) {
-      _ =>
+    val cacheRowCount: AsyncReloadingCache[Int] =
+      AsyncReloadingCache(0, cacheRowCountReloadPeriod) { _ =>
         run(BlockQueries.mainChainQuery.length.result)
-    }
+      }
 
     new BlockCache(
       blockTimes   = cachedBlockTimes,

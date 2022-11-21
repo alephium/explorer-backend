@@ -29,7 +29,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.benchmark.db.{DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.state.ListBlocksReadStateSettings._
-import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.persistence.model.{BlockHeader, TransactionEntity}
 import org.alephium.explorer.persistence.schema.{BlockHeaderSchema, TransactionSchema}
 import org.alephium.protocol.model.{BlockHash, TransactionId}
@@ -49,7 +49,7 @@ class ListBlocksReadState(reverse: Boolean,
   import config.profile.api._
 
   val blockCache: BlockCache =
-    BlockCache()(
+    TestBlockCache()(
       groupSetting = GroupSetting(4),
       ec           = config.db.ioExecutionContext,
       dc           = db.config

@@ -25,7 +25,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
-import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.persistence.DBInitializer
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.util.Duration
@@ -42,7 +42,7 @@ class BlockEntityWriteState(val db: DBExecutor) extends WriteBenchmarkState[Bloc
     GroupSetting(4)
 
   val blockCache: BlockCache =
-    BlockCache()(
+    TestBlockCache()(
       groupSetting = groupSetting,
       ec           = config.db.ioExecutionContext,
       dc           = db.config

@@ -16,7 +16,6 @@
 
 package org.alephium.explorer.persistence.dao
 
-import scala.concurrent.duration._
 import scala.io.{Codec, Source}
 import scala.util.Random
 
@@ -30,7 +29,7 @@ import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.{GroupIndex, Pagination}
-import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
@@ -249,7 +248,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
 
   trait Fixture extends ApiModelCodec {
     implicit val groupSettings: GroupSetting = groupSettingGen.sample.get
-    implicit val blockCache: BlockCache      = BlockCache(cacheRowCountReloadTime = 1.second)
+    implicit val blockCache: BlockCache      = TestBlockCache()
 
     val blockflow: Seq[Seq[model.BlockEntry]] =
       blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
