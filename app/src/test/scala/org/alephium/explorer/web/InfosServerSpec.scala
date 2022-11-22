@@ -26,7 +26,7 @@ import org.alephium.explorer._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.cache.{BlockCache, TransactionCache}
+import org.alephium.explorer.cache.{BlockCache, TestBlockCache, TransactionCache}
 import org.alephium.explorer.config.BootMode
 import org.alephium.explorer.persistence.{Database, DatabaseFixtureForAll}
 import org.alephium.explorer.service._
@@ -80,7 +80,7 @@ class InfosServerSpec()
   }
 
   implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
-  implicit val blockCache: BlockCache     = BlockCache()
+  implicit val blockCache: BlockCache     = TestBlockCache()
   implicit val transactionCache: TransactionCache = TransactionCache(
     new Database(BootMode.ReadWrite))
   val transactionService = new EmptyTransactionService {
