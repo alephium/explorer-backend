@@ -540,6 +540,51 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     }
   }
 
+  "getTxHashesByAddressesQuery" should {
+    "return empty" when {
+      "database is empty" in {
+        forAll(Gen.listOf(addressGen), Gen.posNum[Int], Gen.posNum[Int]) {
+          (addresses, offset, limit) =>
+            val query =
+              TransactionQueries.getTxHashesByAddressesQuery(addresses, offset, limit)
+
+            run(query).futureValue.size is 0
+        }
+      }
+    }
+
+    "return valid transactions_per_addresses" when {
+      "the input contains valid and invalid addresses" in {
+        forAll(Gen.listOf(genTransactionPerAddressEntity()), Gen.listOf(addressGen)) {
+          case (entitiesToPersist, addressesNotPersisted) =>
+            //clear table and insert entities
+            run(TransactionPerAddressSchema.table.delete).futureValue
+            run(TransactionPerAddressSchema.table ++= entitiesToPersist).futureValue
+
+            //merge all addresses
+            val allAddresses =
+              entitiesToPersist.map(_.address) ++ addressesNotPersisted
+
+            //shuffle all merged addresses
+            val shuffledAddresses =
+              Random.shuffle(allAddresses)
+
+            //query shuffled addresses
+            val query =
+              TransactionQueries.getTxHashesByAddressesQuery(shuffledAddresses, 0, Int.MaxValue)
+
+            //expect only main_chain and persisted address
+            val expectedResult =
+              entitiesToPersist.filter(_.mainChain) map { entity =>
+                TxByAddressQR(entity.hash, entity.blockHash, entity.timestamp, entity.txOrder)
+              }
+
+            run(query).futureValue should contain theSameElementsAs expectedResult
+        }
+      }
+    }
+  }
+
   trait Fixture {
 
     val address = addressGen.sample.get

@@ -47,7 +47,11 @@ sealed trait ExplorerState extends Service with StrictLogging {
     new Database(config.bootMode)(executionContext, databaseConfig)
 
   implicit lazy val blockCache: BlockCache =
-    BlockCache()(groupSettings, executionContext, database.databaseConfig)
+    BlockCache(config.cacheRowCountReloadPeriod,
+               config.cacheBlockTimesReloadPeriod,
+               config.cacheLatestBlocksReloadPeriod)(groupSettings,
+                                                     executionContext,
+                                                     database.databaseConfig)
 
   lazy val transactionCache: TransactionCache =
     TransactionCache(database)(executionContext)

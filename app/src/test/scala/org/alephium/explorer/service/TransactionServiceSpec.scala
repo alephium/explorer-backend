@@ -29,7 +29,7 @@ import org.alephium.explorer.{AlephiumActorSpecLike, GroupSetting}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.{BlockDao, UnconfirmedTxDao}
 import org.alephium.explorer.persistence.model._
@@ -502,7 +502,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
   trait Fixture {
     implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
-    implicit val blockCache: BlockCache     = BlockCache()
+    implicit val blockCache: BlockCache     = TestBlockCache()
 
     val groupIndex = GroupIndex.unsafe(0)
 

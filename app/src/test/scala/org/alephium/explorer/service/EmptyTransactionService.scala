@@ -53,6 +53,11 @@ trait EmptyTransactionService extends TransactionService {
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     Future.successful(ArraySeq.empty)
 
+  override def getTransactionsByAddresses(addresses: ArraySeq[Address], pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+    Future.successful(ArraySeq.empty)
+
   override def getTransactionsByAddressTimeRangedSQL(address: Address,
                                                      fromTime: TimeStamp,
                                                      toTime: TimeStamp,

@@ -292,6 +292,25 @@ trait ExplorerSpec
     }
   }
 
+  "get all transactions for addresses" in {
+    forAll(Gen.someOf(transactions)) { transactions =>
+      val limitedAddresses = transactions.flatMap(_.outputs.map(_.address)).take(txLimit)
+      val addressesBody    = limitedAddresses.map(address => s""""$address"""").mkString("[", ",", "]")
+
+      Post("/addresses/transactions", addressesBody) check { response =>
+        val expectedTransactions =
+          transactions.filter(_.outputs.exists(limitedAddresses.contains)).take(txLimit)
+
+        val res = response.as[ArraySeq[Transaction]]
+
+        res.size is limitedAddresses.size
+        Inspectors.forAll(expectedTransactions) { transaction =>
+          res.map(_.hash) should contain(transaction.hash)
+        }
+      }
+    }
+  }
+
   "generate the documentation" in {
     Get("/docs") check { response =>
       response.code is StatusCode.Ok

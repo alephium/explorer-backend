@@ -179,6 +179,45 @@ object TransactionQueries extends StrictLogging {
   }
 
   /**
+    * Get transactions for a list of addresses
+    *
+    * @param addresses Addresses to query
+    * @param offset    Page number (starting from 0)
+    * @param limit     Maximum rows
+    * @return          Paginated transactions
+    */
+  def getTxHashesByAddressesQuery(addresses: ArraySeq[Address],
+                                  offset: Int,
+                                  limit: Int): DBActionSR[TxByAddressQR] =
+    if (addresses.isEmpty) {
+      DBIOAction.successful(ArraySeq.empty)
+    } else {
+      val placeholder = paramPlaceholder(1, addresses.size)
+
+      val query =
+        s"""
+          |SELECT tx_hash, block_hash, block_timestamp, tx_order
+          |FROM transaction_per_addresses
+          |WHERE main_chain = true
+          |  AND address IN $placeholder
+          |ORDER BY block_timestamp DESC, tx_order
+          |LIMIT ? OFFSET ?
+          |""".stripMargin
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) => {
+          addresses foreach (params >> _)
+          params >> limit
+          params >> offset
+        }
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv  = parameters
+      ).asAS[TxByAddressQR]
+    }
+
+  /**
     * Get transactions by address for a given time-range
     *
     * @param address   Address to query
@@ -230,6 +269,17 @@ object TransactionQueries extends StrictLogging {
     val toDrop = offset * limit
     for {
       txHashesTs <- getTxHashesByAddressQuerySQLNoJoin(address, toDrop, limit)
+      txs        <- getTransactionsSQL(txHashesTs)
+    } yield txs
+  }
+
+  def getTransactionsByAddresses(addresses: ArraySeq[Address], pagination: Pagination)(
+      implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
+    val offset = pagination.offset
+    val limit  = pagination.limit
+    val toDrop = offset * limit
+    for {
+      txHashesTs <- getTxHashesByAddressesQuery(addresses, toDrop, limit)
       txs        <- getTransactionsSQL(txHashesTs)
     } yield txs
   }

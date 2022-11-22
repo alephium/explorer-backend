@@ -43,10 +43,13 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
 
   private val oneYear = Duration.ofDaysUnsafe(365)
 
-  private val addressesEndpoint =
+  private val baseAddressesEndpoint =
     baseEndpoint
       .tag("Addresses")
       .in("addresses")
+
+  private val addressesEndpoint =
+    baseAddressesEndpoint
       .in(path[Address]("address")(Codecs.explorerAddressTapirCodec))
 
   private val addressesTokensEndpoint =
@@ -75,6 +78,15 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])
       .description("List transactions of a given address")
+
+  lazy val getTransactionsByAddresses
+    : BaseEndpoint[(ArraySeq[Address], Pagination), ArraySeq[Transaction]] =
+    baseAddressesEndpoint.post
+      .in(jsonBody[ArraySeq[Address]].validate(Validator.maxSize(activeAddressesMaxSize)))
+      .in("transactions")
+      .in(pagination)
+      .out(jsonBody[ArraySeq[Transaction]])
+      .description("List transactions for given addresses")
 
   val getTransactionsByAddressTimeRanged
     : BaseEndpoint[(Address, TimeInterval, Pagination), ArraySeq[Transaction]] =
