@@ -50,7 +50,6 @@ trait Documentation
       getAddressTokenBalance,
       areAddressesActive,
       exportTransactionsCsvByAddress,
-      exportTransactionsJsonByAddress,
       getInfos,
       getHeights,
       listUnconfirmedTransactions,

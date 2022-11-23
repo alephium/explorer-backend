@@ -163,41 +163,33 @@ class AddressServerSpec()
   }
 
   "/addresses/<address>/export-transactions/" should {
-    "handle both json and csv format" in {
-      forAll(addressGen, exportTypeGen) {
-        case (address, exportType) =>
-          val timestamps = transactions.map(_.timestamp.millis).sorted
-          val fromTs     = timestamps.head
-          val toTs       = timestamps.last
-          val format     = exportType.toString.toLowerCase
+    "handle csv format" in {
+      forAll(addressGen) { address =>
+        val timestamps = transactions.map(_.timestamp.millis).sorted
+        val fromTs     = timestamps.head
+        val toTs       = timestamps.last
 
-          Get(s"/addresses/${address}/export-transactions/$format?fromTs=$fromTs&toTs=$toTs") check {
-            response =>
-              exportType match {
-                case ExportType.JSON =>
-                  response.as[ArraySeq[Transaction]] is ArraySeq.from(transactions)
-                case ExportType.CSV =>
-                  response.body is Right(
-                    Transaction.csvHeader ++ transactions.map(_.toCsv(address)).mkString
-                  )
-              }
-          }
+        Get(s"/addresses/${address}/export-transactions/csv?fromTs=$fromTs&toTs=$toTs") check {
+          response =>
+            response.body is Right(
+              Transaction.csvHeader ++ transactions.map(_.toCsv(address)).mkString
+            )
+        }
       }
     }
     "restrict time range to 1 year" in {
-      forAll(addressGen, exportTypeGen, Gen.posNum[Long]) {
-        case (address, exportType, long) =>
+      forAll(addressGen, Gen.posNum[Long]) {
+        case (address, long) =>
           val fromTs = TimeStamp.now().millis
           val toTs   = fromTs + Duration.ofDaysUnsafe(365).millis
-          val format = exportType.toString.toLowerCase
 
-          Get(s"/addresses/${address}/export-transactions/$format?fromTs=$fromTs&toTs=$toTs") check {
+          Get(s"/addresses/${address}/export-transactions/csv?fromTs=$fromTs&toTs=$toTs") check {
             response =>
               response.code is StatusCode.Ok
           }
 
           val toMore = toTs + Duration.ofMillisUnsafe(long).millis
-          Get(s"/addresses/${address}/export-transactions/$format?fromTs=$fromTs&toTs=$toMore") check {
+          Get(s"/addresses/${address}/export-transactions/csv?fromTs=$fromTs&toTs=$toMore") check {
             response =>
               response.code is StatusCode.BadRequest
           }

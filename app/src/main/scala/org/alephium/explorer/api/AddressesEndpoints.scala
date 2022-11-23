@@ -152,13 +152,6 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .in(timeIntervalWithMaxQuery(oneYear))
       .out(streamTextBody(VertxStreams)(TextCsv()))
 
-  val exportTransactionsJsonByAddress: BaseEndpoint[(Address, TimeInterval), ReadStream[Buffer]] =
-    addressesEndpoint.get
-      .in("export-transactions")
-      .in("json")
-      .in(timeIntervalWithMaxQuery(oneYear))
-      .out(streamBody(VertxStreams)(implicitly[Schema[ArraySeq[Transaction]]], CodecFormat.Json()))
-
   private case class TextCsv() extends CodecFormat {
     override val mediaType: MediaType = MediaType.TextCsv
   }

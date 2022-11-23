@@ -109,10 +109,6 @@ class AddressServer(transactionService: TransactionService)(
       route(exportTransactionsCsvByAddress.serverLogicSuccess[Future] {
         case (address, timeInterval) =>
           exportTransactions(address, timeInterval, ExportType.CSV)
-      }),
-      route(exportTransactionsJsonByAddress.serverLogicSuccess[Future] {
-        case (address, timeInterval) =>
-          exportTransactions(address, timeInterval, ExportType.JSON)
       })
     )
 

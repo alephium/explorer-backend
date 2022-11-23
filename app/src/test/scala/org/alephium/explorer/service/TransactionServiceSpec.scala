@@ -483,21 +483,14 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val fromTs       = timestamps.head
     val toTs         = timestamps.last
 
-    forAll(exportTypeGen) { exportType =>
-      val publisher = TransactionService
-        .exportTransactionsByAddress(address, fromTs, toTs, exportType)
+    val publisher = TransactionService
+      .exportTransactionsByAddress(address, fromTs, toTs, ExportType.CSV)
 
-      val result: Seq[Buffer] =
-        Source.fromPublisher(publisher).runWith(Sink.seq).futureValue
+    val result: Seq[Buffer] =
+      Source.fromPublisher(publisher).runWith(Sink.seq).futureValue
 
-      //TODO Check data format and not only the size
-      exportType match {
-        case ExportType.JSON =>
-          result.size is transactions.size + 2 + (transactions.size - 1) // [ ] and all , from the `intersperse`
-        case ExportType.CSV =>
-          result.size is (transactions.size + 1) //header
-      }
-    }
+    //TODO Check data format and not only the size
+    result.size is (transactions.size + 1) //header
   }
 
   trait Fixture {
