@@ -114,7 +114,8 @@ trait TransactionService {
   def exportTransactionsByAddress(address: Address,
                                   from: TimeStamp,
                                   to: TimeStamp,
-                                  exportType: ExportType)(
+                                  exportType: ExportType,
+                                  batchSize: Int)(
       implicit ec: ExecutionContext,
       ac: ActorSystem,
       dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer]
@@ -221,7 +222,8 @@ object TransactionService extends TransactionService {
   def exportTransactionsByAddress(address: Address,
                                   fromTime: TimeStamp,
                                   toTime: TimeStamp,
-                                  exportType: ExportType)(
+                                  exportType: ExportType,
+                                  batchSize: Int)(
       implicit ec: ExecutionContext,
       ac: ActorSystem,
       dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
@@ -229,18 +231,21 @@ object TransactionService extends TransactionService {
     transactionsPublisher(
       address,
       exportType,
-      transactionSource(address, fromTime, toTime)
+      transactionSource(address, fromTime, toTime, batchSize)
     )
 
   }
 
-  private def transactionSource(address: Address, from: TimeStamp, to: TimeStamp)(
+  private def transactionSource(address: Address, from: TimeStamp, to: TimeStamp, batchSize: Int)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Source[Transaction, NotUsed] =
+      dc: DatabaseConfig[PostgresProfile]): Source[ArraySeq[Transaction], NotUsed] = {
     Source
-      .fromPublisher(stream(streamTxIds(address, from, to)))
-      .mapAsync(1)(TransactionDao.get)
-      .collect { case Some(tx) => tx }
+      .fromPublisher(stream(streamTxByAddressQR(address, from, to)))
+      .grouped(batchSize)
+      .mapAsync(1) { hashes =>
+        run(getTransactionsNoJoin(ArraySeq.from(hashes)))
+      }
+  }
 
   private def bufferPublisher(source: Source[String, NotUsed])(
       implicit ac: ActorSystem): Publisher[Buffer] = {
@@ -252,13 +257,13 @@ object TransactionService extends TransactionService {
 
   def transactionsPublisher(address: Address,
                             exportType: ExportType,
-                            source: Source[Transaction, NotUsed])(
+                            source: Source[ArraySeq[Transaction], NotUsed])(
       implicit actorSystem: ActorSystem): Publisher[Buffer] = {
     bufferPublisher {
       exportType match {
         case ExportType.CSV =>
           val headerSource = Source(ArraySeq(Transaction.csvHeader))
-          val csvSource    = source.map(_.toCsv(address))
+          val csvSource    = source.map(_.map(_.toCsv(address)).mkString)
           headerSource ++ csvSource
         case ExportType.JSON =>
           source

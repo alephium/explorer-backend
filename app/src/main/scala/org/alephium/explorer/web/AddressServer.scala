@@ -30,7 +30,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.AddressesEndpoints
-import org.alephium.explorer.api.model.{Address, AddressBalance, AddressInfo, ExportType}
+import org.alephium.explorer.api.model._
 import org.alephium.explorer.service.TransactionService
 
 class AddressServer(transactionService: TransactionService)(
@@ -119,7 +119,8 @@ class AddressServer(transactionService: TransactionService)(
     val pub = transactionService.exportTransactionsByAddress(address,
                                                              timeInterval.from,
                                                              timeInterval.to,
-                                                             exportType)
+                                                             exportType,
+                                                             1)
     pub.subscribe(readStream)
     Future.successful(readStream)
   }

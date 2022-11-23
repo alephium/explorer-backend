@@ -46,10 +46,11 @@ class AddressServerSpec()
 
   implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
 
-  val transactions = Gen.listOfN(30, transactionGen).sample.get.zipWithIndex.map {
-    case (tx, index) =>
-      tx.copy(timestamp = TimeStamp.now() + Duration.ofDaysUnsafe(index.toLong))
-  }
+  val transactions: ArraySeq[Transaction] =
+    ArraySeq.from(Gen.listOfN(30, transactionGen).sample.get.zipWithIndex.map {
+      case (tx, index) =>
+        tx.copy(timestamp = TimeStamp.now() + Duration.ofDaysUnsafe(index.toLong))
+    })
   val unconfirmedTx = utransactionGen.sample.get
 
   var testLimit = 0
@@ -71,14 +72,15 @@ class AddressServerSpec()
     override def exportTransactionsByAddress(address: Address,
                                              from: TimeStamp,
                                              to: TimeStamp,
-                                             exportType: ExportType)(
+                                             exportType: ExportType,
+                                             batchSize: Int)(
         implicit ec: ExecutionContext,
         ac: ActorSystem,
         dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
       TransactionService.transactionsPublisher(
         address,
         exportType,
-        Source(transactions)
+        Source(transactions).grouped(batchSize).map(ArraySeq.from)
       )(system)
     }
   }

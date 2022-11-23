@@ -114,7 +114,8 @@ trait EmptyTransactionService extends TransactionService {
   def exportTransactionsByAddress(address: Address,
                                   from: TimeStamp,
                                   to: TimeStamp,
-                                  exportType: ExportType)(
+                                  exportType: ExportType,
+                                  batchSize: Int)(
       implicit ec: ExecutionContext,
       ac: ActorSystem,
       dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = ???
