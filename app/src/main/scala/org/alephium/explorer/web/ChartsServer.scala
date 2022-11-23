@@ -26,15 +26,14 @@ import sttp.model.StatusCode
 
 import org.alephium.api.ApiError
 import org.alephium.api.model.TimeInterval
-import org.alephium.explorer.api.ChartsEndpoints
+import org.alephium.explorer.api.ChartsEndpoints._
 import org.alephium.explorer.api.model.{IntervalType, TimedCount}
 import org.alephium.explorer.service.{HashrateService, TransactionHistoryService}
 import org.alephium.util.Duration
 
 class ChartsServer()(implicit val executionContext: ExecutionContext,
                      dc: DatabaseConfig[PostgresProfile])
-    extends Server
-    with ChartsEndpoints {
+    extends Server {
 
   // scalastyle:off magic.number
   private val maxHourlyTimeSpan = Duration.ofDaysUnsafe(30)
@@ -42,13 +41,13 @@ class ChartsServer()(implicit val executionContext: ExecutionContext,
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
-      route(getHashrates.serverLogic[Future] {
+      route(getHashrates().serverLogic[Future] {
         case (timeInterval, interval) =>
           validateTimeInterval(timeInterval, interval) {
             HashrateService.get(timeInterval.from, timeInterval.to, interval)
           }
       }),
-      route(getAllChainsTxCount.serverLogic[Future] {
+      route(getAllChainsTxCount().serverLogic[Future] {
         case (timeInterval, interval) =>
           validateTimeInterval(timeInterval, interval) {
             TransactionHistoryService
@@ -60,7 +59,7 @@ class ChartsServer()(implicit val executionContext: ExecutionContext,
               }
           }
       }),
-      route(getPerChainTxCount.serverLogic[Future] {
+      route(getPerChainTxCount().serverLogic[Future] {
         case (timeInterval, interval) =>
           validateTimeInterval(timeInterval, interval) {
             TransactionHistoryService

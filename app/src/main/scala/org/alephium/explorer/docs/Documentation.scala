@@ -21,12 +21,12 @@ import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
 
 import org.alephium.explorer.api._
 import org.alephium.explorer.api.BlockEndpoints._
+import org.alephium.explorer.api.ChartsEndpoints._
 
 trait Documentation
     extends TransactionEndpoints
     with AddressesEndpoints
     with InfosEndpoints
-    with ChartsEndpoints
     with TokensEndpoints
     with UnconfirmedTransactionEndpoints
     with UtilsEndpoints
@@ -61,9 +61,9 @@ trait Documentation
       getLockedSupply,
       getTotalTransactions,
       getAverageBlockTime,
-      getHashrates,
-      getAllChainsTxCount,
-      getPerChainTxCount,
+      getHashrates(),
+      getAllChainsTxCount(),
+      getPerChainTxCount(),
       sanityCheck,
       changeGlobalLogLevel,
       changeLogConfig
