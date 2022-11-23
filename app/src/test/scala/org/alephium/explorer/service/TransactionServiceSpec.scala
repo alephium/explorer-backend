@@ -49,7 +49,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val address = addressGen.sample.get
 
     val blocks = Gen
-      .listOfN(20, blockEntityGen(groupIndex, groupIndex, None))
+      .listOfN(20, blockEntityGen(groupIndex, groupIndex))
       .map(_.map { block =>
         block.copy(outputs = block.outputs.map(_.copy(address = address)))
       })
@@ -78,7 +78,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
     val amount = ALPH.MaxALPHValue.mulUnsafe(ALPH.MaxALPHValue)
 
-    val block = blockEntityGen(groupIndex, groupIndex, None)
+    val block = blockEntityGen(groupIndex, groupIndex)
       .map { block =>
         block.copy(
           outputs = block.outputs.take(1).map(_.copy(amount = amount))
@@ -363,7 +363,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val address = addressGen.sample.get
 
     val blocks = Gen
-      .listOfN(20, blockEntityGen(groupIndex, groupIndex, None))
+      .listOfN(20, blockEntityGen(groupIndex, groupIndex))
       .map(_.map { block =>
         block.copy(outputs = block.outputs.map(_.copy(address = address)))
       })
@@ -412,7 +412,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
   "get output ref's transaction" in new Fixture {
 
     val blocks = Gen
-      .listOfN(20, blockEntityGen(groupIndex, groupIndex, None))
+      .listOfN(20, blockEntityGen(groupIndex, groupIndex))
       .sample
       .get
 
@@ -440,7 +440,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val address2 = addressGen.sample.get
 
     val block =
-      blockEntityGen(groupIndex, groupIndex, None)
+      blockEntityGen(groupIndex, groupIndex)
         .map { block =>
           block.copy(outputs = block.outputs.map(_.copy(address = address)))
         }
@@ -459,11 +459,9 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val address = addressGen.sample.get
 
     val blocks = Gen
-      .listOfN(1, blockEntityGen(groupIndex, groupIndex, None))
-      .map(_.zipWithIndex.map {
-        case (block, index) =>
-          block.copy(timestamp = TimeStamp.now() + Duration.ofDaysUnsafe(index.toLong),
-                     outputs   = block.outputs.map(_.copy(address = address)))
+      .listOfN(5, blockEntityGen(groupIndex, groupIndex))
+      .map(_.map { block =>
+        block.copy(outputs = block.outputs.map(_.copy(address = address)))
       })
       .sample
       .get

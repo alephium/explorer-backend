@@ -99,7 +99,7 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     def blockEntity(parent: Option[BlockEntity],
                     chainFrom: GroupIndex = GroupIndex.unsafe(0),
                     chainTo: GroupIndex   = GroupIndex.unsafe(0)): BlockEntity =
-      blockEntityGen(chainFrom, chainTo, parent).sample.get
+      blockEntityWithParentGen(chainFrom, chainTo, parent).sample.get
 
     //                    +---+                            +---+   +---+  +---+
     //                 +->+ 2 |                         +--> 9 +-->+ 11+->+ 13|
