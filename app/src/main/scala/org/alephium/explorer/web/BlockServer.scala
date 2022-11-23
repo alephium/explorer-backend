@@ -24,24 +24,23 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.ApiError
-import org.alephium.explorer.api.BlockEndpoints
+import org.alephium.explorer.api.BlockEndpoints._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.service.BlockService
 
 class BlockServer(implicit val executionContext: ExecutionContext,
                   dc: DatabaseConfig[PostgresProfile],
                   blockCache: BlockCache)
-    extends Server
-    with BlockEndpoints {
+    extends Server {
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
-      route(listBlocks.serverLogicSuccess[Future](BlockService.listBlocks(_))),
-      route(getBlockByHash.serverLogic[Future] { hash =>
+      route(listBlocks().serverLogicSuccess[Future](BlockService.listBlocks(_))),
+      route(getBlockByHash().serverLogic[Future] { hash =>
         BlockService
           .getLiteBlockByHash(hash)
           .map(_.toRight(ApiError.NotFound(hash.value.toHexString)))
       }),
-      route(getBlockTransactions.serverLogicSuccess[Future] {
+      route(getBlockTransactions().serverLogicSuccess[Future] {
         case (hash, pagination) => BlockService.getBlockTransactions(hash, pagination)
       })
     )

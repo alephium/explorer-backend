@@ -22,33 +22,32 @@ import sttp.tapir._
 import sttp.tapir.generic.auto._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
-import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.BlockHash
 
-trait BlockEndpoints extends BaseEndpoint with QueryParams {
+object BlockEndpoints extends BaseEndpoint with QueryParams {
 
-  private val blocksEndpoint =
+  private def blocksEndpoint() =
     baseEndpoint
       .tag("Blocks")
       .in("blocks")
 
-  val getBlockByHash: BaseEndpoint[BlockHash, BlockEntryLite] =
-    blocksEndpoint.get
+  def getBlockByHash(): BaseEndpoint[BlockHash, BlockEntryLite] =
+    blocksEndpoint().get
       .in(path[BlockHash]("block_hash"))
       .out(jsonBody[BlockEntryLite])
       .description("Get a block with hash")
 
-  val getBlockTransactions: BaseEndpoint[(BlockHash, Pagination), ArraySeq[Transaction]] =
-    blocksEndpoint.get
+  def getBlockTransactions(): BaseEndpoint[(BlockHash, Pagination), ArraySeq[Transaction]] =
+    blocksEndpoint().get
       .in(path[BlockHash]("block_hash"))
       .in("transactions")
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])
       .description("Get block's transactions")
 
-  val listBlocks: BaseEndpoint[Pagination, ListBlocks] =
-    blocksEndpoint.get
+  def listBlocks(): BaseEndpoint[Pagination, ListBlocks] =
+    blocksEndpoint().get
       .in(pagination)
       .out(jsonBody[ListBlocks])
       .description("List blocks within time interval")

@@ -20,10 +20,10 @@ import sttp.apispec.openapi.OpenAPI
 import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
 
 import org.alephium.explorer.api._
+import org.alephium.explorer.api.BlockEndpoints._
 
 trait Documentation
-    extends BlockEndpoints
-    with TransactionEndpoints
+    extends TransactionEndpoints
     with AddressesEndpoints
     with InfosEndpoints
     with ChartsEndpoints
@@ -33,9 +33,9 @@ trait Documentation
     with OpenAPIDocsInterpreter {
   lazy val docs: OpenAPI = toOpenAPI(
     List(
-      listBlocks,
-      getBlockByHash,
-      getBlockTransactions,
+      listBlocks(),
+      getBlockByHash(),
+      getBlockTransactions(),
       getTransactionById,
       getOutputRefTransaction,
       getAddressInfo,
