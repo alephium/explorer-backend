@@ -319,7 +319,7 @@ object TransactionQueries extends StrictLogging {
       FROM transaction_per_addresses
       WHERE address = $address
       AND block_timestamp >= $from
-      AND block_timestamp <= $to
+      AND block_timestamp < $to
       ORDER BY block_timestamp DESC
     """.asAS[TransactionId]
   }

@@ -479,7 +479,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val transactions = blocks.flatMap(_.transactions).sortBy(_.timestamp)
     val timestamps   = transactions.map(_.timestamp)
     val fromTs       = timestamps.head
-    val toTs         = timestamps.last
+    val toTs         = timestamps.last + Duration.ofMillisUnsafe(1)
 
     val publisher = TransactionService
       .exportTransactionsByAddress(address, fromTs, toTs, ExportType.CSV)
