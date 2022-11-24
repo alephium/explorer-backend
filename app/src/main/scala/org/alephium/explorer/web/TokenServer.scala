@@ -23,13 +23,12 @@ import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.api.TokensEndpoints
+import org.alephium.explorer.api.TokensEndpoints._
 import org.alephium.explorer.service.TransactionService
 
 class TokenServer()(implicit val executionContext: ExecutionContext,
                     dc: DatabaseConfig[PostgresProfile])
-    extends Server
-    with TokensEndpoints {
+    extends Server {
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq(

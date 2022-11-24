@@ -23,13 +23,12 @@ import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.api.UnconfirmedTransactionEndpoints
+import org.alephium.explorer.api.UnconfirmedTransactionEndpoints._
 import org.alephium.explorer.service.TransactionService
 
 class UnconfirmedTransactionServer(implicit val executionContext: ExecutionContext,
                                    dc: DatabaseConfig[PostgresProfile])
-    extends Server
-    with UnconfirmedTransactionEndpoints {
+    extends Server {
   val routes: ArraySeq[Router => Route] = ArraySeq(
     route(listUnconfirmedTransactions.serverLogicSuccess[Future] { pagination =>
       TransactionService

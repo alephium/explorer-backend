@@ -27,7 +27,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.{BuildInfo, GroupSetting}
-import org.alephium.explorer.api.InfosEndpoints
+import org.alephium.explorer.api.InfosEndpoints._
 import org.alephium.explorer.api.model.{ExplorerInfo, TokenSupply}
 import org.alephium.explorer.cache.{AsyncReloadingCache, BlockCache, TransactionCache}
 import org.alephium.explorer.service.{BlockService, TokenSupplyService, TransactionService}
@@ -42,8 +42,7 @@ class InfosServer(tokenSupplyService: TokenSupplyService,
     blockCache: BlockCache,
     transactionCache: TransactionCache,
     groupSettings: GroupSetting)
-    extends Server
-    with InfosEndpoints {
+    extends Server {
 
   // scalafmt is struggling on this one, maybe latest version wil work.
   // format: off

@@ -24,13 +24,12 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.ApiError
-import org.alephium.explorer.api.TransactionEndpoints
+import org.alephium.explorer.api.TransactionEndpoints._
 import org.alephium.explorer.service.TransactionService
 
 class TransactionServer(implicit val executionContext: ExecutionContext,
                         dc: DatabaseConfig[PostgresProfile])
-    extends Server
-    with TransactionEndpoints {
+    extends Server {
   val routes: ArraySeq[Router => Route] = ArraySeq(
     route(getTransactionById.serverLogic[Future] { hash =>
       TransactionService

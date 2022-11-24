@@ -22,15 +22,13 @@ import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
 import org.alephium.explorer.api._
 import org.alephium.explorer.api.BlockEndpoints._
 import org.alephium.explorer.api.ChartsEndpoints._
+import org.alephium.explorer.api.InfosEndpoints._
+import org.alephium.explorer.api.TokensEndpoints._
+import org.alephium.explorer.api.TransactionEndpoints._
+import org.alephium.explorer.api.UnconfirmedTransactionEndpoints._
+import org.alephium.explorer.api.UtilsEndpoints._
 
-trait Documentation
-    extends TransactionEndpoints
-    with AddressesEndpoints
-    with InfosEndpoints
-    with TokensEndpoints
-    with UnconfirmedTransactionEndpoints
-    with UtilsEndpoints
-    with OpenAPIDocsInterpreter {
+trait Documentation extends AddressesEndpoints with OpenAPIDocsInterpreter {
   lazy val docs: OpenAPI = toOpenAPI(
     List(
       listBlocks,

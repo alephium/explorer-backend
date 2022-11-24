@@ -21,24 +21,23 @@ import sttp.tapir.generic.auto._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.api.model.{Transaction, TransactionLike}
 import org.alephium.protocol.model.TransactionId
 
-trait TransactionEndpoints extends BaseEndpoint {
+object TransactionEndpoints extends BaseEndpoint {
 
-  private val transactionsEndpoint =
+  private def transactionsEndpoint =
     baseEndpoint
       .tag("Transactions")
       .in("transactions")
 
-  val getTransactionById: BaseEndpoint[TransactionId, TransactionLike] =
+  def getTransactionById: BaseEndpoint[TransactionId, TransactionLike] =
     transactionsEndpoint.get
       .in(path[TransactionId]("transaction_hash"))
       .out(jsonBody[TransactionLike])
       .description("Get a transaction with hash")
 
-  val getOutputRefTransaction: BaseEndpoint[Hash, Transaction] =
+  def getOutputRefTransaction: BaseEndpoint[Hash, Transaction] =
     baseEndpoint
       .tag("Transactions")
       .in("transactions")

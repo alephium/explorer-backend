@@ -25,35 +25,34 @@ import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.explorer.api.model.LogbackValue
 import org.alephium.explorer.persistence.queries.ExplainResult
 
-// scalastyle:off magic.number
-trait UtilsEndpoints extends BaseEndpoint with QueryParams {
+object UtilsEndpoints extends BaseEndpoint with QueryParams {
 
-  private val utilsEndpoint =
+  private def utilsEndpoint =
     baseEndpoint
       .tag("Utils")
       .in("utils")
 
-  private val logLevels    = List("TRACE", "DEBUG", "INFO", "WARN", "ERROR")
-  private val logLevelsStr = logLevels.mkString(", ")
+  private def logLevels    = List("TRACE", "DEBUG", "INFO", "WARN", "ERROR")
+  private def logLevelsStr = logLevels.mkString(", ")
 
-  val sanityCheck: BaseEndpoint[Unit, Unit] =
+  def sanityCheck: BaseEndpoint[Unit, Unit] =
     utilsEndpoint.put
       .in("sanity-check")
       .description("Perform a sanity check")
 
-  val indexCheck: BaseEndpoint[Unit, ArraySeq[ExplainResult]] =
+  def indexCheck: BaseEndpoint[Unit, ArraySeq[ExplainResult]] =
     utilsEndpoint.get
       .in("index-check")
       .out(jsonBody[ArraySeq[ExplainResult]])
       .description("Perform index check")
 
-  val changeGlobalLogLevel: BaseEndpoint[String, Unit] =
+  def changeGlobalLogLevel: BaseEndpoint[String, Unit] =
     utilsEndpoint.put
       .in("update-global-loglevel")
       .in(plainBody[String].validate(Validator.enumeration(logLevels)))
       .description(s"Update global log level, accepted: $logLevelsStr")
 
-  val changeLogConfig: BaseEndpoint[ArraySeq[LogbackValue], Unit] =
+  def changeLogConfig: BaseEndpoint[ArraySeq[LogbackValue], Unit] =
     utilsEndpoint.put
       .in("update-log-config")
       .in(jsonBody[ArraySeq[LogbackValue]])

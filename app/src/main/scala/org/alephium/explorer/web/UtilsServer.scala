@@ -21,6 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util._
 
 import ch.qos.logback.classic.{Level, Logger, LoggerContext}
+import com.typesafe.scalalogging.StrictLogging
 import io.vertx.ext.web._
 import org.slf4j.LoggerFactory
 import slick.basic.DatabaseConfig
@@ -29,7 +30,7 @@ import sttp.model.StatusCode
 
 import org.alephium.api.ApiError
 import org.alephium.explorer.{sideEffect, GroupSetting}
-import org.alephium.explorer.api.UtilsEndpoints
+import org.alephium.explorer.api.UtilsEndpoints._
 import org.alephium.explorer.api.model.LogbackValue
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.service.{BlockFlowClient, IndexChecker, SanityChecker}
@@ -40,7 +41,7 @@ class UtilsServer()(implicit val executionContext: ExecutionContext,
                     blockCache: BlockCache,
                     groupSetting: GroupSetting)
     extends Server
-    with UtilsEndpoints {
+    with StrictLogging {
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq(

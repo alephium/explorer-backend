@@ -22,25 +22,23 @@ import sttp.tapir._
 import sttp.tapir.generic.auto._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
-import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.TokenId
 
-// scalastyle:off magic.number
-trait TokensEndpoints extends BaseEndpoint with QueryParams {
+object TokensEndpoints extends BaseEndpoint with QueryParams {
 
-  private val tokensEndpoint =
+  private def tokensEndpoint =
     baseEndpoint
       .tag("Tokens")
       .in("tokens")
 
-  val listTokens: BaseEndpoint[Pagination, ArraySeq[TokenId]] =
+  def listTokens: BaseEndpoint[Pagination, ArraySeq[TokenId]] =
     tokensEndpoint.get
       .in(pagination)
       .out(jsonBody[ArraySeq[TokenId]])
       .description("List tokens")
 
-  val listTokenTransactions: BaseEndpoint[(TokenId, Pagination), ArraySeq[Transaction]] =
+  def listTokenTransactions: BaseEndpoint[(TokenId, Pagination), ArraySeq[Transaction]] =
     tokensEndpoint.get
       .in(path[TokenId]("token_id"))
       .in("transactions")
@@ -48,7 +46,7 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[Transaction]])
       .description("List token transactions")
 
-  val listTokenAddresses: BaseEndpoint[(TokenId, Pagination), ArraySeq[Address]] =
+  def listTokenAddresses: BaseEndpoint[(TokenId, Pagination), ArraySeq[Address]] =
     tokensEndpoint.get
       .in(path[TokenId]("token_id"))
       .in("addresses")

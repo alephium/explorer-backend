@@ -24,69 +24,68 @@ import sttp.tapir._
 import sttp.tapir.generic.auto._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
-import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.api.model._
 
 // scalastyle:off magic.number
-trait InfosEndpoints extends BaseEndpoint with QueryParams {
+object InfosEndpoints extends BaseEndpoint with QueryParams {
 
-  private val infosEndpoint =
+  private def infosEndpoint =
     baseEndpoint
       .tag("Infos")
       .in("infos")
 
-  private val supplyEndpoint =
+  private def supplyEndpoint =
     infosEndpoint
       .in("supply")
 
-  val getInfos: BaseEndpoint[Unit, ExplorerInfo] =
+  def getInfos: BaseEndpoint[Unit, ExplorerInfo] =
     infosEndpoint.get
       .out(jsonBody[ExplorerInfo])
       .description("Get explorer informations")
 
-  val listTokenSupply: BaseEndpoint[Pagination, ArraySeq[TokenSupply]] =
+  def listTokenSupply: BaseEndpoint[Pagination, ArraySeq[TokenSupply]] =
     supplyEndpoint.get
       .in(pagination)
       .out(jsonBody[ArraySeq[TokenSupply]])
       .description("Get token supply list")
 
-  val getCirculatingSupply: BaseEndpoint[Unit, BigDecimal] =
+  def getCirculatingSupply: BaseEndpoint[Unit, BigDecimal] =
     supplyEndpoint.get
       .in("circulating-alph")
       .out(plainBody[BigDecimal])
       .description("Get the ALPH circulating supply")
 
-  val getTotalSupply: BaseEndpoint[Unit, BigDecimal] =
+  def getTotalSupply: BaseEndpoint[Unit, BigDecimal] =
     supplyEndpoint.get
       .in("total-alph")
       .out(plainBody[BigDecimal])
       .description("Get the ALPH total supply")
 
-  val getReservedSupply: BaseEndpoint[Unit, BigDecimal] =
+  def getReservedSupply: BaseEndpoint[Unit, BigDecimal] =
     supplyEndpoint.get
       .in("reserved-alph")
       .out(plainBody[BigDecimal])
       .description("Get the ALPH reserved supply")
 
-  val getLockedSupply: BaseEndpoint[Unit, BigDecimal] =
+  def getLockedSupply: BaseEndpoint[Unit, BigDecimal] =
     supplyEndpoint.get
       .in("locked-alph")
       .out(plainBody[BigDecimal])
       .description("Get the ALPH locked supply")
 
-  val getHeights: BaseEndpoint[Unit, ArraySeq[PerChainHeight]] =
+  def getHeights: BaseEndpoint[Unit, ArraySeq[PerChainHeight]] =
     infosEndpoint.get
       .in("heights")
       .out(jsonBody[ArraySeq[PerChainHeight]])
       .description("List latest height for each chain")
 
-  val getTotalTransactions: BaseEndpoint[Unit, Int] =
+  def getTotalTransactions: BaseEndpoint[Unit, Int] =
     infosEndpoint.get
       .in("total-transactions")
       .out(plainBody[Int])
       .description("Get the total number of transactions")
 
-  val getAverageBlockTime: BaseEndpoint[Unit, ArraySeq[PerChainDuration]] =
+  def getAverageBlockTime: BaseEndpoint[Unit, ArraySeq[PerChainDuration]] =
     infosEndpoint.get
       .in("average-block-times")
       .out(jsonBody[ArraySeq[PerChainDuration]])
