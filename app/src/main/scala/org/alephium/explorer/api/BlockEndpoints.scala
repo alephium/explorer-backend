@@ -27,27 +27,27 @@ import org.alephium.protocol.model.BlockHash
 
 object BlockEndpoints extends BaseEndpoint with QueryParams {
 
-  private def blocksEndpoint() =
+  private def blocksEndpoint =
     baseEndpoint
       .tag("Blocks")
       .in("blocks")
 
-  def getBlockByHash(): BaseEndpoint[BlockHash, BlockEntryLite] =
-    blocksEndpoint().get
+  def getBlockByHash: BaseEndpoint[BlockHash, BlockEntryLite] =
+    blocksEndpoint.get
       .in(path[BlockHash]("block_hash"))
       .out(jsonBody[BlockEntryLite])
       .description("Get a block with hash")
 
-  def getBlockTransactions(): BaseEndpoint[(BlockHash, Pagination), ArraySeq[Transaction]] =
-    blocksEndpoint().get
+  def getBlockTransactions: BaseEndpoint[(BlockHash, Pagination), ArraySeq[Transaction]] =
+    blocksEndpoint.get
       .in(path[BlockHash]("block_hash"))
       .in("transactions")
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])
       .description("Get block's transactions")
 
-  def listBlocks(): BaseEndpoint[Pagination, ListBlocks] =
-    blocksEndpoint().get
+  def listBlocks: BaseEndpoint[Pagination, ListBlocks] =
+    blocksEndpoint.get
       .in(pagination)
       .out(jsonBody[ListBlocks])
       .description("List blocks within time interval")

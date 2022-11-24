@@ -33,9 +33,9 @@ trait Documentation
     with OpenAPIDocsInterpreter {
   lazy val docs: OpenAPI = toOpenAPI(
     List(
-      listBlocks(),
-      getBlockByHash(),
-      getBlockTransactions(),
+      listBlocks,
+      getBlockByHash,
+      getBlockTransactions,
       getTransactionById,
       getOutputRefTransaction,
       getAddressInfo,
@@ -61,9 +61,9 @@ trait Documentation
       getLockedSupply,
       getTotalTransactions,
       getAverageBlockTime,
-      getHashrates(),
-      getAllChainsTxCount(),
-      getPerChainTxCount(),
+      getHashrates,
+      getAllChainsTxCount,
+      getPerChainTxCount,
       sanityCheck,
       changeGlobalLogLevel,
       changeLogConfig

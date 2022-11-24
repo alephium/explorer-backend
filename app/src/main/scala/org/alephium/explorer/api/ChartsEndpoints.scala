@@ -27,38 +27,37 @@ import org.alephium.explorer.api.model.{Hashrate, IntervalType, PerChainTimedCou
 
 object ChartsEndpoints extends BaseEndpoint with QueryParams {
 
-  def intervalTypes(): String = IntervalType.all.map(_.string).mkString(", ")
+  def intervalTypes: String = IntervalType.all.map(_.string).mkString(", ")
 
-  private def chartsEndpoint() =
+  private def chartsEndpoint =
     baseEndpoint
       .tag("Charts")
       .in("charts")
 
-  def getHashrates(): BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[Hashrate]] =
-    chartsEndpoint().get
+  def getHashrates: BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[Hashrate]] =
+    chartsEndpoint.get
       .in("hashrates")
       .in(timeIntervalQuery)
       .in(intervalTypeQuery)
       .out(jsonBody[ArraySeq[Hashrate]])
-      .description(s"`interval-type` query param: ${intervalTypes()}")
+      .description(s"`interval-type` query param: $intervalTypes")
       .summary("Get hashrate chart in H/s")
 
-  def getAllChainsTxCount(): BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[TimedCount]] =
-    chartsEndpoint().get
+  def getAllChainsTxCount: BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[TimedCount]] =
+    chartsEndpoint.get
       .in("transactions-count")
       .in(timeIntervalQuery)
       .in(intervalTypeQuery)
       .out(jsonBody[ArraySeq[TimedCount]])
-      .description(s"`interval-type` query param: ${intervalTypes()}")
+      .description(s"`interval-type` query param: $intervalTypes")
       .summary("Get transaction count history")
 
-  def getPerChainTxCount()
-    : BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[PerChainTimedCount]] =
-    chartsEndpoint().get
+  def getPerChainTxCount: BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[PerChainTimedCount]] =
+    chartsEndpoint.get
       .in("transactions-count-per-chain")
       .in(timeIntervalQuery)
       .in(intervalTypeQuery)
       .out(jsonBody[ArraySeq[PerChainTimedCount]])
-      .description(s"`interval-type` query param: ${intervalTypes()}")
+      .description(s"`interval-type` query param: $intervalTypes")
       .summary("Get transaction count history per chain")
 }

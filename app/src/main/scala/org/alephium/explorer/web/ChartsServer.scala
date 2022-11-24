@@ -41,13 +41,13 @@ class ChartsServer()(implicit val executionContext: ExecutionContext,
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
-      route(getHashrates().serverLogic[Future] {
+      route(getHashrates.serverLogic[Future] {
         case (timeInterval, interval) =>
           validateTimeInterval(timeInterval, interval) {
             HashrateService.get(timeInterval.from, timeInterval.to, interval)
           }
       }),
-      route(getAllChainsTxCount().serverLogic[Future] {
+      route(getAllChainsTxCount.serverLogic[Future] {
         case (timeInterval, interval) =>
           validateTimeInterval(timeInterval, interval) {
             TransactionHistoryService
@@ -59,7 +59,7 @@ class ChartsServer()(implicit val executionContext: ExecutionContext,
               }
           }
       }),
-      route(getPerChainTxCount().serverLogic[Future] {
+      route(getPerChainTxCount.serverLogic[Future] {
         case (timeInterval, interval) =>
           validateTimeInterval(timeInterval, interval) {
             TransactionHistoryService
