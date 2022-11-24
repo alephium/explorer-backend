@@ -19,30 +19,30 @@ package org.alephium.explorer.util
 import scala.collection.immutable.ArraySeq
 
 import org.alephium.explorer.api.model.{Address, Input, Output}
-import org.alephium.util.{I256, U256}
+import org.alephium.util.U256
 
 object UtxoUtil {
-  def amountForAddressInInputs(address: Address, inputs: ArraySeq[Input]): U256 = {
+  def amountForAddressInInputs(address: Address, inputs: ArraySeq[Input]): Option[U256] = {
     inputs
       .filter(_.address == Some(address))
       .map(_.attoAlphAmount)
       .collect { case Some(amount) => amount }
-      .fold(U256.Zero)(_ addUnsafe _)
+      .foldLeft(Option(U256.Zero)) { case (acc, amount) => acc.flatMap(_.add(amount)) }
   }
 
-  def amountForAddressInOutputs(address: Address, outputs: ArraySeq[Output]): U256 = {
+  def amountForAddressInOutputs(address: Address, outputs: ArraySeq[Output]): Option[U256] = {
     outputs
       .filter(_.address == address)
       .map(_.attoAlphAmount)
-      .fold(U256.Zero)(_ addUnsafe _)
+      .foldLeft(Option(U256.Zero)) { case (acc, amount) => acc.flatMap(_.add(amount)) }
   }
 
   def deltaAmountForAddress(address: Address,
                             inputs: ArraySeq[Input],
-                            outputs: ArraySeq[Output]): Option[I256] = {
+                            outputs: ArraySeq[Output]): Option[U256] = {
     for {
-      in    <- I256.fromU256(amountForAddressInInputs(address, inputs))
-      out   <- I256.fromU256(amountForAddressInOutputs(address, outputs))
+      in    <- amountForAddressInInputs(address, inputs)
+      out   <- amountForAddressInOutputs(address, outputs)
       delta <- out.sub(in)
     } yield {
       delta
