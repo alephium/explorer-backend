@@ -19,7 +19,7 @@ package org.alephium.explorer.docs
 import sttp.apispec.openapi.OpenAPI
 import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
 
-import org.alephium.explorer.api._
+import org.alephium.explorer.api.AddressesEndpoints._
 import org.alephium.explorer.api.BlockEndpoints._
 import org.alephium.explorer.api.ChartsEndpoints._
 import org.alephium.explorer.api.InfosEndpoints._
@@ -28,8 +28,8 @@ import org.alephium.explorer.api.TransactionEndpoints._
 import org.alephium.explorer.api.UnconfirmedTransactionEndpoints._
 import org.alephium.explorer.api.UtilsEndpoints._
 
-trait Documentation extends AddressesEndpoints with OpenAPIDocsInterpreter {
-  lazy val docs: OpenAPI = toOpenAPI(
+object Documentation extends OpenAPIDocsInterpreter {
+  def docs(groupNum: Int): OpenAPI = toOpenAPI(
     List(
       listBlocks,
       getBlockByHash,
@@ -38,7 +38,7 @@ trait Documentation extends AddressesEndpoints with OpenAPIDocsInterpreter {
       getOutputRefTransaction,
       getAddressInfo,
       getTransactionsByAddress,
-      getTransactionsByAddresses,
+      getTransactionsByAddresses(groupNum),
       getTransactionsByAddressTimeRanged,
       getTotalTransactionsByAddress,
       addressUnconfirmedTransactions,
@@ -46,7 +46,7 @@ trait Documentation extends AddressesEndpoints with OpenAPIDocsInterpreter {
       listAddressTokens,
       listAddressTokenTransactions,
       getAddressTokenBalance,
-      areAddressesActive,
+      areAddressesActive(groupNum),
       getInfos,
       getHeights,
       listUnconfirmedTransactions,

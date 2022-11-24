@@ -24,7 +24,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.GroupSetting
-import org.alephium.explorer.api.AddressesEndpoints
+import org.alephium.explorer.api.AddressesEndpoints._
 import org.alephium.explorer.api.model.{AddressBalance, AddressInfo}
 import org.alephium.explorer.service.TransactionService
 
@@ -32,10 +32,7 @@ class AddressServer(transactionService: TransactionService)(
     implicit val executionContext: ExecutionContext,
     groupSetting: GroupSetting,
     dc: DatabaseConfig[PostgresProfile])
-    extends Server
-    with AddressesEndpoints {
-
-  val groupNum = groupSetting.groupNum
+    extends Server {
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
@@ -44,7 +41,7 @@ class AddressServer(transactionService: TransactionService)(
           transactionService
             .getTransactionsByAddress(address, pagination)
       }),
-      route(getTransactionsByAddresses.serverLogicSuccess[Future] {
+      route(getTransactionsByAddresses(groupSetting.groupNum).serverLogicSuccess[Future] {
         case (addresses, pagination) =>
           transactionService
             .getTransactionsByAddresses(addresses, pagination)
@@ -97,7 +94,7 @@ class AddressServer(transactionService: TransactionService)(
             tokens <- transactionService.listAddressTokenTransactions(address, token, pagination)
           } yield tokens
       }),
-      route(areAddressesActive.serverLogicSuccess[Future] { addresses =>
+      route(areAddressesActive(groupSetting.groupNum).serverLogicSuccess[Future] { addresses =>
         transactionService.areAddressesActive(addresses)
       })
     )

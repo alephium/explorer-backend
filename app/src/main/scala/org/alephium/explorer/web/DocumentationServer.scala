@@ -24,15 +24,13 @@ import sttp.tapir.swagger.{SwaggerUI, SwaggerUIOptions}
 
 import org.alephium.api.OpenAPIWriters.openApiJson
 import org.alephium.explorer.GroupSetting
-import org.alephium.explorer.docs.Documentation
+import org.alephium.explorer.docs.Documentation._
 
-class DocumentationServer()(implicit groupSetting: GroupSetting) extends Server with Documentation {
-
-  val groupNum = groupSetting.groupNum
+class DocumentationServer()(implicit groupSetting: GroupSetting) extends Server {
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq.from(
       SwaggerUI[Future](
-        openApiJson(docs, dropAuth             = false),
-        SwaggerUIOptions.default.copy(yamlName = "explorer-backend-openapi.json")).map(route(_)))
+        openApiJson(docs(groupSetting.groupNum), dropAuth = false),
+        SwaggerUIOptions.default.copy(yamlName            = "explorer-backend-openapi.json")).map(route(_)))
 }

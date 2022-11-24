@@ -23,18 +23,16 @@ import org.alephium.explorer.sideEffect
 object OpenApiUpdate {
   def main(args: Array[String]): Unit = {
     sideEffect {
-      new Documentation {
 
-        val groupNum = 4
+      val groupNum = 4
 
-        private val json = openApiJson(docs, dropAuth = false)
+      val json = openApiJson(Documentation.docs(groupNum), dropAuth = false)
 
-        import java.io.PrintWriter
-        new PrintWriter("../app/src/main/resources/explorer-backend-openapi.json") {
-          write(json)
-          write('\n')
-          close
-        }
+      import java.io.PrintWriter
+      new PrintWriter("../app/src/main/resources/explorer-backend-openapi.json") {
+        write(json)
+        write('\n')
+        close
       }
     }
   }
