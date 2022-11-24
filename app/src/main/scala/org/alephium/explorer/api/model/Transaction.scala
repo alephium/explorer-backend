@@ -58,7 +58,7 @@ object Transaction {
   implicit val txRW: ReadWriter[Transaction] = macroRW
 
   val csvHeader: String =
-    "hash,blockHash,unixTimestamp,dateTime,fromAddresses,toAddresses,amount,hintAmount\n"
+    "hash,blockHash,unixTimestamp,dateTimeUTC,fromAddresses,toAddresses,amount,hintAmount\n"
 }
 
 sealed trait TransactionLike {
