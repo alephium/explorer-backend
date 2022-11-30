@@ -111,6 +111,10 @@ trait EmptyTransactionService extends TransactionService {
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]] = {
     Future.successful(ArraySeq(true))
   }
+  def hasAddressMoreTxsThan(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
+      implicit ec: ExecutionContext,
+      ac: ActorSystem,
+      dc: DatabaseConfig[PostgresProfile]): Future[Boolean] = ???
   def exportTransactionsByAddress(address: Address,
                                   from: TimeStamp,
                                   to: TimeStamp,

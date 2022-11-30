@@ -111,6 +111,11 @@ trait TransactionService {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]]
 
+  def hasAddressMoreTxsThan(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
+      implicit ec: ExecutionContext,
+      ac: ActorSystem,
+      dc: DatabaseConfig[PostgresProfile]): Future[Boolean]
+
   def exportTransactionsByAddress(address: Address,
                                   from: TimeStamp,
                                   to: TimeStamp,
@@ -219,6 +224,12 @@ object TransactionService extends TransactionService {
   def getTotalNumber()(implicit cache: TransactionCache): Int =
     cache.getMainChainTxnCount()
 
+  def hasAddressMoreTxsThan(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
+      implicit ec: ExecutionContext,
+      ac: ActorSystem,
+      dc: DatabaseConfig[PostgresProfile]): Future[Boolean] = {
+    run(hasAddressMoreTxsThanQuery(address, from, to, threshold))
+  }
   def exportTransactionsByAddress(address: Address,
                                   fromTime: TimeStamp,
                                   toTime: TimeStamp,
@@ -258,7 +269,8 @@ object TransactionService extends TransactionService {
   def transactionsPublisher(address: Address,
                             exportType: ExportType,
                             source: Source[ArraySeq[Transaction], NotUsed])(
-      implicit actorSystem: ActorSystem): Publisher[Buffer] = {
+      implicit actorSystem: ActorSystem
+  ): Publisher[Buffer] = {
     bufferPublisher {
       exportType match {
         case ExportType.CSV =>

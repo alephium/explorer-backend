@@ -46,6 +46,9 @@ class AddressServerSpec()
 
   implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
 
+  val exportTxsNumberThreshold = 1000
+  var addressHasMoreTxs        = false
+
   val transactions: ArraySeq[Transaction] =
     ArraySeq.from(Gen.listOfN(30, transactionGen).sample.get.zipWithIndex.map {
       case (tx, index) =>
@@ -68,6 +71,14 @@ class AddressServerSpec()
       testLimit = pagination.limit
       Future.successful(ArraySeq.empty)
     }
+
+    override def hasAddressMoreTxsThan(address: Address,
+                                       from: TimeStamp,
+                                       to: TimeStamp,
+                                       threshold: Int)(
+        implicit ec: ExecutionContext,
+        ac: ActorSystem,
+        dc: DatabaseConfig[PostgresProfile]): Future[Boolean] = Future.successful(addressHasMoreTxs)
 
     override def exportTransactionsByAddress(address: Address,
                                              from: TimeStamp,
@@ -195,6 +206,16 @@ class AddressServerSpec()
             response =>
               response.code is StatusCode.BadRequest
           }
+      }
+    }
+    "fail if address has more txs than the threshold" in {
+      addressHasMoreTxs = true
+      forAll(addressGen) { address =>
+        Get(s"/addresses/${address}/export-transactions/csv?fromTs=0&toTs=1") check { response =>
+          response.code is StatusCode.BadRequest
+          response.as[ApiError.BadRequest] is ApiError.BadRequest(
+            s"Too many transactions for that address in this time range, limit is $exportTxsNumberThreshold")
+        }
       }
     }
   }

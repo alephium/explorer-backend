@@ -313,6 +313,19 @@ object TransactionQueries extends StrictLogging {
     } yield txs
   }
 
+  def hasAddressMoreTxsThanQuery(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
+      implicit ec: ExecutionContext): DBActionR[Boolean] = {
+    sql"""
+      select 1
+      FROM transaction_per_addresses
+      WHERE address = $address
+      AND main_chain = true
+      AND block_timestamp >= $from
+      AND block_timestamp < $to
+      ORDER BY 1 OFFSET ($threshold) ROWS FETCH NEXT (1) ROWS ONLY;
+    """.asAS[Int].headOrNone.map(_.isDefined)
+  }
+
   def streamTxByAddressQR(address: Address,
                           from: TimeStamp,
                           to: TimeStamp): StreamAction[TxByAddressQR] = {
@@ -320,6 +333,7 @@ object TransactionQueries extends StrictLogging {
       SELECT tx_hash, block_hash, block_timestamp, tx_order
       FROM transaction_per_addresses
       WHERE address = $address
+      AND main_chain = true
       AND block_timestamp >= $from
       AND block_timestamp < $to
       ORDER BY block_timestamp DESC

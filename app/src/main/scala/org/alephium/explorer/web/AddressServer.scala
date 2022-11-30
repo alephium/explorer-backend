@@ -26,7 +26,9 @@ import io.vertx.ext.reactivestreams.ReactiveReadStream
 import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
+import sttp.model.StatusCode
 
+import org.alephium.api.ApiError
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.AddressesEndpoints
@@ -106,23 +108,32 @@ class AddressServer(transactionService: TransactionService, exportTxsNumberThres
       route(areAddressesActive.serverLogicSuccess[Future] { addresses =>
         transactionService.areAddressesActive(addresses)
       }),
-      route(exportTransactionsCsvByAddress.serverLogicSuccess[Future] {
+      route(exportTransactionsCsvByAddress.serverLogic[Future] {
         case (address, timeInterval) =>
           exportTransactions(address, timeInterval, ExportType.CSV)
       })
     )
 
-  private def exportTransactions(address: Address,
-                                 timeInterval: TimeInterval,
-                                 exportType: ExportType): Future[ReadStream[Buffer]] = {
-    val readStream: ReactiveReadStream[Buffer] = ReactiveReadStream.readStream();
-    val pub = transactionService.exportTransactionsByAddress(address,
-                                                             timeInterval.from,
-                                                             timeInterval.to,
-                                                             exportType,
-                                                             1)
-    pub.subscribe(readStream)
-    Future.successful(readStream)
+  private def exportTransactions(
+      address: Address,
+      timeInterval: TimeInterval,
+      exportType: ExportType): Future[Either[ApiError[_ <: StatusCode], ReadStream[Buffer]]] = {
+    transactionService
+      .hasAddressMoreTxsThan(address, timeInterval.from, timeInterval.to, exportTxsNumberThreshold)
+      .map { hasMore =>
+        if (hasMore) {
+          Left(ApiError.BadRequest(
+            s"Too many transactions for that address in this time range, limit is $exportTxsNumberThreshold"))
+        } else {
+          val readStream: ReactiveReadStream[Buffer] = ReactiveReadStream.readStream();
+          val pub = transactionService.exportTransactionsByAddress(address,
+                                                                   timeInterval.from,
+                                                                   timeInterval.to,
+                                                                   exportType,
+                                                                   1)
+          pub.subscribe(readStream)
+          Right(readStream)
+        }
+      }
   }
-
 }

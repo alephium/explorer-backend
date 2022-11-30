@@ -454,33 +454,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       false)
   }
 
-  "export transactions by address" in new Fixture {
-
-    val address = addressGen.sample.get
-
-    val blocks = Gen
-      .listOfN(5, blockEntityGen(groupIndex, groupIndex))
-      .map(_.map { block =>
-        block.copy(outputs = block.outputs.map(_.copy(address = address)))
-      })
-      .sample
-      .get
-
-    BlockDao.insertAll(blocks).futureValue
-    Future
-      .sequence(blocks.map { block =>
-        for {
-          _ <- databaseConfig.db.run(InputUpdateQueries.updateInputs())
-          _ <- BlockDao.updateMainChainStatus(block.hash, true)
-        } yield (())
-      })
-      .futureValue
-
-    val transactions = blocks.flatMap(_.transactions).sortBy(_.timestamp)
-    val timestamps   = transactions.map(_.timestamp)
-    val fromTs       = timestamps.head
-    val toTs         = timestamps.last + Duration.ofMillisUnsafe(1)
-
+  "export transactions by address" in new TxsByAddressFixture {
     forAll(Gen.choose(1, 4)) { batchSize =>
       val publisher = TransactionService
         .exportTransactionsByAddress(address, fromTs, toTs, ExportType.CSV, batchSize)
@@ -496,6 +470,37 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       val csvFile = result.map(_.toString()).mkString.split('\n')
 
       csvFile.size is (transactions.size + 1)
+    }
+  }
+
+  "has addres more txs than threshold" in new TxsByAddressFixture {
+    TransactionService
+      .hasAddressMoreTxsThan(address, fromTs, toTs, transactions.size)
+      .futureValue is false
+    TransactionService
+      .hasAddressMoreTxsThan(address, fromTs, toTs, transactions.size - 1)
+      .futureValue is true
+
+    //Checking fromTs/toTs are taken into account
+    val fromMs = fromTs.millis
+    val toMs   = toTs.millis
+    val diff   = (toMs - fromMs) / 2
+    forAll(Gen.choose(fromTs.millis, fromTs.millis + diff).map(TimeStamp.unsafe),
+           Gen.choose(toTs.millis - diff, toTs.millis).map(TimeStamp.unsafe)) {
+      case (from, to) =>
+        from <= to is true
+
+        val txsNumber = transactions.count(tx => tx.timestamp >= from && tx.timestamp < to)
+
+        TransactionService
+          .hasAddressMoreTxsThan(address, from, to, txsNumber)
+          .futureValue is false
+
+        if (txsNumber != 0) {
+          TransactionService
+            .hasAddressMoreTxsThan(address, from, to, txsNumber - 1)
+            .futureValue is true
+        }
     }
   }
 
@@ -525,5 +530,32 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
         hashrate     = BigInteger.ZERO
       )
 
+  }
+
+  trait TxsByAddressFixture extends Fixture {
+    val address = addressGen.sample.get
+
+    val blocks = Gen
+      .listOfN(5, blockEntityGen(groupIndex, groupIndex))
+      .map(_.map { block =>
+        block.copy(outputs = block.outputs.map(_.copy(address = address)))
+      })
+      .sample
+      .get
+
+    BlockDao.insertAll(blocks).futureValue
+    val p = Future
+      .sequence(blocks.map { block =>
+        for {
+          _ <- databaseConfig.db.run(InputUpdateQueries.updateInputs())
+          _ <- BlockDao.updateMainChainStatus(block.hash, true)
+        } yield (())
+      })
+      .futureValue
+
+    val transactions = blocks.flatMap(_.transactions).sortBy(_.timestamp)
+    val timestamps   = transactions.map(_.timestamp).distinct
+    val fromTs       = timestamps.head
+    val toTs         = timestamps.last + Duration.ofMillisUnsafe(1)
   }
 }
