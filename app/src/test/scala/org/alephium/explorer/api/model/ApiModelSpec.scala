@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.api.model
 
+import java.time.Instant
+
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.GenApiModel._
@@ -35,9 +37,10 @@ class ApiModelSpec() extends AlephiumSpec {
     check[IntervalType](IntervalType.Daily, s""""daily"""")
   }
 
-  "Transaction" in {
-    forAll(transactionGen) { tx =>
-      val expected = s"""
+  "Transaction" should {
+    "convert to json" in {
+      forAll(transactionGen) { tx =>
+        val expected = s"""
        |{
        |  "hash": "${tx.hash.value.toHexString}",
        |  "blockHash": "${tx.blockHash.value.toHexString}",
@@ -47,7 +50,17 @@ class ApiModelSpec() extends AlephiumSpec {
        |  "gasAmount": ${tx.gasAmount},
        |  "gasPrice": "${tx.gasPrice}"
        |}""".stripMargin
-      check(tx, expected)
+        check(tx, expected)
+      }
+    }
+    "convert to csv" in {
+      forAll(transactionGen) { tx =>
+        //No inputs or outputs so no addresses nor amounts
+        val expected =
+          s"${tx.hash.toHexString},${tx.blockHash.toHexString},${tx.timestamp.millis},${Instant
+            .ofEpochMilli(tx.timestamp.millis)},,,0,0\n"
+        tx.toCsv(addressGen.sample.get) is expected
+      }
     }
   }
 
