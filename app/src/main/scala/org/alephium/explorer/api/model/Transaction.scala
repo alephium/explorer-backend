@@ -47,7 +47,7 @@ final case class Transaction(
     val amount      = deltaAmount.map(_.toString).getOrElse("")
     val amountHint = deltaAmount
       .map(delta =>
-        new java.math.BigDecimal(delta.v).divide(new java.math.BigDecimal(ALPH.oneAlph.v)))
+        new java.math.BigDecimal(delta).divide(new java.math.BigDecimal(ALPH.oneAlph.v)))
       .map(_.toString)
       .getOrElse("")
     s"${hash.toHexString},${blockHash.toHexString},${timestamp.millis},$dateTime,$fromAddresses,$toAddresses,$amount,$amountHint\n"

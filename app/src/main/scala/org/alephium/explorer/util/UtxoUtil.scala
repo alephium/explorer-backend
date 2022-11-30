@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.util
 
+import java.math.BigInteger
+
 import scala.collection.immutable.ArraySeq
 
 import org.alephium.explorer.api.model.{Address, Input, Output}
@@ -39,13 +41,12 @@ object UtxoUtil {
 
   def deltaAmountForAddress(address: Address,
                             inputs: ArraySeq[Input],
-                            outputs: ArraySeq[Output]): Option[U256] = {
+                            outputs: ArraySeq[Output]): Option[BigInteger] = {
     for {
-      in    <- amountForAddressInInputs(address, inputs)
-      out   <- amountForAddressInOutputs(address, outputs)
-      delta <- out.sub(in)
+      in  <- amountForAddressInInputs(address, inputs)
+      out <- amountForAddressInOutputs(address, outputs)
     } yield {
-      delta
+      out.v.subtract(in.v)
     }
   }
 }
