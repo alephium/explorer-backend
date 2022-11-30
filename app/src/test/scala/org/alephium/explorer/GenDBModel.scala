@@ -19,8 +19,10 @@ import org.scalacheck.{Arbitrary, Gen}
 
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreUtil._
+import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.Address
 import org.alephium.explorer.persistence.model._
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.TimeStamp
 
 /** Test-data generators for types in package [[org.alephium.explorer.persistence.model]]  */
@@ -77,10 +79,11 @@ object GenDBModel {
         mainChain = mainChain
       )
 
-  def transactionPerTokenEntityGen(): Gen[TransactionPerTokenEntity] =
+  def transactionPerTokenEntityGen(
+      blockHash: Gen[BlockHash] = blockEntryHashGen): Gen[TransactionPerTokenEntity] =
     for {
       hash      <- transactionHashGen
-      blockHash <- blockEntryHashGen
+      blockHash <- blockHash
       token     <- tokenIdGen
       timestamp <- timestampGen
       txOrder   <- Gen.posNum[Int]
@@ -95,11 +98,12 @@ object GenDBModel {
         mainChain = mainChain
       )
 
-  def tokenTxPerAddressEntityGen(): Gen[TokenTxPerAddressEntity] =
+  def tokenTxPerAddressEntityGen(
+      blockHash: Gen[BlockHash] = blockEntryHashGen): Gen[TokenTxPerAddressEntity] =
     for {
       address   <- addressGen
       hash      <- transactionHashGen
-      blockHash <- blockEntryHashGen
+      blockHash <- blockHash
       timestamp <- timestampGen
       txOrder   <- Gen.posNum[Int]
       mainChain <- Arbitrary.arbitrary[Boolean]
@@ -114,4 +118,57 @@ object GenDBModel {
         mainChain = mainChain,
         token     = token
       )
+
+  def genTokenOutputEntity(
+      addressGen: Gen[Address]          = addressGen,
+      transactionId: Gen[TransactionId] = transactionHashGen,
+      blockHash: Gen[BlockHash]         = blockEntryHashGen,
+      timestampGen: Gen[TimeStamp]      = timestampGen,
+      mainChain: Gen[Boolean]           = Arbitrary.arbitrary[Boolean]): Gen[TokenOutputEntity] =
+    for {
+      blockHash      <- blockHash
+      txHash         <- transactionId
+      timestamp      <- timestampGen
+      outputType     <- Gen.choose(0, 1)
+      hint           <- Gen.posNum[Int]
+      key            <- hashGen
+      token          <- tokenIdGen
+      amount         <- amountGen
+      address        <- addressGen
+      mainChain      <- mainChain
+      lockTime       <- Gen.option(timestampGen)
+      message        <- Gen.option(bytesGen)
+      outputOrder    <- Gen.posNum[Int]
+      txOrder        <- Gen.posNum[Int]
+      spentFinalized <- Gen.option(transactionId)
+    } yield
+      TokenOutputEntity(
+        blockHash,
+        txHash,
+        timestamp,
+        outputType, //0 Asset, 1 Contract
+        hint,
+        key,
+        token,
+        amount,
+        address,
+        mainChain,
+        lockTime,
+        message,
+        outputOrder,
+        txOrder,
+        spentFinalized
+      )
+
+  /** Generates BlockEntity and it's dependant Entities that also maintain the block's mainChain value */
+  def genBlockAndItsMainChainEntities()(implicit groupSetting: GroupSetting)
+    : Gen[(BlockEntity, TransactionPerTokenEntity, TokenTxPerAddressEntity, TokenOutputEntity)] =
+    for {
+      chainFrom         <- groupIndexGen
+      chainTo           <- groupIndexGen
+      entity            <- blockEntityGen(chainFrom, chainTo, None)
+      txnPerToken       <- transactionPerTokenEntityGen(blockHash = entity.hash)
+      tokenTxPerAddress <- tokenTxPerAddressEntityGen(blockHash = entity.hash)
+      tokenOutput       <- genTokenOutputEntity(blockHash = entity.hash)
+    } yield (entity, txnPerToken, tokenTxPerAddress, tokenOutput)
 }

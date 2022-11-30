@@ -20,16 +20,18 @@ import scala.collection.immutable.ArraySeq
 import scala.math.Ordering.Implicits.infixOrderingOps
 import scala.util.Random
 
-import org.scalacheck.Gen
+import org.scalacheck.{Arbitrary, Gen}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
-import org.alephium.explorer.GenApiModel.{blockEntryHashGen, blockHashGen, groupIndexGen, heightGen}
+import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.{GroupIndex, Height}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 
 class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
@@ -371,6 +373,75 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
           block.chainFrom is chainFrom
           block.chainTo is chainTo
           block.mainChain is mainChain
+        }
+      }
+    }
+  }
+
+  "updateMainChainStatusesSQL" should {
+    "not throw Exception" when {
+      "query input is empty" in {
+        run(BlockQueries.updateMainChainStatusesSQL(ArraySeq.empty, Random.nextBoolean())).futureValue is 0
+      }
+    }
+
+    "transactionally update all dependant tables with new mainChain value" when {
+      "there are one or more blocks" in {
+        implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
+
+        forAll(Gen.nonEmptyListOf(genBlockAndItsMainChainEntities()), Arbitrary.arbitrary[Boolean]) {
+          case (testData, updatedMainChainValue) =>
+            val entities           = testData.map(_._1)
+            val txsPerToken        = testData.map(_._2)
+            val tokenTxsPerAddress = testData.map(_._3)
+            val tokenOutputs       = testData.map(_._4)
+
+            //Insert BlockEntity test data
+            run(BlockQueries.insertBlockEntity(entities, groupSetting.groupNum)).futureValue is ()
+            //Insert other BlockEntity's dependant test data
+            run(TransactionPerTokenSchema.table ++= txsPerToken).futureValue is
+              Some(txsPerToken.size)
+            run(TokenPerAddressSchema.table ++= tokenTxsPerAddress).futureValue is
+              Some(tokenTxsPerAddress.size)
+            run(TokenOutputSchema.table ++= tokenOutputs).futureValue is
+              Some(tokenOutputs.size)
+
+            //block hashes to update
+            val hashes = entities.map(_.hash)
+
+            //Run the update query being tested
+            run(BlockQueries.updateMainChainStatusesSQL(hashes, updatedMainChainValue)).futureValue is 0
+
+            //Check that query result is non-empty and has it's mainChain value updated
+            def check(query: Query[Rep[Boolean], Boolean, Seq]) = {
+              val result = run(query.result).futureValue
+              result should not be empty
+              result should contain only updatedMainChainValue
+            }
+
+            //Check the query returns empty
+            def checkEmpty(query: Query[Rep[Boolean], Boolean, Seq]) =
+              run(query.result).futureValue.isEmpty is true
+
+            //Run check on all tables that are expected to have their mainChain value updated
+            check(TransactionSchema.table.filter(_.blockHash inSet hashes).map(_.mainChain))
+            check(OutputSchema.table.filter(_.blockHash inSet hashes).map(_.mainChain))
+            check(BlockHeaderSchema.table.filter(_.hash inSet hashes).map(_.mainChain))
+            check(
+              TransactionPerAddressSchema.table.filter(_.blockHash inSet hashes).map(_.mainChain)
+            )
+            check(TransactionPerTokenSchema.table.filter(_.blockHash inSet hashes).map(_.mainChain))
+            check(TokenPerAddressSchema.table.filter(_.blockHash inSet hashes).map(_.mainChain))
+            check(TokenOutputSchema.table.filter(_.blockHash inSet hashes).map(_.mainChain))
+
+            val inputsQuery = InputSchema.table.filter(_.blockHash inSet hashes).map(_.mainChain)
+
+            //Inputs are optionally generated so if it's empty expect empty query result
+            if (entities.forall(_.inputs.isEmpty)) {
+              checkEmpty(inputsQuery)
+            } else {
+              check(inputsQuery)
+            }
         }
       }
     }
