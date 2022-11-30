@@ -33,7 +33,7 @@ import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.service.TransactionService
 
-class AddressServer(transactionService: TransactionService)(
+class AddressServer(transactionService: TransactionService, exportTxsNumberThreshold: Int)(
     implicit val executionContext: ExecutionContext,
     ac: ActorSystem,
     groupSetting: GroupSetting,

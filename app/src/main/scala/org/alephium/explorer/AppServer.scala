@@ -31,16 +31,17 @@ import org.alephium.explorer.web._
 // scalastyle:off magic.number
 object AppServer {
 
-  def routes()(implicit ec: ExecutionContext,
-               dc: DatabaseConfig[PostgresProfile],
-               blockFlowClient: BlockFlowClient,
-               blockCache: BlockCache,
-               transactionCache: TransactionCache,
-               actorSystem: ActorSystem,
-               groupSetting: GroupSetting): ArraySeq[Router => Route] = {
+  def routes(exportTxsNumberThreshold: Int)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      blockCache: BlockCache,
+      transactionCache: TransactionCache,
+      actorSystem: ActorSystem,
+      groupSetting: GroupSetting): ArraySeq[Router => Route] = {
 
     val blockServer                = new BlockServer()
-    val addressServer              = new AddressServer(TransactionService)
+    val addressServer              = new AddressServer(TransactionService, exportTxsNumberThreshold)
     val transactionServer          = new TransactionServer()
     val infosServer                = new InfosServer(TokenSupplyService, BlockService, TransactionService)
     val utilsServer: UtilsServer   = new UtilsServer()

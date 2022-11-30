@@ -85,7 +85,7 @@ class AddressServerSpec()
     }
   }
 
-  val server = new AddressServer(transactionService)
+  val server = new AddressServer(transactionService, exportTxsNumberThreshold = 1000)
 
   val routes = server.routes
 
