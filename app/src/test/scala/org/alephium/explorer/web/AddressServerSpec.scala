@@ -177,7 +177,7 @@ class AddressServerSpec()
 
   "/addresses/<address>/export-transactions/" should {
     "handle csv format" in {
-      forAll(addressGen) { address =>
+      Gen.listOfN(3, addressGen).sample.get.foreach { address =>
         val timestamps = transactions.map(_.timestamp.millis).sorted
         val fromTs     = timestamps.head
         val toTs       = timestamps.last
@@ -191,7 +191,7 @@ class AddressServerSpec()
       }
     }
     "restrict time range to 1 year" in {
-      forAll(addressGen, Gen.posNum[Long]) {
+      Gen.listOfN(3, Gen.zip(addressGen, Gen.posNum[Long])).sample.get.foreach {
         case (address, long) =>
           val fromTs = TimeStamp.now().millis
           val toTs   = fromTs + Duration.ofDaysUnsafe(365).millis
@@ -210,7 +210,7 @@ class AddressServerSpec()
     }
     "fail if address has more txs than the threshold" in {
       addressHasMoreTxs = true
-      forAll(addressGen) { address =>
+      Gen.listOfN(3, addressGen).sample.get.foreach { address =>
         Get(s"/addresses/${address}/export-transactions/csv?fromTs=0&toTs=1") check { response =>
           response.code is StatusCode.BadRequest
           response.as[ApiError.BadRequest] is ApiError.BadRequest(
