@@ -36,7 +36,7 @@ import slick.jdbc.PostgresProfile
 import sttp.model.StatusCode
 import sttp.tapir._
 import sttp.tapir.generic.auto._
-import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
+//import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 
 import org.alephium.api.{model, ApiError, ApiModelCodec}
 import org.alephium.api.{alphJsonBody => jsonBody}

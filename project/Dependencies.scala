@@ -27,6 +27,7 @@ object Version {
   lazy val apispec    = "0.3.1"
   lazy val prometheus = "0.15.0"
   lazy val micrometer = "1.7.4"
+  lazy val vertx = "4.3.3"
 }
 
 object Dependencies {
@@ -38,8 +39,9 @@ object Dependencies {
   lazy val alephiumHttp     = "org.alephium" %% "alephium-http"     % Version.common
   lazy val alephiumConf     = "org.alephium" %% "alephium-conf"     % Version.common
 
-  lazy val vertx                = "io.vertx" % "vertx-core"             % "4.3.3"
-  lazy val vertxReactiveStreams = "io.vertx" % "vertx-reactive-streams" % "4.3.3"
+  lazy val vertx                = "io.vertx" % "vertx-core"             % Version.vertx
+  lazy val vertxReactiveStreams = "io.vertx" % "vertx-reactive-streams" % Version.vertx
+  lazy val vertxWebClient = "io.vertx" % "vertx-web-client" % Version.vertx
 
   lazy val akkaStreams = "com.typesafe.akka" %% "akka-stream"  % Version.akka
   lazy val akkaTest    = "com.typesafe.akka" %% "akka-testkit" % Version.akka % Test

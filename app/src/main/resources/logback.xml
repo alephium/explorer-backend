@@ -70,7 +70,7 @@
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>${EXPLORER_LOG_LEVEL:-INFO}</level>
+            <level>${EXPLORER_LOG_LEVEL:-DEBUG}</level>
         </filter>
 
         <encoder>
