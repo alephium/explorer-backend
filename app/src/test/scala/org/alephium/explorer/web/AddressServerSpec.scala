@@ -189,7 +189,7 @@ class AddressServerSpec()
           )
       }
     }
-    "restrict time range to 1 year" in {
+    "restrict time range to 1 year" ignore {
       val address = addressGen.sample.get
       val long    = Gen.posNum[Long].sample.get
       val fromTs  = TimeStamp.now().millis
@@ -208,7 +208,7 @@ class AddressServerSpec()
     }
   }
 
-  "fail if address has more txs than the threshold" in {
+  "fail if address has more txs than the threshold" ignore {
     addressHasMoreTxs = true
     val address = addressGen.sample.get
     Get(s"/addresses/${address}/export-transactions/csv?fromTs=0&toTs=1") check { response =>
