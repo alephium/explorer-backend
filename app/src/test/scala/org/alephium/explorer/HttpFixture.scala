@@ -38,12 +38,12 @@ import org.alephium.json.Json._
 
 final case class Response[T](body: T, code: StatusCode)
 
-object Response{
-  def apply(response : HttpResponse[Buffer]):Response[String] = {
+object Response {
+  def apply(response: HttpResponse[Buffer]): Response[String] = {
     val body = response.bodyAsString
     println(s"${Console.RED}${Console.BOLD}*** body ***\n\t${Console.RESET}${body}")
     Response(
-      if(body == null) "" else body,
+      if (body == null) "" else body,
       StatusCode.unsafeApply(response.statusCode)
     )
   }
@@ -64,13 +64,13 @@ object HttpFixture {
       read[T](body)
     }
   }
-  implicit class RichStringResponse(val response: Response[ String]) extends AnyVal {
+  implicit class RichStringResponse(val response: Response[String]) extends AnyVal {
     def as[T: Reader]: T = {
       read[T](response.body)
     }
   }
 
-  implicit class VertxFutureToScalaFuture[A](future:  io.vertx.core.Future[A]) {
+  implicit class VertxFutureToScalaFuture[A](future: io.vertx.core.Future[A]) {
     def asScala: Future[A] = {
       val promise = Promise[A]()
       future.onComplete { handler =>
@@ -88,8 +88,8 @@ object HttpFixture {
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 trait HttpFixture {
 
-  val vertx:Vertx = Vertx.vertx()
-  val client:WebClient = WebClient.create(vertx);
+  val vertx: Vertx      = Vertx.vertx()
+  val client: WebClient = WebClient.create(vertx);
 
   //type HttpRequest = RequestT[Identity, Either[String, String], Any]
 
@@ -99,8 +99,8 @@ trait HttpFixture {
       method: HttpMethod,
       endpoint: String,
       maybeBody: Option[String] = None,
-      port:Int
-  )(implicit ec:ExecutionContext): Future[Response[String]]= {
+      port: Int
+  )(implicit ec: ExecutionContext): Future[Response[String]] = {
     // val request = basicRequest
     //   .method(method, parseUri(endpoint).port(port))
 
@@ -114,39 +114,41 @@ trait HttpFixture {
     val request = client.request(method, port, "localhost", endpoint)
     (maybeBody match {
       case Some(body) => request.sendBuffer(Buffer.buffer(body)).asScala
-      case None => request.send().asScala
-  }).map(Response.apply)
+      case None       => request.send().asScala
+    }).map(Response.apply)
   }
 
   def streamRequest[T, R](
       endpoint: String,
-      port:Int,
-      writeStream:WriteStream[Buffer]
-  )(implicit ec:ExecutionContext):Future[StatusCode]= {
+      port: Int,
+      writeStream: WriteStream[Buffer]
+  )(implicit ec: ExecutionContext): Future[StatusCode] = {
     val request = client.request(HttpMethod.GET, port, "localhost", endpoint)
     request
-.as(BodyCodec.pipe(writeStream))
-.send().asScala.map(res => StatusCode.unsafeApply(res.statusCode))
+      .as(BodyCodec.pipe(writeStream))
+      .send()
+      .asScala
+      .map(res => StatusCode.unsafeApply(res.statusCode))
   }
 
   def httpGet(
       endpoint: String,
       maybeBody: Option[String] = None,
-      port:Int
-  )(implicit ec:ExecutionContext) =
-    httpRequest(HttpMethod.GET, endpoint, maybeBody,port)
+      port: Int
+  )(implicit ec: ExecutionContext) =
+    httpRequest(HttpMethod.GET, endpoint, maybeBody, port)
   def httpPost(
       endpoint: String,
       maybeBody: Option[String] = None,
-      port:Int
-  )(implicit ec:ExecutionContext) =
-    httpRequest(HttpMethod.POST, endpoint, maybeBody,port)
+      port: Int
+  )(implicit ec: ExecutionContext) =
+    httpRequest(HttpMethod.POST, endpoint, maybeBody, port)
   def httpPut(
       endpoint: String,
       maybeBody: Option[String] = None,
-      port:Int
-  )(implicit ec:ExecutionContext) =
-    httpRequest(HttpMethod.PUT, endpoint, maybeBody,port)
+      port: Int
+  )(implicit ec: ExecutionContext) =
+    httpRequest(HttpMethod.PUT, endpoint, maybeBody, port)
 
 // scalastyle:off no.equal
   def parsePath(str: String): (Seq[String], Map[String, String]) = {
@@ -199,39 +201,36 @@ trait HttpRouteFixture extends HttpFixture with BeforeAndAfterAll with AlephiumF
   def Post(
       endpoint: String,
       maybeBody: Option[String]
-  ): Response[ String] = {
-    httpPost(endpoint, maybeBody,port).futureValue
+  ): Response[String] = {
+    httpPost(endpoint, maybeBody, port).futureValue
   }
 
-  def Post(endpoint: String): Response[ String] =
+  def Post(endpoint: String): Response[String] =
     Post(endpoint, None)
 
-  def Post(endpoint: String, body: String): Response[ String] =
+  def Post(endpoint: String, body: String): Response[String] =
     Post(endpoint, Some(body))
 
   def Put(endpoint: String, body: String) = {
-    httpPut(endpoint, Some(body),port).futureValue
+    httpPut(endpoint, Some(body), port).futureValue
   }
 
   def Delete(endpoint: String, body: String) = {
-    httpRequest(HttpMethod.DELETE, endpoint, Some(body),port)
-      .futureValue
+    httpRequest(HttpMethod.DELETE, endpoint, Some(body), port).futureValue
   }
 
   def Get(
       endpoint: String,
       otherPort: Int            = port,
       maybeBody: Option[String] = None
-  ): Response[ String] = {
-    httpGet(endpoint, maybeBody = maybeBody,otherPort)
-      .futureValue
+  ): Response[String] = {
+    httpGet(endpoint, maybeBody = maybeBody, otherPort).futureValue
   }
   def Stream(
       endpoint: String,
       writeStream: WriteStream[Buffer]
-  ): StatusCode = {
+  ): Future[StatusCode] = {
     streamRequest(endpoint, port, writeStream)
-      .futureValue
   }
 }
 

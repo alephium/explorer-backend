@@ -28,6 +28,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.StatusCode
 
+import org.alephium.explorer.sideEffect
 import org.alephium.api.ApiError
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.GroupSetting
@@ -126,6 +127,18 @@ class AddressServer(transactionService: TransactionService, exportTxsNumberThres
             s"Too many transactions for that address in this time range, limit is $exportTxsNumberThreshold"))
         } else {
           val readStream: ReactiveReadStream[Buffer] = ReactiveReadStream.readStream();
+
+          sideEffect {
+            readStream.exceptionHandler { readExc =>
+              println(s"${Console.RED}${Console.BOLD}*** readExc ***\n\t${Console.RESET}${readExc}")
+            }
+          }
+          sideEffect {
+            readStream.endHandler { readEnd =>
+              println(s"${Console.RED}${Console.BOLD}*** readEnd ***\n\t${Console.RESET}${readEnd}")
+              sideEffect(readStream.resume())
+            }
+          }
           val pub = transactionService.exportTransactionsByAddress(address,
                                                                    timeInterval.from,
                                                                    timeInterval.to,
