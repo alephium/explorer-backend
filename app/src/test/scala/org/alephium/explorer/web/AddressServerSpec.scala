@@ -177,46 +177,44 @@ class AddressServerSpec()
 
   "/addresses/<address>/export-transactions/" should {
     "handle csv format" in {
-      Gen.listOfN(3, addressGen).sample.get.foreach { address =>
-        val timestamps = transactions.map(_.timestamp.millis).sorted
-        val fromTs     = timestamps.head
-        val toTs       = timestamps.last
+      val address    = addressGen.sample.get
+      val timestamps = transactions.map(_.timestamp.millis).sorted
+      val fromTs     = timestamps.head
+      val toTs       = timestamps.last
 
-        Get(s"/addresses/${address}/export-transactions/csv?fromTs=$fromTs&toTs=$toTs") check {
-          response =>
-            response.body is Right(
-              Transaction.csvHeader ++ transactions.map(_.toCsv(address)).mkString
-            )
-        }
+      Get(s"/addresses/${address}/export-transactions/csv?fromTs=$fromTs&toTs=$toTs") check {
+        response =>
+          response.body is Right(
+            Transaction.csvHeader ++ transactions.map(_.toCsv(address)).mkString
+          )
       }
     }
     "restrict time range to 1 year" in {
-      Gen.listOfN(3, Gen.zip(addressGen, Gen.posNum[Long])).sample.get.foreach {
-        case (address, long) =>
-          val fromTs = TimeStamp.now().millis
-          val toTs   = fromTs + Duration.ofDaysUnsafe(365).millis
+      val address = addressGen.sample.get
+      val long    = Gen.posNum[Long].sample.get
+      val fromTs  = TimeStamp.now().millis
+      val toTs    = fromTs + Duration.ofDaysUnsafe(365).millis
 
-          Get(s"/addresses/${address}/export-transactions/csv?fromTs=$fromTs&toTs=$toTs") check {
-            response =>
-              response.code is StatusCode.Ok
-          }
+      Get(s"/addresses/${address}/export-transactions/csv?fromTs=$fromTs&toTs=$toTs") check {
+        response =>
+          response.code is StatusCode.Ok
+      }
 
-          val toMore = toTs + Duration.ofMillisUnsafe(long).millis
-          Get(s"/addresses/${address}/export-transactions/csv?fromTs=$fromTs&toTs=$toMore") check {
-            response =>
-              response.code is StatusCode.BadRequest
-          }
+      val toMore = toTs + Duration.ofMillisUnsafe(long).millis
+      Get(s"/addresses/${address}/export-transactions/csv?fromTs=$fromTs&toTs=$toMore") check {
+        response =>
+          response.code is StatusCode.BadRequest
       }
     }
-    "fail if address has more txs than the threshold" in {
-      addressHasMoreTxs = true
-      Gen.listOfN(3, addressGen).sample.get.foreach { address =>
-        Get(s"/addresses/${address}/export-transactions/csv?fromTs=0&toTs=1") check { response =>
-          response.code is StatusCode.BadRequest
-          response.as[ApiError.BadRequest] is ApiError.BadRequest(
-            s"Too many transactions for that address in this time range, limit is $exportTxsNumberThreshold")
-        }
-      }
+  }
+
+  "fail if address has more txs than the threshold" in {
+    addressHasMoreTxs = true
+    val address = addressGen.sample.get
+    Get(s"/addresses/${address}/export-transactions/csv?fromTs=0&toTs=1") check { response =>
+      response.code is StatusCode.BadRequest
+      response.as[ApiError.BadRequest] is ApiError.BadRequest(
+        s"Too many transactions for that address in this time range, limit is $exportTxsNumberThreshold")
     }
   }
 
