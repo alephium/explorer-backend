@@ -38,11 +38,11 @@ final case class Transaction(
     gasPrice: U256
 ) {
   def toCsv(address: Address): String = {
-    val dateTime = Instant.ofEpochMilli(timestamp.millis)
-    val fromAddresses =
-      inputs.map(_.address).collect { case Some(address) => address }.distinct.mkString("-")
+    val dateTime         = Instant.ofEpochMilli(timestamp.millis)
+    val fromAddresses    = UtxoUtil.fromAddresses(inputs)
+    val fromAddressesStr = fromAddresses.mkString("-")
     val toAddresses =
-      outputs.map(_.address).distinct.mkString("-")
+      UtxoUtil.toAddressesWithoutChangeAddresses(outputs, fromAddresses).mkString("-")
     val deltaAmount = UtxoUtil.deltaAmountForAddress(address, inputs, outputs)
     val amount      = deltaAmount.map(_.toString).getOrElse("")
     val amountHint = deltaAmount
@@ -50,7 +50,7 @@ final case class Transaction(
         new java.math.BigDecimal(delta).divide(new java.math.BigDecimal(ALPH.oneAlph.v)))
       .map(_.toString)
       .getOrElse("")
-    s"${hash.toHexString},${blockHash.toHexString},${timestamp.millis},$dateTime,$fromAddresses,$toAddresses,$amount,$amountHint\n"
+    s"${hash.toHexString},${blockHash.toHexString},${timestamp.millis},$dateTime,$fromAddressesStr,$toAddresses,$amount,$amountHint\n"
   }
 }
 

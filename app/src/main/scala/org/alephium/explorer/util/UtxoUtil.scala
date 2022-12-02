@@ -49,4 +49,14 @@ object UtxoUtil {
       out.v.subtract(in.v)
     }
   }
+
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  def fromAddresses(inputs: ArraySeq[Input]): ArraySeq[Address] = {
+    inputs.collect { case input if input.address.isDefined => input.address.get }.distinct
+  }
+
+  def toAddressesWithoutChangeAddresses(outputs: ArraySeq[Output],
+                                        changeAddresses: ArraySeq[Address]): ArraySeq[Address] = {
+    outputs.collect { case output if !changeAddresses.contains(output.address) => output.address }.distinct
+  }
 }
