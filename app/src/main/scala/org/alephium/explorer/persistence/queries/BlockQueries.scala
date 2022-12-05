@@ -207,46 +207,51 @@ object BlockQueries extends StrictLogging {
          |""".stripMargin
   }
 
-  def updateMainChainStatusAction(hash: BlockHash, isMainChain: Boolean)(
-      implicit ec: ExecutionContext): DBActionRWT[Unit] = {
-    val query =
-      for {
-        _ <- TransactionSchema.table
-          .filter(_.blockHash === hash)
-          .map(_.mainChain)
-          .update(isMainChain)
-        _ <- OutputSchema.table
-          .filter(_.blockHash === hash)
-          .map(_.mainChain)
-          .update(isMainChain)
-        _ <- InputSchema.table
-          .filter(_.blockHash === hash)
-          .map(_.mainChain)
-          .update(isMainChain)
-        _ <- BlockHeaderSchema.table
-          .filter(_.hash === hash)
-          .map(_.mainChain)
-          .update(isMainChain)
-        _ <- TransactionPerAddressSchema.table
-          .filter(_.blockHash === hash)
-          .map(_.mainChain)
-          .update(isMainChain)
-        _ <- TransactionPerTokenSchema.table
-          .filter(_.blockHash === hash)
-          .map(_.mainChain)
-          .update(isMainChain)
-        _ <- TokenPerAddressSchema.table
-          .filter(_.blockHash === hash)
-          .map(_.mainChain)
-          .update(isMainChain)
-        _ <- TokenOutputSchema.table
-          .filter(_.blockHash === hash)
-          .map(_.mainChain)
-          .update(isMainChain)
-      } yield ()
+  def updateMainChainStatusSQL(block: BlockHash, mainChain: Boolean): DBActionRWT[Int] =
+    updateMainChainStatusesSQL(Array(block), mainChain)
 
-    query.transactionally
-  }
+  /**
+    * Updates the block and the block's dependant tables with new `mainChain` value.
+    *
+    * @param blocks     Blocks to update
+    * @param mainChain  New mainChain value
+    * @return           The row count for SQL Data Manipulation Language (DML) statements
+    *                   or 0 for SQL statements that return nothing
+    */
+  def updateMainChainStatusesSQL(blocks: Iterable[BlockHash],
+                                 mainChain: Boolean): DBActionRWT[Int] =
+    if (blocks.isEmpty) {
+      DBIOAction.successful(0)
+    } else {
+      def whereClause(columnName: String): String =
+        Array.fill(blocks.size)(s"$columnName = ?").mkString(" OR ")
+
+      val query =
+        s"""
+           |BEGIN;
+           |UPDATE transactions              SET main_chain = ? WHERE ${whereClause("block_hash")};
+           |UPDATE outputs                   SET main_chain = ? WHERE ${whereClause("block_hash")};
+           |UPDATE inputs                    SET main_chain = ? WHERE ${whereClause("block_hash")};
+           |UPDATE block_headers             SET main_chain = ? WHERE ${whereClause("hash")};
+           |UPDATE transaction_per_addresses SET main_chain = ? WHERE ${whereClause("block_hash")};
+           |UPDATE transaction_per_token     SET main_chain = ? WHERE ${whereClause("block_hash")};
+           |UPDATE token_tx_per_addresses    SET main_chain = ? WHERE ${whereClause("block_hash")};
+           |UPDATE token_outputs             SET main_chain = ? WHERE ${whereClause("block_hash")};
+           |COMMIT;
+           |""".stripMargin
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          (1 to 8) foreach { _ =>
+            params >> mainChain
+            blocks foreach (params >> _)
+        }
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv  = parameters
+      ).asUpdate
+    }
 
   def buildBlockEntryWithoutTxsAction(blockHeader: BlockHeader)(
       implicit ec: ExecutionContext): DBActionR[BlockEntry] =
