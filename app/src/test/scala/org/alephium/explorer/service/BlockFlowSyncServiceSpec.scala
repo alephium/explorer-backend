@@ -28,7 +28,7 @@ import org.alephium.explorer.GenApiModel.chainIndexes
 import org.alephium.explorer.GenCoreUtil.timestampMaxValue
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
@@ -99,7 +99,7 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     def blockEntity(parent: Option[BlockEntity],
                     chainFrom: GroupIndex = GroupIndex.unsafe(0),
                     chainTo: GroupIndex   = GroupIndex.unsafe(0)): BlockEntity =
-      blockEntityGen(chainFrom, chainTo, parent).sample.get
+      blockEntityWithParentGen(chainFrom, chainTo, parent).sample.get
 
     //                    +---+                            +---+   +---+  +---+
     //                 +->+ 2 |                         +--> 9 +-->+ 11+->+ 13|
@@ -174,7 +174,7 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     def blockFlow: ArraySeq[ArraySeq[BlockEntry]] =
       blockEntitiesToBlockEntries(blockFlowEntity)
 
-    implicit val blockCache: BlockCache = BlockCache()
+    implicit val blockCache: BlockCache = TestBlockCache()
 
     def blockEntities = ArraySeq.from(blockFlowEntity.flatten)
 

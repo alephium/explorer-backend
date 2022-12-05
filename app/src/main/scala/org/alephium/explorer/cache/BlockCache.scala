@@ -52,11 +52,22 @@ object BlockCache {
   }
 
   // scalastyle:off
-  def apply()(implicit groupSetting: GroupSetting,
-              ec: ExecutionContext,
-              dc: DatabaseConfig[PostgresProfile]): BlockCache = {
+  def apply(cacheRowCountReloadPeriod: FiniteDuration,
+            cacheBlockTimesReloadPeriod: FiniteDuration,
+            cacheLatestBlocksReloadPeriod: FiniteDuration)(
+      implicit groupSetting: GroupSetting,
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): BlockCache = {
     val groupConfig: GroupConfig = groupSetting.groupConfig
 
+    /*
+     * `Option.get` is used to avoid unnecessary memory allocations.
+     * This cache is guaranteed to have data available for
+     * all chain-indexes after a single run of sync so `.get` would
+     * never fail after first few seconds after boot-up.
+     *
+     * @see Comments in PR <a href="https://github.com/alephium/explorer-backend/pull/393">#393</a>
+     */
     @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
     val latestBlockAsyncLoader: AsyncCacheLoader[ChainIndex, LatestBlock] = {
       case (key, _) =>
@@ -71,7 +82,8 @@ object BlockCache {
         Caffeine
           .newBuilder()
           .maximumSize(groupConfig.chainNum.toLong)
-          .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
+          .expireAfterWrite(cacheLatestBlocksReloadPeriod.toNanos,
+                            java.util.concurrent.TimeUnit.NANOSECONDS)
           .buildAsync[ChainIndex, LatestBlock](latestBlockAsyncLoader)
       }
 
@@ -93,13 +105,15 @@ object BlockCache {
         Caffeine
           .newBuilder()
           .maximumSize(groupConfig.chainNum.toLong)
-          .expireAfterWrite(5, java.util.concurrent.TimeUnit.SECONDS)
+          .expireAfterWrite(cacheBlockTimesReloadPeriod.toNanos,
+                            java.util.concurrent.TimeUnit.NANOSECONDS)
           .buildAsync[ChainIndex, Duration](blockTimeAsyncLoader)
       }
 
-    val cacheRowCount: AsyncReloadingCache[Int] = AsyncReloadingCache(0, 10.seconds) { _ =>
-      run(BlockQueries.mainChainQuery.length.result)
-    }
+    val cacheRowCount: AsyncReloadingCache[Int] =
+      AsyncReloadingCache(0, cacheRowCountReloadPeriod) { _ =>
+        run(BlockQueries.mainChainQuery.length.result)
+      }
 
     new BlockCache(
       blockTimes   = cachedBlockTimes,

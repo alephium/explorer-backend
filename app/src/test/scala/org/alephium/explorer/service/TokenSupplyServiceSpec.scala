@@ -26,7 +26,7 @@ import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
 import org.alephium.explorer.GenApiModel.transactionHashGen
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
@@ -153,14 +153,15 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val block1Locked: Boolean = false
 
     implicit val groupSettings: GroupSetting = GroupSetting(1)
-    implicit val blockCache: BlockCache      = BlockCache()
+    implicit val blockCache: BlockCache      = TestBlockCache()
 
     val genesisAddress = Address.unsafe("122uvHwwcaWoXR1ryub9VK1yh2CZvYCqXxzsYDHRb2jYB")
 
     lazy val genesisBlock = {
       val lockTime =
         if (genesisLocked) Some(TimeStamp.now().plusUnsafe(Duration.ofHoursUnsafe(1))) else None
-      val block = blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), None).sample.get
+      val block =
+        blockEntityWithParentGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), None).sample.get
       block.copy(
         outputs = block.outputs.map(
           _.copy(timestamp = block.timestamp, lockTime = lockTime, address = genesisAddress)))
@@ -171,7 +172,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         if (block1Locked) Some(TimeStamp.now().plusUnsafe(Duration.ofHoursUnsafe(2))) else None
       val timestamp = ALPH.LaunchTimestamp.plusHoursUnsafe(1)
       val block =
-        blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(genesisBlock)).sample.get
+        blockEntityWithParentGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(genesisBlock)).sample.get
       block.copy(timestamp = timestamp,
                  outputs   = block.outputs.map(_.copy(timestamp = timestamp, lockTime = lockTime)),
                  inputs    = block.inputs.map(_.copy(timestamp = timestamp)))
@@ -179,7 +180,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     lazy val block2 = {
       val block =
-        blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block1)).sample.get
+        blockEntityWithParentGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block1)).sample.get
       val txHash    = transactionHashGen.sample.get
       val timestamp = block.timestamp.plusHoursUnsafe(24)
       block.copy(
@@ -206,7 +207,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     lazy val block3 = {
       val block =
-        blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block2)).sample.get
+        blockEntityWithParentGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block2)).sample.get
       val timestamp = block.timestamp.plusHoursUnsafe(24)
       val address =
         Address.unsafe(
@@ -217,7 +218,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     lazy val block4 = {
       val block =
-        blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block3)).sample.get
+        blockEntityWithParentGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block3)).sample.get
       val timestamp = block.timestamp.plusHoursUnsafe(24)
       block.copy(timestamp = timestamp, outputs = block.outputs.map(_.copy(timestamp = timestamp)))
     }

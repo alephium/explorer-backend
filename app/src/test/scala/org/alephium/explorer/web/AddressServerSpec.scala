@@ -19,6 +19,10 @@ package org.alephium.explorer.web
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
+import akka.actor.ActorSystem
+import akka.stream.scaladsl._
+import io.vertx.core.buffer.Buffer
+import org.reactivestreams.Publisher
 import org.scalacheck.Gen
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
@@ -31,10 +35,10 @@ import org.alephium.explorer.Generators._
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
-import org.alephium.explorer.service.EmptyTransactionService
-import org.alephium.util.U256
+import org.alephium.explorer.service.{EmptyTransactionService, TransactionService}
+import org.alephium.util.{Duration, TimeStamp, U256}
 
-@SuppressWarnings(Array("org.wartremover.warts.Var"))
+@SuppressWarnings(Array("org.wartremover.warts.PlatformDefault", "org.wartremover.warts.Var"))
 class AddressServerSpec()
     extends AlephiumActorSpecLike
     with DatabaseFixtureForAll
@@ -42,6 +46,14 @@ class AddressServerSpec()
 
   implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
 
+  val exportTxsNumberThreshold = 1000
+  var addressHasMoreTxs        = false
+
+  val transactions: ArraySeq[Transaction] =
+    ArraySeq.from(Gen.listOfN(30, transactionGen).sample.get.zipWithIndex.map {
+      case (tx, index) =>
+        tx.copy(timestamp = TimeStamp.now() + Duration.ofDaysUnsafe(index.toLong))
+    })
   val unconfirmedTx = utransactionGen.sample.get
 
   var testLimit = 0
@@ -59,9 +71,32 @@ class AddressServerSpec()
       testLimit = pagination.limit
       Future.successful(ArraySeq.empty)
     }
+
+    override def hasAddressMoreTxsThan(address: Address,
+                                       from: TimeStamp,
+                                       to: TimeStamp,
+                                       threshold: Int)(
+        implicit ec: ExecutionContext,
+        ac: ActorSystem,
+        dc: DatabaseConfig[PostgresProfile]): Future[Boolean] = Future.successful(addressHasMoreTxs)
+
+    override def exportTransactionsByAddress(address: Address,
+                                             from: TimeStamp,
+                                             to: TimeStamp,
+                                             exportType: ExportType,
+                                             batchSize: Int)(
+        implicit ec: ExecutionContext,
+        ac: ActorSystem,
+        dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
+      TransactionService.transactionsPublisher(
+        address,
+        exportType,
+        Source(transactions).grouped(batchSize).map(ArraySeq.from)
+      )(system)
+    }
   }
 
-  val server = new AddressServer(transactionService)
+  val server = new AddressServer(transactionService, exportTxsNumberThreshold = 1000)
 
   val routes = server.routes
 
@@ -73,11 +108,11 @@ class AddressServerSpec()
           if (txLimit < 0) {
             response.code is StatusCode.BadRequest
             response.as[ApiError.BadRequest] is ApiError.BadRequest(
-              s"Invalid value for: query parameter limit (expected value to be greater than or equal to 0, but was $txLimit)")
+              s"Invalid value for: query parameter limit (expected value to be greater than or equal to 0, but got $txLimit)")
           } else if (txLimit > 100) {
             response.code is StatusCode.BadRequest
             response.as[ApiError.BadRequest] is ApiError.BadRequest(
-              s"Invalid value for: query parameter limit (expected value to be less than or equal to 100, but was $txLimit)")
+              s"Invalid value for: query parameter limit (expected value to be less than or equal to 100, but got $txLimit)")
           } else {
             response.code is StatusCode.Ok
             testLimit is txLimit
@@ -128,22 +163,7 @@ class AddressServerSpec()
   }
 
   "respect the max number of addresses" in {
-    forAll(addressGen) {
-      case (address) =>
-        val size = groupSetting.groupNum * 20
-
-        val jsonOk = s"[${ArraySeq.fill(size)(s""""$address"""").mkString(",")}]"
-        Post(s"/addresses-active", Some(jsonOk)) check { response =>
-          response.code is StatusCode.Ok
-        }
-
-        val jsonFail = s"[${ArraySeq.fill(size + 1)(s""""$address"""").mkString(",")}]"
-        Post(s"/addresses-active", Some(jsonFail)) check { response =>
-          response.code is StatusCode.BadRequest
-          response.as[ApiError.BadRequest] is ApiError.BadRequest(
-            s"Invalid value for: body (expected size of value to be less than or equal to $size, but was ${size + 1})")
-        }
-    }
+    forAll(addressGen)(respectMaxNumberOfAddresses("/addresses-active", _))
   }
 
   "list unconfirmed transactions for a given address" in {
@@ -152,6 +172,80 @@ class AddressServerSpec()
         Get(s"/addresses/${address}/unconfirmed-transactions") check { response =>
           response.as[ArraySeq[UnconfirmedTransaction]] is ArraySeq(unconfirmedTx)
         }
+    }
+  }
+
+  //FIXME See: https://github.com/alephium/explorer-backend/issues/401
+  "/addresses/<address>/export-transactions/" should {
+    "handle csv format" ignore {
+      val address    = addressGen.sample.get
+      val timestamps = transactions.map(_.timestamp.millis).sorted
+      val fromTs     = timestamps.head
+      val toTs       = timestamps.last
+
+      Get(s"/addresses/${address}/export-transactions/csv?fromTs=$fromTs&toTs=$toTs") check {
+        response =>
+          response.body is Right(
+            Transaction.csvHeader ++ transactions.map(_.toCsv(address)).mkString
+          )
+      }
+    }
+    "restrict time range to 1 year" ignore {
+      val address = addressGen.sample.get
+      val long    = Gen.posNum[Long].sample.get
+      val fromTs  = TimeStamp.now().millis
+      val toTs    = fromTs + Duration.ofDaysUnsafe(365).millis
+
+      Get(s"/addresses/${address}/export-transactions/csv?fromTs=$fromTs&toTs=$toTs") check {
+        response =>
+          response.code is StatusCode.Ok
+      }
+
+      val toMore = toTs + Duration.ofMillisUnsafe(long).millis
+      Get(s"/addresses/${address}/export-transactions/csv?fromTs=$fromTs&toTs=$toMore") check {
+        response =>
+          response.code is StatusCode.BadRequest
+      }
+    }
+  }
+
+  "fail if address has more txs than the threshold" ignore {
+    addressHasMoreTxs = true
+    val address = addressGen.sample.get
+    Get(s"/addresses/${address}/export-transactions/csv?fromTs=0&toTs=1") check { response =>
+      response.code is StatusCode.BadRequest
+      response.as[ApiError.BadRequest] is ApiError.BadRequest(
+        s"Too many transactions for that address in this time range, limit is $exportTxsNumberThreshold")
+    }
+  }
+
+  "getTransactionsByAddresses" should {
+    "list transactions for an array of addresses" in {
+      forAll(addressGen) { address =>
+        Post("/addresses/transactions", s"""["$address"]""") check { response =>
+          response.as[ArraySeq[Transaction]] is ArraySeq.empty[Transaction]
+        }
+      }
+    }
+
+    "respect the max number of addresses" in {
+      forAll(addressGen)(respectMaxNumberOfAddresses("/addresses/transactions", _))
+    }
+  }
+
+  def respectMaxNumberOfAddresses(endpoint: String, address: Address) = {
+    val size = groupSetting.groupNum * 20
+
+    val jsonOk = s"[${ArraySeq.fill(size)(s""""$address"""").mkString(",")}]"
+    Post(endpoint, Some(jsonOk)) check { response =>
+      response.code is StatusCode.Ok
+    }
+
+    val jsonFail = s"[${ArraySeq.fill(size + 1)(s""""$address"""").mkString(",")}]"
+    Post(endpoint, Some(jsonFail)) check { response =>
+      response.code is StatusCode.BadRequest
+      response.as[ApiError.BadRequest] is ApiError.BadRequest(
+        s"Invalid value for: body (expected size of value to be less than or equal to $size, but got ${size + 1})")
     }
   }
 }

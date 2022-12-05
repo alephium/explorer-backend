@@ -19,12 +19,16 @@ package org.alephium.explorer.service
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
+import akka.actor.ActorSystem
+import io.vertx.core.buffer.Buffer
+import org.reactivestreams.Publisher
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
+import org.alephium.explorer.service.TransactionService
 import org.alephium.protocol.model.{TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
@@ -45,6 +49,11 @@ trait EmptyTransactionService extends TransactionService {
     Future.successful(0)
 
   override def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+    Future.successful(ArraySeq.empty)
+
+  override def getTransactionsByAddresses(addresses: ArraySeq[Address], pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     Future.successful(ArraySeq.empty)
@@ -102,4 +111,16 @@ trait EmptyTransactionService extends TransactionService {
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]] = {
     Future.successful(ArraySeq(true))
   }
+  def hasAddressMoreTxsThan(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
+      implicit ec: ExecutionContext,
+      ac: ActorSystem,
+      dc: DatabaseConfig[PostgresProfile]): Future[Boolean] = ???
+  def exportTransactionsByAddress(address: Address,
+                                  from: TimeStamp,
+                                  to: TimeStamp,
+                                  exportType: ExportType,
+                                  batchSize: Int)(
+      implicit ec: ExecutionContext,
+      ac: ActorSystem,
+      dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = ???
 }

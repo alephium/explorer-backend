@@ -35,6 +35,7 @@ import org.alephium.protocol.model.BlockHash
 import org.alephium.serde._
 import org.alephium.util.{AVector, Duration, TimeStamp, U256}
 
+// scalastyle:off number.of.methods
 object Generators {
 
   def groupSettingGen: Gen[GroupSetting] = Gen.choose(2, 4).map(groupNum => GroupSetting(groupNum))
@@ -316,8 +317,18 @@ object Generators {
       )
     }
 
-  def blockEntityGen(chainFrom: GroupIndex, chainTo: GroupIndex, parent: Option[BlockEntity])(
+  def blockEntityGen(chainFrom: GroupIndex, chainTo: GroupIndex)(
       implicit groupSettings: GroupSetting): Gen[BlockEntity] =
+    blockEntryProtocolGen.map { block =>
+      BlockFlowClient.blockProtocolToEntity(
+        block
+          .copy(chainFrom = chainFrom.value, chainTo = chainTo.value))
+    }
+
+  def blockEntityWithParentGen(
+      chainFrom: GroupIndex,
+      chainTo: GroupIndex,
+      parent: Option[BlockEntity])(implicit groupSettings: GroupSetting): Gen[BlockEntity] =
     blockEntryProtocolGen.map { entry =>
       val deps = parent
         .map(p => entry.deps.replace(parentIndex(chainTo), p.hash))
@@ -600,8 +611,8 @@ object Generators {
       implicit groupSettings: GroupSetting): Gen[(BlockEntity, Option[BlockEntity])] =
     for {
       groupIndex <- groupIndexGen
-      parent     <- Gen.option(blockEntityGen(groupIndex, groupIndex, None))
-      child      <- blockEntityGen(groupIndex, groupIndex, parent)
+      parent     <- Gen.option(blockEntityWithParentGen(groupIndex, groupIndex, None))
+      child      <- blockEntityWithParentGen(groupIndex, groupIndex, parent)
     } yield {
       randomMainChainGen.flatMap(_.sample) match {
         case Some(randomMainChain) =>

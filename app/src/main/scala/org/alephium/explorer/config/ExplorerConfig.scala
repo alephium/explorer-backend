@@ -132,7 +132,11 @@ object ExplorerConfig {
           explorer.tokenSupplyServiceSyncPeriod,
           explorer.hashRateServiceSyncPeriod,
           explorer.finalizerServiceSyncPeriod,
-          explorer.transactionHistoryServiceSyncPeriod
+          explorer.transactionHistoryServiceSyncPeriod,
+          explorer.cacheRowCountReloadPeriod,
+          explorer.cacheBlockTimesReloadPeriod,
+          explorer.cacheLatestBlocksReloadPeriod,
+          explorer.exportTxsNumberThreshold
         )
       }).get
     }
@@ -154,7 +158,11 @@ object ExplorerConfig {
                                     tokenSupplyServiceSyncPeriod: FiniteDuration,
                                     hashRateServiceSyncPeriod: FiniteDuration,
                                     finalizerServiceSyncPeriod: FiniteDuration,
-                                    transactionHistoryServiceSyncPeriod: FiniteDuration)
+                                    transactionHistoryServiceSyncPeriod: FiniteDuration,
+                                    cacheRowCountReloadPeriod: FiniteDuration,
+                                    cacheBlockTimesReloadPeriod: FiniteDuration,
+                                    cacheLatestBlocksReloadPeriod: FiniteDuration,
+                                    exportTxsNumberThreshold: Int)
 }
 
 /**
@@ -175,4 +183,8 @@ final case class ExplorerConfig private (groupNum: Int,
                                          tokenSupplyServiceSyncPeriod: FiniteDuration,
                                          hashRateServiceSyncPeriod: FiniteDuration,
                                          finalizerServiceSyncPeriod: FiniteDuration,
-                                         transactionHistoryServiceSyncPeriod: FiniteDuration)
+                                         transactionHistoryServiceSyncPeriod: FiniteDuration,
+                                         cacheRowCountReloadPeriod: FiniteDuration,
+                                         cacheBlockTimesReloadPeriod: FiniteDuration,
+                                         cacheLatestBlocksReloadPeriod: FiniteDuration,
+                                         exportTxsNumberThreshold: Int)

@@ -18,13 +18,18 @@ package org.alephium.explorer.api
 
 import scala.collection.immutable.ArraySeq
 
+import io.vertx.core.buffer.Buffer
+import io.vertx.core.streams.ReadStream
+import sttp.model.MediaType
 import sttp.tapir._
 import sttp.tapir.generic.auto._
+import sttp.tapir.server.vertx.streams.VertxStreams
 
 import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.TokenId
+import org.alephium.util.Duration
 
 // scalastyle:off magic.number
 trait AddressesEndpoints extends BaseEndpoint with QueryParams {
@@ -36,10 +41,16 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
 
   private lazy val activeAddressesMaxSize: Int = groupNum * gapLimit
 
-  private val addressesEndpoint =
+  private val oneYear = Duration.ofDaysUnsafe(365)
+
+  private val baseAddressesEndpoint =
     baseEndpoint
       .tag("Addresses")
       .in("addresses")
+
+  private val addressesEndpoint =
+    baseAddressesEndpoint
+      .in(path[Address]("address")(Codecs.explorerAddressTapirCodec))
 
   private val addressesTokensEndpoint =
     baseEndpoint
@@ -50,14 +61,12 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
 
   val getAddressInfo: BaseEndpoint[Address, AddressInfo] =
     addressesEndpoint.get
-      .in(path[Address]("address")(Codecs.explorerAddressTapirCodec))
       .out(jsonBody[AddressInfo])
       .description("Get address information")
 
   val getTransactionsByAddressDEPRECATED
     : BaseEndpoint[(Address, Pagination), ArraySeq[Transaction]] =
     addressesEndpoint.get
-      .in(path[Address]("address")(Codecs.explorerAddressTapirCodec))
       .in("transactions-DEPRECATED")
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])
@@ -65,16 +74,23 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
 
   val getTransactionsByAddress: BaseEndpoint[(Address, Pagination), ArraySeq[Transaction]] =
     addressesEndpoint.get
-      .in(path[Address]("address")(Codecs.explorerAddressTapirCodec))
       .in("transactions")
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])
       .description("List transactions of a given address")
 
+  lazy val getTransactionsByAddresses
+    : BaseEndpoint[(ArraySeq[Address], Pagination), ArraySeq[Transaction]] =
+    baseAddressesEndpoint.post
+      .in(jsonBody[ArraySeq[Address]].validate(Validator.maxSize(activeAddressesMaxSize)))
+      .in("transactions")
+      .in(pagination)
+      .out(jsonBody[ArraySeq[Transaction]])
+      .description("List transactions for given addresses")
+
   val getTransactionsByAddressTimeRanged
     : BaseEndpoint[(Address, TimeInterval, Pagination), ArraySeq[Transaction]] =
     addressesEndpoint.get
-      .in(path[Address]("address")(Codecs.explorerAddressTapirCodec))
       .in("timeranged-transactions")
       .in(timeIntervalQuery)
       .in(paginator(Pagination.thousand))
@@ -83,21 +99,18 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
 
   val getTotalTransactionsByAddress: BaseEndpoint[Address, Int] =
     addressesEndpoint.get
-      .in(path[Address]("address")(Codecs.explorerAddressTapirCodec))
       .in("total-transactions")
       .out(jsonBody[Int])
       .description("Get total transactions of a given address")
 
   val addressUnconfirmedTransactions: BaseEndpoint[Address, ArraySeq[TransactionLike]] =
     addressesEndpoint.get
-      .in(path[Address]("address")(Codecs.explorerAddressTapirCodec))
       .in("unconfirmed-transactions")
       .out(jsonBody[ArraySeq[TransactionLike]])
       .description("List unconfirmed transactions of a given address")
 
   val getAddressBalance: BaseEndpoint[Address, AddressBalance] =
     addressesEndpoint.get
-      .in(path[Address]("address")(Codecs.explorerAddressTapirCodec))
       .in("balance")
       .out(jsonBody[AddressBalance])
       .description("Get address balance")
@@ -131,4 +144,15 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .in(jsonBody[ArraySeq[Address]].validate(Validator.maxSize(activeAddressesMaxSize)))
       .out(jsonBody[ArraySeq[Boolean]])
       .description("Are the addresses active (at least 1 transaction)")
+
+  val exportTransactionsCsvByAddress: BaseEndpoint[(Address, TimeInterval), ReadStream[Buffer]] =
+    addressesEndpoint.get
+      .in("export-transactions")
+      .in("csv")
+      .in(timeIntervalWithMaxQuery(oneYear))
+      .out(streamTextBody(VertxStreams)(TextCsv()))
+
+  private case class TextCsv() extends CodecFormat {
+    override val mediaType: MediaType = MediaType.TextCsv
+  }
 }

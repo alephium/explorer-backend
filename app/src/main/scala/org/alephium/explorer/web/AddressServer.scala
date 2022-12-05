@@ -19,17 +19,25 @@ package org.alephium.explorer.web
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
+import akka.actor.ActorSystem
+import io.vertx.core.buffer.Buffer
+import io.vertx.core.streams.ReadStream
+import io.vertx.ext.reactivestreams.ReactiveReadStream
 import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
+import sttp.model.StatusCode
 
+import org.alephium.api.ApiError
+import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.AddressesEndpoints
-import org.alephium.explorer.api.model.{AddressBalance, AddressInfo}
+import org.alephium.explorer.api.model._
 import org.alephium.explorer.service.TransactionService
 
-class AddressServer(transactionService: TransactionService)(
+class AddressServer(transactionService: TransactionService, exportTxsNumberThreshold: Int)(
     implicit val executionContext: ExecutionContext,
+    ac: ActorSystem,
     groupSetting: GroupSetting,
     dc: DatabaseConfig[PostgresProfile])
     extends Server
@@ -43,6 +51,11 @@ class AddressServer(transactionService: TransactionService)(
         case (address, pagination) =>
           transactionService
             .getTransactionsByAddress(address, pagination)
+      }),
+      route(getTransactionsByAddresses.serverLogicSuccess[Future] {
+        case (addresses, pagination) =>
+          transactionService
+            .getTransactionsByAddresses(addresses, pagination)
       }),
       route(getTransactionsByAddressDEPRECATED.serverLogicSuccess[Future] {
         case (address, pagination) =>
@@ -94,7 +107,33 @@ class AddressServer(transactionService: TransactionService)(
       }),
       route(areAddressesActive.serverLogicSuccess[Future] { addresses =>
         transactionService.areAddressesActive(addresses)
+      }),
+      route(exportTransactionsCsvByAddress.serverLogic[Future] {
+        case (address, timeInterval) =>
+          exportTransactions(address, timeInterval, ExportType.CSV)
       })
     )
 
+  private def exportTransactions(
+      address: Address,
+      timeInterval: TimeInterval,
+      exportType: ExportType): Future[Either[ApiError[_ <: StatusCode], ReadStream[Buffer]]] = {
+    transactionService
+      .hasAddressMoreTxsThan(address, timeInterval.from, timeInterval.to, exportTxsNumberThreshold)
+      .map { hasMore =>
+        if (hasMore) {
+          Left(ApiError.BadRequest(
+            s"Too many transactions for that address in this time range, limit is $exportTxsNumberThreshold"))
+        } else {
+          val readStream: ReactiveReadStream[Buffer] = ReactiveReadStream.readStream();
+          val pub = transactionService.exportTransactionsByAddress(address,
+                                                                   timeInterval.from,
+                                                                   timeInterval.to,
+                                                                   exportType,
+                                                                   1)
+          pub.subscribe(readStream)
+          Right(readStream)
+        }
+      }
+  }
 }

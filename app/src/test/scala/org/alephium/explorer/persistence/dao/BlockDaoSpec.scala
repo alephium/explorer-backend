@@ -29,7 +29,7 @@ import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.{GroupIndex, Pagination}
-import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
@@ -138,7 +138,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
       LatestBlockSchema.table ++=
         chainIndexes.map {
           case (from, to) =>
-            LatestBlock.fromEntity(blockEntityGen(from, to, None).sample.get).copy(timestamp = now)
+            LatestBlock.fromEntity(blockEntityGen(from, to).sample.get).copy(timestamp = now)
         }).futureValue
 
     run(BlockHeaderSchema.table ++= Seq(block1, block2, block3, block4)).futureValue
@@ -248,7 +248,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
 
   trait Fixture extends ApiModelCodec {
     implicit val groupSettings: GroupSetting = groupSettingGen.sample.get
-    implicit val blockCache: BlockCache      = BlockCache()
+    implicit val blockCache: BlockCache      = TestBlockCache()
 
     val blockflow: Seq[Seq[model.BlockEntry]] =
       blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get

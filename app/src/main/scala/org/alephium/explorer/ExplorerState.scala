@@ -25,7 +25,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.cache.{BlockCache, TransactionCache}
-import org.alephium.explorer.config.{BootMode, ExplorerConfig}
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.persistence.Database
 import org.alephium.explorer.service._
 import org.alephium.explorer.util.Scheduler
@@ -47,7 +47,11 @@ sealed trait ExplorerState extends Service with StrictLogging {
     new Database(config.bootMode)(executionContext, databaseConfig)
 
   implicit lazy val blockCache: BlockCache =
-    BlockCache()(groupSettings, executionContext, database.databaseConfig)
+    BlockCache(config.cacheRowCountReloadPeriod,
+               config.cacheBlockTimesReloadPeriod,
+               config.cacheLatestBlocksReloadPeriod)(groupSettings,
+                                                     executionContext,
+                                                     database.databaseConfig)
 
   lazy val transactionCache: TransactionCache =
     TransactionCache(database)(executionContext)
@@ -59,18 +63,6 @@ sealed trait ExplorerState extends Service with StrictLogging {
       maybeApiKey = config.maybeBlockFlowApiKey
     )
 
-  lazy val httpServer: ExplorerHttpServer =
-    new ExplorerHttpServer(
-      config.host,
-      config.port,
-      AppServer.routes()(executionContext,
-                         database.databaseConfig,
-                         blockFlowClient,
-                         blockCache,
-                         transactionCache,
-                         groupSettings)
-    )
-
   override def startSelfOnce(): Future[Unit] = {
     Future.unit
   }
@@ -78,6 +70,8 @@ sealed trait ExplorerState extends Service with StrictLogging {
   override def stopSelfOnce(): Future[Unit] = {
     Future.unit
   }
+
+  def customServices: ArraySeq[Service]
 
   override def subServices: ArraySeq[Service] = {
     val writeOnlyServices =
@@ -87,16 +81,27 @@ sealed trait ExplorerState extends Service with StrictLogging {
         database
       )
 
-    config.bootMode match {
-      case BootMode.ReadOnly | BootMode.ReadWrite =>
-        //prepend httpServer to services
-        httpServer +: writeOnlyServices
-
-      case BootMode.WriteOnly =>
-        writeOnlyServices
-    }
+    customServices ++ writeOnlyServices
   }
 
+}
+
+sealed trait ExplorerStateRead extends ExplorerState {
+  implicit def actorSystem: ActorSystem
+  lazy val httpServer: ExplorerHttpServer =
+    new ExplorerHttpServer(
+      config.host,
+      config.port,
+      AppServer.routes(config.exportTxsNumberThreshold)(executionContext,
+                                                        database.databaseConfig,
+                                                        blockFlowClient,
+                                                        blockCache,
+                                                        transactionCache,
+                                                        actorSystem,
+                                                        groupSettings)
+    )
+
+  override lazy val customServices: ArraySeq[Service] = ArraySeq(httpServer)
 }
 
 object ExplorerState {
@@ -106,14 +111,14 @@ object ExplorerState {
                               val config: ExplorerConfig,
                               val databaseConfig: DatabaseConfig[PostgresProfile],
                               val executionContext: ExecutionContext)
-      extends ExplorerState
+      extends ExplorerStateRead
 
   /** State of Explorer is started in read-write mode */
   final case class ReadWrite()(implicit val actorSystem: ActorSystem,
                                val config: ExplorerConfig,
                                val databaseConfig: DatabaseConfig[PostgresProfile],
                                val executionContext: ExecutionContext)
-      extends ExplorerState {
+      extends ExplorerStateRead {
 
     private implicit val scheduler = Scheduler("SYNC_SERVICES")
 
@@ -130,6 +135,8 @@ object ExplorerState {
 
     //See issue #356
     private implicit val scheduler = Scheduler("SYNC_SERVICES")
+
+    override lazy val customServices: ArraySeq[Service] = ArraySeq()
 
     override def startSelfOnce(): Future[Unit] = {
       SyncServices.startSyncServices(config)
