@@ -24,7 +24,7 @@ import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AnyOps, GroupSetting}
+import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence._
@@ -134,8 +134,8 @@ object BlockDao {
                                                    hashToIgnore = block.hash)
             _ <- DBIOAction.sequence(
               blocks
-                .map(updateMainChainStatusAction(_, false)))
-            _ <- updateMainChainStatusAction(hash, true)
+                .map(updateMainChainStatusSQL(_, false)))
+            _ <- updateMainChainStatusSQL(hash, true)
           } yield {
             block.parent.map(Right(_))
           }
@@ -156,7 +156,7 @@ object BlockDao {
   def updateMainChainStatus(hash: BlockHash, isMainChain: Boolean)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Unit] =
-    run(updateMainChainStatusAction(hash, isMainChain))
+    run(updateMainChainStatusSQL(hash, isMainChain).map(_ => ()))
 
   def latestBlocks()(implicit cache: BlockCache,
                      groupSetting: GroupSetting,
