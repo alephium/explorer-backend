@@ -68,10 +68,14 @@ object BlockDao {
                                  groupSetting: GroupSetting): Future[Unit] =
     insertAll(ArraySeq(block))
 
-  def insertEvents(events: ArraySeq[EventEntity])(
+  def insertWithEvents(block: BlockEntity, events: ArraySeq[EventEntity])(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Unit] =
-    run(insertEventsQuery(events)).map(_ => ())
+      dc: DatabaseConfig[PostgresProfile],
+      groupSetting: GroupSetting): Future[Unit] =
+    run((for {
+      _ <- insertBlockEntity(ArraySeq(block), groupSetting.groupNum)
+      _ <- insertEventsQuery(events)
+    } yield ()).transactionally)
 
   /** Inserts a multiple blocks transactionally via SQL */
   def insertAll(blocks: ArraySeq[BlockEntity])(implicit ec: ExecutionContext,

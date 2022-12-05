@@ -34,7 +34,7 @@ import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.error.ExplorerError.BlocksInDifferentChains
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.BlockDao
-import org.alephium.explorer.persistence.model.{BlockEntity, BlockEntityWithEvents}
+import org.alephium.explorer.persistence.model.{BlockEntity, BlockEntityWithEvents, EventEntity}
 import org.alephium.explorer.persistence.queries.{BlockQueries, InputUpdateQueries}
 import org.alephium.explorer.util.{Scheduler, TimeUtil}
 import org.alephium.protocol.model.BlockHash
@@ -253,7 +253,7 @@ case object BlockFlowSyncService extends StrictLogging {
         if (blocks.nonEmpty) {
           val bestBlock = blocks.head // First block is the main chain one
           for {
-            _ <- insert(bestBlock)
+            _ <- insert(bestBlock, ArraySeq.empty)
             _ <- BlockDao.updateLatestBlock(bestBlock)
           } yield Some(ArraySeq(bestBlock))
         } else {
@@ -280,17 +280,16 @@ case object BlockFlowSyncService extends StrictLogging {
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
       groupSetting: GroupSetting): Future[Unit] = {
-    for {
-      _ <- insert(blockWithEvents.block)
-      _ <- BlockDao.insertEvents(blockWithEvents.events)
-    } yield ()
+    insert(blockWithEvents.block, blockWithEvents.events)
   }
+
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
-  private def insert(block: BlockEntity)(implicit ec: ExecutionContext,
-                                         dc: DatabaseConfig[PostgresProfile],
-                                         blockFlowClient: BlockFlowClient,
-                                         cache: BlockCache,
-                                         groupSetting: GroupSetting): Future[Unit] = {
+  private def insert(block: BlockEntity, events: ArraySeq[EventEntity])(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      cache: BlockCache,
+      groupSetting: GroupSetting): Future[Unit] = {
     (block.parent(groupSetting.groupNum) match {
       case Some(parent) =>
         //We make sure the parent is inserted before inserting the block
@@ -316,7 +315,7 @@ case object BlockFlowSyncService extends StrictLogging {
       case None                            => Future.successful(logger.error(s"${block.hash} doesn't have a parent"))
     }).flatMap { _ =>
       for {
-        _ <- BlockDao.insert(block)
+        _ <- BlockDao.insertWithEvents(block, events)
         _ <- BlockDao.updateMainChain(block.hash,
                                       block.chainFrom,
                                       block.chainTo,
