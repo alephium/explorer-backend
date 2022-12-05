@@ -3542,7 +3542,7 @@
         "tags": [
           "Smart contract events"
         ],
-        "description": "Get contract events by contract id",
+        "description": "Get contract events by contract address",
         "operationId": "getSmart-contract-eventsContract-addressContract_address",
         "parameters": [
           {
@@ -3641,7 +3641,7 @@
         "tags": [
           "Smart contract events"
         ],
-        "description": "Get contract events by contract id",
+        "description": "Get contract events by contract address",
         "operationId": "getSmart-contract-eventsContract-addressContract_addressInput-addressInput_address",
         "parameters": [
           {
