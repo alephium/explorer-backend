@@ -22,17 +22,23 @@ import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.persistence.model.AppState.MigrationVersion
 import org.alephium.explorer.persistence.queries.AppStateQueries
 
 object Migrations extends StrictLogging {
 
-  def migrations(versionOpt: Option[MigrationVersion]): DBActionWT[Option[MigrationVersion]] = {
+  def migrations(versionOpt: Option[MigrationVersion])(
+      implicit ec: ExecutionContext): DBActionWT[Option[MigrationVersion]] = {
     logger.info(s"Current migration version: $versionOpt")
     versionOpt match {
-      case Some(MigrationVersion(0)) => DBIOAction.successful(None)
-      case _                         => DBIOAction.successful(Some(MigrationVersion(0)))
+      case Some(MigrationVersion(0)) =>
+        for {
+          _ <- sqlu"""CREATE INDEX IF NOT EXISTS txs_per_address_address_timestamp_idx
+                  ON transaction_per_addresses (address, block_timestamp)"""
+        } yield Some(MigrationVersion(1))
+      case _ => DBIOAction.successful(Some(MigrationVersion(1)))
     }
   }
 

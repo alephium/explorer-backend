@@ -18,6 +18,7 @@ package org.alephium.explorer.persistence
 
 import scala.concurrent.Future
 
+import org.reactivestreams.Publisher
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
@@ -47,4 +48,7 @@ object DBRunner {
       implicit databaseConfig: DatabaseConfig[PostgresProfile]): Future[R] =
     databaseConfig.db.run(action)
 
+  def stream[R](action: StreamAction[R])(
+      implicit databaseConfig: DatabaseConfig[PostgresProfile]): Publisher[R] =
+    databaseConfig.db.stream(action)
 }

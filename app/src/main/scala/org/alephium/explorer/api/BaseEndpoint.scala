@@ -21,6 +21,7 @@ import sttp.model.StatusCode
 import sttp.tapir._
 import sttp.tapir.generic.Configuration
 import sttp.tapir.generic.auto._
+import sttp.tapir.server.vertx.streams.VertxStreams
 
 import org.alephium.api._
 
@@ -31,7 +32,7 @@ trait BaseEndpoint extends ErrorExamples with TapirCodecs with TapirSchemasLike 
   implicit val customConfiguration: Configuration =
     Configuration.default.withDiscriminator("type")
 
-  type BaseEndpoint[I, O] = Endpoint[Unit, I, ApiError[_ <: StatusCode], O, Any]
+  type BaseEndpoint[I, O] = Endpoint[Unit, I, ApiError[_ <: StatusCode], O, VertxStreams]
 
   val baseEndpoint: BaseEndpoint[Unit, Unit] =
     endpoint

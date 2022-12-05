@@ -138,7 +138,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
       LatestBlockSchema.table ++=
         chainIndexes.map {
           case (from, to) =>
-            LatestBlock.fromEntity(blockEntityGen(from, to, None).sample.get).copy(timestamp = now)
+            LatestBlock.fromEntity(blockEntityGen(from, to).sample.get).copy(timestamp = now)
         }).futureValue
 
     run(BlockHeaderSchema.table ++= Seq(block1, block2, block3, block4)).futureValue

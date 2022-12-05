@@ -166,7 +166,7 @@ object GenDBModel {
     for {
       chainFrom         <- groupIndexGen
       chainTo           <- groupIndexGen
-      entity            <- blockEntityGen(chainFrom, chainTo, None)
+      entity            <- blockEntityGen(chainFrom, chainTo)
       txnPerToken       <- transactionPerTokenEntityGen(blockHash = entity.hash)
       tokenTxPerAddress <- tokenTxPerAddressEntityGen(blockHash = entity.hash)
       tokenOutput       <- tokenOutputEntityGen(blockHash = entity.hash)

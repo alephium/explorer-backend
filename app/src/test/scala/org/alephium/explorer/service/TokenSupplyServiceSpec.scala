@@ -160,7 +160,8 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     lazy val genesisBlock = {
       val lockTime =
         if (genesisLocked) Some(TimeStamp.now().plusUnsafe(Duration.ofHoursUnsafe(1))) else None
-      val block = blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), None).sample.get
+      val block =
+        blockEntityWithParentGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), None).sample.get
       block.copy(
         outputs = block.outputs.map(
           _.copy(timestamp = block.timestamp, lockTime = lockTime, address = genesisAddress)))
@@ -171,7 +172,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         if (block1Locked) Some(TimeStamp.now().plusUnsafe(Duration.ofHoursUnsafe(2))) else None
       val timestamp = ALPH.LaunchTimestamp.plusHoursUnsafe(1)
       val block =
-        blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(genesisBlock)).sample.get
+        blockEntityWithParentGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(genesisBlock)).sample.get
       block.copy(timestamp = timestamp,
                  outputs   = block.outputs.map(_.copy(timestamp = timestamp, lockTime = lockTime)),
                  inputs    = block.inputs.map(_.copy(timestamp = timestamp)))
@@ -179,7 +180,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     lazy val block2 = {
       val block =
-        blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block1)).sample.get
+        blockEntityWithParentGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block1)).sample.get
       val txHash    = transactionHashGen.sample.get
       val timestamp = block.timestamp.plusHoursUnsafe(24)
       block.copy(
@@ -206,7 +207,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     lazy val block3 = {
       val block =
-        blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block2)).sample.get
+        blockEntityWithParentGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block2)).sample.get
       val timestamp = block.timestamp.plusHoursUnsafe(24)
       val address =
         Address.unsafe(
@@ -217,7 +218,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     lazy val block4 = {
       val block =
-        blockEntityGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block3)).sample.get
+        blockEntityWithParentGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block3)).sample.get
       val timestamp = block.timestamp.plusHoursUnsafe(24)
       block.copy(timestamp = timestamp, outputs = block.outputs.map(_.copy(timestamp = timestamp)))
     }

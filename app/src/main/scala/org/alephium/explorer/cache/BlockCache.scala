@@ -60,6 +60,14 @@ object BlockCache {
       dc: DatabaseConfig[PostgresProfile]): BlockCache = {
     val groupConfig: GroupConfig = groupSetting.groupConfig
 
+    /*
+     * `Option.get` is used to avoid unnecessary memory allocations.
+     * This cache is guaranteed to have data available for
+     * all chain-indexes after a single run of sync so `.get` would
+     * never fail after first few seconds after boot-up.
+     *
+     * @see Comments in PR <a href="https://github.com/alephium/explorer-backend/pull/393">#393</a>
+     */
     @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
     val latestBlockAsyncLoader: AsyncCacheLoader[ChainIndex, LatestBlock] = {
       case (key, _) =>
