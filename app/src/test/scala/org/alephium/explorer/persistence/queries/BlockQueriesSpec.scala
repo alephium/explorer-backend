@@ -389,7 +389,7 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
       "there are one or more blocks" in {
         implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
 
-        forAll(Gen.nonEmptyListOf(genBlockAndItsMainChainEntities()), Arbitrary.arbitrary[Boolean]) {
+        forAll(Gen.nonEmptyListOf(blockAndItsMainChainEntitiesGen()), Arbitrary.arbitrary[Boolean]) {
           case (testData, updatedMainChainValue) =>
             val entities           = testData.map(_._1)
             val txsPerToken        = testData.map(_._2)

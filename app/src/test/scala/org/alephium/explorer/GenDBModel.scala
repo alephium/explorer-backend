@@ -119,7 +119,7 @@ object GenDBModel {
         token     = token
       )
 
-  def genTokenOutputEntity(
+  def tokenOutputEntityGen(
       addressGen: Gen[Address]          = addressGen,
       transactionId: Gen[TransactionId] = transactionHashGen,
       blockHash: Gen[BlockHash]         = blockEntryHashGen,
@@ -161,7 +161,7 @@ object GenDBModel {
       )
 
   /** Generates BlockEntity and it's dependant Entities that also maintain the block's mainChain value */
-  def genBlockAndItsMainChainEntities()(implicit groupSetting: GroupSetting)
+  def blockAndItsMainChainEntitiesGen()(implicit groupSetting: GroupSetting)
     : Gen[(BlockEntity, TransactionPerTokenEntity, TokenTxPerAddressEntity, TokenOutputEntity)] =
     for {
       chainFrom         <- groupIndexGen
@@ -169,6 +169,6 @@ object GenDBModel {
       entity            <- blockEntityGen(chainFrom, chainTo, None)
       txnPerToken       <- transactionPerTokenEntityGen(blockHash = entity.hash)
       tokenTxPerAddress <- tokenTxPerAddressEntityGen(blockHash = entity.hash)
-      tokenOutput       <- genTokenOutputEntity(blockHash = entity.hash)
+      tokenOutput       <- tokenOutputEntityGen(blockHash = entity.hash)
     } yield (entity, txnPerToken, tokenTxPerAddress, tokenOutput)
 }
