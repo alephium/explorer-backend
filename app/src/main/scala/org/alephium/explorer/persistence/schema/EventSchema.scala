@@ -42,9 +42,11 @@ object EventSchema extends SchemaMainChain[EventEntity]("events") {
 
     def pk: PrimaryKey = primaryKey("events_pk", (blockHash, txHash, contractAddress))
 
-    def txHashIdx: Index          = index("tx_hash", txHash)
-    def contractAddressIdx: Index = index("contract_address", contractAddress)
-    def inputAddressIdx: Index    = index("input_address", inputAddress)
+    def txHashIdx: Index          = index("tx_hash_idx", txHash)
+    def contractAddressIdx: Index = index("contract_address_idx", contractAddress)
+    def inputAddressIdx: Index    = index("input_address_idx", inputAddress)
+    def timestampIdx: Index       = index("block_timestamp_idx", timestamp)
+    def eventIndexIdx: Index      = index("event_index_idx", eventIndex)
   }
 
   val table: TableQuery[Events] = TableQuery[Events]
