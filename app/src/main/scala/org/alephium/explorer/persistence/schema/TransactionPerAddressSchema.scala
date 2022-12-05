@@ -42,6 +42,8 @@ object TransactionPerAddressSchema
     def timestampIdx: Index = index("txs_per_address_timestamp_idx", timestamp)
     def blockHashIdx: Index = index("txs_per_address_block_hash_idx", blockHash)
     def addressIdx: Index   = index("txs_per_address_address_idx", address)
+    def addressTimestampIdx: Index =
+      index("txs_per_address_address_timestamp_idx", (address, timestamp))
 
     def * : ProvenShape[TransactionPerAddressEntity] =
       (address, txHash, blockHash, timestamp, txOrder, mainChain)

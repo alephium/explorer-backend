@@ -49,6 +49,7 @@ trait Documentation
       listAddressTokenTransactions,
       getAddressTokenBalance,
       areAddressesActive,
+      exportTransactionsCsvByAddress,
       getInfos,
       getHeights,
       listUnconfirmedTransactions,

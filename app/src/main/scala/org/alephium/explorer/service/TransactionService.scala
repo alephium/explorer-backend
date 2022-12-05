@@ -19,17 +19,26 @@ package org.alephium.explorer.service
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
+import akka.NotUsed
+import akka.actor.ActorSystem
+import akka.stream.scaladsl._
+import io.vertx.core.buffer.Buffer
+import org.reactivestreams.Publisher
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
+import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.{TransactionDao, UnconfirmedTxDao}
+import org.alephium.explorer.persistence.queries.TransactionQueries._
+import org.alephium.json.Json.write
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 trait TransactionService {
+
   def getTransaction(transactionHash: TransactionId)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Option[TransactionLike]]
@@ -101,6 +110,20 @@ trait TransactionService {
   def listAddressTokenTransactions(address: Address, token: TokenId, pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]]
+
+  def hasAddressMoreTxsThan(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
+      implicit ec: ExecutionContext,
+      ac: ActorSystem,
+      dc: DatabaseConfig[PostgresProfile]): Future[Boolean]
+
+  def exportTransactionsByAddress(address: Address,
+                                  from: TimeStamp,
+                                  to: TimeStamp,
+                                  exportType: ExportType,
+                                  batchSize: Int)(
+      implicit ec: ExecutionContext,
+      ac: ActorSystem,
+      dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer]
 }
 
 object TransactionService extends TransactionService {
@@ -200,4 +223,65 @@ object TransactionService extends TransactionService {
 
   def getTotalNumber()(implicit cache: TransactionCache): Int =
     cache.getMainChainTxnCount()
+
+  def hasAddressMoreTxsThan(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
+      implicit ec: ExecutionContext,
+      ac: ActorSystem,
+      dc: DatabaseConfig[PostgresProfile]): Future[Boolean] = {
+    run(hasAddressMoreTxsThanQuery(address, from, to, threshold))
+  }
+  def exportTransactionsByAddress(address: Address,
+                                  fromTime: TimeStamp,
+                                  toTime: TimeStamp,
+                                  exportType: ExportType,
+                                  batchSize: Int)(
+      implicit ec: ExecutionContext,
+      ac: ActorSystem,
+      dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
+
+    transactionsPublisher(
+      address,
+      exportType,
+      transactionSource(address, fromTime, toTime, batchSize)
+    )
+
+  }
+
+  private def transactionSource(address: Address, from: TimeStamp, to: TimeStamp, batchSize: Int)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Source[ArraySeq[Transaction], NotUsed] = {
+    Source
+      .fromPublisher(stream(streamTxByAddressQR(address, from, to)))
+      .grouped(batchSize)
+      .mapAsync(1) { hashes =>
+        run(getTransactionsNoJoin(ArraySeq.from(hashes)))
+      }
+  }
+
+  private def bufferPublisher(source: Source[String, NotUsed])(
+      implicit ac: ActorSystem): Publisher[Buffer] = {
+    source
+      .map(Buffer.buffer)
+      .toMat(Sink.asPublisher[Buffer](false))(Keep.right)
+      .run()
+  }
+
+  def transactionsPublisher(address: Address,
+                            exportType: ExportType,
+                            source: Source[ArraySeq[Transaction], NotUsed])(
+      implicit actorSystem: ActorSystem
+  ): Publisher[Buffer] = {
+    bufferPublisher {
+      exportType match {
+        case ExportType.CSV =>
+          val headerSource = Source(ArraySeq(Transaction.csvHeader))
+          val csvSource    = source.map(_.map(_.toCsv(address)).mkString)
+          headerSource ++ csvSource
+        case ExportType.JSON =>
+          source
+            .map(write(_))
+            .intersperse("[", ",\n", "]")
+      }
+    }
+  }
 }

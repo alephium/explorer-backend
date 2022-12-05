@@ -17,14 +17,14 @@
 import sbt._
 
 object Version {
-  lazy val common = "1.5.0"
+  lazy val common = "1.5.4"
 
   lazy val akka       = "2.6.20"
-  lazy val tapir      = "1.0.6"
+  lazy val tapir      = "1.2.2"
   lazy val slick      = "3.3.2"
   lazy val postgresql = "42.2.12"
-  lazy val sttp       = "3.5.2"
-  lazy val apispec    = "0.2.1"
+  lazy val sttp       = "3.7.4"
+  lazy val apispec    = "0.3.1"
   lazy val prometheus = "0.15.0"
   lazy val micrometer = "1.7.4"
 }
@@ -38,13 +38,16 @@ object Dependencies {
   lazy val alephiumHttp     = "org.alephium" %% "alephium-http"     % Version.common
   lazy val alephiumConf     = "org.alephium" %% "alephium-conf"     % Version.common
 
-  lazy val vertx = "io.vertx" % "vertx-core" % "4.3.3"
+  lazy val vertx                = "io.vertx" % "vertx-core"             % "4.3.3"
+  lazy val vertxReactiveStreams = "io.vertx" % "vertx-reactive-streams" % "4.3.3"
 
-  lazy val akkaTest = "com.typesafe.akka" %% "akka-testkit" % Version.akka % Test
+  lazy val akkaStreams = "com.typesafe.akka" %% "akka-stream"  % Version.akka
+  lazy val akkaTest    = "com.typesafe.akka" %% "akka-testkit" % Version.akka % Test
 
-  lazy val tapirCore         = "com.softwaremill.sttp.tapir"   %% "tapir-core"                       % Version.tapir
-  lazy val tapirServer       = "com.softwaremill.sttp.tapir"   %% "tapir-server"                     % Version.tapir
-  lazy val tapirVertx        = "com.softwaremill.sttp.tapir"   %% "tapir-vertx-server"               % Version.tapir
+  lazy val tapirCore   = "com.softwaremill.sttp.tapir" %% "tapir-core"         % Version.tapir
+  lazy val tapirServer = "com.softwaremill.sttp.tapir" %% "tapir-server"       % Version.tapir
+  lazy val tapirVertx  = "com.softwaremill.sttp.tapir" %% "tapir-vertx-server" % Version.tapir
+
   lazy val tapirOpenapi      = "com.softwaremill.sttp.tapir"   %% "tapir-openapi-docs"               % Version.tapir
   lazy val tapirSwaggerUi    = "com.softwaremill.sttp.tapir"   %% "tapir-swagger-ui"                 % Version.tapir
   lazy val tapirOpenapiModel = "com.softwaremill.sttp.apispec" %% "openapi-model"                    % Version.apispec

@@ -135,7 +135,8 @@ object ExplorerConfig {
           explorer.transactionHistoryServiceSyncPeriod,
           explorer.cacheRowCountReloadPeriod,
           explorer.cacheBlockTimesReloadPeriod,
-          explorer.cacheLatestBlocksReloadPeriod
+          explorer.cacheLatestBlocksReloadPeriod,
+          explorer.exportTxsNumberThreshold
         )
       }).get
     }
@@ -160,7 +161,8 @@ object ExplorerConfig {
                                     transactionHistoryServiceSyncPeriod: FiniteDuration,
                                     cacheRowCountReloadPeriod: FiniteDuration,
                                     cacheBlockTimesReloadPeriod: FiniteDuration,
-                                    cacheLatestBlocksReloadPeriod: FiniteDuration)
+                                    cacheLatestBlocksReloadPeriod: FiniteDuration,
+                                    exportTxsNumberThreshold: Int)
 }
 
 /**
@@ -184,4 +186,5 @@ final case class ExplorerConfig private (groupNum: Int,
                                          transactionHistoryServiceSyncPeriod: FiniteDuration,
                                          cacheRowCountReloadPeriod: FiniteDuration,
                                          cacheBlockTimesReloadPeriod: FiniteDuration,
-                                         cacheLatestBlocksReloadPeriod: FiniteDuration)
+                                         cacheLatestBlocksReloadPeriod: FiniteDuration,
+                                         exportTxsNumberThreshold: Int)
