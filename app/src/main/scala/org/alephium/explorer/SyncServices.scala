@@ -96,6 +96,7 @@ object SyncServices extends StrictLogging {
           .onComplete {
             case Failure(error) =>
               logger.error(s"Fatal error while syncing: $error")
+              ec.reportFailure(error)
 
             case Success(_) => ()
           }

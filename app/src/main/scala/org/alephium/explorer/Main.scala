@@ -55,6 +55,12 @@ class BootUp extends StrictLogging {
   implicit val databaseConfig: DatabaseConfig[PostgresProfile] =
     DatabaseConfig.forConfig[PostgresProfile]("db", typesafeConfig)
 
+  def reporter(actorSystem: ActorSystem): Throwable => Unit = {
+    case throwable =>
+      logger.error(s"Reporting: $throwable, closing app")
+      sideEffect(actorSystem.terminate())
+  }
+
   def init(): Unit =
     config.bootMode match {
       case mode: BootMode.Readable =>
@@ -65,8 +71,11 @@ class BootUp extends StrictLogging {
     }
 
   def initInReadableMode(mode: BootMode.Readable): Unit = {
-    implicit val actorSystem: ActorSystem           = ActorSystem()
-    implicit val executionContext: ExecutionContext = actorSystem.dispatcher
+    implicit val actorSystem: ActorSystem = ActorSystem()
+    implicit val executionContext: ExecutionContext = ExecutionContext.fromExecutor(
+      actorSystem.dispatcher,
+      reporter(actorSystem)
+    )
 
     val explorer: ExplorerState =
       mode match {
@@ -95,15 +104,25 @@ class BootUp extends StrictLogging {
         _ <- explorer.stop()
       } yield Done
     }
+
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.GlobalExecutionContext"))
   def initInWriteOnlyMode(): Unit = {
-    implicit val ec: ExecutionContext =
-      scala.concurrent.ExecutionContext.Implicits.global
+    //scalastyle:off null
+    var explorer: ExplorerState = null
+    //scalastyle:on null
 
-    val explorer: ExplorerState =
-      ExplorerState.WriteOnly()
+    def reporter: Throwable => Unit = {
+      case throwable =>
+        logger.error(s"Reporting: $throwable, closing app")
+        sideEffect(explorer.stop())
+    }
+
+    implicit val executionContext: ExecutionContext =
+      ExecutionContext.fromExecutor(ExecutionContext.global, reporter)
+
+    explorer = ExplorerState.WriteOnly()
 
     explorer
       .start()
