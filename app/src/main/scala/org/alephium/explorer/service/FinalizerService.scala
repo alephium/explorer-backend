@@ -19,7 +19,6 @@ package org.alephium.explorer.service
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 
-import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
@@ -35,7 +34,6 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.{Scheduler, TimeUtil}
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.serde._
 import org.alephium.util.{Duration, TimeStamp}
 
 /*
@@ -150,18 +148,7 @@ case object FinalizerService extends StrictLogging {
 
   private def getLastFinalizedInputTime()(
       implicit executionContext: ExecutionContext): DBActionR[Option[TimeStamp]] =
-    sql"""
-    SELECT value FROM app_state where key = 'last_finalized_input_time'
-    """
-      .asAS[ByteString]
-      .map(_.headOption.flatMap { bytes =>
-        deserialize[TimeStamp](bytes) match {
-          case Left(error) =>
-            logger.error(s"Cannot deserialize `last_finalized_input_time`: $error")
-            None
-          case Right(timestamp) => Some(timestamp)
-        }
-      })
+    AppStateQueries.get(LastFinalizedInputTime).map(_.map(_.time))
 
   private def updateLastFinalizedInputTime(time: TimeStamp) =
     AppStateQueries.insertOrUpdate(LastFinalizedInputTime(time))
