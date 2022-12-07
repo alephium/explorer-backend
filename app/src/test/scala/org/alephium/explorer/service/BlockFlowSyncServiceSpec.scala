@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.service
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
@@ -29,6 +31,7 @@ import org.alephium.explorer.GenCoreUtil.timestampMaxValue
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
+import org.alephium.explorer.error.ExplorerError
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
@@ -88,6 +91,25 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     }
   }
 
+  "fail if time range can't be build" in new Fixture {
+    override implicit val blockFlowClient: BlockFlowClient = new EmptyBlockFlowClient {
+      override def fetchChainInfo(from: GroupIndex, to: GroupIndex): Future[ChainInfo] =
+        Future.successful(ChainInfo(0))
+
+      override def fetchBlocksAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
+          implicit executionContext: ExecutionContext): Future[ArraySeq[BlockEntity]] =
+        Future.successful(
+          ArraySeq(
+            blockEntityGen(fromGroup, toGroup).sample.get.copy(timestamp = TimeStamp.unsafe(0))))
+    }
+
+    BlockDao.insertAll(blockEntities).futureValue
+
+    BlockFlowSyncService
+      .syncOnce(ArraySeq(Uri("")), new AtomicBoolean(true))
+      .failed
+      .futureValue is a[ExplorerError.RemoteTimeStampIsBeforeLocal]
+  }
   trait Fixture {
 
     def t(l: Long)            = TimeStamp.unsafe(l)
