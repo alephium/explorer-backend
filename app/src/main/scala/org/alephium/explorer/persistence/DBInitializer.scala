@@ -35,8 +35,9 @@ object DBInitializer extends StrictLogging {
   @SuppressWarnings(
     Array("org.wartremover.warts.JavaSerializable",
           "org.wartremover.warts.Product",
-          "org.wartremover.warts.Serializable"))
-  private val allTables =
+          "org.wartremover.warts.Serializable",
+          "org.wartremover.warts.PublicInference"))
+  val allTables =
     ArraySeq(
       BlockHeaderSchema.table,
       BlockDepsSchema.table,
