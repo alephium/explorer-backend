@@ -29,6 +29,29 @@ import org.alephium.explorer.persistence.queries.AppStateQueries
 
 object Migrations extends StrictLogging {
 
+  def addInputTxHashRefColumn(): DBActionWT[Int] = {
+    sqlu"""
+      ALTER TABLE inputs
+      ADD COLUMN IF NOT EXISTS output_ref_tx_hash bytea;
+    """
+  }
+
+  //Will automatically be recreated after the migration
+  def dropInputOutputRefAddressNullIndex(): DBActionWT[Int] = {
+    sqlu"DROP INDEX IF EXISTS inputs_output_ref_amount_null_idx"
+  }
+
+  def updateInputTxHashRef(): DBActionWT[Int] = {
+    sqlu"""
+      UPDATE inputs
+      SET
+        output_ref_tx_hash = outputs.tx_hash
+      FROM outputs
+      WHERE inputs.output_ref_key = outputs.key
+      AND outputs.main_chain = true
+      AND inputs.output_ref_tx_hash IS NULL
+    """
+  }
   def migrations(versionOpt: Option[MigrationVersion])(
       implicit ec: ExecutionContext): DBActionWT[Option[MigrationVersion]] = {
     logger.info(s"Current migration version: $versionOpt")
@@ -38,7 +61,13 @@ object Migrations extends StrictLogging {
           _ <- sqlu"""CREATE INDEX IF NOT EXISTS txs_per_address_address_timestamp_idx
                   ON transaction_per_addresses (address, block_timestamp)"""
         } yield Some(MigrationVersion(1))
-      case _ => DBIOAction.successful(Some(MigrationVersion(1)))
+      case Some(MigrationVersion(1)) =>
+        (for {
+          _ <- addInputTxHashRefColumn()
+          _ <- dropInputOutputRefAddressNullIndex()
+          _ <- updateInputTxHashRef()
+        } yield Some(MigrationVersion(1))).transactionally
+      case _ => DBIOAction.successful(Some(MigrationVersion(2)))
     }
   }
 

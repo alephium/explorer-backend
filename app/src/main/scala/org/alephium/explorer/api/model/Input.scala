@@ -23,12 +23,14 @@ import akka.util.ByteString
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
+import org.alephium.protocol.model.TransactionId
 import org.alephium.util.U256
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 final case class Input(
     outputRef: OutputRef,
     unlockScript: Option[ByteString] = None,
+    txHashRef: Option[TransactionId] = None,
     address: Option[Address]         = None,
     attoAlphAmount: Option[U256]     = None,
     tokens: Option[ArraySeq[Token]]  = None
