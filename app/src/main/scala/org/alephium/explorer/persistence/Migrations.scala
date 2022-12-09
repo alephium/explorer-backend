@@ -24,8 +24,13 @@ import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence.model.AppState.MigrationVersion
 import org.alephium.explorer.persistence.queries.AppStateQueries
+import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.util.TimeUtil
+import org.alephium.protocol.ALPH
+import org.alephium.util.{Duration, TimeStamp}
 
 object Migrations extends StrictLogging {
 
@@ -41,17 +46,30 @@ object Migrations extends StrictLogging {
     sqlu"DROP INDEX IF EXISTS inputs_output_ref_amount_null_idx"
   }
 
-  def updateInputTxHashRef(): DBActionWT[Int] = {
-    sqlu"""
+  def updateInputTxHashRef(databaseConfig: DatabaseConfig[PostgresProfile])(
+      implicit ec: ExecutionContext): Future[Unit] = {
+    foldFutures(
+      TimeUtil
+        .buildTimestampRange(ALPH.LaunchTimestamp, TimeStamp.now(), Duration.ofDaysUnsafe(1))) {
+      case (from, to) =>
+        logger.info(
+          s"Updating inputs tx_hash_ref: ${TimeUtil.toInstant(from)} - ${TimeUtil.toInstant(to)}")
+        DBRunner.run(databaseConfig)(
+          sqlu"""
       UPDATE inputs
       SET
         output_ref_tx_hash = outputs.tx_hash
       FROM outputs
-      WHERE inputs.output_ref_key = outputs.key
+      WHERE inputs.block_timestamp >= $from
+      AND inputs.block_timestamp < $to
+      AND inputs.output_ref_key = outputs.key
       AND outputs.main_chain = true
       AND inputs.output_ref_tx_hash IS NULL
     """
+        )
+    }.map(_ => ())
   }
+
   def migrations(versionOpt: Option[MigrationVersion])(
       implicit ec: ExecutionContext): DBActionWT[Option[MigrationVersion]] = {
     logger.info(s"Current migration version: $versionOpt")
@@ -65,7 +83,6 @@ object Migrations extends StrictLogging {
         (for {
           _ <- addInputTxHashRefColumn()
           _ <- dropInputOutputRefAddressNullIndex()
-          _ <- updateInputTxHashRef()
         } yield Some(MigrationVersion(1))).transactionally
       case _ => DBIOAction.successful(Some(MigrationVersion(2)))
     }
@@ -74,12 +91,19 @@ object Migrations extends StrictLogging {
   def migrate(databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit ec: ExecutionContext): Future[Unit] = {
     logger.info("Migrating")
-    DBRunner
-      .run(databaseConfig)(for {
-        version       <- getVersion()
-        newVersionOpt <- migrations(version)
-        _             <- updateVersion(newVersionOpt)
-      } yield ())
+    for {
+      (prevVersion, newVersion) <- DBRunner
+        .run(databaseConfig)(for {
+          version       <- getVersion()
+          newVersionOpt <- migrations(version)
+        } yield (version, newVersionOpt))
+      _ <- if (prevVersion == Some(MigrationVersion(1))) {
+        updateInputTxHashRef(databaseConfig)
+      } else {
+        Future.unit
+      }
+      _ <- DBRunner.run(databaseConfig)(updateVersion(newVersion))
+    } yield ()
   }
 
   def getVersion()(implicit ec: ExecutionContext): DBActionR[Option[MigrationVersion]] = {
