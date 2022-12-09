@@ -83,7 +83,7 @@ object Migrations extends StrictLogging {
         (for {
           _ <- addInputTxHashRefColumn()
           _ <- dropInputOutputRefAddressNullIndex()
-        } yield Some(MigrationVersion(1))).transactionally
+        } yield Some(MigrationVersion(2))).transactionally
       case _ => DBIOAction.successful(Some(MigrationVersion(2)))
     }
   }
