@@ -152,6 +152,7 @@ object CustomGetResult {
         mainChain        = result.<<,
         inputOrder       = result.<<,
         txOrder          = result.<<,
+        outputRefTxHash  = result.<<?,
         outputRefAddress = result.<<?,
         outputRefAmount  = result.<<?,
         outputRefTokens  = result.<<?

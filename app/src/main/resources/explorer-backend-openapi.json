@@ -3991,6 +3991,10 @@
             "type": "string",
             "format": "hex-string"
           },
+          "txHashRef": {
+            "type": "string",
+            "format": "32-byte-hash"
+          },
           "address": {
             "type": "string"
           },
