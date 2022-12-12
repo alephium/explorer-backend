@@ -26,9 +26,10 @@ import org.reactivestreams.Publisher
 import org.scalacheck.Gen
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
-import sttp.model.StatusCode
+import sttp.model.{Header, StatusCode}
 
 import org.alephium.api.ApiError
+import org.alephium.api.model.TimeInterval
 import org.alephium.explorer._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.Generators._
@@ -188,6 +189,10 @@ class AddressServerSpec()
           response.body is Right(
             Transaction.csvHeader ++ transactions.map(_.toCsv(address)).mkString
           )
+
+          val header =
+            Header("Content-Disposition", s"""attachment;filename="$address-$fromTs-$toTs"""")
+          response.headers.contains(header) is true
       }
     }
     "restrict time range to 1 year" ignore {
@@ -230,6 +235,21 @@ class AddressServerSpec()
 
     "respect the max number of addresses" in {
       forAll(addressGen)(respectMaxNumberOfAddresses("/addresses/transactions", _))
+    }
+  }
+
+  //Test could be removed once : https://github.com/alephium/explorer-backend/issues/401 is fixed
+  //and ignored test in this file are un-ignored.
+  "AddressServer companion object" should {
+    "create correct export filename" in {
+      val address = "12jK2jHyyJTJyuRMRya7QJSojgVnb5yh4HVzNNw6BTBDF"
+      val from    = 1234L
+      val to      = 5678L
+
+      val expected = s"""attachment;filename="$address-$from-$to""""
+      AddressServer.exportFileNameHeader(
+        Address.unsafe(address),
+        TimeInterval(TimeStamp.unsafe(from), TimeStamp.unsafe(to))) is expected
     }
   }
 
