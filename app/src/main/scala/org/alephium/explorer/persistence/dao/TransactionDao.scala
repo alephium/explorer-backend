@@ -44,30 +44,25 @@ object TransactionDao {
   def getByAddress(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
-    run(getTransactionsByAddressNoJoin(address, pagination))
-
-  def getByAddressSQL(address: Address, pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
-    run(getTransactionsByAddressSQL(address, pagination))
+    run(getTransactionsByAddress(address, pagination))
 
   def getByAddresses(addresses: ArraySeq[Address], pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     run(getTransactionsByAddresses(addresses, pagination))
 
-  def getByAddressTimeRangedSQL(address: Address,
-                                fromTime: TimeStamp,
-                                toTime: TimeStamp,
-                                pagination: Pagination)(
+  def getByAddressTimeRanged(address: Address,
+                             fromTime: TimeStamp,
+                             toTime: TimeStamp,
+                             pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
-    run(getTransactionsByAddressTimeRangedSQL(address, fromTime, toTime, pagination))
+    run(getTransactionsByAddressTimeRanged(address, fromTime, toTime, pagination))
 
   def getNumberByAddressSQLNoJoin(address: Address)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Int] =
-    run(countAddressTransactionsSQLNoJoin(address)).map(_.headOption.getOrElse(0))
+    run(countAddressTransactions(address)).map(_.headOption.getOrElse(0))
 
   def getBalance(address: Address)(implicit ec: ExecutionContext,
                                    dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =

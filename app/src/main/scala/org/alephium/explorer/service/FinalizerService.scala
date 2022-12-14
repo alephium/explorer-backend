@@ -127,11 +127,9 @@ case object FinalizerService extends StrictLogging {
       //No input in db
       case None | Some((TimeStamp.zero, TimeStamp.zero)) => DBIOAction.successful(None)
       // only one input
-      case Some((start, end)) if start == end => DBIOAction.successful(None)
-      // inputs are only after finalization time, noop
       case Some((start, _)) if ft.isBefore(start) => DBIOAction.successful(None)
       case Some((start, _end)) =>
-        val end = if (_end.isBefore(ft)) _end else ft
+        val end = (if (_end.isBefore(ft)) _end else ft).plusUnsafe(Duration.ofMillisUnsafe(1))
         getLastFinalizedInputTime().map {
           case None =>
             Some((start, end))
@@ -141,10 +139,38 @@ case object FinalizerService extends StrictLogging {
     })
   }
 
+  //def getStartEndTime2()(
+  //    implicit executionContext: ExecutionContext): DBActionR[Option[(TimeStamp, TimeStamp)]] = {
+  //  val ft = finalizationTime
+  //  getLastFinalizedInputTime().flatMap {
+  //    case None =>
+  //      getMinMaxInputsTs.flatMap(_.headOption match {
+  //        //No input in db
+  //        case None | Some((TimeStamp.zero, TimeStamp.zero)) => DBIOAction.successful(None)
+  //        // inputs are only after finalization time, noop
+  //        case Some((start, _)) if ft.isBefore(start) => DBIOAction.successful(None)
+  //        case Some((start, _end)) =>
+
+  //      }
+  //    case Some(lastFinalizedInputTime) =>
+  //      getMaxInputsTs.flatMap(_.headOption match {
+  //        case None => DBIOAction.successful(None)
+  //        case Some(_end) =>
+  //          val end = if (_end.isBefore(ft)) _end else ft
+  //          DBIOAction.successful(Some((lastFinalizedInputTime, end)))
+  //      })
+  //  }
+  //}
+
   private val getMinMaxInputsTs: DBActionSR[(TimeStamp, TimeStamp)] =
     sql"""
     SELECT MIN(block_timestamp),Max(block_timestamp) FROM inputs WHERE main_chain = true
     """.asAS[(TimeStamp, TimeStamp)]
+
+  // private val getMaxInputsTs: DBActionSR[TimeStamp] =
+  //   sql"""
+  //   SELECT Max(block_timestamp) FROM inputs WHERE main_chain = true
+  //   """.asAS[TimeStamp]
 
   private def getLastFinalizedInputTime()(
       implicit executionContext: ExecutionContext): DBActionR[Option[TimeStamp]] =

@@ -160,19 +160,19 @@ class DBBenchmark {
   }
 
   @Benchmark
-  def getTxHashesByAddressQuerySQLNoJoin(state: Address_ReadState): Unit = {
+  def getTxHashesByAddressQuery(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(TransactionQueries.getTxHashesByAddressQuerySQLNoJoin(state.address,
-                                                                            state.pagination.offset,
-                                                                            state.pagination.limit),
+      state.db.runNow(TransactionQueries.getTxHashesByAddressQuery(state.address,
+                                                                   state.pagination.offset,
+                                                                   state.pagination.limit),
                       requestTimeout)
   }
 
   @Benchmark
-  def countAddressTransactionsSQLNoJoin(state: Address_ReadState): Unit = {
+  def countAddressTransactions(state: Address_ReadState): Unit = {
     val _ =
       state.db
-        .runNow(TransactionQueries.countAddressTransactionsSQLNoJoin(state.address), requestTimeout)
+        .runNow(TransactionQueries.countAddressTransactions(state.address), requestTimeout)
   }
 
   @Benchmark
@@ -211,17 +211,16 @@ class DBBenchmark {
   @Benchmark
   def getGasFromTxsSQL(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(TransactionQueries.gasFromTxsSQL(state.hashes), requestTimeout)
+      state.db.runNow(TransactionQueries.gasFromTxs(state.hashes), requestTimeout)
   }
 
   @Benchmark
-  def getTransactionsByAddressSQL(state: Address_ReadState): Unit = {
+  def getTransactionsByAddress(state: Address_ReadState): Unit = {
     import state.executionContext
 
     val _ =
-      state.db.runNow(
-        TransactionQueries.getTransactionsByAddressSQL(state.address, state.pagination),
-        requestTimeout)
+      state.db.runNow(TransactionQueries.getTransactionsByAddress(state.address, state.pagination),
+                      requestTimeout)
   }
 
   /** Benchmarks for inserting Blocks. With & without HikariCP */
@@ -265,7 +264,7 @@ class DBBenchmark {
   @Benchmark
   def transactions_per_address_read_state(state: TransactionsPerAddressReadState): Unit = {
     val query =
-      TransactionQueries.getTxHashesByAddressQuerySQLNoJoinTimeRanged(
+      TransactionQueries.getTxHashesByAddressQueryTimeRanged(
         address  = Address.unsafe(state.next),
         fromTime = TimeStamp.zero,
         toTime   = TimeStamp.unsafe(Long.MaxValue),

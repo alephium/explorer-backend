@@ -66,6 +66,14 @@ object SlickUtil {
           case _ => DBIO.successful(rows.headOption)
         }
       }
+
+    @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
+    def flatMapHeadOrNone[B](f: A => DBActionR[Option[B]])(
+        implicit ec: ExecutionContext): DBActionR[Option[B]] =
+      action.headOrNone.flatMap {
+        case None    => DBIO.successful(None)
+        case Some(a) => f(a)
+      }
   }
 
   implicit class OptionResultEnrichment[A](val action: DBActionSR[Option[A]]) extends AnyVal {

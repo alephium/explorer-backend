@@ -33,7 +33,6 @@ import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.queries.result._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.model.{BlockHash, TransactionId}
@@ -99,41 +98,25 @@ object TransactionQueries extends StrictLogging {
         ).asUpdate
     }
 
-  private val countBlockHashTransactionsQuery = Compiled { blockHash: Rep[BlockHash] =>
-    TransactionSchema.table.filter(_.blockHash === blockHash).length
-  }
-
-  def countBlockHashTransactions(blockHash: BlockHash): DBActionR[Int] =
-    countBlockHashTransactionsQuery(blockHash).result
-
-  private val getTransactionQuery = Compiled { txHash: Rep[TransactionId] =>
-    mainTransactions
-      .filter(_.hash === txHash)
-      .map(tx => (tx.blockHash, tx.timestamp, tx.gasAmount, tx.gasPrice))
-  }
+  private def getTransactionQuery(
+      txHash: TransactionId): DBActionSR[(BlockHash, TimeStamp, Int, U256)] =
+    sql"""
+      SELECT block_hash, block_timestamp, gas_amount, gas_price
+      FROM transactions
+      WHERE main_chain = true
+      AND hash = $txHash
+    """.asAS[(BlockHash, TimeStamp, Int, U256)]
 
   def getTransactionAction(txHash: TransactionId)(
       implicit ec: ExecutionContext): DBActionR[Option[Transaction]] =
-    getTransactionQuery(txHash).result.headOption.flatMap {
-      case None => DBIOAction.successful(None)
-      case Some((blockHash, timestamp, gasAmount, gasPrice)) =>
+    getTransactionQuery(txHash).flatMapHeadOrNone {
+      case (blockHash, timestamp, gasAmount, gasPrice) =>
         getKnownTransactionAction(txHash, blockHash, timestamp, gasAmount, gasPrice).map(Some.apply)
     }
 
   def getOutputRefTransactionAction(key: Hash)(
       implicit ec: ExecutionContext): DBActionR[Option[Transaction]] = {
-    OutputQueries.getTxnHash(key).flatMap { txHashes =>
-      txHashes.headOption match {
-        case None => DBIOAction.successful(None)
-        case Some(txHash) =>
-          getTransactionQuery(txHash).result.headOption.flatMap {
-            case None => DBIOAction.successful(None)
-            case Some((blockHash, timestamp, gasAmount, gasPrice)) =>
-              getKnownTransactionAction(txHash, blockHash, timestamp, gasAmount, gasPrice).map(
-                Some.apply)
-          }
-      }
-    }
+    OutputQueries.getTxnHash(key).flatMapHeadOrNone(getTransactionAction)
   }
 
   private def getTxHashesByBlockHashQuery(
@@ -157,7 +140,7 @@ object TransactionQueries extends StrictLogging {
       OFFSET $offset
     """.asAS[(TransactionId, BlockHash, TimeStamp, Int)]
 
-  def countAddressTransactionsSQLNoJoin(address: Address): DBActionSR[Int] = {
+  def countAddressTransactions(address: Address): DBActionSR[Int] = {
     sql"""
     SELECT COUNT(*)
     FROM transaction_per_addresses
@@ -165,9 +148,9 @@ object TransactionQueries extends StrictLogging {
     """.asAS[Int]
   }
 
-  def getTxHashesByAddressQuerySQLNoJoin(address: Address,
-                                         offset: Int,
-                                         limit: Int): DBActionSR[TxByAddressQR] = {
+  def getTxHashesByAddressQuery(address: Address,
+                                offset: Int,
+                                limit: Int): DBActionSR[TxByAddressQR] = {
     sql"""
       SELECT tx_hash, block_hash, block_timestamp, tx_order
       FROM transaction_per_addresses
@@ -226,11 +209,11 @@ object TransactionQueries extends StrictLogging {
     * @param offset    Page number (starting from 0)
     * @param limit     Maximum rows
     */
-  def getTxHashesByAddressQuerySQLNoJoinTimeRanged(address: Address,
-                                                   fromTime: TimeStamp,
-                                                   toTime: TimeStamp,
-                                                   offset: Int,
-                                                   limit: Int): DBActionSR[TxByAddressQR] = {
+  def getTxHashesByAddressQueryTimeRanged(address: Address,
+                                          fromTime: TimeStamp,
+                                          toTime: TimeStamp,
+                                          offset: Int,
+                                          limit: Int): DBActionSR[TxByAddressQR] = {
     sql"""
       SELECT tx_hash, block_hash, block_timestamp, tx_order
       FROM transaction_per_addresses
@@ -247,7 +230,7 @@ object TransactionQueries extends StrictLogging {
       implicit ec: ExecutionContext): DBActionSR[Transaction] = {
     for {
       txHashesTs <- getTxHashesByBlockHashQuery(blockHash)
-      txs        <- getTransactionsSQL(TxByAddressQR(txHashesTs))
+      txs        <- getTransactions(TxByAddressQR(txHashesTs))
     } yield txs
   }
 
@@ -258,18 +241,7 @@ object TransactionQueries extends StrictLogging {
     val toDrop = offset * limit
     for {
       txHashesTs <- getTxHashesByBlockHashWithPaginationQuery(blockHash, toDrop, limit)
-      txs        <- getTransactionsSQL(TxByAddressQR(txHashesTs))
-    } yield txs
-  }
-
-  def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
-      implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
-    val offset = pagination.offset
-    val limit  = pagination.limit
-    val toDrop = offset * limit
-    for {
-      txHashesTs <- getTxHashesByAddressQuerySQLNoJoin(address, toDrop, limit)
-      txs        <- getTransactionsSQL(txHashesTs)
+      txs        <- getTransactions(TxByAddressQR(txHashesTs))
     } yield txs
   }
 
@@ -280,11 +252,11 @@ object TransactionQueries extends StrictLogging {
     val toDrop = offset * limit
     for {
       txHashesTs <- getTxHashesByAddressesQuery(addresses, toDrop, limit)
-      txs        <- getTransactionsSQL(txHashesTs)
+      txs        <- getTransactions(txHashesTs)
     } yield txs
   }
 
-  def getTransactionsByAddressTimeRangedSQL(
+  def getTransactionsByAddressTimeRanged(
       address: Address,
       fromTime: TimeStamp,
       toTime: TimeStamp,
@@ -293,23 +265,19 @@ object TransactionQueries extends StrictLogging {
     val limit  = pagination.limit
     val toDrop = offset * limit
     for {
-      txHashesTs <- getTxHashesByAddressQuerySQLNoJoinTimeRanged(address,
-                                                                 fromTime,
-                                                                 toTime,
-                                                                 toDrop,
-                                                                 limit)
-      txs <- getTransactionsSQL(txHashesTs)
+      txHashesTs <- getTxHashesByAddressQueryTimeRanged(address, fromTime, toTime, toDrop, limit)
+      txs        <- getTransactions(txHashesTs)
     } yield txs
   }
 
-  def getTransactionsByAddressNoJoin(address: Address, pagination: Pagination)(
+  def getTransactionsByAddress(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     val offset = pagination.offset
     val limit  = pagination.limit
     val toDrop = offset * limit
     for {
-      txHashesTs <- getTxHashesByAddressQuerySQLNoJoin(address, toDrop, limit)
-      txs        <- getTransactionsNoJoin(txHashesTs)
+      txHashesTs <- getTxHashesByAddressQuery(address, toDrop, limit)
+      txs        <- getTransactions(txHashesTs)
     } yield txs
   }
 
@@ -340,31 +308,14 @@ object TransactionQueries extends StrictLogging {
     """.asAS[TxByAddressQR]
   }
 
-  def getTransactionsSQL(txHashesTs: ArraySeq[TxByAddressQR])(
-      implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
-    if (txHashesTs.nonEmpty) {
-      val hashes   = txHashesTs.map(_.hashes())
-      val txHashes = txHashesTs.map(_.txHash)
-      for {
-        inputs  <- inputsFromTxsSQL(txHashes)
-        outputs <- outputsFromTxsSQL(txHashes)
-        gases   <- gasFromTxsSQL(hashes)
-      } yield {
-        buildTransaction(txHashesTs, inputs, outputs, gases)
-      }
-    } else {
-      DBIOAction.successful(ArraySeq.empty)
-    }
-  }
-
-  def getTransactionsNoJoin(txHashesTs: ArraySeq[TxByAddressQR])(
+  def getTransactions(txHashesTs: ArraySeq[TxByAddressQR])(
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     if (txHashesTs.nonEmpty) {
       val hashes = txHashesTs.map(_.hashes())
       for {
         inputs  <- inputsFromTxsNoJoin(hashes)
         outputs <- outputsFromTxsNoJoin(hashes)
-        gases   <- gasFromTxsSQL(hashes)
+        gases   <- gasFromTxs(hashes)
       } yield {
         buildTransaction(txHashesTs, inputs, outputs, gases)
       }
@@ -397,7 +348,7 @@ object TransactionQueries extends StrictLogging {
     }
   }
 
-  def gasFromTxsSQL(hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionSR[GasFromTxsQR] = {
+  def gasFromTxs(hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionSR[GasFromTxsQR] = {
     if (hashes.nonEmpty) {
       val values =
         hashes

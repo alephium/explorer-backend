@@ -83,7 +83,7 @@ object TokenQueries extends StrictLogging {
     val toDrop = offset * limit
     for {
       txHashesTs <- listTokenTransactionsAction(token, toDrop, limit)
-      txs        <- TransactionQueries.getTransactionsSQL(txHashesTs)
+      txs        <- TransactionQueries.getTransactions(txHashesTs)
     } yield txs
   }
 
@@ -129,7 +129,7 @@ object TokenQueries extends StrictLogging {
     val toDrop = offset * limit
     for {
       txHashesTs <- getTokenTxHashesByAddressQuery(address, token, toDrop, limit)
-      txs        <- TransactionQueries.getTransactionsSQL(txHashesTs)
+      txs        <- TransactionQueries.getTransactions(txHashesTs)
     } yield txs
   }
 
