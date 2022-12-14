@@ -49,7 +49,7 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
   implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
   val localhost: InetAddress              = InetAddress.getByName("127.0.0.1")
 
-  "BlockFlowClien.fetchBlock" should {
+  "BlockFlowClient.fetchBlock" should {
     val port = SocketUtil.temporaryLocalPort(SocketUtil.Both)
     val _    = new BlockFlowClientSpec.BlockFlowServerMock(localhost, port)
 
