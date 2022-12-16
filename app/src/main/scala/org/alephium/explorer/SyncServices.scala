@@ -50,6 +50,7 @@ object SyncServices extends StrictLogging {
         Future.unit
 
       case BootMode.ReadWrite | BootMode.WriteOnly =>
+        logger.info("Starting sync services")
         getPeers(
           networkId          = config.networkId,
           directCliqueAccess = config.directCliqueAccess,
