@@ -59,13 +59,13 @@ object TimeUtil {
       if (next.isBefore(remoteTs)) {
         rec(next.plusMillisUnsafe(1), seq :+ ((l, next)))
       } else if (l == remoteTs) {
-        seq :+ ((remoteTs, remoteTs.plusMillisUnsafe(1)))
+        seq :+ ((remoteTs, remoteTs))
       } else {
         seq :+ ((l, remoteTs))
       }
     }
 
-    if (remoteTs.millis <= localTs.millis || step == Duration.zero) {
+    if (remoteTs.millis < localTs.millis || step == Duration.zero) {
       ArraySeq.empty
     } else {
       rec(localTs, ArraySeq.empty)
