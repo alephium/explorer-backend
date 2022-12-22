@@ -95,6 +95,7 @@ class AddressReadState(val db: DBExecutor)
       txOrder      = 0,
       None,
       None,
+      None,
       None
     )
   }

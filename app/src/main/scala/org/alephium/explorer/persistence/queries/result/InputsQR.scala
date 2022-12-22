@@ -24,6 +24,7 @@ import slick.jdbc.{GetResult, PositionedResult}
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.protocol.model.TransactionId
 import org.alephium.util.U256
 
 object InputsQR {
@@ -33,6 +34,7 @@ object InputsQR {
         hint             = result.<<,
         outputRefKey     = result.<<,
         unlockScript     = result.<<?,
+        outputRefTxHash  = result.<<?,
         outputRefAddress = result.<<?,
         outputRefAmount  = result.<<?,
         outputRefTokens  = result.<<?
@@ -43,14 +45,18 @@ object InputsQR {
 final case class InputsQR(hint: Int,
                           outputRefKey: Hash,
                           unlockScript: Option[ByteString],
+                          outputRefTxHash: Option[TransactionId],
                           outputRefAddress: Option[Address],
                           outputRefAmount: Option[U256],
                           outputRefTokens: Option[ArraySeq[Token]]) {
 
   def toApiInput(): Input =
-    Input(outputRef      = OutputRef(hint, outputRefKey),
-          unlockScript   = unlockScript,
-          address        = outputRefAddress,
-          attoAlphAmount = outputRefAmount,
-          tokens         = outputRefTokens)
+    Input(
+      outputRef      = OutputRef(hint, outputRefKey),
+      unlockScript   = unlockScript,
+      txHashRef      = outputRefTxHash,
+      address        = outputRefAddress,
+      attoAlphAmount = outputRefAmount,
+      tokens         = outputRefTokens
+    )
 }
