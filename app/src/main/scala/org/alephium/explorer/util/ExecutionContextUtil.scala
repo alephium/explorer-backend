@@ -14,24 +14,29 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.schema
+package org.alephium.explorer.util
 
-import akka.util.ByteString
-import slick.jdbc.PostgresProfile.api._
-import slick.lifted.ProvenShape
+import java.util.concurrent.Executor
 
-import org.alephium.explorer.persistence.model.{AppState, AppStateKey}
-import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import scala.concurrent.ExecutionContext
 
-object AppStateSchema extends Schema[AppState]("app_state") {
+import com.typesafe.scalalogging.StrictLogging
 
-  class AppStates(tag: Tag) extends Table[AppState](tag, name) {
-    def key: Rep[AppStateKey[_]] = column[AppStateKey[_]]("key", O.PrimaryKey)
-    def value: Rep[ByteString]   = column[ByteString]("value")
+import org.alephium.explorer.error._
 
-    def * : ProvenShape[AppState] =
-      (key, value).<>((AppState.applyOrThrow _).tupled, AppState.unapplyOpt)
+object ExecutionContextUtil extends StrictLogging {
+
+  //Currently exiting on every error, we will fined grained this latter
+  //if we see other errors happening that are non-fatal
+  def reporter(exit: => Unit): Throwable => Unit = {
+    case fse: FatalSystemExit =>
+      logger.error(s"Fatal error, closing app", fse)
+      exit
+    case other =>
+      logger.error(s"Unexpected error, closing app", other)
+      exit
   }
 
-  val table: TableQuery[AppStates] = TableQuery[AppStates]
+  def fromExecutor(executor: Executor, exit: => Unit): ExecutionContext =
+    ExecutionContext.fromExecutor(executor, reporter(exit))
 }

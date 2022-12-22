@@ -142,6 +142,6 @@ class AddressServer(transactionService: TransactionService, exportTxsNumberThres
 
 object AddressServer {
   def exportFileNameHeader(address: Address, timeInterval: TimeInterval): String = {
-    s"""attachment;filename="$address-${timeInterval.from.millis}-${timeInterval.to.millis}""""
+    s"""attachment;filename="$address-${timeInterval.from.millis}-${timeInterval.to.millis}.csv""""
   }
 }

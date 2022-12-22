@@ -191,7 +191,7 @@ class AddressServerSpec()
           )
 
           val header =
-            Header("Content-Disposition", s"""attachment;filename="$address-$fromTs-$toTs"""")
+            Header("Content-Disposition", s"""attachment;filename="$address-$fromTs-$toTs.csv"""")
           response.headers.contains(header) is true
       }
     }
@@ -246,7 +246,7 @@ class AddressServerSpec()
       val from    = 1234L
       val to      = 5678L
 
-      val expected = s"""attachment;filename="$address-$from-$to""""
+      val expected = s"""attachment;filename="$address-$from-$to.csv""""
       AddressServer.exportFileNameHeader(
         Address.unsafe(address),
         TimeInterval(TimeStamp.unsafe(from), TimeStamp.unsafe(to))) is expected

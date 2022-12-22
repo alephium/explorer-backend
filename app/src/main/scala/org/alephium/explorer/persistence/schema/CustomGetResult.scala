@@ -252,4 +252,19 @@ object CustomGetResult {
       val mainChain = result.nextBoolean()
       (chainFrom, chainTo, mainChain)
     }
+
+  implicit val migrationVersionGetResult: GetResult[AppState.MigrationVersion] =
+    (result: PositionedResult) =>
+      AppState.MigrationVersion(ByteString.fromArrayUnsafe(result.nextBytes())) match {
+        case Left(error)  => throw error
+        case Right(value) => value
+    }
+
+  implicit val lastFinalizedInputTimeGetResult: GetResult[AppState.LastFinalizedInputTime] =
+    (result: PositionedResult) =>
+      AppState.LastFinalizedInputTime(ByteString.fromArrayUnsafe(result.nextBytes())) match {
+        case Left(error)  => throw error
+        case Right(value) => value
+    }
+
 }

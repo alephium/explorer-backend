@@ -27,6 +27,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence.model.AppState.MigrationVersion
 import org.alephium.explorer.persistence.queries.AppStateQueries
+import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.TimeUtil
 import org.alephium.protocol.ALPH
@@ -107,13 +108,7 @@ object Migrations extends StrictLogging {
   }
 
   def getVersion()(implicit ec: ExecutionContext): DBActionR[Option[MigrationVersion]] = {
-    AppStateQueries.get(MigrationVersion).map {
-      case None                            => None
-      case Some(MigrationVersion(version)) => Some(MigrationVersion(version))
-      case _ =>
-        logger.error(s"Invalid migration version, closing app.")
-        sys.exit(1)
-    }
+    AppStateQueries.get(MigrationVersion)
   }
 
   def updateVersion(versionOpt: Option[MigrationVersion])(
