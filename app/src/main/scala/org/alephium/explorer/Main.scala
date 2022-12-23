@@ -29,6 +29,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.config._
+import org.alephium.explorer.util.ExecutionContextUtil
 
 object Main extends StrictLogging {
   def main(args: Array[String]): Unit = {
@@ -65,8 +66,11 @@ class BootUp extends StrictLogging {
     }
 
   def initInReadableMode(mode: BootMode.Readable): Unit = {
-    implicit val actorSystem: ActorSystem           = ActorSystem()
-    implicit val executionContext: ExecutionContext = actorSystem.dispatcher
+    implicit val actorSystem: ActorSystem = ActorSystem()
+    implicit val executionContext: ExecutionContext = ExecutionContextUtil.fromExecutor(
+      actorSystem.dispatcher,
+      sideEffect(actorSystem.terminate())
+    )
 
     val explorer: ExplorerState =
       mode match {
@@ -95,15 +99,19 @@ class BootUp extends StrictLogging {
         _ <- explorer.stop()
       } yield Done
     }
+
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.GlobalExecutionContext"))
   def initInWriteOnlyMode(): Unit = {
-    implicit val ec: ExecutionContext =
-      scala.concurrent.ExecutionContext.Implicits.global
+    //scalastyle:off null
+    var explorer: ExplorerState = null
+    //scalastyle:on null
 
-    val explorer: ExplorerState =
-      ExplorerState.WriteOnly()
+    implicit val executionContext: ExecutionContext =
+      ExecutionContextUtil.fromExecutor(ExecutionContext.global, sideEffect(explorer.stop()))
+
+    explorer = ExplorerState.WriteOnly()
 
     explorer
       .start()
@@ -120,5 +128,4 @@ class BootUp extends StrictLogging {
       sideEffect(Await.result(explorer.stop(), 10.seconds))
     }))
   }
-
 }
