@@ -81,6 +81,7 @@ case object FinalizerService extends StrictLogging {
       TimeUtil.buildTimestampRange(start, end, step)
     foldFutures(timeRanges) {
       case (from, to) =>
+        logger.debug(s"Updating outputs: ${TimeUtil.toInstant(from)} - ${TimeUtil.toInstant(to)}")
         run(
           (
             for {
@@ -105,7 +106,7 @@ case object FinalizerService extends StrictLogging {
       AND o.main_chain=true
       AND i.main_chain=true
       AND i.block_timestamp >= $from
-      AND i.block_timestamp < $to;
+      AND i.block_timestamp <= $to;
       """
 
   private def updateTokenOutputs(from: TimeStamp, to: TimeStamp): DBActionR[Int] =
@@ -117,7 +118,7 @@ case object FinalizerService extends StrictLogging {
       AND o.main_chain=true
       AND i.main_chain=true
       AND i.block_timestamp >= $from
-      AND i.block_timestamp < $to;
+      AND i.block_timestamp <= $to;
       """
 
   def getStartEndTime()(
@@ -126,8 +127,6 @@ case object FinalizerService extends StrictLogging {
     getMinMaxInputsTs.flatMap(_.headOption match {
       //No input in db
       case None | Some((TimeStamp.zero, TimeStamp.zero)) => DBIOAction.successful(None)
-      // only one input
-      case Some((start, end)) if start == end => DBIOAction.successful(None)
       // inputs are only after finalization time, noop
       case Some((start, _)) if ft.isBefore(start) => DBIOAction.successful(None)
       case Some((start, _end)) =>

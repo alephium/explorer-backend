@@ -29,11 +29,15 @@ import org.alephium.explorer.persistence.model.AppState.MigrationVersion
 import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.service.FinalizerService
 import org.alephium.explorer.util.TimeUtil
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp}
 
+@SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
+
+  val latestVersion: MigrationVersion = MigrationVersion(3)
 
   def addInputTxHashRefColumn(): DBActionWT[Int] = {
     sqlu"""
@@ -62,7 +66,7 @@ object Migrations extends StrictLogging {
         output_ref_tx_hash = outputs.tx_hash
       FROM outputs
       WHERE inputs.block_timestamp >= $from
-      AND inputs.block_timestamp < $to
+      AND inputs.block_timestamp <= $to
       AND inputs.output_ref_key = outputs.key
       AND outputs.main_chain = true
       AND inputs.output_ref_tx_hash IS NULL
@@ -71,21 +75,74 @@ object Migrations extends StrictLogging {
     }.map(_ => ())
   }
 
-  def migrations(versionOpt: Option[MigrationVersion])(
-      implicit ec: ExecutionContext): DBActionWT[Option[MigrationVersion]] = {
+  def updateOutputs(finalizationTime: TimeStamp): DBActionW[Int] =
+    sqlu"""
+      UPDATE outputs o
+      SET spent_finalized = i.tx_hash
+      FROM inputs i
+      WHERE i.output_ref_key = o.key
+      AND o.spent_finalized IS NULL
+      AND o.main_chain=true
+      AND i.main_chain=true
+      AND i.block_timestamp <= $finalizationTime
+      """
+
+  def updateTokenOutputs(finalizationTime: TimeStamp): DBActionW[Int] =
+    sqlu"""
+      UPDATE token_outputs o
+      SET spent_finalized = i.tx_hash
+      FROM inputs i
+      WHERE i.output_ref_key = o.key
+      AND o.spent_finalized IS NULL
+      AND o.main_chain=true
+      AND i.main_chain=true
+      AND i.block_timestamp <= $finalizationTime
+      """
+
+  def updateFinalizedValue(implicit ec: ExecutionContext): DBActionWT[Unit] = {
+    logger.info(s"Migrating finalized outputs and tokens")
+    val finalizationTime = FinalizerService.finalizationTime
+    (for {
+      outs <- updateOutputs(finalizationTime)
+      toks <- updateTokenOutputs(finalizationTime)
+    } yield {
+      logger.info(s"$outs outputs finalized")
+      logger.info(s"$toks tokens finalized")
+    }).transactionally
+  }
+
+  private val migration1 =
+    sqlu"""
+      CREATE INDEX IF NOT EXISTS txs_per_address_address_timestamp_idx
+      ON transaction_per_addresses (address, block_timestamp)
+    """
+
+  private def migration2(implicit ec: ExecutionContext) =
+    (for {
+      _ <- addInputTxHashRefColumn()
+      _ <- dropInputOutputRefAddressNullIndex()
+    } yield ()).transactionally
+
+  private def migration3(implicit ec: ExecutionContext) = updateFinalizedValue
+
+  private def migrations(implicit ec: ExecutionContext) =
+    Seq(migration1, migration2, migration3)
+
+  def migrationsQuery(versionOpt: Option[MigrationVersion])(
+      implicit ec: ExecutionContext): DBActionWT[Unit] = {
     logger.info(s"Current migration version: $versionOpt")
     versionOpt match {
-      case Some(MigrationVersion(0)) =>
-        for {
-          _ <- sqlu"""CREATE INDEX IF NOT EXISTS txs_per_address_address_timestamp_idx
-                  ON transaction_per_addresses (address, block_timestamp)"""
-        } yield Some(MigrationVersion(1))
-      case Some(MigrationVersion(1)) =>
-        (for {
-          _ <- addInputTxHashRefColumn()
-          _ <- dropInputOutputRefAddressNullIndex()
-        } yield Some(MigrationVersion(2))).transactionally
-      case _ => DBIOAction.successful(Some(MigrationVersion(2)))
+      //noop
+      case None | Some(MigrationVersion(latestVersion.version)) =>
+        logger.info(s"No migrations needed")
+        DBIOAction.successful(())
+      case Some(MigrationVersion(current)) =>
+        logger.info(s"Applying ${latestVersion.version - current} migrations")
+        val migrationsToPerform = migrations.drop(current)
+        DBIOAction
+          .sequence(migrationsToPerform)
+          .transactionally
+          .map(_ => ())
     }
   }
 
@@ -93,17 +150,17 @@ object Migrations extends StrictLogging {
       implicit ec: ExecutionContext): Future[Unit] = {
     logger.info("Migrating")
     for {
-      (prevVersion, newVersion) <- DBRunner
+      prevVersion <- DBRunner
         .run(databaseConfig)(for {
-          version       <- getVersion()
-          newVersionOpt <- migrations(version)
-        } yield (version, newVersionOpt))
-      _ <- if (prevVersion == Some(MigrationVersion(1))) {
+          version <- getVersion()
+          _       <- migrationsQuery(version)
+        } yield version)
+      _ <- if (prevVersion.map(_.version < 2).getOrElse(false)) {
         updateInputTxHashRef(databaseConfig)
       } else {
         Future.unit
       }
-      _ <- DBRunner.run(databaseConfig)(updateVersion(newVersion))
+      _ <- DBRunner.run(databaseConfig)(updateVersion(Some(latestVersion)))
     } yield ()
   }
 
