@@ -360,6 +360,7 @@ object BlockFlowClient extends StrictLogging {
     Input(
       OutputRef(input.outputRef.hint, input.outputRef.key),
       Some(input.unlockScript),
+      None,
       addressFromProtocolInput(input),
       None,
       None
@@ -383,6 +384,7 @@ object BlockFlowClient extends StrictLogging {
       mainChain,
       index,
       txOrder,
+      None,
       addressFromProtocolInput(input),
       None,
       None
@@ -406,6 +408,7 @@ object BlockFlowClient extends StrictLogging {
       mainChain,
       index,
       txOrder,
+      None,
       None,
       None,
       None

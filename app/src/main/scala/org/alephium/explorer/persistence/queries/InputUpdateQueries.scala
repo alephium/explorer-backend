@@ -36,6 +36,7 @@ object InputUpdateQueries {
     sql"""
       UPDATE inputs
       SET
+        output_ref_tx_hash = outputs.tx_hash,
         output_ref_address = outputs.address,
         output_ref_amount = outputs.amount,
         output_ref_tokens = outputs.tokens

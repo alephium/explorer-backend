@@ -110,7 +110,9 @@ class AddressServer(transactionService: TransactionService, exportTxsNumberThres
       }),
       route(exportTransactionsCsvByAddress.serverLogic[Future] {
         case (address, timeInterval) =>
-          exportTransactions(address, timeInterval, ExportType.CSV)
+          exportTransactions(address, timeInterval, ExportType.CSV).map(_.map { stream =>
+            (AddressServer.exportFileNameHeader(address, timeInterval), stream)
+          })
       })
     )
 
@@ -135,5 +137,11 @@ class AddressServer(transactionService: TransactionService, exportTxsNumberThres
           Right(readStream)
         }
       }
+  }
+}
+
+object AddressServer {
+  def exportFileNameHeader(address: Address, timeInterval: TimeInterval): String = {
+    s"""attachment;filename="$address-${timeInterval.from.millis}-${timeInterval.to.millis}.csv""""
   }
 }

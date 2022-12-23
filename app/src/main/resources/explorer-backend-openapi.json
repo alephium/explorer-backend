@@ -1817,6 +1817,14 @@
         ],
         "responses": {
           "200": {
+            "headers": {
+              "Content-Disposition": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "text/csv": {
                 "schema": {
@@ -3990,6 +3998,10 @@
           "unlockScript": {
             "type": "string",
             "format": "hex-string"
+          },
+          "txHashRef": {
+            "type": "string",
+            "format": "32-byte-hash"
           },
           "address": {
             "type": "string"

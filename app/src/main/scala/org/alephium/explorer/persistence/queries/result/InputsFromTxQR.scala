@@ -36,6 +36,7 @@ object InputsFromTxQR {
         hint         = result.<<,
         outputRefKey = result.<<,
         unlockScript = result.<<?,
+        txHashRef    = result.<<?,
         address      = result.<<?,
         amount       = result.<<?,
         token        = result.<<?
@@ -48,6 +49,7 @@ final case class InputsFromTxQR(txHash: TransactionId,
                                 hint: Int,
                                 outputRefKey: Hash,
                                 unlockScript: Option[ByteString],
+                                txHashRef: Option[TransactionId],
                                 address: Option[Address],
                                 amount: Option[U256],
                                 token: Option[ArraySeq[Token]]) {
@@ -55,6 +57,7 @@ final case class InputsFromTxQR(txHash: TransactionId,
   def toApiInput(): Input =
     Input(outputRef      = OutputRef(hint, outputRefKey),
           unlockScript   = unlockScript,
+          txHashRef      = txHashRef,
           address        = address,
           attoAlphAmount = amount,
           tokens         = token)

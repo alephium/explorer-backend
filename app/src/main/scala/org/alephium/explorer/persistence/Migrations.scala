@@ -24,11 +24,52 @@ import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence.model.AppState.MigrationVersion
 import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.util.TimeUtil
+import org.alephium.protocol.ALPH
+import org.alephium.util.{Duration, TimeStamp}
 
 object Migrations extends StrictLogging {
+
+  def addInputTxHashRefColumn(): DBActionWT[Int] = {
+    sqlu"""
+      ALTER TABLE inputs
+      ADD COLUMN IF NOT EXISTS output_ref_tx_hash bytea;
+    """
+  }
+
+  //Will automatically be recreated after the migration
+  def dropInputOutputRefAddressNullIndex(): DBActionWT[Int] = {
+    sqlu"DROP INDEX IF EXISTS inputs_output_ref_amount_null_idx"
+  }
+
+  def updateInputTxHashRef(databaseConfig: DatabaseConfig[PostgresProfile])(
+      implicit ec: ExecutionContext): Future[Unit] = {
+    foldFutures(
+      TimeUtil
+        .buildTimestampRange(ALPH.LaunchTimestamp, TimeStamp.now(), Duration.ofDaysUnsafe(1))) {
+      case (from, to) =>
+        logger.info(
+          s"Updating inputs tx_hash_ref: ${TimeUtil.toInstant(from)} - ${TimeUtil.toInstant(to)}")
+        DBRunner.run(databaseConfig)(
+          sqlu"""
+      UPDATE inputs
+      SET
+        output_ref_tx_hash = outputs.tx_hash
+      FROM outputs
+      WHERE inputs.block_timestamp >= $from
+      AND inputs.block_timestamp < $to
+      AND inputs.output_ref_key = outputs.key
+      AND outputs.main_chain = true
+      AND inputs.output_ref_tx_hash IS NULL
+    """
+        )
+    }.map(_ => ())
+  }
 
   def migrations(versionOpt: Option[MigrationVersion])(
       implicit ec: ExecutionContext): DBActionWT[Option[MigrationVersion]] = {
@@ -39,19 +80,31 @@ object Migrations extends StrictLogging {
           _ <- sqlu"""CREATE INDEX IF NOT EXISTS txs_per_address_address_timestamp_idx
                   ON transaction_per_addresses (address, block_timestamp)"""
         } yield Some(MigrationVersion(1))
-      case _ => DBIOAction.successful(Some(MigrationVersion(1)))
+      case Some(MigrationVersion(1)) =>
+        (for {
+          _ <- addInputTxHashRefColumn()
+          _ <- dropInputOutputRefAddressNullIndex()
+        } yield Some(MigrationVersion(2))).transactionally
+      case _ => DBIOAction.successful(Some(MigrationVersion(2)))
     }
   }
 
   def migrate(databaseConfig: DatabaseConfig[PostgresProfile])(
       implicit ec: ExecutionContext): Future[Unit] = {
     logger.info("Migrating")
-    DBRunner
-      .run(databaseConfig)(for {
-        version       <- getVersion()
-        newVersionOpt <- migrations(version)
-        _             <- updateVersion(newVersionOpt)
-      } yield ())
+    for {
+      (prevVersion, newVersion) <- DBRunner
+        .run(databaseConfig)(for {
+          version       <- getVersion()
+          newVersionOpt <- migrations(version)
+        } yield (version, newVersionOpt))
+      _ <- if (prevVersion == Some(MigrationVersion(1))) {
+        updateInputTxHashRef(databaseConfig)
+      } else {
+        Future.unit
+      }
+      _ <- DBRunner.run(databaseConfig)(updateVersion(newVersion))
+    } yield ()
   }
 
   def getVersion()(implicit ec: ExecutionContext): DBActionR[Option[MigrationVersion]] = {

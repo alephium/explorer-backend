@@ -35,6 +35,7 @@ final case class InputEntity(
     mainChain: Boolean,
     inputOrder: Int,
     txOrder: Int,
+    outputRefTxHash: Option[TransactionId],
     outputRefAddress: Option[Address],
     outputRefAmount: Option[U256],
     outputRefTokens: Option[ArraySeq[Token]] //None if empty list
@@ -43,6 +44,7 @@ final case class InputEntity(
     Input(
       OutputRef(hint, outputRefKey),
       unlockScript,
+      Some(outputRef.txHash),
       Some(outputRef.address),
       Some(outputRef.amount),
       outputRef.tokens

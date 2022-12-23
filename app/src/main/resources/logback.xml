@@ -69,10 +69,6 @@
     </if>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>${EXPLORER_LOG_LEVEL:-INFO}</level>
-        </filter>
-
         <encoder>
             <pattern>${consolePattern}</pattern>
         </encoder>
@@ -84,7 +80,7 @@
     <logger name="io.netty" level="WARN"/>
     <logger name="org.asynchttpclient" level="WARN"/>
 
-    <root>
+    <root level="${EXPLORER_LOG_LEVEL:-INFO}">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="ERRFILE"/>
         <appender-ref ref="INFOFILE"/>

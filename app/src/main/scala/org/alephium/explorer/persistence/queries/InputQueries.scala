@@ -37,7 +37,7 @@ object InputQueries {
   /** Inserts inputs or ignore rows with primary key conflict */
   // scalastyle:off magic.number
   def insertInputs(inputs: Iterable[InputEntity]): DBActionW[Int] =
-    QuerySplitter.splitUpdates(rows = inputs, columnsPerRow = 11) { (inputs, placeholder) =>
+    QuerySplitter.splitUpdates(rows = inputs, columnsPerRow = 12) { (inputs, placeholder) =>
       val query =
         s"""
            |INSERT INTO inputs ("block_hash",
@@ -49,6 +49,7 @@ object InputQueries {
            |                    "main_chain",
            |                    "input_order",
            |                    "tx_order",
+           |                    "output_ref_tx_hash",
            |                    "output_ref_address",
            |                    "output_ref_amount")
            |VALUES $placeholder
@@ -69,6 +70,7 @@ object InputQueries {
             params >> input.mainChain
             params >> input.inputOrder
             params >> input.txOrder
+            params >> input.outputRefTxHash
             params >> input.outputRefAddress
             params >> input.outputRefAmount
         }
@@ -88,6 +90,7 @@ object InputQueries {
                  inputs.hint,
                  inputs.output_ref_key,
                  inputs.unlock_script,
+                 outputs.tx_hash,
                  outputs.address,
                  outputs.amount,
                  outputs.tokens
@@ -111,6 +114,7 @@ object InputQueries {
                  inputs.hint,
                  inputs.output_ref_key,
                  inputs.unlock_script,
+                 outputs.tx_hash,
                  outputs.address,
                  outputs.amount,
                  outputs.tokens
@@ -144,6 +148,7 @@ object InputQueries {
            |       hint,
            |       output_ref_key,
            |       unlock_script,
+           |       output_ref_tx_hash,
            |       output_ref_address,
            |       output_ref_amount,
            |       output_ref_tokens
@@ -171,6 +176,7 @@ object InputQueries {
         SELECT hint,
                output_ref_key,
                unlock_script,
+               output_ref_tx_hash,
                output_ref_address,
                output_ref_amount,
                output_ref_tokens
@@ -192,6 +198,7 @@ object InputQueries {
           main_chain,
           input_order,
           tx_order,
+          output_ref_tx_hash,
           output_ref_address,
           output_ref_amount,
           output_ref_tokens
