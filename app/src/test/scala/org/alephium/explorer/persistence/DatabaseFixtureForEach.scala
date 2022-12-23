@@ -41,11 +41,12 @@ trait DatabaseFixtureForEach
   override def beforeAll(): Unit = {
     super.beforeAll()
     DatabaseFixture.createDb(dbName)
+    DatabaseFixture.createTables()
     logger.debug(s"Test database $dbName created")
   }
   override def beforeEach(): Unit = {
     super.beforeEach()
-    DatabaseFixture.dropCreateTables()
+    DatabaseFixture.cleanTables()
   }
 
   override def afterEach(): Unit = {
