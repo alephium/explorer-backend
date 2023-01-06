@@ -51,8 +51,11 @@ object EndpointExamples extends EndpointsExamples {
   private val unlockScript: ByteString =
     Hex.unsafe("d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28")
 
-  private val addressExplorer: Address =
+  private val address1: Address =
     Address.unsafe("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n")
+
+  private val address2: Address =
+    Address.unsafe("3dFzhhHHzGwAWW7MZkTJWubpkW1iJ5gnUjqgAG8HEdhk")
 
   private val tokens: ArraySeq[Token] =
     ArraySeq(
@@ -65,7 +68,7 @@ object EndpointExamples extends EndpointsExamples {
       outputRef      = outputRef,
       unlockScript   = Some(unlockScript),
       txHashRef      = Some(txId),
-      address        = Some(addressExplorer),
+      address        = Some(address1),
       attoAlphAmount = Some(U256.Two),
       tokens         = Some(tokens)
     )
@@ -75,7 +78,7 @@ object EndpointExamples extends EndpointsExamples {
       hint           = 1,
       key            = hash,
       attoAlphAmount = U256.Two,
-      address        = addressExplorer,
+      address        = address1,
       tokens         = Some(tokens),
       lockTime       = Some(ts),
       message        = Some(hash.bytes)
@@ -86,7 +89,7 @@ object EndpointExamples extends EndpointsExamples {
       hint           = 1,
       key            = hash,
       attoAlphAmount = U256.Two,
-      address        = addressExplorer,
+      address        = address1,
       tokens         = Some(tokens)
     )
 
@@ -116,6 +119,21 @@ object EndpointExamples extends EndpointsExamples {
       gasPrice  = org.alephium.protocol.model.defaultGasPrice.value
     )
 
+  private val confirmedTransaction =
+    ConfirmedTransaction.from(transaction)
+
+  private val unconfirmedTransaction =
+    UnconfirmedTransaction(
+      hash      = txId,
+      chainFrom = GroupIndex.unsafe(1),
+      chainTo   = GroupIndex.unsafe(2),
+      inputs    = ArraySeq(input),
+      outputs   = ArraySeq(outputAsset, outputContract),
+      gasAmount = org.alephium.protocol.model.defaultGas.value,
+      gasPrice  = org.alephium.protocol.model.defaultGasPrice.value,
+      lastSeen  = ts
+    )
+
   /**
     * Examples
     */
@@ -127,5 +145,20 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val listOfBlocksExample: List[Example[ListBlocks]] =
     simpleExample(ListBlocks(2, ArraySeq(blockEntryLite, blockEntryLite)))
+
+  implicit val listTokensExample: List[Example[ArraySeq[TokenId]]] =
+    simpleExample(tokens.map(_.id))
+
+  implicit val listAddressesExample: List[Example[ArraySeq[Address]]] =
+    simpleExample(ArraySeq(address1, address2))
+
+  implicit val transactionLikeExample: List[Example[TransactionLike]] =
+    simpleExample(confirmedTransaction)
+
+  implicit val unconfirmedTransactionsLike: List[Example[ArraySeq[UnconfirmedTransaction]]] =
+    simpleExample(ArraySeq(unconfirmedTransaction, unconfirmedTransaction))
+
+  implicit val transactionExample: List[Example[Transaction]] =
+    simpleExample(transaction)
 
 }
