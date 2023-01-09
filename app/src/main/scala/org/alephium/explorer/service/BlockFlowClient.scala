@@ -70,16 +70,6 @@ trait BlockFlowClient extends Service {
             .toArraySeq)
     }
 
-  def fetchBlocksAndEventsAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
-      implicit executionContext: ExecutionContext): Future[ArraySeq[BlockEntityWithEvents]] =
-    fetchHashesAtHeight(fromGroup, toGroup, height).flatMap { hashesAtHeight =>
-      Future
-        .sequence(
-          hashesAtHeight.headers
-            .map(hash => fetchBlockAndEvents(fromGroup, hash))
-            .toArraySeq)
-    }
-
   def fetchSelfClique(): Future[SelfClique]
 
   def fetchChainParams(): Future[ChainParams]
