@@ -16,8 +16,6 @@
 
 package org.alephium.explorer.api
 
-import java.math.BigInteger
-
 import scala.collection.immutable.ArraySeq
 
 import akka.util.ByteString
@@ -27,6 +25,7 @@ import org.alephium.api.EndpointsExamples
 import org.alephium.api.model.Amount
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.ALPH
+import org.alephium.protocol.mining.HashRate
 import org.alephium.protocol.model.{BlockHash, TokenId}
 import org.alephium.util.{Hex, U256}
 
@@ -105,7 +104,7 @@ object EndpointExamples extends EndpointsExamples {
       height    = Height.unsafe(42),
       txNumber  = 1,
       mainChain = true,
-      hashRate  = BigInteger.valueOf(100L)
+      hashRate  = HashRate.a128EhPerSecond.value
     )
 
   private val transaction: Transaction =
@@ -132,6 +131,45 @@ object EndpointExamples extends EndpointsExamples {
       gasAmount = org.alephium.protocol.model.defaultGas.value,
       gasPrice  = org.alephium.protocol.model.defaultGasPrice.value,
       lastSeen  = ts
+    )
+
+  private val addressInfo =
+    AddressInfo(
+      balance       = U256.Ten,
+      lockedBalance = U256.Two,
+      txNumber      = 1
+    )
+
+  private val addressBalance =
+    AddressBalance(
+      balance       = U256.Ten,
+      lockedBalance = U256.Two
+    )
+
+  private val hashRate =
+    Hashrate(
+      timestamp = ts,
+      hashrate  = BigDecimal(HashRate.a128EhPerSecond.value),
+      value     = BigDecimal(HashRate.a128EhPerSecond.value)
+    )
+
+  private val timedCount =
+    TimedCount(
+      timestamp           = ts,
+      totalCountAllChains = 10000000
+    )
+
+  private val perChainCount =
+    PerChainCount(
+      chainFrom = 1,
+      chainTo   = 2,
+      count     = 10000000
+    )
+
+  private val perChainTimedCount =
+    PerChainTimedCount(
+      timestamp          = ts,
+      totalCountPerChain = ArraySeq(perChainCount, perChainCount)
     )
 
   /**
@@ -161,4 +199,21 @@ object EndpointExamples extends EndpointsExamples {
   implicit val transactionExample: List[Example[Transaction]] =
     simpleExample(transaction)
 
+  implicit val addressInfoExample: List[Example[AddressInfo]] =
+    simpleExample(addressInfo)
+
+  implicit val addressBalanceExample: List[Example[AddressBalance]] =
+    simpleExample(addressBalance)
+
+  implicit val booleansExample: List[Example[ArraySeq[Boolean]]] =
+    simpleExample(ArraySeq(true, false))
+
+  implicit val hashrateExample: List[Example[ArraySeq[Hashrate]]] =
+    simpleExample(ArraySeq(hashRate, hashRate))
+
+  implicit val timedCountExample: List[Example[ArraySeq[TimedCount]]] =
+    simpleExample(ArraySeq(timedCount, timedCount))
+
+  implicit val perChainTimedCountExample: List[Example[ArraySeq[PerChainTimedCount]]] =
+    simpleExample(ArraySeq(perChainTimedCount, perChainTimedCount))
 }
