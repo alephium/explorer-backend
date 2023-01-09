@@ -186,7 +186,7 @@ object EndpointExamples extends EndpointsExamples {
       circulating = U256.HalfMaxValue,
       reserved    = U256.Ten,
       locked      = U256.Ten,
-      maximum     = U256.Ten
+      maximum     = U256.MaxValue
     )
 
   private val perChainHeight =
