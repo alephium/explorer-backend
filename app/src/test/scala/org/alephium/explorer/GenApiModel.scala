@@ -102,8 +102,16 @@ object GenApiModel extends ImplicitConversions {
       timestamp <- timestampGen
       gasAmount <- Gen.posNum[Int]
       gasPrice  <- u256Gen
+      coinbase  <- arbitrary[Boolean]
     } yield
-      Transaction(hash, blockHash, timestamp, ArraySeq.empty, ArraySeq.empty, gasAmount, gasPrice)
+      Transaction(hash,
+                  blockHash,
+                  timestamp,
+                  ArraySeq.empty,
+                  ArraySeq.empty,
+                  gasAmount,
+                  gasPrice,
+                  coinbase)
 
   val utransactionGen: Gen[UnconfirmedTransaction] =
     for {

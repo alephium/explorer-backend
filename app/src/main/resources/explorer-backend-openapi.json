@@ -4167,6 +4167,7 @@
           "timestamp",
           "gasAmount",
           "gasPrice",
+          "coinbase",
           "type"
         ],
         "type": "object",
@@ -4202,6 +4203,9 @@
           "gasPrice": {
             "type": "string",
             "format": "uint256"
+          },
+          "coinbase": {
+            "type": "boolean"
           },
           "type": {
             "type": "string"
@@ -4621,7 +4625,8 @@
           "blockHash",
           "timestamp",
           "gasAmount",
-          "gasPrice"
+          "gasPrice",
+          "coinbase"
         ],
         "type": "object",
         "properties": {
@@ -4656,6 +4661,9 @@
           "gasPrice": {
             "type": "string",
             "format": "uint256"
+          },
+          "coinbase": {
+            "type": "boolean"
           }
         }
       },

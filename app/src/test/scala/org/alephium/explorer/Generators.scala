@@ -386,6 +386,7 @@ object Generators {
     val outputs: ArraySeq[OutputEntity] = blocks.flatMap(_.flatMap(_.outputs))
 
     blocks.map(_.map { block =>
+      val coinbaseTxId = block.coinbaseTxId
       val transactions =
         block.transactions.map { tx =>
           Transaction(
@@ -397,7 +398,8 @@ object Generators {
               .map(input => input.toApi(outputs.head)), //TODO Fix when we have a valid blockchain generator
             block.outputs.filter(_.txHash === tx.hash).map(_.toApi(None)),
             tx.gasAmount,
-            tx.gasPrice
+            tx.gasPrice,
+            coinbase = coinbaseTxId == tx.hash
           )
         }
       BlockEntry(
@@ -494,6 +496,7 @@ object Generators {
       mainChain   <- arbitrary[Boolean]
       outputOrder <- arbitrary[Int]
       txOrder     <- arbitrary[Int]
+      coinbase    <- arbitrary[Boolean]
     } yield
       OutputEntity(
         blockHash      = blockHash,
@@ -510,7 +513,8 @@ object Generators {
         message        = if (outputType == OutputEntity.Asset) message else None,
         outputOrder    = outputOrder,
         txOrder        = txOrder,
-        spentFinalized = None
+        spentFinalized = None,
+        coinbase       = coinbase
       )
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
