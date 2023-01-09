@@ -5042,7 +5042,13 @@
                 "items": {
                   "$ref": "#/components/schemas/LogbackValue"
                 }
-              }
+              },
+              "example": [
+                {
+                  "name": "org.test",
+                  "level": "DEBUG"
+                }
+              ]
             }
           },
           "required": false
