@@ -2935,6 +2935,10 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ExplorerInfo"
+                },
+                "example": {
+                  "releaseVersion": "1.11.2+17-00593e8e-SNAPSHOT",
+                  "commit": "00593e8e8c718d6bd27fe218e7aa438ef56611cc"
                 }
               }
             }
@@ -3024,7 +3028,21 @@
                   "items": {
                     "$ref": "#/components/schemas/PerChainHeight"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "chainFrom": 1,
+                    "chainTo": 2,
+                    "height": 1000,
+                    "value": 1000
+                  },
+                  {
+                    "chainFrom": 1,
+                    "chainTo": 2,
+                    "height": 1000,
+                    "value": 1000
+                  }
+                ]
               }
             }
           },
@@ -3793,7 +3811,25 @@
                   "items": {
                     "$ref": "#/components/schemas/TokenSupply"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "timestamp": 1611041396892,
+                    "total": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+                    "circulating": "57896044618658097711785492504343953926634992332820282019728792003956564819967",
+                    "reserved": "10",
+                    "locked": "10",
+                    "maximum": "10"
+                  },
+                  {
+                    "timestamp": 1611041396892,
+                    "total": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+                    "circulating": "57896044618658097711785492504343953926634992332820282019728792003956564819967",
+                    "reserved": "10",
+                    "locked": "10",
+                    "maximum": "10"
+                  }
+                ]
               }
             }
           },
@@ -4313,7 +4349,21 @@
                   "items": {
                     "$ref": "#/components/schemas/PerChainDuration"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "chainFrom": 1,
+                    "chainTo": 2,
+                    "duration": 60,
+                    "value": 60
+                  },
+                  {
+                    "chainFrom": 1,
+                    "chainTo": 2,
+                    "duration": 60,
+                    "value": 60
+                  }
+                ]
               }
             }
           },

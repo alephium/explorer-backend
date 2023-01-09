@@ -172,6 +172,38 @@ object EndpointExamples extends EndpointsExamples {
       totalCountPerChain = ArraySeq(perChainCount, perChainCount)
     )
 
+  private val explorerInfo =
+    ExplorerInfo(
+      releaseVersion = "1.11.2+17-00593e8e-SNAPSHOT",
+      commit         = "00593e8e8c718d6bd27fe218e7aa438ef56611cc"
+    )
+
+  private val tokenSupply =
+    TokenSupply(
+      timestamp   = ts,
+      total       = U256.MaxValue,
+      circulating = U256.HalfMaxValue,
+      reserved    = U256.Ten,
+      locked      = U256.Ten,
+      maximum     = U256.Ten
+    )
+
+  private val perChainHeight =
+    PerChainHeight(
+      chainFrom = 1,
+      chainTo   = 2,
+      height    = 1000,
+      value     = 1000
+    )
+
+  private val perChainDuration =
+    PerChainDuration(
+      chainFrom = 1,
+      chainTo   = 2,
+      duration  = 60,
+      value     = 60
+    )
+
   /**
     * Examples
     */
@@ -216,4 +248,16 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val perChainTimedCountExample: List[Example[ArraySeq[PerChainTimedCount]]] =
     simpleExample(ArraySeq(perChainTimedCount, perChainTimedCount))
+
+  implicit val explorerInfoExample: List[Example[ExplorerInfo]] =
+    simpleExample(explorerInfo)
+
+  implicit val tokenSupplyExample: List[Example[ArraySeq[TokenSupply]]] =
+    simpleExample(ArraySeq(tokenSupply, tokenSupply))
+
+  implicit val perChainHeightExample: List[Example[ArraySeq[PerChainHeight]]] =
+    simpleExample(ArraySeq(perChainHeight, perChainHeight))
+
+  implicit val perChainDurationExample: List[Example[ArraySeq[PerChainDuration]]] =
+    simpleExample(ArraySeq(perChainDuration, perChainDuration))
 }
