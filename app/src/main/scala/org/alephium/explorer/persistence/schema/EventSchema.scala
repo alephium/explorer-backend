@@ -46,7 +46,6 @@ object EventSchema extends SchemaMainChain[EventEntity]("events") {
     def contractAddressIdx: Index = index("contract_address_idx", contractAddress)
     def inputAddressIdx: Index    = index("input_address_idx", inputAddress)
     def timestampIdx: Index       = index("block_timestamp_idx", timestamp)
-    def eventIndexIdx: Index      = index("event_index_idx", eventIndex)
   }
 
   val table: TableQuery[Events] = TableQuery[Events]
