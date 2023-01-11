@@ -182,11 +182,11 @@ object EndpointExamples extends EndpointsExamples {
   private val tokenSupply =
     TokenSupply(
       timestamp   = ts,
-      total       = U256.MaxValue,
-      circulating = U256.HalfMaxValue,
+      total       = ALPH.MaxALPHValue.divUnsafe(U256.Billion),
+      circulating = ALPH.MaxALPHValue.divUnsafe(U256.Billion).divUnsafe(U256.Two),
       reserved    = U256.Ten,
       locked      = U256.Ten,
-      maximum     = U256.MaxValue
+      maximum     = ALPH.MaxALPHValue
     )
 
   private val perChainHeight =

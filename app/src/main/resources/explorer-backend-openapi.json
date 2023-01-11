@@ -3160,7 +3160,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/UnconfirmedTransaction1"
+                    "$ref": "#/components/schemas/TransactionLike"
                   }
                 },
                 "example": [
@@ -3815,19 +3815,19 @@
                 "example": [
                   {
                     "timestamp": 1611041396892,
-                    "total": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
-                    "circulating": "57896044618658097711785492504343953926634992332820282019728792003956564819967",
+                    "total": "1000000000000000000",
+                    "circulating": "500000000000000000",
                     "reserved": "10",
                     "locked": "10",
-                    "maximum": "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+                    "maximum": "1000000000000000000000000000"
                   },
                   {
                     "timestamp": 1611041396892,
-                    "total": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
-                    "circulating": "57896044618658097711785492504343953926634992332820282019728792003956564819967",
+                    "total": "1000000000000000000",
+                    "circulating": "500000000000000000",
                     "reserved": "10",
                     "locked": "10",
-                    "maximum": "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+                    "maximum": "1000000000000000000000000000"
                   }
                 ]
               }
@@ -5819,55 +5819,6 @@
           },
           "type": {
             "type": "string"
-          }
-        }
-      },
-      "UnconfirmedTransaction1": {
-        "required": [
-          "hash",
-          "chainFrom",
-          "chainTo",
-          "gasAmount",
-          "gasPrice",
-          "lastSeen"
-        ],
-        "type": "object",
-        "properties": {
-          "hash": {
-            "type": "string",
-            "format": "32-byte-hash"
-          },
-          "chainFrom": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "chainTo": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "inputs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Input"
-            }
-          },
-          "outputs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Output"
-            }
-          },
-          "gasAmount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "gasPrice": {
-            "type": "string",
-            "format": "uint256"
-          },
-          "lastSeen": {
-            "type": "integer",
-            "format": "int64"
           }
         }
       }

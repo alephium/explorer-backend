@@ -23,7 +23,7 @@ import sttp.tapir.generic.auto._
 
 import org.alephium.api.Endpoints.jsonBody
 import org.alephium.explorer.api.EndpointExamples._
-import org.alephium.explorer.api.model.{Pagination, UnconfirmedTransaction}
+import org.alephium.explorer.api.model.{Pagination, TransactionLike}
 
 trait UnconfirmedTransactionEndpoints extends BaseEndpoint with QueryParams {
 
@@ -32,9 +32,9 @@ trait UnconfirmedTransactionEndpoints extends BaseEndpoint with QueryParams {
       .tag("Transactions")
       .in("unconfirmed-transactions")
 
-  val listUnconfirmedTransactions: BaseEndpoint[Pagination, ArraySeq[UnconfirmedTransaction]] =
+  val listUnconfirmedTransactions: BaseEndpoint[Pagination, ArraySeq[TransactionLike]] =
     unconfirmedTransactionsEndpoint.get
       .in(pagination)
-      .out(jsonBody[ArraySeq[UnconfirmedTransaction]])
+      .out(jsonBody[ArraySeq[TransactionLike]])
       .description("list unconfirmed transactions")
 }
