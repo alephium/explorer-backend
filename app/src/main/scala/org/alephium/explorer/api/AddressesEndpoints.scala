@@ -25,8 +25,9 @@ import sttp.tapir._
 import sttp.tapir.generic.auto._
 import sttp.tapir.server.vertx.streams.VertxStreams
 
-import org.alephium.api.{alphJsonBody => jsonBody}
+import org.alephium.api.Endpoints.jsonBody
 import org.alephium.api.model.TimeInterval
+import org.alephium.explorer.api.EndpointExamples._
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.TokenId
 import org.alephium.util.Duration
