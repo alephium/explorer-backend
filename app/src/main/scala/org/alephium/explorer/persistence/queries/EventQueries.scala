@@ -69,21 +69,33 @@ object EventQueries {
       ORDER BY event_order_in_block
       """.asASE[EventEntity](eventGetResult)
 
-  def getEventsByContractAddressQuery(address: Address): DBActionSR[EventEntity] =
+  def getEventsByContractAddressQuery(address: Address,
+                                      pagination: Pagination): DBActionSR[EventEntity] = {
+    val limit  = pagination.limit
+    val offset = pagination.offset
     sql"""
       SELECT *
       FROM events
       WHERE contract_address = $address
       ORDER BY block_timestamp DESC, event_order_in_block
+      LIMIT $limit
+      OFFSET $offset
       """.asASE[EventEntity](eventGetResult)
+  }
 
   def getEventsByContractAndInputAddressQuery(contract: Address,
-                                              input: Address): DBActionSR[EventEntity] =
+                                              input: Address,
+                                              pagination: Pagination): DBActionSR[EventEntity] = {
+    val limit  = pagination.limit
+    val offset = pagination.offset
     sql"""
       SELECT *
       FROM events
       WHERE contract_address = $contract
       AND input_address = $input
       ORDER BY block_timestamp DESC
+      LIMIT $limit
+      OFFSET $offset
       """.asASE[EventEntity](eventGetResult)
+  }
 }
