@@ -54,5 +54,5 @@ trait EventsEndpoints extends BaseEndpoint with QueryParams {
       .in("input-address")
       .in(path[Address]("input_address"))
       .out(jsonBody[ArraySeq[Event]])
-      .description("Get contract events by contract address")
+      .description("Get contract events by contract and input addresses")
 }
