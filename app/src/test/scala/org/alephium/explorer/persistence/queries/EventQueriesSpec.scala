@@ -56,7 +56,7 @@ class EventQueriesSpec
       forAll(Gen.nonEmptyListOf(eventEntityGen)) { events =>
         val txHash = transactionHashGen.sample.get
         val uniqueTxHashEvents = events.zipWithIndex.map {
-          case (event, index) => event.copy(txHash = txHash, eventIndex = index)
+          case (event, order) => event.copy(txHash = txHash, eventOrder = order)
         }
 
         insert(uniqueTxHashEvents)
@@ -64,7 +64,7 @@ class EventQueriesSpec
         val result = run(EventQueries.getEventsByTxIdQuery(txHash)).futureValue
 
         result.size is uniqueTxHashEvents.size
-        result.zip(uniqueTxHashEvents.sortBy(_.eventIndex)).map {
+        result.zip(uniqueTxHashEvents.sortBy(_.eventOrder)).map {
           case (res, event) =>
             res.toApi is event.toApi
         }

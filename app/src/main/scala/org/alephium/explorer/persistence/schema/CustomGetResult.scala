@@ -264,6 +264,7 @@ object CustomGetResult {
         inputAddress    = result.<<?,
         timestamp       = result.<<,
         eventIndex      = result.<<,
-        fields          = result.<<
+        fields          = result.<<,
+        eventOrder      = result.<<
     )
 }

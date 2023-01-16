@@ -324,16 +324,18 @@ object BlockFlowClient extends StrictLogging {
         .iterator
         .to(Map)
 
-    blockAndEvents.events.map { event =>
-      EventEntity.from(
-        hash,
-        event.txId,
-        Address.unsafe(event.contractAddress.toBase58),
-        transactionAndInputAddress.getOrElse(event.txId, None),
-        block.timestamp,
-        event.eventIndex,
-        event.fields.toArraySeq
-      )
+    blockAndEvents.events.zipWithIndex.map {
+      case (event, order) =>
+        EventEntity.from(
+          hash,
+          event.txId,
+          Address.unsafe(event.contractAddress.toBase58),
+          transactionAndInputAddress.getOrElse(event.txId, None),
+          block.timestamp,
+          event.eventIndex,
+          event.fields.toArraySeq,
+          order
+        )
     }.toArraySeq
   }
 
