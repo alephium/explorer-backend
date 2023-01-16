@@ -53,14 +53,20 @@ object TransactionPerTokenSchema
     * Postgres uses this index for queries that order by `block_timestamp desc, tx_order asc`
     * and have large number of resulting rows.
     */
-  def createSQLIndexes(): SqlAction[Int, NoStream, Effect] =
+  def timestampTxnOrderIndex(): SqlAction[Int, NoStream, Effect] =
     sqlu"""
-          create index if not exists #${name}_block_timestamp_txn_order_idx
-              on #$name (block_timestamp desc, tx_order asc);
-
-          create index if not exists #${name}_timestamp_idx
-              on #$name (block_timestamp desc);
+        create index if not exists #${name}_block_timestamp_txn_order_idx
+                on #$name (block_timestamp desc, tx_order asc);
         """
+
+  def timestampIndex(): SqlAction[Int, NoStream, Effect] =
+    sqlu"""
+        create index if not exists #${name}_timestamp_idx
+                on #$name (block_timestamp desc);
+        """
+
+  def createSQLIndexes(): DBIO[Unit] =
+    DBIO.seq(timestampTxnOrderIndex(), timestampIndex())
 
   val table: TableQuery[TransactionPerTokens] = TableQuery[TransactionPerTokens]
 }

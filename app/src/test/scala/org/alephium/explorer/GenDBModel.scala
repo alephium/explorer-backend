@@ -22,7 +22,7 @@ import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.Address
 import org.alephium.explorer.persistence.model._
-import org.alephium.protocol.model.{BlockHash, TransactionId}
+import org.alephium.protocol.model.{BlockHash, TokenId, TransactionId}
 import org.alephium.util.TimeStamp
 
 /** Test-data generators for types in package [[org.alephium.explorer.persistence.model]]  */
@@ -80,14 +80,16 @@ object GenDBModel {
       )
 
   def transactionPerTokenEntityGen(
-      blockHash: Gen[BlockHash] = blockEntryHashGen): Gen[TransactionPerTokenEntity] =
+      blockHash: Gen[BlockHash]  = blockEntryHashGen,
+      tokenId: Gen[TokenId]      = tokenIdGen,
+      mainChainGen: Gen[Boolean] = Arbitrary.arbitrary[Boolean]): Gen[TransactionPerTokenEntity] =
     for {
       hash      <- transactionHashGen
       blockHash <- blockHash
-      token     <- tokenIdGen
+      token     <- tokenId
       timestamp <- timestampGen
       txOrder   <- Gen.posNum[Int]
-      mainChain <- Arbitrary.arbitrary[Boolean]
+      mainChain <- mainChainGen
     } yield
       TransactionPerTokenEntity(
         hash      = hash,
