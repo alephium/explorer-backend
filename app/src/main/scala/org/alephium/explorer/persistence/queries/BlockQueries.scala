@@ -278,7 +278,7 @@ object BlockQueries extends StrictLogging {
   /** Inserts block_headers or ignore them if there is a primary key conflict */
   // scalastyle:off magic.number
   def insertBlockHeaders(blocks: Iterable[BlockHeader]): DBActionW[Int] =
-    QuerySplitter.splitUpdates(rows = blocks, columnsPerRow = 15) { (blocks, placeholder) =>
+    QuerySplitter.splitUpdates(rows = blocks, columnsPerRow = 14) { (blocks, placeholder) =>
       val query =
         s"""
            |insert into $block_headers ("hash",
@@ -294,7 +294,6 @@ object BlockQueries extends StrictLogging {
            |                            "txs_count",
            |                            "target",
            |                            "hashrate",
-           |                            "coinbase_tx_id",
            |                            "parent")
            |values $placeholder
            |ON CONFLICT ON CONSTRAINT block_headers_pkey
@@ -317,7 +316,6 @@ object BlockQueries extends StrictLogging {
             params >> block.txsCount
             params >> block.target
             params >> block.hashrate
-            params >> block.coinbaseTxId
             params >> block.parent
         }
 

@@ -337,8 +337,7 @@ object BlockFlowClient extends StrictLogging {
       block.depStateHash,
       block.txsHash,
       block.target,
-      computeHashRate(block.target),
-      coinbaseTxId
+      computeHashRate(block.target)
     )
   }
   //scalastyle:on null

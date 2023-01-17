@@ -541,8 +541,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
         depStateHash = hashGen.sample.get,
         txsHash      = hashGen.sample.get,
         target       = bytesGen.sample.get,
-        hashrate     = BigInteger.ZERO,
-        coinbaseTxId = transactionHashGen.sample.get
+        hashrate     = BigInteger.ZERO
       )
 
   }

@@ -126,8 +126,6 @@ object DataGenerator {
     val inputs =
       genInputEntity(outputs)
 
-    val coinbaseTxId = transactions.last.hash
-
     BlockEntity(
       hash         = blockHash,
       timestamp    = timestamp,
@@ -144,8 +142,7 @@ object DataGenerator {
       depStateHash = Hash.generate,
       txsHash      = Hash.generate,
       target       = ByteString.fromString(Random.alphanumeric.take(10).mkString),
-      hashrate     = BigInteger.valueOf(Random.nextLong(Long.MaxValue)),
-      coinbaseTxId = coinbaseTxId
+      hashrate     = BigInteger.valueOf(Random.nextLong(Long.MaxValue))
     )
   }
 
