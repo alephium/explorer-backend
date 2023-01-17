@@ -186,7 +186,9 @@ object BlockFlowClient extends StrictLogging {
         .map { utxs =>
           utxs.flatMap { utx =>
             utx.unconfirmedTransactions.map { tx =>
-              val inputs  = tx.unsigned.inputs.map(protocolInputToInput).toArraySeq
+              val inputs = InputAddressUtil
+                .convertSameAsPrevious(tx.unsigned.inputs.toArraySeq)
+                .map(protocolInputToInput)
               val outputs = tx.unsigned.fixedOutputs.map(protocolOutputToAssetOutput).toArraySeq
               txToUTx(tx, utx.fromGroup, utx.toGroup, inputs, outputs, TimeStamp.now())
             }
@@ -227,7 +229,7 @@ object BlockFlowClient extends StrictLogging {
     val inputs =
       transactions.flatMap {
         case (tx, txOrder) =>
-          tx.unsigned.inputs.toArraySeq.zipWithIndex.map {
+          InputAddressUtil.convertSameAsPrevious(tx.unsigned.inputs.toArraySeq).zipWithIndex.map {
             case (in, index) =>
               inputToEntity(in, hash, tx.unsigned.txId, block.timestamp, mainChain, index, txOrder)
           }
