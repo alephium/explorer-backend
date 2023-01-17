@@ -18,6 +18,7 @@ package org.alephium.explorer.error
 
 import scala.concurrent.duration.FiniteDuration
 
+import org.postgresql.util.PSQLException
 import sttp.model.Uri
 
 import org.alephium.explorer.api.model.GroupIndex
@@ -71,6 +72,10 @@ object ExplorerError {
   final case class RemoteTimeStampIsBeforeLocal(localTs: TimeStamp, remoteTs: TimeStamp)
       extends Exception(
         s"Max remote timestamp ($remoteTs) cannot be be before local timestamp ($localTs)")
+      with FatalSystemExit
+
+  final case class DatabaseError(cause: PSQLException)
+      extends Exception(s"Database error.", cause)
       with FatalSystemExit
 
   /******** Group: [[ConfigError]] ********/

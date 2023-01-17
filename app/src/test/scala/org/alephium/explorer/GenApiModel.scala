@@ -59,9 +59,10 @@ object GenApiModel extends ImplicitConversions {
   val inputGen: Gen[Input] = for {
     outputRef    <- outputRefGen
     unlockScript <- Gen.option(unlockScriptGen)
+    txHashRef    <- Gen.option(transactionHashGen)
     address      <- Gen.option(addressGen)
     amount       <- Gen.option(amountGen)
-  } yield Input(outputRef, unlockScript, address, amount)
+  } yield Input(outputRef, unlockScript, txHashRef, address, amount)
 
   val tokenGen: Gen[Token] = for {
     id     <- tokenIdGen
@@ -118,7 +119,7 @@ object GenApiModel extends ImplicitConversions {
       hash      <- transactionHashGen
       chainFrom <- groupIndexGen
       chainTo   <- groupIndexGen
-      inputs    <- Gen.listOfN(3, inputGen.map(_.copy(attoAlphAmount = None)))
+      inputs    <- Gen.listOfN(3, inputGen.map(_.copy(attoAlphAmount = None, txHashRef = None)))
       outputs   <- Gen.listOfN(3, assetOutputGen.map(_.copy(spent = None)))
       gasAmount <- Gen.posNum[Int]
       gasPrice  <- u256Gen

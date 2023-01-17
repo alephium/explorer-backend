@@ -20,13 +20,14 @@ import scala.collection.immutable.ArraySeq
 
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.streams.ReadStream
-import sttp.model.MediaType
+import sttp.model.{HeaderNames, MediaType}
 import sttp.tapir._
 import sttp.tapir.generic.auto._
 import sttp.tapir.server.vertx.streams.VertxStreams
 
-import org.alephium.api.{alphJsonBody => jsonBody}
+import org.alephium.api.Endpoints.jsonBody
 import org.alephium.api.model.TimeInterval
+import org.alephium.explorer.api.EndpointExamples._
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.TokenId
 import org.alephium.util.Duration
@@ -145,11 +146,13 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[Boolean]])
       .description("Are the addresses active (at least 1 transaction)")
 
-  val exportTransactionsCsvByAddress: BaseEndpoint[(Address, TimeInterval), ReadStream[Buffer]] =
+  val exportTransactionsCsvByAddress
+    : BaseEndpoint[(Address, TimeInterval), (String, ReadStream[Buffer])] =
     addressesEndpoint.get
       .in("export-transactions")
       .in("csv")
       .in(timeIntervalWithMaxQuery(oneYear))
+      .out(header[String](HeaderNames.ContentDisposition))
       .out(streamTextBody(VertxStreams)(TextCsv()))
 
   private case class TextCsv() extends CodecFormat {

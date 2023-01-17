@@ -203,7 +203,7 @@ object BlockQueries extends StrictLogging {
          |from #$block_headers
          |where main_chain = true
          |#$orderBy
-         |limit ${pagination.limit} offset ${pagination.limit * pagination.offset}
+         |limit ${pagination.limit} offset ${pagination.offset}
          |""".stripMargin
   }
 

@@ -14,27 +14,29 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.api
+package org.alephium.explorer.util
 
-import scala.collection.immutable.ArraySeq
+import java.util.concurrent.Executor
 
-import sttp.tapir._
-import sttp.tapir.generic.auto._
+import scala.concurrent.ExecutionContext
 
-import org.alephium.api.Endpoints.jsonBody
-import org.alephium.explorer.api.EndpointExamples._
-import org.alephium.explorer.api.model.{Pagination, TransactionLike}
+import com.typesafe.scalalogging.StrictLogging
 
-trait UnconfirmedTransactionEndpoints extends BaseEndpoint with QueryParams {
+import org.alephium.explorer.error._
 
-  private val unconfirmedTransactionsEndpoint =
-    baseEndpoint
-      .tag("Transactions")
-      .in("unconfirmed-transactions")
+object ExecutionContextUtil extends StrictLogging {
 
-  val listUnconfirmedTransactions: BaseEndpoint[Pagination, ArraySeq[TransactionLike]] =
-    unconfirmedTransactionsEndpoint.get
-      .in(pagination)
-      .out(jsonBody[ArraySeq[TransactionLike]])
-      .description("list unconfirmed transactions")
+  //Currently exiting on every error, we will fined grained this latter
+  //if we see other errors happening that are non-fatal
+  def reporter(exit: => Unit): Throwable => Unit = {
+    case fse: FatalSystemExit =>
+      logger.error(s"Fatal error, closing app", fse)
+      exit
+    case other =>
+      logger.error(s"Unexpected error, closing app", other)
+      exit
+  }
+
+  def fromExecutor(executor: Executor, exit: => Unit): ExecutionContext =
+    ExecutionContext.fromExecutor(executor, reporter(exit))
 }

@@ -26,8 +26,8 @@ import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 object AppStateSchema extends Schema[AppState]("app_state") {
 
   class AppStates(tag: Tag) extends Table[AppState](tag, name) {
-    def key: Rep[AppStateKey]  = column[AppStateKey]("key", O.PrimaryKey)
-    def value: Rep[ByteString] = column[ByteString]("value")
+    def key: Rep[AppStateKey[_]] = column[AppStateKey[_]]("key", O.PrimaryKey)
+    def value: Rep[ByteString]   = column[ByteString]("value")
 
     def * : ProvenShape[AppState] =
       (key, value).<>((AppState.applyOrThrow _).tupled, AppState.unapplyOpt)

@@ -60,7 +60,7 @@ class ListBlocksReadState(reverse: Boolean,
     */
   def generateData(currentCacheSize: Int): Pagination =
     Pagination.unsafe(
-      offset  = currentCacheSize,
+      page    = currentCacheSize + 1,
       limit   = limitPerPage,
       reverse = reverse
     )

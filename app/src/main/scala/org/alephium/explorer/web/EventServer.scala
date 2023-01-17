@@ -36,12 +36,14 @@ class EventServer(implicit val executionContext: ExecutionContext,
       route(getEventsByTxId.serverLogicSuccess[Future] { txId =>
         run(getEventsByTxIdQuery(txId)).map(_.map(_.toApi))
       }),
-      route(getEventsByContractAddress.serverLogicSuccess[Future] { address =>
-        run(getEventsByContractAddressQuery(address)).map(_.map(_.toApi))
+      route(getEventsByContractAddress.serverLogicSuccess[Future] {
+        case (address, pagination) =>
+          run(getEventsByContractAddressQuery(address, pagination)).map(_.map(_.toApi))
       }),
       route(getEventsByContractAndInputAddress.serverLogicSuccess[Future] {
-        case (contract, input) =>
-          run(getEventsByContractAndInputAddressQuery(contract, input)).map(_.map(_.toApi))
+        case (contract, input, pagination) =>
+          run(getEventsByContractAndInputAddressQuery(contract, input, pagination))
+            .map(_.map(_.toApi))
       })
     )
 }

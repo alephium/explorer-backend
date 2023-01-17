@@ -35,10 +35,10 @@ object InputAddressUtil extends StrictLogging {
       case Right(value) =>
         value.unlockScript match {
           case protocol.vm.UnlockScript.P2PKH(pk) =>
-            Some(Address.unsafe(protocol.model.Address.p2pkh(pk).toBase58)): Option[Address]
+            Some(Address.unsafe(protocol.model.Address.p2pkh(pk).toBase58))
           case protocol.vm.UnlockScript.P2SH(script, _) =>
             val lockup = protocol.vm.LockupScript.p2sh(protocol.Hash.hash(script))
-            Some(Address.unsafe(protocol.model.Address.from(lockup).toBase58)): Option[Address]
+            Some(Address.unsafe(protocol.model.Address.from(lockup).toBase58))
           case protocol.vm.UnlockScript.P2MPKH(_) =>
             None
         }
@@ -58,14 +58,16 @@ object InputAddressUtil extends StrictLogging {
     if (inputs.isEmpty) {
       None
     } else {
-      val addresses = inputs
-        .map(InputAddressUtil.addressFromProtocolInput)
-        .collect { case Some(address) => address }
-
-      if (addresses.sizeIs == inputs.size && addresses.distinct.sizeIs == 1) {
-        Some(addresses.head)
-      } else {
-        None
+      val addressOpt = inputs.headOption.flatMap(InputAddressUtil.addressFromProtocolInput)
+      addressOpt match {
+        case None => None
+        case Some(_) =>
+          if (inputs.tail.forall(
+                input => InputAddressUtil.addressFromProtocolInput(input) == addressOpt)) {
+            addressOpt
+          } else {
+            None
+          }
       }
     }
   }

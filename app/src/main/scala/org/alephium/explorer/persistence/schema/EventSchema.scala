@@ -35,12 +35,13 @@ object EventSchema extends SchemaMainChain[EventEntity]("events") {
     def timestamp: Rep[TimeStamp]          = column[TimeStamp]("block_timestamp")
     def eventIndex: Rep[Int]               = column[Int]("event_index")
     def fields: Rep[Array[Byte]]           = column[Array[Byte]]("fields")
+    def eventOrder: Rep[Int]               = column[Int]("event_order_in_block")
 
     def * : ProvenShape[EventEntity] =
-      (blockHash, txHash, contractAddress, inputAddress, timestamp, eventIndex, fields)
+      (blockHash, txHash, contractAddress, inputAddress, timestamp, eventIndex, fields, eventOrder)
         .<>((EventEntity.apply _).tupled, EventEntity.unapply)
 
-    def pk: PrimaryKey = primaryKey("events_pk", (blockHash, txHash, contractAddress))
+    def pk: PrimaryKey = primaryKey("events_pk", (blockHash, eventOrder))
 
     def txHashIdx: Index          = index("tx_hash_idx", txHash)
     def contractAddressIdx: Index = index("contract_address_idx", contractAddress)

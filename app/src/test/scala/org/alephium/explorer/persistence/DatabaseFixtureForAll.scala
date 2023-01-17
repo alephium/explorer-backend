@@ -38,7 +38,7 @@ trait DatabaseFixtureForAll extends BeforeAndAfterAll with AlephiumFutures with 
   override def beforeAll(): Unit = {
     super.beforeAll()
     DatabaseFixture.createDb(dbName)
-    DatabaseFixture.dropCreateTables()
+    DatabaseFixture.createTables()
     logger.debug(s"Test database $dbName created")
   }
 

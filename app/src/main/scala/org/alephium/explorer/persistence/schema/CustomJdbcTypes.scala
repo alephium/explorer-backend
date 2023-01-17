@@ -130,13 +130,13 @@ object CustomJdbcTypes {
       OutputEntity.OutputType.unsafe
     )
 
-  implicit val appStateKey: JdbcType[AppStateKey] =
-    MappedJdbcType.base[AppStateKey, String](
+  implicit val appStateKey: JdbcType[AppStateKey[_]] =
+    MappedJdbcType.base[AppStateKey[_], String](
       state => state.key,
       key =>
         AppState
           .keys()
           .find(_.key == key)
-          .getOrElse(throw new Exception(s"Invalid ${classOf[AppStateKey].getSimpleName}: $key"))
+          .getOrElse(throw new Exception(s"Invalid ${classOf[AppStateKey[_]].getSimpleName}: $key"))
     )
 }

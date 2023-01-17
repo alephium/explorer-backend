@@ -33,7 +33,8 @@ final case class EventEntity(
     inputAddress: Option[Address],
     timestamp: TimeStamp,
     eventIndex: Int,
-    fields: Array[Byte]
+    fields: Array[Byte],
+    eventOrder: Int
 ) {
   def toApi: Event = Event(
     blockHash,
@@ -53,7 +54,8 @@ object EventEntity {
       inputAddress: Option[Address],
       timestamp: TimeStamp,
       eventIndex: Int,
-      fields: ArraySeq[Val]
+      fields: ArraySeq[Val],
+      order: Int
   ): EventEntity = {
     EventEntity(
       blockHash,
@@ -62,7 +64,8 @@ object EventEntity {
       inputAddress,
       timestamp,
       eventIndex,
-      writeBinary(fields)
+      writeBinary(fields),
+      order
     )
   }
 }

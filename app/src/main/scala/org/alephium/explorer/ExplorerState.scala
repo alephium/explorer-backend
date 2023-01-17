@@ -58,9 +58,10 @@ sealed trait ExplorerState extends Service with StrictLogging {
 
   implicit lazy val blockFlowClient: BlockFlowClient =
     BlockFlowClient(
-      uri         = config.blockFlowUri,
-      groupNum    = config.groupNum,
-      maybeApiKey = config.maybeBlockFlowApiKey
+      uri                = config.blockFlowUri,
+      groupNum           = config.groupNum,
+      maybeApiKey        = config.maybeBlockFlowApiKey,
+      directCliqueAccess = config.directCliqueAccess
     )
 
   override def startSelfOnce(): Future[Unit] = {

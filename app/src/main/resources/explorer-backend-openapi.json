@@ -49,6 +49,31 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ListBlocks"
+                },
+                "example": {
+                  "total": 2,
+                  "blocks": [
+                    {
+                      "hash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                      "timestamp": 1611041396892,
+                      "chainFrom": 1,
+                      "chainTo": 2,
+                      "height": 42,
+                      "txNumber": 1,
+                      "mainChain": true,
+                      "hashRate": "147573952589676412928"
+                    },
+                    {
+                      "hash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                      "timestamp": 1611041396892,
+                      "chainFrom": 1,
+                      "chainTo": 2,
+                      "height": 42,
+                      "txNumber": 1,
+                      "mainChain": true,
+                      "hashRate": "147573952589676412928"
+                    }
+                  ]
                 }
               }
             }
@@ -145,6 +170,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BlockEntryLite"
+                },
+                "example": {
+                  "hash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                  "timestamp": 1611041396892,
+                  "chainFrom": 1,
+                  "chainTo": 2,
+                  "height": 42,
+                  "txNumber": 1,
+                  "mainChain": true,
+                  "hashRate": "147573952589676412928"
                 }
               }
             }
@@ -273,7 +308,145 @@
                   "items": {
                     "$ref": "#/components/schemas/Transaction"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "timestamp": 1611041396892,
+                    "inputs": [
+                      {
+                        "outputRef": {
+                          "hint": 23412,
+                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                        },
+                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "attoAlphAmount": "2",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "type": "AssetOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "lockTime": 1611041396892,
+                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                      },
+                      {
+                        "type": "ContractOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "gasAmount": 20000,
+                    "gasPrice": "100000000000",
+                    "coinbase": false
+                  },
+                  {
+                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "timestamp": 1611041396892,
+                    "inputs": [
+                      {
+                        "outputRef": {
+                          "hint": 23412,
+                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                        },
+                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "attoAlphAmount": "2",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "type": "AssetOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "lockTime": 1611041396892,
+                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                      },
+                      {
+                        "type": "ContractOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "gasAmount": 20000,
+                    "gasPrice": "100000000000",
+                    "coinbase": false
+                  }
+                ]
               }
             }
           },
@@ -369,6 +542,75 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TransactionLike"
+                },
+                "example": {
+                  "type": "Confirmed",
+                  "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                  "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                  "timestamp": 1611041396892,
+                  "inputs": [
+                    {
+                      "outputRef": {
+                        "hint": 23412,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                      },
+                      "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                      "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                      "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                      "attoAlphAmount": "2",
+                      "tokens": [
+                        {
+                          "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                          "amount": "42000000000000000000"
+                        },
+                        {
+                          "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                          "amount": "1000000000000000000000"
+                        }
+                      ]
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "AssetOutput",
+                      "hint": 1,
+                      "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                      "attoAlphAmount": "2",
+                      "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                      "tokens": [
+                        {
+                          "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                          "amount": "42000000000000000000"
+                        },
+                        {
+                          "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                          "amount": "1000000000000000000000"
+                        }
+                      ],
+                      "lockTime": 1611041396892,
+                      "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    },
+                    {
+                      "type": "ContractOutput",
+                      "hint": 1,
+                      "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                      "attoAlphAmount": "2",
+                      "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                      "tokens": [
+                        {
+                          "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                          "amount": "42000000000000000000"
+                        },
+                        {
+                          "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                          "amount": "1000000000000000000000"
+                        }
+                      ]
+                    }
+                  ],
+                  "gasAmount": 20000,
+                  "gasPrice": "100000000000",
+                  "coinbase": false
                 }
               }
             }
@@ -465,6 +707,74 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Transaction"
+                },
+                "example": {
+                  "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                  "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                  "timestamp": 1611041396892,
+                  "inputs": [
+                    {
+                      "outputRef": {
+                        "hint": 23412,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                      },
+                      "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                      "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                      "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                      "attoAlphAmount": "2",
+                      "tokens": [
+                        {
+                          "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                          "amount": "42000000000000000000"
+                        },
+                        {
+                          "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                          "amount": "1000000000000000000000"
+                        }
+                      ]
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "AssetOutput",
+                      "hint": 1,
+                      "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                      "attoAlphAmount": "2",
+                      "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                      "tokens": [
+                        {
+                          "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                          "amount": "42000000000000000000"
+                        },
+                        {
+                          "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                          "amount": "1000000000000000000000"
+                        }
+                      ],
+                      "lockTime": 1611041396892,
+                      "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    },
+                    {
+                      "type": "ContractOutput",
+                      "hint": 1,
+                      "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                      "attoAlphAmount": "2",
+                      "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                      "tokens": [
+                        {
+                          "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                          "amount": "42000000000000000000"
+                        },
+                        {
+                          "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                          "amount": "1000000000000000000000"
+                        }
+                      ]
+                    }
+                  ],
+                  "gasAmount": 20000,
+                  "gasPrice": "100000000000",
+                  "coinbase": false
                 }
               }
             }
@@ -561,6 +871,11 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AddressInfo"
+                },
+                "example": {
+                  "balance": "10",
+                  "lockedBalance": "2",
+                  "txNumber": 1
                 }
               }
             }
@@ -689,7 +1004,145 @@
                   "items": {
                     "$ref": "#/components/schemas/Transaction"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "timestamp": 1611041396892,
+                    "inputs": [
+                      {
+                        "outputRef": {
+                          "hint": 23412,
+                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                        },
+                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "attoAlphAmount": "2",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "type": "AssetOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "lockTime": 1611041396892,
+                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                      },
+                      {
+                        "type": "ContractOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "gasAmount": 20000,
+                    "gasPrice": "100000000000",
+                    "coinbase": false
+                  },
+                  {
+                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "timestamp": 1611041396892,
+                    "inputs": [
+                      {
+                        "outputRef": {
+                          "hint": 23412,
+                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                        },
+                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "attoAlphAmount": "2",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "type": "AssetOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "lockTime": 1611041396892,
+                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                      },
+                      {
+                        "type": "ContractOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "gasAmount": 20000,
+                    "gasPrice": "100000000000",
+                    "coinbase": false
+                  }
+                ]
               }
             }
           },
@@ -809,7 +1262,11 @@
                   "type": "string"
                 },
                 "maxItems": 80
-              }
+              },
+              "example": [
+                "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                "3dFzhhHHzGwAWW7MZkTJWubpkW1iJ5gnUjqgAG8HEdhk"
+              ]
             }
           },
           "required": false
@@ -823,7 +1280,145 @@
                   "items": {
                     "$ref": "#/components/schemas/Transaction"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "timestamp": 1611041396892,
+                    "inputs": [
+                      {
+                        "outputRef": {
+                          "hint": 23412,
+                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                        },
+                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "attoAlphAmount": "2",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "type": "AssetOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "lockTime": 1611041396892,
+                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                      },
+                      {
+                        "type": "ContractOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "gasAmount": 20000,
+                    "gasPrice": "100000000000",
+                    "coinbase": false
+                  },
+                  {
+                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "timestamp": 1611041396892,
+                    "inputs": [
+                      {
+                        "outputRef": {
+                          "hint": 23412,
+                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                        },
+                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "attoAlphAmount": "2",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "type": "AssetOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "lockTime": 1611041396892,
+                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                      },
+                      {
+                        "type": "ContractOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "gasAmount": 20000,
+                    "gasPrice": "100000000000",
+                    "coinbase": false
+                  }
+                ]
               }
             }
           },
@@ -971,7 +1566,145 @@
                   "items": {
                     "$ref": "#/components/schemas/Transaction"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "timestamp": 1611041396892,
+                    "inputs": [
+                      {
+                        "outputRef": {
+                          "hint": 23412,
+                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                        },
+                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "attoAlphAmount": "2",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "type": "AssetOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "lockTime": 1611041396892,
+                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                      },
+                      {
+                        "type": "ContractOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "gasAmount": 20000,
+                    "gasPrice": "100000000000",
+                    "coinbase": false
+                  },
+                  {
+                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "timestamp": 1611041396892,
+                    "inputs": [
+                      {
+                        "outputRef": {
+                          "hint": 23412,
+                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                        },
+                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "attoAlphAmount": "2",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "type": "AssetOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "lockTime": 1611041396892,
+                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                      },
+                      {
+                        "type": "ContractOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "gasAmount": 20000,
+                    "gasPrice": "100000000000",
+                    "coinbase": false
+                  }
+                ]
               }
             }
           },
@@ -1068,7 +1801,8 @@
                 "schema": {
                   "type": "integer",
                   "format": "int32"
-                }
+                },
+                "example": 100
               }
             }
           },
@@ -1167,7 +1901,147 @@
                   "items": {
                     "$ref": "#/components/schemas/TransactionLike"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "type": "Unconfirmed",
+                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "chainFrom": 1,
+                    "chainTo": 2,
+                    "inputs": [
+                      {
+                        "outputRef": {
+                          "hint": 23412,
+                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                        },
+                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "attoAlphAmount": "2",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "type": "AssetOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "lockTime": 1611041396892,
+                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                      },
+                      {
+                        "type": "ContractOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "gasAmount": 20000,
+                    "gasPrice": "100000000000",
+                    "lastSeen": 1611041396892
+                  },
+                  {
+                    "type": "Unconfirmed",
+                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "chainFrom": 1,
+                    "chainTo": 2,
+                    "inputs": [
+                      {
+                        "outputRef": {
+                          "hint": 23412,
+                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                        },
+                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "attoAlphAmount": "2",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "type": "AssetOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "lockTime": 1611041396892,
+                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                      },
+                      {
+                        "type": "ContractOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "gasAmount": 20000,
+                    "gasPrice": "100000000000",
+                    "lastSeen": 1611041396892
+                  }
+                ]
               }
             }
           },
@@ -1263,6 +2137,10 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AddressBalance"
+                },
+                "example": {
+                  "balance": "10",
+                  "lockedBalance": "2"
                 }
               }
             }
@@ -1363,7 +2241,11 @@
                     "type": "string",
                     "format": "32-byte-hash"
                   }
-                }
+                },
+                "example": [
+                  "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                  "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
+                ]
               }
             }
           },
@@ -1499,7 +2381,145 @@
                   "items": {
                     "$ref": "#/components/schemas/Transaction"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "timestamp": 1611041396892,
+                    "inputs": [
+                      {
+                        "outputRef": {
+                          "hint": 23412,
+                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                        },
+                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "attoAlphAmount": "2",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "type": "AssetOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "lockTime": 1611041396892,
+                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                      },
+                      {
+                        "type": "ContractOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "gasAmount": 20000,
+                    "gasPrice": "100000000000",
+                    "coinbase": false
+                  },
+                  {
+                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "timestamp": 1611041396892,
+                    "inputs": [
+                      {
+                        "outputRef": {
+                          "hint": 23412,
+                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                        },
+                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "attoAlphAmount": "2",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "type": "AssetOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "lockTime": 1611041396892,
+                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                      },
+                      {
+                        "type": "ContractOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "gasAmount": 20000,
+                    "gasPrice": "100000000000",
+                    "coinbase": false
+                  }
+                ]
               }
             }
           },
@@ -1603,6 +2623,10 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AddressBalance"
+                },
+                "example": {
+                  "balance": "10",
+                  "lockedBalance": "2"
                 }
               }
             }
@@ -1692,7 +2716,11 @@
                   "type": "string"
                 },
                 "maxItems": 80
-              }
+              },
+              "example": [
+                "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                "3dFzhhHHzGwAWW7MZkTJWubpkW1iJ5gnUjqgAG8HEdhk"
+              ]
             }
           },
           "required": false
@@ -1706,7 +2734,11 @@
                   "items": {
                     "type": "boolean"
                   }
-                }
+                },
+                "example": [
+                  true,
+                  false
+                ]
               }
             }
           },
@@ -1817,6 +2849,14 @@
         ],
         "responses": {
           "200": {
+            "headers": {
+              "Content-Disposition": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "text/csv": {
                 "schema": {
@@ -1907,6 +2947,10 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ExplorerInfo"
+                },
+                "example": {
+                  "releaseVersion": "1.11.2+17-00593e8e-SNAPSHOT",
+                  "commit": "00593e8e8c718d6bd27fe218e7aa438ef56611cc"
                 }
               }
             }
@@ -1996,7 +3040,21 @@
                   "items": {
                     "$ref": "#/components/schemas/PerChainHeight"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "chainFrom": 1,
+                    "chainTo": 2,
+                    "height": 1000,
+                    "value": 1000
+                  },
+                  {
+                    "chainFrom": 1,
+                    "chainTo": 2,
+                    "height": 1000,
+                    "value": 1000
+                  }
+                ]
               }
             }
           },
@@ -2116,7 +3174,147 @@
                   "items": {
                     "$ref": "#/components/schemas/TransactionLike"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "type": "Unconfirmed",
+                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "chainFrom": 1,
+                    "chainTo": 2,
+                    "inputs": [
+                      {
+                        "outputRef": {
+                          "hint": 23412,
+                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                        },
+                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "attoAlphAmount": "2",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "type": "AssetOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "lockTime": 1611041396892,
+                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                      },
+                      {
+                        "type": "ContractOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "gasAmount": 20000,
+                    "gasPrice": "100000000000",
+                    "lastSeen": 1611041396892
+                  },
+                  {
+                    "type": "Unconfirmed",
+                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "chainFrom": 1,
+                    "chainTo": 2,
+                    "inputs": [
+                      {
+                        "outputRef": {
+                          "hint": 23412,
+                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                        },
+                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "attoAlphAmount": "2",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "type": "AssetOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "lockTime": 1611041396892,
+                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                      },
+                      {
+                        "type": "ContractOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "gasAmount": 20000,
+                    "gasPrice": "100000000000",
+                    "lastSeen": 1611041396892
+                  }
+                ]
               }
             }
           },
@@ -2237,7 +3435,11 @@
                     "type": "string",
                     "format": "32-byte-hash"
                   }
-                }
+                },
+                "example": [
+                  "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                  "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
+                ]
               }
             }
           },
@@ -2365,7 +3567,145 @@
                   "items": {
                     "$ref": "#/components/schemas/Transaction"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "timestamp": 1611041396892,
+                    "inputs": [
+                      {
+                        "outputRef": {
+                          "hint": 23412,
+                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                        },
+                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "attoAlphAmount": "2",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "type": "AssetOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "lockTime": 1611041396892,
+                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                      },
+                      {
+                        "type": "ContractOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "gasAmount": 20000,
+                    "gasPrice": "100000000000",
+                    "coinbase": false
+                  },
+                  {
+                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "timestamp": 1611041396892,
+                    "inputs": [
+                      {
+                        "outputRef": {
+                          "hint": 23412,
+                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                        },
+                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "attoAlphAmount": "2",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "type": "AssetOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "lockTime": 1611041396892,
+                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                      },
+                      {
+                        "type": "ContractOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ]
+                      }
+                    ],
+                    "gasAmount": 20000,
+                    "gasPrice": "100000000000",
+                    "coinbase": false
+                  }
+                ]
               }
             }
           },
@@ -2485,7 +3825,25 @@
                   "items": {
                     "$ref": "#/components/schemas/TokenSupply"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "timestamp": 1611041396892,
+                    "total": "1000000000000000000",
+                    "circulating": "500000000000000000",
+                    "reserved": "10",
+                    "locked": "10",
+                    "maximum": "1000000000000000000000000000"
+                  },
+                  {
+                    "timestamp": 1611041396892,
+                    "total": "1000000000000000000",
+                    "circulating": "500000000000000000",
+                    "reserved": "10",
+                    "locked": "10",
+                    "maximum": "1000000000000000000000000000"
+                  }
+                ]
               }
             }
           },
@@ -3005,7 +4363,21 @@
                   "items": {
                     "$ref": "#/components/schemas/PerChainDuration"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "chainFrom": 1,
+                    "chainTo": 2,
+                    "duration": 60,
+                    "value": 60
+                  },
+                  {
+                    "chainFrom": 1,
+                    "chainTo": 2,
+                    "duration": 60,
+                    "value": 60
+                  }
+                ]
               }
             }
           },
@@ -3125,7 +4497,19 @@
                   "items": {
                     "$ref": "#/components/schemas/Hashrate"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "timestamp": 1611041396892,
+                    "hashrate": "147573952589676412928",
+                    "value": "147573952589676412928"
+                  },
+                  {
+                    "timestamp": 1611041396892,
+                    "hashrate": "147573952589676412928",
+                    "value": "147573952589676412928"
+                  }
+                ]
               }
             }
           },
@@ -3245,7 +4629,17 @@
                   "items": {
                     "$ref": "#/components/schemas/TimedCount"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "timestamp": 1611041396892,
+                    "totalCountAllChains": 10000000
+                  },
+                  {
+                    "timestamp": 1611041396892,
+                    "totalCountAllChains": 10000000
+                  }
+                ]
               }
             }
           },
@@ -3365,7 +4759,39 @@
                   "items": {
                     "$ref": "#/components/schemas/PerChainTimedCount"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "timestamp": 1611041396892,
+                    "totalCountPerChain": [
+                      {
+                        "chainFrom": 1,
+                        "chainTo": 2,
+                        "count": 10000000
+                      },
+                      {
+                        "chainFrom": 1,
+                        "chainTo": 2,
+                        "count": 10000000
+                      }
+                    ]
+                  },
+                  {
+                    "timestamp": 1611041396892,
+                    "totalCountPerChain": [
+                      {
+                        "chainFrom": 1,
+                        "chainTo": 2,
+                        "count": 10000000
+                      },
+                      {
+                        "chainFrom": 1,
+                        "chainTo": 2,
+                        "count": 10000000
+                      }
+                    ]
+                  }
+                ]
               }
             }
           },
@@ -3552,6 +4978,35 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "reverse",
+            "in": "query",
+            "description": "Reverse pagination",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -3641,7 +5096,7 @@
         "tags": [
           "Smart contract events"
         ],
-        "description": "Get contract events by contract address",
+        "description": "Get contract events by contract and input addresses",
         "operationId": "getSmart-contract-eventsContract-addressContract_addressInput-addressInput_address",
         "parameters": [
           {
@@ -3658,6 +5113,35 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "reverse",
+            "in": "query",
+            "description": "Reverse pagination",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -3935,7 +5419,13 @@
                 "items": {
                   "$ref": "#/components/schemas/LogbackValue"
                 }
-              }
+              },
+              "example": [
+                {
+                  "name": "org.test",
+                  "level": "DEBUG"
+                }
+              ]
             }
           },
           "required": false
@@ -4334,6 +5824,10 @@
           "unlockScript": {
             "type": "string",
             "format": "hex-string"
+          },
+          "txHashRef": {
+            "type": "string",
+            "format": "32-byte-hash"
           },
           "address": {
             "type": "string"

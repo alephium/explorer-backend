@@ -50,6 +50,7 @@ object SyncServices extends StrictLogging {
         Future.unit
 
       case BootMode.ReadWrite | BootMode.WriteOnly =>
+        logger.info("Starting sync services")
         getPeers(
           networkId          = config.networkId,
           directCliqueAccess = config.directCliqueAccess,
@@ -95,7 +96,13 @@ object SyncServices extends StrictLogging {
           )
           .onComplete {
             case Failure(error) =>
+              val failure = error match {
+                case psql: org.postgresql.util.PSQLException =>
+                  DatabaseError(psql)
+                case other => other
+              }
               logger.error(s"Fatal error while syncing: $error")
+              ec.reportFailure(failure)
 
             case Success(_) => ()
           }

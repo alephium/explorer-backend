@@ -26,6 +26,7 @@ import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.Generators._
+import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.EventEntity
 import org.alephium.explorer.persistence.queries.EventQueries
@@ -38,6 +39,7 @@ class EventQueriesSpec
     with ScalaFutures {
 
   implicit val groupSetting = groupSettingGen.sample.get
+  val pagination            = Pagination.unsafe(1, Pagination.defaultLimit)
 
   "Event Queries" should {
     "get event by tx hash" in {
@@ -56,7 +58,7 @@ class EventQueriesSpec
       forAll(Gen.nonEmptyListOf(eventEntityGen)) { events =>
         val txHash = transactionHashGen.sample.get
         val uniqueTxHashEvents = events.zipWithIndex.map {
-          case (event, index) => event.copy(txHash = txHash, eventIndex = index)
+          case (event, order) => event.copy(txHash = txHash, eventOrder = order)
         }
 
         insert(uniqueTxHashEvents)
@@ -64,7 +66,7 @@ class EventQueriesSpec
         val result = run(EventQueries.getEventsByTxIdQuery(txHash)).futureValue
 
         result.size is uniqueTxHashEvents.size
-        result.zip(uniqueTxHashEvents.sortBy(_.eventIndex)).map {
+        result.zip(uniqueTxHashEvents.sortBy(_.eventOrder)).map {
           case (res, event) =>
             res.toApi is event.toApi
         }
@@ -77,7 +79,7 @@ class EventQueriesSpec
 
         events.map { event =>
           val result =
-            run(EventQueries.getEventsByContractAddressQuery(event.contractAddress)).futureValue
+            run(EventQueries.getEventsByContractAddressQuery(event.contractAddress, pagination)).futureValue
           result.size is 1
           result.head.toApi is event.toApi
         }
@@ -93,13 +95,24 @@ class EventQueriesSpec
 
         insert(uniqueContractAddressEvents)
 
+        val fullPagination = Pagination.unsafe(1, uniqueContractAddressEvents.size)
+
         val result =
-          run(EventQueries.getEventsByContractAddressQuery(contractAddress)).futureValue
+          run(EventQueries.getEventsByContractAddressQuery(contractAddress, fullPagination)).futureValue
 
         result.size is uniqueContractAddressEvents.size
         result.zip(uniqueContractAddressEvents.sortBy(_.timestamp).reverse).map {
           case (res, event) =>
             res.toApi is event.toApi
+        }
+
+        val paginatedResult =
+          run(EventQueries.getEventsByContractAddressQuery(contractAddress, pagination)).futureValue
+
+        if (uniqueContractAddressEvents.sizeIs > pagination.limit) {
+          paginatedResult.size is pagination.limit
+        } else {
+          paginatedResult.size is uniqueContractAddressEvents.size
         }
       }
     }
@@ -114,7 +127,8 @@ class EventQueriesSpec
               val result =
                 run(
                   EventQueries.getEventsByContractAndInputAddressQuery(event.contractAddress,
-                                                                       inputAddress)).futureValue
+                                                                       inputAddress,
+                                                                       pagination)).futureValue
 
               result.size is 1
               result.head.toApi is event.toApi
@@ -122,7 +136,8 @@ class EventQueriesSpec
               run(
                 EventQueries.getEventsByContractAndInputAddressQuery(
                   event.contractAddress,
-                  addressGen.sample.get)).futureValue is ArraySeq.empty
+                  addressGen.sample.get,
+                  pagination)).futureValue is ArraySeq.empty
 
           }
         }
@@ -139,13 +154,30 @@ class EventQueriesSpec
 
         insert(uniqueContractAddressEvents)
 
+        val fullPagination = Pagination.unsafe(1, uniqueContractAddressEvents.size)
+
         val result =
-          run(EventQueries.getEventsByContractAndInputAddressQuery(contractAddress, inputAddress)).futureValue
+          run(
+            EventQueries.getEventsByContractAndInputAddressQuery(contractAddress,
+                                                                 inputAddress,
+                                                                 fullPagination)).futureValue
 
         result.size is uniqueContractAddressEvents.size
         result.zip(uniqueContractAddressEvents.sortBy(_.timestamp).reverse).map {
           case (res, event) =>
             res.toApi is event.toApi
+        }
+
+        val paginatedResult =
+          run(
+            EventQueries.getEventsByContractAndInputAddressQuery(contractAddress,
+                                                                 inputAddress,
+                                                                 pagination)).futureValue
+
+        if (uniqueContractAddressEvents.sizeIs > pagination.limit) {
+          paginatedResult.size is pagination.limit
+        } else {
+          paginatedResult.size is uniqueContractAddressEvents.size
         }
       }
     }

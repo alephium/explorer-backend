@@ -21,8 +21,8 @@ import scala.collection.immutable.ArraySeq
 import sttp.tapir._
 import sttp.tapir.generic.auto._
 
-import org.alephium.api.{alphJsonBody => jsonBody}
-import org.alephium.explorer.api.BaseEndpoint
+import org.alephium.api.Endpoints.jsonBody
+import org.alephium.explorer.api.EndpointExamples._
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.BlockHash
 

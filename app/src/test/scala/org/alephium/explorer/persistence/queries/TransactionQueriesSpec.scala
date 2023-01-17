@@ -162,7 +162,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     run(InputUpdateQueries.updateInputs()).futureValue
 
     val hashesSQLNoJoin =
-      run(TransactionQueries.getTxHashesByAddressQuerySQLNoJoin(address, 0, 10)).futureValue
+      run(TransactionQueries.getTxHashesByAddressQuerySQLNoJoin(address, Pagination.unsafe(1, 10))).futureValue
 
     val expected = ArraySeq(
       TxByAddressQR(output1.txHash, output1.blockHash, output1.timestamp, 0, false),
@@ -239,6 +239,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
           hint         = input.hint,
           outputRefKey = input.outputRefKey,
           unlockScript = input.unlockScript,
+          txHashRef    = Some(output.txHash),
           address      = Some(output.address),
           amount       = Some(output.amount),
           token        = output.tokens
@@ -281,10 +282,10 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     }
 
     val txsSQL =
-      run(TransactionQueries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue
+      run(TransactionQueries.getTransactionsByAddressSQL(address, Pagination.unsafe(1, 10))).futureValue
 
     val txsNoJoin =
-      run(TransactionQueries.getTransactionsByAddressNoJoin(address, Pagination.unsafe(0, 10))).futureValue
+      run(TransactionQueries.getTransactionsByAddressNoJoin(address, Pagination.unsafe(1, 10))).futureValue
 
     val expected = ArraySeq(
       tx(output1, None, ArraySeq.empty),
@@ -353,7 +354,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
   //https://github.com/alephium/explorer-backend/issues/174
   "return an empty list when not transactions are found - Isssue 174" in new Fixture {
-    run(TransactionQueries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue is ArraySeq.empty
+    run(TransactionQueries.getTransactionsByAddressSQL(address, Pagination.unsafe(1, 10))).futureValue is ArraySeq.empty
   }
 
   "get total number of main transactions" in new Fixture {
@@ -434,13 +435,13 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     "return empty" when {
       "database is empty" in {
         forAll(addressGen, timestampGen, timestampGen, Gen.posNum[Int], Gen.posNum[Int]) {
-          (address, fromTime, toTime, offset, limit) =>
+          (address, fromTime, toTime, page, limit) =>
             val query =
-              TransactionQueries.getTxHashesByAddressQuerySQLNoJoinTimeRanged(address,
-                                                                              fromTime,
-                                                                              toTime,
-                                                                              offset,
-                                                                              limit)
+              TransactionQueries.getTxHashesByAddressQuerySQLNoJoinTimeRanged(
+                address,
+                fromTime,
+                toTime,
+                Pagination.unsafe(page, limit))
 
             run(query).futureValue.size is 0
         }
@@ -461,8 +462,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
                   .getTxHashesByAddressQuerySQLNoJoinTimeRanged(address  = entity.address,
                                                                 fromTime = entity.timestamp,
                                                                 toTime   = entity.timestamp,
-                                                                offset   = 0,
-                                                                limit    = Int.MaxValue)
+                                                                pagination =
+                                                                  Pagination.unsafe(1,
+                                                                                    Int.MaxValue))
 
               val actualResult = run(query).futureValue
 
@@ -517,11 +519,11 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
                   //run the query for the generated time-range
                   val query =
                     TransactionQueries
-                      .getTxHashesByAddressQuerySQLNoJoinTimeRanged(address  = address,
-                                                                    fromTime = fromTime,
-                                                                    toTime   = toTime,
-                                                                    offset   = 0,
-                                                                    limit    = Int.MaxValue)
+                      .getTxHashesByAddressQuerySQLNoJoinTimeRanged(
+                        address    = address,
+                        fromTime   = fromTime,
+                        toTime     = toTime,
+                        pagination = Pagination.unsafe(1, Int.MaxValue))
 
                   val actualResult = run(query).futureValue
 
@@ -554,9 +556,10 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     "return empty" when {
       "database is empty" in {
         forAll(Gen.listOf(addressGen), Gen.posNum[Int], Gen.posNum[Int]) {
-          (addresses, offset, limit) =>
+          (addresses, page, limit) =>
             val query =
-              TransactionQueries.getTxHashesByAddressesQuery(addresses, offset, limit)
+              TransactionQueries.getTxHashesByAddressesQuery(addresses,
+                                                             Pagination.unsafe(page, limit))
 
             run(query).futureValue.size is 0
         }
@@ -581,7 +584,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
             //query shuffled addresses
             val query =
-              TransactionQueries.getTxHashesByAddressesQuery(shuffledAddresses, 0, Int.MaxValue)
+              TransactionQueries.getTxHashesByAddressesQuery(shuffledAddresses,
+                                                             Pagination.unsafe(1, Int.MaxValue))
 
             //expect only main_chain and persisted address
             val expectedResult =
@@ -637,6 +641,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
                   true,
                   0,
                   0,
+                  None,
                   None,
                   None,
                   None)

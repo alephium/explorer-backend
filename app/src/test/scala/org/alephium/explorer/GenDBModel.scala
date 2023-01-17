@@ -120,7 +120,8 @@ object GenDBModel {
         inputAddress,
         timestamp,
         eventIndex,
-        fields
+        fields,
+        0
       )
 
   def tokenOutputEntityGen(

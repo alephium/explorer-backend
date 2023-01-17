@@ -211,7 +211,9 @@ class ApiModelSpec() extends AlephiumSpec {
      |{
      |  "outputRef": ${write(input.outputRef)}
      |  ${input.unlockScript.map(script => s""","unlockScript": ${write(script)}""").getOrElse("")}
-     |  ${input.address.map(address => s""","address": "${address}"""").getOrElse("")}
+     |  ${input.txHashRef.map(txHashRef      => s""","txHashRef": "${txHashRef.toHexString}"""")
+                          .getOrElse("")}
+     |  ${input.address.map(address           => s""","address": "${address}"""").getOrElse("")}
      |  ${input.attoAlphAmount
                           .map(attoAlphAmount => s""","attoAlphAmount": "${attoAlphAmount}"""")
                           .getOrElse("")}
