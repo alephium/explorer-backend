@@ -86,13 +86,14 @@ object InputAddressUtil extends StrictLogging {
       inputs
     } else {
       var lastUncompressedScript: Int = -1
-      val converted = inputs.view.zipWithIndex.map { case (input, index) =>
-        if (input.unlockScript === sameAsPrevious) {
-          input.copy(unlockScript = inputs(lastUncompressedScript).unlockScript)
-        } else {
-          lastUncompressedScript = index
-          input
-        }
+      val converted = inputs.view.zipWithIndex.map {
+        case (input, index) =>
+          if (input.unlockScript === sameAsPrevious) {
+            input.copy(unlockScript = inputs(lastUncompressedScript).unlockScript)
+          } else {
+            lastUncompressedScript = index
+            input
+          }
       }
       ArraySeq.from(converted)
     }
