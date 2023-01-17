@@ -73,13 +73,14 @@ object EventQueries {
                                       pagination: Pagination): DBActionSR[EventEntity] = {
     val limit  = pagination.limit
     val offset = pagination.offset
+    val toDrop = offset * limit
     sql"""
       SELECT *
       FROM events
       WHERE contract_address = $address
       ORDER BY block_timestamp DESC, event_order_in_block
       LIMIT $limit
-      OFFSET $offset
+      OFFSET $toDrop
       """.asASE[EventEntity](eventGetResult)
   }
 
@@ -88,6 +89,7 @@ object EventQueries {
                                               pagination: Pagination): DBActionSR[EventEntity] = {
     val limit  = pagination.limit
     val offset = pagination.offset
+    val toDrop = offset * limit
     sql"""
       SELECT *
       FROM events
@@ -95,7 +97,7 @@ object EventQueries {
       AND input_address = $input
       ORDER BY block_timestamp DESC
       LIMIT $limit
-      OFFSET $offset
+      OFFSET $toDrop
       """.asASE[EventEntity](eventGetResult)
   }
 }
