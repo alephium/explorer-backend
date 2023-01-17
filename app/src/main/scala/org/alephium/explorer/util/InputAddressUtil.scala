@@ -39,6 +39,8 @@ object InputAddressUtil extends StrictLogging {
           case protocol.vm.UnlockScript.P2SH(script, _) =>
             val lockup = protocol.vm.LockupScript.p2sh(protocol.Hash.hash(script))
             Some(Address.unsafe(protocol.model.Address.from(lockup).toBase58))
+          case protocol.vm.UnlockScript.SameAsPrevious =>
+            None
           case protocol.vm.UnlockScript.P2MPKH(_) =>
             None
         }
@@ -62,11 +64,29 @@ object InputAddressUtil extends StrictLogging {
       addressOpt match {
         case None => None
         case Some(_) =>
-          if (inputs.tail.forall(
-                input => InputAddressUtil.addressFromProtocolInput(input) == addressOpt)) {
+          if (inputs.tail.forall(input =>
+                input.unlockScript == protocol.vm.UnlockScript.SameAsPrevious || InputAddressUtil
+                  .addressFromProtocolInput(input) == addressOpt)) {
             addressOpt
           } else {
             None
+          }
+      }
+    }
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
+  def convertSameAsPrevious(
+      inputs: ArraySeq[api.model.AssetInput]): ArraySeq[api.model.AssetInput] = {
+    if (inputs.sizeIs <= 1) {
+      inputs
+    } else {
+      inputs.tail.foldLeft(ArraySeq(inputs.head)) {
+        case (result, input) =>
+          if (input.unlockScript == protocol.vm.UnlockScript.SameAsPrevious) {
+            result :+ input.copy(unlockScript = result.last.unlockScript)
+          } else {
+            result :+ input
           }
       }
     }
