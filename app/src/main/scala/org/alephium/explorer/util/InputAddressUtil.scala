@@ -82,17 +82,19 @@ object InputAddressUtil extends StrictLogging {
   @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
   def convertSameAsPrevious(
       inputs: ArraySeq[api.model.AssetInput]): ArraySeq[api.model.AssetInput] = {
-    if (inputs.sizeIs <= 1) {
+    if (inputs.length <= 1) {
       inputs
     } else {
-      inputs.tail.foldLeft(ArraySeq(inputs.head)) {
-        case (result, input) =>
-          if (input.unlockScript === sameAsPrevious) {
-            result :+ input.copy(unlockScript = result.last.unlockScript)
-          } else {
-            result :+ input
-          }
+      var lastUncompressedScript: Int = -1
+      val converted = inputs.view.zipWithIndex.map { case (input, index) =>
+        if (input.unlockScript === sameAsPrevious) {
+          input.copy(unlockScript = inputs(lastUncompressedScript).unlockScript)
+        } else {
+          lastUncompressedScript = index
+          input
+        }
       }
+      ArraySeq.from(converted)
     }
   }
 }
