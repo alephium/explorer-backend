@@ -56,6 +56,7 @@ object Generators {
       order             <- Gen.posNum[Int]
       mainChain         <- Arbitrary.arbitrary[Boolean]
       scriptExecutionOk <- Arbitrary.arbitrary[Boolean]
+      coinbase          <- Arbitrary.arbitrary[Boolean]
     } yield
       TransactionEntity(
         hash              = hash,
@@ -69,7 +70,8 @@ object Generators {
         mainChain         = mainChain,
         scriptExecutionOk = scriptExecutionOk,
         inputSignatures   = None,
-        scriptSignatures  = None
+        scriptSignatures  = None,
+        coinbase          = coinbase
       )
 
   val blockHeaderGen: Gen[BlockHeader] =
@@ -93,6 +95,7 @@ object Generators {
       target       <- bytesGen
       hashrate     <- arbitrary[Long].map(BigInteger.valueOf)
       mainChain    <- Arbitrary.arbitrary[Boolean]
+      coinbaseTxId <- transactionHashGen
       parent       <- Gen.option(blockEntryHashGen)
     } yield
       BlockHeader(
@@ -109,6 +112,7 @@ object Generators {
         txsCount     = txsCount,
         target       = target,
         hashrate     = hashrate,
+        coinbaseTxId = coinbaseTxId,
         parent       = parent
       )
 
@@ -161,6 +165,31 @@ object Generators {
     } yield {
       vm.UnlockScript.p2mpkh(indexedKey.sortBy(_._2))
     }
+
+  val methodGen: Gen[vm.Method[vm.StatelessContext]] = {
+    for {
+      useContractAssets <- Arbitrary.arbitrary[Boolean]
+    } yield {
+      vm.Method(
+        isPublic             = true,
+        usePreapprovedAssets = false,
+        useContractAssets,
+        argsLength   = 0,
+        localsLength = 0,
+        returnLength = 0,
+        instrs       = AVector.empty[vm.Instr[vm.StatelessContext]]
+      )
+    }
+  }
+
+  val unlockScriptProtocolP2SHGen: Gen[vm.UnlockScript.P2SH] = {
+    for {
+      methods <- Gen.listOfN(4, methodGen)
+    } yield {
+      val script = vm.StatelessScript.unsafe(AVector.from(methods))
+      vm.UnlockScript.P2SH(script, AVector.empty)
+    }
+  }
 
   val unlockScriptProtocolGen: Gen[vm.UnlockScript] =
     Gen.oneOf(unlockScriptProtocolP2PKHGen: Gen[vm.UnlockScript],
@@ -357,6 +386,7 @@ object Generators {
     val outputs: ArraySeq[OutputEntity] = blocks.flatMap(_.flatMap(_.outputs))
 
     blocks.map(_.map { block =>
+      val coinbaseTxId = block.coinbaseTxId
       val transactions =
         block.transactions.map { tx =>
           Transaction(
@@ -368,7 +398,8 @@ object Generators {
               .map(input => input.toApi(outputs.head)), //TODO Fix when we have a valid blockchain generator
             block.outputs.filter(_.txHash === tx.hash).map(_.toApi(None)),
             tx.gasAmount,
-            tx.gasPrice
+            tx.gasPrice,
+            coinbase = coinbaseTxId == tx.hash
           )
         }
       BlockEntry(
@@ -398,6 +429,7 @@ object Generators {
       txsCount     <- Gen.posNum[Int]
       target       <- bytesGen
       parent       <- Gen.option(blockEntryHashGen)
+      coinbaseTxId <- transactionHashGen
     } yield {
       BlockHeader(
         hash,
@@ -413,6 +445,7 @@ object Generators {
         txsCount,
         target,
         BigDecimal(hashrate).toBigInt.bigInteger,
+        coinbaseTxId,
         parent
       )
     }
@@ -463,6 +496,7 @@ object Generators {
       mainChain   <- arbitrary[Boolean]
       outputOrder <- arbitrary[Int]
       txOrder     <- arbitrary[Int]
+      coinbase    <- arbitrary[Boolean]
     } yield
       OutputEntity(
         blockHash      = blockHash,
@@ -479,7 +513,8 @@ object Generators {
         message        = if (outputType == OutputEntity.Asset) message else None,
         outputOrder    = outputOrder,
         txOrder        = txOrder,
-        spentFinalized = None
+        spentFinalized = None,
+        coinbase       = coinbase
       )
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))

@@ -375,7 +375,8 @@
                       }
                     ],
                     "gasAmount": 20000,
-                    "gasPrice": "100000000000"
+                    "gasPrice": "100000000000",
+                    "coinbase": false
                   },
                   {
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
@@ -442,7 +443,8 @@
                       }
                     ],
                     "gasAmount": 20000,
-                    "gasPrice": "100000000000"
+                    "gasPrice": "100000000000",
+                    "coinbase": false
                   }
                 ]
               }
@@ -607,7 +609,8 @@
                     }
                   ],
                   "gasAmount": 20000,
-                  "gasPrice": "100000000000"
+                  "gasPrice": "100000000000",
+                  "coinbase": false
                 }
               }
             }
@@ -770,7 +773,8 @@
                     }
                   ],
                   "gasAmount": 20000,
-                  "gasPrice": "100000000000"
+                  "gasPrice": "100000000000",
+                  "coinbase": false
                 }
               }
             }
@@ -1067,7 +1071,8 @@
                       }
                     ],
                     "gasAmount": 20000,
-                    "gasPrice": "100000000000"
+                    "gasPrice": "100000000000",
+                    "coinbase": false
                   },
                   {
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
@@ -1134,7 +1139,8 @@
                       }
                     ],
                     "gasAmount": 20000,
-                    "gasPrice": "100000000000"
+                    "gasPrice": "100000000000",
+                    "coinbase": false
                   }
                 ]
               }
@@ -1341,7 +1347,8 @@
                       }
                     ],
                     "gasAmount": 20000,
-                    "gasPrice": "100000000000"
+                    "gasPrice": "100000000000",
+                    "coinbase": false
                   },
                   {
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
@@ -1408,7 +1415,8 @@
                       }
                     ],
                     "gasAmount": 20000,
-                    "gasPrice": "100000000000"
+                    "gasPrice": "100000000000",
+                    "coinbase": false
                   }
                 ]
               }
@@ -1625,7 +1633,8 @@
                       }
                     ],
                     "gasAmount": 20000,
-                    "gasPrice": "100000000000"
+                    "gasPrice": "100000000000",
+                    "coinbase": false
                   },
                   {
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
@@ -1692,7 +1701,8 @@
                       }
                     ],
                     "gasAmount": 20000,
-                    "gasPrice": "100000000000"
+                    "gasPrice": "100000000000",
+                    "coinbase": false
                   }
                 ]
               }
@@ -2438,7 +2448,8 @@
                       }
                     ],
                     "gasAmount": 20000,
-                    "gasPrice": "100000000000"
+                    "gasPrice": "100000000000",
+                    "coinbase": false
                   },
                   {
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
@@ -2505,7 +2516,8 @@
                       }
                     ],
                     "gasAmount": 20000,
-                    "gasPrice": "100000000000"
+                    "gasPrice": "100000000000",
+                    "coinbase": false
                   }
                 ]
               }
@@ -3622,7 +3634,8 @@
                       }
                     ],
                     "gasAmount": 20000,
-                    "gasPrice": "100000000000"
+                    "gasPrice": "100000000000",
+                    "coinbase": false
                   },
                   {
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
@@ -3689,7 +3702,8 @@
                       }
                     ],
                     "gasAmount": 20000,
-                    "gasPrice": "100000000000"
+                    "gasPrice": "100000000000",
+                    "coinbase": false
                   }
                 ]
               }
@@ -4850,6 +4864,369 @@
         }
       }
     },
+    "/smart-contract-events/transaction-id/{transaction_id}": {
+      "get": {
+        "tags": [
+          "Smart contract events"
+        ],
+        "description": "Get contract events by transaction id",
+        "operationId": "getSmart-contract-eventsTransaction-idTransaction_id",
+        "parameters": [
+          {
+            "name": "transaction_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Event"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/smart-contract-events/contract-address/{contract_address}": {
+      "get": {
+        "tags": [
+          "Smart contract events"
+        ],
+        "description": "Get contract events by contract address",
+        "operationId": "getSmart-contract-eventsContract-addressContract_address",
+        "parameters": [
+          {
+            "name": "contract_address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "reverse",
+            "in": "query",
+            "description": "Reverse pagination",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Event"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/smart-contract-events/contract-address/{contract_address}/input-address/{input_address}": {
+      "get": {
+        "tags": [
+          "Smart contract events"
+        ],
+        "description": "Get contract events by contract and input addresses",
+        "operationId": "getSmart-contract-eventsContract-addressContract_addressInput-addressInput_address",
+        "parameters": [
+          {
+            "name": "contract_address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "input_address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "reverse",
+            "in": "query",
+            "description": "Reverse pagination",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Event"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/utils/sanity-check": {
       "put": {
         "tags": [
@@ -5280,6 +5657,7 @@
           "timestamp",
           "gasAmount",
           "gasPrice",
+          "coinbase",
           "type"
         ],
         "type": "object",
@@ -5315,6 +5693,9 @@
           "gasPrice": {
             "type": "string",
             "format": "uint256"
+          },
+          "coinbase": {
+            "type": "boolean"
           },
           "type": {
             "type": "string"
@@ -5358,6 +5739,41 @@
           },
           "type": {
             "type": "string"
+          }
+        }
+      },
+      "Event": {
+        "required": [
+          "blockHash",
+          "txHash",
+          "contractAddress",
+          "eventIndex"
+        ],
+        "type": "object",
+        "properties": {
+          "blockHash": {
+            "type": "string",
+            "format": "block-hash"
+          },
+          "txHash": {
+            "type": "string",
+            "format": "32-byte-hash"
+          },
+          "contractAddress": {
+            "type": "string"
+          },
+          "inputAddress": {
+            "type": "string"
+          },
+          "eventIndex": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Val"
+            }
           }
         }
       },
@@ -5703,7 +6119,8 @@
           "blockHash",
           "timestamp",
           "gasAmount",
-          "gasPrice"
+          "gasPrice",
+          "coinbase"
         ],
         "type": "object",
         "properties": {
@@ -5738,6 +6155,9 @@
           "gasPrice": {
             "type": "string",
             "format": "uint256"
+          },
+          "coinbase": {
+            "type": "boolean"
           }
         }
       },
@@ -5816,6 +6236,136 @@
           "lastSeen": {
             "type": "integer",
             "format": "int64"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "Val": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ValAddress"
+          },
+          {
+            "$ref": "#/components/schemas/ValArray"
+          },
+          {
+            "$ref": "#/components/schemas/ValBool"
+          },
+          {
+            "$ref": "#/components/schemas/ValByteVec"
+          },
+          {
+            "$ref": "#/components/schemas/ValI256"
+          },
+          {
+            "$ref": "#/components/schemas/ValU256"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "ValAddress": "#/components/schemas/ValAddress",
+            "ValArray": "#/components/schemas/ValArray",
+            "ValBool": "#/components/schemas/ValBool",
+            "ValByteVec": "#/components/schemas/ValByteVec",
+            "ValI256": "#/components/schemas/ValI256",
+            "ValU256": "#/components/schemas/ValU256"
+          }
+        }
+      },
+      "ValAddress": {
+        "required": [
+          "value",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "format": "address"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "ValArray": {
+        "required": [
+          "value",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Val"
+            }
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "ValBool": {
+        "required": [
+          "value",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "ValByteVec": {
+        "required": [
+          "value",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "format": "hex-string"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "ValI256": {
+        "required": [
+          "value",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "format": "bigint"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "ValU256": {
+        "required": [
+          "value",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "format": "uint256"
           },
           "type": {
             "type": "string"

@@ -18,24 +18,7 @@ package org.alephium.explorer.persistence.model
 
 import scala.collection.immutable.ArraySeq
 
-import akka.util.ByteString
-
-import org.alephium.explorer.api.model.GroupIndex
-import org.alephium.protocol.model.{BlockHash, TransactionId}
-import org.alephium.util.{TimeStamp, U256}
-
-final case class TransactionEntity(
-    hash: TransactionId,
-    blockHash: BlockHash,
-    timestamp: TimeStamp,
-    chainFrom: GroupIndex,
-    chainTo: GroupIndex,
-    gasAmount: Int,
-    gasPrice: U256,
-    order: Int,
-    mainChain: Boolean,
-    scriptExecutionOk: Boolean,
-    inputSignatures: Option[ArraySeq[ByteString]],
-    scriptSignatures: Option[ArraySeq[ByteString]],
-    coinbase: Boolean
+final case class BlockEntityWithEvents(
+    block: BlockEntity,
+    events: ArraySeq[EventEntity]
 )

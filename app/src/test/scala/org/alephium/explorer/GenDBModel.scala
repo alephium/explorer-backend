@@ -18,6 +18,7 @@ package org.alephium.explorer
 import org.scalacheck.{Arbitrary, Gen}
 
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.GenCoreApi.valGen
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.Address
@@ -38,26 +39,6 @@ object GenDBModel {
       input  <- Generators.inputEntityGen(output)
     } yield (input, output)
 
-  /** Convert input-output to [[org.alephium.explorer.persistence.model.TransactionPerAddressEntity]] */
-  def toTransactionPerAddressEntity(input: InputEntity,
-                                    output: OutputEntity): TransactionPerAddressEntity =
-    TransactionPerAddressEntity(
-      hash      = output.txHash,
-      address   = output.address,
-      blockHash = output.blockHash,
-      timestamp = output.timestamp,
-      txOrder   = input.txOrder,
-      mainChain = output.mainChain
-    )
-
-  /** Convert multiple input-outputs to [[org.alephium.explorer.persistence.model.TransactionPerAddressEntity]] */
-  def toTransactionPerAddressEntities(
-      inputOutputs: Iterable[(InputEntity, OutputEntity)]): Iterable[TransactionPerAddressEntity] =
-    inputOutputs map {
-      case (input, output) =>
-        toTransactionPerAddressEntity(input, output)
-    }
-
   def genTransactionPerAddressEntity(
       addressGen: Gen[Address]     = addressGen,
       timestampGen: Gen[TimeStamp] = timestampGen,
@@ -69,6 +50,7 @@ object GenDBModel {
       timestamp <- timestampGen
       txOrder   <- Gen.posNum[Int]
       mainChain <- mainChain
+      coinbase  <- Arbitrary.arbitrary[Boolean]
     } yield
       TransactionPerAddressEntity(
         address   = address,
@@ -76,7 +58,8 @@ object GenDBModel {
         blockHash = blockHash,
         timestamp = timestamp,
         txOrder   = txOrder,
-        mainChain = mainChain
+        mainChain = mainChain,
+        coinbase  = coinbase
       )
 
   def transactionPerTokenEntityGen(
@@ -117,6 +100,28 @@ object GenDBModel {
         txOrder   = txOrder,
         mainChain = mainChain,
         token     = token
+      )
+
+  def eventEntityGen(implicit groupSetting: GroupSetting): Gen[EventEntity] =
+    for {
+      blockHash       <- blockEntryHashGen
+      hash            <- transactionHashGen
+      contractAddress <- addressGen
+      inputAddress    <- Gen.option(addressGen)
+      timestamp       <- timestampGen
+      eventIndex      <- Gen.posNum[Int]
+      fields          <- Gen.listOf(valGen)
+
+    } yield
+      EventEntity.from(
+        blockHash,
+        hash,
+        contractAddress,
+        inputAddress,
+        timestamp,
+        eventIndex,
+        fields,
+        0
       )
 
   def tokenOutputEntityGen(

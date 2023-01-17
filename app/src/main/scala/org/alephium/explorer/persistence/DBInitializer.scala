@@ -56,6 +56,7 @@ object DBInitializer extends StrictLogging {
       TokenPerAddressSchema.table,
       TokenInfoSchema.table,
       TransactionHistorySchema.table,
+      EventSchema.table,
       AppStateSchema.table
     )
 

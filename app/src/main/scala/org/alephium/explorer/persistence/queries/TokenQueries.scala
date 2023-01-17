@@ -24,7 +24,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
-import org.alephium.explorer.persistence.queries.result.TxByAddressQR
+import org.alephium.explorer.persistence.queries.result.TxByTokenQR
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
@@ -64,54 +64,41 @@ object TokenQueries extends StrictLogging {
     """.asAS[(Option[U256], Option[U256])].exactlyOne
 
   def listTokensAction(pagination: Pagination): DBActionSR[TokenId] = {
-    val offset = pagination.offset
-    val limit  = pagination.limit
-    val toDrop = offset * limit
     sql"""
       SELECT token
       FROM token_info
       ORDER BY last_used DESC
-      LIMIT $limit
-      OFFSET $toDrop
+      #${pagination.query}
     """.asAS[TokenId]
   }
 
   def getTransactionsByToken(token: TokenId, pagination: Pagination)(
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
-    val offset = pagination.offset
-    val limit  = pagination.limit
-    val toDrop = offset * limit
     for {
-      txHashesTs <- listTokenTransactionsAction(token, toDrop, limit)
-      txs        <- TransactionQueries.getTransactionsSQL(txHashesTs)
+      txHashesTs <- listTokenTransactionsAction(token, pagination)
+      txs        <- TransactionQueries.getTransactionsSQL(txHashesTs.map(_.toTxByAddressQR))
     } yield txs
   }
 
   def getAddressesByToken(token: TokenId, pagination: Pagination): DBActionR[ArraySeq[Address]] = {
-    val offset = pagination.offset
-    val limit  = pagination.limit
-    val toDrop = offset * limit
     sql"""
       SELECT DISTINCT address
       FROM token_tx_per_addresses
       WHERE token = $token
-      LIMIT $limit
-      OFFSET $toDrop
+      #${pagination.query}
     """.asAS[Address]
   }
 
   def listTokenTransactionsAction(token: TokenId,
-                                  offset: Int,
-                                  limit: Int): DBActionSR[TxByAddressQR] = {
+                                  pagination: Pagination): DBActionSR[TxByTokenQR] = {
     sql"""
-      SELECT tx_hash, block_hash, block_timestamp, tx_order
+      SELECT #${TxByTokenQR.selectFields}
       FROM transaction_per_token
       WHERE main_chain = true
       AND token = $token
       ORDER BY block_timestamp DESC, tx_order
-      LIMIT $limit
-      OFFSET $offset
-    """.asAS[TxByAddressQR]
+      #${pagination.query}
+    """.asAS[TxByTokenQR]
   }
 
   def listAddressTokensAction(address: Address): DBActionSR[TokenId] =
@@ -124,28 +111,23 @@ object TokenQueries extends StrictLogging {
 
   def getTokenTransactionsByAddress(address: Address, token: TokenId, pagination: Pagination)(
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
-    val offset = pagination.offset
-    val limit  = pagination.limit
-    val toDrop = offset * limit
     for {
-      txHashesTs <- getTokenTxHashesByAddressQuery(address, token, toDrop, limit)
-      txs        <- TransactionQueries.getTransactionsSQL(txHashesTs)
+      txHashesTs <- getTokenTxHashesByAddressQuery(address, token, pagination)
+      txs        <- TransactionQueries.getTransactionsSQL(txHashesTs.map(_.toTxByAddressQR))
     } yield txs
   }
 
   def getTokenTxHashesByAddressQuery(address: Address,
                                      token: TokenId,
-                                     offset: Int,
-                                     limit: Int): DBActionSR[TxByAddressQR] = {
+                                     pagination: Pagination): DBActionSR[TxByTokenQR] = {
     sql"""
-      SELECT tx_hash, block_hash, block_timestamp, tx_order
+      SELECT #${TxByTokenQR.selectFields}
       FROM token_tx_per_addresses
       WHERE main_chain = true
       AND address = $address
       AND token = $token
       ORDER BY block_timestamp DESC, tx_order
-      LIMIT $limit
-      OFFSET $offset
-    """.asAS[TxByAddressQR]
+      #${pagination.query}
+    """.asAS[TxByTokenQR]
   }
 }

@@ -29,7 +29,7 @@ import org.alephium.explorer.benchmark.db.{DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.TimeStamp
 
 /**
@@ -58,7 +58,8 @@ class BlockHeaderMainChainReadState(dropMainChainIndex: Boolean,
       txsCount     = Random.nextInt(),
       target       = ByteString.emptyByteString,
       hashrate     = BigInteger.ONE,
-      parent       = Some(BlockHash.generate)
+      parent       = Some(BlockHash.generate),
+      coinbaseTxId = TransactionId.generate
     )
 
   def persist(data: Array[BlockHeader]): Unit = {

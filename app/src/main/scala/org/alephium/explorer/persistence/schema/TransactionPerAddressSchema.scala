@@ -35,6 +35,7 @@ object TransactionPerAddressSchema
     def timestamp: Rep[TimeStamp]  = column[TimeStamp]("block_timestamp")
     def txOrder: Rep[Int]          = column[Int]("tx_order")
     def mainChain: Rep[Boolean]    = column[Boolean]("main_chain")
+    def coinbase: Rep[Boolean]     = column[Boolean]("coinbase")
 
     def pk: PrimaryKey = primaryKey("txs_per_address_pk", (txHash, blockHash, address))
 
@@ -46,7 +47,7 @@ object TransactionPerAddressSchema
       index("txs_per_address_address_timestamp_idx", (address, timestamp))
 
     def * : ProvenShape[TransactionPerAddressEntity] =
-      (address, txHash, blockHash, timestamp, txOrder, mainChain)
+      (address, txHash, blockHash, timestamp, txOrder, mainChain, coinbase)
         .<>((TransactionPerAddressEntity.apply _).tupled, TransactionPerAddressEntity.unapply)
   }
 

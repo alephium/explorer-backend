@@ -14,28 +14,24 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.model
+package org.alephium.explorer.api.model
 
 import scala.collection.immutable.ArraySeq
 
-import akka.util.ByteString
-
-import org.alephium.explorer.api.model.GroupIndex
+import org.alephium.api.model.Val
+import org.alephium.explorer.api.Codecs._
+import org.alephium.json.Json._
 import org.alephium.protocol.model.{BlockHash, TransactionId}
-import org.alephium.util.{TimeStamp, U256}
 
-final case class TransactionEntity(
-    hash: TransactionId,
+final case class Event(
     blockHash: BlockHash,
-    timestamp: TimeStamp,
-    chainFrom: GroupIndex,
-    chainTo: GroupIndex,
-    gasAmount: Int,
-    gasPrice: U256,
-    order: Int,
-    mainChain: Boolean,
-    scriptExecutionOk: Boolean,
-    inputSignatures: Option[ArraySeq[ByteString]],
-    scriptSignatures: Option[ArraySeq[ByteString]],
-    coinbase: Boolean
+    txHash: TransactionId,
+    contractAddress: Address,
+    inputAddress: Option[Address],
+    eventIndex: Int,
+    fields: ArraySeq[Val]
 )
+
+object Event {
+  implicit val codec: ReadWriter[Event] = macroRW
+}

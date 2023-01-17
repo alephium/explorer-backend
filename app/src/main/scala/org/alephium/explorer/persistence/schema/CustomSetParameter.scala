@@ -96,6 +96,11 @@ object CustomSetParameter {
       }
   }
 
+  implicit object ArrayByteStringSetParameter extends SetParameter[Array[Byte]] {
+    override def apply(input: Array[Byte], params: PositionedParameters): Unit =
+      params setBytes input
+  }
+
   implicit object ByteStringSetParameter extends SetParameter[ByteString] {
     override def apply(input: ByteString, params: PositionedParameters): Unit =
       params setBytes input.toArray

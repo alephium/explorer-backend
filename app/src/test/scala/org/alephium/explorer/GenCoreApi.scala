@@ -18,11 +18,14 @@ package org.alephium.explorer
 
 import org.scalacheck.{Arbitrary, Gen}
 
-import org.alephium.api.model.{ChainParams, PeerAddress, SelfClique}
+import org.alephium.api.model._
+import org.alephium.explorer.GenApiModel.bytesGen
 import org.alephium.explorer.GenCommon.{genInetAddress, genPortNum}
 import org.alephium.explorer.GenCoreProtocol.genNetworkId
+import org.alephium.explorer.Generators._
+import org.alephium.explorer.GroupSetting
 import org.alephium.protocol.model.{CliqueId, NetworkId}
-import org.alephium.util.AVector
+import org.alephium.util.{AVector, I256, U256}
 
 /** Generators for types supplied by Core `org.alephium.api` package */
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -68,4 +71,31 @@ object GenCoreApi {
         groupNumPerBroker     = groupNumPerBroker,
         groups                = groups
       )
+
+  private val i256Gen: Gen[I256] =
+    Gen.choose[java.math.BigInteger](I256.MinValue.v, I256.MaxValue.v).map(I256.unsafe)
+  private val u256Gen: Gen[U256] =
+    Gen.choose[java.math.BigInteger](U256.MinValue.v, U256.MaxValue.v).map(U256.unsafe)
+
+  lazy val valBoolGen: Gen[ValBool]       = Arbitrary.arbitrary[Boolean].map(ValBool.apply)
+  lazy val valI256Gen: Gen[ValI256]       = i256Gen.map(ValI256.apply)
+  lazy val valU256Gen: Gen[ValU256]       = u256Gen.map(ValU256.apply)
+  lazy val valByteVecGen: Gen[ValByteVec] = bytesGen.map(ValByteVec.apply)
+
+  def valAddressGen(implicit groupSetting: GroupSetting): Gen[ValAddress] =
+    addressAssetProtocolGen.map(ValAddress(_))
+
+  @SuppressWarnings(
+    Array("org.wartremover.warts.JavaSerializable",
+          "org.wartremover.warts.Product",
+          "org.wartremover.warts.Serializable")) // Wartremover is complaining, don't now why :/
+  def valGen(implicit groupSetting: GroupSetting): Gen[Val] = {
+    Gen.oneOf(
+      valBoolGen,
+      valI256Gen,
+      valU256Gen,
+      valByteVecGen,
+      valAddressGen
+    )
+  }
 }
