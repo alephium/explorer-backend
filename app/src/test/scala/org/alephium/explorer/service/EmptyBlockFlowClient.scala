@@ -40,9 +40,12 @@ trait EmptyBlockFlowClient extends BlockFlowClient {
                                    toGroup: GroupIndex,
                                    height: Height): Future[HashesAtHeight] = ???
 
+  override def fetchBlockAndEvents(fromGroup: GroupIndex,
+                                   hash: BlockHash): Future[BlockEntityWithEvents] = ???
+
   override def fetchBlocks(fromTs: TimeStamp,
                            toTs: TimeStamp,
-                           uri: Uri): Future[ArraySeq[ArraySeq[BlockEntity]]] = ???
+                           uri: Uri): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]] = ???
 
   override def fetchSelfClique(): Future[SelfClique] = ???
 

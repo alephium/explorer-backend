@@ -83,6 +83,9 @@ object CustomGetResult {
   implicit val bigIntegerGetResult: GetResult[BigInteger] =
     (result: PositionedResult) => result.nextBigDecimal().toBigInt.bigInteger
 
+  implicit val arrayByteGetResult: GetResult[Array[Byte]] =
+    (result: PositionedResult) => result.nextBytes()
+
   implicit val byteStringGetResult: GetResult[ByteString] =
     (result: PositionedResult) => ByteString.fromArrayUnsafe(result.nextBytes())
 
@@ -253,6 +256,19 @@ object CustomGetResult {
       (chainFrom, chainTo, mainChain)
     }
 
+  val eventGetResult: GetResult[EventEntity] =
+    (result: PositionedResult) =>
+      EventEntity(
+        blockHash       = result.<<,
+        txHash          = result.<<,
+        contractAddress = result.<<,
+        inputAddress    = result.<<?,
+        timestamp       = result.<<,
+        eventIndex      = result.<<,
+        fields          = result.<<,
+        eventOrder      = result.<<
+    )
+
   implicit val migrationVersionGetResult: GetResult[AppState.MigrationVersion] =
     (result: PositionedResult) =>
       AppState.MigrationVersion(ByteString.fromArrayUnsafe(result.nextBytes())) match {
@@ -266,5 +282,4 @@ object CustomGetResult {
         case Left(error)  => throw error
         case Right(value) => value
     }
-
 }

@@ -31,6 +31,7 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.BlockQueries._
+import org.alephium.explorer.persistence.queries.EventQueries._
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
@@ -66,6 +67,15 @@ object BlockDao {
                                  dc: DatabaseConfig[PostgresProfile],
                                  groupSetting: GroupSetting): Future[Unit] =
     insertAll(ArraySeq(block))
+
+  def insertWithEvents(block: BlockEntity, events: ArraySeq[EventEntity])(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      groupSetting: GroupSetting): Future[Unit] =
+    run((for {
+      _ <- insertBlockEntity(ArraySeq(block), groupSetting.groupNum)
+      _ <- insertEventsQuery(events)
+    } yield ()).transactionally)
 
   /** Inserts a multiple blocks transactionally via SQL */
   def insertAll(blocks: ArraySeq[BlockEntity])(implicit ec: ExecutionContext,

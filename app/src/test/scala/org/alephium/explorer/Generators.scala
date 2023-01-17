@@ -162,6 +162,31 @@ object Generators {
       vm.UnlockScript.p2mpkh(indexedKey.sortBy(_._2))
     }
 
+  val methodGen: Gen[vm.Method[vm.StatelessContext]] = {
+    for {
+      useContractAssets <- Arbitrary.arbitrary[Boolean]
+    } yield {
+      vm.Method(
+        isPublic             = true,
+        usePreapprovedAssets = false,
+        useContractAssets,
+        argsLength   = 0,
+        localsLength = 0,
+        returnLength = 0,
+        instrs       = AVector.empty[vm.Instr[vm.StatelessContext]]
+      )
+    }
+  }
+
+  val unlockScriptProtocolP2SHGen: Gen[vm.UnlockScript.P2SH] = {
+    for {
+      methods <- Gen.listOfN(4, methodGen)
+    } yield {
+      val script = vm.StatelessScript.unsafe(AVector.from(methods))
+      vm.UnlockScript.P2SH(script, AVector.empty)
+    }
+  }
+
   val unlockScriptProtocolGen: Gen[vm.UnlockScript] =
     Gen.oneOf(unlockScriptProtocolP2PKHGen: Gen[vm.UnlockScript],
               unlockScriptProtocolP2MPKHGen: Gen[vm.UnlockScript])

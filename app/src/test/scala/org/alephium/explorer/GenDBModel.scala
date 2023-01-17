@@ -18,6 +18,7 @@ package org.alephium.explorer
 import org.scalacheck.{Arbitrary, Gen}
 
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.GenCoreApi.valGen
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.Address
@@ -117,6 +118,28 @@ object GenDBModel {
         txOrder   = txOrder,
         mainChain = mainChain,
         token     = token
+      )
+
+  def eventEntityGen(implicit groupSetting: GroupSetting): Gen[EventEntity] =
+    for {
+      blockHash       <- blockEntryHashGen
+      hash            <- transactionHashGen
+      contractAddress <- addressGen
+      inputAddress    <- Gen.option(addressGen)
+      timestamp       <- timestampGen
+      eventIndex      <- Gen.posNum[Int]
+      fields          <- Gen.listOf(valGen)
+
+    } yield
+      EventEntity.from(
+        blockHash,
+        hash,
+        contractAddress,
+        inputAddress,
+        timestamp,
+        eventIndex,
+        fields,
+        0
       )
 
   def tokenOutputEntityGen(

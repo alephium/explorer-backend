@@ -211,15 +211,21 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
       def fetchBlock(from: GroupIndex, hash: BlockHash): Future[BlockEntity] =
         Future.successful(blockEntities.find(_.hash === hash).get)
 
+      def fetchBlockAndEvents(fromGroup: GroupIndex,
+                              hash: BlockHash): Future[BlockEntityWithEvents] =
+        Future.successful(
+          BlockEntityWithEvents(blockEntities.find(_.hash === hash).get, ArraySeq.empty))
+
       def fetchBlocks(fromTs: TimeStamp,
                       toTs: TimeStamp,
-                      uri: Uri): Future[ArraySeq[ArraySeq[BlockEntity]]] =
+                      uri: Uri): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]] =
         Future.successful(
           blockEntities
             .filter(b => b.timestamp >= fromTs && b.timestamp < toTs)
             .groupBy(b => (b.chainFrom, b.chainTo))
             .map(_._2)
-            .map(_.distinctBy(_.height).sortBy(_.height)))
+            .map(_.distinctBy(_.height).sortBy(_.height))
+            .map(_.map(b => BlockEntityWithEvents(b, ArraySeq.empty[EventEntity]))))
 
       def fetchChainInfo(from: GroupIndex, to: GroupIndex): Future[ChainInfo] =
         Future.successful(
