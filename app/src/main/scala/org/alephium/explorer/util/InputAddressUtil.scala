@@ -82,7 +82,7 @@ object InputAddressUtil extends StrictLogging {
   @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
   def convertSameAsPrevious(
       inputs: ArraySeq[api.model.AssetInput]): ArraySeq[api.model.AssetInput] = {
-    if (inputs.length <= 1) {
+    if (inputs.sizeIs <= 1) {
       inputs
     } else {
       var lastUncompressedScript: Int = -1
