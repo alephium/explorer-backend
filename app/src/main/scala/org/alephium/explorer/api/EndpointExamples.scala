@@ -116,7 +116,8 @@ object EndpointExamples extends EndpointsExamples {
       inputs    = ArraySeq(input),
       outputs   = ArraySeq(outputAsset, outputContract),
       gasAmount = org.alephium.protocol.model.defaultGas.value,
-      gasPrice  = org.alephium.protocol.model.defaultGasPrice.value
+      gasPrice  = org.alephium.protocol.model.defaultGasPrice.value,
+      coinbase  = false
     )
 
   private val confirmedTransaction =

@@ -38,8 +38,8 @@ trait QueryParams extends TapirCodecs {
     query[Option[Int]]("page")
       .description("Page number")
       .map({
-        case Some(offset) => offset
-        case None         => Pagination.defaultPage
+        case Some(page) => page
+        case None       => Pagination.defaultPage
       })(Some(_))
       .validate(Validator.min(1))
       .and(
@@ -57,8 +57,8 @@ trait QueryParams extends TapirCodecs {
           case Some(reverse) => reverse
           case None          => false
         })(Some(_)))
-      .map({ case (offset, limit, reverse) => Pagination.unsafe(offset - 1, limit, reverse) })(p =>
-        (p.offset, p.limit, p.reverse))
+      .map({ case (page, limit, reverse) => Pagination.unsafe(page, limit, reverse) })(p =>
+        (p.page, p.limit, p.reverse))
 
   val timeIntervalQuery: EndpointInput[TimeInterval] =
     query[TimeStamp]("fromTs")

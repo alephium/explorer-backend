@@ -22,9 +22,10 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
+import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.queries.TokenQueries
-import org.alephium.explorer.persistence.queries.result.TxByAddressQR
+import org.alephium.explorer.persistence.queries.result.TxByTokenQR
 import org.alephium.explorer.persistence.schema._
 
 class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
@@ -38,9 +39,12 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
           val expected = txPerTokens
             .filter(_.mainChain)
-            .map(tx => TxByAddressQR(tx.hash, tx.blockHash, tx.timestamp, tx.txOrder))
+            .map(tx => TxByTokenQR(tx.hash, tx.blockHash, tx.timestamp, tx.txOrder))
           val result =
-            run(TokenQueries.listTokenTransactionsAction(token, 0, txPerTokens.size)).futureValue
+            run(
+              TokenQueries.listTokenTransactionsAction(
+                token,
+                Pagination.unsafe(1, txPerTokens.size))).futureValue
 
           result.size is expected.size
           result should contain allElementsOf expected
@@ -57,13 +61,13 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
           val expected = txPerAddressTokens
             .filter(_.mainChain)
-            .map(tx => TxByAddressQR(tx.hash, tx.blockHash, tx.timestamp, tx.txOrder))
+            .map(tx => TxByTokenQR(tx.hash, tx.blockHash, tx.timestamp, tx.txOrder))
           val result =
             run(
-              TokenQueries.getTokenTxHashesByAddressQuery(address,
-                                                          token,
-                                                          0,
-                                                          txPerAddressTokens.size)).futureValue
+              TokenQueries.getTokenTxHashesByAddressQuery(
+                address,
+                token,
+                Pagination.unsafe(1, txPerAddressTokens.size))).futureValue
 
           result.size is expected.size
           result should contain allElementsOf expected

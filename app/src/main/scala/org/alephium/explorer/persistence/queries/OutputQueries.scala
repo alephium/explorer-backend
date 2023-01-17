@@ -48,7 +48,7 @@ object OutputQueries {
   // scalastyle:off magic.number
   private def insertBasicOutputs(outputs: Iterable[OutputEntity]): DBActionW[Int] =
     QuerySplitter
-      .splitUpdates(rows = outputs, columnsPerRow = 14) { (outputs, placeholder) =>
+      .splitUpdates(rows = outputs, columnsPerRow = 15) { (outputs, placeholder) =>
         val query =
           s"""
            |INSERT INTO outputs ("block_hash",
@@ -64,7 +64,8 @@ object OutputQueries {
            |                     "lock_time",
            |                     "message",
            |                     "output_order",
-           |                     "tx_order")
+           |                     "tx_order",
+           |                     "coinbase")
            |VALUES $placeholder
            |ON CONFLICT
            |    ON CONSTRAINT outputs_pk
@@ -88,6 +89,7 @@ object OutputQueries {
               params >> output.message
               params >> output.outputOrder
               params >> output.txOrder
+              params >> output.coinbase
           }
 
         SQLActionBuilder(
@@ -98,10 +100,10 @@ object OutputQueries {
   // scalastyle:on magic.number
 
   private def insertTxPerAddressFromOutputs(outputs: Iterable[OutputEntity]): DBActionW[Int] = {
-    QuerySplitter.splitUpdates(rows = outputs, columnsPerRow = 6) { (outputs, placeholder) =>
+    QuerySplitter.splitUpdates(rows = outputs, columnsPerRow = 7) { (outputs, placeholder) =>
       val query =
         s"""
-           |INSERT INTO transaction_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain)
+           |INSERT INTO transaction_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, coinbase)
            |VALUES $placeholder
            |ON CONFLICT (tx_hash, block_hash, address)
            |DO NOTHING
@@ -116,6 +118,7 @@ object OutputQueries {
             params >> output.timestamp
             params >> output.txOrder
             params >> output.mainChain
+            params >> output.coinbase
         }
 
       SQLActionBuilder(
@@ -422,6 +425,7 @@ object OutputQueries {
         message,
         output_order,
         tx_order,
+        coinbase,
         spent_finalized
       FROM outputs
       WHERE main_chain = true

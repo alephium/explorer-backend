@@ -40,6 +40,7 @@ final case class OutputEntity(
     message: Option[ByteString],
     outputOrder: Int,
     txOrder: Int,
+    coinbase: Boolean,
     spentFinalized: Option[TransactionId]
 ) {
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))

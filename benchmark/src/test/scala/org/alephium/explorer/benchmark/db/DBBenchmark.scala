@@ -26,7 +26,7 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.GroupSetting
-import org.alephium.explorer.api.model.Address
+import org.alephium.explorer.api.model.{Address, Pagination}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.state._
 import org.alephium.explorer.cache.BlockCache
@@ -162,10 +162,9 @@ class DBBenchmark {
   @Benchmark
   def getTxHashesByAddressQuerySQLNoJoin(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(TransactionQueries.getTxHashesByAddressQuerySQLNoJoin(state.address,
-                                                                            state.pagination.offset,
-                                                                            state.pagination.limit),
-                      requestTimeout)
+      state.db.runNow(
+        TransactionQueries.getTxHashesByAddressQuerySQLNoJoin(state.address, state.pagination),
+        requestTimeout)
   }
 
   @Benchmark
@@ -266,11 +265,10 @@ class DBBenchmark {
   def transactions_per_address_read_state(state: TransactionsPerAddressReadState): Unit = {
     val query =
       TransactionQueries.getTxHashesByAddressQuerySQLNoJoinTimeRanged(
-        address  = Address.unsafe(state.next),
-        fromTime = TimeStamp.zero,
-        toTime   = TimeStamp.unsafe(Long.MaxValue),
-        offset   = 0,
-        limit    = Int.MaxValue
+        address    = Address.unsafe(state.next),
+        fromTime   = TimeStamp.zero,
+        toTime     = TimeStamp.unsafe(Long.MaxValue),
+        pagination = Pagination.unsafe(1, Int.MaxValue)
       )
 
     val _ =

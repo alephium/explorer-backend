@@ -39,7 +39,7 @@ class EventQueriesSpec
     with ScalaFutures {
 
   implicit val groupSetting = groupSettingGen.sample.get
-  val pagination            = Pagination.unsafe(0, Pagination.defaultLimit)
+  val pagination            = Pagination.unsafe(1, Pagination.defaultLimit)
 
   "Event Queries" should {
     "get event by tx hash" in {
@@ -95,7 +95,7 @@ class EventQueriesSpec
 
         insert(uniqueContractAddressEvents)
 
-        val fullPagination = Pagination.unsafe(0, uniqueContractAddressEvents.size)
+        val fullPagination = Pagination.unsafe(1, uniqueContractAddressEvents.size)
 
         val result =
           run(EventQueries.getEventsByContractAddressQuery(contractAddress, fullPagination)).futureValue
@@ -154,7 +154,7 @@ class EventQueriesSpec
 
         insert(uniqueContractAddressEvents)
 
-        val fullPagination = Pagination.unsafe(0, uniqueContractAddressEvents.size)
+        val fullPagination = Pagination.unsafe(1, uniqueContractAddressEvents.size)
 
         val result =
           run(

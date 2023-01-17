@@ -36,5 +36,6 @@ final case class TransactionEntity(
     mainChain: Boolean,
     scriptExecutionOk: Boolean,
     inputSignatures: Option[ArraySeq[ByteString]],
-    scriptSignatures: Option[ArraySeq[ByteString]]
+    scriptSignatures: Option[ArraySeq[ByteString]],
+    coinbase: Boolean
 )

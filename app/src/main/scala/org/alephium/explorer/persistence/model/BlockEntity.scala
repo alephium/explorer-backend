@@ -25,7 +25,7 @@ import akka.util.ByteString
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{GroupIndex, Height}
 import org.alephium.explorer.service.FlowEntity
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.TimeStamp
 
 final case class BlockEntity(
@@ -44,7 +44,8 @@ final case class BlockEntity(
     depStateHash: Hash,
     txsHash: Hash,
     target: ByteString,
-    hashrate: BigInteger
+    hashrate: BigInteger,
+    coinbaseTxId: TransactionId
 ) extends FlowEntity {
   def updateMainChain(newMainChain: Boolean): BlockEntity = {
     this.copy(

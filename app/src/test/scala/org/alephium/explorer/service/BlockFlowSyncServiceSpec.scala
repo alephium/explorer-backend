@@ -278,7 +278,7 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
 
     def checkMainChain(mainChain: ArraySeq[BlockHash]) = {
       val result = BlockDao
-        .listMainChain(Pagination.unsafe(0, blocks.size))
+        .listMainChain(Pagination.unsafe(1, blocks.size))
         .futureValue
         ._1
         .filter(block =>

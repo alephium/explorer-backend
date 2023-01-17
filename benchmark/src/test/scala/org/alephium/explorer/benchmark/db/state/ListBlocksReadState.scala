@@ -60,7 +60,7 @@ class ListBlocksReadState(reverse: Boolean,
     */
   def generateData(currentCacheSize: Int): Pagination =
     Pagination.unsafe(
-      offset  = currentCacheSize,
+      page    = currentCacheSize + 1,
       limit   = limitPerPage,
       reverse = reverse
     )
@@ -80,7 +80,8 @@ class ListBlocksReadState(reverse: Boolean,
       txsCount     = scala.math.abs(Random.nextInt()),
       target       = ByteString.emptyByteString,
       hashrate     = BigInteger.ONE,
-      parent       = Some(BlockHash.generate)
+      parent       = Some(BlockHash.generate),
+      coinbaseTxId = TransactionId.generate
     )
 
   private def generateTransactions(header: BlockHeader): Seq[TransactionEntity] =
@@ -97,7 +98,8 @@ class ListBlocksReadState(reverse: Boolean,
         mainChain         = header.mainChain,
         scriptExecutionOk = Random.nextBoolean(),
         inputSignatures   = None,
-        scriptSignatures  = None
+        scriptSignatures  = None,
+        coinbase          = false
       )
     }
 

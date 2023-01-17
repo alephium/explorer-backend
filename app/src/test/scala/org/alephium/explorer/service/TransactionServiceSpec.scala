@@ -69,7 +69,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       .futureValue
 
     TransactionService
-      .getTransactionsByAddressSQL(address, Pagination.unsafe(0, txLimit))
+      .getTransactionsByAddressSQL(address, Pagination.unsafe(1, txLimit))
       .futureValue
       .size is txLimit
   }
@@ -126,7 +126,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       true,
       true,
       None,
-      None
+      None,
+      coinbase = false
     )
 
     val output0 =
@@ -144,6 +145,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
                    None,
                    0,
                    0,
+                   coinbase = false,
                    None)
 
     val block0 = defaultBlockEntity.copy(
@@ -169,7 +171,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       true,
       true,
       None,
-      None
+      None,
+      coinbase = false
     )
     val input1 = InputEntity(blockHash1,
                              tx1.hash,
@@ -198,6 +201,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
                                None,
                                0,
                                0,
+                               coinbase = false,
                                None)
 
     val block1 = defaultBlockEntity.copy(
@@ -231,7 +235,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
                     None,
                     Some(tx1.hash))),
       gasAmount,
-      gasPrice
+      gasPrice,
+      coinbase = false
     )
 
     val t1 = Transaction(
@@ -246,11 +251,12 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
               Some(U256.One))),
       ArraySeq(AssetOutput(output1.hint, output1.key, U256.One, address1, None, None, None, None)),
       gasAmount1,
-      gasPrice1
+      gasPrice1,
+      coinbase = false
     )
 
     val res2 =
-      TransactionService.getTransactionsByAddressSQL(address0, Pagination.unsafe(0, 5)).futureValue
+      TransactionService.getTransactionsByAddressSQL(address0, Pagination.unsafe(1, 5)).futureValue
 
     res2 is ArraySeq(t1, t0)
   }
@@ -275,7 +281,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
           true,
           true,
           None,
-          None
+          None,
+          coinbase = false
         )
 
         val output0 =
@@ -293,6 +300,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
                        None,
                        0,
                        0,
+                       coinbase = false,
                        None)
 
         val block0 = defaultBlockEntity.copy(
@@ -321,7 +329,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
         databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
 
         TransactionService
-          .getTransactionsByAddressSQL(address0, Pagination.unsafe(0, 5))
+          .getTransactionsByAddressSQL(address0, Pagination.unsafe(1, 5))
           .futureValue
           .size is 1 // was 2 in fb7127f
 
@@ -399,7 +407,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     }
 
     TransactionService
-      .getTransactionsByAddressSQL(address, Pagination.unsafe(0, Int.MaxValue))
+      .getTransactionsByAddressSQL(address, Pagination.unsafe(1, Int.MaxValue))
       .futureValue
       .map { transaction =>
         transaction.outputs.map(_.key) is outputs
@@ -533,7 +541,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
         depStateHash = hashGen.sample.get,
         txsHash      = hashGen.sample.get,
         target       = bytesGen.sample.get,
-        hashrate     = BigInteger.ZERO
+        hashrate     = BigInteger.ZERO,
+        coinbaseTxId = transactionHashGen.sample.get
       )
 
   }
