@@ -184,17 +184,13 @@ case object BlockFlowSyncService extends StrictLogging {
     for {
       localTs  <- getLocalMaxTimestamp()
       remoteTs <- getRemoteMaxTimestamp()
-    } yield {
-      TimeUtil.buildTimeStampRangeOrEmpty(step, backStep, localTs, remoteTs) match {
+      result <- TimeUtil.buildTimeStampRangeOrEmpty(step, backStep, localTs, remoteTs) match {
         case Failure(exception) =>
-          logger.error("Failed to get TimeStamp range", exception)
-          //See issue #246. sys.exit need to be removed for graceful termination.
-          sys.exit(0)
-
+          Future.failed(exception)
         case Success(result) =>
-          result
+          Future.successful(result)
       }
-    }
+    } yield result
 
   /** @see [[org.alephium.explorer.persistence.queries.BlockQueries.numOfBlocksAndMaxBlockTimestamp]] */
   def getLocalMaxTimestamp()(implicit ec: ExecutionContext,

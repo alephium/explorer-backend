@@ -155,6 +155,7 @@ object CustomGetResult {
         mainChain        = result.<<,
         inputOrder       = result.<<,
         txOrder          = result.<<,
+        outputRefTxHash  = result.<<?,
         outputRefAddress = result.<<?,
         outputRefAmount  = result.<<?,
         outputRefTokens  = result.<<?
@@ -267,4 +268,18 @@ object CustomGetResult {
         fields          = result.<<,
         eventOrder      = result.<<
     )
+
+  implicit val migrationVersionGetResult: GetResult[AppState.MigrationVersion] =
+    (result: PositionedResult) =>
+      AppState.MigrationVersion(ByteString.fromArrayUnsafe(result.nextBytes())) match {
+        case Left(error)  => throw error
+        case Right(value) => value
+    }
+
+  implicit val lastFinalizedInputTimeGetResult: GetResult[AppState.LastFinalizedInputTime] =
+    (result: PositionedResult) =>
+      AppState.LastFinalizedInputTime(ByteString.fromArrayUnsafe(result.nextBytes())) match {
+        case Left(error)  => throw error
+        case Right(value) => value
+    }
 }

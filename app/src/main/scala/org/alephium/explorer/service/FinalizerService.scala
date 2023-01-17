@@ -19,7 +19,6 @@ package org.alephium.explorer.service
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 
-import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
@@ -35,7 +34,6 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.{Scheduler, TimeUtil}
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.serde._
 import org.alephium.util.{Duration, TimeStamp}
 
 /*
@@ -83,6 +81,7 @@ case object FinalizerService extends StrictLogging {
       TimeUtil.buildTimestampRange(start, end, step)
     foldFutures(timeRanges) {
       case (from, to) =>
+        logger.debug(s"Updating outputs: ${TimeUtil.toInstant(from)} - ${TimeUtil.toInstant(to)}")
         run(
           (
             for {
@@ -107,7 +106,7 @@ case object FinalizerService extends StrictLogging {
       AND o.main_chain=true
       AND i.main_chain=true
       AND i.block_timestamp >= $from
-      AND i.block_timestamp < $to;
+      AND i.block_timestamp <= $to;
       """
 
   private def updateTokenOutputs(from: TimeStamp, to: TimeStamp): DBActionR[Int] =
@@ -119,7 +118,7 @@ case object FinalizerService extends StrictLogging {
       AND o.main_chain=true
       AND i.main_chain=true
       AND i.block_timestamp >= $from
-      AND i.block_timestamp < $to;
+      AND i.block_timestamp <= $to;
       """
 
   def getStartEndTime()(
@@ -128,8 +127,6 @@ case object FinalizerService extends StrictLogging {
     getMinMaxInputsTs.flatMap(_.headOption match {
       //No input in db
       case None | Some((TimeStamp.zero, TimeStamp.zero)) => DBIOAction.successful(None)
-      // only one input
-      case Some((start, end)) if start == end => DBIOAction.successful(None)
       // inputs are only after finalization time, noop
       case Some((start, _)) if ft.isBefore(start) => DBIOAction.successful(None)
       case Some((start, _end)) =>
@@ -150,18 +147,7 @@ case object FinalizerService extends StrictLogging {
 
   private def getLastFinalizedInputTime()(
       implicit executionContext: ExecutionContext): DBActionR[Option[TimeStamp]] =
-    sql"""
-    SELECT value FROM app_state where key = 'last_finalized_input_time'
-    """
-      .asAS[ByteString]
-      .map(_.headOption.flatMap { bytes =>
-        deserialize[TimeStamp](bytes) match {
-          case Left(error) =>
-            logger.error(s"Cannot deserialize `last_finalized_input_time`: $error")
-            None
-          case Right(timestamp) => Some(timestamp)
-        }
-      })
+    AppStateQueries.get(LastFinalizedInputTime).map(_.map(_.time))
 
   private def updateLastFinalizedInputTime(time: TimeStamp) =
     AppStateQueries.insertOrUpdate(LastFinalizedInputTime(time))

@@ -82,12 +82,18 @@ trait BlockFlowClient extends Service {
 }
 
 object BlockFlowClient extends StrictLogging {
-  def apply(uri: Uri, groupNum: Int, maybeApiKey: Option[api.model.ApiKey])(
+  def apply(uri: Uri,
+            groupNum: Int,
+            maybeApiKey: Option[api.model.ApiKey],
+            directCliqueAccess: Boolean)(
       implicit executionContext: ExecutionContext
   ): BlockFlowClient =
-    new Impl(uri, groupNum, maybeApiKey)
+    new Impl(uri, groupNum, maybeApiKey, directCliqueAccess)
 
-  private class Impl(uri: Uri, groupNum: Int, val maybeApiKey: Option[api.model.ApiKey])(
+  private class Impl(uri: Uri,
+                     groupNum: Int,
+                     val maybeApiKey: Option[api.model.ApiKey],
+                     directCliqueAccess: Boolean)(
       implicit val executionContext: ExecutionContext
   ) extends BlockFlowClient
       with Endpoints
@@ -129,15 +135,21 @@ object BlockFlowClient extends StrictLogging {
         }
     }
 
+    //If directCliqueAccess = true, we need to first get all nodes of the clique
+    //to make sure we call the node which conains block's data
     def fetchBlock(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntity] =
-      fetchSelfCliqueAndChainParams().flatMap {
-        case (selfClique, chainParams) =>
-          selfCliqueIndex(selfClique, chainParams, fromGroup) match {
-            case Left(error) => Future.failed(new Throwable(error))
-            case Right((nodeAddress, restPort)) =>
-              val uri = Uri(nodeAddress.getHostAddress, restPort)
-              _send(getBlock, uri, hash).map(blockProtocolToEntity)
-          }
+      if (directCliqueAccess) {
+        fetchSelfCliqueAndChainParams().flatMap {
+          case (selfClique, chainParams) =>
+            selfCliqueIndex(selfClique, chainParams, fromGroup) match {
+              case Left(error) => Future.failed(new Throwable(error))
+              case Right((nodeAddress, restPort)) =>
+                val uri = Uri(nodeAddress.getHostAddress, restPort)
+                _send(getBlock, uri, hash).map(blockProtocolToEntity)
+            }
+        }
+      } else {
+        _send(getBlock, uri, hash).map(blockProtocolToEntity)
       }
 
     def fetchBlockAndEvents(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntityWithEvents] =
@@ -382,6 +394,7 @@ object BlockFlowClient extends StrictLogging {
     Input(
       OutputRef(input.outputRef.hint, input.outputRef.key),
       Some(input.unlockScript),
+      None,
       InputAddressUtil.addressFromProtocolInput(input),
       None,
       None
@@ -405,6 +418,7 @@ object BlockFlowClient extends StrictLogging {
       mainChain,
       index,
       txOrder,
+      None,
       InputAddressUtil.addressFromProtocolInput(input),
       None,
       None
@@ -428,6 +442,7 @@ object BlockFlowClient extends StrictLogging {
       mainChain,
       index,
       txOrder,
+      None,
       None,
       None,
       None

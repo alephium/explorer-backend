@@ -31,6 +31,10 @@ import org.alephium.explorer.util.TestUtils._
   */
 object DatabaseFixture extends AlephiumFutures {
 
+  lazy val cleanTablesQuery = DBInitializer.allTables.map { table =>
+    s"DELETE FROM ${table.baseTableRow.tableName};"
+  }.mkString
+
   def config(dbName: String) =
     ConfigFactory
       .parseMap(
@@ -42,25 +46,24 @@ object DatabaseFixture extends AlephiumFutures {
   def createDatabaseConfig(dbName: String): DatabaseConfig[PostgresProfile] =
     DatabaseConfig.forConfig[PostgresProfile]("db", config(dbName))
 
-  def dropCreateTables()(implicit databaseConfig: DatabaseConfig[PostgresProfile]) = {
-    eventually {
-      DBInitializer.dropTables().futureValue
-      DBInitializer.initialize().futureValue
-    }
+  def createTables()(implicit databaseConfig: DatabaseConfig[PostgresProfile]) = {
+    DBInitializer.initialize().futureValue
+  }
+
+  def cleanTables()(implicit databaseConfig: DatabaseConfig[PostgresProfile]) = {
+    databaseConfig.db.run(sqlu"#$cleanTablesQuery").map(_ => ()).futureValue
   }
 
   def createDb(dbName: String) = {
     using(DatabaseConfig.forConfig[PostgresProfile]("db", config(""))) { databaseConfig =>
-      eventually {
-        databaseConfig.db.run(sqlu"DROP DATABASE IF EXISTS #$dbName").futureValue
-        databaseConfig.db.run(sqlu"CREATE DATABASE #$dbName").futureValue
-      }
+      databaseConfig.db.run(sqlu"DROP DATABASE IF EXISTS #$dbName").futureValue
+      databaseConfig.db.run(sqlu"CREATE DATABASE #$dbName").futureValue
     }
   }
 
   def dropDb(dbName: String) = {
     using(DatabaseConfig.forConfig[PostgresProfile]("db", config(""))) { databaseConfig =>
-      eventually(databaseConfig.db.run(sqlu"DROP DATABASE #$dbName")).futureValue
+      databaseConfig.db.run(sqlu"DROP DATABASE #$dbName").futureValue
     }
   }
 }

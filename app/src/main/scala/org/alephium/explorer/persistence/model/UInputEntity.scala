@@ -33,6 +33,7 @@ final case class UInputEntity(
   val toApi: Input = Input(
     OutputRef(hint, outputRefKey),
     unlockScript,
+    None,
     address,
     None,
     None

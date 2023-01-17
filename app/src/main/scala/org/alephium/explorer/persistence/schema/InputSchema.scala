@@ -33,15 +33,17 @@ import org.alephium.util.{TimeStamp, U256}
 object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
 
   class Inputs(tag: Tag) extends Table[InputEntity](tag, name) {
-    def blockHash: Rep[BlockHash]              = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
-    def txHash: Rep[TransactionId]             = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
-    def timestamp: Rep[TimeStamp]              = column[TimeStamp]("block_timestamp")
-    def hint: Rep[Int]                         = column[Int]("hint")
-    def outputRefKey: Rep[Hash]                = column[Hash]("output_ref_key", O.SqlType("BYTEA"))
-    def unlockScript: Rep[Option[ByteString]]  = column[Option[ByteString]]("unlock_script")
-    def mainChain: Rep[Boolean]                = column[Boolean]("main_chain")
-    def inputOrder: Rep[Int]                   = column[Int]("input_order")
-    def txOrder: Rep[Int]                      = column[Int]("tx_order")
+    def blockHash: Rep[BlockHash]             = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
+    def txHash: Rep[TransactionId]            = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
+    def timestamp: Rep[TimeStamp]             = column[TimeStamp]("block_timestamp")
+    def hint: Rep[Int]                        = column[Int]("hint")
+    def outputRefKey: Rep[Hash]               = column[Hash]("output_ref_key", O.SqlType("BYTEA"))
+    def unlockScript: Rep[Option[ByteString]] = column[Option[ByteString]]("unlock_script")
+    def mainChain: Rep[Boolean]               = column[Boolean]("main_chain")
+    def inputOrder: Rep[Int]                  = column[Int]("input_order")
+    def txOrder: Rep[Int]                     = column[Int]("tx_order")
+    def outputRefTxHash: Rep[Option[TransactionId]] =
+      column[Option[TransactionId]]("output_ref_tx_hash")
     def outputRefAddress: Rep[Option[Address]] = column[Option[Address]]("output_ref_address")
     def outputRefAmount: Rep[Option[U256]] =
       column[Option[U256]]("output_ref_amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
@@ -66,6 +68,7 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
        mainChain,
        inputOrder,
        txOrder,
+       outputRefTxHash,
        outputRefAddress,
        outputRefAmount,
        outputRefTokens)
@@ -74,7 +77,7 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
 
   def createOutputRefAddressNullIndex(): DBActionW[Int] =
     sqlu"""CREATE INDEX IF NOT EXISTS inputs_output_ref_amount_null_idx
-      ON #${name} (output_ref_address, output_ref_amount, output_ref_tokens)
+      ON #${name} (output_ref_tx_hash, output_ref_address, output_ref_amount, output_ref_tokens)
       WHERE output_ref_amount IS NULL"""
 
   val table: TableQuery[Inputs] = TableQuery[Inputs]

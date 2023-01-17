@@ -76,13 +76,13 @@ class TimeUtilSpec extends AlephiumSpec with Matchers {
         ArraySeq(r(0, 2), r(3, 5))
 
       buildTimestampRange(t(0), t(6), s(2)) is
-        ArraySeq(r(0, 2), r(3, 5), r(6, 7))
+        ArraySeq(r(0, 2), r(3, 5), r(6, 6))
 
       buildTimestampRange(t(0), t(7), s(2)) is
         ArraySeq(r(0, 2), r(3, 5), r(6, 7))
 
       buildTimestampRange(t(1), t(1), s(1)) is
-        ArraySeq.empty
+        ArraySeq(r(1, 1))
 
       buildTimestampRange(t(1), t(0), s(1)) is
         ArraySeq.empty

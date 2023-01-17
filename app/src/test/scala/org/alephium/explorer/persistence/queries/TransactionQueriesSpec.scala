@@ -239,6 +239,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
           hint         = input.hint,
           outputRefKey = input.outputRefKey,
           unlockScript = input.unlockScript,
+          txHashRef    = Some(output.txHash),
           address      = Some(output.address),
           amount       = Some(output.amount),
           token        = output.tokens
@@ -622,6 +623,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
                   true,
                   0,
                   0,
+                  None,
                   None,
                   None,
                   None)
