@@ -69,7 +69,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       .futureValue
 
     TransactionService
-      .getTransactionsByAddressSQL(address, Pagination.unsafe(0, txLimit))
+      .getTransactionsByAddressSQL(address, Pagination.unsafe(1, txLimit))
       .futureValue
       .size is txLimit
   }
@@ -250,7 +250,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     )
 
     val res2 =
-      TransactionService.getTransactionsByAddressSQL(address0, Pagination.unsafe(0, 5)).futureValue
+      TransactionService.getTransactionsByAddressSQL(address0, Pagination.unsafe(1, 5)).futureValue
 
     res2 is ArraySeq(t1, t0)
   }
@@ -321,7 +321,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
         databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
 
         TransactionService
-          .getTransactionsByAddressSQL(address0, Pagination.unsafe(0, 5))
+          .getTransactionsByAddressSQL(address0, Pagination.unsafe(1, 5))
           .futureValue
           .size is 1 // was 2 in fb7127f
 
@@ -399,7 +399,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     }
 
     TransactionService
-      .getTransactionsByAddressSQL(address, Pagination.unsafe(0, Int.MaxValue))
+      .getTransactionsByAddressSQL(address, Pagination.unsafe(1, Int.MaxValue))
       .futureValue
       .map { transaction =>
         transaction.outputs.map(_.key) is outputs

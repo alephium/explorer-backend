@@ -239,11 +239,11 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         tokenSupply.map(_.circulating) is amounts
 
         TokenSupplyService
-          .listTokenSupply(Pagination.unsafe(0, 1))
+          .listTokenSupply(Pagination.unsafe(1, 1))
           .futureValue
           .map(_.circulating) is ArraySeq(amounts.head)
         TokenSupplyService
-          .listTokenSupply(Pagination.unsafe(0, 0))
+          .listTokenSupply(Pagination.unsafe(1, 0))
           .futureValue is ArraySeq.empty
 
         TokenSupplyService
