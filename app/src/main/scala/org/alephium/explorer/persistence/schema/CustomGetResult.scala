@@ -140,6 +140,7 @@ object CustomGetResult {
         message        = result.<<?,
         outputOrder    = result.<<,
         txOrder        = result.<<,
+        coinbase       = result.<<,
         spentFinalized = result.<<?
     )
 
@@ -199,6 +200,7 @@ object CustomGetResult {
         txsCount     = result.<<,
         target       = result.<<,
         hashrate     = result.<<,
+        coinbaseTxId = result.<<,
         parent       = result.<<?
     )
 

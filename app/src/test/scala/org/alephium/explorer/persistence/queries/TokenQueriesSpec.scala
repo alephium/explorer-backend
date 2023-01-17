@@ -25,7 +25,7 @@ import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.queries.TokenQueries
-import org.alephium.explorer.persistence.queries.result.TxByAddressQR
+import org.alephium.explorer.persistence.queries.result.TxByTokenQR
 import org.alephium.explorer.persistence.schema._
 
 class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
@@ -39,7 +39,7 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
           val expected = txPerTokens
             .filter(_.mainChain)
-            .map(tx => TxByAddressQR(tx.hash, tx.blockHash, tx.timestamp, tx.txOrder))
+            .map(tx => TxByTokenQR(tx.hash, tx.blockHash, tx.timestamp, tx.txOrder))
           val result =
             run(
               TokenQueries.listTokenTransactionsAction(
@@ -61,7 +61,7 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
           val expected = txPerAddressTokens
             .filter(_.mainChain)
-            .map(tx => TxByAddressQR(tx.hash, tx.blockHash, tx.timestamp, tx.txOrder))
+            .map(tx => TxByTokenQR(tx.hash, tx.blockHash, tx.timestamp, tx.txOrder))
           val result =
             run(
               TokenQueries.getTokenTxHashesByAddressQuery(

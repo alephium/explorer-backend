@@ -165,9 +165,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       run(TransactionQueries.getTxHashesByAddressQuerySQLNoJoin(address, Pagination.unsafe(1, 10))).futureValue
 
     val expected = ArraySeq(
-      TxByAddressQR(output1.txHash, output1.blockHash, output1.timestamp, 0),
-      TxByAddressQR(output2.txHash, output2.blockHash, output2.timestamp, 0),
-      TxByAddressQR(input1.txHash, input1.blockHash, input1.timestamp, 0)
+      TxByAddressQR(output1.txHash, output1.blockHash, output1.timestamp, 0, false),
+      TxByAddressQR(output2.txHash, output2.blockHash, output2.timestamp, 0, false),
+      TxByAddressQR(input1.txHash, input1.blockHash, input1.timestamp, 0, false)
     ).sortBy(_.blockTimestamp).reverse
 
     hashesSQLNoJoin is expected
@@ -276,7 +276,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         inputs,
         ArraySeq(output.toApi(spent)),
         1,
-        ALPH.alph(1)
+        ALPH.alph(1),
+        coinbase = false
       )
     }
 
@@ -315,7 +316,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       true,
       true,
       None,
-      None
+      None,
+      coinbase = false
     )
 
     val output1 =
@@ -467,7 +469,11 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
               val actualResult = run(query).futureValue
 
               val expectedResult =
-                TxByAddressQR(entity.hash, entity.blockHash, entity.timestamp, entity.txOrder)
+                TxByAddressQR(entity.hash,
+                              entity.blockHash,
+                              entity.timestamp,
+                              entity.txOrder,
+                              entity.coinbase)
 
               actualResult should contain only expectedResult
             }
@@ -530,7 +536,11 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
                   //transform query result TxByAddressQR
                   val expectedResult =
                     expectedEntities map { entity =>
-                      TxByAddressQR(entity.hash, entity.blockHash, entity.timestamp, entity.txOrder)
+                      TxByAddressQR(entity.hash,
+                                    entity.blockHash,
+                                    entity.timestamp,
+                                    entity.txOrder,
+                                    entity.coinbase)
                     }
 
                   //only the main_chain entities within the time-range is expected
@@ -580,7 +590,11 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
             //expect only main_chain and persisted address
             val expectedResult =
               entitiesToPersist.filter(_.mainChain) map { entity =>
-                TxByAddressQR(entity.hash, entity.blockHash, entity.timestamp, entity.txOrder)
+                TxByAddressQR(entity.hash,
+                              entity.blockHash,
+                              entity.timestamp,
+                              entity.txOrder,
+                              entity.coinbase)
               }
 
             run(query).futureValue should contain theSameElementsAs expectedResult
@@ -613,6 +627,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         Gen.option(bytesGen).sample.get,
         0,
         0,
+        false,
         None
       )
 
@@ -642,7 +657,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
                         true,
                         true,
                         None,
-                        None)
+                        None,
+                        coinbase = false)
     }
   }
 }

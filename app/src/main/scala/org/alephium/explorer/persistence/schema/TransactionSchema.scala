@@ -46,6 +46,7 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
       column[Option[ArraySeq[ByteString]]]("input_signatures")
     def scriptSignatures: Rep[Option[ArraySeq[ByteString]]] =
       column[Option[ArraySeq[ByteString]]]("script_signatures")
+    def coinbase: Rep[Boolean] = column[Boolean]("coinbase")
 
     def pk: PrimaryKey = primaryKey("txs_pk", (hash, blockHash))
 
@@ -66,7 +67,8 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
        mainChain,
        scriptExecutionOk,
        inputSignatures,
-       scriptSignatures)
+       scriptSignatures,
+       coinbase)
         .<>((TransactionEntity.apply _).tupled, TransactionEntity.unapply)
   }
 

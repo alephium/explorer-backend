@@ -35,7 +35,8 @@ final case class Transaction(
     inputs: ArraySeq[Input],
     outputs: ArraySeq[Output],
     gasAmount: Int,
-    gasPrice: U256
+    gasPrice: U256,
+    coinbase: Boolean
 ) {
   def toCsv(address: Address): String = {
     val dateTime         = Instant.ofEpochMilli(timestamp.millis)
@@ -81,7 +82,8 @@ final case class ConfirmedTransaction(
     inputs: ArraySeq[Input],
     outputs: ArraySeq[Output],
     gasAmount: Int,
-    gasPrice: U256
+    gasPrice: U256,
+    coinbase: Boolean
 ) extends TransactionLike
 
 object ConfirmedTransaction {
@@ -93,7 +95,8 @@ object ConfirmedTransaction {
     tx.inputs,
     tx.outputs,
     tx.gasAmount,
-    tx.gasPrice
+    tx.gasPrice,
+    tx.coinbase
   )
 }
 

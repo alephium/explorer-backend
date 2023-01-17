@@ -24,7 +24,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
-import org.alephium.explorer.persistence.queries.result.TxByAddressQR
+import org.alephium.explorer.persistence.queries.result.TxByTokenQR
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
@@ -76,7 +76,7 @@ object TokenQueries extends StrictLogging {
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     for {
       txHashesTs <- listTokenTransactionsAction(token, pagination)
-      txs        <- TransactionQueries.getTransactionsSQL(txHashesTs)
+      txs        <- TransactionQueries.getTransactionsSQL(txHashesTs.map(_.toTxByAddressQR))
     } yield txs
   }
 
@@ -90,15 +90,15 @@ object TokenQueries extends StrictLogging {
   }
 
   def listTokenTransactionsAction(token: TokenId,
-                                  pagination: Pagination): DBActionSR[TxByAddressQR] = {
+                                  pagination: Pagination): DBActionSR[TxByTokenQR] = {
     sql"""
-      SELECT tx_hash, block_hash, block_timestamp, tx_order
+      SELECT #${TxByTokenQR.selectFields}
       FROM transaction_per_token
       WHERE main_chain = true
       AND token = $token
       ORDER BY block_timestamp DESC, tx_order
       #${pagination.query}
-    """.asAS[TxByAddressQR]
+    """.asAS[TxByTokenQR]
   }
 
   def listAddressTokensAction(address: Address): DBActionSR[TokenId] =
@@ -113,21 +113,21 @@ object TokenQueries extends StrictLogging {
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     for {
       txHashesTs <- getTokenTxHashesByAddressQuery(address, token, pagination)
-      txs        <- TransactionQueries.getTransactionsSQL(txHashesTs)
+      txs        <- TransactionQueries.getTransactionsSQL(txHashesTs.map(_.toTxByAddressQR))
     } yield txs
   }
 
   def getTokenTxHashesByAddressQuery(address: Address,
                                      token: TokenId,
-                                     pagination: Pagination): DBActionSR[TxByAddressQR] = {
+                                     pagination: Pagination): DBActionSR[TxByTokenQR] = {
     sql"""
-      SELECT tx_hash, block_hash, block_timestamp, tx_order
+      SELECT #${TxByTokenQR.selectFields}
       FROM token_tx_per_addresses
       WHERE main_chain = true
       AND address = $address
       AND token = $token
       ORDER BY block_timestamp DESC, tx_order
       #${pagination.query}
-    """.asAS[TxByAddressQR]
+    """.asAS[TxByTokenQR]
   }
 }

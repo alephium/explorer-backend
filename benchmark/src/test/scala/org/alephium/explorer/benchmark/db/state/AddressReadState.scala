@@ -114,7 +114,8 @@ class AddressReadState(val db: DBExecutor)
       mainChain         = true,
       scriptExecutionOk = Random.nextBoolean(),
       inputSignatures   = None,
-      scriptSignatures  = None
+      scriptSignatures  = None,
+      coinbase          = false
     )
 
   def generateData(currentCacheSize: Int): OutputEntity = {
@@ -137,6 +138,7 @@ class AddressReadState(val db: DBExecutor)
       message        = None,
       outputOrder    = 0,
       txOrder        = 0,
+      coinbase       = false,
       spentFinalized = None
     )
   }
@@ -161,6 +163,8 @@ class AddressReadState(val db: DBExecutor)
       } else {
         ArraySeq.empty
       }
+      val transactions = ArraySeq(generateTransaction(blockHash, txHash, timestamp))
+      val coinbaseTxId = transactions.last.hash
 
       BlockEntity(
         hash         = blockHash,
@@ -169,7 +173,7 @@ class AddressReadState(val db: DBExecutor)
         chainTo      = GroupIndex.unsafe(16),
         height       = Height.genesis,
         deps         = ArraySeq.empty,
-        transactions = ArraySeq(generateTransaction(blockHash, txHash, timestamp)),
+        transactions = transactions,
         inputs       = inputs,
         outputs      = ArraySeq(output),
         mainChain    = true,
@@ -178,7 +182,8 @@ class AddressReadState(val db: DBExecutor)
         depStateHash = Blake2b.generate,
         txsHash      = Blake2b.generate,
         target       = ByteString.emptyByteString,
-        hashrate     = BigInteger.ONE
+        hashrate     = BigInteger.ONE,
+        coinbaseTxId = coinbaseTxId
       )
     })
 

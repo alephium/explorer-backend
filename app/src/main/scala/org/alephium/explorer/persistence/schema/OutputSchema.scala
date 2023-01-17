@@ -48,6 +48,7 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
     def message: Rep[Option[ByteString]]     = column[Option[ByteString]]("message")
     def outputOrder: Rep[Int]                = column[Int]("output_order")
     def txOrder: Rep[Int]                    = column[Int]("tx_order")
+    def coinbase: Rep[Boolean]               = column[Boolean]("coinbase")
     def spentFinalized: Rep[Option[TransactionId]] =
       column[Option[TransactionId]]("spent_finalized", O.Default(None))
 
@@ -74,6 +75,7 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
        message,
        outputOrder,
        txOrder,
+       coinbase,
        spentFinalized)
         .<>((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }
