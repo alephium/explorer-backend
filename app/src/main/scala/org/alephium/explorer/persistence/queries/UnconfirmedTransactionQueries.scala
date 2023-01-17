@@ -41,9 +41,8 @@ object UnconfirmedTransactionQueries {
 
   def listPaginatedUnconfirmedTransactionsQuery(
       pagination: Pagination): DBActionSR[UnconfirmedTxEntity] = {
-    val offset = pagination.offset.toLong
-    val limit  = pagination.limit.toLong
-    val toDrop = offset * limit
+    val offset = pagination.offset
+    val limit  = pagination.limit
     sql"""
       SELECT hash,
              chain_from,
@@ -54,7 +53,7 @@ object UnconfirmedTransactionQueries {
       FROM utransactions
       ORDER BY last_seen DESC
       LIMIT $limit
-      OFFSET $toDrop
+      OFFSET $offset
     """.asASE[UnconfirmedTxEntity](unconfirmedTransactionGetResult)
   }
 

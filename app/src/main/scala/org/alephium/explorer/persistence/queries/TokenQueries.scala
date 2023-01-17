@@ -66,13 +66,12 @@ object TokenQueries extends StrictLogging {
   def listTokensAction(pagination: Pagination): DBActionSR[TokenId] = {
     val offset = pagination.offset
     val limit  = pagination.limit
-    val toDrop = offset * limit
     sql"""
       SELECT token
       FROM token_info
       ORDER BY last_used DESC
       LIMIT $limit
-      OFFSET $toDrop
+      OFFSET $offset
     """.asAS[TokenId]
   }
 
@@ -80,9 +79,8 @@ object TokenQueries extends StrictLogging {
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     val offset = pagination.offset
     val limit  = pagination.limit
-    val toDrop = offset * limit
     for {
-      txHashesTs <- listTokenTransactionsAction(token, toDrop, limit)
+      txHashesTs <- listTokenTransactionsAction(token, offset, limit)
       txs        <- TransactionQueries.getTransactionsSQL(txHashesTs)
     } yield txs
   }
@@ -90,13 +88,12 @@ object TokenQueries extends StrictLogging {
   def getAddressesByToken(token: TokenId, pagination: Pagination): DBActionR[ArraySeq[Address]] = {
     val offset = pagination.offset
     val limit  = pagination.limit
-    val toDrop = offset * limit
     sql"""
       SELECT DISTINCT address
       FROM token_tx_per_addresses
       WHERE token = $token
       LIMIT $limit
-      OFFSET $toDrop
+      OFFSET $offset
     """.asAS[Address]
   }
 
@@ -126,9 +123,8 @@ object TokenQueries extends StrictLogging {
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     val offset = pagination.offset
     val limit  = pagination.limit
-    val toDrop = offset * limit
     for {
-      txHashesTs <- getTokenTxHashesByAddressQuery(address, token, toDrop, limit)
+      txHashesTs <- getTokenTxHashesByAddressQuery(address, token, offset, limit)
       txs        <- TransactionQueries.getTransactionsSQL(txHashesTs)
     } yield txs
   }

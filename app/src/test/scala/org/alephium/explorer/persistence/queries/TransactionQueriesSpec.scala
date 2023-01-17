@@ -281,10 +281,10 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     }
 
     val txsSQL =
-      run(TransactionQueries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue
+      run(TransactionQueries.getTransactionsByAddressSQL(address, Pagination.unsafe(1, 10))).futureValue
 
     val txsNoJoin =
-      run(TransactionQueries.getTransactionsByAddressNoJoin(address, Pagination.unsafe(0, 10))).futureValue
+      run(TransactionQueries.getTransactionsByAddressNoJoin(address, Pagination.unsafe(1, 10))).futureValue
 
     val expected = ArraySeq(
       tx(output1, None, ArraySeq.empty),
@@ -352,7 +352,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
   //https://github.com/alephium/explorer-backend/issues/174
   "return an empty list when not transactions are found - Isssue 174" in new Fixture {
-    run(TransactionQueries.getTransactionsByAddressSQL(address, Pagination.unsafe(0, 10))).futureValue is ArraySeq.empty
+    run(TransactionQueries.getTransactionsByAddressSQL(address, Pagination.unsafe(1, 10))).futureValue is ArraySeq.empty
   }
 
   "get total number of main transactions" in new Fixture {

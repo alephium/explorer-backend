@@ -103,16 +103,15 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
   def listTokenSupply(pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenSupply]] = {
-    val offset = pagination.offset.toLong
-    val limit  = pagination.limit.toLong
-    val toDrop = offset * limit
+    val offset = pagination.offset
+    val limit  = pagination.limit
     run(
       sql"""
         SELECT *
         FROM token_supply
         ORDER BY block_timestamp DESC
         LIMIT $limit
-        OFFSET $toDrop
+        OFFSET $offset
       """.asASE[TokenSupplyEntity](tokenSupplyGetResult)
     ).map(_.map { entity =>
       TokenSupply(

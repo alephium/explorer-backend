@@ -146,8 +146,8 @@ object TransactionQueries extends StrictLogging {
     """.asAS[(TransactionId, BlockHash, TimeStamp, Int)]
 
   private def getTxHashesByBlockHashWithPaginationQuery(blockHash: BlockHash,
-                                                        offset: Long,
-                                                        limit: Long) =
+                                                        offset: Int,
+                                                        limit: Int) =
     sql"""
       SELECT hash, block_hash, block_timestamp, tx_order
       FROM transactions
@@ -253,11 +253,10 @@ object TransactionQueries extends StrictLogging {
 
   def getTransactionsByBlockHashWithPagination(blockHash: BlockHash, pagination: Pagination)(
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
-    val offset = pagination.offset.toLong
-    val limit  = pagination.limit.toLong
-    val toDrop = offset * limit
+    val offset = pagination.offset
+    val limit  = pagination.limit
     for {
-      txHashesTs <- getTxHashesByBlockHashWithPaginationQuery(blockHash, toDrop, limit)
+      txHashesTs <- getTxHashesByBlockHashWithPaginationQuery(blockHash, offset, limit)
       txs        <- getTransactionsSQL(TxByAddressQR(txHashesTs))
     } yield txs
   }
@@ -266,9 +265,8 @@ object TransactionQueries extends StrictLogging {
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     val offset = pagination.offset
     val limit  = pagination.limit
-    val toDrop = offset * limit
     for {
-      txHashesTs <- getTxHashesByAddressQuerySQLNoJoin(address, toDrop, limit)
+      txHashesTs <- getTxHashesByAddressQuerySQLNoJoin(address, offset, limit)
       txs        <- getTransactionsSQL(txHashesTs)
     } yield txs
   }
@@ -277,9 +275,8 @@ object TransactionQueries extends StrictLogging {
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     val offset = pagination.offset
     val limit  = pagination.limit
-    val toDrop = offset * limit
     for {
-      txHashesTs <- getTxHashesByAddressesQuery(addresses, toDrop, limit)
+      txHashesTs <- getTxHashesByAddressesQuery(addresses, offset, limit)
       txs        <- getTransactionsSQL(txHashesTs)
     } yield txs
   }
@@ -291,12 +288,11 @@ object TransactionQueries extends StrictLogging {
       pagination: Pagination)(implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     val offset = pagination.offset
     val limit  = pagination.limit
-    val toDrop = offset * limit
     for {
       txHashesTs <- getTxHashesByAddressQuerySQLNoJoinTimeRanged(address,
                                                                  fromTime,
                                                                  toTime,
-                                                                 toDrop,
+                                                                 offset,
                                                                  limit)
       txs <- getTransactionsSQL(txHashesTs)
     } yield txs
@@ -306,9 +302,8 @@ object TransactionQueries extends StrictLogging {
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     val offset = pagination.offset
     val limit  = pagination.limit
-    val toDrop = offset * limit
     for {
-      txHashesTs <- getTxHashesByAddressQuerySQLNoJoin(address, toDrop, limit)
+      txHashesTs <- getTxHashesByAddressQuerySQLNoJoin(address, offset, limit)
       txs        <- getTransactionsNoJoin(txHashesTs)
     } yield txs
   }

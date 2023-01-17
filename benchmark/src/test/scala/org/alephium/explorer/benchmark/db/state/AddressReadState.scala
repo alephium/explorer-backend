@@ -73,7 +73,7 @@ class AddressReadState(val db: DBExecutor)
   lazy val txHashes: ArraySeq[TransactionId] = hashes.map(_._1)
 
   val pagination: Pagination = Pagination.unsafe(
-    offset  = 0,
+    page    = 1,
     limit   = 100,
     reverse = false
   )
