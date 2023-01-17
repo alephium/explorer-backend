@@ -21,10 +21,14 @@ import scala.collection.immutable.ArraySeq
 import com.typesafe.scalalogging.StrictLogging
 
 import org.alephium.api
+import org.alephium.explorer.AnyOps
 import org.alephium.explorer.api.model.Address
 import org.alephium.protocol
+import org.alephium.serde._
 
 object InputAddressUtil extends StrictLogging {
+  private val sameAsPrevious = serialize(
+    protocol.vm.UnlockScript.SameAsPrevious: protocol.vm.UnlockScript)
   /*
    * Extract address from an [[org.alephium.api.model.AssetInput]]
    * Addresses can only be extracted from P2PKH and P2SH.
@@ -65,8 +69,8 @@ object InputAddressUtil extends StrictLogging {
         case None => None
         case Some(_) =>
           if (inputs.tail.forall(input =>
-                input.unlockScript == protocol.vm.UnlockScript.SameAsPrevious || InputAddressUtil
-                  .addressFromProtocolInput(input) == addressOpt)) {
+                input.unlockScript === sameAsPrevious || InputAddressUtil
+                  .addressFromProtocolInput(input) === addressOpt)) {
             addressOpt
           } else {
             None
@@ -83,7 +87,7 @@ object InputAddressUtil extends StrictLogging {
     } else {
       inputs.tail.foldLeft(ArraySeq(inputs.head)) {
         case (result, input) =>
-          if (input.unlockScript == protocol.vm.UnlockScript.SameAsPrevious) {
+          if (input.unlockScript === sameAsPrevious) {
             result :+ input.copy(unlockScript = result.last.unlockScript)
           } else {
             result :+ input

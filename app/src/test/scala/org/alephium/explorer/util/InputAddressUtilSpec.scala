@@ -120,6 +120,53 @@ class InputAddressUtilSpec extends AlephiumSpec with Matchers {
     }
   }
 
+  "convertSameAsPrevious" should {
+    "return empty list if list is empty" in {
+      InputAddressUtil.convertSameAsPrevious(ArraySeq.empty) is ArraySeq.empty
+    }
+
+    "return same list if list as only one element" in {
+      forAll(inputProtocolGen) { input =>
+        InputAddressUtil.convertSameAsPrevious(ArraySeq(input)) is ArraySeq(input)
+      }
+    }
+
+    "correcly convert simple SameAsPrevious case" in {
+      val sameAsPrevious =
+        serialize(protocol.vm.UnlockScript.SameAsPrevious: protocol.vm.UnlockScript)
+      forAll(inputProtocolGen, inputProtocolGen, inputProtocolGen) {
+        case (input1, in2, in3) =>
+          val input2 = in2.copy(unlockScript = sameAsPrevious)
+          val input3 = in3.copy(unlockScript = sameAsPrevious)
+
+          val result = InputAddressUtil.convertSameAsPrevious(ArraySeq(input1, input2, input3))
+
+          val newInput2 = input2.copy(unlockScript = input1.unlockScript)
+          val newInput3 = input3.copy(unlockScript = input1.unlockScript)
+
+          result is ArraySeq(input1, newInput2, newInput3)
+      }
+    }
+
+    "correcly convert slightly more complex SameAsPrevious case" in {
+      val sameAsPrevious =
+        serialize(protocol.vm.UnlockScript.SameAsPrevious: protocol.vm.UnlockScript)
+      forAll(inputProtocolGen, inputProtocolGen, inputProtocolGen, inputProtocolGen) {
+        case (input1, in2, input3, in4) =>
+          val input2 = in2.copy(unlockScript = sameAsPrevious)
+          val input4 = in4.copy(unlockScript = sameAsPrevious)
+
+          val result =
+            InputAddressUtil.convertSameAsPrevious(ArraySeq(input1, input2, input3, input4))
+
+          val newInput2 = input2.copy(unlockScript = input1.unlockScript)
+          val newInput4 = input4.copy(unlockScript = input3.unlockScript)
+
+          result is ArraySeq(input1, newInput2, input3, newInput4)
+      }
+    }
+  }
+
   def buildAssetInput(outputRef: api.model.OutputRef, unlockScript: protocol.vm.UnlockScript) = {
     api.model.AssetInput(
       outputRef,
