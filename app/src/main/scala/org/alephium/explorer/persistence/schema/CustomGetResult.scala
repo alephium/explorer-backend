@@ -200,7 +200,6 @@ object CustomGetResult {
         txsCount     = result.<<,
         target       = result.<<,
         hashrate     = result.<<,
-        coinbaseTxId = result.<<,
         parent       = result.<<?
     )
 

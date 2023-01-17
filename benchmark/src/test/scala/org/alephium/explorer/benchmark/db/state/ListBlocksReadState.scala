@@ -80,8 +80,7 @@ class ListBlocksReadState(reverse: Boolean,
       txsCount     = scala.math.abs(Random.nextInt()),
       target       = ByteString.emptyByteString,
       hashrate     = BigInteger.ONE,
-      parent       = Some(BlockHash.generate),
-      coinbaseTxId = TransactionId.generate
+      parent       = Some(BlockHash.generate)
     )
 
   private def generateTransactions(header: BlockHeader): Seq[TransactionEntity] =

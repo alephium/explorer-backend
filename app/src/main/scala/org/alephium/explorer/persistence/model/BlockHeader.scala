@@ -24,7 +24,7 @@ import akka.util.ByteString
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
-import org.alephium.protocol.model.{BlockHash, TransactionId}
+import org.alephium.protocol.model.BlockHash
 import org.alephium.util.TimeStamp
 
 final case class BlockHeader(
@@ -41,7 +41,6 @@ final case class BlockHeader(
     txsCount: Int,
     target: ByteString,
     hashrate: BigInteger,
-    coinbaseTxId: TransactionId,
     parent: Option[BlockHash]
 ) {
   def toApi(deps: ArraySeq[BlockHash], transactions: ArraySeq[Transaction]): BlockEntry =
@@ -67,7 +66,6 @@ object BlockHeader {
       blockEntity.transactions.size,
       blockEntity.target,
       blockEntity.hashrate,
-      blockEntity.coinbaseTxId,
       blockEntity.parent(groupNum)
     )
 }

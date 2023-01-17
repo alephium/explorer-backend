@@ -95,7 +95,6 @@ object Generators {
       target       <- bytesGen
       hashrate     <- arbitrary[Long].map(BigInteger.valueOf)
       mainChain    <- Arbitrary.arbitrary[Boolean]
-      coinbaseTxId <- transactionHashGen
       parent       <- Gen.option(blockEntryHashGen)
     } yield
       BlockHeader(
@@ -112,7 +111,6 @@ object Generators {
         txsCount     = txsCount,
         target       = target,
         hashrate     = hashrate,
-        coinbaseTxId = coinbaseTxId,
         parent       = parent
       )
 
@@ -386,7 +384,7 @@ object Generators {
     val outputs: ArraySeq[OutputEntity] = blocks.flatMap(_.flatMap(_.outputs))
 
     blocks.map(_.map { block =>
-      val coinbaseTxId = block.coinbaseTxId
+      val coinbaseTxId = block.transactions.last.hash
       val transactions =
         block.transactions.map { tx =>
           Transaction(
@@ -429,7 +427,6 @@ object Generators {
       txsCount     <- Gen.posNum[Int]
       target       <- bytesGen
       parent       <- Gen.option(blockEntryHashGen)
-      coinbaseTxId <- transactionHashGen
     } yield {
       BlockHeader(
         hash,
@@ -445,7 +442,6 @@ object Generators {
         txsCount,
         target,
         BigDecimal(hashrate).toBigInt.bigInteger,
-        coinbaseTxId,
         parent
       )
     }

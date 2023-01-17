@@ -164,7 +164,6 @@ class AddressReadState(val db: DBExecutor)
         ArraySeq.empty
       }
       val transactions = ArraySeq(generateTransaction(blockHash, txHash, timestamp))
-      val coinbaseTxId = transactions.last.hash
 
       BlockEntity(
         hash         = blockHash,
@@ -182,8 +181,7 @@ class AddressReadState(val db: DBExecutor)
         depStateHash = Blake2b.generate,
         txsHash      = Blake2b.generate,
         target       = ByteString.emptyByteString,
-        hashrate     = BigInteger.ONE,
-        coinbaseTxId = coinbaseTxId
+        hashrate     = BigInteger.ONE
       )
     })
 

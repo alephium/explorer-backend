@@ -252,11 +252,14 @@ object BlockFlowClient extends StrictLogging {
     inputs ++ contractInputs
   }
 
+  //scalastyle:off null
   def blockProtocolToOutputEntities(block: api.model.BlockEntry): ArraySeq[OutputEntity] = {
     val hash         = block.hash
     val mainChain    = false
     val transactions = block.transactions.toArraySeq.zipWithIndex
-    val coinbaseTxId = block.transactions.last.unsigned.txId
+    //Genesis blocks don't have any transactions
+    val coinbaseTxId =
+      if (block.height == Height.genesis.value) null else block.transactions.last.unsigned.txId
     val outputs =
       transactions.flatMap {
         case (tx, txOrder) =>
@@ -278,7 +281,6 @@ object BlockFlowClient extends StrictLogging {
         case (tx, txOrder) =>
           tx.generatedOutputs.toArraySeq.zipWithIndex.map {
             case (out, index) =>
-              val txId       = tx.unsigned.txId
               val shiftIndex = index + tx.unsigned.fixedOutputs.length
               outputToEntity(out,
                              hash,
@@ -287,17 +289,20 @@ object BlockFlowClient extends StrictLogging {
                              block.timestamp,
                              mainChain,
                              txOrder,
-                             txId == coinbaseTxId)
+                             false)
           }
       }
     outputs ++ generatedOutputs
   }
+  //scalastyle:on null
+
   def blockAndEventsToEntities(blockAndEvents: api.model.BlockAndEvents)(
       implicit groupSetting: GroupSetting): BlockEntityWithEvents = {
     BlockEntityWithEvents(blockProtocolToEntity(blockAndEvents.block),
                           blockProtocolToEventEntities(blockAndEvents))
   }
 
+  //scalastyle:off null
   def blockProtocolToEntity(block: api.model.BlockEntry)(
       implicit groupSetting: GroupSetting): BlockEntity = {
     val hash         = block.hash
@@ -309,7 +314,9 @@ object BlockFlowClient extends StrictLogging {
     val outputs      = blockProtocolToOutputEntities(block)
     //As defined in
     //https://github.com/alephium/alephium/blob/1e359e155b37c2afda6011cdc319d54ae8e4c059/protocol/src/main/scala/org/alephium/protocol/model/Block.scala#L35
-    val coinbaseTxId = block.transactions.last.unsigned.txId
+    //Genesis blocks don't have any transactions
+    val coinbaseTxId =
+      if (block.height == Height.genesis.value) null else block.transactions.last.unsigned.txId
     BlockEntity(
       hash,
       block.timestamp,
@@ -330,10 +337,10 @@ object BlockFlowClient extends StrictLogging {
       block.depStateHash,
       block.txsHash,
       block.target,
-      computeHashRate(block.target),
-      coinbaseTxId
+      computeHashRate(block.target)
     )
   }
+  //scalastyle:on null
 
   def blockProtocolToEventEntities(
       blockAndEvents: api.model.BlockAndEvents): ArraySeq[EventEntity] = {
