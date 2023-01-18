@@ -44,7 +44,7 @@ trait QueryParams extends TapirCodecs {
       .validate(Validator.min(1))
       .and(
         query[Option[Int]]("limit")
-          .description("Number per page")
+          .description("Number of items per page")
           .map({
             case Some(limit) => limit
             case None        => Pagination.defaultLimit
