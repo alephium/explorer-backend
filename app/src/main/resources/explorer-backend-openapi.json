@@ -2536,13 +2536,14 @@
         }
       }
     },
-    "/addresses-active": {
+    "/addresses/used": {
       "post": {
         "tags": [
+          "Addresses",
           "Addresses"
         ],
-        "description": "Are the addresses active (at least 1 transaction)",
-        "operationId": "postAddresses-active",
+        "description": "Are the addresses used (at least 1 transaction)",
+        "operationId": "postAddressesUsed",
         "requestBody": {
           "content": {
             "application/json": {
