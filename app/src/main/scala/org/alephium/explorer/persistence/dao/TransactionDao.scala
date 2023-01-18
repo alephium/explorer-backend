@@ -26,7 +26,6 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries.TokenQueries._
 import org.alephium.explorer.persistence.queries.TransactionQueries._
-import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
@@ -35,11 +34,6 @@ object TransactionDao {
   def get(hash: TransactionId)(implicit ec: ExecutionContext,
                                dc: DatabaseConfig[PostgresProfile]): Future[Option[Transaction]] =
     run(getTransactionAction(hash))
-
-  def getOutputRefTransaction(key: Hash)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Option[Transaction]] =
-    run(getOutputRefTransactionAction(key))
 
   def getByAddress(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,

@@ -20,7 +20,6 @@ import sttp.tapir._
 import sttp.tapir.generic.auto._
 
 import org.alephium.api.Endpoints.jsonBody
-import org.alephium.explorer.Hash
 import org.alephium.explorer.api.EndpointExamples._
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.TransactionId
@@ -37,15 +36,4 @@ trait TransactionEndpoints extends BaseEndpoint {
       .in(path[TransactionId]("transaction_hash"))
       .out(jsonBody[TransactionLike])
       .description("Get a transaction with hash")
-
-  val getOutputRefTransaction: BaseEndpoint[Hash, Transaction] =
-    baseEndpoint
-      .tag("Transactions")
-      .in("transactions")
-      .in("by")
-      .in("output-ref-key")
-      .get
-      .in(path[Hash]("output_ref_key"))
-      .out(jsonBody[Transaction])
-      .description("Get a transaction from a output reference key")
 }

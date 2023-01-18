@@ -38,7 +38,6 @@ trait Documentation
       getBlockByHash,
       getBlockTransactions,
       getTransactionById,
-      getOutputRefTransaction,
       getAddressInfo,
       getTransactionsByAddress,
       getTransactionsByAddresses,

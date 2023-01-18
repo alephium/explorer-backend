@@ -36,11 +36,6 @@ class TransactionServer(implicit val executionContext: ExecutionContext,
       TransactionService
         .getTransaction(hash)
         .map(_.toRight(ApiError.NotFound(hash.value.toHexString)))
-    }),
-    route(getOutputRefTransaction.serverLogic[Future] { hash =>
-      TransactionService
-        .getOutputRefTransaction(hash)
-        .map(_.toRight(ApiError.NotFound(hash.toHexString)))
     })
   )
 
