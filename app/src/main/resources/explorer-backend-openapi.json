@@ -4321,7 +4321,7 @@
             "in": "query",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/IntervalType"
             }
           }
         ],
@@ -4453,7 +4453,7 @@
             "in": "query",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/IntervalType"
             }
           }
         ],
@@ -4583,7 +4583,7 @@
             "in": "query",
             "required": true,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/IntervalType"
             }
           }
         ],
@@ -5691,6 +5691,13 @@
             "type": "string"
           }
         }
+      },
+      "IntervalType": {
+        "type": "string",
+        "enum": [
+          "daily",
+          "hourly"
+        ]
       },
       "ListBlocks": {
         "required": [

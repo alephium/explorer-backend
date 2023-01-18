@@ -19,20 +19,27 @@ package org.alephium.explorer.api
 import scala.util.{Failure, Success, Try}
 
 import sttp.tapir.{Codec, DecodeResult}
-import sttp.tapir.CodecFormat.TextPlain
+import sttp.tapir.Codec.PlainCodec
 
 import org.alephium.api.TapirCodecs
 import org.alephium.explorer.api.model.{Address, IntervalType}
 import org.alephium.json.Json._
 
 object Codecs extends TapirCodecs {
-  implicit val explorerAddressTapirCodec: Codec[String, Address, TextPlain] =
+  implicit val explorerAddressTapirCodec: PlainCodec[Address] =
     fromJson[Address]
 
-  implicit val timeIntervalCodec: Codec[String, IntervalType, TextPlain] =
-    fromJson[IntervalType]
+  @SuppressWarnings(
+    Array("org.wartremover.warts.JavaSerializable",
+          "org.wartremover.warts.Product",
+          "org.wartremover.warts.Serializable")) // Wartremover is complaining, maybe beacause of tapir macros
+  implicit val timeIntervalCodec: PlainCodec[IntervalType] =
+    Codec.derivedEnumeration[String, IntervalType](
+      IntervalType.validate,
+      _.string
+    )
 
-  def explorerFromJson[A: ReadWriter]: Codec[String, A, TextPlain] =
+  def explorerFromJson[A: ReadWriter]: PlainCodec[A] =
     Codec.string.mapDecode[A] { raw =>
       Try(read[A](ujson.Str(raw))) match {
         case Success(a) => DecodeResult.Value(a)

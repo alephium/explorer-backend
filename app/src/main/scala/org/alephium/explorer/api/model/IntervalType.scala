@@ -42,10 +42,17 @@ object IntervalType {
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   implicit val reader: Reader[IntervalType] =
     StringReader.map {
-      case Hourly.string => Hourly
-      case Daily.string  => Daily
-      case _ =>
-        throw new Abort("Cannot decode time-step, expected one of: hourly, daily")
+      validate(_) match {
+        case Some(intervalType) => intervalType
+        case None               => throw new Abort("Cannot decode time-step, expected one of: hourly, daily")
+      }
+    }
+
+  def validate(str: String): Option[IntervalType] =
+    str match {
+      case Hourly.string => Some(Hourly)
+      case Daily.string  => Some(Daily)
+      case _             => None
     }
 
   implicit val writer: Writer[IntervalType] =
