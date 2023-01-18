@@ -40,7 +40,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
   //As defined in https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#address-gap-limit
   private val gapLimit = 20
 
-  private lazy val activeAddressesMaxSize: Int = groupNum * gapLimit
+  private lazy val usedAddressesMaxSize: Int = groupNum * gapLimit
 
   private val oneYear = Duration.ofDaysUnsafe(365)
 
@@ -83,7 +83,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
   lazy val getTransactionsByAddresses
     : BaseEndpoint[(ArraySeq[Address], Pagination), ArraySeq[Transaction]] =
     baseAddressesEndpoint.post
-      .in(jsonBody[ArraySeq[Address]].validate(Validator.maxSize(activeAddressesMaxSize)))
+      .in(jsonBody[ArraySeq[Address]].validate(Validator.maxSize(usedAddressesMaxSize)))
       .in("transactions")
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])
@@ -138,13 +138,13 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .description("List address tokens")
 
   lazy val areAddressesActive: BaseEndpoint[ArraySeq[Address], ArraySeq[Boolean]] =
-    baseEndpoint
+    baseAddressesEndpoint
       .tag("Addresses")
-      .in("addresses-active")
+      .in("used")
       .post
-      .in(jsonBody[ArraySeq[Address]].validate(Validator.maxSize(activeAddressesMaxSize)))
+      .in(jsonBody[ArraySeq[Address]].validate(Validator.maxSize(usedAddressesMaxSize)))
       .out(jsonBody[ArraySeq[Boolean]])
-      .description("Are the addresses active (at least 1 transaction)")
+      .description("Are the addresses used (at least 1 transaction)")
 
   val exportTransactionsCsvByAddress
     : BaseEndpoint[(Address, TimeInterval), (String, ReadStream[Buffer])] =

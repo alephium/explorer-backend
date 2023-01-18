@@ -33,7 +33,6 @@ import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.{TransactionDao, UnconfirmedTxDao}
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.json.Json.write
-import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
@@ -42,10 +41,6 @@ trait TransactionService {
   def getTransaction(transactionHash: TransactionId)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Option[TransactionLike]]
-
-  def getOutputRefTransaction(hash: Hash)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Option[Transaction]]
 
   def getTransactionsByAddress(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,
@@ -135,12 +130,6 @@ object TransactionService extends TransactionService {
       case None     => UnconfirmedTxDao.get(transactionHash)
       case Some(tx) => Future.successful(Some(ConfirmedTransaction.from(tx)))
     }
-
-  def getOutputRefTransaction(hash: Hash)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Option[Transaction]] =
-    TransactionDao
-      .getOutputRefTransaction(hash)
 
   def getTransactionsByAddress(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,

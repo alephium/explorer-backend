@@ -24,7 +24,6 @@ import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
@@ -122,22 +121,6 @@ object TransactionQueries extends StrictLogging {
         getKnownTransactionAction(txHash, blockHash, timestamp, gasAmount, gasPrice, coinbase).map(
           Some.apply)
     }
-
-  def getOutputRefTransactionAction(key: Hash)(
-      implicit ec: ExecutionContext): DBActionR[Option[Transaction]] = {
-    OutputQueries.getTxnHash(key).flatMap { txHashes =>
-      txHashes.headOption match {
-        case None => DBIOAction.successful(None)
-        case Some(txHash) =>
-          getTransactionQuery(txHash).result.headOption.flatMap {
-            case None => DBIOAction.successful(None)
-            case Some((blockHash, timestamp, gasAmount, gasPrice, coinbase)) =>
-              getKnownTransactionAction(txHash, blockHash, timestamp, gasAmount, gasPrice, coinbase)
-                .map(Some.apply)
-          }
-      }
-    }
-  }
 
   private def getTxHashesByBlockHashQuery(
       blockHash: BlockHash): DBActionSR[(TransactionId, BlockHash, TimeStamp, Int, Boolean)] =
