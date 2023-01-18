@@ -4864,13 +4864,13 @@
         }
       }
     },
-    "/smart-contract-events/transaction-id/{transaction_id}": {
+    "/contract-events/transaction-id/{transaction_id}": {
       "get": {
         "tags": [
-          "Smart contract events"
+          "Contract events"
         ],
         "description": "Get contract events by transaction id",
-        "operationId": "getSmart-contract-eventsTransaction-idTransaction_id",
+        "operationId": "getContract-eventsTransaction-idTransaction_id",
         "parameters": [
           {
             "name": "transaction_id",
@@ -4963,13 +4963,13 @@
         }
       }
     },
-    "/smart-contract-events/contract-address/{contract_address}": {
+    "/contract-events/contract-address/{contract_address}": {
       "get": {
         "tags": [
-          "Smart contract events"
+          "Contract events"
         ],
         "description": "Get contract events by contract address",
-        "operationId": "getSmart-contract-eventsContract-addressContract_address",
+        "operationId": "getContract-eventsContract-addressContract_address",
         "parameters": [
           {
             "name": "contract_address",
@@ -5091,13 +5091,13 @@
         }
       }
     },
-    "/smart-contract-events/contract-address/{contract_address}/input-address/{input_address}": {
+    "/contract-events/contract-address/{contract_address}/input-address/{input_address}": {
       "get": {
         "tags": [
-          "Smart contract events"
+          "Contract events"
         ],
         "description": "Get contract events by contract and input addresses",
-        "operationId": "getSmart-contract-eventsContract-addressContract_addressInput-addressInput_address",
+        "operationId": "getContract-eventsContract-addressContract_addressInput-addressInput_address",
         "parameters": [
           {
             "name": "contract_address",
