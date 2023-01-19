@@ -97,10 +97,11 @@ object DBInitializer extends StrictLogging {
       _ <- TransactionSchema.createMainChainIndex()
       _ <- InputSchema.createMainChainIndex()
       _ <- OutputSchema.createMainChainIndex()
-      _ <- TransactionPerAddressSchema.createMainChainIndex()
+      _ <- TransactionPerAddressSchema.createSQLIndexes()
       _ <- OutputSchema.createNonSpentIndex()
       _ <- InputSchema.createOutputRefAddressNullIndex()
       _ <- TransactionPerTokenSchema.createSQLIndexes()
+      _ <- TokenPerAddressSchema.createSQLIndexes()
     } yield ())
   }
 

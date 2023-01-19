@@ -18,7 +18,6 @@ package org.alephium.explorer.persistence.schema
 
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
-import slick.sql.SqlAction
 
 import org.alephium.explorer.persistence.model.TransactionPerTokenEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
@@ -47,26 +46,11 @@ object TransactionPerTokenSchema
         .<>((TransactionPerTokenEntity.apply _).tupled, TransactionPerTokenEntity.unapply)
   }
 
-  /**
-    * Need for multi-column index `block_timestamp_txn_order_idx`?
-    *
-    * Postgres uses this index for queries that order by `block_timestamp desc, tx_order asc`
-    * and have large number of resulting rows.
-    */
-  private def timestampTxnOrderIndex(): SqlAction[Int, NoStream, Effect] =
-    sqlu"""
-        create index if not exists #${name}_block_timestamp_txn_order_idx
-                on #$name (block_timestamp desc, tx_order asc);
-        """
-
-  private def timestampIndex(): SqlAction[Int, NoStream, Effect] =
-    sqlu"""
-        create index if not exists #${name}_timestamp_idx
-                on #$name (block_timestamp desc);
-        """
-
   def createSQLIndexes(): DBIO[Unit] =
-    DBIO.seq(timestampTxnOrderIndex(), timestampIndex())
+    DBIO.seq(
+      CommonIndex.blockTimestampTxOrderIndex(this),
+      CommonIndex.timestampIndex(this)
+    )
 
   val table: TableQuery[TransactionPerTokens] = TableQuery[TransactionPerTokens]
 }
