@@ -40,7 +40,6 @@ object TransactionPerAddressSchema
     def pk: PrimaryKey = primaryKey("txs_per_address_pk", (txHash, blockHash, address))
 
     def hashIdx: Index      = index("txs_per_address_tx_hash_idx", txHash)
-    def timestampIdx: Index = index("txs_per_address_timestamp_idx", timestamp)
     def blockHashIdx: Index = index("txs_per_address_block_hash_idx", blockHash)
     def addressIdx: Index   = index("txs_per_address_address_idx", address)
     def addressTimestampIdx: Index =
@@ -50,6 +49,13 @@ object TransactionPerAddressSchema
       (address, txHash, blockHash, timestamp, txOrder, mainChain, coinbase)
         .<>((TransactionPerAddressEntity.apply _).tupled, TransactionPerAddressEntity.unapply)
   }
+
+  def createSQLIndexes(): DBIO[Unit] =
+    DBIO.seq(
+      createMainChainIndex(),
+      CommonIndex.blockTimestampTxOrderIndex(this),
+      CommonIndex.timestampIndex(this)
+    )
 
   val table: TableQuery[TransactionPerAddresses] = TableQuery[TransactionPerAddresses]
 }

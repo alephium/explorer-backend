@@ -40,7 +40,6 @@ object TokenPerAddressSchema
     def pk: PrimaryKey = primaryKey("token_tx_per_address_pk", (txHash, blockHash, address, token))
 
     def hashIdx: Index         = index("token_tx_per_address_hash_idx", txHash)
-    def timestampIdx: Index    = index("token_tx_per_address_timestamp_idx", timestamp)
     def blockHashIdx: Index    = index("token_tx_per_address_block_hash_idx", blockHash)
     def addressIdx: Index      = index("token_tx_per_address_address_idx", address)
     def tokenIdx: Index        = index("token_tx_per_address_token_idx", token)
@@ -50,6 +49,12 @@ object TokenPerAddressSchema
       (address, txHash, blockHash, timestamp, txOrder, mainChain, token)
         .<>((TokenTxPerAddressEntity.apply _).tupled, TokenTxPerAddressEntity.unapply)
   }
+
+  def createSQLIndexes(): DBIO[Unit] =
+    DBIO.seq(
+      CommonIndex.blockTimestampTxOrderIndex(this),
+      CommonIndex.timestampIndex(this)
+    )
 
   val table: TableQuery[TokenPerAddresses] = TableQuery[TokenPerAddresses]
 }
