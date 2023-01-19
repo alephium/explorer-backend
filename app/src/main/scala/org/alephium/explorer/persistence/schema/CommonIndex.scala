@@ -30,9 +30,9 @@ object CommonIndex {
     * Postgres uses this index for queries that order by `block_timestamp desc, tx_order asc`
     * and have large number of resulting rows.
     */
-  def blockTimestampTxnOrderIndex(table: Schema[_]): SqlAction[Int, NoStream, Effect] =
+  def blockTimestampTxOrderIndex(table: Schema[_]): SqlAction[Int, NoStream, Effect] =
     sqlu"""
-        create index if not exists #${table.name}_block_timestamp_txn_order_idx
+        create index if not exists #${table.name}_block_timestamp_tx_order_idx
                 on #${table.name} (block_timestamp desc, tx_order asc);
         """
 

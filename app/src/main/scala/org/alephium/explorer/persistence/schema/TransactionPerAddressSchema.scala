@@ -53,7 +53,7 @@ object TransactionPerAddressSchema
   def createSQLIndexes(): DBIO[Unit] =
     DBIO.seq(
       createMainChainIndex(),
-      CommonIndex.blockTimestampTxnOrderIndex(this),
+      CommonIndex.blockTimestampTxOrderIndex(this),
       CommonIndex.timestampIndex(this)
     )
 

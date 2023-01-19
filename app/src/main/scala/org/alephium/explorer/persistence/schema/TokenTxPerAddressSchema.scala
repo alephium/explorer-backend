@@ -52,7 +52,7 @@ object TokenPerAddressSchema
 
   def createSQLIndexes(): DBIO[Unit] =
     DBIO.seq(
-      CommonIndex.blockTimestampTxnOrderIndex(this),
+      CommonIndex.blockTimestampTxOrderIndex(this),
       CommonIndex.timestampIndex(this)
     )
 
