@@ -157,14 +157,14 @@ class AddressServerSpec()
     forAll(addressGen) {
       case (address) =>
         val entity = s"""["$address"]"""
-        Post(s"/addresses-active", Some(entity)) check { response =>
+        Post(s"/addresses/used", Some(entity)) check { response =>
           response.as[ArraySeq[Boolean]] is ArraySeq(true)
         }
     }
   }
 
   "respect the max number of addresses" in {
-    forAll(addressGen)(respectMaxNumberOfAddresses("/addresses-active", _))
+    forAll(addressGen)(respectMaxNumberOfAddresses("/addresses/used", _))
   }
 
   "list unconfirmed transactions for a given address" in {

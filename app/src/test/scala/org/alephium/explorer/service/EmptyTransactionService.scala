@@ -25,7 +25,6 @@ import org.reactivestreams.Publisher
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.service.TransactionService
@@ -36,11 +35,6 @@ trait EmptyTransactionService extends TransactionService {
   override def getTransaction(transactionHash: TransactionId)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Option[TransactionLike]] =
-    Future.successful(None)
-
-  override def getOutputRefTransaction(key: Hash)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Option[Transaction]] =
     Future.successful(None)
 
   override def getTransactionsNumberByAddress(address: Address)(

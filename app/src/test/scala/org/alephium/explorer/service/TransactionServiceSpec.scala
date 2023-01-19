@@ -423,31 +423,6 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
   }
 
-  "get output ref's transaction" in new Fixture {
-
-    val blocks = Gen
-      .listOfN(20, blockEntityGen(groupIndex, groupIndex))
-      .sample
-      .get
-
-    val outputRefKeys = blocks.flatMap(_.inputs.map(_.outputRefKey))
-
-    Future.sequence(blocks.map(BlockDao.insert)).futureValue
-    Future
-      .sequence(blocks.map(block => BlockDao.updateMainChainStatus(block.hash, true)))
-      .futureValue
-
-    outputRefKeys.foreach { outputRefKey =>
-      val tx = TransactionService
-        .getOutputRefTransaction(outputRefKey)
-        .futureValue
-        .asInstanceOf[Option[ConfirmedTransaction]]
-
-      //TODO Same as previous test, we need to generate a coherent blockflow.
-      tx is None
-    }
-  }
-
   "check active address" in new Fixture {
 
     val address  = addressGen.sample.get

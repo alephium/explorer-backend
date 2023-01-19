@@ -30,8 +30,8 @@ trait EventsEndpoints extends BaseEndpoint with QueryParams {
 
   private val eventsEndpoint =
     baseEndpoint
-      .tag("Smart contract events")
-      .in("smart-contract-events")
+      .tag("Contract events")
+      .in("contract-events")
 
   val getEventsByTxId: BaseEndpoint[TransactionId, ArraySeq[Event]] =
     eventsEndpoint.get
