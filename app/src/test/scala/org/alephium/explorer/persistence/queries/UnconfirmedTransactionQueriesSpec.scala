@@ -23,14 +23,14 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.Generators._
-import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForAll, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.util.TimeStamp
 
 class UnconfirmedTransactionQueriesSpec
     extends AlephiumFutureSpec
-    with DatabaseFixtureForEach
+    with DatabaseFixtureForAll
     with DBRunner {
 
   /**
