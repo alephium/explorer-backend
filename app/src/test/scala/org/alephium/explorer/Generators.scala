@@ -31,7 +31,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.protocol.{model => protocol, _}
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.serde._
 import org.alephium.util.{AVector, Duration, TimeStamp, U256}
 
@@ -532,6 +532,33 @@ object Generators {
       )
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def uoutputEntityGen(transactionHash: Gen[TransactionId] = transactionHashGen,
+                       address: Gen[Address]               = addressGen): Gen[UOutputEntity] =
+    for {
+      txHash       <- transactionHash
+      outputType   <- outputTypeGen
+      hint         <- Gen.posNum[Int]
+      key          <- hashGen
+      amount       <- u256Gen
+      address      <- address
+      tokens       <- Gen.option(Gen.listOf(tokenGen))
+      lockTime     <- Gen.option(timestampGen)
+      message      <- Gen.option(bytesGen)
+      uoutputOrder <- arbitrary[Int]
+    } yield
+      UOutputEntity(
+        txHash       = txHash,
+        hint         = hint,
+        key          = key,
+        amount       = amount,
+        address      = address,
+        tokens       = tokens,
+        lockTime     = if (outputType == OutputEntity.Asset) lockTime else None,
+        message      = if (outputType == OutputEntity.Asset) message else None,
+        uoutputOrder = uoutputOrder
+      )
+
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def inputEntityGen(outputEntityGen: Gen[OutputEntity] = outputEntityGen): Gen[InputEntity] =
     for {
       outputEntity <- outputEntityGen
@@ -553,6 +580,64 @@ object Generators {
         None,
         None
       )
+    }
+
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def uinputEntityGen(transactionHash: Gen[TransactionId] = transactionHashGen,
+                      address: Gen[Option[Address]]       = Gen.option(addressGen)): Gen[UInputEntity] =
+    for {
+      txHash       <- transactionHash
+      hint         <- Gen.posNum[Int]
+      outputRefKey <- hashGen
+      unlockScript <- Gen.option(unlockScriptGen)
+      address      <- address
+      uinputOrder  <- arbitrary[Int]
+    } yield
+      UInputEntity(
+        txHash,
+        hint,
+        outputRefKey,
+        unlockScript,
+        address,
+        uinputOrder
+      )
+
+  /**
+    * Table `uinputs` applies uniqueness on `(output_ref_key, tx_hash)`.
+    *
+    * Table `uoutputs` applies uniqueness on `(tx_hash, address, uoutput_order)`.
+    *
+    * These tables allow `txHashes` and `addresses` to have duplicate data
+    * and some of our SQL queries run `DISTINCT` on these columns.
+    * This function generates test data for such queries.
+    *
+    * @return Generator that result in data that allows multiple [[UInputEntity]]
+    *         with the same/duplicate `txHashes` and/or `addresses`.
+    */
+  def duplicateTxIdAndAddressGen(): Gen[(Gen[TransactionId], Gen[Address])] =
+    for {
+      txHashes <- Gen.nonEmptyListOf(transactionHashGen)
+      address  <- Gen.nonEmptyListOf(addressGen)
+    } yield (Gen.oneOf(txHashes), Gen.oneOf(address))
+
+  def uinputEntityWithDuplicateTxIdsAndAddressesGen(): Gen[List[UInputEntity]] =
+    for {
+      (txHash, addressOpt) <- duplicateTxIdAndAddressGen()
+      entities             <- Gen.listOf(uinputEntityGen(txHash, Gen.option(addressOpt)))
+    } yield entities
+
+  def uoutputEntityWithDuplicateTxIdsAndAddressesGen(): Gen[List[UOutputEntity]] =
+    for {
+      (txHash, addressOpt) <- duplicateTxIdAndAddressGen()
+      entities             <- Gen.listOf(uoutputEntityGen(txHash, addressOpt))
+    } yield {
+      //uoutput allows duplicate `tx_hash` and `address` and there are queries
+      //that search for such data but these duplicates must have unique `uoutputOrder`.
+      //This sets all uoutputs to have have unique `uoutputOrder`.
+      entities.zipWithIndex map {
+        case (entity, index) =>
+          entity.copy(uoutputOrder = index)
+      }
     }
 
   /** Update toUpdate's primary key to be the same as `original` */

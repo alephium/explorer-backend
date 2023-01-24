@@ -72,4 +72,15 @@ object GenCommon {
       genStringOfLength(length, charGen)
     }
 
+  /**
+    * Randomly pick one from the list.
+    *
+    * If the list is empty generate new from the `Gen[T]`.
+    */
+  def pickOneOrGen[T](pickFrom: Iterable[T])(orElseGen: Gen[T]): Gen[T] =
+    if (pickFrom.isEmpty) {
+      orElseGen
+    } else {
+      Gen.oneOf(pickFrom)
+    }
 }
