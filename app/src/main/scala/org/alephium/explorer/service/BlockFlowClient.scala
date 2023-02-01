@@ -41,7 +41,7 @@ import org.alephium.http.EndpointSender
 import org.alephium.protocol
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.mining.HashRate
-import org.alephium.protocol.model.{BlockHash, Hint, Target, TransactionId}
+import org.alephium.protocol.model.{BlockHash, ContractId, Hint, Target, TransactionId}
 import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.{AVector, Duration, Service, TimeStamp, U256}
 
@@ -73,6 +73,8 @@ trait BlockFlowClient extends Service {
   def fetchSelfClique(): Future[SelfClique]
 
   def fetchChainParams(): Future[ChainParams]
+
+  def fetchContractState(contractId: ContractId): Future[api.model.ContractState]
 
   def fetchUnconfirmedTransactions(uri: Uri): Future[ArraySeq[UnconfirmedTransaction]]
 
@@ -138,19 +140,7 @@ object BlockFlowClient extends StrictLogging {
     //If directCliqueAccess = true, we need to first get all nodes of the clique
     //to make sure we call the node which conains block's data
     def fetchBlock(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntity] =
-      if (directCliqueAccess) {
-        fetchSelfCliqueAndChainParams().flatMap {
-          case (selfClique, chainParams) =>
-            selfCliqueIndex(selfClique, chainParams, fromGroup) match {
-              case Left(error) => Future.failed(new Throwable(error))
-              case Right((nodeAddress, restPort)) =>
-                val uri = Uri(nodeAddress.getHostAddress, restPort)
-                _send(getBlock, uri, hash).map(blockProtocolToEntity)
-            }
-        }
-      } else {
-        _send(getBlock, uri, hash).map(blockProtocolToEntity)
-      }
+      sendToSpecificChain(fromGroup, getBlock, hash).map(blockProtocolToEntity)
 
     def fetchBlockAndEvents(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntityWithEvents] =
       fetchSelfCliqueAndChainParams().flatMap {
@@ -201,6 +191,11 @@ object BlockFlowClient extends StrictLogging {
     def fetchChainParams(): Future[ChainParams] =
       _send(getChainParams, uri, ())
 
+  def fetchContractState(contractId: ContractId): Future[api.model.ContractState]={
+    sendToSpecificChain(GroupIndex.unsafe(contractId.groupIndex.value), contractState, (protocol.model.Address.contract(contractId), contractId.groupIndex))
+
+
+  }
     private def fetchSelfCliqueAndChainParams(): Future[(SelfClique, ChainParams)] = {
       fetchSelfClique().flatMap { selfClique =>
         fetchChainParams().map(chainParams => (selfClique, chainParams))
@@ -219,6 +214,26 @@ object BlockFlowClient extends StrictLogging {
 
     override def close(): Future[Unit] = {
       endpointSender.stop()
+    }
+
+    def sendToSpecificChain[A, B](
+      fromGroup: GroupIndex,
+        endpoint: BaseEndpoint[A, B],
+        a: A
+    ): Future[B] = {
+      if (directCliqueAccess) {
+        fetchSelfCliqueAndChainParams().flatMap {
+          case (selfClique, chainParams) =>
+            selfCliqueIndex(selfClique, chainParams, fromGroup) match {
+              case Left(error) => Future.failed(new Throwable(error))
+              case Right((nodeAddress, restPort)) =>
+                val uri = Uri(nodeAddress.getHostAddress, restPort)
+                _send(endpoint, uri, a)
+            }
+        }
+      } else {
+        _send(endpoint, uri, a)
+      }
     }
   }
 
