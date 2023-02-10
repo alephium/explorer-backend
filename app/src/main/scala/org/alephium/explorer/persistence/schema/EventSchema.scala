@@ -16,9 +16,12 @@
 
 package org.alephium.explorer.persistence.schema
 
+import scala.collection.immutable.ArraySeq
+
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
+import org.alephium.api.model.Val
 import org.alephium.explorer.persistence.model.EventEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
@@ -33,7 +36,7 @@ object EventSchema extends SchemaMainChain[EventEntity]("events") {
     def inputAddress: Rep[Option[Address]] = column[Option[Address]]("input_address")
     def timestamp: Rep[TimeStamp]          = column[TimeStamp]("block_timestamp")
     def eventIndex: Rep[Int]               = column[Int]("event_index")
-    def fields: Rep[Array[Byte]]           = column[Array[Byte]]("fields")
+    def fields: Rep[ArraySeq[Val]]         = column[ArraySeq[Val]]("fields")
     def eventOrder: Rep[Int]               = column[Int]("event_order_in_block")
 
     def * : ProvenShape[EventEntity] =

@@ -19,9 +19,7 @@ package org.alephium.explorer.persistence.model
 import scala.collection.immutable.ArraySeq
 
 import org.alephium.api.model.Val
-import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
-import org.alephium.json.Json._
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.TimeStamp
 
@@ -33,7 +31,7 @@ final case class EventEntity(
     inputAddress: Option[Address],
     timestamp: TimeStamp,
     eventIndex: Int,
-    fields: Array[Byte],
+    fields: ArraySeq[Val],
     eventOrder: Int
 ) {
   def toApi: Event = Event(
@@ -42,7 +40,7 @@ final case class EventEntity(
     contractAddress,
     inputAddress,
     eventIndex,
-    readBinary[ArraySeq[Val]](fields)
+    fields
   )
 }
 
@@ -64,7 +62,7 @@ object EventEntity {
       inputAddress,
       timestamp,
       eventIndex,
-      writeBinary(fields),
+      fields,
       order
     )
   }

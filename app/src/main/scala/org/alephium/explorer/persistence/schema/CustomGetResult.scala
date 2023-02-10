@@ -23,9 +23,12 @@ import scala.collection.immutable.ArraySeq
 import akka.util.ByteString
 import slick.jdbc.{GetResult, PositionedResult}
 
+import org.alephium.api.model.Val
 import org.alephium.explorer.Hash
+import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
+import org.alephium.json.Json._
 import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}
 import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
@@ -104,6 +107,9 @@ object CustomGetResult {
             case Right(value) => value
           }
       }
+
+  implicit val valsGetResult: GetResult[ArraySeq[Val]] =
+    (result: PositionedResult) => readBinary[ArraySeq[Val]](result.nextBytes())
 
   implicit val hashGetResult: GetResult[Hash] =
     (result: PositionedResult) => Hash.unsafe(ByteString.fromArrayUnsafe(result.nextBytes()))
