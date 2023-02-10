@@ -38,8 +38,8 @@ import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{BlockHash, TransactionId}
-import org.alephium.util.{Base58, TimeStamp, U256}
+import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
+import org.alephium.util.{TimeStamp, U256}
 
 class Queries(val config: DatabaseConfig[PostgresProfile])(
     implicit val executionContext: ExecutionContext)
@@ -61,7 +61,7 @@ class AddressReadState(val db: DBExecutor)
 
   import config.profile.api._
 
-  val address: Address = Address.unsafe(Base58.encode(Hash.generate.bytes))
+  val address: Address = DataGenerator.genAddress()
 
   var blocks: ArraySeq[BlockEntity] = _
 

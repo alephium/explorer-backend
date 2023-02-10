@@ -20,11 +20,11 @@ import scala.collection.immutable.ArraySeq
 
 import org.openjdk.jmh.annotations.{Scope, State}
 
-import org.alephium.explorer.api.model.Address
 import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.state.ListBlocksReadStateSettings._
 import org.alephium.explorer.persistence.schema.TransactionPerAddressSchema
+import org.alephium.protocol.model.Address
 
 /**
   * JMH state for benchmarking via [[org.alephium.explorer.persistence.queries.TransactionQueries.areAddressesActiveAction]]

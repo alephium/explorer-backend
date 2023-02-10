@@ -26,7 +26,7 @@ import slick.jdbc.{PositionedParameters, SetParameter}
 import org.alephium.explorer
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.OutputEntity
-import org.alephium.protocol.model.{BlockHash, TokenId, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}
 import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
 
@@ -82,7 +82,7 @@ object CustomSetParameter {
 
   implicit object AddressSetParameter extends SetParameter[Address] {
     override def apply(input: Address, params: PositionedParameters): Unit =
-      params setString input.value
+      params setString input.toBase58
   }
 
   implicit object OptionAddressSetParameter extends SetParameter[Option[Address]] {

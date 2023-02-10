@@ -24,7 +24,7 @@ import sttp.tapir.generic.auto._
 import org.alephium.api.Endpoints.jsonBody
 import org.alephium.explorer.api.EndpointExamples._
 import org.alephium.explorer.api.model._
-import org.alephium.protocol.model.TokenId
+import org.alephium.protocol.model.{Address, TokenId}
 
 // scalastyle:off magic.number
 trait TokensEndpoints extends BaseEndpoint with QueryParams {

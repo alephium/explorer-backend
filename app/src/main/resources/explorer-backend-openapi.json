@@ -1095,13 +1095,14 @@
               "schema": {
                 "type": "array",
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "format": "address"
                 },
                 "maxItems": 80
               },
               "example": [
                 "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
-                "3dFzhhHHzGwAWW7MZkTJWubpkW1iJ5gnUjqgAG8HEdhk"
+                "22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM"
               ]
             }
           },
@@ -2550,13 +2551,14 @@
               "schema": {
                 "type": "array",
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "format": "address"
                 },
                 "maxItems": 80
               },
               "example": [
                 "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
-                "3dFzhhHHzGwAWW7MZkTJWubpkW1iJ5gnUjqgAG8HEdhk"
+                "22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM"
               ]
             }
           },
@@ -5405,7 +5407,8 @@
             "format": "uint256"
           },
           "address": {
-            "type": "string"
+            "type": "string",
+            "format": "address"
           },
           "tokens": {
             "type": "array",
@@ -5562,7 +5565,8 @@
             "format": "uint256"
           },
           "address": {
-            "type": "string"
+            "type": "string",
+            "format": "address"
           },
           "tokens": {
             "type": "array",
@@ -5597,10 +5601,12 @@
             "format": "32-byte-hash"
           },
           "contractAddress": {
-            "type": "string"
+            "type": "string",
+            "format": "address"
           },
           "inputAddress": {
-            "type": "string"
+            "type": "string",
+            "format": "address"
           },
           "eventIndex": {
             "type": "integer",
@@ -5667,7 +5673,8 @@
             "format": "32-byte-hash"
           },
           "address": {
-            "type": "string"
+            "type": "string",
+            "format": "address"
           },
           "attoAlphAmount": {
             "type": "string",

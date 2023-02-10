@@ -22,7 +22,7 @@ import org.alephium.api.model.Val
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
 import org.alephium.json.Json._
-import org.alephium.protocol.model.{BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.TimeStamp
 
 @SuppressWarnings(Array("org.wartremover.warts.ArrayEquals")) // Wartremover is complaining, don't now why :/

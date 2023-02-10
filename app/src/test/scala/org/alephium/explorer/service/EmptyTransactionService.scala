@@ -28,7 +28,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.service.TransactionService
-import org.alephium.protocol.model.{TokenId, TransactionId}
+import org.alephium.protocol.model.{Address, TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 trait EmptyTransactionService extends TransactionService {

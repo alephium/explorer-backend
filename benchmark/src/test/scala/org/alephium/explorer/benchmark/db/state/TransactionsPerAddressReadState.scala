@@ -21,11 +21,11 @@ import org.scalacheck.Gen
 
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
-import org.alephium.explorer.api.model.Address
 import org.alephium.explorer.benchmark.db.{DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.persistence.model.TransactionPerAddressEntity
 import org.alephium.explorer.persistence.schema.TransactionPerAddressSchema
+import org.alephium.protocol.model.Address
 import org.alephium.util.TimeStamp
 
 /**
@@ -54,13 +54,13 @@ class TransactionsPerAddressReadState(val addressCount: Int,
     )
 
   override def generateData(currentCacheSize: Int): String =
-    addressGen.sample.get.value
+    addressGen.sample.get.toBase58
 
   private def genTransactions(address: String): Seq[TransactionPerAddressEntity] =
     (0 to transactionsPerAddress) flatMap { timeStamp =>
       val transactionsPerDayGen =
         genTransactionPerAddressEntity(
-          addressGen   = Gen.const(Address.unsafe(address)),
+          addressGen   = Gen.const(Address.fromBase58(address).get),
           timestampGen = Gen.const(TimeStamp.unsafe(timeStamp.toLong))
         )
 

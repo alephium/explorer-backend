@@ -78,9 +78,7 @@ class InfosServerSpec()
                                        ec: ExecutionContext): Future[ArraySeq[PerChainDuration]] =
       Future.successful(ArraySeq(blockTime))
   }
-
-  implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
-  implicit val blockCache: BlockCache     = TestBlockCache()
+  implicit val blockCache: BlockCache = TestBlockCache()
   implicit val transactionCache: TransactionCache = TransactionCache(
     new Database(BootMode.ReadWrite))
   val transactionService = new EmptyTransactionService {

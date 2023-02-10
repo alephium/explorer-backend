@@ -24,7 +24,7 @@ import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.api.{model, ApiModelCodec}
-import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
+import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.Generators._
@@ -116,7 +116,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
     val now        = TimeStamp.now()
     val from       = GroupIndex.unsafe(0)
     val to         = GroupIndex.unsafe(0)
-    val chainIndex = ChainIndex.unsafe(0, 0)(groupSettings.groupConfig)
+    val chainIndex = ChainIndex.unsafe(0, 0)(groupSetting.groupConfig)
     val block1 = blockHeaderGen.sample.get.copy(mainChain = true,
                                                 chainFrom = from,
                                                 chainTo   = to,
@@ -247,8 +247,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
   }
 
   trait Fixture extends ApiModelCodec {
-    implicit val groupSettings: GroupSetting = groupSettingGen.sample.get
-    implicit val blockCache: BlockCache      = TestBlockCache()
+    implicit val blockCache: BlockCache = TestBlockCache()
 
     val blockflow: Seq[Seq[model.BlockEntry]] =
       blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get

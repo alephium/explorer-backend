@@ -24,7 +24,7 @@ import sttp.tapir.generic.auto._
 import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.api.model._
-import org.alephium.protocol.model.TransactionId
+import org.alephium.protocol.model.{Address, TransactionId}
 
 trait EventsEndpoints extends BaseEndpoint with QueryParams {
 

@@ -21,6 +21,7 @@ import sttp.model.StatusCode
 
 import org.alephium.api.ApiError
 import org.alephium.explorer._
+import org.alephium.explorer.Generators.groupSetting
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model.LogbackValue
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache, TransactionCache}
@@ -37,7 +38,6 @@ class UtilsServerSpec()
     with MockFactory {
 
   implicit val blockFlowClient: BlockFlowClient = mock[BlockFlowClient]
-  implicit val groupSettings: GroupSetting      = Generators.groupSettingGen.sample.get
   implicit val blockCache: BlockCache           = TestBlockCache()
   implicit val transactionCache: TransactionCache = TransactionCache(
     new Database(BootMode.ReadWrite))

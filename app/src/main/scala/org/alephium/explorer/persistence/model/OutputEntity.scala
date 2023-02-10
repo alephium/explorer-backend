@@ -22,7 +22,7 @@ import akka.util.ByteString
 
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
-import org.alephium.protocol.model.{BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 final case class OutputEntity(

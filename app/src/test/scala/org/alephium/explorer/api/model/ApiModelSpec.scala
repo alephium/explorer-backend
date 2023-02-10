@@ -27,7 +27,7 @@ import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.{Hex, TimeStamp}
 
 class ApiModelSpec() extends AlephiumSpec {
@@ -68,7 +68,7 @@ class ApiModelSpec() extends AlephiumSpec {
         tx.toCsv(addressGen.sample.get) is expected
       }
 
-      val address = Address.unsafe("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n")
+      val address = Address.fromBase58("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n").get
       val transaction = Transaction(
         TransactionId
           .from(Hex.unsafe("798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"))
@@ -91,7 +91,7 @@ class ApiModelSpec() extends AlephiumSpec {
             hint           = 0,
             key            = Hash.generate,
             attoAlphAmount = ALPH.alph(8),
-            address        = Address.unsafe("14PqtYSSbwpUi2RJKUvv9yUwGafd6yHbEcke7ionuiE7w"),
+            address        = Address.fromBase58("14PqtYSSbwpUi2RJKUvv9yUwGafd6yHbEcke7ionuiE7w").get,
             tokens         = None,
             lockTime       = None,
             message        = None,
@@ -101,7 +101,7 @@ class ApiModelSpec() extends AlephiumSpec {
             hint           = 0,
             key            = Hash.generate,
             attoAlphAmount = ALPH.alph(8),
-            address        = Address.unsafe("25PqtYSSbwpUi2RJKUvv9yUwGafd6yHbEcke7ionuiE0a"),
+            address        = Address.fromBase58("22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM").get,
             tokens         = None,
             lockTime       = None,
             message        = None,
@@ -124,7 +124,7 @@ class ApiModelSpec() extends AlephiumSpec {
       )
 
       val expected =
-        s"798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef,bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5,1636379973000,2021-11-08T13:59:33Z,1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n,14PqtYSSbwpUi2RJKUvv9yUwGafd6yHbEcke7ionuiE7w-25PqtYSSbwpUi2RJKUvv9yUwGafd6yHbEcke7ionuiE0a,-2000000000000000000,-2\n"
+        s"798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef,bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5,1636379973000,2021-11-08T13:59:33Z,1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n,14PqtYSSbwpUi2RJKUvv9yUwGafd6yHbEcke7ionuiE7w-22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM,-2000000000000000000,-2\n"
 
       transaction.toCsv(address) is expected
     }

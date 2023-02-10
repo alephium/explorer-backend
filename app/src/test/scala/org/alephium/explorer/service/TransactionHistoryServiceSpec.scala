@@ -22,7 +22,7 @@ import scala.collection.immutable.ArraySeq
 
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
+import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
@@ -88,8 +88,6 @@ class TransactionHistoryServiceSpec
 
   "countAndInsert" should {
     "handle per chains and all chains counting" in {
-
-      implicit val groupSettings: GroupSetting = groupSettingGen.sample.get
 
       val group0 = GroupIndex.unsafe(0)
       val group1 = GroupIndex.unsafe(1)

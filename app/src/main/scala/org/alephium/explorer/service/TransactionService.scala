@@ -33,7 +33,7 @@ import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.{TransactionDao, UnconfirmedTxDao}
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.json.Json.write
-import org.alephium.protocol.model.{TokenId, TransactionId}
+import org.alephium.protocol.model.{Address, TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 trait TransactionService {
