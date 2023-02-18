@@ -475,13 +475,13 @@ object ExplorerSpec {
           baseEndpoint.get
             .in("transactions")
             .in("unconfirmed")
-            .out(jsonBody[ArraySeq[model.UnconfirmedTransactions]])
+            .out(jsonBody[ArraySeq[model.MempoolTransactions]])
             .serverLogicSuccess[Future] { _ =>
               val txs  = Gen.listOfN(5, transactionTemplateProtocolGen).sample.get
               val from = groupIndexGen.sample.get.value
               val to   = groupIndexGen.sample.get.value
               Future.successful(
-                ArraySeq(model.UnconfirmedTransactions(from, to, AVector.from(txs)))
+                ArraySeq(model.MempoolTransactions(from, to, AVector.from(txs)))
               )
             }),
         route(
