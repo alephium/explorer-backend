@@ -31,7 +31,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.UnconfirmedTransactionQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.protocol.model.TransactionId
+import org.alephium.protocol.model.{Address, TransactionId}
 
 trait UnconfirmedTxDao {
 

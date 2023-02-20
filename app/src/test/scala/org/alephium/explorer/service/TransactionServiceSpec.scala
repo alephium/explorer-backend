@@ -25,7 +25,7 @@ import akka.stream.scaladsl._
 import io.vertx.core.buffer.Buffer
 import org.scalacheck.Gen
 
-import org.alephium.explorer.{AlephiumActorSpecLike, GroupSetting}
+import org.alephium.explorer.AlephiumActorSpecLike
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
@@ -494,8 +494,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
   }
 
   trait Fixture {
-    implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
-    implicit val blockCache: BlockCache     = TestBlockCache()
+    implicit val blockCache: BlockCache = TestBlockCache()
 
     val groupIndex = GroupIndex.unsafe(0)
 

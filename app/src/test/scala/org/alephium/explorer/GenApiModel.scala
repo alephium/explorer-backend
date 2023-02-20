@@ -26,9 +26,17 @@ import org.scalacheck.Gen
 
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model._
+import org.alephium.protocol
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{BlockHash, ContractId, TokenId, TransactionId, TxOutputRef}
-import org.alephium.util.{Base58, Number, U256}
+import org.alephium.protocol.model.{
+  Address,
+  BlockHash,
+  ContractId,
+  TokenId,
+  TransactionId,
+  TxOutputRef
+}
+import org.alephium.util.{Number, U256}
 
 /** Generators for types supplied by `org.alephium.explorer.api.model` package */
 object GenApiModel extends ImplicitConversions {
@@ -40,14 +48,19 @@ object GenApiModel extends ImplicitConversions {
   val tokenIdGen: Gen[TokenId]               = hashGen.map(TokenId.unsafe)
   val outputRefKeyGen: Gen[TxOutputRef.Key]  = hashGen.map(new TxOutputRef.Key(_))
   val contractIdGen: Gen[ContractId]         = hashGen.map(ContractId.unsafe)
-  val groupIndexGen: Gen[GroupIndex]         = Gen.posNum[Int].map(GroupIndex.unsafe(_))
-  val heightGen: Gen[Height]                 = Gen.posNum[Int].map(Height.unsafe(_))
-  val addressGen: Gen[Address]               = hashGen.map(hash => Address.unsafe(Base58.encode(hash.bytes)))
-  val bytesGen: Gen[ByteString]              = hashGen.map(_.bytes)
-  val hashrateGen: Gen[BigInteger]           = arbitrary[Long].map(BigInteger.valueOf)
-  val amountGen: Gen[U256]                   = Gen.choose(1000L, Number.quadrillion).map(ALPH.nanoAlph)
+  val groupIndexGen: Gen[GroupIndex] =
+    Gen.choose(0, Generators.groupSetting.groupNum - 1).map(GroupIndex.unsafe(_))
+  val heightGen: Gen[Height]       = Gen.posNum[Int].map(Height.unsafe(_))
+  val bytesGen: Gen[ByteString]    = hashGen.map(_.bytes)
+  val hashrateGen: Gen[BigInteger] = arbitrary[Long].map(BigInteger.valueOf)
+  val amountGen: Gen[U256]         = Gen.choose(1000L, Number.quadrillion).map(ALPH.nanoAlph)
   val exportTypeGen: Gen[ExportType] =
     Gen.oneOf(ArraySeq(ExportType.CSV: ExportType, ExportType.JSON: ExportType))
+
+  val addressGen: Gen[Address] = for {
+    groupIndex <- groupIndexGen
+    lockup     <- GenCoreProtocol.lockupGen(new protocol.model.GroupIndex(groupIndex.value))
+  } yield Address.from(lockup)
 
   val outputRefGen: Gen[OutputRef] = for {
     hint <- arbitrary[Int]

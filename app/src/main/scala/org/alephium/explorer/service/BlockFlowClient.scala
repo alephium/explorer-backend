@@ -41,7 +41,7 @@ import org.alephium.http.EndpointSender
 import org.alephium.protocol
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.mining.HashRate
-import org.alephium.protocol.model.{BlockHash, Hint, Target, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, Hint, Target, TransactionId}
 import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.{AVector, Duration, Service, TimeStamp, U256}
 
@@ -360,7 +360,7 @@ object BlockFlowClient extends StrictLogging {
         EventEntity.from(
           hash,
           event.txId,
-          Address.unsafe(event.contractAddress.toBase58),
+          event.contractAddress,
           transactionAndInputAddress.getOrElse(event.txId, None),
           block.timestamp,
           event.eventIndex,
@@ -479,7 +479,7 @@ object BlockFlowClient extends StrictLogging {
       output.hint,
       output.key,
       output.attoAlphAmount.value,
-      new Address(output.address.toBase58),
+      output.address,
       protocolTokensToTokens(output.tokens),
       lockTime,
       Some(output.message),
@@ -543,7 +543,7 @@ object BlockFlowClient extends StrictLogging {
       hint.value,
       protocol.model.TxOutputRef.key(txId, index).value,
       output.attoAlphAmount.value,
-      new Address(output.address.toBase58),
+      output.address,
       tokens,
       mainChain,
       lockTime,

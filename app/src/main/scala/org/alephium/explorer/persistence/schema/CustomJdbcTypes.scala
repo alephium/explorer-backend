@@ -29,10 +29,11 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.{AppState, AppStateKey, OutputEntity}
-import org.alephium.protocol.model.{BlockHash, TokenId, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}
 import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
 
+@SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
 object CustomJdbcTypes {
 
   private def buildHashTypes[H: ClassTag](from: Hash => H, to: H => Hash): JdbcType[H] =
@@ -72,8 +73,8 @@ object CustomJdbcTypes {
   )
 
   implicit val addressType: JdbcType[Address] = MappedJdbcType.base[Address, String](
-    _.value,
-    string => Address.unsafe(string)
+    _.toBase58,
+    string => Address.fromBase58(string).get
   )
 
   implicit val timestampType: JdbcType[TimeStamp] = MappedJdbcType.base[TimeStamp, Long](

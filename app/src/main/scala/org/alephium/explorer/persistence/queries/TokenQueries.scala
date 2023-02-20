@@ -28,7 +28,7 @@ import org.alephium.explorer.persistence.queries.result.TxByTokenQR
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.TokenId
+import org.alephium.protocol.model.{Address, TokenId}
 import org.alephium.util.{TimeStamp, U256}
 
 object TokenQueries extends StrictLogging {

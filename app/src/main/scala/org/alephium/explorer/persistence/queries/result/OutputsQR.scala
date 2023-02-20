@@ -25,7 +25,7 @@ import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.protocol.model.TransactionId
+import org.alephium.protocol.model.{Address, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputsQR {

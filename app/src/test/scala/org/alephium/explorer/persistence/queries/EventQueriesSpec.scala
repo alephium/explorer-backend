@@ -25,7 +25,6 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
-import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.EventEntity
@@ -38,8 +37,7 @@ class EventQueriesSpec
     with DBRunner
     with ScalaFutures {
 
-  implicit val groupSetting = groupSettingGen.sample.get
-  val pagination            = Pagination.unsafe(1, Pagination.defaultLimit)
+  val pagination = Pagination.unsafe(1, Pagination.defaultLimit)
 
   "Event Queries" should {
     "get event by tx hash" in {

@@ -23,11 +23,11 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{Address, Token}
+import org.alephium.explorer.api.model.{Token}
 import org.alephium.explorer.persistence.DBActionW
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.protocol.model.{BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {

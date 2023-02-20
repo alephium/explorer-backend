@@ -24,7 +24,7 @@ import slick.jdbc.{GetResult, PositionedResult}
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.protocol.model.TransactionId
+import org.alephium.protocol.model.{Address, TransactionId}
 import org.alephium.util.U256
 
 object InputsQR {

@@ -22,8 +22,8 @@ import com.typesafe.scalalogging.StrictLogging
 
 import org.alephium.api
 import org.alephium.explorer.AnyOps
-import org.alephium.explorer.api.model.Address
 import org.alephium.protocol
+import org.alephium.protocol.model.Address
 import org.alephium.serde._
 
 object InputAddressUtil extends StrictLogging {
@@ -39,10 +39,10 @@ object InputAddressUtil extends StrictLogging {
       case Right(value) =>
         value.unlockScript match {
           case protocol.vm.UnlockScript.P2PKH(pk) =>
-            Some(Address.unsafe(protocol.model.Address.p2pkh(pk).toBase58))
+            Some(protocol.model.Address.p2pkh(pk))
           case protocol.vm.UnlockScript.P2SH(script, _) =>
             val lockup = protocol.vm.LockupScript.p2sh(protocol.Hash.hash(script))
-            Some(Address.unsafe(protocol.model.Address.from(lockup).toBase58))
+            Some(protocol.model.Address.from(lockup))
           case protocol.vm.UnlockScript.SameAsPrevious =>
             None
           case protocol.vm.UnlockScript.P2MPKH(_) =>

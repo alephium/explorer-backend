@@ -37,6 +37,7 @@ import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.service.{EmptyTransactionService, TransactionService}
+import org.alephium.protocol.model.Address
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.PlatformDefault", "org.wartremover.warts.Var"))
@@ -44,8 +45,6 @@ class AddressServerSpec()
     extends AlephiumActorSpecLike
     with DatabaseFixtureForAll
     with HttpServerFixture {
-
-  implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
 
   val exportTxsNumberThreshold = 1000
   var addressHasMoreTxs        = false
@@ -248,7 +247,7 @@ class AddressServerSpec()
 
       val expected = s"""attachment;filename="$address-$from-$to.csv""""
       AddressServer.exportFileNameHeader(
-        Address.unsafe(address),
+        Address.fromBase58(address).get,
         TimeInterval(TimeStamp.unsafe(from), TimeStamp.unsafe(to))) is expected
     }
   }

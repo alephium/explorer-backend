@@ -21,9 +21,8 @@ import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreApi.valGen
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.Generators._
-import org.alephium.explorer.api.model.Address
 import org.alephium.explorer.persistence.model._
-import org.alephium.protocol.model.{BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.TimeStamp
 
 /** Test-data generators for types in package [[org.alephium.explorer.persistence.model]]  */
@@ -102,7 +101,7 @@ object GenDBModel {
         token     = token
       )
 
-  def eventEntityGen(implicit groupSetting: GroupSetting): Gen[EventEntity] =
+  def eventEntityGen: Gen[EventEntity] =
     for {
       blockHash       <- blockEntryHashGen
       hash            <- transactionHashGen
@@ -166,7 +165,7 @@ object GenDBModel {
       )
 
   /** Generates BlockEntity and it's dependant Entities that also maintain the block's mainChain value */
-  def blockAndItsMainChainEntitiesGen()(implicit groupSetting: GroupSetting)
+  def blockAndItsMainChainEntitiesGen()
     : Gen[(BlockEntity, TransactionPerTokenEntity, TokenTxPerAddressEntity, TokenOutputEntity)] =
     for {
       chainFrom         <- groupIndexGen

@@ -19,8 +19,7 @@ package org.alephium.explorer.persistence.model
 import akka.util.ByteString
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model._
-import org.alephium.protocol.model.{BlockHash, TokenId, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 final case class TokenOutputEntity(

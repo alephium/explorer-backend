@@ -26,10 +26,11 @@ import slick.jdbc.{GetResult, PositionedResult}
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
-import org.alephium.protocol.model.{BlockHash, TokenId, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}
 import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
 
+@SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
 object CustomGetResult {
 
   /**
@@ -108,10 +109,11 @@ object CustomGetResult {
     (result: PositionedResult) => Hash.unsafe(ByteString.fromArrayUnsafe(result.nextBytes()))
 
   implicit val addressGetResult: GetResult[Address] =
-    (result: PositionedResult) => Address.unsafe(result.nextString())
+    (result: PositionedResult) => Address.fromBase58(result.nextString()).get
 
   implicit val optionAddressGetResult: GetResult[Option[Address]] =
-    (result: PositionedResult) => result.nextStringOption().map(string => Address.unsafe(string))
+    (result: PositionedResult) =>
+      result.nextStringOption().map(string => Address.fromBase58(string).get)
 
   implicit val u256GetResult: GetResult[U256] =
     (result: PositionedResult) => {

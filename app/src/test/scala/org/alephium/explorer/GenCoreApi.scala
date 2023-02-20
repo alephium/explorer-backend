@@ -23,7 +23,6 @@ import org.alephium.explorer.GenApiModel.bytesGen
 import org.alephium.explorer.GenCommon.{genInetAddress, genPortNum}
 import org.alephium.explorer.GenCoreProtocol.genNetworkId
 import org.alephium.explorer.Generators._
-import org.alephium.explorer.GroupSetting
 import org.alephium.protocol.model.{CliqueId, NetworkId}
 import org.alephium.util.{AVector, I256, U256}
 
@@ -82,14 +81,14 @@ object GenCoreApi {
   lazy val valU256Gen: Gen[ValU256]       = u256Gen.map(ValU256.apply)
   lazy val valByteVecGen: Gen[ValByteVec] = bytesGen.map(ValByteVec.apply)
 
-  def valAddressGen(implicit groupSetting: GroupSetting): Gen[ValAddress] =
+  def valAddressGen: Gen[ValAddress] =
     addressAssetProtocolGen.map(ValAddress(_))
 
   @SuppressWarnings(
     Array("org.wartremover.warts.JavaSerializable",
           "org.wartremover.warts.Product",
           "org.wartremover.warts.Serializable")) // Wartremover is complaining, don't now why :/
-  def valGen(implicit groupSetting: GroupSetting): Gen[Val] = {
+  def valGen: Gen[Val] = {
     Gen.oneOf(
       valBoolGen,
       valI256Gen,
