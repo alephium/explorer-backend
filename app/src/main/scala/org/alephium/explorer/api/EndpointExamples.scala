@@ -115,8 +115,8 @@ object EndpointExamples extends EndpointsExamples {
       timestamp = ts,
       inputs    = ArraySeq(input),
       outputs   = ArraySeq(outputAsset, outputContract),
-      gasAmount = org.alephium.protocol.model.defaultGas.value,
-      gasPrice  = org.alephium.protocol.model.defaultGasPrice.value,
+      gasAmount = org.alephium.protocol.model.minimalGas.value,
+      gasPrice  = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
       coinbase  = false
     )
 
@@ -130,8 +130,8 @@ object EndpointExamples extends EndpointsExamples {
       chainTo   = GroupIndex.unsafe(2),
       inputs    = ArraySeq(input),
       outputs   = ArraySeq(outputAsset, outputContract),
-      gasAmount = org.alephium.protocol.model.defaultGas.value,
-      gasPrice  = org.alephium.protocol.model.defaultGasPrice.value,
+      gasAmount = org.alephium.protocol.model.minimalGas.value,
+      gasPrice  = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
       lastSeen  = ts
     )
 

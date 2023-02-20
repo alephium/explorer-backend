@@ -57,7 +57,8 @@ class ExplorerHttpServer(host: String, port: Int, val routes: ArraySeq[Router =>
       .route()
       .handler(
         CorsHandler
-          .create(".*.")
+          .create()
+          .addRelativeOrigin(".*.")
           .allowedMethod(HttpMethod.GET)
           .allowedMethod(HttpMethod.POST)
           .allowedMethod(HttpMethod.PUT)

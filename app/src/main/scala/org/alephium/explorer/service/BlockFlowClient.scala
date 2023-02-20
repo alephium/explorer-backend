@@ -182,10 +182,10 @@ object BlockFlowClient extends StrictLogging {
     }
 
     def fetchUnconfirmedTransactions(uri: Uri): Future[ArraySeq[UnconfirmedTransaction]] =
-      _send(listUnconfirmedTransactions, uri, ())
+      _send(listMempoolTransactions, uri, ())
         .map { utxs =>
           utxs.flatMap { utx =>
-            utx.unconfirmedTransactions.map { tx =>
+            utx.transactions.map { tx =>
               val inputs = InputAddressUtil
                 .convertSameAsPrevious(tx.unsigned.inputs.toArraySeq)
                 .map(protocolInputToInput)
