@@ -71,7 +71,7 @@ sealed trait TransactionLike {
 
 object TransactionLike {
   implicit val txTemplateRW: ReadWriter[TransactionLike] =
-    ReadWriter.merge(ConfirmedTransaction.txRW, UnconfirmedTransaction.utxRW)
+    ReadWriter.merge(ConfirmedTransaction.txRW, MempoolTransaction.utxRW)
 }
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -102,8 +102,8 @@ object ConfirmedTransaction {
 }
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-@upickle.implicits.key("Unconfirmed")
-final case class UnconfirmedTransaction(
+@upickle.implicits.key("Mempooled")
+final case class MempoolTransaction(
     hash: TransactionId,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
@@ -114,6 +114,6 @@ final case class UnconfirmedTransaction(
     lastSeen: TimeStamp
 ) extends TransactionLike
 
-object UnconfirmedTransaction {
-  implicit val utxRW: ReadWriter[UnconfirmedTransaction] = macroRW
+object MempoolTransaction {
+  implicit val utxRW: ReadWriter[MempoolTransaction] = macroRW
 }

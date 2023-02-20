@@ -74,7 +74,7 @@ trait BlockFlowClient extends Service {
 
   def fetchChainParams(): Future[ChainParams]
 
-  def fetchUnconfirmedTransactions(uri: Uri): Future[ArraySeq[UnconfirmedTransaction]]
+  def fetchMempoolTransactions(uri: Uri): Future[ArraySeq[MempoolTransaction]]
 
   def start(): Future[Unit]
 
@@ -181,7 +181,7 @@ object BlockFlowClient extends StrictLogging {
             .toArraySeq)
     }
 
-    def fetchUnconfirmedTransactions(uri: Uri): Future[ArraySeq[UnconfirmedTransaction]] =
+    def fetchMempoolTransactions(uri: Uri): Future[ArraySeq[MempoolTransaction]] =
       _send(listMempoolTransactions, uri, ())
         .map { utxs =>
           utxs.flatMap { utx =>
@@ -375,8 +375,8 @@ object BlockFlowClient extends StrictLogging {
                       chainTo: Int,
                       inputs: ArraySeq[Input],
                       outputs: ArraySeq[AssetOutput],
-                      timestamp: TimeStamp): UnconfirmedTransaction =
-    UnconfirmedTransaction(
+                      timestamp: TimeStamp): MempoolTransaction =
+    MempoolTransaction(
       tx.unsigned.txId,
       GroupIndex.unsafe(chainFrom),
       GroupIndex.unsafe(chainTo),

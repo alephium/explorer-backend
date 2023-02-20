@@ -254,7 +254,7 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
           ChainParams(NetworkId.AlephiumDevNet, 18, 1, 2)
         )
 
-      def fetchUnconfirmedTransactions(uri: Uri): Future[ArraySeq[UnconfirmedTransaction]] =
+      def fetchMempoolTransactions(uri: Uri): Future[ArraySeq[MempoolTransaction]] =
         Future.successful(ArraySeq.empty)
 
       override def start(): Future[Unit] =

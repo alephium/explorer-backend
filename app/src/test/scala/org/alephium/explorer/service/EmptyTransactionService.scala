@@ -60,9 +60,9 @@ trait EmptyTransactionService extends TransactionService {
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     Future.successful(ArraySeq.empty)
 
-  override def listUnconfirmedTransactionsByAddress(address: Address)(
+  override def listMempoolTransactionsByAddress(address: Address)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]] = {
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[MempoolTransaction]] = {
     Future.successful(ArraySeq.empty)
   }
 
@@ -79,9 +79,9 @@ trait EmptyTransactionService extends TransactionService {
   def getTotalNumber()(implicit cache: TransactionCache): Int =
     0
 
-  def listUnconfirmedTransactions(pagination: Pagination)(
+  def listMempoolTransactions(pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]] = ???
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[MempoolTransaction]] = ???
   def getTokenBalance(address: Address, token: TokenId)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] = ???

@@ -14,25 +14,28 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.web
+package org.alephium.explorer.api
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.{ExecutionContext, Future}
 
-import io.vertx.ext.web._
-import slick.basic.DatabaseConfig
-import slick.jdbc.PostgresProfile
+import sttp.tapir._
+import sttp.tapir.generic.auto._
 
-import org.alephium.explorer.api.UnconfirmedTransactionEndpoints
-import org.alephium.explorer.service.TransactionService
+import org.alephium.api.Endpoints.jsonBody
+import org.alephium.explorer.api.EndpointExamples._
+import org.alephium.explorer.api.model.{Pagination, TransactionLike}
 
-class UnconfirmedTransactionServer(implicit val executionContext: ExecutionContext,
-                                   dc: DatabaseConfig[PostgresProfile])
-    extends Server
-    with UnconfirmedTransactionEndpoints {
-  val routes: ArraySeq[Router => Route] = ArraySeq(
-    route(listUnconfirmedTransactions.serverLogicSuccess[Future] { pagination =>
-      TransactionService
-        .listUnconfirmedTransactions(pagination)
-    }))
+trait MempoolEndpoints extends BaseEndpoint with QueryParams {
+
+  private val mempoolEndpoint =
+    baseEndpoint
+      .tag("Mempool")
+      .in("mempool")
+
+  val listMempoolTransactions: BaseEndpoint[Pagination, ArraySeq[TransactionLike]] =
+    mempoolEndpoint.get
+      .in("transactions")
+      .in(pagination)
+      .out(jsonBody[ArraySeq[TransactionLike]])
+      .description("list mempool transactions")
 }

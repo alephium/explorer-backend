@@ -123,8 +123,8 @@ object EndpointExamples extends EndpointsExamples {
   private val confirmedTransaction =
     ConfirmedTransaction.from(transaction)
 
-  private val unconfirmedTransaction =
-    UnconfirmedTransaction(
+  private val mempoolTransaction =
+    MempoolTransaction(
       hash      = txId,
       chainFrom = GroupIndex.unsafe(1),
       chainTo   = GroupIndex.unsafe(2),
@@ -250,8 +250,8 @@ object EndpointExamples extends EndpointsExamples {
   implicit val transactionLikeExample: List[Example[TransactionLike]] =
     simpleExample(confirmedTransaction)
 
-  implicit val unconfirmedTransactionsLike: List[Example[ArraySeq[UnconfirmedTransaction]]] =
-    simpleExample(ArraySeq(unconfirmedTransaction, unconfirmedTransaction))
+  implicit val mempoolTransactionsExamle: List[Example[ArraySeq[MempoolTransaction]]] =
+    simpleExample(ArraySeq(mempoolTransaction, mempoolTransaction))
 
   implicit val transactionExample: List[Example[Transaction]] =
     simpleExample(transaction)

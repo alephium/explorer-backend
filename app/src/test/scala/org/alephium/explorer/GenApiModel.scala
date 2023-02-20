@@ -127,7 +127,7 @@ object GenApiModel extends ImplicitConversions {
                   gasPrice,
                   coinbase)
 
-  val utransactionGen: Gen[UnconfirmedTransaction] =
+  val mempooltransactionGen: Gen[MempoolTransaction] =
     for {
       hash      <- transactionHashGen
       chainFrom <- groupIndexGen
@@ -138,14 +138,7 @@ object GenApiModel extends ImplicitConversions {
       gasPrice  <- u256Gen
       lastSeen  <- timestampGen
     } yield
-      UnconfirmedTransaction(hash,
-                             chainFrom,
-                             chainTo,
-                             inputs,
-                             outputs,
-                             gasAmount,
-                             gasPrice,
-                             lastSeen)
+      MempoolTransaction(hash, chainFrom, chainTo, inputs, outputs, gasAmount, gasPrice, lastSeen)
 
   def chainIndexes(implicit groupSetting: GroupSetting): Seq[(GroupIndex, GroupIndex)] =
     for {

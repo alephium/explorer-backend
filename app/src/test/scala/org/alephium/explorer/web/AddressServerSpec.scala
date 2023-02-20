@@ -54,15 +54,15 @@ class AddressServerSpec()
       case (tx, index) =>
         tx.copy(timestamp = TimeStamp.now() + Duration.ofDaysUnsafe(index.toLong))
     })
-  val unconfirmedTx = utransactionGen.sample.get
+  val mempoolTx = mempooltransactionGen.sample.get
 
   var testLimit = 0
 
   val transactionService = new EmptyTransactionService {
-    override def listUnconfirmedTransactionsByAddress(address: Address)(
+    override def listMempoolTransactionsByAddress(address: Address)(
         implicit ec: ExecutionContext,
-        dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]] = {
-      Future.successful(ArraySeq(unconfirmedTx))
+        dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[MempoolTransaction]] = {
+      Future.successful(ArraySeq(mempoolTx))
     }
 
     override def getTransactionsByAddress(address: Address, pagination: Pagination)(
@@ -166,11 +166,11 @@ class AddressServerSpec()
     forAll(addressGen)(respectMaxNumberOfAddresses("/addresses/used", _))
   }
 
-  "list unconfirmed transactions for a given address" in {
+  "list mempool transactions for a given address" in {
     forAll(addressGen) {
       case (address) =>
-        Get(s"/addresses/${address}/unconfirmed-transactions") check { response =>
-          response.as[ArraySeq[UnconfirmedTransaction]] is ArraySeq(unconfirmedTx)
+        Get(s"/addresses/${address}/mempool/transactions") check { response =>
+          response.as[ArraySeq[MempoolTransaction]] is ArraySeq(mempoolTx)
         }
     }
   }

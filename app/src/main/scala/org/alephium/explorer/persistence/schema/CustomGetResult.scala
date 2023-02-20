@@ -205,9 +205,9 @@ object CustomGetResult {
         parent       = result.<<?
     )
 
-  val unconfirmedTransactionGetResult: GetResult[UnconfirmedTxEntity] =
+  val mempoolTransactionGetResult: GetResult[MempoolTransactionEntity] =
     (result: PositionedResult) =>
-      UnconfirmedTxEntity(
+      MempoolTransactionEntity(
         hash      = result.<<,
         chainFrom = result.<<,
         chainTo   = result.<<,

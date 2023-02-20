@@ -47,7 +47,7 @@ object AppServer {
     val utilsServer: UtilsServer   = new UtilsServer()
     val chartsServer: ChartsServer = new ChartsServer()
     val tokenServer: TokenServer   = new TokenServer()
-    val unconfirmedTxServer        = new UnconfirmedTransactionServer()
+    val mempoolServer              = new MempoolServer()
     val eventServer                = new EventServer()
     val documentationServer        = new DocumentationServer()
 
@@ -58,7 +58,7 @@ object AppServer {
       infosServer.routes ++
       chartsServer.routes ++
       utilsServer.routes ++
-      unconfirmedTxServer.routes ++
+      mempoolServer.routes ++
       eventServer.routes ++
       documentationServer.routes :+
       Metrics.route

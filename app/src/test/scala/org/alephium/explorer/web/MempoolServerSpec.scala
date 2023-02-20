@@ -23,35 +23,35 @@ import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
-import org.alephium.explorer.persistence.dao.UnconfirmedTxDao
+import org.alephium.explorer.persistence.dao.MempoolDao
 
 @SuppressWarnings(Array("org.wartremover.warts.ThreadSleep", "org.wartremover.warts.Var"))
-class UnconfirmedTransactionServerSpec()
+class MempoolServerSpec()
     extends AlephiumActorSpecLike
     with HttpServerFixture
     with DatabaseFixtureForAll {
 
-  val utxServer = new UnconfirmedTransactionServer()
+  val utxServer = new MempoolServer()
 
   val routes = utxServer.routes
 
-  "listUnconfirmedTransactions" in {
-    Get(s"/unconfirmed-transactions") check { response =>
-      response.as[Seq[UnconfirmedTransaction]] is Seq.empty
+  "listMempoolTransactions" in {
+    Get(s"/mempool/transactions") check { response =>
+      response.as[Seq[MempoolTransaction]] is Seq.empty
     }
 
-    forAll(Gen.listOf(utransactionGen), Gen.choose(1, 2), Gen.choose(2, 4)) {
+    forAll(Gen.listOf(mempooltransactionGen), Gen.choose(1, 2), Gen.choose(2, 4)) {
       case (utxs, page, limit) =>
-        UnconfirmedTxDao.insertMany(utxs).futureValue
-        Get(s"/unconfirmed-transactions?page=$page&limit=$limit") check { response =>
+        MempoolDao.insertMany(utxs).futureValue
+        Get(s"/mempool/transactions?page=$page&limit=$limit") check { response =>
           val offset = page - 1
           val drop   = offset * limit
-          response.as[Seq[UnconfirmedTransaction]] is utxs
+          response.as[Seq[MempoolTransaction]] is utxs
             .sortBy(_.lastSeen)
             .reverse
             .slice(drop, drop + limit)
         }
-        UnconfirmedTxDao.removeMany(utxs.map(_.hash)).futureValue
+        MempoolDao.removeMany(utxs.map(_.hash)).futureValue
     }
   }
 }

@@ -104,11 +104,12 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[Int])
       .description("Get total transactions of a given address")
 
-  val addressUnconfirmedTransactions: BaseEndpoint[Address, ArraySeq[TransactionLike]] =
+  val addressMempoolTransactions: BaseEndpoint[Address, ArraySeq[TransactionLike]] =
     addressesEndpoint.get
-      .in("unconfirmed-transactions")
+      .in("mempool")
+      .in("transactions")
       .out(jsonBody[ArraySeq[TransactionLike]])
-      .description("List unconfirmed transactions of a given address")
+      .description("List mempool transactions of a given address")
 
   val getAddressBalance: BaseEndpoint[Address, AddressBalance] =
     addressesEndpoint.get

@@ -20,14 +20,14 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, ProvenShape}
 
 import org.alephium.explorer.api.model.GroupIndex
-import org.alephium.explorer.persistence.model.UnconfirmedTxEntity
+import org.alephium.explorer.persistence.model.MempoolTransactionEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.model.TransactionId
 import org.alephium.util.{TimeStamp, U256}
 
-object UnconfirmedTxSchema extends Schema[UnconfirmedTxEntity]("utransactions") {
+object MempoolTransactionSchema extends Schema[MempoolTransactionEntity]("utransactions") {
 
-  class UnconfirmedTxs(tag: Tag) extends Table[UnconfirmedTxEntity](tag, name) {
+  class MempoolTransactions(tag: Tag) extends Table[MempoolTransactionEntity](tag, name) {
     def hash: Rep[TransactionId] =
       column[TransactionId]("hash", O.PrimaryKey, O.SqlType("BYTEA"))
     def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
@@ -39,10 +39,10 @@ object UnconfirmedTxSchema extends Schema[UnconfirmedTxEntity]("utransactions") 
 
     def lastSeenIdx: Index = index("utransactions_last_seen_idx", lastSeen)
 
-    def * : ProvenShape[UnconfirmedTxEntity] =
+    def * : ProvenShape[MempoolTransactionEntity] =
       (hash, chainFrom, chainTo, gasAmount, gasPrice, lastSeen)
-        .<>((UnconfirmedTxEntity.apply _).tupled, UnconfirmedTxEntity.unapply)
+        .<>((MempoolTransactionEntity.apply _).tupled, MempoolTransactionEntity.unapply)
   }
 
-  val table: TableQuery[UnconfirmedTxs] = TableQuery[UnconfirmedTxs]
+  val table: TableQuery[MempoolTransactions] = TableQuery[MempoolTransactions]
 }

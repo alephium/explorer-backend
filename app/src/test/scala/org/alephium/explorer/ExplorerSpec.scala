@@ -471,8 +471,8 @@ object ExplorerSpec {
             }),
         route(
           baseEndpoint.get
+            .in("mempool")
             .in("transactions")
-            .in("unconfirmed")
             .out(jsonBody[ArraySeq[model.MempoolTransactions]])
             .serverLogicSuccess[Future] { _ =>
               val txs  = Gen.listOfN(5, transactionTemplateProtocolGen).sample.get

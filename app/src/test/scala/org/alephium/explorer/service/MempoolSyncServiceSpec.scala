@@ -25,10 +25,10 @@ import sttp.model.Uri
 
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.AlephiumFutureSpec
-import org.alephium.explorer.GenApiModel.utransactionGen
-import org.alephium.explorer.api.model.{GroupIndex, Height, UnconfirmedTransaction}
+import org.alephium.explorer.GenApiModel.mempooltransactionGen
+import org.alephium.explorer.api.model.{GroupIndex, Height, MempoolTransaction}
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
-import org.alephium.explorer.persistence.dao.UnconfirmedTxDao
+import org.alephium.explorer.persistence.dao.MempoolDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.TestUtils._
@@ -41,25 +41,25 @@ class MempoolSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     using(Scheduler("test")) { implicit scheduler =>
       MempoolSyncService.start(ArraySeq(Uri("")), 100.milliseconds)
 
-      UnconfirmedTxDao.listHashes().futureValue is ArraySeq.empty
+      MempoolDao.listHashes().futureValue is ArraySeq.empty
 
-      unconfirmedTransactions = Gen.listOfN(10, utransactionGen).sample.get
+      mempoolTransactions = Gen.listOfN(10, mempooltransactionGen).sample.get
 
       eventually {
-        UnconfirmedTxDao.listHashes().futureValue.toSet is unconfirmedTransactions.map(_.hash).toSet
+        MempoolDao.listHashes().futureValue.toSet is mempoolTransactions.map(_.hash).toSet
       }
 
-      val head   = unconfirmedTransactions.head
-      val last   = unconfirmedTransactions.last
-      val middle = unconfirmedTransactions(5)
+      val head   = mempoolTransactions.head
+      val last   = mempoolTransactions.last
+      val middle = mempoolTransactions(5)
 
-      val newUnconfirmedTransactions =
-        unconfirmedTransactions.filterNot(tx => tx == head || tx == last || tx == middle)
+      val newMempoolTransactions =
+        mempoolTransactions.filterNot(tx => tx == head || tx == last || tx == middle)
 
-      unconfirmedTransactions = newUnconfirmedTransactions
+      mempoolTransactions = newMempoolTransactions
 
       eventually {
-        UnconfirmedTxDao.listHashes().futureValue.toSet is newUnconfirmedTransactions
+        MempoolDao.listHashes().futureValue.toSet is newMempoolTransactions
           .map(_.hash)
           .toSet
       }
@@ -67,15 +67,15 @@ class MempoolSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
   }
 
   trait Fixture {
-    var unconfirmedTransactions: ArraySeq[UnconfirmedTransaction] = ArraySeq.empty
+    var mempoolTransactions: ArraySeq[MempoolTransaction] = ArraySeq.empty
 
     implicit val blockFlowClient: BlockFlowClient = new BlockFlowClient {
       implicit val executionContext: ExecutionContext = implicitly
       def startSelfOnce(): Future[Unit]               = Future.unit
       def stopSelfOnce(): Future[Unit]                = Future.unit
       def subServices: ArraySeq[Service]              = ArraySeq.empty
-      def fetchUnconfirmedTransactions(uri: Uri): Future[ArraySeq[UnconfirmedTransaction]] =
-        Future.successful(unconfirmedTransactions)
+      def fetchMempoolTransactions(uri: Uri): Future[ArraySeq[MempoolTransaction]] =
+        Future.successful(mempoolTransactions)
       def fetchBlock(from: GroupIndex, hash: BlockHash): Future[BlockEntity] =
         ???
       def fetchBlockAndEvents(fromGroup: GroupIndex,

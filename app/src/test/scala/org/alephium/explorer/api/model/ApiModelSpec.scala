@@ -222,11 +222,11 @@ class ApiModelSpec() extends AlephiumSpec {
     }
   }
 
-  "UnconfirmedTx" in {
-    forAll(utransactionGen) { utx =>
+  "MempoolTransaction" in {
+    forAll(mempooltransactionGen) { utx =>
       val expected = s"""
      |{
-     |  "type": "Unconfirmed",
+     |  "type": "Mempooled",
      |  "hash": "${utx.hash.value.toHexString}",
      |  "chainFrom": ${utx.chainFrom.value},
      |  "chainTo": ${utx.chainTo.value},

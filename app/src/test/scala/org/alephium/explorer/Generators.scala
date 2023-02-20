@@ -76,7 +76,7 @@ object Generators {
         coinbase          = coinbase
       )
 
-  def unconfirmedTransactionEntityGen(): Gen[UnconfirmedTxEntity] =
+  def mempoolTransactionEntityGen(): Gen[MempoolTransactionEntity] =
     for {
       hash      <- transactionHashGen
       chainFrom <- groupIndexGen
@@ -85,7 +85,7 @@ object Generators {
       gasPrice  <- u256Gen
       timestamp <- timestampGen
     } yield
-      UnconfirmedTxEntity(
+      MempoolTransactionEntity(
         hash      = hash,
         chainFrom = chainFrom,
         chainTo   = chainTo,
