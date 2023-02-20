@@ -20,7 +20,8 @@ import java.math.BigInteger
 
 import scala.collection.immutable.ArraySeq
 
-import org.alephium.explorer.api.model.{Address, Input, Output}
+import org.alephium.explorer.api.model.{Input, Output}
+import org.alephium.protocol.model.Address
 import org.alephium.util.U256
 
 object UtxoUtil {

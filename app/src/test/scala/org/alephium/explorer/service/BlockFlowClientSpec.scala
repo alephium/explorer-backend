@@ -30,7 +30,7 @@ import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 
 import org.alephium.api
 import org.alephium.api.model
-import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
+import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
@@ -45,9 +45,8 @@ import org.alephium.util.AVector
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
 class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll {
 
-  val group                               = GroupIndex.unsafe(0)
-  implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
-  val localhost: InetAddress              = InetAddress.getByName("127.0.0.1")
+  val group                  = GroupIndex.unsafe(0)
+  val localhost: InetAddress = InetAddress.getByName("127.0.0.1")
 
   "BlockFlowClient.fetchBlock" should {
     val port = SocketUtil.temporaryLocalPort(SocketUtil.Both)
@@ -73,9 +72,7 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
 }
 
 object BlockFlowClientSpec extends ScalaFutures with IntegrationPatience {
-  class BlockFlowServerMock(localhost: InetAddress, port: Int)(implicit groupSetting: GroupSetting)
-      extends api.Endpoints
-      with Server {
+  class BlockFlowServerMock(localhost: InetAddress, port: Int) extends api.Endpoints with Server {
 
     implicit val groupConfig: GroupConfig     = groupSetting.groupConfig
     val maybeApiKey: Option[api.model.ApiKey] = None

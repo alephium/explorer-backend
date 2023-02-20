@@ -16,8 +16,7 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.api.model.Address
-import org.alephium.protocol.model.{BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.TimeStamp
 
 final case class TransactionPerAddressEntity(

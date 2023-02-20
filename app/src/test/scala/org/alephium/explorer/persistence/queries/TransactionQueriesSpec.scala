@@ -38,7 +38,7 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.TransactionId
+import org.alephium.protocol.model.{Address, TransactionId}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {

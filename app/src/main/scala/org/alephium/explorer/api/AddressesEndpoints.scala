@@ -29,7 +29,7 @@ import org.alephium.api.Endpoints.jsonBody
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.EndpointExamples._
 import org.alephium.explorer.api.model._
-import org.alephium.protocol.model.TokenId
+import org.alephium.protocol.model.{Address, TokenId}
 import org.alephium.util.Duration
 
 // scalastyle:off magic.number

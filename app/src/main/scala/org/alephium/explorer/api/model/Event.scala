@@ -21,7 +21,7 @@ import scala.collection.immutable.ArraySeq
 import org.alephium.api.model.Val
 import org.alephium.explorer.api.Codecs._
 import org.alephium.json.Json._
-import org.alephium.protocol.model.{BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 
 final case class Event(
     blockHash: BlockHash,

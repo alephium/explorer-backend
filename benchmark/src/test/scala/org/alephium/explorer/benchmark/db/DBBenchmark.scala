@@ -26,7 +26,7 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.GroupSetting
-import org.alephium.explorer.api.model.{Address, Pagination}
+import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.state._
 import org.alephium.explorer.cache.BlockCache
@@ -35,6 +35,7 @@ import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
+import org.alephium.protocol.model.Address
 import org.alephium.util.TimeStamp
 
 /**
@@ -265,7 +266,7 @@ class DBBenchmark {
   def transactions_per_address_read_state(state: TransactionsPerAddressReadState): Unit = {
     val query =
       TransactionQueries.getTxHashesByAddressQuerySQLNoJoinTimeRanged(
-        address    = Address.unsafe(state.next),
+        address    = Address.fromBase58(state.next).get,
         fromTime   = TimeStamp.zero,
         toTime     = TimeStamp.unsafe(Long.MaxValue),
         pagination = Pagination.unsafe(1, Int.MaxValue)

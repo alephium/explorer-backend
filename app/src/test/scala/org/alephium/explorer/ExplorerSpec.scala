@@ -53,7 +53,7 @@ import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.explorer.web._
 import org.alephium.json.Json._
-import org.alephium.protocol.model.{BlockHash, CliqueId, NetworkId}
+import org.alephium.protocol.model.{Address, BlockHash, CliqueId, NetworkId}
 import org.alephium.util.{AVector, TimeStamp, U256}
 
 trait ExplorerSpec
@@ -63,8 +63,6 @@ trait ExplorerSpec
     with HttpRouteFixture {
 
   override val name: String = "ExploreSpec"
-
-  implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
 
   val networkId: NetworkId = NetworkId.AlephiumDevNet
 

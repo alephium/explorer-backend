@@ -30,8 +30,6 @@ import org.alephium.serde._
 @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
 class InputAddressUtilSpec extends AlephiumSpec with Matchers {
 
-  implicit val groupSetting = groupSettingGen.sample.get
-
   "addressFromProtocolInput" should {
     "convert P2PKH input into the right address" in {
       forAll(unlockScriptProtocolP2PKHGen, outputRefProtocolGen) {

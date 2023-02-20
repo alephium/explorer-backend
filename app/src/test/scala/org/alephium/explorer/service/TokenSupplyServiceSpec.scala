@@ -33,10 +33,13 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.ALPH
+import org.alephium.protocol.model.Address
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
 class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
+
+  implicit val gs: GroupSetting = GroupSetting(1)
 
   "Build days range" in {
     val launchTime = ALPH.LaunchTimestamp //2021-11-08T11:20:06+00:00
@@ -152,10 +155,9 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val genesisLocked: Boolean
     val block1Locked: Boolean = false
 
-    implicit val groupSettings: GroupSetting = GroupSetting(1)
-    implicit val blockCache: BlockCache      = TestBlockCache()
+    implicit val blockCache: BlockCache = TestBlockCache()(gs, executionContext, databaseConfig)
 
-    val genesisAddress = Address.unsafe("122uvHwwcaWoXR1ryub9VK1yh2CZvYCqXxzsYDHRb2jYB")
+    val genesisAddress = Address.fromBase58("122uvHwwcaWoXR1ryub9VK1yh2CZvYCqXxzsYDHRb2jYB").get
 
     lazy val genesisBlock = {
       val lockTime =
@@ -211,8 +213,10 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         blockEntityWithParentGen(GroupIndex.unsafe(0), GroupIndex.unsafe(0), Some(block2)).sample.get
       val timestamp = block.timestamp.plusHoursUnsafe(24)
       val address =
-        Address.unsafe(
-          "X4TqZeAizjDV8yt7XzxDVLywdzmJvLALtdAnjAERtCY3TPkyPXt4A5fxvXAX7UucXPpSYF7amNysNiniqb98vQ5rs9gh12MDXhsAf5kWmbmjXDygxV9AboSj8QR7QK8duaKAkZ")
+        Address
+          .fromBase58(
+            "X4TqZeAizjDV8yt7XzxDVLywdzmJvLALtdAnjAERtCY3TPkyPXt4A5fxvXAX7UucXPpSYF7amNysNiniqb98vQ5rs9gh12MDXhsAf5kWmbmjXDygxV9AboSj8QR7QK8duaKAkZ")
+          .get
       block.copy(timestamp = timestamp,
                  outputs   = block.outputs.map(_.copy(timestamp = timestamp, address = address)))
     }
@@ -225,12 +229,12 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     }
 
     def test(blocks: BlockEntity*)(amounts: ArraySeq[U256]) = {
-      BlockDao.insertAll(ArraySeq.from(blocks)).futureValue
+      BlockDao.insertAll(ArraySeq.from(blocks))(executionContext, databaseConfig, gs).futureValue
       blocks.foreach { block =>
         BlockDao.updateMainChainStatus(block.hash, true).futureValue
       }
 
-      TokenSupplyService.syncOnce().futureValue is ()
+      TokenSupplyService.syncOnce()(executionContext, databaseConfig, gs).futureValue is ()
 
       eventually {
         val tokenSupply =

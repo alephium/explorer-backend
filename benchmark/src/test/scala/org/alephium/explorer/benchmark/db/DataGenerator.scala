@@ -26,8 +26,8 @@ import akka.util.ByteString
 import org.alephium.explorer.{GenApiModel, Hash}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
-import org.alephium.protocol.model.{BlockHash, TransactionId}
-import org.alephium.util.{Base58, TimeStamp, U256}
+import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
+import org.alephium.util.{TimeStamp, U256}
 
 /**
   * Data generators for JMH benchmarks.
@@ -75,7 +75,7 @@ object DataGenerator {
           hint           = Random.nextInt(1000),
           key            = Hash.generate,
           amount         = U256.unsafe(Random.nextInt(100)),
-          address        = Address.unsafe(Random.alphanumeric.take(10).mkString),
+          address        = GenApiModel.addressGen.sample.get,
           tokens         = None,
           mainChain      = transaction.mainChain,
           lockTime       = Some(TimeStamp.now()),
@@ -147,7 +147,7 @@ object DataGenerator {
   }
 
   def genAddress(): Address =
-    Address.unsafe(Base58.encode(Hash.generate.bytes))
+    GenApiModel.addressGen.sample.get
 
   def genTransactionPerAddressEntity(address: Address = genAddress()): TransactionPerAddressEntity =
     TransactionPerAddressEntity(

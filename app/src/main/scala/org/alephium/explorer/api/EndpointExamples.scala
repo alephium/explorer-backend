@@ -27,7 +27,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.queries.ExplainResult
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.mining.HashRate
-import org.alephium.protocol.model.{BlockHash, TokenId}
+import org.alephium.protocol.model.{Address, BlockHash, TokenId}
 import org.alephium.util.{Hex, U256}
 
 /**
@@ -52,10 +52,10 @@ object EndpointExamples extends EndpointsExamples {
     Hex.unsafe("d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28")
 
   private val address1: Address =
-    Address.unsafe("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n")
+    Address.fromBase58("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n").get
 
   private val address2: Address =
-    Address.unsafe("3dFzhhHHzGwAWW7MZkTJWubpkW1iJ5gnUjqgAG8HEdhk")
+    Address.fromBase58("22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM").get
 
   private val tokens: ArraySeq[Token] =
     ArraySeq(

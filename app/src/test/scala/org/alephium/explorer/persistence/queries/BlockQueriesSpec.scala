@@ -387,8 +387,6 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
     "transactionally update all dependant tables with new mainChain value" when {
       "there are one or more blocks" in {
-        implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
-
         forAll(Gen.nonEmptyListOf(blockAndItsMainChainEntitiesGen()), Arbitrary.arbitrary[Boolean]) {
           case (testData, updatedMainChainValue) =>
             val entities           = testData.map(_._1)

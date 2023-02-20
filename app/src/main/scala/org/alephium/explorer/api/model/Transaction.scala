@@ -26,6 +26,7 @@ import org.alephium.explorer.util.UtxoUtil
 import org.alephium.json.Json._
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{BlockHash, TransactionId}
+import org.alephium.protocol.model.Address
 import org.alephium.util.{TimeStamp, U256}
 
 final case class Transaction(

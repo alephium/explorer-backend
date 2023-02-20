@@ -22,8 +22,9 @@ import sttp.tapir.{Codec, DecodeResult}
 import sttp.tapir.Codec.PlainCodec
 
 import org.alephium.api.TapirCodecs
-import org.alephium.explorer.api.model.{Address, IntervalType}
+import org.alephium.explorer.api.model.IntervalType
 import org.alephium.json.Json._
+import org.alephium.protocol.model.Address
 
 object Codecs extends TapirCodecs {
   implicit val explorerAddressTapirCodec: PlainCodec[Address] =

@@ -34,6 +34,7 @@ import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.service.TransactionService
+import org.alephium.protocol.model.Address
 
 class AddressServer(transactionService: TransactionService, exportTxsNumberThreshold: Int)(
     implicit val executionContext: ExecutionContext,

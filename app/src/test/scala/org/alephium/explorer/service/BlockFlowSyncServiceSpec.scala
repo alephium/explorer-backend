@@ -25,7 +25,7 @@ import scala.concurrent.duration._
 import sttp.model.Uri
 
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
-import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
+import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel.chainIndexes
 import org.alephium.explorer.GenCoreUtil.timestampMaxValue
 import org.alephium.explorer.Generators._
@@ -115,8 +115,6 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     def t(l: Long)            = TimeStamp.unsafe(l)
     def s(l: Long)            = Duration.ofMillisUnsafe(l)
     def r(l1: Long, l2: Long) = (t(l1), t(l2))
-
-    implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
 
     def blockEntity(parent: Option[BlockEntity],
                     chainFrom: GroupIndex = GroupIndex.unsafe(0),
