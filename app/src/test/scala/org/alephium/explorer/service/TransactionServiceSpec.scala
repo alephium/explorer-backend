@@ -31,7 +31,7 @@ import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
-import org.alephium.explorer.persistence.dao.{BlockDao, UnconfirmedTxDao}
+import org.alephium.explorer.persistence.dao.{BlockDao, MempoolDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.protocol.ALPH
@@ -337,21 +337,21 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
           .getTransaction(tx.hash)
           .futureValue
           .get
-          .asInstanceOf[ConfirmedTransaction]
+          .asInstanceOf[AcceptedTransaction]
           .blockHash is blockHash0 // was sometime blockHash1 in fb7127f
     }
   }
 
-  "fall back on unconfirmed tx" in new Fixture {
-    val utx = utransactionGen.sample.get
+  "fall back on mempool tx" in new Fixture {
+    val utx = mempooltransactionGen.sample.get
 
     TransactionService.getTransaction(utx.hash).futureValue is None
-    UnconfirmedTxDao.insertMany(ArraySeq(utx)).futureValue
-    TransactionService.getTransaction(utx.hash).futureValue is Some(utx)
+    MempoolDao.insertMany(ArraySeq(utx)).futureValue
+    TransactionService.getTransaction(utx.hash).futureValue is Some(PendingTransaction.from(utx))
   }
 
-  "return unconfirmed txs of an address" in new Fixture {
-    forAll(addressGen, Gen.listOf(utransactionGen)) {
+  "return mempool txs of an address" in new Fixture {
+    forAll(addressGen, Gen.listOf(mempooltransactionGen)) {
       case (address, utxs) =>
         val updatedUtxs = utxs.map { utx =>
           utx.copy(inputs = utx.inputs.map { input =>
@@ -359,16 +359,16 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
           })
         }
 
-        UnconfirmedTxDao.insertMany(updatedUtxs).futureValue
+        MempoolDao.insertMany(updatedUtxs).futureValue
 
         val expected =
           updatedUtxs.filter(_.inputs.exists(_.address === Some(address)))
 
         TransactionService
-          .listUnconfirmedTransactionsByAddress(address)
+          .listMempoolTransactionsByAddress(address)
           .futureValue should contain allElementsOf expected
 
-        UnconfirmedTxDao.removeMany(updatedUtxs.map(_.hash)).futureValue
+        MempoolDao.removeMany(updatedUtxs.map(_.hash)).futureValue
     }
   }
 
@@ -398,7 +398,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
             .getTransaction(tx.hash)
             .futureValue
             .get
-            .asInstanceOf[ConfirmedTransaction]
+            .asInstanceOf[AcceptedTransaction]
         transaction.outputs.map(_.key) is block.outputs
           .filter(_.txHash == tx.hash)
           .sortBy(_.outputOrder)

@@ -71,9 +71,9 @@ class AddressServer(transactionService: TransactionService, exportTxsNumberThres
                                                    timeInterval.to,
                                                    pagination)
       }),
-      route(addressUnconfirmedTransactions.serverLogicSuccess[Future] { address =>
+      route(addressMempoolTransactions.serverLogicSuccess[Future] { address =>
         transactionService
-          .listUnconfirmedTransactionsByAddress(address)
+          .listMempoolTransactionsByAddress(address)
       }),
       route(getAddressInfo.serverLogicSuccess[Future] { address =>
         for {

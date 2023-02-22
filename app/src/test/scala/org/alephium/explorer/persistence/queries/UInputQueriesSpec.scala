@@ -60,7 +60,7 @@ class UInputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll wi
         addressAndExpectedUInputs foreach {
           case (address, expectedUInputs) =>
             val actual =
-              run(UnconfirmedTransactionQueries.listUTXHashesByAddress(address)).futureValue
+              run(MempoolQueries.listUTXHashesByAddress(address)).futureValue
 
             //expect distinct transaction hashes
             val expected = expectedUInputs.map(_.txHash).distinct
@@ -86,7 +86,7 @@ class UInputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll wi
           val expected = uinputs.filter(uinput => txIds.contains(uinput.txHash))
 
           val actual =
-            run(UnconfirmedTransactionQueries.uinputsFromTxs(txIds)).futureValue
+            run(MempoolQueries.uinputsFromTxs(txIds)).futureValue
 
           actual should contain theSameElementsAs expected
         }
@@ -120,7 +120,7 @@ class UInputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll wi
               .sortBy(_.uinputOrder)
 
           val actual =
-            run(UnconfirmedTransactionQueries.uinputsFromTx(txId)).futureValue
+            run(MempoolQueries.uinputsFromTx(txId)).futureValue
 
           //the result should be in expected order.
           actual should contain theSameElementsInOrderAs expected

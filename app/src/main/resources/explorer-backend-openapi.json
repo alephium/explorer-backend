@@ -544,7 +544,7 @@
                   "$ref": "#/components/schemas/TransactionLike"
                 },
                 "example": {
-                  "type": "Confirmed",
+                  "type": "Accepted",
                   "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
                   "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
                   "timestamp": 1611041396892,
@@ -1712,13 +1712,13 @@
         }
       }
     },
-    "/addresses/{address}/unconfirmed-transactions": {
+    "/addresses/{address}/mempool/transactions": {
       "get": {
         "tags": [
           "Addresses"
         ],
-        "description": "List unconfirmed transactions of a given address",
-        "operationId": "getAddressesAddressUnconfirmed-transactions",
+        "description": "List mempool transactions of a given address",
+        "operationId": "getAddressesAddressMempoolTransactions",
         "parameters": [
           {
             "name": "address",
@@ -1736,12 +1736,11 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/TransactionLike"
+                    "$ref": "#/components/schemas/MempoolTransaction"
                   }
                 },
                 "example": [
                   {
-                    "type": "Unconfirmed",
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
                     "chainFrom": 1,
                     "chainTo": 2,
@@ -1810,7 +1809,6 @@
                     "lastSeen": 1611041396892
                   },
                   {
-                    "type": "Unconfirmed",
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
                     "chainFrom": 1,
                     "chainTo": 2,
@@ -2966,13 +2964,13 @@
         }
       }
     },
-    "/unconfirmed-transactions": {
+    "/mempool/transactions": {
       "get": {
         "tags": [
-          "Transactions"
+          "Mempool"
         ],
-        "description": "list unconfirmed transactions",
-        "operationId": "getUnconfirmed-transactions",
+        "description": "list mempool transactions",
+        "operationId": "getMempoolTransactions",
         "parameters": [
           {
             "name": "page",
@@ -3011,12 +3009,11 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/TransactionLike"
+                    "$ref": "#/components/schemas/MempoolTransaction"
                   }
                 },
                 "example": [
                   {
-                    "type": "Unconfirmed",
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
                     "chainFrom": 1,
                     "chainTo": 2,
@@ -3085,7 +3082,6 @@
                     "lastSeen": 1611041396892
                   },
                   {
-                    "type": "Unconfirmed",
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
                     "chainFrom": 1,
                     "chainTo": 2,
@@ -5345,6 +5341,58 @@
   },
   "components": {
     "schemas": {
+      "AcceptedTransaction": {
+        "required": [
+          "hash",
+          "blockHash",
+          "timestamp",
+          "gasAmount",
+          "gasPrice",
+          "coinbase",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "hash": {
+            "type": "string",
+            "format": "32-byte-hash"
+          },
+          "blockHash": {
+            "type": "string",
+            "format": "block-hash"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Input"
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Output"
+            }
+          },
+          "gasAmount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "gasPrice": {
+            "type": "string",
+            "format": "uint256"
+          },
+          "coinbase": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
       "AddressBalance": {
         "required": [
           "balance",
@@ -5487,58 +5535,6 @@
           "hashRate": {
             "type": "string",
             "format": "bigint"
-          }
-        }
-      },
-      "ConfirmedTransaction": {
-        "required": [
-          "hash",
-          "blockHash",
-          "timestamp",
-          "gasAmount",
-          "gasPrice",
-          "coinbase",
-          "type"
-        ],
-        "type": "object",
-        "properties": {
-          "hash": {
-            "type": "string",
-            "format": "32-byte-hash"
-          },
-          "blockHash": {
-            "type": "string",
-            "format": "block-hash"
-          },
-          "timestamp": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "inputs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Input"
-            }
-          },
-          "outputs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Output"
-            }
-          },
-          "gasAmount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "gasPrice": {
-            "type": "string",
-            "format": "uint256"
-          },
-          "coinbase": {
-            "type": "boolean"
-          },
-          "type": {
-            "type": "string"
           }
         }
       },
@@ -5739,6 +5735,55 @@
           }
         }
       },
+      "MempoolTransaction": {
+        "required": [
+          "hash",
+          "chainFrom",
+          "chainTo",
+          "gasAmount",
+          "gasPrice",
+          "lastSeen"
+        ],
+        "type": "object",
+        "properties": {
+          "hash": {
+            "type": "string",
+            "format": "32-byte-hash"
+          },
+          "chainFrom": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "chainTo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Input"
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Output"
+            }
+          },
+          "gasAmount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "gasPrice": {
+            "type": "string",
+            "format": "uint256"
+          },
+          "lastSeen": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "NotFound": {
         "required": [
           "detail",
@@ -5785,6 +5830,59 @@
           "key": {
             "type": "string",
             "format": "32-byte-hash"
+          }
+        }
+      },
+      "PendingTransaction": {
+        "required": [
+          "hash",
+          "chainFrom",
+          "chainTo",
+          "gasAmount",
+          "gasPrice",
+          "lastSeen",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "hash": {
+            "type": "string",
+            "format": "32-byte-hash"
+          },
+          "chainFrom": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "chainTo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Input"
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Output"
+            }
+          },
+          "gasAmount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "gasPrice": {
+            "type": "string",
+            "format": "uint256"
+          },
+          "lastSeen": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "type": {
+            "type": "string"
           }
         }
       },
@@ -6015,17 +6113,17 @@
       "TransactionLike": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/ConfirmedTransaction"
+            "$ref": "#/components/schemas/AcceptedTransaction"
           },
           {
-            "$ref": "#/components/schemas/UnconfirmedTransaction"
+            "$ref": "#/components/schemas/PendingTransaction"
           }
         ],
         "discriminator": {
           "propertyName": "type",
           "mapping": {
-            "ConfirmedTransaction": "#/components/schemas/ConfirmedTransaction",
-            "UnconfirmedTransaction": "#/components/schemas/UnconfirmedTransaction"
+            "AcceptedTransaction": "#/components/schemas/AcceptedTransaction",
+            "PendingTransaction": "#/components/schemas/PendingTransaction"
           }
         }
       },
@@ -6036,59 +6134,6 @@
         "type": "object",
         "properties": {
           "detail": {
-            "type": "string"
-          }
-        }
-      },
-      "UnconfirmedTransaction": {
-        "required": [
-          "hash",
-          "chainFrom",
-          "chainTo",
-          "gasAmount",
-          "gasPrice",
-          "lastSeen",
-          "type"
-        ],
-        "type": "object",
-        "properties": {
-          "hash": {
-            "type": "string",
-            "format": "32-byte-hash"
-          },
-          "chainFrom": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "chainTo": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "inputs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Input"
-            }
-          },
-          "outputs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Output"
-            }
-          },
-          "gasAmount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "gasPrice": {
-            "type": "string",
-            "format": "uint256"
-          },
-          "lastSeen": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "type": {
             "type": "string"
           }
         }

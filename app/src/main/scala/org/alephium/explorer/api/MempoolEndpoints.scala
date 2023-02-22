@@ -23,18 +23,19 @@ import sttp.tapir.generic.auto._
 
 import org.alephium.api.Endpoints.jsonBody
 import org.alephium.explorer.api.EndpointExamples._
-import org.alephium.explorer.api.model.{Pagination, TransactionLike}
+import org.alephium.explorer.api.model.{MempoolTransaction, Pagination}
 
-trait UnconfirmedTransactionEndpoints extends BaseEndpoint with QueryParams {
+trait MempoolEndpoints extends BaseEndpoint with QueryParams {
 
-  private val unconfirmedTransactionsEndpoint =
+  private val mempoolEndpoint =
     baseEndpoint
-      .tag("Transactions")
-      .in("unconfirmed-transactions")
+      .tag("Mempool")
+      .in("mempool")
 
-  val listUnconfirmedTransactions: BaseEndpoint[Pagination, ArraySeq[TransactionLike]] =
-    unconfirmedTransactionsEndpoint.get
+  val listMempoolTransactions: BaseEndpoint[Pagination, ArraySeq[MempoolTransaction]] =
+    mempoolEndpoint.get
+      .in("transactions")
       .in(pagination)
-      .out(jsonBody[ArraySeq[TransactionLike]])
-      .description("list unconfirmed transactions")
+      .out(jsonBody[ArraySeq[MempoolTransaction]])
+      .description("list mempool transactions")
 }

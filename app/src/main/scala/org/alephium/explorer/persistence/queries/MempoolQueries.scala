@@ -30,7 +30,7 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.model.{Address, TransactionId}
 
-object UnconfirmedTransactionQueries {
+object MempoolQueries {
 
   val listHashesQuery: DBActionSR[TransactionId] = {
     sql"""
@@ -39,8 +39,8 @@ object UnconfirmedTransactionQueries {
     """.asAS[TransactionId]
   }
 
-  def listPaginatedUnconfirmedTransactionsQuery(
-      pagination: Pagination): DBActionSR[UnconfirmedTxEntity] = {
+  def listPaginatedMempoolTransactionsQuery(
+      pagination: Pagination): DBActionSR[MempoolTransactionEntity] = {
     sql"""
       SELECT hash,
              chain_from,
@@ -51,7 +51,7 @@ object UnconfirmedTransactionQueries {
       FROM utransactions
       ORDER BY last_seen DESC
       #${pagination.query}
-    """.asASE[UnconfirmedTxEntity](unconfirmedTransactionGetResult)
+    """.asASE[MempoolTransactionEntity](mempoolTransactionGetResult)
   }
 
   def listUTXHashesByAddress(address: Address): DBActionSR[TransactionId] = {
@@ -62,7 +62,7 @@ object UnconfirmedTransactionQueries {
     """.asAS[TransactionId]
   }
 
-  def utxsFromTxs(hashes: ArraySeq[TransactionId]): DBActionSR[UnconfirmedTxEntity] = {
+  def utxsFromTxs(hashes: ArraySeq[TransactionId]): DBActionSR[MempoolTransactionEntity] = {
     if (hashes.nonEmpty) {
       val params = paramPlaceholder(1, hashes.size)
 
@@ -88,7 +88,7 @@ object UnconfirmedTransactionQueries {
       SQLActionBuilder(
         queryParts = query,
         unitPConv  = parameters
-      ).asASE[UnconfirmedTxEntity](unconfirmedTransactionGetResult)
+      ).asASE[MempoolTransactionEntity](mempoolTransactionGetResult)
     } else {
       DBIOAction.successful(ArraySeq.empty)
     }
@@ -159,7 +159,7 @@ object UnconfirmedTransactionQueries {
     }
   }
 
-  def utxFromTxHash(hash: TransactionId): DBActionSR[UnconfirmedTxEntity] = {
+  def utxFromTxHash(hash: TransactionId): DBActionSR[MempoolTransactionEntity] = {
     sql"""
            |SELECT hash,
            |       chain_from,
@@ -169,7 +169,7 @@ object UnconfirmedTransactionQueries {
            |       last_seen
            |FROM utransactions
            |WHERE hash = $hash
-           |""".stripMargin.asASE[UnconfirmedTxEntity](unconfirmedTransactionGetResult)
+           |""".stripMargin.asASE[MempoolTransactionEntity](mempoolTransactionGetResult)
   }
 
   def uoutputsFromTx(hash: TransactionId): DBActionSR[UOutputEntity] = {

@@ -28,51 +28,48 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.util.TimeStamp
 
-class UnconfirmedTransactionQueriesSpec
-    extends AlephiumFutureSpec
-    with DatabaseFixtureForAll
-    with DBRunner {
+class MempoolQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with DBRunner {
 
   /**
-    * Setup tests data for table [[UnconfirmedTxSchema]]
+    * Setup tests data for table [[MempoolTransactionSchema]]
     *
-    * @param unconfirmedTxs transaction to create a table for
+    * @param mempoolTxs transaction to create a table for
     */
-  def createTestData(unconfirmedTxs: Iterable[UnconfirmedTxEntity]): Unit = {
-    run(UnconfirmedTxSchema.table.delete).futureValue
-    val persistCount = run(UnconfirmedTxSchema.table ++= unconfirmedTxs).futureValue
-    persistCount should contain(unconfirmedTxs.size)
+  def createTestData(mempoolTxs: Iterable[MempoolTransactionEntity]): Unit = {
+    run(MempoolTransactionSchema.table.delete).futureValue
+    val persistCount = run(MempoolTransactionSchema.table ++= mempoolTxs).futureValue
+    persistCount should contain(mempoolTxs.size)
     ()
   }
 
   "listHashesQuery" should {
-    "list unconfirmed transaction hashes" in {
-      forAll(Gen.listOf(unconfirmedTransactionEntityGen())) { unconfirmedTxs =>
+    "list mempool transaction hashes" in {
+      forAll(Gen.listOf(mempoolTransactionEntityGen())) { mempoolTxs =>
         //setup test data
-        createTestData(unconfirmedTxs)
+        createTestData(mempoolTxs)
 
         //fetch expected and actual data
-        val expectedHashes = unconfirmedTxs.map(_.hash)
-        val actualHashes   = run(UnconfirmedTransactionQueries.listHashesQuery).futureValue
+        val expectedHashes = mempoolTxs.map(_.hash)
+        val actualHashes   = run(MempoolQueries.listHashesQuery).futureValue
 
         actualHashes should contain theSameElementsAs expectedHashes
       }
     }
   }
 
-  "listPaginatedUnconfirmedTransactionsQuery" should {
-    "list paginated unconfirmed transactions" in {
-      forAll(paginationDataGen(Gen.listOf(unconfirmedTransactionEntityGen()))) {
-        case (unconfirmedTxs, pagination) =>
-          createTestData(unconfirmedTxs)
+  "listPaginatedMempoolTransactionsQuery" should {
+    "list paginated mempool transactions" in {
+      forAll(paginationDataGen(Gen.listOf(mempoolTransactionEntityGen()))) {
+        case (mempoolTxs, pagination) =>
+          createTestData(mempoolTxs)
 
           val expected =
-            unconfirmedTxs
+            mempoolTxs
               .sortBy(_.lastSeen)(TimeStamp.ordering.reverse) //descending order order last_seen
               .slice(pagination.offset, pagination.offset + pagination.limit) //pagination
 
           val actual =
-            run(UnconfirmedTransactionQueries.listPaginatedUnconfirmedTransactionsQuery(pagination)).futureValue
+            run(MempoolQueries.listPaginatedMempoolTransactionsQuery(pagination)).futureValue
 
           actual should contain theSameElementsInOrderAs expected
       }
@@ -80,14 +77,14 @@ class UnconfirmedTransactionQueriesSpec
   }
 
   "utxsFromTxs" should {
-    "list unconfirmed transaction for transaction ids" in {
-      forAll(Gen.listOf(unconfirmedTransactionEntityGen()), Gen.posNum[Int]) {
-        case (unconfirmedTxs, txsCountToQuery) =>
-          createTestData(unconfirmedTxs)
+    "list mempool transaction for transaction ids" in {
+      forAll(Gen.listOf(mempoolTransactionEntityGen()), Gen.posNum[Int]) {
+        case (mempoolTxs, txsCountToQuery) =>
+          createTestData(mempoolTxs)
 
           val expected =
             Random
-              .shuffle(unconfirmedTxs)
+              .shuffle(mempoolTxs)
               .take(txsCountToQuery) //randomly select few
               .sortBy(_.lastSeen)(TimeStamp.ordering.reverse) //descending order order last_seen
 
@@ -95,7 +92,7 @@ class UnconfirmedTransactionQueriesSpec
             Random.shuffle(expected.map(_.hash))
 
           val actual =
-            run(UnconfirmedTransactionQueries.utxsFromTxs(transactionIdsToQuery)).futureValue
+            run(MempoolQueries.utxsFromTxs(transactionIdsToQuery)).futureValue
 
           actual should contain theSameElementsInOrderAs expected
       }
@@ -103,13 +100,13 @@ class UnconfirmedTransactionQueriesSpec
   }
 
   "utxFromTxHash" should {
-    "fetch unconfirmed transaction for a transaction id" in {
-      forAll(Gen.listOf(unconfirmedTransactionEntityGen())) { unconfirmedTxs =>
-        createTestData(unconfirmedTxs)
+    "fetch mempool transaction for a transaction id" in {
+      forAll(Gen.listOf(mempoolTransactionEntityGen())) { mempoolTxs =>
+        createTestData(mempoolTxs)
 
-        unconfirmedTxs foreach { expected =>
+        mempoolTxs foreach { expected =>
           val actual =
-            run(UnconfirmedTransactionQueries.utxFromTxHash(expected.hash)).futureValue
+            run(MempoolQueries.utxFromTxHash(expected.hash)).futureValue
 
           actual should contain only expected
         }

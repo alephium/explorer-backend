@@ -22,7 +22,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.TransactionId
 import org.alephium.util.{TimeStamp, U256}
 
-final case class UnconfirmedTxEntity(
+final case class MempoolTransactionEntity(
     hash: TransactionId,
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
@@ -31,10 +31,10 @@ final case class UnconfirmedTxEntity(
     lastSeen: TimeStamp
 )
 
-object UnconfirmedTxEntity {
-  def from(utx: UnconfirmedTransaction)
-    : (UnconfirmedTxEntity, ArraySeq[UInputEntity], ArraySeq[UOutputEntity]) = {
-    (UnconfirmedTxEntity(
+object MempoolTransactionEntity {
+  def from(utx: MempoolTransaction)
+    : (MempoolTransactionEntity, ArraySeq[UInputEntity], ArraySeq[UOutputEntity]) = {
+    (MempoolTransactionEntity(
        utx.hash,
        utx.chainFrom,
        utx.chainTo,

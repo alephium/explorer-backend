@@ -120,11 +120,32 @@ object EndpointExamples extends EndpointsExamples {
       coinbase  = false
     )
 
-  private val confirmedTransaction =
-    ConfirmedTransaction.from(transaction)
+  private val acceptedTransaction: AcceptedTransaction =
+    AcceptedTransaction(
+      hash      = txId,
+      blockHash = blockHash,
+      timestamp = ts,
+      inputs    = ArraySeq(input),
+      outputs   = ArraySeq(outputAsset, outputContract),
+      gasAmount = org.alephium.protocol.model.minimalGas.value,
+      gasPrice  = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
+      coinbase  = false
+    )
 
-  private val unconfirmedTransaction =
-    UnconfirmedTransaction(
+  private val pendingTransaction: PendingTransaction =
+    PendingTransaction(
+      hash      = txId,
+      chainFrom = GroupIndex.unsafe(1),
+      chainTo   = GroupIndex.unsafe(2),
+      inputs    = ArraySeq(input),
+      outputs   = ArraySeq(outputAsset, outputContract),
+      gasAmount = org.alephium.protocol.model.minimalGas.value,
+      gasPrice  = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
+      lastSeen  = ts
+    )
+
+  private val mempoolTransaction: MempoolTransaction =
+    MempoolTransaction(
       hash      = txId,
       chainFrom = GroupIndex.unsafe(1),
       chainTo   = GroupIndex.unsafe(2),
@@ -248,10 +269,13 @@ object EndpointExamples extends EndpointsExamples {
     simpleExample(ArraySeq(address1, address2))
 
   implicit val transactionLikeExample: List[Example[TransactionLike]] =
-    simpleExample(confirmedTransaction)
+    simpleExample(acceptedTransaction)
 
-  implicit val unconfirmedTransactionsLike: List[Example[ArraySeq[UnconfirmedTransaction]]] =
-    simpleExample(ArraySeq(unconfirmedTransaction, unconfirmedTransaction))
+  implicit val transactionsLikeExample: List[Example[ArraySeq[TransactionLike]]] =
+    simpleExample(ArraySeq[TransactionLike](acceptedTransaction, pendingTransaction))
+
+  implicit val mempoolTransactionsExamle: List[Example[ArraySeq[MempoolTransaction]]] =
+    simpleExample(ArraySeq(mempoolTransaction, mempoolTransaction))
 
   implicit val transactionExample: List[Example[Transaction]] =
     simpleExample(transaction)

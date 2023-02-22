@@ -28,26 +28,26 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries.UnconfirmedTransactionQueries._
+import org.alephium.explorer.persistence.queries.MempoolQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.model.{Address, TransactionId}
 
-trait UnconfirmedTxDao {
+trait MempoolDao {
 
   def get(hash: TransactionId)(
       implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Option[UnconfirmedTransaction]]
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Option[MempoolTransaction]]
 
   def list(pagination: Pagination)(
       implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]]
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[MempoolTransaction]]
 
   def listByAddress(address: Address)(
       implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]]
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[MempoolTransaction]]
 
-  def insertMany(utxs: ArraySeq[UnconfirmedTransaction])(
+  def insertMany(utxs: ArraySeq[MempoolTransaction])(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit]
 
@@ -59,23 +59,23 @@ trait UnconfirmedTxDao {
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit]
 
   def removeAndInsertMany(toRemove: ArraySeq[TransactionId],
-                          toInsert: ArraySeq[UnconfirmedTransaction])(
+                          toInsert: ArraySeq[MempoolTransaction])(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit]
 }
 
-object UnconfirmedTxDao extends UnconfirmedTxDao {
+object MempoolDao extends MempoolDao {
 
   def get(hash: TransactionId)(
       implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Option[UnconfirmedTransaction]] = {
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Option[MempoolTransaction]] = {
     run(for {
       maybeTx <- utxFromTxHash(hash)
       inputs  <- uinputsFromTx(hash)
       outputs <- uoutputsFromTx(hash)
     } yield {
       maybeTx.headOption.map { tx =>
-        UnconfirmedTransaction(
+        MempoolTransaction(
           tx.hash,
           tx.chainFrom,
           tx.chainTo,
@@ -90,16 +90,16 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
   }
   def list(pagination: Pagination)(
       implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]] = {
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[MempoolTransaction]] = {
 
     run(for {
-      txs <- listPaginatedUnconfirmedTransactionsQuery(pagination)
+      txs <- listPaginatedMempoolTransactionsQuery(pagination)
       txHashes = txs.map(_.hash)
       inputs  <- uinputsFromTxs(txHashes)
       outputs <- uoutputsFromTxs(txHashes)
     } yield {
       txs.map { tx =>
-        UnconfirmedTransaction(
+        MempoolTransaction(
           tx.hash,
           tx.chainFrom,
           tx.chainTo,
@@ -114,7 +114,7 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
   }
   def listByAddress(address: Address)(
       implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]] = {
+      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[MempoolTransaction]] = {
     run(for {
       txHashes <- listUTXHashesByAddress(address)
       txs      <- utxsFromTxs(txHashes)
@@ -122,7 +122,7 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
       outputs  <- uoutputsFromTxs(txHashes)
     } yield {
       txs.map { tx =>
-        UnconfirmedTransaction(
+        MempoolTransaction(
           tx.hash,
           tx.chainFrom,
           tx.chainTo,
@@ -136,20 +136,20 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
     })
   }
 
-  private def insertManyAction(utxs: ArraySeq[UnconfirmedTransaction])(
+  private def insertManyAction(utxs: ArraySeq[MempoolTransaction])(
       implicit executionContext: ExecutionContext): DBActionW[Unit] = {
-    val entities = utxs.map(UnconfirmedTxEntity.from)
+    val entities = utxs.map(MempoolTransactionEntity.from)
     val txs      = entities.map { case (tx, _, _) => tx }
     val inputs   = entities.flatMap { case (_, in, _) => in }
     val outputs  = entities.flatMap { case (_, _, out) => out }
     for {
-      _ <- DBIOAction.sequence(txs.map(UnconfirmedTxSchema.table.insertOrUpdate))
+      _ <- DBIOAction.sequence(txs.map(MempoolTransactionSchema.table.insertOrUpdate))
       _ <- DBIOAction.sequence(inputs.map(UInputSchema.table.insertOrUpdate))
       _ <- DBIOAction.sequence(outputs.map(UOutputSchema.table.insertOrUpdate))
     } yield ()
   }
 
-  def insertMany(utxs: ArraySeq[UnconfirmedTransaction])(
+  def insertMany(utxs: ArraySeq[MempoolTransaction])(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
     run(insertManyAction(utxs))
@@ -164,7 +164,7 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
   private def removeManyAction(txs: ArraySeq[TransactionId])(
       implicit executionContext: ExecutionContext): DBActionW[Unit] = {
     for {
-      _ <- UnconfirmedTxSchema.table.filter(_.hash inSet txs).delete
+      _ <- MempoolTransactionSchema.table.filter(_.hash inSet txs).delete
       _ <- UOutputSchema.table.filter(_.txHash inSet txs).delete
       _ <- UInputSchema.table.filter(_.txHash inSet txs).delete
     } yield ()
@@ -177,7 +177,7 @@ object UnconfirmedTxDao extends UnconfirmedTxDao {
   }
 
   def removeAndInsertMany(toRemove: ArraySeq[TransactionId],
-                          toInsert: ArraySeq[UnconfirmedTransaction])(
+                          toInsert: ArraySeq[MempoolTransaction])(
       implicit executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
     run((for {

@@ -30,7 +30,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.DBRunner._
-import org.alephium.explorer.persistence.dao.{TransactionDao, UnconfirmedTxDao}
+import org.alephium.explorer.persistence.dao.{MempoolDao, TransactionDao}
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.json.Json.write
 import org.alephium.protocol.model.{Address, TokenId, TransactionId}
@@ -61,9 +61,9 @@ trait TransactionService {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]]
 
-  def listUnconfirmedTransactionsByAddress(address: Address)(
+  def listMempoolTransactionsByAddress(address: Address)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]]
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[MempoolTransaction]]
 
   def getTransactionsNumberByAddress(address: Address)(
       implicit ec: ExecutionContext,
@@ -82,9 +82,9 @@ trait TransactionService {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]]
 
-  def listUnconfirmedTransactions(pagination: Pagination)(
+  def listMempoolTransactions(pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]]
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[MempoolTransaction]]
 
   def listTokens(pagination: Pagination)(
       implicit ec: ExecutionContext,
@@ -127,8 +127,8 @@ object TransactionService extends TransactionService {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Option[TransactionLike]] =
     TransactionDao.get(transactionHash).flatMap {
-      case None     => UnconfirmedTxDao.get(transactionHash)
-      case Some(tx) => Future.successful(Some(ConfirmedTransaction.from(tx)))
+      case None     => MempoolDao.get(transactionHash).map(_.map(PendingTransaction.from))
+      case Some(tx) => Future.successful(Some(AcceptedTransaction.from(tx)))
     }
 
   def getTransactionsByAddress(address: Address, pagination: Pagination)(
@@ -154,10 +154,10 @@ object TransactionService extends TransactionService {
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     TransactionDao.getByAddresses(addresses, pagination)
 
-  def listUnconfirmedTransactionsByAddress(address: Address)(
+  def listMempoolTransactionsByAddress(address: Address)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]] = {
-    UnconfirmedTxDao.listByAddress(address)
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[MempoolTransaction]] = {
+    MempoolDao.listByAddress(address)
   }
 
   def getTransactionsNumberByAddress(address: Address)(
@@ -174,10 +174,10 @@ object TransactionService extends TransactionService {
       dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
     TransactionDao.getTokenBalance(address, token)
 
-  def listUnconfirmedTransactions(pagination: Pagination)(
+  def listMempoolTransactions(pagination: Pagination)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[UnconfirmedTransaction]] = {
-    UnconfirmedTxDao.list(pagination)
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[MempoolTransaction]] = {
+    MempoolDao.list(pagination)
   }
 
   def listTokens(pagination: Pagination)(

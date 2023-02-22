@@ -29,7 +29,7 @@ trait Documentation
     with ChartsEndpoints
     with TokensEndpoints
     with EventsEndpoints
-    with UnconfirmedTransactionEndpoints
+    with MempoolEndpoints
     with UtilsEndpoints
     with OpenAPIDocsInterpreter {
   lazy val docs: OpenAPI = toOpenAPI(
@@ -43,7 +43,7 @@ trait Documentation
       getTransactionsByAddresses,
       getTransactionsByAddressTimeRanged,
       getTotalTransactionsByAddress,
-      addressUnconfirmedTransactions,
+      addressMempoolTransactions,
       getAddressBalance,
       listAddressTokens,
       listAddressTokenTransactions,
@@ -52,7 +52,7 @@ trait Documentation
       exportTransactionsCsvByAddress,
       getInfos,
       getHeights,
-      listUnconfirmedTransactions,
+      listMempoolTransactions,
       listTokens,
       listTokenTransactions,
       listTokenSupply,

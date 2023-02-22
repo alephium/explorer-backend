@@ -130,11 +130,11 @@ class ApiModelSpec() extends AlephiumSpec {
     }
   }
 
-  "ConfirmedTransaction" in {
+  "AcceptedTransaction" in {
     forAll(transactionGen) { tx =>
       val expected = s"""
        |{
-       |  "type": "Confirmed",
+       |  "type": "Accepted",
        |  "hash": "${tx.hash.value.toHexString}",
        |  "blockHash": "${tx.blockHash.value.toHexString}",
        |  "timestamp": ${tx.timestamp.millis},
@@ -144,7 +144,7 @@ class ApiModelSpec() extends AlephiumSpec {
        |  "gasPrice": "${tx.gasPrice}",
        |  "coinbase": ${tx.coinbase}
        |}""".stripMargin
-      check(ConfirmedTransaction.from(tx), expected)
+      check(AcceptedTransaction.from(tx), expected)
     }
   }
 
@@ -222,11 +222,27 @@ class ApiModelSpec() extends AlephiumSpec {
     }
   }
 
-  "UnconfirmedTx" in {
-    forAll(utransactionGen) { utx =>
+  "MempoolTransaction" in {
+    forAll(mempooltransactionGen) { utx =>
       val expected = s"""
      |{
-     |  "type": "Unconfirmed",
+     |  "hash": "${utx.hash.value.toHexString}",
+     |  "chainFrom": ${utx.chainFrom.value},
+     |  "chainTo": ${utx.chainTo.value},
+     |  "inputs": ${write(utx.inputs)},
+     |  "outputs": ${write(utx.outputs)},
+     |  "gasAmount": ${utx.gasAmount},
+     |  "gasPrice": "${utx.gasPrice}",
+     |  "lastSeen": ${utx.lastSeen.millis}
+     |}""".stripMargin
+      check(utx, expected)
+    }
+  }
+
+  "PendingTransaction" in {
+    forAll(mempooltransactionGen) { utx =>
+      val expected = s"""
+     |{
      |  "hash": "${utx.hash.value.toHexString}",
      |  "chainFrom": ${utx.chainFrom.value},
      |  "chainTo": ${utx.chainTo.value},

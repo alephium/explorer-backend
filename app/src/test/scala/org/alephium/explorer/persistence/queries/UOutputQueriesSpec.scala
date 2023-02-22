@@ -53,7 +53,7 @@ class UOutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
           val expected = uoutput.filter(uoutput => txIds.contains(uoutput.txHash))
 
           val actual =
-            run(UnconfirmedTransactionQueries.uoutputsFromTxs(txIds)).futureValue
+            run(MempoolQueries.uoutputsFromTxs(txIds)).futureValue
 
           actual should contain theSameElementsAs expected
         }
@@ -80,7 +80,7 @@ class UOutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
               .sortBy(_.uoutputOrder)
 
           val actual =
-            run(UnconfirmedTransactionQueries.uoutputsFromTx(txId)).futureValue
+            run(MempoolQueries.uoutputsFromTx(txId)).futureValue
 
           //the result should be in expected order.
           actual should contain theSameElementsInOrderAs expected

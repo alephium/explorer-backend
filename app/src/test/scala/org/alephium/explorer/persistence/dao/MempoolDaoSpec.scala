@@ -22,22 +22,25 @@ import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AlephiumFutureSpec
-import org.alephium.explorer.GenApiModel.{assetOutputGen, utransactionGen}
+import org.alephium.explorer.GenApiModel.{assetOutputGen, mempooltransactionGen}
 import org.alephium.explorer.GenCoreUtil.timestampGen
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.model.TransactionId
 
-class UnconfirmedTxDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
+class MempoolTransactionDaoSpec
+    extends AlephiumFutureSpec
+    with DatabaseFixtureForEach
+    with DBRunner {
 
   "insertMany" in {
-    forAll(Gen.listOfN(5, utransactionGen)) { txs =>
-      UnconfirmedTxDao.insertMany(txs).futureValue
+    forAll(Gen.listOfN(5, mempooltransactionGen)) { txs =>
+      MempoolDao.insertMany(txs).futureValue
 
       txs.foreach { tx =>
         val dbTx =
-          run(UnconfirmedTxSchema.table.filter(_.hash === tx.hash).result).futureValue
+          run(MempoolTransactionSchema.table.filter(_.hash === tx.hash).result).futureValue
         dbTx.size is 1
         dbTx.head.hash is tx.hash
         dbTx.head.chainFrom is tx.chainFrom
@@ -58,42 +61,42 @@ class UnconfirmedTxDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEac
   }
 
   "get" in {
-    forAll(utransactionGen) { utx =>
-      UnconfirmedTxDao.insertMany(ArraySeq(utx)).futureValue
+    forAll(mempooltransactionGen) { utx =>
+      MempoolDao.insertMany(ArraySeq(utx)).futureValue
 
-      UnconfirmedTxDao.get(utx.hash).futureValue is Some(utx)
+      MempoolDao.get(utx.hash).futureValue is Some(utx)
     }
   }
 
   "get utx with multiple outputs with same address but different lock time. Issue #142 " in {
-    forAll(Gen.choose(2, 6), assetOutputGen, utransactionGen) {
+    forAll(Gen.choose(2, 6), assetOutputGen, mempooltransactionGen) {
       case (outputSize, out, utx) =>
         //outputs with same address but different lockTime
         val outputs = ArraySeq.fill(outputSize)(out.copy(lockTime = Some(timestampGen.sample.get)))
 
-        UnconfirmedTxDao.insertMany(ArraySeq(utx.copy(outputs = outputs))).futureValue
+        MempoolDao.insertMany(ArraySeq(utx.copy(outputs = outputs))).futureValue
 
-        UnconfirmedTxDao.get(utx.hash).futureValue.get.outputs.size is outputSize
+        MempoolDao.get(utx.hash).futureValue.get.outputs.size is outputSize
     }
   }
 
   "removeMany" in {
-    forAll(Gen.listOfN(5, utransactionGen)) { txs =>
-      UnconfirmedTxDao.insertMany(txs).futureValue
-      UnconfirmedTxDao.removeMany(txs.map(_.hash)).futureValue
+    forAll(Gen.listOfN(5, mempooltransactionGen)) { txs =>
+      MempoolDao.insertMany(txs).futureValue
+      MempoolDao.removeMany(txs.map(_.hash)).futureValue
 
       txs.foreach { tx =>
-        UnconfirmedTxDao.get(tx.hash).futureValue is None
+        MempoolDao.get(tx.hash).futureValue is None
       }
     }
   }
 
   "listHashes" in {
     var hashes = Set.empty[TransactionId]
-    forAll(Gen.listOfN(5, utransactionGen)) { txs =>
-      UnconfirmedTxDao.insertMany(txs).futureValue
+    forAll(Gen.listOfN(5, mempooltransactionGen)) { txs =>
+      MempoolDao.insertMany(txs).futureValue
       hashes = hashes ++ txs.map(_.hash)
-      UnconfirmedTxDao.listHashes().futureValue.toSet is hashes
+      MempoolDao.listHashes().futureValue.toSet is hashes
     }
   }
 }

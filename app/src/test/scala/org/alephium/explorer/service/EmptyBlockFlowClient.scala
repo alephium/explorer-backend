@@ -51,7 +51,7 @@ trait EmptyBlockFlowClient extends BlockFlowClient {
 
   override def fetchChainParams(): Future[ChainParams] = ???
 
-  override def fetchUnconfirmedTransactions(uri: Uri): Future[ArraySeq[UnconfirmedTransaction]] =
+  override def fetchMempoolTransactions(uri: Uri): Future[ArraySeq[MempoolTransaction]] =
     ???
 
   override def start(): Future[Unit] = ???
