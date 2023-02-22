@@ -337,7 +337,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
           .getTransaction(tx.hash)
           .futureValue
           .get
-          .asInstanceOf[ConfirmedTransaction]
+          .asInstanceOf[AcceptedTransaction]
           .blockHash is blockHash0 // was sometime blockHash1 in fb7127f
     }
   }
@@ -347,7 +347,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
     TransactionService.getTransaction(utx.hash).futureValue is None
     MempoolDao.insertMany(ArraySeq(utx)).futureValue
-    TransactionService.getTransaction(utx.hash).futureValue is Some(utx)
+    TransactionService.getTransaction(utx.hash).futureValue is Some(PendingTransaction.from(utx))
   }
 
   "return mempool txs of an address" in new Fixture {
@@ -398,7 +398,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
             .getTransaction(tx.hash)
             .futureValue
             .get
-            .asInstanceOf[ConfirmedTransaction]
+            .asInstanceOf[AcceptedTransaction]
         transaction.outputs.map(_.key) is block.outputs
           .filter(_.txHash == tx.hash)
           .sortBy(_.outputOrder)

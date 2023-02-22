@@ -127,8 +127,8 @@ object TransactionService extends TransactionService {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Option[TransactionLike]] =
     TransactionDao.get(transactionHash).flatMap {
-      case None     => MempoolDao.get(transactionHash)
-      case Some(tx) => Future.successful(Some(ConfirmedTransaction.from(tx)))
+      case None     => MempoolDao.get(transactionHash).map(_.map(PendingTransaction.from))
+      case Some(tx) => Future.successful(Some(AcceptedTransaction.from(tx)))
     }
 
   def getTransactionsByAddress(address: Address, pagination: Pagination)(

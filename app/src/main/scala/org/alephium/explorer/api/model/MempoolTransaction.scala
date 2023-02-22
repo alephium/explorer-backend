@@ -14,28 +14,27 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.api
+package org.alephium.explorer.api.model
 
 import scala.collection.immutable.ArraySeq
 
-import sttp.tapir._
-import sttp.tapir.generic.auto._
+import org.alephium.api.UtilJson.{timestampReader, timestampWriter}
+import org.alephium.explorer.api.Json._
+import org.alephium.json.Json._
+import org.alephium.protocol.model.TransactionId
+import org.alephium.util.{TimeStamp, U256}
 
-import org.alephium.api.Endpoints.jsonBody
-import org.alephium.explorer.api.EndpointExamples._
-import org.alephium.explorer.api.model.{MempoolTransaction, Pagination}
+final case class MempoolTransaction(
+    hash: TransactionId,
+    chainFrom: GroupIndex,
+    chainTo: GroupIndex,
+    inputs: ArraySeq[Input],
+    outputs: ArraySeq[Output],
+    gasAmount: Int,
+    gasPrice: U256,
+    lastSeen: TimeStamp
+)
 
-trait MempoolEndpoints extends BaseEndpoint with QueryParams {
-
-  private val mempoolEndpoint =
-    baseEndpoint
-      .tag("Mempool")
-      .in("mempool")
-
-  val listMempoolTransactions: BaseEndpoint[Pagination, ArraySeq[MempoolTransaction]] =
-    mempoolEndpoint.get
-      .in("transactions")
-      .in(pagination)
-      .out(jsonBody[ArraySeq[MempoolTransaction]])
-      .description("list mempool transactions")
+object MempoolTransaction {
+  implicit val utxRW: ReadWriter[MempoolTransaction] = macroRW
 }
