@@ -49,6 +49,7 @@ object AppServer {
     val tokenServer: TokenServer   = new TokenServer()
     val mempoolServer              = new MempoolServer()
     val eventServer                = new EventServer()
+    val contractServer             = new ContractServer()
     val documentationServer        = new DocumentationServer()
 
     blockServer.routes ++
@@ -60,6 +61,7 @@ object AppServer {
       utilsServer.routes ++
       mempoolServer.routes ++
       eventServer.routes ++
+      contractServer.routes ++
       documentationServer.routes :+
       Metrics.route
   }
