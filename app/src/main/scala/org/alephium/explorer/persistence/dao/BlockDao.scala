@@ -31,6 +31,7 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.BlockQueries._
+import org.alephium.explorer.persistence.queries.ContractQueries._
 import org.alephium.explorer.persistence.queries.EventQueries._
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.persistence.schema._
@@ -75,6 +76,7 @@ object BlockDao {
     run((for {
       _ <- insertBlockEntity(ArraySeq(block), groupSetting.groupNum)
       _ <- insertEventsQuery(events)
+      _ <- insertSubContractCreation(events)
     } yield ()).transactionally)
 
   /** Inserts a multiple blocks transactionally via SQL */
