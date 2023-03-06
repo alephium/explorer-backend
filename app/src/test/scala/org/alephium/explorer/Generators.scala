@@ -404,19 +404,21 @@ object Generators {
     blocks.map(_.map { block =>
       val coinbaseTxId = block.transactions.last.hash
       val transactions =
-        block.transactions.map { tx =>
-          Transaction(
-            tx.hash,
-            block.hash,
-            block.timestamp,
-            block.inputs
-              .filter(_.txHash === tx.hash)
-              .map(input => input.toApi(outputs.head)), //TODO Fix when we have a valid blockchain generator
-            block.outputs.filter(_.txHash === tx.hash).map(_.toApi(None)),
-            tx.gasAmount,
-            tx.gasPrice,
-            coinbase = coinbaseTxId == tx.hash
-          )
+        block.transactions.map {
+          tx =>
+            Transaction(
+              tx.hash,
+              block.hash,
+              block.timestamp,
+              block.inputs
+                .filter(_.txHash === tx.hash)
+                .map(input => input.toApi(outputs.head)), //TODO Fix when we have a valid blockchain generator
+              block.outputs.filter(_.txHash === tx.hash).map(_.toApi(None)),
+              tx.gasAmount,
+              tx.gasPrice,
+              tx.scriptExecutionOk,
+              coinbase = coinbaseTxId == tx.hash
+            )
         }
       BlockEntry(
         block.hash,

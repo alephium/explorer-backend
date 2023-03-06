@@ -236,7 +236,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
                     Some(tx1.hash))),
       gasAmount,
       gasPrice,
-      coinbase = false
+      scriptExecutionOk = true,
+      coinbase          = false
     )
 
     val t1 = Transaction(
@@ -252,7 +253,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       ArraySeq(AssetOutput(output1.hint, output1.key, U256.One, address1, None, None, None, None)),
       gasAmount1,
       gasPrice1,
-      coinbase = false
+      scriptExecutionOk = true,
+      coinbase          = false
     )
 
     val res2 =

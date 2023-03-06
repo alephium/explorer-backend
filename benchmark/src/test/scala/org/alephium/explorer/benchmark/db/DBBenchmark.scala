@@ -211,7 +211,7 @@ class DBBenchmark {
   @Benchmark
   def getGasFromTxsSQL(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(TransactionQueries.gasFromTxsSQL(state.hashes), requestTimeout)
+      state.db.runNow(TransactionQueries.infoFromTxsSQL(state.hashes), requestTimeout)
   }
 
   @Benchmark

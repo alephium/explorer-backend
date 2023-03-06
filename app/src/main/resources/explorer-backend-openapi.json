@@ -376,6 +376,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
+                    "scriptExecutionOk": false,
                     "coinbase": false
                   },
                   {
@@ -444,6 +445,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
+                    "scriptExecutionOk": false,
                     "coinbase": false
                   }
                 ]
@@ -610,6 +612,7 @@
                   ],
                   "gasAmount": 20000,
                   "gasPrice": "100000000000",
+                  "scriptExecutionOk": false,
                   "coinbase": false
                 }
               }
@@ -908,6 +911,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
+                    "scriptExecutionOk": false,
                     "coinbase": false
                   },
                   {
@@ -976,6 +980,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
+                    "scriptExecutionOk": false,
                     "coinbase": false
                   }
                 ]
@@ -1185,6 +1190,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
+                    "scriptExecutionOk": false,
                     "coinbase": false
                   },
                   {
@@ -1253,6 +1259,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
+                    "scriptExecutionOk": false,
                     "coinbase": false
                   }
                 ]
@@ -1471,6 +1478,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
+                    "scriptExecutionOk": false,
                     "coinbase": false
                   },
                   {
@@ -1539,6 +1547,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
+                    "scriptExecutionOk": false,
                     "coinbase": false
                   }
                 ]
@@ -2284,6 +2293,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
+                    "scriptExecutionOk": false,
                     "coinbase": false
                   },
                   {
@@ -2352,6 +2362,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
+                    "scriptExecutionOk": false,
                     "coinbase": false
                   }
                 ]
@@ -3470,6 +3481,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
+                    "scriptExecutionOk": false,
                     "coinbase": false
                   },
                   {
@@ -3538,6 +3550,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
+                    "scriptExecutionOk": false,
                     "coinbase": false
                   }
                 ]
@@ -5348,6 +5361,7 @@
           "timestamp",
           "gasAmount",
           "gasPrice",
+          "scriptExecutionOk",
           "coinbase",
           "type"
         ],
@@ -5384,6 +5398,9 @@
           "gasPrice": {
             "type": "string",
             "format": "uint256"
+          },
+          "scriptExecutionOk": {
+            "type": "boolean"
           },
           "coinbase": {
             "type": "boolean"
@@ -6069,6 +6086,7 @@
           "timestamp",
           "gasAmount",
           "gasPrice",
+          "scriptExecutionOk",
           "coinbase"
         ],
         "type": "object",
@@ -6104,6 +6122,9 @@
           "gasPrice": {
             "type": "string",
             "format": "uint256"
+          },
+          "scriptExecutionOk": {
+            "type": "boolean"
           },
           "coinbase": {
             "type": "boolean"
