@@ -376,7 +376,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
-                    "scriptExecutionOk": false,
+                    "scriptExecutionOk": true,
                     "coinbase": false
                   },
                   {
@@ -445,7 +445,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
-                    "scriptExecutionOk": false,
+                    "scriptExecutionOk": true,
                     "coinbase": false
                   }
                 ]
@@ -612,7 +612,7 @@
                   ],
                   "gasAmount": 20000,
                   "gasPrice": "100000000000",
-                  "scriptExecutionOk": false,
+                  "scriptExecutionOk": true,
                   "coinbase": false
                 }
               }
@@ -911,7 +911,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
-                    "scriptExecutionOk": false,
+                    "scriptExecutionOk": true,
                     "coinbase": false
                   },
                   {
@@ -980,7 +980,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
-                    "scriptExecutionOk": false,
+                    "scriptExecutionOk": true,
                     "coinbase": false
                   }
                 ]
@@ -1190,7 +1190,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
-                    "scriptExecutionOk": false,
+                    "scriptExecutionOk": true,
                     "coinbase": false
                   },
                   {
@@ -1259,7 +1259,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
-                    "scriptExecutionOk": false,
+                    "scriptExecutionOk": true,
                     "coinbase": false
                   }
                 ]
@@ -1478,7 +1478,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
-                    "scriptExecutionOk": false,
+                    "scriptExecutionOk": true,
                     "coinbase": false
                   },
                   {
@@ -1547,7 +1547,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
-                    "scriptExecutionOk": false,
+                    "scriptExecutionOk": true,
                     "coinbase": false
                   }
                 ]
@@ -2293,7 +2293,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
-                    "scriptExecutionOk": false,
+                    "scriptExecutionOk": true,
                     "coinbase": false
                   },
                   {
@@ -2362,7 +2362,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
-                    "scriptExecutionOk": false,
+                    "scriptExecutionOk": true,
                     "coinbase": false
                   }
                 ]
@@ -3481,7 +3481,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
-                    "scriptExecutionOk": false,
+                    "scriptExecutionOk": true,
                     "coinbase": false
                   },
                   {
@@ -3550,7 +3550,7 @@
                     ],
                     "gasAmount": 20000,
                     "gasPrice": "100000000000",
-                    "scriptExecutionOk": false,
+                    "scriptExecutionOk": true,
                     "coinbase": false
                   }
                 ]

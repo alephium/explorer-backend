@@ -117,7 +117,7 @@ object EndpointExamples extends EndpointsExamples {
       outputs           = ArraySeq(outputAsset, outputContract),
       gasAmount         = org.alephium.protocol.model.minimalGas.value,
       gasPrice          = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
-      scriptExecutionOk = false,
+      scriptExecutionOk = true,
       coinbase          = false
     )
 
@@ -130,7 +130,7 @@ object EndpointExamples extends EndpointsExamples {
       outputs           = ArraySeq(outputAsset, outputContract),
       gasAmount         = org.alephium.protocol.model.minimalGas.value,
       gasPrice          = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
-      scriptExecutionOk = false,
+      scriptExecutionOk = true,
       coinbase          = false
     )
 

@@ -362,7 +362,7 @@ object TransactionQueries extends StrictLogging {
       val ins                                      = insByTx.getOrElse(txn.txHash, ArraySeq.empty)
       val ous                                      = ousByTx.getOrElse(txn.txHash, ArraySeq.empty)
       val gas                                      = gasByTx.getOrElse(txn.txHash, ArraySeq.empty)
-      val (gasAmount, gasPrice, scriptExecutionOk) = gas.headOption.getOrElse((0, U256.Zero, false))
+      val (gasAmount, gasPrice, scriptExecutionOk) = gas.headOption.getOrElse((0, U256.Zero, true))
       Transaction(txn.txHash,
                   txn.blockHash,
                   txn.blockTimestamp,
