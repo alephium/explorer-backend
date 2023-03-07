@@ -61,6 +61,15 @@ class SchedulerSpec extends AlephiumFutureSpec with ScalaCheckDrivenPropertyChec
             .scheduleTime(ZonedDateTime.now(zoneId).plusMinutes(10).plusSeconds(20),
                           "test-scheduler")
             .toMinutes is 10
+        }
+
+        /**
+          * <a href="https://github.com/alephium/explorer-backend/issues/335">#335</a>:
+          * The following test is invalid for timezones in daylight savings.
+          *
+          * Restricting this test to run for known timezones only (Sydney & Switzerland).
+          * */
+        Seq(ZoneId.of("Australia/Sydney"), ZoneId.of("CET")) foreach { zoneId =>
           //Days
           Scheduler
             .scheduleTime(ZonedDateTime.now(zoneId).plusDays(10).plusSeconds(20), "test-scheduler")
