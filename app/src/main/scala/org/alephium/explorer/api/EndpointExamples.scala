@@ -110,26 +110,28 @@ object EndpointExamples extends EndpointsExamples {
 
   private val transaction: Transaction =
     Transaction(
-      hash      = txId,
-      blockHash = blockHash,
-      timestamp = ts,
-      inputs    = ArraySeq(input),
-      outputs   = ArraySeq(outputAsset, outputContract),
-      gasAmount = org.alephium.protocol.model.minimalGas.value,
-      gasPrice  = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
-      coinbase  = false
+      hash              = txId,
+      blockHash         = blockHash,
+      timestamp         = ts,
+      inputs            = ArraySeq(input),
+      outputs           = ArraySeq(outputAsset, outputContract),
+      gasAmount         = org.alephium.protocol.model.minimalGas.value,
+      gasPrice          = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
+      scriptExecutionOk = true,
+      coinbase          = false
     )
 
   private val acceptedTransaction: AcceptedTransaction =
     AcceptedTransaction(
-      hash      = txId,
-      blockHash = blockHash,
-      timestamp = ts,
-      inputs    = ArraySeq(input),
-      outputs   = ArraySeq(outputAsset, outputContract),
-      gasAmount = org.alephium.protocol.model.minimalGas.value,
-      gasPrice  = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
-      coinbase  = false
+      hash              = txId,
+      blockHash         = blockHash,
+      timestamp         = ts,
+      inputs            = ArraySeq(input),
+      outputs           = ArraySeq(outputAsset, outputContract),
+      gasAmount         = org.alephium.protocol.model.minimalGas.value,
+      gasPrice          = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
+      scriptExecutionOk = true,
+      coinbase          = false
     )
 
   private val pendingTransaction: PendingTransaction =

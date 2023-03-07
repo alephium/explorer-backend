@@ -110,16 +110,22 @@ object TransactionQueries extends StrictLogging {
   private val getTransactionQuery = Compiled { txHash: Rep[TransactionId] =>
     mainTransactions
       .filter(_.hash === txHash)
-      .map(tx => (tx.blockHash, tx.timestamp, tx.gasAmount, tx.gasPrice, tx.coinbase))
+      .map(tx =>
+        (tx.blockHash, tx.timestamp, tx.gasAmount, tx.gasPrice, tx.scriptExecutionOk, tx.coinbase))
   }
 
   def getTransactionAction(txHash: TransactionId)(
       implicit ec: ExecutionContext): DBActionR[Option[Transaction]] =
     getTransactionQuery(txHash).result.headOption.flatMap {
       case None => DBIOAction.successful(None)
-      case Some((blockHash, timestamp, gasAmount, gasPrice, coinbase)) =>
-        getKnownTransactionAction(txHash, blockHash, timestamp, gasAmount, gasPrice, coinbase).map(
-          Some.apply)
+      case Some((blockHash, timestamp, gasAmount, gasPrice, scriptExecutionOk, coinbase)) =>
+        getKnownTransactionAction(txHash,
+                                  blockHash,
+                                  timestamp,
+                                  gasAmount,
+                                  gasPrice,
+                                  scriptExecutionOk,
+                                  coinbase).map(Some.apply)
     }
 
   private def getTxHashesByBlockHashQuery(
@@ -312,7 +318,7 @@ object TransactionQueries extends StrictLogging {
       for {
         inputs  <- inputsFromTxsSQL(txHashes)
         outputs <- outputsFromTxsSQL(txHashes)
-        gases   <- gasFromTxsSQL(hashes)
+        gases   <- infoFromTxsSQL(hashes)
       } yield {
         buildTransaction(txHashesTs, inputs, outputs, gases)
       }
@@ -328,7 +334,7 @@ object TransactionQueries extends StrictLogging {
       for {
         inputs  <- inputsFromTxsNoJoin(hashes)
         outputs <- outputsFromTxsNoJoin(hashes)
-        gases   <- gasFromTxsSQL(hashes)
+        gases   <- infoFromTxsSQL(hashes)
       } yield {
         buildTransaction(txHashesTs, inputs, outputs, gases)
       }
@@ -340,7 +346,7 @@ object TransactionQueries extends StrictLogging {
   private def buildTransaction(txHashesTs: ArraySeq[TxByAddressQR],
                                inputs: ArraySeq[InputsFromTxQR],
                                outputs: ArraySeq[OutputsFromTxQR],
-                               gases: ArraySeq[GasFromTxsQR]) = {
+                               gases: ArraySeq[InfoFromTxsQR]) = {
     val insByTx = inputs.groupBy(_.txHash).view.mapValues { values =>
       values
         .sortBy(_.inputOrder)
@@ -351,12 +357,12 @@ object TransactionQueries extends StrictLogging {
         .sortBy(_.outputOrder)
         .map(_.toApiOutput())
     }
-    val gasByTx = gases.groupBy(_.txHash).view.mapValues(_.map(_.gasInfo()))
+    val gasByTx = gases.groupBy(_.txHash).view.mapValues(_.map(_.info()))
     txHashesTs.map { txn =>
-      val ins                   = insByTx.getOrElse(txn.txHash, ArraySeq.empty)
-      val ous                   = ousByTx.getOrElse(txn.txHash, ArraySeq.empty)
-      val gas                   = gasByTx.getOrElse(txn.txHash, ArraySeq.empty)
-      val (gasAmount, gasPrice) = gas.headOption.getOrElse((0, U256.Zero))
+      val ins                                      = insByTx.getOrElse(txn.txHash, ArraySeq.empty)
+      val ous                                      = ousByTx.getOrElse(txn.txHash, ArraySeq.empty)
+      val gas                                      = gasByTx.getOrElse(txn.txHash, ArraySeq.empty)
+      val (gasAmount, gasPrice, scriptExecutionOk) = gas.headOption.getOrElse((0, U256.Zero, true))
       Transaction(txn.txHash,
                   txn.blockHash,
                   txn.blockTimestamp,
@@ -364,11 +370,12 @@ object TransactionQueries extends StrictLogging {
                   ous,
                   gasAmount,
                   gasPrice,
+                  scriptExecutionOk,
                   txn.coinbase)
     }
   }
 
-  def gasFromTxsSQL(hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionSR[GasFromTxsQR] = {
+  def infoFromTxsSQL(hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionSR[InfoFromTxsQR] = {
     if (hashes.nonEmpty) {
       val values =
         hashes
@@ -378,10 +385,10 @@ object TransactionQueries extends StrictLogging {
           }
           .mkString(",")
       sql"""
-    SELECT hash, gas_amount, gas_price
+    SELECT hash, gas_amount, gas_price, script_execution_ok
     FROM transactions
     WHERE (hash, block_hash) IN (#$values)
-    """.asAS[GasFromTxsQR]
+    """.asAS[InfoFromTxsQR]
     } else {
       DBIOAction.successful(ArraySeq.empty)
     }
@@ -393,6 +400,7 @@ object TransactionQueries extends StrictLogging {
       timestamp: TimeStamp,
       gasAmount: Int,
       gasPrice: U256,
+      scriptExecutionOk: Boolean,
       coinbase: Boolean)(implicit ec: ExecutionContext): DBActionR[Transaction] =
     for {
       ins  <- getInputsQuery(txHash, blockHash)
@@ -405,6 +413,7 @@ object TransactionQueries extends StrictLogging {
                   outs.map(_.toApiOutput()),
                   gasAmount,
                   gasPrice,
+                  scriptExecutionOk,
                   coinbase)
     }
 

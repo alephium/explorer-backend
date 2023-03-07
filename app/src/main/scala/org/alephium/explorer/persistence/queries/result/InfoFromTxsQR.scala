@@ -22,22 +22,26 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.protocol.model.TransactionId
 import org.alephium.util.U256
 
-object GasFromTxsQR {
+object InfoFromTxsQR {
 
-  implicit val gasFromTxsQRGetResult: GetResult[GasFromTxsQR] =
+  implicit val infoFromTxsQRGetResult: GetResult[InfoFromTxsQR] =
     (result: PositionedResult) =>
-      GasFromTxsQR(
-        txHash    = result.<<,
-        gasAmount = result.<<,
-        gasPrice  = result.<<
+      InfoFromTxsQR(
+        txHash            = result.<<,
+        gasAmount         = result.<<,
+        gasPrice          = result.<<,
+        scriptExecutionOk = result.<<
     )
 
 }
 
-/** Query result for [[org.alephium.explorer.persistence.queries.TransactionQueries.gasFromTxsSQL]] */
-final case class GasFromTxsQR(txHash: TransactionId, gasAmount: Int, gasPrice: U256) {
+/** Query result for [[org.alephium.explorer.persistence.queries.TransactionQueries.infoFromTxsSQL]] */
+final case class InfoFromTxsQR(txHash: TransactionId,
+                               gasAmount: Int,
+                               gasPrice: U256,
+                               scriptExecutionOk: Boolean) {
 
-  def gasInfo(): (Int, U256) =
-    (gasAmount, gasPrice)
+  def info(): (Int, U256, Boolean) =
+    (gasAmount, gasPrice, scriptExecutionOk)
 
 }

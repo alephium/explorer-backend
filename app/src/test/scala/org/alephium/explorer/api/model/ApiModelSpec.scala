@@ -54,6 +54,7 @@ class ApiModelSpec() extends AlephiumSpec {
        |  "outputs": [],
        |  "gasAmount": ${tx.gasAmount},
        |  "gasPrice": "${tx.gasPrice}",
+       |  "scriptExecutionOk": ${tx.scriptExecutionOk},
        |  "coinbase": ${tx.coinbase}
        |}""".stripMargin
         check(tx, expected)
@@ -120,6 +121,7 @@ class ApiModelSpec() extends AlephiumSpec {
         ),
         gasAmount = 1,
         gasPrice  = ALPH.alph(1),
+        false,
         true
       )
 
@@ -142,6 +144,7 @@ class ApiModelSpec() extends AlephiumSpec {
        |  "outputs": [],
        |  "gasAmount": ${tx.gasAmount},
        |  "gasPrice": "${tx.gasPrice}",
+       |  "scriptExecutionOk": ${tx.scriptExecutionOk},
        |  "coinbase": ${tx.coinbase}
        |}""".stripMargin
       check(AcceptedTransaction.from(tx), expected)

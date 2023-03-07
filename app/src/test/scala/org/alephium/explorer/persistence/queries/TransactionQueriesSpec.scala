@@ -277,7 +277,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         ArraySeq(output.toApi(spent)),
         1,
         ALPH.alph(1),
-        coinbase = false
+        scriptExecutionOk = true,
+        coinbase          = false
       )
     }
 

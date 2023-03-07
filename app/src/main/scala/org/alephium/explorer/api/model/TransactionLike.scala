@@ -44,6 +44,7 @@ final case class AcceptedTransaction(
     outputs: ArraySeq[Output],
     gasAmount: Int,
     gasPrice: U256,
+    scriptExecutionOk: Boolean,
     coinbase: Boolean
 ) extends TransactionLike
 
@@ -57,6 +58,7 @@ object AcceptedTransaction {
     tx.outputs,
     tx.gasAmount,
     tx.gasPrice,
+    tx.scriptExecutionOk,
     tx.coinbase
   )
 }

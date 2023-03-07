@@ -37,6 +37,7 @@ final case class Transaction(
     outputs: ArraySeq[Output],
     gasAmount: Int,
     gasPrice: U256,
+    scriptExecutionOk: Boolean,
     coinbase: Boolean
 ) {
   def toCsv(address: Address): String = {

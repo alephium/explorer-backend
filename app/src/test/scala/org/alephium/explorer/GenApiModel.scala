@@ -111,12 +111,13 @@ object GenApiModel extends ImplicitConversions {
 
   val transactionGen: Gen[Transaction] =
     for {
-      hash      <- transactionHashGen
-      blockHash <- blockEntryHashGen
-      timestamp <- timestampGen
-      gasAmount <- Gen.posNum[Int]
-      gasPrice  <- u256Gen
-      coinbase  <- arbitrary[Boolean]
+      hash              <- transactionHashGen
+      blockHash         <- blockEntryHashGen
+      timestamp         <- timestampGen
+      gasAmount         <- Gen.posNum[Int]
+      gasPrice          <- u256Gen
+      scriptExecutionOk <- arbitrary[Boolean]
+      coinbase          <- arbitrary[Boolean]
     } yield
       Transaction(hash,
                   blockHash,
@@ -125,6 +126,7 @@ object GenApiModel extends ImplicitConversions {
                   ArraySeq.empty,
                   gasAmount,
                   gasPrice,
+                  scriptExecutionOk,
                   coinbase)
 
   val mempooltransactionGen: Gen[MempoolTransaction] =
