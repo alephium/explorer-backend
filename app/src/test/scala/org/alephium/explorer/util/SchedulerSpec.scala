@@ -72,7 +72,8 @@ class SchedulerSpec extends AlephiumFutureSpec with ScalaCheckDrivenPropertyChec
         Seq(ZoneId.of("Australia/Sydney"), ZoneId.of("CET")) foreach { zoneId =>
           //Days
           Scheduler
-            .scheduleTime(ZonedDateTime.now(zoneId).plusDays(10).plusSeconds(20), "test-scheduler")
+            .scheduleTime(ZonedDateTime.now(zoneId).plusDays(10).plusHours(1).plusSeconds(20),
+                          "test-scheduler")
             .toDays is 10
         }
       }
