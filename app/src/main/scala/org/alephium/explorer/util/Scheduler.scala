@@ -114,7 +114,7 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
     scheduleOnce(taskId, firstInterval)(block) andThen {
       case Failure(exception) =>
         logger.error(s"${logId(taskId)}: Failed executing task", exception)
-        Future.failed(exception)
+        ec.reportFailure(exception)
 
       case Success(_) =>
         if (!terminated) {
@@ -135,7 +135,7 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
     scheduleOnce(taskId, scheduleTime(at, logId(taskId)))(block) onComplete {
       case Failure(exception) =>
         logger.error(s"${logId(taskId)}: Failed executing task", exception)
-        Future.failed(exception)
+        ec.reportFailure(exception)
 
       case Success(_) =>
         if (!terminated) {
