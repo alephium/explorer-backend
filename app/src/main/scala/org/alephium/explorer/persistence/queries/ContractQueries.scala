@@ -23,40 +23,40 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence._
-import org.alephium.explorer.persistence.model.{CreateSubContractEventEntity, EventEntity}
+import org.alephium.explorer.persistence.model.{ContractEntity, EventEntity}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.model.Address
 
 object ContractQueries {
-  def insertSubContractCreation(events: Iterable[EventEntity]): DBActionW[Int] = {
-    insertCreateSubContractEventEntities(
-      events.flatMap(CreateSubContractEventEntity.fromEventEntity)
+  def insertContractCreation(events: Iterable[EventEntity]): DBActionW[Int] = {
+    insertContractCreationEventEntities(
+      events.flatMap(ContractEntity.creationFromEventEntity)
     )
   }
 
-  private def insertCreateSubContractEventEntities(
-      events: Iterable[CreateSubContractEventEntity]): DBActionW[Int] = {
+  private def insertContractCreationEventEntities(
+      events: Iterable[ContractEntity]): DBActionW[Int] = {
     QuerySplitter.splitUpdates(rows = events, columnsPerRow = 6) { (events, placeholder) =>
       val query =
         s"""
-           |INSERT INTO create_sub_contract_events ("block_hash", "tx_hash", "contract", "sub_contract","block_timestamp", "event_order_in_block")
+           |INSERT INTO contracts ("contract", "parent", "creation_block_hash", "creation_tx_hash","creation_timestamp","creation_event_order")
            |VALUES $placeholder
            |ON CONFLICT
-           | ON CONSTRAINT create_sub_contract_events_pk
+           | ON CONSTRAINT contracts_pk
            | DO NOTHING
            |""".stripMargin
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
           events foreach { event =>
-            params >> event.blockHash
-            params >> event.txHash
             params >> event.contract
-            params >> event.subContract
-            params >> event.timestamp
-            params >> event.eventOrder
+            params >> event.parent
+            params >> event.creationBlockHash
+            params >> event.creationTxHash
+            params >> event.creationTimestamp
+            params >> event.creationEventOrder
         }
 
       SQLActionBuilder(
@@ -66,22 +66,22 @@ object ContractQueries {
     }
   }
 
-  def getParentAddressQuery(subContract: Address)(
+  def getParentAddressQuery(contract: Address)(
       implicit ec: ExecutionContext): DBActionR[Option[Address]] = {
     sql"""
-      SELECT contract
-      FROM create_sub_contract_events
-      WHERE sub_contract = $subContract
+      SELECT parent
+      FROM contracts
+      WHERE contract = $contract
       LIMIT 1
-      """.asASE[Address](addressGetResult).headOrNone
+      """.asASE[Option[Address]](optionAddressGetResult).headOrNone.map(_.flatten)
   }
 
-  def getSubContractsQuery(contract: Address, pagination: Pagination): DBActionSR[Address] = {
+  def getSubContractsQuery(parent: Address, pagination: Pagination): DBActionSR[Address] = {
     sql"""
-      SELECT sub_contract
-      FROM create_sub_contract_events
-      WHERE contract = $contract
-      ORDER BY block_timestamp DESC, event_order_in_block
+      SELECT contract
+      FROM contracts
+      WHERE parent = $parent
+      ORDER BY creation_timestamp DESC, creation_event_order
       #${pagination.query}
       """.asASE[Address](addressGetResult)
   }

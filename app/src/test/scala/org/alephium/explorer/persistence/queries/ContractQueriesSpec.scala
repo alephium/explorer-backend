@@ -28,9 +28,9 @@ import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
-import org.alephium.explorer.persistence.model.{CreateSubContractEventEntity, EventEntity}
+import org.alephium.explorer.persistence.model.{ContractEntity, EventEntity}
 import org.alephium.explorer.persistence.queries.ContractQueries
-import org.alephium.explorer.persistence.schema.CreateSubContractEventSchema
+import org.alephium.explorer.persistence.schema.ContractSchema
 import org.alephium.protocol.model.Address
 
 @SuppressWarnings(
@@ -41,40 +41,40 @@ class ContractQueriesSpec
     with DBRunner
     with ScalaFutures {
 
-  def createEventGen(contract: Option[Address] = None): Gen[EventEntity] =
+  def createEventGen(parentOpt: Option[Address] = None): Gen[EventEntity] =
     for {
-      event       <- eventEntityGen
-      parent      <- contract.map(Gen.const).getOrElse(addressGen)
-      subContract <- addressGen
+      event    <- eventEntityGen
+      contract <- addressGen
+      parent   <- parentOpt.map(Gen.const).getOrElse(addressGen)
     } yield {
       event.copy(
-        contractAddress = CreateSubContractEventEntity.createContractEventAddress,
+        contractAddress = ContractEntity.createContractEventAddress,
         fields = ArraySeq(
-          ValAddress(subContract),
+          ValAddress(contract),
           ValAddress(parent)
         )
       )
     }
 
   "Contract Queries" should {
-    "insertSubContractCreation" in {
+    "insertContractCreation" in {
       forAll(Gen.nonEmptyListOf(createEventGen())) { events =>
-        run(CreateSubContractEventSchema.table.delete).futureValue
-        run(ContractQueries.insertSubContractCreation(events)).futureValue
-        run(CreateSubContractEventSchema.table.result).futureValue.sortBy(_.timestamp) is events
-          .flatMap(CreateSubContractEventEntity.fromEventEntity)
-          .sortBy(_.timestamp)
+        run(ContractSchema.table.delete).futureValue
+        run(ContractQueries.insertContractCreation(events)).futureValue
+        run(ContractSchema.table.result).futureValue.sortBy(_.creationTimestamp) is events
+          .flatMap(ContractEntity.creationFromEventEntity)
+          .sortBy(_.creationTimestamp)
       }
     }
 
     "getParentAddressQuery" in {
       forAll(Gen.nonEmptyListOf(createEventGen())) { events =>
-        run(CreateSubContractEventSchema.table.delete).futureValue
-        run(ContractQueries.insertSubContractCreation(events)).futureValue
+        run(ContractSchema.table.delete).futureValue
+        run(ContractQueries.insertContractCreation(events)).futureValue
 
-        events.flatMap(CreateSubContractEventEntity.fromEventEntity).foreach { event =>
-          run(ContractQueries.getParentAddressQuery(event.subContract)).futureValue is Some(
-            event.contract)
+        events.flatMap(ContractEntity.creationFromEventEntity).foreach { event =>
+          run(ContractQueries.getParentAddressQuery(event.contract)).futureValue is
+            event.parent
         }
 
         run(ContractQueries.getParentAddressQuery(addressGen.sample.get)).futureValue is None
@@ -87,15 +87,15 @@ class ContractQueriesSpec
 
       forAll(Gen.nonEmptyListOf(createEventGen(Some(parent))), Gen.nonEmptyListOf(createEventGen())) {
         case (events, otherEvents) =>
-          run(CreateSubContractEventSchema.table.delete).futureValue
-          run(ContractQueries.insertSubContractCreation(events ++ otherEvents)).futureValue
+          run(ContractSchema.table.delete).futureValue
+          run(ContractQueries.insertContractCreation(events ++ otherEvents)).futureValue
 
           run(ContractQueries.getSubContractsQuery(parent, pagination)).futureValue is events
             .sortBy(_.timestamp)
             .reverse
             .take(pagination.limit)
-            .flatMap(CreateSubContractEventEntity.fromEventEntity)
-            .map(_.subContract)
+            .flatMap(ContractEntity.creationFromEventEntity)
+            .map(_.contract)
 
       }
     }

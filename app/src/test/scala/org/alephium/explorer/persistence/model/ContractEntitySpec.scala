@@ -22,70 +22,72 @@ import org.alephium.api.model.{Val, ValAddress, ValBool}
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
-import org.alephium.explorer.persistence.model.CreateSubContractEventEntity
+import org.alephium.explorer.persistence.model.ContractEntity
 
-class CreateSubContractEventEntitySpec extends AlephiumSpec {
+class ContractEntitySpec extends AlephiumSpec {
 
-  "CreateSubContractEventEntity.fromEventEntity" should {
+  "ContractEntity.creationFromEventEntity" should {
     "return None for a random event" in {
       forAll(eventEntityGen) { event =>
-        CreateSubContractEventEntity.fromEventEntity(event) is None
+        ContractEntity.creationFromEventEntity(event) is None
       }
     }
 
     "convert the event for a correct create sub contract event" in {
       forAll(eventEntityGen, addressGen, addressGen) {
-        case (event, parent, subContract) =>
+        case (event, contract, parent) =>
           val createSubContractEvent = event.copy(
-            contractAddress = CreateSubContractEventEntity.createContractEventAddress,
+            contractAddress = ContractEntity.createContractEventAddress,
             fields = ArraySeq(
-              ValAddress(subContract),
+              ValAddress(contract),
               ValAddress(parent)
             )
           )
 
-          CreateSubContractEventEntity.fromEventEntity(createSubContractEvent) is Some(
-            CreateSubContractEventEntity(
+          ContractEntity.creationFromEventEntity(createSubContractEvent) is Some(
+            ContractEntity(
+              contract,
+              Some(parent),
               createSubContractEvent.blockHash,
               createSubContractEvent.txHash,
-              parent,
-              subContract,
               createSubContractEvent.timestamp,
-              createSubContractEvent.eventOrder
+              createSubContractEvent.eventOrder,
+              None,
+              None,
+              None,
+              None
             ))
       }
     }
 
-    "fail to convert the event if there isn't exactly 2 ValAddress fields" in {
+    "fail to convert the event if there isn't 1 or 2 ValAddress fields" in {
       forAll(eventEntityGen, addressGen, addressGen) {
-        case (event, parent, subContract) =>
-          val oneField = event.copy(
-            contractAddress = CreateSubContractEventEntity.createContractEventAddress,
-            fields = ArraySeq(
-              ValAddress(subContract)
-            )
+        case (event, contract, parent) =>
+          val zeroField = event.copy(
+            contractAddress = ContractEntity.createContractEventAddress,
+            fields          = ArraySeq.empty
           )
 
-          CreateSubContractEventEntity.fromEventEntity(oneField) is None
+          ContractEntity.creationFromEventEntity(zeroField) is None
 
-          val threeFields = oneField.copy(
+          val threeFields = zeroField.copy(
             fields = ArraySeq(
-              ValAddress(subContract),
+              ValAddress(contract),
               ValAddress(parent),
               ValAddress(addressGen.sample.get)
             )
           )
 
-          CreateSubContractEventEntity.fromEventEntity(threeFields) is None
+          ContractEntity.creationFromEventEntity(threeFields) is None
 
-          val wrongVals = oneField.copy(
+          val wrongVals = zeroField.copy(
             fields = ArraySeq[Val](
-              ValAddress(subContract),
+              ValAddress(contract),
               ValBool(true)
             )
           )
 
-          CreateSubContractEventEntity.fromEventEntity(wrongVals) is None
+          ContractEntity.creationFromEventEntity(wrongVals) is None
       }
     }
   }
