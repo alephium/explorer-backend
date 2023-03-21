@@ -30,9 +30,24 @@ import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.model.Address
 
 object ContractQueries {
+  def insertOrUpdateContracts(events: Iterable[EventEntity])(
+      implicit ec: ExecutionContext): DBActionW[Unit] = {
+    for {
+      _ <- insertContractCreation(events)
+      _ <- updateContractDestruction(events)
+    } yield ()
+  }
+
   def insertContractCreation(events: Iterable[EventEntity]): DBActionW[Int] = {
     insertContractCreationEventEntities(
       events.flatMap(ContractEntity.creationFromEventEntity)
+    )
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
+  def updateContractDestruction(events: Iterable[EventEntity]): DBActionW[Int] = {
+    updateContractDestructionEventEntities(
+      events.flatMap(ContractEntity.destructionFromEventEntity)
     )
   }
 
@@ -57,6 +72,36 @@ object ContractQueries {
             params >> event.creationTxHash
             params >> event.creationTimestamp
             params >> event.creationEventOrder
+        }
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv  = parameters
+      ).asUpdate
+    }
+  }
+
+  private def updateContractDestructionEventEntities(
+      destroyInfos: Iterable[ContractEntity.DestroyInfo]): DBActionW[Int] = {
+    QuerySplitter.splitUpdates(rows = destroyInfos, columnsPerRow = 5) { (destroyInfos, _) =>
+      val query =
+        destroyInfos
+          .map { _ =>
+            s"""
+           UPDATE contracts SET destruction_block_hash = ?, destruction_tx_hash = ?, destruction_timestamp = ?, destruction_event_order = ?
+           WHERE contract = ?
+         """
+          }
+          .mkString("BEGIN;", ";", ";COMMIT;")
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          destroyInfos foreach { destroyInfo =>
+            params >> destroyInfo.blockHash
+            params >> destroyInfo.txHash
+            params >> destroyInfo.timestamp
+            params >> destroyInfo.eventOrder
+            params >> destroyInfo.contract
         }
 
       SQLActionBuilder(

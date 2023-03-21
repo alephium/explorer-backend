@@ -56,14 +56,39 @@ class ContractQueriesSpec
       )
     }
 
+  def destroyEventGen(contract: Address): Gen[EventEntity] =
+    for {
+      event <- eventEntityGen
+    } yield {
+      event.copy(contractAddress = ContractEntity.destroyContractEventAddress,
+                 fields = ArraySeq(
+                   ValAddress(contract)
+                 ))
+    }
+
+  def contractAddressFromEvent(event: EventEntity): Address = {
+    event.fields.head.asInstanceOf[ValAddress].value
+  }
+
   "Contract Queries" should {
-    "insertContractCreation" in {
+    "insertContractCreation and updateContractDestruction" in {
       forAll(Gen.nonEmptyListOf(createEventGen())) { events =>
+        //Creation
         run(ContractSchema.table.delete).futureValue
         run(ContractQueries.insertContractCreation(events)).futureValue
         run(ContractSchema.table.result).futureValue.sortBy(_.creationTimestamp) is events
           .flatMap(ContractEntity.creationFromEventEntity)
           .sortBy(_.creationTimestamp)
+
+        //Destruction
+        val destroyEvents = events.map(e => destroyEventGen(contractAddressFromEvent(e)).sample.get)
+        run(ContractQueries.updateContractDestruction(destroyEvents)).futureValue
+
+        run(ContractSchema.table.result).futureValue
+          .sortBy(_.destructionTimestamp)
+          .flatMap(_.destroyInfo()) is destroyEvents
+          .flatMap(ContractEntity.destructionFromEventEntity)
+          .sortBy(_.timestamp)
       }
     }
 

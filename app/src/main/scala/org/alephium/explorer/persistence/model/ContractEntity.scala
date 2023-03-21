@@ -32,9 +32,23 @@ final case class ContractEntity(
     destructionTxHash: Option[TransactionId],
     destructionTimestamp: Option[TimeStamp],
     destructionEventOrder: Option[Int]
-)
+) {
+  def destroyInfo(): Option[ContractEntity.DestroyInfo] =
+    for {
+      blockHash  <- destructionBlockHash
+      txHash     <- destructionTxHash
+      timestamp  <- destructionTimestamp
+      eventOrder <- destructionEventOrder
+    } yield ContractEntity.DestroyInfo(contract, blockHash, txHash, timestamp, eventOrder)
+}
 
 object ContractEntity {
+  final case class DestroyInfo(contract: Address,
+                               blockHash: BlockHash,
+                               txHash: TransactionId,
+                               timestamp: TimeStamp,
+                               eventOrder: Int)
+
   val createContractEventAddress: Address =
     protocol.model.Address.contract(protocol.vm.createContractEventId)
 
@@ -71,6 +85,21 @@ object ContractEntity {
           Some((contract, Some(parent)))
         case (ValAddress(contract), None) =>
           Some((contract, None))
+        case _ =>
+          None
+      }
+    } else {
+      None
+    }
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
+  def destructionFromEventEntity(event: EventEntity): Option[DestroyInfo] = {
+    if (event.contractAddress == destroyContractEventAddress && event.fields.sizeIs == 1) {
+      event.fields.head match {
+        case ValAddress(contract) =>
+          Some(
+            DestroyInfo(contract, event.blockHash, event.txHash, event.timestamp, event.eventOrder))
         case _ =>
           None
       }
