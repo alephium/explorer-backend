@@ -79,7 +79,14 @@ object ContractEntity {
 
   @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
   def extractAddresses(event: EventEntity): Option[(Address, Option[Address])] = {
-    if (event.fields.sizeIs == 1 || event.fields.sizeIs == 2) {
+    if (event.fields.sizeIs == 1) {
+      event.fields.head match {
+        case ValAddress(contract) =>
+          Some((contract, None))
+        case _ =>
+          None
+      }
+    } else if (event.fields.sizeIs == 2) {
       (event.fields.head, event.fields.lastOption) match {
         case (ValAddress(contract), Some(ValAddress(parent))) =>
           Some((contract, Some(parent)))

@@ -60,6 +60,32 @@ class ContractEntitySpec extends AlephiumSpec {
       }
     }
 
+    "convert the event for a correct creation without sub contract " in {
+      forAll(eventEntityGen, addressGen) {
+        case (event, contract) =>
+          val createContractEvent = event.copy(
+            contractAddress = ContractEntity.createContractEventAddress,
+            fields = ArraySeq(
+              ValAddress(contract)
+            )
+          )
+
+          ContractEntity.creationFromEventEntity(createContractEvent) is Some(
+            ContractEntity(
+              contract,
+              None,
+              createContractEvent.blockHash,
+              createContractEvent.txHash,
+              createContractEvent.timestamp,
+              createContractEvent.eventOrder,
+              None,
+              None,
+              None,
+              None
+            ))
+      }
+    }
+
     "fail to convert the event if there isn't 1 or 2 ValAddress fields" in {
       forAll(eventEntityGen, addressGen, addressGen) {
         case (event, contract, parent) =>
