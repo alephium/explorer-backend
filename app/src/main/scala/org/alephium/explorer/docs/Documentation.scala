@@ -30,6 +30,7 @@ trait Documentation
     with TokensEndpoints
     with EventsEndpoints
     with MempoolEndpoints
+    with ContractsEndpoints
     with UtilsEndpoints
     with OpenAPIDocsInterpreter {
   lazy val docs: OpenAPI = toOpenAPI(
@@ -68,6 +69,8 @@ trait Documentation
       getEventsByTxId,
       getEventsByContractAddress,
       getEventsByContractAndInputAddress,
+      getParentAddress,
+      getSubContracts,
       sanityCheck,
       changeGlobalLogLevel,
       changeLogConfig

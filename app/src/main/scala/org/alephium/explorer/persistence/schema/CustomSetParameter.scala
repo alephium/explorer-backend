@@ -23,9 +23,12 @@ import scala.collection.immutable.ArraySeq
 import akka.util.ByteString
 import slick.jdbc.{PositionedParameters, SetParameter}
 
+import org.alephium.api.model.Val
 import org.alephium.explorer
+import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.OutputEntity
+import org.alephium.json.Json._
 import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}
 import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
@@ -161,6 +164,11 @@ object CustomSetParameter {
           params setBytes null
         //scalastyle:on null
       }
+  }
+
+  implicit object ValsSetParameter extends SetParameter[ArraySeq[Val]] {
+    override def apply(input: ArraySeq[Val], params: PositionedParameters): Unit =
+      params setBytes writeBinary(input)
   }
 
   implicit object BigIntegerSetParameter extends SetParameter[BigInteger] {

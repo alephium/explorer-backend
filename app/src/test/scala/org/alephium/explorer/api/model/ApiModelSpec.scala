@@ -20,6 +20,8 @@ import java.time.Instant
 
 import scala.collection.immutable.ArraySeq
 
+import org.scalacheck.Gen
+
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.{AlephiumSpec, Hash}
 import org.alephium.explorer.GenApiModel._
@@ -339,5 +341,27 @@ class ApiModelSpec() extends AlephiumSpec {
      |  "commit": "b96f64ff"
      |}""".stripMargin
     check(ExplorerInfo("1.2.3", "b96f64ff"), expected)
+  }
+
+  "ContractParent" in {
+    forAll(addressGen) { address =>
+      val expected = s"""
+     |{
+     |  "parent": "$address"
+     |}""".stripMargin
+      check(ContractParent(Some(address)), expected)
+      check(ContractParent(None), "{}")
+    }
+  }
+
+  "SubContracts" in {
+    forAll(Gen.nonEmptyListOf(addressGen)) { addresses =>
+      val expected = s"""
+     |{
+     |  "subContracts": ${write(addresses)}
+     |}""".stripMargin
+      check(SubContracts(addresses), expected)
+      check(SubContracts(ArraySeq.empty), """{"subContracts":[]}""")
+    }
   }
 }

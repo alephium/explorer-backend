@@ -26,9 +26,12 @@ import slick.jdbc._
 import slick.jdbc.PostgresProfile._
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.api.model.Val
 import org.alephium.explorer._
+import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.{AppState, AppStateKey, OutputEntity}
+import org.alephium.json.Json._
 import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}
 import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
@@ -117,6 +120,12 @@ object CustomJdbcTypes {
           case Left(error)  => throw error
           case Right(value) => value
       }
+    )
+
+  implicit val valsType: JdbcType[ArraySeq[Val]] =
+    MappedJdbcType.base[ArraySeq[Val], Array[Byte]](
+      vals  => writeBinary(vals),
+      bytes => readBinary[ArraySeq[Val]](bytes)
     )
 
   implicit val intervalTypeType: JdbcType[IntervalType] =

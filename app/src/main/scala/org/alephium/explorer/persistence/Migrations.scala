@@ -25,18 +25,29 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.persistence.model.AppState.MigrationVersion
-import org.alephium.explorer.persistence.queries.AppStateQueries
+import org.alephium.explorer.persistence.queries.{AppStateQueries, ContractQueries}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.explorer.persistence.schema.EventSchema
 
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(0)
+  val latestVersion: MigrationVersion = MigrationVersion(1)
 
-  private def migrations: Seq[DBActionWT[Unit]] = Seq.empty
+  def migration1(implicit ec: ExecutionContext): DBActionRW[Unit] =
+    EventSchema.table.result.flatMap { events =>
+      for {
+        _ <- ContractQueries.insertContractCreation(events)
+        _ <- ContractQueries.updateContractDestruction(events)
+      } yield ()
+    }
+
+  private def migrations(implicit ec: ExecutionContext): Seq[DBActionRW[Unit]] = Seq(
+    migration1
+  )
 
   def migrationsQuery(versionOpt: Option[MigrationVersion])(
-      implicit ec: ExecutionContext): DBActionWT[Unit] = {
+      implicit ec: ExecutionContext): DBActionRWT[Unit] = {
     logger.info(s"Current migration version: $versionOpt")
     versionOpt match {
       //noop

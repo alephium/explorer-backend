@@ -171,6 +171,12 @@ object EndpointExamples extends EndpointsExamples {
       lockedBalance = U256.Two
     )
 
+  private val contractParent =
+    ContractParent(Some(address1))
+
+  private val subContracts =
+    SubContracts(ArraySeq(address1, address2))
+
   private val hashRate =
     Hashrate(
       timestamp = ts,
@@ -287,6 +293,12 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val addressBalanceExample: List[Example[AddressBalance]] =
     simpleExample(addressBalance)
+
+  implicit val contractParentExample: List[Example[ContractParent]] =
+    simpleExample(contractParent)
+
+  implicit val subContractsExample: List[Example[SubContracts]] =
+    simpleExample(subContracts)
 
   implicit val booleansExample: List[Example[ArraySeq[Boolean]]] =
     simpleExample(ArraySeq(true, false))
