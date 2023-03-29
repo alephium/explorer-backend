@@ -18,13 +18,20 @@ package org.alephium.explorer.persistence.model
 
 import scala.collection.immutable.ArraySeq
 
-import org.alephium.api.model.{Val, ValAddress, ValBool}
+import akka.util.ByteString
+import org.scalacheck.Gen
+
+import org.alephium.api.model.{Val, ValAddress, ValBool, ValByteVec}
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.persistence.model.ContractEntity
 
 class ContractEntitySpec extends AlephiumSpec {
+
+  val interfaceIdGen    = Gen.const(ValByteVec(ContractEntity.createContractInterfaceIdPrefix))
+  val emptyByteVec: Val = ValByteVec(ByteString.empty)
 
   "ContractEntity.creationFromEventEntity" should {
     "return None for a random event" in {
@@ -33,21 +40,24 @@ class ContractEntitySpec extends AlephiumSpec {
       }
     }
 
-    "convert the event for a correct create sub contract event" in {
-      forAll(eventEntityGen, addressGen, addressGen) {
-        case (event, contract, parent) =>
+    "convert the event for a correct create contract events" in {
+      forAll(eventEntityGen, addressGen, Gen.option(addressGen), Gen.option(interfaceIdGen)) {
+        case (event, contract, parentOpt, interfaceIdOpt) =>
+          val parent: Val = parentOpt.map(ValAddress.apply).getOrElse(emptyByteVec)
           val createSubContractEvent = event.copy(
             contractAddress = ContractEntity.createContractEventAddress,
-            fields = ArraySeq(
+            fields = ArraySeq[Val](
               ValAddress(contract),
-              ValAddress(parent)
+              parent,
+              interfaceIdOpt.getOrElse(emptyByteVec)
             )
           )
 
           ContractEntity.creationFromEventEntity(createSubContractEvent) is Some(
             ContractEntity(
               contract,
-              Some(parent),
+              parentOpt,
+              interfaceIdOpt.map(_.value),
               createSubContractEvent.blockHash,
               createSubContractEvent.txHash,
               createSubContractEvent.timestamp,
@@ -60,35 +70,9 @@ class ContractEntitySpec extends AlephiumSpec {
       }
     }
 
-    "convert the event for a correct creation without sub contract " in {
-      forAll(eventEntityGen, addressGen) {
-        case (event, contract) =>
-          val createContractEvent = event.copy(
-            contractAddress = ContractEntity.createContractEventAddress,
-            fields = ArraySeq(
-              ValAddress(contract)
-            )
-          )
-
-          ContractEntity.creationFromEventEntity(createContractEvent) is Some(
-            ContractEntity(
-              contract,
-              None,
-              createContractEvent.blockHash,
-              createContractEvent.txHash,
-              createContractEvent.timestamp,
-              createContractEvent.eventOrder,
-              None,
-              None,
-              None,
-              None
-            ))
-      }
-    }
-
-    "fail to convert the event if there isn't 1 or 2 ValAddress fields" in {
-      forAll(eventEntityGen, addressGen, addressGen) {
-        case (event, contract, parent) =>
+    "fail to convert the event if there isn't 3 correct fields" in {
+      forAll(eventEntityGen, addressGen, addressGen, interfaceIdGen) {
+        case (event, contract, parent, interfaceId) =>
           val zeroField = event.copy(
             contractAddress = ContractEntity.createContractEventAddress,
             fields          = ArraySeq.empty
@@ -96,24 +80,54 @@ class ContractEntitySpec extends AlephiumSpec {
 
           ContractEntity.creationFromEventEntity(zeroField) is None
 
-          val threeFields = zeroField.copy(
+          val oneField = zeroField.copy(
             fields = ArraySeq(
-              ValAddress(contract),
-              ValAddress(parent),
-              ValAddress(addressGen.sample.get)
+              ValAddress(contract)
             )
           )
 
-          ContractEntity.creationFromEventEntity(threeFields) is None
+          ContractEntity.creationFromEventEntity(oneField) is None
+
+          val twoFields = zeroField.copy(
+            fields = ArraySeq(
+              ValAddress(contract),
+              ValAddress(parent)
+            )
+          )
+
+          ContractEntity.creationFromEventEntity(twoFields) is None
+
+          val fourFields = zeroField.copy(
+            fields = ArraySeq[Val](
+              ValAddress(contract),
+              ValAddress(parent),
+              interfaceId,
+              ValAddress(parent)
+            )
+          )
+
+          ContractEntity.creationFromEventEntity(fourFields) is None
 
           val wrongVals = zeroField.copy(
             fields = ArraySeq[Val](
               ValAddress(contract),
-              ValBool(true)
+              ValBool(true),
+              interfaceId
             )
           )
 
           ContractEntity.creationFromEventEntity(wrongVals) is None
+
+          val wrongInterfaceId = zeroField.copy(
+            fields = ArraySeq[Val](
+              ValAddress(contract),
+              ValBool(true),
+              ValAddress(parent),
+              valByteVecGen.sample.get
+            )
+          )
+
+          ContractEntity.creationFromEventEntity(wrongInterfaceId) is None
       }
     }
   }
