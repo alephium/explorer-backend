@@ -32,9 +32,9 @@ import org.alephium.explorer.persistence.schema.EventSchema
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(1)
+  val latestVersion: MigrationVersion = MigrationVersion(2)
 
-  def migration1(implicit ec: ExecutionContext): DBActionRW[Unit] =
+  def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] =
     EventSchema.table.result.flatMap { events =>
       for {
         _ <- ContractQueries.insertContractCreation(events)
@@ -42,12 +42,19 @@ object Migrations extends StrictLogging {
       } yield ()
     }
 
-  private def migrations(implicit ec: ExecutionContext): Seq[DBActionRW[Unit]] = Seq(
-    migration1
+  def migration2(implicit ec: ExecutionContext): DBActionAll[Unit] =
+    for {
+      _ <- sqlu"""ALTER TABLE contracts ADD COLUMN IF NOT EXISTS std_interface_id_guessed bytea"""
+      _ <- sqlu"""CREATE INDEX IF NOT EXISTS contracts_std_interface_id_guessed_idx ON contracts (std_interface_id_guessed)"""
+    } yield ()
+
+  private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
+    migration1,
+    migration2
   )
 
   def migrationsQuery(versionOpt: Option[MigrationVersion])(
-      implicit ec: ExecutionContext): DBActionRWT[Unit] = {
+      implicit ec: ExecutionContext): DBActionAll[Unit] = {
     logger.info(s"Current migration version: $versionOpt")
     versionOpt match {
       //noop
@@ -79,12 +86,12 @@ object Migrations extends StrictLogging {
     } yield ()
   }
 
-  def getVersion()(implicit ec: ExecutionContext): DBActionR[Option[MigrationVersion]] = {
+  def getVersion()(implicit ec: ExecutionContext): DBActionAll[Option[MigrationVersion]] = {
     AppStateQueries.get(MigrationVersion)
   }
 
   def updateVersion(versionOpt: Option[MigrationVersion])(
-      implicit ec: ExecutionContext): DBActionW[Unit] = {
+      implicit ec: ExecutionContext): DBActionAll[Unit] = {
     versionOpt match {
       case None => DBIOAction.successful(())
       case Some(version) =>

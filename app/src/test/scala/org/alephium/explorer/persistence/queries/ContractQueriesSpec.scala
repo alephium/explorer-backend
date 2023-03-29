@@ -18,13 +18,15 @@ package org.alephium.explorer.persistence.queries
 
 import scala.collection.immutable.ArraySeq
 
+import akka.util.ByteString
 import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.api.model.ValAddress
+import org.alephium.api.model.{Val, ValAddress, ValByteVec}
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.GenCoreApi.valByteVecGen
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
@@ -41,17 +43,20 @@ class ContractQueriesSpec
     with DBRunner
     with ScalaFutures {
 
+  val emptyByteVec: Val = ValByteVec(ByteString.empty)
+
   def createEventGen(parentOpt: Option[Address] = None): Gen[EventEntity] =
     for {
-      event    <- eventEntityGen
-      contract <- addressGen
-      parent   <- parentOpt.map(Gen.const).getOrElse(addressGen)
+      event       <- eventEntityGen
+      contract    <- addressGen
+      interfaceId <- Gen.option(valByteVecGen)
     } yield {
       event.copy(
         contractAddress = ContractEntity.createContractEventAddress,
         fields = ArraySeq(
           ValAddress(contract),
-          ValAddress(parent)
+          parentOpt.map(ValAddress.apply).getOrElse(emptyByteVec),
+          interfaceId.getOrElse(emptyByteVec)
         )
       )
     }

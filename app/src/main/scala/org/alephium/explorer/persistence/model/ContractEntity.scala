@@ -16,7 +16,9 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.api.model.ValAddress
+import akka.util.ByteString
+
+import org.alephium.api.model.{ValAddress, ValByteVec}
 import org.alephium.protocol
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.TimeStamp
@@ -24,6 +26,7 @@ import org.alephium.util.TimeStamp
 final case class ContractEntity(
     contract: Address,
     parent: Option[Address],
+    stdInterfaceIdGuessed: Option[ByteString],
     creationBlockHash: BlockHash,
     creationTxHash: TransactionId,
     creationTimestamp: TimeStamp,
@@ -43,6 +46,7 @@ final case class ContractEntity(
 }
 
 object ContractEntity {
+
   final case class DestroyInfo(contract: Address,
                                blockHash: BlockHash,
                                txHash: TransactionId,
@@ -58,10 +62,11 @@ object ContractEntity {
   def creationFromEventEntity(event: EventEntity): Option[ContractEntity] = {
     if (event.contractAddress == createContractEventAddress) {
       extractAddresses(event).map {
-        case (contract, parent) =>
+        case (contract, parent, stdInterfaceIdGuessed) =>
           ContractEntity(
             contract              = contract,
             parent                = parent,
+            stdInterfaceIdGuessed = stdInterfaceIdGuessed,
             creationBlockHash     = event.blockHash,
             creationTxHash        = event.txHash,
             creationTimestamp     = event.timestamp,
@@ -78,18 +83,19 @@ object ContractEntity {
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
-  def extractAddresses(event: EventEntity): Option[(Address, Option[Address])] = {
-    if (event.fields.sizeIs == 1) {
-      event.fields(0) match {
-        case ValAddress(contract) =>
-          Some((contract, None))
-        case _ =>
-          None
-      }
-    } else if (event.fields.sizeIs == 2) {
-      (event.fields(0), event.fields(1)) match {
-        case (ValAddress(contract), ValAddress(parent)) =>
-          Some((contract, Some(parent)))
+  def extractAddresses(
+      event: EventEntity
+  ): Option[(Address, Option[Address], Option[ByteString])] = {
+    if (event.fields.sizeIs == 3) {
+      (event.fields(0), event.fields(1), event.fields(2)) match {
+        case (ValAddress(contract), ValByteVec(ByteString.empty), ValByteVec(ByteString.empty)) =>
+          Some((contract, None, None))
+        case (ValAddress(contract), ValAddress(parent), ValByteVec(ByteString.empty)) =>
+          Some((contract, Some(parent), None))
+        case (ValAddress(contract), ValAddress(parent), ValByteVec(interfaceId)) =>
+          Some((contract, Some(parent), Some(interfaceId)))
+        case (ValAddress(contract), ValByteVec(ByteString.empty), ValByteVec(interfaceId)) =>
+          Some((contract, None, Some(interfaceId)))
         case _ =>
           None
       }

@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence.schema
 
+import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
@@ -29,6 +30,8 @@ object ContractSchema extends SchemaMainChain[ContractEntity]("contracts") {
   class CreateSubContractEvents(tag: Tag) extends Table[ContractEntity](tag, name) {
     def contract: Rep[Address]       = column[Address]("contract")
     def parent: Rep[Option[Address]] = column[Option[Address]]("parent")
+    def stdInterfaceIdGuessed: Rep[Option[ByteString]] =
+      column[Option[ByteString]]("std_interface_id_guessed")
     def creationBlockHash: Rep[BlockHash] =
       column[BlockHash]("creation_block_hash", O.SqlType("BYTEA"))
     def creationTxHash: Rep[TransactionId] =
@@ -46,6 +49,7 @@ object ContractSchema extends SchemaMainChain[ContractEntity]("contracts") {
     def * : ProvenShape[ContractEntity] =
       (contract,
        parent,
+       stdInterfaceIdGuessed,
        creationBlockHash,
        creationTxHash,
        creationTimestamp,
@@ -60,6 +64,8 @@ object ContractSchema extends SchemaMainChain[ContractEntity]("contracts") {
 
     def contractIdx: Index = index("contracts_contract_idx", contract)
     def parentIdx: Index   = index("contracts_parent_idx", parent)
+    def stdInterfaceIdGuessedIdx: Index =
+      index("contracts_std_interface_id_guessed_idx", stdInterfaceIdGuessed)
   }
 
   val table: TableQuery[CreateSubContractEvents] = TableQuery[CreateSubContractEvents]

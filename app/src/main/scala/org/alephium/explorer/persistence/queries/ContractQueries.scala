@@ -51,12 +51,12 @@ object ContractQueries {
     )
   }
 
-  private def insertContractCreationEventEntities(
-      events: Iterable[ContractEntity]): DBActionW[Int] = {
-    QuerySplitter.splitUpdates(rows = events, columnsPerRow = 6) { (events, placeholder) =>
+  def insertContractCreationEventEntities(events: Iterable[ContractEntity]): DBActionW[Int] = {
+    QuerySplitter.splitUpdates(rows = events, columnsPerRow = 7) { (events, placeholder) =>
       val query =
         s"""
-           |INSERT INTO contracts ("contract", "parent", "creation_block_hash", "creation_tx_hash","creation_timestamp","creation_event_order")
+           |INSERT INTO contracts
+           |("contract", "parent", "std_interface_id_guessed", "creation_block_hash", "creation_tx_hash","creation_timestamp","creation_event_order")
            |VALUES $placeholder
            |ON CONFLICT
            | ON CONSTRAINT contracts_pk
@@ -68,6 +68,7 @@ object ContractQueries {
           events foreach { event =>
             params >> event.contract
             params >> event.parent
+            params >> event.stdInterfaceIdGuessed
             params >> event.creationBlockHash
             params >> event.creationTxHash
             params >> event.creationTimestamp
