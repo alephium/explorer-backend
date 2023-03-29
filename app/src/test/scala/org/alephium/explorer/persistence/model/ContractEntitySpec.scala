@@ -30,7 +30,7 @@ import org.alephium.explorer.persistence.model.ContractEntity
 
 class ContractEntitySpec extends AlephiumSpec {
 
-  val interfaceIdGen    = Gen.const(ValByteVec(ContractEntity.createContractInterfaceIdPrefix))
+  val interfaceIdGen    = valByteVecGen
   val emptyByteVec: Val = ValByteVec(ByteString.empty)
 
   "ContractEntity.creationFromEventEntity" should {

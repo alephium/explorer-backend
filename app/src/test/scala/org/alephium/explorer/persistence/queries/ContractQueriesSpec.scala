@@ -26,6 +26,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.api.model.{Val, ValAddress, ValByteVec}
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.GenCoreApi.valByteVecGen
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
@@ -43,13 +44,12 @@ class ContractQueriesSpec
     with ScalaFutures {
 
   val emptyByteVec: Val = ValByteVec(ByteString.empty)
-  val interfaceIdGen    = Gen.const(ValByteVec(ContractEntity.createContractInterfaceIdPrefix))
 
   def createEventGen(parentOpt: Option[Address] = None): Gen[EventEntity] =
     for {
       event       <- eventEntityGen
       contract    <- addressGen
-      interfaceId <- Gen.option(interfaceIdGen)
+      interfaceId <- Gen.option(valByteVecGen)
     } yield {
       event.copy(
         contractAddress = ContractEntity.createContractEventAddress,

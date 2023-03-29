@@ -26,7 +26,7 @@ import org.alephium.util.TimeStamp
 final case class ContractEntity(
     contract: Address,
     parent: Option[Address],
-    interfaceId: Option[ByteString],
+    stdInterfaceIdGuessed: Option[ByteString],
     creationBlockHash: BlockHash,
     creationTxHash: TransactionId,
     creationTimestamp: TimeStamp,
@@ -56,20 +56,17 @@ object ContractEntity {
   val createContractEventAddress: Address =
     protocol.model.Address.contract(protocol.vm.createContractEventId)
 
-  //TODO use the one from protocol once released
-  val createContractInterfaceIdPrefix: ByteString = ByteString("ALPH")
-
   val destroyContractEventAddress: Address =
     protocol.model.Address.contract(protocol.vm.destroyContractEventId)
 
   def creationFromEventEntity(event: EventEntity): Option[ContractEntity] = {
     if (event.contractAddress == createContractEventAddress) {
       extractAddresses(event).map {
-        case (contract, parent, interfaceId) =>
+        case (contract, parent, stdInterfaceIdGuessed) =>
           ContractEntity(
             contract              = contract,
             parent                = parent,
-            interfaceId           = interfaceId,
+            stdInterfaceIdGuessed = stdInterfaceIdGuessed,
             creationBlockHash     = event.blockHash,
             creationTxHash        = event.txHash,
             creationTimestamp     = event.timestamp,
@@ -95,11 +92,9 @@ object ContractEntity {
           Some((contract, None, None))
         case (ValAddress(contract), ValAddress(parent), ValByteVec(ByteString.empty)) =>
           Some((contract, Some(parent), None))
-        case (ValAddress(contract), ValAddress(parent), ValByteVec(interfaceId))
-            if (interfaceId == createContractInterfaceIdPrefix) =>
+        case (ValAddress(contract), ValAddress(parent), ValByteVec(interfaceId)) =>
           Some((contract, Some(parent), Some(interfaceId)))
-        case (ValAddress(contract), ValByteVec(ByteString.empty), ValByteVec(interfaceId))
-            if (interfaceId == createContractInterfaceIdPrefix) =>
+        case (ValAddress(contract), ValByteVec(ByteString.empty), ValByteVec(interfaceId)) =>
           Some((contract, None, Some(interfaceId)))
         case _ =>
           None

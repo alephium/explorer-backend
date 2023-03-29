@@ -51,8 +51,7 @@ object ContractQueries {
     )
   }
 
-  private def insertContractCreationEventEntities(
-      events: Iterable[ContractEntity]): DBActionW[Int] = {
+  def insertContractCreationEventEntities(events: Iterable[ContractEntity]): DBActionW[Int] = {
     QuerySplitter.splitUpdates(rows = events, columnsPerRow = 7) { (events, placeholder) =>
       val query =
         s"""
@@ -68,7 +67,7 @@ object ContractQueries {
           events foreach { event =>
             params >> event.contract
             params >> event.parent
-            params >> event.interfaceId
+            params >> event.stdInterfaceIdGuessed
             params >> event.creationBlockHash
             params >> event.creationTxHash
             params >> event.creationTimestamp

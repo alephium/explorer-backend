@@ -26,8 +26,8 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.persistence.model.AppState.MigrationVersion
 import org.alephium.explorer.persistence.queries.{AppStateQueries, ContractQueries}
-import org.alephium.explorer.persistence.schema.{ContractSchema, EventSchema}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.explorer.persistence.schema.EventSchema
 
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
@@ -44,8 +44,8 @@ object Migrations extends StrictLogging {
 
   def migration2(implicit ec: ExecutionContext): DBActionAll[Unit] =
     for {
-      _ <- sqlu"""ALTER TABLE contracts ADD COLUMN IF NOT EXISTS interface_id bytea"""
-      _ <- sqlu"""CREATE INDEX IF NOT EXISTS contracts_interface_id_idx ON contracts (interface_id)"""
+      _ <- sqlu"""ALTER TABLE contracts ADD COLUMN IF NOT EXISTS std_interface_id_guessed bytea"""
+      _ <- sqlu"""CREATE INDEX IF NOT EXISTS contracts_std_interface_id_guessed_idx ON contracts (std_interface_id_guessed)"""
     } yield ()
 
   private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
