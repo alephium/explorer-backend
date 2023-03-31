@@ -95,10 +95,11 @@ class AddressServer(transactionService: TransactionService, exportTxsNumberThres
             (balance, locked) <- transactionService.getTokenBalance(address, token)
           } yield AddressBalance(balance, locked)
       }),
-      route(listAddressTokens.serverLogicSuccess[Future] { address =>
-        for {
-          tokens <- transactionService.listAddressTokens(address)
-        } yield tokens
+      route(listAddressTokens.serverLogicSuccess[Future] {
+        case (address, pagination) =>
+          for {
+            tokens <- transactionService.listAddressTokens(address, pagination)
+          } yield tokens
       }),
       route(listAddressTokenTransactions.serverLogicSuccess[Future] {
         case (address, token, pagination) =>

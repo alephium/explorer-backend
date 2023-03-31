@@ -90,9 +90,9 @@ object TransactionDao {
       implicit dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Address]] =
     run(getAddressesByToken(token, pagination))
 
-  def listAddressTokens(address: Address)(
+  def listAddressTokens(address: Address, pagination: Pagination)(
       implicit dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenId]] =
-    run(listAddressTokensAction(address))
+    run(listAddressTokensAction(address, pagination))
 
   def listAddressTokenTransactions(address: Address, token: TokenId, pagination: Pagination)(
       implicit ec: ExecutionContext,
