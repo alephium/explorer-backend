@@ -19,7 +19,6 @@ package org.alephium.explorer.web
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.actor.ActorSystem
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.streams.ReadStream
 import io.vertx.ext.reactivestreams.ReactiveReadStream
@@ -38,7 +37,6 @@ import org.alephium.protocol.model.Address
 
 class AddressServer(transactionService: TransactionService, exportTxsNumberThreshold: Int)(
     implicit val executionContext: ExecutionContext,
-    ac: ActorSystem,
     groupSetting: GroupSetting,
     dc: DatabaseConfig[PostgresProfile])
     extends Server
@@ -111,7 +109,7 @@ class AddressServer(transactionService: TransactionService, exportTxsNumberThres
       }),
       route(exportTransactionsCsvByAddress.serverLogic[Future] {
         case (address, timeInterval) =>
-          exportTransactions(address, timeInterval, ExportType.CSV).map(_.map { stream =>
+          exportTransactions(address, timeInterval).map(_.map { stream =>
             (AddressServer.exportFileNameHeader(address, timeInterval), stream)
           })
       })
@@ -119,8 +117,8 @@ class AddressServer(transactionService: TransactionService, exportTxsNumberThres
 
   private def exportTransactions(
       address: Address,
-      timeInterval: TimeInterval,
-      exportType: ExportType): Future[Either[ApiError[_ <: StatusCode], ReadStream[Buffer]]] = {
+      timeInterval: TimeInterval
+  ): Future[Either[ApiError[_ <: StatusCode], ReadStream[Buffer]]] = {
     transactionService
       .hasAddressMoreTxsThan(address, timeInterval.from, timeInterval.to, exportTxsNumberThreshold)
       .map { hasMore =>
@@ -132,7 +130,6 @@ class AddressServer(transactionService: TransactionService, exportTxsNumberThres
           val pub = transactionService.exportTransactionsByAddress(address,
                                                                    timeInterval.from,
                                                                    timeInterval.to,
-                                                                   exportType,
                                                                    1)
           pub.subscribe(readStream)
           Right(readStream)

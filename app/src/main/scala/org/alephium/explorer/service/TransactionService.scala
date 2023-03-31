@@ -18,10 +18,10 @@ package org.alephium.explorer.service
 
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters._
+import scala.jdk.FutureConverters._
 
-import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.stream.scaladsl._
+import io.reactivex.rxjava3.core.Flowable
 import io.vertx.core.buffer.Buffer
 import org.reactivestreams.Publisher
 import slick.basic.DatabaseConfig
@@ -32,7 +32,6 @@ import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.{MempoolDao, TransactionDao}
 import org.alephium.explorer.persistence.queries.TransactionQueries._
-import org.alephium.json.Json.write
 import org.alephium.protocol.model.{Address, TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
@@ -108,16 +107,10 @@ trait TransactionService {
 
   def hasAddressMoreTxsThan(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
       implicit ec: ExecutionContext,
-      ac: ActorSystem,
       dc: DatabaseConfig[PostgresProfile]): Future[Boolean]
 
-  def exportTransactionsByAddress(address: Address,
-                                  from: TimeStamp,
-                                  to: TimeStamp,
-                                  exportType: ExportType,
-                                  batchSize: Int)(
+  def exportTransactionsByAddress(address: Address, from: TimeStamp, to: TimeStamp, batchSize: Int)(
       implicit ec: ExecutionContext,
-      ac: ActorSystem,
       dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer]
 }
 
@@ -215,22 +208,18 @@ object TransactionService extends TransactionService {
 
   def hasAddressMoreTxsThan(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
       implicit ec: ExecutionContext,
-      ac: ActorSystem,
       dc: DatabaseConfig[PostgresProfile]): Future[Boolean] = {
     run(hasAddressMoreTxsThanQuery(address, from, to, threshold))
   }
   def exportTransactionsByAddress(address: Address,
                                   fromTime: TimeStamp,
                                   toTime: TimeStamp,
-                                  exportType: ExportType,
                                   batchSize: Int)(
       implicit ec: ExecutionContext,
-      ac: ActorSystem,
       dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
 
     transactionsPublisher(
       address,
-      exportType,
       transactionSource(address, fromTime, toTime, batchSize)
     )
 
@@ -238,39 +227,34 @@ object TransactionService extends TransactionService {
 
   private def transactionSource(address: Address, from: TimeStamp, to: TimeStamp, batchSize: Int)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Source[ArraySeq[Transaction], NotUsed] = {
-    Source
+      dc: DatabaseConfig[PostgresProfile]): Flowable[ArraySeq[Transaction]] = {
+    Flowable
       .fromPublisher(stream(streamTxByAddressQR(address, from, to)))
-      .grouped(batchSize)
-      .mapAsync(1) { hashes =>
-        run(getTransactionsNoJoin(ArraySeq.from(hashes)))
+      .buffer(batchSize)
+      .concatMap { hashes =>
+        Flowable.fromFuture(
+          run(getTransactionsNoJoin(ArraySeq.from(hashes.asScala))).asJava.toCompletableFuture
+        )
       }
   }
 
-  private def bufferPublisher(source: Source[String, NotUsed])(
-      implicit ac: ActorSystem): Publisher[Buffer] = {
+  private def bufferPublisher(source: Flowable[String]): Publisher[Buffer] = {
     source
       .map(Buffer.buffer)
-      .toMat(Sink.asPublisher[Buffer](false))(Keep.right)
-      .run()
   }
 
   def transactionsPublisher(address: Address,
-                            exportType: ExportType,
-                            source: Source[ArraySeq[Transaction], NotUsed])(
-      implicit actorSystem: ActorSystem
-  ): Publisher[Buffer] = {
+                            source: Flowable[ArraySeq[Transaction]]): Publisher[Buffer] = {
     bufferPublisher {
-      exportType match {
-        case ExportType.CSV =>
-          val headerSource = Source(ArraySeq(Transaction.csvHeader))
-          val csvSource    = source.map(_.map(_.toCsv(address)).mkString)
-          headerSource ++ csvSource
-        case ExportType.JSON =>
-          source
-            .map(write(_))
-            .intersperse("[", ",\n", "]")
-      }
+      val headerSource = Flowable.just(Transaction.csvHeader)
+      val csvSource    = source.map(_.map(_.toCsv(address)).mkString)
+      headerSource.mergeWith(csvSource)
+    }
+  }
+
+  def outputsPublisher(source: Flowable[ArraySeq[Output]]): Publisher[Buffer] = {
+    bufferPublisher {
+      source.map(_.map(_.toString()).mkString)
     }
   }
 }

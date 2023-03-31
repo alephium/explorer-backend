@@ -18,9 +18,9 @@ package org.alephium.explorer.web
 
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.CollectionConverters._
 
-import akka.actor.ActorSystem
-import akka.stream.scaladsl._
+import io.reactivex.rxjava3.core.Flowable
 import io.vertx.core.buffer.Buffer
 import org.reactivestreams.Publisher
 import org.scalacheck.Gen
@@ -77,22 +77,21 @@ class AddressServerSpec()
                                        to: TimeStamp,
                                        threshold: Int)(
         implicit ec: ExecutionContext,
-        ac: ActorSystem,
         dc: DatabaseConfig[PostgresProfile]): Future[Boolean] = Future.successful(addressHasMoreTxs)
 
     override def exportTransactionsByAddress(address: Address,
                                              from: TimeStamp,
                                              to: TimeStamp,
-                                             exportType: ExportType,
                                              batchSize: Int)(
         implicit ec: ExecutionContext,
-        ac: ActorSystem,
         dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
       TransactionService.transactionsPublisher(
         address,
-        exportType,
-        Source(transactions).grouped(batchSize).map(ArraySeq.from)
-      )(system)
+        Flowable
+          .fromIterable(transactions.asJava)
+          .buffer(batchSize)
+          .map(l => ArraySeq.from(l.asScala))
+      )
     }
   }
 

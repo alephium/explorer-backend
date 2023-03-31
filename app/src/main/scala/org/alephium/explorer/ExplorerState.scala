@@ -19,7 +19,6 @@ package org.alephium.explorer
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.actor.ActorSystem
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
@@ -88,7 +87,6 @@ sealed trait ExplorerState extends Service with StrictLogging {
 }
 
 sealed trait ExplorerStateRead extends ExplorerState {
-  implicit def actorSystem: ActorSystem
   lazy val httpServer: ExplorerHttpServer =
     new ExplorerHttpServer(
       config.host,
@@ -98,7 +96,6 @@ sealed trait ExplorerStateRead extends ExplorerState {
                                                         blockFlowClient,
                                                         blockCache,
                                                         transactionCache,
-                                                        actorSystem,
                                                         groupSettings)
     )
 
@@ -108,15 +105,13 @@ sealed trait ExplorerStateRead extends ExplorerState {
 object ExplorerState {
 
   /** State of Explorer is started in read-only mode */
-  final case class ReadOnly()(implicit val actorSystem: ActorSystem,
-                              val config: ExplorerConfig,
+  final case class ReadOnly()(implicit val config: ExplorerConfig,
                               val databaseConfig: DatabaseConfig[PostgresProfile],
                               val executionContext: ExecutionContext)
       extends ExplorerStateRead
 
   /** State of Explorer is started in read-write mode */
-  final case class ReadWrite()(implicit val actorSystem: ActorSystem,
-                               val config: ExplorerConfig,
+  final case class ReadWrite()(implicit val config: ExplorerConfig,
                                val databaseConfig: DatabaseConfig[PostgresProfile],
                                val executionContext: ExecutionContext)
       extends ExplorerStateRead {
