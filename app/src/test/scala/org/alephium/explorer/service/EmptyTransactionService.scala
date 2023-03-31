@@ -87,7 +87,7 @@ trait EmptyTransactionService extends TransactionService {
   def listAddressTokenTransactions(address: Address, token: TokenId, pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] = ???
-  def listAddressTokens(address: Address)(
+  def listAddressTokens(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenId]] = ???
   def listTokenAddresses(token: TokenId, pagination: Pagination)(

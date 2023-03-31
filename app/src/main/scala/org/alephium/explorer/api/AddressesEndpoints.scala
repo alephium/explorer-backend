@@ -94,7 +94,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
     addressesEndpoint.get
       .in("timeranged-transactions")
       .in(timeIntervalQuery)
-      .in(paginator(Pagination.thousand))
+      .in(paginator(maxLimit = Pagination.thousand))
       .out(jsonBody[ArraySeq[Transaction]])
       .description("List transactions of a given address within a time-range")
 
@@ -117,9 +117,10 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[AddressBalance])
       .description("Get address balance")
 
-  val listAddressTokens: BaseEndpoint[Address, ArraySeq[TokenId]] =
+  val listAddressTokens: BaseEndpoint[(Address, Pagination), ArraySeq[TokenId]] =
     addressesTokensEndpoint.get
       .out(jsonBody[ArraySeq[TokenId]])
+      .in(paginator(defaultLimit = 100))
       .description("List address tokens")
 
   val getAddressTokenBalance: BaseEndpoint[(Address, TokenId), AddressBalance] =
