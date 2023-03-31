@@ -164,7 +164,7 @@ lazy val app = mainProject("app")
     alephiumApi,
     alephiumCrypto,
     alephiumJson,
-    akkaStreams,
+    rxJava,
     alephiumHttp,
     alephiumConf,
     tapirCore,

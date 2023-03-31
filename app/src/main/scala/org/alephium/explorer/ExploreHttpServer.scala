@@ -79,7 +79,6 @@ class ExplorerHttpServer(host: String, port: Int, val routes: ArraySeq[Router =>
     }
   }
 
-  /** Stop AkkaHttp server and terminates ActorSystem */
   def stopSelfOnce(): Future[Unit] = {
     for {
       binding <- httpBindingPromise.future

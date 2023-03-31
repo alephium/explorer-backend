@@ -19,7 +19,6 @@ package org.alephium.explorer
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
-import akka.actor.ActorSystem
 import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
@@ -37,7 +36,6 @@ object AppServer {
       blockFlowClient: BlockFlowClient,
       blockCache: BlockCache,
       transactionCache: TransactionCache,
-      actorSystem: ActorSystem,
       groupSetting: GroupSetting): ArraySeq[Router => Route] = {
 
     val blockServer = new BlockServer()

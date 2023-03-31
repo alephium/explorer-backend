@@ -20,6 +20,7 @@ object Version {
   lazy val common = "2.0.4"
 
   lazy val akka       = "2.6.20"
+  lazy val rxJava     = "3.1.6"
   lazy val tapir      = "1.2.8"
   lazy val slick      = "3.3.2"
   lazy val postgresql = "42.2.12"
@@ -41,8 +42,9 @@ object Dependencies {
   lazy val vertx                = "io.vertx" % "vertx-core"             % "4.3.8"
   lazy val vertxReactiveStreams = "io.vertx" % "vertx-reactive-streams" % "4.3.8"
 
-  lazy val akkaStreams = "com.typesafe.akka" %% "akka-stream"  % Version.akka
-  lazy val akkaTest    = "com.typesafe.akka" %% "akka-testkit" % Version.akka % Test
+  lazy val akkaTest = "com.typesafe.akka" %% "akka-testkit" % Version.akka % Test
+
+  lazy val rxJava = "io.reactivex.rxjava3" % "rxjava" % Version.rxJava
 
   lazy val tapirCore   = "com.softwaremill.sttp.tapir" %% "tapir-core"         % Version.tapir
   lazy val tapirServer = "com.softwaremill.sttp.tapir" %% "tapir-server"       % Version.tapir

@@ -20,8 +20,6 @@ import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
 import scala.util._
 
-import akka.Done
-import akka.actor.{ActorSystem, CoordinatedShutdown}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 import io.prometheus.client.hotspot.DefaultExports
@@ -65,18 +63,19 @@ class BootUp extends StrictLogging {
         initInWriteOnlyMode()
     }
 
+  @SuppressWarnings(Array("org.wartremover.warts.GlobalExecutionContext"))
   def initInReadableMode(mode: BootMode.Readable): Unit = {
-    implicit val actorSystem: ActorSystem = ActorSystem()
-    implicit val executionContext: ExecutionContext = ExecutionContextUtil.fromExecutor(
-      actorSystem.dispatcher,
-      sideEffect(actorSystem.terminate())
-    )
+    //scalastyle:off null
+    var explorer: ExplorerState = null
+    //scalastyle:on null
+    //
+    implicit val executionContext: ExecutionContext =
+      ExecutionContextUtil.fromExecutor(ExecutionContext.global, sideEffect(explorer.stop()))
 
-    val explorer: ExplorerState =
-      mode match {
-        case BootMode.ReadOnly  => ExplorerState.ReadOnly()
-        case BootMode.ReadWrite => ExplorerState.ReadWrite()
-      }
+    explorer = mode match {
+      case BootMode.ReadOnly  => ExplorerState.ReadOnly()
+      case BootMode.ReadWrite => ExplorerState.ReadWrite()
+    }
 
     explorer
       .start()
@@ -84,21 +83,25 @@ class BootUp extends StrictLogging {
         case Success(_) => ()
         case Failure(e) =>
           logger.error(s"Fatal error during initialization", e)
-          actorSystem.terminate()
+          explorer.stop().failed foreach { error =>
+            logger.error("Failed to stop explorer", error)
+          }
+      }
+
+    explorer
+      .start()
+      .onComplete {
+        case Success(_) => ()
+        case Failure(error) =>
+          logger.error("Fatal error during initialization", error)
+          explorer.stop().failed foreach { error =>
+            logger.error("Failed to stop explorer", error)
+          }
       }
 
     Runtime.getRuntime.addShutdownHook(new Thread(() => {
-      sideEffect(Await.result(actorSystem.terminate(), 10.seconds))
+      sideEffect(Await.result(explorer.stop(), 10.seconds))
     }))
-
-    CoordinatedShutdown(actorSystem).addTask(
-      CoordinatedShutdown.PhaseBeforeActorSystemTerminate,
-      "Shutdown services"
-    ) { () =>
-      for {
-        _ <- explorer.stop()
-      } yield Done
-    }
 
   }
 
