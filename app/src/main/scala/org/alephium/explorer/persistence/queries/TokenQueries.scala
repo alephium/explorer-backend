@@ -101,12 +101,13 @@ object TokenQueries extends StrictLogging {
     """.asAS[TxByTokenQR]
   }
 
-  def listAddressTokensAction(address: Address): DBActionSR[TokenId] =
+  def listAddressTokensAction(address: Address, pagination: Pagination): DBActionSR[TokenId] =
     sql"""
       SELECT DISTINCT token
       FROM token_tx_per_addresses
       WHERE address = $address
       AND main_chain = true
+      #${pagination.query}
     """.asAS[TokenId]
 
   def getTokenTransactionsByAddress(address: Address, token: TokenId, pagination: Pagination)(

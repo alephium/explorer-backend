@@ -26,15 +26,17 @@ import org.alephium.explorer.api.model.{IntervalType, Pagination}
 import org.alephium.protocol.model.TokenId
 import org.alephium.util.{Duration, TimeStamp}
 
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 trait QueryParams extends TapirCodecs {
 
   implicit val tokenIdTapirCodec: Codec[String, TokenId, TextPlain] =
     fromJson[TokenId]
 
   val pagination: EndpointInput[Pagination] =
-    paginator(Pagination.maxLimit)
+    paginator()
 
-  def paginator(maxLimit: Int): EndpointInput[Pagination] =
+  def paginator(defaultLimit: Int = Pagination.defaultLimit,
+                maxLimit: Int     = Pagination.maxLimit): EndpointInput[Pagination] =
     query[Option[Int]]("page")
       .description("Page number")
       .map({
@@ -47,7 +49,7 @@ trait QueryParams extends TapirCodecs {
           .description("Number of items per page")
           .map({
             case Some(limit) => limit
-            case None        => Pagination.defaultLimit
+            case None        => defaultLimit
           })(Some(_))
           .validate(Validator.min(0))
           .validate(Validator.max(maxLimit)))
