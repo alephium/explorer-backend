@@ -171,6 +171,15 @@ object EndpointExamples extends EndpointsExamples {
       lockedBalance = U256.Two
     )
 
+  private val tokensBalance =
+    tokens.map { token =>
+      TokenBalance(
+        tokenId       = token.id,
+        balance       = U256.Ten,
+        lockedBalance = U256.Two
+      )
+    }
+
   private val contractParent =
     ContractParent(Some(address1))
 
@@ -293,6 +302,9 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val addressBalanceExample: List[Example[AddressBalance]] =
     simpleExample(addressBalance)
+
+  implicit val tokensBalanceExample: List[Example[ArraySeq[TokenBalance]]] =
+    simpleExample(tokensBalance)
 
   implicit val contractParentExample: List[Example[ContractParent]] =
     simpleExample(contractParent)

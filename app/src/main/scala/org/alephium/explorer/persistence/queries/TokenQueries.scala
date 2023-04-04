@@ -20,6 +20,7 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
 import com.typesafe.scalalogging.StrictLogging
+import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
@@ -109,6 +110,22 @@ object TokenQueries extends StrictLogging {
       AND main_chain = true
       #${pagination.query}
     """.asAS[TokenId]
+
+  def listAddressTokensBalanceAction(address: Address, pagination: Pagination)(
+      implicit ec: ExecutionContext): DBActionSR[TokenBalance] =
+    for {
+      tokens <- listAddressTokensAction(address, pagination)
+      balances <- DBIOAction.sequence(tokens.map { token =>
+        getTokenBalanceAction(address, token).map { balance =>
+          (token, balance)
+        }
+      })
+    } yield {
+      balances.map {
+        case (token, (balance, locked)) =>
+          TokenBalance(token, balance, locked)
+      }
+    }
 
   def getTokenTransactionsByAddress(address: Address, token: TokenId, pagination: Pagination)(
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {

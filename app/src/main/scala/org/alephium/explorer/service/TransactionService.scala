@@ -102,6 +102,10 @@ trait TransactionService {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenId]]
 
+  def listAddressTokensBalance(address: Address, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenBalance]]
+
   def listAddressTokenTransactions(address: Address, token: TokenId, pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]]
@@ -194,6 +198,11 @@ object TransactionService extends TransactionService {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenId]] =
     TransactionDao.listAddressTokens(address, pagination)
+
+  def listAddressTokensBalance(address: Address, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenBalance]] =
+    TransactionDao.listAddressTokensBalance(address, pagination)
 
   def listTokenAddresses(token: TokenId, pagination: Pagination)(
       implicit ec: ExecutionContext,

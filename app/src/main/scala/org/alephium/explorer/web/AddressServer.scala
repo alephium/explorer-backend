@@ -101,6 +101,10 @@ class AddressServer(transactionService: TransactionService, exportTxsNumberThres
             tokens <- transactionService.listAddressTokens(address, pagination)
           } yield tokens
       }),
+      route(listAddressTokensBalance.serverLogicSuccess[Future] {
+        case (address, pagination) =>
+          transactionService.listAddressTokensBalance(address, pagination)
+      }),
       route(listAddressTokenTransactions.serverLogicSuccess[Future] {
         case (address, token, pagination) =>
           for {

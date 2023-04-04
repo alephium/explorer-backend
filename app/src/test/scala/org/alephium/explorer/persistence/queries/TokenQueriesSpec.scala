@@ -22,11 +22,12 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
-import org.alephium.explorer.api.model.Pagination
+import org.alephium.explorer.api.model.{Pagination, TokenBalance}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.queries.TokenQueries
 import org.alephium.explorer.persistence.queries.result.TxByTokenQR
 import org.alephium.explorer.persistence.schema._
+import org.alephium.util.U256
 
 class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
@@ -67,6 +68,26 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
               TokenQueries.getTokenTxHashesByAddressQuery(
                 address,
                 token,
+                Pagination.unsafe(1, txPerAddressTokens.size))).futureValue
+
+          result.size is expected.size
+          result should contain allElementsOf expected
+      }
+    }
+
+    "get tokens balance address" in {
+      forAll(Gen.listOfN(30, tokenTxPerAddressEntityGen()), addressGen) {
+        case (txPerAddressTokens, address) =>
+          run(TokenPerAddressSchema.table.delete).futureValue
+          run(TokenPerAddressSchema.table ++= txPerAddressTokens.map(_.copy(address = address))).futureValue
+
+          val expected = txPerAddressTokens
+            .filter(_.mainChain)
+            .map(tx => TokenBalance(tx.token, U256.Zero, U256.Zero))
+          val result =
+            run(
+              TokenQueries.listAddressTokensBalanceAction(
+                address,
                 Pagination.unsafe(1, txPerAddressTokens.size))).futureValue
 
           result.size is expected.size

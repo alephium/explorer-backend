@@ -94,6 +94,11 @@ object TransactionDao {
       implicit dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenId]] =
     run(listAddressTokensAction(address, pagination))
 
+  def listAddressTokensBalance(address: Address, pagination: Pagination)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenBalance]] =
+    run(listAddressTokensBalanceAction(address, pagination))
+
   def listAddressTokenTransactions(address: Address, token: TokenId, pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
