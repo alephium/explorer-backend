@@ -10,7 +10,7 @@
         "tags": [
           "Blocks"
         ],
-        "description": "List blocks within time interval",
+        "description": "List latest blocks",
         "operationId": "getBlocks",
         "parameters": [
           {
