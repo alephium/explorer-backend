@@ -22,7 +22,7 @@ import akka.util.ByteString
 import sttp.tapir.EndpointIO.Example
 
 import org.alephium.api.EndpointsExamples
-import org.alephium.api.model.Amount
+import org.alephium.api.model.{Amount, ValBool}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.queries.ExplainResult
 import org.alephium.protocol.ALPH
@@ -177,6 +177,16 @@ object EndpointExamples extends EndpointsExamples {
   private val subContracts =
     SubContracts(ArraySeq(address1, address2))
 
+  private val event =
+    Event(
+      blockHash,
+      txId,
+      address1,
+      Some(address1),
+      0,
+      ArraySeq(ValBool(true))
+    )
+
   private val hashRate =
     Hashrate(
       timestamp = ts,
@@ -299,6 +309,9 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val subContractsExample: List[Example[SubContracts]] =
     simpleExample(subContracts)
+
+  implicit val eventsExample: List[Example[ArraySeq[Event]]] =
+    simpleExample(ArraySeq(event, event))
 
   implicit val booleansExample: List[Example[ArraySeq[Boolean]]] =
     simpleExample(ArraySeq(true, false))
