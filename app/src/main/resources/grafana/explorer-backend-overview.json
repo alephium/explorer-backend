@@ -287,7 +287,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(irate(explorer_backend_requests_total{app=\"explorer-backend\"}[1m])) by (path)",
+          "expr": "sum(irate(explorer_backend_request_total{app=\"explorer-backend\"}[1m])) by (path)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -295,7 +295,7 @@
           "refId": "A"
         },
         {
-          "expr": "sum(irate(explorer_backend_requests_total{app=\"explorer-backend\"}[1m]))",
+          "expr": "sum(irate(explorer_backend_request_total{app=\"explorer-backend\"}[1m]))",
           "interval": "",
           "legendFormat": "total",
           "refId": "B"
@@ -385,7 +385,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(explorer_backend_responses_total{app=\"explorer-backend\",status=\"5xx\"}[1m])) by (path)",
+          "expr": "sum(increase(explorer_backend_request_total{app=\"explorer-backend\",status=\"5xx\"}[1m])) by (path)",
           "interval": "",
           "legendFormat": "{{path}}",
           "refId": "A"
@@ -475,25 +475,25 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum(irate(explorer_backend_responses_duration_bucket{app=\"explorer-backend\"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(irate(explorer_backend_request_duration_seconds_bucket{app=\"explorer-backend\"}[1m])) by (le))",
           "interval": "",
           "legendFormat": "P99",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.95, sum(irate(explorer_backend_responses_duration_bucket{app=\"explorer-backend\"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(irate(explorer_backend_request_duration_seconds_bucket{app=\"explorer-backend\"}[1m])) by (le))",
           "interval": "",
           "legendFormat": "P95",
           "refId": "B"
         },
         {
-          "expr": "histogram_quantile(0.50, sum(irate(explorer_backend_responses_duration_bucket{app=\"explorer-backend\"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(irate(explorer_backend_request_duration_seconds_bucket{app=\"explorer-backend\"}[1m])) by (le))",
           "interval": "",
           "legendFormat": "P50",
           "refId": "C"
         },
         {
-          "expr": "sum(irate(explorer_backend_responses_duration_sum{app=\"explorer-backend\"}[1m])) / sum(irate(explorer_backend_responses_duration_count{app=\"explorer-backend\"}[1m]))",
+          "expr": "sum(irate(explorer_backend_request_duration_seconds_sum{app=\"explorer-backend\"}[1m])) / sum(irate(explorer_backend_request_duration_seconds_count{app=\"explorer-backend\"}[1m]))",
           "interval": "",
           "legendFormat": "Average",
           "refId": "D"
@@ -582,7 +582,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "(sum(irate(explorer_backend_responses_duration_sum{app=\"explorer-backend\"}[1m])) by (path)) / (sum(irate(explorer_backend_responses_duration_count{app=\"explorer-backend\"}[1m])) by (path))",
+          "expr": "(sum(irate(explorer_backend_request_duration_seconds_sum{app=\"explorer-backend\"}[1m])) by (path)) / (sum(irate(explorer_backend_request_duration_seconds_count{app=\"explorer-backend\"}[1m])) by (path))",
           "interval": "",
           "legendFormat": "{{path}}",
           "refId": "A"
