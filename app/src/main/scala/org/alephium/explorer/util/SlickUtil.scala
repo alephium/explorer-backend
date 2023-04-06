@@ -27,6 +27,7 @@ import slick.jdbc._
 import slick.jdbc.PostgresProfile.api._
 import slick.sql._
 
+import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DBActionR, DBActionSR}
 
 /** Convenience functions for Slick */
@@ -134,6 +135,21 @@ object SlickUtil {
         }
         protected[this] def createBuilder = ArraySeq.newBuilder[R]
       }
+    }
+
+    def paginate(pagination: Pagination): SQLActionBuilder = {
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) => {
+          action.unitPConv((), params)
+          params >> pagination.limit
+          params >> pagination.offset
+        }
+
+      action.copy(
+        queryParts = action.queryParts :+ "LIMIT ? OFFSET ?",
+        unitPConv  = parameters
+      )
     }
   }
 

@@ -76,8 +76,9 @@ object EventQueries {
       FROM events
       WHERE contract_address = $address
       ORDER BY block_timestamp DESC, event_order_in_block
-      #${pagination.query}
-      """.asASE[EventEntity](eventGetResult)
+      """
+      .paginate(pagination)
+      .asASE[EventEntity](eventGetResult)
   }
 
   def getEventsByContractAndInputAddressQuery(contract: Address,
@@ -89,7 +90,8 @@ object EventQueries {
       WHERE contract_address = $contract
       AND input_address = $input
       ORDER BY block_timestamp DESC
-      #${pagination.query}
-      """.asASE[EventEntity](eventGetResult)
+      """
+      .paginate(pagination)
+      .asASE[EventEntity](eventGetResult)
   }
 }

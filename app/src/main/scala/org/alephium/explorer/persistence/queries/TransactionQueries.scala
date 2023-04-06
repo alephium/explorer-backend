@@ -144,8 +144,9 @@ object TransactionQueries extends StrictLogging {
       FROM transactions
       WHERE block_hash = $blockHash
       ORDER BY tx_order
-      #${pagination.query}
-    """.asAS[(TransactionId, BlockHash, TimeStamp, Int, Boolean)]
+    """
+      .paginate(pagination)
+      .asAS[(TransactionId, BlockHash, TimeStamp, Int, Boolean)]
 
   def countAddressTransactionsSQLNoJoin(address: Address): DBActionSR[Int] = {
     sql"""
@@ -162,8 +163,9 @@ object TransactionQueries extends StrictLogging {
       FROM transaction_per_addresses
       WHERE main_chain = true AND address = $address
       ORDER BY block_timestamp DESC, tx_order
-      #${pagination.query}
-    """.asAS[TxByAddressQR]
+    """
+      .paginate(pagination)
+      .asAS[TxByAddressQR]
   }
 
   /**
@@ -188,20 +190,18 @@ object TransactionQueries extends StrictLogging {
           |WHERE main_chain = true
           |  AND address IN $placeholder
           |ORDER BY block_timestamp DESC, tx_order
-          |LIMIT ? OFFSET ?
           |""".stripMargin
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) => {
           addresses foreach (params >> _)
-          params >> pagination.limit
-          params >> pagination.offset
         }
 
       SQLActionBuilder(
         queryParts = query,
         unitPConv  = parameters
-      ).asAS[TxByAddressQR]
+      ).paginate(pagination)
+        .asAS[TxByAddressQR]
     }
 
   /**
@@ -225,8 +225,9 @@ object TransactionQueries extends StrictLogging {
         AND address = $address
         AND block_timestamp BETWEEN $fromTime AND $toTime
       ORDER BY block_timestamp DESC, tx_order
-      #${pagination.query}
-    """.asAS[TxByAddressQR]
+    """
+      .paginate(pagination)
+      .asAS[TxByAddressQR]
   }
 
   def getTransactionsByBlockHash(blockHash: BlockHash)(
