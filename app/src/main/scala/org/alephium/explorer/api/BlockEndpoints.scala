@@ -51,5 +51,5 @@ trait BlockEndpoints extends BaseEndpoint with QueryParams {
     blocksEndpoint.get
       .in(pagination)
       .out(jsonBody[ListBlocks])
-      .description("List blocks within time interval")
+      .description("List latest blocks")
 }

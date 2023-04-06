@@ -10,7 +10,7 @@
         "tags": [
           "Blocks"
         ],
-        "description": "List blocks within time interval",
+        "description": "List latest blocks",
         "operationId": "getBlocks",
         "parameters": [
           {
@@ -4767,7 +4767,35 @@
                   "items": {
                     "$ref": "#/components/schemas/Event"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "txHash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "contractAddress": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                    "inputAddress": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                    "eventIndex": 0,
+                    "fields": [
+                      {
+                        "type": "Bool",
+                        "value": true
+                      }
+                    ]
+                  },
+                  {
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "txHash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "contractAddress": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                    "inputAddress": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                    "eventIndex": 0,
+                    "fields": [
+                      {
+                        "type": "Bool",
+                        "value": true
+                      }
+                    ]
+                  }
+                ]
               }
             }
           },
@@ -4895,7 +4923,35 @@
                   "items": {
                     "$ref": "#/components/schemas/Event"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "txHash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "contractAddress": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                    "inputAddress": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                    "eventIndex": 0,
+                    "fields": [
+                      {
+                        "type": "Bool",
+                        "value": true
+                      }
+                    ]
+                  },
+                  {
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "txHash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "contractAddress": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                    "inputAddress": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                    "eventIndex": 0,
+                    "fields": [
+                      {
+                        "type": "Bool",
+                        "value": true
+                      }
+                    ]
+                  }
+                ]
               }
             }
           },
@@ -5031,7 +5087,35 @@
                   "items": {
                     "$ref": "#/components/schemas/Event"
                   }
-                }
+                },
+                "example": [
+                  {
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "txHash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "contractAddress": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                    "inputAddress": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                    "eventIndex": 0,
+                    "fields": [
+                      {
+                        "type": "Bool",
+                        "value": true
+                      }
+                    ]
+                  },
+                  {
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "txHash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "contractAddress": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                    "inputAddress": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                    "eventIndex": 0,
+                    "fields": [
+                      {
+                        "type": "Bool",
+                        "value": true
+                      }
+                    ]
+                  }
+                ]
               }
             }
           },
@@ -5127,6 +5211,9 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ContractParent"
+                },
+                "example": {
+                  "parent": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y"
                 }
               }
             }
@@ -5252,6 +5339,12 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SubContracts"
+                },
+                "example": {
+                  "subContracts": [
+                    "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                    "22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM"
+                  ]
                 }
               }
             }
