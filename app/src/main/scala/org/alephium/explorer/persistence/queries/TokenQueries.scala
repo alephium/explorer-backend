@@ -68,8 +68,10 @@ object TokenQueries extends StrictLogging {
       SELECT token
       FROM token_info
       ORDER BY last_used DESC
-      #${pagination.query}
-    """.asAS[TokenId]
+    """
+      .paginate(pagination)
+      .asAS[TokenId]
+
   }
 
   def getTransactionsByToken(token: TokenId, pagination: Pagination)(
@@ -85,8 +87,9 @@ object TokenQueries extends StrictLogging {
       SELECT DISTINCT address
       FROM token_tx_per_addresses
       WHERE token = $token
-      #${pagination.query}
-    """.asAS[Address]
+    """
+      .paginate(pagination)
+      .asAS[Address]
   }
 
   def listTokenTransactionsAction(token: TokenId,
@@ -97,8 +100,9 @@ object TokenQueries extends StrictLogging {
       WHERE main_chain = true
       AND token = $token
       ORDER BY block_timestamp DESC, tx_order
-      #${pagination.query}
-    """.asAS[TxByTokenQR]
+    """
+      .paginate(pagination)
+      .asAS[TxByTokenQR]
   }
 
   def listAddressTokensAction(address: Address, pagination: Pagination): DBActionSR[TokenId] =
@@ -107,8 +111,9 @@ object TokenQueries extends StrictLogging {
       FROM token_tx_per_addresses
       WHERE address = $address
       AND main_chain = true
-      #${pagination.query}
-    """.asAS[TokenId]
+    """
+      .paginate(pagination)
+      .asAS[TokenId]
 
   def getTokenTransactionsByAddress(address: Address, token: TokenId, pagination: Pagination)(
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
@@ -128,7 +133,8 @@ object TokenQueries extends StrictLogging {
       AND address = $address
       AND token = $token
       ORDER BY block_timestamp DESC, tx_order
-      #${pagination.query}
-    """.asAS[TxByTokenQR]
+    """
+      .paginate(pagination)
+      .asAS[TxByTokenQR]
   }
 }
