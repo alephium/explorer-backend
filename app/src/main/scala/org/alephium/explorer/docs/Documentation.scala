@@ -51,6 +51,7 @@ trait Documentation
       getAddressTokenBalance,
       areAddressesActive,
       exportTransactionsCsvByAddress,
+      getAddressAmountHistory,
       getInfos,
       getHeights,
       listMempoolTransactions,

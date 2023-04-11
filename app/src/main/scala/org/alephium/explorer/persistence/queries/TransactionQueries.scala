@@ -343,6 +343,30 @@ object TransactionQueries extends StrictLogging {
     }
   }
 
+  def sumAddressOutputs(address: Address, from: TimeStamp, to: TimeStamp)(
+      implicit ec: ExecutionContext): DBActionR[U256] = {
+    sql"""
+      SELECT SUM(amount)
+      FROM outputs
+      WHERE address = $address
+      AND main_chain = true
+      AND block_timestamp >= $from
+      AND block_timestamp <= $to
+    """.asAS[Option[U256]].exactlyOne.map(_.getOrElse(U256.Zero))
+  }
+
+  def sumAddressInputs(address: Address, from: TimeStamp, to: TimeStamp)(
+      implicit ec: ExecutionContext): DBActionR[U256] = {
+    sql"""
+      SELECT SUM(output_ref_amount)
+      FROM inputs
+      WHERE output_ref_address = $address
+      AND main_chain = true
+      AND block_timestamp >= $from
+      AND block_timestamp <= $to
+    """.asAS[Option[U256]].exactlyOne.map(_.getOrElse(U256.Zero))
+  }
+
   private def buildTransaction(txHashesTs: ArraySeq[TxByAddressQR],
                                inputs: ArraySeq[InputsFromTxQR],
                                outputs: ArraySeq[OutputsFromTxQR],
