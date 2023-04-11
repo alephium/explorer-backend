@@ -35,6 +35,7 @@ import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.service.TransactionService
 import org.alephium.protocol.model.Address
+import org.alephium.util.Duration
 
 class AddressServer(transactionService: TransactionService,
                     exportTxsNumberThreshold: Int,
@@ -45,6 +46,10 @@ class AddressServer(transactionService: TransactionService,
     with AddressesEndpoints {
 
   val groupNum = groupSetting.groupNum
+
+  // scalastyle:off magic.number
+  private val maxHourlyTimeSpan = Duration.ofDaysUnsafe(7)
+  // scalastyle:on magic.number
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
@@ -115,6 +120,20 @@ class AddressServer(transactionService: TransactionService,
           exportTransactions(address, timeInterval).map(_.map { stream =>
             (AddressServer.exportFileNameHeader(address, timeInterval), stream)
           })
+      }),
+      route(getAddressAmountHistory.serverLogic[Future] {
+        case (address, timeInterval, intervalType) =>
+          validateTimeInterval(timeInterval, intervalType) {
+            val readStream: ReactiveReadStream[Buffer] = ReactiveReadStream.readStream();
+            val pub =
+              transactionService.getAmountHistory(address,
+                                                  timeInterval.from,
+                                                  timeInterval.to,
+                                                  intervalType)
+            pub.subscribe(readStream)
+            Future.successful(
+              (AddressServer.amountHistoryFileNameHeader(address, timeInterval), readStream))
+          }
       })
     )
 
@@ -138,10 +157,18 @@ class AddressServer(transactionService: TransactionService,
         }
       }
   }
+
+  private def validateTimeInterval[A](timeInterval: TimeInterval, intervalType: IntervalType)(
+      contd: => Future[A]): Future[Either[ApiError[_ <: StatusCode], A]] =
+    IntervalType.validateTimeInterval(timeInterval, intervalType, maxHourlyTimeSpan)(contd)
 }
 
 object AddressServer {
   def exportFileNameHeader(address: Address, timeInterval: TimeInterval): String = {
     s"""attachment;filename="$address-${timeInterval.from.millis}-${timeInterval.to.millis}.csv""""
+  }
+
+  def amountHistoryFileNameHeader(address: Address, timeInterval: TimeInterval): String = {
+    s"""attachment;filename="$address-amount-history-${timeInterval.from.millis}-${timeInterval.to.millis}.csv""""
   }
 }
