@@ -16,6 +16,9 @@
 
 package org.alephium.explorer.service
 
+import java.math.BigInteger
+import java.time.Instant
+
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -32,9 +35,11 @@ import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.{MempoolDao, TransactionDao}
 import org.alephium.explorer.persistence.queries.TransactionQueries._
+import org.alephium.explorer.util.TimeUtil
 import org.alephium.json.Json.write
+import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{Address, TokenId, TransactionId}
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.util.{Duration, TimeStamp, U256}
 
 trait TransactionService {
 
@@ -117,6 +122,14 @@ trait TransactionService {
                                   exportType: ExportType,
                                   batchSize: Int,
                                   paralellism: Int)(
+      implicit ec: ExecutionContext,
+      ac: ActorSystem,
+      dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer]
+
+  def getAmountHistory(address: Address,
+                       from: TimeStamp,
+                       to: TimeStamp,
+                       intervalType: IntervalType)(
       implicit ec: ExecutionContext,
       ac: ActorSystem,
       dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer]
@@ -236,6 +249,72 @@ object TransactionService extends TransactionService {
       transactionSource(address, fromTime, toTime, batchSize, paralellism)
     )
 
+  }
+
+  def getAmountHistory(address: Address,
+                       from: TimeStamp,
+                       to: TimeStamp,
+                       intervalType: IntervalType)(
+      implicit ec: ExecutionContext,
+      ac: ActorSystem,
+      dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
+
+    val timeranges = amountHistoryTimeRanges(from, to, intervalType)
+
+    Source(timeranges)
+      .mapAsync(1) {
+        case (from, to) =>
+          run(sumAddressOutputs(address, from, to)).map(res => (res, from, to))
+      }
+      .mapAsync(1) {
+        case (outs, from, to) =>
+          run(sumAddressInputs(address, from, to)).map(res => (outs, res, to))
+      }
+      .collect {
+        case (outs, ins, to) if outs != U256.Zero || ins != U256.Zero =>
+          (outs, ins, to)
+      }
+      .scan((BigInteger.ZERO, TimeStamp.zero)) {
+        case ((sum, _), (outs, ins, to)) =>
+          val diff   = outs.v.subtract(ins.v)
+          val newSum = sum.add(diff)
+          (newSum, to)
+      }
+      .map {
+        case (diff, to) =>
+          if (to == TimeStamp.zero) {
+            Buffer.buffer("to,diff\n")
+          } else {
+            val dec =
+              new java.math.BigDecimal(diff).divide(new java.math.BigDecimal(ALPH.oneAlph.v))
+            val toI         = to.millis
+            val str: String = s"$toI,$dec,$diff\n"
+            Buffer.buffer(str)
+          }
+      }
+      .toMat(Sink.asPublisher[Buffer](false))(Keep.right)
+      .run()
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  private def amountHistoryTimeRanges(
+      from: TimeStamp,
+      to: TimeStamp,
+      intervalType: IntervalType): ArraySeq[(TimeStamp, TimeStamp)] = {
+    val fromTruncated =
+      TimeStamp.unsafe(
+        Instant
+          .ofEpochMilli(
+            if (from.isBefore(ALPH.LaunchTimestamp)) ALPH.LaunchTimestamp.millis else from.millis
+          )
+          .truncatedTo(intervalType.chronoUnit)
+          .toEpochMilli
+      )
+
+    val first = (ALPH.GenesisTimestamp, fromTruncated.minusUnsafe(Duration.ofMillisUnsafe(1)))
+    first +: TimeUtil.buildTimestampRange(fromTruncated,
+                                          to,
+                                          (intervalType.duration - Duration.ofMillisUnsafe(1)).get)
   }
 
   private def transactionSource(address: Address,
