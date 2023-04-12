@@ -128,7 +128,8 @@ object ContractQueries {
       FROM contracts
       WHERE parent = $parent
       ORDER BY creation_timestamp DESC, creation_event_order
-      #${pagination.query}
-      """.asASE[Address](addressGetResult)
+      """
+      .paginate(pagination)
+      .asASE[Address](addressGetResult)
   }
 }

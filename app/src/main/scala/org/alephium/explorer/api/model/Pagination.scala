@@ -17,8 +17,7 @@
 package org.alephium.explorer.api.model
 
 final case class Pagination private (page: Int, limit: Int, reverse: Boolean) {
-  val offset: Int   = (page - 1) * limit
-  val query: String = s"LIMIT $limit OFFSET $offset"
+  val offset: Int = (page - 1) * limit
 }
 
 object Pagination {

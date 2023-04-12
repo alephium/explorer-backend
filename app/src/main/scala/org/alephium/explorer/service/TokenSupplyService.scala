@@ -108,8 +108,9 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
         SELECT *
         FROM token_supply
         ORDER BY block_timestamp DESC
-        #${pagination.query}
-      """.asASE[TokenSupplyEntity](tokenSupplyGetResult)
+      """
+        .paginate(pagination)
+        .asASE[TokenSupplyEntity](tokenSupplyGetResult)
     ).map(_.map { entity =>
       TokenSupply(
         entity.timestamp,

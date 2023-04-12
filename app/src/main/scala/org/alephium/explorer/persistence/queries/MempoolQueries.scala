@@ -50,8 +50,9 @@ object MempoolQueries {
              last_seen
       FROM utransactions
       ORDER BY last_seen DESC
-      #${pagination.query}
-    """.asASE[MempoolTransactionEntity](mempoolTransactionGetResult)
+    """
+      .paginate(pagination)
+      .asASE[MempoolTransactionEntity](mempoolTransactionGetResult)
   }
 
   def listUTXHashesByAddress(address: Address): DBActionSR[TransactionId] = {
