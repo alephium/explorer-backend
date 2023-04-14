@@ -129,10 +129,10 @@ trait TransactionService {
   def getAmountHistory(address: Address,
                        from: TimeStamp,
                        to: TimeStamp,
-                       intervalType: IntervalType)(
-      implicit ec: ExecutionContext,
-      ac: ActorSystem,
-      dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer]
+                       intervalType: IntervalType,
+                       paralellism: Int)(implicit ec: ExecutionContext,
+                                         ac: ActorSystem,
+                                         dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer]
 }
 
 object TransactionService extends TransactionService {
@@ -254,19 +254,19 @@ object TransactionService extends TransactionService {
   def getAmountHistory(address: Address,
                        from: TimeStamp,
                        to: TimeStamp,
-                       intervalType: IntervalType)(
-      implicit ec: ExecutionContext,
-      ac: ActorSystem,
-      dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
+                       intervalType: IntervalType,
+                       paralellism: Int)(implicit ec: ExecutionContext,
+                                         ac: ActorSystem,
+                                         dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
 
     val timeranges = amountHistoryTimeRanges(from, to, intervalType)
 
     Source(timeranges)
-      .mapAsync(1) {
+      .mapAsync(paralellism) {
         case (from, to) =>
           run(sumAddressOutputs(address, from, to)).map(res => (res, from, to))
       }
-      .mapAsync(1) {
+      .mapAsync(paralellism) {
         case (outs, from, to) =>
           run(sumAddressInputs(address, from, to)).map(res => (outs, res, to))
       }
@@ -283,15 +283,16 @@ object TransactionService extends TransactionService {
       .map {
         case (diff, to) =>
           if (to == TimeStamp.zero) {
-            Buffer.buffer("to,diff\n")
+            None
           } else {
-            val dec =
-              new java.math.BigDecimal(diff).divide(new java.math.BigDecimal(ALPH.oneAlph.v))
             val toI         = to.millis
-            val str: String = s"$toI,$dec,$diff\n"
-            Buffer.buffer(str)
+            val str: String = s"[$toI,$diff]"
+            Some(str)
           }
       }
+      .collect { case Some(value) => value }
+      .intersperse("""{"amountHistory":[""", ",", "]}")
+      .map(Buffer.buffer)
       .toMat(Sink.asPublisher[Buffer](false))(Keep.right)
       .run()
   }

@@ -81,15 +81,17 @@ object IntervalType {
 
   def validateTimeInterval[A](timeInterval: TimeInterval,
                               intervalType: IntervalType,
-                              maxHourlyTimeSpan: Duration)(contd: => Future[A])(
+                              maxHourlyTimeSpan: Duration,
+                              maxDailyTimeSpan: Duration)(contd: => Future[A])(
       implicit executionContext: ExecutionContext): Future[Either[ApiError[_ <: StatusCode], A]] = {
-    intervalType match {
-      case IntervalType.Daily => contd.map(Right(_))
-      case IntervalType.Hourly =>
-        timeInterval.validateTimeSpan(maxHourlyTimeSpan) match {
-          case Left(error) => Future.successful(Left(error))
-          case Right(_)    => contd.map(Right(_))
-        }
+    val timeSpan =
+      intervalType match {
+        case IntervalType.Daily  => maxDailyTimeSpan
+        case IntervalType.Hourly => maxHourlyTimeSpan
+      }
+    timeInterval.validateTimeSpan(timeSpan) match {
+      case Left(error) => Future.successful(Left(error))
+      case Right(_)    => contd.map(Right(_))
     }
   }
 }

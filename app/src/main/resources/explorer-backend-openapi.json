@@ -2866,7 +2866,7 @@
               }
             },
             "content": {
-              "text/csv": {
+              "application/json": {
                 "schema": {
                   "type": "string"
                 }
