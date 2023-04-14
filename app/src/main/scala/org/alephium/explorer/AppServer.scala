@@ -30,7 +30,7 @@ import org.alephium.explorer.web._
 // scalastyle:off magic.number
 object AppServer {
 
-  def routes(exportTxsNumberThreshold: Int)(
+  def routes(exportTxsNumberThreshold: Int, streamParallelism: Int)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
@@ -38,8 +38,9 @@ object AppServer {
       transactionCache: TransactionCache,
       groupSetting: GroupSetting): ArraySeq[Router => Route] = {
 
-    val blockServer                = new BlockServer()
-    val addressServer              = new AddressServer(TransactionService, exportTxsNumberThreshold)
+    val blockServer = new BlockServer()
+    val addressServer =
+      new AddressServer(TransactionService, exportTxsNumberThreshold, streamParallelism)
     val transactionServer          = new TransactionServer()
     val infosServer                = new InfosServer(TokenSupplyService, BlockService, TransactionService)
     val utilsServer: UtilsServer   = new UtilsServer()

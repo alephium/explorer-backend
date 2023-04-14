@@ -82,7 +82,9 @@ class AddressServerSpec()
     override def exportTransactionsByAddress(address: Address,
                                              from: TimeStamp,
                                              to: TimeStamp,
-                                             batchSize: Int)(
+                                             exportType: ExportType,
+                                             batchSize: Int,
+                                             streamParallelism: Int)(
         implicit ec: ExecutionContext,
         dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
       TransactionService.transactionsPublisher(
@@ -95,7 +97,8 @@ class AddressServerSpec()
     }
   }
 
-  val server = new AddressServer(transactionService, exportTxsNumberThreshold = 1000)
+  val server =
+    new AddressServer(transactionService, exportTxsNumberThreshold = 1000, streamParallelism = 8)
 
   val routes = server.routes
 

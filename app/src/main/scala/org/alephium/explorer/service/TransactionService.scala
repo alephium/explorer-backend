@@ -108,7 +108,12 @@ trait TransactionService {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Boolean]
 
-  def exportTransactionsByAddress(address: Address, from: TimeStamp, to: TimeStamp, batchSize: Int)(
+  def exportTransactionsByAddress(address: Address,
+                                  fromTime: TimeStamp,
+                                  toTime: TimeStamp,
+                                  exportType: ExportType,
+                                  batchSize: Int,
+                                  paralellism: Int)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer]
 }
@@ -213,18 +218,25 @@ object TransactionService extends TransactionService {
   def exportTransactionsByAddress(address: Address,
                                   fromTime: TimeStamp,
                                   toTime: TimeStamp,
-                                  batchSize: Int)(
+                                  exportType: ExportType,
+                                  batchSize: Int,
+                                  paralellism: Int)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = {
 
     transactionsPublisher(
       address,
-      transactionSource(address, fromTime, toTime, batchSize)
+      exportType,
+      transactionSource(address, fromTime, toTime, batchSize, paralellism)
     )
 
   }
 
-  private def transactionSource(address: Address, from: TimeStamp, to: TimeStamp, batchSize: Int)(
+  private def transactionSource(address: Address,
+                                from: TimeStamp,
+                                to: TimeStamp,
+                                batchSize: Int,
+                                paralellism: Int)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Flowable[ArraySeq[Transaction]] = {
     Flowable
