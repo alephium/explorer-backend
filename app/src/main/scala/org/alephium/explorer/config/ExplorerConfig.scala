@@ -136,7 +136,8 @@ object ExplorerConfig {
           explorer.cacheRowCountReloadPeriod,
           explorer.cacheBlockTimesReloadPeriod,
           explorer.cacheLatestBlocksReloadPeriod,
-          explorer.exportTxsNumberThreshold
+          explorer.exportTxsNumberThreshold,
+          explorer.streamParallelism
         )
       }).get
     }
@@ -162,7 +163,9 @@ object ExplorerConfig {
                                     cacheRowCountReloadPeriod: FiniteDuration,
                                     cacheBlockTimesReloadPeriod: FiniteDuration,
                                     cacheLatestBlocksReloadPeriod: FiniteDuration,
-                                    exportTxsNumberThreshold: Int)
+                                    exportTxsNumberThreshold: Int,
+                                    streamParallelism: Int)
+
 }
 
 /**
@@ -187,4 +190,5 @@ final case class ExplorerConfig private (groupNum: Int,
                                          cacheRowCountReloadPeriod: FiniteDuration,
                                          cacheBlockTimesReloadPeriod: FiniteDuration,
                                          cacheLatestBlocksReloadPeriod: FiniteDuration,
-                                         exportTxsNumberThreshold: Int)
+                                         exportTxsNumberThreshold: Int,
+                                         streamParallelism: Int)

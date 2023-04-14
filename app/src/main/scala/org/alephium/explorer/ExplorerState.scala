@@ -93,13 +93,14 @@ sealed trait ExplorerStateRead extends ExplorerState {
     new ExplorerHttpServer(
       config.host,
       config.port,
-      AppServer.routes(config.exportTxsNumberThreshold)(executionContext,
-                                                        database.databaseConfig,
-                                                        blockFlowClient,
-                                                        blockCache,
-                                                        transactionCache,
-                                                        actorSystem,
-                                                        groupSettings)
+      AppServer.routes(config.exportTxsNumberThreshold, config.streamParallelism)(
+        executionContext,
+        database.databaseConfig,
+        blockFlowClient,
+        blockCache,
+        transactionCache,
+        actorSystem,
+        groupSettings)
     )
 
   override lazy val customServices: ArraySeq[Service] = ArraySeq(httpServer)

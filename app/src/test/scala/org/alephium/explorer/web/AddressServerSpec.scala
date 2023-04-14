@@ -84,7 +84,8 @@ class AddressServerSpec()
                                              from: TimeStamp,
                                              to: TimeStamp,
                                              exportType: ExportType,
-                                             batchSize: Int)(
+                                             batchSize: Int,
+                                             streamParallelism: Int)(
         implicit ec: ExecutionContext,
         ac: ActorSystem,
         dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
@@ -96,7 +97,8 @@ class AddressServerSpec()
     }
   }
 
-  val server = new AddressServer(transactionService, exportTxsNumberThreshold = 1000)
+  val server =
+    new AddressServer(transactionService, exportTxsNumberThreshold = 1000, streamParallelism = 8)
 
   val routes = server.routes
 

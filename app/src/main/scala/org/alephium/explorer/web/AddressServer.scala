@@ -36,11 +36,12 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.service.TransactionService
 import org.alephium.protocol.model.Address
 
-class AddressServer(transactionService: TransactionService, exportTxsNumberThreshold: Int)(
-    implicit val executionContext: ExecutionContext,
-    ac: ActorSystem,
-    groupSetting: GroupSetting,
-    dc: DatabaseConfig[PostgresProfile])
+class AddressServer(transactionService: TransactionService,
+                    exportTxsNumberThreshold: Int,
+                    streamParallelism: Int)(implicit val executionContext: ExecutionContext,
+                                            ac: ActorSystem,
+                                            groupSetting: GroupSetting,
+                                            dc: DatabaseConfig[PostgresProfile])
     extends Server
     with AddressesEndpoints {
 
@@ -134,7 +135,8 @@ class AddressServer(transactionService: TransactionService, exportTxsNumberThres
                                                                    timeInterval.from,
                                                                    timeInterval.to,
                                                                    exportType,
-                                                                   1)
+                                                                   1,
+                                                                   streamParallelism)
           pub.subscribe(readStream)
           Right(readStream)
         }

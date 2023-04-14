@@ -448,7 +448,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
   "export transactions by address" in new TxsByAddressFixture {
     forAll(Gen.choose(1, 4)) { batchSize =>
       val publisher = TransactionService
-        .exportTransactionsByAddress(address, fromTs, toTs, ExportType.CSV, batchSize)
+        .exportTransactionsByAddress(address, fromTs, toTs, ExportType.CSV, batchSize, 8)
 
       val result: Seq[Buffer] =
         Source.fromPublisher(publisher).runWith(Sink.seq).futureValue

@@ -112,10 +112,11 @@ trait TransactionService {
       dc: DatabaseConfig[PostgresProfile]): Future[Boolean]
 
   def exportTransactionsByAddress(address: Address,
-                                  from: TimeStamp,
-                                  to: TimeStamp,
+                                  fromTime: TimeStamp,
+                                  toTime: TimeStamp,
                                   exportType: ExportType,
-                                  batchSize: Int)(
+                                  batchSize: Int,
+                                  paralellism: Int)(
       implicit ec: ExecutionContext,
       ac: ActorSystem,
       dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer]
@@ -223,7 +224,8 @@ object TransactionService extends TransactionService {
                                   fromTime: TimeStamp,
                                   toTime: TimeStamp,
                                   exportType: ExportType,
-                                  batchSize: Int)(
+                                  batchSize: Int,
+                                  paralellism: Int)(
       implicit ec: ExecutionContext,
       ac: ActorSystem,
       dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
@@ -231,18 +233,22 @@ object TransactionService extends TransactionService {
     transactionsPublisher(
       address,
       exportType,
-      transactionSource(address, fromTime, toTime, batchSize)
+      transactionSource(address, fromTime, toTime, batchSize, paralellism)
     )
 
   }
 
-  private def transactionSource(address: Address, from: TimeStamp, to: TimeStamp, batchSize: Int)(
+  private def transactionSource(address: Address,
+                                from: TimeStamp,
+                                to: TimeStamp,
+                                batchSize: Int,
+                                paralellism: Int)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Source[ArraySeq[Transaction], NotUsed] = {
     Source
       .fromPublisher(stream(streamTxByAddressQR(address, from, to)))
       .grouped(batchSize)
-      .mapAsync(1) { hashes =>
+      .mapAsync(paralellism) { hashes =>
         run(getTransactionsNoJoin(ArraySeq.from(hashes)))
       }
   }
