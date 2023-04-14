@@ -119,7 +119,8 @@ trait EmptyTransactionService extends TransactionService {
   def getAmountHistory(address: Address,
                        from: TimeStamp,
                        to: TimeStamp,
-                       intervalType: IntervalType)(
+                       intervalType: IntervalType,
+                       streamParallelism: Int)(
       implicit ec: ExecutionContext,
       ac: ActorSystem,
       dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = ???

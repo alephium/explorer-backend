@@ -49,6 +49,7 @@ class AddressServer(transactionService: TransactionService,
 
   // scalastyle:off magic.number
   private val maxHourlyTimeSpan = Duration.ofDaysUnsafe(7)
+  private val maxDailyTimeSpan  = Duration.ofDaysUnsafe(365)
   // scalastyle:on magic.number
 
   val routes: ArraySeq[Router => Route] =
@@ -129,7 +130,8 @@ class AddressServer(transactionService: TransactionService,
               transactionService.getAmountHistory(address,
                                                   timeInterval.from,
                                                   timeInterval.to,
-                                                  intervalType)
+                                                  intervalType,
+                                                  streamParallelism)
             pub.subscribe(readStream)
             Future.successful(
               (AddressServer.amountHistoryFileNameHeader(address, timeInterval), readStream))
@@ -160,7 +162,10 @@ class AddressServer(transactionService: TransactionService,
 
   private def validateTimeInterval[A](timeInterval: TimeInterval, intervalType: IntervalType)(
       contd: => Future[A]): Future[Either[ApiError[_ <: StatusCode], A]] =
-    IntervalType.validateTimeInterval(timeInterval, intervalType, maxHourlyTimeSpan)(contd)
+    IntervalType.validateTimeInterval(timeInterval,
+                                      intervalType,
+                                      maxHourlyTimeSpan,
+                                      maxDailyTimeSpan)(contd)
 }
 
 object AddressServer {
@@ -169,6 +174,6 @@ object AddressServer {
   }
 
   def amountHistoryFileNameHeader(address: Address, timeInterval: TimeInterval): String = {
-    s"""attachment;filename="$address-amount-history-${timeInterval.from.millis}-${timeInterval.to.millis}.csv""""
+    s"""attachment;filename="$address-amount-history-${timeInterval.from.millis}-${timeInterval.to.millis}.json""""
   }
 }

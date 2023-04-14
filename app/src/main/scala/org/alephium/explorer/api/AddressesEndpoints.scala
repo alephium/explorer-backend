@@ -164,7 +164,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .in(timeIntervalQuery)
       .in(intervalTypeQuery)
       .out(header[String](HeaderNames.ContentDisposition))
-      .out(streamTextBody(VertxStreams)(TextCsv()))
+      .out(streamTextBody(VertxStreams)(CodecFormat.Json()))
 
   private case class TextCsv() extends CodecFormat {
     override val mediaType: MediaType = MediaType.TextCsv
