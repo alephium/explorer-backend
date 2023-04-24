@@ -113,7 +113,8 @@ trait EmptyTransactionService extends TransactionService {
                                   from: TimeStamp,
                                   to: TimeStamp,
                                   exportType: ExportType,
-                                  batchSize: Int)(
+                                  batchSize: Int,
+                                  streamParallelism: Int)(
       implicit ec: ExecutionContext,
       ac: ActorSystem,
       dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = ???
