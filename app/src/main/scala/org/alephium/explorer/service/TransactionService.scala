@@ -23,7 +23,6 @@ import scala.jdk.FutureConverters._
 
 import io.reactivex.rxjava3.core.Flowable
 import io.vertx.core.buffer.Buffer
-import org.reactivestreams.Publisher
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -115,7 +114,7 @@ trait TransactionService {
                                   batchSize: Int,
                                   paralellism: Int)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer]
+      dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer]
 }
 
 object TransactionService extends TransactionService {
@@ -221,9 +220,9 @@ object TransactionService extends TransactionService {
                                   batchSize: Int,
                                   paralellism: Int)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
+      dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = {
 
-    transactionsPublisher(
+    transactionsFlowable(
       address,
       transactionSource(address, fromTime, toTime, batchSize, paralellism)
     )
@@ -240,29 +239,29 @@ object TransactionService extends TransactionService {
     Flowable
       .fromPublisher(stream(streamTxByAddressQR(address, from, to)))
       .buffer(batchSize)
-      .concatMap { hashes =>
+      .concatMapEager(({ hashes =>
         Flowable.fromFuture(
           run(getTransactionsNoJoin(ArraySeq.from(hashes.asScala))).asJava.toCompletableFuture
         )
-      }
+      }), paralellism, 1)
   }
 
-  private def bufferPublisher(source: Flowable[String]): Publisher[Buffer] = {
+  private def bufferFlowable(source: Flowable[String]): Flowable[Buffer] = {
     source
       .map(Buffer.buffer)
   }
 
-  def transactionsPublisher(address: Address,
-                            source: Flowable[ArraySeq[Transaction]]): Publisher[Buffer] = {
-    bufferPublisher {
+  def transactionsFlowable(address: Address,
+                           source: Flowable[ArraySeq[Transaction]]): Flowable[Buffer] = {
+    bufferFlowable {
       val headerSource = Flowable.just(Transaction.csvHeader)
       val csvSource    = source.map(_.map(_.toCsv(address)).mkString)
       headerSource.mergeWith(csvSource)
     }
   }
 
-  def outputsPublisher(source: Flowable[ArraySeq[Output]]): Publisher[Buffer] = {
-    bufferPublisher {
+  def outputsFlowable(source: Flowable[ArraySeq[Output]]): Flowable[Buffer] = {
+    bufferFlowable {
       source.map(_.map(_.toString()).mkString)
     }
   }

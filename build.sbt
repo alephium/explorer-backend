@@ -170,7 +170,7 @@ lazy val app = mainProject("app")
     tapirCore,
     tapirServer,
     tapirVertx,
-    vertxReactiveStreams,
+    vertxRxJava,
     tapirOpenapi,
     tapirOpenapiModel,
     tapirSwaggerUi,

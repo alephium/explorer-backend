@@ -22,7 +22,6 @@ import scala.jdk.CollectionConverters._
 
 import io.reactivex.rxjava3.core.Flowable
 import io.vertx.core.buffer.Buffer
-import org.reactivestreams.Publisher
 import org.scalacheck.Gen
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
@@ -85,8 +84,8 @@ class AddressServerSpec()
                                              batchSize: Int,
                                              streamParallelism: Int)(
         implicit ec: ExecutionContext,
-        dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
-      TransactionService.transactionsPublisher(
+        dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = {
+      TransactionService.transactionsFlowable(
         address,
         Flowable
           .fromIterable(transactions.asJava)

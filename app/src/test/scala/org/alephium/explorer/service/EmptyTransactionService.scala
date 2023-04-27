@@ -19,8 +19,8 @@ package org.alephium.explorer.service
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
+import io.reactivex.rxjava3.core.Flowable
 import io.vertx.core.buffer.Buffer
-import org.reactivestreams.Publisher
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -113,5 +113,5 @@ trait EmptyTransactionService extends TransactionService {
                                   batchSize: Int,
                                   streamParallelism: Int)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = ???
+      dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = ???
 }
