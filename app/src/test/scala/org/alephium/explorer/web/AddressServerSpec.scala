@@ -175,9 +175,8 @@ class AddressServerSpec()
     }
   }
 
-  //FIXME See: https://github.com/alephium/explorer-backend/issues/401
   "/addresses/<address>/export-transactions/" should {
-    "handle csv format" ignore {
+    "handle csv format" in {
       val address    = addressGen.sample.get
       val timestamps = transactions.map(_.timestamp.millis).sorted
       val fromTs     = timestamps.head
@@ -194,7 +193,7 @@ class AddressServerSpec()
           response.headers.contains(header) is true
       }
     }
-    "restrict time range to 1 year" ignore {
+    "restrict time range to 1 year" in {
       val address = addressGen.sample.get
       val long    = Gen.posNum[Long].sample.get
       val fromTs  = TimeStamp.now().millis
@@ -213,7 +212,7 @@ class AddressServerSpec()
     }
   }
 
-  "fail if address has more txs than the threshold" ignore {
+  "fail if address has more txs than the threshold" in {
     addressHasMoreTxs = true
     val address = addressGen.sample.get
     Get(s"/addresses/${address}/export-transactions/csv?fromTs=0&toTs=1") check { response =>
@@ -237,8 +236,6 @@ class AddressServerSpec()
     }
   }
 
-  //Test could be removed once : https://github.com/alephium/explorer-backend/issues/401 is fixed
-  //and ignored test in this file are un-ignored.
   "AddressServer companion object" should {
     "create correct export filename" in {
       val address = "12jK2jHyyJTJyuRMRya7QJSojgVnb5yh4HVzNNw6BTBDF"
