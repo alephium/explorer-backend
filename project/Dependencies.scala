@@ -22,6 +22,7 @@ object Version {
   lazy val akka       = "2.6.20"
   lazy val rxJava     = "3.1.6"
   lazy val tapir      = "1.2.8"
+  lazy val vertx      = "4.3.8"
   lazy val slick      = "3.3.2"
   lazy val postgresql = "42.2.12"
   lazy val sttp       = "3.7.4"
@@ -39,8 +40,9 @@ object Dependencies {
   lazy val alephiumHttp     = "org.alephium" %% "alephium-http"     % Version.common
   lazy val alephiumConf     = "org.alephium" %% "alephium-conf"     % Version.common
 
-  lazy val vertx                = "io.vertx" % "vertx-core"             % "4.3.8"
-  lazy val vertxReactiveStreams = "io.vertx" % "vertx-reactive-streams" % "4.3.8"
+  lazy val vertx                = "io.vertx" % "vertx-core"             % Version.vertx
+  lazy val vertxRxJava = "io.vertx" % "vertx-rx-java3" % Version.vertx
+
 
   lazy val akkaTest = "com.typesafe.akka" %% "akka-testkit" % Version.akka % Test
 

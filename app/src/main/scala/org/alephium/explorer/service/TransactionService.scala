@@ -23,7 +23,6 @@ import scala.jdk.FutureConverters._
 
 import io.reactivex.rxjava3.core.Flowable
 import io.vertx.core.buffer.Buffer
-import org.reactivestreams.Publisher
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -111,7 +110,7 @@ trait TransactionService {
 
   def exportTransactionsByAddress(address: Address, from: TimeStamp, to: TimeStamp, batchSize: Int)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer]
+      dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer]
 }
 
 object TransactionService extends TransactionService {
@@ -216,7 +215,7 @@ object TransactionService extends TransactionService {
                                   toTime: TimeStamp,
                                   batchSize: Int)(
       implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
+      dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = {
 
     transactionsPublisher(
       address,
@@ -238,13 +237,13 @@ object TransactionService extends TransactionService {
       }
   }
 
-  private def bufferPublisher(source: Flowable[String]): Publisher[Buffer] = {
+  private def bufferPublisher(source: Flowable[String]): Flowable[Buffer] = {
     source
       .map(Buffer.buffer)
   }
 
   def transactionsPublisher(address: Address,
-                            source: Flowable[ArraySeq[Transaction]]): Publisher[Buffer] = {
+                            source: Flowable[ArraySeq[Transaction]]): Flowable[Buffer] = {
     bufferPublisher {
       val headerSource = Flowable.just(Transaction.csvHeader)
       val csvSource    = source.map(_.map(_.toCsv(address)).mkString)
@@ -252,7 +251,7 @@ object TransactionService extends TransactionService {
     }
   }
 
-  def outputsPublisher(source: Flowable[ArraySeq[Output]]): Publisher[Buffer] = {
+  def outputsPublisher(source: Flowable[ArraySeq[Output]]): Flowable[Buffer] = {
     bufferPublisher {
       source.map(_.map(_.toString()).mkString)
     }

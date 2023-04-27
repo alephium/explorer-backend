@@ -21,8 +21,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.streams.ReadStream
-import io.vertx.ext.reactivestreams.ReactiveReadStream
 import io.vertx.ext.web._
+import io.vertx.rxjava3.FlowableHelper
+
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.StatusCode
@@ -126,13 +127,11 @@ class AddressServer(transactionService: TransactionService, exportTxsNumberThres
           Left(ApiError.BadRequest(
             s"Too many transactions for that address in this time range, limit is $exportTxsNumberThreshold"))
         } else {
-          val readStream: ReactiveReadStream[Buffer] = ReactiveReadStream.readStream();
           val pub = transactionService.exportTransactionsByAddress(address,
                                                                    timeInterval.from,
                                                                    timeInterval.to,
                                                                    1)
-          pub.subscribe(readStream)
-          Right(readStream)
+          Right(FlowableHelper.toReadStream(pub))
         }
       }
   }
