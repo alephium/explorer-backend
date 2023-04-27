@@ -240,8 +240,8 @@ object TransactionService extends TransactionService {
       .fromPublisher(stream(streamTxByAddressQR(address, from, to)))
       .buffer(batchSize)
       .concatMapEager(({ hashes =>
-        Flowable.fromFuture(
-          run(getTransactionsNoJoin(ArraySeq.from(hashes.asScala))).asJava.toCompletableFuture
+        Flowable.fromCompletionStage(
+          run(getTransactionsNoJoin(ArraySeq.from(hashes.asScala))).asJava
         )
       }), paralellism, 1)
   }
