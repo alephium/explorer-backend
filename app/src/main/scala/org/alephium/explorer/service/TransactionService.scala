@@ -20,11 +20,12 @@ import java.math.BigInteger
 import java.time.Instant
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
 
-import io.reactivex.rxjava3.core.Flowable
+import io.reactivex.rxjava3.core.{Completable, Flowable}
 import io.vertx.core.buffer.Buffer
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
@@ -117,7 +118,6 @@ trait TransactionService {
   def exportTransactionsByAddress(address: Address,
                                   fromTime: TimeStamp,
                                   toTime: TimeStamp,
-                                  exportType: ExportType,
                                   batchSize: Int,
                                   paralellism: Int)(
       implicit ec: ExecutionContext,
@@ -128,8 +128,7 @@ trait TransactionService {
                        to: TimeStamp,
                        intervalType: IntervalType,
                        paralellism: Int)(implicit ec: ExecutionContext,
-                                         ac: ActorSystem,
-                                         dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer]
+                                         dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer]
 }
 
 object TransactionService extends TransactionService {
@@ -232,7 +231,6 @@ object TransactionService extends TransactionService {
   def exportTransactionsByAddress(address: Address,
                                   fromTime: TimeStamp,
                                   toTime: TimeStamp,
-                                  exportType: ExportType,
                                   batchSize: Int,
                                   paralellism: Int)(
       implicit ec: ExecutionContext,
@@ -240,41 +238,52 @@ object TransactionService extends TransactionService {
 
     transactionsPublisher(
       address,
-      exportType,
       transactionSource(address, fromTime, toTime, batchSize, paralellism)
     )
 
   }
 
+  //scalastyle:off
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   def getAmountHistory(address: Address,
                        from: TimeStamp,
                        to: TimeStamp,
                        intervalType: IntervalType,
                        paralellism: Int)(implicit ec: ExecutionContext,
-                                         ac: ActorSystem,
-                                         dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = {
+                                         dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = {
 
     val timeranges = amountHistoryTimeRanges(from, to, intervalType)
 
-    Source(timeranges)
-      .mapAsync(paralellism) {
-        case (from, to) =>
-          run(sumAddressOutputs(address, from, to)).map(res => (res, from, to))
+    Flowable
+      .fromIterable(timeranges.asJava)
+      .concatMapEager(({ ts =>
+        val (from, to) = ts
+        Flowable.fromCompletionStage(
+          run(sumAddressOutputs(address, from, to))
+            .map(res => (res, from, to))
+            .asJava
+        )
+      }), paralellism, 1)
+      .concatMapEager(({ ts =>
+        val (outs, from, to) = ts
+        Flowable.fromCompletionStage(
+          run(sumAddressInputs(address, from, to))
+            .map(res => (outs, res, to))
+            .asJava
+        )
+      }), paralellism, 1)
+      .filter {
+        case (outs, ins, to) => outs != U256.Zero || ins != U256.Zero
       }
-      .mapAsync(paralellism) {
-        case (outs, from, to) =>
-          run(sumAddressInputs(address, from, to)).map(res => (outs, res, to))
-      }
-      .collect {
-        case (outs, ins, to) if outs != U256.Zero || ins != U256.Zero =>
-          (outs, ins, to)
-      }
-      .scan((BigInteger.ZERO, TimeStamp.zero)) {
-        case ((sum, _), (outs, ins, to)) =>
-          val diff   = outs.v.subtract(ins.v)
-          val newSum = sum.add(diff)
+      .scan(
+        (BigInteger.ZERO, TimeStamp.zero), { (acc: (BigInteger, TimeStamp), next) =>
+          val (sum, _)        = acc
+          val (outs, ins, to) = next
+          val diff            = outs.v.subtract(ins.v)
+          val newSum          = sum.add(diff)
           (newSum, to)
-      }
+        }
+      )
       .map {
         case (diff, to) =>
           if (to == TimeStamp.zero) {
@@ -285,11 +294,9 @@ object TransactionService extends TransactionService {
             Some(str)
           }
       }
-      .collect { case Some(value) => value }
-      .intersperse("""{"amountHistory":[""", ",", "]}")
-      .map(Buffer.buffer)
-      .toMat(Sink.asPublisher[Buffer](false))(Keep.right)
-      .run()
+      .filter(_.isDefined)
+      //.intersperse("""{"amountHistory":[""", ",", "]}")
+      .map(e => Buffer.buffer(e.get))
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
@@ -323,11 +330,11 @@ object TransactionService extends TransactionService {
     Flowable
       .fromPublisher(stream(streamTxByAddressQR(address, from, to)))
       .buffer(batchSize)
-      .concatMap { hashes =>
-        Flowable.fromFuture(
-          run(getTransactionsNoJoin(ArraySeq.from(hashes.asScala))).asJava.toCompletableFuture
+      .concatMapEager(({ hashes =>
+        Flowable.fromCompletionStage(
+          run(getTransactionsNoJoin(ArraySeq.from(hashes.asScala))).asJava
         )
-      }
+      }), paralellism, 1)
   }
 
   private def bufferPublisher(source: Flowable[String]): Flowable[Buffer] = {

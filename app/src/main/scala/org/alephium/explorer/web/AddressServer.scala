@@ -23,7 +23,6 @@ import io.vertx.core.buffer.Buffer
 import io.vertx.core.streams.ReadStream
 import io.vertx.ext.web._
 import io.vertx.rxjava3.FlowableHelper
-
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.StatusCode
@@ -125,16 +124,16 @@ class AddressServer(transactionService: TransactionService,
       route(getAddressAmountHistory.serverLogic[Future] {
         case (address, timeInterval, intervalType) =>
           validateTimeInterval(timeInterval, intervalType) {
-            val readStream: ReactiveReadStream[Buffer] = ReactiveReadStream.readStream();
             val pub =
               transactionService.getAmountHistory(address,
                                                   timeInterval.from,
                                                   timeInterval.to,
                                                   intervalType,
                                                   streamParallelism)
-            pub.subscribe(readStream)
             Future.successful(
-              (AddressServer.amountHistoryFileNameHeader(address, timeInterval), readStream))
+              (AddressServer.amountHistoryFileNameHeader(address, timeInterval),
+               FlowableHelper.toReadStream(pub))
+            )
           }
       })
     )
