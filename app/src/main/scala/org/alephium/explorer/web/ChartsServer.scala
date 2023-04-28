@@ -38,6 +38,7 @@ class ChartsServer()(implicit val executionContext: ExecutionContext,
 
   // scalastyle:off magic.number
   private val maxHourlyTimeSpan = Duration.ofDaysUnsafe(30)
+  private val maxDailyTimeSpan  = Duration.ofDaysUnsafe(365)
   // scalastyle:on magic.number
 
   val routes: ArraySeq[Router => Route] =
@@ -70,14 +71,9 @@ class ChartsServer()(implicit val executionContext: ExecutionContext,
     )
 
   private def validateTimeInterval[A](timeInterval: TimeInterval, intervalType: IntervalType)(
-      contd: => Future[A]): Future[Either[ApiError[_ <: StatusCode], A]] = {
-    intervalType match {
-      case IntervalType.Daily => contd.map(Right(_))
-      case IntervalType.Hourly =>
-        timeInterval.validateTimeSpan(maxHourlyTimeSpan) match {
-          case Left(error) => Future.successful(Left(error))
-          case Right(_)    => contd.map(Right(_))
-        }
-    }
-  }
+      contd: => Future[A]): Future[Either[ApiError[_ <: StatusCode], A]] =
+    IntervalType.validateTimeInterval(timeInterval,
+                                      intervalType,
+                                      maxHourlyTimeSpan,
+                                      maxDailyTimeSpan)(contd)
 }
