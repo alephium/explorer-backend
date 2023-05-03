@@ -54,7 +54,14 @@ class AddressServerSpec()
         tx.copy(timestamp = TimeStamp.now() + Duration.ofDaysUnsafe(index.toLong))
     })
   val mempoolTx = mempooltransactionGen.sample.get
-
+//producing some random data, it isn't a real history
+  val amountHistory = transactions
+    .flatMap { tx =>
+      tx.outputs.map { output =>
+        (output.attoAlphAmount.v, tx.timestamp)
+      }
+    }
+    .sortBy(_._2)
   var testLimit = 0
 
   val transactionService = new EmptyTransactionService {
@@ -93,6 +100,15 @@ class AddressServerSpec()
           .map(l => ArraySeq.from(l.asScala))
       )
     }
+
+    override def getAmountHistory(address: Address,
+                                  from: TimeStamp,
+                                  to: TimeStamp,
+                                  intervalType: IntervalType,
+                                  paralellism: Int)(
+        implicit ec: ExecutionContext,
+        dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] =
+      TransactionService.amountHistoryToJsonFlowable(Flowable.fromIterable(amountHistory.asJava))
   }
 
   val server =
@@ -219,6 +235,54 @@ class AddressServerSpec()
       response.code is StatusCode.BadRequest
       response.as[ApiError.BadRequest] is ApiError.BadRequest(
         s"Too many transactions for that address in this time range, limit is $exportTxsNumberThreshold")
+    }
+  }
+
+  "/addresses/<address>/amount-history" should {
+    val address       = addressGen.sample.get
+    val timestamps    = transactions.map(_.timestamp.millis).sorted
+    val intervalTypes = ArraySeq[IntervalType](IntervalType.Hourly, IntervalType.Daily)
+    val fromTs        = timestamps.head
+    def maxTimeSpan(intervalType: IntervalType) = intervalType match {
+      case IntervalType.Hourly => Duration.ofDaysUnsafe(7)
+      case IntervalType.Daily  => Duration.ofDaysUnsafe(365)
+    }
+    def getToTs(intervalType: IntervalType) =
+      fromTs + maxTimeSpan(intervalType).millis
+
+    "return the amount history as json " in {
+      intervalTypes.foreach { intervalType =>
+        val toTs = getToTs(intervalType)
+
+        Get(
+          s"/addresses/${address}/amount-history?fromTs=$fromTs&toTs=$toTs&interval-type=$intervalType") check {
+          response =>
+            response.body is Right(
+              s"""{"amountHistory":${amountHistory
+                .map { case (amount, ts) => s"""[${ts.millis},"$amount"]""" }
+                .mkString("[", ",", "]")}}"""
+            )
+
+            val header =
+              Header("Content-Disposition",
+                     s"""attachment;filename="$address-amount-history-$fromTs-$toTs.json"""")
+            response.headers.contains(header) is true
+        }
+      }
+    }
+
+    "respect the time range and time interval" in {
+      intervalTypes.foreach { intervalType =>
+        val wrongToTs = getToTs(intervalType) + 1
+
+        Get(
+          s"/addresses/${address}/amount-history?fromTs=$fromTs&toTs=$wrongToTs&interval-type=$intervalType") check {
+          response =>
+            response.body is Left(
+              s"""{"detail":"Time span cannot be greater than ${maxTimeSpan(intervalType)}"}"""
+            )
+        }
+      }
     }
   }
 

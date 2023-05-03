@@ -53,7 +53,7 @@ class ApiModelSpec() extends AlephiumSpec {
        |  "blockHash": "${tx.blockHash.value.toHexString}",
        |  "timestamp": ${tx.timestamp.millis},
        |  "inputs": [],
-       |  "outputs": [],
+       |  "outputs": ${write(tx.outputs)},
        |  "gasAmount": ${tx.gasAmount},
        |  "gasPrice": "${tx.gasPrice}",
        |  "scriptExecutionOk": ${tx.scriptExecutionOk},
@@ -67,8 +67,9 @@ class ApiModelSpec() extends AlephiumSpec {
         //No inputs or outputs so no addresses nor amounts
         val expected =
           s"${tx.hash.toHexString},${tx.blockHash.toHexString},${tx.timestamp.millis},${Instant
-            .ofEpochMilli(tx.timestamp.millis)},,,0,0\n"
-        tx.toCsv(addressGen.sample.get) is expected
+            .ofEpochMilli(tx.timestamp.millis)},,${tx.outputs.map(_.address).mkString("-")},0,0\n"
+        tx.toCsv(addressGen.sample.get)
+        expected
       }
 
       val address = Address.fromBase58("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n").get
@@ -142,8 +143,8 @@ class ApiModelSpec() extends AlephiumSpec {
        |  "hash": "${tx.hash.value.toHexString}",
        |  "blockHash": "${tx.blockHash.value.toHexString}",
        |  "timestamp": ${tx.timestamp.millis},
-       |  "inputs": [],
-       |  "outputs": [],
+       |  "inputs": ${write(tx.inputs)},
+       |  "outputs": ${write(tx.outputs)},
        |  "gasAmount": ${tx.gasAmount},
        |  "gasPrice": "${tx.gasPrice}",
        |  "scriptExecutionOk": ${tx.scriptExecutionOk},

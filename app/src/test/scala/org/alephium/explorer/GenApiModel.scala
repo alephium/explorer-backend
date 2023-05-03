@@ -57,6 +57,9 @@ object GenApiModel extends ImplicitConversions {
   val exportTypeGen: Gen[ExportType] =
     Gen.oneOf(ArraySeq(ExportType.CSV: ExportType, ExportType.JSON: ExportType))
 
+  val intervalTypeGen: Gen[IntervalType] =
+    Gen.oneOf(ArraySeq[IntervalType](IntervalType.Hourly, IntervalType.Daily))
+
   val addressGen: Gen[Address] = for {
     groupIndex <- groupIndexGen
     lockup     <- GenCoreProtocol.lockupGen(new protocol.model.GroupIndex(groupIndex.value))
@@ -114,6 +117,7 @@ object GenApiModel extends ImplicitConversions {
       hash              <- transactionHashGen
       blockHash         <- blockEntryHashGen
       timestamp         <- timestampGen
+      outputs           <- Gen.listOfN(5, outputGen)
       gasAmount         <- Gen.posNum[Int]
       gasPrice          <- u256Gen
       scriptExecutionOk <- arbitrary[Boolean]
@@ -123,7 +127,7 @@ object GenApiModel extends ImplicitConversions {
                   blockHash,
                   timestamp,
                   ArraySeq.empty,
-                  ArraySeq.empty,
+                  ArraySeq.from(outputs),
                   gasAmount,
                   gasPrice,
                   scriptExecutionOk,

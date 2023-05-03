@@ -107,11 +107,20 @@ trait EmptyTransactionService extends TransactionService {
   def hasAddressMoreTxsThan(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Boolean] = ???
+
   def exportTransactionsByAddress(address: Address,
                                   from: TimeStamp,
                                   to: TimeStamp,
                                   batchSize: Int,
-                                  streamParallelism: Int)(
+                                  paralellism: Int)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = ???
+
+  def getAmountHistory(address: Address,
+                       from: TimeStamp,
+                       to: TimeStamp,
+                       intervalType: IntervalType,
+                       paralellism: Int)(implicit ec: ExecutionContext,
+                                         dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] =
+    ???
 }
