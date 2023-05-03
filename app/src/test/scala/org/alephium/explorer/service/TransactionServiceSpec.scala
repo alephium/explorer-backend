@@ -20,8 +20,9 @@ import java.math.BigInteger
 
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.Future
+import scala.jdk.CollectionConverters._
 
-import akka.stream.scaladsl._
+import io.reactivex.rxjava3.core.Flowable
 import io.vertx.core.buffer.Buffer
 import org.scalacheck.Gen
 
@@ -448,10 +449,10 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
   "export transactions by address" in new TxsByAddressFixture {
     forAll(Gen.choose(1, 4)) { batchSize =>
       val publisher = TransactionService
-        .exportTransactionsByAddress(address, fromTs, toTs, ExportType.CSV, batchSize, 8)
+        .exportTransactionsByAddress(address, fromTs, toTs, batchSize, 8)
 
       val result: Seq[Buffer] =
-        Source.fromPublisher(publisher).runWith(Sink.seq).futureValue
+        Flowable.fromPublisher(publisher).toList().blockingGet().asScala
 
       //TODO Check data format and not only the size
 

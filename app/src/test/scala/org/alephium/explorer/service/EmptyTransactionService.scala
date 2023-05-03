@@ -19,9 +19,8 @@ package org.alephium.explorer.service
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.actor.ActorSystem
+import io.reactivex.rxjava3.core.Flowable
 import io.vertx.core.buffer.Buffer
-import org.reactivestreams.Publisher
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -107,15 +106,12 @@ trait EmptyTransactionService extends TransactionService {
   }
   def hasAddressMoreTxsThan(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
       implicit ec: ExecutionContext,
-      ac: ActorSystem,
       dc: DatabaseConfig[PostgresProfile]): Future[Boolean] = ???
   def exportTransactionsByAddress(address: Address,
                                   from: TimeStamp,
                                   to: TimeStamp,
-                                  exportType: ExportType,
                                   batchSize: Int,
                                   streamParallelism: Int)(
       implicit ec: ExecutionContext,
-      ac: ActorSystem,
-      dc: DatabaseConfig[PostgresProfile]): Publisher[Buffer] = ???
+      dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = ???
 }

@@ -19,11 +19,10 @@ package org.alephium.explorer.web
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.actor.ActorSystem
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.streams.ReadStream
-import io.vertx.ext.reactivestreams.ReactiveReadStream
 import io.vertx.ext.web._
+import io.vertx.rxjava3.FlowableHelper
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.StatusCode
@@ -39,7 +38,6 @@ import org.alephium.protocol.model.Address
 class AddressServer(transactionService: TransactionService,
                     exportTxsNumberThreshold: Int,
                     streamParallelism: Int)(implicit val executionContext: ExecutionContext,
-                                            ac: ActorSystem,
                                             groupSetting: GroupSetting,
                                             dc: DatabaseConfig[PostgresProfile])
     extends Server
@@ -113,7 +111,7 @@ class AddressServer(transactionService: TransactionService,
       }),
       route(exportTransactionsCsvByAddress.serverLogic[Future] {
         case (address, timeInterval) =>
-          exportTransactions(address, timeInterval, ExportType.CSV).map(_.map { stream =>
+          exportTransactions(address, timeInterval).map(_.map { stream =>
             (AddressServer.exportFileNameHeader(address, timeInterval), stream)
           })
       })
@@ -121,8 +119,8 @@ class AddressServer(transactionService: TransactionService,
 
   private def exportTransactions(
       address: Address,
-      timeInterval: TimeInterval,
-      exportType: ExportType): Future[Either[ApiError[_ <: StatusCode], ReadStream[Buffer]]] = {
+      timeInterval: TimeInterval
+  ): Future[Either[ApiError[_ <: StatusCode], ReadStream[Buffer]]] = {
     transactionService
       .hasAddressMoreTxsThan(address, timeInterval.from, timeInterval.to, exportTxsNumberThreshold)
       .map { hasMore =>
@@ -130,15 +128,12 @@ class AddressServer(transactionService: TransactionService,
           Left(ApiError.BadRequest(
             s"Too many transactions for that address in this time range, limit is $exportTxsNumberThreshold"))
         } else {
-          val readStream: ReactiveReadStream[Buffer] = ReactiveReadStream.readStream();
-          val pub = transactionService.exportTransactionsByAddress(address,
-                                                                   timeInterval.from,
-                                                                   timeInterval.to,
-                                                                   exportType,
-                                                                   1,
-                                                                   streamParallelism)
-          pub.subscribe(readStream)
-          Right(readStream)
+          val flowable = transactionService.exportTransactionsByAddress(address,
+                                                                        timeInterval.from,
+                                                                        timeInterval.to,
+                                                                        1,
+                                                                        streamParallelism)
+          Right(FlowableHelper.toReadStream(flowable))
         }
       }
   }
