@@ -22,10 +22,10 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 
-import io.reactivex.rxjava3.core.Flowable
 import io.vertx.core.buffer.Buffer
 import org.scalacheck.Gen
 
+import org.alephium.api.UtilJson._
 import org.alephium.explorer.AlephiumActorSpecLike
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.Generators._
@@ -35,6 +35,7 @@ import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.{BlockDao, MempoolDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
+import org.alephium.json.Json._
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.BlockHash
 import org.alephium.util.{Duration, TimeStamp, U256}
@@ -448,11 +449,11 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
   "export transactions by address" in new TxsByAddressFixture {
     forAll(Gen.choose(1, 4)) { batchSize =>
-      val publisher = TransactionService
+      val flowable = TransactionService
         .exportTransactionsByAddress(address, fromTs, toTs, batchSize, 8)
 
       val result: Seq[Buffer] =
-        Flowable.fromPublisher(publisher).toList().blockingGet().asScala
+        flowable.toList().blockingGet().asScala
 
       //TODO Check data format and not only the size
 
@@ -462,6 +463,26 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       val csvFile = result.map(_.toString()).mkString.split('\n')
 
       csvFile.size is (transactions.size + 1)
+    }
+  }
+
+  "get amount history" in new TxsByAddressFixture {
+    Seq[IntervalType](IntervalType.Hourly, IntervalType.Daily).foreach { intervalType =>
+      val flowable = TransactionService
+        .getAmountHistory(address, fromTs, toTs, intervalType, 8)
+
+      val result: Seq[Buffer] =
+        flowable.toList().blockingGet().asScala
+
+      val amountHistory = read[ujson.Value](result.mkString)
+      val history       = read[Seq[(Long, BigInteger)]](amountHistory("amountHistory"))
+
+      val times = history.map(_._1)
+
+      //Test that history is always ordered correctly
+      times is times.sorted
+
+    //TODO Test history amount value
     }
   }
 
@@ -526,16 +547,29 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
   trait TxsByAddressFixture extends Fixture {
     val address = addressGen.sample.get
 
+    val halfDay = Duration.ofHoursUnsafe(12)
+    val now     = TimeStamp.now()
+
     val blocks = Gen
       .listOfN(5, blockEntityGen(groupIndex, groupIndex))
-      .map(_.map { block =>
-        block.copy(outputs = block.outputs.map(_.copy(address = address)))
+      .map(_.zipWithIndex.map {
+        case (block, index) =>
+          val timestamp = now + (halfDay.timesUnsafe(index.toLong))
+          block.copy(
+            timestamp = timestamp,
+            outputs   = block.outputs.map(_.copy(address = address, timestamp = timestamp)),
+            inputs =
+              block.inputs.map(_.copy(outputRefAddress = Some(address), timestamp = timestamp)),
+            transactions = block.transactions.map { tx =>
+              tx.copy(timestamp = timestamp)
+            }
+          )
       })
       .sample
       .get
 
     BlockDao.insertAll(blocks).futureValue
-    val p = Future
+    Future
       .sequence(blocks.map { block =>
         for {
           _ <- databaseConfig.db.run(InputUpdateQueries.updateInputs())

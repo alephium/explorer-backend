@@ -48,7 +48,7 @@ class AddressServer(transactionService: TransactionService,
 
   // scalastyle:off magic.number
   private val maxHourlyTimeSpan = Duration.ofDaysUnsafe(7)
-  private val maxDailyTimeSpan  = Duration.ofDaysUnsafe(3650)
+  private val maxDailyTimeSpan  = Duration.ofDaysUnsafe(365)
   // scalastyle:on magic.number
 
   val routes: ArraySeq[Router => Route] =

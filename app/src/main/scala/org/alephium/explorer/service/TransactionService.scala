@@ -260,7 +260,7 @@ object TransactionService extends TransactionService {
                        paralellism: Int)(implicit ec: ExecutionContext,
                                          dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = {
     val timeranges = amountHistoryTimeRanges(from, to, intervalType)
-    Flowable
+    val amountHistory = Flowable
       .fromIterable(timeranges.asJava)
       .concatMapEager(
         {
@@ -284,9 +284,17 @@ object TransactionService extends TransactionService {
         }
       )
       .skip(1) //Drop first elem which is the seed of the scan (0,0)
+
+    amountHistoryToJsonFlowable(
+      amountHistory
+    )
+  }
+
+  def amountHistoryToJsonFlowable(history: Flowable[(BigInteger, TimeStamp)]): Flowable[Buffer] = {
+    history
       .concatMap {
         case (diff, to: TimeStamp) =>
-          val str = s"[${to.millis},$diff]"
+          val str = s"""[${to.millis},"$diff"]"""
           Flowable.just(str, ",")
       }
       .skipLast(1) //Removing latest "," it replace the missing `intersperse`

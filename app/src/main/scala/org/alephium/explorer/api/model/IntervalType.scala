@@ -42,6 +42,7 @@ object IntervalType {
     val string: String         = "hourly"
     val chronoUnit: ChronoUnit = ChronoUnit.HOURS
     val duration: Duration     = Duration.ofHoursUnsafe(1)
+    override def toString()    = string
   }
 
   case object Daily extends IntervalType {
@@ -49,6 +50,7 @@ object IntervalType {
     val string: String         = "daily"
     val chronoUnit: ChronoUnit = ChronoUnit.DAYS
     val duration: Duration     = Duration.ofDaysUnsafe(1)
+    override def toString()    = string
   }
 
   val all: ArraySeq[IntervalType] = ArraySeq(Hourly: IntervalType, Daily: IntervalType)
