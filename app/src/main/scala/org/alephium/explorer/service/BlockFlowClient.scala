@@ -30,7 +30,7 @@ import sttp.model.Uri
 import org.alephium.api
 import org.alephium.api.{ApiModelCodec, Endpoints}
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
-import org.alephium.explorer.GroupSetting
+import org.alephium.explorer.{GroupSetting, LemanHardForkTimestamp}
 import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.error.ExplorerError
@@ -337,7 +337,8 @@ object BlockFlowClient extends StrictLogging {
       block.depStateHash,
       block.txsHash,
       block.target,
-      computeHashRate(block.target)
+      computeHashRate(block.target),
+      computeReward(block),
     )
   }
   //scalastyle:on null
@@ -562,4 +563,26 @@ object BlockFlowClient extends StrictLogging {
     HashRate.from(target, blockTargetTime)(groupSetting.groupConfig).value
   }
   // scalastyle:on magic.number
+
+  def computeReward(block: api.model.BlockEntry): U256 = {
+    // https://github.com/alephium/alephium/blob/58c93b302b5ee6ffc7d93f81a0dbe53082570efe/protocol/src/main/scala/org/alephium/protocol/model/Block.scala#L38
+    val coinbaseReward: U256 = block.transactions.lastOption
+      .flatMap(_.unsigned.fixedOutputs.headOption.map(_.attoAlphAmount.value))
+      .getOrElse(U256.Zero)
+
+    // https://github.com/alephium/alephium/blob/58c93b302b5ee6ffc7d93f81a0dbe53082570efe/protocol/src/main/scala/org/alephium/protocol/model/Block.scala#L41
+    val feeReward: U256 =
+      if (block.timestamp < LemanHardForkTimestamp) {
+        block.transactions.init
+          .map { tx =>
+            tx.unsigned.gasPrice.mul(U256.unsafe(tx.unsigned.gasAmount)).getOrElse(U256.Zero)
+          }
+          .fold(U256.Zero)(_ addUnsafe _)
+          .divUnsafe(U256.Two)
+      } else {
+        U256.Zero
+      }
+
+    coinbaseReward.addUnsafe(feeReward)
+  }
 }

@@ -25,7 +25,7 @@ import akka.util.ByteString
 import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.BlockHash
-import org.alephium.util.TimeStamp
+import org.alephium.util.{TimeStamp, U256}
 
 final case class BlockHeader(
     hash: BlockHash,
@@ -41,13 +41,14 @@ final case class BlockHeader(
     txsCount: Int,
     target: ByteString,
     hashrate: BigInteger,
-    parent: Option[BlockHash]
+    parent: Option[BlockHash],
+    reward: Option[U256]
 ) {
   def toApi(deps: ArraySeq[BlockHash], transactions: ArraySeq[Transaction]): BlockEntry =
-    BlockEntry(hash, timestamp, chainFrom, chainTo, height, deps, transactions, mainChain, hashrate)
+    BlockEntry(hash, timestamp, chainFrom, chainTo, height, deps, transactions, mainChain, hashrate, reward)
 
   val toLiteApi: BlockEntryLite =
-    BlockEntryLite(hash, timestamp, chainFrom, chainTo, height, txsCount, mainChain, hashrate)
+    BlockEntryLite(hash, timestamp, chainFrom, chainTo, height, txsCount, mainChain, hashrate, reward)
 }
 
 object BlockHeader {
@@ -66,6 +67,7 @@ object BlockHeader {
       blockEntity.transactions.size,
       blockEntity.target,
       blockEntity.hashrate,
-      blockEntity.parent(groupNum)
+      blockEntity.parent(groupNum),
+      Some(blockEntity.reward)
     )
 }

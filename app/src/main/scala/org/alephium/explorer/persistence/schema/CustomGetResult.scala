@@ -190,7 +190,8 @@ object CustomGetResult {
                      height    = result.<<,
                      mainChain = result.<<,
                      hashRate  = result.<<,
-                     txNumber  = result.<<)
+                     txNumber  = result.<<,
+                     reward = result.<<?)
 
   val blockHeaderGetResult: GetResult[BlockHeader] =
     (result: PositionedResult) =>
@@ -208,7 +209,8 @@ object CustomGetResult {
         txsCount     = result.<<,
         target       = result.<<,
         hashrate     = result.<<,
-        parent       = result.<<?
+        parent       = result.<<?,
+        reward       = result.<<?
     )
 
   val mempoolTransactionGetResult: GetResult[MempoolTransactionEntity] =

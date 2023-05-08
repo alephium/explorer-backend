@@ -28,7 +28,7 @@ import org.alephium.explorer.api.model.{GroupIndex, Height}
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.model.BlockHash
-import org.alephium.util.TimeStamp
+import org.alephium.util.{TimeStamp, U256}
 
 object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
 
@@ -48,6 +48,7 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
     def target: Rep[ByteString]    = column[ByteString]("target")
     def hashrate: Rep[BigInteger] =
       column[BigInteger]("hashrate", O.SqlType("DECIMAL(80,0)")) //TODO How much decimal we need? this one is the same as for U256
+    def reward: Rep[Option[U256]]      = column[Option[U256]]("reward", O.SqlType("DECIMAL(80,0)"))
     def parent: Rep[Option[BlockHash]] = column[Option[BlockHash]]("parent")
 
     def timestampIdx: Index = index("blocks_timestamp_idx", timestamp)
@@ -67,7 +68,8 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
        txsCount,
        target,
        hashrate,
-       parent)
+       parent,
+       reward)
         .<>((BlockHeader.apply _).tupled, BlockHeader.unapply)
   }
 

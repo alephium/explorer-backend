@@ -105,7 +105,8 @@ object EndpointExamples extends EndpointsExamples {
       height    = Height.unsafe(42),
       txNumber  = 1,
       mainChain = true,
-      hashRate  = HashRate.a128EhPerSecond.value
+      hashRate  = HashRate.a128EhPerSecond.value,
+      reward = Some(alph(2).value)
     )
 
   private val transaction: Transaction =

@@ -199,7 +199,8 @@ object BlockQueries extends StrictLogging {
          |       height,
          |       main_chain,
          |       hashrate,
-         |       txs_count
+         |       txs_count,
+         |       reward
          |from #$block_headers
          |where main_chain = true
          |#$orderBy
@@ -278,7 +279,7 @@ object BlockQueries extends StrictLogging {
   /** Inserts block_headers or ignore them if there is a primary key conflict */
   // scalastyle:off magic.number
   def insertBlockHeaders(blocks: Iterable[BlockHeader]): DBActionW[Int] =
-    QuerySplitter.splitUpdates(rows = blocks, columnsPerRow = 14) { (blocks, placeholder) =>
+    QuerySplitter.splitUpdates(rows = blocks, columnsPerRow = 15) { (blocks, placeholder) =>
       val query =
         s"""
            |insert into $block_headers ("hash",
@@ -294,7 +295,8 @@ object BlockQueries extends StrictLogging {
            |                            "txs_count",
            |                            "target",
            |                            "hashrate",
-           |                            "parent")
+           |                            "parent",
+           |                            "reward")
            |values $placeholder
            |ON CONFLICT ON CONSTRAINT block_headers_pkey
            |    DO NOTHING
@@ -317,6 +319,7 @@ object BlockQueries extends StrictLogging {
             params >> block.target
             params >> block.hashrate
             params >> block.parent
+            params >> block.reward
         }
 
       SQLActionBuilder(

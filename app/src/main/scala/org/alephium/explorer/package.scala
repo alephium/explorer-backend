@@ -21,6 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
 import org.alephium.crypto.Blake2b
+import org.alephium.util.TimeStamp
 
 package object explorer {
   @inline @specialized def sideEffect[E](effect: E): Unit = {
@@ -41,4 +42,6 @@ package object explorer {
     seqA.foldLeft(Future.successful(ArraySeq.empty[B])) {
       case (acc, a) => acc.flatMap(p => f(a).map(b => p :+ b))
     }
+
+  val LemanHardForkTimestamp: TimeStamp = TimeStamp.unsafe(1676210400000L)
 }

@@ -25,7 +25,7 @@ import org.alephium.explorer.api.Codecs._
 import org.alephium.explorer.service.FlowEntity
 import org.alephium.json.Json._
 import org.alephium.protocol.model.BlockHash
-import org.alephium.util.TimeStamp
+import org.alephium.util.{TimeStamp, U256}
 
 final case class BlockEntry(
     hash: BlockHash,
@@ -36,7 +36,8 @@ final case class BlockEntry(
     deps: ArraySeq[BlockHash],
     transactions: ArraySeq[Transaction],
     mainChain: Boolean,
-    hashRate: BigInteger
+    hashRate: BigInteger,
+    reward: Option[U256]
 ) extends FlowEntity
 
 object BlockEntry {
@@ -51,7 +52,8 @@ final case class BlockEntryLite(
     height: Height,
     txNumber: Int,
     mainChain: Boolean,
-    hashRate: BigInteger
+    hashRate: BigInteger,
+    reward: Option[U256]
 )
 object BlockEntryLite {
   implicit val codec: ReadWriter[BlockEntryLite] = macroRW

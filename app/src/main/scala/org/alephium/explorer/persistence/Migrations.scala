@@ -32,7 +32,7 @@ import org.alephium.explorer.persistence.schema.EventSchema
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(2)
+  val latestVersion: MigrationVersion = MigrationVersion(3)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] =
     EventSchema.table.result.flatMap { events =>
@@ -48,9 +48,16 @@ object Migrations extends StrictLogging {
       _ <- sqlu"""CREATE INDEX IF NOT EXISTS contracts_std_interface_id_guessed_idx ON contracts (std_interface_id_guessed)"""
     } yield ()
 
+  def migration3(implicit ec: ExecutionContext): DBActionAll[Unit] =
+    for {
+      _ <- sqlu"""ALTER TABLE block_headers ADD COLUMN IF NOT EXISTS reward numeric(80,0)"""
+    } yield ()
+
+
   private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
     migration1,
-    migration2
+    migration2,
+    migration3
   )
 
   def migrationsQuery(versionOpt: Option[MigrationVersion])(
