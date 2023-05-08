@@ -402,18 +402,24 @@ object TransactionQueries extends StrictLogging {
 
   def infoFromTxsSQL(hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionSR[InfoFromTxsQR] = {
     if (hashes.nonEmpty) {
-      val values =
-        hashes
-          .map {
-            case (txHash, blockHash) =>
-              s"('\\x${txHash.toHexString}','\\x${blockHash.toHexString}')"
-          }
-          .mkString(",")
-      sql"""
+      val params = paramPlaceholderTuple2(1, hashes.size)
+      val query  = s"""
     SELECT hash, gas_amount, gas_price, script_execution_ok
     FROM transactions
-    WHERE (hash, block_hash) IN (#$values)
-    """.asAS[InfoFromTxsQR]
+    WHERE (hash, block_hash) IN $params
+    """
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          hashes foreach {
+            case (txId, blockHash) =>
+              params >> txId
+              params >> blockHash
+        }
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv  = parameters
+      ).asAS[InfoFromTxsQR]
     } else {
       DBIOAction.successful(ArraySeq.empty)
     }
