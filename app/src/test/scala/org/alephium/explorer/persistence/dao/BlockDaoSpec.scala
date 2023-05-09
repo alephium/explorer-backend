@@ -165,7 +165,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
       //invoking listMainChainSQL would populate the cache with the row count
       eventually {
         BlockDao
-          .listMainChain(Pagination.unsafe(1, 1))
+          .listMainChain(Pagination.Reversible.unsafe(1, 1))
           .futureValue
           ._2 is expectedMainChainCount
       }
@@ -191,7 +191,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
         //Assert the query return expected count
         eventually {
           BlockDao
-            .listMainChain(Pagination.unsafe(1, 1, Random.nextBoolean()))
+            .listMainChain(Pagination.Reversible.unsafe(1, 1, Random.nextBoolean()))
             .futureValue
             ._2 is expectedMainChainCount
         }
@@ -204,7 +204,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
         //Dispatch a query so the cache get populated
         eventually {
           BlockDao
-            .listMainChain(Pagination.unsafe(1, 1, Random.nextBoolean()))
+            .listMainChain(Pagination.Reversible.unsafe(1, 1, Random.nextBoolean()))
             .futureValue
             ._2 is expectedMainChainCountTotal
         }

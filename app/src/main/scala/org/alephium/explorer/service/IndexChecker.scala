@@ -38,8 +38,10 @@ object IndexChecker {
 
   def checkAction()(implicit ec: ExecutionContext): DBActionR[ArraySeq[ExplainResult]] =
     for {
-      a                  <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(1, 20)) //first page
-      b                  <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(10000, 20)) //far page
+      a <- BlockQueries.explainListMainChainHeadersWithTxnNumber(
+        Pagination.Reversible.unsafe(1, 20)) //first page
+      b <- BlockQueries.explainListMainChainHeadersWithTxnNumber(
+        Pagination.Reversible.unsafe(10000, 20)) //far page
       c                  <- BlockQueries.explainMainChainQuery()
       oldestOutputEntity <- OutputQueries.getMainChainOutputs(true).headOrEmpty
       latestOutputEntity <- OutputQueries.getMainChainOutputs(false).headOrEmpty

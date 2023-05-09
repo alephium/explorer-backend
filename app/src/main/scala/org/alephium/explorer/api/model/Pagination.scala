@@ -16,19 +16,27 @@
 
 package org.alephium.explorer.api.model
 
-final case class Pagination private (page: Int, limit: Int, reverse: Boolean) {
+final case class Pagination private (page: Int, limit: Int) {
   val offset: Int = (page - 1) * limit
 }
 
 object Pagination {
 
+  final case class Reversible private (page: Int, limit: Int, reverse: Boolean) {
+    val offset: Int = (page - 1) * limit
+  }
+  object Reversible {
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+    def unsafe(page: Int, limit: Int, reverse: Boolean = false): Reversible = {
+      Reversible(page, limit, reverse)
+    }
+  }
   val defaultPage: Int  = 1
   val defaultLimit: Int = 20
   val maxLimit: Int     = 100
   val thousand: Int     = 1000
 
-  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def unsafe(page: Int, limit: Int, reverse: Boolean = false): Pagination = {
-    Pagination(page, limit, reverse)
+  def unsafe(page: Int, limit: Int): Pagination = {
+    Pagination(page, limit)
   }
 }

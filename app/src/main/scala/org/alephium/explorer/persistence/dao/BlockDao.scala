@@ -85,7 +85,7 @@ object BlockDao {
                                                groupSetting: GroupSetting): Future[Unit] =
     run(insertBlockEntity(blocks, groupSetting.groupNum)).map(_ => ())
 
-  def listMainChain(pagination: Pagination)(
+  def listMainChain(pagination: Pagination.Reversible)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       cache: BlockCache): Future[(ArraySeq[BlockEntryLite], Int)] = {

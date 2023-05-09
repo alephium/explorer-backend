@@ -44,7 +44,7 @@ class ListBlocksReadState(reverse: Boolean,
                           limitPerPage: Int,
                           transactionsPerBlock: Int,
                           val db: DBExecutor)
-    extends ReadBenchmarkState[Pagination](testDataCount = maxPages, db = db) {
+    extends ReadBenchmarkState[Pagination.Reversible](testDataCount = maxPages, db = db) {
 
   import config.profile.api._
 
@@ -58,8 +58,8 @@ class ListBlocksReadState(reverse: Boolean,
   /**
     * Generates a [[org.alephium.explorer.api.model.Pagination]] instance for each page to query.
     */
-  def generateData(currentCacheSize: Int): Pagination =
-    Pagination.unsafe(
+  def generateData(currentCacheSize: Int): Pagination.Reversible =
+    Pagination.Reversible.unsafe(
       page    = currentCacheSize + 1,
       limit   = limitPerPage,
       reverse = reverse
@@ -102,7 +102,7 @@ class ListBlocksReadState(reverse: Boolean,
       )
     }
 
-  def persist(cache: Array[Pagination]): Unit = {
+  def persist(cache: Array[Pagination.Reversible]): Unit = {
     logger.info(s"Generating data. Pages: ${cache.last.offset + 1}. Limit: ${cache.last.limit}.")
 
     val blocks       = List.fill(cache.length * limitPerPage)(generateBlockHeader()) //generate blocks

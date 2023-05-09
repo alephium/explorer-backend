@@ -288,15 +288,6 @@
               "type": "integer",
               "format": "int32"
             }
-          },
-          {
-            "name": "reverse",
-            "in": "query",
-            "description": "Reverse pagination",
-            "required": false,
-            "schema": {
-              "type": "boolean"
-            }
           }
         ],
         "responses": {
@@ -823,15 +814,6 @@
               "type": "integer",
               "format": "int32"
             }
-          },
-          {
-            "name": "reverse",
-            "in": "query",
-            "description": "Reverse pagination",
-            "required": false,
-            "schema": {
-              "type": "boolean"
-            }
           }
         ],
         "responses": {
@@ -1082,15 +1064,6 @@
             "schema": {
               "type": "integer",
               "format": "int32"
-            }
-          },
-          {
-            "name": "reverse",
-            "in": "query",
-            "description": "Reverse pagination",
-            "required": false,
-            "schema": {
-              "type": "boolean"
             }
           }
         ],
@@ -1389,15 +1362,6 @@
             "schema": {
               "type": "integer",
               "format": "int32"
-            }
-          },
-          {
-            "name": "reverse",
-            "in": "query",
-            "description": "Reverse pagination",
-            "required": false,
-            "schema": {
-              "type": "boolean"
             }
           }
         ],
@@ -2093,15 +2057,6 @@
               "type": "integer",
               "format": "int32"
             }
-          },
-          {
-            "name": "reverse",
-            "in": "query",
-            "description": "Reverse pagination",
-            "required": false,
-            "schema": {
-              "type": "boolean"
-            }
           }
         ],
         "responses": {
@@ -2233,15 +2188,6 @@
             "schema": {
               "type": "integer",
               "format": "int32"
-            }
-          },
-          {
-            "name": "reverse",
-            "in": "query",
-            "description": "Reverse pagination",
-            "required": false,
-            "schema": {
-              "type": "boolean"
             }
           }
         ],
@@ -3162,15 +3108,6 @@
               "type": "integer",
               "format": "int32"
             }
-          },
-          {
-            "name": "reverse",
-            "in": "query",
-            "description": "Reverse pagination",
-            "required": false,
-            "schema": {
-              "type": "boolean"
-            }
           }
         ],
         "responses": {
@@ -3420,15 +3357,6 @@
               "type": "integer",
               "format": "int32"
             }
-          },
-          {
-            "name": "reverse",
-            "in": "query",
-            "description": "Reverse pagination",
-            "required": false,
-            "schema": {
-              "type": "boolean"
-            }
           }
         ],
         "responses": {
@@ -3552,15 +3480,6 @@
             "schema": {
               "type": "integer",
               "format": "int32"
-            }
-          },
-          {
-            "name": "reverse",
-            "in": "query",
-            "description": "Reverse pagination",
-            "required": false,
-            "schema": {
-              "type": "boolean"
             }
           }
         ],
@@ -3812,15 +3731,6 @@
             "schema": {
               "type": "integer",
               "format": "int32"
-            }
-          },
-          {
-            "name": "reverse",
-            "in": "query",
-            "description": "Reverse pagination",
-            "required": false,
-            "schema": {
-              "type": "boolean"
             }
           }
         ],
@@ -5034,15 +4944,6 @@
               "type": "integer",
               "format": "int32"
             }
-          },
-          {
-            "name": "reverse",
-            "in": "query",
-            "description": "Reverse pagination",
-            "required": false,
-            "schema": {
-              "type": "boolean"
-            }
           }
         ],
         "responses": {
@@ -5197,15 +5098,6 @@
             "schema": {
               "type": "integer",
               "format": "int32"
-            }
-          },
-          {
-            "name": "reverse",
-            "in": "query",
-            "description": "Reverse pagination",
-            "required": false,
-            "schema": {
-              "type": "boolean"
             }
           }
         ],
@@ -5452,15 +5344,6 @@
             "schema": {
               "type": "integer",
               "format": "int32"
-            }
-          },
-          {
-            "name": "reverse",
-            "in": "query",
-            "description": "Reverse pagination",
-            "required": false,
-            "schema": {
-              "type": "boolean"
             }
           }
         ],

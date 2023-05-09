@@ -47,9 +47,9 @@ trait BlockEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[Transaction]])
       .description("Get block's transactions")
 
-  val listBlocks: BaseEndpoint[Pagination, ListBlocks] =
+  val listBlocks: BaseEndpoint[Pagination.Reversible, ListBlocks] =
     blocksEndpoint.get
-      .in(pagination)
+      .in(paginationReversible)
       .out(jsonBody[ListBlocks])
       .description("List latest blocks")
 }

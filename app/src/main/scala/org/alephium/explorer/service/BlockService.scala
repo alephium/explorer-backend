@@ -37,9 +37,9 @@ trait BlockService {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]]
 
-  def listBlocks(pagination: Pagination)(implicit ec: ExecutionContext,
-                                         dc: DatabaseConfig[PostgresProfile],
-                                         cache: BlockCache): Future[ListBlocks]
+  def listBlocks(pagination: Pagination.Reversible)(implicit ec: ExecutionContext,
+                                                    dc: DatabaseConfig[PostgresProfile],
+                                                    cache: BlockCache): Future[ListBlocks]
 
   def listMaxHeights()(implicit cache: BlockCache,
                        groupSetting: GroupSetting,
@@ -62,9 +62,9 @@ object BlockService extends BlockService {
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     BlockDao.getTransactions(hash, pagination)
 
-  def listBlocks(pagination: Pagination)(implicit ec: ExecutionContext,
-                                         dc: DatabaseConfig[PostgresProfile],
-                                         cache: BlockCache): Future[ListBlocks] =
+  def listBlocks(pagination: Pagination.Reversible)(implicit ec: ExecutionContext,
+                                                    dc: DatabaseConfig[PostgresProfile],
+                                                    cache: BlockCache): Future[ListBlocks] =
     BlockDao.listMainChain(pagination).map {
       case (blocks, total) =>
         ListBlocks(total, blocks)
