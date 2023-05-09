@@ -302,8 +302,8 @@ object OutputQueries {
 
   def outputsFromTxsSQL(txHashes: ArraySeq[TransactionId]): DBActionR[ArraySeq[OutputsFromTxQR]] =
     if (txHashes.nonEmpty) {
-      val values = txHashes.map(hash => s"'\\x${hash.toHexString}'").mkString(",")
-      sql"""
+      val params = paramPlaceholder(1, txHashes.size)
+      val query  = s"""
           SELECT outputs.tx_hash,
                  outputs.output_order,
                  outputs.output_type,
@@ -319,17 +319,28 @@ object OutputQueries {
                    LEFT JOIN inputs
                        ON inputs.output_ref_key = outputs.key
                               AND inputs.main_chain = true
-          WHERE outputs.tx_hash IN (#$values)
+          WHERE outputs.tx_hash IN $params
             AND outputs.main_chain = true
-        """.asAS[OutputsFromTxQR]
+        """
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          txHashes foreach { hash =>
+            params >> hash
+        }
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv  = parameters
+      ).asAS[OutputsFromTxQR]
     } else {
       DBIOAction.successful(ArraySeq.empty)
     }
 
   def outputsFromTxsSQLAS(txHashes: ArraySeq[TransactionId]): DBActionSR[OutputsFromTxQR] =
     if (txHashes.nonEmpty) {
-      val values = txHashes.map(hash => s"'\\x${hash.toHexString}'").mkString(",")
-      sql"""
+      val params = paramPlaceholder(1, txHashes.size)
+      val query  = s"""
           SELECT outputs.tx_hash,
                  outputs.output_order,
                  outputs.output_type,
@@ -345,9 +356,20 @@ object OutputQueries {
                    LEFT JOIN inputs
                        ON inputs.output_ref_key = outputs.key
                               AND inputs.main_chain = true
-          WHERE outputs.tx_hash IN (#$values)
+          WHERE outputs.tx_hash IN $params
             AND outputs.main_chain = true
-        """.asAS[OutputsFromTxQR]
+        """
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          txHashes foreach { hash =>
+            params >> hash
+        }
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv  = parameters
+      ).asAS[OutputsFromTxQR]
     } else {
       DBIOAction.successful(ArraySeq.empty)
     }
