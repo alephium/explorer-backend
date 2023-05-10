@@ -148,7 +148,7 @@ object TransactionQueries extends StrictLogging {
       .paginate(pagination)
       .asAS[(TransactionId, BlockHash, TimeStamp, Int, Boolean)]
 
-  def countAddressTransactionsSQLNoJoin(address: Address): DBActionSR[Int] = {
+  def countAddressTransactions(address: Address): DBActionSR[Int] = {
     sql"""
     SELECT COUNT(*)
     FROM transaction_per_addresses
@@ -156,8 +156,8 @@ object TransactionQueries extends StrictLogging {
     """.asAS[Int]
   }
 
-  def getTxHashesByAddressQuerySQLNoJoin(address: Address,
-                                         pagination: Pagination): DBActionSR[TxByAddressQR] = {
+  def getTxHashesByAddressQuery(address: Address,
+                                pagination: Pagination): DBActionSR[TxByAddressQR] = {
     sql"""
       SELECT #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
@@ -213,11 +213,10 @@ object TransactionQueries extends StrictLogging {
     * @param offset    Page number (starting from 0)
     * @param limit     Maximum rows
     */
-  def getTxHashesByAddressQuerySQLNoJoinTimeRanged(
-      address: Address,
-      fromTime: TimeStamp,
-      toTime: TimeStamp,
-      pagination: Pagination): DBActionSR[TxByAddressQR] = {
+  def getTxHashesByAddressQueryTimeRanged(address: Address,
+                                          fromTime: TimeStamp,
+                                          toTime: TimeStamp,
+                                          pagination: Pagination): DBActionSR[TxByAddressQR] = {
     sql"""
       SELECT #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
@@ -234,7 +233,7 @@ object TransactionQueries extends StrictLogging {
       implicit ec: ExecutionContext): DBActionSR[Transaction] = {
     for {
       txHashesTs <- getTxHashesByBlockHashQuery(blockHash)
-      txs        <- getTransactionsSQL(TxByAddressQR(txHashesTs))
+      txs        <- getTransactions(TxByAddressQR(txHashesTs))
     } yield txs
   }
 
@@ -242,15 +241,15 @@ object TransactionQueries extends StrictLogging {
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     for {
       txHashesTs <- getTxHashesByBlockHashWithPaginationQuery(blockHash, pagination)
-      txs        <- getTransactionsSQL(TxByAddressQR(txHashesTs))
+      txs        <- getTransactions(TxByAddressQR(txHashesTs))
     } yield txs
   }
 
-  def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
+  def getTransactionsByAddress(address: Address, pagination: Pagination)(
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     for {
-      txHashesTs <- getTxHashesByAddressQuerySQLNoJoin(address, pagination)
-      txs        <- getTransactionsSQL(txHashesTs)
+      txHashesTs <- getTxHashesByAddressQuery(address, pagination)
+      txs        <- getTransactions(txHashesTs)
     } yield txs
   }
 
@@ -258,29 +257,18 @@ object TransactionQueries extends StrictLogging {
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     for {
       txHashesTs <- getTxHashesByAddressesQuery(addresses, pagination)
-      txs        <- getTransactionsSQL(txHashesTs)
+      txs        <- getTransactions(txHashesTs)
     } yield txs
   }
 
-  def getTransactionsByAddressTimeRangedSQL(
+  def getTransactionsByAddressTimeRanged(
       address: Address,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       pagination: Pagination)(implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     for {
-      txHashesTs <- getTxHashesByAddressQuerySQLNoJoinTimeRanged(address,
-                                                                 fromTime,
-                                                                 toTime,
-                                                                 pagination)
-      txs <- getTransactionsSQL(txHashesTs)
-    } yield txs
-  }
-
-  def getTransactionsByAddressNoJoin(address: Address, pagination: Pagination)(
-      implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
-    for {
-      txHashesTs <- getTxHashesByAddressQuerySQLNoJoin(address, pagination)
-      txs        <- getTransactionsNoJoin(txHashesTs)
+      txHashesTs <- getTxHashesByAddressQueryTimeRanged(address, fromTime, toTime, pagination)
+      txs        <- getTransactions(txHashesTs)
     } yield txs
   }
 
@@ -311,31 +299,14 @@ object TransactionQueries extends StrictLogging {
     """.asAS[TxByAddressQR]
   }
 
-  def getTransactionsSQL(txHashesTs: ArraySeq[TxByAddressQR])(
-      implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
-    if (txHashesTs.nonEmpty) {
-      val hashes   = txHashesTs.map(_.hashes())
-      val txHashes = txHashesTs.map(_.txHash)
-      for {
-        inputs  <- inputsFromTxsSQL(txHashes)
-        outputs <- outputsFromTxsSQL(txHashes)
-        gases   <- infoFromTxsSQL(hashes)
-      } yield {
-        buildTransaction(txHashesTs, inputs, outputs, gases)
-      }
-    } else {
-      DBIOAction.successful(ArraySeq.empty)
-    }
-  }
-
-  def getTransactionsNoJoin(txHashesTs: ArraySeq[TxByAddressQR])(
+  def getTransactions(txHashesTs: ArraySeq[TxByAddressQR])(
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     if (txHashesTs.nonEmpty) {
       val hashes = txHashesTs.map(_.hashes())
       for {
-        inputs  <- inputsFromTxsNoJoin(hashes)
-        outputs <- outputsFromTxsNoJoin(hashes)
-        gases   <- infoFromTxsSQL(hashes)
+        inputs  <- inputsFromTxs(hashes)
+        outputs <- outputsFromTxs(hashes)
+        gases   <- infoFromTxs(hashes)
       } yield {
         buildTransaction(txHashesTs, inputs, outputs, gases)
       }
@@ -400,7 +371,7 @@ object TransactionQueries extends StrictLogging {
     }
   }
 
-  def infoFromTxsSQL(hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionSR[InfoFromTxsQR] = {
+  def infoFromTxs(hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionSR[InfoFromTxsQR] = {
     if (hashes.nonEmpty) {
       val params = paramPlaceholderTuple2(1, hashes.size)
       val query  = s"""

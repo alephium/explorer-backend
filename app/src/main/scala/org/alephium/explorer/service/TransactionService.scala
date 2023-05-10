@@ -49,14 +49,10 @@ trait TransactionService {
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]]
 
-  def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]]
-
-  def getTransactionsByAddressTimeRangedSQL(address: Address,
-                                            fromTime: TimeStamp,
-                                            toTime: TimeStamp,
-                                            pagination: Pagination)(
+  def getTransactionsByAddressTimeRanged(address: Address,
+                                         fromTime: TimeStamp,
+                                         toTime: TimeStamp,
+                                         pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]]
 
@@ -144,18 +140,13 @@ object TransactionService extends TransactionService {
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     TransactionDao.getByAddress(address, pagination)
 
-  def getTransactionsByAddressSQL(address: Address, pagination: Pagination)(
+  def getTransactionsByAddressTimeRanged(address: Address,
+                                         fromTime: TimeStamp,
+                                         toTime: TimeStamp,
+                                         pagination: Pagination)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
-    TransactionDao.getByAddressSQL(address, pagination)
-
-  def getTransactionsByAddressTimeRangedSQL(address: Address,
-                                            fromTime: TimeStamp,
-                                            toTime: TimeStamp,
-                                            pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
-    TransactionDao.getByAddressTimeRangedSQL(address, fromTime, toTime, pagination)
+    TransactionDao.getByAddressTimeRanged(address, fromTime, toTime, pagination)
 
   def getTransactionsByAddresses(addresses: ArraySeq[Address], pagination: Pagination)(
       implicit ec: ExecutionContext,
@@ -171,7 +162,7 @@ object TransactionService extends TransactionService {
   def getTransactionsNumberByAddress(address: Address)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Int] =
-    TransactionDao.getNumberByAddressSQLNoJoin(address)
+    TransactionDao.getNumberByAddress(address)
 
   def getBalance(address: Address)(implicit ec: ExecutionContext,
                                    dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
@@ -336,7 +327,7 @@ object TransactionService extends TransactionService {
       .buffer(batchSize)
       .concatMapEager(({ hashes =>
         Flowable.fromCompletionStage(
-          run(getTransactionsNoJoin(ArraySeq.from(hashes.asScala))).asJava
+          run(getTransactions(ArraySeq.from(hashes.asScala))).asJava
         )
       }), paralellism, 1)
   }

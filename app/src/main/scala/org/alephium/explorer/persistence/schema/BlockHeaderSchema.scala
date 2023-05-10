@@ -77,7 +77,7 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
     *
     * @see PR <a href="https://github.com/alephium/explorer-backend/pull/112">#112</a>.
     */
-  private def fullIndexSQL(): SqlAction[Int, NoStream, Effect] =
+  private def fullIndex(): SqlAction[Int, NoStream, Effect] =
     sqlu"""
       create unique index if not exists #${name}_full_index
           on #${name} (main_chain asc, block_timestamp desc, hash asc, chain_from asc, chain_to asc, height asc);
@@ -86,8 +86,8 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
   /**
     * Joins all indexes created via raw SQL
     */
-  def createBlockHeadersIndexesSQL(): DBIO[Unit] =
-    DBIO.seq(fullIndexSQL(), createMainChainIndex())
+  def createBlockHeadersIndexes(): DBIO[Unit] =
+    DBIO.seq(fullIndex(), createMainChainIndex())
 
   val table: TableQuery[BlockHeaders] = TableQuery[BlockHeaders]
 }

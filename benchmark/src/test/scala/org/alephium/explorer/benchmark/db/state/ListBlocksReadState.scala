@@ -117,7 +117,7 @@ class ListBlocksReadState(reverse: Boolean,
     //Persist blocks
     val persistBlocks =
       BlockHeaderSchema.table.schema.create
-        .andThen(BlockHeaderSchema.createBlockHeadersIndexesSQL())
+        .andThen(BlockHeaderSchema.createBlockHeadersIndexes())
         .andThen(BlockHeaderSchema.table ++= blocks)
 
     val _ = db.runNow(

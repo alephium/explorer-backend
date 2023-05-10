@@ -63,18 +63,13 @@ class AddressServer(transactionService: TransactionService,
           transactionService
             .getTransactionsByAddresses(addresses, pagination)
       }),
-      route(getTransactionsByAddressDEPRECATED.serverLogicSuccess[Future] {
-        case (address, pagination) =>
-          transactionService
-            .getTransactionsByAddressSQL(address, pagination)
-      }),
       route(getTransactionsByAddressTimeRanged.serverLogicSuccess[Future] {
         case (address, timeInterval, pagination) =>
           transactionService
-            .getTransactionsByAddressTimeRangedSQL(address,
-                                                   timeInterval.from,
-                                                   timeInterval.to,
-                                                   pagination)
+            .getTransactionsByAddressTimeRanged(address,
+                                                timeInterval.from,
+                                                timeInterval.to,
+                                                pagination)
       }),
       route(addressMempoolTransactions.serverLogicSuccess[Future] { address =>
         transactionService

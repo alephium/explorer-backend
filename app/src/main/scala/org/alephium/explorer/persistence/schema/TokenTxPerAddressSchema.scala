@@ -49,7 +49,7 @@ object TokenPerAddressSchema
         .<>((TokenTxPerAddressEntity.apply _).tupled, TokenTxPerAddressEntity.unapply)
   }
 
-  def createSQLIndexes(): DBIO[Unit] =
+  def createIndexes(): DBIO[Unit] =
     DBIO.seq(
       CommonIndex.blockTimestampTxOrderIndex(this),
       CommonIndex.timestampIndex(this)

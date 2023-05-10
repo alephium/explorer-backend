@@ -49,8 +49,8 @@ object IndexChecker {
       e                  <- OutputQueries.explainGetTxnHash(latestOutputEntity.map(_.key).headOption)
       oldestInputEntity  <- InputQueries.getMainChainInputs(true).headOrEmpty
       latestInputEntity  <- InputQueries.getMainChainInputs(false).headOrEmpty
-      f                  <- InputQueries.explainInputsFromTxsNoJoin(oldestInputEntity.map(_.hashes()))
-      g                  <- InputQueries.explainInputsFromTxsNoJoin(latestInputEntity.map(_.hashes()))
+      f                  <- InputQueries.explainInputsFromTxs(oldestInputEntity.map(_.hashes()))
+      g                  <- InputQueries.explainInputsFromTxs(latestInputEntity.map(_.hashes()))
     } yield ArraySeq(a, b, c, d, e, f, g).sortBy(_.passed)
 
 }

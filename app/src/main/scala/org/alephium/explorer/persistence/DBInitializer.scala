@@ -94,15 +94,15 @@ object DBInitializer extends StrictLogging {
                               databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
     logger.info("Create Indexes")
     run(for {
-      _ <- BlockHeaderSchema.createBlockHeadersIndexesSQL()
+      _ <- BlockHeaderSchema.createBlockHeadersIndexes()
       _ <- TransactionSchema.createMainChainIndex()
       _ <- InputSchema.createMainChainIndex()
       _ <- OutputSchema.createMainChainIndex()
-      _ <- TransactionPerAddressSchema.createSQLIndexes()
+      _ <- TransactionPerAddressSchema.createIndexes()
       _ <- OutputSchema.createNonSpentIndex()
       _ <- InputSchema.createOutputRefAddressNullIndex()
-      _ <- TransactionPerTokenSchema.createSQLIndexes()
-      _ <- TokenPerAddressSchema.createSQLIndexes()
+      _ <- TransactionPerTokenSchema.createIndexes()
+      _ <- TokenPerAddressSchema.createIndexes()
     } yield ())
   }
 

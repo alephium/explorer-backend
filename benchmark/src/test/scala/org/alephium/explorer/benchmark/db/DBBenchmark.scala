@@ -161,18 +161,17 @@ class DBBenchmark {
   }
 
   @Benchmark
-  def getTxHashesByAddressQuerySQLNoJoin(state: Address_ReadState): Unit = {
+  def getTxHashesByAddressQuery(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(
-        TransactionQueries.getTxHashesByAddressQuerySQLNoJoin(state.address, state.pagination),
-        requestTimeout)
+      state.db.runNow(TransactionQueries.getTxHashesByAddressQuery(state.address, state.pagination),
+                      requestTimeout)
   }
 
   @Benchmark
-  def countAddressTransactionsSQLNoJoin(state: Address_ReadState): Unit = {
+  def countAddressTransactions(state: Address_ReadState): Unit = {
     val _ =
       state.db
-        .runNow(TransactionQueries.countAddressTransactionsSQLNoJoin(state.address), requestTimeout)
+        .runNow(TransactionQueries.countAddressTransactions(state.address), requestTimeout)
   }
 
   @Benchmark
@@ -181,47 +180,35 @@ class DBBenchmark {
 
     val _ = Await.result(for {
       _ <- TransactionDao.getBalance(state.address)
-      _ <- TransactionDao.getNumberByAddressSQLNoJoin(state.address)
+      _ <- TransactionDao.getNumberByAddress(state.address)
     } yield (), requestTimeout)
   }
 
   @Benchmark
-  def getInputsFromTxsSQL(state: Address_ReadState): Unit = {
+  def getInputsFromTxs(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(inputsFromTxsSQL(state.txHashes), requestTimeout)
+      state.db.runNow(inputsFromTxs(state.hashes), requestTimeout)
   }
 
   @Benchmark
-  def getInputsFromTxsSQLOpt(state: Address_ReadState): Unit = {
+  def getOutputsFromTxs(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(inputsFromTxsNoJoin(state.hashes), requestTimeout)
-  }
-  @Benchmark
-  def getOutputsFromTxsSQL(state: Address_ReadState): Unit = {
-    val _ =
-      state.db.runNow(outputsFromTxsSQL(state.txHashes), requestTimeout)
+      state.db.runNow(outputsFromTxs(state.hashes), requestTimeout)
   }
 
   @Benchmark
-  def getOutputsFromTxsSQLOpt(state: Address_ReadState): Unit = {
+  def getGasFromTxs(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(outputsFromTxsNoJoin(state.hashes), requestTimeout)
+      state.db.runNow(TransactionQueries.infoFromTxs(state.hashes), requestTimeout)
   }
 
   @Benchmark
-  def getGasFromTxsSQL(state: Address_ReadState): Unit = {
-    val _ =
-      state.db.runNow(TransactionQueries.infoFromTxsSQL(state.hashes), requestTimeout)
-  }
-
-  @Benchmark
-  def getTransactionsByAddressSQL(state: Address_ReadState): Unit = {
+  def getTransactionsByAddress(state: Address_ReadState): Unit = {
     import state.executionContext
 
     val _ =
-      state.db.runNow(
-        TransactionQueries.getTransactionsByAddressSQL(state.address, state.pagination),
-        requestTimeout)
+      state.db.runNow(TransactionQueries.getTransactionsByAddress(state.address, state.pagination),
+                      requestTimeout)
   }
 
   /** Benchmarks for inserting Blocks. With & without HikariCP */
@@ -265,7 +252,7 @@ class DBBenchmark {
   @Benchmark
   def transactions_per_address_read_state(state: TransactionsPerAddressReadState): Unit = {
     val query =
-      TransactionQueries.getTxHashesByAddressQuerySQLNoJoinTimeRanged(
+      TransactionQueries.getTxHashesByAddressQueryTimeRanged(
         address    = Address.fromBase58(state.next).get,
         fromTime   = TimeStamp.zero,
         toTime     = TimeStamp.unsafe(Long.MaxValue),

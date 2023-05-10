@@ -78,7 +78,7 @@ object TokenQueries extends StrictLogging {
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     for {
       txHashesTs <- listTokenTransactionsAction(token, pagination)
-      txs        <- TransactionQueries.getTransactionsSQL(txHashesTs.map(_.toTxByAddressQR))
+      txs        <- TransactionQueries.getTransactions(txHashesTs.map(_.toTxByAddressQR))
     } yield txs
   }
 
@@ -119,7 +119,7 @@ object TokenQueries extends StrictLogging {
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     for {
       txHashesTs <- getTokenTxHashesByAddressQuery(address, token, pagination)
-      txs        <- TransactionQueries.getTransactionsSQL(txHashesTs.map(_.toTxByAddressQR))
+      txs        <- TransactionQueries.getTransactions(txHashesTs.map(_.toTxByAddressQR))
     } yield txs
   }
 

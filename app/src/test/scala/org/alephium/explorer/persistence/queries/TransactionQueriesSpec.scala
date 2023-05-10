@@ -30,8 +30,6 @@ import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries.InputQueries._
-import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.queries.result._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
@@ -116,11 +114,11 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     run(TransactionQueries.insertAll(ArraySeq.empty, outputs, inputs)).futureValue
     run(InputUpdateQueries.updateInputs()).futureValue
 
-    val totalSQLNoJoin =
-      run(TransactionQueries.countAddressTransactionsSQLNoJoin(address)).futureValue.head
+    val total =
+      run(TransactionQueries.countAddressTransactions(address)).futureValue.head
 
     //tx of output1, output2 and input1
-    totalSQLNoJoin is 3
+    total is 3
   }
 
   "update inputs when corresponding output is finally inserted" in new Fixture {
@@ -137,12 +135,12 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     run(TransactionQueries.insertAll(ArraySeq.empty, outputs, inputs)).futureValue
     run(InputUpdateQueries.updateInputs()).futureValue
 
-    run(TransactionQueries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 2
+    run(TransactionQueries.countAddressTransactions(address)).futureValue.head is 2
 
     run(OutputSchema.table += output2).futureValue
     run(InputUpdateQueries.updateInputs()).futureValue
 
-    run(TransactionQueries.countAddressTransactionsSQLNoJoin(address)).futureValue.head is 3
+    run(TransactionQueries.countAddressTransactions(address)).futureValue.head is 3
   }
 
   "get tx hashes by address" in new Fixture {
@@ -161,8 +159,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     run(TransactionQueries.insertAll(ArraySeq.empty, outputs, inputs)).futureValue
     run(InputUpdateQueries.updateInputs()).futureValue
 
-    val hashesSQLNoJoin =
-      run(TransactionQueries.getTxHashesByAddressQuerySQLNoJoin(address, Pagination.unsafe(1, 10))).futureValue
+    val hashes =
+      run(TransactionQueries.getTxHashesByAddressQuery(address, Pagination.unsafe(1, 10))).futureValue
 
     val expected = ArraySeq(
       TxByAddressQR(output1.txHash, output1.blockHash, output1.timestamp, 0, false),
@@ -170,83 +168,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       TxByAddressQR(input1.txHash, input1.blockHash, input1.timestamp, 0, false)
     ).sortBy(_.blockTimestamp).reverse
 
-    hashesSQLNoJoin is expected
-  }
-
-  "outpus for txs" in new Fixture {
-
-    val output1 = output(address, ALPH.alph(1), None)
-    val output2 = output(address, ALPH.alph(2), None)
-    val output3 = output(address, ALPH.alph(3), None)
-    val output4 = output(address, ALPH.alph(3), None).copy(mainChain = false)
-    val input1  = input(output2.hint, output2.key)
-    val input2  = input(output3.hint, output3.key).copy(mainChain = false)
-
-    val outputs = ArraySeq(output1, output2, output3, output4)
-    val inputs  = ArraySeq(input1, input2)
-
-    run(OutputSchema.table ++= outputs).futureValue
-    run(InputSchema.table ++= inputs).futureValue
-
-    val txHashes = outputs.map(_.txHash)
-
-    def res(output: OutputEntity, input: Option[InputEntity]) =
-      OutputsFromTxQR(
-        output.txHash,
-        output.outputOrder,
-        output.outputType,
-        output.hint,
-        output.key,
-        output.amount,
-        output.address,
-        output.tokens,
-        output.lockTime,
-        output.message,
-        input.map(_.txHash)
-      )
-
-    val expected = ArraySeq(
-      res(output1, None),
-      res(output2, Some(input1)),
-      res(output3, None)
-    ).sortBy(_.txHash.toString())
-
-    run(outputsFromTxsSQL(txHashes)).futureValue.sortBy(_.txHash.toString()) is expected
-  }
-
-  "inputs for txs" in new Fixture {
-
-    val output1 = output(address, ALPH.alph(1), None)
-    val output2 = output(address, ALPH.alph(2), None)
-    val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
-    val input1  = input(output1.hint, output1.key)
-    val input2  = input(output2.hint, output2.key)
-    val input3  = input(output3.hint, output3.key)
-
-    val inputs  = ArraySeq(input1, input2)
-    val outputs = ArraySeq(output1, output2)
-
-    run(OutputSchema.table ++= (outputs :+ output3)).futureValue
-    run(InputSchema.table ++= (inputs :+ input3)).futureValue
-
-    val txHashes = ArraySeq(input1.txHash, input2.txHash)
-
-    val expected = inputs.zip(outputs).map {
-      case (input, output) =>
-        InputsFromTxQR(
-          txHash       = input.txHash,
-          inputOrder   = input.inputOrder,
-          hint         = input.hint,
-          outputRefKey = input.outputRefKey,
-          unlockScript = input.unlockScript,
-          txHashRef    = Some(output.txHash),
-          address      = Some(output.address),
-          amount       = Some(output.amount),
-          token        = output.tokens
-        )
-    }
-
-    run(inputsFromTxsSQL(txHashes)).futureValue is expected
+    hashes is expected
   }
 
   "get tx by address" in new Fixture {
@@ -282,11 +204,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       )
     }
 
-    val txsSQL =
-      run(TransactionQueries.getTransactionsByAddressSQL(address, Pagination.unsafe(1, 10))).futureValue
-
-    val txsNoJoin =
-      run(TransactionQueries.getTransactionsByAddressNoJoin(address, Pagination.unsafe(1, 10))).futureValue
+    val txs =
+      run(TransactionQueries.getTransactionsByAddress(address, Pagination.unsafe(1, 10))).futureValue
 
     val expected = ArraySeq(
       tx(output1, None, ArraySeq.empty),
@@ -294,10 +213,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       tx(output4, None, ArraySeq(input1.toApi(output2)))
     ).sortBy(_.timestamp).reverse
 
-    txsSQL.size is 3
-    txsSQL should contain allElementsOf expected
-
-    txsSQL should contain allElementsOf txsNoJoin
+    txs.size is 3
+    txs should contain allElementsOf expected
   }
 
   "output's spent info should only take the input from the main chain " in new Fixture {
@@ -355,7 +272,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
   //https://github.com/alephium/explorer-backend/issues/174
   "return an empty list when not transactions are found - Isssue 174" in new Fixture {
-    run(TransactionQueries.getTransactionsByAddressSQL(address, Pagination.unsafe(1, 10))).futureValue is ArraySeq.empty
+    run(TransactionQueries.getTransactionsByAddress(address, Pagination.unsafe(1, 10))).futureValue is ArraySeq.empty
   }
 
   "get total number of main transactions" in new Fixture {
@@ -432,17 +349,16 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     }
   }
 
-  "getTxHashesByAddressQuerySQLNoJoinTimeRanged" should {
+  "getTxHashesByAddressQueryTimeRanged" should {
     "return empty" when {
       "database is empty" in {
         forAll(addressGen, timestampGen, timestampGen, Gen.posNum[Int], Gen.posNum[Int]) {
           (address, fromTime, toTime, page, limit) =>
             val query =
-              TransactionQueries.getTxHashesByAddressQuerySQLNoJoinTimeRanged(
-                address,
-                fromTime,
-                toTime,
-                Pagination.unsafe(page, limit))
+              TransactionQueries.getTxHashesByAddressQueryTimeRanged(address,
+                                                                     fromTime,
+                                                                     toTime,
+                                                                     Pagination.unsafe(page, limit))
 
             run(query).futureValue.size is 0
         }
@@ -460,12 +376,11 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
               //run the query for each entity and expect that same entity to be returned
               val query =
                 TransactionQueries
-                  .getTxHashesByAddressQuerySQLNoJoinTimeRanged(address  = entity.address,
-                                                                fromTime = entity.timestamp,
-                                                                toTime   = entity.timestamp,
-                                                                pagination =
-                                                                  Pagination.unsafe(1,
-                                                                                    Int.MaxValue))
+                  .getTxHashesByAddressQueryTimeRanged(address  = entity.address,
+                                                       fromTime = entity.timestamp,
+                                                       toTime   = entity.timestamp,
+                                                       pagination =
+                                                         Pagination.unsafe(1, Int.MaxValue))
 
               val actualResult = run(query).futureValue
 
@@ -520,11 +435,11 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
                   //run the query for the generated time-range
                   val query =
                     TransactionQueries
-                      .getTxHashesByAddressQuerySQLNoJoinTimeRanged(
-                        address    = address,
-                        fromTime   = fromTime,
-                        toTime     = toTime,
-                        pagination = Pagination.unsafe(1, Int.MaxValue))
+                      .getTxHashesByAddressQueryTimeRanged(address  = address,
+                                                           fromTime = fromTime,
+                                                           toTime   = toTime,
+                                                           pagination =
+                                                             Pagination.unsafe(1, Int.MaxValue))
 
                   val actualResult = run(query).futureValue
 
