@@ -35,7 +35,7 @@ object InfoFromTxsQR {
 
 }
 
-/** Query result for [[org.alephium.explorer.persistence.queries.TransactionQueries.infoFromTxsSQL]] */
+/** Query result for [[org.alephium.explorer.persistence.queries.TransactionQueries]] */
 final case class InfoFromTxsQR(txHash: TransactionId,
                                gasAmount: Int,
                                gasPrice: U256,
