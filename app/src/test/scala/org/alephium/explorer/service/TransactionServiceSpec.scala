@@ -26,7 +26,7 @@ import io.vertx.core.buffer.Buffer
 import org.scalacheck.Gen
 
 import org.alephium.api.UtilJson._
-import org.alephium.explorer.AlephiumActorSpecLike
+import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
@@ -44,7 +44,7 @@ import org.alephium.util.{Duration, TimeStamp, U256}
   Array("org.wartremover.warts.Var",
         "org.wartremover.warts.DefaultArguments",
         "org.wartremover.warts.AsInstanceOf"))
-class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureForEach {
+class TransactionServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach {
 
   "limit the number of transactions in address details" in new Fixture {
 

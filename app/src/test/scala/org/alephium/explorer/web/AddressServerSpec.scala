@@ -41,7 +41,7 @@ import org.alephium.util.{Duration, TimeStamp, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.PlatformDefault", "org.wartremover.warts.Var"))
 class AddressServerSpec()
-    extends AlephiumActorSpecLike
+    extends AlephiumFutureSpec
     with DatabaseFixtureForAll
     with HttpServerFixture {
 

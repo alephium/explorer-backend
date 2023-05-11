@@ -56,13 +56,7 @@ import org.alephium.json.Json._
 import org.alephium.protocol.model.{Address, BlockHash, CliqueId, NetworkId}
 import org.alephium.util.{AVector, TimeStamp, U256}
 
-trait ExplorerSpec
-    extends AlephiumActorSpecLike
-    with AlephiumFutureSpec
-    with DatabaseFixtureForAll
-    with HttpRouteFixture {
-
-  override val name: String = "ExploreSpec"
+trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with HttpRouteFixture {
 
   val networkId: NetworkId = NetworkId.AlephiumDevNet
 

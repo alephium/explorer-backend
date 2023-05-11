@@ -32,7 +32,7 @@ import org.alephium.json.Json
 
 @SuppressWarnings(Array("org.wartremover.warts.Var"))
 class UtilsServerSpec()
-    extends AlephiumActorSpecLike
+    extends AlephiumFutureSpec
     with DatabaseFixtureForAll
     with HttpServerFixture
     with MockFactory {

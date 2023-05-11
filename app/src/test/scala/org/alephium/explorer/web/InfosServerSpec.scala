@@ -35,7 +35,7 @@ import org.alephium.util.TimeStamp
 
 @SuppressWarnings(Array("org.wartremover.warts.Var"))
 class InfosServerSpec()
-    extends AlephiumActorSpecLike
+    extends AlephiumFutureSpec
     with HttpServerFixture
     with DatabaseFixtureForAll {
 

@@ -18,7 +18,7 @@ package org.alephium.explorer.web
 
 import org.scalacheck.Gen
 
-import org.alephium.explorer.{AlephiumActorSpecLike, HttpServerFixture}
+import org.alephium.explorer.{AlephiumFutureSpec, HttpServerFixture}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model._
@@ -27,7 +27,7 @@ import org.alephium.explorer.persistence.dao.MempoolDao
 
 @SuppressWarnings(Array("org.wartremover.warts.ThreadSleep", "org.wartremover.warts.Var"))
 class MempoolServerSpec()
-    extends AlephiumActorSpecLike
+    extends AlephiumFutureSpec
     with HttpServerFixture
     with DatabaseFixtureForAll {
 

@@ -26,7 +26,7 @@ import org.alephium.explorer.persistence.DatabaseFixtureForAll
 
 @SuppressWarnings(Array("org.wartremover.warts.PlatformDefault", "org.wartremover.warts.Var"))
 class ContractServerSpec()
-    extends AlephiumActorSpecLike
+    extends AlephiumFutureSpec
     with DatabaseFixtureForAll
     with HttpServerFixture {
 
