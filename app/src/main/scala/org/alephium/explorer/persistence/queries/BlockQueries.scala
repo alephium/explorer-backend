@@ -147,7 +147,7 @@ object BlockQueries extends StrictLogging {
   /**
     * Order by query for [[org.alephium.explorer.persistence.schema.BlockHeaderSchema.table]]
     */
-  private def orderBySQLString(reverse: Boolean): String =
+  private def orderBy(reverse: Boolean): String =
     if (reverse) {
       s"order by block_timestamp, hash desc"
     } else {
@@ -156,23 +156,23 @@ object BlockQueries extends StrictLogging {
 
   /** Reverse order by without prefix */
   private val LIST_BLOCKS_ORDER_BY_REVERSE: String =
-    orderBySQLString(reverse = true)
+    orderBy(reverse = true)
 
   /** Forward order by without prefix */
   private val LIST_BLOCKS_ORDER_BY_FORWARD: String =
-    orderBySQLString(reverse = false)
+    orderBy(reverse = false)
 
   /**
     * Fetches all main_chain [[org.alephium.explorer.persistence.schema.BlockHeaderSchema.table]] rows
     */
-  def listMainChainHeadersWithTxnNumberSQL(
-      pagination: Pagination): DBActionRWT[ArraySeq[BlockEntryLite]] =
-    listMainChainHeadersWithTxnNumberSQLBuilder(pagination)
+  def listMainChainHeadersWithTxnNumber(
+      pagination: Pagination.Reversible): DBActionRWT[ArraySeq[BlockEntryLite]] =
+    listMainChainHeadersWithTxnNumberBuilder(pagination)
       .asASE[BlockEntryLite](blockEntryListGetResult)
 
-  def explainListMainChainHeadersWithTxnNumber(pagination: Pagination)(
+  def explainListMainChainHeadersWithTxnNumber(pagination: Pagination.Reversible)(
       implicit ec: ExecutionContext): DBActionR[ExplainResult] =
-    listMainChainHeadersWithTxnNumberSQLBuilder(pagination).explainAnalyze() map { explain =>
+    listMainChainHeadersWithTxnNumberBuilder(pagination).explainAnalyze() map { explain =>
       ExplainResult(
         queryName  = "listMainChainHeadersWithTxnNumber",
         queryInput = pagination.toString,
@@ -182,7 +182,8 @@ object BlockQueries extends StrictLogging {
       )
     }
 
-  def listMainChainHeadersWithTxnNumberSQLBuilder(pagination: Pagination): SQLActionBuilder = {
+  def listMainChainHeadersWithTxnNumberBuilder(
+      pagination: Pagination.Reversible): SQLActionBuilder = {
     //order by for inner query
     val orderBy =
       if (pagination.reverse) {
@@ -207,8 +208,8 @@ object BlockQueries extends StrictLogging {
          |""".stripMargin
   }
 
-  def updateMainChainStatusSQL(block: BlockHash, mainChain: Boolean): DBActionRWT[Int] =
-    updateMainChainStatusesSQL(Array(block), mainChain)
+  def updateMainChainStatusQuery(block: BlockHash, mainChain: Boolean): DBActionRWT[Int] =
+    updateMainChainStatuses(Array(block), mainChain)
 
   /**
     * Updates the block and the block's dependant tables with new `mainChain` value.
@@ -218,8 +219,7 @@ object BlockQueries extends StrictLogging {
     * @return           The row count for SQL Data Manipulation Language (DML) statements
     *                   or 0 for SQL statements that return nothing
     */
-  def updateMainChainStatusesSQL(blocks: Iterable[BlockHash],
-                                 mainChain: Boolean): DBActionRWT[Int] =
+  def updateMainChainStatuses(blocks: Iterable[BlockHash], mainChain: Boolean): DBActionRWT[Int] =
     if (blocks.isEmpty) {
       DBIOAction.successful(0)
     } else {
@@ -369,7 +369,7 @@ object BlockQueries extends StrictLogging {
     * Fetches the maximum `block_timestamp` from blocks
     * with maximum height within the given chain.
     */
-  val maxBlockTimestampForMaxHeightForChainSQL: String =
+  val maxBlockTimestampForMaxHeightForChain: String =
     s"""
        |SELECT max(block_timestamp) as block_timestamp,
        |       height
@@ -397,7 +397,7 @@ object BlockQueries extends StrictLogging {
     //build queries for each chainFrom-chainTo and merge them into a single UNION query
     val unions: String =
       Array
-        .fill(groupSetting.groupIndexes.size)(maxBlockTimestampForMaxHeightForChainSQL)
+        .fill(groupSetting.groupIndexes.size)(maxBlockTimestampForMaxHeightForChain)
         .mkString("UNION")
 
     //fetch maximum `block_timestamp` and sum all `heights` for all unions
@@ -440,7 +440,7 @@ object BlockQueries extends StrictLogging {
       DBIOAction.successful(ArraySeq.empty)
     } else {
       //Parameter index is used for ordering the output collection
-      def maxHeightSQL(index: Int): String =
+      def maxHeight(index: Int): String =
         s"""
            |SELECT max(height), $index
            |FROM $block_headers
@@ -450,7 +450,7 @@ object BlockQueries extends StrictLogging {
 
       val query =
         Array
-          .tabulate(chainIndexes.size)(maxHeightSQL)
+          .tabulate(chainIndexes.size)(maxHeight)
           .mkString("UNION ALL")
 
       val parameters: SetParameter[Unit] =

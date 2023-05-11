@@ -162,8 +162,8 @@ object SanityChecker extends StrictLogging {
               blocks
                 .map(_.hash)
                 .filterNot(_ === block.hash)
-                .map(updateMainChainStatusSQL(_, false)))
-            _ <- updateMainChainStatusSQL(hash, true)
+                .map(updateMainChainStatusQuery(_, false)))
+            _ <- updateMainChainStatusQuery(hash, true)
           } yield {
             block.parent(groupNum).map(Right(_))
           }

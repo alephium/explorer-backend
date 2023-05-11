@@ -378,10 +378,10 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
     }
   }
 
-  "updateMainChainStatusesSQL" should {
+  "updateMainChainStatusesQuery" should {
     "not throw Exception" when {
       "query input is empty" in {
-        run(BlockQueries.updateMainChainStatusesSQL(ArraySeq.empty, Random.nextBoolean())).futureValue is 0
+        run(BlockQueries.updateMainChainStatuses(ArraySeq.empty, Random.nextBoolean())).futureValue is 0
       }
     }
 
@@ -408,7 +408,7 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
             val hashes = entities.map(_.hash)
 
             //Run the update query being tested
-            run(BlockQueries.updateMainChainStatusesSQL(hashes, updatedMainChainValue)).futureValue is 0
+            run(BlockQueries.updateMainChainStatuses(hashes, updatedMainChainValue)).futureValue is 0
 
             //Check that query result is non-empty and has it's mainChain value updated
             def check(query: Query[Rep[Boolean], Boolean, Seq]) = {

@@ -35,8 +35,25 @@ trait QueryParams extends TapirCodecs {
   val pagination: EndpointInput[Pagination] =
     paginator()
 
+  val paginationReversible: EndpointInput[Pagination.Reversible] =
+    paginatorParams()
+      .and(
+        query[Option[Boolean]]("reverse")
+          .description("Reverse pagination")
+          .map({
+            case Some(reverse) => reverse
+            case None          => false
+          })(Some(_)))
+      .map({ case (page, limit, reverse) => Pagination.Reversible.unsafe(page, limit, reverse) })(
+        p => (p.page, p.limit, p.reverse))
+
   def paginator(defaultLimit: Int = Pagination.defaultLimit,
                 maxLimit: Int     = Pagination.maxLimit): EndpointInput[Pagination] =
+    paginatorParams(defaultLimit, maxLimit)
+      .map({ case (page, limit) => Pagination.unsafe(page, limit) })(p => (p.page, p.limit))
+
+  private def paginatorParams(defaultLimit: Int = Pagination.defaultLimit,
+                              maxLimit: Int     = Pagination.maxLimit): EndpointInput[(Int, Int)] =
     query[Option[Int]]("page")
       .description("Page number")
       .map({
@@ -53,14 +70,6 @@ trait QueryParams extends TapirCodecs {
           })(Some(_))
           .validate(Validator.min(0))
           .validate(Validator.max(maxLimit)))
-      .and(query[Option[Boolean]]("reverse")
-        .description("Reverse pagination")
-        .map({
-          case Some(reverse) => reverse
-          case None          => false
-        })(Some(_)))
-      .map({ case (page, limit, reverse) => Pagination.unsafe(page, limit, reverse) })(p =>
-        (p.page, p.limit, p.reverse))
 
   val timeIntervalQuery: EndpointInput[TimeInterval] =
     query[TimeStamp]("fromTs")

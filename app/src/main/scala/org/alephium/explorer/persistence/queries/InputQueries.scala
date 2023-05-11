@@ -81,83 +81,15 @@ object InputQueries {
       ).asUpdate
     }
 
-  def inputsFromTxsSQL(txHashes: ArraySeq[TransactionId]): DBActionR[ArraySeq[InputsFromTxQR]] =
-    if (txHashes.nonEmpty) {
-      val params = paramPlaceholder(1, txHashes.size)
-      val query  = s"""
-          SELECT inputs.tx_hash,
-                 inputs.input_order,
-                 inputs.hint,
-                 inputs.output_ref_key,
-                 inputs.unlock_script,
-                 outputs.tx_hash,
-                 outputs.address,
-                 outputs.amount,
-                 outputs.tokens
-          FROM inputs
-                   JOIN outputs
-                        ON inputs.output_ref_key = outputs.KEY
-                            AND outputs.main_chain = true
-          WHERE inputs.tx_hash IN $params
-            AND inputs.main_chain = true
-    """
-      val parameters: SetParameter[Unit] =
-        (_: Unit, params: PositionedParameters) =>
-          txHashes foreach { hash =>
-            params >> hash
-        }
-
-      SQLActionBuilder(
-        queryParts = query,
-        unitPConv  = parameters
-      ).asAS[InputsFromTxQR]
-    } else {
-      DBIOAction.successful(ArraySeq.empty)
-    }
-
-  def inputsFromTxsSQLAS(txHashes: ArraySeq[TransactionId]): DBActionSR[InputsFromTxQR] =
-    if (txHashes.nonEmpty) {
-      val params = paramPlaceholder(1, txHashes.size)
-      val query  = s"""
-          SELECT inputs.tx_hash,
-                 inputs.input_order,
-                 inputs.hint,
-                 inputs.output_ref_key,
-                 inputs.unlock_script,
-                 outputs.tx_hash,
-                 outputs.address,
-                 outputs.amount,
-                 outputs.tokens
-          FROM inputs
-                   JOIN outputs
-                        ON inputs.output_ref_key = outputs.KEY
-                            AND outputs.main_chain = true
-          WHERE inputs.tx_hash IN $params
-            AND inputs.main_chain = true
-    """
-      val parameters: SetParameter[Unit] =
-        (_: Unit, params: PositionedParameters) =>
-          txHashes foreach { hash =>
-            params >> hash
-        }
-
-      SQLActionBuilder(
-        queryParts = query,
-        unitPConv  = parameters
-      ).asAS[InputsFromTxQR]
-    } else {
-      DBIOAction.successful(ArraySeq.empty[InputsFromTxQR])
-    }
-
-  def inputsFromTxsNoJoin(
+  def inputsFromTxs(
       hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionR[ArraySeq[InputsFromTxQR]] =
     if (hashes.nonEmpty) {
-      inputsFromTxsNoJoinSQLBuilder(hashes).asAS[InputsFromTxQR]
+      inputsFromTxsBuilder(hashes).asAS[InputsFromTxQR]
     } else {
       DBIOAction.successful(ArraySeq.empty)
     }
 
-  private def inputsFromTxsNoJoinSQLBuilder(
+  private def inputsFromTxsBuilder(
       hashes: ArraySeq[(TransactionId, BlockHash)]): SQLActionBuilder = {
     val params = paramPlaceholderTuple2(1, hashes.size)
 
@@ -227,15 +159,15 @@ object InputQueries {
         ORDER BY block_timestamp #${if (ascendingOrder) "" else "DESC"}
     """.asASE[InputEntity](inputGetResult)
 
-  /** Runs explain on query `inputsFromTxsNoJoin` and checks the index `inputs_tx_hash_block_hash_idx`
+  /** Runs explain on query `inputsFromTxs` and checks the index `inputs_tx_hash_block_hash_idx`
     * is being used */
-  def explainInputsFromTxsNoJoin(hashes: ArraySeq[(TransactionId, BlockHash)])(
+  def explainInputsFromTxs(hashes: ArraySeq[(TransactionId, BlockHash)])(
       implicit ec: ExecutionContext): DBActionR[ExplainResult] = {
-    val queryName = "inputsFromTxsNoJoin"
+    val queryName = "inputsFromTxs"
     if (hashes.isEmpty) {
       DBIOAction.successful(ExplainResult.emptyInput(queryName))
     } else {
-      inputsFromTxsNoJoinSQLBuilder(hashes).explainAnalyze() map { explain =>
+      inputsFromTxsBuilder(hashes).explainAnalyze() map { explain =>
         ExplainResult(
           queryName  = queryName,
           queryInput = hashes.toString(),

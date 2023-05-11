@@ -70,7 +70,7 @@ class InputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
     }
   }
 
-  "inputsFromTxsNoJoin" should {
+  "inputsFromTxs" should {
     "read from inputs table" when {
       "empty" in {
         //clear table
@@ -80,7 +80,7 @@ class InputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
         forAll(Gen.listOf(inputEntityGen())) { inputs =>
           //run query
           val hashes = inputs.map(input => (input.txHash, input.blockHash))
-          val actual = run(InputQueries.inputsFromTxsNoJoin(hashes)).futureValue
+          val actual = run(InputQueries.inputsFromTxs(hashes)).futureValue
 
           //query output size is 0
           actual.size is 0
@@ -95,7 +95,7 @@ class InputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
           //run query
           val hashes = inputs.map(input => (input.txHash, input.blockHash))
-          val actual = run(InputQueries.inputsFromTxsNoJoin(hashes)).futureValue
+          val actual = run(InputQueries.inputsFromTxs(hashes)).futureValue
 
           //expected query result
           val expected =

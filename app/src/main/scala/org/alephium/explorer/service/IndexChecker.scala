@@ -38,8 +38,10 @@ object IndexChecker {
 
   def checkAction()(implicit ec: ExecutionContext): DBActionR[ArraySeq[ExplainResult]] =
     for {
-      a                  <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(1, 20)) //first page
-      b                  <- BlockQueries.explainListMainChainHeadersWithTxnNumber(Pagination.unsafe(10000, 20)) //far page
+      a <- BlockQueries.explainListMainChainHeadersWithTxnNumber(
+        Pagination.Reversible.unsafe(1, 20)) //first page
+      b <- BlockQueries.explainListMainChainHeadersWithTxnNumber(
+        Pagination.Reversible.unsafe(10000, 20)) //far page
       c                  <- BlockQueries.explainMainChainQuery()
       oldestOutputEntity <- OutputQueries.getMainChainOutputs(true).headOrEmpty
       latestOutputEntity <- OutputQueries.getMainChainOutputs(false).headOrEmpty
@@ -47,8 +49,8 @@ object IndexChecker {
       e                  <- OutputQueries.explainGetTxnHash(latestOutputEntity.map(_.key).headOption)
       oldestInputEntity  <- InputQueries.getMainChainInputs(true).headOrEmpty
       latestInputEntity  <- InputQueries.getMainChainInputs(false).headOrEmpty
-      f                  <- InputQueries.explainInputsFromTxsNoJoin(oldestInputEntity.map(_.hashes()))
-      g                  <- InputQueries.explainInputsFromTxsNoJoin(latestInputEntity.map(_.hashes()))
+      f                  <- InputQueries.explainInputsFromTxs(oldestInputEntity.map(_.hashes()))
+      g                  <- InputQueries.explainInputsFromTxs(latestInputEntity.map(_.hashes()))
     } yield ArraySeq(a, b, c, d, e, f, g).sortBy(_.passed)
 
 }

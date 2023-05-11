@@ -56,7 +56,7 @@ object TxByAddressQR {
 
 }
 
-/** Query result for [[org.alephium.explorer.persistence.queries.TransactionQueries.getTransactionsByAddressNoJoin]] */
+/** Query result for [[org.alephium.explorer.persistence.queries.TransactionQueries.getTransactionsByAddress]] */
 final case class TxByAddressQR(txHash: TransactionId,
                                blockHash: BlockHash,
                                blockTimestamp: TimeStamp,

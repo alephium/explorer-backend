@@ -46,7 +46,7 @@ object OutputsFromTxQR {
     )
 }
 
-/** Query result for [[org.alephium.explorer.persistence.queries.OutputQueries.outputsFromTxsNoJoin]] */
+/** Query result for [[org.alephium.explorer.persistence.queries.OutputQueries.outputsFromTxs]] */
 final case class OutputsFromTxQR(txHash: TransactionId,
                                  outputOrder: Int,
                                  outputType: OutputEntity.OutputType,

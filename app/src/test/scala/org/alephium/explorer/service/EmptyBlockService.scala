@@ -39,9 +39,9 @@ trait EmptyBlockService extends BlockService {
       dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
     Future.successful(ArraySeq.empty)
 
-  def listBlocks(pagination: Pagination)(implicit ec: ExecutionContext,
-                                         dc: DatabaseConfig[PostgresProfile],
-                                         cache: BlockCache): Future[ListBlocks] =
+  def listBlocks(pagination: Pagination.Reversible)(implicit ec: ExecutionContext,
+                                                    dc: DatabaseConfig[PostgresProfile],
+                                                    cache: BlockCache): Future[ListBlocks] =
     Future.successful(ListBlocks(0, ArraySeq.empty))
 
   def listMaxHeights()(implicit cache: BlockCache,

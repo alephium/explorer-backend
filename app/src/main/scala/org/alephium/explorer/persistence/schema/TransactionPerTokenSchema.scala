@@ -46,7 +46,7 @@ object TransactionPerTokenSchema
         .<>((TransactionPerTokenEntity.apply _).tupled, TransactionPerTokenEntity.unapply)
   }
 
-  def createSQLIndexes(): DBIO[Unit] =
+  def createIndexes(): DBIO[Unit] =
     DBIO.seq(
       CommonIndex.blockTimestampTxOrderIndex(this),
       CommonIndex.timestampIndex(this)

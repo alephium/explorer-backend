@@ -54,7 +54,7 @@ object TxByTokenQR {
 
 }
 
-/** Query result for [[org.alephium.explorer.persistence.queries.TransactionQueries.getTransactionsByAddressNoJoin]] */
+/** Query result for [[org.alephium.explorer.persistence.queries.TransactionQueries.getTransactionsByAddress]] */
 final case class TxByTokenQR(txHash: TransactionId,
                              blockHash: BlockHash,
                              blockTimestamp: TimeStamp,

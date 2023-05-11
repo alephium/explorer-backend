@@ -49,7 +49,7 @@ object TransactionPerAddressSchema
         .<>((TransactionPerAddressEntity.apply _).tupled, TransactionPerAddressEntity.unapply)
   }
 
-  def createSQLIndexes(): DBIO[Unit] =
+  def createIndexes(): DBIO[Unit] =
     DBIO.seq(
       createMainChainIndex(),
       CommonIndex.blockTimestampTxOrderIndex(this),

@@ -43,7 +43,7 @@ object InputsFromTxQR {
     )
 }
 
-/** Query result for [[org.alephium.explorer.persistence.queries.InputQueries.inputsFromTxsNoJoin]] */
+/** Query result for [[org.alephium.explorer.persistence.queries.InputQueries.inputsFromTxs]] */
 final case class InputsFromTxQR(txHash: TransactionId,
                                 inputOrder: Int,
                                 hint: Int,

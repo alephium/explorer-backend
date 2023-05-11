@@ -761,6 +761,5 @@ object Generators {
       maxDataCount <- maxDataCountGen
       page         <- Gen.choose(maxDataCount min 1, maxDataCount) //Requirement: Page should be >= 1
       limit        <- Gen.choose(0, maxDataCount)
-      reverse      <- Arbitrary.arbitrary[Boolean]
-    } yield Pagination.unsafe(page, limit, reverse)
+    } yield Pagination.unsafe(page, limit)
 }

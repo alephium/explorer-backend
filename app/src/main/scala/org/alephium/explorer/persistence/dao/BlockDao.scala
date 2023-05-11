@@ -85,11 +85,11 @@ object BlockDao {
                                                groupSetting: GroupSetting): Future[Unit] =
     run(insertBlockEntity(blocks, groupSetting.groupNum)).map(_ => ())
 
-  def listMainChain(pagination: Pagination)(
+  def listMainChain(pagination: Pagination.Reversible)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       cache: BlockCache): Future[(ArraySeq[BlockEntryLite], Int)] = {
-    run(listMainChainHeadersWithTxnNumberSQL(pagination)).map { blockEntries =>
+    run(listMainChainHeadersWithTxnNumber(pagination)).map { blockEntries =>
       (blockEntries, cache.getMainChainBlockCount())
     }
   }
@@ -136,8 +136,8 @@ object BlockDao {
                                                    hashToIgnore = block.hash)
             _ <- DBIOAction.sequence(
               blocks
-                .map(updateMainChainStatusSQL(_, false)))
-            _ <- updateMainChainStatusSQL(hash, true)
+                .map(updateMainChainStatusQuery(_, false)))
+            _ <- updateMainChainStatusQuery(hash, true)
           } yield {
             block.parent.map(Right(_))
           }
@@ -158,7 +158,7 @@ object BlockDao {
   def updateMainChainStatus(hash: BlockHash, isMainChain: Boolean)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]): Future[Unit] =
-    run(updateMainChainStatusSQL(hash, isMainChain).map(_ => ()))
+    run(updateMainChainStatusQuery(hash, isMainChain).map(_ => ()))
 
   def latestBlocks()(implicit cache: BlockCache,
                      groupSetting: GroupSetting,
