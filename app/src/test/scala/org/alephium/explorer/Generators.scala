@@ -642,6 +642,18 @@ object Generators {
       }
     }
 
+  def uInOutEntityWithDuplicateTxIdsAndAddressesGen()
+    : Gen[(List[UInputEntity], List[UOutputEntity])] =
+    for {
+      (txHash, addressOpt) <- duplicateTxIdAndAddressGen()
+      inputs               <- Gen.listOf(uinputEntityGen(txHash, Gen.option(addressOpt)))
+      outputs              <- Gen.listOf(uoutputEntityGen(txHash, addressOpt))
+    } yield
+      (inputs, outputs.zipWithIndex map {
+        case (entity, index) =>
+          entity.copy(uoutputOrder = index)
+      })
+
   /** Update toUpdate's primary key to be the same as `original` */
   def copyPrimaryKeys(original: InputEntity, toUpdate: InputEntity): InputEntity =
     toUpdate.copy(
