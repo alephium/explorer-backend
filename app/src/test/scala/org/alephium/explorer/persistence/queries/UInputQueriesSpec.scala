@@ -38,39 +38,6 @@ class UInputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll wi
     ()
   }
 
-  "listUTXHashesByAddress" should {
-    "return distinct hashes for address" in {
-      forAll(uinputEntityWithDuplicateTxIdsAndAddressesGen()) { uinputs =>
-        createTestData(uinputs)
-
-        val addressAndExpectedUInputs =
-          uinputs
-            .groupBy(_.address)
-            .map {
-              case (Some(address), entities) =>
-                //collect entities with addresses
-                (address, entities)
-
-              case (None, _) =>
-                //The entity didn't generate an address.
-                //So generate one and expect empty query result
-                (addressGen.sample.get, List.empty)
-            }
-
-        addressAndExpectedUInputs foreach {
-          case (address, expectedUInputs) =>
-            val actual =
-              run(MempoolQueries.listUTXHashesByAddress(address)).futureValue
-
-            //expect distinct transaction hashes
-            val expected = expectedUInputs.map(_.txHash).distinct
-
-            actual should contain theSameElementsAs expected
-        }
-      }
-    }
-  }
-
   "uinputsFromTxs" should {
     "return distinct hashes for address" in {
       forAll(uinputEntityWithDuplicateTxIdsAndAddressesGen()) { uinputs =>

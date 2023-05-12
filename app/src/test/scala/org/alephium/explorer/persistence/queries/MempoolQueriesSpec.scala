@@ -22,10 +22,12 @@ import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AlephiumFutureSpec
+import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.persistence.{DatabaseFixtureForAll, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.protocol.model.{Address, TransactionId}
 import org.alephium.util.TimeStamp
 
 class MempoolQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with DBRunner {
@@ -39,6 +41,16 @@ class MempoolQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
     run(MempoolTransactionSchema.table.delete).futureValue
     val persistCount = run(MempoolTransactionSchema.table ++= mempoolTxs).futureValue
     persistCount should contain(mempoolTxs.size)
+    ()
+  }
+
+  def createTestData(uinputs: Iterable[UInputEntity], uoutput: Iterable[UOutputEntity]): Unit = {
+    run(UInputSchema.table.delete).futureValue
+    run(UOutputSchema.table.delete).futureValue
+    val inPersistCount  = run(UInputSchema.table ++= uinputs).futureValue
+    val outPersistCount = run(UOutputSchema.table ++= uoutput).futureValue
+    inPersistCount should contain(uinputs.size)
+    outPersistCount should contain(uoutput.size)
     ()
   }
 
@@ -110,6 +122,43 @@ class MempoolQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
 
           actual should contain only expected
         }
+      }
+    }
+  }
+
+  "listUTXHashesByAddress" should {
+    "return distinct hashes for address" in {
+      forAll(uInOutEntityWithDuplicateTxIdsAndAddressesGen()) {
+        case (uinputs, uoutputs) =>
+          createTestData(uinputs, uoutputs)
+
+          val addressAndExpectedTx: Map[Address, List[TransactionId]] =
+            (uinputs
+              .map { input =>
+                input.address match {
+                  case Some(address) =>
+                    (address, Some(input.txHash))
+                  case None =>
+                    (addressGen.sample.get, None)
+                }
+              } ++ uoutputs.map { output =>
+              (output.address, Some(output.txHash))
+            }).groupBy { case (address, _) => address }
+              .map {
+                case (address, entities) =>
+                  (address, entities.map { case (_, txHashes) => txHashes }.flatten)
+              }
+
+          addressAndExpectedTx foreach {
+            case (address, expectedTx) =>
+              val actual =
+                run(MempoolQueries.listUTXHashesByAddress(address)).futureValue
+
+              //expect distinct transaction hashes
+              val expected = expectedTx.distinct
+
+              actual should contain theSameElementsAs expected
+          }
       }
     }
   }

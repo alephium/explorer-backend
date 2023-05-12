@@ -57,8 +57,12 @@ object MempoolQueries {
 
   def listUTXHashesByAddress(address: Address): DBActionSR[TransactionId] = {
     sql"""
-      SELECT DISTINCT tx_hash
+      SELECT tx_hash
       FROM uinputs
+      WHERE address = $address
+      UNION
+      SELECT tx_hash
+      FROM uoutputs
       WHERE address = $address
     """.asAS[TransactionId]
   }
