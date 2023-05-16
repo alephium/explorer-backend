@@ -54,67 +54,16 @@ class BootUp extends StrictLogging {
   implicit val databaseConfig: DatabaseConfig[PostgresProfile] =
     DatabaseConfig.forConfig[PostgresProfile]("db", typesafeConfig)
 
-  def init(): Unit =
-    config.bootMode match {
-      case mode: BootMode.Readable =>
-        initInReadableMode(mode)
-
-      case BootMode.WriteOnly =>
-        initInWriteOnlyMode()
-    }
-
-  @SuppressWarnings(Array("org.wartremover.warts.GlobalExecutionContext"))
-  def initInReadableMode(mode: BootMode.Readable): Unit = {
-    //scalastyle:off null
-    var explorer: ExplorerState = null
-    //scalastyle:on null
-    //
-    implicit val executionContext: ExecutionContext =
-      ExecutionContextUtil.fromExecutor(ExecutionContext.global, sideEffect(explorer.stop()))
-
-    explorer = mode match {
-      case BootMode.ReadOnly  => ExplorerState.ReadOnly()
-      case BootMode.ReadWrite => ExplorerState.ReadWrite()
-    }
-
-    explorer
-      .start()
-      .onComplete {
-        case Success(_) => ()
-        case Failure(e) =>
-          logger.error(s"Fatal error during initialization", e)
-          explorer.stop().failed foreach { error =>
-            logger.error("Failed to stop explorer", error)
-          }
-      }
-
-    explorer
-      .start()
-      .onComplete {
-        case Success(_) => ()
-        case Failure(error) =>
-          logger.error("Fatal error during initialization", error)
-          explorer.stop().failed foreach { error =>
-            logger.error("Failed to stop explorer", error)
-          }
-      }
-
-    Runtime.getRuntime.addShutdownHook(new Thread(() => {
-      sideEffect(Await.result(explorer.stop(), 10.seconds))
-    }))
-
-  }
-
-  @SuppressWarnings(Array("org.wartremover.warts.GlobalExecutionContext"))
-  def initInWriteOnlyMode(): Unit = {
+  def init(): Unit = {
     //scalastyle:off null
     var explorer: ExplorerState = null
     //scalastyle:on null
 
+    @SuppressWarnings(Array("org.wartremover.warts.GlobalExecutionContext"))
     implicit val executionContext: ExecutionContext =
       ExecutionContextUtil.fromExecutor(ExecutionContext.global, sideEffect(explorer.stop()))
 
-    explorer = ExplorerState.WriteOnly()
+    explorer = ExplorerState(config.bootMode)
 
     explorer
       .start()
