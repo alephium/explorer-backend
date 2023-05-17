@@ -24,16 +24,17 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.cache.{BlockCache, TransactionCache}
-import org.alephium.explorer.config.ExplorerConfig
+import org.alephium.explorer.config.{BootMode, ExplorerConfig}
 import org.alephium.explorer.persistence.Database
 import org.alephium.explorer.service._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.util.Service
 
-/** Boot-up states for Explorer: Explorer can be started in the following two states
+/** Boot-up states for Explorer: Explorer can be started in the following three states
   *
   *  - ReadOnly: [[org.alephium.explorer.ExplorerState.ReadOnly]]
   *  - ReadWrite: [[org.alephium.explorer.ExplorerState.ReadWrite]]
+  *  - WriteOnly: [[org.alephium.explorer.ExplorerState.WriteOnly]]
   * */
 sealed trait ExplorerState extends Service with StrictLogging {
   implicit def config: ExplorerConfig
@@ -104,6 +105,15 @@ sealed trait ExplorerStateRead extends ExplorerState {
 }
 
 object ExplorerState {
+
+  def apply(mode: BootMode)(implicit config: ExplorerConfig,
+                            databaseConfig: DatabaseConfig[PostgresProfile],
+                            executionContext: ExecutionContext): ExplorerState =
+    mode match {
+      case BootMode.ReadOnly  => ExplorerState.ReadOnly()
+      case BootMode.ReadWrite => ExplorerState.ReadWrite()
+      case BootMode.WriteOnly => ExplorerState.WriteOnly()
+    }
 
   /** State of Explorer is started in read-only mode */
   final case class ReadOnly()(implicit val config: ExplorerConfig,
