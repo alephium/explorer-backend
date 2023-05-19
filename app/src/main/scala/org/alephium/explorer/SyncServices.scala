@@ -16,6 +16,8 @@
 
 package org.alephium.explorer
 
+import java.time.LocalTime
+
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
@@ -59,7 +61,7 @@ object SyncServices extends StrictLogging {
           startSyncServices(
             peers                               = peers,
             syncPeriod                          = config.syncPeriod,
-            tokenSupplyServiceSyncPeriod        = config.tokenSupplyServiceSyncPeriod,
+            tokenSupplyServiceScheduleTime      = config.tokenSupplyServiceScheduleTime,
             hashRateServiceSyncPeriod           = config.hashRateServiceSyncPeriod,
             finalizerServiceSyncPeriod          = config.finalizerServiceSyncPeriod,
             transactionHistoryServiceSyncPeriod = config.transactionHistoryServiceSyncPeriod
@@ -71,7 +73,7 @@ object SyncServices extends StrictLogging {
   // scalastyle:off
   def startSyncServices(peers: ArraySeq[Uri],
                         syncPeriod: FiniteDuration,
-                        tokenSupplyServiceSyncPeriod: FiniteDuration,
+                        tokenSupplyServiceScheduleTime: LocalTime,
                         hashRateServiceSyncPeriod: FiniteDuration,
                         finalizerServiceSyncPeriod: FiniteDuration,
                         transactionHistoryServiceSyncPeriod: FiniteDuration)(
@@ -88,7 +90,7 @@ object SyncServices extends StrictLogging {
             ArraySeq(
               BlockFlowSyncService.start(peers, syncPeriod),
               MempoolSyncService.start(peers, syncPeriod),
-              TokenSupplyService.start(tokenSupplyServiceSyncPeriod),
+              TokenSupplyService.start(tokenSupplyServiceScheduleTime),
               HashrateService.start(hashRateServiceSyncPeriod),
               FinalizerService.start(finalizerServiceSyncPeriod),
               TransactionHistoryService.start(transactionHistoryServiceSyncPeriod)

@@ -16,12 +16,11 @@
 
 package org.alephium.explorer.service
 
-import java.time.Instant
+import java.time.{Instant, LocalTime, ZonedDateTime, ZoneOffset}
 import java.time.temporal.ChronoUnit
 
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 import scala.io.{Codec, Source}
 
 import com.typesafe.scalalogging.StrictLogging
@@ -80,15 +79,20 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
   private val launchDay =
     Instant.ofEpochMilli(ALPH.LaunchTimestamp.millis).truncatedTo(ChronoUnit.DAYS)
 
-  def start(interval: FiniteDuration)(implicit executionContext: ExecutionContext,
-                                      databaseConfig: DatabaseConfig[PostgresProfile],
-                                      groupSetting: GroupSetting,
-                                      scheduler: Scheduler): Future[Unit] =
-    scheduler.scheduleLoop(
-      taskId        = TokenSupplyService.productPrefix,
-      firstInterval = ScalaDuration.Zero,
-      loopInterval  = interval
-    )(syncOnce())
+  def start(scheduleTime: LocalTime)(implicit executionContext: ExecutionContext,
+                                     databaseConfig: DatabaseConfig[PostgresProfile],
+                                     groupSetting: GroupSetting,
+                                     scheduler: Scheduler): Future[Unit] = {
+    //Sync once on start to make sure we are up to date and then sync once a day at the given time.
+    syncOnce().map { _ =>
+      scheduler.scheduleDailyAt(
+        taskId = TokenSupplyService.productPrefix,
+        at = ZonedDateTime
+          .ofInstant(Instant.EPOCH, ZoneOffset.UTC)
+          .plusSeconds(scheduleTime.toSecondOfDay().toLong)
+      )(syncOnce())
+    }
+  }
 
   def syncOnce()(implicit ec: ExecutionContext,
                  dc: DatabaseConfig[PostgresProfile],

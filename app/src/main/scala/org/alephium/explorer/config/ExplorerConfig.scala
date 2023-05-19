@@ -17,6 +17,7 @@
 package org.alephium.explorer.config
 
 import java.net.InetAddress
+import java.time.LocalTime
 
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
@@ -103,6 +104,11 @@ object ExplorerConfig {
       validateSyncPeriod(input).get
     }
 
+  implicit val locaTimeReader: ValueReader[LocalTime] =
+    ValueReader[String](Ficus.stringValueReader).map { input =>
+      LocalTime.parse(input)
+    }
+
   implicit val bootUpMode: ValueReader[BootMode] =
     ValueReader[String](Ficus.stringValueReader).map { input =>
       BootMode.validate(input).get
@@ -129,7 +135,7 @@ object ExplorerConfig {
           port,
           explorer.bootMode,
           explorer.syncPeriod,
-          explorer.tokenSupplyServiceSyncPeriod,
+          explorer.tokenSupplyServiceScheduleTime,
           explorer.hashRateServiceSyncPeriod,
           explorer.finalizerServiceSyncPeriod,
           explorer.transactionHistoryServiceSyncPeriod,
@@ -156,7 +162,7 @@ object ExplorerConfig {
                                     port: Int,
                                     bootMode: BootMode,
                                     syncPeriod: FiniteDuration,
-                                    tokenSupplyServiceSyncPeriod: FiniteDuration,
+                                    tokenSupplyServiceScheduleTime: LocalTime,
                                     hashRateServiceSyncPeriod: FiniteDuration,
                                     finalizerServiceSyncPeriod: FiniteDuration,
                                     transactionHistoryServiceSyncPeriod: FiniteDuration,
@@ -183,7 +189,7 @@ final case class ExplorerConfig private (groupNum: Int,
                                          port: Int,
                                          bootMode: BootMode,
                                          syncPeriod: FiniteDuration,
-                                         tokenSupplyServiceSyncPeriod: FiniteDuration,
+                                         tokenSupplyServiceScheduleTime: LocalTime,
                                          hashRateServiceSyncPeriod: FiniteDuration,
                                          finalizerServiceSyncPeriod: FiniteDuration,
                                          transactionHistoryServiceSyncPeriod: FiniteDuration,
