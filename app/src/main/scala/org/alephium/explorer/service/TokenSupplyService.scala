@@ -37,7 +37,6 @@ import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.model.TokenSupplyEntity
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.SlickUtil._
@@ -223,12 +222,15 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
       DBIOAction.sequence(
         groupSetting.groupIndexes.map {
           case (from, to) =>
-            BlockHeaderSchema.table
-              .filter(header => header.chainFrom === from && header.chainTo === to)
-              .sortBy(_.timestamp.desc)
-              .map(_.timestamp)
-              .result
-              .headOption
+            sql"""
+              SELECT block_timestamp
+              FROM block_headers
+              WHERE main_chain = true
+              AND chain_from = $from
+              AND chain_to = $to
+              ORDER BY block_timestamp DESC
+              LIMIT 1
+            """.asAS[TimeStamp].headOrNone
         }
       )
     ).map { timestampsOpt =>
@@ -293,14 +295,15 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
   private def insert(tokenSupply: TokenSupplyEntity) =
     TokenSupplySchema.table.insertOrUpdate(tokenSupply)
 
-  private def getLatestTimestamp()(
-      implicit dc: DatabaseConfig[PostgresProfile]): Future[Option[TimeStamp]] =
+  private def getLatestTimestamp()(implicit ec: ExecutionContext,
+                                   dc: DatabaseConfig[PostgresProfile]): Future[Option[TimeStamp]] =
     run(
-      TokenSupplySchema.table
-        .sortBy { _.timestamp.desc }
-        .map(_.timestamp)
-        .result
-        .headOption
+      sql"""
+        SELECT block_timestamp
+        FROM token_supply
+        ORDER BY block_timestamp DESC
+        LIMIT 1
+      """.asAS[TimeStamp].headOrNone
     )
 
   private[service] def buildDaysRange(from: TimeStamp, until: TimeStamp): ArraySeq[TimeStamp] = {
