@@ -234,6 +234,13 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         BlockDao.updateMainChainStatus(block.hash, true).futureValue
       }
 
+      val timestamps = blocks.map(_.timestamp)
+      val minTs      = timestamps.min
+      val maxTs      = timestamps.max
+
+      FinalizerService
+        .finalizeOutputsWith(timestamps.min, timestamps.max, maxTs.deltaUnsafe(minTs))
+        .futureValue is ()
       TokenSupplyService.syncOnce()(executionContext, databaseConfig, gs).futureValue is ()
 
       eventually {
