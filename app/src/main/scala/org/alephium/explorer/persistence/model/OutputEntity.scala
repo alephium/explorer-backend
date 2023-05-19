@@ -41,17 +41,9 @@ final case class OutputEntity(
     outputOrder: Int,
     txOrder: Int,
     coinbase: Boolean,
-    spentFinalized: Option[TransactionId]
-) {
-  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-  def toApi(spent: Option[TransactionId]): Output = {
-    outputType match {
-      case OutputEntity.Asset =>
-        AssetOutput(hint, key, amount, address, tokens, lockTime, message, spent)
-      case OutputEntity.Contract => ContractOutput(hint, key, amount, address, tokens, spent)
-    }
-  }
-}
+    spentFinalized: Option[TransactionId],
+    spentTimestamp: Option[TimeStamp]
+)
 
 object OutputEntity {
   sealed trait OutputType {

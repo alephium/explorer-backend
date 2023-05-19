@@ -83,7 +83,8 @@ object DataGenerator {
           outputOrder    = order,
           txOrder        = order,
           coinbase       = transaction.hash == coinbaseTxHash,
-          spentFinalized = None
+          spentFinalized = None,
+          spentTimestamp = None
         )
     }
   }

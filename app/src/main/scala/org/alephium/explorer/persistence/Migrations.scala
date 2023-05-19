@@ -32,7 +32,7 @@ import org.alephium.explorer.persistence.schema.EventSchema
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(2)
+  val latestVersion: MigrationVersion = MigrationVersion(3)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] =
     EventSchema.table.result.flatMap { events =>
@@ -48,9 +48,20 @@ object Migrations extends StrictLogging {
       _ <- sqlu"""CREATE INDEX IF NOT EXISTS contracts_std_interface_id_guessed_idx ON contracts (std_interface_id_guessed)"""
     } yield ()
 
+  def migration3(implicit ec: ExecutionContext): DBActionAll[Unit] =
+    for {
+      _ <- sqlu"""ALTER TABLE outputs ADD COLUMN IF NOT EXISTS spent_timestamp bigint"""
+      _ <- sqlu"""ALTER TABLE token_outputs ADD COLUMN IF NOT EXISTS spent_timestamp bigint"""
+      _ <- sqlu"""CREATE INDEX IF NOT EXISTS outputs_spent_timestamp_idx ON outputs(spent_timestamp)"""
+      _ <- sqlu"""CREATE INDEX IF NOT EXISTS token_outputs_spent_timestamp_idx ON token_outputs(spent_timestamp)"""
+      //Reset `last_finalized_input_time` and let `FinalizerService` update all `spent_timestamp`
+      _ <- sqlu"""DELETE FROM app_state WHERE key = 'last_finalized_input_time'"""
+    } yield ()
+
   private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
     migration1,
-    migration2
+    migration2,
+    migration3
   )
 
   def migrationsQuery(versionOpt: Option[MigrationVersion])(

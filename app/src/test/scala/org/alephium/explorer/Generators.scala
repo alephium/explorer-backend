@@ -412,8 +412,8 @@ object Generators {
               block.timestamp,
               block.inputs
                 .filter(_.txHash === tx.hash)
-                .map(input => input.toApi(outputs.head)), //TODO Fix when we have a valid blockchain generator
-              block.outputs.filter(_.txHash === tx.hash).map(_.toApi(None)),
+                .map(input                                       => inputEntityToApi(input, outputs.head)), //TODO Fix when we have a valid blockchain generator
+              block.outputs.filter(_.txHash === tx.hash).map(out => outputEntityToApi(out, None)),
               tx.gasAmount,
               tx.gasPrice,
               tx.scriptExecutionOk,
@@ -530,6 +530,7 @@ object Generators {
         outputOrder    = outputOrder,
         txOrder        = txOrder,
         spentFinalized = None,
+        spentTimestamp = None,
         coinbase       = coinbase
       )
 
@@ -774,4 +775,23 @@ object Generators {
       page         <- Gen.choose(maxDataCount min 1, maxDataCount) //Requirement: Page should be >= 1
       limit        <- Gen.choose(0, maxDataCount)
     } yield Pagination.unsafe(page, limit)
+
+  def inputEntityToApi(input: InputEntity, outputRef: OutputEntity): Input =
+    Input(
+      OutputRef(input.hint, input.outputRefKey),
+      input.unlockScript,
+      Some(outputRef.txHash),
+      Some(outputRef.address),
+      Some(outputRef.amount),
+      outputRef.tokens
+    )
+
+  def outputEntityToApi(o: OutputEntity, spent: Option[TransactionId]): Output = {
+    o.outputType match {
+      case OutputEntity.Asset =>
+        AssetOutput(o.hint, o.key, o.amount, o.address, o.tokens, o.lockTime, o.message, spent)
+      case OutputEntity.Contract =>
+        ContractOutput(o.hint, o.key, o.amount, o.address, o.tokens, spent)
+    }
+  }
 }

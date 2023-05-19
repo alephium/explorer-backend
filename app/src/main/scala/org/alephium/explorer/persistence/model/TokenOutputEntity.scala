@@ -37,5 +37,6 @@ final case class TokenOutputEntity(
     message: Option[ByteString],
     outputOrder: Int,
     txOrder: Int,
-    spentFinalized: Option[TransactionId]
+    spentFinalized: Option[TransactionId],
+    spentTimestamp: Option[TimeStamp]
 )

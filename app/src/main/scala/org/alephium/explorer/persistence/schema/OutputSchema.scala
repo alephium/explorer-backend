@@ -51,12 +51,14 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
     def coinbase: Rep[Boolean]               = column[Boolean]("coinbase")
     def spentFinalized: Rep[Option[TransactionId]] =
       column[Option[TransactionId]]("spent_finalized", O.Default(None))
+    def spentTimestamp: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("spent_timestamp")
 
     def pk: PrimaryKey = primaryKey("outputs_pk", (key, blockHash))
 
-    def blockHashIdx: Index = index("outputs_block_hash_idx", blockHash)
-    def addressIdx: Index   = index("outputs_address_idx", address)
-    def timestampIdx: Index = index("outputs_timestamp_idx", timestamp)
+    def blockHashIdx: Index      = index("outputs_block_hash_idx", blockHash)
+    def addressIdx: Index        = index("outputs_address_idx", address)
+    def timestampIdx: Index      = index("outputs_timestamp_idx", timestamp)
+    def spentTimestampIdx: Index = index("outputs_spent_timestamp_idx", spentTimestamp)
     def outputsBlockHashTxHashIdx: Index =
       index("outputs_tx_hash_block_hash_idx", (txHash, blockHash))
 
@@ -76,7 +78,8 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
        outputOrder,
        txOrder,
        coinbase,
-       spentFinalized)
+       spentFinalized,
+       spentTimestamp)
         .<>((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }
 

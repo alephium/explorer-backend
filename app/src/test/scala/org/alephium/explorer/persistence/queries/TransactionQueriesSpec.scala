@@ -196,7 +196,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         output.blockHash,
         output.timestamp,
         inputs,
-        ArraySeq(output.toApi(spent)),
+        ArraySeq(outputEntityToApi(output, spent)),
         1,
         ALPH.alph(1),
         scriptExecutionOk = true,
@@ -210,7 +210,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val expected = ArraySeq(
       tx(output1, None, ArraySeq.empty),
       tx(output2, Some(input1.txHash), ArraySeq.empty),
-      tx(output4, None, ArraySeq(input1.toApi(output2)))
+      tx(output4, None, ArraySeq(inputEntityToApi(input1, output2)))
     ).sortBy(_.timestamp).reverse
 
     txs.size is 3
@@ -544,6 +544,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         0,
         0,
         false,
+        None,
         None
       )
 
