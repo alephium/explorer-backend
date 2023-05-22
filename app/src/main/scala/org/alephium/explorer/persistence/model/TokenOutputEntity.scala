@@ -26,7 +26,7 @@ final case class TokenOutputEntity(
     blockHash: BlockHash,
     txHash: TransactionId,
     timestamp: TimeStamp,
-    outputType: Int, //0 Asset, 1 Contract
+    outputType: OutputEntity.OutputType,
     hint: Int,
     key: Hash,
     token: TokenId,
