@@ -20,7 +20,7 @@ import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumFutureSpec, GenCommon}
-import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.GenCoreProtocol.transactionHashGen
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.persistence.{DatabaseFixtureForAll, DBRunner}
 import org.alephium.explorer.persistence.model._

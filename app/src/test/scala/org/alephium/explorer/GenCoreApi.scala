@@ -16,14 +16,18 @@
 
 package org.alephium.explorer
 
+import java.math.BigInteger
+
 import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.Arbitrary.arbitrary
 
 import org.alephium.api.model._
 import org.alephium.explorer.GenApiModel.bytesGen
 import org.alephium.explorer.GenCommon.{genInetAddress, genPortNum}
-import org.alephium.explorer.GenCoreProtocol.genNetworkId
+import org.alephium.explorer.GenCoreProtocol._
+import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.Generators._
-import org.alephium.protocol.model.{CliqueId, NetworkId}
+import org.alephium.protocol.model.{CliqueId, NetworkId, Target}
 import org.alephium.util.{AVector, I256, U256}
 
 /** Generators for types supplied by Core `org.alephium.api` package */
@@ -72,9 +76,9 @@ object GenCoreApi {
       )
 
   private val i256Gen: Gen[I256] =
-    Gen.choose[java.math.BigInteger](I256.MinValue.v, I256.MaxValue.v).map(I256.unsafe)
+    Gen.choose[BigInteger](I256.MinValue.v, I256.MaxValue.v).map(I256.unsafe)
   private val u256Gen: Gen[U256] =
-    Gen.choose[java.math.BigInteger](U256.MinValue.v, U256.MaxValue.v).map(U256.unsafe)
+    Gen.choose[BigInteger](U256.MinValue.v, U256.MaxValue.v).map(U256.unsafe)
 
   lazy val valBoolGen: Gen[ValBool]       = Arbitrary.arbitrary[Boolean].map(ValBool.apply)
   lazy val valI256Gen: Gen[ValI256]       = i256Gen.map(ValI256.apply)
@@ -97,4 +101,89 @@ object GenCoreApi {
       valAddressGen
     )
   }
+
+  def transactionProtocolGen: Gen[Transaction] =
+    for {
+      unsigned             <- unsignedTxGen
+      scriptExecutionOk    <- arbitrary[Boolean]
+      contractInputsSize   <- Gen.choose(0, 5)
+      contractInputs       <- Gen.listOfN(contractInputsSize, outputRefProtocolGen)
+      generatedOutputsSize <- Gen.choose(0, 5)
+      generatedOutputs     <- Gen.listOfN(generatedOutputsSize, outputProtocolGen)
+      inputSignatures      <- Gen.listOfN(2, bytesGen)
+      scriptSignatures     <- Gen.listOfN(2, bytesGen)
+    } yield
+      Transaction(unsigned,
+                  scriptExecutionOk,
+                  AVector.from(contractInputs),
+                  AVector.from(generatedOutputs),
+                  AVector.from(inputSignatures),
+                  AVector.from(scriptSignatures))
+
+  def blockEntryProtocolGen(implicit groupSetting: GroupSetting): Gen[BlockEntry] =
+    for {
+      hash            <- blockHashGen
+      timestamp       <- timestampGen
+      chainFrom       <- GenApiModel.groupIndexGen
+      chainTo         <- GenApiModel.groupIndexGen
+      height          <- GenApiModel.heightGen
+      deps            <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockHashGen)
+      transactionSize <- Gen.choose(1, 10)
+      transactions    <- Gen.listOfN(transactionSize, transactionProtocolGen)
+      nonce           <- bytesGen
+      version         <- Gen.posNum[Byte]
+      depStateHash    <- hashGen
+      txsHash         <- hashGen
+    } yield {
+      //From `alephium` repo
+      val numZerosAtLeastInHash = 37
+      val target = Target.unsafe(
+        BigInteger.ONE.shiftLeft(256 - numZerosAtLeastInHash).subtract(BigInteger.ONE))
+
+      BlockEntry(
+        hash,
+        timestamp,
+        chainFrom.value,
+        chainTo.value,
+        height.value,
+        AVector.from(deps),
+        AVector.from(transactions),
+        nonce,
+        version,
+        depStateHash,
+        txsHash,
+        target.bits
+      )
+    }
+
+  def unsignedTxGen: Gen[UnsignedTx] =
+    for {
+      hash       <- transactionHashGen
+      version    <- Gen.posNum[Byte]
+      networkId  <- Gen.posNum[Byte]
+      scriptOpt  <- Gen.option(scriptGen)
+      inputSize  <- Gen.choose(0, 10)
+      inputs     <- Gen.listOfN(inputSize, inputProtocolGen)
+      outputSize <- Gen.choose(2, 10)
+      outputs    <- Gen.listOfN(outputSize, fixedOutputAssetProtocolGen)
+      gasAmount  <- Gen.posNum[Int]
+      gasPrice   <- Gen.posNum[Long].map(U256.unsafe)
+    } yield
+      UnsignedTx(hash,
+                 version,
+                 networkId,
+                 scriptOpt,
+                 gasAmount,
+                 gasPrice,
+                 AVector.from(inputs),
+                 AVector.from(outputs))
+
+  def transactionTemplateProtocolGen: Gen[TransactionTemplate] =
+    for {
+      unsigned         <- unsignedTxGen
+      inputSignatures  <- Gen.listOfN(2, bytesGen)
+      scriptSignatures <- Gen.listOfN(2, bytesGen)
+    } yield
+      TransactionTemplate(unsigned, AVector.from(inputSignatures), AVector.from(scriptSignatures))
+
 }

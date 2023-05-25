@@ -25,31 +25,22 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 
 import org.alephium.explorer.ConfigDefaults._
+import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model._
 import org.alephium.protocol
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{
-  Address,
-  BlockHash,
-  ContractId,
-  TokenId,
-  TransactionId,
-  TxOutputRef
-}
+import org.alephium.protocol.model.{Address, ContractId, TokenId, TxOutputRef}
 import org.alephium.util.{Number, U256}
 
 /** Generators for types supplied by `org.alephium.explorer.api.model` package */
 object GenApiModel extends ImplicitConversions {
 
-  val hashGen: Gen[Hash]                     = Gen.const(()).map(_ => Hash.generate)
-  val blockHashGen: Gen[BlockHash]           = Gen.const(()).map(_ => BlockHash.generate)
-  val transactionHashGen: Gen[TransactionId] = hashGen.map(TransactionId.unsafe)
-  val tokenIdGen: Gen[TokenId]               = hashGen.map(TokenId.unsafe)
-  val outputRefKeyGen: Gen[TxOutputRef.Key]  = hashGen.map(new TxOutputRef.Key(_))
-  val contractIdGen: Gen[ContractId]         = hashGen.map(ContractId.unsafe)
+  val tokenIdGen: Gen[TokenId]              = hashGen.map(TokenId.unsafe)
+  val outputRefKeyGen: Gen[TxOutputRef.Key] = hashGen.map(new TxOutputRef.Key(_))
+  val contractIdGen: Gen[ContractId]        = hashGen.map(ContractId.unsafe)
   val groupIndexGen: Gen[GroupIndex] =
-    Gen.choose(0, Generators.groupSetting.groupNum - 1).map(GroupIndex.unsafe(_))
+    Gen.choose(0, groupSetting.groupNum - 1).map(GroupIndex.unsafe(_))
   val heightGen: Gen[Height]       = Gen.posNum[Int].map(Height.unsafe(_))
   val bytesGen: Gen[ByteString]    = hashGen.map(_.bytes)
   val hashrateGen: Gen[BigInteger] = arbitrary[Long].map(BigInteger.valueOf)

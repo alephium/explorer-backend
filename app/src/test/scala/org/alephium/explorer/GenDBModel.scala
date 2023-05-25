@@ -16,26 +16,149 @@
 package org.alephium.explorer
 
 import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.Arbitrary.arbitrary
 
 import org.alephium.explorer.GenApiModel._
-import org.alephium.explorer.GenCoreApi.valGen
+import org.alephium.explorer.GenCoreApi.{blockEntryProtocolGen, valGen}
+import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
-import org.alephium.explorer.Generators._
+import org.alephium.explorer.api.model.GroupIndex
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.service.BlockFlowClient
+import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
-import org.alephium.util.TimeStamp
+import org.alephium.util.{AVector, TimeStamp}
 
 /** Test-data generators for types in package [[org.alephium.explorer.persistence.model]]  */
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 object GenDBModel {
 
+  val outputTypeGen: Gen[OutputEntity.OutputType] =
+    Gen.oneOf(0, 1).map(OutputEntity.OutputType.unsafe)
+
+  val outputEntityGen: Gen[OutputEntity] =
+    for {
+      blockHash   <- blockHashGen
+      txHash      <- transactionHashGen
+      timestamp   <- timestampGen
+      outputType  <- outputTypeGen
+      hint        <- Gen.posNum[Int]
+      key         <- hashGen
+      amount      <- u256Gen
+      address     <- addressGen
+      tokens      <- Gen.option(Gen.listOf(tokenGen))
+      lockTime    <- Gen.option(timestampGen)
+      message     <- Gen.option(bytesGen)
+      mainChain   <- arbitrary[Boolean]
+      outputOrder <- arbitrary[Int]
+      txOrder     <- arbitrary[Int]
+      coinbase    <- arbitrary[Boolean]
+    } yield
+      OutputEntity(
+        blockHash      = blockHash,
+        txHash         = txHash,
+        timestamp      = timestamp,
+        outputType     = outputType,
+        hint           = hint,
+        key            = key,
+        amount         = amount,
+        address        = address,
+        tokens         = tokens,
+        mainChain      = mainChain,
+        lockTime       = if (outputType == OutputEntity.Asset) lockTime else None,
+        message        = if (outputType == OutputEntity.Asset) message else None,
+        outputOrder    = outputOrder,
+        txOrder        = txOrder,
+        spentFinalized = None,
+        spentTimestamp = None,
+        coinbase       = coinbase
+      )
+
+  val finalizedOutputEntityGen: Gen[OutputEntity] =
+    for {
+      output         <- outputEntityGen
+      spentFinalized <- Gen.option(transactionHashGen)
+      spentTimestamp <- Gen.option(timestampGen)
+    } yield output.copy(spentFinalized = spentFinalized, spentTimestamp = spentTimestamp)
+
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def uoutputEntityGen(transactionHash: Gen[TransactionId] = transactionHashGen,
+                       address: Gen[Address]               = addressGen): Gen[UOutputEntity] =
+    for {
+      txHash       <- transactionHash
+      outputType   <- outputTypeGen
+      hint         <- Gen.posNum[Int]
+      key          <- hashGen
+      amount       <- u256Gen
+      address      <- address
+      tokens       <- Gen.option(Gen.listOf(tokenGen))
+      lockTime     <- Gen.option(timestampGen)
+      message      <- Gen.option(bytesGen)
+      uoutputOrder <- arbitrary[Int]
+    } yield
+      UOutputEntity(
+        txHash       = txHash,
+        hint         = hint,
+        key          = key,
+        amount       = amount,
+        address      = address,
+        tokens       = tokens,
+        lockTime     = if (outputType == OutputEntity.Asset) lockTime else None,
+        message      = if (outputType == OutputEntity.Asset) message else None,
+        uoutputOrder = uoutputOrder
+      )
+
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def inputEntityGen(outputEntityGen: Gen[OutputEntity] = outputEntityGen): Gen[InputEntity] =
+    for {
+      outputEntity <- outputEntityGen
+      unlockScript <- Gen.option(unlockScriptGen)
+      txOrder      <- arbitrary[Int]
+    } yield {
+      InputEntity(
+        blockHash    = outputEntity.blockHash,
+        txHash       = outputEntity.txHash,
+        timestamp    = outputEntity.timestamp,
+        hint         = outputEntity.hint,
+        outputRefKey = outputEntity.key,
+        unlockScript = unlockScript,
+        mainChain    = outputEntity.mainChain,
+        inputOrder   = outputEntity.outputOrder,
+        txOrder      = txOrder,
+        None,
+        None,
+        None,
+        None
+      )
+    }
+
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def uinputEntityGen(transactionHash: Gen[TransactionId] = transactionHashGen,
+                      address: Gen[Option[Address]]       = Gen.option(addressGen)): Gen[UInputEntity] =
+    for {
+      txHash       <- transactionHash
+      hint         <- Gen.posNum[Int]
+      outputRefKey <- hashGen
+      unlockScript <- Gen.option(unlockScriptGen)
+      address      <- address
+      uinputOrder  <- arbitrary[Int]
+    } yield
+      UInputEntity(
+        txHash,
+        hint,
+        outputRefKey,
+        unlockScript,
+        address,
+        uinputOrder
+      )
+
   /** Generates and [[org.alephium.explorer.persistence.model.InputEntity]] for the given
     * [[org.alephium.explorer.persistence.model.OutputEntity]] generator */
   def genInputOutput(
-      outputGen: Gen[OutputEntity] = Generators.outputEntityGen): Gen[(InputEntity, OutputEntity)] =
+      outputGen: Gen[OutputEntity] = outputEntityGen): Gen[(InputEntity, OutputEntity)] =
     for {
       output <- outputGen
-      input  <- Generators.inputEntityGen(output)
+      input  <- inputEntityGen(output)
     } yield (input, output)
 
   def genTransactionPerAddressEntity(
@@ -166,8 +289,36 @@ object GenDBModel {
         spentTimestamp
       )
 
+  def blockEntityGen(chainFrom: GroupIndex, chainTo: GroupIndex)(
+      implicit groupSetting: GroupSetting): Gen[BlockEntity] =
+    blockEntryProtocolGen.map { block =>
+      BlockFlowClient.blockProtocolToEntity(
+        block
+          .copy(chainFrom = chainFrom.value, chainTo = chainTo.value))
+    }
+
+  def blockEntityWithParentGen(
+      chainFrom: GroupIndex,
+      chainTo: GroupIndex,
+      parent: Option[BlockEntity])(implicit groupSetting: GroupSetting): Gen[BlockEntity] =
+    blockEntryProtocolGen.map { entry =>
+      val deps = parent
+        .map(p => entry.deps.replace(Generators.parentIndex(chainTo), p.hash))
+        .getOrElse(AVector.empty)
+      val height    = parent.map(_.height.value + 1).getOrElse(0)
+      val timestamp = parent.map(_.timestamp.plusHoursUnsafe(1)).getOrElse(ALPH.GenesisTimestamp)
+      BlockFlowClient.blockProtocolToEntity(
+        entry
+          .copy(chainFrom = chainFrom.value,
+                chainTo   = chainTo.value,
+                timestamp = timestamp,
+                height    = height,
+                deps      = deps))
+
+    }
+
   /** Generates BlockEntity and it's dependant Entities that also maintain the block's mainChain value */
-  def blockAndItsMainChainEntitiesGen()
+  def blockAndItsMainChainEntitiesGen()(implicit groupSetting: GroupSetting)
     : Gen[(BlockEntity, TransactionPerTokenEntity, TokenTxPerAddressEntity, TokenOutputEntity)] =
     for {
       chainFrom         <- groupIndexGen

@@ -29,7 +29,8 @@ import org.alephium.api.UtilJson._
 import org.alephium.explorer.AlephiumActorSpecLike
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
-import org.alephium.explorer.Generators._
+import org.alephium.explorer.GenCoreProtocol._
+import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.persistence.DatabaseFixtureForEach

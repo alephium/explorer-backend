@@ -27,23 +27,21 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.alephium.api.{model => protocolApi}
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.GenCoreApi._
+import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
+import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.protocol.{model => protocol, _}
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.serde._
-import org.alephium.util.{AVector, Duration, TimeStamp, U256}
+import org.alephium.util.{AVector, Duration, TimeStamp}
 
 // scalastyle:off number.of.methods file.size.limit
 object Generators {
 
   def groupSettingGen: Gen[GroupSetting] = Gen.choose(2, 4).map(groupNum => GroupSetting(groupNum))
-
-
-  val outputTypeGen: Gen[OutputEntity.OutputType] =
-    Gen.oneOf(0, 1).map(OutputEntity.OutputType.unsafe)
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def transactionEntityGen(blockHash: Gen[BlockHash] = blockHashGen): Gen[TransactionEntity] =
@@ -140,7 +138,7 @@ object Generators {
       transaction <- Gen.listOf(transactionEntityGen(Gen.const(blockHeader.hash)))
     } yield (blockHeader, transaction)
 
-  private def parentIndex(chainTo: GroupIndex) =
+  def parentIndex(chainTo: GroupIndex)(implicit groupSetting: GroupSetting) =
     groupSetting.groupNum - 1 + chainTo.value
 
   def addressAssetProtocolGen: Gen[protocol.Address.Asset] =
@@ -251,117 +249,6 @@ object Generators {
               outputContractProtocolGen: Gen[protocolApi.Output])
 
   def scriptGen: Gen[protocolApi.Script] = Gen.hexStr.map(protocolApi.Script.apply)
-  def unsignedTxGen: Gen[protocolApi.UnsignedTx] =
-    for {
-      hash       <- transactionHashGen
-      version    <- Gen.posNum[Byte]
-      networkId  <- Gen.posNum[Byte]
-      scriptOpt  <- Gen.option(scriptGen)
-      inputSize  <- Gen.choose(0, 10)
-      inputs     <- Gen.listOfN(inputSize, inputProtocolGen)
-      outputSize <- Gen.choose(2, 10)
-      outputs    <- Gen.listOfN(outputSize, fixedOutputAssetProtocolGen)
-      gasAmount  <- Gen.posNum[Int]
-      gasPrice   <- Gen.posNum[Long].map(U256.unsafe)
-    } yield
-      protocolApi.UnsignedTx(hash,
-                             version,
-                             networkId,
-                             scriptOpt,
-                             gasAmount,
-                             gasPrice,
-                             AVector.from(inputs),
-                             AVector.from(outputs))
-
-  def transactionProtocolGen: Gen[protocolApi.Transaction] =
-    for {
-      unsigned             <- unsignedTxGen
-      scriptExecutionOk    <- arbitrary[Boolean]
-      contractInputsSize   <- Gen.choose(0, 5)
-      contractInputs       <- Gen.listOfN(contractInputsSize, outputRefProtocolGen)
-      generatedOutputsSize <- Gen.choose(0, 5)
-      generatedOutputs     <- Gen.listOfN(generatedOutputsSize, outputProtocolGen)
-      inputSignatures      <- Gen.listOfN(2, bytesGen)
-      scriptSignatures     <- Gen.listOfN(2, bytesGen)
-    } yield
-      protocolApi.Transaction(unsigned,
-                              scriptExecutionOk,
-                              AVector.from(contractInputs),
-                              AVector.from(generatedOutputs),
-                              AVector.from(inputSignatures),
-                              AVector.from(scriptSignatures))
-
-  def transactionTemplateProtocolGen: Gen[protocolApi.TransactionTemplate] =
-    for {
-      unsigned         <- unsignedTxGen
-      inputSignatures  <- Gen.listOfN(2, bytesGen)
-      scriptSignatures <- Gen.listOfN(2, bytesGen)
-    } yield
-      protocolApi.TransactionTemplate(unsigned,
-                                      AVector.from(inputSignatures),
-                                      AVector.from(scriptSignatures))
-
-  def blockEntryProtocolGen: Gen[protocolApi.BlockEntry] =
-    for {
-      hash            <- blockHashGen
-      timestamp       <- timestampGen
-      chainFrom       <- groupIndexGen
-      chainTo         <- groupIndexGen
-      height          <- heightGen
-      deps            <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockHashGen)
-      transactionSize <- Gen.choose(1, 10)
-      transactions    <- Gen.listOfN(transactionSize, transactionProtocolGen)
-      nonce           <- bytesGen
-      version         <- Gen.posNum[Byte]
-      depStateHash    <- hashGen
-      txsHash         <- hashGen
-    } yield {
-      //From `alephium` repo
-      val numZerosAtLeastInHash = 37
-      val target = protocol.Target.unsafe(
-        BigInteger.ONE.shiftLeft(256 - numZerosAtLeastInHash).subtract(BigInteger.ONE))
-
-      protocolApi.BlockEntry(
-        hash,
-        timestamp,
-        chainFrom.value,
-        chainTo.value,
-        height.value,
-        AVector.from(deps),
-        AVector.from(transactions),
-        nonce,
-        version,
-        depStateHash,
-        txsHash,
-        target.bits
-      )
-    }
-
-  def blockEntityGen(chainFrom: GroupIndex, chainTo: GroupIndex): Gen[BlockEntity] =
-    blockEntryProtocolGen.map { block =>
-      BlockFlowClient.blockProtocolToEntity(
-        block
-          .copy(chainFrom = chainFrom.value, chainTo = chainTo.value))
-    }
-
-  def blockEntityWithParentGen(chainFrom: GroupIndex,
-                               chainTo: GroupIndex,
-                               parent: Option[BlockEntity]): Gen[BlockEntity] =
-    blockEntryProtocolGen.map { entry =>
-      val deps = parent
-        .map(p => entry.deps.replace(parentIndex(chainTo), p.hash))
-        .getOrElse(AVector.empty)
-      val height    = Height.unsafe(parent.map(_.height.value + 1).getOrElse(0))
-      val timestamp = parent.map(_.timestamp.plusHoursUnsafe(1)).getOrElse(ALPH.GenesisTimestamp)
-      BlockFlowClient.blockProtocolToEntity(
-        entry
-          .copy(chainFrom = chainFrom.value,
-                chainTo   = chainTo.value,
-                timestamp = timestamp,
-                height    = height.value,
-                deps      = deps))
-
-    }
 
   def chainGen(size: Int,
                startTimestamp: TimeStamp,
@@ -496,122 +383,6 @@ object Generators {
       (dep1, copyPrimaryKeys(dep1, dep2))
     }
 
-  val outputEntityGen: Gen[OutputEntity] =
-    for {
-      blockHash   <- blockHashGen
-      txHash      <- transactionHashGen
-      timestamp   <- timestampGen
-      outputType  <- outputTypeGen
-      hint        <- Gen.posNum[Int]
-      key         <- hashGen
-      amount      <- u256Gen
-      address     <- addressGen
-      tokens      <- Gen.option(Gen.listOf(tokenGen))
-      lockTime    <- Gen.option(timestampGen)
-      message     <- Gen.option(bytesGen)
-      mainChain   <- arbitrary[Boolean]
-      outputOrder <- arbitrary[Int]
-      txOrder     <- arbitrary[Int]
-      coinbase    <- arbitrary[Boolean]
-    } yield
-      OutputEntity(
-        blockHash      = blockHash,
-        txHash         = txHash,
-        timestamp      = timestamp,
-        outputType     = outputType,
-        hint           = hint,
-        key            = key,
-        amount         = amount,
-        address        = address,
-        tokens         = tokens,
-        mainChain      = mainChain,
-        lockTime       = if (outputType == OutputEntity.Asset) lockTime else None,
-        message        = if (outputType == OutputEntity.Asset) message else None,
-        outputOrder    = outputOrder,
-        txOrder        = txOrder,
-        spentFinalized = None,
-        spentTimestamp = None,
-        coinbase       = coinbase
-      )
-
-  val finalizedOutputEntityGen: Gen[OutputEntity] =
-    for {
-      output         <- outputEntityGen
-      spentFinalized <- Gen.option(transactionHashGen)
-      spentTimestamp <- Gen.option(timestampGen)
-    } yield output.copy(spentFinalized = spentFinalized, spentTimestamp = spentTimestamp)
-
-  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def uoutputEntityGen(transactionHash: Gen[TransactionId] = transactionHashGen,
-                       address: Gen[Address]               = addressGen): Gen[UOutputEntity] =
-    for {
-      txHash       <- transactionHash
-      outputType   <- outputTypeGen
-      hint         <- Gen.posNum[Int]
-      key          <- hashGen
-      amount       <- u256Gen
-      address      <- address
-      tokens       <- Gen.option(Gen.listOf(tokenGen))
-      lockTime     <- Gen.option(timestampGen)
-      message      <- Gen.option(bytesGen)
-      uoutputOrder <- arbitrary[Int]
-    } yield
-      UOutputEntity(
-        txHash       = txHash,
-        hint         = hint,
-        key          = key,
-        amount       = amount,
-        address      = address,
-        tokens       = tokens,
-        lockTime     = if (outputType == OutputEntity.Asset) lockTime else None,
-        message      = if (outputType == OutputEntity.Asset) message else None,
-        uoutputOrder = uoutputOrder
-      )
-
-  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def inputEntityGen(outputEntityGen: Gen[OutputEntity] = outputEntityGen): Gen[InputEntity] =
-    for {
-      outputEntity <- outputEntityGen
-      unlockScript <- Gen.option(unlockScriptGen)
-      txOrder      <- arbitrary[Int]
-    } yield {
-      InputEntity(
-        blockHash    = outputEntity.blockHash,
-        txHash       = outputEntity.txHash,
-        timestamp    = outputEntity.timestamp,
-        hint         = outputEntity.hint,
-        outputRefKey = outputEntity.key,
-        unlockScript = unlockScript,
-        mainChain    = outputEntity.mainChain,
-        inputOrder   = outputEntity.outputOrder,
-        txOrder      = txOrder,
-        None,
-        None,
-        None,
-        None
-      )
-    }
-
-  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def uinputEntityGen(transactionHash: Gen[TransactionId] = transactionHashGen,
-                      address: Gen[Option[Address]]       = Gen.option(addressGen)): Gen[UInputEntity] =
-    for {
-      txHash       <- transactionHash
-      hint         <- Gen.posNum[Int]
-      outputRefKey <- hashGen
-      unlockScript <- Gen.option(unlockScriptGen)
-      address      <- address
-      uinputOrder  <- arbitrary[Int]
-    } yield
-      UInputEntity(
-        txHash,
-        hint,
-        outputRefKey,
-        unlockScript,
-        address,
-        uinputOrder
-      )
-
   /**
     * Table `uinputs` applies uniqueness on `(output_ref_key, tx_hash)`.
     *
@@ -731,8 +502,7 @@ object Generators {
     }
 
   /**
-    * Generates a [[BlockEntity]] with optional paren
-    * t
+    * Generates a [[BlockEntity]] with optional parent
     * @param randomMainChainGen Some if randomness to mainChain should be applies else None.
     *                           The generated boolean mainChain is set for both parent and child [[BlockEntity]].
     */

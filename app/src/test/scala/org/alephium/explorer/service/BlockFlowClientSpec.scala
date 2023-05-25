@@ -32,8 +32,8 @@ import org.alephium.api
 import org.alephium.api.model
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.ConfigDefaults._
-import org.alephium.explorer.GenApiModel._
-import org.alephium.explorer.Generators._
+import org.alephium.explorer.GenCoreApi._
+import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.error.ExplorerError
 import org.alephium.explorer.persistence.DatabaseFixtureForAll

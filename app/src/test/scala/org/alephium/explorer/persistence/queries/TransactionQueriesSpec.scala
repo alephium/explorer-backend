@@ -24,6 +24,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumFutureSpec, Hash, TestQueries}
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.Generators._
