@@ -23,7 +23,7 @@ import scala.collection.immutable.ArraySeq
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AlephiumFutureSpec
-import org.alephium.explorer.Generators._
+import org.alephium.explorer.GenDBModel.blockHeaderWithHashrate
 import org.alephium.explorer.api.model.{Hashrate, IntervalType}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.queries.HashrateQueries._

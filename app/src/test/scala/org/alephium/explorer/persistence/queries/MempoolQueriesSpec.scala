@@ -23,6 +23,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.persistence.{DatabaseFixtureForAll, DBRunner}
 import org.alephium.explorer.persistence.model._
