@@ -18,6 +18,9 @@ package org.alephium.explorer
 
 import java.math.BigInteger
 
+import scala.collection.immutable.ArraySeq
+
+import akka.util.ByteString
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
 
@@ -27,8 +30,10 @@ import org.alephium.explorer.GenCommon.{genInetAddress, genPortNum}
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.Generators._
-import org.alephium.protocol.model.{CliqueId, NetworkId, Target}
-import org.alephium.util.{AVector, I256, U256}
+import org.alephium.explorer.api.model.{GroupIndex, Height}
+import org.alephium.protocol.model.{BlockHash, CliqueId, NetworkId, Target}
+import org.alephium.serde._
+import org.alephium.util.{AVector, Duration, I256, TimeStamp, U256}
 
 /** Generators for types supplied by Core `org.alephium.api` package */
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -85,24 +90,25 @@ object GenCoreApi {
   lazy val valU256Gen: Gen[ValU256]       = u256Gen.map(ValU256.apply)
   lazy val valByteVecGen: Gen[ValByteVec] = bytesGen.map(ValByteVec.apply)
 
-  def valAddressGen: Gen[ValAddress] =
-    addressAssetProtocolGen.map(ValAddress(_))
+  def valAddressGen()(implicit groupSetting: GroupSetting): Gen[ValAddress] = {
+    addressAssetProtocolGen().map(ValAddress(_))
+  }
 
   @SuppressWarnings(
     Array("org.wartremover.warts.JavaSerializable",
           "org.wartremover.warts.Product",
           "org.wartremover.warts.Serializable")) // Wartremover is complaining, don't now why :/
-  def valGen: Gen[Val] = {
+  def valGen()(implicit groupSetting: GroupSetting): Gen[Val] = {
     Gen.oneOf(
       valBoolGen,
       valI256Gen,
       valU256Gen,
       valByteVecGen,
-      valAddressGen
+      valAddressGen()
     )
   }
 
-  def transactionProtocolGen: Gen[Transaction] =
+  def transactionProtocolGen(implicit groupSetting: GroupSetting): Gen[Transaction] =
     for {
       unsigned             <- unsignedTxGen
       scriptExecutionOk    <- arbitrary[Boolean]
@@ -156,7 +162,7 @@ object GenCoreApi {
       )
     }
 
-  def unsignedTxGen: Gen[UnsignedTx] =
+  def unsignedTxGen(implicit groupSetting: GroupSetting): Gen[UnsignedTx] =
     for {
       hash       <- transactionHashGen
       version    <- Gen.posNum[Byte]
@@ -178,7 +184,8 @@ object GenCoreApi {
                  AVector.from(inputs),
                  AVector.from(outputs))
 
-  def transactionTemplateProtocolGen: Gen[TransactionTemplate] =
+  def transactionTemplateProtocolGen(
+      implicit groupSetting: GroupSetting): Gen[TransactionTemplate] =
     for {
       unsigned         <- unsignedTxGen
       inputSignatures  <- Gen.listOfN(2, bytesGen)
@@ -186,4 +193,79 @@ object GenCoreApi {
     } yield
       TransactionTemplate(unsigned, AVector.from(inputSignatures), AVector.from(scriptSignatures))
 
+  val outputRefProtocolGen: Gen[OutputRef] = for {
+    hint <- arbitrary[Int]
+    key  <- hashGen
+  } yield OutputRef(hint, key)
+
+  val inputProtocolGen: Gen[AssetInput] = for {
+    outputRef    <- outputRefProtocolGen
+    unlockScript <- unlockScriptProtocolGen
+  } yield AssetInput(outputRef, serialize(unlockScript))
+
+  def fixedOutputAssetProtocolGen(implicit groupSetting: GroupSetting): Gen[FixedAssetOutput] =
+    for {
+      hint     <- Gen.posNum[Int]
+      key      <- hashGen
+      amount   <- amountGen
+      lockTime <- timestampGen
+      address  <- addressAssetProtocolGen()
+    } yield
+      FixedAssetOutput(hint,
+                       key,
+                       Amount(amount),
+                       address,
+                       AVector.empty,
+                       lockTime,
+                       ByteString.empty)
+
+  def outputAssetProtocolGen(implicit groupSetting: GroupSetting): Gen[AssetOutput] =
+    fixedOutputAssetProtocolGen.map(_.upCast())
+
+  def outputContractProtocolGen: Gen[ContractOutput] =
+    for {
+      hint    <- Gen.posNum[Int]
+      key     <- hashGen
+      amount  <- amountGen
+      address <- addressContractProtocolGen
+    } yield ContractOutput(hint, key, Amount(amount), address, AVector.empty)
+
+  def outputProtocolGen(implicit groupSetting: GroupSetting): Gen[Output] =
+    Gen.oneOf(outputAssetProtocolGen: Gen[Output], outputContractProtocolGen: Gen[Output])
+
+  def scriptGen: Gen[Script] = Gen.hexStr.map(Script.apply)
+
+  def chainGen(size: Int, startTimestamp: TimeStamp, chainFrom: GroupIndex, chainTo: GroupIndex)(
+      implicit groupSetting: GroupSetting): Gen[ArraySeq[BlockEntry]] =
+    Gen.listOfN(size, blockEntryProtocolGen).map { blocks =>
+      blocks
+        .foldLeft((ArraySeq.empty[BlockEntry], Height.genesis, startTimestamp)) {
+          case ((acc, height, timestamp), block) =>
+            val deps: AVector[BlockHash] =
+              if (acc.isEmpty) {
+                AVector.empty
+              } else {
+                block.deps.replace(parentIndex(chainTo), acc.last.hash)
+              }
+            val newBlock = block.copy(height = height.value,
+                                      deps      = deps,
+                                      timestamp = timestamp,
+                                      chainFrom = chainFrom.value,
+                                      chainTo   = chainTo.value)
+            (acc :+ newBlock, Height.unsafe(height.value + 1), timestamp + Duration.unsafe(1))
+        } match { case (block, _, _) => block }
+    }
+
+  def blockFlowGen(maxChainSize: Int, startTimestamp: TimeStamp)(
+      implicit groupSetting: GroupSetting): Gen[ArraySeq[ArraySeq[BlockEntry]]] = {
+    val indexes = groupSetting.groupIndexes
+    Gen
+      .listOfN(indexes.size, Gen.choose(1, maxChainSize))
+      .map { list =>
+        ArraySeq.from(list.zip(indexes).map {
+          case (size, (from, to)) =>
+            chainGen(size, startTimestamp, from, to).sample.get
+        })
+      }
+  }
 }

@@ -30,6 +30,7 @@ import org.alephium.explorer.AlephiumActorSpecLike
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreProtocol._
+import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache}

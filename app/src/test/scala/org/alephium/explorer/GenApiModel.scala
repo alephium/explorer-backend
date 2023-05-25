@@ -29,22 +29,18 @@ import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model._
 import org.alephium.protocol
-import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{Address, ContractId, TokenId, TxOutputRef}
-import org.alephium.util.{Number, U256}
+import org.alephium.protocol.model.{Address, TokenId, TxOutputRef}
 
 /** Generators for types supplied by `org.alephium.explorer.api.model` package */
 object GenApiModel extends ImplicitConversions {
 
   val tokenIdGen: Gen[TokenId]              = hashGen.map(TokenId.unsafe)
   val outputRefKeyGen: Gen[TxOutputRef.Key] = hashGen.map(new TxOutputRef.Key(_))
-  val contractIdGen: Gen[ContractId]        = hashGen.map(ContractId.unsafe)
   val groupIndexGen: Gen[GroupIndex] =
     Gen.choose(0, groupSetting.groupNum - 1).map(GroupIndex.unsafe(_))
   val heightGen: Gen[Height]       = Gen.posNum[Int].map(Height.unsafe(_))
   val bytesGen: Gen[ByteString]    = hashGen.map(_.bytes)
   val hashrateGen: Gen[BigInteger] = arbitrary[Long].map(BigInteger.valueOf)
-  val amountGen: Gen[U256]         = Gen.choose(1000L, Number.quadrillion).map(ALPH.nanoAlph)
   val exportTypeGen: Gen[ExportType] =
     Gen.oneOf(ArraySeq(ExportType.CSV: ExportType, ExportType.JSON: ExportType))
 

@@ -23,6 +23,7 @@ import org.scalacheck.Gen
 
 import org.alephium.api.model.{Val, ValAddress, ValBool, ValByteVec}
 import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenDBModel._
@@ -35,13 +36,13 @@ class ContractEntitySpec extends AlephiumSpec {
 
   "ContractEntity.creationFromEventEntity" should {
     "return None for a random event" in {
-      forAll(eventEntityGen) { event =>
+      forAll(eventEntityGen()) { event =>
         ContractEntity.creationFromEventEntity(event) is None
       }
     }
 
     "convert the event for a correct create contract events" in {
-      forAll(eventEntityGen, addressGen, Gen.option(addressGen), Gen.option(interfaceIdGen)) {
+      forAll(eventEntityGen(), addressGen, Gen.option(addressGen), Gen.option(interfaceIdGen)) {
         case (event, contract, parentOpt, interfaceIdOpt) =>
           val parent: Val = parentOpt.map(ValAddress.apply).getOrElse(emptyByteVec)
           val createSubContractEvent = event.copy(
@@ -71,7 +72,7 @@ class ContractEntitySpec extends AlephiumSpec {
     }
 
     "fail to convert the event if there isn't 3 correct fields" in {
-      forAll(eventEntityGen, addressGen, addressGen, interfaceIdGen) {
+      forAll(eventEntityGen(), addressGen, addressGen, interfaceIdGen) {
         case (event, contract, parent, interfaceId) =>
           val zeroField = event.copy(
             contractAddress = ContractEntity.createContractEventAddress,

@@ -226,7 +226,7 @@ object GenDBModel {
         token     = token
       )
 
-  def eventEntityGen: Gen[EventEntity] =
+  def eventEntityGen()(implicit groupSetting: GroupSetting): Gen[EventEntity] =
     for {
       blockHash       <- blockHashGen
       hash            <- transactionHashGen
@@ -234,7 +234,7 @@ object GenDBModel {
       inputAddress    <- Gen.option(addressGen)
       timestamp       <- timestampGen
       eventIndex      <- Gen.posNum[Int]
-      fields          <- Gen.listOf(valGen)
+      fields          <- Gen.listOf(valGen())
 
     } yield
       EventEntity.from(
