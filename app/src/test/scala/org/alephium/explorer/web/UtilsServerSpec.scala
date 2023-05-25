@@ -21,7 +21,7 @@ import sttp.model.StatusCode
 
 import org.alephium.api.ApiError
 import org.alephium.explorer._
-import org.alephium.explorer.Generators.groupSetting
+import org.alephium.explorer.ConfigDefaults.groupSetting
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model.LogbackValue
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache, TransactionCache}

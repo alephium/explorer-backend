@@ -40,6 +40,7 @@ import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 
 import org.alephium.api.{model, ApiError, ApiModelCodec}
 import org.alephium.api.{alphJsonBody => jsonBody}
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.HttpFixture._

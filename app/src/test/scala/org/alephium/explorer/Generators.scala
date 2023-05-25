@@ -25,6 +25,7 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
 
 import org.alephium.api.{model => protocolApi}
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model._
@@ -40,7 +41,6 @@ object Generators {
 
   def groupSettingGen: Gen[GroupSetting] = Gen.choose(2, 4).map(groupNum => GroupSetting(groupNum))
 
-  implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
 
   val outputTypeGen: Gen[OutputEntity.OutputType] =
     Gen.oneOf(0, 1).map(OutputEntity.OutputType.unsafe)

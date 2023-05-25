@@ -24,6 +24,7 @@ import org.scalacheck.{Arbitrary, Gen}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.Generators._
@@ -115,8 +116,6 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
   }
 
   "insert deps, transactions, inputs, outputs, block_headers" in {
-
-    implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
 
     forAll(Gen.listOf(genBlockEntityWithOptionalParent().map(_._1))) { entities =>
       //clear all tables
