@@ -244,4 +244,30 @@ object GenApiModel extends ImplicitConversions {
         blocks
       )
     }
+
+  /**
+    * Generates [[Pagination]] instance for the generated data.
+    *
+    * @return Pagination instance with the Generated data
+    *         used to generate the Pagination instance
+    */
+  def paginationDataGen[T](dataGen: Gen[List[T]]): Gen[(List[T], Pagination)] =
+    for {
+      data       <- dataGen
+      pagination <- paginationGen(Gen.const(data.size))
+    } yield (data, pagination)
+
+  /**
+    * Generates a [[Pagination]] instance with page between `1` and `maxDataCountGen.sample`.
+    *
+    * [[Pagination.page]] will at least have a minimum value of `1`.
+    */
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def paginationGen(maxDataCountGen: Gen[Int] = Gen.choose(0, 10)): Gen[Pagination] =
+    for {
+      maxDataCount <- maxDataCountGen
+      page         <- Gen.choose(maxDataCount min 1, maxDataCount) //Requirement: Page should be >= 1
+      limit        <- Gen.choose(0, maxDataCount)
+    } yield Pagination.unsafe(page, limit)
+
 }
