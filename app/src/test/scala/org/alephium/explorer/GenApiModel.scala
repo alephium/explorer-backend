@@ -43,7 +43,6 @@ object GenApiModel extends ImplicitConversions {
 
   val hashGen: Gen[Hash]                     = Gen.const(()).map(_ => Hash.generate)
   val blockHashGen: Gen[BlockHash]           = Gen.const(()).map(_ => BlockHash.generate)
-  val blockEntryHashGen: Gen[BlockHash]      = blockHashGen
   val transactionHashGen: Gen[TransactionId] = hashGen.map(TransactionId.unsafe)
   val tokenIdGen: Gen[TokenId]               = hashGen.map(TokenId.unsafe)
   val outputRefKeyGen: Gen[TxOutputRef.Key]  = hashGen.map(new TxOutputRef.Key(_))
@@ -115,7 +114,7 @@ object GenApiModel extends ImplicitConversions {
   val transactionGen: Gen[Transaction] =
     for {
       hash              <- transactionHashGen
-      blockHash         <- blockEntryHashGen
+      blockHash         <- blockHashGen
       timestamp         <- timestampGen
       outputs           <- Gen.listOfN(5, outputGen)
       gasAmount         <- Gen.posNum[Int]
@@ -154,7 +153,7 @@ object GenApiModel extends ImplicitConversions {
 
   val blockEntryLiteGen: Gen[BlockEntryLite] =
     for {
-      hash      <- blockEntryHashGen
+      hash      <- blockHashGen
       timestamp <- timestampGen
       chainFrom <- groupIndexGen
       chainTo   <- groupIndexGen
@@ -177,12 +176,12 @@ object GenApiModel extends ImplicitConversions {
 
   def blockEntryGen(implicit groupSetting: GroupSetting): Gen[BlockEntry] =
     for {
-      hash         <- blockEntryHashGen
+      hash         <- blockHashGen
       timestamp    <- timestampGen
       chainFrom    <- groupIndexGen
       chainTo      <- groupIndexGen
       height       <- heightGen
-      deps         <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockEntryHashGen)
+      deps         <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockHashGen)
       transactions <- Gen.listOfN(2, transactionGen)
       mainChain    <- arbitrary[Boolean]
       hashrate     <- arbitrary[Long].map(BigInteger.valueOf)

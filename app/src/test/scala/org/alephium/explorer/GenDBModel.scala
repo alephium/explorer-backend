@@ -45,7 +45,7 @@ object GenDBModel {
     for {
       address   <- addressGen
       hash      <- transactionHashGen
-      blockHash <- blockEntryHashGen
+      blockHash <- blockHashGen
       timestamp <- timestampGen
       txOrder   <- Gen.posNum[Int]
       mainChain <- mainChain
@@ -62,7 +62,7 @@ object GenDBModel {
       )
 
   def transactionPerTokenEntityGen(
-      blockHash: Gen[BlockHash] = blockEntryHashGen): Gen[TransactionPerTokenEntity] =
+      blockHash: Gen[BlockHash] = blockHashGen): Gen[TransactionPerTokenEntity] =
     for {
       hash      <- transactionHashGen
       blockHash <- blockHash
@@ -81,7 +81,7 @@ object GenDBModel {
       )
 
   def tokenTxPerAddressEntityGen(
-      blockHash: Gen[BlockHash] = blockEntryHashGen): Gen[TokenTxPerAddressEntity] =
+      blockHash: Gen[BlockHash] = blockHashGen): Gen[TokenTxPerAddressEntity] =
     for {
       address   <- addressGen
       hash      <- transactionHashGen
@@ -103,7 +103,7 @@ object GenDBModel {
 
   def eventEntityGen: Gen[EventEntity] =
     for {
-      blockHash       <- blockEntryHashGen
+      blockHash       <- blockHashGen
       hash            <- transactionHashGen
       contractAddress <- addressGen
       inputAddress    <- Gen.option(addressGen)
@@ -126,7 +126,7 @@ object GenDBModel {
   def tokenOutputEntityGen(
       addressGen: Gen[Address]          = addressGen,
       transactionId: Gen[TransactionId] = transactionHashGen,
-      blockHash: Gen[BlockHash]         = blockEntryHashGen,
+      blockHash: Gen[BlockHash]         = blockHashGen,
       timestampGen: Gen[TimeStamp]      = timestampGen,
       mainChain: Gen[Boolean]           = Arbitrary.arbitrary[Boolean]): Gen[TokenOutputEntity] =
     for {

@@ -178,7 +178,7 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
         //clear table
         run(BlockHeaderSchema.table.delete).futureValue
 
-        forAll(blockEntryHashGen) { hash =>
+        forAll(blockHashGen) { hash =>
           //table is empty
           run(BlockHeaderSchema.table.length.result).futureValue is 0
           //expect None
@@ -306,7 +306,7 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
           BlockQueries.getHashesAtHeightIgnoringOne(fromGroup    = GroupIndex.unsafe(0),
                                                     toGroup      = GroupIndex.unsafe(0),
                                                     height       = Height.unsafe(19),
-                                                    hashToIgnore = blockEntryHashGen.sample.get)
+                                                    hashToIgnore = blockHashGen.sample.get)
 
         run(query).futureValue.size is 0
       }

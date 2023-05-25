@@ -529,7 +529,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     def output(address: Address, amount: U256, lockTime: Option[TimeStamp]): OutputEntity =
       OutputEntity(
-        blockEntryHashGen.sample.get,
+        blockHashGen.sample.get,
         transactionHashGen.sample.get,
         now,
         outputTypeGen.sample.get,
@@ -549,7 +549,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       )
 
     def input(hint: Int, outputRefKey: Hash): InputEntity =
-      InputEntity(blockEntryHashGen.sample.get,
+      InputEntity(blockHashGen.sample.get,
                   transactionHashGen.sample.get,
                   now,
                   hint,

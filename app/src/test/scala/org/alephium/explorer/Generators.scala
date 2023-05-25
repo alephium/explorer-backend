@@ -46,7 +46,7 @@ object Generators {
     Gen.oneOf(0, 1).map(OutputEntity.OutputType.unsafe)
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def transactionEntityGen(blockHash: Gen[BlockHash] = blockEntryHashGen): Gen[TransactionEntity] =
+  def transactionEntityGen(blockHash: Gen[BlockHash] = blockHashGen): Gen[TransactionEntity] =
     for {
       hash              <- transactionHashGen
       blockHash         <- blockHash
@@ -102,7 +102,7 @@ object Generators {
                                  chainTo: Gen[GroupIndex]   = groupIndexGen,
                                  height: Gen[Height]        = heightGen): Gen[BlockHeader] =
     for {
-      hash         <- blockEntryHashGen
+      hash         <- blockHashGen
       timestamp    <- timestampGen
       chainFrom    <- chainFrom
       chainTo      <- chainTo
@@ -115,7 +115,7 @@ object Generators {
       target       <- bytesGen
       hashrate     <- arbitrary[Long].map(BigInteger.valueOf)
       mainChain    <- Arbitrary.arbitrary[Boolean]
-      parent       <- Gen.option(blockEntryHashGen)
+      parent       <- Gen.option(blockHashGen)
     } yield
       BlockHeader(
         hash         = hash,
@@ -303,12 +303,12 @@ object Generators {
 
   def blockEntryProtocolGen: Gen[protocolApi.BlockEntry] =
     for {
-      hash            <- blockEntryHashGen
+      hash            <- blockHashGen
       timestamp       <- timestampGen
       chainFrom       <- groupIndexGen
       chainTo         <- groupIndexGen
       height          <- heightGen
-      deps            <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockEntryHashGen)
+      deps            <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockHashGen)
       transactionSize <- Gen.choose(1, 10)
       transactions    <- Gen.listOfN(transactionSize, transactionProtocolGen)
       nonce           <- bytesGen
@@ -436,7 +436,7 @@ object Generators {
 
   def blockHeaderWithHashrate(timestamp: TimeStamp, hashrate: Double): Gen[BlockHeader] = {
     for {
-      hash         <- blockEntryHashGen
+      hash         <- blockHashGen
       from         <- groupIndexGen
       to           <- groupIndexGen
       height       <- heightGen
@@ -446,7 +446,7 @@ object Generators {
       txsHash      <- hashGen
       txsCount     <- Gen.posNum[Int]
       target       <- bytesGen
-      parent       <- Gen.option(blockEntryHashGen)
+      parent       <- Gen.option(blockHashGen)
     } yield {
       BlockHeader(
         hash,
@@ -476,8 +476,8 @@ object Generators {
 
   val blockDepGen: Gen[BlockDepEntity] =
     for {
-      hash  <- blockEntryHashGen
-      dep   <- blockEntryHashGen
+      hash  <- blockHashGen
+      dep   <- blockHashGen
       order <- Gen.posNum[Int]
     } yield
       BlockDepEntity(
@@ -498,7 +498,7 @@ object Generators {
 
   val outputEntityGen: Gen[OutputEntity] =
     for {
-      blockHash   <- blockEntryHashGen
+      blockHash   <- blockHashGen
       txHash      <- transactionHashGen
       timestamp   <- timestampGen
       outputType  <- outputTypeGen
@@ -705,7 +705,7 @@ object Generators {
   /** Generates a [[BlockEntity]] with optional parent */
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def updatedTransactionEntityGen(
-      blockHash: Gen[BlockHash] = blockEntryHashGen): Gen[(TransactionEntity, TransactionEntity)] =
+      blockHash: Gen[BlockHash] = blockHashGen): Gen[(TransactionEntity, TransactionEntity)] =
     for {
       transaction1 <- transactionEntityGen(blockHash)
       transaction2 <- transactionEntityGen(blockHash)
