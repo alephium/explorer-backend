@@ -23,9 +23,10 @@ import scala.util.Random
 
 import akka.util.ByteString
 
-import org.alephium.explorer.{GenApiModel, Hash}
+import org.alephium.explorer.GenApiModel
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
+import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 

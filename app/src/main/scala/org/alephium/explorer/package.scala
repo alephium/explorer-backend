@@ -20,8 +20,6 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
-import org.alephium.crypto.Blake2b
-
 package object explorer {
   @inline @specialized def sideEffect[E](effect: E): Unit = {
     val _ = effect
@@ -32,9 +30,6 @@ package object explorer {
     def ===(other: A): Boolean = self == other
     def =/=(other: A): Boolean = self != other
   }
-
-  type Hash = Blake2b
-  val Hash: Blake2b.type = Blake2b
 
   def foldFutures[A, B: ClassTag](seqA: ArraySeq[A])(f: A => Future[B])(
       implicit executionContext: ExecutionContext): Future[ArraySeq[B]] =

@@ -22,7 +22,7 @@ import scala.util.Random
 import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AlephiumFutureSpec, Hash, TestQueries}
+import org.alephium.explorer.{AlephiumFutureSpec, TestQueries}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
@@ -36,7 +36,7 @@ import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.explorer.util.SlickExplainUtil._
-import org.alephium.protocol.ALPH
+import org.alephium.protocol.{ALPH, Hash}
 import org.alephium.protocol.model.{Address, GroupIndex, TransactionId}
 import org.alephium.util.{Duration, TimeStamp, U256}
 

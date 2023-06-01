@@ -24,11 +24,11 @@ import akka.util.ByteString
 import slick.jdbc.{GetResult, PositionedResult}
 
 import org.alephium.api.model.Val
-import org.alephium.explorer.Hash
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.json.Json._
+import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TokenId, TransactionId}
 import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}

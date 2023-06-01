@@ -24,11 +24,11 @@ import akka.util.ByteString
 import slick.jdbc.{PositionedParameters, SetParameter}
 
 import org.alephium.api.model.Val
-import org.alephium.explorer
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.json.Json._
+import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TokenId, TransactionId}
 import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
@@ -61,8 +61,8 @@ object CustomSetParameter {
       params setInt input.value
   }
 
-  implicit object ExplorerHashSetParameter extends SetParameter[explorer.Hash] {
-    override def apply(input: explorer.Hash, params: PositionedParameters): Unit = {
+  implicit object ExplorerHashSetParameter extends SetParameter[Hash] {
+    override def apply(input: Hash, params: PositionedParameters): Unit = {
       params setBytes input.bytes.toArray
     }
   }

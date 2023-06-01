@@ -22,9 +22,9 @@ import scala.collection.immutable.ArraySeq
 
 import akka.util.ByteString
 
-import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.Height
 import org.alephium.explorer.service.FlowEntity
+import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{BlockHash, GroupIndex}
 import org.alephium.util.TimeStamp
 
