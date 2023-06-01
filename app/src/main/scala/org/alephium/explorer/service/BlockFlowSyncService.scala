@@ -37,7 +37,7 @@ import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.{BlockEntity, BlockEntityWithEvents, EventEntity}
 import org.alephium.explorer.persistence.queries.{BlockQueries, InputUpdateQueries}
 import org.alephium.explorer.util.{Scheduler, TimeUtil}
-import org.alephium.protocol.model.{BlockHash, GroupIndex}
+import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
 import org.alephium.util.{Duration, TimeStamp}
 
 /*
@@ -158,17 +158,17 @@ case object BlockFlowSyncService extends StrictLogging {
              blockFlowClient: BlockFlowClient,
              cache: BlockCache,
              groupSetting: GroupSetting): Future[Boolean] =
-    run(BlockQueries.maxHeightZipped(groupSetting.groupIndexes)) flatMap { heightAndGroups =>
+    run(BlockQueries.maxHeightZipped(groupSetting.chainIndexes)) flatMap { heightAndGroups =>
       Future
         .traverse(heightAndGroups) {
-          case (height, (fromGroup, toGroup)) =>
+          case (height, chainIndex) =>
             height match {
               case Some(height) if height.value == 0 =>
-                syncAt(fromGroup, toGroup, Height.unsafe(1)).map(_.nonEmpty)
+                syncAt(chainIndex, Height.unsafe(1)).map(_.nonEmpty)
               case None =>
                 for {
-                  _      <- syncAt(fromGroup, toGroup, Height.unsafe(0))
-                  blocks <- syncAt(fromGroup, toGroup, Height.unsafe(1))
+                  _      <- syncAt(chainIndex, Height.unsafe(0))
+                  blocks <- syncAt(chainIndex, Height.unsafe(1))
                 } yield blocks.nonEmpty
               case _ => Future.successful(true)
             }
@@ -213,17 +213,16 @@ case object BlockFlowSyncService extends StrictLogging {
       blockFlowClient: BlockFlowClient,
       groupSetting: GroupSetting): Future[Option[(TimeStamp, Int)]] = {
     Future
-      .sequence(groupSetting.groupIndexes.map {
-        case (fromGroup, toGroup) =>
-          blockFlowClient
-            .fetchChainInfo(fromGroup, toGroup)
-            .flatMap { chainInfo =>
-              blockFlowClient
-                .fetchBlocksAtHeight(fromGroup, toGroup, Height.unsafe(chainInfo.currentHeight))
-                .map { blocks =>
-                  blocks.map(_.timestamp).maxOption.map(ts => (ts, chainInfo.currentHeight))
-                }
-            }
+      .sequence(groupSetting.chainIndexes.map { chainIndex =>
+        blockFlowClient
+          .fetchChainInfo(chainIndex)
+          .flatMap { chainInfo =>
+            blockFlowClient
+              .fetchBlocksAtHeight(chainIndex, Height.unsafe(chainInfo.currentHeight))
+              .map { blocks =>
+                blocks.map(_.timestamp).maxOption.map(ts => (ts, chainInfo.currentHeight))
+              }
+          }
 
       })
       .map { res =>
@@ -235,8 +234,7 @@ case object BlockFlowSyncService extends StrictLogging {
 
   @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
   private def syncAt(
-      fromGroup: GroupIndex,
-      toGroup: GroupIndex,
+      chainIndex: ChainIndex,
       height: Height
   )(implicit ec: ExecutionContext,
     dc: DatabaseConfig[PostgresProfile],
@@ -244,7 +242,7 @@ case object BlockFlowSyncService extends StrictLogging {
     cache: BlockCache,
     groupSetting: GroupSetting): Future[Option[ArraySeq[BlockEntity]]] = {
     blockFlowClient
-      .fetchBlocksAtHeight(fromGroup, toGroup, height)
+      .fetchBlocksAtHeight(chainIndex, height)
       .flatMap { blocks =>
         if (blocks.nonEmpty) {
           val bestBlock = blocks.head // First block is the main chain one

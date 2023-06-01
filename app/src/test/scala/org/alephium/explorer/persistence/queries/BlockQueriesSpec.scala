@@ -34,7 +34,7 @@ import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.protocol.model.GroupIndex
+import org.alephium.protocol.model.{ChainIndex, GroupIndex}
 
 class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
@@ -79,11 +79,10 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
   /** Filter blocks within the given chain */
   def filterBlocksInChain(blocks: Iterable[BlockHeader],
-                          chainFrom: GroupIndex,
-                          chainTo: GroupIndex): Iterable[BlockHeader] =
+                          chainIndex: ChainIndex): Iterable[BlockHeader] =
     blocks.filter { header =>
-      header.chainFrom == chainFrom &&
-      header.chainTo == chainTo
+      header.chainFrom == chainIndex.from &&
+      header.chainTo == chainIndex.to
     }
 
   /** Sum height of all blocks */
@@ -229,11 +228,10 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
         forAll(groupSettingGen) { implicit groupSetting =>
           //All blocks with maximum height
           val maxHeightBlocks =
-            groupSetting.groupIndexes
-              .flatMap {
-                case (from, to) =>
-                  val blocksInThisChain = filterBlocksInChain(blocks, from, to)
-                  maxHeight(blocksInThisChain)
+            groupSetting.chainIndexes
+              .flatMap { chainIndex =>
+                val blocksInThisChain = filterBlocksInChain(blocks, chainIndex)
+                maxHeight(blocksInThisChain)
               }
 
           //expected total number of blocks
@@ -265,8 +263,8 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
     "return non-empty List with None values" when {
       "there is no data" in {
         forAll(groupSettingGen) { implicit groupSetting =>
-          val expected = ArraySeq.fill(groupSetting.groupIndexes.size)(None)
-          run(BlockQueries.maxHeight(groupSetting.groupIndexes)).futureValue is expected
+          val expected = ArraySeq.fill(groupSetting.chainIndexes.size)(None)
+          run(BlockQueries.maxHeight(groupSetting.chainIndexes)).futureValue is expected
         }
       }
     }
@@ -283,15 +281,14 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
           forAll(groupSettingGen) { implicit groupSetting =>
             //All blocks with maximum height
             val expectedHeights =
-              groupSetting.groupIndexes
-                .map {
-                  case (from, to) =>
-                    val blocksInThisChain = filterBlocksInChain(blocks, from, to)
-                    maxHeight(blocksInThisChain).map(_.height)
+              groupSetting.chainIndexes
+                .map { chainIndex =>
+                  val blocksInThisChain = filterBlocksInChain(blocks, chainIndex)
+                  maxHeight(blocksInThisChain).map(_.height)
                 }
 
             val actualHeights =
-              run(BlockQueries.maxHeight(groupSetting.groupIndexes)).futureValue
+              run(BlockQueries.maxHeight(groupSetting.chainIndexes)).futureValue
 
             actualHeights is expectedHeights
           }

@@ -95,14 +95,13 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
 
   "fail if time range can't be build" in new Fixture {
     override implicit val blockFlowClient: BlockFlowClient = new EmptyBlockFlowClient {
-      override def fetchChainInfo(from: GroupIndex, to: GroupIndex): Future[ChainInfo] =
+      override def fetchChainInfo(chainIndex: ChainIndex): Future[ChainInfo] =
         Future.successful(ChainInfo(0))
 
-      override def fetchBlocksAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
+      override def fetchBlocksAtHeight(chainIndex: ChainIndex, height: Height)(
           implicit executionContext: ExecutionContext): Future[ArraySeq[BlockEntity]] =
         Future.successful(
-          ArraySeq(
-            blockEntityGen(fromGroup, toGroup).sample.get.copy(timestamp = TimeStamp.unsafe(0))))
+          ArraySeq(blockEntityGen(chainIndex).sample.get.copy(timestamp = TimeStamp.unsafe(0))))
     }
 
     BlockDao.insertAll(blockEntities).futureValue
@@ -118,10 +117,10 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     def s(l: Long)            = Duration.ofMillisUnsafe(l)
     def r(l1: Long, l2: Long) = (t(l1), t(l2))
 
-    def blockEntity(parent: Option[BlockEntity],
-                    chainFrom: GroupIndex = GroupIndex.Zero,
-                    chainTo: GroupIndex   = GroupIndex.Zero): BlockEntity =
-      blockEntityWithParentGen(chainFrom, chainTo, parent).sample.get
+    def blockEntity(
+        parent: Option[BlockEntity],
+        chainIndex: ChainIndex = ChainIndex(GroupIndex.Zero, GroupIndex.Zero)): BlockEntity =
+      blockEntityWithParentGen(chainIndex, parent).sample.get
 
     //                    +---+                            +---+   +---+  +---+
     //                 +->+ 2 |                         +--> 9 +-->+ 11+->+ 13|
@@ -185,9 +184,8 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     var chainOToO = ArraySeq(block0, block1, block2, block3, block4, block5, block6, block7, block8, block9, block10, block11, block12, block13, block14)
     // format: on
 
-    val chains = chainIndexes.map {
-      case (from, to) =>
-        ArraySeq(blockEntity(None, from, to))
+    val chains = chainIndexes.map { chainIndex =>
+      ArraySeq(blockEntity(None, chainIndex))
     }.tail
 
     def blockFlowEntity: ArraySeq[ArraySeq[BlockEntity]] =
@@ -227,24 +225,21 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
             .map(_.distinctBy(_.height).sortBy(_.height))
             .map(_.map(b => BlockEntityWithEvents(b, ArraySeq.empty[EventEntity]))))
 
-      def fetchChainInfo(from: GroupIndex, to: GroupIndex): Future[ChainInfo] =
+      def fetchChainInfo(chainIndex: ChainIndex): Future[ChainInfo] =
         Future.successful(
           ChainInfo(
             blocks
-              .filter(block => block.chainFrom === from && block.chainTo === to)
+              .filter(block =>
+                block.chainFrom === chainIndex.from && block.chainTo === chainIndex.to)
               .map(_.height.value)
               .max))
 
-      def fetchHashesAtHeight(from: GroupIndex,
-                              to: GroupIndex,
-                              height: Height): Future[HashesAtHeight] =
+      def fetchHashesAtHeight(chainIndex: ChainIndex, height: Height): Future[HashesAtHeight] =
         Future.successful(
-          HashesAtHeight(
-            AVector.from(
-              blocks
-                .filter(block =>
-                  block.chainFrom === from && block.chainTo === to && block.height === height)
-                .map(_.hash))))
+          HashesAtHeight(AVector.from(blocks
+            .filter(block =>
+              block.chainFrom === chainIndex.from && block.chainTo === chainIndex.to && block.height === height)
+            .map(_.hash))))
 
       def fetchSelfClique(): Future[SelfClique] =
         Future.successful(

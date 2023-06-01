@@ -40,7 +40,15 @@ import org.alephium.http.EndpointSender
 import org.alephium.protocol
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.mining.HashRate
-import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, Hint, Target, TransactionId}
+import org.alephium.protocol.model.{
+  Address,
+  BlockHash,
+  ChainIndex,
+  GroupIndex,
+  Hint,
+  Target,
+  TransactionId
+}
 import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.{AVector, Duration, Service, TimeStamp, U256}
 
@@ -49,23 +57,21 @@ trait BlockFlowClient extends Service {
 
   def fetchBlockAndEvents(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntityWithEvents]
 
-  def fetchChainInfo(fromGroup: GroupIndex, toGroup: GroupIndex): Future[ChainInfo]
+  def fetchChainInfo(chainIndex: ChainIndex): Future[ChainInfo]
 
-  def fetchHashesAtHeight(fromGroup: GroupIndex,
-                          toGroup: GroupIndex,
-                          height: Height): Future[HashesAtHeight]
+  def fetchHashesAtHeight(chainIndex: ChainIndex, height: Height): Future[HashesAtHeight]
 
   def fetchBlocks(fromTs: TimeStamp,
                   toTs: TimeStamp,
                   uri: Uri): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]]
 
-  def fetchBlocksAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
+  def fetchBlocksAtHeight(chainIndex: ChainIndex, height: Height)(
       implicit executionContext: ExecutionContext): Future[ArraySeq[BlockEntity]] =
-    fetchHashesAtHeight(fromGroup, toGroup, height).flatMap { hashesAtHeight =>
+    fetchHashesAtHeight(chainIndex, height).flatMap { hashesAtHeight =>
       Future
         .sequence(
           hashesAtHeight.headers
-            .map(hash => fetchBlock(fromGroup, hash))
+            .map(hash => fetchBlock(chainIndex.from, hash))
             .toArraySeq)
     }
 
@@ -158,14 +164,12 @@ object BlockFlowClient extends StrictLogging {
               _send(getBlockAndEvents, uri, hash).map(blockAndEventsToEntities)
           }
       }
-    def fetchChainInfo(fromGroup: GroupIndex, toGroup: GroupIndex): Future[ChainInfo] = {
-      _send(getChainInfo, uri, protocol.model.ChainIndex(fromGroup, toGroup))
+    def fetchChainInfo(chainIndex: ChainIndex): Future[ChainInfo] = {
+      _send(getChainInfo, uri, chainIndex)
     }
 
-    def fetchHashesAtHeight(fromGroup: GroupIndex,
-                            toGroup: GroupIndex,
-                            height: Height): Future[HashesAtHeight] =
-      _send(getHashesAtHeight, uri, (protocol.model.ChainIndex(fromGroup, toGroup), height.value))
+    def fetchHashesAtHeight(chainIndex: ChainIndex, height: Height): Future[HashesAtHeight] =
+      _send(getHashesAtHeight, uri, (chainIndex, height.value))
 
     def fetchBlocks(fromTs: TimeStamp,
                     toTs: TimeStamp,

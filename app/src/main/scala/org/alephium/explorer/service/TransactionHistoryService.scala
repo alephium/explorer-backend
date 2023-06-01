@@ -128,9 +128,8 @@ case object TransactionHistoryService extends StrictLogging {
           run(
             DBIO
               .sequence(
-                gs.groupIndexes.map {
-                  case (chainFrom, chainTo) =>
-                    countAndInsertPerChain(intervalType, from, to, chainFrom, chainTo)
+                gs.chainIndexes.map { chainIndex =>
+                  countAndInsertPerChain(intervalType, from, to, chainIndex.from, chainIndex.to)
                 } :+ countAndInsertAllChains(intervalType, from, to)
               )
               .transactionally

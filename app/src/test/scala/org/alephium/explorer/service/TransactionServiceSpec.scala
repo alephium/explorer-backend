@@ -40,7 +40,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.json.Json._
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{BlockHash, GroupIndex}
+import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 @SuppressWarnings(
@@ -54,7 +54,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val address = addressGen.sample.get
 
     val blocks = Gen
-      .listOfN(20, blockEntityGen(groupIndex, groupIndex))
+      .listOfN(20, blockEntityGen(chainIndex))
       .map(_.map { block =>
         block.copy(outputs = block.outputs.map(_.copy(address = address)))
       })
@@ -83,7 +83,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
     val amount = ALPH.MaxALPHValue.mulUnsafe(ALPH.MaxALPHValue)
 
-    val block = blockEntityGen(groupIndex, groupIndex)
+    val block = blockEntityGen(chainIndex)
       .map { block =>
         block.copy(
           outputs = block.outputs.take(1).map(_.copy(amount = amount))
@@ -387,7 +387,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val address = addressGen.sample.get
 
     val blocks = Gen
-      .listOfN(20, blockEntityGen(groupIndex, groupIndex))
+      .listOfN(20, blockEntityGen(chainIndex))
       .map(_.map { block =>
         block.copy(outputs = block.outputs.map(_.copy(address = address)))
       })
@@ -439,7 +439,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val address2 = addressGen.sample.get
 
     val block =
-      blockEntityGen(groupIndex, groupIndex)
+      blockEntityGen(chainIndex)
         .map { block =>
           block.copy(outputs = block.outputs.map(_.copy(address = address)))
         }
@@ -527,6 +527,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     implicit val blockCache: BlockCache = TestBlockCache()
 
     val groupIndex = GroupIndex.Zero
+    val chainIndex = ChainIndex(groupIndex, groupIndex)
 
     val defaultBlockEntity: BlockEntity =
       BlockEntity(
@@ -557,7 +558,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val now     = TimeStamp.now()
 
     val blocks = Gen
-      .listOfN(5, blockEntityGen(groupIndex, groupIndex))
+      .listOfN(5, blockEntityGen(chainIndex))
       .map(_.zipWithIndex.map {
         case (block, index) =>
           val timestamp = now + (halfDay.timesUnsafe(index.toLong))

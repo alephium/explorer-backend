@@ -28,7 +28,7 @@ import org.alephium.explorer.api.model.Height
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, ChainIndex, GroupIndex, TransactionId}
 import org.alephium.util.{AVector, TimeStamp}
 
 /** Test-data generators for types in package [[org.alephium.explorer.persistence.model]]  */
@@ -291,28 +291,26 @@ object GenDBModel {
         spentTimestamp
       )
 
-  def blockEntityGen(chainFrom: GroupIndex, chainTo: GroupIndex)(
+  def blockEntityGen(chainIndex: ChainIndex)(
       implicit groupSetting: GroupSetting): Gen[BlockEntity] =
     blockEntryProtocolGen.map { block =>
       BlockFlowClient.blockProtocolToEntity(
         block
-          .copy(chainFrom = chainFrom.value, chainTo = chainTo.value))
+          .copy(chainFrom = chainIndex.from.value, chainTo = chainIndex.to.value))
     }
 
-  def blockEntityWithParentGen(
-      chainFrom: GroupIndex,
-      chainTo: GroupIndex,
-      parent: Option[BlockEntity])(implicit groupSetting: GroupSetting): Gen[BlockEntity] =
+  def blockEntityWithParentGen(chainIndex: ChainIndex, parent: Option[BlockEntity])(
+      implicit groupSetting: GroupSetting): Gen[BlockEntity] =
     blockEntryProtocolGen.map { entry =>
       val deps = parent
-        .map(p => entry.deps.replace(Generators.parentIndex(chainTo), p.hash))
+        .map(p => entry.deps.replace(Generators.parentIndex(chainIndex.to), p.hash))
         .getOrElse(AVector.empty)
       val height    = parent.map(_.height.value + 1).getOrElse(0)
       val timestamp = parent.map(_.timestamp.plusHoursUnsafe(1)).getOrElse(ALPH.GenesisTimestamp)
       BlockFlowClient.blockProtocolToEntity(
         entry
-          .copy(chainFrom = chainFrom.value,
-                chainTo   = chainTo.value,
+          .copy(chainFrom = chainIndex.from.value,
+                chainTo   = chainIndex.to.value,
                 timestamp = timestamp,
                 height    = height,
                 deps      = deps))
@@ -323,9 +321,8 @@ object GenDBModel {
   def blockAndItsMainChainEntitiesGen()(implicit groupSetting: GroupSetting)
     : Gen[(BlockEntity, TransactionPerTokenEntity, TokenTxPerAddressEntity, TokenOutputEntity)] =
     for {
-      chainFrom         <- groupIndexGen
-      chainTo           <- groupIndexGen
-      entity            <- blockEntityWithParentGen(chainFrom, chainTo, None)
+      chainIndex        <- chainIndexGen
+      entity            <- blockEntityWithParentGen(chainIndex, None)
       txnPerToken       <- transactionPerTokenEntityGen(blockHash = entity.hash)
       tokenTxPerAddress <- tokenTxPerAddressEntityGen(blockHash = entity.hash)
       tokenOutput       <- tokenOutputEntityGen(blockHash = entity.hash)
@@ -617,8 +614,9 @@ object GenDBModel {
       implicit groupSetting: GroupSetting): Gen[(BlockEntity, Option[BlockEntity])] =
     for {
       groupIndex <- groupIndexGen
-      parent     <- Gen.option(blockEntityWithParentGen(groupIndex, groupIndex, None))
-      child      <- blockEntityWithParentGen(groupIndex, groupIndex, parent)
+      chainIndex = ChainIndex(groupIndex, groupIndex)
+      parent <- Gen.option(blockEntityWithParentGen(chainIndex, None))
+      child  <- blockEntityWithParentGen(chainIndex, parent)
     } yield {
       randomMainChainGen.flatMap(_.sample) match {
         case Some(randomMainChain) =>

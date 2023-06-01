@@ -36,16 +36,17 @@ import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.queries.BlockQueries._
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.protocol.model.{BlockHash, GroupIndex}
+import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.IterableOps"))
 object SanityChecker extends StrictLogging {
 
-  private def findLatestBlock(from: GroupIndex, to: GroupIndex)(
+  private def findLatestBlock(chainIndex: ChainIndex)(
       implicit dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockHash]] = {
     run(
       BlockHeaderSchema.table
-        .filter(header => header.mainChain && header.chainFrom === from && header.chainTo === to)
+        .filter(header =>
+          header.mainChain && header.chainFrom === chainIndex.from && header.chainTo === chainIndex.to)
         .sortBy(_.timestamp.desc)
         .map(_.hash)
         .result
@@ -70,17 +71,16 @@ object SanityChecker extends StrictLogging {
           .flatMap { nbOfBlocks =>
             logger.info(s"Starting sanity check $nbOfBlocks to check")
             Future
-              .sequence(groupSetting.groupIndexes.map {
-                case (from, to) =>
-                  findLatestBlock(from, to).flatMap {
-                    case None => Future.successful(())
-                    case Some(hash) =>
-                      BlockDao.get(hash).flatMap {
-                        case None => Future.successful(())
-                        case Some(block) =>
-                          checkBlock(block, blockNum, nbOfBlocks)
-                      }
-                  }
+              .sequence(groupSetting.chainIndexes.map { chainIndex =>
+                findLatestBlock(chainIndex).flatMap {
+                  case None => Future.successful(())
+                  case Some(hash) =>
+                    BlockDao.get(hash).flatMap {
+                      case None => Future.successful(())
+                      case Some(block) =>
+                        checkBlock(block, blockNum, nbOfBlocks)
+                    }
+                }
               })
           }
 

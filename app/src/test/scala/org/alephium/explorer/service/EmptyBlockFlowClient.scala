@@ -24,7 +24,7 @@ import sttp.model.Uri
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
-import org.alephium.protocol.model.{BlockHash, GroupIndex}
+import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
 import org.alephium.util.{Service, TimeStamp}
 
 trait EmptyBlockFlowClient extends BlockFlowClient {
@@ -34,11 +34,10 @@ trait EmptyBlockFlowClient extends BlockFlowClient {
   override def subServices: ArraySeq[Service]                                          = ArraySeq.empty
   override def fetchBlock(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntity] = ???
 
-  override def fetchChainInfo(fromGroup: GroupIndex, toGroup: GroupIndex): Future[ChainInfo] = ???
+  override def fetchChainInfo(chainIndex: ChainIndex): Future[ChainInfo] = ???
 
-  override def fetchHashesAtHeight(fromGroup: GroupIndex,
-                                   toGroup: GroupIndex,
-                                   height: Height): Future[HashesAtHeight] = ???
+  override def fetchHashesAtHeight(chainIndex: ChainIndex, height: Height): Future[HashesAtHeight] =
+    ???
 
   override def fetchBlockAndEvents(fromGroup: GroupIndex,
                                    hash: BlockHash): Future[BlockEntityWithEvents] = ???
