@@ -39,7 +39,7 @@ import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.TestUtils._
-import org.alephium.protocol.model.{BlockHash, ChainIndex, CliqueId, NetworkId}
+import org.alephium.protocol.model.{BlockHash, ChainIndex, CliqueId, GroupIndex, NetworkId}
 import org.alephium.util.{AVector, Duration, Hex, Service, TimeStamp}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
@@ -119,8 +119,8 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     def r(l1: Long, l2: Long) = (t(l1), t(l2))
 
     def blockEntity(parent: Option[BlockEntity],
-                    chainFrom: GroupIndex = GroupIndex.unsafe(0),
-                    chainTo: GroupIndex   = GroupIndex.unsafe(0)): BlockEntity =
+                    chainFrom: GroupIndex = GroupIndex.Zero,
+                    chainTo: GroupIndex   = GroupIndex.Zero): BlockEntity =
       blockEntityWithParentGen(chainFrom, chainTo, parent).sample.get
 
     //                    +---+                            +---+   +---+  +---+
@@ -281,8 +281,7 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
         .listMainChain(Pagination.Reversible.unsafe(1, blocks.size))
         .futureValue
         ._1
-        .filter(block =>
-          block.chainFrom == GroupIndex.unsafe(0) && block.chainTo == GroupIndex.unsafe(0))
+        .filter(block => block.chainFrom == GroupIndex.Zero && block.chainTo == GroupIndex.Zero)
         .map(_.hash)
         .toSet
       result is mainChain.toSet

@@ -24,11 +24,11 @@ import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreApi.{blockEntryProtocolGen, valGen}
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
-import org.alephium.explorer.api.model.{GroupIndex, Height}
+import org.alephium.explorer.api.model.Height
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{AVector, TimeStamp}
 
 /** Test-data generators for types in package [[org.alephium.explorer.persistence.model]]  */
@@ -406,8 +406,8 @@ object GenDBModel {
       BlockHeader(
         hash         = hash,
         timestamp    = timestamp,
-        chainFrom    = GroupIndex.unsafe(chainFrom.value),
-        chainTo      = GroupIndex.unsafe(chainTo.value),
+        chainFrom    = chainFrom,
+        chainTo      = chainTo,
         height       = Height.unsafe(height.value),
         mainChain    = mainChain,
         nonce        = nonce,
@@ -612,8 +612,7 @@ object GenDBModel {
     *                           The generated boolean mainChain is set for both parent and child [[BlockEntity]].
     */
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def genBlockEntityWithOptionalParent(groupIndexGen: Gen[GroupIndex] =
-                                         Gen.const(GroupIndex.unsafe(0)),
+  def genBlockEntityWithOptionalParent(groupIndexGen: Gen[GroupIndex]           = Gen.const(GroupIndex.Zero),
                                        randomMainChainGen: Option[Gen[Boolean]] = None)(
       implicit groupSetting: GroupSetting): Gen[(BlockEntity, Option[BlockEntity])] =
     for {

@@ -18,9 +18,8 @@ package org.alephium.explorer
 
 import scala.collection.immutable.ArraySeq
 
-import org.alephium.explorer.api.model.GroupIndex
 import org.alephium.protocol.config.GroupConfig
-import org.alephium.protocol.model.ChainIndex
+import org.alephium.protocol.model.{ChainIndex, GroupIndex}
 
 object GroupSetting {
 

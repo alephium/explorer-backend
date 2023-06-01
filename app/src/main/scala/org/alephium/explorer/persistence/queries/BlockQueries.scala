@@ -39,7 +39,7 @@ import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.{BlockHash, GroupIndex}
 import org.alephium.util.TimeStamp
 
 object BlockQueries extends StrictLogging {

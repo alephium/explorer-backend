@@ -21,7 +21,6 @@ import java.net.InetAddress
 
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
-import scala.language.implicitConversions
 
 import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
@@ -41,7 +40,7 @@ import org.alephium.http.EndpointSender
 import org.alephium.protocol
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.mining.HashRate
-import org.alephium.protocol.model.{Address, BlockHash, Hint, Target, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, Hint, Target, TransactionId}
 import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.{AVector, Duration, Service, TimeStamp, U256}
 
@@ -115,9 +114,6 @@ object BlockFlowClient extends StrictLogging {
 
     implicit val groupConfig: GroupConfig = groupSetting.groupConfig
 
-    private implicit def groupIndexConversion(x: GroupIndex): protocol.model.GroupIndex =
-      protocol.model.GroupIndex.unsafe(x.value)
-
     private def _send[A, B](
         endpoint: BaseEndpoint[A, B],
         uri: Uri,
@@ -190,7 +186,12 @@ object BlockFlowClient extends StrictLogging {
                 .convertSameAsPrevious(tx.unsigned.inputs.toArraySeq)
                 .map(protocolInputToInput)
               val outputs = tx.unsigned.fixedOutputs.map(protocolOutputToAssetOutput).toArraySeq
-              txToUTx(tx, utx.fromGroup, utx.toGroup, inputs, outputs, TimeStamp.now())
+              txToUTx(tx,
+                      new GroupIndex(utx.fromGroup),
+                      new GroupIndex(utx.toGroup),
+                      inputs,
+                      outputs,
+                      TimeStamp.now())
             }
           }.toArraySeq
         }
@@ -308,8 +309,8 @@ object BlockFlowClient extends StrictLogging {
     val hash         = block.hash
     val mainChain    = false
     val transactions = block.transactions.toArraySeq.zipWithIndex
-    val chainFrom    = block.chainFrom
-    val chainTo      = block.chainTo
+    val chainFrom    = new GroupIndex(block.chainFrom)
+    val chainTo      = new GroupIndex(block.chainTo)
     val inputs       = blockProtocolToInputEntities(block)
     val outputs      = blockProtocolToOutputEntities(block)
     //As defined in
@@ -320,8 +321,8 @@ object BlockFlowClient extends StrictLogging {
     BlockEntity(
       hash,
       block.timestamp,
-      GroupIndex.unsafe(block.chainFrom),
-      GroupIndex.unsafe(block.chainTo),
+      chainFrom,
+      chainTo,
       Height.unsafe(block.height),
       block.deps.toArraySeq,
       transactions.map {
@@ -371,15 +372,15 @@ object BlockFlowClient extends StrictLogging {
   }
 
   private def txToUTx(tx: api.model.TransactionTemplate,
-                      chainFrom: Int,
-                      chainTo: Int,
+                      chainFrom: GroupIndex,
+                      chainTo: GroupIndex,
                       inputs: ArraySeq[Input],
                       outputs: ArraySeq[AssetOutput],
                       timestamp: TimeStamp): MempoolTransaction =
     MempoolTransaction(
       tx.unsigned.txId,
-      GroupIndex.unsafe(chainFrom),
-      GroupIndex.unsafe(chainTo),
+      chainFrom,
+      chainTo,
       inputs,
       outputs,
       tx.unsigned.gasAmount,
@@ -392,15 +393,15 @@ object BlockFlowClient extends StrictLogging {
                          timestamp: TimeStamp,
                          index: Int,
                          mainChain: Boolean,
-                         chainFrom: Int,
-                         chainTo: Int,
+                         chainFrom: GroupIndex,
+                         chainTo: GroupIndex,
                          coinbase: Boolean): TransactionEntity =
     TransactionEntity(
       tx.unsigned.txId,
       blockHash,
       timestamp,
-      GroupIndex.unsafe(chainFrom),
-      GroupIndex.unsafe(chainTo),
+      chainFrom,
+      chainTo,
       tx.unsigned.gasAmount,
       tx.unsigned.gasPrice,
       index,

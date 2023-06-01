@@ -24,7 +24,7 @@ import org.scalacheck.Gen
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
-import org.alephium.protocol.model.TransactionId
+import org.alephium.protocol.model.{GroupIndex, TransactionId}
 
 object Generators {
 

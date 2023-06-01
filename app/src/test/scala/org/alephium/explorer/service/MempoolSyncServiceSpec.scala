@@ -26,13 +26,13 @@ import sttp.model.Uri
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel.mempooltransactionGen
-import org.alephium.explorer.api.model.{GroupIndex, Height, MempoolTransaction}
+import org.alephium.explorer.api.model.{Height, MempoolTransaction}
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.MempoolDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.TestUtils._
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.{BlockHash, GroupIndex}
 import org.alephium.util.{Service, TimeStamp}
 
 class MempoolSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach {

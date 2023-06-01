@@ -40,7 +40,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.json.Json._
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.{BlockHash, GroupIndex}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 @SuppressWarnings(
@@ -526,7 +526,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
   trait Fixture {
     implicit val blockCache: BlockCache = TestBlockCache()
 
-    val groupIndex = GroupIndex.unsafe(0)
+    val groupIndex = GroupIndex.Zero
 
     val defaultBlockEntity: BlockEntity =
       BlockEntity(

@@ -39,6 +39,7 @@ import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.explorer.util.TimeUtil._
 import org.alephium.protocol.ALPH
+import org.alephium.protocol.model.GroupIndex
 import org.alephium.util.{Duration, TimeStamp}
 
 case object TransactionHistoryService extends StrictLogging {

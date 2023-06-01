@@ -27,7 +27,6 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.GroupSetting
-import org.alephium.explorer.api.model.GroupIndex
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.model.LatestBlock
 import org.alephium.explorer.persistence.queries.BlockQueries
@@ -72,8 +71,7 @@ object BlockCache {
     val latestBlockAsyncLoader: AsyncCacheLoader[ChainIndex, LatestBlock] = {
       case (key, _) =>
         run(
-          BlockQueries.getLatestBlock(GroupIndex.unsafe(key.from.value),
-                                      GroupIndex.unsafe(key.to.value))
+          BlockQueries.getLatestBlock(key.from, key.to)
         ).map(_.get).asJava.toCompletableFuture
     }
 
@@ -89,8 +87,8 @@ object BlockCache {
 
     val blockTimeAsyncLoader: AsyncCacheLoader[ChainIndex, Duration] = {
       case (key, _) =>
-        val chainFrom = GroupIndex.fromProtocol(key.from)
-        val chainTo   = GroupIndex.fromProtocol(key.to)
+        val chainFrom = key.from
+        val chainTo   = key.to
         (for {
           latestBlock <- cachedLatestBlocks.get(key)
           after = latestBlock.timestamp.minusUnsafe(Duration.ofHoursUnsafe(2))

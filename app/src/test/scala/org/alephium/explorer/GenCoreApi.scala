@@ -30,8 +30,8 @@ import org.alephium.explorer.GenCommon.{genInetAddress, genPortNum}
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.Generators._
-import org.alephium.explorer.api.model.{GroupIndex, Height}
-import org.alephium.protocol.model.{BlockHash, CliqueId, NetworkId, Target}
+import org.alephium.explorer.api.model.Height
+import org.alephium.protocol.model.{BlockHash, CliqueId, GroupIndex, NetworkId, Target}
 import org.alephium.serde._
 import org.alephium.util.{AVector, Duration, I256, TimeStamp, U256}
 

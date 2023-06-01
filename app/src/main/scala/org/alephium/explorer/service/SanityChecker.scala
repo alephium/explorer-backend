@@ -28,7 +28,7 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AnyOps, GroupSetting}
-import org.alephium.explorer.api.model.{BlockEntry, GroupIndex}
+import org.alephium.explorer.api.model.BlockEntry
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.DBRunner._
@@ -36,7 +36,7 @@ import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.queries.BlockQueries._
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.{BlockHash, GroupIndex}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.IterableOps"))
 object SanityChecker extends StrictLogging {

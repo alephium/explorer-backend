@@ -21,7 +21,7 @@ import scala.collection.immutable.ArraySeq
 import akka.util.ByteString
 
 import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model._
+import org.alephium.explorer.api.model.Token
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 

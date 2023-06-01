@@ -19,10 +19,9 @@ package org.alephium.explorer.persistence.schema
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, ProvenShape}
 
-import org.alephium.explorer.api.model.GroupIndex
 import org.alephium.explorer.persistence.model.MempoolTransactionEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.protocol.model.TransactionId
+import org.alephium.protocol.model.{GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object MempoolTransactionSchema extends Schema[MempoolTransactionEntity]("utransactions") {

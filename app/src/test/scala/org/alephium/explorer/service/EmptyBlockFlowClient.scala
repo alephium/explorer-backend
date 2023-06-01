@@ -24,7 +24,7 @@ import sttp.model.Uri
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.{BlockHash, GroupIndex}
 import org.alephium.util.{Service, TimeStamp}
 
 trait EmptyBlockFlowClient extends BlockFlowClient {

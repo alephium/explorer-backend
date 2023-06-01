@@ -19,7 +19,7 @@ package org.alephium.explorer.persistence.model
 import scala.collection.immutable.ArraySeq
 
 import org.alephium.api.model.Val
-import org.alephium.explorer.api.model._
+import org.alephium.explorer.api.model.Event
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.TimeStamp
 

@@ -28,8 +28,7 @@ import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model._
-import org.alephium.protocol
-import org.alephium.protocol.model.{Address, TokenId, TxOutputRef}
+import org.alephium.protocol.model.{Address, GroupIndex, TokenId, TxOutputRef}
 
 /** Generators for types supplied by `org.alephium.explorer.api.model` package */
 object GenApiModel extends ImplicitConversions {
@@ -37,7 +36,7 @@ object GenApiModel extends ImplicitConversions {
   val tokenIdGen: Gen[TokenId]              = hashGen.map(TokenId.unsafe)
   val outputRefKeyGen: Gen[TxOutputRef.Key] = hashGen.map(new TxOutputRef.Key(_))
   val groupIndexGen: Gen[GroupIndex] =
-    Gen.choose(0, groupSetting.groupNum - 1).map(GroupIndex.unsafe(_))
+    Gen.choose(0, groupSetting.groupNum - 1).map(new GroupIndex(_))
   val heightGen: Gen[Height]       = Gen.posNum[Int].map(Height.unsafe(_))
   val bytesGen: Gen[ByteString]    = hashGen.map(_.bytes)
   val hashrateGen: Gen[BigInteger] = arbitrary[Long].map(BigInteger.valueOf)
@@ -49,7 +48,7 @@ object GenApiModel extends ImplicitConversions {
 
   val addressGen: Gen[Address] = for {
     groupIndex <- groupIndexGen
-    lockup     <- GenCoreProtocol.lockupGen(new protocol.model.GroupIndex(groupIndex.value))
+    lockup     <- GenCoreProtocol.lockupGen(groupIndex)
   } yield Address.from(lockup)
 
   val outputRefGen: Gen[OutputRef] = for {
@@ -137,7 +136,9 @@ object GenApiModel extends ImplicitConversions {
     for {
       i <- 0 to groupSetting.groupNum - 1
       j <- 0 to groupSetting.groupNum - 1
-    } yield (GroupIndex.unsafe(i), GroupIndex.unsafe(j))
+    } yield
+      (GroupIndex.unsafe(i)(groupSetting.groupConfig),
+       GroupIndex.unsafe(j)(groupSetting.groupConfig))
 
   val blockEntryLiteGen: Gen[BlockEntryLite] =
     for {

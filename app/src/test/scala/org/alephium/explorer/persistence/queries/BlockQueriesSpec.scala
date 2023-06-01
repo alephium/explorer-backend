@@ -29,11 +29,12 @@ import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.Generators._
-import org.alephium.explorer.api.model.{GroupIndex, Height}
+import org.alephium.explorer.api.model.Height
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.protocol.model.GroupIndex
 
 class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
@@ -204,8 +205,8 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
             //set the block's chainFrom to maxChainIndex + 1 so no blocks match the groupSetting
             val updatedBlocks = blocks.map { block =>
-              block.copy(chainFrom = GroupIndex.unsafe(maxChainIndex + 1),
-                         chainTo   = GroupIndex.unsafe(maxChainIndex + 10))
+              block.copy(chainFrom = new GroupIndex(maxChainIndex + 1),
+                         chainTo   = new GroupIndex(maxChainIndex + 10))
             }
 
             run(BlockHeaderSchema.table.delete).futureValue //clear table
@@ -273,7 +274,7 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
     "return non-empty list with Some values" when {
       "there is data" in {
         //short range GroupIndex so there are enough valid groups for this test
-        val genGroupIndex = Gen.choose(1, 5).map(GroupIndex.unsafe)
+        val genGroupIndex = Gen.choose(1, 5).map(new GroupIndex(_))
 
         forAll(Gen.listOf(blockHeaderGenWithDefaults(genGroupIndex, genGroupIndex))) { blocks =>
           run(BlockHeaderSchema.table.delete).futureValue //clear table
@@ -303,8 +304,8 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
     "return empty" when {
       "data is empty" in {
         val query =
-          BlockQueries.getHashesAtHeightIgnoringOne(fromGroup    = GroupIndex.unsafe(0),
-                                                    toGroup      = GroupIndex.unsafe(0),
+          BlockQueries.getHashesAtHeightIgnoringOne(fromGroup    = GroupIndex.Zero,
+                                                    toGroup      = GroupIndex.Zero,
                                                     height       = Height.unsafe(19),
                                                     hashToIgnore = blockHashGen.sample.get)
 

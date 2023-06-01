@@ -29,7 +29,7 @@ import slick.jdbc.PostgresProfile
 import sttp.model.Uri
 
 import org.alephium.explorer.{foldFutures, GroupSetting}
-import org.alephium.explorer.api.model.{GroupIndex, Height}
+import org.alephium.explorer.api.model.Height
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.error.ExplorerError.BlocksInDifferentChains
 import org.alephium.explorer.persistence.DBRunner._
@@ -37,7 +37,7 @@ import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.{BlockEntity, BlockEntityWithEvents, EventEntity}
 import org.alephium.explorer.persistence.queries.{BlockQueries, InputUpdateQueries}
 import org.alephium.explorer.util.{Scheduler, TimeUtil}
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.{BlockHash, GroupIndex}
 import org.alephium.util.{Duration, TimeStamp}
 
 /*

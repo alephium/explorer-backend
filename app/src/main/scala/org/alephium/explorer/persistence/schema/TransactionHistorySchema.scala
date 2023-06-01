@@ -19,9 +19,10 @@ package org.alephium.explorer.persistence.schema
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
-import org.alephium.explorer.api.model.{GroupIndex, IntervalType}
+import org.alephium.explorer.api.model.IntervalType
 import org.alephium.explorer.persistence.model.TransactionHistoryEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.protocol.model.GroupIndex
 import org.alephium.util.TimeStamp
 
 object TransactionHistorySchema extends Schema[TransactionHistoryEntity]("transactions_history") {

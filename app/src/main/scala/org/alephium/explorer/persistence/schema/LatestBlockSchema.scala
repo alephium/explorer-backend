@@ -22,10 +22,10 @@ import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{PrimaryKey, ProvenShape}
 
-import org.alephium.explorer.api.model.{GroupIndex, Height}
+import org.alephium.explorer.api.model.Height
 import org.alephium.explorer.persistence.model.LatestBlock
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.{BlockHash, GroupIndex}
 import org.alephium.util.TimeStamp
 
 object LatestBlockSchema extends Schema[LatestBlock]("latest_blocks") {

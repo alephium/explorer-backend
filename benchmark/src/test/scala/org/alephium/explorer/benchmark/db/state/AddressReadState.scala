@@ -38,7 +38,7 @@ import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 class Queries(val config: DatabaseConfig[PostgresProfile])(
@@ -105,8 +105,8 @@ class AddressReadState(val db: DBExecutor)
       hash              = txHash,
       blockHash         = blockHash,
       timestamp         = timestamp,
-      chainFrom         = GroupIndex.unsafe(1),
-      chainTo           = GroupIndex.unsafe(3),
+      chainFrom         = new GroupIndex(1),
+      chainTo           = new GroupIndex(3),
       gasAmount         = 0,
       gasPrice          = U256.unsafe(0),
       order             = 0,
@@ -168,8 +168,8 @@ class AddressReadState(val db: DBExecutor)
       BlockEntity(
         hash         = blockHash,
         timestamp    = timestamp,
-        chainFrom    = GroupIndex.unsafe(1),
-        chainTo      = GroupIndex.unsafe(16),
+        chainFrom    = new GroupIndex(1),
+        chainTo      = new GroupIndex(16),
         height       = Height.genesis,
         deps         = ArraySeq.empty,
         transactions = transactions,

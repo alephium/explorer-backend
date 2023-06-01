@@ -29,7 +29,7 @@ import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.json.Json._
-import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TokenId, TransactionId}
 import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
 

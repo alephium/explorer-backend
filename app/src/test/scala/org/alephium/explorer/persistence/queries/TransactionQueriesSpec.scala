@@ -37,7 +37,7 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{Address, TransactionId}
+import org.alephium.protocol.model.{Address, GroupIndex, TransactionId}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
@@ -525,8 +525,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val address = addressGen.sample.get
     def now     = TimeStamp.now().plusMinutesUnsafe(scala.util.Random.nextLong(240))
 
-    val chainFrom = GroupIndex.unsafe(0)
-    val chainTo   = GroupIndex.unsafe(0)
+    val chainFrom = GroupIndex.Zero
+    val chainTo   = GroupIndex.Zero
 
     def output(address: Address, amount: U256, lockTime: Option[TimeStamp]): OutputEntity =
       OutputEntity(
@@ -567,8 +567,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       TransactionEntity(output.txHash,
                         output.blockHash,
                         output.timestamp,
-                        GroupIndex.unsafe(0),
-                        GroupIndex.unsafe(1),
+                        GroupIndex.Zero,
+                        new GroupIndex(1),
                         1,
                         ALPH.alph(1),
                         0,

@@ -29,7 +29,7 @@ import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.json.Json._
-import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TokenId, TransactionId}
 import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
 
@@ -69,7 +69,7 @@ object CustomGetResult {
     (result: PositionedResult) => result.nextLongOption().map(TimeStamp.unsafe)
 
   implicit val groupIndexGetResult: GetResult[GroupIndex] =
-    (result: PositionedResult) => GroupIndex.unsafe(result.nextInt())
+    (result: PositionedResult) => new GroupIndex(result.nextInt())
 
   implicit val heightGetResult: GetResult[Height] =
     (result: PositionedResult) => Height.unsafe(result.nextInt())
