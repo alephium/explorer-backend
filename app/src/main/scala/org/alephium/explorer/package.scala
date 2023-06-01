@@ -21,11 +21,6 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
 package object explorer {
-  @inline @specialized def sideEffect[E](effect: E): Unit = {
-    val _ = effect
-    () //Return unit to prevent warning due to discarding value
-  }
-
   implicit final class AnyOps[A](val self: A) extends AnyVal {
     def ===(other: A): Boolean = self == other
     def =/=(other: A): Boolean = self != other

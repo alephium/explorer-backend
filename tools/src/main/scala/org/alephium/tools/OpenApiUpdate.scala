@@ -18,11 +18,11 @@ package org.alephium.tools
 
 import org.alephium.api.OpenAPIWriters.openApiJson
 import org.alephium.explorer.docs.Documentation
-import org.alephium.explorer.sideEffect
+import org.alephium.util.discard
 
 object OpenApiUpdate {
   def main(args: Array[String]): Unit = {
-    sideEffect {
+    discard {
       new Documentation {
 
         val groupNum = 4

@@ -26,8 +26,8 @@ import scala.util.{Failure, Success}
 
 import com.typesafe.scalalogging.StrictLogging
 
-import org.alephium.explorer._
 import org.alephium.explorer.util.Scheduler.scheduleTime
+import org.alephium.util.discard
 
 object Scheduler extends StrictLogging {
 
@@ -92,7 +92,7 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
     val task =
       new TimerTask {
         def run(): Unit =
-          sideEffect(promise.completeWith(block))
+          discard(promise.completeWith(block))
       }
 
     timer.schedule(task, delay.toMillis max 0)
