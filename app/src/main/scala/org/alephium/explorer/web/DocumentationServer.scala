@@ -34,5 +34,6 @@ class DocumentationServer()(implicit groupSetting: GroupSetting) extends Server 
       SwaggerUI(
         openApiJson(docs, dropAuth = false),
         openapiFileName = "explorer-backend-openapi.json"
-      ).map(route(_)))
+      ).map(route(_))
+    )
 }

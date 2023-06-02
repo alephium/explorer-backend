@@ -23,8 +23,7 @@ import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.AlephiumFutures
 
-/**
-  * Creates and drops a new database connection for all test-cases in a test class.
+/** Creates and drops a new database connection for all test-cases in a test class.
   */
 @SuppressWarnings(Array("org.wartremover.warts.PlatformDefault"))
 trait DatabaseFixtureForAll extends BeforeAndAfterAll with AlephiumFutures with StrictLogging {

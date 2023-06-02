@@ -29,12 +29,14 @@ import org.alephium.explorer.persistence.DBAction
 
 object DBExecutor extends StrictLogging {
 
-  /**
-    * Builds a [[DBExecutor]] instance for Postgres.
+  /** Builds a [[DBExecutor]] instance for Postgres.
     *
-    * @param name Target database name
-    * @param host Target database host
-    * @param port Target database port
+    * @param name
+    *   Target database name
+    * @param host
+    *   Target database host
+    * @param port
+    *   Target database port
     */
   def apply(name: String, host: String, port: Int, connectionPool: DBConnectionPool): DBExecutor = {
     logger.info(s"Connecting to database: '$name'")
@@ -64,28 +66,28 @@ object DBExecutor extends StrictLogging {
   // scalastyle:off magic.number
   def forTest(): DBExecutor =
     DBExecutor(
-      name           = "postgres",
-      host           = "localhost",
-      port           = 5432,
+      name = "postgres",
+      host = "localhost",
+      port = 5432,
       connectionPool = DBConnectionPool.Disabled
     )
   // scalastyle:on magic.number
 }
 
-/**
-  * Provides execution functions for interacting with the target ([[config]]) database.
+/** Provides execution functions for interacting with the target ([[config]]) database.
   *
-  * @param config Target database config
+  * @param config
+  *   Target database config
   *
-  * @note Similar to [[org.alephium.explorer.persistence.DBRunner]] but provides blocking execution.
-  *       To avoid naming conflicts it's named [[DBExecutor]] instead of `DBRunner`.
+  * @note
+  *   Similar to [[org.alephium.explorer.persistence.DBRunner]] but provides blocking execution. To
+  *   avoid naming conflicts it's named [[DBExecutor]] instead of `DBRunner`.
   */
 class DBExecutor private (val config: DatabaseConfig[PostgresProfile]) extends StrictLogging {
 
   import config.profile.api._
 
-  /**
-    * Executes a database action.
+  /** Executes a database action.
     */
   def runNow[R, E <: Effect](action: DBAction[R, E], timeout: FiniteDuration): R =
     Await.result[R](config.db.run(action), timeout)
@@ -93,8 +95,7 @@ class DBExecutor private (val config: DatabaseConfig[PostgresProfile]) extends S
   def dropTableIfExists[T <: AbstractTable[_]](table: TableQuery[T]): Int =
     runNow(sqlu"DROP TABLE IF EXISTS #${table.baseTableRow.tableName}", 5.seconds)
 
-  /**
-    * Closes DB connection
+  /** Closes DB connection
     */
   def close(): Unit =
     config.db.close()

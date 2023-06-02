@@ -96,23 +96,26 @@ trait ExplorerSpec
   val blockflowBinding = blockFlowMock.server
 
   def createApp(bootMode: BootMode.Readable): ExplorerState = {
-    //We create a `databaseConfig` for each `ExplorerState`. If we use
-    //the one from `DatabaseFixture`, the connection might get closed by
-    //one of the `ExplorerState` and not available anymore for others.
+    // We create a `databaseConfig` for each `ExplorerState`. If we use
+    // the one from `DatabaseFixture`, the connection might get closed by
+    // one of the `ExplorerState` and not available anymore for others.
     implicit val databaseConfig: DatabaseConfig[PostgresProfile] =
       DatabaseFixture.createDatabaseConfig(dbName)
     val explorerPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
     @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
     implicit val explorerConfig: ExplorerConfig = ExplorerConfig.load(
       ConfigFactory
-        .parseMap(Map(
-          ("alephium.explorer.boot-mode", bootMode.productPrefix),
-          ("alephium.explorer.port", explorerPort),
-          ("alephium.blockflow.port", blockFlowPort),
-          ("alephium.blockflow.network-id", networkId.id),
-          ("alephium.blockflow.group-num", groupSetting.groupNum)
-        ).view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava)
-        .withFallback(DatabaseFixture.config(dbName)))
+        .parseMap(
+          Map(
+            ("alephium.explorer.boot-mode", bootMode.productPrefix),
+            ("alephium.explorer.port", explorerPort),
+            ("alephium.blockflow.port", blockFlowPort),
+            ("alephium.blockflow.network-id", networkId.id),
+            ("alephium.blockflow.group-num", groupSetting.groupNum)
+          ).view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava
+        )
+        .withFallback(DatabaseFixture.config(dbName))
+    )
 
     bootMode match {
       case BootMode.ReadOnly  => ExplorerState.ReadOnly()
@@ -122,7 +125,7 @@ trait ExplorerSpec
 
   def initApp(app: ExplorerState): Assertion = {
     app.start().futureValue
-    //let it sync
+    // let it sync
     eventually(app.blockCache.getMainChainBlockCount() is blocks.size)
   }
 
@@ -133,7 +136,7 @@ trait ExplorerSpec
   "get a block by its id" in {
     initApp(app)
 
-    //forAll(Gen.oneOf(blocks)) { block =>
+    // forAll(Gen.oneOf(blocks)) { block =>
     val block = Gen.oneOf(blocks).sample.get
     Get(s"/blocks/${block.hash.value.toHexString}") check { response =>
       val blockResult = response.as[BlockEntryLite]
@@ -143,7 +146,7 @@ trait ExplorerSpec
       blockResult.chainTo is block.chainTo
       blockResult.height is block.height
       blockResult.txNumber is block.transactions.size
-    //}
+    // }
     }
 
     forAll(hashGen) { hash =>
@@ -166,20 +169,19 @@ trait ExplorerSpec
   }
 
   "list blocks" in {
-    forAll(Gen.choose(1, 3), Gen.choose(2, 4)) {
-      case (page, limit) =>
-        Get(s"/blocks?page=$page&limit=$limit") check { response =>
-          val offset = page - 1
-          //filter `blocks by the same timestamp as the query for better assertion`
-          val drop           = offset * limit
-          val expectedBlocks = blocks.sortBy(_.timestamp).reverse.slice(drop, drop + limit)
-          val res            = response.as[ListBlocks]
-          val hashes         = res.blocks.map(_.hash)
+    forAll(Gen.choose(1, 3), Gen.choose(2, 4)) { case (page, limit) =>
+      Get(s"/blocks?page=$page&limit=$limit") check { response =>
+        val offset = page - 1
+        // filter `blocks by the same timestamp as the query for better assertion`
+        val drop           = offset * limit
+        val expectedBlocks = blocks.sortBy(_.timestamp).reverse.slice(drop, drop + limit)
+        val res            = response.as[ListBlocks]
+        val hashes         = res.blocks.map(_.hash)
 
-          expectedBlocks.size is hashes.size
+        expectedBlocks.size is hashes.size
 
-          res.total is blocks.size
-        }
+        res.total is blocks.size
+      }
     }
 
     Get(s"/blocks") check { response =>
@@ -242,7 +244,7 @@ trait ExplorerSpec
   "get a transaction by its id" in {
     forAll(Gen.oneOf(transactions)) { transaction =>
       Get(s"/transactions/${transaction.hash.value.toHexString}") check { response =>
-        //TODO Validate full transaction when we have a valid blockchain generator
+        // TODO Validate full transaction when we have a valid blockchain generator
         response.as[Transaction].hash is transaction.hash
       }
     }
@@ -268,7 +270,8 @@ trait ExplorerSpec
               _.outputs
                 .filter(out => out.spent.isEmpty && out.address == address)
                 .map(_.attoAlphAmount)
-                .fold(U256.Zero)(_ addUnsafe _))
+                .fold(U256.Zero)(_ addUnsafe _)
+            )
             .fold(U256.Zero)(_ addUnsafe _)
 
         val res = response.as[AddressInfo]
@@ -297,7 +300,7 @@ trait ExplorerSpec
   "get all transactions for addresses" in {
     forAll(Gen.someOf(transactions)) { transactions =>
       val limitedAddresses = transactions.flatMap(_.outputs.map(_.address)).take(txLimit)
-      val addressesBody    = limitedAddresses.map(address => s""""$address"""").mkString("[", ",", "]")
+      val addressesBody = limitedAddresses.map(address => s""""$address"""").mkString("[", ",", "]")
 
       Post("/addresses/transactions", addressesBody) check { response =>
         val expectedTransactions =
@@ -326,8 +329,9 @@ trait ExplorerSpec
         )(
           _.getLines().toList
             .mkString("\n")
-            //updating address discovery gap limit according to group number
-            .replace(""""maxItems": 80""", s""""maxItems": ${groupSetting.groupNum * 20}"""))
+            // updating address discovery gap limit according to group number
+            .replace(""""maxItems": 80""", s""""maxItems": ${groupSetting.groupNum * 20}""")
+        )
 
       val expectedOpenapi =
         read[ujson.Value](openApiFile)
@@ -342,10 +346,12 @@ trait ExplorerSpec
 
 object ExplorerSpec {
 
-  class BlockFlowServerMock(address: InetAddress,
-                            port: Int,
-                            blockflow: ArraySeq[ArraySeq[model.BlockEntry]],
-                            networkId: NetworkId)(implicit groupSetting: GroupSetting)
+  class BlockFlowServerMock(
+      address: InetAddress,
+      port: Int,
+      blockflow: ArraySeq[ArraySeq[model.BlockEntry]],
+      networkId: NetworkId
+  )(implicit groupSetting: GroupSetting)
       extends ApiModelCodec
       with BaseEndpoint
       with ScalaFutures
@@ -360,9 +366,11 @@ object ExplorerSpec {
 
     private val peer = model.PeerAddress(address, port, 0, 0)
 
-    def fetchHashesAtHeight(from: GroupIndex,
-                            to: GroupIndex,
-                            height: Height): model.HashesAtHeight =
+    def fetchHashesAtHeight(
+        from: GroupIndex,
+        to: GroupIndex,
+        height: Height
+    ): model.HashesAtHeight =
       model.HashesAtHeight(AVector.from(blocks.collect {
         case block
             if block.chainFrom === from.value && block.chainTo === to.value && block.height === height.value =>
@@ -377,7 +385,8 @@ object ExplorerSpec {
               block.height
           }
           .maxOption
-          .getOrElse(Height.genesis.value))
+          .getOrElse(Height.genesis.value)
+      )
     }
 
     private val vertx  = Vertx.vertx()
@@ -399,7 +408,8 @@ object ExplorerSpec {
             .out(jsonBody[model.BlockEntry])
             .serverLogicSuccess[Future] { hash =>
               Future.successful(blocks.find(_.hash === hash).get)
-            }),
+            }
+        ),
         route(
           baseEndpoint.get
             .in("blockflow")
@@ -407,9 +417,10 @@ object ExplorerSpec {
             .in(path[BlockHash])
             .out(jsonBody[model.BlockAndEvents])
             .serverLogicSuccess[Future] { hash =>
-              Future.successful(
-                model.BlockAndEvents(blocks.find(_.hash === hash).get, AVector.empty))
-            }),
+              Future
+                .successful(model.BlockAndEvents(blocks.find(_.hash === hash).get, AVector.empty))
+            }
+        ),
         route(
           baseEndpoint.get
             .in("blockflow")
@@ -423,10 +434,15 @@ object ExplorerSpec {
                     blockflow
                       .map(
                         _.filter(b =>
-                          b.timestamp >= timeInterval.from && b.timestamp <= timeInterval.to)
+                          b.timestamp >= timeInterval.from && b.timestamp <= timeInterval.to
+                        )
                       )
-                      .map(AVector.from(_)))))
-            }),
+                      .map(AVector.from(_))
+                  )
+                )
+              )
+            }
+        ),
         route(
           baseEndpoint.get
             .in("blockflow")
@@ -440,12 +456,18 @@ object ExplorerSpec {
                     blockflow
                       .map(
                         _.filter(b =>
-                          b.timestamp >= timeInterval.from && b.timestamp <= timeInterval.to)
+                          b.timestamp >= timeInterval.from && b.timestamp <= timeInterval.to
+                        )
                       )
                       .map(blocks =>
-                        AVector.from(blocks.map(block =>
-                          model.BlockAndEvents(block, AVector.empty)))))))
-            }),
+                        AVector
+                          .from(blocks.map(block => model.BlockAndEvents(block, AVector.empty)))
+                      )
+                  )
+                )
+              )
+            }
+        ),
         route(
           baseEndpoint.get
             .in("blockflow")
@@ -454,13 +476,16 @@ object ExplorerSpec {
             .in(query[Int]("toGroup"))
             .in(query[Int]("height"))
             .out(jsonBody[model.HashesAtHeight])
-            .serverLogicSuccess[Future] {
-              case (from, to, height) =>
-                Future.successful(
-                  fetchHashesAtHeight(GroupIndex.unsafe(from),
-                                      GroupIndex.unsafe(to),
-                                      Height.unsafe(height)))
-            }),
+            .serverLogicSuccess[Future] { case (from, to, height) =>
+              Future.successful(
+                fetchHashesAtHeight(
+                  GroupIndex.unsafe(from),
+                  GroupIndex.unsafe(to),
+                  Height.unsafe(height)
+                )
+              )
+            }
+        ),
         route(
           baseEndpoint.get
             .in("blockflow")
@@ -468,12 +493,12 @@ object ExplorerSpec {
             .in(query[Int]("fromGroup"))
             .in(query[Int]("toGroup"))
             .out(jsonBody[model.ChainInfo])
-            .serverLogicSuccess[Future] {
-              case (from, to) =>
-                Future.successful(
-                  getChainInfo(GroupIndex.unsafe(from), GroupIndex.unsafe(to))
-                )
-            }),
+            .serverLogicSuccess[Future] { case (from, to) =>
+              Future.successful(
+                getChainInfo(GroupIndex.unsafe(from), GroupIndex.unsafe(to))
+              )
+            }
+        ),
         route(
           baseEndpoint.get
             .in("mempool")
@@ -486,7 +511,8 @@ object ExplorerSpec {
               Future.successful(
                 ArraySeq(model.MempoolTransactions(from, to, AVector.from(txs)))
               )
-            }),
+            }
+        ),
         route(
           baseEndpoint.get
             .in("infos")
@@ -496,7 +522,8 @@ object ExplorerSpec {
               Future.successful(
                 model.SelfClique(cliqueId, AVector(peer), true, true)
               )
-            }),
+            }
+        ),
         route(
           baseEndpoint.get
             .in("infos")
@@ -506,7 +533,8 @@ object ExplorerSpec {
               Future.successful(
                 model.ChainParams(networkId, 18, groupSetting.groupNum, groupSetting.groupNum)
               )
-            })
+            }
+        )
       )
 
     val server = vertx.createHttpServer().requestHandler(router)
@@ -526,7 +554,7 @@ class ExplorerReadOnlySpec extends ExplorerSpec {
     rwApp.stop().futureValue is ()
     super.initApp(app)
   }
-  //TODO how to test that sync services aren't started?
+  // TODO how to test that sync services aren't started?
 }
 
 class ExplorerReadWriteSpec extends ExplorerSpec {

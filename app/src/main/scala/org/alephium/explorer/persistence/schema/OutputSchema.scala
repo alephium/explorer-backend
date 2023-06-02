@@ -33,14 +33,14 @@ import org.alephium.util.{TimeStamp, U256}
 object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
 
   class Outputs(tag: Tag) extends Table[OutputEntity](tag, name) {
-    def blockHash: Rep[BlockHash]                = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
-    def txHash: Rep[TransactionId]               = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
-    def timestamp: Rep[TimeStamp]                = column[TimeStamp]("block_timestamp")
+    def blockHash: Rep[BlockHash]  = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
+    def txHash: Rep[TransactionId] = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
+    def timestamp: Rep[TimeStamp]  = column[TimeStamp]("block_timestamp")
     def outputType: Rep[OutputEntity.OutputType] = column[OutputEntity.OutputType]("output_type")
     def hint: Rep[Int]                           = column[Int]("hint")
     def key: Rep[Hash]                           = column[Hash]("key", O.SqlType("BYTEA"))
     def amount: Rep[U256] =
-      column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
+      column[U256]("amount", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
     def address: Rep[Address]                = column[Address]("address")
     def tokens: Rep[Option[ArraySeq[Token]]] = column[Option[ArraySeq[Token]]]("tokens")
     def mainChain: Rep[Boolean]              = column[Boolean]("main_chain")
@@ -63,23 +63,25 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
       index("outputs_tx_hash_block_hash_idx", (txHash, blockHash))
 
     def * : ProvenShape[OutputEntity] =
-      (blockHash,
-       txHash,
-       timestamp,
-       outputType,
-       hint,
-       key,
-       amount,
-       address,
-       tokens,
-       mainChain,
-       lockTime,
-       message,
-       outputOrder,
-       txOrder,
-       coinbase,
-       spentFinalized,
-       spentTimestamp)
+      (
+        blockHash,
+        txHash,
+        timestamp,
+        outputType,
+        hint,
+        key,
+        amount,
+        address,
+        tokens,
+        mainChain,
+        lockTime,
+        message,
+        outputOrder,
+        txOrder,
+        coinbase,
+        spentFinalized,
+        spentTimestamp
+      )
         .<>((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }
 

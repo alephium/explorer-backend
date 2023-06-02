@@ -45,16 +45,19 @@ object Migrations extends StrictLogging {
   def migration2(implicit ec: ExecutionContext): DBActionAll[Unit] =
     for {
       _ <- sqlu"""ALTER TABLE contracts ADD COLUMN IF NOT EXISTS std_interface_id_guessed bytea"""
-      _ <- sqlu"""CREATE INDEX IF NOT EXISTS contracts_std_interface_id_guessed_idx ON contracts (std_interface_id_guessed)"""
+      _ <-
+        sqlu"""CREATE INDEX IF NOT EXISTS contracts_std_interface_id_guessed_idx ON contracts (std_interface_id_guessed)"""
     } yield ()
 
   def migration3(implicit ec: ExecutionContext): DBActionAll[Unit] =
     for {
       _ <- sqlu"""ALTER TABLE outputs ADD COLUMN IF NOT EXISTS spent_timestamp bigint"""
       _ <- sqlu"""ALTER TABLE token_outputs ADD COLUMN IF NOT EXISTS spent_timestamp bigint"""
-      _ <- sqlu"""CREATE INDEX IF NOT EXISTS outputs_spent_timestamp_idx ON outputs(spent_timestamp)"""
-      _ <- sqlu"""CREATE INDEX IF NOT EXISTS token_outputs_spent_timestamp_idx ON token_outputs(spent_timestamp)"""
-      //Reset `last_finalized_input_time` and let `FinalizerService` update all `spent_timestamp`
+      _ <-
+        sqlu"""CREATE INDEX IF NOT EXISTS outputs_spent_timestamp_idx ON outputs(spent_timestamp)"""
+      _ <-
+        sqlu"""CREATE INDEX IF NOT EXISTS token_outputs_spent_timestamp_idx ON token_outputs(spent_timestamp)"""
+      // Reset `last_finalized_input_time` and let `FinalizerService` update all `spent_timestamp`
       _ <- sqlu"""DELETE FROM app_state WHERE key = 'last_finalized_input_time'"""
     } yield ()
 
@@ -64,11 +67,12 @@ object Migrations extends StrictLogging {
     migration3
   )
 
-  def migrationsQuery(versionOpt: Option[MigrationVersion])(
-      implicit ec: ExecutionContext): DBActionAll[Unit] = {
+  def migrationsQuery(
+      versionOpt: Option[MigrationVersion]
+  )(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     logger.info(s"Current migration version: $versionOpt")
     versionOpt match {
-      //noop
+      // noop
       case None | Some(MigrationVersion(latestVersion.version)) =>
         logger.info(s"No migrations needed")
         DBIOAction.successful(())
@@ -84,8 +88,9 @@ object Migrations extends StrictLogging {
     }
   }
 
-  def migrate(databaseConfig: DatabaseConfig[PostgresProfile])(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def migrate(
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     logger.info("Migrating")
     for {
       _ <- DBRunner
@@ -101,8 +106,9 @@ object Migrations extends StrictLogging {
     AppStateQueries.get(MigrationVersion)
   }
 
-  def updateVersion(versionOpt: Option[MigrationVersion])(
-      implicit ec: ExecutionContext): DBActionAll[Unit] = {
+  def updateVersion(
+      versionOpt: Option[MigrationVersion]
+  )(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     versionOpt match {
       case None => DBIOAction.successful(())
       case Some(version) =>

@@ -41,12 +41,14 @@ import org.alephium.protocol.model.NetworkId
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object SyncServices extends StrictLogging {
 
-  def startSyncServices(config: ExplorerConfig)(implicit scheduler: Scheduler,
-                                                ec: ExecutionContext,
-                                                dc: DatabaseConfig[PostgresProfile],
-                                                blockFlowClient: BlockFlowClient,
-                                                blockCache: BlockCache,
-                                                groupSetting: GroupSetting): Future[Unit] =
+  def startSyncServices(config: ExplorerConfig)(implicit
+      scheduler: Scheduler,
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      blockCache: BlockCache,
+      groupSetting: GroupSetting
+  ): Future[Unit] =
     config.bootMode match {
       case BootMode.ReadOnly =>
         Future.unit
@@ -54,16 +56,16 @@ object SyncServices extends StrictLogging {
       case BootMode.ReadWrite | BootMode.WriteOnly =>
         logger.info("Starting sync services")
         getPeers(
-          networkId          = config.networkId,
+          networkId = config.networkId,
           directCliqueAccess = config.directCliqueAccess,
-          blockFlowUri       = config.blockFlowUri
+          blockFlowUri = config.blockFlowUri
         ) flatMap { peers =>
           startSyncServices(
-            peers                               = peers,
-            syncPeriod                          = config.syncPeriod,
-            tokenSupplyServiceScheduleTime      = config.tokenSupplyServiceScheduleTime,
-            hashRateServiceSyncPeriod           = config.hashRateServiceSyncPeriod,
-            finalizerServiceSyncPeriod          = config.finalizerServiceSyncPeriod,
+            peers = peers,
+            syncPeriod = config.syncPeriod,
+            tokenSupplyServiceScheduleTime = config.tokenSupplyServiceScheduleTime,
+            hashRateServiceSyncPeriod = config.hashRateServiceSyncPeriod,
+            finalizerServiceSyncPeriod = config.finalizerServiceSyncPeriod,
             transactionHistoryServiceSyncPeriod = config.transactionHistoryServiceSyncPeriod
           )
         }
@@ -71,18 +73,21 @@ object SyncServices extends StrictLogging {
 
   /** Start sync services given the peers */
   // scalastyle:off
-  def startSyncServices(peers: ArraySeq[Uri],
-                        syncPeriod: FiniteDuration,
-                        tokenSupplyServiceScheduleTime: LocalTime,
-                        hashRateServiceSyncPeriod: FiniteDuration,
-                        finalizerServiceSyncPeriod: FiniteDuration,
-                        transactionHistoryServiceSyncPeriod: FiniteDuration)(
-      implicit scheduler: Scheduler,
+  def startSyncServices(
+      peers: ArraySeq[Uri],
+      syncPeriod: FiniteDuration,
+      tokenSupplyServiceScheduleTime: LocalTime,
+      hashRateServiceSyncPeriod: FiniteDuration,
+      finalizerServiceSyncPeriod: FiniteDuration,
+      transactionHistoryServiceSyncPeriod: FiniteDuration
+  )(implicit
+      scheduler: Scheduler,
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       blockCache: BlockCache,
-      groupSetting: GroupSetting): Future[Unit] =
+      groupSetting: GroupSetting
+  ): Future[Unit] =
     Future.fromTry {
       Try {
         Future
@@ -112,15 +117,16 @@ object SyncServices extends StrictLogging {
     }
 
   /** Fetch network peers */
-  def getPeers(networkId: NetworkId, directCliqueAccess: Boolean, blockFlowUri: Uri)(
-      implicit ec: ExecutionContext,
-      blockFlowClient: BlockFlowClient): Future[ArraySeq[Uri]] =
+  def getPeers(networkId: NetworkId, directCliqueAccess: Boolean, blockFlowUri: Uri)(implicit
+      ec: ExecutionContext,
+      blockFlowClient: BlockFlowClient
+  ): Future[ArraySeq[Uri]] =
     blockFlowClient
       .fetchChainParams()
       .flatMap { chainParams =>
         val validationResult =
           validateChainParams(
-            networkId   = networkId,
+            networkId = networkId,
             chainParams = chainParams
           )
 
@@ -131,7 +137,7 @@ object SyncServices extends StrictLogging {
           case Success(_) =>
             getBlockFlowPeers(
               directCliqueAccess = directCliqueAccess,
-              blockFlowUri       = blockFlowUri
+              blockFlowUri = blockFlowUri
             )
         }
       }
@@ -142,9 +148,10 @@ object SyncServices extends StrictLogging {
       Uri(peer.address.getHostAddress, peer.restPort)
     }
 
-  def getBlockFlowPeers(directCliqueAccess: Boolean, blockFlowUri: Uri)(
-      implicit ec: ExecutionContext,
-      blockFlowClient: BlockFlowClient): Future[ArraySeq[Uri]] =
+  def getBlockFlowPeers(directCliqueAccess: Boolean, blockFlowUri: Uri)(implicit
+      ec: ExecutionContext,
+      blockFlowClient: BlockFlowClient
+  ): Future[ArraySeq[Uri]] =
     if (directCliqueAccess) {
       blockFlowClient.fetchSelfClique() flatMap { selfClique =>
         if (selfClique.nodes.isEmpty) {

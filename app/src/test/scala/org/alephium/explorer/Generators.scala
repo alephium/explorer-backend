@@ -34,27 +34,29 @@ object Generators {
     groupSetting.groupNum - 1 + chainTo.value
 
   def blockEntitiesToBlockEntries(
-      blocks: ArraySeq[ArraySeq[BlockEntity]]): ArraySeq[ArraySeq[BlockEntry]] = {
+      blocks: ArraySeq[ArraySeq[BlockEntity]]
+  ): ArraySeq[ArraySeq[BlockEntry]] = {
     val outputs: ArraySeq[OutputEntity] = blocks.flatMap(_.flatMap(_.outputs))
 
     blocks.map(_.map { block =>
       val coinbaseTxId = block.transactions.last.hash
       val transactions =
-        block.transactions.map {
-          tx =>
-            Transaction(
-              tx.hash,
-              block.hash,
-              block.timestamp,
-              block.inputs
-                .filter(_.txHash === tx.hash)
-                .map(input                                       => inputEntityToApi(input, outputs.head)), //TODO Fix when we have a valid blockchain generator
-              block.outputs.filter(_.txHash === tx.hash).map(out => outputEntityToApi(out, None)),
-              tx.gasAmount,
-              tx.gasPrice,
-              tx.scriptExecutionOk,
-              coinbase = coinbaseTxId == tx.hash
-            )
+        block.transactions.map { tx =>
+          Transaction(
+            tx.hash,
+            block.hash,
+            block.timestamp,
+            block.inputs
+              .filter(_.txHash === tx.hash)
+              .map(input =>
+                inputEntityToApi(input, outputs.head)
+              ), // TODO Fix when we have a valid blockchain generator
+            block.outputs.filter(_.txHash === tx.hash).map(out => outputEntityToApi(out, None)),
+            tx.gasAmount,
+            tx.gasPrice,
+            tx.scriptExecutionOk,
+            coinbase = coinbaseTxId == tx.hash
+          )
         }
       BlockEntry(
         block.hash,

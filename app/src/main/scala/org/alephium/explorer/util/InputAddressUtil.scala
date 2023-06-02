@@ -28,7 +28,8 @@ import org.alephium.serde._
 
 object InputAddressUtil extends StrictLogging {
   private val sameAsPrevious = serialize(
-    protocol.vm.UnlockScript.SameAsPrevious: protocol.vm.UnlockScript)
+    protocol.vm.UnlockScript.SameAsPrevious: protocol.vm.UnlockScript
+  )
   /*
    * Extract address from an [[org.alephium.api.model.AssetInput]]
    * Addresses can only be extracted from P2PKH and P2SH.
@@ -68,9 +69,12 @@ object InputAddressUtil extends StrictLogging {
       addressOpt match {
         case None => None
         case Some(_) =>
-          if (inputs.tail.forall(input =>
-                input.unlockScript === sameAsPrevious || InputAddressUtil
-                  .addressFromProtocolInput(input) === addressOpt)) {
+          if (
+            inputs.tail.forall(input =>
+              input.unlockScript === sameAsPrevious || InputAddressUtil
+                .addressFromProtocolInput(input) === addressOpt
+            )
+          ) {
             addressOpt
           } else {
             None
@@ -81,19 +85,19 @@ object InputAddressUtil extends StrictLogging {
 
   @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
   def convertSameAsPrevious(
-      inputs: ArraySeq[api.model.AssetInput]): ArraySeq[api.model.AssetInput] = {
+      inputs: ArraySeq[api.model.AssetInput]
+  ): ArraySeq[api.model.AssetInput] = {
     if (inputs.sizeIs <= 1) {
       inputs
     } else {
       var lastUncompressedScript: Int = -1
-      val converted = inputs.view.zipWithIndex.map {
-        case (input, index) =>
-          if (input.unlockScript === sameAsPrevious) {
-            input.copy(unlockScript = inputs(lastUncompressedScript).unlockScript)
-          } else {
-            lastUncompressedScript = index
-            input
-          }
+      val converted = inputs.view.zipWithIndex.map { case (input, index) =>
+        if (input.unlockScript === sameAsPrevious) {
+          input.copy(unlockScript = inputs(lastUncompressedScript).unlockScript)
+        } else {
+          lastUncompressedScript = index
+          input
+        }
       }
       ArraySeq.from(converted)
     }

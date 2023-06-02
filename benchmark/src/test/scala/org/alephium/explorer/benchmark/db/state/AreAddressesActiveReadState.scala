@@ -26,8 +26,8 @@ import org.alephium.explorer.benchmark.db.state.ListBlocksReadStateSettings._
 import org.alephium.explorer.persistence.schema.TransactionPerAddressSchema
 import org.alephium.protocol.model.Address
 
-/**
-  * JMH state for benchmarking via [[org.alephium.explorer.persistence.queries.TransactionQueries.areAddressesActiveAction]]
+/** JMH state for benchmarking via
+  * [[org.alephium.explorer.persistence.queries.TransactionQueries.areAddressesActiveAction]]
   */
 class AreAddressesActiveReadState(val db: DBExecutor)
     extends ReadBenchmarkState[ArraySeq[Address]](testDataCount = maxPages, db = db) {
@@ -36,17 +36,17 @@ class AreAddressesActiveReadState(val db: DBExecutor)
 
   // scalastyle:off magic.number
   override def generateData(currentCacheSize: Int): ArraySeq[Address] =
-    ArraySeq.fill(40)(DataGenerator.genAddress()) //Generate 40 address per query
+    ArraySeq.fill(40)(DataGenerator.genAddress()) // Generate 40 address per query
 
   override def persist(data: Array[ArraySeq[Address]]): Unit = {
-    val transactions = //for every address generate a TransactionPerAddressEntity
+    val transactions = // for every address generate a TransactionPerAddressEntity
       data flatMap { addresses =>
         addresses map DataGenerator.genTransactionPerAddressEntity
       }
 
     val _ = db.dropTableIfExists(TransactionPerAddressSchema.table)
 
-    //persist TransactionPerAddressEntities
+    // persist TransactionPerAddressEntities
     val createDBBenchmarkState =
       TransactionPerAddressSchema.table.schema.create
         .andThen(TransactionPerAddressSchema.createMainChainIndex())

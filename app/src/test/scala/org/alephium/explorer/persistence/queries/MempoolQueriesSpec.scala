@@ -32,10 +32,10 @@ import org.alephium.util.TimeStamp
 
 class MempoolQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with DBRunner {
 
-  /**
-    * Setup tests data for table [[MempoolTransactionSchema]]
+  /** Setup tests data for table [[MempoolTransactionSchema]]
     *
-    * @param mempoolTxs transaction to create a table for
+    * @param mempoolTxs
+    *   transaction to create a table for
     */
   def createTestData(mempoolTxs: Iterable[MempoolTransactionEntity]): Unit = {
     run(MempoolTransactionSchema.table.delete).futureValue
@@ -57,10 +57,10 @@ class MempoolQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
   "listHashesQuery" should {
     "list mempool transaction hashes" in {
       forAll(Gen.listOf(mempoolTransactionEntityGen())) { mempoolTxs =>
-        //setup test data
+        // setup test data
         createTestData(mempoolTxs)
 
-        //fetch expected and actual data
+        // fetch expected and actual data
         val expectedHashes = mempoolTxs.map(_.hash)
         val actualHashes   = run(MempoolQueries.listHashesQuery).futureValue
 
@@ -77,8 +77,8 @@ class MempoolQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
 
           val expected =
             mempoolTxs
-              .sortBy(_.lastSeen)(TimeStamp.ordering.reverse) //descending order order last_seen
-              .slice(pagination.offset, pagination.offset + pagination.limit) //pagination
+              .sortBy(_.lastSeen)(TimeStamp.ordering.reverse) // descending order order last_seen
+              .slice(pagination.offset, pagination.offset + pagination.limit) // pagination
 
           val actual =
             run(MempoolQueries.listPaginatedMempoolTransactionsQuery(pagination)).futureValue
@@ -97,10 +97,10 @@ class MempoolQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
           val expected =
             Random
               .shuffle(mempoolTxs)
-              .take(txsCountToQuery) //randomly select few
-              .sortBy(_.lastSeen)(TimeStamp.ordering.reverse) //descending order order last_seen
+              .take(txsCountToQuery) // randomly select few
+              .sortBy(_.lastSeen)(TimeStamp.ordering.reverse) // descending order order last_seen
 
-          val transactionIdsToQuery = //shuffle input to ensure output is sorted based on last_seen
+          val transactionIdsToQuery = // shuffle input to ensure output is sorted based on last_seen
             Random.shuffle(expected.map(_.hash))
 
           val actual =
@@ -128,37 +128,34 @@ class MempoolQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
 
   "listUTXHashesByAddress" should {
     "return distinct hashes for address" in {
-      forAll(uInOutEntityWithDuplicateTxIdsAndAddressesGen()) {
-        case (uinputs, uoutputs) =>
-          createTestData(uinputs, uoutputs)
+      forAll(uInOutEntityWithDuplicateTxIdsAndAddressesGen()) { case (uinputs, uoutputs) =>
+        createTestData(uinputs, uoutputs)
 
-          val addressAndExpectedTx: Map[Address, List[TransactionId]] =
-            (uinputs
-              .map { input =>
-                input.address match {
-                  case Some(address) =>
-                    (address, Some(input.txHash))
-                  case None =>
-                    (addressGen.sample.get, None)
-                }
-              } ++ uoutputs.map { output =>
-              (output.address, Some(output.txHash))
-            }).groupBy { case (address, _) => address }
-              .map {
-                case (address, entities) =>
-                  (address, entities.map { case (_, txHashes) => txHashes }.flatten)
+        val addressAndExpectedTx: Map[Address, List[TransactionId]] =
+          (uinputs
+            .map { input =>
+              input.address match {
+                case Some(address) =>
+                  (address, Some(input.txHash))
+                case None =>
+                  (addressGen.sample.get, None)
               }
+            } ++ uoutputs.map { output =>
+            (output.address, Some(output.txHash))
+          }).groupBy { case (address, _) => address }
+            .map { case (address, entities) =>
+              (address, entities.map { case (_, txHashes) => txHashes }.flatten)
+            }
 
-          addressAndExpectedTx foreach {
-            case (address, expectedTx) =>
-              val actual =
-                run(MempoolQueries.listUTXHashesByAddress(address)).futureValue
+        addressAndExpectedTx foreach { case (address, expectedTx) =>
+          val actual =
+            run(MempoolQueries.listUTXHashesByAddress(address)).futureValue
 
-              //expect distinct transaction hashes
-              val expected = expectedTx.distinct
+          // expect distinct transaction hashes
+          val expected = expectedTx.distinct
 
-              actual should contain theSameElementsAs expected
-          }
+          actual should contain theSameElementsAs expected
+        }
       }
     }
   }

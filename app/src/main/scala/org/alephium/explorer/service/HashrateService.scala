@@ -42,17 +42,21 @@ case object HashrateService extends StrictLogging {
   val hourlyStepBack: Duration = Duration.ofHoursUnsafe(2)
   val dailyStepBack: Duration  = Duration.ofDaysUnsafe(1)
 
-  def start(interval: FiniteDuration)(implicit executionContext: ExecutionContext,
-                                      databaseConfig: DatabaseConfig[PostgresProfile],
-                                      scheduler: Scheduler): Future[Unit] =
+  def start(interval: FiniteDuration)(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile],
+      scheduler: Scheduler
+  ): Future[Unit] =
     scheduler.scheduleLoop(
-      taskId        = HashrateService.productPrefix,
+      taskId = HashrateService.productPrefix,
       firstInterval = ScalaDuration.Zero,
-      loopInterval  = interval
+      loopInterval = interval
     )(syncOnce())
 
-  def syncOnce()(implicit ec: ExecutionContext,
-                 dc: DatabaseConfig[PostgresProfile]): Future[Unit] = {
+  def syncOnce()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = {
     logger.debug("Updating hashrates")
     val startedAt = TimeStamp.now()
     updateHashrates().map { _ =>
@@ -61,16 +65,18 @@ case object HashrateService extends StrictLogging {
     }
   }
 
-  def get(from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Hashrate]] =
-    run(getHashratesQuery(from, to, intervalType)).map(_.map {
-      case (timestamp, hashrate) =>
-        Hashrate(timestamp, hashrate, hashrate)
+  def get(from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[Hashrate]] =
+    run(getHashratesQuery(from, to, intervalType)).map(_.map { case (timestamp, hashrate) =>
+      Hashrate(timestamp, hashrate, hashrate)
     })
 
-  private def updateHashrates()(implicit ec: ExecutionContext,
-                                dc: DatabaseConfig[PostgresProfile]): Future[Unit] =
+  private def updateHashrates()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] =
     run(
       for {
         hourlyTs <- findLatestHashrateAndStepBack(IntervalType.Hourly, computeHourlyStepBack)
@@ -87,11 +93,13 @@ case object HashrateService extends StrictLogging {
       .result
       .headOption
 
-  private def findLatestHashrateAndStepBack(intervalType: IntervalType,
-                                            computeStepBack: TimeStamp => TimeStamp)(
-      implicit ec: ExecutionContext): DBActionR[TimeStamp] = {
+  private def findLatestHashrateAndStepBack(
+      intervalType: IntervalType,
+      computeStepBack: TimeStamp => TimeStamp
+  )(implicit ec: ExecutionContext): DBActionR[TimeStamp] = {
     findLatestHashrate(intervalType).map(
-      _.map(h => computeStepBack(h.timestamp)).getOrElse(ALPH.LaunchTimestamp))
+      _.map(h => computeStepBack(h.timestamp)).getOrElse(ALPH.LaunchTimestamp)
+    )
   }
 
   /*

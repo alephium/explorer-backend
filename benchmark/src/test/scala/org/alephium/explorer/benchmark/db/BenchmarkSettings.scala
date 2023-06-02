@@ -18,16 +18,15 @@ package org.alephium.explorer.benchmark.db
 
 import scala.concurrent.duration._
 
-/**
-  * Default settings for executing benchmarks.
+/** Default settings for executing benchmarks.
   */
 object BenchmarkSettings {
 
-  /**
-    * Default number of rows to generated for read benchmarks.
+  /** Default number of rows to generated for read benchmarks.
     *
-    * @note When modified also ensure that timeout set via [[batchWriteTimeout]]
-    *       is enough for creating this size data.
+    * @note
+    *   When modified also ensure that timeout set via [[batchWriteTimeout]] is enough for creating
+    *   this size data.
     */
   val readDataCount: Int = 1000000
 

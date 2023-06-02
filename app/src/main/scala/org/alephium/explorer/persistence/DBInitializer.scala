@@ -33,10 +33,13 @@ import org.alephium.explorer.persistence.schema._
 object DBInitializer extends StrictLogging {
 
   @SuppressWarnings(
-    Array("org.wartremover.warts.JavaSerializable",
-          "org.wartremover.warts.Product",
-          "org.wartremover.warts.Serializable",
-          "org.wartremover.warts.PublicInference"))
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable",
+      "org.wartremover.warts.PublicInference"
+    )
+  )
   val allTables =
     ArraySeq(
       BlockHeaderSchema.table,
@@ -61,8 +64,10 @@ object DBInitializer extends StrictLogging {
       AppStateSchema.table
     )
 
-  def initialize()(implicit executionContext: ExecutionContext,
-                   databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
+  def initialize()(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = {
     for {
       _ <- createTables()
       _ <- Migrations.migrate(databaseConfig)
@@ -70,10 +75,12 @@ object DBInitializer extends StrictLogging {
     } yield ()
   }
 
-  private def createTables()(implicit executionContext: ExecutionContext,
-                             databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
+  private def createTables()(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = {
     logger.info("Create Tables")
-    //TODO Look for something like https://flywaydb.org/ to manage schemas
+    // TODO Look for something like https://flywaydb.org/ to manage schemas
     val existingTables = run(MTable.getTables)
     existingTables
       .flatMap { tables =>
@@ -90,8 +97,10 @@ object DBInitializer extends StrictLogging {
       .map(_ => ())
   }
 
-  private def createIndexes()(implicit executionContext: ExecutionContext,
-                              databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
+  private def createIndexes()(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = {
     logger.info("Create Indexes")
     run(for {
       _ <- BlockHeaderSchema.createBlockHeadersIndexes()
@@ -106,8 +115,10 @@ object DBInitializer extends StrictLogging {
     } yield ())
   }
 
-  def dropTables()(implicit executionContext: ExecutionContext,
-                   databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
+  def dropTables()(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = {
     val query = allTables
       .map { table =>
         val name = table.baseTableRow.tableName

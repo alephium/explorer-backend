@@ -43,32 +43,34 @@ import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
 import org.alephium.util.{Duration, TimeStamp}
 
 @SuppressWarnings(
-  Array("org.wartremover.warts.JavaSerializable",
-        "org.wartremover.warts.Product",
-        "org.wartremover.warts.Serializable")) // Wartremover is complaining, don't now why :/
+  Array(
+    "org.wartremover.warts.JavaSerializable",
+    "org.wartremover.warts.Product",
+    "org.wartremover.warts.Serializable"
+  )
+) // Wartremover is complaining, don't now why :/
 class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
   "updateMainChainStatus correctly" in new Fixture {
-    forAll(Gen.oneOf(blockEntities), arbitrary[Boolean]) {
-      case (block, mainChainInput) =>
-        BlockDao.insert(block).futureValue
-        BlockDao.updateMainChainStatus(block.hash, mainChainInput).futureValue
+    forAll(Gen.oneOf(blockEntities), arbitrary[Boolean]) { case (block, mainChainInput) =>
+      BlockDao.insert(block).futureValue
+      BlockDao.updateMainChainStatus(block.hash, mainChainInput).futureValue
 
-        val fetchedBlock = BlockDao.get(block.hash).futureValue.get
-        fetchedBlock.hash is block.hash
-        fetchedBlock.mainChain is mainChainInput
+      val fetchedBlock = BlockDao.get(block.hash).futureValue.get
+      fetchedBlock.hash is block.hash
+      fetchedBlock.mainChain is mainChainInput
 
-        val inputQuery =
-          InputSchema.table.filter(_.blockHash === block.hash).map(_.mainChain).result
-        val outputQuery =
-          OutputSchema.table.filter(_.blockHash === block.hash).map(_.mainChain).result
+      val inputQuery =
+        InputSchema.table.filter(_.blockHash === block.hash).map(_.mainChain).result
+      val outputQuery =
+        OutputSchema.table.filter(_.blockHash === block.hash).map(_.mainChain).result
 
-        val inputs: Seq[Boolean]  = run(inputQuery).futureValue
-        val outputs: Seq[Boolean] = run(outputQuery).futureValue
+      val inputs: Seq[Boolean]  = run(inputQuery).futureValue
+      val outputs: Seq[Boolean] = run(outputQuery).futureValue
 
-        inputs.size is block.inputs.size
-        outputs.size is block.outputs.size
-        (inputs ++ outputs).foreach(isMainChain => isMainChain is mainChainInput)
+      inputs.size is block.inputs.size
+      outputs.size is block.outputs.size
+      (inputs ++ outputs).foreach(isMainChain => isMainChain is mainChainInput)
     }
   }
 
@@ -118,28 +120,37 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
     val from       = GroupIndex.Zero
     val to         = GroupIndex.Zero
     val chainIndex = ChainIndex(from, to)
-    val block1 = blockHeaderGen.sample.get.copy(mainChain = true,
-                                                chainFrom = from,
-                                                chainTo   = to,
-                                                timestamp = now)
-    val block2 = blockHeaderGen.sample.get.copy(mainChain = true,
-                                                chainFrom = from,
-                                                chainTo   = to,
-                                                timestamp = now.plusMinutesUnsafe(2))
-    val block3 = blockHeaderGen.sample.get.copy(mainChain = true,
-                                                chainFrom = from,
-                                                chainTo   = to,
-                                                timestamp = now.plusMinutesUnsafe(4))
-    val block4 = blockHeaderGen.sample.get.copy(mainChain = true,
-                                                chainFrom = from,
-                                                chainTo   = to,
-                                                timestamp = now.plusMinutesUnsafe(6))
+    val block1 = blockHeaderGen.sample.get.copy(
+      mainChain = true,
+      chainFrom = from,
+      chainTo = to,
+      timestamp = now
+    )
+    val block2 = blockHeaderGen.sample.get.copy(
+      mainChain = true,
+      chainFrom = from,
+      chainTo = to,
+      timestamp = now.plusMinutesUnsafe(2)
+    )
+    val block3 = blockHeaderGen.sample.get.copy(
+      mainChain = true,
+      chainFrom = from,
+      chainTo = to,
+      timestamp = now.plusMinutesUnsafe(4)
+    )
+    val block4 = blockHeaderGen.sample.get.copy(
+      mainChain = true,
+      chainFrom = from,
+      chainTo = to,
+      timestamp = now.plusMinutesUnsafe(6)
+    )
 
     run(
       LatestBlockSchema.table ++=
         chainIndexes.map { chainIndex =>
           LatestBlock.fromEntity(blockEntityGen(chainIndex).sample.get).copy(timestamp = now)
-        }).futureValue
+        }
+    ).futureValue
 
     run(BlockHeaderSchema.table ++= Seq(block1, block2, block3, block4)).futureValue
 
@@ -147,22 +158,22 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
   }
 
   "cache mainChainQuery's rowCount when table is non-empty" in new Fixture {
-    //generate some entities with random mainChain value
+    // generate some entities with random mainChain value
     val entitiesGenerator: Gen[List[BlockEntity]] =
       Gen
         .listOf(genBlockEntityWithOptionalParent(randomMainChainGen = Some(arbitrary[Boolean])))
         .map(_.map(_._1))
 
     forAll(entitiesGenerator) { blockEntities =>
-      //clear existing data
+      // clear existing data
       run(BlockHeaderSchema.table.delete).futureValue
 
       BlockDao.insertAll(blockEntities).futureValue
 
-      //expected row count in cache
+      // expected row count in cache
       val expectedMainChainCount = blockEntities.count(_.mainChain)
 
-      //invoking listMainChainSQL would populate the cache with the row count
+      // invoking listMainChainSQL would populate the cache with the row count
       eventually {
         BlockDao
           .listMainChain(Pagination.Reversible.unsafe(1, 1))
@@ -173,41 +184,40 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
   }
 
   "refresh row count cache of mainChainQuery when new data is inserted" in new Fixture {
-    //generate some entities with random mainChain value
+    // generate some entities with random mainChain value
     val entitiesGenerator: Gen[List[BlockEntity]] =
       Gen
         .listOf(genBlockEntityWithOptionalParent(randomMainChainGen = Some(arbitrary[Boolean])))
         .map(_.map(_._1))
 
-    forAll(entitiesGenerator, entitiesGenerator) {
-      case (entities1, entities2) =>
-        //clear existing data
-        run(BlockHeaderSchema.table.delete).futureValue
+    forAll(entitiesGenerator, entitiesGenerator) { case (entities1, entities2) =>
+      // clear existing data
+      run(BlockHeaderSchema.table.delete).futureValue
 
-        /** INSERT BATCH 1 - [[entities1]] */
-        BlockDao.insertAll(entities1).futureValue
-        //expected count
-        val expectedMainChainCount = entities1.count(_.mainChain)
-        //Assert the query return expected count
-        eventually {
-          BlockDao
-            .listMainChain(Pagination.Reversible.unsafe(1, 1, Random.nextBoolean()))
-            .futureValue
-            ._2 is expectedMainChainCount
-        }
+      /** INSERT BATCH 1 - [[entities1]] */
+      BlockDao.insertAll(entities1).futureValue
+      // expected count
+      val expectedMainChainCount = entities1.count(_.mainChain)
+      // Assert the query return expected count
+      eventually {
+        BlockDao
+          .listMainChain(Pagination.Reversible.unsafe(1, 1, Random.nextBoolean()))
+          .futureValue
+          ._2 is expectedMainChainCount
+      }
 
-        /** INSERT BATCH 2 - [[entities2]] */
-        //insert the next batch of block entities
-        BlockDao.insertAll(entities2).futureValue
-        //Expected total row count in cache
-        val expectedMainChainCountTotal = entities2.count(_.mainChain) + expectedMainChainCount
-        //Dispatch a query so the cache get populated
-        eventually {
-          BlockDao
-            .listMainChain(Pagination.Reversible.unsafe(1, 1, Random.nextBoolean()))
-            .futureValue
-            ._2 is expectedMainChainCountTotal
-        }
+      /** INSERT BATCH 2 - [[entities2]] */
+      // insert the next batch of block entities
+      BlockDao.insertAll(entities2).futureValue
+      // Expected total row count in cache
+      val expectedMainChainCountTotal = entities2.count(_.mainChain) + expectedMainChainCount
+      // Dispatch a query so the cache get populated
+      eventually {
+        BlockDao
+          .listMainChain(Pagination.Reversible.unsafe(1, 1, Random.nextBoolean()))
+          .futureValue
+          ._2 is expectedMainChainCountTotal
+      }
     }
   }
 
@@ -215,7 +225,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
     "successfully insert InputEntity" when {
       "there are no persisted outputs" in new Fixture {
         forAll(Gen.listOf(inputEntityGen())) { _ =>
-          //No persisted outputs so expect inputs to persist nothing
+          // No persisted outputs so expect inputs to persist nothing
           run(InputUpdateQueries.updateInputs()).futureValue is ()
           run(TransactionPerAddressSchema.table.result).futureValue is Seq.empty
         }
@@ -223,23 +233,23 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
 
       "there are existing outputs" in new Fixture {
         forAll(Gen.listOf(genInputOutput())) { inputOutputs =>
-          //clear tables
+          // clear tables
           run(OutputSchema.table.delete).futureValue
           run(TransactionPerAddressSchema.table.delete).futureValue
 
           val outputs = inputOutputs.map(_._2)
           val inputs  = inputOutputs.map(_._1)
 
-          //insert outputs
+          // insert outputs
           run(OutputSchema.table ++= outputs).futureValue should contain(outputs.size)
-          //insert inputs
+          // insert inputs
           run(InputSchema.table ++= inputs).futureValue
           run(InputUpdateQueries.updateInputs()).futureValue is ()
 
-          //expected rows in table TransactionPerAddressSchema
+          // expected rows in table TransactionPerAddressSchema
           val expected     = toTransactionPerAddressEntities(inputOutputs)
           val transactions = run(TransactionPerAddressSchema.table.result).futureValue
-          //check rows are as expected
+          // check rows are as expected
           transactions should contain theSameElementsAs expected
         }
       }
@@ -252,27 +262,33 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
     val blockflow: Seq[Seq[model.BlockEntry]] =
       blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
     val blocksProtocol: Seq[model.BlockEntry] = blockflow.flatten
-    val blockEntities: Seq[BlockEntity]       = blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
+    val blockEntities: Seq[BlockEntity] = blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
 
-    /** Convert input-output to [[org.alephium.explorer.persistence.model.TransactionPerAddressEntity]] */
-    def toTransactionPerAddressEntity(input: InputEntity,
-                                      output: OutputEntity): TransactionPerAddressEntity =
+    /** Convert input-output to
+      * [[org.alephium.explorer.persistence.model.TransactionPerAddressEntity]]
+      */
+    def toTransactionPerAddressEntity(
+        input: InputEntity,
+        output: OutputEntity
+    ): TransactionPerAddressEntity =
       TransactionPerAddressEntity(
-        hash      = output.txHash,
-        address   = output.address,
+        hash = output.txHash,
+        address = output.address,
         blockHash = output.blockHash,
         timestamp = output.timestamp,
-        txOrder   = input.txOrder,
+        txOrder = input.txOrder,
         mainChain = output.mainChain,
-        coinbase  = output.coinbase
+        coinbase = output.coinbase
       )
 
-    /** Convert multiple input-outputs to [[org.alephium.explorer.persistence.model.TransactionPerAddressEntity]] */
-    def toTransactionPerAddressEntities(inputOutputs: Iterable[(InputEntity, OutputEntity)])
-      : Iterable[TransactionPerAddressEntity] =
-      inputOutputs map {
-        case (input, output) =>
-          toTransactionPerAddressEntity(input, output)
+    /** Convert multiple input-outputs to
+      * [[org.alephium.explorer.persistence.model.TransactionPerAddressEntity]]
+      */
+    def toTransactionPerAddressEntities(
+        inputOutputs: Iterable[(InputEntity, OutputEntity)]
+    ): Iterable[TransactionPerAddressEntity] =
+      inputOutputs map { case (input, output) =>
+        toTransactionPerAddressEntity(input, output)
       }
 
   }

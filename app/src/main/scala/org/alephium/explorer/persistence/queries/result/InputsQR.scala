@@ -31,32 +31,34 @@ object InputsQR {
   implicit val inputsQRGetResult: GetResult[InputsQR] =
     (result: PositionedResult) =>
       InputsQR(
-        hint             = result.<<,
-        outputRefKey     = result.<<,
-        unlockScript     = result.<<?,
-        outputRefTxHash  = result.<<?,
+        hint = result.<<,
+        outputRefKey = result.<<,
+        unlockScript = result.<<?,
+        outputRefTxHash = result.<<?,
         outputRefAddress = result.<<?,
-        outputRefAmount  = result.<<?,
-        outputRefTokens  = result.<<?
-    )
+        outputRefAmount = result.<<?,
+        outputRefTokens = result.<<?
+      )
 }
 
 /** Query result for [[org.alephium.explorer.persistence.queries.InputQueries.getInputsQuery]] */
-final case class InputsQR(hint: Int,
-                          outputRefKey: Hash,
-                          unlockScript: Option[ByteString],
-                          outputRefTxHash: Option[TransactionId],
-                          outputRefAddress: Option[Address],
-                          outputRefAmount: Option[U256],
-                          outputRefTokens: Option[ArraySeq[Token]]) {
+final case class InputsQR(
+    hint: Int,
+    outputRefKey: Hash,
+    unlockScript: Option[ByteString],
+    outputRefTxHash: Option[TransactionId],
+    outputRefAddress: Option[Address],
+    outputRefAmount: Option[U256],
+    outputRefTokens: Option[ArraySeq[Token]]
+) {
 
   def toApiInput(): Input =
     Input(
-      outputRef      = OutputRef(hint, outputRefKey),
-      unlockScript   = unlockScript,
-      txHashRef      = outputRefTxHash,
-      address        = outputRefAddress,
+      outputRef = OutputRef(hint, outputRefKey),
+      unlockScript = unlockScript,
+      txHashRef = outputRefTxHash,
+      address = outputRefAddress,
       attoAlphAmount = outputRefAmount,
-      tokens         = outputRefTokens
+      tokens = outputRefTokens
     )
 }

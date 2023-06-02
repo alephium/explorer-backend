@@ -30,8 +30,9 @@ import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.model.Address
 
 object ContractQueries {
-  def insertOrUpdateContracts(events: Iterable[EventEntity])(
-      implicit ec: ExecutionContext): DBActionW[Unit] = {
+  def insertOrUpdateContracts(
+      events: Iterable[EventEntity]
+  )(implicit ec: ExecutionContext): DBActionW[Unit] = {
     for {
       _ <- insertContractCreation(events)
       _ <- updateContractDestruction(events)
@@ -73,17 +74,18 @@ object ContractQueries {
             params >> event.creationTxHash
             params >> event.creationTimestamp
             params >> event.creationEventOrder
-        }
+          }
 
       SQLActionBuilder(
         queryParts = query,
-        unitPConv  = parameters
+        unitPConv = parameters
       ).asUpdate
     }
   }
 
   private def updateContractDestructionEventEntities(
-      destroyInfos: Iterable[ContractEntity.DestroyInfo]): DBActionW[Int] = {
+      destroyInfos: Iterable[ContractEntity.DestroyInfo]
+  ): DBActionW[Int] = {
     QuerySplitter.splitUpdates(rows = destroyInfos, columnsPerRow = 5) { (destroyInfos, _) =>
       val query =
         destroyInfos
@@ -103,17 +105,18 @@ object ContractQueries {
             params >> destroyInfo.timestamp
             params >> destroyInfo.eventOrder
             params >> destroyInfo.contract
-        }
+          }
 
       SQLActionBuilder(
         queryParts = query,
-        unitPConv  = parameters
+        unitPConv = parameters
       ).asUpdate
     }
   }
 
-  def getParentAddressQuery(contract: Address)(
-      implicit ec: ExecutionContext): DBActionR[Option[Address]] = {
+  def getParentAddressQuery(
+      contract: Address
+  )(implicit ec: ExecutionContext): DBActionR[Option[Address]] = {
     sql"""
       SELECT parent
       FROM contracts

@@ -32,47 +32,53 @@ object OutputsQR {
   implicit val outputsQRGetResult: GetResult[OutputsQR] =
     (result: PositionedResult) =>
       OutputsQR(
-        outputType     = result.<<,
-        hint           = result.<<,
-        key            = result.<<,
-        amount         = result.<<,
-        address        = result.<<,
-        tokens         = result.<<?,
-        lockTime       = result.<<?,
-        message        = result.<<?,
+        outputType = result.<<,
+        hint = result.<<,
+        key = result.<<,
+        amount = result.<<,
+        address = result.<<,
+        tokens = result.<<?,
+        lockTime = result.<<?,
+        message = result.<<?,
         spentFinalized = result.<<?
-    )
+      )
 }
 
 /** Query result for [[org.alephium.explorer.persistence.queries.OutputQueries.getOutputsQuery]] */
-final case class OutputsQR(outputType: OutputEntity.OutputType,
-                           hint: Int,
-                           key: Hash,
-                           amount: U256,
-                           address: Address,
-                           tokens: Option[ArraySeq[Token]],
-                           lockTime: Option[TimeStamp],
-                           message: Option[ByteString],
-                           spentFinalized: Option[TransactionId]) {
+final case class OutputsQR(
+    outputType: OutputEntity.OutputType,
+    hint: Int,
+    key: Hash,
+    amount: U256,
+    address: Address,
+    tokens: Option[ArraySeq[Token]],
+    lockTime: Option[TimeStamp],
+    message: Option[ByteString],
+    spentFinalized: Option[TransactionId]
+) {
 
   def toApiOutput(): Output =
     outputType match {
       case OutputEntity.Asset =>
-        AssetOutput(hint           = hint,
-                    key            = key,
-                    attoAlphAmount = amount,
-                    address        = address,
-                    tokens         = tokens,
-                    lockTime       = lockTime,
-                    message        = message,
-                    spent          = spentFinalized)
+        AssetOutput(
+          hint = hint,
+          key = key,
+          attoAlphAmount = amount,
+          address = address,
+          tokens = tokens,
+          lockTime = lockTime,
+          message = message,
+          spent = spentFinalized
+        )
 
       case OutputEntity.Contract =>
-        ContractOutput(hint           = hint,
-                       key            = key,
-                       attoAlphAmount = amount,
-                       address        = address,
-                       tokens         = tokens,
-                       spent          = spentFinalized)
+        ContractOutput(
+          hint = hint,
+          key = key,
+          attoAlphAmount = amount,
+          address = address,
+          tokens = tokens,
+          spent = spentFinalized
+        )
     }
 }

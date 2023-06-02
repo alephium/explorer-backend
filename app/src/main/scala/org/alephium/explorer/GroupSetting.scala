@@ -32,7 +32,7 @@ object GroupSetting {
     } yield ChainIndex.unsafe(i, j))
 
     new GroupSetting(
-      groupConfig  = groupConfig,
+      groupConfig = groupConfig,
       chainIndexes = chainIndexes
     )
   }

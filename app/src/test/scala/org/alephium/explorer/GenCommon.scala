@@ -54,9 +54,8 @@ object GenCommon {
     } yield (time, unit)
 
   val genTimeDurationForConfigString: Gen[String] =
-    genTimeDurationForConfig flatMap {
-      case (value, unit) =>
-        s"$value $unit"
+    genTimeDurationForConfig flatMap { case (value, unit) =>
+      s"$value $unit"
     }
 
   val genFiniteDuration: Gen[FiniteDuration] =
@@ -65,15 +64,16 @@ object GenCommon {
   def genStringOfLength(length: Int, charGen: Gen[Char] = Gen.alphaChar): Gen[String] =
     Gen.listOfN(length, charGen).map(_.mkString)
 
-  def genStringOfLengthBetween(min: Int,
-                               max: Int,
-                               charGen: Gen[Char] = Gen.alphaChar): Gen[String] =
+  def genStringOfLengthBetween(
+      min: Int,
+      max: Int,
+      charGen: Gen[Char] = Gen.alphaChar
+  ): Gen[String] =
     Gen.choose(min, max) flatMap { length =>
       genStringOfLength(length, charGen)
     }
 
-  /**
-    * Randomly pick one from the list.
+  /** Randomly pick one from the list.
     *
     * If the list is empty generate new from the `Gen[T]`.
     */

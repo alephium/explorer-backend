@@ -34,28 +34,34 @@ import org.alephium.explorer.util.Scheduler
 
 case object MempoolSyncService extends StrictLogging {
 
-  def start(nodeUris: ArraySeq[Uri], interval: FiniteDuration)(implicit ec: ExecutionContext,
-                                                               dc: DatabaseConfig[PostgresProfile],
-                                                               blockFlowClient: BlockFlowClient,
-                                                               scheduler: Scheduler): Future[Unit] =
+  def start(nodeUris: ArraySeq[Uri], interval: FiniteDuration)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      scheduler: Scheduler
+  ): Future[Unit] =
     scheduler.scheduleLoop(
-      taskId        = this.productPrefix,
+      taskId = this.productPrefix,
       firstInterval = ScalaDuration.Zero,
-      loopInterval  = interval
+      loopInterval = interval
     )(syncOnce(nodeUris))
 
-  def syncOnce(nodeUris: ArraySeq[Uri])(implicit ec: ExecutionContext,
-                                        dc: DatabaseConfig[PostgresProfile],
-                                        blockFlowClient: BlockFlowClient): Future[Unit] = {
+  def syncOnce(nodeUris: ArraySeq[Uri])(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient
+  ): Future[Unit] = {
     logger.debug("Syncing mempol")
     Future.sequence(nodeUris.map(syncMempool)).map { _ =>
       logger.debug("Mempool synced")
     }
   }
 
-  private def syncMempool(uri: Uri)(implicit ec: ExecutionContext,
-                                    dc: DatabaseConfig[PostgresProfile],
-                                    blockFlowClient: BlockFlowClient): Future[Unit] = {
+  private def syncMempool(uri: Uri)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient
+  ): Future[Unit] = {
     blockFlowClient.fetchMempoolTransactions(uri).flatMap { utxs =>
       MempoolDao.listHashes().flatMap { localUtxs =>
         val localUtxsSet = localUtxs.toSet

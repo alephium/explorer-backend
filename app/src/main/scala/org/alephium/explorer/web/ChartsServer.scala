@@ -31,9 +31,10 @@ import org.alephium.explorer.api.model.{IntervalType, TimedCount}
 import org.alephium.explorer.service.{HashrateService, TransactionHistoryService}
 import org.alephium.util.Duration
 
-class ChartsServer()(implicit val executionContext: ExecutionContext,
-                     dc: DatabaseConfig[PostgresProfile])
-    extends Server
+class ChartsServer()(implicit
+    val executionContext: ExecutionContext,
+    dc: DatabaseConfig[PostgresProfile]
+) extends Server
     with ChartsEndpoints {
 
   // scalastyle:off magic.number
@@ -43,37 +44,37 @@ class ChartsServer()(implicit val executionContext: ExecutionContext,
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
-      route(getHashrates.serverLogic[Future] {
-        case (timeInterval, interval) =>
-          validateTimeInterval(timeInterval, interval) {
-            HashrateService.get(timeInterval.from, timeInterval.to, interval)
-          }
+      route(getHashrates.serverLogic[Future] { case (timeInterval, interval) =>
+        validateTimeInterval(timeInterval, interval) {
+          HashrateService.get(timeInterval.from, timeInterval.to, interval)
+        }
       }),
-      route(getAllChainsTxCount.serverLogic[Future] {
-        case (timeInterval, interval) =>
-          validateTimeInterval(timeInterval, interval) {
-            TransactionHistoryService
-              .getAllChains(timeInterval.from, timeInterval.to, interval)
-              .map { seq =>
-                seq.map {
-                  case (timestamp, count) => TimedCount(timestamp, count)
-                }
+      route(getAllChainsTxCount.serverLogic[Future] { case (timeInterval, interval) =>
+        validateTimeInterval(timeInterval, interval) {
+          TransactionHistoryService
+            .getAllChains(timeInterval.from, timeInterval.to, interval)
+            .map { seq =>
+              seq.map { case (timestamp, count) =>
+                TimedCount(timestamp, count)
               }
-          }
+            }
+        }
       }),
-      route(getPerChainTxCount.serverLogic[Future] {
-        case (timeInterval, interval) =>
-          validateTimeInterval(timeInterval, interval) {
-            TransactionHistoryService
-              .getPerChain(timeInterval.from, timeInterval.to, interval)
-          }
+      route(getPerChainTxCount.serverLogic[Future] { case (timeInterval, interval) =>
+        validateTimeInterval(timeInterval, interval) {
+          TransactionHistoryService
+            .getPerChain(timeInterval.from, timeInterval.to, interval)
+        }
       })
     )
 
   private def validateTimeInterval[A](timeInterval: TimeInterval, intervalType: IntervalType)(
-      contd: => Future[A]): Future[Either[ApiError[_ <: StatusCode], A]] =
-    IntervalType.validateTimeInterval(timeInterval,
-                                      intervalType,
-                                      maxHourlyTimeSpan,
-                                      maxDailyTimeSpan)(contd)
+      contd: => Future[A]
+  ): Future[Either[ApiError[_ <: StatusCode], A]] =
+    IntervalType.validateTimeInterval(
+      timeInterval,
+      intervalType,
+      maxHourlyTimeSpan,
+      maxDailyTimeSpan
+    )(contd)
 }

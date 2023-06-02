@@ -28,27 +28,26 @@ class InputUpdateQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
   "Input Update" should {
     "update inputs when address is already set" in {
-      forAll(outputEntityGen, inputEntityGen()) {
-        case (output, input) =>
-          run(for {
-            _ <- OutputSchema.table += output
-            _ <- InputSchema.table +=
-              input.copy(outputRefKey = output.key, outputRefAddress = Some(output.address))
-          } yield ()).futureValue
+      forAll(outputEntityGen, inputEntityGen()) { case (output, input) =>
+        run(for {
+          _ <- OutputSchema.table += output
+          _ <- InputSchema.table +=
+            input.copy(outputRefKey = output.key, outputRefAddress = Some(output.address))
+        } yield ()).futureValue
 
-          val inputBeforeUpdate =
-            run(InputSchema.table.filter(_.outputRefKey === output.key).result.head).futureValue
+        val inputBeforeUpdate =
+          run(InputSchema.table.filter(_.outputRefKey === output.key).result.head).futureValue
 
-          inputBeforeUpdate.outputRefAddress is Some(output.address)
-          inputBeforeUpdate.outputRefAmount is None
+        inputBeforeUpdate.outputRefAddress is Some(output.address)
+        inputBeforeUpdate.outputRefAmount is None
 
-          run(InputUpdateQueries.updateInputs()).futureValue
+        run(InputUpdateQueries.updateInputs()).futureValue
 
-          val updatedInput =
-            run(InputSchema.table.filter(_.outputRefKey === output.key).result.head).futureValue
+        val updatedInput =
+          run(InputSchema.table.filter(_.outputRefKey === output.key).result.head).futureValue
 
-          updatedInput.outputRefAddress is Some(output.address)
-          updatedInput.outputRefAmount is Some(output.amount)
+        updatedInput.outputRefAddress is Some(output.address)
+        updatedInput.outputRefAmount is Some(output.amount)
       }
     }
   }

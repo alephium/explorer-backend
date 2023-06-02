@@ -26,13 +26,15 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer.api.MempoolEndpoints
 import org.alephium.explorer.service.TransactionService
 
-class MempoolServer(implicit val executionContext: ExecutionContext,
-                    dc: DatabaseConfig[PostgresProfile])
-    extends Server
+class MempoolServer(implicit
+    val executionContext: ExecutionContext,
+    dc: DatabaseConfig[PostgresProfile]
+) extends Server
     with MempoolEndpoints {
   val routes: ArraySeq[Router => Route] = ArraySeq(
     route(listMempoolTransactions.serverLogicSuccess[Future] { pagination =>
       TransactionService
         .listMempoolTransactions(pagination)
-    }))
+    })
+  )
 }

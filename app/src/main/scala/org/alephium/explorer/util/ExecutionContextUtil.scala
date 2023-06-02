@@ -26,8 +26,8 @@ import org.alephium.explorer.error._
 
 object ExecutionContextUtil extends StrictLogging {
 
-  //Currently exiting on every error, we will fined grained this latter
-  //if we see other errors happening that are non-fatal
+  // Currently exiting on every error, we will fined grained this latter
+  // if we see other errors happening that are non-fatal
   def reporter(exit: => Unit): Throwable => Unit = {
     case fse: FatalSystemExit =>
       logger.error(s"Fatal error, closing app", fse)

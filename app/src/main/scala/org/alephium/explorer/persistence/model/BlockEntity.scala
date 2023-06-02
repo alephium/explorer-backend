@@ -48,18 +48,17 @@ final case class BlockEntity(
 ) extends FlowEntity {
   def updateMainChain(newMainChain: Boolean): BlockEntity = {
     this.copy(
-      mainChain    = newMainChain,
+      mainChain = newMainChain,
       transactions = transactions.map(_.copy(mainChain = newMainChain)),
-      inputs       = inputs.map(_.copy(mainChain = newMainChain)),
-      outputs      = outputs.map(_.copy(mainChain = newMainChain))
+      inputs = inputs.map(_.copy(mainChain = newMainChain)),
+      outputs = outputs.map(_.copy(mainChain = newMainChain))
     )
   }
 
   /** Builds entries for block_deps table */
   def toBlockDepEntities(): ArraySeq[BlockDepEntity] =
-    deps.zipWithIndex map {
-      case (dep, i) =>
-        BlockDepEntity(hash = hash, dep = dep, order = i)
+    deps.zipWithIndex map { case (dep, i) =>
+      BlockDepEntity(hash = hash, dep = dep, order = i)
     }
 
   @inline def toBlockHeader(groupNum: Int): BlockHeader =

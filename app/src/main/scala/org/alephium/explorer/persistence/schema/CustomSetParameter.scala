@@ -111,11 +111,11 @@ object CustomSetParameter {
 
   implicit object ByteStringOptionSetParameter extends SetParameter[Option[ByteString]] {
 
-    /** {{{Params.setBytesOption(input.map(_.value.bytes.toArray[Byte]))}}} sets the value
-      * to java.lang.Object instead of null which fails and requires casting at SQL level.
+    /** {{{Params.setBytesOption(input.map(_.value.bytes.toArray[Byte]))}}} sets the value to
+      * java.lang.Object instead of null which fails and requires casting at SQL level.
       *
-      * ERROR: org.postgresql.util.PSQLException: ERROR: column "***" is of type bytea but expression is of type oid
-      * Hint: You will need to rewrite or cast the expression.
+      * ERROR: org.postgresql.util.PSQLException: ERROR: column "***" is of type bytea but
+      * expression is of type oid Hint: You will need to rewrite or cast the expression.
       *
       * To keep this simple `null` is used and which set the column value as expected.
       */
@@ -125,19 +125,19 @@ object CustomSetParameter {
           params setBytes bytes.toArray
 
         case None =>
-          //scalastyle:off null
+          // scalastyle:off null
           params setBytes null
-        //scalastyle:on null
+        // scalastyle:on null
       }
   }
 
   implicit object TokensOptionSetParameter extends SetParameter[Option[ArraySeq[Token]]] {
 
-    /** {{{Params.setBytesOption(input.map(_.value.bytes.toArray[Byte]))}}} sets the value
-      * to java.lang.Object instead of null which fails and requires casting at SQL level.
+    /** {{{Params.setBytesOption(input.map(_.value.bytes.toArray[Byte]))}}} sets the value to
+      * java.lang.Object instead of null which fails and requires casting at SQL level.
       *
-      * ERROR: org.postgresql.util.PSQLException: ERROR: column "***" is of type bytea but expression is of type oid
-      * Hint: You will need to rewrite or cast the expression.
+      * ERROR: org.postgresql.util.PSQLException: ERROR: column "***" is of type bytea but
+      * expression is of type oid Hint: You will need to rewrite or cast the expression.
       *
       * To keep this simple `null` is used and which set the column value as expected.
       */
@@ -147,9 +147,9 @@ object CustomSetParameter {
           params setBytes serialize(tokens).toArray
 
         case None =>
-          //scalastyle:off null
+          // scalastyle:off null
           params setBytes null
-        //scalastyle:on null
+        // scalastyle:on null
       }
   }
 
@@ -160,9 +160,9 @@ object CustomSetParameter {
           params setBytes serialize(byteStrings).toArray
 
         case None =>
-          //scalastyle:off null
+          // scalastyle:off null
           params setBytes null
-        //scalastyle:on null
+        // scalastyle:on null
       }
   }
 
@@ -193,11 +193,11 @@ object CustomSetParameter {
 
   implicit object BlockEntryHashOptionSetParameter extends SetParameter[Option[BlockHash]] {
 
-    /** {{{Params.setBytesOption(input.map(_.value.bytes.toArray[Byte]))}}} sets the value
-      * to java.lang.Object instead of null which fails and requires casting at SQL level.
+    /** {{{Params.setBytesOption(input.map(_.value.bytes.toArray[Byte]))}}} sets the value to
+      * java.lang.Object instead of null which fails and requires casting at SQL level.
       *
-      * ERROR: org.postgresql.util.PSQLException: ERROR: column "***" is of type bytea but expression is of type oid
-      * Hint: You will need to rewrite or cast the expression.
+      * ERROR: org.postgresql.util.PSQLException: ERROR: column "***" is of type bytea but
+      * expression is of type oid Hint: You will need to rewrite or cast the expression.
       *
       * To keep this simple `null` is used and which set the column value as expected.
       */
@@ -207,9 +207,9 @@ object CustomSetParameter {
           params setBytes value.value.bytes.toArray
 
         case None =>
-          //scalastyle:off null
+          // scalastyle:off null
           params setBytes null
-        //scalastyle:on null
+        // scalastyle:on null
       }
   }
 
@@ -220,9 +220,9 @@ object CustomSetParameter {
           params setBytes value.value.bytes.toArray
 
         case None =>
-          //scalastyle:off null
+          // scalastyle:off null
           params setBytes null
-        //scalastyle:on null
+        // scalastyle:on null
       }
   }
   implicit object TimeStampSetParameter extends SetParameter[TimeStamp] {

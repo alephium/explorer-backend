@@ -41,16 +41,17 @@ import org.alephium.protocol.{ALPH, Hash}
 import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
-class Queries(val config: DatabaseConfig[PostgresProfile])(
-    implicit val executionContext: ExecutionContext)
+class Queries(val config: DatabaseConfig[PostgresProfile])(implicit
+    val executionContext: ExecutionContext
+)
 
-/**
-  * JMH state for benchmarking reads from TransactionDao
+/** JMH state for benchmarking reads from TransactionDao
   */
 // scalastyle:off magic.number
 // scalastyle:off method.length
 @SuppressWarnings(
-  Array("org.wartremover.warts.OptionPartial", "org.wartremover.warts.GlobalExecutionContext"))
+  Array("org.wartremover.warts.OptionPartial", "org.wartremover.warts.GlobalExecutionContext")
+)
 class AddressReadState(val db: DBExecutor)
     extends ReadBenchmarkState[OutputEntity](testDataCount = 4000, db = db) {
 
@@ -68,53 +69,58 @@ class AddressReadState(val db: DBExecutor)
   lazy val hashes: ArraySeq[(TransactionId, BlockHash)] = ArraySeq.from(
     Random
       .shuffle(blocks.flatMap(_.transactions.map(tx => (tx.hash, tx.blockHash))).toMap)
-      .take(100))
+      .take(100)
+  )
 
   lazy val txHashes: ArraySeq[TransactionId] = hashes.map(_._1)
 
   val pagination: Pagination = Pagination.unsafe(
-    page  = 1,
+    page = 1,
     limit = 100
   )
 
-  private def generateInput(blockHash: BlockHash,
-                            txHash: TransactionId,
-                            timestamp: TimeStamp,
-                            hint: Int,
-                            key: Hash): InputEntity = {
+  private def generateInput(
+      blockHash: BlockHash,
+      txHash: TransactionId,
+      timestamp: TimeStamp,
+      hint: Int,
+      key: Hash
+  ): InputEntity = {
     InputEntity(
-      blockHash    = blockHash,
-      txHash       = txHash,
-      timestamp    = timestamp,
-      hint         = hint,
+      blockHash = blockHash,
+      txHash = txHash,
+      timestamp = timestamp,
+      hint = hint,
       outputRefKey = key,
       unlockScript = None,
-      mainChain    = true,
-      inputOrder   = 0,
-      txOrder      = 0,
+      mainChain = true,
+      inputOrder = 0,
+      txOrder = 0,
       None,
       None,
       None,
       None
     )
   }
-  private def generateTransaction(blockHash: BlockHash,
-                                  txHash: TransactionId,
-                                  timestamp: TimeStamp): TransactionEntity =
+  private def generateTransaction(
+      blockHash: BlockHash,
+      txHash: TransactionId,
+      timestamp: TimeStamp
+  ): TransactionEntity =
     TransactionEntity(
-      hash              = txHash,
-      blockHash         = blockHash,
-      timestamp         = timestamp,
-      chainFrom         = new GroupIndex(1),
-      chainTo           = new GroupIndex(3),
-      gasAmount         = 0,
-      gasPrice          = U256.unsafe(0),
-      order             = 0,
-      mainChain         = true,
+      hash = txHash,
+      blockHash = blockHash,
+      timestamp = timestamp,
+      chainFrom = new GroupIndex(1),
+      chainTo = new GroupIndex(3),
+      gasAmount = 0,
+      gasPrice = U256.unsafe(0),
+      order = 0,
+      mainChain = true,
       scriptExecutionOk = Random.nextBoolean(),
-      inputSignatures   = None,
-      scriptSignatures  = None,
-      coinbase          = false
+      inputSignatures = None,
+      scriptSignatures = None,
+      coinbase = false
     )
 
   def generateData(currentCacheSize: Int): OutputEntity = {
@@ -123,21 +129,21 @@ class AddressReadState(val db: DBExecutor)
     val timestamp = TimeStamp.now()
 
     OutputEntity(
-      blockHash      = blockHash,
-      txHash         = txHash,
-      timestamp      = timestamp,
-      outputType     = OutputEntity.OutputType.unsafe(Random.nextInt(2)),
-      hint           = Random.nextInt(),
-      key            = Hash.generate,
-      amount         = ALPH.alph(1),
-      address        = address,
-      tokens         = None,
-      mainChain      = true,
-      lockTime       = None,
-      message        = None,
-      outputOrder    = 0,
-      txOrder        = 0,
-      coinbase       = false,
+      blockHash = blockHash,
+      txHash = txHash,
+      timestamp = timestamp,
+      outputType = OutputEntity.OutputType.unsafe(Random.nextInt(2)),
+      hint = Random.nextInt(),
+      key = Hash.generate,
+      amount = ALPH.alph(1),
+      address = address,
+      tokens = None,
+      mainChain = true,
+      lockTime = None,
+      message = None,
+      outputOrder = 0,
+      txOrder = 0,
+      coinbase = false,
       spentFinalized = None,
       spentTimestamp = None
     )
@@ -166,26 +172,26 @@ class AddressReadState(val db: DBExecutor)
       val transactions = ArraySeq(generateTransaction(blockHash, txHash, timestamp))
 
       BlockEntity(
-        hash         = blockHash,
-        timestamp    = timestamp,
-        chainFrom    = new GroupIndex(1),
-        chainTo      = new GroupIndex(16),
-        height       = Height.genesis,
-        deps         = ArraySeq.empty,
+        hash = blockHash,
+        timestamp = timestamp,
+        chainFrom = new GroupIndex(1),
+        chainTo = new GroupIndex(16),
+        height = Height.genesis,
+        deps = ArraySeq.empty,
         transactions = transactions,
-        inputs       = inputs,
-        outputs      = ArraySeq(output),
-        mainChain    = true,
-        nonce        = ByteString.emptyByteString,
-        version      = 0,
+        inputs = inputs,
+        outputs = ArraySeq(output),
+        mainChain = true,
+        nonce = ByteString.emptyByteString,
+        version = 0,
         depStateHash = Blake2b.generate,
-        txsHash      = Blake2b.generate,
-        target       = ByteString.emptyByteString,
-        hashrate     = BigInteger.ONE
+        txsHash = Blake2b.generate,
+        target = ByteString.emptyByteString,
+        hashrate = BigInteger.ONE
       )
     })
 
-    //drop existing tables
+    // drop existing tables
     val _ = db.dropTableIfExists(BlockHeaderSchema.table)
     val _ = db.dropTableIfExists(TransactionSchema.table)
     val _ = db.dropTableIfExists(InputSchema.table)
@@ -208,7 +214,7 @@ class AddressReadState(val db: DBExecutor)
         .andThen(OutputSchema.createNonSpentIndex())
 
     val _ = db.runNow(
-      action  = createTable,
+      action = createTable,
       timeout = batchWriteTimeout
     )
 
@@ -223,11 +229,13 @@ class AddressReadState(val db: DBExecutor)
     val from = ALPH.LaunchTimestamp
     val to   = DataGenerator.timestampMaxValue
     val _ =
-      Await.result(FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from)),
-                   batchWriteTimeout)
+      Await.result(
+        FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from)),
+        batchWriteTimeout
+      )
 
     val _ = db.runNow(
-      action  = InputUpdateQueries.updateInputs(),
+      action = InputUpdateQueries.updateInputs(),
       timeout = batchWriteTimeout
     )
 
@@ -237,13 +245,11 @@ class AddressReadState(val db: DBExecutor)
 
 // scalastyle:off magic.number
 
-/**
-  * JMH State For forward iteration with HikariCP.
+/** JMH State For forward iteration with HikariCP.
   *
-  *  Reverse benchmark with HikariCP is not required because
-  *  these benchmarks are actually for when connection pooling is
-  *  disabled to prove that raw SQL queries are faster with minimal
-  *  connections whereas typed queries require more connections to be faster.
+  * Reverse benchmark with HikariCP is not required because these benchmarks are actually for when
+  * connection pooling is disabled to prove that raw SQL queries are faster with minimal connections
+  * whereas typed queries require more connections to be faster.
   */
 @State(Scope.Thread)
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))

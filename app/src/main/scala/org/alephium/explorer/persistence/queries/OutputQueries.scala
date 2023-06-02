@@ -39,9 +39,11 @@ object OutputQueries {
 
   def insertOutputs(outputs: Iterable[OutputEntity]): DBActionRWT[Unit] =
     DBIOAction
-      .seq(insertBasicOutputs(outputs),
-           insertTxPerAddressFromOutputs(outputs),
-           insertTokensFromOutputs(outputs))
+      .seq(
+        insertBasicOutputs(outputs),
+        insertTxPerAddressFromOutputs(outputs),
+        insertTokensFromOutputs(outputs)
+      )
       .transactionally
 
   /** Inserts outputs or ignore rows with primary key conflict */
@@ -51,28 +53,28 @@ object OutputQueries {
       .splitUpdates(rows = outputs, columnsPerRow = 17) { (outputs, placeholder) =>
         val query =
           s"""
-           |INSERT INTO outputs ("block_hash",
-           |                     "tx_hash",
-           |                     "block_timestamp",
-           |                     "output_type",
-           |                     "hint",
-           |                     "key",
-           |                     "amount",
-           |                     "address",
-           |                     "tokens",
-           |                     "main_chain",
-           |                     "lock_time",
-           |                     "message",
-           |                     "output_order",
-           |                     "tx_order",
-           |                     "coinbase",
-           |                     "spent_finalized",
-           |                     "spent_timestamp")
-           |VALUES $placeholder
-           |ON CONFLICT
-           |    ON CONSTRAINT outputs_pk
-           |    DO NOTHING
-           |""".stripMargin
+             |INSERT INTO outputs ("block_hash",
+             |                     "tx_hash",
+             |                     "block_timestamp",
+             |                     "output_type",
+             |                     "hint",
+             |                     "key",
+             |                     "amount",
+             |                     "address",
+             |                     "tokens",
+             |                     "main_chain",
+             |                     "lock_time",
+             |                     "message",
+             |                     "output_order",
+             |                     "tx_order",
+             |                     "coinbase",
+             |                     "spent_finalized",
+             |                     "spent_timestamp")
+             |VALUES $placeholder
+             |ON CONFLICT
+             |    ON CONSTRAINT outputs_pk
+             |    DO NOTHING
+             |""".stripMargin
 
         val parameters: SetParameter[Unit] =
           (_: Unit, params: PositionedParameters) =>
@@ -94,11 +96,11 @@ object OutputQueries {
               params >> output.coinbase
               params >> output.spentFinalized
               params >> output.spentTimestamp
-          }
+            }
 
         SQLActionBuilder(
           queryParts = query,
-          unitPConv  = parameters
+          unitPConv = parameters
         ).asUpdate
       }
   // scalastyle:on magic.number
@@ -123,11 +125,11 @@ object OutputQueries {
             params >> output.txOrder
             params >> output.mainChain
             params >> output.coinbase
-        }
+          }
 
       SQLActionBuilder(
         queryParts = query,
-        unitPConv  = parameters
+        unitPConv = parameters
       ).asUpdate
     }
   }
@@ -157,129 +159,128 @@ object OutputQueries {
       (tokenOutputs, placeholder) =>
         val query =
           s"""
-           |INSERT INTO token_outputs ("block_hash",
-           |                     "tx_hash",
-           |                     "block_timestamp",
-           |                     "output_type",
-           |                     "hint",
-           |                     "key",
-           |                     "token",
-           |                     "amount",
-           |                     "address",
-           |                     "main_chain",
-           |                     "lock_time",
-           |                     "message",
-           |                     "output_order",
-           |                     "tx_order",
-           |                     "spent_finalized",
-           |                     "spent_timestamp")
-           |VALUES $placeholder
-           |ON CONFLICT
-           |    ON CONSTRAINT token_outputs_pk
-           |    DO NOTHING
-           |""".stripMargin
+             |INSERT INTO token_outputs ("block_hash",
+             |                     "tx_hash",
+             |                     "block_timestamp",
+             |                     "output_type",
+             |                     "hint",
+             |                     "key",
+             |                     "token",
+             |                     "amount",
+             |                     "address",
+             |                     "main_chain",
+             |                     "lock_time",
+             |                     "message",
+             |                     "output_order",
+             |                     "tx_order",
+             |                     "spent_finalized",
+             |                     "spent_timestamp")
+             |VALUES $placeholder
+             |ON CONFLICT
+             |    ON CONSTRAINT token_outputs_pk
+             |    DO NOTHING
+             |""".stripMargin
 
         val parameters: SetParameter[Unit] =
           (_: Unit, params: PositionedParameters) =>
-            tokenOutputs foreach {
-              case (token, output) =>
-                params >> output.blockHash
-                params >> output.txHash
-                params >> output.timestamp
-                params >> output.outputType
-                params >> output.hint
-                params >> output.key
-                params >> token.id
-                params >> token.amount
-                params >> output.address
-                params >> output.mainChain
-                params >> output.lockTime
-                params >> output.message
-                params >> output.outputOrder
-                params >> output.txOrder
-                params >> output.spentFinalized
-                params >> output.spentTimestamp
-          }
+            tokenOutputs foreach { case (token, output) =>
+              params >> output.blockHash
+              params >> output.txHash
+              params >> output.timestamp
+              params >> output.outputType
+              params >> output.hint
+              params >> output.key
+              params >> token.id
+              params >> token.amount
+              params >> output.address
+              params >> output.mainChain
+              params >> output.lockTime
+              params >> output.message
+              params >> output.outputOrder
+              params >> output.txOrder
+              params >> output.spentFinalized
+              params >> output.spentTimestamp
+            }
 
         SQLActionBuilder(
           queryParts = query,
-          unitPConv  = parameters
+          unitPConv = parameters
         ).asUpdate
     }
   }
   // scalastyle:on magic.number
 
   private def insertTransactionTokenFromOutputs(
-      tokenOutputs: Iterable[(Token, OutputEntity)]): DBActionW[Int] = {
+      tokenOutputs: Iterable[(Token, OutputEntity)]
+  ): DBActionW[Int] = {
     QuerySplitter.splitUpdates(rows = tokenOutputs, columnsPerRow = 6) {
       (tokenOutputs, placeholder) =>
         val query =
           s"""
-           |  INSERT INTO transaction_per_token (tx_hash, block_hash, token, block_timestamp, tx_order, main_chain )
-           |  VALUES $placeholder
-           |  ON CONFLICT (tx_hash, block_hash, token) DO NOTHING
-           |""".stripMargin
+             |  INSERT INTO transaction_per_token (tx_hash, block_hash, token, block_timestamp, tx_order, main_chain )
+             |  VALUES $placeholder
+             |  ON CONFLICT (tx_hash, block_hash, token) DO NOTHING
+             |""".stripMargin
 
         val parameters: SetParameter[Unit] =
           (_: Unit, params: PositionedParameters) =>
-            tokenOutputs foreach {
-              case (token, output) =>
-                params >> output.txHash
-                params >> output.blockHash
-                params >> token
-                params >> output.timestamp
-                params >> output.txOrder
-                params >> output.mainChain
-          }
+            tokenOutputs foreach { case (token, output) =>
+              params >> output.txHash
+              params >> output.blockHash
+              params >> token
+              params >> output.timestamp
+              params >> output.txOrder
+              params >> output.mainChain
+            }
 
         SQLActionBuilder(
           queryParts = query,
-          unitPConv  = parameters
+          unitPConv = parameters
         ).asUpdate
     }
   }
 
   private def insertTokenPerAddressFromOutputs(
-      tokenOutputs: Iterable[(Token, OutputEntity)]): DBActionW[Int] = {
+      tokenOutputs: Iterable[(Token, OutputEntity)]
+  ): DBActionW[Int] = {
     QuerySplitter.splitUpdates(rows = tokenOutputs, columnsPerRow = 7) {
       (tokenOutputs, placeholder) =>
         val query =
           s"""
-           |INSERT INTO token_tx_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
-           |VALUES $placeholder
-           |ON CONFLICT (tx_hash, block_hash, address, token)
-           |DO NOTHING
-           |""".stripMargin
+             |INSERT INTO token_tx_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
+             |VALUES $placeholder
+             |ON CONFLICT (tx_hash, block_hash, address, token)
+             |DO NOTHING
+             |""".stripMargin
 
         val parameters: SetParameter[Unit] =
           (_: Unit, params: PositionedParameters) =>
-            tokenOutputs foreach {
-              case (token, output) =>
-                params >> output.address
-                params >> output.txHash
-                params >> output.blockHash
-                params >> output.timestamp
-                params >> output.txOrder
-                params >> output.mainChain
-                params >> token
-          }
+            tokenOutputs foreach { case (token, output) =>
+              params >> output.address
+              params >> output.txHash
+              params >> output.blockHash
+              params >> output.timestamp
+              params >> output.txOrder
+              params >> output.mainChain
+              params >> token
+            }
 
         SQLActionBuilder(
           queryParts = query,
-          unitPConv  = parameters
+          unitPConv = parameters
         ).asUpdate
     }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
   private def insertTokenInfoFromOutputs(
-      tokenOutputs: Iterable[(Token, OutputEntity)]): DBActionW[Int] = {
+      tokenOutputs: Iterable[(Token, OutputEntity)]
+  ): DBActionW[Int] = {
     val tokens = tokenOutputs
       .groupBy { case (token, _) => token.id }
-      .map {
-        case (token, groups) =>
-          val timestamp = groups.map { case (_, output) => output.timestamp }.max
-          (token, timestamp)
+      .map { case (token, groups) =>
+        val timestamp = groups.map { case (_, output) => output.timestamp }.max
+        (token, timestamp)
       }
 
     QuerySplitter.splitUpdates(rows = tokens, columnsPerRow = 2) { (tokens, placeholder) =>
@@ -295,21 +296,21 @@ object OutputQueries {
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
-          tokens foreach {
-            case (token, timestamp) =>
-              params >> token
-              params >> timestamp
-        }
+          tokens foreach { case (token, timestamp) =>
+            params >> token
+            params >> timestamp
+          }
 
       SQLActionBuilder(
         queryParts = query,
-        unitPConv  = parameters
+        unitPConv = parameters
       ).asUpdate
     }
   }
 
   def outputsFromTxs(
-      hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionR[ArraySeq[OutputsFromTxQR]] =
+      hashes: ArraySeq[(TransactionId, BlockHash)]
+  ): DBActionR[ArraySeq[OutputsFromTxQR]] =
     if (hashes.nonEmpty) {
       val params = paramPlaceholderTuple2(1, hashes.size)
 
@@ -332,15 +333,14 @@ object OutputQueries {
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
-          hashes foreach {
-            case (txnHash, blockHash) =>
-              params >> txnHash
-              params >> blockHash
-        }
+          hashes foreach { case (txnHash, blockHash) =>
+            params >> txnHash
+            params >> blockHash
+          }
 
       SQLActionBuilder(
         queryParts = query,
-        unitPConv  = parameters
+        unitPConv = parameters
       ).asAS[OutputsFromTxQR]
     } else {
       DBIOAction.successful(ArraySeq.empty)
@@ -363,7 +363,8 @@ object OutputQueries {
         ORDER BY output_order
       """.asAS[OutputsQR]
 
-  /** Get main chain [[org.alephium.explorer.persistence.model.OutputEntity]]s ordered by timestamp */
+  /** Get main chain [[org.alephium.explorer.persistence.model.OutputEntity]]s ordered by timestamp
+    */
   def getMainChainOutputs(ascendingOrder: Boolean): DBActionSR[OutputEntity] = {
     sql"""
       SELECT
@@ -390,8 +391,9 @@ object OutputQueries {
   }
 
   /** Checks that [[getTxnHash]] uses both indexes for the given key */
-  def explainGetTxnHash(key: Option[Hash])(
-      implicit ec: ExecutionContext): DBActionR[ExplainResult] = {
+  def explainGetTxnHash(
+      key: Option[Hash]
+  )(implicit ec: ExecutionContext): DBActionR[ExplainResult] = {
     val queryName = "getTxnHashBuilder"
 
     key match {
@@ -408,11 +410,11 @@ object OutputQueries {
             )
 
           ExplainResult(
-            queryName  = queryName,
+            queryName = queryName,
             queryInput = key.toString(),
-            explain    = explain,
-            messages   = message,
-            passed     = passed
+            explain = explain,
+            messages = message,
+            passed = passed
           )
         }
 
@@ -433,15 +435,17 @@ object OutputQueries {
         AND key = $key
     """
 
-  def getBalanceActionOption(address: Address)(
-      implicit ec: ExecutionContext): DBActionR[(Option[U256], Option[U256])] =
+  def getBalanceActionOption(
+      address: Address
+  )(implicit ec: ExecutionContext): DBActionR[(Option[U256], Option[U256])] =
     getBalanceUntilLockTime(
-      address  = address,
+      address = address,
       lockTime = TimeStamp.now()
     )
 
-  def getBalanceUntilLockTime(address: Address, lockTime: TimeStamp)(
-      implicit ec: ExecutionContext): DBActionR[(Option[U256], Option[U256])] =
+  def getBalanceUntilLockTime(address: Address, lockTime: TimeStamp)(implicit
+      ec: ExecutionContext
+  ): DBActionR[(Option[U256], Option[U256])] =
     sql"""
       SELECT sum(outputs.amount),
              sum(CASE

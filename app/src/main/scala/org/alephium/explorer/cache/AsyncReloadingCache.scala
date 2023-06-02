@@ -25,8 +25,7 @@ import com.typesafe.scalalogging.LazyLogging
 
 object AsyncReloadingCache {
 
-  /**
-    * Example:
+  /** Example:
     * {{{
     *    val cache =
     *      AsyncReloadingCache(initial = "Initial value", reloadAfter = 1.second) {
@@ -40,18 +39,18 @@ object AsyncReloadingCache {
     * }}}
     */
   @inline def apply[T](initial: T, reloadAfter: FiniteDuration)(
-      loader: T => Future[T]): AsyncReloadingCache[T] =
+      loader: T => Future[T]
+  ): AsyncReloadingCache[T] =
     new AsyncReloadingCache[T](
-      value       = initial,
-      deadline    = reloadAfter.fromNow,
-      reloading   = new AtomicBoolean(),
+      value = initial,
+      deadline = reloadAfter.fromNow,
+      reloading = new AtomicBoolean(),
       reloadAfter = reloadAfter,
-      loader      = loader
+      loader = loader
     )
 
-  /**
-    * Used when initial value is unknown during compile-time and
-    * should be fetched asynchronously during runtime via `loader`.
+  /** Used when initial value is unknown during compile-time and should be fetched asynchronously
+    * during runtime via `loader`.
     *
     * {{{
     *   val cache =
@@ -61,19 +60,20 @@ object AsyncReloadingCache {
     * }}}
     */
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
-  def reloadNow[T](reloadAfter: FiniteDuration)(loader: => Future[T])(
-      implicit ec: ExecutionContext): Future[AsyncReloadingCache[T]] = {
-    //scalastyle:off null
-    //Null is internal only. Initial value is never shared with the client
-    //so null is never accessed and NullPointerException will never occur.
+  def reloadNow[T](
+      reloadAfter: FiniteDuration
+  )(loader: => Future[T])(implicit ec: ExecutionContext): Future[AsyncReloadingCache[T]] = {
+    // scalastyle:off null
+    // Null is internal only. Initial value is never shared with the client
+    // so null is never accessed and NullPointerException will never occur.
     val cache =
       AsyncReloadingCache[T](
-        initial     = null.asInstanceOf[T],
+        initial = null.asInstanceOf[T],
         reloadAfter = reloadAfter
       )(_ => loader)
-    //scalastyle:on null
+    // scalastyle:on null
 
-    //Reload the cache. If reload was not executed (unlikely to happen) fail the future.
+    // Reload the cache. If reload was not executed (unlikely to happen) fail the future.
     cache.expireAndReloadFuture() flatMap { reloaded =>
       if (reloaded) {
         Future.successful(cache)
@@ -84,23 +84,29 @@ object AsyncReloadingCache {
   }
 }
 
-/**
-  * Cache that reloads value asynchronously returning the existing
-  * cached value while reload/re-cache is in the progress in the background.
+/** Cache that reloads value asynchronously returning the existing cached value while
+  * reload/re-cache is in the progress in the background.
   *
-  * @param value       Current cached value
-  * @param deadline    Deadline until expiration
-  * @param reloading   Allows only a single thread to execute reloading
-  * @param reloadAfter How often to reload the cache or how long to keep existing cache value alive.
-  * @param loader      A function given the existing cached value returns the next value to cache.
-  * @tparam T Cached value's type
+  * @param value
+  *   Current cached value
+  * @param deadline
+  *   Deadline until expiration
+  * @param reloading
+  *   Allows only a single thread to execute reloading
+  * @param reloadAfter
+  *   How often to reload the cache or how long to keep existing cache value alive.
+  * @param loader
+  *   A function given the existing cached value returns the next value to cache.
+  * @tparam T
+  *   Cached value's type
   */
-class AsyncReloadingCache[T](@volatile private var value: T,
-                             @volatile private var deadline: Deadline,
-                             reloading: AtomicBoolean,
-                             reloadAfter: FiniteDuration,
-                             loader: T => Future[T])
-    extends LazyLogging {
+class AsyncReloadingCache[T](
+    @volatile private var value: T,
+    @volatile private var deadline: Deadline,
+    reloading: AtomicBoolean,
+    reloadAfter: FiniteDuration,
+    loader: T => Future[T]
+) extends LazyLogging {
 
   /** Returns the latest cached value and invokes reload */
   def get(): T = {
@@ -108,12 +114,12 @@ class AsyncReloadingCache[T](@volatile private var value: T,
     value
   }
 
-  /**
-    * Instantly expires the current cached value and invokes reload.
+  /** Instantly expires the current cached value and invokes reload.
     *
-    * @note This does not always guarantee instant reload will occur immediately in this
-    *       call for cases when another thread is currently successfully executing reload.
-    * */
+    * @note
+    *   This does not always guarantee instant reload will occur immediately in this call for cases
+    *   when another thread is currently successfully executing reload.
+    */
   def expireAndReload(): Unit = {
     expire()
     reload()
@@ -128,34 +134,34 @@ class AsyncReloadingCache[T](@volatile private var value: T,
   def expire(): Unit =
     deadline = Deadline.now
 
-  /** Reload and update state in the current [[ExecutionContext]].
-    * State update is inexpensive therefore local [[ExecutionContext]] is used.
-    * */
+  /** Reload and update state in the current [[ExecutionContext]]. State update is inexpensive
+    * therefore local [[ExecutionContext]] is used.
+    */
   @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
   private def reload(): Unit =
     reloadFuture()(ExecutionContext.parasitic): Unit
 
   /** Reload the cache and updates state only in the given [[ExecutionContext]] */
   private def reloadFuture()(implicit ec: ExecutionContext): Future[Boolean] =
-    //Reload if expired and not already being reloaded by another thread
+    // Reload if expired and not already being reloaded by another thread
     if (deadline.isOverdue() && reloading.compareAndSet(false, true)) {
 
       @inline def setFree() = {
-        //set next deadline
+        // set next deadline
         deadline = reloadAfter.fromNow
-        //release to allow next reload
+        // release to allow next reload
         reloading.set(false)
       }
 
       loader(value)
         .map { newValue =>
-          //Set the next value immediately after the future is complete
+          // Set the next value immediately after the future is complete
           this.value = newValue
           setFree()
           true
         }
         .recoverWith { error =>
-          //Log the error and return the same error
+          // Log the error and return the same error
           logger.error("Failed to reload cache", error)
           setFree()
           Future.failed(error)

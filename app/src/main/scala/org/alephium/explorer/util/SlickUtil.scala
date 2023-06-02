@@ -35,8 +35,7 @@ object SlickUtil {
 
   implicit class ResultEnrichment[A](val action: DBActionSR[A]) extends AnyVal {
 
-    /**
-      * Fetch single row else fail.
+    /** Fetch single row else fail.
       */
     @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
     def exactlyOne(implicit ec: ExecutionContext): DBActionR[A] =
@@ -47,9 +46,8 @@ object SlickUtil {
         }
       }
 
-    /**
-      * Expects query to return headOption
-      * */
+    /** Expects query to return headOption
+      */
     @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
     def headOrEmpty(implicit ec: ExecutionContext): DBActionR[ArraySeq[A]] =
       action.flatMap { rows =>
@@ -71,13 +69,12 @@ object SlickUtil {
 
   implicit class OptionResultEnrichment[A](val action: DBActionSR[Option[A]]) extends AnyVal {
 
-    /**
-      * Expects query to return less than or equal to 1. Fails is the result is greater than 1.
+    /** Expects query to return less than or equal to 1. Fails is the result is greater than 1.
       *
-      * This is used to ensure queries selecting on SQL functions like `sum` and `max`
-      * return only one row or none. If the more than one rows are return then there
-      * is a problem in the query itself.
-      * */
+      * This is used to ensure queries selecting on SQL functions like `sum` and `max` return only
+      * one row or none. If the more than one rows are return then there is a problem in the query
+      * itself.
+      */
     @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
     def oneOrNone(implicit ec: ExecutionContext): DBActionR[Option[A]] =
       action.flatMap { rows =>
@@ -91,11 +88,15 @@ object SlickUtil {
 
   implicit class RichSqlActionBuilder[A](val action: SQLActionBuilder) extends AnyVal {
     @SuppressWarnings(
-      Array("org.wartremover.warts.AsInstanceOf",
-            "org.wartremover.warts.IsInstanceOf",
-            "org.wartremover.warts.IterableOps"))
-    def asAS[R: ClassTag](
-        implicit rconv: GetResult[R]): SqlStreamingAction[ArraySeq[R], R, Effect] = {
+      Array(
+        "org.wartremover.warts.AsInstanceOf",
+        "org.wartremover.warts.IsInstanceOf",
+        "org.wartremover.warts.IterableOps"
+      )
+    )
+    def asAS[R: ClassTag](implicit
+        rconv: GetResult[R]
+    ): SqlStreamingAction[ArraySeq[R], R, Effect] = {
       val query =
         if (action.queryParts.lengthIs == 1 && action.queryParts(0).isInstanceOf[String]) {
           action.queryParts(0).asInstanceOf[String]
@@ -115,9 +116,12 @@ object SlickUtil {
     }
 
     @SuppressWarnings(
-      Array("org.wartremover.warts.AsInstanceOf",
-            "org.wartremover.warts.IsInstanceOf",
-            "org.wartremover.warts.IterableOps"))
+      Array(
+        "org.wartremover.warts.AsInstanceOf",
+        "org.wartremover.warts.IsInstanceOf",
+        "org.wartremover.warts.IterableOps"
+      )
+    )
     def asASE[R: ClassTag](rconv: GetResult[R]): SqlStreamingAction[ArraySeq[R], R, Effect] = {
       val query =
         if (action.queryParts.lengthIs == 1 && action.queryParts(0).isInstanceOf[String]) {
@@ -148,7 +152,7 @@ object SlickUtil {
 
       action.copy(
         queryParts = action.queryParts :+ "LIMIT ? OFFSET ?",
-        unitPConv  = parameters
+        unitPConv = parameters
       )
     }
   }
@@ -160,11 +164,10 @@ object SlickUtil {
   def paramPlaceholder(rows: Int, columns: Int): String =
     paramPlaceholder(rows, columns, "?")
 
-  /**
-    * Builds placeholders for generating parameterised SQL queries.
+  /** Builds placeholders for generating parameterised SQL queries.
     *
-    * Example: If rows = 2, columns = 3 & placeHolder = "?" this
-    *          returns comma separated rows (?, ?, ?),(?, ?, ?).
+    * Example: If rows = 2, columns = 3 & placeHolder = "?" this returns comma separated rows (?, ?,
+    * ?),(?, ?, ?).
     */
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def paramPlaceholder(rows: Int, columns: Int, placeHolder: String): String =

@@ -42,7 +42,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
   implicit val gs: GroupSetting = GroupSetting(1)
 
   "Build days range" in {
-    val launchTime = ALPH.LaunchTimestamp //2021-11-08T11:20:06+00:00
+    val launchTime = ALPH.LaunchTimestamp // 2021-11-08T11:20:06+00:00
     def ts(str: String): TimeStamp = {
       TimeStamp.unsafe(Instant.parse(str).toEpochMilli)
     }
@@ -168,7 +168,9 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         blockEntityWithParentGen(chainIndex, None).sample.get
       block.copy(
         outputs = block.outputs.map(
-          _.copy(timestamp = block.timestamp, lockTime = lockTime, address = genesisAddress)))
+          _.copy(timestamp = block.timestamp, lockTime = lockTime, address = genesisAddress)
+        )
+      )
     }
 
     lazy val block1 = {
@@ -177,9 +179,11 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       val timestamp = ALPH.LaunchTimestamp.plusHoursUnsafe(1)
       val block =
         blockEntityWithParentGen(chainIndex, Some(genesisBlock)).sample.get
-      block.copy(timestamp = timestamp,
-                 outputs   = block.outputs.map(_.copy(timestamp = timestamp, lockTime = lockTime)),
-                 inputs    = block.inputs.map(_.copy(timestamp = timestamp)))
+      block.copy(
+        timestamp = timestamp,
+        outputs = block.outputs.map(_.copy(timestamp = timestamp, lockTime = lockTime)),
+        inputs = block.inputs.map(_.copy(timestamp = timestamp))
+      )
     }
 
     lazy val block2 = {
@@ -189,21 +193,22 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       val timestamp = block.timestamp.plusHoursUnsafe(24)
       block.copy(
         timestamp = timestamp,
-        inputs = block1.outputs.zipWithIndex.map {
-          case (out, index) =>
-            InputEntity(block.hash,
-                        txHash,
-                        timestamp,
-                        0,
-                        out.key,
-                        None,
-                        false,
-                        index,
-                        0,
-                        None,
-                        None,
-                        None,
-                        None)
+        inputs = block1.outputs.zipWithIndex.map { case (out, index) =>
+          InputEntity(
+            block.hash,
+            txHash,
+            timestamp,
+            0,
+            out.key,
+            None,
+            false,
+            index,
+            0,
+            None,
+            None,
+            None,
+            None
+          )
 
         },
         outputs = block.outputs.map(_.copy(timestamp = timestamp, lockTime = None))
@@ -217,10 +222,13 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       val address =
         Address
           .fromBase58(
-            "X4TqZeAizjDV8yt7XzxDVLywdzmJvLALtdAnjAERtCY3TPkyPXt4A5fxvXAX7UucXPpSYF7amNysNiniqb98vQ5rs9gh12MDXhsAf5kWmbmjXDygxV9AboSj8QR7QK8duaKAkZ")
+            "X4TqZeAizjDV8yt7XzxDVLywdzmJvLALtdAnjAERtCY3TPkyPXt4A5fxvXAX7UucXPpSYF7amNysNiniqb98vQ5rs9gh12MDXhsAf5kWmbmjXDygxV9AboSj8QR7QK8duaKAkZ"
+          )
           .get
-      block.copy(timestamp = timestamp,
-                 outputs   = block.outputs.map(_.copy(timestamp = timestamp, address = address)))
+      block.copy(
+        timestamp = timestamp,
+        outputs = block.outputs.map(_.copy(timestamp = timestamp, address = address))
+      )
     }
 
     lazy val block4 = {

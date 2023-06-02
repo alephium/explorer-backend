@@ -114,16 +114,17 @@ object GenApiModel extends ImplicitConversions {
       gasPrice          <- u256Gen
       scriptExecutionOk <- arbitrary[Boolean]
       coinbase          <- arbitrary[Boolean]
-    } yield
-      Transaction(hash,
-                  blockHash,
-                  timestamp,
-                  ArraySeq.empty,
-                  ArraySeq.from(outputs),
-                  gasAmount,
-                  gasPrice,
-                  scriptExecutionOk,
-                  coinbase)
+    } yield Transaction(
+      hash,
+      blockHash,
+      timestamp,
+      ArraySeq.empty,
+      ArraySeq.from(outputs),
+      gasAmount,
+      gasPrice,
+      scriptExecutionOk,
+      coinbase
+    )
 
   val mempooltransactionGen: Gen[MempoolTransaction] =
     for {
@@ -135,16 +136,25 @@ object GenApiModel extends ImplicitConversions {
       gasAmount <- Gen.posNum[Int]
       gasPrice  <- u256Gen
       lastSeen  <- timestampGen
-    } yield
-      MempoolTransaction(hash, chainFrom, chainTo, inputs, outputs, gasAmount, gasPrice, lastSeen)
+    } yield MempoolTransaction(
+      hash,
+      chainFrom,
+      chainTo,
+      inputs,
+      outputs,
+      gasAmount,
+      gasPrice,
+      lastSeen
+    )
 
   def chainIndexes(implicit groupSetting: GroupSetting): Seq[ChainIndex] =
     for {
       i <- 0 to groupSetting.groupNum - 1
       j <- 0 to groupSetting.groupNum - 1
-    } yield
-      ChainIndex(GroupIndex.unsafe(i)(groupSetting.groupConfig),
-                 GroupIndex.unsafe(j)(groupSetting.groupConfig))
+    } yield ChainIndex(
+      GroupIndex.unsafe(i)(groupSetting.groupConfig),
+      GroupIndex.unsafe(j)(groupSetting.groupConfig)
+    )
 
   val blockEntryLiteGen: Gen[BlockEntryLite] =
     for {
@@ -248,11 +258,10 @@ object GenApiModel extends ImplicitConversions {
       )
     }
 
-  /**
-    * Generates [[Pagination]] instance for the generated data.
+  /** Generates [[Pagination]] instance for the generated data.
     *
-    * @return Pagination instance with the Generated data
-    *         used to generate the Pagination instance
+    * @return
+    *   Pagination instance with the Generated data used to generate the Pagination instance
     */
   def paginationDataGen[T](dataGen: Gen[List[T]]): Gen[(List[T], Pagination)] =
     for {
@@ -260,8 +269,7 @@ object GenApiModel extends ImplicitConversions {
       pagination <- paginationGen(Gen.const(data.size))
     } yield (data, pagination)
 
-  /**
-    * Generates a [[Pagination]] instance with page between `1` and `maxDataCountGen.sample`.
+  /** Generates a [[Pagination]] instance with page between `1` and `maxDataCountGen.sample`.
     *
     * [[Pagination.page]] will at least have a minimum value of `1`.
     */
@@ -269,8 +277,8 @@ object GenApiModel extends ImplicitConversions {
   def paginationGen(maxDataCountGen: Gen[Int] = Gen.choose(0, 10)): Gen[Pagination] =
     for {
       maxDataCount <- maxDataCountGen
-      page         <- Gen.choose(maxDataCount min 1, maxDataCount) //Requirement: Page should be >= 1
-      limit        <- Gen.choose(0, maxDataCount)
+      page  <- Gen.choose(maxDataCount min 1, maxDataCount) // Requirement: Page should be >= 1
+      limit <- Gen.choose(0, maxDataCount)
     } yield Pagination.unsafe(page, limit)
 
 }

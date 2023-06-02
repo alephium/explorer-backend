@@ -32,10 +32,10 @@ import org.alephium.util.Service
 
 /** Boot-up states for Explorer: Explorer can be started in the following three states
   *
-  *  - ReadOnly: [[org.alephium.explorer.ExplorerState.ReadOnly]]
-  *  - ReadWrite: [[org.alephium.explorer.ExplorerState.ReadWrite]]
-  *  - WriteOnly: [[org.alephium.explorer.ExplorerState.WriteOnly]]
-  * */
+  *   - ReadOnly: [[org.alephium.explorer.ExplorerState.ReadOnly]]
+  *   - ReadWrite: [[org.alephium.explorer.ExplorerState.ReadWrite]]
+  *   - WriteOnly: [[org.alephium.explorer.ExplorerState.WriteOnly]]
+  */
 sealed trait ExplorerState extends Service with StrictLogging {
   implicit def config: ExplorerConfig
   implicit def databaseConfig: DatabaseConfig[PostgresProfile]
@@ -47,20 +47,20 @@ sealed trait ExplorerState extends Service with StrictLogging {
     new Database(config.bootMode)(executionContext, databaseConfig)
 
   implicit lazy val blockCache: BlockCache =
-    BlockCache(config.cacheRowCountReloadPeriod,
-               config.cacheBlockTimesReloadPeriod,
-               config.cacheLatestBlocksReloadPeriod)(groupSettings,
-                                                     executionContext,
-                                                     database.databaseConfig)
+    BlockCache(
+      config.cacheRowCountReloadPeriod,
+      config.cacheBlockTimesReloadPeriod,
+      config.cacheLatestBlocksReloadPeriod
+    )(groupSettings, executionContext, database.databaseConfig)
 
   lazy val transactionCache: TransactionCache =
     TransactionCache(database)(executionContext)
 
   implicit lazy val blockFlowClient: BlockFlowClient =
     BlockFlowClient(
-      uri                = config.blockFlowUri,
-      groupNum           = config.groupNum,
-      maybeApiKey        = config.maybeBlockFlowApiKey,
+      uri = config.blockFlowUri,
+      groupNum = config.groupNum,
+      maybeApiKey = config.maybeBlockFlowApiKey,
       directCliqueAccess = config.directCliqueAccess
     )
 
@@ -98,7 +98,8 @@ sealed trait ExplorerStateRead extends ExplorerState {
         blockFlowClient,
         blockCache,
         transactionCache,
-        groupSettings)
+        groupSettings
+      )
     )
 
   override lazy val customServices: ArraySeq[Service] = ArraySeq(httpServer)
@@ -106,9 +107,11 @@ sealed trait ExplorerStateRead extends ExplorerState {
 
 object ExplorerState {
 
-  def apply(mode: BootMode)(implicit config: ExplorerConfig,
-                            databaseConfig: DatabaseConfig[PostgresProfile],
-                            executionContext: ExecutionContext): ExplorerState =
+  def apply(mode: BootMode)(implicit
+      config: ExplorerConfig,
+      databaseConfig: DatabaseConfig[PostgresProfile],
+      executionContext: ExecutionContext
+  ): ExplorerState =
     mode match {
       case BootMode.ReadOnly  => ExplorerState.ReadOnly()
       case BootMode.ReadWrite => ExplorerState.ReadWrite()
@@ -116,18 +119,20 @@ object ExplorerState {
     }
 
   /** State of Explorer is started in read-only mode */
-  final case class ReadOnly()(implicit val config: ExplorerConfig,
-                              val databaseConfig: DatabaseConfig[PostgresProfile],
-                              val executionContext: ExecutionContext)
-      extends ExplorerStateRead
+  final case class ReadOnly()(implicit
+      val config: ExplorerConfig,
+      val databaseConfig: DatabaseConfig[PostgresProfile],
+      val executionContext: ExecutionContext
+  ) extends ExplorerStateRead
 
   /** State of Explorer is started in read-write mode */
-  final case class ReadWrite()(implicit val config: ExplorerConfig,
-                               val databaseConfig: DatabaseConfig[PostgresProfile],
-                               val executionContext: ExecutionContext)
-      extends ExplorerStateRead {
+  final case class ReadWrite()(implicit
+      val config: ExplorerConfig,
+      val databaseConfig: DatabaseConfig[PostgresProfile],
+      val executionContext: ExecutionContext
+  ) extends ExplorerStateRead {
 
-    private implicit val scheduler = Scheduler("SYNC_SERVICES")
+    implicit private val scheduler = Scheduler("SYNC_SERVICES")
 
     override def startSelfOnce(): Future[Unit] = {
       SyncServices.startSyncServices(config)
@@ -135,13 +140,14 @@ object ExplorerState {
   }
 
   /** State of Explorer is started in Sync only mode */
-  final case class WriteOnly()(implicit val config: ExplorerConfig,
-                               val databaseConfig: DatabaseConfig[PostgresProfile],
-                               val executionContext: ExecutionContext)
-      extends ExplorerState {
+  final case class WriteOnly()(implicit
+      val config: ExplorerConfig,
+      val databaseConfig: DatabaseConfig[PostgresProfile],
+      val executionContext: ExecutionContext
+  ) extends ExplorerState {
 
-    //See issue #356
-    private implicit val scheduler = Scheduler("SYNC_SERVICES")
+    // See issue #356
+    implicit private val scheduler = Scheduler("SYNC_SERVICES")
 
     override lazy val customServices: ArraySeq[Service] = ArraySeq()
 

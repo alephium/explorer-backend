@@ -26,8 +26,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.AlephiumFutures
 import org.alephium.explorer.util.TestUtils._
 
-/**
-  * Implements functions for managing test database connections.
+/** Implements functions for managing test database connections.
   */
 object DatabaseFixture extends AlephiumFutures {
 
@@ -40,7 +39,8 @@ object DatabaseFixture extends AlephiumFutures {
       .parseMap(
         Map(
           ("db.db.url", s"jdbc:postgresql://localhost:5432/$dbName")
-        ).view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava)
+        ).view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava
+      )
       .withFallback(ConfigFactory.load())
 
   def createDatabaseConfig(dbName: String): DatabaseConfig[PostgresProfile] =

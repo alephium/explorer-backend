@@ -38,7 +38,10 @@ object LatestBlockSchema extends Schema[LatestBlock]("latest_blocks") {
     def height: Rep[Height]        = column[Height]("height")
     def target: Rep[ByteString]    = column[ByteString]("target")
     def hashrate: Rep[BigInteger] =
-      column[BigInteger]("hashrate", O.SqlType("DECIMAL(80,0)")) //TODO How much decimal we need? this one is the same as for U256
+      column[BigInteger](
+        "hashrate",
+        O.SqlType("DECIMAL(80,0)")
+      ) // TODO How much decimal we need? this one is the same as for U256
 
     def pk: PrimaryKey = primaryKey("latest_block_pk", (chainFrom, chainTo))
 

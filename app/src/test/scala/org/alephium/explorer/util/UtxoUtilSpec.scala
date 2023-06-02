@@ -31,37 +31,34 @@ class UtxoUtilSpec extends AlephiumSpec {
   "UtxoUtil.amountForAddressInInputs" should {
     "return amount in inputs" when {
       "all inputs belong to the same address" in {
-        forAll(addressGen, Gen.listOf(inputGen)) {
-          case (address, inputs) =>
-            val addressInputs = inputs.map(_.copy(address = Some(address)))
-            val amount = inputs.foldLeft(Option(U256.Zero)) {
-              case (acc, in) => acc.flatMap(_.add(in.attoAlphAmount.getOrElse(U256.Zero)))
-            }
+        forAll(addressGen, Gen.listOf(inputGen)) { case (address, inputs) =>
+          val addressInputs = inputs.map(_.copy(address = Some(address)))
+          val amount = inputs.foldLeft(Option(U256.Zero)) { case (acc, in) =>
+            acc.flatMap(_.add(in.attoAlphAmount.getOrElse(U256.Zero)))
+          }
 
-            UtxoUtil.amountForAddressInInputs(address, addressInputs) is amount
+          UtxoUtil.amountForAddressInInputs(address, addressInputs) is amount
         }
       }
       "part of the inputs belong to the address" in {
-        forAll(addressGen, addressGen, Gen.listOf(inputGen)) {
-          case (address, address2, inputs) =>
-            val addresses       = Seq(address, address2)
-            val addressesInputs = inputs.map(_.copy(address = Random.shuffle(addresses).headOption))
+        forAll(addressGen, addressGen, Gen.listOf(inputGen)) { case (address, address2, inputs) =>
+          val addresses       = Seq(address, address2)
+          val addressesInputs = inputs.map(_.copy(address = Random.shuffle(addresses).headOption))
 
-            val amount =
-              addressesInputs.filter(_.address == Some(address)).foldLeft(Option(U256.Zero)) {
-                case (acc, in) => acc.flatMap(_.add(in.attoAlphAmount.getOrElse(U256.Zero)))
-              }
+          val amount =
+            addressesInputs.filter(_.address == Some(address)).foldLeft(Option(U256.Zero)) {
+              case (acc, in) => acc.flatMap(_.add(in.attoAlphAmount.getOrElse(U256.Zero)))
+            }
 
-            UtxoUtil.amountForAddressInInputs(address, addressesInputs) is amount
+          UtxoUtil.amountForAddressInInputs(address, addressesInputs) is amount
         }
       }
     }
 
     "return zero" when {
       "address doesn't belong to inputs" in {
-        forAll(addressGen, Gen.listOf(inputGen)) {
-          case (address, inputs) =>
-            UtxoUtil.amountForAddressInInputs(address, inputs) is Some(U256.Zero)
+        forAll(addressGen, Gen.listOf(inputGen)) { case (address, inputs) =>
+          UtxoUtil.amountForAddressInInputs(address, inputs) is Some(U256.Zero)
         }
       }
     }
@@ -70,30 +67,28 @@ class UtxoUtilSpec extends AlephiumSpec {
   "UtxoUtil.amountForAddressInOutputs" should {
     "return amount in outputs" when {
       "outputs contains the address" in {
-        forAll(addressGen, addressGen, Gen.listOf(outputGen)) {
-          case (address, address2, outputs) =>
-            val addresses = Seq(address, address2)
-            val addressesOutputs = outputs.map {
-              case asset: AssetOutput =>
-                asset.copy(address = Random.shuffle(addresses).head): Output
-              case contract: ContractOutput =>
-                contract.copy(address = Random.shuffle(addresses).head): Output
-            }
+        forAll(addressGen, addressGen, Gen.listOf(outputGen)) { case (address, address2, outputs) =>
+          val addresses = Seq(address, address2)
+          val addressesOutputs = outputs.map {
+            case asset: AssetOutput =>
+              asset.copy(address = Random.shuffle(addresses).head): Output
+            case contract: ContractOutput =>
+              contract.copy(address = Random.shuffle(addresses).head): Output
+          }
 
-            val amount = addressesOutputs.filter(_.address == address).foldLeft(Option(U256.Zero)) {
-              case (acc, in) => acc.flatMap(_.add(in.attoAlphAmount))
-            }
+          val amount = addressesOutputs.filter(_.address == address).foldLeft(Option(U256.Zero)) {
+            case (acc, in) => acc.flatMap(_.add(in.attoAlphAmount))
+          }
 
-            UtxoUtil.amountForAddressInOutputs(address, addressesOutputs) is amount
+          UtxoUtil.amountForAddressInOutputs(address, addressesOutputs) is amount
         }
       }
     }
 
     "return zero" when {
       "address doesn't belong to inputs" in {
-        forAll(addressGen, Gen.listOf(outputGen)) {
-          case (address, outputs) =>
-            UtxoUtil.amountForAddressInOutputs(address, outputs) is Some(U256.Zero)
+        forAll(addressGen, Gen.listOf(outputGen)) { case (address, outputs) =>
+          UtxoUtil.amountForAddressInOutputs(address, outputs) is Some(U256.Zero)
         }
       }
     }
@@ -111,13 +106,13 @@ class UtxoUtilSpec extends AlephiumSpec {
               contract.copy(address = address): Output
           }
           val inputAmount = inputs
-            .foldLeft(Option(U256.Zero)) {
-              case (acc, in) => acc.flatMap(_.add(in.attoAlphAmount.getOrElse(U256.Zero)))
+            .foldLeft(Option(U256.Zero)) { case (acc, in) =>
+              acc.flatMap(_.add(in.attoAlphAmount.getOrElse(U256.Zero)))
             }
             .get
           val outputAmount = outputs
-            .foldLeft(Option(U256.Zero)) {
-              case (acc, in) => acc.flatMap(_.add(in.attoAlphAmount))
+            .foldLeft(Option(U256.Zero)) { case (acc, in) =>
+              acc.flatMap(_.add(in.attoAlphAmount))
             }
             .get
 
@@ -149,9 +144,8 @@ class UtxoUtilSpec extends AlephiumSpec {
     }
 
     "return only 1 address if all inputs have the same address" in {
-      forAll(inputWithAddressGen) {
-        case (address, inputs) =>
-          UtxoUtil.fromAddresses(inputs) is ArraySeq(address)
+      forAll(inputWithAddressGen) { case (address, inputs) =>
+        UtxoUtil.fromAddresses(inputs) is ArraySeq(address)
       }
     }
 
@@ -185,9 +179,8 @@ class UtxoUtilSpec extends AlephiumSpec {
     }
 
     "return 1 address if all output have same address and change addresses is empty" in {
-      forAll(outputWithAddressGen) {
-        case (address, outputs) =>
-          UtxoUtil.toAddressesWithoutChangeAddresses(outputs, ArraySeq.empty) is ArraySeq(address)
+      forAll(outputWithAddressGen) { case (address, outputs) =>
+        UtxoUtil.toAddressesWithoutChangeAddresses(outputs, ArraySeq.empty) is ArraySeq(address)
       }
     }
 
@@ -211,14 +204,20 @@ class UtxoUtilSpec extends AlephiumSpec {
 
         val (changeAddresses, addresses) = allAddresses.splitAt(2)
 
-        UtxoUtil.toAddressesWithoutChangeAddresses(outputs, ArraySeq.from(changeAddresses)) is ArraySeq
+        UtxoUtil.toAddressesWithoutChangeAddresses(
+          outputs,
+          ArraySeq.from(changeAddresses)
+        ) is ArraySeq
           .from(addresses)
       }
     }
 
     "return zero address if outputs are empty" in {
       forAll(Gen.listOf(addressGen)) { changeAddresses =>
-        UtxoUtil.toAddressesWithoutChangeAddresses(ArraySeq.empty, changeAddresses) is ArraySeq.empty
+        UtxoUtil.toAddressesWithoutChangeAddresses(
+          ArraySeq.empty,
+          changeAddresses
+        ) is ArraySeq.empty
       }
     }
   }

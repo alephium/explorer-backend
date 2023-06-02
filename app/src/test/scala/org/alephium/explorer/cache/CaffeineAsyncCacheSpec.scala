@@ -39,11 +39,11 @@ class CaffeineAsyncCacheSpec extends AlephiumFutureSpec {
           }
       }
 
-    //does not throw NullPointerException
+    // does not throw NullPointerException
     cache.getIfPresent(1) is None
-    //insert value for key 1
+    // insert value for key 1
     cache.put(1, "one")
-    //get value
+    // get value
     cache.getIfPresent(1).map(_.futureValue) is Some("one")
 
   }

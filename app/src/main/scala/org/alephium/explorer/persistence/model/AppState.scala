@@ -37,9 +37,11 @@ sealed trait AppStateKey[V <: AppState] {
 
   def apply(bytes: ByteString): Either[SerdeError, AppState]
 
-  final def get()(implicit ct: ClassTag[V],
-                  gr: GetResult[V],
-                  ec: ExecutionContext): DBActionR[Option[V]] =
+  final def get()(implicit
+      ct: ClassTag[V],
+      gr: GetResult[V],
+      ec: ExecutionContext
+  ): DBActionR[Option[V]] =
     sql"""SELECT value FROM app_state WHERE key = $key""".asAS[V].headOrNone
 }
 

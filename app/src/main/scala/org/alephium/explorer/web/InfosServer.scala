@@ -34,15 +34,17 @@ import org.alephium.explorer.service.{BlockService, TokenSupplyService, Transact
 import org.alephium.protocol.ALPH
 import org.alephium.util.U256
 
-class InfosServer(tokenSupplyService: TokenSupplyService,
-                  blockService: BlockService,
-                  transactionService: TransactionService)(
-    implicit val executionContext: ExecutionContext,
+class InfosServer(
+    tokenSupplyService: TokenSupplyService,
+    blockService: BlockService,
+    transactionService: TransactionService
+)(implicit
+    val executionContext: ExecutionContext,
     dc: DatabaseConfig[PostgresProfile],
     blockCache: BlockCache,
     transactionCache: TransactionCache,
-    groupSettings: GroupSetting)
-    extends Server
+    groupSettings: GroupSetting
+) extends Server
     with InfosEndpoints {
 
   // scalafmt is struggling on this one, maybe latest version wil work.
