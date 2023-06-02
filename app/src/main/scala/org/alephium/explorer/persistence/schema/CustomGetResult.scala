@@ -149,7 +149,8 @@ object CustomGetResult {
         outputOrder    = result.<<,
         txOrder        = result.<<,
         coinbase       = result.<<,
-        spentFinalized = result.<<?
+        spentFinalized = result.<<?,
+        spentTimestamp = result.<<?
     )
 
   val inputGetResult: GetResult[InputEntity] =

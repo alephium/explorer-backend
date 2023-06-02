@@ -145,6 +145,7 @@ object GenDBModel {
       outputOrder    <- Gen.posNum[Int]
       txOrder        <- Gen.posNum[Int]
       spentFinalized <- Gen.option(transactionId)
+      spentTimestamp <- Gen.option(timestampGen)
     } yield
       TokenOutputEntity(
         blockHash,
@@ -161,7 +162,8 @@ object GenDBModel {
         message,
         outputOrder,
         txOrder,
-        spentFinalized
+        spentFinalized,
+        spentTimestamp
       )
 
   /** Generates BlockEntity and it's dependant Entities that also maintain the block's mainChain value */

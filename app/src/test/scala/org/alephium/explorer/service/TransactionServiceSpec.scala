@@ -148,6 +148,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
                    0,
                    0,
                    coinbase = false,
+                   None,
                    None)
 
     val block0 = defaultBlockEntity.copy(
@@ -204,6 +205,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
                                0,
                                0,
                                coinbase = false,
+                               None,
                                None)
 
     val block1 = defaultBlockEntity.copy(
@@ -305,6 +307,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
                        0,
                        0,
                        coinbase = false,
+                       None,
                        None)
 
         val block0 = defaultBlockEntity.copy(

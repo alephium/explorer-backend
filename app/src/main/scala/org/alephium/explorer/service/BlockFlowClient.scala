@@ -551,6 +551,7 @@ object BlockFlowClient extends StrictLogging {
       index,
       txOrder,
       coinbase,
+      None,
       None
     )
   }

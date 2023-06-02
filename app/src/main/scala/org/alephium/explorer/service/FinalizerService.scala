@@ -100,7 +100,7 @@ case object FinalizerService extends StrictLogging {
   private def updateOutputs(from: TimeStamp, to: TimeStamp): DBActionR[Int] =
     sqlu"""
       UPDATE outputs o
-      SET spent_finalized = i.tx_hash
+      SET spent_finalized = i.tx_hash, spent_timestamp = i.block_timestamp
       FROM inputs i
       WHERE i.output_ref_key = o.key
       AND o.main_chain=true
@@ -112,7 +112,7 @@ case object FinalizerService extends StrictLogging {
   private def updateTokenOutputs(from: TimeStamp, to: TimeStamp): DBActionR[Int] =
     sqlu"""
       UPDATE token_outputs o
-      SET spent_finalized = i.tx_hash
+      SET spent_finalized = i.tx_hash, spent_timestamp = i.block_timestamp
       FROM inputs i
       WHERE i.output_ref_key = o.key
       AND o.main_chain=true

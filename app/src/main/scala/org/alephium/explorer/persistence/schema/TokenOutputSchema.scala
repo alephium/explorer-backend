@@ -47,15 +47,17 @@ object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outpu
     def txOrder: Rep[Int]                = column[Int]("tx_order")
     def spentFinalized: Rep[Option[TransactionId]] =
       column[Option[TransactionId]]("spent_finalized", O.Default(None))
+    def spentTimestamp: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("spent_timestamp")
 
     def pk: PrimaryKey = primaryKey("token_outputs_pk", (key, token, blockHash))
 
-    def keyIdx: Index       = index("token_outputs_key_idx", key)
-    def blockHashIdx: Index = index("token_outputs_block_hash_idx", blockHash)
-    def txHashIdx: Index    = index("token_outputs_tx_hash_idx", txHash)
-    def addressIdx: Index   = index("token_outputs_address_idx", address)
-    def timestampIdx: Index = index("token_outputs_timestamp_idx", timestamp)
-    def tokenIdx: Index     = index("token_outputs_token_idx", token)
+    def keyIdx: Index            = index("token_outputs_key_idx", key)
+    def blockHashIdx: Index      = index("token_outputs_block_hash_idx", blockHash)
+    def txHashIdx: Index         = index("token_outputs_tx_hash_idx", txHash)
+    def addressIdx: Index        = index("token_outputs_address_idx", address)
+    def timestampIdx: Index      = index("token_outputs_timestamp_idx", timestamp)
+    def tokenIdx: Index          = index("token_outputs_token_idx", token)
+    def spentTimestampIdx: Index = index("token_outputs_spent_timestamp_idx", spentTimestamp)
 
     def * : ProvenShape[TokenOutputEntity] =
       (blockHash,
@@ -72,7 +74,8 @@ object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outpu
        message,
        outputOrder,
        txOrder,
-       spentFinalized)
+       spentFinalized,
+       spentTimestamp)
         .<>((TokenOutputEntity.apply _).tupled, TokenOutputEntity.unapply)
   }
 

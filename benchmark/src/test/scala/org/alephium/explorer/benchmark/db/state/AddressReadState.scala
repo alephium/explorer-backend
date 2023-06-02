@@ -138,7 +138,8 @@ class AddressReadState(val db: DBExecutor)
       outputOrder    = 0,
       txOrder        = 0,
       coinbase       = false,
-      spentFinalized = None
+      spentFinalized = None,
+      spentTimestamp = None
     )
   }
 

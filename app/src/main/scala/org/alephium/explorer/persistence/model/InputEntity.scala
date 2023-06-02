@@ -40,15 +40,6 @@ final case class InputEntity(
     outputRefAmount: Option[U256],
     outputRefTokens: Option[ArraySeq[Token]] //None if empty list
 ) {
-  def toApi(outputRef: OutputEntity): Input =
-    Input(
-      OutputRef(hint, outputRefKey),
-      unlockScript,
-      Some(outputRef.txHash),
-      Some(outputRef.address),
-      Some(outputRef.amount),
-      outputRef.tokens
-    )
 
   /** @return All hash types associated with this [[InputEntity]] */
   def hashes(): (TransactionId, BlockHash) =
