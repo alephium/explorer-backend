@@ -36,7 +36,6 @@ import org.alephium.explorer.persistence.queries.EventQueries._
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
@@ -105,17 +104,6 @@ object BlockDao {
       ORDER BY block_timestamp DESC, hash
 
       """.asASE[BlockHeader](blockHeaderGetResult)).map(_.map(_.toLiteApi))
-  }
-
-  def maxHeight(fromGroup: GroupIndex, toGroup: GroupIndex)(
-      implicit dc: DatabaseConfig[PostgresProfile]): Future[Option[Height]] = {
-    val query =
-      BlockHeaderSchema.table
-        .filter(header => header.chainFrom === fromGroup && header.chainTo === toGroup)
-        .map(_.height)
-        .max
-
-    run(query.result)
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
