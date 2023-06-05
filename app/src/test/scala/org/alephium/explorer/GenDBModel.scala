@@ -133,7 +133,7 @@ object GenDBModel {
       blockHash      <- blockHash
       txHash         <- transactionId
       timestamp      <- timestampGen
-      outputType     <- Gen.choose(0, 1)
+      outputType     <- outputTypeGen
       hint           <- Gen.posNum[Int]
       key            <- hashGen
       token          <- tokenIdGen

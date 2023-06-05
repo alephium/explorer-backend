@@ -45,10 +45,10 @@ object OutputQueries {
       .transactionally
 
   /** Inserts outputs or ignore rows with primary key conflict */
-  // scalastyle:off magic.number
+  // scalastyle:off magic.number method.length
   private def insertBasicOutputs(outputs: Iterable[OutputEntity]): DBActionW[Int] =
     QuerySplitter
-      .splitUpdates(rows = outputs, columnsPerRow = 15) { (outputs, placeholder) =>
+      .splitUpdates(rows = outputs, columnsPerRow = 17) { (outputs, placeholder) =>
         val query =
           s"""
            |INSERT INTO outputs ("block_hash",
@@ -65,7 +65,9 @@ object OutputQueries {
            |                     "message",
            |                     "output_order",
            |                     "tx_order",
-           |                     "coinbase")
+           |                     "coinbase",
+           |                     "spent_finalized",
+           |                     "spent_timestamp")
            |VALUES $placeholder
            |ON CONFLICT
            |    ON CONSTRAINT outputs_pk
@@ -90,6 +92,8 @@ object OutputQueries {
               params >> output.outputOrder
               params >> output.txOrder
               params >> output.coinbase
+              params >> output.spentFinalized
+              params >> output.spentTimestamp
           }
 
         SQLActionBuilder(
@@ -149,7 +153,7 @@ object OutputQueries {
 
   // scalastyle:off magic.number
   private def insertTokenOutputs(tokenOutputs: Iterable[(Token, OutputEntity)]): DBActionW[Int] = {
-    QuerySplitter.splitUpdates(rows = tokenOutputs, columnsPerRow = 14) {
+    QuerySplitter.splitUpdates(rows = tokenOutputs, columnsPerRow = 16) {
       (tokenOutputs, placeholder) =>
         val query =
           s"""
@@ -166,7 +170,9 @@ object OutputQueries {
            |                     "lock_time",
            |                     "message",
            |                     "output_order",
-           |                     "tx_order")
+           |                     "tx_order",
+           |                     "spent_finalized",
+           |                     "spent_timestamp")
            |VALUES $placeholder
            |ON CONFLICT
            |    ON CONSTRAINT token_outputs_pk
@@ -191,6 +197,8 @@ object OutputQueries {
                 params >> output.message
                 params >> output.outputOrder
                 params >> output.txOrder
+                params >> output.spentFinalized
+                params >> output.spentTimestamp
           }
 
         SQLActionBuilder(

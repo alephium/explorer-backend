@@ -35,7 +35,7 @@ import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.serde._
 import org.alephium.util.{AVector, Duration, TimeStamp, U256}
 
-// scalastyle:off number.of.methods
+// scalastyle:off number.of.methods file.size.limit
 object Generators {
 
   def groupSettingGen: Gen[GroupSetting] = Gen.choose(2, 4).map(groupNum => GroupSetting(groupNum))
@@ -533,6 +533,13 @@ object Generators {
         spentTimestamp = None,
         coinbase       = coinbase
       )
+
+  val finalizedOutputEntityGen: Gen[OutputEntity] =
+    for {
+      output         <- outputEntityGen
+      spentFinalized <- Gen.option(transactionHashGen)
+      spentTimestamp <- Gen.option(timestampGen)
+    } yield output.copy(spentFinalized = spentFinalized, spentTimestamp = spentTimestamp)
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def uoutputEntityGen(transactionHash: Gen[TransactionId] = transactionHashGen,
