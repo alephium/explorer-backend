@@ -24,7 +24,9 @@ import org.scalacheck.{Arbitrary, Gen}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.{GroupIndex, Height}
@@ -116,8 +118,6 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
   "insert deps, transactions, inputs, outputs, block_headers" in {
 
-    implicit val groupSetting: GroupSetting = groupSettingGen.sample.get
-
     forAll(Gen.listOf(genBlockEntityWithOptionalParent().map(_._1))) { entities =>
       //clear all tables
       run(BlockHeaderSchema.table.delete).futureValue
@@ -178,7 +178,7 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
         //clear table
         run(BlockHeaderSchema.table.delete).futureValue
 
-        forAll(blockEntryHashGen) { hash =>
+        forAll(blockHashGen) { hash =>
           //table is empty
           run(BlockHeaderSchema.table.length.result).futureValue is 0
           //expect None
@@ -306,7 +306,7 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
           BlockQueries.getHashesAtHeightIgnoringOne(fromGroup    = GroupIndex.unsafe(0),
                                                     toGroup      = GroupIndex.unsafe(0),
                                                     height       = Height.unsafe(19),
-                                                    hashToIgnore = blockEntryHashGen.sample.get)
+                                                    hashToIgnore = blockHashGen.sample.get)
 
         run(query).futureValue.size is 0
       }

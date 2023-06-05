@@ -27,8 +27,11 @@ import org.scalacheck.Gen
 
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.AlephiumActorSpecLike
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
-import org.alephium.explorer.Generators._
+import org.alephium.explorer.GenCoreProtocol._
+import org.alephium.explorer.GenCoreUtil._
+import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
@@ -112,7 +115,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val address1 = addressGen.sample.get
 
     val ts0        = TimeStamp.unsafe(0)
-    val blockHash0 = blockEntryHashGen.sample.get
+    val blockHash0 = blockHashGen.sample.get
     val gasAmount  = Gen.posNum[Int].sample.get
     val gasPrice   = amountGen.sample.get
 
@@ -159,7 +162,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     )
 
     val ts1        = TimeStamp.unsafe(1)
-    val blockHash1 = blockEntryHashGen.sample.get
+    val blockHash1 = blockHashGen.sample.get
     val gasAmount1 = Gen.posNum[Int].sample.get
     val gasPrice1  = amountGen.sample.get
     val tx1 = TransactionEntity(
@@ -269,7 +272,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
   "get only main chain transaction for an address in case of tx in two blocks (in case of reorg)" in new Fixture {
 
-    forAll(blockEntryHashGen, blockEntryHashGen) {
+    forAll(blockHashGen, blockHashGen) {
       case (blockHash0, blockHash1) =>
         val address0 = addressGen.sample.get
 
@@ -527,7 +530,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
     val defaultBlockEntity: BlockEntity =
       BlockEntity(
-        hash         = blockEntryHashGen.sample.get,
+        hash         = blockHashGen.sample.get,
         timestamp    = TimeStamp.unsafe(0),
         chainFrom    = groupIndex,
         chainTo      = groupIndex,

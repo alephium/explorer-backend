@@ -24,36 +24,23 @@ import akka.util.ByteString
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 
+import org.alephium.explorer.ConfigDefaults._
+import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model._
 import org.alephium.protocol
-import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{
-  Address,
-  BlockHash,
-  ContractId,
-  TokenId,
-  TransactionId,
-  TxOutputRef
-}
-import org.alephium.util.{Number, U256}
+import org.alephium.protocol.model.{Address, TokenId, TxOutputRef}
 
 /** Generators for types supplied by `org.alephium.explorer.api.model` package */
 object GenApiModel extends ImplicitConversions {
 
-  val hashGen: Gen[Hash]                     = Gen.const(()).map(_ => Hash.generate)
-  val blockHashGen: Gen[BlockHash]           = Gen.const(()).map(_ => BlockHash.generate)
-  val blockEntryHashGen: Gen[BlockHash]      = blockHashGen
-  val transactionHashGen: Gen[TransactionId] = hashGen.map(TransactionId.unsafe)
-  val tokenIdGen: Gen[TokenId]               = hashGen.map(TokenId.unsafe)
-  val outputRefKeyGen: Gen[TxOutputRef.Key]  = hashGen.map(new TxOutputRef.Key(_))
-  val contractIdGen: Gen[ContractId]         = hashGen.map(ContractId.unsafe)
+  val tokenIdGen: Gen[TokenId]              = hashGen.map(TokenId.unsafe)
+  val outputRefKeyGen: Gen[TxOutputRef.Key] = hashGen.map(new TxOutputRef.Key(_))
   val groupIndexGen: Gen[GroupIndex] =
-    Gen.choose(0, Generators.groupSetting.groupNum - 1).map(GroupIndex.unsafe(_))
+    Gen.choose(0, groupSetting.groupNum - 1).map(GroupIndex.unsafe(_))
   val heightGen: Gen[Height]       = Gen.posNum[Int].map(Height.unsafe(_))
   val bytesGen: Gen[ByteString]    = hashGen.map(_.bytes)
   val hashrateGen: Gen[BigInteger] = arbitrary[Long].map(BigInteger.valueOf)
-  val amountGen: Gen[U256]         = Gen.choose(1000L, Number.quadrillion).map(ALPH.nanoAlph)
   val exportTypeGen: Gen[ExportType] =
     Gen.oneOf(ArraySeq(ExportType.CSV: ExportType, ExportType.JSON: ExportType))
 
@@ -115,7 +102,7 @@ object GenApiModel extends ImplicitConversions {
   val transactionGen: Gen[Transaction] =
     for {
       hash              <- transactionHashGen
-      blockHash         <- blockEntryHashGen
+      blockHash         <- blockHashGen
       timestamp         <- timestampGen
       outputs           <- Gen.listOfN(5, outputGen)
       gasAmount         <- Gen.posNum[Int]
@@ -154,7 +141,7 @@ object GenApiModel extends ImplicitConversions {
 
   val blockEntryLiteGen: Gen[BlockEntryLite] =
     for {
-      hash      <- blockEntryHashGen
+      hash      <- blockHashGen
       timestamp <- timestampGen
       chainFrom <- groupIndexGen
       chainTo   <- groupIndexGen
@@ -177,12 +164,12 @@ object GenApiModel extends ImplicitConversions {
 
   def blockEntryGen(implicit groupSetting: GroupSetting): Gen[BlockEntry] =
     for {
-      hash         <- blockEntryHashGen
+      hash         <- blockHashGen
       timestamp    <- timestampGen
       chainFrom    <- groupIndexGen
       chainTo      <- groupIndexGen
       height       <- heightGen
-      deps         <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockEntryHashGen)
+      deps         <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockHashGen)
       transactions <- Gen.listOfN(2, transactionGen)
       mainChain    <- arbitrary[Boolean]
       hashrate     <- arbitrary[Long].map(BigInteger.valueOf)
@@ -253,4 +240,30 @@ object GenApiModel extends ImplicitConversions {
         blocks
       )
     }
+
+  /**
+    * Generates [[Pagination]] instance for the generated data.
+    *
+    * @return Pagination instance with the Generated data
+    *         used to generate the Pagination instance
+    */
+  def paginationDataGen[T](dataGen: Gen[List[T]]): Gen[(List[T], Pagination)] =
+    for {
+      data       <- dataGen
+      pagination <- paginationGen(Gen.const(data.size))
+    } yield (data, pagination)
+
+  /**
+    * Generates a [[Pagination]] instance with page between `1` and `maxDataCountGen.sample`.
+    *
+    * [[Pagination.page]] will at least have a minimum value of `1`.
+    */
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def paginationGen(maxDataCountGen: Gen[Int] = Gen.choose(0, 10)): Gen[Pagination] =
+    for {
+      maxDataCount <- maxDataCountGen
+      page         <- Gen.choose(maxDataCount min 1, maxDataCount) //Requirement: Page should be >= 1
+      limit        <- Gen.choose(0, maxDataCount)
+    } yield Pagination.unsafe(page, limit)
+
 }

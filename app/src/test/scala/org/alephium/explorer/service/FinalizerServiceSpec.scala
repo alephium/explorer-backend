@@ -17,7 +17,7 @@
 package org.alephium.explorer.service
 
 import org.alephium.explorer.AlephiumFutureSpec
-import org.alephium.explorer.Generators._
+import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.AppState.LastFinalizedInputTime
 import org.alephium.explorer.persistence.model.InputEntity

@@ -25,9 +25,10 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.api.{model, ApiModelCodec}
 import org.alephium.explorer.AlephiumFutureSpec
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenDBModel._
-import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.{GroupIndex, Pagination}
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}

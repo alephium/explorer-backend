@@ -26,8 +26,10 @@ import sttp.model.Uri
 
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.AlephiumFutureSpec
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel.chainIndexes
 import org.alephium.explorer.GenCoreUtil.timestampMaxValue
+import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache}

@@ -23,7 +23,8 @@ import org.scalatest.matchers.should.Matchers
 
 import org.alephium.api
 import org.alephium.explorer.AlephiumSpec
-import org.alephium.explorer.Generators._
+import org.alephium.explorer.GenCoreApi._
+import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.protocol
 import org.alephium.serde._
 
