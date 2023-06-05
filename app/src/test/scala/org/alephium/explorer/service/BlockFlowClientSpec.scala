@@ -34,19 +34,18 @@ import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenCoreProtocol._
-import org.alephium.explorer.api.model._
 import org.alephium.explorer.error.ExplorerError
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.web.Server
 import org.alephium.protocol.config.GroupConfig
-import org.alephium.protocol.model.{CliqueId, NetworkId}
+import org.alephium.protocol.model.{CliqueId, GroupIndex, NetworkId}
 import org.alephium.util.AVector
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
 class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll {
 
-  val group                  = GroupIndex.unsafe(0)
+  val group                  = GroupIndex.Zero
   val localhost: InetAddress = InetAddress.getByName("127.0.0.1")
 
   "BlockFlowClient.fetchBlock" should {

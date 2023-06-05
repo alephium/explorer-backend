@@ -207,14 +207,13 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
                                            groupSetting: GroupSetting): Future[Option[TimeStamp]] =
     run(
       DBIOAction.sequence(
-        groupSetting.groupIndexes.map {
-          case (from, to) =>
-            sql"""
+        groupSetting.chainIndexes.map { chainIndex =>
+          sql"""
               SELECT block_timestamp
               FROM block_headers
               WHERE main_chain = true
-              AND chain_from = $from
-              AND chain_to = $to
+              AND chain_from = ${chainIndex.from}
+              AND chain_to = ${chainIndex.to}
               ORDER BY block_timestamp DESC
               LIMIT 1
             """.asAS[TimeStamp].headOrNone

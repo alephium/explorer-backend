@@ -26,13 +26,13 @@ import sttp.model.Uri
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel.mempooltransactionGen
-import org.alephium.explorer.api.model.{GroupIndex, Height, MempoolTransaction}
+import org.alephium.explorer.api.model.{Height, MempoolTransaction}
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.MempoolDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.TestUtils._
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
 import org.alephium.util.{Service, TimeStamp}
 
 class MempoolSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach {
@@ -85,14 +85,12 @@ class MempoolSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
                       toTs: TimeStamp,
                       uri: Uri): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]] =
         ???
-      def fetchChainInfo(from: GroupIndex, to: GroupIndex): Future[ChainInfo] = ???
-      def fetchHashesAtHeight(from: GroupIndex,
-                              to: GroupIndex,
-                              height: Height): Future[HashesAtHeight] = ???
-      def fetchSelfClique(): Future[SelfClique]                       = ???
-      def fetchChainParams(): Future[ChainParams]                     = ???
-      override def start(): Future[Unit]                              = ???
-      override def close(): Future[Unit]                              = ???
+      def fetchChainInfo(chainIndex: ChainIndex): Future[ChainInfo]                           = ???
+      def fetchHashesAtHeight(chainIndex: ChainIndex, height: Height): Future[HashesAtHeight] = ???
+      def fetchSelfClique(): Future[SelfClique]                                               = ???
+      def fetchChainParams(): Future[ChainParams]                                             = ???
+      override def start(): Future[Unit]                                                      = ???
+      override def close(): Future[Unit]                                                      = ???
     }
 
   }

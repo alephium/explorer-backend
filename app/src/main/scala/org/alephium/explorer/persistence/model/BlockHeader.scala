@@ -22,9 +22,9 @@ import scala.collection.immutable.ArraySeq
 
 import akka.util.ByteString
 
-import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model._
-import org.alephium.protocol.model.BlockHash
+import org.alephium.explorer.api.model.{BlockEntry, BlockEntryLite, Height, Transaction}
+import org.alephium.protocol.Hash
+import org.alephium.protocol.model.{BlockHash, GroupIndex}
 import org.alephium.util.TimeStamp
 
 final case class BlockHeader(

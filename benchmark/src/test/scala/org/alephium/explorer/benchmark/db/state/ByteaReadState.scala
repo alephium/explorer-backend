@@ -18,10 +18,10 @@ package org.alephium.explorer.benchmark.db.state
 
 import org.openjdk.jmh.annotations.{Scope, State}
 
-import org.alephium.explorer.Hash
 import org.alephium.explorer.benchmark.db.{DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.table.TableByteSchema
+import org.alephium.protocol.Hash
 
 /**
   * JMH state for benchmarking reads to [[org.alephium.explorer.benchmark.db.table.TableByteSchema]].

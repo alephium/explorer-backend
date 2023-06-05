@@ -23,11 +23,11 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, ProvenShape}
 import slick.sql.SqlAction
 
-import org.alephium.explorer.Hash
-import org.alephium.explorer.api.model.{GroupIndex, Height}
+import org.alephium.explorer.api.model.Height
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.Hash
+import org.alephium.protocol.model.{BlockHash, GroupIndex}
 import org.alephium.util.TimeStamp
 
 object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {

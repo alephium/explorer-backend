@@ -29,7 +29,7 @@ import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenDBModel._
-import org.alephium.explorer.api.model.{GroupIndex, Pagination}
+import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._
@@ -39,7 +39,7 @@ import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.json.Json._
-import org.alephium.protocol.model.{BlockHash, ChainIndex}
+import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
 import org.alephium.util.{Duration, TimeStamp}
 
 @SuppressWarnings(
@@ -115,9 +115,9 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
 
   "get average block time" in new Fixture {
     val now        = TimeStamp.now()
-    val from       = GroupIndex.unsafe(0)
-    val to         = GroupIndex.unsafe(0)
-    val chainIndex = ChainIndex.unsafe(0, 0)(groupSetting.groupConfig)
+    val from       = GroupIndex.Zero
+    val to         = GroupIndex.Zero
+    val chainIndex = ChainIndex(from, to)
     val block1 = blockHeaderGen.sample.get.copy(mainChain = true,
                                                 chainFrom = from,
                                                 chainTo   = to,
@@ -137,9 +137,8 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
 
     run(
       LatestBlockSchema.table ++=
-        chainIndexes.map {
-          case (from, to) =>
-            LatestBlock.fromEntity(blockEntityGen(from, to).sample.get).copy(timestamp = now)
+        chainIndexes.map { chainIndex =>
+          LatestBlock.fromEntity(blockEntityGen(chainIndex).sample.get).copy(timestamp = now)
         }).futureValue
 
     run(BlockHeaderSchema.table ++= Seq(block1, block2, block3, block4)).futureValue

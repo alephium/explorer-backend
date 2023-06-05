@@ -18,8 +18,8 @@ package org.alephium.explorer.service
 
 import scala.collection.immutable.ArraySeq
 
-import org.alephium.explorer.api.model.{GroupIndex, Height}
-import org.alephium.protocol.model.BlockHash
+import org.alephium.explorer.api.model.Height
+import org.alephium.protocol.model.{BlockHash, GroupIndex}
 import org.alephium.util.TimeStamp
 
 trait FlowEntity {

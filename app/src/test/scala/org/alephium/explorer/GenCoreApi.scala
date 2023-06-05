@@ -30,8 +30,8 @@ import org.alephium.explorer.GenCommon.{genInetAddress, genPortNum}
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.Generators._
-import org.alephium.explorer.api.model.{GroupIndex, Height}
-import org.alephium.protocol.model.{BlockHash, CliqueId, NetworkId, Target}
+import org.alephium.explorer.api.model.Height
+import org.alephium.protocol.model.{BlockHash, ChainIndex, CliqueId, NetworkId, Target}
 import org.alephium.serde._
 import org.alephium.util.{AVector, Duration, I256, TimeStamp, U256}
 
@@ -235,7 +235,7 @@ object GenCoreApi {
 
   def scriptGen: Gen[Script] = Gen.hexStr.map(Script.apply)
 
-  def chainGen(size: Int, startTimestamp: TimeStamp, chainFrom: GroupIndex, chainTo: GroupIndex)(
+  def chainGen(size: Int, startTimestamp: TimeStamp, chainIndex: ChainIndex)(
       implicit groupSetting: GroupSetting): Gen[ArraySeq[BlockEntry]] =
     Gen.listOfN(size, blockEntryProtocolGen).map { blocks =>
       blocks
@@ -245,26 +245,26 @@ object GenCoreApi {
               if (acc.isEmpty) {
                 AVector.empty
               } else {
-                block.deps.replace(parentIndex(chainTo), acc.last.hash)
+                block.deps.replace(parentIndex(chainIndex.to), acc.last.hash)
               }
             val newBlock = block.copy(height = height.value,
                                       deps      = deps,
                                       timestamp = timestamp,
-                                      chainFrom = chainFrom.value,
-                                      chainTo   = chainTo.value)
+                                      chainFrom = chainIndex.from.value,
+                                      chainTo   = chainIndex.to.value)
             (acc :+ newBlock, Height.unsafe(height.value + 1), timestamp + Duration.unsafe(1))
         } match { case (block, _, _) => block }
     }
 
   def blockFlowGen(maxChainSize: Int, startTimestamp: TimeStamp)(
       implicit groupSetting: GroupSetting): Gen[ArraySeq[ArraySeq[BlockEntry]]] = {
-    val indexes = groupSetting.groupIndexes
+    val indexes = groupSetting.chainIndexes
     Gen
       .listOfN(indexes.size, Gen.choose(1, maxChainSize))
       .map { list =>
         ArraySeq.from(list.zip(indexes).map {
-          case (size, (from, to)) =>
-            chainGen(size, startTimestamp, from, to).sample.get
+          case (size, chainIndex) =>
+            chainGen(size, startTimestamp, chainIndex).sample.get
         })
       }
   }

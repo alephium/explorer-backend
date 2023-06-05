@@ -27,7 +27,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.queries.ExplainResult
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.mining.HashRate
-import org.alephium.protocol.model.{Address, BlockHash, TokenId}
+import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TokenId}
 import org.alephium.util.{Hex, U256}
 
 /**
@@ -56,6 +56,9 @@ object EndpointExamples extends EndpointsExamples {
 
   private val address2: Address =
     Address.fromBase58("22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM").get
+
+  private val groupIndex1: GroupIndex = new GroupIndex(1)
+  private val groupIndex2: GroupIndex = new GroupIndex(2)
 
   private val tokens: ArraySeq[Token] =
     ArraySeq(
@@ -100,8 +103,8 @@ object EndpointExamples extends EndpointsExamples {
     BlockEntryLite(
       hash      = blockHash,
       timestamp = ts,
-      chainFrom = GroupIndex.unsafe(1),
-      chainTo   = GroupIndex.unsafe(2),
+      chainFrom = groupIndex1,
+      chainTo   = groupIndex2,
       height    = Height.unsafe(42),
       txNumber  = 1,
       mainChain = true,
@@ -137,8 +140,8 @@ object EndpointExamples extends EndpointsExamples {
   private val pendingTransaction: PendingTransaction =
     PendingTransaction(
       hash      = txId,
-      chainFrom = GroupIndex.unsafe(1),
-      chainTo   = GroupIndex.unsafe(2),
+      chainFrom = groupIndex1,
+      chainTo   = groupIndex2,
       inputs    = ArraySeq(input),
       outputs   = ArraySeq(outputAsset, outputContract),
       gasAmount = org.alephium.protocol.model.minimalGas.value,
@@ -149,8 +152,8 @@ object EndpointExamples extends EndpointsExamples {
   private val mempoolTransaction: MempoolTransaction =
     MempoolTransaction(
       hash      = txId,
-      chainFrom = GroupIndex.unsafe(1),
-      chainTo   = GroupIndex.unsafe(2),
+      chainFrom = groupIndex1,
+      chainTo   = groupIndex2,
       inputs    = ArraySeq(input),
       outputs   = ArraySeq(outputAsset, outputContract),
       gasAmount = org.alephium.protocol.model.minimalGas.value,

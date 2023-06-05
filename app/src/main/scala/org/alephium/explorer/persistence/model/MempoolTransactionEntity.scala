@@ -18,8 +18,8 @@ package org.alephium.explorer.persistence.model
 
 import scala.collection.immutable.ArraySeq
 
-import org.alephium.explorer.api.model._
-import org.alephium.protocol.model.TransactionId
+import org.alephium.explorer.api.model.{AssetOutput, ContractOutput, MempoolTransaction}
+import org.alephium.protocol.model.{GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 final case class MempoolTransactionEntity(

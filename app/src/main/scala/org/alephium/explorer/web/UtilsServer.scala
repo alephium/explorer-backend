@@ -28,11 +28,12 @@ import slick.jdbc.PostgresProfile
 import sttp.model.StatusCode
 
 import org.alephium.api.ApiError
-import org.alephium.explorer.{sideEffect, GroupSetting}
+import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.UtilsEndpoints
 import org.alephium.explorer.api.model.LogbackValue
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.service.{BlockFlowClient, IndexChecker, SanityChecker}
+import org.alephium.util.discard
 
 class UtilsServer()(implicit val executionContext: ExecutionContext,
                     dc: DatabaseConfig[PostgresProfile],
@@ -45,7 +46,7 @@ class UtilsServer()(implicit val executionContext: ExecutionContext,
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
       route(sanityCheck.serverLogicSuccess[Future] { _ =>
-        sideEffect(SanityChecker.check())
+        discard(SanityChecker.check())
         Future.successful(())
       }),
       route(indexCheck.serverLogic[Future] { _ =>

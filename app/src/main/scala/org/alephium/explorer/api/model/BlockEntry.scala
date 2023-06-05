@@ -22,9 +22,10 @@ import scala.collection.immutable.ArraySeq
 
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.api.Codecs._
+import org.alephium.explorer.api.Json.groupIndexReadWriter
 import org.alephium.explorer.service.FlowEntity
 import org.alephium.json.Json._
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.{BlockHash, GroupIndex}
 import org.alephium.util.TimeStamp
 
 final case class BlockEntry(

@@ -5889,11 +5889,11 @@
           },
           "chainFrom": {
             "type": "integer",
-            "format": "int32"
+            "format": "group-index"
           },
           "chainTo": {
             "type": "integer",
-            "format": "int32"
+            "format": "group-index"
           },
           "height": {
             "type": "integer",
@@ -6135,11 +6135,11 @@
           },
           "chainFrom": {
             "type": "integer",
-            "format": "int32"
+            "format": "group-index"
           },
           "chainTo": {
             "type": "integer",
-            "format": "int32"
+            "format": "group-index"
           },
           "inputs": {
             "type": "array",
@@ -6234,11 +6234,11 @@
           },
           "chainFrom": {
             "type": "integer",
-            "format": "int32"
+            "format": "group-index"
           },
           "chainTo": {
             "type": "integer",
-            "format": "int32"
+            "format": "group-index"
           },
           "inputs": {
             "type": "array",

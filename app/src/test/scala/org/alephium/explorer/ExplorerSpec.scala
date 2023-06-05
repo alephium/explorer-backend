@@ -56,7 +56,8 @@ import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.explorer.web._
 import org.alephium.json.Json._
-import org.alephium.protocol.model.{Address, BlockHash, CliqueId, NetworkId}
+import org.alephium.protocol.config.GroupConfig
+import org.alephium.protocol.model.{Address, BlockHash, CliqueId, GroupIndex, NetworkId}
 import org.alephium.util.{AVector, TimeStamp, U256}
 
 trait ExplorerSpec
@@ -352,7 +353,8 @@ object ExplorerSpec {
       with Server
       with IntegrationPatience {
 
-    val blocks = blockflow.flatten
+    implicit val groupConfig: GroupConfig = groupSetting.groupConfig
+    val blocks                            = blockflow.flatten
 
     val cliqueId = CliqueId.generate
 
