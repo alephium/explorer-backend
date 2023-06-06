@@ -18,7 +18,7 @@ package org.alephium.explorer.persistence.model
 
 import akka.util.ByteString
 
-import org.alephium.explorer.Hash
+import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
@@ -26,7 +26,7 @@ final case class TokenOutputEntity(
     blockHash: BlockHash,
     txHash: TransactionId,
     timestamp: TimeStamp,
-    outputType: Int, //0 Asset, 1 Contract
+    outputType: OutputEntity.OutputType,
     hint: Int,
     key: Hash,
     token: TokenId,

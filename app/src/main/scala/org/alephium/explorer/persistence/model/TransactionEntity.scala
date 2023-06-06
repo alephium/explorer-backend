@@ -20,8 +20,7 @@ import scala.collection.immutable.ArraySeq
 
 import akka.util.ByteString
 
-import org.alephium.explorer.api.model.GroupIndex
-import org.alephium.protocol.model.{BlockHash, TransactionId}
+import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 final case class TransactionEntity(

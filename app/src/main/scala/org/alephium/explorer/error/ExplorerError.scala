@@ -21,10 +21,9 @@ import scala.concurrent.duration.FiniteDuration
 import org.postgresql.util.PSQLException
 import sttp.model.Uri
 
-import org.alephium.explorer.api.model.GroupIndex
 import org.alephium.explorer.config.BootMode
 import org.alephium.explorer.persistence.model.BlockEntity
-import org.alephium.protocol.model.{BlockHash, NetworkId}
+import org.alephium.protocol.model.{BlockHash, GroupIndex, NetworkId}
 import org.alephium.util.TimeStamp
 
 /** All Explorer errors */

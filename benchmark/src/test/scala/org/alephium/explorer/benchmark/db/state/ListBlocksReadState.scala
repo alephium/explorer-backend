@@ -32,7 +32,7 @@ import org.alephium.explorer.benchmark.db.state.ListBlocksReadStateSettings._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.persistence.model.{BlockHeader, TransactionEntity}
 import org.alephium.explorer.persistence.schema.{BlockHeaderSchema, TransactionSchema}
-import org.alephium.protocol.model.{BlockHash, TransactionId}
+import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 /**
@@ -69,8 +69,8 @@ class ListBlocksReadState(reverse: Boolean,
     BlockHeader(
       hash         = BlockHash.generate,
       timestamp    = TimeStamp.now(),
-      chainFrom    = GroupIndex.unsafe(0),
-      chainTo      = GroupIndex.unsafe(3),
+      chainFrom    = new GroupIndex(0),
+      chainTo      = new GroupIndex(3),
       height       = Height.genesis,
       mainChain    = Random.nextBoolean(),
       nonce        = ByteString.emptyByteString,
@@ -89,8 +89,8 @@ class ListBlocksReadState(reverse: Boolean,
         hash              = TransactionId.generate,
         blockHash         = header.hash,
         timestamp         = header.timestamp,
-        chainFrom         = GroupIndex.unsafe(1),
-        chainTo           = GroupIndex.unsafe(3),
+        chainFrom         = new GroupIndex(1),
+        chainTo           = new GroupIndex(3),
         gasAmount         = 0,
         gasPrice          = U256.unsafe(0),
         order             = 0,

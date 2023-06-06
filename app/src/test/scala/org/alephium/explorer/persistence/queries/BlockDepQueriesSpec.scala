@@ -19,7 +19,7 @@ package org.alephium.explorer.persistence.queries
 import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AlephiumFutureSpec, Generators}
+import org.alephium.explorer.{AlephiumFutureSpec, GenDBModel}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.queries.BlockDepQueries._
 import org.alephium.explorer.persistence.schema.BlockDepsSchema
@@ -28,7 +28,7 @@ class BlockDepQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
 
   "insert and ignore block_deps" in {
 
-    forAll(Gen.listOf(Generators.blockDepUpdatedGen)) { deps =>
+    forAll(Gen.listOf(GenDBModel.blockDepUpdatedGen)) { deps =>
       //clean existing rows
       run(BlockDepsSchema.table.delete).futureValue
 

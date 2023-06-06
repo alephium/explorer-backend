@@ -19,7 +19,7 @@ package org.alephium.explorer.persistence.schema
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
-import org.alephium.explorer.{AlephiumFutureSpec, Generators}
+import org.alephium.explorer.{AlephiumFutureSpec, GenDBModel}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.queries.OutputQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
@@ -67,7 +67,7 @@ class CustomJdbcTypesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
 
   "set/get tokens" in new Fixture {
 
-    forAll(Generators.outputEntityGen) { output =>
+    forAll(GenDBModel.outputEntityGen) { output =>
       run(OutputSchema.table.delete).futureValue
 
       run(OutputQueries.insertOutputs(Seq(output))).futureValue

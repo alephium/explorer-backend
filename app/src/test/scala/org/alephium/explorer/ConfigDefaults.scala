@@ -16,12 +16,6 @@
 
 package org.alephium.explorer
 
-import org.alephium.json.Json._
-import org.alephium.serde.RandomBytes
-
-abstract class HashCompanion[A <: RandomBytes, H](fromHash: A => H, toHash: H => A)(
-    implicit aReadWriter: ReadWriter[A]) {
-
-  implicit val codec: ReadWriter[H] =
-    ReadWriter.join(aReadWriter.map(fromHash), aReadWriter.comap(toHash))
+object ConfigDefaults {
+  implicit val groupSetting: GroupSetting = Generators.groupSettingGen.sample.get
 }

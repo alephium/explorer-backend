@@ -21,7 +21,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel._
-import org.alephium.explorer.Generators._
+import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.queries.result.{OutputsFromTxQR, OutputsQR}
@@ -33,22 +33,31 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
 
   "insert and ignore outputs" in {
 
-    //forAll(Gen.listOf(updatedOutputEntityGen())) { existingAndUpdates =>
-    val existingAndUpdates = Gen.listOf(updatedOutputEntityGen()).sample.get
-    //fresh table
-    run(OutputSchema.table.delete).futureValue
+    forAll(Gen.listOf(updatedOutputEntityGen())) { existingAndUpdates =>
+      //fresh table
+      run(OutputSchema.table.delete).futureValue
 
-    val existing = existingAndUpdates.map(_._1) //existing outputs
-    val ignored  = existingAndUpdates.map(_._2) //ignored outputs
+      val existing = existingAndUpdates.map(_._1) //existing outputs
+      val ignored  = existingAndUpdates.map(_._2) //ignored outputs
 
-    //insert existing
-    run(insertOutputs(existing)).futureValue
-    run(OutputSchema.table.result).futureValue.toSet is existing.toSet
+      //insert existing
+      run(insertOutputs(existing)).futureValue
+      run(OutputSchema.table.result).futureValue.toSet is existing.toSet
 
-    ////insert should ignore existing outputs
-    run(insertOutputs(ignored)).futureValue
-    run(OutputSchema.table.result).futureValue.toSet is existing.toSet
-    //}
+      ////insert should ignore existing outputs
+      run(insertOutputs(ignored)).futureValue
+      run(OutputSchema.table.result).futureValue.toSet is existing.toSet
+    }
+  }
+
+  "insert finalized outputs" in {
+    forAll(Gen.listOf(finalizedOutputEntityGen)) { outputs =>
+      //fresh table
+      run(OutputSchema.table.delete).futureValue
+
+      run(insertOutputs(outputs)).futureValue
+      run(OutputSchema.table.result).futureValue.toSet is outputs.toSet
+    }
   }
 
   "outputsFromTxs" should {

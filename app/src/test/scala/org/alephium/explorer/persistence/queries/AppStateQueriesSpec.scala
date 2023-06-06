@@ -22,7 +22,7 @@ import slick.jdbc.GetResult
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AlephiumFutureSpec
-import org.alephium.explorer.GenApiModel
+import org.alephium.explorer.GenCoreProtocol.hashGen
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.{AppState, AppStateKey}
@@ -65,7 +65,7 @@ class AppStateQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
 
   "get" should {
     def checkFailure[V <: AppState: ClassTag: GetResult](key: AppStateKey[V]) = {
-      forAll(GenApiModel.hashGen) { hash =>
+      forAll(hashGen) { hash =>
         run(AppStateSchema.table.delete).futureValue
         run(sqlu"INSERT INTO app_state VALUES (${key.key}, ${serialize(hash)})").futureValue
         run(AppStateQueries.get(key)).failed.futureValue should (be(a[SerdeError.WrongFormat]) or be(

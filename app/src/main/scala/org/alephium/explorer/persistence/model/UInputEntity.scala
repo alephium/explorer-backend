@@ -18,8 +18,8 @@ package org.alephium.explorer.persistence.model
 
 import akka.util.ByteString
 
-import org.alephium.explorer.Hash
 import org.alephium.explorer.api.model.{Input, OutputRef}
+import org.alephium.protocol.Hash
 import org.alephium.protocol.model.Address
 import org.alephium.protocol.model.TransactionId
 

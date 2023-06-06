@@ -39,7 +39,7 @@ import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
 import org.alephium.util.TimeStamp
 
 object BlockQueries extends StrictLogging {
@@ -386,7 +386,7 @@ object BlockQueries extends StrictLogging {
   /**
     * Fetches the maximum `block_timestamp` and sum height of
     * all blocks filtered with maximum height for all input chain
-    * chains provided by [[GroupSetting.groupIndexes]]
+    * chains provided by [[GroupSetting.chainIndexes]]
     *
     * @param groupSetting Provides the list of chains to run this query on
     * @return Maximum timestamp and sum of all heights i.e. the total number of blocks.
@@ -397,7 +397,7 @@ object BlockQueries extends StrictLogging {
     //build queries for each chainFrom-chainTo and merge them into a single UNION query
     val unions: String =
       Array
-        .fill(groupSetting.groupIndexes.size)(maxBlockTimestampForMaxHeightForChain)
+        .fill(groupSetting.chainIndexes.size)(maxBlockTimestampForMaxHeightForChain)
         .mkString("UNION")
 
     //fetch maximum `block_timestamp` and sum all `heights` for all unions
@@ -410,12 +410,11 @@ object BlockQueries extends StrictLogging {
 
     val parameters: SetParameter[Unit] =
       (_: Unit, params: PositionedParameters) =>
-        groupSetting.groupIndexes foreach {
-          case (fromGroup, toGroup) =>
-            params >> fromGroup
-            params >> toGroup
-            params >> fromGroup
-            params >> toGroup
+        groupSetting.chainIndexes foreach { chainIndex =>
+          params >> chainIndex.from
+          params >> chainIndex.to
+          params >> chainIndex.from
+          params >> chainIndex.to
       }
 
     SQLActionBuilder(
@@ -434,7 +433,7 @@ object BlockQueries extends StrictLogging {
     *         Collection items will be `Some(height)` when
     *         `GroupIndex` pair exists, else `None`.
     * */
-  def maxHeight(chainIndexes: Iterable[(GroupIndex, GroupIndex)])(
+  def maxHeight(chainIndexes: Iterable[ChainIndex])(
       implicit ec: ExecutionContext): DBActionR[ArraySeq[Option[Height]]] =
     if (chainIndexes.isEmpty) {
       DBIOAction.successful(ArraySeq.empty)
@@ -455,10 +454,9 @@ object BlockQueries extends StrictLogging {
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
-          chainIndexes foreach {
-            case (from, to) =>
-              params >> from
-              params >> to
+          chainIndexes foreach { chainIndex =>
+            params >> chainIndex.from
+            params >> chainIndex.to
         }
 
       val queryResult =
@@ -472,8 +470,7 @@ object BlockQueries extends StrictLogging {
     }
 
   /** Pairs input to it's output value */
-  def maxHeightZipped(chainIndexes: Iterable[(GroupIndex, GroupIndex)])(
-      implicit ec: ExecutionContext)
-    : DBActionR[ArraySeq[(Option[Height], (GroupIndex, GroupIndex))]] =
+  def maxHeightZipped(chainIndexes: Iterable[ChainIndex])(
+      implicit ec: ExecutionContext): DBActionR[ArraySeq[(Option[Height], ChainIndex)]] =
     maxHeight(chainIndexes).map(_.zip(chainIndexes))
 }

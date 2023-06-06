@@ -20,23 +20,23 @@ import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
-import org.alephium.explorer.Hash
 import org.alephium.explorer.persistence.DBActionW
-import org.alephium.explorer.persistence.model.TokenOutputEntity
+import org.alephium.explorer.persistence.model.{OutputEntity, TokenOutputEntity}
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outputs") {
 
   class TokenOutputs(tag: Tag) extends Table[TokenOutputEntity](tag, name) {
-    def blockHash: Rep[BlockHash]  = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
-    def txHash: Rep[TransactionId] = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
-    def timestamp: Rep[TimeStamp]  = column[TimeStamp]("block_timestamp")
-    def outputType: Rep[Int]       = column[Int]("output_type")
-    def hint: Rep[Int]             = column[Int]("hint")
-    def key: Rep[Hash]             = column[Hash]("key", O.SqlType("BYTEA"))
-    def token: Rep[TokenId]        = column[TokenId]("token")
+    def blockHash: Rep[BlockHash]                = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
+    def txHash: Rep[TransactionId]               = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
+    def timestamp: Rep[TimeStamp]                = column[TimeStamp]("block_timestamp")
+    def outputType: Rep[OutputEntity.OutputType] = column[OutputEntity.OutputType]("output_type")
+    def hint: Rep[Int]                           = column[Int]("hint")
+    def key: Rep[Hash]                           = column[Hash]("key", O.SqlType("BYTEA"))
+    def token: Rep[TokenId]                      = column[TokenId]("token")
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
     def address: Rep[Address]            = column[Address]("address")

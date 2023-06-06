@@ -28,6 +28,7 @@ import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.config._
 import org.alephium.explorer.util.ExecutionContextUtil
+import org.alephium.util.discard
 
 object Main extends StrictLogging {
   def main(args: Array[String]): Unit = {
@@ -61,7 +62,7 @@ class BootUp extends StrictLogging {
 
     @SuppressWarnings(Array("org.wartremover.warts.GlobalExecutionContext"))
     implicit val executionContext: ExecutionContext =
-      ExecutionContextUtil.fromExecutor(ExecutionContext.global, sideEffect(explorer.stop()))
+      ExecutionContextUtil.fromExecutor(ExecutionContext.global, discard(explorer.stop()))
 
     explorer = ExplorerState(config.bootMode)
 
@@ -77,7 +78,7 @@ class BootUp extends StrictLogging {
       }
 
     Runtime.getRuntime.addShutdownHook(new Thread(() => {
-      sideEffect(Await.result(explorer.stop(), 10.seconds))
+      discard(Await.result(explorer.stop(), 10.seconds))
     }))
   }
 }

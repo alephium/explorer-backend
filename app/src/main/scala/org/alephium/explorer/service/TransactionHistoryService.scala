@@ -39,6 +39,7 @@ import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.explorer.util.TimeUtil._
 import org.alephium.protocol.ALPH
+import org.alephium.protocol.model.GroupIndex
 import org.alephium.util.{Duration, TimeStamp}
 
 case object TransactionHistoryService extends StrictLogging {
@@ -127,9 +128,8 @@ case object TransactionHistoryService extends StrictLogging {
           run(
             DBIO
               .sequence(
-                gs.groupIndexes.map {
-                  case (chainFrom, chainTo) =>
-                    countAndInsertPerChain(intervalType, from, to, chainFrom, chainTo)
+                gs.chainIndexes.map { chainIndex =>
+                  countAndInsertPerChain(intervalType, from, to, chainIndex.from, chainIndex.to)
                 } :+ countAndInsertAllChains(intervalType, from, to)
               )
               .transactionally

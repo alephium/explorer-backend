@@ -27,8 +27,11 @@ import org.scalacheck.Gen
 
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.AlephiumActorSpecLike
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
-import org.alephium.explorer.Generators._
+import org.alephium.explorer.GenCoreProtocol._
+import org.alephium.explorer.GenCoreUtil._
+import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
@@ -37,7 +40,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.json.Json._
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 @SuppressWarnings(
@@ -51,7 +54,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val address = addressGen.sample.get
 
     val blocks = Gen
-      .listOfN(20, blockEntityGen(groupIndex, groupIndex))
+      .listOfN(20, blockEntityGen(chainIndex))
       .map(_.map { block =>
         block.copy(outputs = block.outputs.map(_.copy(address = address)))
       })
@@ -80,7 +83,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
     val amount = ALPH.MaxALPHValue.mulUnsafe(ALPH.MaxALPHValue)
 
-    val block = blockEntityGen(groupIndex, groupIndex)
+    val block = blockEntityGen(chainIndex)
       .map { block =>
         block.copy(
           outputs = block.outputs.take(1).map(_.copy(amount = amount))
@@ -112,7 +115,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val address1 = addressGen.sample.get
 
     val ts0        = TimeStamp.unsafe(0)
-    val blockHash0 = blockEntryHashGen.sample.get
+    val blockHash0 = blockHashGen.sample.get
     val gasAmount  = Gen.posNum[Int].sample.get
     val gasPrice   = amountGen.sample.get
 
@@ -159,7 +162,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     )
 
     val ts1        = TimeStamp.unsafe(1)
-    val blockHash1 = blockEntryHashGen.sample.get
+    val blockHash1 = blockHashGen.sample.get
     val gasAmount1 = Gen.posNum[Int].sample.get
     val gasPrice1  = amountGen.sample.get
     val tx1 = TransactionEntity(
@@ -269,7 +272,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
   "get only main chain transaction for an address in case of tx in two blocks (in case of reorg)" in new Fixture {
 
-    forAll(blockEntryHashGen, blockEntryHashGen) {
+    forAll(blockHashGen, blockHashGen) {
       case (blockHash0, blockHash1) =>
         val address0 = addressGen.sample.get
 
@@ -384,7 +387,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val address = addressGen.sample.get
 
     val blocks = Gen
-      .listOfN(20, blockEntityGen(groupIndex, groupIndex))
+      .listOfN(20, blockEntityGen(chainIndex))
       .map(_.map { block =>
         block.copy(outputs = block.outputs.map(_.copy(address = address)))
       })
@@ -436,7 +439,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val address2 = addressGen.sample.get
 
     val block =
-      blockEntityGen(groupIndex, groupIndex)
+      blockEntityGen(chainIndex)
         .map { block =>
           block.copy(outputs = block.outputs.map(_.copy(address = address)))
         }
@@ -523,11 +526,12 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
   trait Fixture {
     implicit val blockCache: BlockCache = TestBlockCache()
 
-    val groupIndex = GroupIndex.unsafe(0)
+    val groupIndex = GroupIndex.Zero
+    val chainIndex = ChainIndex(groupIndex, groupIndex)
 
     val defaultBlockEntity: BlockEntity =
       BlockEntity(
-        hash         = blockEntryHashGen.sample.get,
+        hash         = blockHashGen.sample.get,
         timestamp    = TimeStamp.unsafe(0),
         chainFrom    = groupIndex,
         chainTo      = groupIndex,
@@ -554,7 +558,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val now     = TimeStamp.now()
 
     val blocks = Gen
-      .listOfN(5, blockEntityGen(groupIndex, groupIndex))
+      .listOfN(5, blockEntityGen(chainIndex))
       .map(_.zipWithIndex.map {
         case (block, index) =>
           val timestamp = now + (halfDay.timesUnsafe(index.toLong))

@@ -16,12 +16,11 @@
 
 package org.alephium.explorer.service
 
-import java.time.Instant
+import java.time.{Instant, LocalTime, ZonedDateTime, ZoneOffset}
 import java.time.temporal.ChronoUnit
 
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 import scala.io.{Codec, Source}
 
 import com.typesafe.scalalogging.StrictLogging
@@ -80,15 +79,20 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
   private val launchDay =
     Instant.ofEpochMilli(ALPH.LaunchTimestamp.millis).truncatedTo(ChronoUnit.DAYS)
 
-  def start(interval: FiniteDuration)(implicit executionContext: ExecutionContext,
-                                      databaseConfig: DatabaseConfig[PostgresProfile],
-                                      groupSetting: GroupSetting,
-                                      scheduler: Scheduler): Future[Unit] =
-    scheduler.scheduleLoop(
-      taskId        = TokenSupplyService.productPrefix,
-      firstInterval = ScalaDuration.Zero,
-      loopInterval  = interval
-    )(syncOnce())
+  def start(scheduleTime: LocalTime)(implicit executionContext: ExecutionContext,
+                                     databaseConfig: DatabaseConfig[PostgresProfile],
+                                     groupSetting: GroupSetting,
+                                     scheduler: Scheduler): Future[Unit] = {
+    //Sync once on start to make sure we are up to date and then sync once a day at the given time.
+    syncOnce().map { _ =>
+      scheduler.scheduleDailyAt(
+        taskId = TokenSupplyService.productPrefix,
+        at = ZonedDateTime
+          .ofInstant(Instant.EPOCH, ZoneOffset.UTC)
+          .plusSeconds(scheduleTime.toSecondOfDay().toLong)
+      )(syncOnce())
+    }
+  }
 
   def syncOnce()(implicit ec: ExecutionContext,
                  dc: DatabaseConfig[PostgresProfile],
@@ -144,17 +148,13 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
   private def circulatingTokensOptionQuery(at: TimeStamp)(
       implicit ec: ExecutionContext): DBActionR[Option[U256]] =
     sql"""
-      SELECT sum(outputs.amount)
+      SELECT sum(amount)
       FROM outputs
-      LEFT JOIN inputs
-        ON outputs.key = inputs.output_ref_key
-        AND inputs.main_chain = true
-        AND inputs.block_timestamp <= $at
-      WHERE outputs.block_timestamp <= $at
-      AND (outputs.lock_time is NULL OR outputs.lock_time <= $at) /* Only count unlock tokens */
-      AND outputs.main_chain = true
-      AND outputs.address NOT IN (#$reservedAddresses) /* We exclude the reserved wallets */
-      AND inputs.block_hash IS NULL;
+      WHERE block_timestamp <= $at
+      AND (spent_timestamp > $at OR spent_timestamp IS NULL)
+      AND (lock_time is NULL OR lock_time <= $at) /* Only count unlock tokens */
+      AND main_chain = true
+      AND address NOT IN (#$reservedAddresses) /* We exclude the reserved wallets */
         """.asAS[Option[U256]].exactlyOne
 
   def circulatingTokensQuery(at: TimeStamp)(implicit ec: ExecutionContext): DBActionR[U256] =
@@ -165,13 +165,9 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
     sql"""
         SELECT sum(outputs.amount)
         FROM outputs
-        LEFT JOIN inputs
-          ON outputs.key = inputs.output_ref_key
-          AND inputs.main_chain = true
-          AND inputs.block_timestamp <= $at
         WHERE outputs.main_chain = true
-        AND outputs.block_timestamp <= $at
-        AND inputs.block_hash IS NULL;
+        AND outputs.block_timestamp <=$at
+        AND (spent_timestamp > $at OR spent_timestamp IS NULL)
       """.asAS[Option[U256]].exactlyOne
 
   def allUnspentTokensQuery(at: TimeStamp)(implicit ec: ExecutionContext): DBActionR[U256] =
@@ -182,14 +178,10 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
     sql"""
        SELECT sum(outputs.amount)
        FROM outputs
-       LEFT JOIN inputs
-         ON outputs.key = inputs.output_ref_key
-         AND inputs.main_chain = true
-         AND inputs.block_timestamp <= $at
        WHERE outputs.block_timestamp <= $at
+       AND (spent_timestamp > $at OR spent_timestamp IS NULL)
        AND outputs.main_chain = true
-      AND outputs.address IN (#$reservedAddresses) /* We only take the reserved wallets */
-      AND inputs.block_hash IS NULL;
+       AND outputs.address IN (#$reservedAddresses) /* We only take the reserved wallets */
         """.asAS[Option[U256]].exactlyOne
 
   private def reservedTokensQuery(at: TimeStamp)(implicit ec: ExecutionContext): DBActionR[U256] =
@@ -200,15 +192,10 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
     sql"""
        SELECT sum(outputs.amount)
        FROM outputs
-       LEFT JOIN inputs
-         ON outputs.key = inputs.output_ref_key
-         AND inputs.main_chain = true
-         AND inputs.block_timestamp <= $at
        WHERE outputs.block_timestamp <= $at
        AND outputs.lock_time > $at /* count only locked tokens */
        AND outputs.main_chain = true
-      AND outputs.address NOT IN (#$reservedAddresses) /* We exclude the reserved wallets */
-      AND inputs.block_hash IS NULL;
+       AND outputs.address NOT IN (#$reservedAddresses) /* We exclude the reserved wallets */
         """.asAS[Option[U256]].exactlyOne
 
   private def lockedTokensQuery(at: TimeStamp)(implicit ec: ExecutionContext): DBActionR[U256] =
@@ -220,14 +207,13 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
                                            groupSetting: GroupSetting): Future[Option[TimeStamp]] =
     run(
       DBIOAction.sequence(
-        groupSetting.groupIndexes.map {
-          case (from, to) =>
-            sql"""
+        groupSetting.chainIndexes.map { chainIndex =>
+          sql"""
               SELECT block_timestamp
               FROM block_headers
               WHERE main_chain = true
-              AND chain_from = $from
-              AND chain_to = $to
+              AND chain_from = ${chainIndex.from}
+              AND chain_to = ${chainIndex.to}
               ORDER BY block_timestamp DESC
               LIMIT 1
             """.asAS[TimeStamp].headOrNone

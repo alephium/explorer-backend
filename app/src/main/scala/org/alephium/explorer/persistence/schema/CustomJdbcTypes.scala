@@ -27,12 +27,12 @@ import slick.jdbc.PostgresProfile._
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.api.model.Val
-import org.alephium.explorer._
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.{AppState, AppStateKey, OutputEntity}
 import org.alephium.json.Json._
-import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}
+import org.alephium.protocol.Hash
+import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TokenId, TransactionId}
 import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
 
@@ -67,7 +67,7 @@ object CustomJdbcTypes {
 
   implicit val groupIndexType: JdbcType[GroupIndex] = MappedJdbcType.base[GroupIndex, Int](
     _.value,
-    int => GroupIndex.unsafe(int)
+    int => new GroupIndex(int)
   )
 
   implicit val heightType: JdbcType[Height] = MappedJdbcType.base[Height, Int](

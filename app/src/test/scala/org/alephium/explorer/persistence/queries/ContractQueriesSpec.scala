@@ -25,6 +25,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.api.model.{Val, ValAddress, ValByteVec}
 import org.alephium.explorer.AlephiumFutureSpec
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreApi.valByteVecGen
 import org.alephium.explorer.GenDBModel._
@@ -47,7 +48,7 @@ class ContractQueriesSpec
 
   def createEventGen(parentOpt: Option[Address] = None): Gen[EventEntity] =
     for {
-      event       <- eventEntityGen
+      event       <- eventEntityGen()
       contract    <- addressGen
       interfaceId <- Gen.option(valByteVecGen)
     } yield {
@@ -63,7 +64,7 @@ class ContractQueriesSpec
 
   def destroyEventGen(contract: Address): Gen[EventEntity] =
     for {
-      event <- eventEntityGen
+      event <- eventEntityGen()
     } yield {
       event.copy(contractAddress = ContractEntity.destroyContractEventAddress,
                  fields = ArraySeq(

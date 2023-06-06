@@ -18,7 +18,8 @@ package org.alephium.explorer
 
 import org.scalacheck.Gen
 
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.protocol.ALPH
+import org.alephium.util.{Number, TimeStamp, U256}
 
 /** Generators for types supplied by Core `org.alephium.util` package */
 object GenCoreUtil {
@@ -29,4 +30,5 @@ object GenCoreUtil {
   val u256Gen: Gen[U256] = Gen.posNum[Long].map(U256.unsafe)
   val timestampGen: Gen[TimeStamp] =
     Gen.choose[Long](0, timestampMaxValue.millis).map(TimeStamp.unsafe)
+  val amountGen: Gen[U256] = Gen.choose(1000L, Number.quadrillion).map(ALPH.nanoAlph)
 }

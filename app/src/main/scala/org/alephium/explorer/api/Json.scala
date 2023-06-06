@@ -18,9 +18,15 @@ package org.alephium.explorer.api
 
 import org.alephium.api.ApiModelCodec
 import org.alephium.json.Json._
+import org.alephium.protocol.model.GroupIndex
 import org.alephium.util.U256
 
 @SuppressWarnings(Array("org.wartremover.warts.Throw"))
 object Json extends ApiModelCodec {
   implicit val u256ReadWriter: ReadWriter[U256] = ReadWriter.join(u256Reader, u256Writer)
+  implicit val groupIndexReadWriter: ReadWriter[GroupIndex] =
+    readwriter[Int].bimap(
+      _.value,
+      group => new GroupIndex(group)
+    )
 }

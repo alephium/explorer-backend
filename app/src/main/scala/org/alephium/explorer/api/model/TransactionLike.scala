@@ -21,7 +21,7 @@ import scala.collection.immutable.ArraySeq
 import org.alephium.api.UtilJson.{timestampReader, timestampWriter}
 import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
-import org.alephium.protocol.model.{BlockHash, TransactionId}
+import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 sealed trait TransactionLike {

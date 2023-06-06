@@ -23,10 +23,11 @@ import scala.util.Random
 
 import akka.util.ByteString
 
-import org.alephium.explorer.{GenApiModel, Hash}
+import org.alephium.explorer.GenApiModel
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
-import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
+import org.alephium.protocol.Hash
+import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 /**
@@ -50,8 +51,8 @@ object DataGenerator {
         hash              = TransactionId.generate,
         blockHash         = blockHash,
         timestamp         = blockTimestamp,
-        chainFrom         = GroupIndex.unsafe(1),
-        chainTo           = GroupIndex.unsafe(3),
+        chainFrom         = new GroupIndex(1),
+        chainTo           = new GroupIndex(3),
         gasAmount         = Random.nextInt(1000),
         gasPrice          = U256.unsafe(0),
         order             = Random.nextInt(1000),
@@ -130,8 +131,8 @@ object DataGenerator {
     BlockEntity(
       hash         = blockHash,
       timestamp    = timestamp,
-      chainFrom    = GroupIndex.unsafe(0),
-      chainTo      = GroupIndex.unsafe(3),
+      chainFrom    = GroupIndex.Zero,
+      chainTo      = new GroupIndex(3),
       height       = Height.genesis,
       deps         = ArraySeq.fill(5)(BlockHash.generate),
       transactions = transactions,

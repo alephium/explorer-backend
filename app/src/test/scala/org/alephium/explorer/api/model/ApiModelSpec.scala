@@ -23,12 +23,12 @@ import scala.collection.immutable.ArraySeq
 import org.scalacheck.Gen
 
 import org.alephium.api.UtilJson._
-import org.alephium.explorer.{AlephiumSpec, Hash}
+import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
-import org.alephium.protocol.ALPH
+import org.alephium.protocol.{ALPH, Hash}
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.{Hex, TimeStamp}
 

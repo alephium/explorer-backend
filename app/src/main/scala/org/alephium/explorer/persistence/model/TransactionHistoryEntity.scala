@@ -16,7 +16,8 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.api.model.{GroupIndex, IntervalType}
+import org.alephium.explorer.api.model.IntervalType
+import org.alephium.protocol.model.GroupIndex
 import org.alephium.util.TimeStamp
 
 final case class TransactionHistoryEntity(

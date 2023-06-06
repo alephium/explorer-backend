@@ -16,9 +16,9 @@
 
 package org.alephium.explorer.api.model
 
-import org.alephium.explorer.Hash
 import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
+import org.alephium.protocol.Hash
 
 final case class OutputRef(hint: Int, key: Hash)
 

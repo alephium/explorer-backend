@@ -30,8 +30,8 @@ import sttp.model.{Header, StatusCode}
 import org.alephium.api.ApiError
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer._
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
-import org.alephium.explorer.Generators._
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
