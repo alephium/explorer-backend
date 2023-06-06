@@ -16,9 +16,14 @@
 
 package org.alephium.explorer.api.model
 
+import org.alephium.api.UtilJson._
 import org.alephium.json.Json._
+import org.alephium.util.TimeStamp
 
-final case class ExplorerInfo(releaseVersion: String, commit: String)
+final case class ExplorerInfo(releaseVersion: String,
+                              commit: String,
+                              migrationsVersion: Int,
+                              lastFinalizedInputTime: TimeStamp)
 
 object ExplorerInfo {
   implicit val readWriter: ReadWriter[ExplorerInfo] = macroRW

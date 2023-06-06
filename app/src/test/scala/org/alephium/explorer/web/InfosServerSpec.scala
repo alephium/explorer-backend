@@ -28,7 +28,7 @@ import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache, TransactionCache}
 import org.alephium.explorer.config.BootMode
-import org.alephium.explorer.persistence.{Database, DatabaseFixtureForAll}
+import org.alephium.explorer.persistence.{Database, DatabaseFixtureForAll, Migrations}
 import org.alephium.explorer.service._
 import org.alephium.protocol.ALPH
 import org.alephium.util.TimeStamp
@@ -94,7 +94,9 @@ class InfosServerSpec()
     Get(s"/infos") check { response =>
       response.as[ExplorerInfo] is ExplorerInfo(
         BuildInfo.releaseVersion,
-        BuildInfo.commitId
+        BuildInfo.commitId,
+        Migrations.latestVersion.version,
+        TimeStamp.zero
       )
     }
   }

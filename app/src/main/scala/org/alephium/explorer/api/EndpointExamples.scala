@@ -215,8 +215,10 @@ object EndpointExamples extends EndpointsExamples {
 
   private val explorerInfo =
     ExplorerInfo(
-      releaseVersion = "1.11.2+17-00593e8e-SNAPSHOT",
-      commit         = "00593e8e8c718d6bd27fe218e7aa438ef56611cc"
+      releaseVersion         = "1.11.2+17-00593e8e-SNAPSHOT",
+      commit                 = "00593e8e8c718d6bd27fe218e7aa438ef56611cc",
+      migrationsVersion      = 1,
+      lastFinalizedInputTime = ts
     )
 
   private val tokenSupply =
