@@ -2904,7 +2904,9 @@
                 },
                 "example": {
                   "releaseVersion": "1.11.2+17-00593e8e-SNAPSHOT",
-                  "commit": "00593e8e8c718d6bd27fe218e7aa438ef56611cc"
+                  "commit": "00593e8e8c718d6bd27fe218e7aa438ef56611cc",
+                  "migrationsVersion": 1,
+                  "lastFinalizedInputTime": 1611041396892
                 }
               }
             }
@@ -6002,7 +6004,9 @@
       "ExplorerInfo": {
         "required": [
           "releaseVersion",
-          "commit"
+          "commit",
+          "migrationsVersion",
+          "lastFinalizedInputTime"
         ],
         "type": "object",
         "properties": {
@@ -6011,6 +6015,14 @@
           },
           "commit": {
             "type": "string"
+          },
+          "migrationsVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lastFinalizedInputTime": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },

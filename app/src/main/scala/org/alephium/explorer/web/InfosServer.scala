@@ -30,9 +30,13 @@ import org.alephium.explorer.{BuildInfo, GroupSetting}
 import org.alephium.explorer.api.InfosEndpoints
 import org.alephium.explorer.api.model.{ExplorerInfo, TokenSupply}
 import org.alephium.explorer.cache.{AsyncReloadingCache, BlockCache, TransactionCache}
+import org.alephium.explorer.persistence.DBRunner
+import org.alephium.explorer.persistence.model.AppState
+import org.alephium.explorer.persistence.queries.AppStateQueries
+import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.service.{BlockService, TokenSupplyService, TransactionService}
 import org.alephium.protocol.ALPH
-import org.alephium.util.U256
+import org.alephium.util.{TimeStamp, U256}
 
 class InfosServer(tokenSupplyService: TokenSupplyService,
                   blockService: BlockService,
@@ -49,9 +53,10 @@ class InfosServer(tokenSupplyService: TokenSupplyService,
   // format: off
   val routes: ArraySeq[Router=>Route] =
     ArraySeq(
-    route(getInfos.serverLogicSuccess[Future] { _ =>
-      Future.successful(ExplorerInfo(BuildInfo.releaseVersion, BuildInfo.commitId))
-    }) ,     route(listTokenSupply.serverLogicSuccess[Future] { pagination =>
+      route(getInfos.serverLogicSuccess[Future] { _ =>
+        getExplorerInfo()
+      }) ,
+      route(listTokenSupply.serverLogicSuccess[Future] { pagination =>
         tokenSupplyService.listTokenSupply(pagination)
       }) ,
       route(getCirculatingSupply.serverLogicSuccess[Future] { _ =>
@@ -93,6 +98,29 @@ class InfosServer(tokenSupplyService: TokenSupplyService,
       })
       )
   // format: on
+
+  def getExplorerInfo()(implicit executionContext: ExecutionContext,
+                        dc: DatabaseConfig[PostgresProfile]): Future[ExplorerInfo] = {
+    DBRunner
+      .run(
+        for {
+          migrationsVersionOpt      <- AppStateQueries.get(AppState.MigrationVersion)
+          lastFinalizedInputTimeOpt <- AppStateQueries.get(AppState.LastFinalizedInputTime)
+        } yield {
+          val migrationsVersion = migrationsVersionOpt.map(_.version).getOrElse(0)
+          val lastFinalizedInputTime =
+            lastFinalizedInputTimeOpt.map(_.time).getOrElse(TimeStamp.zero)
+          (migrationsVersion, lastFinalizedInputTime)
+        }
+      )
+      .map {
+        case (migrationsVersion, lastFinalizedInputTime) =>
+          ExplorerInfo(BuildInfo.releaseVersion,
+                       BuildInfo.commitId,
+                       migrationsVersion,
+                       lastFinalizedInputTime)
+      }
+  }
 
   private def toALPH(u256: U256): BigDecimal =
     new BigDecimal(u256.v).divide(new BigDecimal(ALPH.oneAlph.v))
