@@ -16,6 +16,9 @@
 
 package org.alephium.explorer.persistence
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+
 import scala.concurrent.{ExecutionContext, Future}
 
 import com.typesafe.scalalogging.StrictLogging
@@ -24,15 +27,16 @@ import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.persistence.model.AppState.MigrationVersion
+import org.alephium.explorer.persistence.model.AppState.{LastFinalizedInputTime, MigrationVersion}
 import org.alephium.explorer.persistence.queries.{AppStateQueries, ContractQueries}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.EventSchema
+import org.alephium.util.TimeStamp
 
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(3)
+  val latestVersion: MigrationVersion = MigrationVersion(4)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] =
     EventSchema.table.result.flatMap { events =>
@@ -58,10 +62,26 @@ object Migrations extends StrictLogging {
       _ <- sqlu"""DELETE FROM app_state WHERE key = 'last_finalized_input_time'"""
     } yield ()
 
+  def migration4(implicit ec: ExecutionContext): DBActionAll[Unit] = {
+    val currentDay =
+      Instant.ofEpochMilli(TimeStamp.now().millis).truncatedTo(ChronoUnit.DAYS).toEpochMilli
+    for {
+      lastFinalizedInputTimeOpt <- AppStateQueries.get(LastFinalizedInputTime)
+      _ <- if (lastFinalizedInputTimeOpt.map(_.time.millis < currentDay).getOrElse(true)) {
+        DBIOAction.failed(
+          new Throwable(
+            "`spent_timestamp` update isn't finish, please continue to run version `v1.14.1`"))
+      } else {
+        DBIOAction.successful(())
+      }
+    } yield ()
+  }
+
   private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
     migration1,
     migration2,
-    migration3
+    migration3,
+    migration4
   )
 
   def migrationsQuery(versionOpt: Option[MigrationVersion])(
