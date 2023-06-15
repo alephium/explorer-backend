@@ -19,7 +19,7 @@ package org.alephium.explorer.service
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 import scala.util.{Failure, Success}
 
@@ -38,7 +38,7 @@ import org.alephium.explorer.persistence.model.{BlockEntity, BlockEntityWithEven
 import org.alephium.explorer.persistence.queries.{BlockQueries, InputUpdateQueries}
 import org.alephium.explorer.util.{Scheduler, TimeUtil}
 import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
-import org.alephium.util.{Duration, TimeStamp}
+import org.alephium.util.{discard, Duration, TimeStamp}
 
 /*
  * Syncing main chains blocks
@@ -66,34 +66,53 @@ case object BlockFlowSyncService extends StrictLogging {
   private val defaultStep     = Duration.ofMinutesUnsafe(30L)
   private val defaultBackStep = Duration.ofSecondsUnsafe(10L)
   private val initialBackStep = Duration.ofMinutesUnsafe(30L)
+  private val upToDateDelta   = Duration.ofSecondsUnsafe(30L)
   // scalastyle:on magic.number
+  private val stopPromise = Promise[Unit]()
 
-  def start(nodeUris: ArraySeq[Uri], interval: FiniteDuration)(implicit ec: ExecutionContext,
-                                                               dc: DatabaseConfig[PostgresProfile],
-                                                               blockFlowClient: BlockFlowClient,
-                                                               cache: BlockCache,
-                                                               groupSetting: GroupSetting,
-                                                               scheduler: Scheduler): Future[Unit] =
+  def start(nodeUris: ArraySeq[Uri], interval: FiniteDuration, blockflowWsUri: Uri)(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      cache: BlockCache,
+      groupSetting: GroupSetting,
+      scheduler: Scheduler): Future[Unit] =
     scheduler.scheduleLoopConditional(
       taskId        = this.productPrefix,
       firstInterval = ScalaDuration.Zero,
       loopInterval  = interval,
       state         = new AtomicBoolean(),
-      stop          = None
-    )(init())(state => syncOnce(nodeUris, state))
+      stop          = Some(stopPromise)
+    )(init())(state => syncOnce(nodeUris, state, blockflowWsUri))
 
-  def syncOnce(nodeUris: ArraySeq[Uri], initialBackStepDone: AtomicBoolean)(
+  def syncOnce(nodeUris: ArraySeq[Uri], initialBackStepDone: AtomicBoolean, blockflowWsUri: Uri)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
       groupSetting: GroupSetting): Future[Unit] = {
-    if (initialBackStepDone.get()) {
-      syncOnceWith(nodeUris, defaultStep, defaultBackStep)
-    } else {
-      syncOnceWith(nodeUris, defaultStep, initialBackStep).map { _ =>
-        initialBackStepDone.set(true)
+    if (!stopPromise.isCompleted) {
+      val syncResult =
+        if (initialBackStepDone.get()) {
+          syncOnceWith(nodeUris, defaultStep, defaultBackStep)
+        } else {
+          syncOnceWith(nodeUris, defaultStep, initialBackStep).map { result =>
+            initialBackStepDone.set(true)
+            result
+          }
+        }
+
+      syncResult.map { isUpToDate =>
+        if (isUpToDate) {
+          logger.info("Blocks are up to date, switching to web socket syncing")
+          discard(stopPromise.success(()))
+          WebSocketSyncService.start(blockflowWsUri)
+        } else {
+          ()
+        }
       }
+    } else {
+      Future.successful(())
     }
   }
 
@@ -103,7 +122,7 @@ case object BlockFlowSyncService extends StrictLogging {
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
-      groupSetting: GroupSetting): Future[Unit] = {
+      groupSetting: GroupSetting): Future[Boolean] = {
     logger.debug("Start syncing")
     val startedAt  = TimeStamp.now()
     var downloaded = 0
@@ -121,15 +140,19 @@ case object BlockFlowSyncService extends StrictLogging {
                       downloaded = downloaded + num
                       logger.debug(s"Downloaded ${downloaded}, progress ${scala.math
                         .min(100, (downloaded.toFloat / nbOfBlocksToDownloads * 100.0).toInt)}%")
+
+                      TimeStamp.now().deltaUnsafe(to) < upToDateDelta
                     }
                   }
               }
             }
           }
       }
-      .map { _ =>
+      .map { deltas =>
         val duration = TimeStamp.now().deltaUnsafe(startedAt)
         logger.debug(s"Syncing done in ${duration.toMinutes} min")
+
+        deltas.flatten.contains(true)
       }
   }
   // scalastyle:on magic.number
@@ -319,7 +342,7 @@ case object BlockFlowSyncService extends StrictLogging {
     }
   }
 
-  private def insertBlocks(blocksWithEvents: ArraySeq[BlockEntityWithEvents])(
+  def insertBlocks(blocksWithEvents: ArraySeq[BlockEntityWithEvents])(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,

@@ -80,7 +80,7 @@
     <logger name="io.netty" level="WARN"/>
     <logger name="org.asynchttpclient" level="WARN"/>
 
-    <root level="${EXPLORER_LOG_LEVEL:-INFO}">
+    <root level="${EXPLORER_LOG_LEVEL:-DEBUG}">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="ERRFILE"/>
         <appender-ref ref="INFOFILE"/>

@@ -77,6 +77,10 @@ object ExplorerError {
       extends Exception(s"Database error.", cause)
       with FatalSystemExit
 
+  final case class WebSocketError(cause: String)
+      extends Exception(s"WebSocket error. $cause")
+      with ExplorerError
+
   /******** Group: [[ConfigError]] ********/
   final case class InvalidGroupNumber(groupNum: Int)
       extends Exception(s"Invalid groupNum: $groupNum. It should be > 0")
