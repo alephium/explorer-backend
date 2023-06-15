@@ -48,7 +48,8 @@ case object HashrateService extends StrictLogging {
     scheduler.scheduleLoop(
       taskId        = HashrateService.productPrefix,
       firstInterval = ScalaDuration.Zero,
-      loopInterval  = interval
+      loopInterval  = interval,
+      stop          = None
     )(syncOnce())
 
   def syncOnce()(implicit ec: ExecutionContext,

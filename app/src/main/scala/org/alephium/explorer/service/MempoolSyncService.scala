@@ -41,7 +41,8 @@ case object MempoolSyncService extends StrictLogging {
     scheduler.scheduleLoop(
       taskId        = this.productPrefix,
       firstInterval = ScalaDuration.Zero,
-      loopInterval  = interval
+      loopInterval  = interval,
+      stop          = None
     )(syncOnce(nodeUris))
 
   def syncOnce(nodeUris: ArraySeq[Uri])(implicit ec: ExecutionContext,

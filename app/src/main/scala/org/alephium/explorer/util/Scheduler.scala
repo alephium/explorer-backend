@@ -103,22 +103,25 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
   }
 
   /** Schedule block at given interval */
-  def scheduleLoop[T](taskId: String, interval: FiniteDuration)(block: => Future[T])(
-      implicit ec: ExecutionContext): Future[T] =
-    scheduleLoop(taskId, interval, interval)(block)
+  def scheduleLoop[T](taskId: String, interval: FiniteDuration, stop: Option[Promise[Unit]])(
+      block: => Future[T])(implicit ec: ExecutionContext): Future[T] =
+    scheduleLoop(taskId, interval, interval, stop)(block)
 
   /** Schedules the block at given `loopInterval` with the first schedule at `firstInterval` */
   @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))
-  def scheduleLoop[T](taskId: String, firstInterval: FiniteDuration, loopInterval: FiniteDuration)(
-      block: => Future[T])(implicit ec: ExecutionContext): Future[T] = {
+  def scheduleLoop[T](taskId: String,
+                      firstInterval: FiniteDuration,
+                      loopInterval: FiniteDuration,
+                      stop: Option[Promise[Unit]])(block: => Future[T])(
+      implicit ec: ExecutionContext): Future[T] = {
     scheduleOnce(taskId, firstInterval)(block) andThen {
       case Failure(exception) =>
         logger.error(s"${logId(taskId)}: Failed executing task", exception)
         ec.reportFailure(exception)
 
       case Success(_) =>
-        if (!terminated) {
-          scheduleLoop(taskId, loopInterval, loopInterval)(block)
+        if (!terminated && !stop.map(_.isCompleted).getOrElse(false)) {
+          scheduleLoop(taskId, loopInterval, loopInterval, stop)(block)
         }
     }
   }
@@ -155,14 +158,16 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
   def scheduleLoopConditional[S](
       taskId: String,
       interval: FiniteDuration,
-      state: S
+      state: S,
+      stop: Option[Promise[Unit]]
   )(init: => Future[Boolean])(block: S => Future[Unit])(
       implicit ec: ExecutionContext): Future[Unit] =
     scheduleLoopConditional(
       taskId        = taskId,
       firstInterval = interval,
       loopInterval  = interval,
-      state         = state
+      state         = state,
+      stop          = stop
     )(init)(block)
 
   /**
@@ -179,7 +184,8 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
       taskId: String,
       firstInterval: FiniteDuration,
       loopInterval: FiniteDuration,
-      state: S
+      state: S,
+      stop: Option[Promise[Unit]]
   )(init: => Future[Boolean])(block: S => Future[Unit])(
       implicit ec: ExecutionContext): Future[Unit] = {
     //false if init has not been executed or previous init attempt returned false, else true.
@@ -188,7 +194,8 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
     scheduleLoop(
       taskId        = taskId,
       firstInterval = firstInterval,
-      loopInterval  = loopInterval
+      loopInterval  = loopInterval,
+      stop          = stop
     ) {
       if (initialized) { //Already initialised. Invoke block!
         block(state)

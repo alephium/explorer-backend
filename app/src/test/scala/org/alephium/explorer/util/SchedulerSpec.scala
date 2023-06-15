@@ -119,7 +119,7 @@ class SchedulerSpec extends AlephiumFutureSpec with ScalaCheckDrivenPropertyChec
         val scheduleTimes = new ConcurrentLinkedDeque[Long]
 
         //schedule tasks every 1 second, first one being immediate
-        scheduler.scheduleLoop("test", 0.seconds, 1.seconds) {
+        scheduler.scheduleLoop("test", 0.seconds, 1.seconds, None) {
           Future(scheduleTimes.add(System.nanoTime()))
         }
 
@@ -198,7 +198,7 @@ class SchedulerSpec extends AlephiumFutureSpec with ScalaCheckDrivenPropertyChec
         @volatile var blockExecuted = false //true if block gets executed, else false
 
         using(Scheduler("test")) { scheduler =>
-          scheduler.scheduleLoopConditional("test", 10.milliseconds, ()) {
+          scheduler.scheduleLoopConditional("test", 10.milliseconds, (), None) {
             Future {
               initInvocations.incrementAndGet()
               false
@@ -224,7 +224,7 @@ class SchedulerSpec extends AlephiumFutureSpec with ScalaCheckDrivenPropertyChec
 
         using(Scheduler("test")) { scheduler =>
           scheduler
-            .scheduleLoopConditional("test", 10.milliseconds, ()) {
+            .scheduleLoopConditional("test", 10.milliseconds, (), None) {
               initInvocations.incrementAndGet() //increment init invocation count
               Future.failed(new Exception("I'm sorry!")) //Init is always failing. So expect block to never get executed.
             } { _ =>
@@ -244,7 +244,7 @@ class SchedulerSpec extends AlephiumFutureSpec with ScalaCheckDrivenPropertyChec
 
         using(Scheduler("test")) { scheduler =>
           scheduler
-            .scheduleLoopConditional("test", 5.milliseconds, 0) {
+            .scheduleLoopConditional("test", 5.milliseconds, 0, None) {
               initExecuted = true
               Future.successful(true)
             } { _ =>
@@ -265,7 +265,7 @@ class SchedulerSpec extends AlephiumFutureSpec with ScalaCheckDrivenPropertyChec
 
         using(Scheduler("test")) { scheduler =>
           //use blockExecuted as a state
-          scheduler.scheduleLoopConditional("test", 1.millisecond, blockExecuted) {
+          scheduler.scheduleLoopConditional("test", 1.millisecond, blockExecuted, None) {
             Future {
               initInvocations.incrementAndGet()
               true

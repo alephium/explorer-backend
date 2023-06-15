@@ -78,7 +78,8 @@ case object BlockFlowSyncService extends StrictLogging {
       taskId        = this.productPrefix,
       firstInterval = ScalaDuration.Zero,
       loopInterval  = interval,
-      state         = new AtomicBoolean()
+      state         = new AtomicBoolean(),
+      stop          = None
     )(init())(state => syncOnce(nodeUris, state))
 
   def syncOnce(nodeUris: ArraySeq[Uri], initialBackStepDone: AtomicBoolean)(

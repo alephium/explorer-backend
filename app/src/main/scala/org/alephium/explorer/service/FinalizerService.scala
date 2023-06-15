@@ -54,7 +54,8 @@ case object FinalizerService extends StrictLogging {
     scheduler.scheduleLoop(
       taskId        = FinalizerService.productPrefix,
       firstInterval = ScalaDuration.Zero,
-      loopInterval  = interval
+      loopInterval  = interval,
+      stop          = None
     )(syncOnce())
 
   def syncOnce()(implicit ec: ExecutionContext,
