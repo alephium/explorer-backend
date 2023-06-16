@@ -21,7 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import com.typesafe.scalalogging.StrictLogging
 import io.vertx.core.Vertx
-import io.vertx.core.http.{HttpClient, WebSocket}
+import io.vertx.core.http.{HttpClient, WebSocket, HttpClientOptions}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.Uri
@@ -52,7 +52,10 @@ case object WebSocketSyncService extends api.WebSocketEndpoints with StrictLoggi
     logger.debug("Starting web sockent syncing")
     vertx = Vertx.vertx()
 
-    val client: HttpClient = vertx.createHttpClient();
+    val client: HttpClient = {
+      val options = new HttpClientOptions().setMaxWebSocketFrameSize(1024 * 1024)
+      vertx.createHttpClient(options);
+    }
 
     client.webSocket(
       blockFlowWsUri.port.get,
