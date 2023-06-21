@@ -77,7 +77,7 @@ object ExplorerError {
       extends Exception(s"Database error.", cause)
       with FatalSystemExit
 
-  final case class WebSocketError(cause: String)
+  final case class WebSocketError(cause: Throwable)
       extends Exception(s"WebSocket error. $cause")
       with ExplorerError
 

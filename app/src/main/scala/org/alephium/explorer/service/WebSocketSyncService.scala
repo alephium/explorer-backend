@@ -16,12 +16,13 @@
 
 package org.alephium.explorer.service
 
+import scala.annotation.nowarn
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 import com.typesafe.scalalogging.StrictLogging
-import io.vertx.core.Vertx
-import io.vertx.core.http.{HttpClient, WebSocket, HttpClientOptions}
+import io.vertx.core.{AsyncResult, Handler, Vertx}
+import io.vertx.core.http.{HttpClient, HttpClientOptions, WebSocket}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.Uri
@@ -30,9 +31,10 @@ import org.alephium.api
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.error.ExplorerError.WebSocketError
+import org.alephium.explorer.persistence.model.BlockEntityWithEvents
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.json.Json._
-import org.alephium.util.discard
+import org.alephium.util.{Duration, TimeStamp}
 
 @SuppressWarnings(
   Array("org.wartremover.warts.NonUnitStatements",
@@ -42,53 +44,92 @@ import org.alephium.util.discard
 case object WebSocketSyncService extends api.WebSocketEndpoints with StrictLogging {
 
   val maybeApiKey: Option[api.model.ApiKey] = None
-  private var vertx: Vertx                  = _
+  private val vertx: Vertx                  = Vertx.vertx()
+  private val client: HttpClient = {
+    val options = new HttpClientOptions().setMaxWebSocketFrameSize(1024 * 1024)
+    vertx.createHttpClient(options);
+  }
 
-  def start(blockFlowWsUri: Uri)(implicit ec: ExecutionContext,
-                                 dc: DatabaseConfig[PostgresProfile],
-                                 blockFlowClient: BlockFlowClient,
-                                 cache: BlockCache,
-                                 groupSetting: GroupSetting): Unit = {
-    logger.debug("Starting web sockent syncing")
-    vertx = Vertx.vertx()
+  // scalastyle:off magic.number
+  private val delayAllowed = Duration.ofSecondsUnsafe(30L)
+  // scalastyle:on magic.number
 
-    val client: HttpClient = {
-      val options = new HttpClientOptions().setMaxWebSocketFrameSize(1024 * 1024)
-      vertx.createHttpClient(options);
-    }
-
+  def sync(blockFlowWsUri: Uri, stopPromise: Promise[Unit])(implicit ec: ExecutionContext,
+                                                            dc: DatabaseConfig[PostgresProfile],
+                                                            blockFlowClient: BlockFlowClient,
+                                                            cache: BlockCache,
+                                                            groupSetting: GroupSetting): Unit = {
+    logger.debug("Starting web socket syncing")
     client.webSocket(
       blockFlowWsUri.port.get,
       blockFlowWsUri.host.get,
-      blockWebSocket.showPathTemplate(), { asyncResult =>
-        discard(
-          asyncResult.map {
-            ws: WebSocket =>
-              ws.textMessageHandler { msg =>
-                  val blockAndEvents =
-                    BlockFlowClient.blockAndEventsToEntities(read[api.model.BlockAndEvents](msg))
-                  discard(
-                    for {
-                      _ <- BlockFlowSyncService.insertBlocks(ArraySeq(blockAndEvents))
-                      _ <- dc.db.run(InputUpdateQueries.updateInputs())
-                    } yield {
-                      ()
-                    }
-                  )
-                }
-                .closeHandler { _ =>
-                  ec.reportFailure(WebSocketError("WebSocket closed, node must be down"))
-                }
-                .exceptionHandler { exception =>
-                  ec.reportFailure(WebSocketError(s"WebSocket exception: $exception"))
-                }
-          }
-        )
-      }
+      blockWebSocket.showPathTemplate(),
+      webSocketHandler(stopPromise)
     )
   }
 
-  def stop(): Future[Unit] = {
-    Future.successful(())
+  @nowarn
+  def webSocketHandler(stopPromise: Promise[Unit])(
+      implicit ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      cache: BlockCache,
+      groupSetting: GroupSetting): Handler[AsyncResult[WebSocket]] = { asyncResult =>
+    asyncResult.map { ws: WebSocket =>
+      ws.textMessageHandler { msg =>
+          handleMessage(msg).map {
+            case Left(cause) =>
+              logger.debug(cause)
+              stopPromise.trySuccess(())
+              ws.close()
+            case _ => ()
+          }
+        }
+        .closeHandler { _ =>
+          stopPromise.trySuccess(())
+        }
+        .exceptionHandler { exception =>
+          ec.reportFailure(WebSocketError(exception))
+        }
+    }
+  }
+
+  def handleMessage(message: String)(implicit ec: ExecutionContext,
+                                     dc: DatabaseConfig[PostgresProfile],
+                                     blockFlowClient: BlockFlowClient,
+                                     cache: BlockCache,
+                                     groupSetting: GroupSetting): Future[Either[String, Unit]] = {
+    val blockAndEvents =
+      BlockFlowClient.blockAndEventsToEntities(read[api.model.BlockAndEvents](message))
+
+    validateBlockAndEvents(blockAndEvents) match {
+      case Left(cause) => Future.successful(Left(cause))
+      case Right(_)    => insert(blockAndEvents).map(Right(_))
+    }
+  }
+
+  def insert(blockAndEvents: BlockEntityWithEvents)(implicit ec: ExecutionContext,
+                                                    dc: DatabaseConfig[PostgresProfile],
+                                                    blockFlowClient: BlockFlowClient,
+                                                    cache: BlockCache,
+                                                    groupSetting: GroupSetting): Future[Unit] =
+    for {
+      _ <- BlockFlowSyncService.insertBlocks(ArraySeq(blockAndEvents))
+      _ <- dc.db.run(InputUpdateQueries.updateInputs())
+    } yield ()
+
+  def validateBlockAndEvents(blockAndEvents: BlockEntityWithEvents): Either[String, Unit] =
+    for {
+      _ <- validateTimestamp(blockAndEvents.block.timestamp)
+    } yield ()
+
+  def validateTimestamp(timestamp: TimeStamp): Either[String, Unit] = {
+    if ((TimeStamp.now() -- timestamp)
+          .map(_ > delayAllowed)
+          .getOrElse(true)) {
+      Left("WebSocket message is to old")
+    } else {
+      Right(())
+    }
   }
 }

@@ -38,7 +38,7 @@ import org.alephium.explorer.persistence.model.{BlockEntity, BlockEntityWithEven
 import org.alephium.explorer.persistence.queries.{BlockQueries, InputUpdateQueries}
 import org.alephium.explorer.util.{Scheduler, TimeUtil}
 import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
-import org.alephium.util.{discard, Duration, TimeStamp}
+import org.alephium.util.{Duration, TimeStamp}
 
 /*
  * Syncing main chains blocks
@@ -53,6 +53,8 @@ import org.alephium.util.{discard, Duration, TimeStamp}
  * 5. For each last block of each chains, mark it as part of the main chain and travel
  *   down the parents recursively until we found back a parent that is part of the main chain.
  * 6. During step 5, if a parent is missing, we download it and continue the procces at 5.
+ * 7. Once the blocks are up-to-date with the node, we switch to websocket syncing
+ * 8. If the websocket close or is late, in case of network issue, we go back to step 1.
  *
  * TODO: Step 5 is costly, but it's an easy way to handle reorg. In step 3 we know we receive the current main chain
  * for that timerange, so in step 4 we could directly insert them as `mainChain = true`, but we need to sync
@@ -68,7 +70,6 @@ case object BlockFlowSyncService extends StrictLogging {
   private val initialBackStep = Duration.ofMinutesUnsafe(30L)
   private val upToDateDelta   = Duration.ofSecondsUnsafe(30L)
   // scalastyle:on magic.number
-  private val stopPromise = Promise[Unit]()
 
   def start(nodeUris: ArraySeq[Uri], interval: FiniteDuration, blockflowWsUri: Uri)(
       implicit ec: ExecutionContext,
@@ -82,7 +83,7 @@ case object BlockFlowSyncService extends StrictLogging {
       firstInterval = ScalaDuration.Zero,
       loopInterval  = interval,
       state         = new AtomicBoolean(),
-      stop          = Some(stopPromise)
+      stop          = None
     )(init())(state => syncOnce(nodeUris, state, blockflowWsUri))
 
   def syncOnce(nodeUris: ArraySeq[Uri], initialBackStepDone: AtomicBoolean, blockflowWsUri: Uri)(
@@ -91,33 +92,32 @@ case object BlockFlowSyncService extends StrictLogging {
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
       groupSetting: GroupSetting): Future[Unit] = {
-    if (!stopPromise.isCompleted) {
-      val syncResult =
-        if (initialBackStepDone.get()) {
-          syncOnceWith(nodeUris, defaultStep, defaultBackStep)
-        } else {
-          syncOnceWith(nodeUris, defaultStep, initialBackStep).map { result =>
-            initialBackStepDone.set(true)
-            result
-          }
-        }
-
-      syncResult.map { isUpToDate =>
-        if (isUpToDate) {
-          logger.info("Blocks are up to date, switching to web socket syncing")
-          discard(stopPromise.success(()))
-          WebSocketSyncService.start(blockflowWsUri)
-        } else {
-          ()
+    val syncResult =
+      if (initialBackStepDone.get()) {
+        syncOnceWith(nodeUris, defaultStep, defaultBackStep)
+      } else {
+        syncOnceWith(nodeUris, defaultStep, initialBackStep).map { result =>
+          initialBackStepDone.set(true)
+          result
         }
       }
-    } else {
-      Future.successful(())
+
+    syncResult.flatMap { isUpToDate =>
+      if (isUpToDate) {
+        logger.info("Blocks are up to date, switching to web socket syncing")
+        val stopPromise = Promise[Unit]()
+        WebSocketSyncService.sync(blockflowWsUri, stopPromise)
+        stopPromise.future.map { _ =>
+          logger.info("WebSocket syncing stopped, resuming http syncing")
+        }
+      } else {
+        Future.successful(())
+      }
     }
   }
 
   // scalastyle:off magic.number
-  private def syncOnceWith(nodeUris: ArraySeq[Uri], step: Duration, backStep: Duration)(
+  def syncOnceWith(nodeUris: ArraySeq[Uri], step: Duration, backStep: Duration)(
       implicit ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
@@ -141,7 +141,7 @@ case object BlockFlowSyncService extends StrictLogging {
                       logger.debug(s"Downloaded ${downloaded}, progress ${scala.math
                         .min(100, (downloaded.toFloat / nbOfBlocksToDownloads * 100.0).toInt)}%")
 
-                      TimeStamp.now().deltaUnsafe(to) < upToDateDelta
+                      (TimeStamp.now() -- to).map(_ < upToDateDelta).getOrElse(false)
                     }
                   }
               }
