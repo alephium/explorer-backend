@@ -19,7 +19,7 @@ package org.alephium.explorer.persistence.queries
 import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.AlephiumFutureSpec
+import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model.Pagination
@@ -71,6 +71,25 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
           result.size is expected.size
           result should contain allElementsOf expected
+      }
+    }
+
+    //TODO Test data aren't coherent, we currently only test that query doesn't throw an error -_-'
+    "list address tokens with balance" in {
+      implicit val groupSetting: GroupSetting = GroupSetting(4)
+      val testData                            = Gen.nonEmptyListOf(blockAndItsMainChainEntitiesGen()).sample.get
+      val inputs                              = testData.flatMap(_._1.inputs)
+      val tokenOutputs                        = testData.map(_._4)
+      val addresses                           = tokenOutputs.map(_.address)
+      val pagination                          = Pagination.unsafe(1, 10)
+
+      run(InputSchema.table.delete).futureValue
+      run(InputSchema.table ++= inputs)
+      run(TokenOutputSchema.table.delete).futureValue
+      run(TokenOutputSchema.table ++= tokenOutputs)
+
+      addresses.foreach { address =>
+        run(TokenQueries.listAddressTokensWithBalanceAction(address, pagination)).futureValue
       }
     }
   }
