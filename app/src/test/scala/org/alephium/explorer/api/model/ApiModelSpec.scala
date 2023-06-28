@@ -324,6 +324,29 @@ class ApiModelSpec() extends AlephiumSpec {
     }
   }
 
+  "AddressBalance" in {
+    forAll(addressBalanceGen) { addressBalance =>
+      val expected = s"""
+       |{
+       | "balance": "${addressBalance.balance}",
+       | "lockedBalance": "${addressBalance.lockedBalance}"
+       |}""".stripMargin
+      check(addressBalance, expected)
+    }
+  }
+
+  "AddressTokenBalance" in {
+    forAll(addressTokenBalanceGen) { addressTokenBalance =>
+      val expected = s"""
+       |{
+       | "tokenId": "${addressTokenBalance.tokenId.toHexString}",
+       | "balance": "${addressTokenBalance.balance}",
+       | "lockedBalance": "${addressTokenBalance.lockedBalance}"
+       |}""".stripMargin
+      check(addressTokenBalance, expected)
+    }
+  }
+
   "ListBlocks" in {
     forAll(listBlocksGen) { listBlocks =>
       val expected = s"""

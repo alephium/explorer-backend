@@ -36,7 +36,7 @@ import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.service.{EmptyTransactionService, TransactionService}
-import org.alephium.protocol.model.Address
+import org.alephium.protocol.model.{Address, TokenId}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.PlatformDefault", "org.wartremover.warts.Var"))
@@ -62,6 +62,9 @@ class AddressServerSpec()
       }
     }
     .sortBy(_._2)
+
+  val tokens = Gen.listOf(addressTokenBalanceGen).sample.get
+
   var testLimit = 0
 
   val transactionService = new EmptyTransactionService {
@@ -109,6 +112,13 @@ class AddressServerSpec()
         implicit ec: ExecutionContext,
         dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] =
       TransactionService.amountHistoryToJsonFlowable(Flowable.fromIterable(amountHistory.asJava))
+
+    override def listAddressTokensWithBalance(address: Address, pagination: Pagination)(
+        implicit ec: ExecutionContext,
+        dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[(TokenId, U256, U256)]] =
+      Future.successful {
+        tokens.map(res => (res.tokenId, res.balance, res.lockedBalance))
+      }
   }
 
   val server =
@@ -297,6 +307,16 @@ class AddressServerSpec()
 
     "respect the max number of addresses" in {
       forAll(addressGen)(respectMaxNumberOfAddresses("/addresses/transactions", _))
+    }
+  }
+
+  "listAddressTokenTransactions" should {
+    "list tokens with their balance for a given address" in {
+      forAll(addressGen) { address =>
+        Get(s"/addresses/$address/tokens-balance") check { response =>
+          response.as[ArraySeq[AddressTokenBalance]] is tokens
+        }
+      }
     }
   }
 

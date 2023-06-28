@@ -49,6 +49,7 @@ trait Documentation
       listAddressTokens,
       listAddressTokenTransactions,
       getAddressTokenBalance,
+      listAddressTokensBalance,
       areAddressesActive,
       exportTransactionsCsvByAddress,
       getAddressAmountHistory,

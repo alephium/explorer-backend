@@ -224,6 +224,18 @@ object GenApiModel extends ImplicitConversions {
       )
     }
 
+  val addressTokenBalanceGen: Gen[AddressTokenBalance] =
+    for {
+      addressBalance <- addressBalanceGen
+      tokenId        <- tokenIdGen
+    } yield {
+      AddressTokenBalance(
+        tokenId,
+        addressBalance.balance,
+        addressBalance.lockedBalance
+      )
+    }
+
   val addressInfoGen: Gen[AddressInfo] =
     for {
       balance       <- u256Gen
