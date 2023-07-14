@@ -152,7 +152,7 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
               spentFinalized = output.spentFinalized
             )
 
-          actual.toList contains only(expected)
+          actual.toList should contain only expected
         }
       }
     }

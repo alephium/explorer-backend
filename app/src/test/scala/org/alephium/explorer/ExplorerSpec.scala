@@ -102,17 +102,18 @@ trait ExplorerSpec
     implicit val databaseConfig: DatabaseConfig[PostgresProfile] =
       DatabaseFixture.createDatabaseConfig(dbName)
     val explorerPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
+    val configValues: Map[String, Any] = Map(
+      ("alephium.explorer.boot-mode", bootMode.productPrefix),
+      ("alephium.explorer.port", explorerPort),
+      ("alephium.blockflow.port", blockFlowPort),
+      ("alephium.blockflow.network-id", networkId.id),
+      ("alephium.blockflow.group-num", groupSetting.groupNum)
+    )
     @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
     implicit val explorerConfig: ExplorerConfig = ExplorerConfig.load(
       ConfigFactory
         .parseMap(
-          Map(
-            ("alephium.explorer.boot-mode", bootMode.productPrefix),
-            ("alephium.explorer.port", explorerPort),
-            ("alephium.blockflow.port", blockFlowPort),
-            ("alephium.blockflow.network-id", networkId.id),
-            ("alephium.blockflow.group-num", groupSetting.groupNum)
-          ).view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava
+          configValues.view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava
         )
         .withFallback(DatabaseFixture.config(dbName))
     )

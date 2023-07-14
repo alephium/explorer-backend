@@ -158,7 +158,7 @@ class InputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
               outputRefTokens = input.outputRefTokens
             )
 
-          actual.toList contains only(expected)
+          actual.toList should contain only expected
         }
       }
     }

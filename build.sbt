@@ -104,7 +104,7 @@ val inliningOptions =
 val commonSettings = Seq(
   name         := "explorer-backend",
   organization := "org.alephium",
-  scalaVersion := "2.13.8",
+  scalaVersion := "2.13.10",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding",
