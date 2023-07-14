@@ -40,7 +40,8 @@ object MempoolQueries {
   }
 
   def listPaginatedMempoolTransactionsQuery(
-      pagination: Pagination): DBActionSR[MempoolTransactionEntity] = {
+      pagination: Pagination
+  ): DBActionSR[MempoolTransactionEntity] = {
     sql"""
       SELECT hash,
              chain_from,
@@ -88,11 +89,11 @@ object MempoolQueries {
         (_: Unit, params: PositionedParameters) =>
           hashes foreach { txnHash =>
             params >> txnHash
-        }
+          }
 
       SQLActionBuilder(
         queryParts = query,
-        unitPConv  = parameters
+        unitPConv = parameters
       ).asASE[MempoolTransactionEntity](mempoolTransactionGetResult)
     } else {
       DBIOAction.successful(ArraySeq.empty)
@@ -122,11 +123,11 @@ object MempoolQueries {
         (_: Unit, params: PositionedParameters) =>
           hashes foreach { txnHash =>
             params >> txnHash
-        }
+          }
 
       SQLActionBuilder(
         queryParts = query,
-        unitPConv  = parameters
+        unitPConv = parameters
       ).asASE[UOutputEntity](uoutputGetResult)
     } else {
       DBIOAction.successful(ArraySeq.empty)
@@ -153,11 +154,11 @@ object MempoolQueries {
         (_: Unit, params: PositionedParameters) =>
           hashes foreach { txnHash =>
             params >> txnHash
-        }
+          }
 
       SQLActionBuilder(
         queryParts = query,
-        unitPConv  = parameters
+        unitPConv = parameters
       ).asASE[UInputEntity](uinputGetResult)
     } else {
       DBIOAction.successful(ArraySeq.empty)
@@ -166,45 +167,45 @@ object MempoolQueries {
 
   def utxFromTxHash(hash: TransactionId): DBActionSR[MempoolTransactionEntity] = {
     sql"""
-           |SELECT hash,
-           |       chain_from,
-           |       chain_to,
-           |       gas_amount,
-           |       gas_price,
-           |       last_seen
-           |FROM utransactions
-           |WHERE hash = $hash
-           |""".stripMargin.asASE[MempoolTransactionEntity](mempoolTransactionGetResult)
+         |SELECT hash,
+         |       chain_from,
+         |       chain_to,
+         |       gas_amount,
+         |       gas_price,
+         |       last_seen
+         |FROM utransactions
+         |WHERE hash = $hash
+         |""".stripMargin.asASE[MempoolTransactionEntity](mempoolTransactionGetResult)
   }
 
   def uoutputsFromTx(hash: TransactionId): DBActionSR[UOutputEntity] = {
     sql"""
-           |SELECT tx_hash,
-           |       hint,
-           |       key,
-           |       amount,
-           |       address,
-           |       tokens,
-           |       lock_time,
-           |       message,
-           |       uoutput_order
-           |FROM uoutputs
-           |WHERE tx_hash = $hash
-           |ORDER BY uoutput_order
-           |""".stripMargin.asASE[UOutputEntity](uoutputGetResult)
+         |SELECT tx_hash,
+         |       hint,
+         |       key,
+         |       amount,
+         |       address,
+         |       tokens,
+         |       lock_time,
+         |       message,
+         |       uoutput_order
+         |FROM uoutputs
+         |WHERE tx_hash = $hash
+         |ORDER BY uoutput_order
+         |""".stripMargin.asASE[UOutputEntity](uoutputGetResult)
   }
 
   def uinputsFromTx(hash: TransactionId): DBActionSR[UInputEntity] = {
     sql"""
-           |SELECT tx_hash,
-           |       hint,
-           |       output_ref_key,
-           |       unlock_script,
-           |       address,
-           |       uinput_order
-           |FROM uinputs
-           |WHERE tx_hash = $hash
-           |ORDER BY uinput_order
-           |""".stripMargin.asASE[UInputEntity](uinputGetResult)
+         |SELECT tx_hash,
+         |       hint,
+         |       output_ref_key,
+         |       unlock_script,
+         |       address,
+         |       uinput_order
+         |FROM uinputs
+         |WHERE tx_hash = $hash
+         |ORDER BY uinput_order
+         |""".stripMargin.asASE[UInputEntity](uinputGetResult)
   }
 }

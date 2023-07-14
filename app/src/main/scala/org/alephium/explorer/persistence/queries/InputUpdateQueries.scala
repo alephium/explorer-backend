@@ -45,14 +45,18 @@ object InputUpdateQueries {
       AND inputs.output_ref_amount IS NULL
       RETURNING outputs.address, outputs.tokens, inputs.tx_hash, inputs.block_hash, inputs.block_timestamp, inputs.tx_order, inputs.main_chain, outputs.coinbase
     """
-      .as[(Address,
-           Option[ArraySeq[Token]],
-           TransactionId,
-           BlockHash,
-           TimeStamp,
-           Int,
-           Boolean,
-           Boolean)]
+      .as[
+        (
+            Address,
+            Option[ArraySeq[Token]],
+            TransactionId,
+            BlockHash,
+            TimeStamp,
+            Int,
+            Boolean,
+            Boolean
+        )
+      ]
       .flatMap(internalUpdates)
       .transactionally
   }
@@ -94,11 +98,11 @@ object InputUpdateQueries {
               params >> txOrder
               params >> mainChain
               params >> coinbase
-        }
+          }
 
       SQLActionBuilder(
         queryParts = query,
-        unitPConv  = parameters
+        unitPConv = parameters
       ).asUpdate
     }
   }
@@ -123,10 +127,10 @@ object InputUpdateQueries {
       (tokenTxPerAddresses, placeholder) =>
         val query =
           s"""
-           | INSERT INTO token_tx_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
-           | VALUES $placeholder
-           | ON CONFLICT ON CONSTRAINT token_tx_per_address_pk DO NOTHING
-           |""".stripMargin
+             | INSERT INTO token_tx_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
+             | VALUES $placeholder
+             | ON CONFLICT ON CONSTRAINT token_tx_per_address_pk DO NOTHING
+             |""".stripMargin
 
         val parameters: SetParameter[Unit] =
           (_: Unit, params: PositionedParameters) =>
@@ -139,11 +143,11 @@ object InputUpdateQueries {
                 params >> txOrder
                 params >> mainChain
                 params >> token
-          }
+            }
 
         SQLActionBuilder(
           queryParts = query,
-          unitPConv  = parameters
+          unitPConv = parameters
         ).asUpdate
     }
   }

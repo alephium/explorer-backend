@@ -22,5 +22,5 @@ package org.alephium.explorer.api
 // import org.alephium.explorer.api.model.LogbackValue
 
 object Schemas {
-  //implicit val logbackLevel: Schema[LogbackValue.Level] = Schema(SString())
+  // implicit val logbackLevel: Schema[LogbackValue.Level] = Schema(SString())
 }

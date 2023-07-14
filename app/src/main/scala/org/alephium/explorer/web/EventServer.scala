@@ -27,18 +27,18 @@ import org.alephium.explorer.api.EventsEndpoints
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries.EventQueries._
 
-class EventServer(implicit val executionContext: ExecutionContext,
-                  dc: DatabaseConfig[PostgresProfile])
-    extends Server
+class EventServer(implicit
+    val executionContext: ExecutionContext,
+    dc: DatabaseConfig[PostgresProfile]
+) extends Server
     with EventsEndpoints {
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
       route(getEventsByTxId.serverLogicSuccess[Future] { txId =>
         run(getEventsByTxIdQuery(txId)).map(_.map(_.toApi))
       }),
-      route(getEventsByContractAddress.serverLogicSuccess[Future] {
-        case (address, pagination) =>
-          run(getEventsByContractAddressQuery(address, pagination)).map(_.map(_.toApi))
+      route(getEventsByContractAddress.serverLogicSuccess[Future] { case (address, pagination) =>
+        run(getEventsByContractAddressQuery(address, pagination)).map(_.map(_.toApi))
       }),
       route(getEventsByContractAndInputAddress.serverLogicSuccess[Future] {
         case (contract, input, pagination) =>

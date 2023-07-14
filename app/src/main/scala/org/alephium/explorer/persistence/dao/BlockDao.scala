@@ -43,35 +43,43 @@ import org.alephium.util.{Duration, TimeStamp}
 
 object BlockDao {
 
-  def getLite(hash: BlockHash)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntryLite]] =
+  def getLite(hash: BlockHash)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[BlockEntryLite]] =
     run(getBlockEntryLiteAction(hash))
 
-  def getTransactions(hash: BlockHash, pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+  def getTransactions(hash: BlockHash, pagination: Pagination)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[Transaction]] =
     run(getTransactionsByBlockHashWithPagination(hash, pagination))
 
-  def get(hash: BlockHash)(implicit ec: ExecutionContext,
-                           dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntry]] =
+  def get(hash: BlockHash)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[BlockEntry]] =
     run(getBlockEntryAction(hash))
 
-  def getAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[BlockEntry]] =
+  def getAtHeight(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[BlockEntry]] =
     run(getAtHeightAction(fromGroup, toGroup, height))
 
   /** Inserts a single block transactionally via SQL */
-  def insert(block: BlockEntity)(implicit ec: ExecutionContext,
-                                 dc: DatabaseConfig[PostgresProfile],
-                                 groupSetting: GroupSetting): Future[Unit] =
+  def insert(block: BlockEntity)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      groupSetting: GroupSetting
+  ): Future[Unit] =
     insertAll(ArraySeq(block))
 
-  def insertWithEvents(block: BlockEntity, events: ArraySeq[EventEntity])(
-      implicit ec: ExecutionContext,
+  def insertWithEvents(block: BlockEntity, events: ArraySeq[EventEntity])(implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
-      groupSetting: GroupSetting): Future[Unit] =
+      groupSetting: GroupSetting
+  ): Future[Unit] =
     run((for {
       _ <- insertBlockEntity(ArraySeq(block), groupSetting.groupNum)
       _ <- insertEventsQuery(events)
@@ -79,23 +87,27 @@ object BlockDao {
     } yield ()).transactionally)
 
   /** Inserts a multiple blocks transactionally via SQL */
-  def insertAll(blocks: ArraySeq[BlockEntity])(implicit ec: ExecutionContext,
-                                               dc: DatabaseConfig[PostgresProfile],
-                                               groupSetting: GroupSetting): Future[Unit] =
+  def insertAll(blocks: ArraySeq[BlockEntity])(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      groupSetting: GroupSetting
+  ): Future[Unit] =
     run(insertBlockEntity(blocks, groupSetting.groupNum)).map(_ => ())
 
-  def listMainChain(pagination: Pagination.Reversible)(
-      implicit ec: ExecutionContext,
+  def listMainChain(pagination: Pagination.Reversible)(implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
-      cache: BlockCache): Future[(ArraySeq[BlockEntryLite], Int)] = {
+      cache: BlockCache
+  ): Future[(ArraySeq[BlockEntryLite], Int)] = {
     run(listMainChainHeadersWithTxnNumber(pagination)).map { blockEntries =>
       (blockEntries, cache.getMainChainBlockCount())
     }
   }
 
-  def listIncludingForks(from: TimeStamp, to: TimeStamp)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[BlockEntryLite]] = {
+  def listIncludingForks(from: TimeStamp, to: TimeStamp)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[BlockEntryLite]] = {
     run(sql"""
       SELECT *
       FROM block_headers
@@ -107,24 +119,30 @@ object BlockDao {
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
-  private def updateMainChainAction(hash: BlockHash,
-                                    chainFrom: GroupIndex,
-                                    chainTo: GroupIndex,
-                                    groupNum: Int)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): DBActionRWT[Option[BlockHash]] =
+  private def updateMainChainAction(
+      hash: BlockHash,
+      chainFrom: GroupIndex,
+      chainTo: GroupIndex,
+      groupNum: Int
+  )(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): DBActionRWT[Option[BlockHash]] =
     getBlockHeaderAction(hash)
       .flatMap {
         case Some(block) if !block.mainChain =>
           assert(block.chainFrom == chainFrom && block.chainTo == chainTo)
           for {
-            blocks <- getHashesAtHeightIgnoringOne(fromGroup = block.chainFrom,
-                                                   toGroup      = block.chainTo,
-                                                   height       = block.height,
-                                                   hashToIgnore = block.hash)
+            blocks <- getHashesAtHeightIgnoringOne(
+              fromGroup = block.chainFrom,
+              toGroup = block.chainTo,
+              height = block.height,
+              hashToIgnore = block.hash
+            )
             _ <- DBIOAction.sequence(
               blocks
-                .map(updateMainChainStatusQuery(_, false)))
+                .map(updateMainChainStatusQuery(_, false))
+            )
             _ <- updateMainChainStatusQuery(hash, true)
           } yield {
             block.parent.map(Right(_))
@@ -139,29 +157,38 @@ object BlockDao {
       }
 
   def updateMainChain(hash: BlockHash, chainFrom: GroupIndex, chainTo: GroupIndex, groupNum: Int)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockHash]] =
+      implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[BlockHash]] =
     run(updateMainChainAction(hash, chainFrom, chainTo, groupNum))
 
-  def updateMainChainStatus(hash: BlockHash, isMainChain: Boolean)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Unit] =
+  def updateMainChainStatus(hash: BlockHash, isMainChain: Boolean)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] =
     run(updateMainChainStatusQuery(hash, isMainChain).map(_ => ()))
 
-  def latestBlocks()(implicit cache: BlockCache,
-                     groupSetting: GroupSetting,
-                     ec: ExecutionContext): Future[ArraySeq[(ChainIndex, LatestBlock)]] =
+  def latestBlocks()(implicit
+      cache: BlockCache,
+      groupSetting: GroupSetting,
+      ec: ExecutionContext
+  ): Future[ArraySeq[(ChainIndex, LatestBlock)]] =
     cache.getAllLatestBlocks()
 
-  def getAverageBlockTime()(implicit cache: BlockCache,
-                            groupSetting: GroupSetting,
-                            ec: ExecutionContext): Future[ArraySeq[(ChainIndex, Duration)]] =
+  def getAverageBlockTime()(implicit
+      cache: BlockCache,
+      groupSetting: GroupSetting,
+      ec: ExecutionContext
+  ): Future[ArraySeq[(ChainIndex, Duration)]] =
     cache.getAllBlockTimes(groupSetting.chainIndexes)
 
-  def updateLatestBlock(block: BlockEntity)(implicit ec: ExecutionContext,
-                                            dc: DatabaseConfig[PostgresProfile],
-                                            cache: BlockCache,
-                                            groupSetting: GroupSetting): Future[Unit] = {
+  def updateLatestBlock(block: BlockEntity)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      cache: BlockCache,
+      groupSetting: GroupSetting
+  ): Future[Unit] = {
     val chainIndex =
       ChainIndex.unsafe(block.chainFrom.value, block.chainTo.value)(groupSetting.groupConfig)
     val latestBlock = LatestBlock.fromEntity(block)

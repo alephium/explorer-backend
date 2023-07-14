@@ -36,16 +36,16 @@ class TimeUtilSpec extends AlephiumSpec with Matchers {
   "toZonedDateTime" should {
     "convert OffsetTime to ZonedDateTime with today's date" in {
       val zone         = ZoneId.of("Australia/Perth")
-      val expectedDate = LocalDateTime.now(zone) //expected day/month/year
-      val expectedTime = OffsetTime.now(zone) //expected hour/minute/day
+      val expectedDate = LocalDateTime.now(zone) // expected day/month/year
+      val expectedTime = OffsetTime.now(zone)    // expected hour/minute/day
 
-      val actual = toZonedDateTime(expectedTime) //actual ZonedDateTime
+      val actual = toZonedDateTime(expectedTime) // actual ZonedDateTime
 
-      //check time
+      // check time
       actual.getHour is expectedTime.getHour
       actual.getMinute is expectedTime.getMinute
       actual.getSecond is expectedTime.getSecond
-      //check year
+      // check year
       actual.getDayOfYear is expectedDate.getDayOfYear
       actual.getMonth is expectedDate.getMonth
       actual.getYear is expectedDate.getYear
@@ -98,18 +98,20 @@ class TimeUtilSpec extends AlephiumSpec with Matchers {
         val actual =
           TimeUtil
             .buildTimeStampRange(
-              step     = Duration.ofMillisUnsafe(10),
+              step = Duration.ofMillisUnsafe(10),
               backStep = Duration.ofMillisUnsafe(5),
-              localTs  = TimeStamp.unsafe(20), //local is behind remote
-              remoteTs = TimeStamp.unsafe(40) //remote is ahead
+              localTs = TimeStamp.unsafe(20), // local is behind remote
+              remoteTs = TimeStamp.unsafe(40) // remote is ahead
             )
             .success
             .value
 
         val expected =
-          ArraySeq((TimeStamp.unsafe(16), TimeStamp.unsafe(26)),
-                   (TimeStamp.unsafe(27), TimeStamp.unsafe(37)),
-                   (TimeStamp.unsafe(38), TimeStamp.unsafe(41)))
+          ArraySeq(
+            (TimeStamp.unsafe(16), TimeStamp.unsafe(26)),
+            (TimeStamp.unsafe(27), TimeStamp.unsafe(37)),
+            (TimeStamp.unsafe(38), TimeStamp.unsafe(41))
+          )
 
         expected is actual
       }
@@ -117,18 +119,21 @@ class TimeUtilSpec extends AlephiumSpec with Matchers {
 
     "return failure" when {
       "local timestamp is ahead of remote timestamp" in {
-        forAll(Gen.posNum[Long], Gen.posNum[Short]) {
-          case (timestamp, aheadBy) =>
-            val localTs  = TimeStamp.unsafe(timestamp + (aheadBy max 1)) //max 1 so that local is ahead by at least 1
-            val remoteTs = TimeStamp.unsafe(timestamp)
+        forAll(Gen.posNum[Long], Gen.posNum[Short]) { case (timestamp, aheadBy) =>
+          val localTs = TimeStamp.unsafe(
+            timestamp + (aheadBy max 1)
+          ) // max 1 so that local is ahead by at least 1
+          val remoteTs = TimeStamp.unsafe(timestamp)
 
-            TimeUtil
-              .buildTimeStampRange(step     = Duration.ofMillisUnsafe(10),
-                                   backStep = Duration.ofMillisUnsafe(5),
-                                   localTs  = localTs,
-                                   remoteTs = remoteTs)
-              .failure
-              .exception is RemoteTimeStampIsBeforeLocal(localTs, remoteTs)
+          TimeUtil
+            .buildTimeStampRange(
+              step = Duration.ofMillisUnsafe(10),
+              backStep = Duration.ofMillisUnsafe(5),
+              localTs = localTs,
+              remoteTs = remoteTs
+            )
+            .failure
+            .exception is RemoteTimeStampIsBeforeLocal(localTs, remoteTs)
         }
       }
     }
@@ -140,10 +145,12 @@ class TimeUtilSpec extends AlephiumSpec with Matchers {
         forAll(Gen.posNum[Long], Gen.posNum[Long], timestampGen, Gen.posNum[Int]) {
           case (step, backStep, timeStamp, numOfBlocks) =>
             TimeUtil
-              .buildTimeStampRangeOption(step     = Duration.ofMillisUnsafe(step),
-                                         backStep = Duration.ofMillisUnsafe(backStep),
-                                         localTs  = Some((timeStamp, numOfBlocks)),
-                                         remoteTs = None)
+              .buildTimeStampRangeOption(
+                step = Duration.ofMillisUnsafe(step),
+                backStep = Duration.ofMillisUnsafe(backStep),
+                localTs = Some((timeStamp, numOfBlocks)),
+                remoteTs = None
+              )
               .is(None)
         }
       }
@@ -152,10 +159,12 @@ class TimeUtilSpec extends AlephiumSpec with Matchers {
         forAll(Gen.posNum[Long], Gen.posNum[Long], timestampGen, Gen.posNum[Int]) {
           case (step, backStep, timeStamp, numOfBlocks) =>
             TimeUtil
-              .buildTimeStampRangeOption(step     = Duration.ofMillisUnsafe(step),
-                                         backStep = Duration.ofMillisUnsafe(backStep),
-                                         localTs  = None,
-                                         remoteTs = Some((timeStamp, numOfBlocks)))
+              .buildTimeStampRangeOption(
+                step = Duration.ofMillisUnsafe(step),
+                backStep = Duration.ofMillisUnsafe(backStep),
+                localTs = None,
+                remoteTs = Some((timeStamp, numOfBlocks))
+              )
               .is(None)
         }
       }
@@ -163,26 +172,26 @@ class TimeUtilSpec extends AlephiumSpec with Matchers {
 
     "return total number of blocks (remoteNumOfBlocks - localNumOfBlocks)" when {
       "all inputs are valid" in {
-        //Test: When all inputs are valid, NumOfBlocks should be (remoteNumOfBlocks - localNumOfBlocks)
+        // Test: When all inputs are valid, NumOfBlocks should be (remoteNumOfBlocks - localNumOfBlocks)
         forAll(Gen.posNum[Long], Gen.posNum[Int], Gen.posNum[Int]) {
           case (timestamp, localNumOfBlocks, remoteNumOfBlocks) =>
-            //localNumBlocks should be greater than or equal to remoteNumBlocks
+            // localNumBlocks should be greater than or equal to remoteNumBlocks
             val localBlocks = remoteNumOfBlocks min localNumOfBlocks
 
-            //Only test for numOfBlocks. It should be (remote - local)
+            // Only test for numOfBlocks. It should be (remote - local)
             val (_, numOfBlocks) =
               TimeUtil
                 .buildTimeStampRangeOption(
-                  step     = Duration.ofMillisUnsafe(0),
+                  step = Duration.ofMillisUnsafe(0),
                   backStep = Duration.ofMillisUnsafe(0),
-                  localTs  = Some((TimeStamp.unsafe(timestamp), localBlocks)),
+                  localTs = Some((TimeStamp.unsafe(timestamp), localBlocks)),
                   remoteTs = Some((TimeStamp.unsafe(timestamp + 1), remoteNumOfBlocks))
                 )
                 .value
                 .success
                 .value
 
-            //Num of blocks returned should be (remote - local)
+            // Num of blocks returned should be (remote - local)
             numOfBlocks is (remoteNumOfBlocks - localBlocks)
         }
       }

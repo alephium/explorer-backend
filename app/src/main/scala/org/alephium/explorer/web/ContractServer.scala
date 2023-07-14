@@ -28,18 +28,18 @@ import org.alephium.explorer.api.model.{ContractParent, SubContracts}
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries.ContractQueries._
 
-class ContractServer(implicit val executionContext: ExecutionContext,
-                     dc: DatabaseConfig[PostgresProfile])
-    extends Server
+class ContractServer(implicit
+    val executionContext: ExecutionContext,
+    dc: DatabaseConfig[PostgresProfile]
+) extends Server
     with ContractsEndpoints {
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
       route(getParentAddress.serverLogicSuccess[Future] { contract =>
         run(getParentAddressQuery(contract).map(ContractParent.apply))
       }),
-      route(getSubContracts.serverLogicSuccess[Future] {
-        case (contract, pagination) =>
-          run(getSubContractsQuery(contract, pagination).map(SubContracts.apply))
+      route(getSubContracts.serverLogicSuccess[Future] { case (contract, pagination) =>
+        run(getSubContractsQuery(contract, pagination).map(SubContracts.apply))
       })
     )
 }

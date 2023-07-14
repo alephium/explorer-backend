@@ -94,10 +94,12 @@ object BlockFlowClientSpec extends ScalaFutures with IntegrationPatience {
         })),
         route(getChainParams.serverLogicSuccess(_ => { _: Unit =>
           Future.successful(
-            model.ChainParams(NetworkId.AlephiumDevNet,
-                              18,
-                              groupSetting.groupNum,
-                              groupSetting.groupNum)
+            model.ChainParams(
+              NetworkId.AlephiumDevNet,
+              18,
+              groupSetting.groupNum,
+              groupSetting.groupNum
+            )
           )
         })),
         route(getBlock.serverLogicSuccess(_ => { _ =>

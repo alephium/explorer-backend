@@ -39,16 +39,19 @@ object DBRunner {
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   def run[R, E <: Effect](databaseConfig: DatabaseConfig[PostgresProfile])(
-      action: DBAction[R, E]): Future[R] =
+      action: DBAction[R, E]
+  ): Future[R] =
     databaseConfig.db.run(action)
 
   /** Temporary function until all things are made stateless */
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def run[R, E <: Effect](action: DBAction[R, E])(
-      implicit databaseConfig: DatabaseConfig[PostgresProfile]): Future[R] =
+  def run[R, E <: Effect](action: DBAction[R, E])(implicit
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[R] =
     databaseConfig.db.run(action)
 
-  def stream[R](action: StreamAction[R])(
-      implicit databaseConfig: DatabaseConfig[PostgresProfile]): Publisher[R] =
+  def stream[R](action: StreamAction[R])(implicit
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Publisher[R] =
     databaseConfig.db.stream(action)
 }

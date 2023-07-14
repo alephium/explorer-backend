@@ -33,19 +33,20 @@ import org.alephium.util.{TimeStamp, U256}
 
 object TokenQueries extends StrictLogging {
 
-  def getTokenBalanceAction(address: Address, token: TokenId)(
-      implicit ec: ExecutionContext): DBActionR[(U256, U256)] =
+  def getTokenBalanceAction(address: Address, token: TokenId)(implicit
+      ec: ExecutionContext
+  ): DBActionR[(U256, U256)] =
     getTokenBalanceUntilLockTime(
       address = address,
       token,
       lockTime = TimeStamp.now()
-    ) map {
-      case (total, locked) =>
-        (total.getOrElse(U256.Zero), locked.getOrElse(U256.Zero))
+    ) map { case (total, locked) =>
+      (total.getOrElse(U256.Zero), locked.getOrElse(U256.Zero))
     }
 
-  def getTokenBalanceUntilLockTime(address: Address, token: TokenId, lockTime: TimeStamp)(
-      implicit ec: ExecutionContext): DBActionR[(Option[U256], Option[U256])] =
+  def getTokenBalanceUntilLockTime(address: Address, token: TokenId, lockTime: TimeStamp)(implicit
+      ec: ExecutionContext
+  ): DBActionR[(Option[U256], Option[U256])] =
     sql"""
       SELECT sum(token_outputs.amount),
              sum(CASE
@@ -74,8 +75,9 @@ object TokenQueries extends StrictLogging {
 
   }
 
-  def getTransactionsByToken(token: TokenId, pagination: Pagination)(
-      implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
+  def getTransactionsByToken(token: TokenId, pagination: Pagination)(implicit
+      ec: ExecutionContext
+  ): DBActionR[ArraySeq[Transaction]] = {
     for {
       txHashesTs <- listTokenTransactionsAction(token, pagination)
       txs        <- TransactionQueries.getTransactions(txHashesTs.map(_.toTxByAddressQR))
@@ -92,8 +94,10 @@ object TokenQueries extends StrictLogging {
       .asAS[Address]
   }
 
-  def listTokenTransactionsAction(token: TokenId,
-                                  pagination: Pagination): DBActionSR[TxByTokenQR] = {
+  def listTokenTransactionsAction(
+      token: TokenId,
+      pagination: Pagination
+  ): DBActionSR[TxByTokenQR] = {
     sql"""
       SELECT #${TxByTokenQR.selectFields}
       FROM transaction_per_token
@@ -116,16 +120,19 @@ object TokenQueries extends StrictLogging {
       .asAS[TokenId]
 
   def getTokenTransactionsByAddress(address: Address, token: TokenId, pagination: Pagination)(
-      implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
+      implicit ec: ExecutionContext
+  ): DBActionR[ArraySeq[Transaction]] = {
     for {
       txHashesTs <- getTokenTxHashesByAddressQuery(address, token, pagination)
       txs        <- TransactionQueries.getTransactions(txHashesTs.map(_.toTxByAddressQR))
     } yield txs
   }
 
-  def getTokenTxHashesByAddressQuery(address: Address,
-                                     token: TokenId,
-                                     pagination: Pagination): DBActionSR[TxByTokenQR] = {
+  def getTokenTxHashesByAddressQuery(
+      address: Address,
+      token: TokenId,
+      pagination: Pagination
+  ): DBActionSR[TxByTokenQR] = {
     sql"""
       SELECT #${TxByTokenQR.selectFields}
       FROM token_tx_per_addresses

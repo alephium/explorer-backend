@@ -51,12 +51,15 @@ object BlockCache {
   }
 
   // scalastyle:off
-  def apply(cacheRowCountReloadPeriod: FiniteDuration,
-            cacheBlockTimesReloadPeriod: FiniteDuration,
-            cacheLatestBlocksReloadPeriod: FiniteDuration)(
-      implicit groupSetting: GroupSetting,
+  def apply(
+      cacheRowCountReloadPeriod: FiniteDuration,
+      cacheBlockTimesReloadPeriod: FiniteDuration,
+      cacheLatestBlocksReloadPeriod: FiniteDuration
+  )(implicit
+      groupSetting: GroupSetting,
       ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): BlockCache = {
+      dc: DatabaseConfig[PostgresProfile]
+  ): BlockCache = {
     val groupConfig: GroupConfig = groupSetting.groupConfig
 
     /*
@@ -68,11 +71,10 @@ object BlockCache {
      * @see Comments in PR <a href="https://github.com/alephium/explorer-backend/pull/393">#393</a>
      */
     @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-    val latestBlockAsyncLoader: AsyncCacheLoader[ChainIndex, LatestBlock] = {
-      case (key, _) =>
-        run(
-          BlockQueries.getLatestBlock(key.from, key.to)
-        ).map(_.get).asJava.toCompletableFuture
+    val latestBlockAsyncLoader: AsyncCacheLoader[ChainIndex, LatestBlock] = { case (key, _) =>
+      run(
+        BlockQueries.getLatestBlock(key.from, key.to)
+      ).map(_.get).asJava.toCompletableFuture
     }
 
     val cachedLatestBlocks: CaffeineAsyncCache[ChainIndex, LatestBlock] =
@@ -80,22 +82,23 @@ object BlockCache {
         Caffeine
           .newBuilder()
           .maximumSize(groupConfig.chainNum.toLong)
-          .expireAfterWrite(cacheLatestBlocksReloadPeriod.toNanos,
-                            java.util.concurrent.TimeUnit.NANOSECONDS)
+          .expireAfterWrite(
+            cacheLatestBlocksReloadPeriod.toNanos,
+            java.util.concurrent.TimeUnit.NANOSECONDS
+          )
           .buildAsync[ChainIndex, LatestBlock](latestBlockAsyncLoader)
       }
 
-    val blockTimeAsyncLoader: AsyncCacheLoader[ChainIndex, Duration] = {
-      case (key, _) =>
-        val chainFrom = key.from
-        val chainTo   = key.to
-        (for {
-          latestBlock <- cachedLatestBlocks.get(key)
-          after = latestBlock.timestamp.minusUnsafe(Duration.ofHoursUnsafe(2))
-          blockTimes <- run(BlockQueries.getBlockTimes(chainFrom, chainTo, after))
-        } yield {
-          computeAverageBlockTime(blockTimes)
-        }).asJava.toCompletableFuture
+    val blockTimeAsyncLoader: AsyncCacheLoader[ChainIndex, Duration] = { case (key, _) =>
+      val chainFrom = key.from
+      val chainTo   = key.to
+      (for {
+        latestBlock <- cachedLatestBlocks.get(key)
+        after = latestBlock.timestamp.minusUnsafe(Duration.ofHoursUnsafe(2))
+        blockTimes <- run(BlockQueries.getBlockTimes(chainFrom, chainTo, after))
+      } yield {
+        computeAverageBlockTime(blockTimes)
+      }).asJava.toCompletableFuture
     }
 
     val cachedBlockTimes: CaffeineAsyncCache[ChainIndex, Duration] =
@@ -103,8 +106,10 @@ object BlockCache {
         Caffeine
           .newBuilder()
           .maximumSize(groupConfig.chainNum.toLong)
-          .expireAfterWrite(cacheBlockTimesReloadPeriod.toNanos,
-                            java.util.concurrent.TimeUnit.NANOSECONDS)
+          .expireAfterWrite(
+            cacheBlockTimesReloadPeriod.toNanos,
+            java.util.concurrent.TimeUnit.NANOSECONDS
+          )
           .buildAsync[ChainIndex, Duration](blockTimeAsyncLoader)
       }
 
@@ -114,8 +119,8 @@ object BlockCache {
       }
 
     new BlockCache(
-      blockTimes   = cachedBlockTimes,
-      rowCount     = cacheRowCount,
+      blockTimes = cachedBlockTimes,
+      rowCount = cacheRowCount,
       latestBlocks = cachedLatestBlocks
     )
   }
@@ -125,20 +130,24 @@ object BlockCache {
 /** Cache used by Block queries.
   *
   * Encapsulate so the cache mutation is not directly accessible by clients.
-  * */
-class BlockCache(blockTimes: CaffeineAsyncCache[ChainIndex, Duration],
-                 rowCount: AsyncReloadingCache[Int],
-                 latestBlocks: CaffeineAsyncCache[ChainIndex, LatestBlock]) {
+  */
+class BlockCache(
+    blockTimes: CaffeineAsyncCache[ChainIndex, Duration],
+    rowCount: AsyncReloadingCache[Int],
+    latestBlocks: CaffeineAsyncCache[ChainIndex, LatestBlock]
+) {
 
   /** Operations on `blockTimes` cache */
-  def getAllBlockTimes(chainIndexes: Iterable[ChainIndex])(
-      implicit ec: ExecutionContext): Future[ArraySeq[(ChainIndex, Duration)]] =
+  def getAllBlockTimes(chainIndexes: Iterable[ChainIndex])(implicit
+      ec: ExecutionContext
+  ): Future[ArraySeq[(ChainIndex, Duration)]] =
     blockTimes.getAll(chainIndexes)
 
   /** Operations on `latestBlocks` cache */
-  def getAllLatestBlocks()(
-      implicit ec: ExecutionContext,
-      groupSetting: GroupSetting): Future[ArraySeq[(ChainIndex, LatestBlock)]] =
+  def getAllLatestBlocks()(implicit
+      ec: ExecutionContext,
+      groupSetting: GroupSetting
+  ): Future[ArraySeq[(ChainIndex, LatestBlock)]] =
     latestBlocks.getAll(groupSetting.chainIndexes)
 
   def putLatestBlock(chainIndex: ChainIndex, block: LatestBlock): Unit =

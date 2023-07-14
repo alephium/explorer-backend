@@ -50,7 +50,7 @@ trait EventsEndpoints extends BaseEndpoint with QueryParams {
       .description("Get contract events by contract address")
 
   val getEventsByContractAndInputAddress
-    : BaseEndpoint[(Address, Address, Pagination), ArraySeq[Event]] =
+      : BaseEndpoint[(Address, Address, Pagination), ArraySeq[Event]] =
     eventsEndpoint.get
       .in("contract-address")
       .in(path[Address]("contract_address"))

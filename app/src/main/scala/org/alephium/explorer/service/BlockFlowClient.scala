@@ -61,18 +61,22 @@ trait BlockFlowClient extends Service {
 
   def fetchHashesAtHeight(chainIndex: ChainIndex, height: Height): Future[HashesAtHeight]
 
-  def fetchBlocks(fromTs: TimeStamp,
-                  toTs: TimeStamp,
-                  uri: Uri): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]]
+  def fetchBlocks(
+      fromTs: TimeStamp,
+      toTs: TimeStamp,
+      uri: Uri
+  ): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]]
 
-  def fetchBlocksAtHeight(chainIndex: ChainIndex, height: Height)(
-      implicit executionContext: ExecutionContext): Future[ArraySeq[BlockEntity]] =
+  def fetchBlocksAtHeight(chainIndex: ChainIndex, height: Height)(implicit
+      executionContext: ExecutionContext
+  ): Future[ArraySeq[BlockEntity]] =
     fetchHashesAtHeight(chainIndex, height).flatMap { hashesAtHeight =>
       Future
         .sequence(
           hashesAtHeight.headers
             .map(hash => fetchBlock(chainIndex.from, hash))
-            .toArraySeq)
+            .toArraySeq
+        )
     }
 
   def fetchSelfClique(): Future[SelfClique]
@@ -87,19 +91,23 @@ trait BlockFlowClient extends Service {
 }
 
 object BlockFlowClient extends StrictLogging {
-  def apply(uri: Uri,
-            groupNum: Int,
-            maybeApiKey: Option[api.model.ApiKey],
-            directCliqueAccess: Boolean)(
-      implicit executionContext: ExecutionContext
+  def apply(
+      uri: Uri,
+      groupNum: Int,
+      maybeApiKey: Option[api.model.ApiKey],
+      directCliqueAccess: Boolean
+  )(implicit
+      executionContext: ExecutionContext
   ): BlockFlowClient =
     new Impl(uri, groupNum, maybeApiKey, directCliqueAccess)
 
-  private class Impl(uri: Uri,
-                     groupNum: Int,
-                     val maybeApiKey: Option[api.model.ApiKey],
-                     directCliqueAccess: Boolean)(
-      implicit val executionContext: ExecutionContext
+  private class Impl(
+      uri: Uri,
+      groupNum: Int,
+      val maybeApiKey: Option[api.model.ApiKey],
+      directCliqueAccess: Boolean
+  )(implicit
+      val executionContext: ExecutionContext
   ) extends BlockFlowClient
       with Endpoints
       with ApiModelCodec {
@@ -137,32 +145,30 @@ object BlockFlowClient extends StrictLogging {
         }
     }
 
-    //If directCliqueAccess = true, we need to first get all nodes of the clique
-    //to make sure we call the node which conains block's data
+    // If directCliqueAccess = true, we need to first get all nodes of the clique
+    // to make sure we call the node which conains block's data
     def fetchBlock(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntity] =
       if (directCliqueAccess) {
-        fetchSelfCliqueAndChainParams().flatMap {
-          case (selfClique, chainParams) =>
-            selfCliqueIndex(selfClique, chainParams, fromGroup) match {
-              case Left(error) => Future.failed(new Throwable(error))
-              case Right((nodeAddress, restPort)) =>
-                val uri = Uri(nodeAddress.getHostAddress, restPort)
-                _send(getBlock, uri, hash).map(blockProtocolToEntity)
-            }
+        fetchSelfCliqueAndChainParams().flatMap { case (selfClique, chainParams) =>
+          selfCliqueIndex(selfClique, chainParams, fromGroup) match {
+            case Left(error) => Future.failed(new Throwable(error))
+            case Right((nodeAddress, restPort)) =>
+              val uri = Uri(nodeAddress.getHostAddress, restPort)
+              _send(getBlock, uri, hash).map(blockProtocolToEntity)
+          }
         }
       } else {
         _send(getBlock, uri, hash).map(blockProtocolToEntity)
       }
 
     def fetchBlockAndEvents(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntityWithEvents] =
-      fetchSelfCliqueAndChainParams().flatMap {
-        case (selfClique, chainParams) =>
-          selfCliqueIndex(selfClique, chainParams, fromGroup) match {
-            case Left(error) => Future.failed(new Throwable(error))
-            case Right((nodeAddress, restPort)) =>
-              val uri = Uri(nodeAddress.getHostAddress, restPort)
-              _send(getBlockAndEvents, uri, hash).map(blockAndEventsToEntities)
-          }
+      fetchSelfCliqueAndChainParams().flatMap { case (selfClique, chainParams) =>
+        selfCliqueIndex(selfClique, chainParams, fromGroup) match {
+          case Left(error) => Future.failed(new Throwable(error))
+          case Right((nodeAddress, restPort)) =>
+            val uri = Uri(nodeAddress.getHostAddress, restPort)
+            _send(getBlockAndEvents, uri, hash).map(blockAndEventsToEntities)
+        }
       }
     def fetchChainInfo(chainIndex: ChainIndex): Future[ChainInfo] = {
       _send(getChainInfo, uri, chainIndex)
@@ -171,14 +177,17 @@ object BlockFlowClient extends StrictLogging {
     def fetchHashesAtHeight(chainIndex: ChainIndex, height: Height): Future[HashesAtHeight] =
       _send(getHashesAtHeight, uri, (chainIndex, height.value))
 
-    def fetchBlocks(fromTs: TimeStamp,
-                    toTs: TimeStamp,
-                    uri: Uri): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]] = {
+    def fetchBlocks(
+        fromTs: TimeStamp,
+        toTs: TimeStamp,
+        uri: Uri
+    ): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]] = {
       _send(getBlocksAndEvents, uri, api.model.TimeInterval(fromTs, toTs))
         .map(
           _.blocksAndEvents
             .map(_.map(blockAndEventsToEntities).toArraySeq)
-            .toArraySeq)
+            .toArraySeq
+        )
     }
 
     def fetchMempoolTransactions(uri: Uri): Future[ArraySeq[MempoolTransaction]] =
@@ -190,12 +199,14 @@ object BlockFlowClient extends StrictLogging {
                 .convertSameAsPrevious(tx.unsigned.inputs.toArraySeq)
                 .map(protocolInputToInput)
               val outputs = tx.unsigned.fixedOutputs.map(protocolOutputToAssetOutput).toArraySeq
-              txToUTx(tx,
-                      new GroupIndex(utx.fromGroup),
-                      new GroupIndex(utx.toGroup),
-                      inputs,
-                      outputs,
-                      TimeStamp.now())
+              txToUTx(
+                tx,
+                new GroupIndex(utx.fromGroup),
+                new GroupIndex(utx.toGroup),
+                inputs,
+                outputs,
+                TimeStamp.now()
+              )
             }
           }.toArraySeq
         }
@@ -212,9 +223,11 @@ object BlockFlowClient extends StrictLogging {
       }
     }
 
-    private def selfCliqueIndex(selfClique: SelfClique,
-                                chainParams: ChainParams,
-                                group: GroupIndex): Either[ExplorerError, (InetAddress, Int)] = {
+    private def selfCliqueIndex(
+        selfClique: SelfClique,
+        chainParams: ChainParams,
+        group: GroupIndex
+    ): Either[ExplorerError, (InetAddress, Int)] = {
       if (chainParams.groupNumPerBroker <= 0) {
         Left(InvalidChainGroupNumPerBroker(chainParams.groupNumPerBroker))
       } else {
@@ -232,84 +245,87 @@ object BlockFlowClient extends StrictLogging {
     val mainChain    = false
     val transactions = block.transactions.toArraySeq.zipWithIndex
     val inputs =
-      transactions.flatMap {
-        case (tx, txOrder) =>
-          InputAddressUtil.convertSameAsPrevious(tx.unsigned.inputs.toArraySeq).zipWithIndex.map {
-            case (in, index) =>
-              inputToEntity(in, hash, tx.unsigned.txId, block.timestamp, mainChain, index, txOrder)
-          }
+      transactions.flatMap { case (tx, txOrder) =>
+        InputAddressUtil.convertSameAsPrevious(tx.unsigned.inputs.toArraySeq).zipWithIndex.map {
+          case (in, index) =>
+            inputToEntity(in, hash, tx.unsigned.txId, block.timestamp, mainChain, index, txOrder)
+        }
       }
     val contractInputs =
-      transactions.flatMap {
-        case (tx, txOrder) =>
-          tx.contractInputs.toArraySeq.zipWithIndex.map {
-            case (outputRef, index) =>
-              val shiftIndex = index + tx.unsigned.inputs.length
-              outputRefToInputEntity(outputRef,
-                                     hash,
-                                     tx.unsigned.txId,
-                                     block.timestamp,
-                                     mainChain,
-                                     shiftIndex,
-                                     txOrder)
-          }
+      transactions.flatMap { case (tx, txOrder) =>
+        tx.contractInputs.toArraySeq.zipWithIndex.map { case (outputRef, index) =>
+          val shiftIndex = index + tx.unsigned.inputs.length
+          outputRefToInputEntity(
+            outputRef,
+            hash,
+            tx.unsigned.txId,
+            block.timestamp,
+            mainChain,
+            shiftIndex,
+            txOrder
+          )
+        }
       }
     inputs ++ contractInputs
   }
 
-  //scalastyle:off null
+  // scalastyle:off null
   def blockProtocolToOutputEntities(block: api.model.BlockEntry): ArraySeq[OutputEntity] = {
     val hash         = block.hash
     val mainChain    = false
     val transactions = block.transactions.toArraySeq.zipWithIndex
-    //Genesis blocks don't have any transactions
+    // Genesis blocks don't have any transactions
     val coinbaseTxId =
       if (block.height == Height.genesis.value) null else block.transactions.last.unsigned.txId
     val outputs =
-      transactions.flatMap {
-        case (tx, txOrder) =>
-          tx.unsigned.fixedOutputs.toArraySeq.zipWithIndex.map {
-            case (out, index) =>
-              val txId = tx.unsigned.txId
-              outputToEntity(out.upCast(),
-                             hash,
-                             txId,
-                             index,
-                             block.timestamp,
-                             mainChain,
-                             txOrder,
-                             txId == coinbaseTxId)
-          }
+      transactions.flatMap { case (tx, txOrder) =>
+        tx.unsigned.fixedOutputs.toArraySeq.zipWithIndex.map { case (out, index) =>
+          val txId = tx.unsigned.txId
+          outputToEntity(
+            out.upCast(),
+            hash,
+            txId,
+            index,
+            block.timestamp,
+            mainChain,
+            txOrder,
+            txId == coinbaseTxId
+          )
+        }
       }
     val generatedOutputs =
-      transactions.flatMap {
-        case (tx, txOrder) =>
-          tx.generatedOutputs.toArraySeq.zipWithIndex.map {
-            case (out, index) =>
-              val shiftIndex = index + tx.unsigned.fixedOutputs.length
-              outputToEntity(out,
-                             hash,
-                             tx.unsigned.txId,
-                             shiftIndex,
-                             block.timestamp,
-                             mainChain,
-                             txOrder,
-                             false)
-          }
+      transactions.flatMap { case (tx, txOrder) =>
+        tx.generatedOutputs.toArraySeq.zipWithIndex.map { case (out, index) =>
+          val shiftIndex = index + tx.unsigned.fixedOutputs.length
+          outputToEntity(
+            out,
+            hash,
+            tx.unsigned.txId,
+            shiftIndex,
+            block.timestamp,
+            mainChain,
+            txOrder,
+            false
+          )
+        }
       }
     outputs ++ generatedOutputs
   }
-  //scalastyle:on null
+  // scalastyle:on null
 
-  def blockAndEventsToEntities(blockAndEvents: api.model.BlockAndEvents)(
-      implicit groupSetting: GroupSetting): BlockEntityWithEvents = {
-    BlockEntityWithEvents(blockProtocolToEntity(blockAndEvents.block),
-                          blockProtocolToEventEntities(blockAndEvents))
+  def blockAndEventsToEntities(
+      blockAndEvents: api.model.BlockAndEvents
+  )(implicit groupSetting: GroupSetting): BlockEntityWithEvents = {
+    BlockEntityWithEvents(
+      blockProtocolToEntity(blockAndEvents.block),
+      blockProtocolToEventEntities(blockAndEvents)
+    )
   }
 
-  //scalastyle:off null
-  def blockProtocolToEntity(block: api.model.BlockEntry)(
-      implicit groupSetting: GroupSetting): BlockEntity = {
+  // scalastyle:off null
+  def blockProtocolToEntity(
+      block: api.model.BlockEntry
+  )(implicit groupSetting: GroupSetting): BlockEntity = {
     val hash         = block.hash
     val mainChain    = false
     val transactions = block.transactions.toArraySeq.zipWithIndex
@@ -317,9 +333,9 @@ object BlockFlowClient extends StrictLogging {
     val chainTo      = new GroupIndex(block.chainTo)
     val inputs       = blockProtocolToInputEntities(block)
     val outputs      = blockProtocolToOutputEntities(block)
-    //As defined in
-    //https://github.com/alephium/alephium/blob/1e359e155b37c2afda6011cdc319d54ae8e4c059/protocol/src/main/scala/org/alephium/protocol/model/Block.scala#L35
-    //Genesis blocks don't have any transactions
+    // As defined in
+    // https://github.com/alephium/alephium/blob/1e359e155b37c2afda6011cdc319d54ae8e4c059/protocol/src/main/scala/org/alephium/protocol/model/Block.scala#L35
+    // Genesis blocks don't have any transactions
     val coinbaseTxId =
       if (block.height == Height.genesis.value) null else block.transactions.last.unsigned.txId
     BlockEntity(
@@ -329,10 +345,9 @@ object BlockFlowClient extends StrictLogging {
       chainTo,
       Height.unsafe(block.height),
       block.deps.toArraySeq,
-      transactions.map {
-        case (tx, index) =>
-          val coinbase = tx.unsigned.txId == coinbaseTxId
-          txToEntity(tx, hash, block.timestamp, index, mainChain, chainFrom, chainTo, coinbase)
+      transactions.map { case (tx, index) =>
+        val coinbase = tx.unsigned.txId == coinbaseTxId
+        txToEntity(tx, hash, block.timestamp, index, mainChain, chainFrom, chainTo, coinbase)
       },
       inputs,
       outputs,
@@ -345,10 +360,11 @@ object BlockFlowClient extends StrictLogging {
       computeHashRate(block.target)
     )
   }
-  //scalastyle:on null
+  // scalastyle:on null
 
   def blockProtocolToEventEntities(
-      blockAndEvents: api.model.BlockAndEvents): ArraySeq[EventEntity] = {
+      blockAndEvents: api.model.BlockAndEvents
+  ): ArraySeq[EventEntity] = {
     val block = blockAndEvents.block
     val hash  = block.hash
     val transactionAndInputAddress: Map[TransactionId, Option[Address]] =
@@ -360,27 +376,28 @@ object BlockFlowClient extends StrictLogging {
         .iterator
         .to(Map)
 
-    blockAndEvents.events.zipWithIndex.map {
-      case (event, order) =>
-        EventEntity.from(
-          hash,
-          event.txId,
-          event.contractAddress,
-          transactionAndInputAddress.getOrElse(event.txId, None),
-          block.timestamp,
-          event.eventIndex,
-          event.fields.toArraySeq,
-          order
-        )
+    blockAndEvents.events.zipWithIndex.map { case (event, order) =>
+      EventEntity.from(
+        hash,
+        event.txId,
+        event.contractAddress,
+        transactionAndInputAddress.getOrElse(event.txId, None),
+        block.timestamp,
+        event.eventIndex,
+        event.fields.toArraySeq,
+        order
+      )
     }.toArraySeq
   }
 
-  private def txToUTx(tx: api.model.TransactionTemplate,
-                      chainFrom: GroupIndex,
-                      chainTo: GroupIndex,
-                      inputs: ArraySeq[Input],
-                      outputs: ArraySeq[AssetOutput],
-                      timestamp: TimeStamp): MempoolTransaction =
+  private def txToUTx(
+      tx: api.model.TransactionTemplate,
+      chainFrom: GroupIndex,
+      chainTo: GroupIndex,
+      inputs: ArraySeq[Input],
+      outputs: ArraySeq[AssetOutput],
+      timestamp: TimeStamp
+  ): MempoolTransaction =
     MempoolTransaction(
       tx.unsigned.txId,
       chainFrom,
@@ -392,14 +409,16 @@ object BlockFlowClient extends StrictLogging {
       timestamp
     )
 
-  private def txToEntity(tx: api.model.Transaction,
-                         blockHash: BlockHash,
-                         timestamp: TimeStamp,
-                         index: Int,
-                         mainChain: Boolean,
-                         chainFrom: GroupIndex,
-                         chainTo: GroupIndex,
-                         coinbase: Boolean): TransactionEntity =
+  private def txToEntity(
+      tx: api.model.Transaction,
+      blockHash: BlockHash,
+      timestamp: TimeStamp,
+      index: Int,
+      mainChain: Boolean,
+      chainFrom: GroupIndex,
+      chainTo: GroupIndex,
+      coinbase: Boolean
+  ): TransactionEntity =
     TransactionEntity(
       tx.unsigned.txId,
       blockHash,
@@ -427,13 +446,15 @@ object BlockFlowClient extends StrictLogging {
     )
   }
 
-  private def inputToEntity(input: api.model.AssetInput,
-                            blockHash: BlockHash,
-                            txId: TransactionId,
-                            timestamp: TimeStamp,
-                            mainChain: Boolean,
-                            index: Int,
-                            txOrder: Int): InputEntity = {
+  private def inputToEntity(
+      input: api.model.AssetInput,
+      blockHash: BlockHash,
+      txId: TransactionId,
+      timestamp: TimeStamp,
+      mainChain: Boolean,
+      index: Int,
+      txOrder: Int
+  ): InputEntity = {
     InputEntity(
       blockHash,
       txId,
@@ -451,13 +472,15 @@ object BlockFlowClient extends StrictLogging {
     )
   }
 
-  private def outputRefToInputEntity(outputRef: api.model.OutputRef,
-                                     blockHash: BlockHash,
-                                     txId: TransactionId,
-                                     timestamp: TimeStamp,
-                                     mainChain: Boolean,
-                                     index: Int,
-                                     txOrder: Int): InputEntity = {
+  private def outputRefToInputEntity(
+      outputRef: api.model.OutputRef,
+      blockHash: BlockHash,
+      txId: TransactionId,
+      timestamp: TimeStamp,
+      mainChain: Boolean,
+      index: Int,
+      txOrder: Int
+  ): InputEntity = {
     InputEntity(
       blockHash,
       txId,
@@ -500,24 +523,27 @@ object BlockFlowClient extends StrictLogging {
         ArraySeq.unsafeWrapArray(
           tokens
             .groupBy(_.id)
-            .map {
-              case (id, tokens) =>
-                val amount = tokens.map(_.amount).fold(U256.Zero)(_ addUnsafe _)
-                Token(id, amount)
+            .map { case (id, tokens) =>
+              val amount = tokens.map(_.amount).fold(U256.Zero)(_ addUnsafe _)
+              Token(id, amount)
             }
-            .toArray))
+            .toArray
+        )
+      )
     }
   }
 
   // scalastyle:off method.length
-  private def outputToEntity(output: api.model.Output,
-                             blockHash: BlockHash,
-                             txId: TransactionId,
-                             index: Int,
-                             timestamp: TimeStamp,
-                             mainChain: Boolean,
-                             txOrder: Int,
-                             coinbase: Boolean): OutputEntity = {
+  private def outputToEntity(
+      output: api.model.Output,
+      blockHash: BlockHash,
+      txId: TransactionId,
+      index: Int,
+      timestamp: TimeStamp,
+      mainChain: Boolean,
+      txOrder: Int,
+      coinbase: Boolean
+  ): OutputEntity = {
     val lockTime = output match {
       case asset: api.model.AssetOutput if asset.lockTime.millis > 0 => Some(asset.lockTime)
       case _                                                         => None
@@ -564,7 +590,7 @@ object BlockFlowClient extends StrictLogging {
   // scalastyle:off magic.number
   def computeHashRate(targetBytes: ByteString)(implicit groupSetting: GroupSetting): BigInteger = {
     val target          = Target.unsafe(targetBytes)
-    val blockTargetTime = Duration.ofSecondsUnsafe(64) //TODO add this to config
+    val blockTargetTime = Duration.ofSecondsUnsafe(64) // TODO add this to config
     HashRate.from(target, blockTargetTime)(groupSetting.groupConfig).value
   }
   // scalastyle:on magic.number

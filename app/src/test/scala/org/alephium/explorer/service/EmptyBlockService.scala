@@ -29,29 +29,37 @@ import org.alephium.protocol.model.BlockHash
 
 trait EmptyBlockService extends BlockService {
 
-  def getLiteBlockByHash(hash: BlockHash)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockEntryLite]] =
+  def getLiteBlockByHash(hash: BlockHash)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[BlockEntryLite]] =
     Future.successful(None)
 
-  def getBlockTransactions(hash: BlockHash, pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+  def getBlockTransactions(hash: BlockHash, pagination: Pagination)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[Transaction]] =
     Future.successful(ArraySeq.empty)
 
-  def listBlocks(pagination: Pagination.Reversible)(implicit ec: ExecutionContext,
-                                                    dc: DatabaseConfig[PostgresProfile],
-                                                    cache: BlockCache): Future[ListBlocks] =
+  def listBlocks(pagination: Pagination.Reversible)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      cache: BlockCache
+  ): Future[ListBlocks] =
     Future.successful(ListBlocks(0, ArraySeq.empty))
 
-  def listMaxHeights()(implicit cache: BlockCache,
-                       groupSetting: GroupSetting,
-                       ec: ExecutionContext): Future[ArraySeq[PerChainHeight]] =
+  def listMaxHeights()(implicit
+      cache: BlockCache,
+      groupSetting: GroupSetting,
+      ec: ExecutionContext
+  ): Future[ArraySeq[PerChainHeight]] =
     Future.successful(ArraySeq.empty)
 
-  def getAverageBlockTime()(implicit cache: BlockCache,
-                            groupSetting: GroupSetting,
-                            ec: ExecutionContext): Future[ArraySeq[PerChainDuration]] =
+  def getAverageBlockTime()(implicit
+      cache: BlockCache,
+      groupSetting: GroupSetting,
+      ec: ExecutionContext
+  ): Future[ArraySeq[PerChainDuration]] =
     Future.successful(ArraySeq.empty)
 
 }

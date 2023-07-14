@@ -45,7 +45,7 @@ import org.alephium.util.TimeStamp
 object BlockQueries extends StrictLogging {
 
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
-  val block_headers = BlockHeaderSchema.table.baseTableRow.tableName //block_headers table name
+  val block_headers = BlockHeaderSchema.table.baseTableRow.tableName // block_headers table name
 
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
   val mainChainQuery = BlockHeaderSchema.table.filter(_.mainChain)
@@ -53,23 +53,25 @@ object BlockQueries extends StrictLogging {
   def explainMainChainQuery()(implicit ec: ExecutionContext): DBActionR[ExplainResult] =
     mainChainQuery.result.explainAnalyze() map { explain =>
       ExplainResult(
-        queryName  = "mainChainQuery",
+        queryName = "mainChainQuery",
         queryInput = "Unit",
-        explain    = explain,
-        messages   = Iterable.empty,
-        passed     = explain.mkString contains "block_headers_main_chain_idx"
+        explain = explain,
+        messages = Iterable.empty,
+        passed = explain.mkString contains "block_headers_main_chain_idx"
       )
     }
 
-  def buildBlockEntryAction(blockHeader: BlockHeader)(
-      implicit ec: ExecutionContext): DBActionR[BlockEntry] =
+  def buildBlockEntryAction(
+      blockHeader: BlockHeader
+  )(implicit ec: ExecutionContext): DBActionR[BlockEntry] =
     for {
       deps <- getDepsForBlock(blockHeader.hash)
       txs  <- getTransactionsByBlockHash(blockHeader.hash)
     } yield blockHeader.toApi(deps, txs)
 
-  def getBlockEntryLiteAction(hash: BlockHash)(
-      implicit ec: ExecutionContext): DBActionR[Option[BlockEntryLite]] =
+  def getBlockEntryLiteAction(
+      hash: BlockHash
+  )(implicit ec: ExecutionContext): DBActionR[Option[BlockEntryLite]] =
     for {
       header <- BlockHeaderSchema.table.filter(_.hash === hash).result.headOption
     } yield header.map(_.toLiteApi)
@@ -77,17 +79,18 @@ object BlockQueries extends StrictLogging {
   /** For a given `BlockHash` returns its basic chain information */
   def getBlockChainInfo(hash: BlockHash): DBActionR[Option[(GroupIndex, GroupIndex, Boolean)]] =
     sql"""
-       |SELECT chain_from,
-       |       chain_to,
-       |       main_chain
-       |FROM block_headers
-       |WHERE hash = $hash
-       |""".stripMargin
+         |SELECT chain_from,
+         |       chain_to,
+         |       main_chain
+         |FROM block_headers
+         |WHERE hash = $hash
+         |""".stripMargin
       .asAS[(GroupIndex, GroupIndex, Boolean)]
       .headOption
 
-  def getBlockEntryAction(hash: BlockHash)(
-      implicit ec: ExecutionContext): DBActionR[Option[BlockEntry]] =
+  def getBlockEntryAction(
+      hash: BlockHash
+  )(implicit ec: ExecutionContext): DBActionR[Option[BlockEntry]] =
     for {
       headers <- BlockHeaderSchema.table.filter(_.hash === hash).result
       blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
@@ -95,38 +98,45 @@ object BlockQueries extends StrictLogging {
 
   def getBlockHeaderAction(hash: BlockHash): DBActionR[Option[BlockHeader]] =
     sql"""
-       |SELECT *
-       |FROM #$block_headers
-       |WHERE hash = $hash
-       |""".stripMargin
+         |SELECT *
+         |FROM #$block_headers
+         |WHERE hash = $hash
+         |""".stripMargin
       .asASE[BlockHeader](blockHeaderGetResult)
       .headOption
 
-  private def getHeadersAtHeightQuery(fromGroup: GroupIndex,
-                                      toGroup: GroupIndex,
-                                      height: Height): DBActionSR[BlockHeader] =
+  private def getHeadersAtHeightQuery(
+      fromGroup: GroupIndex,
+      toGroup: GroupIndex,
+      height: Height
+  ): DBActionSR[BlockHeader] =
     sql"""
-       |SELECT *
-       |FROM #$block_headers
-       |WHERE chain_from = $fromGroup
-       |AND chain_to = $toGroup
-       |AND height = $height
-       |""".stripMargin
+         |SELECT *
+         |FROM #$block_headers
+         |WHERE chain_from = $fromGroup
+         |AND chain_to = $toGroup
+         |AND height = $height
+         |""".stripMargin
       .asASE[BlockHeader](blockHeaderGetResult)
 
-  /**
-    * Fetch bloch-hashes belonging to the input chain-index at a height, ignoring/filtering-out
-    * one block-hash.
+  /** Fetch bloch-hashes belonging to the input chain-index at a height, ignoring/filtering-out one
+    * block-hash.
     *
-    * @param fromGroup    `chain_from` of the blocks
-    * @param toGroup      `chain_to` of the blocks
-    * @param height       `height` of the blocks
-    * @param hashToIgnore  the `block-hash` to ignore or filter-out.
+    * @param fromGroup
+    *   `chain_from` of the blocks
+    * @param toGroup
+    *   `chain_to` of the blocks
+    * @param height
+    *   `height` of the blocks
+    * @param hashToIgnore
+    *   the `block-hash` to ignore or filter-out.
     */
-  def getHashesAtHeightIgnoringOne(fromGroup: GroupIndex,
-                                   toGroup: GroupIndex,
-                                   height: Height,
-                                   hashToIgnore: BlockHash): DBActionSR[BlockHash] =
+  def getHashesAtHeightIgnoringOne(
+      fromGroup: GroupIndex,
+      toGroup: GroupIndex,
+      height: Height,
+      hashToIgnore: BlockHash
+  ): DBActionSR[BlockHash] =
     sql"""
          |SELECT hash
          |FROM #$block_headers
@@ -137,15 +147,15 @@ object BlockQueries extends StrictLogging {
          |""".stripMargin
       .asASE[BlockHash](blockEntryHashGetResult)
 
-  def getAtHeightAction(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(
-      implicit ec: ExecutionContext): DBActionR[ArraySeq[BlockEntry]] =
+  def getAtHeightAction(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(implicit
+      ec: ExecutionContext
+  ): DBActionR[ArraySeq[BlockEntry]] =
     for {
       headers <- getHeadersAtHeightQuery(fromGroup, toGroup, height)
       blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
     } yield blocks
 
-  /**
-    * Order by query for [[org.alephium.explorer.persistence.schema.BlockHeaderSchema.table]]
+  /** Order by query for [[org.alephium.explorer.persistence.schema.BlockHeaderSchema.table]]
     */
   private def orderBy(reverse: Boolean): String =
     if (reverse) {
@@ -162,29 +172,32 @@ object BlockQueries extends StrictLogging {
   private val LIST_BLOCKS_ORDER_BY_FORWARD: String =
     orderBy(reverse = false)
 
-  /**
-    * Fetches all main_chain [[org.alephium.explorer.persistence.schema.BlockHeaderSchema.table]] rows
+  /** Fetches all main_chain [[org.alephium.explorer.persistence.schema.BlockHeaderSchema.table]]
+    * rows
     */
   def listMainChainHeadersWithTxnNumber(
-      pagination: Pagination.Reversible): DBActionRWT[ArraySeq[BlockEntryLite]] =
+      pagination: Pagination.Reversible
+  ): DBActionRWT[ArraySeq[BlockEntryLite]] =
     listMainChainHeadersWithTxnNumberBuilder(pagination)
       .asASE[BlockEntryLite](blockEntryListGetResult)
 
-  def explainListMainChainHeadersWithTxnNumber(pagination: Pagination.Reversible)(
-      implicit ec: ExecutionContext): DBActionR[ExplainResult] =
+  def explainListMainChainHeadersWithTxnNumber(
+      pagination: Pagination.Reversible
+  )(implicit ec: ExecutionContext): DBActionR[ExplainResult] =
     listMainChainHeadersWithTxnNumberBuilder(pagination).explainAnalyze() map { explain =>
       ExplainResult(
-        queryName  = "listMainChainHeadersWithTxnNumber",
+        queryName = "listMainChainHeadersWithTxnNumber",
         queryInput = pagination.toString,
-        explain    = explain,
-        messages   = Iterable.empty,
-        passed     = explain.mkString contains "block_headers_full_index"
+        explain = explain,
+        messages = Iterable.empty,
+        passed = explain.mkString contains "block_headers_full_index"
       )
     }
 
   def listMainChainHeadersWithTxnNumberBuilder(
-      pagination: Pagination.Reversible): SQLActionBuilder = {
-    //order by for inner query
+      pagination: Pagination.Reversible
+  ): SQLActionBuilder = {
+    // order by for inner query
     val orderBy =
       if (pagination.reverse) {
         LIST_BLOCKS_ORDER_BY_REVERSE
@@ -211,13 +224,15 @@ object BlockQueries extends StrictLogging {
   def updateMainChainStatusQuery(block: BlockHash, mainChain: Boolean): DBActionRWT[Int] =
     updateMainChainStatuses(Array(block), mainChain)
 
-  /**
-    * Updates the block and the block's dependant tables with new `mainChain` value.
+  /** Updates the block and the block's dependant tables with new `mainChain` value.
     *
-    * @param blocks     Blocks to update
-    * @param mainChain  New mainChain value
-    * @return           The row count for SQL Data Manipulation Language (DML) statements
-    *                   or 0 for SQL statements that return nothing
+    * @param blocks
+    *   Blocks to update
+    * @param mainChain
+    *   New mainChain value
+    * @return
+    *   The row count for SQL Data Manipulation Language (DML) statements or 0 for SQL statements
+    *   that return nothing
     */
   def updateMainChainStatuses(blocks: Iterable[BlockHash], mainChain: Boolean): DBActionRWT[Int] =
     if (blocks.isEmpty) {
@@ -245,22 +260,24 @@ object BlockQueries extends StrictLogging {
           (1 to 8) foreach { _ =>
             params >> mainChain
             blocks foreach (params >> _)
-        }
+          }
 
       SQLActionBuilder(
         queryParts = query,
-        unitPConv  = parameters
+        unitPConv = parameters
       ).asUpdate
     }
 
-  def buildBlockEntryWithoutTxsAction(blockHeader: BlockHeader)(
-      implicit ec: ExecutionContext): DBActionR[BlockEntry] =
+  def buildBlockEntryWithoutTxsAction(
+      blockHeader: BlockHeader
+  )(implicit ec: ExecutionContext): DBActionR[BlockEntry] =
     for {
       deps <- getDepsForBlock(blockHeader.hash)
     } yield blockHeader.toApi(deps, ArraySeq.empty)
 
-  def getBlockEntryWithoutTxsAction(hash: BlockHash)(
-      implicit ec: ExecutionContext): DBActionR[Option[BlockEntry]] =
+  def getBlockEntryWithoutTxsAction(
+      hash: BlockHash
+  )(implicit ec: ExecutionContext): DBActionR[Option[BlockEntry]] =
     for {
       headers <- BlockHeaderSchema.table.filter(_.hash === hash).result
       blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryWithoutTxsAction))
@@ -317,18 +334,19 @@ object BlockQueries extends StrictLogging {
             params >> block.target
             params >> block.hashrate
             params >> block.parent
-        }
+          }
 
       SQLActionBuilder(
         queryParts = query,
-        unitPConv  = parameters
+        unitPConv = parameters
       ).asUpdate
     }
   // scalastyle:on magic.number
 
   /** Transactionally write blocks */
   @SuppressWarnings(
-    Array("org.wartremover.warts.MutableDataStructures", "org.wartremover.warts.NonUnitStatements"))
+    Array("org.wartremover.warts.MutableDataStructures", "org.wartremover.warts.NonUnitStatements")
+  )
   def insertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int): DBActionRWT[Unit] = {
     val blockDeps    = ListBuffer.empty[BlockDepEntity]
     val transactions = ListBuffer.empty[TransactionEntity]
@@ -336,7 +354,7 @@ object BlockQueries extends StrictLogging {
     val outputs      = ListBuffer.empty[OutputEntity]
     val blockHeaders = ListBuffer.empty[BlockHeader]
 
-    //build data for all insert queries in single iteration
+    // build data for all insert queries in single iteration
     blocks foreach { block =>
       if (block.height.value != 0) blockDeps addAll block.toBlockDepEntities()
       transactions addAll block.transactions
@@ -346,18 +364,22 @@ object BlockQueries extends StrictLogging {
     }
 
     val query =
-      DBIOAction.seq(insertBlockDeps(blockDeps),
-                     insertTransactions(transactions),
-                     insertOutputs(outputs),
-                     insertInputs(inputs),
-                     insertBlockHeaders(blockHeaders))
+      DBIOAction.seq(
+        insertBlockDeps(blockDeps),
+        insertTransactions(transactions),
+        insertOutputs(outputs),
+        insertInputs(inputs),
+        insertBlockHeaders(blockHeaders)
+      )
 
     query.transactionally
   }
 
-  def getBlockTimes(fromGroup: GroupIndex,
-                    toGroup: GroupIndex,
-                    after: TimeStamp): DBActionSR[TimeStamp] = {
+  def getBlockTimes(
+      fromGroup: GroupIndex,
+      toGroup: GroupIndex,
+      after: TimeStamp
+  ): DBActionSR[TimeStamp] = {
     sql"""
       SELECT block_timestamp FROM  block_headers
       WHERE chain_from = $fromGroup AND chain_to = $toGroup AND block_timestamp > $after
@@ -365,9 +387,7 @@ object BlockQueries extends StrictLogging {
     """.asAS[TimeStamp]
   }
 
-  /**
-    * Fetches the maximum `block_timestamp` from blocks
-    * with maximum height within the given chain.
+  /** Fetches the maximum `block_timestamp` from blocks with maximum height within the given chain.
     */
   val maxBlockTimestampForMaxHeightForChain: String =
     s"""
@@ -383,30 +403,31 @@ object BlockQueries extends StrictLogging {
        |GROUP BY height
        |""".stripMargin
 
-  /**
-    * Fetches the maximum `block_timestamp` and sum height of
-    * all blocks filtered with maximum height for all input chain
-    * chains provided by [[GroupSetting.chainIndexes]]
+  /** Fetches the maximum `block_timestamp` and sum height of all blocks filtered with maximum
+    * height for all input chain chains provided by [[GroupSetting.chainIndexes]]
     *
-    * @param groupSetting Provides the list of chains to run this query on
-    * @return Maximum timestamp and sum of all heights i.e. the total number of blocks.
+    * @param groupSetting
+    *   Provides the list of chains to run this query on
+    * @return
+    *   Maximum timestamp and sum of all heights i.e. the total number of blocks.
     */
-  def numOfBlocksAndMaxBlockTimestamp()(
-      implicit groupSetting: GroupSetting,
-      ec: ExecutionContext): DBActionR[Option[(TimeStamp, Height)]] = {
-    //build queries for each chainFrom-chainTo and merge them into a single UNION query
+  def numOfBlocksAndMaxBlockTimestamp()(implicit
+      groupSetting: GroupSetting,
+      ec: ExecutionContext
+  ): DBActionR[Option[(TimeStamp, Height)]] = {
+    // build queries for each chainFrom-chainTo and merge them into a single UNION query
     val unions: String =
       Array
         .fill(groupSetting.chainIndexes.size)(maxBlockTimestampForMaxHeightForChain)
         .mkString("UNION")
 
-    //fetch maximum `block_timestamp` and sum all `heights` for all unions
+    // fetch maximum `block_timestamp` and sum all `heights` for all unions
     val query =
       s"""
-        |SELECT max(block_timestamp),
-        |       sum(height)
-        |FROM ($unions) as max_block_timestamps_and_num_of_blocks;
-        |""".stripMargin
+         |SELECT max(block_timestamp),
+         |       sum(height)
+         |FROM ($unions) as max_block_timestamps_and_num_of_blocks;
+         |""".stripMargin
 
     val parameters: SetParameter[Unit] =
       (_: Unit, params: PositionedParameters) =>
@@ -415,30 +436,30 @@ object BlockQueries extends StrictLogging {
           params >> chainIndex.to
           params >> chainIndex.from
           params >> chainIndex.to
-      }
+        }
 
     SQLActionBuilder(
       queryParts = query,
-      unitPConv  = parameters
+      unitPConv = parameters
     ).asAS[Option[(TimeStamp, Height)]].oneOrNone
   }
 
-  /**
-    * Fetches maximum `Height` for each `GroupIndex` pair.
+  /** Fetches maximum `Height` for each `GroupIndex` pair.
     *
-    * @see [[maxHeightZipped]] for paired output with input.
+    * @see
+    *   [[maxHeightZipped]] for paired output with input.
     *
-    * @return A collection of optional `Height` values in
-    *         the same order as the input `GroupIndex` pair.
-    *         Collection items will be `Some(height)` when
-    *         `GroupIndex` pair exists, else `None`.
-    * */
-  def maxHeight(chainIndexes: Iterable[ChainIndex])(
-      implicit ec: ExecutionContext): DBActionR[ArraySeq[Option[Height]]] =
+    * @return
+    *   A collection of optional `Height` values in the same order as the input `GroupIndex` pair.
+    *   Collection items will be `Some(height)` when `GroupIndex` pair exists, else `None`.
+    */
+  def maxHeight(
+      chainIndexes: Iterable[ChainIndex]
+  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[Option[Height]]] =
     if (chainIndexes.isEmpty) {
       DBIOAction.successful(ArraySeq.empty)
     } else {
-      //Parameter index is used for ordering the output collection
+      // Parameter index is used for ordering the output collection
       def maxHeight(index: Int): String =
         s"""
            |SELECT max(height), $index
@@ -457,20 +478,21 @@ object BlockQueries extends StrictLogging {
           chainIndexes foreach { chainIndex =>
             params >> chainIndex.from
             params >> chainIndex.to
-        }
+          }
 
       val queryResult =
         SQLActionBuilder(
           queryParts = query,
-          unitPConv  = parameters
+          unitPConv = parameters
         ).asAS[(Option[Height], Int)]
 
-      //Sort by index and then return just the heights
+      // Sort by index and then return just the heights
       queryResult.map(_.sortBy(_._2).map(_._1))
     }
 
   /** Pairs input to it's output value */
-  def maxHeightZipped(chainIndexes: Iterable[ChainIndex])(
-      implicit ec: ExecutionContext): DBActionR[ArraySeq[(Option[Height], ChainIndex)]] =
+  def maxHeightZipped(chainIndexes: Iterable[ChainIndex])(implicit
+      ec: ExecutionContext
+  ): DBActionR[ArraySeq[(Option[Height], ChainIndex)]] =
     maxHeight(chainIndexes).map(_.zip(chainIndexes))
 }

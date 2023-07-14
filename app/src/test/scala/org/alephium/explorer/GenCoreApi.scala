@@ -45,26 +45,24 @@ object GenCoreApi {
       restPort     <- genPortNum
       wsPort       <- genPortNum
       minerApiPort <- genPortNum
-    } yield
-      PeerAddress(
-        address      = address,
-        restPort     = restPort,
-        wsPort       = wsPort,
-        minerApiPort = minerApiPort
-      )
+    } yield PeerAddress(
+      address = address,
+      restPort = restPort,
+      wsPort = wsPort,
+      minerApiPort = minerApiPort
+    )
 
   def genSelfClique(peers: Gen[List[PeerAddress]] = Gen.listOf(genPeerAddress)): Gen[SelfClique] =
     for {
       peers     <- peers
       selfReady <- Arbitrary.arbitrary[Boolean]
       synced    <- Arbitrary.arbitrary[Boolean]
-    } yield
-      SelfClique(
-        cliqueId  = CliqueId.generate,
-        nodes     = AVector.from(peers),
-        selfReady = selfReady,
-        synced    = synced
-      )
+    } yield SelfClique(
+      cliqueId = CliqueId.generate,
+      nodes = AVector.from(peers),
+      selfReady = selfReady,
+      synced = synced
+    )
 
   def genChainParams(networkId: Gen[NetworkId] = genNetworkId): Gen[ChainParams] =
     for {
@@ -72,13 +70,12 @@ object GenCoreApi {
       numZerosAtLeastInHash <- Gen.posNum[Int]
       groupNumPerBroker     <- Gen.posNum[Int]
       groups                <- Gen.posNum[Int]
-    } yield
-      ChainParams(
-        networkId             = networkId,
-        numZerosAtLeastInHash = numZerosAtLeastInHash,
-        groupNumPerBroker     = groupNumPerBroker,
-        groups                = groups
-      )
+    } yield ChainParams(
+      networkId = networkId,
+      numZerosAtLeastInHash = numZerosAtLeastInHash,
+      groupNumPerBroker = groupNumPerBroker,
+      groups = groups
+    )
 
   private val i256Gen: Gen[I256] =
     Gen.choose[BigInteger](I256.MinValue.v, I256.MaxValue.v).map(I256.unsafe)
@@ -95,9 +92,12 @@ object GenCoreApi {
   }
 
   @SuppressWarnings(
-    Array("org.wartremover.warts.JavaSerializable",
-          "org.wartremover.warts.Product",
-          "org.wartremover.warts.Serializable")) // Wartremover is complaining, don't now why :/
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
+    )
+  ) // Wartremover is complaining, don't now why :/
   def valGen()(implicit groupSetting: GroupSetting): Gen[Val] = {
     Gen.oneOf(
       valBoolGen,
@@ -118,13 +118,14 @@ object GenCoreApi {
       generatedOutputs     <- Gen.listOfN(generatedOutputsSize, outputProtocolGen)
       inputSignatures      <- Gen.listOfN(2, bytesGen)
       scriptSignatures     <- Gen.listOfN(2, bytesGen)
-    } yield
-      Transaction(unsigned,
-                  scriptExecutionOk,
-                  AVector.from(contractInputs),
-                  AVector.from(generatedOutputs),
-                  AVector.from(inputSignatures),
-                  AVector.from(scriptSignatures))
+    } yield Transaction(
+      unsigned,
+      scriptExecutionOk,
+      AVector.from(contractInputs),
+      AVector.from(generatedOutputs),
+      AVector.from(inputSignatures),
+      AVector.from(scriptSignatures)
+    )
 
   def blockEntryProtocolGen(implicit groupSetting: GroupSetting): Gen[BlockEntry] =
     for {
@@ -141,10 +142,11 @@ object GenCoreApi {
       depStateHash    <- hashGen
       txsHash         <- hashGen
     } yield {
-      //From `alephium` repo
+      // From `alephium` repo
       val numZerosAtLeastInHash = 37
       val target = Target.unsafe(
-        BigInteger.ONE.shiftLeft(256 - numZerosAtLeastInHash).subtract(BigInteger.ONE))
+        BigInteger.ONE.shiftLeft(256 - numZerosAtLeastInHash).subtract(BigInteger.ONE)
+      )
 
       BlockEntry(
         hash,
@@ -174,24 +176,29 @@ object GenCoreApi {
       outputs    <- Gen.listOfN(outputSize, fixedOutputAssetProtocolGen)
       gasAmount  <- Gen.posNum[Int]
       gasPrice   <- Gen.posNum[Long].map(U256.unsafe)
-    } yield
-      UnsignedTx(hash,
-                 version,
-                 networkId,
-                 scriptOpt,
-                 gasAmount,
-                 gasPrice,
-                 AVector.from(inputs),
-                 AVector.from(outputs))
+    } yield UnsignedTx(
+      hash,
+      version,
+      networkId,
+      scriptOpt,
+      gasAmount,
+      gasPrice,
+      AVector.from(inputs),
+      AVector.from(outputs)
+    )
 
-  def transactionTemplateProtocolGen(
-      implicit groupSetting: GroupSetting): Gen[TransactionTemplate] =
+  def transactionTemplateProtocolGen(implicit
+      groupSetting: GroupSetting
+  ): Gen[TransactionTemplate] =
     for {
       unsigned         <- unsignedTxGen
       inputSignatures  <- Gen.listOfN(2, bytesGen)
       scriptSignatures <- Gen.listOfN(2, bytesGen)
-    } yield
-      TransactionTemplate(unsigned, AVector.from(inputSignatures), AVector.from(scriptSignatures))
+    } yield TransactionTemplate(
+      unsigned,
+      AVector.from(inputSignatures),
+      AVector.from(scriptSignatures)
+    )
 
   val outputRefProtocolGen: Gen[OutputRef] = for {
     hint <- arbitrary[Int]
@@ -210,14 +217,15 @@ object GenCoreApi {
       amount   <- amountGen
       lockTime <- timestampGen
       address  <- addressAssetProtocolGen()
-    } yield
-      FixedAssetOutput(hint,
-                       key,
-                       Amount(amount),
-                       address,
-                       AVector.empty,
-                       lockTime,
-                       ByteString.empty)
+    } yield FixedAssetOutput(
+      hint,
+      key,
+      Amount(amount),
+      address,
+      AVector.empty,
+      lockTime,
+      ByteString.empty
+    )
 
   def outputAssetProtocolGen(implicit groupSetting: GroupSetting): Gen[AssetOutput] =
     fixedOutputAssetProtocolGen.map(_.upCast())
@@ -235,8 +243,9 @@ object GenCoreApi {
 
   def scriptGen: Gen[Script] = Gen.hexStr.map(Script.apply)
 
-  def chainGen(size: Int, startTimestamp: TimeStamp, chainIndex: ChainIndex)(
-      implicit groupSetting: GroupSetting): Gen[ArraySeq[BlockEntry]] =
+  def chainGen(size: Int, startTimestamp: TimeStamp, chainIndex: ChainIndex)(implicit
+      groupSetting: GroupSetting
+  ): Gen[ArraySeq[BlockEntry]] =
     Gen.listOfN(size, blockEntryProtocolGen).map { blocks =>
       blocks
         .foldLeft((ArraySeq.empty[BlockEntry], Height.genesis, startTimestamp)) {
@@ -247,24 +256,26 @@ object GenCoreApi {
               } else {
                 block.deps.replace(parentIndex(chainIndex.to), acc.last.hash)
               }
-            val newBlock = block.copy(height = height.value,
-                                      deps      = deps,
-                                      timestamp = timestamp,
-                                      chainFrom = chainIndex.from.value,
-                                      chainTo   = chainIndex.to.value)
+            val newBlock = block.copy(
+              height = height.value,
+              deps = deps,
+              timestamp = timestamp,
+              chainFrom = chainIndex.from.value,
+              chainTo = chainIndex.to.value
+            )
             (acc :+ newBlock, Height.unsafe(height.value + 1), timestamp + Duration.unsafe(1))
         } match { case (block, _, _) => block }
     }
 
-  def blockFlowGen(maxChainSize: Int, startTimestamp: TimeStamp)(
-      implicit groupSetting: GroupSetting): Gen[ArraySeq[ArraySeq[BlockEntry]]] = {
+  def blockFlowGen(maxChainSize: Int, startTimestamp: TimeStamp)(implicit
+      groupSetting: GroupSetting
+  ): Gen[ArraySeq[ArraySeq[BlockEntry]]] = {
     val indexes = groupSetting.chainIndexes
     Gen
       .listOfN(indexes.size, Gen.choose(1, maxChainSize))
       .map { list =>
-        ArraySeq.from(list.zip(indexes).map {
-          case (size, chainIndex) =>
-            chainGen(size, startTimestamp, chainIndex).sample.get
+        ArraySeq.from(list.zip(indexes).map { case (size, chainIndex) =>
+          chainGen(size, startTimestamp, chainIndex).sample.get
         })
       }
   }

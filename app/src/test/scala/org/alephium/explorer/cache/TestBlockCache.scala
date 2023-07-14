@@ -26,15 +26,19 @@ import org.alephium.explorer.GroupSetting
 
 object TestBlockCache {
 
-  /**
-    * @return Test instance of [[BlockCache]] for faster cache reloads
-    *         than configured periods in `application.conf`
-    * */
-  def apply()(implicit groupSetting: GroupSetting,
-              ec: ExecutionContext,
-              dc: DatabaseConfig[PostgresProfile]): BlockCache =
-    BlockCache(cacheRowCountReloadPeriod     = 1.second,
-               cacheBlockTimesReloadPeriod   = 1.second,
-               cacheLatestBlocksReloadPeriod = 1.second)
+  /** @return
+    *   Test instance of [[BlockCache]] for faster cache reloads than configured periods in
+    *   `application.conf`
+    */
+  def apply()(implicit
+      groupSetting: GroupSetting,
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): BlockCache =
+    BlockCache(
+      cacheRowCountReloadPeriod = 1.second,
+      cacheBlockTimesReloadPeriod = 1.second,
+      cacheLatestBlocksReloadPeriod = 1.second
+    )
 
 }

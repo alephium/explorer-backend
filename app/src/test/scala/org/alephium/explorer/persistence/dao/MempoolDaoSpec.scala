@@ -69,14 +69,13 @@ class MempoolTransactionDaoSpec
   }
 
   "get utx with multiple outputs with same address but different lock time. Issue #142 " in {
-    forAll(Gen.choose(2, 6), assetOutputGen, mempooltransactionGen) {
-      case (outputSize, out, utx) =>
-        //outputs with same address but different lockTime
-        val outputs = ArraySeq.fill(outputSize)(out.copy(lockTime = Some(timestampGen.sample.get)))
+    forAll(Gen.choose(2, 6), assetOutputGen, mempooltransactionGen) { case (outputSize, out, utx) =>
+      // outputs with same address but different lockTime
+      val outputs = ArraySeq.fill(outputSize)(out.copy(lockTime = Some(timestampGen.sample.get)))
 
-        MempoolDao.insertMany(ArraySeq(utx.copy(outputs = outputs))).futureValue
+      MempoolDao.insertMany(ArraySeq(utx.copy(outputs = outputs))).futureValue
 
-        MempoolDao.get(utx.hash).futureValue.get.outputs.size is outputSize
+      MempoolDao.get(utx.hash).futureValue.get.outputs.size is outputSize
     }
   }
 

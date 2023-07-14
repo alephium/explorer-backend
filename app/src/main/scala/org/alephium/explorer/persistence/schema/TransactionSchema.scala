@@ -37,7 +37,7 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
     def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
     def gasAmount: Rep[Int]        = column[Int]("gas_amount")
     def gasPrice: Rep[U256] =
-      column[U256]("gas_price", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
+      column[U256]("gas_price", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
     def txOrder: Rep[Int]               = column[Int]("tx_order")
     def mainChain: Rep[Boolean]         = column[Boolean]("main_chain")
     def scriptExecutionOk: Rep[Boolean] = column[Boolean]("script_execution_ok")
@@ -55,19 +55,21 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
     def chainToIdx: Index   = index("txs_chain_to_idx", chainTo)
 
     def * : ProvenShape[TransactionEntity] =
-      (hash,
-       blockHash,
-       timestamp,
-       chainFrom,
-       chainTo,
-       gasAmount,
-       gasPrice,
-       txOrder,
-       mainChain,
-       scriptExecutionOk,
-       inputSignatures,
-       scriptSignatures,
-       coinbase)
+      (
+        hash,
+        blockHash,
+        timestamp,
+        chainFrom,
+        chainTo,
+        gasAmount,
+        gasPrice,
+        txOrder,
+        mainChain,
+        scriptExecutionOk,
+        inputSignatures,
+        scriptSignatures,
+        coinbase
+      )
         .<>((TransactionEntity.apply _).tupled, TransactionEntity.unapply)
   }
 

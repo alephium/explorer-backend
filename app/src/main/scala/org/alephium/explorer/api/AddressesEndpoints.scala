@@ -37,7 +37,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
 
   def groupNum: Int
 
-  //As defined in https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#address-gap-limit
+  // As defined in https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#address-gap-limit
   private val gapLimit = 20
 
   private lazy val usedAddressesMaxSize: Int = groupNum * gapLimit
@@ -73,7 +73,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .description("List transactions of a given address")
 
   lazy val getTransactionsByAddresses
-    : BaseEndpoint[(ArraySeq[Address], Pagination), ArraySeq[Transaction]] =
+      : BaseEndpoint[(ArraySeq[Address], Pagination), ArraySeq[Transaction]] =
     baseAddressesEndpoint.post
       .in(jsonBody[ArraySeq[Address]].validate(Validator.maxSize(usedAddressesMaxSize)))
       .in("transactions")
@@ -82,7 +82,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .description("List transactions for given addresses")
 
   val getTransactionsByAddressTimeRanged
-    : BaseEndpoint[(Address, TimeInterval, Pagination), ArraySeq[Transaction]] =
+      : BaseEndpoint[(Address, TimeInterval, Pagination), ArraySeq[Transaction]] =
     addressesEndpoint.get
       .in("timeranged-transactions")
       .in(timeIntervalQuery)
@@ -123,7 +123,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .description("Get address balance of given token")
 
   val listAddressTokenTransactions
-    : BaseEndpoint[(Address, TokenId, Pagination), ArraySeq[Transaction]] =
+      : BaseEndpoint[(Address, TokenId, Pagination), ArraySeq[Transaction]] =
     addressesTokensEndpoint.get
       .in(path[TokenId]("token_id"))
       .in("transactions")
@@ -141,7 +141,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .description("Are the addresses used (at least 1 transaction)")
 
   val exportTransactionsCsvByAddress
-    : BaseEndpoint[(Address, TimeInterval), (String, ReadStream[Buffer])] =
+      : BaseEndpoint[(Address, TimeInterval), (String, ReadStream[Buffer])] =
     addressesEndpoint.get
       .in("export-transactions")
       .in("csv")
@@ -150,7 +150,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(streamTextBody(VertxStreams)(TextCsv()))
 
   val getAddressAmountHistory
-    : BaseEndpoint[(Address, TimeInterval, IntervalType), (String, ReadStream[Buffer])] =
+      : BaseEndpoint[(Address, TimeInterval, IntervalType), (String, ReadStream[Buffer])] =
     addressesEndpoint.get
       .in("amount-history")
       .in(timeIntervalQuery)

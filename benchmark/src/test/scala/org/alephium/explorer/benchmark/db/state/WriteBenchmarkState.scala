@@ -23,43 +23,44 @@ import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.benchmark.db.DBExecutor
 
-/**
-  * Base implementation for JMH states, for benchmarking write queries to the target database.
+/** Base implementation for JMH states, for benchmarking write queries to the target database.
   *
   * JMH annotations used create the following lifecycle of function invocations
-  *  - 1. [[beforeAll]] - Implemented by caller. For eg: Drop and create a new table.
-  *  - 2. [[beforeEach]] - Set the next data for the benchmark's current iteration's invocation
-  *  - 3. [[next]] - Returns the data set by [[beforeEach]]. Used by the actual benchmark code in [[DBBenchmark]].
-  *  - 4. [[afterAll]] - Terminates db connection created by [[beforeAll]]
+  *   - \1. [[beforeAll]] - Implemented by caller. For eg: Drop and create a new table.
+  *   - 2. [[beforeEach]] - Set the next data for the benchmark's current iteration's invocation
+  *   - 3. [[next]] - Returns the data set by [[beforeEach]]. Used by the actual benchmark code in
+  *     [[DBBenchmark]].
+  *   - 4. [[afterAll]] - Terminates db connection created by [[beforeAll]]
   *
-  * @param db Target database
-  * @tparam D Data type of the targeted table
+  * @param db
+  *   Target database
+  * @tparam D
+  *   Data type of the targeted table
   */
 abstract class WriteBenchmarkState[D](db: DBExecutor) extends AutoCloseable with StrictLogging {
 
   val config: DatabaseConfig[PostgresProfile] =
     db.config
 
-  /**
-    * Placeholder to store next data required by the benchmark.
-    * Populated when JMH invokes [[beforeEach]].
+  /** Placeholder to store next data required by the benchmark. Populated when JMH invokes
+    * [[beforeEach]].
     */
   private var _next: D = _
 
-  /**
-    * Getter. Similar to an Iterator.next function this
-    * provides the next available data to read.
+  /** Getter. Similar to an Iterator.next function this provides the next available data to read.
     *
-    * @note Prerequisite: [[beforeEach]] should be invoked before next is called.
-    *       JMH will automatically call [[beforeEach]]. Your benchmark function only
-    *       needs to invoke [[next]].
+    * @note
+    *   Prerequisite: [[beforeEach]] should be invoked before next is called. JMH will automatically
+    *   call [[beforeEach]]. Your benchmark function only needs to invoke [[next]].
     */
   def next: D = _next
 
   /** Generates random data */
   def generateData(): D
 
-  /** Invoked once before a benchmark is started. Used to create a desired state for eg: create/clearing a table */
+  /** Invoked once before a benchmark is started. Used to create a desired state for eg:
+    * create/clearing a table
+    */
   @Setup(Level.Iteration)
   def beforeAll(): Unit
 
