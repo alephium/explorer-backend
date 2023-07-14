@@ -32,6 +32,9 @@ import org.alephium.util._
 
 object InputUpdateQueries {
 
+  private type UpdateReturn =
+    (Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean, Boolean)
+
   def updateInputs()(implicit ec: ExecutionContext): DBActionWT[Unit] = {
     sql"""
       UPDATE inputs
@@ -45,18 +48,7 @@ object InputUpdateQueries {
       AND inputs.output_ref_amount IS NULL
       RETURNING outputs.address, outputs.tokens, inputs.tx_hash, inputs.block_hash, inputs.block_timestamp, inputs.tx_order, inputs.main_chain, outputs.coinbase
     """
-      .as[
-        (
-            Address,
-            Option[ArraySeq[Token]],
-            TransactionId,
-            BlockHash,
-            TimeStamp,
-            Int,
-            Boolean,
-            Boolean
-        )
-      ]
+      .as[UpdateReturn]
       .flatMap(internalUpdates)
       .transactionally
   }
