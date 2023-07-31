@@ -48,23 +48,29 @@ case object FinalizerService extends StrictLogging {
   def rangeStep: Duration            = Duration.ofHoursUnsafe(24)
   // scalastyle:on magic.number
 
-  def start(interval: FiniteDuration)(implicit ec: ExecutionContext,
-                                      dc: DatabaseConfig[PostgresProfile],
-                                      scheduler: Scheduler): Future[Unit] =
+  def start(interval: FiniteDuration)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      scheduler: Scheduler
+  ): Future[Unit] =
     scheduler.scheduleLoop(
-      taskId        = FinalizerService.productPrefix,
+      taskId = FinalizerService.productPrefix,
       firstInterval = ScalaDuration.Zero,
-      loopInterval  = interval
+      loopInterval = interval
     )(syncOnce())
 
-  def syncOnce()(implicit ec: ExecutionContext,
-                 dc: DatabaseConfig[PostgresProfile]): Future[Unit] = {
+  def syncOnce()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = {
     logger.debug("Finalizing")
     finalizeOutputs()
   }
 
-  def finalizeOutputs()(implicit ec: ExecutionContext,
-                        dc: DatabaseConfig[PostgresProfile]): Future[Unit] =
+  def finalizeOutputs()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] =
     run(getStartEndTime()).flatMap {
       case Some((start, end)) =>
         finalizeOutputsWith(start, end, rangeStep)
@@ -72,28 +78,28 @@ case object FinalizerService extends StrictLogging {
         Future.successful(())
     }
 
-  def finalizeOutputsWith(start: TimeStamp, end: TimeStamp, step: Duration)(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
+  def finalizeOutputsWith(start: TimeStamp, end: TimeStamp, step: Duration)(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = {
     var updateCounter = 0
     logger.debug(s"Updating outputs")
     val timeRanges =
       TimeUtil.buildTimestampRange(start, end, step)
-    foldFutures(timeRanges) {
-      case (from, to) =>
-        logger.debug(s"Updating outputs: ${TimeUtil.toInstant(from)} - ${TimeUtil.toInstant(to)}")
-        run(
-          (
-            for {
-              nb <- updateOutputs(from, to)
-              _  <- updateTokenOutputs(from, to)
-              _  <- updateLastFinalizedInputTime(to)
-            } yield nb
-          ).transactionally
-        ).map { nb =>
-          updateCounter = updateCounter + nb
-          logger.debug(s"$updateCounter outputs updated")
-        }
+    foldFutures(timeRanges) { case (from, to) =>
+      logger.debug(s"Updating outputs: ${TimeUtil.toInstant(from)} - ${TimeUtil.toInstant(to)}")
+      run(
+        (
+          for {
+            nb <- updateOutputs(from, to)
+            _  <- updateTokenOutputs(from, to)
+            _  <- updateLastFinalizedInputTime(to)
+          } yield nb
+        ).transactionally
+      ).map { nb =>
+        updateCounter = updateCounter + nb
+        logger.debug(s"$updateCounter outputs updated")
+      }
     }.map(_ => logger.debug(s"Outputs updated"))
   }
 
@@ -121,11 +127,12 @@ case object FinalizerService extends StrictLogging {
       AND i.block_timestamp <= $to;
       """
 
-  def getStartEndTime()(
-      implicit executionContext: ExecutionContext): DBActionR[Option[(TimeStamp, TimeStamp)]] = {
+  def getStartEndTime()(implicit
+      executionContext: ExecutionContext
+  ): DBActionR[Option[(TimeStamp, TimeStamp)]] = {
     val ft = finalizationTime
     getMinMaxInputsTs.flatMap(_.headOption match {
-      //No input in db
+      // No input in db
       case None | Some((TimeStamp.zero, TimeStamp.zero)) => DBIOAction.successful(None)
       // inputs are only after finalization time, noop
       case Some((start, _)) if ft.isBefore(start) => DBIOAction.successful(None)
@@ -145,8 +152,9 @@ case object FinalizerService extends StrictLogging {
     SELECT MIN(block_timestamp),Max(block_timestamp) FROM inputs WHERE main_chain = true
     """.asAS[(TimeStamp, TimeStamp)]
 
-  private def getLastFinalizedInputTime()(
-      implicit executionContext: ExecutionContext): DBActionR[Option[TimeStamp]] =
+  private def getLastFinalizedInputTime()(implicit
+      executionContext: ExecutionContext
+  ): DBActionR[Option[TimeStamp]] =
     AppStateQueries.get(LastFinalizedInputTime).map(_.map(_.time))
 
   private def updateLastFinalizedInputTime(time: TimeStamp) =

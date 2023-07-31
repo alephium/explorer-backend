@@ -162,7 +162,7 @@ trait HttpRouteFixture extends HttpFixture with BeforeAndAfterAll with AlephiumF
 
   def Get(
       endpoint: String,
-      otherPort: Int            = port,
+      otherPort: Int = port,
       maybeBody: Option[String] = None
   ): Response[Either[String, String]] = {
     httpGet(endpoint, maybeBody = maybeBody)(otherPort)
@@ -172,7 +172,8 @@ trait HttpRouteFixture extends HttpFixture with BeforeAndAfterAll with AlephiumF
 }
 
 @SuppressWarnings(
-  Array("org.wartremover.warts.DefaultArguments", "org.wartremover.warts.NonUnitStatements"))
+  Array("org.wartremover.warts.DefaultArguments", "org.wartremover.warts.NonUnitStatements")
+)
 trait HttpServerFixture extends HttpRouteFixture {
   this: Suite =>
   def routes: ArraySeq[Router => Route]

@@ -38,12 +38,14 @@ object Height {
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   implicit val readWriter: ReadWriter[Height] =
-    readwriter[Int].bimap[Height](_.value,
-                                  int =>
-                                    from(int) match {
-                                      case Right(height) => height
-                                      case Left(error)   => throw new Abort(error)
-                                  })
+    readwriter[Int].bimap[Height](
+      _.value,
+      int =>
+        from(int) match {
+          case Right(height) => height
+          case Left(error)   => throw new Abort(error)
+        }
+    )
 
   implicit val ordering: Ordering[Height] = Ordering.by[Height, Int](_.value)
 }

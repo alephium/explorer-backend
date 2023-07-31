@@ -47,11 +47,13 @@ final case class ContractEntity(
 
 object ContractEntity {
 
-  final case class DestroyInfo(contract: Address,
-                               blockHash: BlockHash,
-                               txHash: TransactionId,
-                               timestamp: TimeStamp,
-                               eventOrder: Int)
+  final case class DestroyInfo(
+      contract: Address,
+      blockHash: BlockHash,
+      txHash: TransactionId,
+      timestamp: TimeStamp,
+      eventOrder: Int
+  )
 
   val createContractEventAddress: Address =
     protocol.model.Address.contract(protocol.vm.createContractEventId)
@@ -61,21 +63,20 @@ object ContractEntity {
 
   def creationFromEventEntity(event: EventEntity): Option[ContractEntity] = {
     if (event.contractAddress == createContractEventAddress) {
-      extractAddresses(event).map {
-        case (contract, parent, stdInterfaceIdGuessed) =>
-          ContractEntity(
-            contract              = contract,
-            parent                = parent,
-            stdInterfaceIdGuessed = stdInterfaceIdGuessed,
-            creationBlockHash     = event.blockHash,
-            creationTxHash        = event.txHash,
-            creationTimestamp     = event.timestamp,
-            creationEventOrder    = event.eventOrder,
-            destructionBlockHash  = None,
-            destructionTxHash     = None,
-            destructionTimestamp  = None,
-            destructionEventOrder = None
-          )
+      extractAddresses(event).map { case (contract, parent, stdInterfaceIdGuessed) =>
+        ContractEntity(
+          contract = contract,
+          parent = parent,
+          stdInterfaceIdGuessed = stdInterfaceIdGuessed,
+          creationBlockHash = event.blockHash,
+          creationTxHash = event.txHash,
+          creationTimestamp = event.timestamp,
+          creationEventOrder = event.eventOrder,
+          destructionBlockHash = None,
+          destructionTxHash = None,
+          destructionTimestamp = None,
+          destructionEventOrder = None
+        )
       }
     } else {
       None
@@ -110,7 +111,8 @@ object ContractEntity {
       event.fields(0) match {
         case ValAddress(contract) =>
           Some(
-            DestroyInfo(contract, event.blockHash, event.txHash, event.timestamp, event.eventOrder))
+            DestroyInfo(contract, event.blockHash, event.txHash, event.timestamp, event.eventOrder)
+          )
         case _ =>
           None
       }

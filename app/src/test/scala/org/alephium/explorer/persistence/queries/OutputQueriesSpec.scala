@@ -34,17 +34,17 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
   "insert and ignore outputs" in {
 
     forAll(Gen.listOf(updatedOutputEntityGen())) { existingAndUpdates =>
-      //fresh table
+      // fresh table
       run(OutputSchema.table.delete).futureValue
 
-      val existing = existingAndUpdates.map(_._1) //existing outputs
-      val ignored  = existingAndUpdates.map(_._2) //ignored outputs
+      val existing = existingAndUpdates.map(_._1) // existing outputs
+      val ignored  = existingAndUpdates.map(_._2) // ignored outputs
 
-      //insert existing
+      // insert existing
       run(insertOutputs(existing)).futureValue
       run(OutputSchema.table.result).futureValue.toSet is existing.toSet
 
-      ////insert should ignore existing outputs
+      //// insert should ignore existing outputs
       run(insertOutputs(ignored)).futureValue
       run(OutputSchema.table.result).futureValue.toSet is existing.toSet
     }
@@ -52,7 +52,7 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
 
   "insert finalized outputs" in {
     forAll(Gen.listOf(finalizedOutputEntityGen)) { outputs =>
-      //fresh table
+      // fresh table
       run(OutputSchema.table.delete).futureValue
 
       run(insertOutputs(outputs)).futureValue
@@ -63,45 +63,45 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
   "outputsFromTxs" should {
     "read from outputs table" when {
       "empty" in {
-        //clear table
+        // clear table
         run(OutputSchema.table.delete).futureValue
         run(OutputSchema.table.length.result).futureValue is 0
 
         forAll(Gen.listOf(outputEntityGen)) { outputs =>
-          //run query
+          // run query
           val hashes = outputs.map(output => (output.txHash, output.blockHash))
           val actual = run(OutputQueries.outputsFromTxs(hashes)).futureValue
 
-          //query output size is 0
+          // query output size is 0
           actual.size is 0
         }
       }
 
       "non-empty" in {
         forAll(Gen.listOf(outputEntityGen)) { outputs =>
-          //persist test-data
+          // persist test-data
           run(OutputSchema.table.delete).futureValue
           run(OutputSchema.table ++= outputs).futureValue
 
-          //run query
+          // run query
           val hashes = outputs.map(output => (output.txHash, output.blockHash))
           val actual = run(OutputQueries.outputsFromTxs(hashes)).futureValue
 
-          //expected query result
+          // expected query result
           val expected =
             outputs.map { entity =>
               OutputsFromTxQR(
-                txHash      = entity.txHash,
+                txHash = entity.txHash,
                 outputOrder = entity.outputOrder,
-                outputType  = entity.outputType,
-                hint        = entity.hint,
-                key         = entity.key,
-                amount      = entity.amount,
-                address     = entity.address,
-                tokens      = entity.tokens,
-                lockTime    = entity.lockTime,
-                message     = entity.message,
-                spent       = entity.spentFinalized
+                outputType = entity.outputType,
+                hint = entity.hint,
+                key = entity.key,
+                amount = entity.amount,
+                address = entity.address,
+                tokens = entity.tokens,
+                lockTime = entity.lockTime,
+                message = entity.message,
+                spent = entity.spentFinalized
               )
             }
 
@@ -114,15 +114,15 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
   "getOutputsQuery" should {
     "read outputs table" when {
       "empty" in {
-        //table is empty
+        // table is empty
         run(OutputSchema.table.length.result).futureValue is 0
 
         forAll(outputEntityGen) { output =>
-          //run query
+          // run query
           val actual =
             run(OutputQueries.getOutputsQuery(output.txHash, output.blockHash)).futureValue
 
-          //query output size is 0
+          // query output size is 0
           actual.size is 0
         }
       }
@@ -130,29 +130,29 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
 
     "non-empty" in {
       forAll(Gen.listOf(outputEntityGen)) { outputs =>
-        //no-need to clear the table for each iteration.
+        // no-need to clear the table for each iteration.
         run(OutputSchema.table ++= outputs).futureValue
 
-        //run query for each output
+        // run query for each output
         outputs foreach { output =>
           val actual =
             run(OutputQueries.getOutputsQuery(output.txHash, output.blockHash)).futureValue
 
-          //expected query result
+          // expected query result
           val expected: OutputsQR =
             OutputsQR(
-              outputType     = output.outputType,
-              hint           = output.hint,
-              key            = output.key,
-              amount         = output.amount,
-              address        = output.address,
-              tokens         = output.tokens,
-              lockTime       = output.lockTime,
-              message        = output.message,
+              outputType = output.outputType,
+              hint = output.hint,
+              key = output.key,
+              amount = output.amount,
+              address = output.address,
+              tokens = output.tokens,
+              lockTime = output.lockTime,
+              message = output.message,
               spentFinalized = output.spentFinalized
             )
 
-          actual.toList contains only(expected)
+          actual.toList should contain only expected
         }
       }
     }
@@ -167,13 +167,13 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
 
           val expected = outputs.filter(_.mainChain).sortBy(_.timestamp)
 
-          //Ascending order
+          // Ascending order
           locally {
             val actual = run(OutputQueries.getMainChainOutputs(true)).futureValue
             actual should contain inOrderElementsOf expected
           }
 
-          //Descending order
+          // Descending order
           locally {
             val expectedReversed = expected.reverse
             val actual           = run(OutputQueries.getMainChainOutputs(false)).futureValue

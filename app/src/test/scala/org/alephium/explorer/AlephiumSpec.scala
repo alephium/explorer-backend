@@ -34,7 +34,7 @@ trait AlephiumSpec
     with ImplicitConversions
     with ScalaCheckDrivenPropertyChecks
     with Matchers {
-  @nowarn protected implicit def noShrink[A]: Shrink[A] = Shrink(_ => Stream.empty)
+  @nowarn implicit protected def noShrink[A]: Shrink[A] = Shrink(_ => Stream.empty)
 
   // scalastyle:off no.should
   implicit class IsOps[A: Equality](left: A)(implicit pos: Position) {

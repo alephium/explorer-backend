@@ -63,28 +63,36 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
       chainOToO = ArraySeq(block0, block1, block3, block4, block5, block7, block8, block14)
       eventually(
         checkMainChain(
-          ArraySeq(block0.hash,
-                   block1.hash,
-                   block3.hash,
-                   block4.hash,
-                   block5.hash,
-                   block7.hash,
-                   block8.hash,
-                   block14.hash)))
+          ArraySeq(
+            block0.hash,
+            block1.hash,
+            block3.hash,
+            block4.hash,
+            block5.hash,
+            block7.hash,
+            block8.hash,
+            block14.hash
+          )
+        )
+      )
 
       checkLatestHeight(7)
 
       chainOToO = ArraySeq(block0, block1, block3, block4, block5, block6, block10, block12)
       eventually(
         checkMainChain(
-          ArraySeq(block0.hash,
-                   block1.hash,
-                   block3.hash,
-                   block4.hash,
-                   block5.hash,
-                   block6.hash,
-                   block10.hash,
-                   block12.hash)))
+          ArraySeq(
+            block0.hash,
+            block1.hash,
+            block3.hash,
+            block4.hash,
+            block5.hash,
+            block6.hash,
+            block10.hash,
+            block12.hash
+          )
+        )
+      )
 
       chainOToO = ArraySeq(block0, block1, block3, block4, block5, block6, block9, block11, block13)
       eventually(checkMainChain(mainChain))
@@ -94,14 +102,16 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
   }
 
   "fail if time range can't be build" in new Fixture {
-    override implicit val blockFlowClient: BlockFlowClient = new EmptyBlockFlowClient {
+    implicit override val blockFlowClient: BlockFlowClient = new EmptyBlockFlowClient {
       override def fetchChainInfo(chainIndex: ChainIndex): Future[ChainInfo] =
         Future.successful(ChainInfo(0))
 
-      override def fetchBlocksAtHeight(chainIndex: ChainIndex, height: Height)(
-          implicit executionContext: ExecutionContext): Future[ArraySeq[BlockEntity]] =
+      override def fetchBlocksAtHeight(chainIndex: ChainIndex, height: Height)(implicit
+          executionContext: ExecutionContext
+      ): Future[ArraySeq[BlockEntity]] =
         Future.successful(
-          ArraySeq(blockEntityGen(chainIndex).sample.get.copy(timestamp = TimeStamp.unsafe(0))))
+          ArraySeq(blockEntityGen(chainIndex).sample.get.copy(timestamp = TimeStamp.unsafe(0)))
+        )
     }
 
     BlockDao.insertAll(blockEntities).futureValue
@@ -119,7 +129,8 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
 
     def blockEntity(
         parent: Option[BlockEntity],
-        chainIndex: ChainIndex = ChainIndex(GroupIndex.Zero, GroupIndex.Zero)): BlockEntity =
+        chainIndex: ChainIndex = ChainIndex(GroupIndex.Zero, GroupIndex.Zero)
+    ): BlockEntity =
       blockEntityWithParentGen(chainIndex, parent).sample.get
 
     //                    +---+                            +---+   +---+  +---+
@@ -209,37 +220,52 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
       def fetchBlock(from: GroupIndex, hash: BlockHash): Future[BlockEntity] =
         Future.successful(blockEntities.find(_.hash === hash).get)
 
-      def fetchBlockAndEvents(fromGroup: GroupIndex,
-                              hash: BlockHash): Future[BlockEntityWithEvents] =
+      def fetchBlockAndEvents(
+          fromGroup: GroupIndex,
+          hash: BlockHash
+      ): Future[BlockEntityWithEvents] =
         Future.successful(
-          BlockEntityWithEvents(blockEntities.find(_.hash === hash).get, ArraySeq.empty))
+          BlockEntityWithEvents(blockEntities.find(_.hash === hash).get, ArraySeq.empty)
+        )
 
-      def fetchBlocks(fromTs: TimeStamp,
-                      toTs: TimeStamp,
-                      uri: Uri): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]] =
+      def fetchBlocks(
+          fromTs: TimeStamp,
+          toTs: TimeStamp,
+          uri: Uri
+      ): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]] =
         Future.successful(
           blockEntities
             .filter(b => b.timestamp >= fromTs && b.timestamp < toTs)
             .groupBy(b => (b.chainFrom, b.chainTo))
             .map(_._2)
             .map(_.distinctBy(_.height).sortBy(_.height))
-            .map(_.map(b => BlockEntityWithEvents(b, ArraySeq.empty[EventEntity]))))
+            .map(_.map(b => BlockEntityWithEvents(b, ArraySeq.empty[EventEntity])))
+        )
 
       def fetchChainInfo(chainIndex: ChainIndex): Future[ChainInfo] =
         Future.successful(
           ChainInfo(
             blocks
               .filter(block =>
-                block.chainFrom === chainIndex.from && block.chainTo === chainIndex.to)
+                block.chainFrom === chainIndex.from && block.chainTo === chainIndex.to
+              )
               .map(_.height.value)
-              .max))
+              .max
+          )
+        )
 
       def fetchHashesAtHeight(chainIndex: ChainIndex, height: Height): Future[HashesAtHeight] =
         Future.successful(
-          HashesAtHeight(AVector.from(blocks
-            .filter(block =>
-              block.chainFrom === chainIndex.from && block.chainTo === chainIndex.to && block.height === height)
-            .map(_.hash))))
+          HashesAtHeight(
+            AVector.from(
+              blocks
+                .filter(block =>
+                  block.chainFrom === chainIndex.from && block.chainTo === chainIndex.to && block.height === height
+                )
+                .map(_.hash)
+            )
+          )
+        )
 
       def fetchSelfClique(): Future[SelfClique] =
         Future.successful(
@@ -287,8 +313,8 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
         BlockDao
           .latestBlocks()
           .futureValue
-          .find {
-            case (chainIndex, _) => chainIndex == ChainIndex.unsafe(0, 0)(groupSetting.groupConfig)
+          .find { case (chainIndex, _) =>
+            chainIndex == ChainIndex.unsafe(0, 0)(groupSetting.groupConfig)
           }
           .get
           ._2

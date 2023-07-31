@@ -23,8 +23,8 @@ import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.table.TableVarcharSchema
 import org.alephium.protocol.Hash
 
-/**
-  * JMH state for benchmarking writes to [[org.alephium.explorer.benchmark.db.table.TableVarcharSchema]].
+/** JMH state for benchmarking writes to
+  * [[org.alephium.explorer.benchmark.db.table.TableVarcharSchema]].
   */
 @State(Scope.Thread)
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
@@ -34,7 +34,7 @@ class VarcharWriteState(val db: DBExecutor)
 
   import config.profile.api._
 
-  //Overload: default constructor required by JMH. Uses Postgres as target DB.
+  // Overload: default constructor required by JMH. Uses Postgres as target DB.
   def this() = {
     this(DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.HikariCP))
   }
@@ -44,8 +44,8 @@ class VarcharWriteState(val db: DBExecutor)
 
   def beforeAll(): Unit =
     db.runNow(
-      //action = create a fresh table
-      action  = tableVarcharQuery.schema.dropIfExists.andThen(tableVarcharQuery.schema.create),
+      // action = create a fresh table
+      action = tableVarcharQuery.schema.dropIfExists.andThen(tableVarcharQuery.schema.create),
       timeout = requestTimeout
     )
 }

@@ -31,9 +31,12 @@ object Codecs extends TapirCodecs {
     fromJson[Address]
 
   @SuppressWarnings(
-    Array("org.wartremover.warts.JavaSerializable",
-          "org.wartremover.warts.Product",
-          "org.wartremover.warts.Serializable")) // Wartremover is complaining, maybe beacause of tapir macros
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
+    )
+  ) // Wartremover is complaining, maybe beacause of tapir macros
   implicit val timeIntervalCodec: PlainCodec[IntervalType] =
     Codec.derivedEnumeration[String, IntervalType](
       IntervalType.validate,

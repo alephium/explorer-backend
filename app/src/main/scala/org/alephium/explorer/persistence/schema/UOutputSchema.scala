@@ -36,7 +36,7 @@ object UOutputSchema extends Schema[UOutputEntity]("uoutputs") {
     def hint: Rep[Int]             = column[Int]("hint")
     def key: Rep[Hash]             = column[Hash]("key", O.SqlType("BYTEA"))
     def amount: Rep[U256] =
-      column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
+      column[U256]("amount", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
     def address: Rep[Address]                = column[Address]("address")
     def tokens: Rep[Option[ArraySeq[Token]]] = column[Option[ArraySeq[Token]]]("tokens")
     def lockTime: Rep[Option[TimeStamp]]     = column[Option[TimeStamp]]("lock_time")

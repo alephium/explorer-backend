@@ -30,8 +30,8 @@ import org.alephium.util.Service
 
 /** Stores AkkaHttp related instances created on boot-up */
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
-class ExplorerHttpServer(host: String, port: Int, val routes: ArraySeq[Router => Route])(
-    implicit val executionContext: ExecutionContext
+class ExplorerHttpServer(host: String, port: Int, val routes: ArraySeq[Router => Route])(implicit
+    val executionContext: ExecutionContext
 ) extends Service
     with StrictLogging {
 
@@ -52,7 +52,7 @@ class ExplorerHttpServer(host: String, port: Int, val routes: ArraySeq[Router =>
 
     val server = vertx.createHttpServer().requestHandler(router)
 
-    //scalastyle:off magic.number
+    // scalastyle:off magic.number
     router
       .route()
       .handler(

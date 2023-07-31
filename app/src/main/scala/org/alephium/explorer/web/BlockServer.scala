@@ -28,10 +28,11 @@ import org.alephium.explorer.api.BlockEndpoints
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.service.BlockService
 
-class BlockServer(implicit val executionContext: ExecutionContext,
-                  dc: DatabaseConfig[PostgresProfile],
-                  blockCache: BlockCache)
-    extends Server
+class BlockServer(implicit
+    val executionContext: ExecutionContext,
+    dc: DatabaseConfig[PostgresProfile],
+    blockCache: BlockCache
+) extends Server
     with BlockEndpoints {
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
@@ -41,8 +42,8 @@ class BlockServer(implicit val executionContext: ExecutionContext,
           .getLiteBlockByHash(hash)
           .map(_.toRight(ApiError.NotFound(hash.value.toHexString)))
       }),
-      route(getBlockTransactions.serverLogicSuccess[Future] {
-        case (hash, pagination) => BlockService.getBlockTransactions(hash, pagination)
+      route(getBlockTransactions.serverLogicSuccess[Future] { case (hash, pagination) =>
+        BlockService.getBlockTransactions(hash, pagination)
       })
     )
 }

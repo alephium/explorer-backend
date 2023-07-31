@@ -43,9 +43,11 @@ object TransactionQueries extends StrictLogging {
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
   val mainTransactions = TransactionSchema.table.filter(_.mainChain)
 
-  def insertAll(transactions: ArraySeq[TransactionEntity],
-                outputs: ArraySeq[OutputEntity],
-                inputs: ArraySeq[InputEntity]): DBActionRWT[Unit] = {
+  def insertAll(
+      transactions: ArraySeq[TransactionEntity],
+      outputs: ArraySeq[OutputEntity],
+      inputs: ArraySeq[InputEntity]
+  ): DBActionRWT[Unit] = {
     DBIOAction
       .seq(insertTransactions(transactions), insertInputs(inputs), insertOutputs(outputs))
       .transactionally
@@ -58,23 +60,23 @@ object TransactionQueries extends StrictLogging {
       (transactions, placeholder) =>
         val query =
           s"""
-           |insert into transactions (hash,
-           |                          block_hash,
-           |                          block_timestamp,
-           |                          chain_from,
-           |                          chain_to,
-           |                          gas_amount,
-           |                          gas_price,
-           |                          tx_order,
-           |                          main_chain,
-           |                          script_execution_ok,
-           |                          input_signatures,
-           |                          script_signatures,
-           |                          coinbase)
-           |values $placeholder
-           |ON CONFLICT ON CONSTRAINT txs_pk
-           |    DO NOTHING
-           |""".stripMargin
+             |insert into transactions (hash,
+             |                          block_hash,
+             |                          block_timestamp,
+             |                          chain_from,
+             |                          chain_to,
+             |                          gas_amount,
+             |                          gas_price,
+             |                          tx_order,
+             |                          main_chain,
+             |                          script_execution_ok,
+             |                          input_signatures,
+             |                          script_signatures,
+             |                          coinbase)
+             |values $placeholder
+             |ON CONFLICT ON CONSTRAINT txs_pk
+             |    DO NOTHING
+             |""".stripMargin
 
         val parameters: SetParameter[Unit] =
           (_: Unit, params: PositionedParameters) =>
@@ -92,11 +94,11 @@ object TransactionQueries extends StrictLogging {
               params >> transaction.inputSignatures
               params >> transaction.scriptSignatures
               params >> transaction.coinbase
-          }
+            }
 
         SQLActionBuilder(
           queryParts = query,
-          unitPConv  = parameters
+          unitPConv = parameters
         ).asUpdate
     }
 
@@ -111,25 +113,30 @@ object TransactionQueries extends StrictLogging {
     mainTransactions
       .filter(_.hash === txHash)
       .map(tx =>
-        (tx.blockHash, tx.timestamp, tx.gasAmount, tx.gasPrice, tx.scriptExecutionOk, tx.coinbase))
+        (tx.blockHash, tx.timestamp, tx.gasAmount, tx.gasPrice, tx.scriptExecutionOk, tx.coinbase)
+      )
   }
 
-  def getTransactionAction(txHash: TransactionId)(
-      implicit ec: ExecutionContext): DBActionR[Option[Transaction]] =
+  def getTransactionAction(
+      txHash: TransactionId
+  )(implicit ec: ExecutionContext): DBActionR[Option[Transaction]] =
     getTransactionQuery(txHash).result.headOption.flatMap {
       case None => DBIOAction.successful(None)
       case Some((blockHash, timestamp, gasAmount, gasPrice, scriptExecutionOk, coinbase)) =>
-        getKnownTransactionAction(txHash,
-                                  blockHash,
-                                  timestamp,
-                                  gasAmount,
-                                  gasPrice,
-                                  scriptExecutionOk,
-                                  coinbase).map(Some.apply)
+        getKnownTransactionAction(
+          txHash,
+          blockHash,
+          timestamp,
+          gasAmount,
+          gasPrice,
+          scriptExecutionOk,
+          coinbase
+        ).map(Some.apply)
     }
 
   private def getTxHashesByBlockHashQuery(
-      blockHash: BlockHash): DBActionSR[(TransactionId, BlockHash, TimeStamp, Int, Boolean)] =
+      blockHash: BlockHash
+  ): DBActionSR[(TransactionId, BlockHash, TimeStamp, Int, Boolean)] =
     sql"""
       SELECT hash, block_hash, block_timestamp, tx_order, coinbase
       FROM transactions
@@ -137,8 +144,10 @@ object TransactionQueries extends StrictLogging {
       ORDER BY tx_order
     """.asAS[(TransactionId, BlockHash, TimeStamp, Int, Boolean)]
 
-  private def getTxHashesByBlockHashWithPaginationQuery(blockHash: BlockHash,
-                                                        pagination: Pagination) =
+  private def getTxHashesByBlockHashWithPaginationQuery(
+      blockHash: BlockHash,
+      pagination: Pagination
+  ) =
     sql"""
       SELECT hash, block_hash, block_timestamp, tx_order, coinbase
       FROM transactions
@@ -156,8 +165,10 @@ object TransactionQueries extends StrictLogging {
     """.asAS[Int]
   }
 
-  def getTxHashesByAddressQuery(address: Address,
-                                pagination: Pagination): DBActionSR[TxByAddressQR] = {
+  def getTxHashesByAddressQuery(
+      address: Address,
+      pagination: Pagination
+  ): DBActionSR[TxByAddressQR] = {
     sql"""
       SELECT #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
@@ -168,16 +179,21 @@ object TransactionQueries extends StrictLogging {
       .asAS[TxByAddressQR]
   }
 
-  /**
-    * Get transactions for a list of addresses
+  /** Get transactions for a list of addresses
     *
-    * @param addresses Addresses to query
-    * @param offset    Page number (starting from 0)
-    * @param limit     Maximum rows
-    * @return          Paginated transactions
+    * @param addresses
+    *   Addresses to query
+    * @param offset
+    *   Page number (starting from 0)
+    * @param limit
+    *   Maximum rows
+    * @return
+    *   Paginated transactions
     */
-  def getTxHashesByAddressesQuery(addresses: ArraySeq[Address],
-                                  pagination: Pagination): DBActionSR[TxByAddressQR] =
+  def getTxHashesByAddressesQuery(
+      addresses: ArraySeq[Address],
+      pagination: Pagination
+  ): DBActionSR[TxByAddressQR] =
     if (addresses.isEmpty) {
       DBIOAction.successful(ArraySeq.empty)
     } else {
@@ -185,12 +201,12 @@ object TransactionQueries extends StrictLogging {
 
       val query =
         s"""
-          |SELECT ${TxByAddressQR.selectFields}
-          |FROM transaction_per_addresses
-          |WHERE main_chain = true
-          |  AND address IN $placeholder
-          |ORDER BY block_timestamp DESC, tx_order
-          |""".stripMargin
+           |SELECT ${TxByAddressQR.selectFields}
+           |FROM transaction_per_addresses
+           |WHERE main_chain = true
+           |  AND address IN $placeholder
+           |ORDER BY block_timestamp DESC, tx_order
+           |""".stripMargin
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) => {
@@ -199,24 +215,30 @@ object TransactionQueries extends StrictLogging {
 
       SQLActionBuilder(
         queryParts = query,
-        unitPConv  = parameters
+        unitPConv = parameters
       ).paginate(pagination)
         .asAS[TxByAddressQR]
     }
 
-  /**
-    * Get transactions by address for a given time-range
+  /** Get transactions by address for a given time-range
     *
-    * @param address   Address to query
-    * @param fromTime  From TimeStamp of the time-range
-    * @param toTime    To TimeStamp of the time-range
-    * @param offset    Page number (starting from 0)
-    * @param limit     Maximum rows
+    * @param address
+    *   Address to query
+    * @param fromTime
+    *   From TimeStamp of the time-range
+    * @param toTime
+    *   To TimeStamp of the time-range
+    * @param offset
+    *   Page number (starting from 0)
+    * @param limit
+    *   Maximum rows
     */
-  def getTxHashesByAddressQueryTimeRanged(address: Address,
-                                          fromTime: TimeStamp,
-                                          toTime: TimeStamp,
-                                          pagination: Pagination): DBActionSR[TxByAddressQR] = {
+  def getTxHashesByAddressQueryTimeRanged(
+      address: Address,
+      fromTime: TimeStamp,
+      toTime: TimeStamp,
+      pagination: Pagination
+  ): DBActionSR[TxByAddressQR] = {
     sql"""
       SELECT #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
@@ -229,8 +251,9 @@ object TransactionQueries extends StrictLogging {
       .asAS[TxByAddressQR]
   }
 
-  def getTransactionsByBlockHash(blockHash: BlockHash)(
-      implicit ec: ExecutionContext): DBActionSR[Transaction] = {
+  def getTransactionsByBlockHash(
+      blockHash: BlockHash
+  )(implicit ec: ExecutionContext): DBActionSR[Transaction] = {
     for {
       txHashesTs <- getTxHashesByBlockHashQuery(blockHash)
       txs        <- getTransactions(TxByAddressQR(txHashesTs))
@@ -238,23 +261,26 @@ object TransactionQueries extends StrictLogging {
   }
 
   def getTransactionsByBlockHashWithPagination(blockHash: BlockHash, pagination: Pagination)(
-      implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
+      implicit ec: ExecutionContext
+  ): DBActionR[ArraySeq[Transaction]] = {
     for {
       txHashesTs <- getTxHashesByBlockHashWithPaginationQuery(blockHash, pagination)
       txs        <- getTransactions(TxByAddressQR(txHashesTs))
     } yield txs
   }
 
-  def getTransactionsByAddress(address: Address, pagination: Pagination)(
-      implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
+  def getTransactionsByAddress(address: Address, pagination: Pagination)(implicit
+      ec: ExecutionContext
+  ): DBActionR[ArraySeq[Transaction]] = {
     for {
       txHashesTs <- getTxHashesByAddressQuery(address, pagination)
       txs        <- getTransactions(txHashesTs)
     } yield txs
   }
 
-  def getTransactionsByAddresses(addresses: ArraySeq[Address], pagination: Pagination)(
-      implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
+  def getTransactionsByAddresses(addresses: ArraySeq[Address], pagination: Pagination)(implicit
+      ec: ExecutionContext
+  ): DBActionR[ArraySeq[Transaction]] = {
     for {
       txHashesTs <- getTxHashesByAddressesQuery(addresses, pagination)
       txs        <- getTransactions(txHashesTs)
@@ -265,7 +291,8 @@ object TransactionQueries extends StrictLogging {
       address: Address,
       fromTime: TimeStamp,
       toTime: TimeStamp,
-      pagination: Pagination)(implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
+      pagination: Pagination
+  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     for {
       txHashesTs <- getTxHashesByAddressQueryTimeRanged(address, fromTime, toTime, pagination)
       txs        <- getTransactions(txHashesTs)
@@ -273,7 +300,8 @@ object TransactionQueries extends StrictLogging {
   }
 
   def hasAddressMoreTxsThanQuery(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
-      implicit ec: ExecutionContext): DBActionR[Boolean] = {
+      implicit ec: ExecutionContext
+  ): DBActionR[Boolean] = {
     sql"""
       select 1
       FROM transaction_per_addresses
@@ -285,9 +313,11 @@ object TransactionQueries extends StrictLogging {
     """.asAS[Int].headOrNone.map(_.isDefined)
   }
 
-  def streamTxByAddressQR(address: Address,
-                          from: TimeStamp,
-                          to: TimeStamp): StreamAction[TxByAddressQR] = {
+  def streamTxByAddressQR(
+      address: Address,
+      from: TimeStamp,
+      to: TimeStamp
+  ): StreamAction[TxByAddressQR] = {
     sql"""
       SELECT #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
@@ -299,8 +329,9 @@ object TransactionQueries extends StrictLogging {
     """.asAS[TxByAddressQR]
   }
 
-  def getTransactions(txHashesTs: ArraySeq[TxByAddressQR])(
-      implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
+  def getTransactions(
+      txHashesTs: ArraySeq[TxByAddressQR]
+  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
     if (txHashesTs.nonEmpty) {
       val hashes = txHashesTs.map(_.hashes())
       for {
@@ -315,8 +346,9 @@ object TransactionQueries extends StrictLogging {
     }
   }
 
-  def sumAddressOutputs(address: Address, from: TimeStamp, to: TimeStamp)(
-      implicit ec: ExecutionContext): DBActionR[U256] = {
+  def sumAddressOutputs(address: Address, from: TimeStamp, to: TimeStamp)(implicit
+      ec: ExecutionContext
+  ): DBActionR[U256] = {
     sql"""
       SELECT SUM(amount)
       FROM outputs
@@ -327,8 +359,9 @@ object TransactionQueries extends StrictLogging {
     """.asAS[Option[U256]].exactlyOne.map(_.getOrElse(U256.Zero))
   }
 
-  def sumAddressInputs(address: Address, from: TimeStamp, to: TimeStamp)(
-      implicit ec: ExecutionContext): DBActionR[U256] = {
+  def sumAddressInputs(address: Address, from: TimeStamp, to: TimeStamp)(implicit
+      ec: ExecutionContext
+  ): DBActionR[U256] = {
     sql"""
       SELECT SUM(output_ref_amount)
       FROM inputs
@@ -339,10 +372,12 @@ object TransactionQueries extends StrictLogging {
     """.asAS[Option[U256]].exactlyOne.map(_.getOrElse(U256.Zero))
   }
 
-  private def buildTransaction(txHashesTs: ArraySeq[TxByAddressQR],
-                               inputs: ArraySeq[InputsFromTxQR],
-                               outputs: ArraySeq[OutputsFromTxQR],
-                               gases: ArraySeq[InfoFromTxsQR]) = {
+  private def buildTransaction(
+      txHashesTs: ArraySeq[TxByAddressQR],
+      inputs: ArraySeq[InputsFromTxQR],
+      outputs: ArraySeq[OutputsFromTxQR],
+      gases: ArraySeq[InfoFromTxsQR]
+  ) = {
     val insByTx = inputs.groupBy(_.txHash).view.mapValues { values =>
       values
         .sortBy(_.inputOrder)
@@ -359,37 +394,38 @@ object TransactionQueries extends StrictLogging {
       val ous                                      = ousByTx.getOrElse(txn.txHash, ArraySeq.empty)
       val gas                                      = gasByTx.getOrElse(txn.txHash, ArraySeq.empty)
       val (gasAmount, gasPrice, scriptExecutionOk) = gas.headOption.getOrElse((0, U256.Zero, true))
-      Transaction(txn.txHash,
-                  txn.blockHash,
-                  txn.blockTimestamp,
-                  ins,
-                  ous,
-                  gasAmount,
-                  gasPrice,
-                  scriptExecutionOk,
-                  txn.coinbase)
+      Transaction(
+        txn.txHash,
+        txn.blockHash,
+        txn.blockTimestamp,
+        ins,
+        ous,
+        gasAmount,
+        gasPrice,
+        scriptExecutionOk,
+        txn.coinbase
+      )
     }
   }
 
   def infoFromTxs(hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionSR[InfoFromTxsQR] = {
     if (hashes.nonEmpty) {
       val params = paramPlaceholderTuple2(1, hashes.size)
-      val query  = s"""
+      val query = s"""
     SELECT hash, gas_amount, gas_price, script_execution_ok
     FROM transactions
     WHERE (hash, block_hash) IN $params
     """
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
-          hashes foreach {
-            case (txId, blockHash) =>
-              params >> txId
-              params >> blockHash
-        }
+          hashes foreach { case (txId, blockHash) =>
+            params >> txId
+            params >> blockHash
+          }
 
       SQLActionBuilder(
         queryParts = query,
-        unitPConv  = parameters
+        unitPConv = parameters
       ).asAS[InfoFromTxsQR]
     } else {
       DBIOAction.successful(ArraySeq.empty)
@@ -403,24 +439,28 @@ object TransactionQueries extends StrictLogging {
       gasAmount: Int,
       gasPrice: U256,
       scriptExecutionOk: Boolean,
-      coinbase: Boolean)(implicit ec: ExecutionContext): DBActionR[Transaction] =
+      coinbase: Boolean
+  )(implicit ec: ExecutionContext): DBActionR[Transaction] =
     for {
       ins  <- getInputsQuery(txHash, blockHash)
       outs <- getOutputsQuery(txHash, blockHash)
     } yield {
-      Transaction(txHash,
-                  blockHash,
-                  timestamp,
-                  ins.map(_.toApiInput()),
-                  outs.map(_.toApiOutput()),
-                  gasAmount,
-                  gasPrice,
-                  scriptExecutionOk,
-                  coinbase)
+      Transaction(
+        txHash,
+        blockHash,
+        timestamp,
+        ins.map(_.toApiInput()),
+        outs.map(_.toApiOutput()),
+        gasAmount,
+        gasPrice,
+        scriptExecutionOk,
+        coinbase
+      )
     }
 
-  def areAddressesActiveAction(addresses: ArraySeq[Address])(
-      implicit ec: ExecutionContext): DBActionR[ArraySeq[Boolean]] =
+  def areAddressesActiveAction(
+      addresses: ArraySeq[Address]
+  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[Boolean]] =
     filterExistingAddresses(addresses.toSet) map { existing =>
       addresses map existing.contains
     }
@@ -441,21 +481,20 @@ object TransactionQueries extends StrictLogging {
         (_: Unit, params: PositionedParameters) =>
           addresses foreach { address =>
             params >> address
-        }
+          }
 
       SQLActionBuilder(
         queryParts = query,
-        unitPConv  = parameters
+        unitPConv = parameters
       ).asAS[Address]
     }
 
   def getBalanceAction(address: Address)(implicit ec: ExecutionContext): DBActionR[(U256, U256)] =
     getBalanceUntilLockTime(
-      address  = address,
+      address = address,
       lockTime = TimeStamp.now()
-    ) map {
-      case (total, locked) =>
-        (total.getOrElse(U256.Zero), locked.getOrElse(U256.Zero))
+    ) map { case (total, locked) =>
+      (total.getOrElse(U256.Zero), locked.getOrElse(U256.Zero))
     }
 
   // switch logger.trace when we can disable debugging mode

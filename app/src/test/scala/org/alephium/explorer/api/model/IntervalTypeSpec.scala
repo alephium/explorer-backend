@@ -30,24 +30,26 @@ class IntervalTypeSpec() extends AlephiumFutureSpec {
   "IntervalType" should {
     "validate TimeInterval" in {
       val now = TimeStamp.now()
-      forAll(intervalTypeGen, Gen.choose(1L, 10L)) {
-        case (intervalType, amount) =>
-          val duration     = (intervalType.duration * amount).get
-          val to           = now + duration
-          val timeInterval = TimeInterval(now, to)
+      forAll(intervalTypeGen, Gen.choose(1L, 10L)) { case (intervalType, amount) =>
+        val duration     = (intervalType.duration * amount).get
+        val to           = now + duration
+        val timeInterval = TimeInterval(now, to)
 
-          IntervalType
-            .validateTimeInterval(timeInterval, intervalType, duration, duration)(
-              Future.successful(()))
-            .futureValue is Right(())
+        IntervalType
+          .validateTimeInterval(timeInterval, intervalType, duration, duration)(
+            Future.successful(())
+          )
+          .futureValue is Right(())
 
-          val shorterDuration = (duration - (Duration.ofMillisUnsafe(1))).get
+        val shorterDuration = (duration - (Duration.ofMillisUnsafe(1))).get
 
-          IntervalType
-            .validateTimeInterval(timeInterval, intervalType, shorterDuration, shorterDuration)(
-              Future.successful(()))
-            .futureValue is Left(
-            ApiError.BadRequest(s"Time span cannot be greater than $shorterDuration"))
+        IntervalType
+          .validateTimeInterval(timeInterval, intervalType, shorterDuration, shorterDuration)(
+            Future.successful(())
+          )
+          .futureValue is Left(
+          ApiError.BadRequest(s"Time span cannot be greater than $shorterDuration")
+        )
       }
     }
   }

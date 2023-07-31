@@ -31,65 +31,81 @@ import org.alephium.util.{TimeStamp, U256}
 
 object TransactionDao {
 
-  def get(hash: TransactionId)(implicit ec: ExecutionContext,
-                               dc: DatabaseConfig[PostgresProfile]): Future[Option[Transaction]] =
+  def get(hash: TransactionId)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[Transaction]] =
     run(getTransactionAction(hash))
 
-  def getByAddress(address: Address, pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+  def getByAddress(address: Address, pagination: Pagination)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[Transaction]] =
     run(getTransactionsByAddress(address, pagination))
 
-  def getByAddresses(addresses: ArraySeq[Address], pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+  def getByAddresses(addresses: ArraySeq[Address], pagination: Pagination)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[Transaction]] =
     run(getTransactionsByAddresses(addresses, pagination))
 
-  def getByAddressTimeRanged(address: Address,
-                             fromTime: TimeStamp,
-                             toTime: TimeStamp,
-                             pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+  def getByAddressTimeRanged(
+      address: Address,
+      fromTime: TimeStamp,
+      toTime: TimeStamp,
+      pagination: Pagination
+  )(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[Transaction]] =
     run(getTransactionsByAddressTimeRanged(address, fromTime, toTime, pagination))
 
-  def getNumberByAddress(address: Address)(implicit ec: ExecutionContext,
-                                           dc: DatabaseConfig[PostgresProfile]): Future[Int] =
+  def getNumberByAddress(
+      address: Address
+  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int] =
     run(countAddressTransactions(address)).map(_.headOption.getOrElse(0))
 
-  def getBalance(address: Address)(implicit ec: ExecutionContext,
-                                   dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
+  def getBalance(
+      address: Address
+  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
     run(getBalanceAction(address))
 
-  def getTokenBalance(address: Address, token: TokenId)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
+  def getTokenBalance(address: Address, token: TokenId)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[(U256, U256)] =
     run(getTokenBalanceAction(address, token))
 
-  def areAddressesActive(addresses: ArraySeq[Address])(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]] =
+  def areAddressesActive(
+      addresses: ArraySeq[Address]
+  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]] =
     run(areAddressesActiveAction(addresses))
 
-  def listTokens(pagination: Pagination)(
-      implicit dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenId]] =
+  def listTokens(pagination: Pagination)(implicit
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[TokenId]] =
     run(listTokensAction(pagination))
 
-  def listTokenTransactions(token: TokenId, pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+  def listTokenTransactions(token: TokenId, pagination: Pagination)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[Transaction]] =
     run(getTransactionsByToken(token, pagination))
 
-  def listTokenAddresses(token: TokenId, pagination: Pagination)(
-      implicit dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Address]] =
+  def listTokenAddresses(token: TokenId, pagination: Pagination)(implicit
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[Address]] =
     run(getAddressesByToken(token, pagination))
 
-  def listAddressTokens(address: Address, pagination: Pagination)(
-      implicit dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenId]] =
+  def listAddressTokens(address: Address, pagination: Pagination)(implicit
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[TokenId]] =
     run(listAddressTokensAction(address, pagination))
 
   def listAddressTokenTransactions(address: Address, token: TokenId, pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Transaction]] =
+      implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[Transaction]] =
     run(getTokenTransactionsByAddress(address, token, pagination))
 }

@@ -33,31 +33,29 @@ class InputAddressUtilSpec extends AlephiumSpec with Matchers {
 
   "addressFromProtocolInput" should {
     "convert P2PKH input into the right address" in {
-      forAll(unlockScriptProtocolP2PKHGen, outputRefProtocolGen) {
-        case (p2pkh, outputRef) =>
-          val assetInput = buildAssetInput(outputRef, p2pkh)
+      forAll(unlockScriptProtocolP2PKHGen, outputRefProtocolGen) { case (p2pkh, outputRef) =>
+        val assetInput = buildAssetInput(outputRef, p2pkh)
 
-          val result = InputAddressUtil
-            .addressFromProtocolInput(assetInput)
+        val result = InputAddressUtil
+          .addressFromProtocolInput(assetInput)
 
-          result.nonEmpty is true
+        result.nonEmpty is true
 
-          result.get.toString is protocol.model.Address.p2pkh(p2pkh.publicKey).toBase58
+        result.get.toString is protocol.model.Address.p2pkh(p2pkh.publicKey).toBase58
       }
     }
 
     "convert P2SH input into the right address" in {
-      forAll(unlockScriptProtocolP2SHGen, outputRefProtocolGen) {
-        case (p2sh, outputRef) =>
-          val assetInput = buildAssetInput(outputRef, p2sh)
+      forAll(unlockScriptProtocolP2SHGen, outputRefProtocolGen) { case (p2sh, outputRef) =>
+        val assetInput = buildAssetInput(outputRef, p2sh)
 
-          val result = InputAddressUtil
-            .addressFromProtocolInput(assetInput)
+        val result = InputAddressUtil
+          .addressFromProtocolInput(assetInput)
 
-          result.nonEmpty is true
+        result.nonEmpty is true
 
-          val lockup = protocol.vm.LockupScript.p2sh(protocol.Hash.hash(p2sh.script))
-          result.get.toString is protocol.model.Address.from(lockup).toBase58
+        val lockup = protocol.vm.LockupScript.p2sh(protocol.Hash.hash(p2sh.script))
+        result.get.toString is protocol.model.Address.from(lockup).toBase58
       }
     }
 
@@ -133,17 +131,16 @@ class InputAddressUtilSpec extends AlephiumSpec with Matchers {
     "correcly convert simple SameAsPrevious case" in {
       val sameAsPrevious =
         serialize(protocol.vm.UnlockScript.SameAsPrevious: protocol.vm.UnlockScript)
-      forAll(inputProtocolGen, inputProtocolGen, inputProtocolGen) {
-        case (input1, in2, in3) =>
-          val input2 = in2.copy(unlockScript = sameAsPrevious)
-          val input3 = in3.copy(unlockScript = sameAsPrevious)
+      forAll(inputProtocolGen, inputProtocolGen, inputProtocolGen) { case (input1, in2, in3) =>
+        val input2 = in2.copy(unlockScript = sameAsPrevious)
+        val input3 = in3.copy(unlockScript = sameAsPrevious)
 
-          val result = InputAddressUtil.convertSameAsPrevious(ArraySeq(input1, input2, input3))
+        val result = InputAddressUtil.convertSameAsPrevious(ArraySeq(input1, input2, input3))
 
-          val newInput2 = input2.copy(unlockScript = input1.unlockScript)
-          val newInput3 = input3.copy(unlockScript = input1.unlockScript)
+        val newInput2 = input2.copy(unlockScript = input1.unlockScript)
+        val newInput3 = input3.copy(unlockScript = input1.unlockScript)
 
-          result is ArraySeq(input1, newInput2, newInput3)
+        result is ArraySeq(input1, newInput2, newInput3)
       }
     }
 

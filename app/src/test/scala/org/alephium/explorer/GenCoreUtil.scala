@@ -24,8 +24,8 @@ import org.alephium.util.{Number, TimeStamp, U256}
 /** Generators for types supplied by Core `org.alephium.util` package */
 object GenCoreUtil {
 
-  //java.sql.timestamp is out of range with Long.MaxValue
-  val timestampMaxValue: TimeStamp = TimeStamp.unsafe(253370764800000L) //Jan 01 9999 00:00:00
+  // java.sql.timestamp is out of range with Long.MaxValue
+  val timestampMaxValue: TimeStamp = TimeStamp.unsafe(253370764800000L) // Jan 01 9999 00:00:00
 
   val u256Gen: Gen[U256] = Gen.posNum[Long].map(U256.unsafe)
   val timestampGen: Gen[TimeStamp] =

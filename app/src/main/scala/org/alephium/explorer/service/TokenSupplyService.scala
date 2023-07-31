@@ -63,12 +63,15 @@ import org.alephium.util.{Duration, TimeStamp, U256}
  * some other wallets were creating after the launch and are explicitly listed below in `reservedAddresses`.
  */
 trait TokenSupplyService {
-  def listTokenSupply(pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenSupply]]
+  def listTokenSupply(pagination: Pagination)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[TokenSupply]]
 
-  def getLatestTokenSupply()(implicit ec: ExecutionContext,
-                             dc: DatabaseConfig[PostgresProfile]): Future[Option[TokenSupply]]
+  def getLatestTokenSupply()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[TokenSupply]]
 }
 
 case object TokenSupplyService extends TokenSupplyService with StrictLogging {
@@ -79,11 +82,13 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
   private val launchDay =
     Instant.ofEpochMilli(ALPH.LaunchTimestamp.millis).truncatedTo(ChronoUnit.DAYS)
 
-  def start(scheduleTime: LocalTime)(implicit executionContext: ExecutionContext,
-                                     databaseConfig: DatabaseConfig[PostgresProfile],
-                                     groupSetting: GroupSetting,
-                                     scheduler: Scheduler): Future[Unit] = {
-    //Sync once on start to make sure we are up to date and then sync once a day at the given time.
+  def start(scheduleTime: LocalTime)(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile],
+      groupSetting: GroupSetting,
+      scheduler: Scheduler
+  ): Future[Unit] = {
+    // Sync once on start to make sure we are up to date and then sync once a day at the given time.
     syncOnce().map { _ =>
       scheduler.scheduleDailyAt(
         taskId = TokenSupplyService.productPrefix,
@@ -94,18 +99,21 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
     }
   }
 
-  def syncOnce()(implicit ec: ExecutionContext,
-                 dc: DatabaseConfig[PostgresProfile],
-                 groupSetting: GroupSetting): Future[Unit] = {
+  def syncOnce()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      groupSetting: GroupSetting
+  ): Future[Unit] = {
     logger.debug("Computing token supply")
     updateTokenSupply().map { _ =>
       logger.debug("Token supply updated")
     }
   }
 
-  def listTokenSupply(pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenSupply]] = {
+  def listTokenSupply(pagination: Pagination)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[TokenSupply]] = {
     run(
       sql"""
         SELECT *
@@ -126,8 +134,10 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
     })
   }
 
-  def getLatestTokenSupply()(implicit ec: ExecutionContext,
-                             dc: DatabaseConfig[PostgresProfile]): Future[Option[TokenSupply]] =
+  def getLatestTokenSupply()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[TokenSupply]] =
     run(
       sql"""
         SELECT *
@@ -145,8 +155,9 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
       )
     })
 
-  private def circulatingTokensOptionQuery(at: TimeStamp)(
-      implicit ec: ExecutionContext): DBActionR[Option[U256]] =
+  private def circulatingTokensOptionQuery(at: TimeStamp)(implicit
+      ec: ExecutionContext
+  ): DBActionR[Option[U256]] =
     sql"""
       SELECT sum(amount)
       FROM outputs
@@ -160,8 +171,9 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
   def circulatingTokensQuery(at: TimeStamp)(implicit ec: ExecutionContext): DBActionR[U256] =
     circulatingTokensOptionQuery(at).map(_.getOrElse(U256.Zero))
 
-  private def allUnspentTokensOption(at: TimeStamp)(
-      implicit ec: ExecutionContext): DBActionR[Option[U256]] =
+  private def allUnspentTokensOption(at: TimeStamp)(implicit
+      ec: ExecutionContext
+  ): DBActionR[Option[U256]] =
     sql"""
         SELECT sum(outputs.amount)
         FROM outputs
@@ -173,8 +185,9 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
   def allUnspentTokensQuery(at: TimeStamp)(implicit ec: ExecutionContext): DBActionR[U256] =
     allUnspentTokensOption(at).map(_.getOrElse(U256.Zero))
 
-  private def reservedTokensOptionQuery(at: TimeStamp)(
-      implicit ec: ExecutionContext): DBActionR[Option[U256]] =
+  private def reservedTokensOptionQuery(at: TimeStamp)(implicit
+      ec: ExecutionContext
+  ): DBActionR[Option[U256]] =
     sql"""
        SELECT sum(outputs.amount)
        FROM outputs
@@ -187,8 +200,9 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
   private def reservedTokensQuery(at: TimeStamp)(implicit ec: ExecutionContext): DBActionR[U256] =
     reservedTokensOptionQuery(at).map(_.getOrElse(U256.Zero))
 
-  private def lockedTokensOptionQuery(at: TimeStamp)(
-      implicit ec: ExecutionContext): DBActionR[Option[U256]] =
+  private def lockedTokensOptionQuery(at: TimeStamp)(implicit
+      ec: ExecutionContext
+  ): DBActionR[Option[U256]] =
     sql"""
        SELECT sum(outputs.amount)
        FROM outputs
@@ -202,9 +216,11 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
     lockedTokensOptionQuery(at).map(_.getOrElse(U256.Zero))
 
   @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
-  private def findMinimumLatestBlockTime()(implicit ec: ExecutionContext,
-                                           dc: DatabaseConfig[PostgresProfile],
-                                           groupSetting: GroupSetting): Future[Option[TimeStamp]] =
+  private def findMinimumLatestBlockTime()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      groupSetting: GroupSetting
+  ): Future[Option[TimeStamp]] =
     run(
       DBIOAction.sequence(
         groupSetting.chainIndexes.map { chainIndex =>
@@ -233,8 +249,9 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
       }
     }
 
-  private def computeTokenSupply(at: TimeStamp)(
-      implicit ec: ExecutionContext): DBActionR[(U256, U256, U256, U256)] =
+  private def computeTokenSupply(
+      at: TimeStamp
+  )(implicit ec: ExecutionContext): DBActionR[(U256, U256, U256, U256)] =
     for {
       total       <- allUnspentTokensQuery(at)
       circulating <- circulatingTokensQuery(at)
@@ -248,9 +265,11 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
       (total, circulating, reserved, locked)
     }
 
-  private def updateTokenSupply()(implicit ec: ExecutionContext,
-                                  dc: DatabaseConfig[PostgresProfile],
-                                  groupSetting: GroupSetting): Future[Unit] =
+  private def updateTokenSupply()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      groupSetting: GroupSetting
+  ): Future[Unit] =
     findMinimumLatestBlockTime().flatMap {
       case None =>
         Future.successful(())
@@ -265,24 +284,28 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
             foldFutures(days) { day =>
               run(for {
                 (total, circulating, reserved, locked) <- computeTokenSupply(day)
-                _                                      <- insert(TokenSupplyEntity(day, total, circulating, reserved, locked))
+                _ <- insert(TokenSupplyEntity(day, total, circulating, reserved, locked))
               } yield (()))
             }.map(_ => ())
           }
     }
 
-  private def initGenesisTokenSupply()(implicit ec: ExecutionContext,
-                                       dc: DatabaseConfig[PostgresProfile]): Future[TimeStamp] =
+  private def initGenesisTokenSupply()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[TimeStamp] =
     run(for {
       (total, circulating, reserved, locked) <- computeTokenSupply(ALPH.LaunchTimestamp)
-      _                                      <- insert(TokenSupplyEntity(ALPH.LaunchTimestamp, total, circulating, reserved, locked))
+      _ <- insert(TokenSupplyEntity(ALPH.LaunchTimestamp, total, circulating, reserved, locked))
     } yield ALPH.LaunchTimestamp)
 
   private def insert(tokenSupply: TokenSupplyEntity) =
     TokenSupplySchema.table.insertOrUpdate(tokenSupply)
 
-  private def getLatestTimestamp()(implicit ec: ExecutionContext,
-                                   dc: DatabaseConfig[PostgresProfile]): Future[Option[TimeStamp]] =
+  private def getLatestTimestamp()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[TimeStamp]] =
     run(
       sql"""
         SELECT block_timestamp

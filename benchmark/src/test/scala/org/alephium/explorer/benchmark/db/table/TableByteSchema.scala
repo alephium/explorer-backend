@@ -26,8 +26,7 @@ trait TableByteSchema {
 
   import config.profile.api._
 
-  /**
-    * Table with single column that stores byte arrays
+  /** Table with single column that stores byte arrays
     */
   class TableBytea(tag: Tag) extends Table[Array[Byte]](tag, "table_bytea") {
     def hash: Rep[Array[Byte]] = column[Array[Byte]]("hash", O.PrimaryKey, O.SqlType("BYTEA"))

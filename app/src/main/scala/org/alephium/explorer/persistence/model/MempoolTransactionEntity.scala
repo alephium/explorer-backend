@@ -32,48 +32,49 @@ final case class MempoolTransactionEntity(
 )
 
 object MempoolTransactionEntity {
-  def from(utx: MempoolTransaction)
-    : (MempoolTransactionEntity, ArraySeq[UInputEntity], ArraySeq[UOutputEntity]) = {
-    (MempoolTransactionEntity(
-       utx.hash,
-       utx.chainFrom,
-       utx.chainTo,
-       utx.gasAmount,
-       utx.gasPrice,
-       utx.lastSeen
-     ),
-     utx.inputs.zipWithIndex.map {
-       case (input, order) =>
-         UInputEntity(
-           utx.hash,
-           input.outputRef.hint,
-           input.outputRef.key,
-           input.unlockScript,
-           input.address,
-           order
-         )
-     },
-     utx.outputs.zipWithIndex.map {
-       case (output, order) =>
-         val lockTime = output match {
-           case asset: AssetOutput => asset.lockTime
-           case _: ContractOutput  => None
-         }
-         val message = output match {
-           case asset: AssetOutput => asset.message
-           case _: ContractOutput  => None
-         }
-         UOutputEntity(
-           utx.hash,
-           output.hint,
-           output.key,
-           output.attoAlphAmount,
-           output.address,
-           output.tokens,
-           lockTime,
-           message,
-           order
-         )
-     })
+  def from(
+      utx: MempoolTransaction
+  ): (MempoolTransactionEntity, ArraySeq[UInputEntity], ArraySeq[UOutputEntity]) = {
+    (
+      MempoolTransactionEntity(
+        utx.hash,
+        utx.chainFrom,
+        utx.chainTo,
+        utx.gasAmount,
+        utx.gasPrice,
+        utx.lastSeen
+      ),
+      utx.inputs.zipWithIndex.map { case (input, order) =>
+        UInputEntity(
+          utx.hash,
+          input.outputRef.hint,
+          input.outputRef.key,
+          input.unlockScript,
+          input.address,
+          order
+        )
+      },
+      utx.outputs.zipWithIndex.map { case (output, order) =>
+        val lockTime = output match {
+          case asset: AssetOutput => asset.lockTime
+          case _: ContractOutput  => None
+        }
+        val message = output match {
+          case asset: AssetOutput => asset.message
+          case _: ContractOutput  => None
+        }
+        UOutputEntity(
+          utx.hash,
+          output.hint,
+          output.key,
+          output.attoAlphAmount,
+          output.address,
+          output.tokens,
+          lockTime,
+          message,
+          order
+        )
+      }
+    )
   }
 }

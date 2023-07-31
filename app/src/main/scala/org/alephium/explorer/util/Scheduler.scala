@@ -31,27 +31,29 @@ import org.alephium.util.discard
 
 object Scheduler extends StrictLogging {
 
-  /**
-    * Creates a Scheduler.
+  /** Creates a Scheduler.
     *
-    * @param name     Name of the associated thread
-    * @param isDaemon `true` if the associated thread should run as a daemon
+    * @param name
+    *   Name of the associated thread
+    * @param isDaemon
+    *   `true` if the associated thread should run as a daemon
     */
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def apply(name: String, isDaemon: Boolean = true): Scheduler =
     new Scheduler(
-      name       = name,
-      timer      = new Timer(name, isDaemon),
+      name = name,
+      timer = new Timer(name, isDaemon),
       terminated = false
     )
 
-  /**
-    * Calculate time left to schedule for the input [[java.time.ZonedDateTime]].
-    * If the time is in the past then it schedules for tomorrow.
+  /** Calculate time left to schedule for the input [[java.time.ZonedDateTime]]. If the time is in
+    * the past then it schedules for tomorrow.
     *
-    * @param scheduleAt Time to schedule at.
+    * @param scheduleAt
+    *   Time to schedule at.
     *
-    * @return Time left until next schedule.
+    * @return
+    *   Time left until next schedule.
     */
   @tailrec
   def scheduleTime(scheduleAt: ZonedDateTime, id: String): FiniteDuration = {
@@ -59,13 +61,13 @@ object Scheduler extends StrictLogging {
 
     val timeLeft = Duration.between(ZonedDateTime.now(scheduleAt.getZone), scheduleAt)
 
-    if (timeLeft.isNegative) { //time is in the past, schedule for tomorrow.
+    if (timeLeft.isNegative) { // time is in the past, schedule for tomorrow.
       val daysBehind = Math.abs(timeLeft.toDays) + 1
       logger.trace(s"$id: Scheduled time is $daysBehind.days behind")
       scheduleTime(scheduleAt.plusDays(daysBehind), id)
-    } else { //time is in the future. Good!
+    } else { // time is in the future. Good!
       val nextSchedule = timeLeft.toNanos.nanos
-      //calculate first schedule using today's date.
+      // calculate first schedule using today's date.
       logger.debug(s"$id: Scheduled delay ${nextSchedule.toSeconds}.seconds")
       nextSchedule
     }
@@ -80,11 +82,9 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
   @inline final def logId(taskId: String): String =
     s"Scheduler '$name', Task '$taskId'"
 
-  /**
-    * Schedules the block after a delay.
+  /** Schedules the block after a delay.
     *
-    * Every other function is just a combinator to build more functionality
-    * on top of this function.
+    * Every other function is just a combinator to build more functionality on top of this function.
     */
   def scheduleOnce[T](taskId: String, delay: FiniteDuration)(block: => Future[T]): Future[T] = {
     val promise = Promise[T]()
@@ -103,14 +103,16 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
   }
 
   /** Schedule block at given interval */
-  def scheduleLoop[T](taskId: String, interval: FiniteDuration)(block: => Future[T])(
-      implicit ec: ExecutionContext): Future[T] =
+  def scheduleLoop[T](taskId: String, interval: FiniteDuration)(block: => Future[T])(implicit
+      ec: ExecutionContext
+  ): Future[T] =
     scheduleLoop(taskId, interval, interval)(block)
 
   /** Schedules the block at given `loopInterval` with the first schedule at `firstInterval` */
   @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))
   def scheduleLoop[T](taskId: String, firstInterval: FiniteDuration, loopInterval: FiniteDuration)(
-      block: => Future[T])(implicit ec: ExecutionContext): Future[T] = {
+      block: => Future[T]
+  )(implicit ec: ExecutionContext): Future[T] = {
     scheduleOnce(taskId, firstInterval)(block) andThen {
       case Failure(exception) =>
         logger.error(s"${logId(taskId)}: Failed executing task", exception)
@@ -123,15 +125,14 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
     }
   }
 
-  /**
-    * Schedules daily, starting from the given [[java.time.ZonedDateTime]].
+  /** Schedules daily, starting from the given [[java.time.ZonedDateTime]].
     *
-    * If the time is in the past (eg: 1PM when now is 2PM) then the
-    * schedule occurs for tomorrow.
+    * If the time is in the past (eg: 1PM when now is 2PM) then the schedule occurs for tomorrow.
     */
   @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))
-  def scheduleDailyAt[T](taskId: String, at: ZonedDateTime)(block: => Future[T])(
-      implicit ec: ExecutionContext): Unit =
+  def scheduleDailyAt[T](taskId: String, at: ZonedDateTime)(
+      block: => Future[T]
+  )(implicit ec: ExecutionContext): Unit =
     scheduleOnce(taskId, scheduleTime(at, logId(taskId)))(block) onComplete {
       case Failure(exception) =>
         logger.error(s"${logId(taskId)}: Failed executing task", exception)
@@ -143,12 +144,12 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
         }
     }
 
-  /**
-    * Schedules daily, starting from today.
+  /** Schedules daily, starting from today.
     */
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-  def scheduleDailyAt[T](taskId: String, at: OffsetTime)(block: => Future[T])(
-      implicit ec: ExecutionContext): Unit =
+  def scheduleDailyAt[T](taskId: String, at: OffsetTime)(block: => Future[T])(implicit
+      ec: ExecutionContext
+  ): Unit =
     scheduleDailyAt(taskId, TimeUtil.toZonedDateTime(at))(block)
 
   @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))
@@ -156,23 +157,23 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
       taskId: String,
       interval: FiniteDuration,
       state: S
-  )(init: => Future[Boolean])(block: S => Future[Unit])(
-      implicit ec: ExecutionContext): Future[Unit] =
+  )(
+      init: => Future[Boolean]
+  )(block: S => Future[Unit])(implicit ec: ExecutionContext): Future[Unit] =
     scheduleLoopConditional(
-      taskId        = taskId,
+      taskId = taskId,
       firstInterval = interval,
-      loopInterval  = interval,
-      state         = state
+      loopInterval = interval,
+      state = state
     )(init)(block)
 
-  /**
-    * Conditionally executes `block` only if `init` returns true.
-    * @param state The state of the block.
-    *              Unlike `scheduleLoopFlatMap` above which passes the result of `init`
-    *              as state into `block`, here the state is provided as a function input.
-    * @param init  Invoked at specified intervals until it returns true.
-    *              When true, block is executed without any further init
-    *              invocations.
+  /** Conditionally executes `block` only if `init` returns true.
+    * @param state
+    *   The state of the block. Unlike `scheduleLoopFlatMap` above which passes the result of `init`
+    *   as state into `block`, here the state is provided as a function input.
+    * @param init
+    *   Invoked at specified intervals until it returns true. When true, block is executed without
+    *   any further init invocations.
     */
   @SuppressWarnings(Array("org.wartremover.warts.Recursion", "org.wartremover.warts.Overloading"))
   def scheduleLoopConditional[S](
@@ -180,29 +181,32 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
       firstInterval: FiniteDuration,
       loopInterval: FiniteDuration,
       state: S
-  )(init: => Future[Boolean])(block: S => Future[Unit])(
-      implicit ec: ExecutionContext): Future[Unit] = {
-    //false if init has not been executed or previous init attempt returned false, else true.
+  )(
+      init: => Future[Boolean]
+  )(block: S => Future[Unit])(implicit ec: ExecutionContext): Future[Unit] = {
+    // false if init has not been executed or previous init attempt returned false, else true.
     @volatile var initialized: Boolean = false
 
     scheduleLoop(
-      taskId        = taskId,
+      taskId = taskId,
       firstInterval = firstInterval,
-      loopInterval  = loopInterval
+      loopInterval = loopInterval
     ) {
-      if (initialized) { //Already initialised. Invoke block!
+      if (initialized) { // Already initialised. Invoke block!
         block(state)
-      } else { //Not initialised! Invoke init!
+      } else { // Not initialised! Invoke init!
         init flatMap { initResult =>
-          if (initResult) { //Init successful! Invoke block!
+          if (initResult) { // Init successful! Invoke block!
             logger.debug(
-              s"${logId(taskId)}: Task initialisation result: $initResult. Executing block")
+              s"${logId(taskId)}: Task initialisation result: $initResult. Executing block"
+            )
             initialized = initResult
             block(state)
           } else {
-            //Init returned false. Do not execute block.
+            // Init returned false. Do not execute block.
             logger.debug(
-              s"${logId(taskId)}: Task initialisation result: $initResult. Executing block delayed.")
+              s"${logId(taskId)}: Task initialisation result: $initResult. Executing block delayed."
+            )
             Future.unit
           }
         }

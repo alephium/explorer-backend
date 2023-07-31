@@ -78,12 +78,16 @@ class MempoolSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         Future.successful(mempoolTransactions)
       def fetchBlock(from: GroupIndex, hash: BlockHash): Future[BlockEntity] =
         ???
-      def fetchBlockAndEvents(fromGroup: GroupIndex,
-                              hash: BlockHash): Future[BlockEntityWithEvents] =
+      def fetchBlockAndEvents(
+          fromGroup: GroupIndex,
+          hash: BlockHash
+      ): Future[BlockEntityWithEvents] =
         ???
-      def fetchBlocks(fromTs: TimeStamp,
-                      toTs: TimeStamp,
-                      uri: Uri): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]] =
+      def fetchBlocks(
+          fromTs: TimeStamp,
+          toTs: TimeStamp,
+          uri: Uri
+      ): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]] =
         ???
       def fetchChainInfo(chainIndex: ChainIndex): Future[ChainInfo]                           = ???
       def fetchHashesAtHeight(chainIndex: ChainIndex, height: Height): Future[HashesAtHeight] = ???

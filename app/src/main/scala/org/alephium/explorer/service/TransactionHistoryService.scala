@@ -47,19 +47,23 @@ case object TransactionHistoryService extends StrictLogging {
   val hourlyStepBack: Duration = Duration.ofHoursUnsafe(2)
   val dailyStepBack: Duration  = Duration.ofDaysUnsafe(1)
 
-  def start(interval: FiniteDuration)(implicit executionContext: ExecutionContext,
-                                      databaseConfig: DatabaseConfig[PostgresProfile],
-                                      scheduler: Scheduler,
-                                      gs: GroupSetting): Future[Unit] =
+  def start(interval: FiniteDuration)(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile],
+      scheduler: Scheduler,
+      gs: GroupSetting
+  ): Future[Unit] =
     scheduler.scheduleLoop(
-      taskId        = TransactionHistoryService.productPrefix,
+      taskId = TransactionHistoryService.productPrefix,
       firstInterval = ScalaDuration.Zero,
-      loopInterval  = interval
+      loopInterval = interval
     )(syncOnce())
 
-  def syncOnce()(implicit ec: ExecutionContext,
-                 dc: DatabaseConfig[PostgresProfile],
-                 gs: GroupSetting): Future[Unit] = {
+  def syncOnce()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      gs: GroupSetting
+  ): Future[Unit] = {
     logger.debug("Updating transactions count")
     val startedAt = TimeStamp.now()
     updateTxHistoryCount().map { _ =>
@@ -68,40 +72,44 @@ case object TransactionHistoryService extends StrictLogging {
     }
   }
 
-  def getPerChain(from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[PerChainTimedCount]] = {
-    run(getPerChainQuery(intervalType, from, to)).map(
-      res =>
-        ArraySeq
-          .unsafeWrapArray(res
-            .groupBy {
-              case (timestamp, _, _, _) => timestamp
+  def getPerChain(from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[PerChainTimedCount]] = {
+    run(getPerChainQuery(intervalType, from, to)).map(res =>
+      ArraySeq
+        .unsafeWrapArray(
+          res
+            .groupBy { case (timestamp, _, _, _) =>
+              timestamp
             }
-            .map {
-              case (timestamp, values) =>
-                val perChainCounts = values.map {
-                  case (_, chainFrom, chainTo, count) =>
-                    PerChainCount(chainFrom.value, chainTo.value, count)
-                }
-                PerChainTimedCount(timestamp, perChainCounts)
+            .map { case (timestamp, values) =>
+              val perChainCounts = values.map { case (_, chainFrom, chainTo, count) =>
+                PerChainCount(chainFrom.value, chainTo.value, count)
+              }
+              PerChainTimedCount(timestamp, perChainCounts)
             }
-            .toArray)
-          .sortBy(_.timestamp)) //We need to sort because `groupBy` doesn't preserve order
+            .toArray
+        )
+        .sortBy(_.timestamp)
+    ) // We need to sort because `groupBy` doesn't preserve order
   }
 
-  def getAllChains(from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(
-      implicit dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[(TimeStamp, Long)]] = {
+  def getAllChains(from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(implicit
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[(TimeStamp, Long)]] = {
     run(
       getAllChainsQuery(intervalType, from, to)
     )
   }
 
-  private def updateTxHistoryCount()(implicit ec: ExecutionContext,
-                                     dc: DatabaseConfig[PostgresProfile],
-                                     gs: GroupSetting): Future[Unit] = {
+  private def updateTxHistoryCount()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      gs: GroupSetting
+  ): Future[Unit] = {
     findLatestTransationTimestamp().flatMap {
-      case None => Future.successful(()) //noop
+      case None => Future.successful(()) // noop
       case Some(latestTxTs) =>
         for {
           _ <- updateTxHistoryCountForInterval(latestTxTs, IntervalType.Daily)
@@ -110,10 +118,11 @@ case object TransactionHistoryService extends StrictLogging {
     }
   }
 
-  def updateTxHistoryCountForInterval(latestTxTs: TimeStamp, intervalType: IntervalType)(
-      implicit ec: ExecutionContext,
+  def updateTxHistoryCountForInterval(latestTxTs: TimeStamp, intervalType: IntervalType)(implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
-      gs: GroupSetting): Future[Unit] = {
+      gs: GroupSetting
+  ): Future[Unit] = {
     run(findLatestHistoryTimestamp(intervalType)).flatMap { histTsOpt =>
       val start = histTsOpt
         .map { histTs =>
@@ -123,17 +132,16 @@ case object TransactionHistoryService extends StrictLogging {
 
       val ranges = getTimeRanges(start, latestTxTs, intervalType)
 
-      foldFutures(ranges) {
-        case (from, to) =>
-          run(
-            DBIO
-              .sequence(
-                gs.chainIndexes.map { chainIndex =>
-                  countAndInsertPerChain(intervalType, from, to, chainIndex.from, chainIndex.to)
-                } :+ countAndInsertAllChains(intervalType, from, to)
-              )
-              .transactionally
-          )
+      foldFutures(ranges) { case (from, to) =>
+        run(
+          DBIO
+            .sequence(
+              gs.chainIndexes.map { chainIndex =>
+                countAndInsertPerChain(intervalType, from, to, chainIndex.from, chainIndex.to)
+              } :+ countAndInsertAllChains(intervalType, from, to)
+            )
+            .transactionally
+        )
       }.map(_ => ())
     }
   }
@@ -145,9 +153,11 @@ case object TransactionHistoryService extends StrictLogging {
     }
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-  def getTimeRanges(histTs: TimeStamp,
-                    latestTxTs: TimeStamp,
-                    intervalType: IntervalType): ArraySeq[(TimeStamp, TimeStamp)] = {
+  def getTimeRanges(
+      histTs: TimeStamp,
+      latestTxTs: TimeStamp,
+      intervalType: IntervalType
+  ): ArraySeq[(TimeStamp, TimeStamp)] = {
 
     val oneMillis = Duration.ofMillisUnsafe(1)
     val start     = truncate(histTs, intervalType)
@@ -175,17 +185,19 @@ case object TransactionHistoryService extends StrictLogging {
       case IntervalType.Hourly => timestamp.minusUnsafe(hourlyStepBack)
     }
 
-  //TODO Replace by accessing a `Latest Transaction cache`
-  private def findLatestTransationTimestamp()(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Option[TimeStamp]] = {
+  // TODO Replace by accessing a `Latest Transaction cache`
+  private def findLatestTransationTimestamp()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[TimeStamp]] = {
     run(sql"""
     SELECT MAX(block_timestamp) FROM transactions WHERE main_chain = true
     """.asAS[Option[TimeStamp]].exactlyOne)
   }
 
-  private def findLatestHistoryTimestamp(intervalType: IntervalType)(
-      implicit ec: ExecutionContext): DBActionR[Option[TimeStamp]] = {
+  private def findLatestHistoryTimestamp(
+      intervalType: IntervalType
+  )(implicit ec: ExecutionContext): DBActionR[Option[TimeStamp]] = {
     TransactionHistorySchema.table
       .filter(_.intervalType === intervalType)
       .sortBy(_.timestamp.desc)
@@ -194,11 +206,13 @@ case object TransactionHistoryService extends StrictLogging {
       .map(_.map(_.timestamp))
   }
 
-  private def countAndInsertPerChain(intervalType: IntervalType,
-                                     from: TimeStamp,
-                                     to: TimeStamp,
-                                     chainFrom: GroupIndex,
-                                     chainTo: GroupIndex) = {
+  private def countAndInsertPerChain(
+      intervalType: IntervalType,
+      from: TimeStamp,
+      to: TimeStamp,
+      chainFrom: GroupIndex,
+      chainTo: GroupIndex
+  ) = {
     sqlu"""
       INSERT INTO transactions_history(timestamp, chain_from, chain_to, value, interval_type)
         SELECT $from, $chainFrom, $chainTo, COUNT(*), $intervalType
@@ -213,10 +227,12 @@ case object TransactionHistoryService extends StrictLogging {
     """
   }
 
-  //count all chains tx and insert with special group index -1
-  private def countAndInsertAllChains(intervalType: IntervalType,
-                                      from: TimeStamp,
-                                      to: TimeStamp) = {
+  // count all chains tx and insert with special group index -1
+  private def countAndInsertAllChains(
+      intervalType: IntervalType,
+      from: TimeStamp,
+      to: TimeStamp
+  ) = {
     sqlu"""
       INSERT INTO transactions_history(timestamp, chain_from, chain_to, value, interval_type)
         SELECT $from, -1, -1, COUNT(*), $intervalType
@@ -229,9 +245,11 @@ case object TransactionHistoryService extends StrictLogging {
     """
   }
 
-  def getPerChainQuery(intervalType: IntervalType,
-                       from: TimeStamp,
-                       to: TimeStamp): DBActionSR[(TimeStamp, GroupIndex, GroupIndex, Long)] = {
+  def getPerChainQuery(
+      intervalType: IntervalType,
+      from: TimeStamp,
+      to: TimeStamp
+  ): DBActionSR[(TimeStamp, GroupIndex, GroupIndex, Long)] = {
 
     sql"""
         SELECT timestamp, chain_from, chain_to, value
@@ -245,9 +263,11 @@ case object TransactionHistoryService extends StrictLogging {
       """.asAS[(TimeStamp, GroupIndex, GroupIndex, Long)]
   }
 
-  def getAllChainsQuery(intervalType: IntervalType,
-                        from: TimeStamp,
-                        to: TimeStamp): DBActionSR[(TimeStamp, Long)] = {
+  def getAllChainsQuery(
+      intervalType: IntervalType,
+      from: TimeStamp,
+      to: TimeStamp
+  ): DBActionSR[(TimeStamp, Long)] = {
     sql"""
         SELECT timestamp, value FROM transactions_history
         WHERE interval_type = $intervalType

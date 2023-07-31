@@ -30,15 +30,15 @@ import org.alephium.util.{TimeStamp, U256}
 object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outputs") {
 
   class TokenOutputs(tag: Tag) extends Table[TokenOutputEntity](tag, name) {
-    def blockHash: Rep[BlockHash]                = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
-    def txHash: Rep[TransactionId]               = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
-    def timestamp: Rep[TimeStamp]                = column[TimeStamp]("block_timestamp")
+    def blockHash: Rep[BlockHash]  = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
+    def txHash: Rep[TransactionId] = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
+    def timestamp: Rep[TimeStamp]  = column[TimeStamp]("block_timestamp")
     def outputType: Rep[OutputEntity.OutputType] = column[OutputEntity.OutputType]("output_type")
     def hint: Rep[Int]                           = column[Int]("hint")
     def key: Rep[Hash]                           = column[Hash]("key", O.SqlType("BYTEA"))
     def token: Rep[TokenId]                      = column[TokenId]("token")
     def amount: Rep[U256] =
-      column[U256]("amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
+      column[U256]("amount", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
     def address: Rep[Address]            = column[Address]("address")
     def mainChain: Rep[Boolean]          = column[Boolean]("main_chain")
     def lockTime: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("lock_time")
@@ -60,22 +60,24 @@ object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outpu
     def spentTimestampIdx: Index = index("token_outputs_spent_timestamp_idx", spentTimestamp)
 
     def * : ProvenShape[TokenOutputEntity] =
-      (blockHash,
-       txHash,
-       timestamp,
-       outputType,
-       hint,
-       key,
-       token,
-       amount,
-       address,
-       mainChain,
-       lockTime,
-       message,
-       outputOrder,
-       txOrder,
-       spentFinalized,
-       spentTimestamp)
+      (
+        blockHash,
+        txHash,
+        timestamp,
+        outputType,
+        hint,
+        key,
+        token,
+        amount,
+        address,
+        mainChain,
+        lockTime,
+        message,
+        outputOrder,
+        txOrder,
+        spentFinalized,
+        spentTimestamp
+      )
         .<>((TokenOutputEntity.apply _).tupled, TokenOutputEntity.unapply)
   }
 

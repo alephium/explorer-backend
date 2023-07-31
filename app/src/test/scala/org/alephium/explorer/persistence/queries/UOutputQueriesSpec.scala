@@ -28,8 +28,7 @@ import org.alephium.explorer.persistence.schema._
 
 class UOutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with DBRunner {
 
-  /**
-    * Clear [[UOutputSchema]] table and persist new test data.
+  /** Clear [[UOutputSchema]] table and persist new test data.
     */
   def createTestData(uoutput: Iterable[UOutputEntity]): Unit = {
     run(UOutputSchema.table.delete).futureValue
@@ -43,13 +42,13 @@ class UOutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
       forAll(uoutputEntityWithDuplicateTxIdsAndAddressesGen()) { uoutput =>
         createTestData(uoutput)
 
-        //randomly select some of the TransactionIds from the
-        //persisted test data and expect only these to be returned
+        // randomly select some of the TransactionIds from the
+        // persisted test data and expect only these to be returned
         val txIdsGen =
           Gen.someOf(uoutput.map(_.txHash))
 
         forAll(txIdsGen) { txIds =>
-          //For each iteration expect entities with txHashes to be the same as txIds
+          // For each iteration expect entities with txHashes to be the same as txIds
           val expected = uoutput.filter(uoutput => txIds.contains(uoutput.txHash))
 
           val actual =
@@ -69,11 +68,11 @@ class UOutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
         val txIds =
           uoutputs.map(_.txHash)
 
-        val txIdGen = //randomly pick a txId or generate a new one if the list is empty.
+        val txIdGen = // randomly pick a txId or generate a new one if the list is empty.
           GenCommon.pickOneOrGen(txIds)(transactionHashGen)
 
         forAll(txIdGen) { txId =>
-          //expect only the uoutput with this txId.
+          // expect only the uoutput with this txId.
           val expected =
             uoutputs
               .filter(_.txHash == txId)
@@ -82,7 +81,7 @@ class UOutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
           val actual =
             run(MempoolQueries.uoutputsFromTx(txId)).futureValue
 
-          //the result should be in expected order.
+          // the result should be in expected order.
           actual should contain theSameElementsInOrderAs expected
         }
       }

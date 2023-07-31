@@ -40,9 +40,11 @@ object UtxoUtil {
       .foldLeft(Option(U256.Zero)) { case (acc, amount) => acc.flatMap(_.add(amount)) }
   }
 
-  def deltaAmountForAddress(address: Address,
-                            inputs: ArraySeq[Input],
-                            outputs: ArraySeq[Output]): Option[BigInteger] = {
+  def deltaAmountForAddress(
+      address: Address,
+      inputs: ArraySeq[Input],
+      outputs: ArraySeq[Output]
+  ): Option[BigInteger] = {
     for {
       in  <- amountForAddressInInputs(address, inputs)
       out <- amountForAddressInOutputs(address, outputs)
@@ -56,8 +58,12 @@ object UtxoUtil {
     inputs.collect { case input if input.address.isDefined => input.address.get }.distinct
   }
 
-  def toAddressesWithoutChangeAddresses(outputs: ArraySeq[Output],
-                                        changeAddresses: ArraySeq[Address]): ArraySeq[Address] = {
-    outputs.collect { case output if !changeAddresses.contains(output.address) => output.address }.distinct
+  def toAddressesWithoutChangeAddresses(
+      outputs: ArraySeq[Output],
+      changeAddresses: ArraySeq[Address]
+  ): ArraySeq[Address] = {
+    outputs.collect {
+      case output if !changeAddresses.contains(output.address) => output.address
+    }.distinct
   }
 }

@@ -38,45 +38,51 @@ import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.protocol.model.Address
 import org.alephium.util.TimeStamp
 
-/**
-  * Implements all JMH functions executing benchmarks on Postgres.
+/** Implements all JMH functions executing benchmarks on Postgres.
   *
   * Prerequisite: Database set by [[org.alephium.explorer.benchmark.db.BenchmarkSettings.dbName]]
-  *               should exists.
+  * should exists.
   */
-@Fork(value        = 1, warmups = 0)
+@Fork(value = 1, warmups = 0)
 @Warmup(iterations = 0)
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
-@Measurement(iterations = 1, time = 5, timeUnit = TimeUnit.SECONDS) //runs this benchmark for x minutes
+@Measurement(
+  iterations = 1,
+  time = 5,
+  timeUnit = TimeUnit.SECONDS
+) //runs this benchmark for x minutes
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 // scalastyle:off number.of.methods
 class DBBenchmark {
 
-  /**
-    * Benchmarks writes to `varchar` column type in [[org.alephium.explorer.benchmark.db.table.TableVarcharSchema]]
+  /** Benchmarks writes to `varchar` column type in
+    * [[org.alephium.explorer.benchmark.db.table.TableVarcharSchema]]
     *
-    * @param state State of current iteration
+    * @param state
+    *   State of current iteration
     */
   @Benchmark
   def writeVarchar(state: VarcharWriteState): Unit = {
     val _ = state.db.runNow(state.tableVarcharQuery += state.next, requestTimeout)
   }
 
-  /**
-    * Benchmarks writes to `bytea` column type in [[org.alephium.explorer.benchmark.db.table.TableByteSchema]]
+  /** Benchmarks writes to `bytea` column type in
+    * [[org.alephium.explorer.benchmark.db.table.TableByteSchema]]
     *
-    * @param state State of current iteration
+    * @param state
+    *   State of current iteration
     */
   @Benchmark
   def writeBytea(state: ByteaWriteState): Unit = {
     val _ = state.db.runNow(state.tableByteaQuery += state.next, requestTimeout)
   }
 
-  /**
-    * Benchmarks reads to `varchar` column type in [[org.alephium.explorer.benchmark.db.table.TableVarcharSchema]].
+  /** Benchmarks reads to `varchar` column type in
+    * [[org.alephium.explorer.benchmark.db.table.TableVarcharSchema]].
     *
-    * @param state State of current iteration
+    * @param state
+    *   State of current iteration
     */
   @Benchmark
   def readVarchar(state: VarcharReadState): Unit = {
@@ -84,10 +90,11 @@ class DBBenchmark {
       state.db.runNow(state.tableVarcharQuery.filter(_.hash === state.next).result, requestTimeout)
   }
 
-  /**
-    * Benchmarks reads to `bytea` column type in [[org.alephium.explorer.benchmark.db.table.TableByteSchema]].
+  /** Benchmarks reads to `bytea` column type in
+    * [[org.alephium.explorer.benchmark.db.table.TableByteSchema]].
     *
-    * @param state State of current iteration
+    * @param state
+    *   State of current iteration
     */
   @Benchmark
   def readBytea(state: ByteaReadState): Unit = {
@@ -107,10 +114,10 @@ class DBBenchmark {
       state.db.runNow(BlockHeaderSchema.table.filter(_.mainChain).length.result, requestTimeout)
   }
 
-  /**
-    * CONNECTION POOL = DISABLED
+  /** CONNECTION POOL = DISABLED
     *
-    * The following benchmarks listMainChain's forward & reverse queries with connection pool disabled
+    * The following benchmarks listMainChain's forward & reverse queries with connection pool
+    * disabled
     */
   @Benchmark
   def listBlocks_Forward_DisabledCP_SQL(state: ListBlocks_Forward_DisabledCP_ReadState): Unit = {
@@ -132,11 +139,10 @@ class DBBenchmark {
       Await.result(BlockDao.listMainChain(state.next), requestTimeout)
   }
 
-  /**
-    * CONNECTION POOL = HIKARI
+  /** CONNECTION POOL = HIKARI
     *
-    * Benchmarks listMainChain forward & reverse queries with [[DBConnectionPool.HikariCP]] as
-    * the connection pool
+    * Benchmarks listMainChain forward & reverse queries with [[DBConnectionPool.HikariCP]] as the
+    * connection pool
     */
   @Benchmark
   def listBlocks_Forward_HikariCP_SQL_Cached(state: ListBlocks_Forward_HikariCP_ReadState): Unit = {
@@ -148,8 +154,7 @@ class DBBenchmark {
       Await.result(BlockDao.listMainChain(state.next), requestTimeout)
   }
 
-  /**
-    * Address benchmarks
+  /** Address benchmarks
     */
 
   @Benchmark
@@ -163,8 +168,10 @@ class DBBenchmark {
   @Benchmark
   def getTxHashesByAddressQuery(state: Address_ReadState): Unit = {
     val _ =
-      state.db.runNow(TransactionQueries.getTxHashesByAddressQuery(state.address, state.pagination),
-                      requestTimeout)
+      state.db.runNow(
+        TransactionQueries.getTxHashesByAddressQuery(state.address, state.pagination),
+        requestTimeout
+      )
   }
 
   @Benchmark
@@ -178,10 +185,13 @@ class DBBenchmark {
   def getAddressInfoWithTxAddressTable(state: Address_ReadState): Unit = {
     import state.{databaseConfig, executionContext}
 
-    val _ = Await.result(for {
-      _ <- TransactionDao.getBalance(state.address)
-      _ <- TransactionDao.getNumberByAddress(state.address)
-    } yield (), requestTimeout)
+    val _ = Await.result(
+      for {
+        _ <- TransactionDao.getBalance(state.address)
+        _ <- TransactionDao.getNumberByAddress(state.address)
+      } yield (),
+      requestTimeout
+    )
   }
 
   @Benchmark
@@ -207,8 +217,10 @@ class DBBenchmark {
     import state.executionContext
 
     val _ =
-      state.db.runNow(TransactionQueries.getTransactionsByAddress(state.address, state.pagination),
-                      requestTimeout)
+      state.db.runNow(
+        TransactionQueries.getTransactionsByAddress(state.address, state.pagination),
+        requestTimeout
+      )
   }
 
   /** Benchmarks for inserting Blocks. With & without HikariCP */
@@ -253,9 +265,9 @@ class DBBenchmark {
   def transactions_per_address_read_state(state: TransactionsPerAddressReadState): Unit = {
     val query =
       TransactionQueries.getTxHashesByAddressQueryTimeRanged(
-        address    = Address.fromBase58(state.next).get,
-        fromTime   = TimeStamp.zero,
-        toTime     = TimeStamp.unsafe(Long.MaxValue),
+        address = Address.fromBase58(state.next).get,
+        fromTime = TimeStamp.zero,
+        toTime = TimeStamp.unsafe(Long.MaxValue),
         pagination = Pagination.unsafe(1, Int.MaxValue)
       )
 

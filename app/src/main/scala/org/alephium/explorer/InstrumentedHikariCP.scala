@@ -27,10 +27,12 @@ import slick.jdbc.{JdbcDataSource, JdbcDataSourceFactory}
 import slick.jdbc.hikaricp.HikariCPJdbcDataSource
 
 object InstrumentedHikariCP extends JdbcDataSourceFactory {
-  override def forConfig(c: Config,
-                         driver: Driver,
-                         name: String,
-                         classLoader: ClassLoader): JdbcDataSource = {
+  override def forConfig(
+      c: Config,
+      driver: Driver,
+      name: String,
+      classLoader: ClassLoader
+  ): JdbcDataSource = {
     val hikariCPDataSource = HikariCPJdbcDataSource.forConfig(c, driver, name, classLoader)
     hikariCPDataSource.ds.setMetricsTrackerFactory(new PrometheusMetricsTrackerFactory())
     val databaseName = c.getString("name")

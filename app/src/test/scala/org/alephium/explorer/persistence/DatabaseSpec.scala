@@ -21,7 +21,7 @@ import scala.util._
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.config.BootMode
 
-/** Temporary placeholder. These tests should be merged into ApplicationSpec  */
+/** Temporary placeholder. These tests should be merged into ApplicationSpec */
 class DatabaseSpec extends AlephiumFutureSpec with DatabaseFixtureForEach {
 
   "initialiseDatabase" should {

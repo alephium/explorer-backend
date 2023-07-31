@@ -48,19 +48,22 @@ class CustomJdbcTypesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
      */
     run(
       sql"SELECT * from timestamps WHERE timestamp = $t1"
-        .as[TimeStamp]).futureValue is Vector(t1)
+        .as[TimeStamp]
+    ).futureValue is Vector(t1)
 
     run(timestampTable.filter(_.timestamp === t1).result).futureValue is Seq(t1)
 
     run(
       sql"SELECT * from timestamps WHERE timestamp = $t2"
-        .as[TimeStamp]).futureValue is Vector(t2)
+        .as[TimeStamp]
+    ).futureValue is Vector(t2)
 
     run(timestampTable.filter(_.timestamp === t2).result).futureValue is Seq(t2)
 
     run(
       sql"SELECT * from timestamps WHERE timestamp <= $t1"
-        .as[TimeStamp]).futureValue is Vector(t1, t2)
+        .as[TimeStamp]
+    ).futureValue is Vector(t1, t2)
 
     run(timestampTable.filter(_.timestamp <= t1).result).futureValue is Seq(t1, t2)
   }
@@ -76,7 +79,8 @@ class CustomJdbcTypesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
       if (output.tokens.isEmpty) {
         run(
           sql"SELECT CASE WHEN tokens IS NULL THEN 'true' ELSE 'false' END FROM outputs"
-            .as[Boolean]).futureValue.head is true
+            .as[Boolean]
+        ).futureValue.head is true
       }
 
     }

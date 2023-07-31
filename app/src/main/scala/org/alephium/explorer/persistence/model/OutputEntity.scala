@@ -34,7 +34,7 @@ final case class OutputEntity(
     key: Hash,
     amount: U256,
     address: Address,
-    tokens: Option[ArraySeq[Token]], //None if empty list
+    tokens: Option[ArraySeq[Token]], // None if empty list
     mainChain: Boolean,
     lockTime: Option[TimeStamp],
     message: Option[ByteString],

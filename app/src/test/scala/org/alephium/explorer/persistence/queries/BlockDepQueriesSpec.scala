@@ -29,7 +29,7 @@ class BlockDepQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
   "insert and ignore block_deps" in {
 
     forAll(Gen.listOf(GenDBModel.blockDepUpdatedGen)) { deps =>
-      //clean existing rows
+      // clean existing rows
       run(BlockDepsSchema.table.delete).futureValue
 
       val original = deps.map(_._1)
@@ -38,9 +38,9 @@ class BlockDepQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
       run(insertBlockDeps(original)).futureValue is original.size
       run(BlockDepsSchema.table.result).futureValue is original
 
-      //Ignore the same data with do nothing order
+      // Ignore the same data with do nothing order
       run(insertBlockDeps(ignored)).futureValue is 0
-      //it should contain original rows
+      // it should contain original rows
       run(BlockDepsSchema.table.result).futureValue should contain allElementsOf original
     }
   }

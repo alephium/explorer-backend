@@ -39,28 +39,35 @@ class InfosServerSpec()
     with HttpServerFixture
     with DatabaseFixtureForAll {
 
-  val tokenSupply = TokenSupply(TimeStamp.zero,
-                                ALPH.alph(1),
-                                ALPH.alph(2),
-                                ALPH.alph(3),
-                                ALPH.alph(4),
-                                ALPH.alph(5))
+  val tokenSupply = TokenSupply(
+    TimeStamp.zero,
+    ALPH.alph(1),
+    ALPH.alph(2),
+    ALPH.alph(3),
+    ALPH.alph(4),
+    ALPH.alph(5)
+  )
 
   val tokenSupplyService = new TokenSupplyService {
-    def listTokenSupply(pagination: Pagination)(
-        implicit ec: ExecutionContext,
-        dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenSupply]] =
+    def listTokenSupply(pagination: Pagination)(implicit
+        ec: ExecutionContext,
+        dc: DatabaseConfig[PostgresProfile]
+    ): Future[ArraySeq[TokenSupply]] =
       Future.successful(
         ArraySeq(
           tokenSupply
-        ))
+        )
+      )
 
-    def getLatestTokenSupply()(implicit ec: ExecutionContext,
-                               dc: DatabaseConfig[PostgresProfile]): Future[Option[TokenSupply]] =
+    def getLatestTokenSupply()(implicit
+        ec: ExecutionContext,
+        dc: DatabaseConfig[PostgresProfile]
+    ): Future[Option[TokenSupply]] =
       Future.successful(
         Some(
           tokenSupply
-        ))
+        )
+      )
 
   }
 
@@ -68,19 +75,24 @@ class InfosServerSpec()
   val blockTime   = PerChainDuration(0, 0, 1, 1)
   val blockService = new EmptyBlockService {
 
-    override def listMaxHeights()(implicit cache: BlockCache,
-                                  groupSetting: GroupSetting,
-                                  ec: ExecutionContext): Future[ArraySeq[PerChainHeight]] =
+    override def listMaxHeights()(implicit
+        cache: BlockCache,
+        groupSetting: GroupSetting,
+        ec: ExecutionContext
+    ): Future[ArraySeq[PerChainHeight]] =
       Future.successful(ArraySeq(chainHeight))
 
-    override def getAverageBlockTime()(implicit cache: BlockCache,
-                                       groupSetting: GroupSetting,
-                                       ec: ExecutionContext): Future[ArraySeq[PerChainDuration]] =
+    override def getAverageBlockTime()(implicit
+        cache: BlockCache,
+        groupSetting: GroupSetting,
+        ec: ExecutionContext
+    ): Future[ArraySeq[PerChainDuration]] =
       Future.successful(ArraySeq(blockTime))
   }
   implicit val blockCache: BlockCache = TestBlockCache()
   implicit val transactionCache: TransactionCache = TransactionCache(
-    new Database(BootMode.ReadWrite))
+    new Database(BootMode.ReadWrite)
+  )
   val transactionService = new EmptyTransactionService {
     override def getTotalNumber()(implicit cache: TransactionCache): Int = 10
   }
