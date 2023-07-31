@@ -340,10 +340,10 @@ class ApiModelSpec() extends AlephiumSpec {
   "AddressBalance" in {
     forAll(addressBalanceGen) { addressBalance =>
       val expected = s"""
-       |{
-       | "balance": "${addressBalance.balance}",
-       | "lockedBalance": "${addressBalance.lockedBalance}"
-       |}""".stripMargin
+                        |{
+                        | "balance": "${addressBalance.balance}",
+                        | "lockedBalance": "${addressBalance.lockedBalance}"
+                        |}""".stripMargin
       check(addressBalance, expected)
     }
   }
@@ -351,11 +351,11 @@ class ApiModelSpec() extends AlephiumSpec {
   "AddressTokenBalance" in {
     forAll(addressTokenBalanceGen) { addressTokenBalance =>
       val expected = s"""
-       |{
-       | "tokenId": "${addressTokenBalance.tokenId.toHexString}",
-       | "balance": "${addressTokenBalance.balance}",
-       | "lockedBalance": "${addressTokenBalance.lockedBalance}"
-       |}""".stripMargin
+                        |{
+                        | "tokenId": "${addressTokenBalance.tokenId.toHexString}",
+                        | "balance": "${addressTokenBalance.balance}",
+                        | "lockedBalance": "${addressTokenBalance.lockedBalance}"
+                        |}""".stripMargin
       check(addressTokenBalance, expected)
     }
   }

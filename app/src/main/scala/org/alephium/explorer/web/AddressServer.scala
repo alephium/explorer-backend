@@ -92,20 +92,17 @@ class AddressServer(
           (balance, locked) <- transactionService.getBalance(address)
         } yield AddressBalance(balance, locked)
       }),
-      route(getAddressTokenBalance.serverLogicSuccess[Future] {
-        case (address, token) =>
-          for {
-            (balance, locked) <- transactionService.getTokenBalance(address, token)
-          } yield AddressTokenBalance(token, balance, locked)
+      route(getAddressTokenBalance.serverLogicSuccess[Future] { case (address, token) =>
+        for {
+          (balance, locked) <- transactionService.getTokenBalance(address, token)
+        } yield AddressTokenBalance(token, balance, locked)
       }),
-      route(listAddressTokensBalance.serverLogicSuccess[Future] {
-        case (address, pagination) =>
-          transactionService
-            .listAddressTokensWithBalance(address, pagination)
-            .map(_.map {
-              case (tokenId, balance, locked) =>
-                AddressTokenBalance(tokenId, balance, locked)
-            })
+      route(listAddressTokensBalance.serverLogicSuccess[Future] { case (address, pagination) =>
+        transactionService
+          .listAddressTokensWithBalance(address, pagination)
+          .map(_.map { case (tokenId, balance, locked) =>
+            AddressTokenBalance(tokenId, balance, locked)
+          })
       }),
       route(listAddressTokens.serverLogicSuccess[Future] { case (address, pagination) =>
         for {

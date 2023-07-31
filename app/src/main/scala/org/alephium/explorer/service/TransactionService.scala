@@ -120,9 +120,10 @@ trait TransactionService {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]]
 
-  def listAddressTokensWithBalance(address: Address, pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[(TokenId, U256, U256)]]
+  def listAddressTokensWithBalance(address: Address, pagination: Pagination)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[(TokenId, U256, U256)]]
 
   def hasAddressMoreTxsThan(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
       implicit
@@ -241,14 +242,15 @@ object TransactionService extends TransactionService {
   ): Future[ArraySeq[Transaction]] =
     TransactionDao.listAddressTokenTransactions(address, token, pagination)
 
-  def listAddressTokensWithBalance(address: Address, pagination: Pagination)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[(TokenId, U256, U256)]] =
+  def listAddressTokensWithBalance(address: Address, pagination: Pagination)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[(TokenId, U256, U256)]] =
     TransactionDao.listAddressTokensWithBalance(address, pagination)
 
-  def areAddressesActive(addresses: ArraySeq[Address])(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]] =
+  def areAddressesActive(
+      addresses: ArraySeq[Address]
+  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]] =
     TransactionDao.areAddressesActive(addresses)
 
   def getTotalNumber()(implicit cache: TransactionCache): Int =

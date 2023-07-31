@@ -115,9 +115,10 @@ class AddressServerSpec()
     )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] =
       TransactionService.amountHistoryToJsonFlowable(Flowable.fromIterable(amountHistory.asJava))
 
-    override def listAddressTokensWithBalance(address: Address, pagination: Pagination)(
-        implicit ec: ExecutionContext,
-        dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[(TokenId, U256, U256)]] =
+    override def listAddressTokensWithBalance(address: Address, pagination: Pagination)(implicit
+        ec: ExecutionContext,
+        dc: DatabaseConfig[PostgresProfile]
+    ): Future[ArraySeq[(TokenId, U256, U256)]] =
       Future.successful {
         tokens.map(res => (res.tokenId, res.balance, res.lockedBalance))
       }

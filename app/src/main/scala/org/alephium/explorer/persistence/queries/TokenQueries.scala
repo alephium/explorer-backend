@@ -145,8 +145,9 @@ object TokenQueries extends StrictLogging {
       .asAS[TxByTokenQR]
   }
 
-  def listAddressTokensWithBalanceAction(address: Address, pagination: Pagination)(
-      implicit ec: ExecutionContext): DBActionSR[(TokenId, U256, U256)] =
+  def listAddressTokensWithBalanceAction(address: Address, pagination: Pagination)(implicit
+      ec: ExecutionContext
+  ): DBActionSR[(TokenId, U256, U256)] =
     listAddressTokensWithBalanceUntilLockTime(address, TimeStamp.now(), pagination).map(_.map {
       case (token, total, locked) =>
         (token, total.getOrElse(U256.Zero), locked.getOrElse(U256.Zero))
@@ -155,7 +156,8 @@ object TokenQueries extends StrictLogging {
   def listAddressTokensWithBalanceUntilLockTime(
       address: Address,
       lockTime: TimeStamp,
-      pagination: Pagination): DBActionSR[(TokenId, Option[U256], Option[U256])] =
+      pagination: Pagination
+  ): DBActionSR[(TokenId, Option[U256], Option[U256])] =
     sql"""
       SELECT
         token_outputs.token,

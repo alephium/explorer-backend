@@ -176,8 +176,8 @@ object EndpointExamples extends EndpointsExamples {
 
   private val addressTokenBalance =
     AddressTokenBalance(
-      tokenId       = token,
-      balance       = U256.Ten,
+      tokenId = token,
+      balance = U256.Ten,
       lockedBalance = U256.Two
     )
 
