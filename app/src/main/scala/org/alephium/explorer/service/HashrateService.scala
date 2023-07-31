@@ -18,7 +18,7 @@ package org.alephium.explorer.service
 
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
+import scala.concurrent.duration.FiniteDuration
 
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
@@ -41,15 +41,24 @@ case object HashrateService extends StrictLogging {
 
   val hourlyStepBack: Duration = Duration.ofHoursUnsafe(2)
   val dailyStepBack: Duration  = Duration.ofDaysUnsafe(1)
+  val syncDelay: Duration      = Duration.ofMinutesUnsafe(1)
 
+  /*
+   * Hashrate are computed once on start. As hashrates are grouped by hourly/daily interval
+   * we can schedule the next hashrate computation on next round hour + a delay
+   * e.g if it's 08:20, next sync will occurs at 09:00 + syncDelay
+   */
   def start(interval: FiniteDuration)(implicit executionContext: ExecutionContext,
                                       databaseConfig: DatabaseConfig[PostgresProfile],
-                                      scheduler: Scheduler): Future[Unit] =
-    scheduler.scheduleLoop(
-      taskId        = HashrateService.productPrefix,
-      firstInterval = ScalaDuration.Zero,
-      loopInterval  = interval
-    )(syncOnce())
+                                      scheduler: Scheduler): Future[Unit] = {
+    syncOnce().flatMap { _ =>
+      scheduler.scheduleLoop(
+        taskId        = HashrateService.productPrefix,
+        firstInterval = computeFirstSyncInterval(TimeStamp.now()).asScala,
+        loopInterval  = interval
+      )(syncOnce())
+    }
+  }
 
   def syncOnce()(implicit ec: ExecutionContext,
                  dc: DatabaseConfig[PostgresProfile]): Future[Unit] = {
@@ -104,4 +113,15 @@ case object HashrateService extends StrictLogging {
 
   def computeDailyStepBack(timestamp: TimeStamp): TimeStamp =
     truncatedToDay(timestamp.minusUnsafe(dailyStepBack)).plusMillisUnsafe(1)
+
+  def computeFirstSyncInterval(from: TimeStamp): Duration = {
+    val truncated = truncatedToHour(from).plusUnsafe(syncDelay)
+    if (from == truncated) {
+      Duration.zero
+    } else if (from.isBefore(truncated)) {
+      truncated.deltaUnsafe(from)
+    } else {
+      truncated.plusHoursUnsafe(1L).deltaUnsafe(from)
+    }
+  }
 }
