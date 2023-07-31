@@ -130,7 +130,8 @@ class ExplorerConfigSpec extends AlephiumSpec with ScalaCheckDrivenPropertyCheck
       "apiKey.length < 32" in {
         forAll(genStringOfLength(31)) { string =>
           validateApiKey(string).failure.exception is InvalidApiKey(
-            "Api key must have at least 32 characters")
+            "Api key must have at least 32 characters"
+          )
         }
       }
     }

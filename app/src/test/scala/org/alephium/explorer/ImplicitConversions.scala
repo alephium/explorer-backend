@@ -32,6 +32,7 @@ trait ImplicitConversions {
     ArraySeq.from(iterable)
 
   implicit def optionIterableToArraySeq[A: ClassTag](
-      iterableOpt: Option[Iterable[A]]): Option[ArraySeq[A]] =
+      iterableOpt: Option[Iterable[A]]
+  ): Option[ArraySeq[A]] =
     iterableOpt.map(ArraySeq.from(_))
 }

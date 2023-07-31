@@ -23,7 +23,9 @@ import org.alephium.explorer.api.model.Event
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.TimeStamp
 
-@SuppressWarnings(Array("org.wartremover.warts.ArrayEquals")) // Wartremover is complaining, don't now why :/
+@SuppressWarnings(
+  Array("org.wartremover.warts.ArrayEquals")
+) // Wartremover is complaining, don't now why :/
 final case class EventEntity(
     blockHash: BlockHash,
     txHash: TransactionId,

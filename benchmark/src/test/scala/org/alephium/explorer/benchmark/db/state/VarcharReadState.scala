@@ -23,11 +23,12 @@ import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.table.TableVarcharSchema
 import org.alephium.protocol.Hash
 
-/**
-  * JMH state for benchmarking reads to [[org.alephium.explorer.benchmark.db.table.TableByteSchema]].
+/** JMH state for benchmarking reads to
+  * [[org.alephium.explorer.benchmark.db.table.TableByteSchema]].
   *
-  * @param testDataCount total number of rows to generate in
-  *                      [[org.alephium.explorer.benchmark.db.table.TableByteSchema]]
+  * @param testDataCount
+  *   total number of rows to generate in
+  *   [[org.alephium.explorer.benchmark.db.table.TableByteSchema]]
   */
 @State(Scope.Thread)
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
@@ -37,7 +38,7 @@ class VarcharReadState(testDataCount: Int, val db: DBExecutor)
 
   import config.profile.api._
 
-  //Overload: default constructor required by JMH. Uses Postgres as target DB.
+  // Overload: default constructor required by JMH. Uses Postgres as target DB.
   def this() = {
     this(readDataCount, DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.HikariCP))
   }
@@ -46,14 +47,14 @@ class VarcharReadState(testDataCount: Int, val db: DBExecutor)
     Hash.generate.toHexString
 
   def persist(data: Array[String]): Unit = {
-    //create a fresh table and insert the data
+    // create a fresh table and insert the data
     val query =
       tableVarcharQuery.schema.dropIfExists
         .andThen(tableVarcharQuery.schema.create)
         .andThen(tableVarcharQuery ++= data)
 
     val _ = db.runNow(
-      action  = query,
+      action = query,
       timeout = batchWriteTimeout
     )
   }

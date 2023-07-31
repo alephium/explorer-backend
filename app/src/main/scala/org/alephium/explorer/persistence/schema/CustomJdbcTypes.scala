@@ -86,7 +86,7 @@ object CustomJdbcTypes {
   )
 
   implicit val u256Type: JdbcType[U256] = MappedJdbcType.base[U256, BigDecimal](
-    u256       => BigDecimal(u256.v),
+    u256 => BigDecimal(u256.v),
     bigDecimal => U256.unsafe(bigDecimal.toBigInt.bigInteger)
   )
 
@@ -109,7 +109,7 @@ object CustomJdbcTypes {
         deserialize[ArraySeq[ByteString]](ByteString.fromArrayUnsafe(bytes)) match {
           case Left(error)  => throw error
           case Right(value) => value
-      }
+        }
     )
 
   implicit val tokensType: JdbcType[ArraySeq[Token]] =
@@ -119,12 +119,12 @@ object CustomJdbcTypes {
         deserialize[ArraySeq[Token]](ByteString.fromArrayUnsafe(bytes)) match {
           case Left(error)  => throw error
           case Right(value) => value
-      }
+        }
     )
 
   implicit val valsType: JdbcType[ArraySeq[Val]] =
     MappedJdbcType.base[ArraySeq[Val], Array[Byte]](
-      vals  => writeBinary(vals),
+      vals => writeBinary(vals),
       bytes => readBinary[ArraySeq[Val]](bytes)
     )
 

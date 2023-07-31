@@ -19,16 +19,14 @@ package org.alephium.explorer.persistence.schema
 import slick.jdbc.PostgresProfile.api._
 import slick.sql.SqlAction
 
-/**
-  * Common table indexes.
+/** Common table indexes.
   */
 object CommonIndex {
 
-  /**
-    * Need for this multi-column index?
+  /** Need for this multi-column index?
     *
-    * Postgres uses this index for queries that order by `block_timestamp desc, tx_order asc`
-    * and have large number of resulting rows.
+    * Postgres uses this index for queries that order by `block_timestamp desc, tx_order asc` and
+    * have large number of resulting rows.
     */
   def blockTimestampTxOrderIndex(table: Schema[_]): SqlAction[Int, NoStream, Effect] =
     sqlu"""

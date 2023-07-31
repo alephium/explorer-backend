@@ -164,6 +164,14 @@ class HashrateServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
     }
   }
 
+  "compute first sync interval" in new Fixture {
+    checkSyncInterval("2022-01-08T12:21:34.321Z", "2022-01-08T13:01:00.000Z")
+    checkSyncInterval("2022-01-08T23:21:34.321Z", "2022-01-09T00:01:00.000Z")
+    checkSyncInterval("2022-01-09T00:01:00.000Z", "2022-01-09T00:01:00.000Z")
+    checkSyncInterval("2022-01-09T00:00:30.000Z", "2022-01-09T00:01:00.000Z")
+    checkSyncInterval("2022-01-09T00:01:00.001Z", "2022-01-09T01:01:00.000Z")
+  }
+
   trait Fixture {
 
     val from = TimeStamp.zero
@@ -180,5 +188,11 @@ class HashrateServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
 
     def v(time: String, value: Double)  = (ts(time), bg(value))
     def hr(time: String, value: Double) = Hashrate(ts(time), bg(value), bg(value))
+
+    def checkSyncInterval(from: String, expected: String) = {
+      val timestamp = ts(from)
+      val duration  = HashrateService.computeFirstSyncInterval(timestamp)
+      timestamp.plusUnsafe(duration) is ts(expected)
+    }
   }
 }

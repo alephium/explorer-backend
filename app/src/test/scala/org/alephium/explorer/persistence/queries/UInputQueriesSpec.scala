@@ -28,8 +28,7 @@ import org.alephium.explorer.persistence.schema._
 
 class UInputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with DBRunner {
 
-  /**
-    * Clear [[UInputSchema]] table and persist new test data.
+  /** Clear [[UInputSchema]] table and persist new test data.
     */
   def createTestData(uinputs: Iterable[UInputEntity]): Unit = {
     run(UInputSchema.table.delete).futureValue
@@ -43,13 +42,13 @@ class UInputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll wi
       forAll(uinputEntityWithDuplicateTxIdsAndAddressesGen()) { uinputs =>
         createTestData(uinputs)
 
-        //randomly select some of the persisted test data
-        //and expect only these to be returned by the query
+        // randomly select some of the persisted test data
+        // and expect only these to be returned by the query
         val generator =
           Gen.someOf(uinputs.map(_.txHash))
 
         forAll(generator) { txIds =>
-          //For each iteration expect entities with txHashes to be the same as txIds
+          // For each iteration expect entities with txHashes to be the same as txIds
           val expected = uinputs.filter(uinput => txIds.contains(uinput.txHash))
 
           val actual =
@@ -64,11 +63,10 @@ class UInputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll wi
   "uinputsFromTx" should {
     "return uinput entities ordered by uinput_order" in {
       forAll(uinputEntityWithDuplicateTxIdsAndAddressesGen()) { _uinputs =>
-        //update uinputs to have incremental order so it's easier to test
+        // update uinputs to have incremental order so it's easier to test
         val uinputs =
-          _uinputs.zipWithIndex map {
-            case (uinput, index) =>
-              uinput.copy(uinputOrder = index)
+          _uinputs.zipWithIndex map { case (uinput, index) =>
+            uinput.copy(uinputOrder = index)
           }
 
         createTestData(uinputs)
@@ -76,11 +74,11 @@ class UInputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll wi
         val txIds =
           uinputs.map(_.txHash)
 
-        val txIdGen = //randomly pick a txId or generate a new one if the list is empty.
+        val txIdGen = // randomly pick a txId or generate a new one if the list is empty.
           GenCommon.pickOneOrGen(txIds)(transactionHashGen)
 
         forAll(txIdGen) { txId =>
-          //expect only the uinputs with this txId.
+          // expect only the uinputs with this txId.
           val expected =
             uinputs
               .filter(_.txHash == txId)
@@ -89,7 +87,7 @@ class UInputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll wi
           val actual =
             run(MempoolQueries.uinputsFromTx(txId)).futureValue
 
-          //the result should be in expected order.
+          // the result should be in expected order.
           actual should contain theSameElementsInOrderAs expected
         }
       }

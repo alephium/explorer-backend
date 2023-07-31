@@ -44,9 +44,12 @@ import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 @SuppressWarnings(
-  Array("org.wartremover.warts.Var",
-        "org.wartremover.warts.DefaultArguments",
-        "org.wartremover.warts.AsInstanceOf"))
+  Array(
+    "org.wartremover.warts.Var",
+    "org.wartremover.warts.DefaultArguments",
+    "org.wartremover.warts.AsInstanceOf"
+  )
+)
 class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureForEach {
 
   "limit the number of transactions in address details" in new Fixture {
@@ -136,29 +139,31 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     )
 
     val output0 =
-      OutputEntity(blockHash0,
-                   tx0.hash,
-                   ts0,
-                   OutputEntity.Asset,
-                   0,
-                   hashGen.sample.get,
-                   U256.One,
-                   address0,
-                   None,
-                   true,
-                   None,
-                   None,
-                   0,
-                   0,
-                   coinbase = false,
-                   None,
-                   None)
+      OutputEntity(
+        blockHash0,
+        tx0.hash,
+        ts0,
+        OutputEntity.Asset,
+        0,
+        hashGen.sample.get,
+        U256.One,
+        address0,
+        None,
+        true,
+        None,
+        None,
+        0,
+        0,
+        coinbase = false,
+        None,
+        None
+      )
 
     val block0 = defaultBlockEntity.copy(
-      hash         = blockHash0,
-      timestamp    = ts0,
+      hash = blockHash0,
+      timestamp = ts0,
       transactions = ArraySeq(tx0),
-      outputs      = ArraySeq(output0)
+      outputs = ArraySeq(output0)
     )
 
     val ts1        = TimeStamp.unsafe(1)
@@ -180,45 +185,49 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       None,
       coinbase = false
     )
-    val input1 = InputEntity(blockHash1,
-                             tx1.hash,
-                             timestamp    = ts1,
-                             hint         = 0,
-                             outputRefKey = output0.key,
-                             None,
-                             true,
-                             0,
-                             0,
-                             None,
-                             None,
-                             None,
-                             None)
-    val output1 = OutputEntity(blockHash1,
-                               tx1.hash,
-                               timestamp = ts1,
-                               OutputEntity.Asset,
-                               0,
-                               hashGen.sample.get,
-                               U256.One,
-                               address1,
-                               None,
-                               true,
-                               None,
-                               None,
-                               0,
-                               0,
-                               coinbase = false,
-                               None,
-                               None)
+    val input1 = InputEntity(
+      blockHash1,
+      tx1.hash,
+      timestamp = ts1,
+      hint = 0,
+      outputRefKey = output0.key,
+      None,
+      true,
+      0,
+      0,
+      None,
+      None,
+      None,
+      None
+    )
+    val output1 = OutputEntity(
+      blockHash1,
+      tx1.hash,
+      timestamp = ts1,
+      OutputEntity.Asset,
+      0,
+      hashGen.sample.get,
+      U256.One,
+      address1,
+      None,
+      true,
+      None,
+      None,
+      0,
+      0,
+      coinbase = false,
+      None,
+      None
+    )
 
     val block1 = defaultBlockEntity.copy(
-      hash         = blockHash1,
-      timestamp    = ts1,
-      height       = Height.unsafe(1),
+      hash = blockHash1,
+      timestamp = ts1,
+      height = Height.unsafe(1),
       transactions = ArraySeq(tx1),
-      inputs       = ArraySeq(input1),
-      outputs      = ArraySeq(output1),
-      deps         = ArraySeq.fill(2 * groupSetting.groupNum - 1)(BlockHash.generate)
+      inputs = ArraySeq(input1),
+      outputs = ArraySeq(output1),
+      deps = ArraySeq.fill(2 * groupSetting.groupNum - 1)(BlockHash.generate)
     )
 
     val blocks = ArraySeq(block0, block1)
@@ -233,18 +242,12 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       ts0,
       ArraySeq.empty,
       ArraySeq(
-        AssetOutput(output0.hint,
-                    output0.key,
-                    U256.One,
-                    address0,
-                    None,
-                    None,
-                    None,
-                    Some(tx1.hash))),
+        AssetOutput(output0.hint, output0.key, U256.One, address0, None, None, None, Some(tx1.hash))
+      ),
       gasAmount,
       gasPrice,
       scriptExecutionOk = true,
-      coinbase          = false
+      coinbase = false
     )
 
     val t1 = Transaction(
@@ -252,16 +255,13 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       blockHash1,
       ts1,
       ArraySeq(
-        Input(OutputRef(0, output0.key),
-              None,
-              Some(output0.txHash),
-              Some(address0),
-              Some(U256.One))),
+        Input(OutputRef(0, output0.key), None, Some(output0.txHash), Some(address0), Some(U256.One))
+      ),
       ArraySeq(AssetOutput(output1.hint, output1.key, U256.One, address1, None, None, None, None)),
       gasAmount1,
       gasPrice1,
       scriptExecutionOk = true,
-      coinbase          = false
+      coinbase = false
     )
 
     val res2 =
@@ -272,83 +272,85 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
   "get only main chain transaction for an address in case of tx in two blocks (in case of reorg)" in new Fixture {
 
-    forAll(blockHashGen, blockHashGen) {
-      case (blockHash0, blockHash1) =>
-        val address0 = addressGen.sample.get
+    forAll(blockHashGen, blockHashGen) { case (blockHash0, blockHash1) =>
+      val address0 = addressGen.sample.get
 
-        val ts0 = TimeStamp.unsafe(0)
+      val ts0 = TimeStamp.unsafe(0)
 
-        val tx = TransactionEntity(
-          transactionHashGen.sample.get,
+      val tx = TransactionEntity(
+        transactionHashGen.sample.get,
+        blockHash0,
+        ts0,
+        groupIndex,
+        groupIndex,
+        Gen.posNum[Int].sample.get,
+        amountGen.sample.get,
+        0,
+        true,
+        true,
+        None,
+        None,
+        coinbase = false
+      )
+
+      val output0 =
+        OutputEntity(
           blockHash0,
+          tx.hash,
           ts0,
-          groupIndex,
-          groupIndex,
-          Gen.posNum[Int].sample.get,
-          amountGen.sample.get,
+          OutputEntity.Asset,
           0,
-          true,
+          hashGen.sample.get,
+          U256.One,
+          address0,
+          None,
           true,
           None,
           None,
-          coinbase = false
+          0,
+          0,
+          coinbase = false,
+          None,
+          None
         )
 
-        val output0 =
-          OutputEntity(blockHash0,
-                       tx.hash,
-                       ts0,
-                       OutputEntity.Asset,
-                       0,
-                       hashGen.sample.get,
-                       U256.One,
-                       address0,
-                       None,
-                       true,
-                       None,
-                       None,
-                       0,
-                       0,
-                       coinbase = false,
-                       None,
-                       None)
+      val block0 = defaultBlockEntity.copy(
+        hash = blockHash0,
+        timestamp = ts0,
+        transactions = ArraySeq(tx),
+        outputs = ArraySeq(output0)
+      )
 
-        val block0 = defaultBlockEntity.copy(
-          hash         = blockHash0,
-          timestamp    = ts0,
-          transactions = ArraySeq(tx),
-          outputs      = ArraySeq(output0)
-        )
+      val ts1 = TimeStamp.unsafe(1)
+      val block1 = block0.copy(
+        hash = blockHash1,
+        timestamp = ts1,
+        transactions = block0.transactions.map(
+          _.copy(blockHash = blockHash1, timestamp = ts1, mainChain = false)
+        ),
+        inputs =
+          block0.inputs.map(_.copy(blockHash = blockHash1, timestamp = ts1, mainChain = false)),
+        outputs =
+          block0.outputs.map(_.copy(blockHash = blockHash1, timestamp = ts1, mainChain = false)),
+        mainChain = false
+      )
 
-        val ts1 = TimeStamp.unsafe(1)
-        val block1 = block0.copy(
-          hash      = blockHash1,
-          timestamp = ts1,
-          transactions = block0.transactions.map(
-            _.copy(blockHash = blockHash1, timestamp = ts1, mainChain = false)),
-          inputs =
-            block0.inputs.map(_.copy(blockHash = blockHash1, timestamp = ts1, mainChain = false)),
-          outputs =
-            block0.outputs.map(_.copy(blockHash = blockHash1, timestamp = ts1, mainChain = false)),
-          mainChain = false
-        )
+      val blocks = ArraySeq(block0, block1)
 
-        val blocks = ArraySeq(block0, block1)
+      Future.sequence(blocks.map(BlockDao.insert)).futureValue
+      databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
 
-        Future.sequence(blocks.map(BlockDao.insert)).futureValue
-        databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
+      TransactionService
+        .getTransactionsByAddress(address0, Pagination.unsafe(1, 5))
+        .futureValue
+        .size is 1 // was 2 in fb7127f
 
-        TransactionService
-          .getTransactionsByAddress(address0, Pagination.unsafe(1, 5))
-          .futureValue
-          .size is 1 // was 2 in fb7127f
-
-        TransactionService
-          .getTransaction(tx.hash)
-          .futureValue
-          .get
-          .asInstanceOf[AcceptedTransaction]
-          .blockHash is blockHash0 // was sometime blockHash1 in fb7127f
+      TransactionService
+        .getTransaction(tx.hash)
+        .futureValue
+        .get
+        .asInstanceOf[AcceptedTransaction]
+        .blockHash is blockHash0 // was sometime blockHash1 in fb7127f
     }
   }
 
@@ -361,24 +363,23 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
   }
 
   "return mempool txs of an address" in new Fixture {
-    forAll(addressGen, Gen.listOf(mempooltransactionGen)) {
-      case (address, utxs) =>
-        val updatedUtxs = utxs.map { utx =>
-          utx.copy(inputs = utx.inputs.map { input =>
-            input.copy(address = Some(address))
-          })
-        }
+    forAll(addressGen, Gen.listOf(mempooltransactionGen)) { case (address, utxs) =>
+      val updatedUtxs = utxs.map { utx =>
+        utx.copy(inputs = utx.inputs.map { input =>
+          input.copy(address = Some(address))
+        })
+      }
 
-        MempoolDao.insertMany(updatedUtxs).futureValue
+      MempoolDao.insertMany(updatedUtxs).futureValue
 
-        val expected =
-          updatedUtxs.filter(_.inputs.exists(_.address === Some(address)))
+      val expected =
+        updatedUtxs.filter(_.inputs.exists(_.address === Some(address)))
 
-        TransactionService
-          .listMempoolTransactionsByAddress(address)
-          .futureValue should contain allElementsOf expected
+      TransactionService
+        .listMempoolTransactionsByAddress(address)
+        .futureValue should contain allElementsOf expected
 
-        MempoolDao.removeMany(updatedUtxs.map(_.hash)).futureValue
+      MempoolDao.removeMany(updatedUtxs.map(_.hash)).futureValue
     }
   }
 
@@ -428,8 +429,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
   }
 
   "preserve inputs order" in new Fixture {
-    //TODO Test this please
-    //We need to generate a coherent blockflow, otherwise the queries can't match the inputs with outputs
+    // TODO Test this please
+    // We need to generate a coherent blockflow, otherwise the queries can't match the inputs with outputs
 
   }
 
@@ -450,7 +451,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
     TransactionService.areAddressesActive(ArraySeq(address, address2)).futureValue is ArraySeq(
       true,
-      false)
+      false
+    )
   }
 
   "export transactions by address" in new TxsByAddressFixture {
@@ -461,11 +463,11 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       val result: Seq[Buffer] =
         flowable.toList().blockingGet().asScala
 
-      //TODO Check data format and not only the size
+      // TODO Check data format and not only the size
 
-      result.size is ((transactions.size.toFloat / batchSize.toFloat).ceil.toInt + 1) //header
+      result.size is ((transactions.size.toFloat / batchSize.toFloat).ceil.toInt + 1) // header
 
-      //Checking the final csv has the correct number of lines
+      // Checking the final csv has the correct number of lines
       val csvFile = result.map(_.toString()).mkString.split('\n')
 
       csvFile.size is (transactions.size + 1)
@@ -485,10 +487,10 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
       val times = history.map(_._1)
 
-      //Test that history is always ordered correctly
+      // Test that history is always ordered correctly
       times is times.sorted
 
-    //TODO Test history amount value
+      // TODO Test history amount value
     }
   }
 
@@ -500,26 +502,27 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       .hasAddressMoreTxsThan(address, fromTs, toTs, transactions.size - 1)
       .futureValue is true
 
-    //Checking fromTs/toTs are taken into account
+    // Checking fromTs/toTs are taken into account
     val fromMs = fromTs.millis
     val toMs   = toTs.millis
     val diff   = (toMs - fromMs) / 2
-    forAll(Gen.choose(fromTs.millis, fromTs.millis + diff).map(TimeStamp.unsafe),
-           Gen.choose(toTs.millis - diff, toTs.millis).map(TimeStamp.unsafe)) {
-      case (from, to) =>
-        from <= to is true
+    forAll(
+      Gen.choose(fromTs.millis, fromTs.millis + diff).map(TimeStamp.unsafe),
+      Gen.choose(toTs.millis - diff, toTs.millis).map(TimeStamp.unsafe)
+    ) { case (from, to) =>
+      from <= to is true
 
-        val txsNumber = transactions.count(tx => tx.timestamp >= from && tx.timestamp < to)
+      val txsNumber = transactions.count(tx => tx.timestamp >= from && tx.timestamp < to)
 
+      TransactionService
+        .hasAddressMoreTxsThan(address, from, to, txsNumber)
+        .futureValue is false
+
+      if (txsNumber != 0) {
         TransactionService
-          .hasAddressMoreTxsThan(address, from, to, txsNumber)
-          .futureValue is false
-
-        if (txsNumber != 0) {
-          TransactionService
-            .hasAddressMoreTxsThan(address, from, to, txsNumber - 1)
-            .futureValue is true
-        }
+          .hasAddressMoreTxsThan(address, from, to, txsNumber - 1)
+          .futureValue is true
+      }
     }
   }
 
@@ -531,22 +534,22 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
     val defaultBlockEntity: BlockEntity =
       BlockEntity(
-        hash         = blockHashGen.sample.get,
-        timestamp    = TimeStamp.unsafe(0),
-        chainFrom    = groupIndex,
-        chainTo      = groupIndex,
-        height       = Height.unsafe(0),
-        deps         = ArraySeq.empty,
+        hash = blockHashGen.sample.get,
+        timestamp = TimeStamp.unsafe(0),
+        chainFrom = groupIndex,
+        chainTo = groupIndex,
+        height = Height.unsafe(0),
+        deps = ArraySeq.empty,
         transactions = ArraySeq.empty,
-        inputs       = ArraySeq.empty,
-        outputs      = ArraySeq.empty,
+        inputs = ArraySeq.empty,
+        outputs = ArraySeq.empty,
         true,
-        nonce        = bytesGen.sample.get,
-        version      = 1.toByte,
+        nonce = bytesGen.sample.get,
+        version = 1.toByte,
         depStateHash = hashGen.sample.get,
-        txsHash      = hashGen.sample.get,
-        target       = bytesGen.sample.get,
-        hashrate     = BigInteger.ZERO
+        txsHash = hashGen.sample.get,
+        target = bytesGen.sample.get,
+        hashrate = BigInteger.ZERO
       )
 
   }
@@ -559,18 +562,17 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
     val blocks = Gen
       .listOfN(5, blockEntityGen(chainIndex))
-      .map(_.zipWithIndex.map {
-        case (block, index) =>
-          val timestamp = now + (halfDay.timesUnsafe(index.toLong))
-          block.copy(
-            timestamp = timestamp,
-            outputs   = block.outputs.map(_.copy(address = address, timestamp = timestamp)),
-            inputs =
-              block.inputs.map(_.copy(outputRefAddress = Some(address), timestamp = timestamp)),
-            transactions = block.transactions.map { tx =>
-              tx.copy(timestamp = timestamp)
-            }
-          )
+      .map(_.zipWithIndex.map { case (block, index) =>
+        val timestamp = now + (halfDay.timesUnsafe(index.toLong))
+        block.copy(
+          timestamp = timestamp,
+          outputs = block.outputs.map(_.copy(address = address, timestamp = timestamp)),
+          inputs =
+            block.inputs.map(_.copy(outputRefAddress = Some(address), timestamp = timestamp)),
+          transactions = block.transactions.map { tx =>
+            tx.copy(timestamp = timestamp)
+          }
+        )
       })
       .sample
       .get

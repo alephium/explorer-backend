@@ -26,7 +26,9 @@ import org.alephium.explorer.persistence.DBRunner._
 
 object HealthCheckDao {
 
-  def healthCheck()(implicit executionContext: ExecutionContext,
-                    databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] =
+  def healthCheck()(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] =
     run(MTable.getTables).map(_ => ())
 }

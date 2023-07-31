@@ -30,12 +30,12 @@ import org.alephium.explorer.persistence.DBInitializer
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.util.Duration
 
-/**
-  * JMH state for benchmarking block creation.
+/** JMH state for benchmarking block creation.
   */
 @State(Scope.Thread)
 @SuppressWarnings(
-  Array("org.wartremover.warts.Overloading", "org.wartremover.warts.GlobalExecutionContext"))
+  Array("org.wartremover.warts.Overloading", "org.wartremover.warts.GlobalExecutionContext")
+)
 class BlockEntityWriteState(val db: DBExecutor) extends WriteBenchmarkState[BlockEntity](db) {
 
   val groupSetting: GroupSetting =
@@ -44,8 +44,8 @@ class BlockEntityWriteState(val db: DBExecutor) extends WriteBenchmarkState[Bloc
   val blockCache: BlockCache =
     TestBlockCache()(
       groupSetting = groupSetting,
-      ec           = config.db.ioExecutionContext,
-      dc           = db.config
+      ec = config.db.ioExecutionContext,
+      dc = db.config
     )
 
   def generateData(): BlockEntity =
@@ -63,17 +63,21 @@ class BlockEntityWriteState(val db: DBExecutor) extends WriteBenchmarkState[Bloc
 /** State with connection pooling disabled */
 class BlockEntityWriteState_DisabledCP
     extends BlockEntityWriteState(
-      DBExecutor(name           = dbName,
-                 host           = dbHost,
-                 port           = dbPort,
-                 connectionPool = DBConnectionPool.Disabled)
+      DBExecutor(
+        name = dbName,
+        host = dbHost,
+        port = dbPort,
+        connectionPool = DBConnectionPool.Disabled
+      )
     )
 
 /** State with connection pooling enabled with HikariCP */
 class BlockEntityWriteState_HikariCP
     extends BlockEntityWriteState(
-      DBExecutor(name           = dbName,
-                 host           = dbHost,
-                 port           = dbPort,
-                 connectionPool = DBConnectionPool.HikariCP)
+      DBExecutor(
+        name = dbName,
+        host = dbHost,
+        port = dbPort,
+        connectionPool = DBConnectionPool.HikariCP
+      )
     )

@@ -36,8 +36,7 @@ import org.alephium.util.{TimeStamp, U256}
 @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
 object CustomGetResult {
 
-  /**
-    * GetResult types
+  /** GetResult types
     */
   implicit val blockEntryHashGetResult: GetResult[BlockHash] =
     (result: PositionedResult) => BlockHash.unsafe(ByteString.fromArrayUnsafe(result.nextBytes()))
@@ -106,7 +105,7 @@ object CustomGetResult {
             case Left(error)  => throw error
             case Right(value) => value
           }
-      }
+        }
 
   implicit val valsGetResult: GetResult[ArraySeq[Val]] =
     (result: PositionedResult) => readBinary[ArraySeq[Val]](result.nextBytes())
@@ -134,129 +133,130 @@ object CustomGetResult {
   val outputGetResult: GetResult[OutputEntity] =
     (result: PositionedResult) =>
       OutputEntity(
-        blockHash      = result.<<,
-        txHash         = result.<<,
-        timestamp      = result.<<,
-        outputType     = result.<<,
-        hint           = result.<<,
-        key            = result.<<,
-        amount         = result.<<,
-        address        = result.<<,
-        tokens         = result.<<?,
-        mainChain      = result.<<,
-        lockTime       = result.<<?,
-        message        = result.<<?,
-        outputOrder    = result.<<,
-        txOrder        = result.<<,
-        coinbase       = result.<<,
+        blockHash = result.<<,
+        txHash = result.<<,
+        timestamp = result.<<,
+        outputType = result.<<,
+        hint = result.<<,
+        key = result.<<,
+        amount = result.<<,
+        address = result.<<,
+        tokens = result.<<?,
+        mainChain = result.<<,
+        lockTime = result.<<?,
+        message = result.<<?,
+        outputOrder = result.<<,
+        txOrder = result.<<,
+        coinbase = result.<<,
         spentFinalized = result.<<?,
         spentTimestamp = result.<<?
-    )
+      )
 
   val inputGetResult: GetResult[InputEntity] =
     (result: PositionedResult) =>
       InputEntity(
-        blockHash        = result.<<,
-        txHash           = result.<<,
-        timestamp        = result.<<,
-        hint             = result.<<,
-        outputRefKey     = result.<<,
-        unlockScript     = result.<<?,
-        mainChain        = result.<<,
-        inputOrder       = result.<<,
-        txOrder          = result.<<,
-        outputRefTxHash  = result.<<?,
+        blockHash = result.<<,
+        txHash = result.<<,
+        timestamp = result.<<,
+        hint = result.<<,
+        outputRefKey = result.<<,
+        unlockScript = result.<<?,
+        mainChain = result.<<,
+        inputOrder = result.<<,
+        txOrder = result.<<,
+        outputRefTxHash = result.<<?,
         outputRefAddress = result.<<?,
-        outputRefAmount  = result.<<?,
-        outputRefTokens  = result.<<?
-    )
+        outputRefAmount = result.<<?,
+        outputRefTokens = result.<<?
+      )
 
   implicit val outputTypeGetResult: GetResult[OutputEntity.OutputType] =
     (result: PositionedResult) => OutputEntity.OutputType.unsafe(result.nextInt())
 
-  /**
-    * GetResult type for BlockEntryLite
+  /** GetResult type for BlockEntryLite
     *
-    * @note The order in which the query returns the column values matters.
-    *       For example: Getting (`.<<`) `chainTo` before `chainFrom` when
-    *       `chainFrom` is before `chainTo` in the query result would compile
-    *       but would result in incorrect data.
+    * @note
+    *   The order in which the query returns the column values matters. For example: Getting (`.<<`)
+    *   `chainTo` before `chainFrom` when `chainFrom` is before `chainTo` in the query result would
+    *   compile but would result in incorrect data.
     */
   val blockEntryListGetResult: GetResult[BlockEntryLite] =
     (result: PositionedResult) =>
-      BlockEntryLite(hash      = result.<<,
-                     timestamp = result.<<,
-                     chainFrom = result.<<,
-                     chainTo   = result.<<,
-                     height    = result.<<,
-                     mainChain = result.<<,
-                     hashRate  = result.<<,
-                     txNumber  = result.<<)
+      BlockEntryLite(
+        hash = result.<<,
+        timestamp = result.<<,
+        chainFrom = result.<<,
+        chainTo = result.<<,
+        height = result.<<,
+        mainChain = result.<<,
+        hashRate = result.<<,
+        txNumber = result.<<
+      )
 
   val blockHeaderGetResult: GetResult[BlockHeader] =
     (result: PositionedResult) =>
       BlockHeader(
-        hash         = result.<<,
-        timestamp    = result.<<,
-        chainFrom    = result.<<,
-        chainTo      = result.<<,
-        height       = result.<<,
-        mainChain    = result.<<,
-        nonce        = result.<<,
-        version      = result.<<,
+        hash = result.<<,
+        timestamp = result.<<,
+        chainFrom = result.<<,
+        chainTo = result.<<,
+        height = result.<<,
+        mainChain = result.<<,
+        nonce = result.<<,
+        version = result.<<,
         depStateHash = result.<<,
-        txsHash      = result.<<,
-        txsCount     = result.<<,
-        target       = result.<<,
-        hashrate     = result.<<,
-        parent       = result.<<?
-    )
+        txsHash = result.<<,
+        txsCount = result.<<,
+        target = result.<<,
+        hashrate = result.<<,
+        parent = result.<<?
+      )
 
   val mempoolTransactionGetResult: GetResult[MempoolTransactionEntity] =
     (result: PositionedResult) =>
       MempoolTransactionEntity(
-        hash      = result.<<,
+        hash = result.<<,
         chainFrom = result.<<,
-        chainTo   = result.<<,
+        chainTo = result.<<,
         gasAmount = result.<<,
-        gasPrice  = result.<<,
-        lastSeen  = result.<<
-    )
+        gasPrice = result.<<,
+        lastSeen = result.<<
+      )
 
   val uinputGetResult: GetResult[UInputEntity] =
     (result: PositionedResult) =>
       UInputEntity(
-        txHash       = result.<<,
-        hint         = result.<<,
+        txHash = result.<<,
+        hint = result.<<,
         outputRefKey = result.<<,
         unlockScript = result.<<?,
-        address      = result.<<?,
-        uinputOrder  = result.<<
-    )
+        address = result.<<?,
+        uinputOrder = result.<<
+      )
 
   val uoutputGetResult: GetResult[UOutputEntity] =
     (result: PositionedResult) =>
       UOutputEntity(
-        txHash       = result.<<,
-        hint         = result.<<,
-        key          = result.<<,
-        amount       = result.<<,
-        address      = result.<<,
-        tokens       = result.<<?,
-        lockTime     = result.<<?,
-        message      = result.<<?,
+        txHash = result.<<,
+        hint = result.<<,
+        key = result.<<,
+        amount = result.<<,
+        address = result.<<,
+        tokens = result.<<?,
+        lockTime = result.<<?,
+        message = result.<<?,
         uoutputOrder = result.<<
-    )
+      )
 
   val tokenSupplyGetResult: GetResult[TokenSupplyEntity] =
     (result: PositionedResult) =>
       TokenSupplyEntity(
-        timestamp   = result.<<,
-        total       = result.<<,
+        timestamp = result.<<,
+        total = result.<<,
         circulating = result.<<,
-        reserved    = result.<<,
-        locked      = result.<<
-    )
+        reserved = result.<<,
+        locked = result.<<
+      )
 
   implicit val chainFromToAndMainChain: GetResult[(GroupIndex, GroupIndex, Boolean)] =
     (result: PositionedResult) => {
@@ -269,27 +269,27 @@ object CustomGetResult {
   val eventGetResult: GetResult[EventEntity] =
     (result: PositionedResult) =>
       EventEntity(
-        blockHash       = result.<<,
-        txHash          = result.<<,
+        blockHash = result.<<,
+        txHash = result.<<,
         contractAddress = result.<<,
-        inputAddress    = result.<<?,
-        timestamp       = result.<<,
-        eventIndex      = result.<<,
-        fields          = result.<<,
-        eventOrder      = result.<<
-    )
+        inputAddress = result.<<?,
+        timestamp = result.<<,
+        eventIndex = result.<<,
+        fields = result.<<,
+        eventOrder = result.<<
+      )
 
   implicit val migrationVersionGetResult: GetResult[AppState.MigrationVersion] =
     (result: PositionedResult) =>
       AppState.MigrationVersion(ByteString.fromArrayUnsafe(result.nextBytes())) match {
         case Left(error)  => throw error
         case Right(value) => value
-    }
+      }
 
   implicit val lastFinalizedInputTimeGetResult: GetResult[AppState.LastFinalizedInputTime] =
     (result: PositionedResult) =>
       AppState.LastFinalizedInputTime(ByteString.fromArrayUnsafe(result.nextBytes())) match {
         case Left(error)  => throw error
         case Right(value) => value
-    }
+      }
 }

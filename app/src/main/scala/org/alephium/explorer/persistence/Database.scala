@@ -28,9 +28,10 @@ import org.alephium.explorer.persistence.dao.HealthCheckDao
 import org.alephium.explorer.util.FutureUtil._
 import org.alephium.util.Service
 
-class Database(bootMode: BootMode)(implicit val executionContext: ExecutionContext,
-                                   val databaseConfig: DatabaseConfig[PostgresProfile])
-    extends Service {
+class Database(bootMode: BootMode)(implicit
+    val executionContext: ExecutionContext,
+    val databaseConfig: DatabaseConfig[PostgresProfile]
+) extends Service {
 
   override def startSelfOnce(): Future[Unit] =
     bootMode match {

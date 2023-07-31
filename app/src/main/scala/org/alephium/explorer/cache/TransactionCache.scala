@@ -30,20 +30,20 @@ import org.alephium.util.Service
 object TransactionCache {
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def apply(database: Database, reloadAfter: FiniteDuration = 5.seconds)(
-      implicit ec: ExecutionContext
+  def apply(database: Database, reloadAfter: FiniteDuration = 5.seconds)(implicit
+      ec: ExecutionContext
   ): TransactionCache =
     new TransactionCache(database, reloadAfter)
 }
 
-/**
-  * Transaction related cache
+/** Transaction related cache
   *
-  * @param mainChainTxnCount Stores current total number of `main_chain` transaction.
+  * @param mainChainTxnCount
+  *   Stores current total number of `main_chain` transaction.
   */
-class TransactionCache(database: Database, reloadAfter: FiniteDuration)(
-    implicit val executionContext: ExecutionContext)
-    extends Service {
+class TransactionCache(database: Database, reloadAfter: FiniteDuration)(implicit
+    val executionContext: ExecutionContext
+) extends Service {
 
   private val mainChainTxnCount: AsyncReloadingCache[Int] = {
     AsyncReloadingCache(0, reloadAfter) { _ =>

@@ -31,9 +31,9 @@ final case class Input(
     outputRef: OutputRef,
     unlockScript: Option[ByteString] = None,
     txHashRef: Option[TransactionId] = None,
-    address: Option[Address]         = None,
-    attoAlphAmount: Option[U256]     = None,
-    tokens: Option[ArraySeq[Token]]  = None
+    address: Option[Address] = None,
+    attoAlphAmount: Option[U256] = None,
+    tokens: Option[ArraySeq[Token]] = None
 )
 
 object Input {

@@ -38,15 +38,17 @@ import org.alephium.explorer.service.{BlockService, TokenSupplyService, Transact
 import org.alephium.protocol.ALPH
 import org.alephium.util.{TimeStamp, U256}
 
-class InfosServer(tokenSupplyService: TokenSupplyService,
-                  blockService: BlockService,
-                  transactionService: TransactionService)(
-    implicit val executionContext: ExecutionContext,
+class InfosServer(
+    tokenSupplyService: TokenSupplyService,
+    blockService: BlockService,
+    transactionService: TransactionService
+)(implicit
+    val executionContext: ExecutionContext,
     dc: DatabaseConfig[PostgresProfile],
     blockCache: BlockCache,
     transactionCache: TransactionCache,
-    groupSettings: GroupSetting)
-    extends Server
+    groupSettings: GroupSetting
+) extends Server
     with InfosEndpoints {
 
   // scalafmt is struggling on this one, maybe latest version wil work.
@@ -99,8 +101,10 @@ class InfosServer(tokenSupplyService: TokenSupplyService,
       )
   // format: on
 
-  def getExplorerInfo()(implicit executionContext: ExecutionContext,
-                        dc: DatabaseConfig[PostgresProfile]): Future[ExplorerInfo] = {
+  def getExplorerInfo()(implicit
+      executionContext: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ExplorerInfo] = {
     DBRunner
       .run(
         for {
@@ -113,12 +117,13 @@ class InfosServer(tokenSupplyService: TokenSupplyService,
           (migrationsVersion, lastFinalizedInputTime)
         }
       )
-      .map {
-        case (migrationsVersion, lastFinalizedInputTime) =>
-          ExplorerInfo(BuildInfo.releaseVersion,
-                       BuildInfo.commitId,
-                       migrationsVersion,
-                       lastFinalizedInputTime)
+      .map { case (migrationsVersion, lastFinalizedInputTime) =>
+        ExplorerInfo(
+          BuildInfo.releaseVersion,
+          BuildInfo.commitId,
+          migrationsVersion,
+          lastFinalizedInputTime
+        )
       }
   }
 

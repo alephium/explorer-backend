@@ -30,9 +30,11 @@ import org.alephium.util.TimeStamp
 
 object HashrateQueries {
 
-  def getHashratesQuery(from: TimeStamp,
-                        to: TimeStamp,
-                        intervalType: IntervalType): DBActionSR[(TimeStamp, BigDecimal)] = {
+  def getHashratesQuery(
+      from: TimeStamp,
+      to: TimeStamp,
+      intervalType: IntervalType
+  ): DBActionSR[(TimeStamp, BigDecimal)] = {
 
     sql"""
         SELECT block_timestamp, value
@@ -92,8 +94,9 @@ object HashrateQueries {
     )
   }
 
-  def computeHourlyHashrate(from: TimeStamp)(
-      implicit ec: ExecutionContext): DBActionR[ArraySeq[(TimeStamp, BigDecimal)]] = {
+  def computeHourlyHashrate(
+      from: TimeStamp
+  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[(TimeStamp, BigDecimal)]] = {
     computeHourlyHashrateRawString(from).map(_.map { case (ts, v, _) => (ts, v) })
   }
 
@@ -105,15 +108,18 @@ object HashrateQueries {
     )
   }
 
-  def computeDailyHashrate(from: TimeStamp)(
-      implicit ec: ExecutionContext): DBActionR[ArraySeq[(TimeStamp, BigDecimal)]] = {
+  def computeDailyHashrate(
+      from: TimeStamp
+  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[(TimeStamp, BigDecimal)]] = {
     val sql = computeDailyHashrateRawString(from)
     sql.map(_.map { case (ts, v, _) => (ts, v) })
   }
 
-  private def computeHashrateRawString(from: TimeStamp,
-                                       dateGroup: String,
-                                       intervalType: IntervalType) = {
+  private def computeHashrateRawString(
+      from: TimeStamp,
+      dateGroup: String,
+      intervalType: IntervalType
+  ) = {
     sql"""
         SELECT
         EXTRACT(EPOCH FROM ((#$dateGroup) AT TIME ZONE 'UTC')) * 1000 as ts,

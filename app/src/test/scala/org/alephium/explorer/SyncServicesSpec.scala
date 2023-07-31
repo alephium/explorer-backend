@@ -33,7 +33,7 @@ import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.service.BlockFlowClient
 
-/** Temporary placeholder. These tests should be merged into ApplicationSpec  */
+/** Temporary placeholder. These tests should be merged into ApplicationSpec */
 class SyncServicesSpec
     extends AlephiumFutureSpec
     with Matchers
@@ -55,8 +55,10 @@ class SyncServicesSpec
             SyncServices.urisFromPeers(selfClique.nodes)
 
           SyncServices
-            .getBlockFlowPeers(directCliqueAccess = true,
-                               blockFlowUri       = explorerConfig.blockFlowUri)
+            .getBlockFlowPeers(
+              directCliqueAccess = true,
+              blockFlowUri = explorerConfig.blockFlowUri
+            )
             .futureValue is expectedPeers
         }
       }
@@ -72,23 +74,25 @@ class SyncServicesSpec
 
     "fail" when {
       "no peers" in {
-        //Generate data with no peers
+        // Generate data with no peers
         forAll(genSelfClique(peers = Gen.const(List.empty))) { selfClique =>
           implicit val client: BlockFlowClient = mock[BlockFlowClient]
 
-          //expect call to fetchSelfClique because directCliqueAccess = true
+          // expect call to fetchSelfClique because directCliqueAccess = true
           (client.fetchSelfClique _).expects() returns Future.successful(selfClique)
 
           val result =
             SyncServices
-              .getBlockFlowPeers(directCliqueAccess = true,
-                                 blockFlowUri       = explorerConfig.blockFlowUri)
+              .getBlockFlowPeers(
+                directCliqueAccess = true,
+                blockFlowUri = explorerConfig.blockFlowUri
+              )
               .failed
               .futureValue
 
-          //expect PeersNotFound exception
+          // expect PeersNotFound exception
           result is PeersNotFound(explorerConfig.blockFlowUri)
-          //exception message should contain the Uri
+          // exception message should contain the Uri
           result.getMessage should include(explorerConfig.blockFlowUri.toString())
         }
       }
@@ -102,11 +106,10 @@ class SyncServicesSpec
           for {
             networkId   <- genNetworkId
             chainParams <- genChainParams(networkId)
-          } yield (networkId, chainParams) //generate matching networkId
+          } yield (networkId, chainParams) // generate matching networkId
 
-        forAll(matchingNetworkId) {
-          case (networkId, chainParams) =>
-            SyncServices.validateChainParams(networkId, chainParams) is Success(())
+        forAll(matchingNetworkId) { case (networkId, chainParams) =>
+          SyncServices.validateChainParams(networkId, chainParams) is Success(())
         }
       }
     }
@@ -119,12 +122,11 @@ class SyncServicesSpec
             chainParams <- genChainParams(genNetworkId(exclude = networkId))
           } yield (networkId, chainParams)
 
-        forAll(mismatchedNetworkId) {
-          case (networkId, chainParams) =>
-            SyncServices
-              .validateChainParams(networkId, chainParams)
-              .failure
-              .exception is ChainIdMismatch(remote = chainParams.networkId, local = networkId)
+        forAll(mismatchedNetworkId) { case (networkId, chainParams) =>
+          SyncServices
+            .validateChainParams(networkId, chainParams)
+            .failure
+            .exception is ChainIdMismatch(remote = chainParams.networkId, local = networkId)
         }
       }
     }

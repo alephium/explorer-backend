@@ -56,9 +56,9 @@ class BootUp extends StrictLogging {
     DatabaseConfig.forConfig[PostgresProfile]("db", typesafeConfig)
 
   def init(): Unit = {
-    //scalastyle:off null
+    // scalastyle:off null
     var explorer: ExplorerState = null
-    //scalastyle:on null
+    // scalastyle:on null
 
     @SuppressWarnings(Array("org.wartremover.warts.GlobalExecutionContext"))
     implicit val executionContext: ExecutionContext =

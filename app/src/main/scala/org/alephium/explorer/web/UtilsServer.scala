@@ -35,12 +35,13 @@ import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.service.{BlockFlowClient, IndexChecker, SanityChecker}
 import org.alephium.util.discard
 
-class UtilsServer()(implicit val executionContext: ExecutionContext,
-                    dc: DatabaseConfig[PostgresProfile],
-                    blockFlowClient: BlockFlowClient,
-                    blockCache: BlockCache,
-                    groupSetting: GroupSetting)
-    extends Server
+class UtilsServer()(implicit
+    val executionContext: ExecutionContext,
+    dc: DatabaseConfig[PostgresProfile],
+    blockFlowClient: BlockFlowClient,
+    blockCache: BlockCache,
+    groupSetting: GroupSetting
+) extends Server
     with UtilsEndpoints {
 
   val routes: ArraySeq[Router => Route] =

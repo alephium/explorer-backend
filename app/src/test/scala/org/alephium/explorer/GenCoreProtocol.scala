@@ -46,8 +46,9 @@ object GenCoreProtocol {
   def genNetworkId(exclude: NetworkId): Gen[NetworkId] =
     genNetworkId.filter(_ != exclude)
 
-  def keyPairGen(groupIndex: GroupIndex)(
-      implicit groupSetting: GroupSetting): (PrivateKey, PublicKey) = {
+  def keyPairGen(
+      groupIndex: GroupIndex
+  )(implicit groupSetting: GroupSetting): (PrivateKey, PublicKey) = {
     val (privateKey, publicKey) = SignatureSchema.secureGeneratePriPub()
     val lockupScript            = LockupScript.p2pkh(Hash.hash(publicKey.bytes))
     if (lockupScript.groupIndex(groupSetting.groupConfig) == groupIndex) {
@@ -60,22 +61,25 @@ object GenCoreProtocol {
   def publicKeyGen(groupIndex: GroupIndex)(implicit groupSetting: GroupSetting): Gen[PublicKey] =
     keyPairGen(groupIndex)._2
 
-  def p2pkhLockupGen(groupIndex: GroupIndex)(
-      implicit groupSetting: GroupSetting): Gen[LockupScript.P2PKH] =
+  def p2pkhLockupGen(
+      groupIndex: GroupIndex
+  )(implicit groupSetting: GroupSetting): Gen[LockupScript.P2PKH] =
     for {
       publicKey <- publicKeyGen(groupIndex)
     } yield LockupScript.p2pkh(publicKey)
 
-  def p2mpkhLockupGen(groupIndex: GroupIndex)(
-      implicit groupSetting: GroupSetting): Gen[LockupScript.Asset] =
+  def p2mpkhLockupGen(
+      groupIndex: GroupIndex
+  )(implicit groupSetting: GroupSetting): Gen[LockupScript.Asset] =
     for {
       numKeys   <- Gen.chooseNum(1, ALPH.MaxKeysInP2MPK)
       keys      <- Gen.listOfN(numKeys, publicKeyGen(groupIndex)).map(AVector.from)
       threshold <- Gen.choose(1, keys.length)
     } yield LockupScript.p2mpkh(keys, threshold).get
 
-  def p2mpkhLockupGen(n: Int, m: Int, groupIndex: GroupIndex)(
-      implicit groupSetting: GroupSetting): Gen[LockupScript.Asset] = {
+  def p2mpkhLockupGen(n: Int, m: Int, groupIndex: GroupIndex)(implicit
+      groupSetting: GroupSetting
+  ): Gen[LockupScript.Asset] = {
     assume(m <= n)
     for {
       publicKey0 <- publicKeyGen(groupIndex)
@@ -83,8 +87,9 @@ object GenCoreProtocol {
     } yield LockupScript.p2mpkh(publicKey0 +: moreKeys, m).get
   }
 
-  def p2shLockupGen(groupIndex: GroupIndex)(
-      implicit groupSetting: GroupSetting): Gen[LockupScript.Asset] = {
+  def p2shLockupGen(
+      groupIndex: GroupIndex
+  )(implicit groupSetting: GroupSetting): Gen[LockupScript.Asset] = {
     hashGen
       .retryUntil { hash =>
         ScriptHint.fromHash(hash).groupIndex(groupSetting.groupConfig).equals(groupIndex)
@@ -92,8 +97,9 @@ object GenCoreProtocol {
       .map(LockupScript.p2sh)
   }
 
-  def assetLockupGen(groupIndex: GroupIndex)(
-      implicit groupSetting: GroupSetting): Gen[LockupScript.Asset] = {
+  def assetLockupGen(
+      groupIndex: GroupIndex
+  )(implicit groupSetting: GroupSetting): Gen[LockupScript.Asset] = {
     Gen.oneOf(
       p2pkhLockupGen(groupIndex),
       p2mpkhLockupGen(groupIndex),
@@ -101,8 +107,9 @@ object GenCoreProtocol {
     )
   }
 
-  def p2cLockupGen(groupIndex: GroupIndex)(
-      implicit groupSetting: GroupSetting): Gen[LockupScript.P2C] = {
+  def p2cLockupGen(
+      groupIndex: GroupIndex
+  )(implicit groupSetting: GroupSetting): Gen[LockupScript.P2C] = {
     hashGen
       .retryUntil { hash =>
         ScriptHint.fromHash(hash).groupIndex(groupSetting.groupConfig).equals(groupIndex)
@@ -162,13 +169,13 @@ object GenCoreProtocol {
       useContractAssets <- arbitrary[Boolean]
     } yield {
       Method(
-        isPublic             = true,
+        isPublic = true,
         usePreapprovedAssets = false,
         useContractAssets,
-        argsLength   = 0,
+        argsLength = 0,
         localsLength = 0,
         returnLength = 0,
-        instrs       = AVector.empty[Instr[StatelessContext]]
+        instrs = AVector.empty[Instr[StatelessContext]]
       )
     }
   }
@@ -183,6 +190,8 @@ object GenCoreProtocol {
   }
 
   val unlockScriptProtocolGen: Gen[UnlockScript] =
-    Gen.oneOf(unlockScriptProtocolP2PKHGen: Gen[UnlockScript],
-              unlockScriptProtocolP2MPKHGen: Gen[UnlockScript])
+    Gen.oneOf(
+      unlockScriptProtocolP2PKHGen: Gen[UnlockScript],
+      unlockScriptProtocolP2MPKHGen: Gen[UnlockScript]
+    )
 }

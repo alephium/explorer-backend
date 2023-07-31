@@ -28,13 +28,13 @@ object TokenSupplySchema extends Schema[TokenSupplyEntity]("token_supply") {
   class TokenSupplies(tag: Tag) extends Table[TokenSupplyEntity](tag, name) {
     def timestamp: Rep[TimeStamp] = column[TimeStamp]("block_timestamp", O.PrimaryKey)
     def total: Rep[U256] =
-      column[U256]("total", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
+      column[U256]("total", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
     def circulating: Rep[U256] =
-      column[U256]("circulating", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
+      column[U256]("circulating", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
     def reserved: Rep[U256] =
-      column[U256]("reserved", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
+      column[U256]("reserved", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
     def locked: Rep[U256] =
-      column[U256]("locked", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
+      column[U256]("locked", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
 
     def * : ProvenShape[TokenSupplyEntity] =
       (timestamp, total, circulating, reserved, locked)

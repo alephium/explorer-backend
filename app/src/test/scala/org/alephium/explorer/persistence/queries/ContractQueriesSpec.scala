@@ -37,7 +37,8 @@ import org.alephium.explorer.persistence.schema.ContractSchema
 import org.alephium.protocol.model.Address
 
 @SuppressWarnings(
-  Array("org.wartremover.warts.DefaultArguments", "org.wartremover.warts.AsInstanceOf"))
+  Array("org.wartremover.warts.DefaultArguments", "org.wartremover.warts.AsInstanceOf")
+)
 class ContractQueriesSpec
     extends AlephiumFutureSpec
     with DatabaseFixtureForEach
@@ -66,10 +67,12 @@ class ContractQueriesSpec
     for {
       event <- eventEntityGen()
     } yield {
-      event.copy(contractAddress = ContractEntity.destroyContractEventAddress,
-                 fields = ArraySeq(
-                   ValAddress(contract)
-                 ))
+      event.copy(
+        contractAddress = ContractEntity.destroyContractEventAddress,
+        fields = ArraySeq(
+          ValAddress(contract)
+        )
+      )
     }
 
   def contractAddressFromEvent(event: EventEntity): Address = {
@@ -79,14 +82,14 @@ class ContractQueriesSpec
   "Contract Queries" should {
     "insertContractCreation and updateContractDestruction" in {
       forAll(Gen.nonEmptyListOf(createEventGen())) { events =>
-        //Creation
+        // Creation
         run(ContractSchema.table.delete).futureValue
         run(ContractQueries.insertContractCreation(events)).futureValue
         run(ContractSchema.table.result).futureValue.sortBy(_.creationTimestamp) is events
           .flatMap(ContractEntity.creationFromEventEntity)
           .sortBy(_.creationTimestamp)
 
-        //Destruction
+        // Destruction
         val destroyEvents = events.map(e => destroyEventGen(contractAddressFromEvent(e)).sample.get)
         run(ContractQueries.updateContractDestruction(destroyEvents)).futureValue
 
@@ -116,17 +119,19 @@ class ContractQueriesSpec
       val parent     = addressGen.sample.get
       val pagination = Pagination.unsafe(1, 5)
 
-      forAll(Gen.nonEmptyListOf(createEventGen(Some(parent))), Gen.nonEmptyListOf(createEventGen())) {
-        case (events, otherEvents) =>
-          run(ContractSchema.table.delete).futureValue
-          run(ContractQueries.insertContractCreation(events ++ otherEvents)).futureValue
+      forAll(
+        Gen.nonEmptyListOf(createEventGen(Some(parent))),
+        Gen.nonEmptyListOf(createEventGen())
+      ) { case (events, otherEvents) =>
+        run(ContractSchema.table.delete).futureValue
+        run(ContractQueries.insertContractCreation(events ++ otherEvents)).futureValue
 
-          run(ContractQueries.getSubContractsQuery(parent, pagination)).futureValue is events
-            .sortBy(_.timestamp)
-            .reverse
-            .take(pagination.limit)
-            .flatMap(ContractEntity.creationFromEventEntity)
-            .map(_.contract)
+        run(ContractQueries.getSubContractsQuery(parent, pagination)).futureValue is events
+          .sortBy(_.timestamp)
+          .reverse
+          .take(pagination.limit)
+          .flatMap(ContractEntity.creationFromEventEntity)
+          .map(_.contract)
 
       }
     }

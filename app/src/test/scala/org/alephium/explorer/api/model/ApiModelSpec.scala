@@ -48,26 +48,26 @@ class ApiModelSpec() extends AlephiumSpec {
     "convert to json" in {
       forAll(transactionGen) { tx =>
         val expected = s"""
-       |{
-       |  "hash": "${tx.hash.value.toHexString}",
-       |  "blockHash": "${tx.blockHash.value.toHexString}",
-       |  "timestamp": ${tx.timestamp.millis},
-       |  "inputs": [],
-       |  "outputs": ${write(tx.outputs)},
-       |  "gasAmount": ${tx.gasAmount},
-       |  "gasPrice": "${tx.gasPrice}",
-       |  "scriptExecutionOk": ${tx.scriptExecutionOk},
-       |  "coinbase": ${tx.coinbase}
-       |}""".stripMargin
+                          |{
+                          |  "hash": "${tx.hash.value.toHexString}",
+                          |  "blockHash": "${tx.blockHash.value.toHexString}",
+                          |  "timestamp": ${tx.timestamp.millis},
+                          |  "inputs": [],
+                          |  "outputs": ${write(tx.outputs)},
+                          |  "gasAmount": ${tx.gasAmount},
+                          |  "gasPrice": "${tx.gasPrice}",
+                          |  "scriptExecutionOk": ${tx.scriptExecutionOk},
+                          |  "coinbase": ${tx.coinbase}
+                          |}""".stripMargin
         check(tx, expected)
       }
     }
     "convert to csv" in {
       forAll(transactionGen) { tx =>
-        //No inputs or outputs so no addresses nor amounts
+        // No inputs or outputs so no addresses nor amounts
         val expected =
           s"${tx.hash.toHexString},${tx.blockHash.toHexString},${tx.timestamp.millis},${Instant
-            .ofEpochMilli(tx.timestamp.millis)},,${tx.outputs.map(_.address).mkString("-")},0,0\n"
+              .ofEpochMilli(tx.timestamp.millis)},,${tx.outputs.map(_.address).mkString("-")},0,0\n"
         tx.toCsv(addressGen.sample.get)
         expected
       }
@@ -84,46 +84,46 @@ class ApiModelSpec() extends AlephiumSpec {
         ArraySeq(
           Input(
             OutputRef(1, Hash.generate),
-            unlockScript   = None,
-            address        = Some(address),
+            unlockScript = None,
+            address = Some(address),
             attoAlphAmount = Some(ALPH.alph(10)),
-            tokens         = None
+            tokens = None
           )
         ),
         ArraySeq(
           AssetOutput(
-            hint           = 0,
-            key            = Hash.generate,
+            hint = 0,
+            key = Hash.generate,
             attoAlphAmount = ALPH.alph(8),
-            address        = Address.fromBase58("14PqtYSSbwpUi2RJKUvv9yUwGafd6yHbEcke7ionuiE7w").get,
-            tokens         = None,
-            lockTime       = None,
-            message        = None,
-            spent          = None
+            address = Address.fromBase58("14PqtYSSbwpUi2RJKUvv9yUwGafd6yHbEcke7ionuiE7w").get,
+            tokens = None,
+            lockTime = None,
+            message = None,
+            spent = None
           ),
           AssetOutput(
-            hint           = 0,
-            key            = Hash.generate,
+            hint = 0,
+            key = Hash.generate,
             attoAlphAmount = ALPH.alph(8),
-            address        = Address.fromBase58("22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM").get,
-            tokens         = None,
-            lockTime       = None,
-            message        = None,
-            spent          = None
+            address = Address.fromBase58("22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM").get,
+            tokens = None,
+            lockTime = None,
+            message = None,
+            spent = None
           ),
           AssetOutput(
-            hint           = 0,
-            key            = Hash.generate,
+            hint = 0,
+            key = Hash.generate,
             attoAlphAmount = ALPH.alph(8),
             address,
-            tokens   = None,
+            tokens = None,
             lockTime = None,
-            message  = None,
-            spent    = None
+            message = None,
+            spent = None
           )
         ),
         gasAmount = 1,
-        gasPrice  = ALPH.alph(1),
+        gasPrice = ALPH.alph(1),
         false,
         true
       )
@@ -138,18 +138,18 @@ class ApiModelSpec() extends AlephiumSpec {
   "AcceptedTransaction" in {
     forAll(transactionGen) { tx =>
       val expected = s"""
-       |{
-       |  "type": "Accepted",
-       |  "hash": "${tx.hash.value.toHexString}",
-       |  "blockHash": "${tx.blockHash.value.toHexString}",
-       |  "timestamp": ${tx.timestamp.millis},
-       |  "inputs": ${write(tx.inputs)},
-       |  "outputs": ${write(tx.outputs)},
-       |  "gasAmount": ${tx.gasAmount},
-       |  "gasPrice": "${tx.gasPrice}",
-       |  "scriptExecutionOk": ${tx.scriptExecutionOk},
-       |  "coinbase": ${tx.coinbase}
-       |}""".stripMargin
+                        |{
+                        |  "type": "Accepted",
+                        |  "hash": "${tx.hash.value.toHexString}",
+                        |  "blockHash": "${tx.blockHash.value.toHexString}",
+                        |  "timestamp": ${tx.timestamp.millis},
+                        |  "inputs": ${write(tx.inputs)},
+                        |  "outputs": ${write(tx.outputs)},
+                        |  "gasAmount": ${tx.gasAmount},
+                        |  "gasPrice": "${tx.gasPrice}",
+                        |  "scriptExecutionOk": ${tx.scriptExecutionOk},
+                        |  "coinbase": ${tx.coinbase}
+                        |}""".stripMargin
       check(AcceptedTransaction.from(tx), expected)
     }
   }
@@ -157,10 +157,10 @@ class ApiModelSpec() extends AlephiumSpec {
   "Output.Ref" in {
     forAll(outputRefGen) { outputRef =>
       val expected = s"""
-     |{
-     |  "hint": ${outputRef.hint},
-     |  "key": "${outputRef.key.toHexString}"
-     |}""".stripMargin
+                        |{
+                        |  "hint": ${outputRef.hint},
+                        |  "key": "${outputRef.key.toHexString}"
+                        |}""".stripMargin
       check(outputRef, expected)
     }
   }
@@ -168,62 +168,75 @@ class ApiModelSpec() extends AlephiumSpec {
   "Token" in {
     forAll(tokenGen) { token =>
       val expected = s"""
-     |{
-     |  "id": "${token.id.toHexString}",
-     |  "amount": "${token.amount}"
-     |}""".stripMargin
+                        |{
+                        |  "id": "${token.id.toHexString}",
+                        |  "amount": "${token.amount}"
+                        |}""".stripMargin
       check(token, expected)
     }
   }
 
   "AsetOutput" in {
     forAll(assetOutputGen) { output =>
-      val expected = s"""
-     |{
-     |  "type": "AssetOutput",
-     |  "hint": ${output.hint},
-     |  "key": "${output.key.toHexString}",
-     |  "attoAlphAmount": "${output.attoAlphAmount}",
-     |  "address": "${output.address}"
-     |  ${output.tokens.map(tokens => s""","tokens": ${write(tokens)}""").getOrElse("")}
-     |  ${output.lockTime.map(lockTime => s""","lockTime": ${lockTime.millis}""").getOrElse("")}
-     |  ${output.message.map(message => s""","message":${write(message)}""")
-                          .getOrElse("")}
-     |  ${output.spent.map(spent       => s""","spent": "${spent.value.toHexString}"""").getOrElse("")}
-     |}""".stripMargin
+      val expected =
+        s"""
+           |{
+           |  "type": "AssetOutput",
+           |  "hint": ${output.hint},
+           |  "key": "${output.key.toHexString}",
+           |  "attoAlphAmount": "${output.attoAlphAmount}",
+           |  "address": "${output.address}"
+           |  ${output.tokens.map(tokens => s""","tokens": ${write(tokens)}""").getOrElse("")}
+           |  ${output.lockTime
+            .map(lockTime => s""","lockTime": ${lockTime.millis}""")
+            .getOrElse("")}
+           |  ${output.message
+            .map(message => s""","message":${write(message)}""")
+            .getOrElse("")}
+           |  ${output.spent
+            .map(spent => s""","spent": "${spent.value.toHexString}"""")
+            .getOrElse("")}
+           |}""".stripMargin
       check(output, expected)
     }
   }
 
   "ContractOutputGen" in {
     forAll(contractOutputGen) { output =>
-      val expected = s"""
-     |{
-     |  "type": "ContractOutput",
-     |  "hint": ${output.hint},
-     |  "key": "${output.key.toHexString}",
-     |  "attoAlphAmount": "${output.attoAlphAmount}",
-     |  "address": "${output.address}"
-     |  ${output.tokens.map(tokens => s""","tokens": ${write(tokens)}""").getOrElse("")}
-     |  ${output.spent.map(spent => s""","spent": "${spent.value.toHexString}"""").getOrElse("")}
-     |}""".stripMargin
+      val expected =
+        s"""
+           |{
+           |  "type": "ContractOutput",
+           |  "hint": ${output.hint},
+           |  "key": "${output.key.toHexString}",
+           |  "attoAlphAmount": "${output.attoAlphAmount}",
+           |  "address": "${output.address}"
+           |  ${output.tokens.map(tokens => s""","tokens": ${write(tokens)}""").getOrElse("")}
+           |  ${output.spent
+            .map(spent => s""","spent": "${spent.value.toHexString}"""")
+            .getOrElse("")}
+           |}""".stripMargin
       check(output, expected)
     }
   }
 
   "Input" in {
     forAll(inputGen) { input =>
-      val expected = s"""
-     |{
-     |  "outputRef": ${write(input.outputRef)}
-     |  ${input.unlockScript.map(script => s""","unlockScript": ${write(script)}""").getOrElse("")}
-     |  ${input.txHashRef.map(txHashRef      => s""","txHashRef": "${txHashRef.toHexString}"""")
-                          .getOrElse("")}
-     |  ${input.address.map(address           => s""","address": "${address}"""").getOrElse("")}
-     |  ${input.attoAlphAmount
-                          .map(attoAlphAmount => s""","attoAlphAmount": "${attoAlphAmount}"""")
-                          .getOrElse("")}
-     |}""".stripMargin
+      val expected =
+        s"""
+           |{
+           |  "outputRef": ${write(input.outputRef)}
+           |  ${input.unlockScript
+            .map(script => s""","unlockScript": ${write(script)}""")
+            .getOrElse("")}
+           |  ${input.txHashRef
+            .map(txHashRef => s""","txHashRef": "${txHashRef.toHexString}"""")
+            .getOrElse("")}
+           |  ${input.address.map(address => s""","address": "${address}"""").getOrElse("")}
+           |  ${input.attoAlphAmount
+            .map(attoAlphAmount => s""","attoAlphAmount": "${attoAlphAmount}"""")
+            .getOrElse("")}
+           |}""".stripMargin
       check(input, expected)
     }
   }
@@ -231,16 +244,16 @@ class ApiModelSpec() extends AlephiumSpec {
   "MempoolTransaction" in {
     forAll(mempooltransactionGen) { utx =>
       val expected = s"""
-     |{
-     |  "hash": "${utx.hash.value.toHexString}",
-     |  "chainFrom": ${utx.chainFrom.value},
-     |  "chainTo": ${utx.chainTo.value},
-     |  "inputs": ${write(utx.inputs)},
-     |  "outputs": ${write(utx.outputs)},
-     |  "gasAmount": ${utx.gasAmount},
-     |  "gasPrice": "${utx.gasPrice}",
-     |  "lastSeen": ${utx.lastSeen.millis}
-     |}""".stripMargin
+                        |{
+                        |  "hash": "${utx.hash.value.toHexString}",
+                        |  "chainFrom": ${utx.chainFrom.value},
+                        |  "chainTo": ${utx.chainTo.value},
+                        |  "inputs": ${write(utx.inputs)},
+                        |  "outputs": ${write(utx.outputs)},
+                        |  "gasAmount": ${utx.gasAmount},
+                        |  "gasPrice": "${utx.gasPrice}",
+                        |  "lastSeen": ${utx.lastSeen.millis}
+                        |}""".stripMargin
       check(utx, expected)
     }
   }
@@ -248,16 +261,16 @@ class ApiModelSpec() extends AlephiumSpec {
   "PendingTransaction" in {
     forAll(mempooltransactionGen) { utx =>
       val expected = s"""
-     |{
-     |  "hash": "${utx.hash.value.toHexString}",
-     |  "chainFrom": ${utx.chainFrom.value},
-     |  "chainTo": ${utx.chainTo.value},
-     |  "inputs": ${write(utx.inputs)},
-     |  "outputs": ${write(utx.outputs)},
-     |  "gasAmount": ${utx.gasAmount},
-     |  "gasPrice": "${utx.gasPrice}",
-     |  "lastSeen": ${utx.lastSeen.millis}
-     |}""".stripMargin
+                        |{
+                        |  "hash": "${utx.hash.value.toHexString}",
+                        |  "chainFrom": ${utx.chainFrom.value},
+                        |  "chainTo": ${utx.chainTo.value},
+                        |  "inputs": ${write(utx.inputs)},
+                        |  "outputs": ${write(utx.outputs)},
+                        |  "gasAmount": ${utx.gasAmount},
+                        |  "gasPrice": "${utx.gasPrice}",
+                        |  "lastSeen": ${utx.lastSeen.millis}
+                        |}""".stripMargin
       check(utx, expected)
     }
   }
@@ -265,16 +278,16 @@ class ApiModelSpec() extends AlephiumSpec {
   "BlockEntryLite" in {
     forAll(blockEntryLiteGen) { block =>
       val expected = s"""
-       |{
-       |  "hash": "${block.hash.value.toHexString}",
-       |  "timestamp": ${block.timestamp.millis},
-       |  "chainFrom": ${block.chainFrom.value},
-       |  "chainTo": ${block.chainTo.value},
-       |  "height": ${block.height.value},
-       |  "txNumber": ${block.txNumber},
-       |  "mainChain": ${block.mainChain},
-       |  "hashRate": "${block.hashRate}"
-       |}""".stripMargin
+                        |{
+                        |  "hash": "${block.hash.value.toHexString}",
+                        |  "timestamp": ${block.timestamp.millis},
+                        |  "chainFrom": ${block.chainFrom.value},
+                        |  "chainTo": ${block.chainTo.value},
+                        |  "height": ${block.height.value},
+                        |  "txNumber": ${block.txNumber},
+                        |  "mainChain": ${block.mainChain},
+                        |  "hashRate": "${block.hashRate}"
+                        |}""".stripMargin
       check(block, expected)
     }
   }
@@ -282,17 +295,17 @@ class ApiModelSpec() extends AlephiumSpec {
   "BlockEntry" in {
     forAll(groupSettingGen.flatMap(blockEntryGen(_))) { block =>
       val expected = s"""
-       |{
-       |  "hash": "${block.hash.value.toHexString}",
-       |  "timestamp": ${block.timestamp.millis},
-       |  "chainFrom": ${block.chainFrom.value},
-       |  "chainTo": ${block.chainTo.value},
-       |  "height": ${block.height.value},
-       |  "deps": ${write(block.deps)},
-       |  "transactions": ${write(block.transactions)},
-       |  "mainChain": ${block.mainChain},
-       |  "hashRate": "${block.hashRate}"
-       |}""".stripMargin
+                        |{
+                        |  "hash": "${block.hash.value.toHexString}",
+                        |  "timestamp": ${block.timestamp.millis},
+                        |  "chainFrom": ${block.chainFrom.value},
+                        |  "chainTo": ${block.chainTo.value},
+                        |  "height": ${block.height.value},
+                        |  "deps": ${write(block.deps)},
+                        |  "transactions": ${write(block.transactions)},
+                        |  "mainChain": ${block.mainChain},
+                        |  "hashRate": "${block.hashRate}"
+                        |}""".stripMargin
       check(block, expected)
     }
   }
@@ -300,14 +313,14 @@ class ApiModelSpec() extends AlephiumSpec {
   "TokenSupply" in {
     forAll(tokenSupplyGen) { tokenSupply =>
       val expected = s"""
-       |{
-       | "timestamp": ${tokenSupply.timestamp.millis},
-       | "total": "${tokenSupply.total}",
-       | "circulating": "${tokenSupply.circulating}",
-       | "reserved": "${tokenSupply.reserved}",
-       | "locked": "${tokenSupply.locked}",
-       | "maximum": "${tokenSupply.maximum}"
-       |}""".stripMargin
+                        |{
+                        | "timestamp": ${tokenSupply.timestamp.millis},
+                        | "total": "${tokenSupply.total}",
+                        | "circulating": "${tokenSupply.circulating}",
+                        | "reserved": "${tokenSupply.reserved}",
+                        | "locked": "${tokenSupply.locked}",
+                        | "maximum": "${tokenSupply.maximum}"
+                        |}""".stripMargin
       check(tokenSupply, expected)
     }
   }
@@ -315,11 +328,11 @@ class ApiModelSpec() extends AlephiumSpec {
   "AddressInfo" in {
     forAll(addressInfoGen) { addressInfo =>
       val expected = s"""
-       |{
-       | "balance": "${addressInfo.balance}",
-       | "lockedBalance": "${addressInfo.lockedBalance}",
-       | "txNumber": ${addressInfo.txNumber}
-       |}""".stripMargin
+                        |{
+                        | "balance": "${addressInfo.balance}",
+                        | "lockedBalance": "${addressInfo.lockedBalance}",
+                        | "txNumber": ${addressInfo.txNumber}
+                        |}""".stripMargin
       check(addressInfo, expected)
     }
   }
@@ -350,31 +363,31 @@ class ApiModelSpec() extends AlephiumSpec {
   "ListBlocks" in {
     forAll(listBlocksGen) { listBlocks =>
       val expected = s"""
-       |{
-       | "total": ${listBlocks.total},
-       | "blocks": ${write(listBlocks.blocks)}
-       |}""".stripMargin
+                        |{
+                        | "total": ${listBlocks.total},
+                        | "blocks": ${write(listBlocks.blocks)}
+                        |}""".stripMargin
       check(listBlocks, expected)
     }
   }
 
   "ExplorerInfo" in {
     val expected = s"""
-     |{
-     |  "releaseVersion": "1.2.3",
-     |  "commit": "b96f64ff",
-     |  "migrationsVersion": 0,
-     |  "lastFinalizedInputTime": 1234
-     |}""".stripMargin
+                      |{
+                      |  "releaseVersion": "1.2.3",
+                      |  "commit": "b96f64ff",
+                      |  "migrationsVersion": 0,
+                      |  "lastFinalizedInputTime": 1234
+                      |}""".stripMargin
     check(ExplorerInfo("1.2.3", "b96f64ff", 0, TimeStamp.unsafe(1234)), expected)
   }
 
   "ContractParent" in {
     forAll(addressGen) { address =>
       val expected = s"""
-     |{
-     |  "parent": "$address"
-     |}""".stripMargin
+                        |{
+                        |  "parent": "$address"
+                        |}""".stripMargin
       check(ContractParent(Some(address)), expected)
       check(ContractParent(None), "{}")
     }
@@ -383,9 +396,9 @@ class ApiModelSpec() extends AlephiumSpec {
   "SubContracts" in {
     forAll(Gen.nonEmptyListOf(addressGen)) { addresses =>
       val expected = s"""
-     |{
-     |  "subContracts": ${write(addresses)}
-     |}""".stripMargin
+                        |{
+                        |  "subContracts": ${write(addresses)}
+                        |}""".stripMargin
       check(SubContracts(addresses), expected)
       check(SubContracts(ArraySeq.empty), """{"subContracts":[]}""")
     }

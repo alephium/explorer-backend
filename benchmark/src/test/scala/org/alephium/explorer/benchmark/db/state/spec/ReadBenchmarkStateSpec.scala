@@ -25,27 +25,26 @@ import org.alephium.explorer.benchmark.db.DBExecutor
 import org.alephium.explorer.benchmark.db.state._
 import org.alephium.explorer.util.TestUtils._
 
-/**
-  * Tests the behaviour of functions implemented in [[ReadBenchmarkState]] using
+/** Tests the behaviour of functions implemented in [[ReadBenchmarkState]] using
   *   - [[ByteaReadState]]
   *   - [[VarcharReadState]]
   */
 class ReadBenchmarkStateSpec extends AlephiumFutureSpec {
 
-  //total number of rows to generate
+  // total number of rows to generate
   val testDataCount = 10
 
   "beforeAll - generate & cache test data" in {
     def doTest[D, S <: ReadBenchmarkState[D]](state: => S, getRows: S => Seq[D]): Unit =
       using(state) { state =>
-        //create test data
+        // create test data
         state.beforeAll()
         state.testDataCount is testDataCount
 
-        //cache should contain all the data
+        // cache should contain all the data
         state.cache.length is testDataCount
 
-        //cached and persisted data should be the same
+        // cached and persisted data should be the same
         getRows(state) should contain theSameElementsAs state.cache
         ()
       }
@@ -70,16 +69,16 @@ class ReadBenchmarkStateSpec extends AlephiumFutureSpec {
   "beforeEach - fetch next data incrementally" in {
     def doTest(state: => ReadBenchmarkState[_]): Unit =
       using(state) { state =>
-        //create test data
+        // create test data
         state.beforeAll()
 
-        //read all data one by one
+        // read all data one by one
         for (index <- 0 until testDataCount) {
           state.beforeEach()
           state.next is state.cache(index)
         }
 
-        //invoking setNext after all data is read should reset the index and start from the first row
+        // invoking setNext after all data is read should reset the index and start from the first row
         state.beforeEach()
         state.next is state.cache.head
         ()
@@ -92,13 +91,13 @@ class ReadBenchmarkStateSpec extends AlephiumFutureSpec {
   "afterAll - terminate connection" in {
     def doTest(state: => ReadBenchmarkState[_]): Unit =
       using(state) { state =>
-        //call beforeAll some data and establish connection
+        // call beforeAll some data and establish connection
         state.beforeAll()
 
-        //call afterAll to close connection
+        // call afterAll to close connection
         state.afterAll()
 
-        //expect rejection
+        // expect rejection
         assertThrows[RejectedExecutionException](state.beforeAll())
         ()
       }

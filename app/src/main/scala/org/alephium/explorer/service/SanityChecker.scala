@@ -41,12 +41,14 @@ import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.IterableOps"))
 object SanityChecker extends StrictLogging {
 
-  private def findLatestBlock(chainIndex: ChainIndex)(
-      implicit dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockHash]] = {
+  private def findLatestBlock(
+      chainIndex: ChainIndex
+  )(implicit dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockHash]] = {
     run(
       BlockHeaderSchema.table
         .filter(header =>
-          header.mainChain && header.chainFrom === chainIndex.from && header.chainTo === chainIndex.to)
+          header.mainChain && header.chainFrom === chainIndex.from && header.chainTo === chainIndex.to
+        )
         .sortBy(_.timestamp.desc)
         .map(_.hash)
         .result
@@ -56,11 +58,13 @@ object SanityChecker extends StrictLogging {
 
   private val running = new AtomicBoolean(false)
 
-  def check()(implicit ec: ExecutionContext,
-              dc: DatabaseConfig[PostgresProfile],
-              blockFlowClient: BlockFlowClient,
-              blockCache: BlockCache,
-              groupSetting: GroupSetting): Future[Unit] = {
+  def check()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      blockCache: BlockCache,
+      groupSetting: GroupSetting
+  ): Future[Unit] = {
     if (!running.compareAndSet(false, true)) {
       Future.successful(logger.error("Sanity check already running"))
     } else {
@@ -98,18 +102,21 @@ object SanityChecker extends StrictLogging {
     }
   }
 
-  private def checkBlock(block: BlockEntry, blockNum: AtomicInteger, totalNbOfBlocks: Int)(
-      implicit ec: ExecutionContext,
+  private def checkBlock(block: BlockEntry, blockNum: AtomicInteger, totalNbOfBlocks: Int)(implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       blockCache: BlockCache,
-      groupSetting: GroupSetting): Future[Unit] = {
-    updateMainChain(block.hash,
-                    block.chainFrom,
-                    block.chainTo,
-                    groupSetting.groupNum,
-                    blockNum,
-                    totalNbOfBlocks).flatMap {
+      groupSetting: GroupSetting
+  ): Future[Unit] = {
+    updateMainChain(
+      block.hash,
+      block.chainFrom,
+      block.chainTo,
+      groupSetting.groupNum,
+      blockNum,
+      totalNbOfBlocks
+    ).flatMap {
       case None => Future.successful(())
       case Some(missing) =>
         handleMissingBlock(missing, block.chainFrom, blockNum, totalNbOfBlocks)
@@ -117,16 +124,20 @@ object SanityChecker extends StrictLogging {
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-  //scalastyle:off
-  private def handleMissingBlock(missing: BlockHash,
-                                 chainFrom: GroupIndex,
-                                 blockNum: AtomicInteger,
-                                 totalNbOfBlocks: Int)(implicit ec: ExecutionContext,
-                                                       dc: DatabaseConfig[PostgresProfile],
-                                                       blockFlowClient: BlockFlowClient,
-                                                       blockCache: BlockCache,
-                                                       groupSetting: GroupSetting): Future[Unit] = {
-    //scalastyle:on
+  // scalastyle:off
+  private def handleMissingBlock(
+      missing: BlockHash,
+      chainFrom: GroupIndex,
+      blockNum: AtomicInteger,
+      totalNbOfBlocks: Int
+  )(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      blockCache: BlockCache,
+      groupSetting: GroupSetting
+  ): Future[Unit] = {
+    // scalastyle:on
     logger.info(s"Downloading missing block $missing")
     blockFlowClient.fetchBlock(chainFrom, missing).flatMap { block =>
       for {
@@ -138,18 +149,22 @@ object SanityChecker extends StrictLogging {
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
-  private def updateMainChainAction(hash: BlockHash,
-                                    chainFrom: GroupIndex,
-                                    chainTo: GroupIndex,
-                                    groupNum: Int,
-                                    blockNum: AtomicInteger,
-                                    totalNbOfBlocks: Int)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): DBActionRWT[Option[BlockHash]] = {
+  private def updateMainChainAction(
+      hash: BlockHash,
+      chainFrom: GroupIndex,
+      chainTo: GroupIndex,
+      groupNum: Int,
+      blockNum: AtomicInteger,
+      totalNbOfBlocks: Int
+  )(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): DBActionRWT[Option[BlockHash]] = {
     val nextBlockNum = blockNum.incrementAndGet()
     if (nextBlockNum % 10000 == 0) {
       logger.debug(
-        s"Checked $blockNum blocks , progress ${(nextBlockNum.toFloat / totalNbOfBlocks * 100.0).toInt}%")
+        s"Checked $blockNum blocks , progress ${(nextBlockNum.toFloat / totalNbOfBlocks * 100.0).toInt}%"
+      )
     }
     getBlockEntryWithoutTxsAction(hash)
       .flatMap {
@@ -162,7 +177,8 @@ object SanityChecker extends StrictLogging {
               blocks
                 .map(_.hash)
                 .filterNot(_ === block.hash)
-                .map(updateMainChainStatusQuery(_, false)))
+                .map(updateMainChainStatusQuery(_, false))
+            )
             _ <- updateMainChainStatusQuery(hash, true)
           } yield {
             block.parent(groupNum).map(Right(_))
@@ -174,17 +190,17 @@ object SanityChecker extends StrictLogging {
         case Some(Right(parent)) =>
           updateMainChainAction(parent, chainFrom, chainTo, groupNum, blockNum, totalNbOfBlocks)
         case Some(Left(missing)) => DBIOAction.successful(Some(missing))
-        case None                => DBIOAction.successful(None) //No parent, we reach the genesis blocks
+        case None => DBIOAction.successful(None) // No parent, we reach the genesis blocks
       }
   }
 
-  def updateMainChain(hash: BlockHash,
-                      chainFrom: GroupIndex,
-                      chainTo: GroupIndex,
-                      groupNum: Int,
-                      blockNum: AtomicInteger,
-                      totalNbOfBlocks: Int)(
-      implicit ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockHash]] =
+  def updateMainChain(
+      hash: BlockHash,
+      chainFrom: GroupIndex,
+      chainTo: GroupIndex,
+      groupNum: Int,
+      blockNum: AtomicInteger,
+      totalNbOfBlocks: Int
+  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Option[BlockHash]] =
     run(updateMainChainAction(hash, chainFrom, chainTo, groupNum, blockNum, totalNbOfBlocks))
 }

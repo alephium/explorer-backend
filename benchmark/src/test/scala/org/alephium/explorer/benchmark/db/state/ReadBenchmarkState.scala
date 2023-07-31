@@ -26,42 +26,43 @@ import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.benchmark.db.DBExecutor
 
-/**
-  * Base implementation for JMH states, for benchmarking reads queries to the target database.
+/** Base implementation for JMH states, for benchmarking reads queries to the target database.
   *
-  * JMH annotations used here create the following lifecycle of function invocations (naming similar to ScalaTest)
-  *  - 1. [[beforeAll]] - Invoked by JMH before the benchmark is executed.
-  *  - 2. [[beforeEach]] - Set the [[next]] data for the benchmark's current iteration.
-  *  - 3. [[next]] - Returns the data set by [[beforeEach]]. Used by the actual benchmark code in [[DBBenchmark]].
-  *  - 4. [[afterAll]] - Terminates db connection created by [[beforeAll]].
+  * JMH annotations used here create the following lifecycle of function invocations (naming similar
+  * to ScalaTest)
+  *   - \1. [[beforeAll]] - Invoked by JMH before the benchmark is executed.
+  *   - 2. [[beforeEach]] - Set the [[next]] data for the benchmark's current iteration.
+  *   - 3. [[next]] - Returns the data set by [[beforeEach]]. Used by the actual benchmark code in
+  *     [[DBBenchmark]].
+  *   - 4. [[afterAll]] - Terminates db connection created by [[beforeAll]].
   *
-  * @param testDataCount Total number of rows to persist in [[beforeAll]]
-  * @param db            Target database
-  * @tparam D Data type of the targeted table
+  * @param testDataCount
+  *   Total number of rows to persist in [[beforeAll]]
+  * @param db
+  *   Target database
+  * @tparam D
+  *   Data type of the targeted table
   */
 abstract class ReadBenchmarkState[D: ClassTag](val testDataCount: Int, db: DBExecutor)
     extends AutoCloseable
     with StrictLogging {
 
-  //testDataCount cannot be 0 or negative value
+  // testDataCount cannot be 0 or negative value
   require(testDataCount >= 1, s"Invalid testDataCount '$testDataCount'. It should be >= 1.")
 
   val config: DatabaseConfig[PostgresProfile] =
     db.config
 
-  /**
-    * Placeholder to store next data required by the benchmark.
-    * Populated when JMH invokes [[beforeEach]].
+  /** Placeholder to store next data required by the benchmark. Populated when JMH invokes
+    * [[beforeEach]].
     */
   private var _next: D = _
 
-  /**
-    * Getter. Similar to an Iterator.next function this
-    * provides the next available data to read.
+  /** Getter. Similar to an Iterator.next function this provides the next available data to read.
     *
-    * @note Prerequisite: [[beforeEach]] should be invoked before next is called.
-    *       JMH will automatically call [[beforeEach]]. Your benchmark function only
-    *       needs to invoke [[next]].
+    * @note
+    *   Prerequisite: [[beforeEach]] should be invoked before next is called. JMH will automatically
+    *   call [[beforeEach]]. Your benchmark function only needs to invoke [[next]].
     */
   def next: D = _next
 
@@ -78,7 +79,9 @@ abstract class ReadBenchmarkState[D: ClassTag](val testDataCount: Int, db: DBExe
   /** Invoked once during [[beforeAll]]. It should persist the input data to the target database. */
   def persist(data: Array[D]): Unit
 
-  /** Invoked once before a benchmark is started. Generates, persists & caches data required by the benchmark */
+  /** Invoked once before a benchmark is started. Generates, persists & caches data required by the
+    * benchmark
+    */
   @Setup(Level.Iteration)
   def beforeAll(): Unit = {
     logger.info(s"Generating test data of size $testDataCount")
@@ -97,21 +100,21 @@ abstract class ReadBenchmarkState[D: ClassTag](val testDataCount: Int, db: DBExe
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   final def beforeEach(): Unit =
     try {
-      //set the next data to query required by benchmark
+      // set the next data to query required by benchmark
       _next = cache(nextIndex)
       nextIndex += 1
-      //Logs how much data from the cache is read
-      if (nextIndex % (cache.length / 100D) == 0) {
+      // Logs how much data from the cache is read
+      if (nextIndex % (cache.length / 100d) == 0) {
         logger.info(s"Read progress: $nextIndex/${cache.length}")
       }
     } catch {
       case exception: ArrayIndexOutOfBoundsException =>
         if (nextIndex == 0) {
-          //if its already zero then testDataCount must be invalid (<= 0)
-          //throw exception indicating invalid testDataCount input
+          // if its already zero then testDataCount must be invalid (<= 0)
+          // throw exception indicating invalid testDataCount input
           throw exception
         } else {
-          //Else it's finished reading all rows. Reset index so benchmarking reads continue.
+          // Else it's finished reading all rows. Reset index so benchmarking reads continue.
           nextIndex = 0
           beforeEach()
         }

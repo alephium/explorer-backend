@@ -35,106 +35,106 @@ import org.alephium.explorer.persistence.schema.{BlockHeaderSchema, TransactionS
 import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
-/**
-  * JMH state for benchmarking reads to [[org.alephium.explorer.persistence.schema.BlockHeaderSchema]] &
+/** JMH state for benchmarking reads to
+  * [[org.alephium.explorer.persistence.schema.BlockHeaderSchema]] &
   * [[org.alephium.explorer.persistence.schema.TransactionSchema]].
   */
-class ListBlocksReadState(reverse: Boolean,
-                          maxPages: Int,
-                          limitPerPage: Int,
-                          transactionsPerBlock: Int,
-                          val db: DBExecutor)
-    extends ReadBenchmarkState[Pagination.Reversible](testDataCount = maxPages, db = db) {
+class ListBlocksReadState(
+    reverse: Boolean,
+    maxPages: Int,
+    limitPerPage: Int,
+    transactionsPerBlock: Int,
+    val db: DBExecutor
+) extends ReadBenchmarkState[Pagination.Reversible](testDataCount = maxPages, db = db) {
 
   import config.profile.api._
 
   val blockCache: BlockCache =
     TestBlockCache()(
       groupSetting = GroupSetting(4),
-      ec           = config.db.ioExecutionContext,
-      dc           = db.config
+      ec = config.db.ioExecutionContext,
+      dc = db.config
     )
 
-  /**
-    * Generates a [[org.alephium.explorer.api.model.Pagination]] instance for each page to query.
+  /** Generates a [[org.alephium.explorer.api.model.Pagination]] instance for each page to query.
     */
   def generateData(currentCacheSize: Int): Pagination.Reversible =
     Pagination.Reversible.unsafe(
-      page    = currentCacheSize + 1,
-      limit   = limitPerPage,
+      page = currentCacheSize + 1,
+      limit = limitPerPage,
       reverse = reverse
     )
 
   private def generateBlockHeader(): BlockHeader =
     BlockHeader(
-      hash         = BlockHash.generate,
-      timestamp    = TimeStamp.now(),
-      chainFrom    = new GroupIndex(0),
-      chainTo      = new GroupIndex(3),
-      height       = Height.genesis,
-      mainChain    = Random.nextBoolean(),
-      nonce        = ByteString.emptyByteString,
-      version      = 0,
+      hash = BlockHash.generate,
+      timestamp = TimeStamp.now(),
+      chainFrom = new GroupIndex(0),
+      chainTo = new GroupIndex(3),
+      height = Height.genesis,
+      mainChain = Random.nextBoolean(),
+      nonce = ByteString.emptyByteString,
+      version = 0,
       depStateHash = Blake2b.generate,
-      txsHash      = Blake2b.generate,
-      txsCount     = scala.math.abs(Random.nextInt()),
-      target       = ByteString.emptyByteString,
-      hashrate     = BigInteger.ONE,
-      parent       = Some(BlockHash.generate)
+      txsHash = Blake2b.generate,
+      txsCount = scala.math.abs(Random.nextInt()),
+      target = ByteString.emptyByteString,
+      hashrate = BigInteger.ONE,
+      parent = Some(BlockHash.generate)
     )
 
   private def generateTransactions(header: BlockHeader): Seq[TransactionEntity] =
     List.fill(transactionsPerBlock) {
       TransactionEntity(
-        hash              = TransactionId.generate,
-        blockHash         = header.hash,
-        timestamp         = header.timestamp,
-        chainFrom         = new GroupIndex(1),
-        chainTo           = new GroupIndex(3),
-        gasAmount         = 0,
-        gasPrice          = U256.unsafe(0),
-        order             = 0,
-        mainChain         = header.mainChain,
+        hash = TransactionId.generate,
+        blockHash = header.hash,
+        timestamp = header.timestamp,
+        chainFrom = new GroupIndex(1),
+        chainTo = new GroupIndex(3),
+        gasAmount = 0,
+        gasPrice = U256.unsafe(0),
+        order = 0,
+        mainChain = header.mainChain,
         scriptExecutionOk = Random.nextBoolean(),
-        inputSignatures   = None,
-        scriptSignatures  = None,
-        coinbase          = false
+        inputSignatures = None,
+        scriptSignatures = None,
+        coinbase = false
       )
     }
 
   def persist(cache: Array[Pagination.Reversible]): Unit = {
     logger.info(s"Generating data. Pages: ${cache.last.offset + 1}. Limit: ${cache.last.limit}.")
 
-    val blocks       = List.fill(cache.length * limitPerPage)(generateBlockHeader()) //generate blocks
-    val transactions = blocks flatMap generateTransactions //generate transactions for each block
+    val blocks = List.fill(cache.length * limitPerPage)(generateBlockHeader()) // generate blocks
+    val transactions = blocks flatMap generateTransactions // generate transactions for each block
 
-    //drop existing tables
+    // drop existing tables
     val _ = db.dropTableIfExists(BlockHeaderSchema.table)
     val _ = db.dropTableIfExists(TransactionSchema.table)
 
     logger.info(s"Persisting ${BlockHeaderSchema.table.baseTableRow.tableName} data")
 
-    //Persist blocks
+    // Persist blocks
     val persistBlocks =
       BlockHeaderSchema.table.schema.create
         .andThen(BlockHeaderSchema.createBlockHeadersIndexes())
         .andThen(BlockHeaderSchema.table ++= blocks)
 
     val _ = db.runNow(
-      action  = persistBlocks,
+      action = persistBlocks,
       timeout = batchWriteTimeout
     )
 
     logger.info(s"Persisting ${TransactionSchema.table.baseTableRow.tableName} data")
 
-    //Persist transactions
+    // Persist transactions
     val persistTransactions =
       TransactionSchema.table.schema.create
         .andThen(TransactionSchema.createMainChainIndex())
         .andThen(TransactionSchema.table ++= transactions)
 
     val _ = db.runNow(
-      action  = persistTransactions,
+      action = persistTransactions,
       timeout = batchWriteTimeout
     )
 
@@ -152,55 +152,57 @@ object ListBlocksReadStateSettings {
 }
 // scalastyle:off magic.number
 
-/**
-  * JMH State For forward iteration with disabled connection pooling
+/** JMH State For forward iteration with disabled connection pooling
   */
 @State(Scope.Thread)
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 class ListBlocks_Forward_DisabledCP_ReadState(override val db: DBExecutor)
-    extends ListBlocksReadState(reverse              = false,
-                                maxPages             = maxPages,
-                                limitPerPage         = limitPerPage,
-                                transactionsPerBlock = transactionsPerBlock,
-                                db                   = db) {
+    extends ListBlocksReadState(
+      reverse = false,
+      maxPages = maxPages,
+      limitPerPage = limitPerPage,
+      transactionsPerBlock = transactionsPerBlock,
+      db = db
+    ) {
 
   def this() = {
     this(DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.Disabled))
   }
 }
 
-/**
-  * JMH State For forward iteration with disabled connection pooling
+/** JMH State For forward iteration with disabled connection pooling
   */
 @State(Scope.Thread)
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 class ListBlocks_Reverse_DisabledCP_ReadState(override val db: DBExecutor)
-    extends ListBlocksReadState(reverse              = true,
-                                maxPages             = maxPages,
-                                limitPerPage         = limitPerPage,
-                                transactionsPerBlock = transactionsPerBlock,
-                                db                   = db) {
+    extends ListBlocksReadState(
+      reverse = true,
+      maxPages = maxPages,
+      limitPerPage = limitPerPage,
+      transactionsPerBlock = transactionsPerBlock,
+      db = db
+    ) {
   def this() = {
     this(db = DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.Disabled))
   }
 }
 
-/**
-  * JMH State For forward iteration with HikariCP.
+/** JMH State For forward iteration with HikariCP.
   *
-  *  Reverse benchmark with HikariCP is not required because
-  *  these benchmarks are actually for when connection pooling is
-  *  disabled to prove that raw SQL queries are faster with minimal
-  *  connections whereas typed queries require more connections to be faster.
+  * Reverse benchmark with HikariCP is not required because these benchmarks are actually for when
+  * connection pooling is disabled to prove that raw SQL queries are faster with minimal connections
+  * whereas typed queries require more connections to be faster.
   */
 @State(Scope.Thread)
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 class ListBlocks_Forward_HikariCP_ReadState(override val db: DBExecutor)
-    extends ListBlocksReadState(reverse              = false,
-                                maxPages             = maxPages,
-                                limitPerPage         = limitPerPage,
-                                transactionsPerBlock = transactionsPerBlock,
-                                db                   = db) {
+    extends ListBlocksReadState(
+      reverse = false,
+      maxPages = maxPages,
+      limitPerPage = limitPerPage,
+      transactionsPerBlock = transactionsPerBlock,
+      db = db
+    ) {
 
   def this() = {
     this(db = DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.HikariCP))

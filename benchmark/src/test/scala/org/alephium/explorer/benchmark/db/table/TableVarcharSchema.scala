@@ -26,8 +26,7 @@ trait TableVarcharSchema {
 
   import config.profile.api._
 
-  /**
-    * Table with single column that stores String values
+  /** Table with single column that stores String values
     */
   class TableVarchar(tag: Tag) extends Table[String](tag, "table_varchar") {
     def hash: Rep[String] = column[String]("hash", O.PrimaryKey)

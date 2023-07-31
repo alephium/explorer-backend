@@ -46,7 +46,10 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
       column[Option[TransactionId]]("output_ref_tx_hash")
     def outputRefAddress: Rep[Option[Address]] = column[Option[Address]]("output_ref_address")
     def outputRefAmount: Rep[Option[U256]] =
-      column[Option[U256]]("output_ref_amount", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
+      column[Option[U256]](
+        "output_ref_amount",
+        O.SqlType("DECIMAL(80,0)")
+      ) // U256.MaxValue has 78 digits
     def outputRefTokens: Rep[Option[ArraySeq[Token]]] =
       column[Option[ArraySeq[Token]]]("output_ref_tokens")
 
@@ -59,19 +62,21 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
       index("inputs_tx_hash_block_hash_idx", (txHash, blockHash))
 
     def * : ProvenShape[InputEntity] =
-      (blockHash,
-       txHash,
-       timestamp,
-       hint,
-       outputRefKey,
-       unlockScript,
-       mainChain,
-       inputOrder,
-       txOrder,
-       outputRefTxHash,
-       outputRefAddress,
-       outputRefAmount,
-       outputRefTokens)
+      (
+        blockHash,
+        txHash,
+        timestamp,
+        hint,
+        outputRefKey,
+        unlockScript,
+        mainChain,
+        inputOrder,
+        txOrder,
+        outputRefTxHash,
+        outputRefAddress,
+        outputRefAmount,
+        outputRefTokens
+      )
         .<>((InputEntity.apply _).tupled, InputEntity.unapply)
   }
 

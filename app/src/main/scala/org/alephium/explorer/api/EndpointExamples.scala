@@ -30,8 +30,7 @@ import org.alephium.protocol.mining.HashRate
 import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TokenId}
 import org.alephium.util.{Hex, U256}
 
-/**
-  * Contains OpenAPI Examples.
+/** Contains OpenAPI Examples.
   */
 // scalastyle:off magic.number
 @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
@@ -70,109 +69,108 @@ object EndpointExamples extends EndpointsExamples {
 
   private val input: Input =
     Input(
-      outputRef      = outputRef,
-      unlockScript   = Some(unlockScript),
-      txHashRef      = Some(txId),
-      address        = Some(address1),
+      outputRef = outputRef,
+      unlockScript = Some(unlockScript),
+      txHashRef = Some(txId),
+      address = Some(address1),
       attoAlphAmount = Some(U256.Two),
-      tokens         = Some(tokens)
+      tokens = Some(tokens)
     )
 
   private val outputAsset: AssetOutput =
     AssetOutput(
-      hint           = 1,
-      key            = hash,
+      hint = 1,
+      key = hash,
       attoAlphAmount = U256.Two,
-      address        = address1,
-      tokens         = Some(tokens),
-      lockTime       = Some(ts),
-      message        = Some(hash.bytes)
+      address = address1,
+      tokens = Some(tokens),
+      lockTime = Some(ts),
+      message = Some(hash.bytes)
     )
 
   private val outputContract: Output =
     ContractOutput(
-      hint           = 1,
-      key            = hash,
+      hint = 1,
+      key = hash,
       attoAlphAmount = U256.Two,
-      address        = address1,
-      tokens         = Some(tokens)
+      address = address1,
+      tokens = Some(tokens)
     )
 
-  /**
-    * Main API objects
+  /** Main API objects
     */
   private val blockEntryLite: BlockEntryLite =
     BlockEntryLite(
-      hash      = blockHash,
+      hash = blockHash,
       timestamp = ts,
       chainFrom = groupIndex1,
-      chainTo   = groupIndex2,
-      height    = Height.unsafe(42),
-      txNumber  = 1,
+      chainTo = groupIndex2,
+      height = Height.unsafe(42),
+      txNumber = 1,
       mainChain = true,
-      hashRate  = HashRate.a128EhPerSecond.value
+      hashRate = HashRate.a128EhPerSecond.value
     )
 
   private val transaction: Transaction =
     Transaction(
-      hash              = txId,
-      blockHash         = blockHash,
-      timestamp         = ts,
-      inputs            = ArraySeq(input),
-      outputs           = ArraySeq(outputAsset, outputContract),
-      gasAmount         = org.alephium.protocol.model.minimalGas.value,
-      gasPrice          = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
+      hash = txId,
+      blockHash = blockHash,
+      timestamp = ts,
+      inputs = ArraySeq(input),
+      outputs = ArraySeq(outputAsset, outputContract),
+      gasAmount = org.alephium.protocol.model.minimalGas.value,
+      gasPrice = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
       scriptExecutionOk = true,
-      coinbase          = false
+      coinbase = false
     )
 
   private val acceptedTransaction: AcceptedTransaction =
     AcceptedTransaction(
-      hash              = txId,
-      blockHash         = blockHash,
-      timestamp         = ts,
-      inputs            = ArraySeq(input),
-      outputs           = ArraySeq(outputAsset, outputContract),
-      gasAmount         = org.alephium.protocol.model.minimalGas.value,
-      gasPrice          = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
+      hash = txId,
+      blockHash = blockHash,
+      timestamp = ts,
+      inputs = ArraySeq(input),
+      outputs = ArraySeq(outputAsset, outputContract),
+      gasAmount = org.alephium.protocol.model.minimalGas.value,
+      gasPrice = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
       scriptExecutionOk = true,
-      coinbase          = false
+      coinbase = false
     )
 
   private val pendingTransaction: PendingTransaction =
     PendingTransaction(
-      hash      = txId,
+      hash = txId,
       chainFrom = groupIndex1,
-      chainTo   = groupIndex2,
-      inputs    = ArraySeq(input),
-      outputs   = ArraySeq(outputAsset, outputContract),
+      chainTo = groupIndex2,
+      inputs = ArraySeq(input),
+      outputs = ArraySeq(outputAsset, outputContract),
       gasAmount = org.alephium.protocol.model.minimalGas.value,
-      gasPrice  = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
-      lastSeen  = ts
+      gasPrice = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
+      lastSeen = ts
     )
 
   private val mempoolTransaction: MempoolTransaction =
     MempoolTransaction(
-      hash      = txId,
+      hash = txId,
       chainFrom = groupIndex1,
-      chainTo   = groupIndex2,
-      inputs    = ArraySeq(input),
-      outputs   = ArraySeq(outputAsset, outputContract),
+      chainTo = groupIndex2,
+      inputs = ArraySeq(input),
+      outputs = ArraySeq(outputAsset, outputContract),
       gasAmount = org.alephium.protocol.model.minimalGas.value,
-      gasPrice  = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
-      lastSeen  = ts
+      gasPrice = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
+      lastSeen = ts
     )
 
   private val addressInfo =
     AddressInfo(
-      balance       = U256.Ten,
+      balance = U256.Ten,
       lockedBalance = U256.Two,
-      txNumber      = 1
+      txNumber = 1
     )
 
   private val addressBalance =
     AddressBalance(
-      balance       = U256.Ten,
+      balance = U256.Ten,
       lockedBalance = U256.Two
     )
 
@@ -202,66 +200,66 @@ object EndpointExamples extends EndpointsExamples {
   private val hashRate =
     Hashrate(
       timestamp = ts,
-      hashrate  = BigDecimal(HashRate.a128EhPerSecond.value),
-      value     = BigDecimal(HashRate.a128EhPerSecond.value)
+      hashrate = BigDecimal(HashRate.a128EhPerSecond.value),
+      value = BigDecimal(HashRate.a128EhPerSecond.value)
     )
 
   private val timedCount =
     TimedCount(
-      timestamp           = ts,
+      timestamp = ts,
       totalCountAllChains = 10000000
     )
 
   private val perChainCount =
     PerChainCount(
       chainFrom = 1,
-      chainTo   = 2,
-      count     = 10000000
+      chainTo = 2,
+      count = 10000000
     )
 
   private val perChainTimedCount =
     PerChainTimedCount(
-      timestamp          = ts,
+      timestamp = ts,
       totalCountPerChain = ArraySeq(perChainCount, perChainCount)
     )
 
   private val explorerInfo =
     ExplorerInfo(
-      releaseVersion         = "1.11.2+17-00593e8e-SNAPSHOT",
-      commit                 = "00593e8e8c718d6bd27fe218e7aa438ef56611cc",
-      migrationsVersion      = 1,
+      releaseVersion = "1.11.2+17-00593e8e-SNAPSHOT",
+      commit = "00593e8e8c718d6bd27fe218e7aa438ef56611cc",
+      migrationsVersion = 1,
       lastFinalizedInputTime = ts
     )
 
   private val tokenSupply =
     TokenSupply(
-      timestamp   = ts,
-      total       = ALPH.MaxALPHValue.divUnsafe(U256.Billion),
+      timestamp = ts,
+      total = ALPH.MaxALPHValue.divUnsafe(U256.Billion),
       circulating = ALPH.MaxALPHValue.divUnsafe(U256.Billion).divUnsafe(U256.Two),
-      reserved    = U256.Ten,
-      locked      = U256.Ten,
-      maximum     = ALPH.MaxALPHValue
+      reserved = U256.Ten,
+      locked = U256.Ten,
+      maximum = ALPH.MaxALPHValue
     )
 
   private val perChainHeight =
     PerChainHeight(
       chainFrom = 1,
-      chainTo   = 2,
-      height    = 1000,
-      value     = 1000
+      chainTo = 2,
+      height = 1000,
+      value = 1000
     )
 
   private val perChainDuration =
     PerChainDuration(
       chainFrom = 1,
-      chainTo   = 2,
-      duration  = 60,
-      value     = 60
+      chainTo = 2,
+      duration = 60,
+      value = 60
     )
 
   private val explainResult =
     ExplainResult(
-      queryName  = "queryName",
+      queryName = "queryName",
       queryInput = "Pagination(0,20,false)",
       explain = Vector(
         "Seq Scan on table_name  (cost=0.00..850.88 rows=20088 width=198) (actual time=0.007..4.358 rows=20088 loops=1)",
@@ -278,12 +276,11 @@ object EndpointExamples extends EndpointsExamples {
 
   private val logbackValue =
     LogbackValue(
-      name  = "org.test",
+      name = "org.test",
       level = LogbackValue.Level.Debug
     )
 
-  /**
-    * Examples
+  /** Examples
     */
   implicit val blockEntryLiteExample: List[Example[BlockEntryLite]] =
     simpleExample(blockEntryLite)

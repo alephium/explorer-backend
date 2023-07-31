@@ -33,21 +33,21 @@ object TxByAddressQR {
   implicit val transactionByAddressQRGetResult: GetResult[TxByAddressQR] =
     (result: PositionedResult) =>
       TxByAddressQR(
-        txHash         = result.<<,
-        blockHash      = result.<<,
+        txHash = result.<<,
+        blockHash = result.<<,
         blockTimestamp = result.<<,
-        txOrder        = result.<<,
-        coinbase       = result.<<
-    )
+        txOrder = result.<<,
+        coinbase = result.<<
+      )
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def apply(tuple: Tuple): TxByAddressQR =
     TxByAddressQR(
-      txHash         = tuple._1,
-      blockHash      = tuple._2,
+      txHash = tuple._1,
+      blockHash = tuple._2,
       blockTimestamp = tuple._3,
-      txOrder        = tuple._4,
-      coinbase       = tuple._5
+      txOrder = tuple._4,
+      coinbase = tuple._5
     )
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
@@ -56,12 +56,16 @@ object TxByAddressQR {
 
 }
 
-/** Query result for [[org.alephium.explorer.persistence.queries.TransactionQueries.getTransactionsByAddress]] */
-final case class TxByAddressQR(txHash: TransactionId,
-                               blockHash: BlockHash,
-                               blockTimestamp: TimeStamp,
-                               txOrder: Int,
-                               coinbase: Boolean) {
+/** Query result for
+  * [[org.alephium.explorer.persistence.queries.TransactionQueries.getTransactionsByAddress]]
+  */
+final case class TxByAddressQR(
+    txHash: TransactionId,
+    blockHash: BlockHash,
+    blockTimestamp: TimeStamp,
+    txOrder: Int,
+    coinbase: Boolean
+) {
 
   def hashes(): (TransactionId, BlockHash) =
     (txHash, blockHash)

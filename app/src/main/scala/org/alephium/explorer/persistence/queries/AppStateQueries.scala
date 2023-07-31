@@ -35,7 +35,8 @@ object AppStateQueries {
   @inline def insertOrUpdate(appState: AppState): DBActionW[Int] =
     AppStateSchema.table insertOrUpdate appState
 
-  @inline def get[V <: AppState: ClassTag: GetResult](appState: AppStateKey[V])(
-      implicit ec: ExecutionContext): DBActionR[Option[V]] =
+  @inline def get[V <: AppState: ClassTag: GetResult](appState: AppStateKey[V])(implicit
+      ec: ExecutionContext
+  ): DBActionR[Option[V]] =
     appState.get()
 }
