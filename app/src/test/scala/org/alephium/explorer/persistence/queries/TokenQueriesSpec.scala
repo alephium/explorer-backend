@@ -19,7 +19,7 @@ package org.alephium.explorer.persistence.queries
 import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.AlephiumFutureSpec
+import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model.Pagination
@@ -27,6 +27,7 @@ import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.queries.TokenQueries
 import org.alephium.explorer.persistence.queries.result.TxByTokenQR
 import org.alephium.explorer.persistence.schema._
+import org.alephium.util.{TimeStamp, U256}
 
 class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
@@ -79,6 +80,38 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
           result.size is expected.size
           result should contain allElementsOf expected
+      }
+    }
+
+    "list address tokens with balance" in {
+      implicit val groupSetting: GroupSetting = GroupSetting(4)
+      val testData     = Gen.nonEmptyListOf(blockAndItsMainChainEntitiesGen()).sample.get
+      val inputs       = testData.flatMap(_._1.inputs)
+      val tokenOutputs = testData.map(_._4)
+      val addresses    = tokenOutputs.map(_.address)
+      val pagination   = Pagination.unsafe(1, 100)
+      val now          = TimeStamp.now()
+
+      run(InputSchema.table.delete).futureValue
+      run(InputSchema.table ++= inputs).futureValue
+      run(TokenOutputSchema.table.delete).futureValue
+      run(TokenOutputSchema.table ++= tokenOutputs).futureValue
+
+      addresses.foreach { address =>
+        val result =
+          run(TokenQueries.listAddressTokensWithBalanceAction(address, pagination)).futureValue
+
+        val expected = tokenOutputs
+          .filter(t =>
+            t.address == address && t.mainChain && !t.spentFinalized.isDefined && !inputs
+              .filter(_.mainChain)
+              .exists(
+                _.outputRefKey == t.key
+              )
+          )
+          .map(t => (t.token, t.amount, if (t.lockTime.exists(_ > now)) t.amount else U256.Zero))
+
+        result should contain allElementsOf expected
       }
     }
   }
