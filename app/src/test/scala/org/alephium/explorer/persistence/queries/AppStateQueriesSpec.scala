@@ -68,8 +68,9 @@ class AppStateQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
       forAll(hashGen) { hash =>
         run(AppStateSchema.table.delete).futureValue
         run(sqlu"INSERT INTO app_state VALUES (${key.key}, ${serialize(hash)})").futureValue
-        run(AppStateQueries.get(key)).failed.futureValue should (be(a[SerdeError.WrongFormat]) or be(
-          a[org.postgresql.util.PSQLException]))
+        run(AppStateQueries.get(key)).failed.futureValue should (be(
+          a[SerdeError.WrongFormat]
+        ) or be(a[org.postgresql.util.PSQLException]))
       }
     }
 

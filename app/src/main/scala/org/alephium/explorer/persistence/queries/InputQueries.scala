@@ -73,16 +73,17 @@ object InputQueries {
             params >> input.outputRefTxHash
             params >> input.outputRefAddress
             params >> input.outputRefAmount
-        }
+          }
 
       SQLActionBuilder(
         queryParts = query,
-        unitPConv  = parameters
+        unitPConv = parameters
       ).asUpdate
     }
 
   def inputsFromTxs(
-      hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionR[ArraySeq[InputsFromTxQR]] =
+      hashes: ArraySeq[(TransactionId, BlockHash)]
+  ): DBActionR[ArraySeq[InputsFromTxQR]] =
     if (hashes.nonEmpty) {
       inputsFromTxsBuilder(hashes).asAS[InputsFromTxQR]
     } else {
@@ -90,36 +91,36 @@ object InputQueries {
     }
 
   private def inputsFromTxsBuilder(
-      hashes: ArraySeq[(TransactionId, BlockHash)]): SQLActionBuilder = {
+      hashes: ArraySeq[(TransactionId, BlockHash)]
+  ): SQLActionBuilder = {
     val params = paramPlaceholderTuple2(1, hashes.size)
 
     val query =
       s"""
-           |SELECT tx_hash,
-           |       input_order,
-           |       hint,
-           |       output_ref_key,
-           |       unlock_script,
-           |       output_ref_tx_hash,
-           |       output_ref_address,
-           |       output_ref_amount,
-           |       output_ref_tokens
-           |FROM inputs
-           |WHERE (tx_hash, block_hash) IN $params
-           |
-           |""".stripMargin
+         |SELECT tx_hash,
+         |       input_order,
+         |       hint,
+         |       output_ref_key,
+         |       unlock_script,
+         |       output_ref_tx_hash,
+         |       output_ref_address,
+         |       output_ref_amount,
+         |       output_ref_tokens
+         |FROM inputs
+         |WHERE (tx_hash, block_hash) IN $params
+         |
+         |""".stripMargin
 
     val parameters: SetParameter[Unit] =
       (_: Unit, params: PositionedParameters) =>
-        hashes foreach {
-          case (txnHash, blockHash) =>
-            params >> txnHash
-            params >> blockHash
-      }
+        hashes foreach { case (txnHash, blockHash) =>
+          params >> txnHash
+          params >> blockHash
+        }
 
     SQLActionBuilder(
       queryParts = query,
-      unitPConv  = parameters
+      unitPConv = parameters
     )
   }
 
@@ -159,21 +160,23 @@ object InputQueries {
         ORDER BY block_timestamp #${if (ascendingOrder) "" else "DESC"}
     """.asASE[InputEntity](inputGetResult)
 
-  /** Runs explain on query `inputsFromTxs` and checks the index `inputs_tx_hash_block_hash_idx`
-    * is being used */
-  def explainInputsFromTxs(hashes: ArraySeq[(TransactionId, BlockHash)])(
-      implicit ec: ExecutionContext): DBActionR[ExplainResult] = {
+  /** Runs explain on query `inputsFromTxs` and checks the index `inputs_tx_hash_block_hash_idx` is
+    * being used
+    */
+  def explainInputsFromTxs(
+      hashes: ArraySeq[(TransactionId, BlockHash)]
+  )(implicit ec: ExecutionContext): DBActionR[ExplainResult] = {
     val queryName = "inputsFromTxs"
     if (hashes.isEmpty) {
       DBIOAction.successful(ExplainResult.emptyInput(queryName))
     } else {
       inputsFromTxsBuilder(hashes).explainAnalyze() map { explain =>
         ExplainResult(
-          queryName  = queryName,
+          queryName = queryName,
           queryInput = hashes.toString(),
-          explain    = explain,
-          messages   = Iterable.empty,
-          passed     = explain.exists(_.contains("inputs_tx_hash_block_hash_idx"))
+          explain = explain,
+          messages = Iterable.empty,
+          passed = explain.exists(_.contains("inputs_tx_hash_block_hash_idx"))
         )
       }
     }

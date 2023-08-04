@@ -29,7 +29,7 @@ object Metrics {
   val namespace                          = "explorer_backend"
   val prometheus: PrometheusMetrics[Future] = PrometheusMetrics[Future](
     namespace = namespace,
-    registry  = defaultRegistry,
+    registry = defaultRegistry,
     metrics = List(
       PrometheusMetrics.requestTotal(defaultRegistry, namespace, MetricLabels.Default),
       PrometheusMetrics.requestDuration(defaultRegistry, namespace, MetricLabels.Default),

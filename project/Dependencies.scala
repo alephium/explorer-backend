@@ -51,11 +51,12 @@ object Dependencies {
   lazy val tapirServer = "com.softwaremill.sttp.tapir" %% "tapir-server"       % Version.tapir
   lazy val tapirVertx  = "com.softwaremill.sttp.tapir" %% "tapir-vertx-server" % Version.tapir
 
-  lazy val tapirOpenapi      = "com.softwaremill.sttp.tapir"   %% "tapir-openapi-docs"               % Version.tapir
-  lazy val tapirSwaggerUi    = "com.softwaremill.sttp.tapir"   %% "tapir-swagger-ui"                 % Version.tapir
-  lazy val tapirOpenapiModel = "com.softwaremill.sttp.apispec" %% "openapi-model"                    % Version.apispec
-  lazy val tapirClient       = "com.softwaremill.sttp.tapir"   %% "tapir-sttp-client"                % Version.tapir
-  lazy val sttpBackend       = "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % Version.sttp
+  lazy val tapirOpenapi   = "com.softwaremill.sttp.tapir" %% "tapir-openapi-docs" % Version.tapir
+  lazy val tapirSwaggerUi = "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui"   % Version.tapir
+  lazy val tapirOpenapiModel = "com.softwaremill.sttp.apispec" %% "openapi-model" % Version.apispec
+  lazy val tapirClient = "com.softwaremill.sttp.tapir" %% "tapir-sttp-client" % Version.tapir
+  lazy val sttpBackend =
+    "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % Version.sttp
 
   lazy val `upickle` = "com.lihaoyi" %% "upickle" % "1.6.0"
 
@@ -63,21 +64,24 @@ object Dependencies {
 
   lazy val ficus = "com.iheart" %% "ficus" % "1.5.2"
 
-  lazy val scalatest     = "org.scalatest"              %% "scalatest"       % "3.2.13" % Test
-  lazy val scalacheck    = "org.scalacheck"             %% "scalacheck"      % "1.14.3" % Test
+  lazy val scalatest     = "org.scalatest"              %% "scalatest"       % "3.2.13"   % Test
+  lazy val scalacheck    = "org.scalacheck"             %% "scalacheck"      % "1.14.3"   % Test
   lazy val scalatestplus = "org.scalatestplus"          %% "scalacheck-1-16" % "3.2.13.0" % Test
-  lazy val scalaMock     = "org.scalamock"              %% "scalamock"       % "5.2.0" % Test
+  lazy val scalaMock     = "org.scalamock"              %% "scalamock"       % "5.2.0"    % Test
   lazy val scalaLogging  = "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.2"
-  lazy val logback       = "ch.qos.logback"             % "logback-classic"  % "1.2.3"
+  lazy val logback       = "ch.qos.logback"              % "logback-classic" % "1.2.3"
 
-  lazy val slick      = "com.typesafe.slick" %% "slick"     % Version.slick
-  lazy val postgresql = "org.postgresql"     % "postgresql" % Version.postgresql
+  lazy val slick      = "com.typesafe.slick" %% "slick"      % Version.slick
+  lazy val postgresql = "org.postgresql"      % "postgresql" % Version.postgresql
 
   lazy val slickHikaricp = "com.typesafe.slick" %% "slick-hikaricp" % Version.slick
 
-  lazy val prometheusSimpleClient        = "io.prometheus"               % "simpleclient"                   % Version.prometheus
-  lazy val prometheusSimpleClientHotspot = "io.prometheus"               % "simpleclient_hotspot"           % Version.prometheus
-  lazy val tapirPrometheusMetrics        = "com.softwaremill.sttp.tapir" %% "tapir-prometheus-metrics"      % Version.tapir
-  lazy val micrometerCore                = "io.micrometer"               % "micrometer-core"                % Version.micrometer
-  lazy val micrometerPrometheus          = "io.micrometer"               % "micrometer-registry-prometheus" % Version.micrometer
+  lazy val prometheusSimpleClient = "io.prometheus" % "simpleclient" % Version.prometheus
+  lazy val prometheusSimpleClientHotspot =
+    "io.prometheus" % "simpleclient_hotspot" % Version.prometheus
+  lazy val tapirPrometheusMetrics =
+    "com.softwaremill.sttp.tapir" %% "tapir-prometheus-metrics" % Version.tapir
+  lazy val micrometerCore = "io.micrometer" % "micrometer-core" % Version.micrometer
+  lazy val micrometerPrometheus =
+    "io.micrometer" % "micrometer-registry-prometheus" % Version.micrometer
 }

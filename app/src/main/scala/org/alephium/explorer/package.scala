@@ -26,9 +26,10 @@ package object explorer {
     def =/=(other: A): Boolean = self != other
   }
 
-  def foldFutures[A, B: ClassTag](seqA: ArraySeq[A])(f: A => Future[B])(
-      implicit executionContext: ExecutionContext): Future[ArraySeq[B]] =
-    seqA.foldLeft(Future.successful(ArraySeq.empty[B])) {
-      case (acc, a) => acc.flatMap(p => f(a).map(b => p :+ b))
+  def foldFutures[A, B: ClassTag](
+      seqA: ArraySeq[A]
+  )(f: A => Future[B])(implicit executionContext: ExecutionContext): Future[ArraySeq[B]] =
+    seqA.foldLeft(Future.successful(ArraySeq.empty[B])) { case (acc, a) =>
+      acc.flatMap(p => f(a).map(b => p :+ b))
     }
 }

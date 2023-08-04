@@ -27,19 +27,21 @@ object InfoFromTxsQR {
   implicit val infoFromTxsQRGetResult: GetResult[InfoFromTxsQR] =
     (result: PositionedResult) =>
       InfoFromTxsQR(
-        txHash            = result.<<,
-        gasAmount         = result.<<,
-        gasPrice          = result.<<,
+        txHash = result.<<,
+        gasAmount = result.<<,
+        gasPrice = result.<<,
         scriptExecutionOk = result.<<
-    )
+      )
 
 }
 
 /** Query result for [[org.alephium.explorer.persistence.queries.TransactionQueries]] */
-final case class InfoFromTxsQR(txHash: TransactionId,
-                               gasAmount: Int,
-                               gasPrice: U256,
-                               scriptExecutionOk: Boolean) {
+final case class InfoFromTxsQR(
+    txHash: TransactionId,
+    gasAmount: Int,
+    gasPrice: U256,
+    scriptExecutionOk: Boolean
+) {
 
   def info(): (Int, U256, Boolean) =
     (gasAmount, gasPrice, scriptExecutionOk)

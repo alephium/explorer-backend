@@ -35,7 +35,9 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
       forAll(Gen.listOfN(30, transactionPerTokenEntityGen()), tokenIdGen) {
         case (txPerTokens, token) =>
           run(TransactionPerTokenSchema.table.delete).futureValue
-          run(TransactionPerTokenSchema.table ++= txPerTokens.map(_.copy(token = token))).futureValue
+          run(
+            TransactionPerTokenSchema.table ++= txPerTokens.map(_.copy(token = token))
+          ).futureValue
 
           val expected = txPerTokens
             .filter(_.mainChain)
@@ -44,7 +46,9 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
             run(
               TokenQueries.listTokenTransactionsAction(
                 token,
-                Pagination.unsafe(1, txPerTokens.size))).futureValue
+                Pagination.unsafe(1, txPerTokens.size)
+              )
+            ).futureValue
 
           result.size is expected.size
           result should contain allElementsOf expected
@@ -57,7 +61,9 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
           run(TokenPerAddressSchema.table.delete).futureValue
           run(
             TokenPerAddressSchema.table ++= txPerAddressTokens.map(
-              _.copy(address = address, token = token))).futureValue
+              _.copy(address = address, token = token)
+            )
+          ).futureValue
 
           val expected = txPerAddressTokens
             .filter(_.mainChain)
@@ -67,7 +73,9 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
               TokenQueries.getTokenTxHashesByAddressQuery(
                 address,
                 token,
-                Pagination.unsafe(1, txPerAddressTokens.size))).futureValue
+                Pagination.unsafe(1, txPerAddressTokens.size)
+              )
+            ).futureValue
 
           result.size is expected.size
           result should contain allElementsOf expected

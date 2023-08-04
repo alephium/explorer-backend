@@ -6,19 +6,21 @@ def mainProject(id: String): Project = {
   Project(id, file(id))
     .settings(commonSettings: _*)
     .settings(
-      name := s"explorer-backend-$id",
+      name                       := s"explorer-backend-$id",
       Compile / scalastyleConfig := root.base / "scalastyle-config.xml",
-      Test / scalastyleConfig := root.base / "scalastyle-test-config.xml"
+      Test / scalastyleConfig    := root.base / "scalastyle-test-config.xml"
     )
     .enablePlugins(JavaAppPackaging, sbtdocker.DockerPlugin, ScalaUnidocPlugin)
 }
 
-/**
-  * Finds the jar file for an external library.
+/** Finds the jar file for an external library.
   *
-  * @param classPath The classpath to search
-  * @param moduleId  Target external library to find within the classpath
-  * @return          The jar file of external library or [[sys.error]] if not found.
+  * @param classPath
+  *   The classpath to search
+  * @param moduleId
+  *   Target external library to find within the classpath
+  * @return
+  *   The jar file of external library or [[sys.error]] if not found.
   */
 def findDependencyJar(classPath: Classpath, moduleId: ModuleID): File = {
   val jarFileOption =
@@ -34,7 +36,8 @@ def findDependencyJar(classPath: Classpath, moduleId: ModuleID): File = {
 
     case None =>
       sys.error(
-        s"Dependency not found: ${moduleId.organization}:${moduleId.name}:${moduleId.revision}")
+        s"Dependency not found: ${moduleId.organization}:${moduleId.name}:${moduleId.revision}"
+      )
   }
 }
 
@@ -43,7 +46,7 @@ def scalaDocsAPIMapping(classPath: Classpath, scalaVersion: String): (sbt.File, 
   val scalaLibJar =
     findDependencyJar(
       classPath = classPath,
-      moduleId  = "org.scala-lang" % "scala-library" % scalaVersion
+      moduleId = "org.scala-lang" % "scala-library" % scalaVersion
     )
 
   val scalaDocsURL = url(s"http://www.scala-lang.org/api/$scalaVersion/")
@@ -56,10 +59,10 @@ def slickScalaDocAPIMapping(classPath: Classpath, scalaVersion: String): (sbt.Fi
   val slickJar =
     findDependencyJar(
       classPath = classPath,
-      moduleId  = slick
+      moduleId = slick
     )
 
-  //fetch only the major and minor
+  // fetch only the major and minor
   val scalaMajorMinor = scalaVersion.split("\\.").take(2).mkString(".")
   val slickDocsURL =
     url(
@@ -74,10 +77,10 @@ def caffeineJavaDocAPIMapping(classPath: Classpath): (sbt.File, sbt.URL) = {
   val slickJar =
     findDependencyJar(
       classPath = classPath,
-      moduleId  = caffeine
+      moduleId = caffeine
     )
 
-  //fetch only the major and minor
+  // fetch only the major and minor
   val docsURL =
     url(
       s"https://www.javadoc.io/doc/com.github.ben-manes.caffeine/caffeine/${caffeine.revision}/com.github.benmanes.caffeine/"
@@ -90,18 +93,18 @@ val inliningOptions =
   Seq(
     "-opt-warnings",
     "-opt:l:inline",
-    "-opt-inline-from:org.alephium.explorer.**",
-    //Uncomment to debug inlining
+    "-opt-inline-from:org.alephium.explorer.**"
+    // Uncomment to debug inlining
     /*
     "-Yopt-log-inline",
     "_"
-   */
+     */
   )
 
 val commonSettings = Seq(
-  name := "explorer-backend",
+  name         := "explorer-backend",
   organization := "org.alephium",
-  scalaVersion := "2.13.8",
+  scalaVersion := "2.13.10",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding",
@@ -137,14 +140,14 @@ val commonSettings = Seq(
     "-Ywarn-unused:privates",
     "-Ywarn-value-discard"
   ) ++ inliningOptions,
-  Test / envVars += "ALEPHIUM_ENV" -> "test",
+  Test / envVars += "ALEPHIUM_ENV"      -> "test",
   Compile / compile / wartremoverErrors := Warts.allBut(wartsCompileExcludes: _*),
-  Test / compile / wartremoverErrors := Warts.allBut(wartsTestExcludes: _*),
-  fork := true,
+  Test / compile / wartremoverErrors    := Warts.allBut(wartsTestExcludes: _*),
+  fork                                  := true,
   apiMappings ++= {
     val scalaDocsMap =
       scalaDocsAPIMapping(
-        classPath    = (Compile / fullClasspath).value,
+        classPath = (Compile / fullClasspath).value,
         scalaVersion = scalaVersion.value
       )
 
@@ -158,47 +161,49 @@ lazy val root = (project in file("."))
 
 lazy val app = mainProject("app")
   .enablePlugins(BuildInfoPlugin)
-  .settings(libraryDependencies ++= Seq(
-    alephiumUtil,
-    alephiumProtocol,
-    alephiumApi,
-    alephiumCrypto,
-    alephiumJson,
-    rxJava,
-    alephiumHttp,
-    alephiumConf,
-    tapirCore,
-    tapirServer,
-    tapirVertx,
-    vertxRxJava,
-    tapirOpenapi,
-    tapirOpenapiModel,
-    tapirSwaggerUi,
-    tapirClient,
-    sttpBackend,
-    upickle,
-    caffeine,
-    ficus,
-    scalaLogging,
-    logback,
-    akkaTest,
-    scalatest,
-    scalaMock,
-    scalatestplus,
-    scalacheck,
-    slick,
-    slickHikaricp,
-    postgresql,
-    prometheusSimpleClient,
-    prometheusSimpleClientHotspot,
-    tapirPrometheusMetrics,
-    micrometerCore,
-    micrometerPrometheus,
-  ))
   .settings(
-    assembly / mainClass := Some("org.alephium.explorer.Main"),
+    libraryDependencies ++= Seq(
+      alephiumUtil,
+      alephiumProtocol,
+      alephiumApi,
+      alephiumCrypto,
+      alephiumJson,
+      rxJava,
+      alephiumHttp,
+      alephiumConf,
+      tapirCore,
+      tapirServer,
+      tapirVertx,
+      vertxRxJava,
+      tapirOpenapi,
+      tapirOpenapiModel,
+      tapirSwaggerUi,
+      tapirClient,
+      sttpBackend,
+      upickle,
+      caffeine,
+      ficus,
+      scalaLogging,
+      logback,
+      akkaTest,
+      scalatest,
+      scalaMock,
+      scalatestplus,
+      scalacheck,
+      slick,
+      slickHikaricp,
+      postgresql,
+      prometheusSimpleClient,
+      prometheusSimpleClientHotspot,
+      tapirPrometheusMetrics,
+      micrometerCore,
+      micrometerPrometheus
+    )
+  )
+  .settings(
+    assembly / mainClass       := Some("org.alephium.explorer.Main"),
     assembly / assemblyJarName := s"explorer-backend-${version.value}.jar",
-    assembly / test := {},
+    assembly / test            := {},
     docker / dockerfile := {
       val appSource = stage.value
       val appTarget = "/app"
@@ -216,7 +221,7 @@ lazy val app = mainProject("app")
       val versionTag    = version.value.replace('+', '_')
       Seq(
         ImageName(baseImageName + ":" + versionTag),
-        ImageName(baseImageName + ":latest"),
+        ImageName(baseImageName + ":latest")
       )
     },
     buildInfoKeys := Seq[BuildInfoKey](
@@ -227,7 +232,7 @@ lazy val app = mainProject("app")
       BuildInfoKey("branch"         -> git.gitCurrentBranch.value),
       BuildInfoKey("releaseVersion" -> version.value)
     ),
-    buildInfoPackage := "org.alephium.explorer",
+    buildInfoPackage          := "org.alephium.explorer",
     buildInfoUsePackageAsPath := true,
     assembly / assemblyMergeStrategy := {
       case PathList("META-INF", "io.netty.versions.properties", xs @ _*) =>
@@ -243,7 +248,7 @@ lazy val app = mainProject("app")
 
       val slickAPIMapping =
         slickScalaDocAPIMapping(
-          classPath    = classPath,
+          classPath = classPath,
           scalaVersion = scalaVersion.value
         )
 
@@ -275,29 +280,29 @@ lazy val benchmark = mainProject("benchmark")
     apiMappings ++= {
       val slickAPIMapping =
         slickScalaDocAPIMapping(
-          classPath    = (Compile / fullClasspath).value,
+          classPath = (Compile / fullClasspath).value,
           scalaVersion = scalaVersion.value
         )
 
       Map(slickAPIMapping)
     },
-    Jmh / sourceDirectory := (Test / sourceDirectory).value,
-    Jmh / classDirectory := (Test / classDirectory).value,
+    Jmh / sourceDirectory     := (Test / sourceDirectory).value,
+    Jmh / classDirectory      := (Test / classDirectory).value,
     Jmh / dependencyClasspath := (Test / dependencyClasspath).value,
     // rewire tasks, so that 'jmh:run' automatically invokes 'jmh:compile' (otherwise a clean 'jmh:run' would fail)
     Jmh / compile := (Jmh / compile).dependsOn(Test / compile).value,
-    Jmh / run := (Jmh / run).dependsOn(Test / Keys.compile).evaluated,
+    Jmh / run     := (Jmh / run).dependsOn(Test / Keys.compile).evaluated
   )
 
 val wartsCompileExcludes = Seq(
   Wart.Any,
   Wart.ImplicitParameter,
   Wart.StringPlusAny,
-  Wart.Null, // for upickle macroRW
-  Wart.Equals, // for upickle macroRW
+  Wart.Null,     // for upickle macroRW
+  Wart.Equals,   // for upickle macroRW
   Wart.ToString, // for upickle macroRW
-  Wart.Var, // for upickle macroRW
-  Wart.Throw, // for upickle macroRW
+  Wart.Var,      // for upickle macroRW
+  Wart.Throw,    // for upickle macroRW
   Wart.Nothing
 )
 

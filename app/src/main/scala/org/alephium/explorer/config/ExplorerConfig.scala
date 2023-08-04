@@ -41,7 +41,7 @@ object ExplorerConfig {
     if (groupNum < 0) {
       Failure(InvalidGroupNumber(groupNum))
     } else {
-      //Is 0 a valid groupNum? Is there a max limit?
+      // Is 0 a valid groupNum? Is there a max limit?
       Success(groupNum)
     }
 
@@ -153,52 +153,56 @@ object ExplorerConfig {
   def load(config: Config): ExplorerConfig =
     config.as[ExplorerConfig]("alephium")
 
-  private final case class BlockFlow(groupNum: Int,
-                                     directCliqueAccess: Boolean,
-                                     host: String,
-                                     port: Int,
-                                     wsPort: Int,
-                                     networkId: NetworkId,
-                                     apiKey: Option[ApiKey])
+  final private case class BlockFlow(
+      groupNum: Int,
+      directCliqueAccess: Boolean,
+      host: String,
+      port: Int,
+      wsPort: Int,
+      networkId: NetworkId,
+      apiKey: Option[ApiKey]
+  )
 
-  private final case class Explorer(host: String,
-                                    port: Int,
-                                    bootMode: BootMode,
-                                    syncPeriod: FiniteDuration,
-                                    tokenSupplyServiceScheduleTime: LocalTime,
-                                    hashRateServiceSyncPeriod: FiniteDuration,
-                                    finalizerServiceSyncPeriod: FiniteDuration,
-                                    transactionHistoryServiceSyncPeriod: FiniteDuration,
-                                    cacheRowCountReloadPeriod: FiniteDuration,
-                                    cacheBlockTimesReloadPeriod: FiniteDuration,
-                                    cacheLatestBlocksReloadPeriod: FiniteDuration,
-                                    exportTxsNumberThreshold: Int,
-                                    streamParallelism: Int)
+  final private case class Explorer(
+      host: String,
+      port: Int,
+      bootMode: BootMode,
+      syncPeriod: FiniteDuration,
+      tokenSupplyServiceScheduleTime: LocalTime,
+      hashRateServiceSyncPeriod: FiniteDuration,
+      finalizerServiceSyncPeriod: FiniteDuration,
+      transactionHistoryServiceSyncPeriod: FiniteDuration,
+      cacheRowCountReloadPeriod: FiniteDuration,
+      cacheBlockTimesReloadPeriod: FiniteDuration,
+      cacheLatestBlocksReloadPeriod: FiniteDuration,
+      exportTxsNumberThreshold: Int,
+      streamParallelism: Int
+  )
 
 }
 
-/**
-  * Configurations to boot-up Explorer.
+/** Configurations to boot-up Explorer.
   *
-  * The default constructor is private to ensure the configurations are
-  * always valid.
-  * */
-final case class ExplorerConfig private (groupNum: Int,
-                                         directCliqueAccess: Boolean,
-                                         blockFlowUri: Uri,
-                                         blockFlowWsUri: Uri,
-                                         networkId: NetworkId,
-                                         maybeBlockFlowApiKey: Option[ApiKey],
-                                         host: String,
-                                         port: Int,
-                                         bootMode: BootMode,
-                                         syncPeriod: FiniteDuration,
-                                         tokenSupplyServiceScheduleTime: LocalTime,
-                                         hashRateServiceSyncPeriod: FiniteDuration,
-                                         finalizerServiceSyncPeriod: FiniteDuration,
-                                         transactionHistoryServiceSyncPeriod: FiniteDuration,
-                                         cacheRowCountReloadPeriod: FiniteDuration,
-                                         cacheBlockTimesReloadPeriod: FiniteDuration,
-                                         cacheLatestBlocksReloadPeriod: FiniteDuration,
-                                         exportTxsNumberThreshold: Int,
-                                         streamParallelism: Int)
+  * The default constructor is private to ensure the configurations are always valid.
+  */
+final case class ExplorerConfig private (
+    groupNum: Int,
+    directCliqueAccess: Boolean,
+    blockFlowUri: Uri,
+    blockFlowWsUri: Uri,
+    networkId: NetworkId,
+    maybeBlockFlowApiKey: Option[ApiKey],
+    host: String,
+    port: Int,
+    bootMode: BootMode,
+    syncPeriod: FiniteDuration,
+    tokenSupplyServiceScheduleTime: LocalTime,
+    hashRateServiceSyncPeriod: FiniteDuration,
+    finalizerServiceSyncPeriod: FiniteDuration,
+    transactionHistoryServiceSyncPeriod: FiniteDuration,
+    cacheRowCountReloadPeriod: FiniteDuration,
+    cacheBlockTimesReloadPeriod: FiniteDuration,
+    cacheLatestBlocksReloadPeriod: FiniteDuration,
+    exportTxsNumberThreshold: Int,
+    streamParallelism: Int
+)

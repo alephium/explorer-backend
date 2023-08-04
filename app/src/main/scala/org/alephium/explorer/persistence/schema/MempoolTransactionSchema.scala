@@ -33,7 +33,7 @@ object MempoolTransactionSchema extends Schema[MempoolTransactionEntity]("utrans
     def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
     def gasAmount: Rep[Int]        = column[Int]("gas_amount")
     def gasPrice: Rep[U256] =
-      column[U256]("gas_price", O.SqlType("DECIMAL(80,0)")) //U256.MaxValue has 78 digits
+      column[U256]("gas_price", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
     def lastSeen: Rep[TimeStamp] = column[TimeStamp]("last_seen")
 
     def lastSeenIdx: Index = index("utransactions_last_seen_idx", lastSeen)

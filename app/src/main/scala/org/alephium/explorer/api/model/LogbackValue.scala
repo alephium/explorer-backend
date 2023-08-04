@@ -51,13 +51,17 @@ object LogbackValue {
     }
 
     @SuppressWarnings(
-      Array("org.wartremover.warts.JavaSerializable",
-            "org.wartremover.warts.Product",
-            "org.wartremover.warts.Serializable")) // Wartremover is complaining, don't now why :/
+      Array(
+        "org.wartremover.warts.JavaSerializable",
+        "org.wartremover.warts.Product",
+        "org.wartremover.warts.Serializable"
+      )
+    ) // Wartremover is complaining, don't now why :/
     val levels: ArraySeq[Level] = ArraySeq(Trace, Debug, Info, Warn, Error)
 
     implicit val levelReadWriter: ReadWriter[Level] = readwriter[String].bimap(
-      _.toString, {
+      _.toString,
+      {
         case "TRACE" => Trace
         case "DEBUG" => Debug
         case "INFO"  => Info

@@ -36,12 +36,15 @@ import org.alephium.explorer.service.TransactionService
 import org.alephium.protocol.model.Address
 import org.alephium.util.Duration
 
-class AddressServer(transactionService: TransactionService,
-                    exportTxsNumberThreshold: Int,
-                    streamParallelism: Int)(implicit val executionContext: ExecutionContext,
-                                            groupSetting: GroupSetting,
-                                            dc: DatabaseConfig[PostgresProfile])
-    extends Server
+class AddressServer(
+    transactionService: TransactionService,
+    exportTxsNumberThreshold: Int,
+    streamParallelism: Int
+)(implicit
+    val executionContext: ExecutionContext,
+    groupSetting: GroupSetting,
+    dc: DatabaseConfig[PostgresProfile]
+) extends Server
     with AddressesEndpoints {
 
   val groupNum = groupSetting.groupNum
@@ -53,23 +56,23 @@ class AddressServer(transactionService: TransactionService,
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
-      route(getTransactionsByAddress.serverLogicSuccess[Future] {
-        case (address, pagination) =>
-          transactionService
-            .getTransactionsByAddress(address, pagination)
+      route(getTransactionsByAddress.serverLogicSuccess[Future] { case (address, pagination) =>
+        transactionService
+          .getTransactionsByAddress(address, pagination)
       }),
-      route(getTransactionsByAddresses.serverLogicSuccess[Future] {
-        case (addresses, pagination) =>
-          transactionService
-            .getTransactionsByAddresses(addresses, pagination)
+      route(getTransactionsByAddresses.serverLogicSuccess[Future] { case (addresses, pagination) =>
+        transactionService
+          .getTransactionsByAddresses(addresses, pagination)
       }),
       route(getTransactionsByAddressTimeRanged.serverLogicSuccess[Future] {
         case (address, timeInterval, pagination) =>
           transactionService
-            .getTransactionsByAddressTimeRanged(address,
-                                                timeInterval.from,
-                                                timeInterval.to,
-                                                pagination)
+            .getTransactionsByAddressTimeRanged(
+              address,
+              timeInterval.from,
+              timeInterval.to,
+              pagination
+            )
       }),
       route(addressMempoolTransactions.serverLogicSuccess[Future] { address =>
         transactionService
@@ -89,17 +92,15 @@ class AddressServer(transactionService: TransactionService,
           (balance, locked) <- transactionService.getBalance(address)
         } yield AddressBalance(balance, locked)
       }),
-      route(getAddressTokenBalance.serverLogicSuccess[Future] {
-        case (address, token) =>
-          for {
-            (balance, locked) <- transactionService.getTokenBalance(address, token)
-          } yield AddressBalance(balance, locked)
+      route(getAddressTokenBalance.serverLogicSuccess[Future] { case (address, token) =>
+        for {
+          (balance, locked) <- transactionService.getTokenBalance(address, token)
+        } yield AddressBalance(balance, locked)
       }),
-      route(listAddressTokens.serverLogicSuccess[Future] {
-        case (address, pagination) =>
-          for {
-            tokens <- transactionService.listAddressTokens(address, pagination)
-          } yield tokens
+      route(listAddressTokens.serverLogicSuccess[Future] { case (address, pagination) =>
+        for {
+          tokens <- transactionService.listAddressTokens(address, pagination)
+        } yield tokens
       }),
       route(listAddressTokenTransactions.serverLogicSuccess[Future] {
         case (address, token, pagination) =>
@@ -110,24 +111,27 @@ class AddressServer(transactionService: TransactionService,
       route(areAddressesActive.serverLogicSuccess[Future] { addresses =>
         transactionService.areAddressesActive(addresses)
       }),
-      route(exportTransactionsCsvByAddress.serverLogic[Future] {
-        case (address, timeInterval) =>
-          exportTransactions(address, timeInterval).map(_.map { stream =>
-            (AddressServer.exportFileNameHeader(address, timeInterval), stream)
-          })
+      route(exportTransactionsCsvByAddress.serverLogic[Future] { case (address, timeInterval) =>
+        exportTransactions(address, timeInterval).map(_.map { stream =>
+          (AddressServer.exportFileNameHeader(address, timeInterval), stream)
+        })
       }),
       route(getAddressAmountHistory.serverLogic[Future] {
         case (address, timeInterval, intervalType) =>
           validateTimeInterval(timeInterval, intervalType) {
             val flowable =
-              transactionService.getAmountHistory(address,
-                                                  timeInterval.from,
-                                                  timeInterval.to,
-                                                  intervalType,
-                                                  streamParallelism)
+              transactionService.getAmountHistory(
+                address,
+                timeInterval.from,
+                timeInterval.to,
+                intervalType,
+                streamParallelism
+              )
             Future.successful(
-              (AddressServer.amountHistoryFileNameHeader(address, timeInterval),
-               FlowableHelper.toReadStream(flowable))
+              (
+                AddressServer.amountHistoryFileNameHeader(address, timeInterval),
+                FlowableHelper.toReadStream(flowable)
+              )
             )
           }
       })
@@ -141,25 +145,33 @@ class AddressServer(transactionService: TransactionService,
       .hasAddressMoreTxsThan(address, timeInterval.from, timeInterval.to, exportTxsNumberThreshold)
       .map { hasMore =>
         if (hasMore) {
-          Left(ApiError.BadRequest(
-            s"Too many transactions for that address in this time range, limit is $exportTxsNumberThreshold"))
+          Left(
+            ApiError.BadRequest(
+              s"Too many transactions for that address in this time range, limit is $exportTxsNumberThreshold"
+            )
+          )
         } else {
-          val flowable = transactionService.exportTransactionsByAddress(address,
-                                                                        timeInterval.from,
-                                                                        timeInterval.to,
-                                                                        1,
-                                                                        streamParallelism)
+          val flowable = transactionService.exportTransactionsByAddress(
+            address,
+            timeInterval.from,
+            timeInterval.to,
+            1,
+            streamParallelism
+          )
           Right(FlowableHelper.toReadStream(flowable))
         }
       }
   }
 
   private def validateTimeInterval[A](timeInterval: TimeInterval, intervalType: IntervalType)(
-      contd: => Future[A]): Future[Either[ApiError[_ <: StatusCode], A]] =
-    IntervalType.validateTimeInterval(timeInterval,
-                                      intervalType,
-                                      maxHourlyTimeSpan,
-                                      maxDailyTimeSpan)(contd)
+      contd: => Future[A]
+  ): Future[Either[ApiError[_ <: StatusCode], A]] =
+    IntervalType.validateTimeInterval(
+      timeInterval,
+      intervalType,
+      maxHourlyTimeSpan,
+      maxDailyTimeSpan
+    )(contd)
 }
 
 object AddressServer {

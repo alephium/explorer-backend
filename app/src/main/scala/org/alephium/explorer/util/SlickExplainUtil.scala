@@ -38,9 +38,10 @@ object SlickExplainUtil {
       alterHeadQuery(sql, "EXPLAIN")
   }
 
-  /** For typed static queries  */
+  /** For typed static queries */
   implicit class FixedSqlStreamingActionImplicits[+R, +T, -E <: Effect](
-      sql: FixedSqlStreamingAction[R, T, E]) {
+      sql: FixedSqlStreamingAction[R, T, E]
+  ) {
 
     /** Adds `EXPLAIN ANALYZE` to head query */
     def explainAnalyze(): SqlStreamingAction[Vector[String], String, Effect.Read] =
@@ -59,8 +60,10 @@ object SlickExplainUtil {
 
   /** Alter's first query with the prefix. */
   @SuppressWarnings(Array("org.wartremover.warts.Overloading", "org.wartremover.warts.IterableOps"))
-  def alterHeadQuery(sql: SQLActionBuilder,
-                     prefix: String): SqlStreamingAction[Vector[String], String, Effect.Read] =
+  def alterHeadQuery(
+      sql: SQLActionBuilder,
+      prefix: String
+  ): SqlStreamingAction[Vector[String], String, Effect.Read] =
     sql
       .copy(queryParts = sql.queryParts.updated(0, s"$prefix ${sql.queryParts.head}"))
       .as[String]
@@ -69,12 +72,14 @@ object SlickExplainUtil {
   @SuppressWarnings(Array("org.wartremover.warts.Overloading", "org.wartremover.warts.IterableOps"))
   def alterHeadQuery[R, T, E <: Effect](
       sql: FixedSqlStreamingAction[R, T, E],
-      prefix: String): SqlStreamingAction[Vector[String], String, Effect.Read] =
+      prefix: String
+  ): SqlStreamingAction[Vector[String], String, Effect.Read] =
     if (sql.statements.sizeIs == 1) {
       alterHeadQuery(sql"#${sql.statements.head}", prefix)
     } else if (sql.statements.sizeIs <= 0) {
       throw new Exception(
-        s"$prefix cannot be implemented for empty SQL. Statement size: ${sql.statements.size}")
+        s"$prefix cannot be implemented for empty SQL. Statement size: ${sql.statements.size}"
+      )
     } else {
       throw new Exception(
         s"TODO: $prefix not yet implemented for nested queries. Statement size: ${sql.statements.size}"

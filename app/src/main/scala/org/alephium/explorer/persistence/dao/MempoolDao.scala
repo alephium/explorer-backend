@@ -35,40 +35,51 @@ import org.alephium.protocol.model.{Address, TransactionId}
 
 trait MempoolDao {
 
-  def get(hash: TransactionId)(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Option[MempoolTransaction]]
+  def get(hash: TransactionId)(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Option[MempoolTransaction]]
 
-  def list(pagination: Pagination)(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[MempoolTransaction]]
+  def list(pagination: Pagination)(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[MempoolTransaction]]
 
-  def listByAddress(address: Address)(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[MempoolTransaction]]
+  def listByAddress(address: Address)(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[MempoolTransaction]]
 
-  def insertMany(utxs: ArraySeq[MempoolTransaction])(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit]
+  def insertMany(utxs: ArraySeq[MempoolTransaction])(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit]
 
-  def listHashes()(implicit executionContext: ExecutionContext,
-                   databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TransactionId]]
+  def listHashes()(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[TransactionId]]
 
-  def removeMany(txs: ArraySeq[TransactionId])(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit]
+  def removeMany(txs: ArraySeq[TransactionId])(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit]
 
-  def removeAndInsertMany(toRemove: ArraySeq[TransactionId],
-                          toInsert: ArraySeq[MempoolTransaction])(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit]
+  def removeAndInsertMany(
+      toRemove: ArraySeq[TransactionId],
+      toInsert: ArraySeq[MempoolTransaction]
+  )(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit]
 }
 
 object MempoolDao extends MempoolDao {
 
-  def get(hash: TransactionId)(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Option[MempoolTransaction]] = {
+  def get(hash: TransactionId)(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Option[MempoolTransaction]] = {
     run(for {
       maybeTx <- utxFromTxHash(hash)
       inputs  <- uinputsFromTx(hash)
@@ -88,9 +99,10 @@ object MempoolDao extends MempoolDao {
       }
     })
   }
-  def list(pagination: Pagination)(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[MempoolTransaction]] = {
+  def list(pagination: Pagination)(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[MempoolTransaction]] = {
 
     run(for {
       txs <- listPaginatedMempoolTransactionsQuery(pagination)
@@ -112,9 +124,10 @@ object MempoolDao extends MempoolDao {
       }
     })
   }
-  def listByAddress(address: Address)(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[MempoolTransaction]] = {
+  def listByAddress(address: Address)(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[MempoolTransaction]] = {
     run(for {
       txHashes <- listUTXHashesByAddress(address)
       txs      <- utxsFromTxs(txHashes)
@@ -136,8 +149,9 @@ object MempoolDao extends MempoolDao {
     })
   }
 
-  private def insertManyAction(utxs: ArraySeq[MempoolTransaction])(
-      implicit executionContext: ExecutionContext): DBActionW[Unit] = {
+  private def insertManyAction(
+      utxs: ArraySeq[MempoolTransaction]
+  )(implicit executionContext: ExecutionContext): DBActionW[Unit] = {
     val entities = utxs.map(MempoolTransactionEntity.from)
     val txs      = entities.map { case (tx, _, _) => tx }
     val inputs   = entities.flatMap { case (_, in, _) => in }
@@ -149,20 +163,23 @@ object MempoolDao extends MempoolDao {
     } yield ()
   }
 
-  def insertMany(utxs: ArraySeq[MempoolTransaction])(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
+  def insertMany(utxs: ArraySeq[MempoolTransaction])(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = {
     run(insertManyAction(utxs))
   }
 
-  def listHashes()(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TransactionId]] = {
+  def listHashes()(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[TransactionId]] = {
     run(listHashesQuery)
   }
 
-  private def removeManyAction(txs: ArraySeq[TransactionId])(
-      implicit executionContext: ExecutionContext): DBActionW[Unit] = {
+  private def removeManyAction(
+      txs: ArraySeq[TransactionId]
+  )(implicit executionContext: ExecutionContext): DBActionW[Unit] = {
     for {
       _ <- MempoolTransactionSchema.table.filter(_.hash inSet txs).delete
       _ <- UOutputSchema.table.filter(_.txHash inSet txs).delete
@@ -170,16 +187,20 @@ object MempoolDao extends MempoolDao {
     } yield ()
   }
 
-  def removeMany(txs: ArraySeq[TransactionId])(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
+  def removeMany(txs: ArraySeq[TransactionId])(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = {
     run(removeManyAction(txs))
   }
 
-  def removeAndInsertMany(toRemove: ArraySeq[TransactionId],
-                          toInsert: ArraySeq[MempoolTransaction])(
-      implicit executionContext: ExecutionContext,
-      databaseConfig: DatabaseConfig[PostgresProfile]): Future[Unit] = {
+  def removeAndInsertMany(
+      toRemove: ArraySeq[TransactionId],
+      toInsert: ArraySeq[MempoolTransaction]
+  )(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = {
     run((for {
       _ <- removeManyAction(toRemove)
       _ <- insertManyAction(toInsert)

@@ -40,42 +40,50 @@ trait QueryParams extends TapirCodecs {
       .and(
         query[Option[Boolean]]("reverse")
           .description("Reverse pagination")
-          .map({
+          .map {
             case Some(reverse) => reverse
             case None          => false
-          })(Some(_)))
-      .map({ case (page, limit, reverse) => Pagination.Reversible.unsafe(page, limit, reverse) })(
-        p => (p.page, p.limit, p.reverse))
+          }(Some(_))
+      )
+      .map { case (page, limit, reverse) => Pagination.Reversible.unsafe(page, limit, reverse) }(
+        p => (p.page, p.limit, p.reverse)
+      )
 
-  def paginator(defaultLimit: Int = Pagination.defaultLimit,
-                maxLimit: Int     = Pagination.maxLimit): EndpointInput[Pagination] =
+  def paginator(
+      defaultLimit: Int = Pagination.defaultLimit,
+      maxLimit: Int = Pagination.maxLimit
+  ): EndpointInput[Pagination] =
     paginatorParams(defaultLimit, maxLimit)
-      .map({ case (page, limit) => Pagination.unsafe(page, limit) })(p => (p.page, p.limit))
+      .map { case (page, limit) => Pagination.unsafe(page, limit) }(p => (p.page, p.limit))
 
-  private def paginatorParams(defaultLimit: Int = Pagination.defaultLimit,
-                              maxLimit: Int     = Pagination.maxLimit): EndpointInput[(Int, Int)] =
+  private def paginatorParams(
+      defaultLimit: Int = Pagination.defaultLimit,
+      maxLimit: Int = Pagination.maxLimit
+  ): EndpointInput[(Int, Int)] =
     query[Option[Int]]("page")
       .description("Page number")
-      .map({
+      .map {
         case Some(page) => page
         case None       => Pagination.defaultPage
-      })(Some(_))
+      }(Some(_))
       .validate(Validator.min(1))
       .and(
         query[Option[Int]]("limit")
           .description("Number of items per page")
-          .map({
+          .map {
             case Some(limit) => limit
             case None        => defaultLimit
-          })(Some(_))
+          }(Some(_))
           .validate(Validator.min(0))
-          .validate(Validator.max(maxLimit)))
+          .validate(Validator.max(maxLimit))
+      )
 
   val timeIntervalQuery: EndpointInput[TimeInterval] =
     query[TimeStamp]("fromTs")
       .and(query[TimeStamp]("toTs"))
-      .map({ case (from, to) => TimeInterval(from, to) })(timeInterval =>
-        (timeInterval.from, timeInterval.to))
+      .map { case (from, to) => TimeInterval(from, to) }(timeInterval =>
+        (timeInterval.from, timeInterval.to)
+      )
       .validate(TimeInterval.validator)
 
   def timeIntervalWithMaxQuery(duration: Duration): EndpointInput[TimeInterval] =

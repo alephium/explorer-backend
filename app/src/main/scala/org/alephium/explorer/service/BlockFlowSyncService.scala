@@ -71,26 +71,29 @@ case object BlockFlowSyncService extends StrictLogging {
   private val upToDateDelta   = Duration.ofSecondsUnsafe(30L)
   // scalastyle:on magic.number
 
-  def start(nodeUris: ArraySeq[Uri], interval: FiniteDuration, blockflowWsUri: Uri)(
-      implicit ec: ExecutionContext,
+  def start(nodeUris: ArraySeq[Uri], interval: FiniteDuration, blockflowWsUri: Uri)(implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
       groupSetting: GroupSetting,
-      scheduler: Scheduler): Future[Unit] =
+      scheduler: Scheduler
+  ): Future[Unit] =
     scheduler.scheduleLoopConditional(
-      taskId        = this.productPrefix,
+      taskId = this.productPrefix,
       firstInterval = ScalaDuration.Zero,
-      loopInterval  = interval,
-      state         = new AtomicBoolean()
+      loopInterval = interval,
+      state = new AtomicBoolean()
     )(init())(state => syncOnce(nodeUris, state, blockflowWsUri))
 
   def syncOnce(nodeUris: ArraySeq[Uri], initialBackStepDone: AtomicBoolean, blockflowWsUri: Uri)(
-      implicit ec: ExecutionContext,
+      implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
-      groupSetting: GroupSetting): Future[Unit] = {
+      groupSetting: GroupSetting
+  ): Future[Unit] = {
     val syncResult =
       if (initialBackStepDone.get()) {
         syncOnceWith(nodeUris, defaultStep, defaultBackStep)
@@ -116,36 +119,35 @@ case object BlockFlowSyncService extends StrictLogging {
   }
 
   // scalastyle:off magic.number
-  private def syncOnceWith(nodeUris: ArraySeq[Uri], step: Duration, backStep: Duration)(
-      implicit ec: ExecutionContext,
+  private def syncOnceWith(nodeUris: ArraySeq[Uri], step: Duration, backStep: Duration)(implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
-      groupSetting: GroupSetting): Future[Boolean] = {
+      groupSetting: GroupSetting
+  ): Future[Boolean] = {
     logger.debug("Start syncing")
     val startedAt  = TimeStamp.now()
     var downloaded = 0
 
     getTimeStampRange(step, backStep)
-      .flatMap {
-        case (ranges, nbOfBlocksToDownloads) =>
-          logger.debug(s"Downloading $nbOfBlocksToDownloads blocks")
-          Future.sequence {
-            nodeUris.map { uri =>
-              foldFutures(ranges) {
-                case (from, to) =>
-                  syncTimeRange(from, to, uri).map { num =>
-                    synchronized {
-                      downloaded = downloaded + num
-                      logger.debug(s"Downloaded ${downloaded}, progress ${scala.math
-                        .min(100, (downloaded.toFloat / nbOfBlocksToDownloads * 100.0).toInt)}%")
+      .flatMap { case (ranges, nbOfBlocksToDownloads) =>
+        logger.debug(s"Downloading $nbOfBlocksToDownloads blocks")
+        Future.sequence {
+          nodeUris.map { uri =>
+            foldFutures(ranges) { case (from, to) =>
+              syncTimeRange(from, to, uri).map { num =>
+                synchronized {
+                  downloaded = downloaded + num
+                  logger.debug(s"Downloaded ${downloaded}, progress ${scala.math
+                      .min(100, (downloaded.toFloat / nbOfBlocksToDownloads * 100.0).toInt)}%")
 
-                      (TimeStamp.now() -- to).map(_ < upToDateDelta).getOrElse(false)
-                    }
-                  }
+                  (TimeStamp.now() -- to).map(_ < upToDateDelta).getOrElse(false)
+                }
               }
             }
           }
+        }
       }
       .map { upToDates =>
         val duration = TimeStamp.now().deltaUnsafe(startedAt)
@@ -160,11 +162,13 @@ case object BlockFlowSyncService extends StrictLogging {
       from: TimeStamp,
       to: TimeStamp,
       uri: Uri
-  )(implicit ec: ExecutionContext,
-    dc: DatabaseConfig[PostgresProfile],
-    blockFlowClient: BlockFlowClient,
-    cache: BlockCache,
-    groupSetting: GroupSetting): Future[Int] = {
+  )(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      cache: BlockCache,
+      groupSetting: GroupSetting
+  ): Future[Int] = {
     blockFlowClient.fetchBlocks(from, to, uri).flatMap { multiChain =>
       for {
         res <- Future
@@ -175,35 +179,37 @@ case object BlockFlowSyncService extends StrictLogging {
     }
   }
 
-  //We need at least one TimeStamp other than a genesis one
-  def init()(implicit ec: ExecutionContext,
-             dc: DatabaseConfig[PostgresProfile],
-             blockFlowClient: BlockFlowClient,
-             cache: BlockCache,
-             groupSetting: GroupSetting): Future[Boolean] =
+  // We need at least one TimeStamp other than a genesis one
+  def init()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      cache: BlockCache,
+      groupSetting: GroupSetting
+  ): Future[Boolean] =
     run(BlockQueries.maxHeightZipped(groupSetting.chainIndexes)) flatMap { heightAndGroups =>
       Future
-        .traverse(heightAndGroups) {
-          case (height, chainIndex) =>
-            height match {
-              case Some(height) if height.value == 0 =>
-                syncAt(chainIndex, Height.unsafe(1)).map(_.nonEmpty)
-              case None =>
-                for {
-                  _      <- syncAt(chainIndex, Height.unsafe(0))
-                  blocks <- syncAt(chainIndex, Height.unsafe(1))
-                } yield blocks.nonEmpty
-              case _ => Future.successful(true)
-            }
+        .traverse(heightAndGroups) { case (height, chainIndex) =>
+          height match {
+            case Some(height) if height.value == 0 =>
+              syncAt(chainIndex, Height.unsafe(1)).map(_.nonEmpty)
+            case None =>
+              for {
+                _      <- syncAt(chainIndex, Height.unsafe(0))
+                blocks <- syncAt(chainIndex, Height.unsafe(1))
+              } yield blocks.nonEmpty
+            case _ => Future.successful(true)
+          }
         }
         .map(_.contains(true))
     }
 
-  private def getTimeStampRange(step: Duration, backStep: Duration)(
-      implicit ec: ExecutionContext,
+  private def getTimeStampRange(step: Duration, backStep: Duration)(implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
-      groupSetting: GroupSetting): Future[(ArraySeq[(TimeStamp, TimeStamp)], Int)] =
+      groupSetting: GroupSetting
+  ): Future[(ArraySeq[(TimeStamp, TimeStamp)], Int)] =
     for {
       localTs  <- getLocalMaxTimestamp()
       remoteTs <- getRemoteMaxTimestamp()
@@ -215,26 +221,30 @@ case object BlockFlowSyncService extends StrictLogging {
       }
     } yield result
 
-  /** @see [[org.alephium.explorer.persistence.queries.BlockQueries.numOfBlocksAndMaxBlockTimestamp]] */
-  def getLocalMaxTimestamp()(implicit ec: ExecutionContext,
-                             dc: DatabaseConfig[PostgresProfile],
-                             groupSetting: GroupSetting): Future[Option[(TimeStamp, Int)]] = {
-    //Convert query result to return `Height` as `Int` value.
+  /** @see
+    *   [[org.alephium.explorer.persistence.queries.BlockQueries.numOfBlocksAndMaxBlockTimestamp]]
+    */
+  def getLocalMaxTimestamp()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      groupSetting: GroupSetting
+  ): Future[Option[(TimeStamp, Int)]] = {
+    // Convert query result to return `Height` as `Int` value.
     val queryResultToIntHeight =
       BlockQueries.numOfBlocksAndMaxBlockTimestamp() map { optionResult =>
-        optionResult map {
-          case (timestamp, height) =>
-            (timestamp, height.value)
+        optionResult map { case (timestamp, height) =>
+          (timestamp, height.value)
         }
       }
 
     run(queryResultToIntHeight)
   }
 
-  private def getRemoteMaxTimestamp()(
-      implicit ec: ExecutionContext,
+  private def getRemoteMaxTimestamp()(implicit
+      ec: ExecutionContext,
       blockFlowClient: BlockFlowClient,
-      groupSetting: GroupSetting): Future[Option[(TimeStamp, Int)]] = {
+      groupSetting: GroupSetting
+  ): Future[Option[(TimeStamp, Int)]] = {
     Future
       .sequence(groupSetting.chainIndexes.map { chainIndex =>
         blockFlowClient
@@ -259,11 +269,13 @@ case object BlockFlowSyncService extends StrictLogging {
   private def syncAt(
       chainIndex: ChainIndex,
       height: Height
-  )(implicit ec: ExecutionContext,
-    dc: DatabaseConfig[PostgresProfile],
-    blockFlowClient: BlockFlowClient,
-    cache: BlockCache,
-    groupSetting: GroupSetting): Future[Option[ArraySeq[BlockEntity]]] = {
+  )(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      cache: BlockCache,
+      groupSetting: GroupSetting
+  ): Future[Option[ArraySeq[BlockEntity]]] = {
     blockFlowClient
       .fetchBlocksAtHeight(chainIndex, height)
       .flatMap { blocks =>
@@ -279,37 +291,40 @@ case object BlockFlowSyncService extends StrictLogging {
       }
   }
 
-  private def updateMainChain(hash: BlockHash, chainFrom: GroupIndex, chainTo: GroupIndex)(
-      implicit ec: ExecutionContext,
+  private def updateMainChain(hash: BlockHash, chainFrom: GroupIndex, chainTo: GroupIndex)(implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
-      groupSetting: GroupSetting): Future[Unit] = {
+      groupSetting: GroupSetting
+  ): Future[Unit] = {
     BlockDao.updateMainChain(hash, chainFrom, chainTo, groupSetting.groupNum).flatMap {
       case None          => Future.successful(())
       case Some(missing) => handleMissingMainChainBlock(missing, chainFrom)
     }
   }
 
-  private def insertWithEvents(blockWithEvents: BlockEntityWithEvents)(
-      implicit ec: ExecutionContext,
+  private def insertWithEvents(blockWithEvents: BlockEntityWithEvents)(implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
-      groupSetting: GroupSetting): Future[Unit] = {
+      groupSetting: GroupSetting
+  ): Future[Unit] = {
     insert(blockWithEvents.block, blockWithEvents.events)
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
-  private def insert(block: BlockEntity, events: ArraySeq[EventEntity])(
-      implicit ec: ExecutionContext,
+  private def insert(block: BlockEntity, events: ArraySeq[EventEntity])(implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
-      groupSetting: GroupSetting): Future[Unit] = {
+      groupSetting: GroupSetting
+  ): Future[Unit] = {
     (block.parent(groupSetting.groupNum) match {
       case Some(parent) =>
-        //We make sure the parent is inserted before inserting the block
+        // We make sure the parent is inserted before inserting the block
         run(BlockQueries.getBlockChainInfo(parent))
           .flatMap {
             case None =>
@@ -320,49 +335,55 @@ case object BlockFlowSyncService extends StrictLogging {
                 updateMainChain(parent, block.chainFrom, block.chainTo)
               } else {
                 val error =
-                  BlocksInDifferentChains(parent          = parent,
-                                          parentChainFrom = chainFrom,
-                                          parentChainTo   = chainTo,
-                                          child           = block)
+                  BlocksInDifferentChains(
+                    parent = parent,
+                    parentChainFrom = chainFrom,
+                    parentChainTo = chainTo,
+                    child = block
+                  )
                 Future.failed(error)
               }
             case Some(_) => Future.successful(())
           }
       case None if block.height.value == 0 => Future.successful(())
-      case None                            => Future.successful(logger.error(s"${block.hash} doesn't have a parent"))
+      case None => Future.successful(logger.error(s"${block.hash} doesn't have a parent"))
     }).flatMap { _ =>
       for {
         _ <- BlockDao.insertWithEvents(block, events)
-        _ <- BlockDao.updateMainChain(block.hash,
-                                      block.chainFrom,
-                                      block.chainTo,
-                                      groupSetting.groupNum)
+        _ <- BlockDao.updateMainChain(
+          block.hash,
+          block.chainFrom,
+          block.chainTo,
+          groupSetting.groupNum
+        )
       } yield ()
     }
   }
 
-  def insertBlocks(blocksWithEvents: ArraySeq[BlockEntityWithEvents])(
-      implicit ec: ExecutionContext,
+  def insertBlocks(blocksWithEvents: ArraySeq[BlockEntityWithEvents])(implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
-      groupSetting: GroupSetting): Future[Int] = {
+      groupSetting: GroupSetting
+  ): Future[Int] = {
     if (blocksWithEvents.nonEmpty) {
       for {
         _ <- foldFutures(blocksWithEvents)(insertWithEvents)
         _ <- BlockDao.updateLatestBlock(blocksWithEvents.last.block)
-      } yield (blocksWithEvents.size)
+      } yield blocksWithEvents.size
     } else {
       Future.successful(0)
     }
   }
 
-  private def handleMissingMainChainBlock(missing: BlockHash, chainFrom: GroupIndex)(
-      implicit ec: ExecutionContext,
+  private def handleMissingMainChainBlock(missing: BlockHash, chainFrom: GroupIndex)(implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
-      groupSetting: GroupSetting): Future[Unit] = {
+      groupSetting: GroupSetting
+  ): Future[Unit] = {
     logger.debug(s"Downloading missing block $missing")
     blockFlowClient.fetchBlockAndEvents(chainFrom, missing).flatMap(insertWithEvents)
   }

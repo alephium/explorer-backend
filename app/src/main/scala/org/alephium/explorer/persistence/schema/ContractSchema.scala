@@ -47,17 +47,19 @@ object ContractSchema extends SchemaMainChain[ContractEntity]("contracts") {
     def destructionEventOrder: Rep[Option[Int]] = column[Option[Int]]("destruction_event_order")
 
     def * : ProvenShape[ContractEntity] =
-      (contract,
-       parent,
-       stdInterfaceIdGuessed,
-       creationBlockHash,
-       creationTxHash,
-       creationTimestamp,
-       creationEventOrder,
-       destructionBlockHash,
-       destructionTxHash,
-       destructionTimestamp,
-       destructionEventOrder)
+      (
+        contract,
+        parent,
+        stdInterfaceIdGuessed,
+        creationBlockHash,
+        creationTxHash,
+        creationTimestamp,
+        creationEventOrder,
+        destructionBlockHash,
+        destructionTxHash,
+        destructionTimestamp,
+        destructionEventOrder
+      )
         .<>((ContractEntity.apply _).tupled, ContractEntity.unapply)
 
     def pk: PrimaryKey = primaryKey("contracts_pk", (contract, creationBlockHash))

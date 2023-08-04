@@ -67,7 +67,8 @@ class ContractEntitySpec extends AlephiumSpec {
               None,
               None,
               None
-            ))
+            )
+          )
       }
     }
 
@@ -76,7 +77,7 @@ class ContractEntitySpec extends AlephiumSpec {
         case (event, contract, parent, interfaceId) =>
           val zeroField = event.copy(
             contractAddress = ContractEntity.createContractEventAddress,
-            fields          = ArraySeq.empty
+            fields = ArraySeq.empty
           )
 
           ContractEntity.creationFromEventEntity(zeroField) is None

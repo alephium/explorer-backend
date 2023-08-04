@@ -44,9 +44,9 @@ final case class AssetOutput(
     attoAlphAmount: U256,
     address: Address,
     tokens: Option[ArraySeq[Token]] = None,
-    lockTime: Option[TimeStamp]     = None,
-    message: Option[ByteString]     = None,
-    spent: Option[TransactionId]    = None
+    lockTime: Option[TimeStamp] = None,
+    message: Option[ByteString] = None,
+    spent: Option[TransactionId] = None
 ) extends Output
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -57,7 +57,7 @@ final case class ContractOutput(
     attoAlphAmount: U256,
     address: Address,
     tokens: Option[ArraySeq[Token]] = None,
-    spent: Option[TransactionId]    = None
+    spent: Option[TransactionId] = None
 ) extends Output
 
 object Output {

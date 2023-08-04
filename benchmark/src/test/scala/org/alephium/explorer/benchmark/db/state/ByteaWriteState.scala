@@ -23,8 +23,8 @@ import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.table.TableByteSchema
 import org.alephium.protocol.Hash
 
-/**
-  * JMH state for benchmarking writes to [[org.alephium.explorer.benchmark.db.table.TableByteSchema]].
+/** JMH state for benchmarking writes to
+  * [[org.alephium.explorer.benchmark.db.table.TableByteSchema]].
   */
 @State(Scope.Thread)
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
@@ -34,7 +34,7 @@ class ByteaWriteState(val db: DBExecutor)
 
   import config.profile.api._
 
-  //Overload: default constructor required by JMH. Uses Postgres as target DB.
+  // Overload: default constructor required by JMH. Uses Postgres as target DB.
   def this() = {
     this(DBExecutor(dbName, dbHost, dbPort, DBConnectionPool.HikariCP))
   }
@@ -44,8 +44,8 @@ class ByteaWriteState(val db: DBExecutor)
 
   def beforeAll(): Unit =
     db.runNow(
-      //action = create a fresh table
-      action  = tableByteaQuery.schema.dropIfExists.andThen(tableByteaQuery.schema.create),
+      // action = create a fresh table
+      action = tableByteaQuery.schema.dropIfExists.andThen(tableByteaQuery.schema.create),
       timeout = requestTimeout
     )
 }

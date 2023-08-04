@@ -34,7 +34,7 @@ trait AlephiumActorSpecLike
   implicit lazy val system: ActorSystem =
     ActorSystem(name, ConfigFactory.parseString(AlephiumActorSpec.config))
 
-  override implicit lazy val executionContext: ExecutionContext = system.dispatcher
+  implicit override lazy val executionContext: ExecutionContext = system.dispatcher
 
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)

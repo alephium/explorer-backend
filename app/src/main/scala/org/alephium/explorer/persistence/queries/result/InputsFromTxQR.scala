@@ -31,34 +31,38 @@ object InputsFromTxQR {
   implicit val inputsFromTxQRGetResult: GetResult[InputsFromTxQR] =
     (result: PositionedResult) =>
       InputsFromTxQR(
-        txHash       = result.<<,
-        inputOrder   = result.<<,
-        hint         = result.<<,
+        txHash = result.<<,
+        inputOrder = result.<<,
+        hint = result.<<,
         outputRefKey = result.<<,
         unlockScript = result.<<?,
-        txHashRef    = result.<<?,
-        address      = result.<<?,
-        amount       = result.<<?,
-        token        = result.<<?
-    )
+        txHashRef = result.<<?,
+        address = result.<<?,
+        amount = result.<<?,
+        token = result.<<?
+      )
 }
 
 /** Query result for [[org.alephium.explorer.persistence.queries.InputQueries.inputsFromTxs]] */
-final case class InputsFromTxQR(txHash: TransactionId,
-                                inputOrder: Int,
-                                hint: Int,
-                                outputRefKey: Hash,
-                                unlockScript: Option[ByteString],
-                                txHashRef: Option[TransactionId],
-                                address: Option[Address],
-                                amount: Option[U256],
-                                token: Option[ArraySeq[Token]]) {
+final case class InputsFromTxQR(
+    txHash: TransactionId,
+    inputOrder: Int,
+    hint: Int,
+    outputRefKey: Hash,
+    unlockScript: Option[ByteString],
+    txHashRef: Option[TransactionId],
+    address: Option[Address],
+    amount: Option[U256],
+    token: Option[ArraySeq[Token]]
+) {
 
   def toApiInput(): Input =
-    Input(outputRef      = OutputRef(hint, outputRefKey),
-          unlockScript   = unlockScript,
-          txHashRef      = txHashRef,
-          address        = address,
-          attoAlphAmount = amount,
-          tokens         = token)
+    Input(
+      outputRef = OutputRef(hint, outputRefKey),
+      unlockScript = unlockScript,
+      txHashRef = txHashRef,
+      address = address,
+      attoAlphAmount = amount,
+      tokens = token
+    )
 }

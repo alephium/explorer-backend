@@ -28,10 +28,10 @@ import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
 import org.alephium.util.{Service, TimeStamp}
 
 trait EmptyBlockFlowClient extends BlockFlowClient {
-  implicit val executionContext: ExecutionContext                                      = implicitly
-  override def startSelfOnce(): Future[Unit]                                           = Future.unit
-  override def stopSelfOnce(): Future[Unit]                                            = Future.unit
-  override def subServices: ArraySeq[Service]                                          = ArraySeq.empty
+  implicit val executionContext: ExecutionContext = implicitly
+  override def startSelfOnce(): Future[Unit]      = Future.unit
+  override def stopSelfOnce(): Future[Unit]       = Future.unit
+  override def subServices: ArraySeq[Service]     = ArraySeq.empty
   override def fetchBlock(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntity] = ???
 
   override def fetchChainInfo(chainIndex: ChainIndex): Future[ChainInfo] = ???
@@ -39,12 +39,16 @@ trait EmptyBlockFlowClient extends BlockFlowClient {
   override def fetchHashesAtHeight(chainIndex: ChainIndex, height: Height): Future[HashesAtHeight] =
     ???
 
-  override def fetchBlockAndEvents(fromGroup: GroupIndex,
-                                   hash: BlockHash): Future[BlockEntityWithEvents] = ???
+  override def fetchBlockAndEvents(
+      fromGroup: GroupIndex,
+      hash: BlockHash
+  ): Future[BlockEntityWithEvents] = ???
 
-  override def fetchBlocks(fromTs: TimeStamp,
-                           toTs: TimeStamp,
-                           uri: Uri): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]] = ???
+  override def fetchBlocks(
+      fromTs: TimeStamp,
+      toTs: TimeStamp,
+      uri: Uri
+  ): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]] = ???
 
   override def fetchSelfClique(): Future[SelfClique] = ???
 

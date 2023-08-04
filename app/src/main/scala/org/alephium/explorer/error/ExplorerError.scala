@@ -42,7 +42,8 @@ sealed trait RuntimeError extends Throwable
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 object ExplorerError {
 
-  /******** Group: [[FatalSystemExit]] ********/
+  /** ****** Group: [[FatalSystemExit]] *******
+    */
   final case class UnreachableNode(cause: Throwable)
       extends Exception(s"Could not reach node.", cause)
       with FatalSystemExit
@@ -61,7 +62,8 @@ object ExplorerError {
 
   final case class InvalidChainGroupNumPerBroker(groupNumPerBroker: Int)
       extends Exception(
-        s"SelfClique.groupNumPerBroker ($groupNumPerBroker) cannot be less or equal to zero")
+        s"SelfClique.groupNumPerBroker ($groupNumPerBroker) cannot be less or equal to zero"
+      )
       with FatalSystemExit
 
   final case class InvalidProtocolInput(error: String)
@@ -70,7 +72,8 @@ object ExplorerError {
 
   final case class RemoteTimeStampIsBeforeLocal(localTs: TimeStamp, remoteTs: TimeStamp)
       extends Exception(
-        s"Max remote timestamp ($remoteTs) cannot be be before local timestamp ($localTs)")
+        s"Max remote timestamp ($remoteTs) cannot be be before local timestamp ($localTs)"
+      )
       with FatalSystemExit
 
   final case class DatabaseError(cause: PSQLException)
@@ -81,7 +84,8 @@ object ExplorerError {
       extends Exception(s"WebSocket error. $cause")
       with ExplorerError
 
-  /******** Group: [[ConfigError]] ********/
+  /** ****** Group: [[ConfigError]] *******
+    */
   final case class InvalidGroupNumber(groupNum: Int)
       extends Exception(s"Invalid groupNum: $groupNum. It should be > 0")
       with ConfigError
@@ -108,35 +112,41 @@ object ExplorerError {
 
   final case class InvalidBootMode(mode: String)
       extends Exception(
-        s"Invalid boot-mode: $mode. Valid modes are: ${BootMode.all.map(_.productPrefix).mkString(", ")}.")
+        s"Invalid boot-mode: $mode. Valid modes are: ${BootMode.all.map(_.productPrefix).mkString(", ")}."
+      )
       with ConfigError
 
   object BlocksInDifferentChains {
 
     @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
-    @inline def apply(parent: BlockHash,
-                      parentChainFrom: GroupIndex,
-                      parentChainTo: GroupIndex,
-                      child: BlockEntity): BlocksInDifferentChains =
+    @inline def apply(
+        parent: BlockHash,
+        parentChainFrom: GroupIndex,
+        parentChainTo: GroupIndex,
+        child: BlockEntity
+    ): BlocksInDifferentChains =
       new BlocksInDifferentChains(
-        parent          = parent,
+        parent = parent,
         parentChainFrom = parentChainFrom,
-        parentChainTo   = parentChainTo,
-        child           = child.hash,
-        childChainFrom  = child.chainFrom,
-        childChainTo    = child.chainTo
+        parentChainTo = parentChainTo,
+        child = child.hash,
+        childChainFrom = child.chainFrom,
+        childChainTo = child.chainTo
       )
   }
 
-  /******** Group: [[RuntimeError]] ********/
-  final case class BlocksInDifferentChains(parent: BlockHash,
-                                           parentChainFrom: GroupIndex,
-                                           parentChainTo: GroupIndex,
-                                           child: BlockHash,
-                                           childChainFrom: GroupIndex,
-                                           childChainTo: GroupIndex)
-      extends Exception(
+  /** ****** Group: [[RuntimeError]] *******
+    */
+  final case class BlocksInDifferentChains(
+      parent: BlockHash,
+      parentChainFrom: GroupIndex,
+      parentChainTo: GroupIndex,
+      child: BlockHash,
+      childChainFrom: GroupIndex,
+      childChainTo: GroupIndex
+  ) extends Exception(
         s"Parent ($parent) and child ($child) blocks belongs to different chains. " +
-          s"ParentChain: ($parentChainFrom, $parentChainTo). ChildChain: ($childChainFrom, $childChainTo)")
+          s"ParentChain: ($parentChainFrom, $parentChainTo). ChildChain: ($childChainFrom, $childChainTo)"
+      )
       with RuntimeError
 }

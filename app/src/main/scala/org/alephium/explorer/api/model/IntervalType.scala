@@ -60,7 +60,7 @@ object IntervalType {
     StringReader.map {
       validate(_) match {
         case Some(intervalType) => intervalType
-        case None               => throw new Abort("Cannot decode time-step, expected one of: hourly, daily")
+        case None => throw new Abort("Cannot decode time-step, expected one of: hourly, daily")
       }
     }
 
@@ -81,11 +81,14 @@ object IntervalType {
     }
   }
 
-  def validateTimeInterval[A](timeInterval: TimeInterval,
-                              intervalType: IntervalType,
-                              maxHourlyTimeSpan: Duration,
-                              maxDailyTimeSpan: Duration)(contd: => Future[A])(
-      implicit executionContext: ExecutionContext): Future[Either[ApiError[_ <: StatusCode], A]] = {
+  def validateTimeInterval[A](
+      timeInterval: TimeInterval,
+      intervalType: IntervalType,
+      maxHourlyTimeSpan: Duration,
+      maxDailyTimeSpan: Duration
+  )(
+      contd: => Future[A]
+  )(implicit executionContext: ExecutionContext): Future[Either[ApiError[_ <: StatusCode], A]] = {
     val timeSpan =
       intervalType match {
         case IntervalType.Daily  => maxDailyTimeSpan

@@ -38,7 +38,7 @@ final case class InputEntity(
     outputRefTxHash: Option[TransactionId],
     outputRefAddress: Option[Address],
     outputRefAmount: Option[U256],
-    outputRefTokens: Option[ArraySeq[Token]] //None if empty list
+    outputRefTokens: Option[ArraySeq[Token]] // None if empty list
 ) {
 
   /** @return All hash types associated with this [[InputEntity]] */

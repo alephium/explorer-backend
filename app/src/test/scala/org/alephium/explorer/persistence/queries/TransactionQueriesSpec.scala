@@ -118,7 +118,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val total =
       run(TransactionQueries.countAddressTransactions(address)).futureValue.head
 
-    //tx of output1, output2 and input1
+    // tx of output1, output2 and input1
     total is 3
   }
 
@@ -161,7 +161,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     run(InputUpdateQueries.updateInputs()).futureValue
 
     val hashes =
-      run(TransactionQueries.getTxHashesByAddressQuery(address, Pagination.unsafe(1, 10))).futureValue
+      run(
+        TransactionQueries.getTxHashesByAddressQuery(address, Pagination.unsafe(1, 10))
+      ).futureValue
 
     val expected = ArraySeq(
       TxByAddressQR(output1.txHash, output1.blockHash, output1.timestamp, 0, false),
@@ -201,12 +203,14 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         1,
         ALPH.alph(1),
         scriptExecutionOk = true,
-        coinbase          = false
+        coinbase = false
       )
     }
 
     val txs =
-      run(TransactionQueries.getTransactionsByAddress(address, Pagination.unsafe(1, 10))).futureValue
+      run(
+        TransactionQueries.getTransactionsByAddress(address, Pagination.unsafe(1, 10))
+      ).futureValue
 
     val expected = ArraySeq(
       tx(output1, None, ArraySeq.empty),
@@ -261,19 +265,27 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       val existingTransactions = transactions.map(_._1)
       val updatedTransactions  = transactions.map(_._2)
 
-      //insert
-      run(TransactionQueries.insertTransactions(existingTransactions)).futureValue is existingTransactions.size
-      run(TransactionSchema.table.result).futureValue should contain allElementsOf existingTransactions
+      // insert
+      run(
+        TransactionQueries.insertTransactions(existingTransactions)
+      ).futureValue is existingTransactions.size
+      run(
+        TransactionSchema.table.result
+      ).futureValue should contain allElementsOf existingTransactions
 
-      //ignore
+      // ignore
       run(TransactionQueries.insertTransactions(updatedTransactions)).futureValue is 0
-      run(TransactionSchema.table.result).futureValue should contain allElementsOf existingTransactions
+      run(
+        TransactionSchema.table.result
+      ).futureValue should contain allElementsOf existingTransactions
     }
   }
 
-  //https://github.com/alephium/explorer-backend/issues/174
+  // https://github.com/alephium/explorer-backend/issues/174
   "return an empty list when not transactions are found - Isssue 174" in new Fixture {
-    run(TransactionQueries.getTransactionsByAddress(address, Pagination.unsafe(1, 10))).futureValue is ArraySeq.empty
+    run(
+      TransactionQueries.getTransactionsByAddress(address, Pagination.unsafe(1, 10))
+    ).futureValue is ArraySeq.empty
   }
 
   "get total number of main transactions" in new Fixture {
@@ -314,38 +326,41 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
   "filterExistingAddresses & areAddressesActiveActionNonConcurrent" should {
     "return address that exist in DB" in {
-      //generate two lists: Left to be persisted/existing & right as non-existing.
-      forAll(Gen.listOf(genTransactionPerAddressEntity()),
-             Gen.listOf(genTransactionPerAddressEntity())) {
-        case (existing, nonExisting) =>
-          //clear the table
-          run(TransactionPerAddressSchema.table.delete).futureValue
-          //persist existing entities
-          run(TransactionPerAddressSchema.table ++= existing).futureValue
+      // generate two lists: Left to be persisted/existing & right as non-existing.
+      forAll(
+        Gen.listOf(genTransactionPerAddressEntity()),
+        Gen.listOf(genTransactionPerAddressEntity())
+      ) { case (existing, nonExisting) =>
+        // clear the table
+        run(TransactionPerAddressSchema.table.delete).futureValue
+        // persist existing entities
+        run(TransactionPerAddressSchema.table ++= existing).futureValue
 
-          //join existing and nonExisting entities and shuffle
-          val allEntities  = Random.shuffle(existing ++ nonExisting)
-          val allAddresses = allEntities.map(_.address)
+        // join existing and nonExisting entities and shuffle
+        val allEntities  = Random.shuffle(existing ++ nonExisting)
+        val allAddresses = allEntities.map(_.address)
 
-          //get persisted entities to assert against actual query results
-          val existingAddresses = existing.map(_.address)
+        // get persisted entities to assert against actual query results
+        val existingAddresses = existing.map(_.address)
 
-          //fetch actual persisted addresses that exists
-          val actualExisting =
-            run(TransactionQueries.filterExistingAddresses(allAddresses.toSet)).futureValue
+        // fetch actual persisted addresses that exists
+        val actualExisting =
+          run(TransactionQueries.filterExistingAddresses(allAddresses.toSet)).futureValue
 
-          //actual address should contain all of existingAddresses
-          actualExisting should contain theSameElementsAs existingAddresses
+        // actual address should contain all of existingAddresses
+        actualExisting should contain theSameElementsAs existingAddresses
 
-          //run the boolean query
-          val booleanExistingResult =
-            run(TransactionQueries.areAddressesActiveAction(allAddresses)).futureValue
+        // run the boolean query
+        val booleanExistingResult =
+          run(TransactionQueries.areAddressesActiveAction(allAddresses)).futureValue
 
-          //boolean query should output results in the same order as the input addresses
-          (allAddresses.map(actualExisting.contains): ArraySeq[Boolean]) is booleanExistingResult
+        // boolean query should output results in the same order as the input addresses
+        (allAddresses.map(actualExisting.contains): ArraySeq[Boolean]) is booleanExistingResult
 
-          //check the boolean query with the existing concurrent query
-          run(TransactionQueries.areAddressesActiveAction(allAddresses)).futureValue is booleanExistingResult
+        // check the boolean query with the existing concurrent query
+        run(
+          TransactionQueries.areAddressesActiveAction(allAddresses)
+        ).futureValue is booleanExistingResult
       }
     }
   }
@@ -356,10 +371,12 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         forAll(addressGen, timestampGen, timestampGen, Gen.posNum[Int], Gen.posNum[Int]) {
           (address, fromTime, toTime, page, limit) =>
             val query =
-              TransactionQueries.getTxHashesByAddressQueryTimeRanged(address,
-                                                                     fromTime,
-                                                                     toTime,
-                                                                     Pagination.unsafe(page, limit))
+              TransactionQueries.getTxHashesByAddressQueryTimeRanged(
+                address,
+                fromTime,
+                toTime,
+                Pagination.unsafe(page, limit)
+              )
 
             run(query).futureValue.size is 0
         }
@@ -370,27 +387,30 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       "there is exactly one transaction per address (each address and timestamp belong to only one transaction)" in {
         forAll(Gen.listOf(genTransactionPerAddressEntity(mainChain = Gen.const(true)))) {
           entities =>
-            //clear table and insert entities
+            // clear table and insert entities
             run(TestQueries.clearAndInsert(entities)).futureValue
 
             entities foreach { entity =>
-              //run the query for each entity and expect that same entity to be returned
+              // run the query for each entity and expect that same entity to be returned
               val query =
                 TransactionQueries
-                  .getTxHashesByAddressQueryTimeRanged(address  = entity.address,
-                                                       fromTime = entity.timestamp,
-                                                       toTime   = entity.timestamp,
-                                                       pagination =
-                                                         Pagination.unsafe(1, Int.MaxValue))
+                  .getTxHashesByAddressQueryTimeRanged(
+                    address = entity.address,
+                    fromTime = entity.timestamp,
+                    toTime = entity.timestamp,
+                    pagination = Pagination.unsafe(1, Int.MaxValue)
+                  )
 
               val actualResult = run(query).futureValue
 
               val expectedResult =
-                TxByAddressQR(entity.hash,
-                              entity.blockHash,
-                              entity.timestamp,
-                              entity.txOrder,
-                              entity.coinbase)
+                TxByAddressQR(
+                  entity.hash,
+                  entity.blockHash,
+                  entity.timestamp,
+                  entity.txOrder,
+                  entity.coinbase
+                )
 
               actualResult should contain only expectedResult
             }
@@ -398,71 +418,74 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       }
 
       "there are multiple transactions per address" in {
-        //a narrowed time range so there is overlap between transaction timestamps
+        // a narrowed time range so there is overlap between transaction timestamps
         val timeStampGen =
           Gen.chooseNum(0L, 10L).map(TimeStamp.unsafe)
 
         val genTransactionsPerAddress =
           addressGen flatMap { address =>
-            //for a single address generate multiple `TransactionPerAddressEntity`
+            // for a single address generate multiple `TransactionPerAddressEntity`
             val entityGen =
-              genTransactionPerAddressEntity(addressGen   = Gen.const(address),
-                                             timestampGen = timeStampGen)
+              genTransactionPerAddressEntity(
+                addressGen = Gen.const(address),
+                timestampGen = timeStampGen
+              )
 
             Gen.listOf(entityGen)
           }
 
         forAll(genTransactionsPerAddress) { entities =>
-          //clear table and insert entities
+          // clear table and insert entities
           run(TestQueries.clearAndInsert(entities)).futureValue
 
-          //for each address run the query for randomly selected time-range and expect entities
-          //only for that time-range to be returned
-          entities.groupBy(_.address) foreach {
-            case (address, entities) =>
-              val minTime = entities.map(_.timestamp).min.millis //minimum time
-              val maxTime = entities.map(_.timestamp).max.millis //maximum time
+          // for each address run the query for randomly selected time-range and expect entities
+          // only for that time-range to be returned
+          entities.groupBy(_.address) foreach { case (address, entities) =>
+            val minTime = entities.map(_.timestamp).min.millis // minimum time
+            val maxTime = entities.map(_.timestamp).max.millis // maximum time
 
-              //randomly select time range from the above minimum and maximum time range
-              val timeRangeGen =
-                for {
-                  fromTime <- Gen.chooseNum(minTime, maxTime)
-                  toTime   <- Gen.chooseNum(fromTime, maxTime)
-                } yield (TimeStamp.unsafe(fromTime), TimeStamp.unsafe(toTime))
+            // randomly select time range from the above minimum and maximum time range
+            val timeRangeGen =
+              for {
+                fromTime <- Gen.chooseNum(minTime, maxTime)
+                toTime   <- Gen.chooseNum(fromTime, maxTime)
+              } yield (TimeStamp.unsafe(fromTime), TimeStamp.unsafe(toTime))
 
-              //Run test on multiple randomly generated time-ranges on the same test data persisted
-              forAll(timeRangeGen) {
-                case (fromTime, toTime) =>
-                  //run the query for the generated time-range
-                  val query =
-                    TransactionQueries
-                      .getTxHashesByAddressQueryTimeRanged(address  = address,
-                                                           fromTime = fromTime,
-                                                           toTime   = toTime,
-                                                           pagination =
-                                                             Pagination.unsafe(1, Int.MaxValue))
+            // Run test on multiple randomly generated time-ranges on the same test data persisted
+            forAll(timeRangeGen) { case (fromTime, toTime) =>
+              // run the query for the generated time-range
+              val query =
+                TransactionQueries
+                  .getTxHashesByAddressQueryTimeRanged(
+                    address = address,
+                    fromTime = fromTime,
+                    toTime = toTime,
+                    pagination = Pagination.unsafe(1, Int.MaxValue)
+                  )
 
-                  val actualResult = run(query).futureValue
+              val actualResult = run(query).futureValue
 
-                  //expect only main_chain entities within the queried time-range
-                  val expectedEntities =
-                    entities filter { entity =>
-                      entity.mainChain && entity.timestamp >= fromTime && entity.timestamp <= toTime
-                    }
+              // expect only main_chain entities within the queried time-range
+              val expectedEntities =
+                entities filter { entity =>
+                  entity.mainChain && entity.timestamp >= fromTime && entity.timestamp <= toTime
+                }
 
-                  //transform query result TxByAddressQR
-                  val expectedResult =
-                    expectedEntities map { entity =>
-                      TxByAddressQR(entity.hash,
-                                    entity.blockHash,
-                                    entity.timestamp,
-                                    entity.txOrder,
-                                    entity.coinbase)
-                    }
+              // transform query result TxByAddressQR
+              val expectedResult =
+                expectedEntities map { entity =>
+                  TxByAddressQR(
+                    entity.hash,
+                    entity.blockHash,
+                    entity.timestamp,
+                    entity.txOrder,
+                    entity.coinbase
+                  )
+                }
 
-                  //only the main_chain entities within the time-range is expected
-                  actualResult should contain theSameElementsAs expectedResult
-              }
+              // only the main_chain entities within the time-range is expected
+              actualResult should contain theSameElementsAs expectedResult
+            }
           }
         }
       }
@@ -475,8 +498,10 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         forAll(Gen.listOf(addressGen), Gen.posNum[Int], Gen.posNum[Int]) {
           (addresses, page, limit) =>
             val query =
-              TransactionQueries.getTxHashesByAddressesQuery(addresses,
-                                                             Pagination.unsafe(page, limit))
+              TransactionQueries.getTxHashesByAddressesQuery(
+                addresses,
+                Pagination.unsafe(page, limit)
+              )
 
             run(query).futureValue.size is 0
         }
@@ -487,31 +512,35 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       "the input contains valid and invalid addresses" in {
         forAll(Gen.listOf(genTransactionPerAddressEntity()), Gen.listOf(addressGen)) {
           case (entitiesToPersist, addressesNotPersisted) =>
-            //clear table and insert entities
+            // clear table and insert entities
             run(TransactionPerAddressSchema.table.delete).futureValue
             run(TransactionPerAddressSchema.table ++= entitiesToPersist).futureValue
 
-            //merge all addresses
+            // merge all addresses
             val allAddresses =
               entitiesToPersist.map(_.address) ++ addressesNotPersisted
 
-            //shuffle all merged addresses
+            // shuffle all merged addresses
             val shuffledAddresses =
               Random.shuffle(allAddresses)
 
-            //query shuffled addresses
+            // query shuffled addresses
             val query =
-              TransactionQueries.getTxHashesByAddressesQuery(shuffledAddresses,
-                                                             Pagination.unsafe(1, Int.MaxValue))
+              TransactionQueries.getTxHashesByAddressesQuery(
+                shuffledAddresses,
+                Pagination.unsafe(1, Int.MaxValue)
+              )
 
-            //expect only main_chain and persisted address
+            // expect only main_chain and persisted address
             val expectedResult =
               entitiesToPersist.filter(_.mainChain) map { entity =>
-                TxByAddressQR(entity.hash,
-                              entity.blockHash,
-                              entity.timestamp,
-                              entity.txOrder,
-                              entity.coinbase)
+                TxByAddressQR(
+                  entity.hash,
+                  entity.blockHash,
+                  entity.timestamp,
+                  entity.txOrder,
+                  entity.coinbase
+                )
               }
 
             run(query).futureValue should contain theSameElementsAs expectedResult
@@ -550,33 +579,37 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       )
 
     def input(hint: Int, outputRefKey: Hash): InputEntity =
-      InputEntity(blockHashGen.sample.get,
-                  transactionHashGen.sample.get,
-                  now,
-                  hint,
-                  outputRefKey,
-                  None,
-                  true,
-                  0,
-                  0,
-                  None,
-                  None,
-                  None,
-                  None)
+      InputEntity(
+        blockHashGen.sample.get,
+        transactionHashGen.sample.get,
+        now,
+        hint,
+        outputRefKey,
+        None,
+        true,
+        0,
+        0,
+        None,
+        None,
+        None,
+        None
+      )
     def transaction(output: OutputEntity): TransactionEntity = {
-      TransactionEntity(output.txHash,
-                        output.blockHash,
-                        output.timestamp,
-                        GroupIndex.Zero,
-                        new GroupIndex(1),
-                        1,
-                        ALPH.alph(1),
-                        0,
-                        true,
-                        true,
-                        None,
-                        None,
-                        coinbase = false)
+      TransactionEntity(
+        output.txHash,
+        output.blockHash,
+        output.timestamp,
+        GroupIndex.Zero,
+        new GroupIndex(1),
+        1,
+        ALPH.alph(1),
+        0,
+        true,
+        true,
+        None,
+        None,
+        coinbase = false
+      )
     }
   }
 }

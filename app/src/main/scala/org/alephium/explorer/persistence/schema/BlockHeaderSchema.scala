@@ -47,35 +47,40 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
     def txsCount: Rep[Int]         = column[Int]("txs_count")
     def target: Rep[ByteString]    = column[ByteString]("target")
     def hashrate: Rep[BigInteger] =
-      column[BigInteger]("hashrate", O.SqlType("DECIMAL(80,0)")) //TODO How much decimal we need? this one is the same as for U256
+      column[BigInteger](
+        "hashrate",
+        O.SqlType("DECIMAL(80,0)")
+      ) // TODO How much decimal we need? this one is the same as for U256
     def parent: Rep[Option[BlockHash]] = column[Option[BlockHash]]("parent")
 
     def timestampIdx: Index = index("blocks_timestamp_idx", timestamp)
     def heightIdx: Index    = index("blocks_height_idx", height)
 
     def * : ProvenShape[BlockHeader] =
-      (hash,
-       timestamp,
-       chainFrom,
-       chainTo,
-       height,
-       mainChain,
-       nonce,
-       version,
-       depStateHash,
-       txsHash,
-       txsCount,
-       target,
-       hashrate,
-       parent)
+      (
+        hash,
+        timestamp,
+        chainFrom,
+        chainTo,
+        height,
+        mainChain,
+        nonce,
+        version,
+        depStateHash,
+        txsHash,
+        txsCount,
+        target,
+        hashrate,
+        parent
+      )
         .<>((BlockHeader.apply _).tupled, BlockHeader.unapply)
   }
 
-  /**
-    * Indexes all columns of this table so that `INDEX ONLY SCAN`
-    * is enough for queries to return results.
+  /** Indexes all columns of this table so that `INDEX ONLY SCAN` is enough for queries to return
+    * results.
     *
-    * @see PR <a href="https://github.com/alephium/explorer-backend/pull/112">#112</a>.
+    * @see
+    *   PR <a href="https://github.com/alephium/explorer-backend/pull/112">#112</a>.
     */
   private def fullIndex(): SqlAction[Int, NoStream, Effect] =
     sqlu"""
@@ -83,8 +88,7 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
           on #${name} (main_chain asc, block_timestamp desc, hash asc, chain_from asc, chain_to asc, height asc);
       """
 
-  /**
-    * Joins all indexes created via raw SQL
+  /** Joins all indexes created via raw SQL
     */
   def createBlockHeadersIndexes(): DBIO[Unit] =
     DBIO.seq(fullIndex(), createMainChainIndex())
