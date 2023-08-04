@@ -62,6 +62,7 @@ object SyncServices extends StrictLogging {
         ) flatMap { peers =>
           startSyncServices(
             peers = peers,
+            blockFlowWsUri = config.blockFlowWsUri,
             syncPeriod = config.syncPeriod,
             tokenSupplyServiceScheduleTime = config.tokenSupplyServiceScheduleTime,
             hashRateServiceSyncPeriod = config.hashRateServiceSyncPeriod,
@@ -75,6 +76,7 @@ object SyncServices extends StrictLogging {
   // scalastyle:off
   def startSyncServices(
       peers: ArraySeq[Uri],
+      blockFlowWsUri: Uri,
       syncPeriod: FiniteDuration,
       tokenSupplyServiceScheduleTime: LocalTime,
       hashRateServiceSyncPeriod: FiniteDuration,
@@ -93,7 +95,7 @@ object SyncServices extends StrictLogging {
         Future
           .sequence(
             ArraySeq(
-              BlockFlowSyncService.start(peers, syncPeriod),
+              BlockFlowSyncService.start(peers, syncPeriod, blockFlowWsUri),
               MempoolSyncService.start(peers, syncPeriod),
               TokenSupplyService.start(tokenSupplyServiceScheduleTime),
               HashrateService.start(hashRateServiceSyncPeriod),

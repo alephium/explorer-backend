@@ -120,15 +120,17 @@ object ExplorerConfig {
       val blockflow = as[BlockFlow]("blockflow")
 
       (for {
-        groupNum     <- validateGroupNum(blockflow.groupNum)
-        blockflowUri <- validateUri(blockflow.host, blockflow.port)
-        host         <- validateHost(explorer.host)
-        port         <- validatePort(explorer.port)
+        groupNum       <- validateGroupNum(blockflow.groupNum)
+        blockflowUri   <- validateUri(blockflow.host, blockflow.port)
+        blockFlowWsUri <- validateUri(blockflow.host, blockflow.wsPort)
+        host           <- validateHost(explorer.host)
+        port           <- validatePort(explorer.port)
       } yield {
         ExplorerConfig(
           groupNum,
           blockflow.directCliqueAccess,
           blockflowUri,
+          blockFlowWsUri,
           blockflow.networkId,
           blockflow.apiKey,
           host,
@@ -156,6 +158,7 @@ object ExplorerConfig {
       directCliqueAccess: Boolean,
       host: String,
       port: Int,
+      wsPort: Int,
       networkId: NetworkId,
       apiKey: Option[ApiKey]
   )
@@ -186,6 +189,7 @@ final case class ExplorerConfig private (
     groupNum: Int,
     directCliqueAccess: Boolean,
     blockFlowUri: Uri,
+    blockFlowWsUri: Uri,
     networkId: NetworkId,
     maybeBlockFlowApiKey: Option[ApiKey],
     host: String,
