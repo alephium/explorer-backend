@@ -298,6 +298,15 @@ trait ExplorerSpec
     }
   }
 
+  "get address tokens with balance" in {
+    forAll(Gen.oneOf(addresses)) { address =>
+      Get(s"/addresses/${address}/tokens-balance") check { response =>
+        val res = response.as[ArraySeq[AddressTokenBalance]]
+        res.size is 0
+      }
+    }
+  }
+
   "get all transactions for addresses" in {
     forAll(Gen.someOf(transactions)) { transactions =>
       val limitedAddresses = transactions.flatMap(_.outputs.map(_.address)).take(txLimit)

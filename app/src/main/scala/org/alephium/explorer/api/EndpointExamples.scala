@@ -59,6 +59,8 @@ object EndpointExamples extends EndpointsExamples {
   private val groupIndex1: GroupIndex = new GroupIndex(1)
   private val groupIndex2: GroupIndex = new GroupIndex(2)
 
+  private val token = TokenId.hash("token")
+
   private val tokens: ArraySeq[Token] =
     ArraySeq(
       Token(TokenId.hash("token1"), alph(42).value),
@@ -168,6 +170,13 @@ object EndpointExamples extends EndpointsExamples {
 
   private val addressBalance =
     AddressBalance(
+      balance = U256.Ten,
+      lockedBalance = U256.Two
+    )
+
+  private val addressTokenBalance =
+    AddressTokenBalance(
+      tokenId = token,
       balance = U256.Ten,
       lockedBalance = U256.Two
     )
@@ -305,6 +314,12 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val addressBalanceExample: List[Example[AddressBalance]] =
     simpleExample(addressBalance)
+
+  implicit val addressTokenBalanceExample: List[Example[AddressTokenBalance]] =
+    simpleExample(addressTokenBalance)
+
+  implicit val addressTokensBalanceExample: List[Example[ArraySeq[AddressTokenBalance]]] =
+    simpleExample(ArraySeq(addressTokenBalance))
 
   implicit val contractParentExample: List[Example[ContractParent]] =
     simpleExample(contractParent)
