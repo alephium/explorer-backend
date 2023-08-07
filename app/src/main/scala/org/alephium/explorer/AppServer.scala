@@ -41,12 +41,17 @@ object AppServer {
 
     val blockServer = new BlockServer()
     val addressServer =
-      new AddressServer(TransactionService, exportTxsNumberThreshold, streamParallelism)
+      new AddressServer(
+        TransactionService,
+        TokenService,
+        exportTxsNumberThreshold,
+        streamParallelism
+      )
     val transactionServer = new TransactionServer()
     val infosServer       = new InfosServer(TokenSupplyService, BlockService, TransactionService)
     val utilsServer: UtilsServer   = new UtilsServer()
     val chartsServer: ChartsServer = new ChartsServer()
-    val tokenServer: TokenServer   = new TokenServer()
+    val tokenServer: TokenServer   = new TokenServer(TokenService)
     val mempoolServer              = new MempoolServer()
     val eventServer                = new EventServer()
     val contractServer             = new ContractServer()

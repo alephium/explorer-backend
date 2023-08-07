@@ -24,9 +24,9 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.api.TokensEndpoints
-import org.alephium.explorer.service.TransactionService
+import org.alephium.explorer.service.TokenService
 
-class TokenServer()(implicit
+class TokenServer(tokenService: TokenService)(implicit
     val executionContext: ExecutionContext,
     dc: DatabaseConfig[PostgresProfile]
 ) extends Server
@@ -35,15 +35,15 @@ class TokenServer()(implicit
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
       route(listTokens.serverLogicSuccess[Future] { pagination =>
-        TransactionService
+        tokenService
           .listTokens(pagination)
       }),
       route(listTokenTransactions.serverLogicSuccess[Future] { case (token, pagination) =>
-        TransactionService
+        tokenService
           .listTokenTransactions(token, pagination)
       }),
       route(listTokenAddresses.serverLogicSuccess[Future] { case (token, pagination) =>
-        TransactionService
+        tokenService
           .listTokenAddresses(token, pagination)
       })
     )

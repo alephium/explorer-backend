@@ -27,7 +27,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.service.TransactionService
-import org.alephium.protocol.model.{Address, TokenId, TransactionId}
+import org.alephium.protocol.model.{Address, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 trait EmptyTransactionService extends TransactionService {
@@ -85,35 +85,6 @@ trait EmptyTransactionService extends TransactionService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[MempoolTransaction]] = ???
-  def getTokenBalance(address: Address, token: TokenId)(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[(U256, U256)] = ???
-  def listAddressTokenTransactions(address: Address, token: TokenId, pagination: Pagination)(
-      implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[Transaction]] = ???
-  def listAddressTokens(address: Address, pagination: Pagination)(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[TokenId]] = ???
-  def listTokenAddresses(token: TokenId, pagination: Pagination)(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[Address]] = ???
-  def listTokenTransactions(token: TokenId, pagination: Pagination)(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[Transaction]] = ???
-  def listAddressTokensWithBalance(address: Address, pagination: Pagination)(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[(TokenId, U256, U256)]] = ???
-  def listTokens(
-      pagination: Pagination
-  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenId]] =
-    ???
   def areAddressesActive(addresses: ArraySeq[Address])(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]

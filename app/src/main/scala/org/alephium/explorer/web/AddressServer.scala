@@ -32,12 +32,13 @@ import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.service.TransactionService
+import org.alephium.explorer.service.{TokenService, TransactionService}
 import org.alephium.protocol.model.Address
 import org.alephium.util.Duration
 
 class AddressServer(
     transactionService: TransactionService,
+    tokenService: TokenService,
     exportTxsNumberThreshold: Int,
     streamParallelism: Int
 )(implicit
@@ -94,11 +95,11 @@ class AddressServer(
       }),
       route(getAddressTokenBalance.serverLogicSuccess[Future] { case (address, token) =>
         for {
-          (balance, locked) <- transactionService.getTokenBalance(address, token)
+          (balance, locked) <- tokenService.getTokenBalance(address, token)
         } yield AddressTokenBalance(token, balance, locked)
       }),
       route(listAddressTokensBalance.serverLogicSuccess[Future] { case (address, pagination) =>
-        transactionService
+        tokenService
           .listAddressTokensWithBalance(address, pagination)
           .map(_.map { case (tokenId, balance, locked) =>
             AddressTokenBalance(tokenId, balance, locked)
@@ -106,13 +107,13 @@ class AddressServer(
       }),
       route(listAddressTokens.serverLogicSuccess[Future] { case (address, pagination) =>
         for {
-          tokens <- transactionService.listAddressTokens(address, pagination)
+          tokens <- tokenService.listAddressTokens(address, pagination)
         } yield tokens
       }),
       route(listAddressTokenTransactions.serverLogicSuccess[Future] {
         case (address, token, pagination) =>
           for {
-            tokens <- transactionService.listAddressTokenTransactions(address, token, pagination)
+            tokens <- tokenService.listAddressTokenTransactions(address, token, pagination)
           } yield tokens
       }),
       route(areAddressesActive.serverLogicSuccess[Future] { addresses =>
