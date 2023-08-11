@@ -93,7 +93,8 @@ object ContractQueries {
             s"""
            UPDATE contracts SET destruction_block_hash = ?, destruction_tx_hash = ?, destruction_timestamp = ?, destruction_event_order = ?
            WHERE contract = ?
-         """
+           AND destruction_block_hash IS NULL
+         """ // We update where destruction_block_hash is null, because a contract can be recreated after it was first destroyed.
           }
           .mkString("BEGIN;", ";", ";COMMIT;")
 
