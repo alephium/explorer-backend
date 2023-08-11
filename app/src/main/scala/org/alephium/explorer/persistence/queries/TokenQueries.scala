@@ -66,14 +66,14 @@ object TokenQueries extends StrictLogging {
         AND inputs.block_hash IS NULL;
     """.asAS[(Option[U256], Option[U256])].exactlyOne
 
-  def listTokensAction(pagination: Pagination): DBActionSR[TokenId] = {
+  def listTokensAction(pagination: Pagination): DBActionSR[TokenInfo] = {
     sql"""
-      SELECT token
+      SELECT token, interface_id
       FROM token_info
       ORDER BY last_used DESC
     """
       .paginate(pagination)
-      .asAS[TokenId]
+      .asASE[TokenInfo](tokenInfoGetResult)
 
   }
 

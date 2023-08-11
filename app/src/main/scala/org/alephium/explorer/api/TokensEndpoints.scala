@@ -29,16 +29,24 @@ import org.alephium.protocol.model.{Address, TokenId}
 // scalastyle:off magic.number
 trait TokensEndpoints extends BaseEndpoint with QueryParams {
 
+  private lazy val maxTokens: Int = 80
+
   private val tokensEndpoint =
     baseEndpoint
       .tag("Tokens")
       .in("tokens")
 
-  val listTokens: BaseEndpoint[Pagination, ArraySeq[TokenId]] =
+  val listTokens: BaseEndpoint[Pagination, ArraySeq[TokenInfo]] =
     tokensEndpoint.get
       .in(pagination)
-      .out(jsonBody[ArraySeq[TokenId]])
-      .description("List tokens")
+      .out(jsonBody[ArraySeq[TokenInfo]])
+      .description("List token information")
+
+  val listTokenInfo: BaseEndpoint[ArraySeq[TokenId], ArraySeq[TokenInfo]] =
+    tokensEndpoint.post
+      .in(jsonBody[ArraySeq[TokenId]].validate(Validator.maxSize(maxTokens)))
+      .out(jsonBody[ArraySeq[TokenInfo]])
+      .description("list given tokens information")
 
   val listTokenTransactions: BaseEndpoint[(TokenId, Pagination), ArraySeq[Transaction]] =
     tokensEndpoint.get
@@ -55,4 +63,31 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .in(pagination)
       .out(jsonBody[ArraySeq[Address]])
       .description("List token addresses")
+
+  val listFungibleTokenMetadata: BaseEndpoint[ArraySeq[TokenId], ArraySeq[FungibleTokenMetadata]] =
+    tokensEndpoint.post
+      .in("fungible-metadata")
+      .in(jsonBody[ArraySeq[TokenId]].validate(Validator.maxSize(maxTokens)))
+      .out(jsonBody[ArraySeq[FungibleTokenMetadata]])
+      .description(
+        "Return metadata for the given fungible tokens, if metadata doesn't exist or token isn't a fungible, it won't be in the output list"
+      )
+
+  val listNFTMetadata: BaseEndpoint[ArraySeq[TokenId], ArraySeq[NFTMetadata]] =
+    tokensEndpoint.post
+      .in("nft-metadata")
+      .in(jsonBody[ArraySeq[TokenId]].validate(Validator.maxSize(maxTokens)))
+      .out(jsonBody[ArraySeq[NFTMetadata]])
+      .description(
+        "Return metadata for the given nft tokens, if metadata doesn't exist or token isn't a nft, it won't be in the output list"
+      )
+
+  val listNFTCollectionMetadata: BaseEndpoint[ArraySeq[Address], ArraySeq[NFTCollectionMetadata]] =
+    tokensEndpoint.post
+      .in("nft-collection-metadata")
+      .in(jsonBody[ArraySeq[Address]].validate(Validator.maxSize(maxTokens)))
+      .out(jsonBody[ArraySeq[NFTCollectionMetadata]])
+      .description(
+        "Return metadata for the given nft collection addresses, if metadata doesn't exist or address isn't a nft collection, it won't be in the output list"
+      )
 }

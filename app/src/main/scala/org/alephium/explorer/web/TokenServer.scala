@@ -25,6 +25,7 @@ import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.api.TokensEndpoints
 import org.alephium.explorer.service.TokenService
+import org.alephium.protocol.model.Address
 
 class TokenServer(tokenService: TokenService)(implicit
     val executionContext: ExecutionContext,
@@ -45,6 +46,19 @@ class TokenServer(tokenService: TokenService)(implicit
       route(listTokenAddresses.serverLogicSuccess[Future] { case (token, pagination) =>
         tokenService
           .listTokenAddresses(token, pagination)
+      }),
+      route(listTokenInfo.serverLogicSuccess[Future] { tokens =>
+        tokenService.listTokenInfo(tokens)
+      }),
+      route(listFungibleTokenMetadata.serverLogicSuccess[Future] { tokens =>
+        tokenService.listFungibleTokenMetadata(tokens)
+      }),
+      route(listNFTMetadata.serverLogicSuccess[Future] { tokens =>
+        tokenService.listNFTMetadata(tokens)
+      }),
+      route(listNFTCollectionMetadata.serverLogicSuccess[Future] { addresses =>
+        val contracts = addresses.collect { case address: Address.Contract => address }
+        tokenService.listNFTCollectionMetadata(contracts)
       })
     )
 }
