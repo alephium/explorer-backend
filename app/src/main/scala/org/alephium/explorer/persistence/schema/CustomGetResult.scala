@@ -116,6 +116,18 @@ object CustomGetResult {
   implicit val addressGetResult: GetResult[Address] =
     (result: PositionedResult) => Address.fromBase58(result.nextString()).get
 
+  val addressContractGetResult: GetResult[Address.Contract] =
+    (result: PositionedResult) => {
+      val string = result.nextString()
+      Address.fromBase58(string) match {
+        case Some(address: Address.Contract) => address
+        case Some(_: Address.Asset) =>
+          throw new Exception(s"Expect contract address, but was asset address: $string")
+        case None =>
+          throw new Exception(s"Unable to decode address from $string")
+      }
+    }
+
   implicit val optionAddressGetResult: GetResult[Option[Address]] =
     (result: PositionedResult) =>
       result.nextStringOption().map(string => Address.fromBase58(string).get)
@@ -277,6 +289,39 @@ object CustomGetResult {
         eventIndex = result.<<,
         fields = result.<<,
         eventOrder = result.<<
+      )
+
+  val fungibleTokenMetadataGetResult: GetResult[FungibleTokenMetadata] =
+    (result: PositionedResult) =>
+      FungibleTokenMetadata(
+        token = result.<<,
+        symbol = result.<<,
+        name = result.<<,
+        decimals = result.<<,
+        totalSupply = result.<<
+      )
+
+  val nftMetadataGetResult: GetResult[NFTMetadata] =
+    (result: PositionedResult) =>
+      NFTMetadata(
+        token = result.<<,
+        tokenUri = result.<<,
+        collectionAddress = result.<<
+      )
+
+  val nftCollectionMetadataGetResult: GetResult[NFTCollectionMetadata] =
+    (result: PositionedResult) =>
+      NFTCollectionMetadata(
+        address = result.<<(addressContractGetResult),
+        collectionUri = result.<<,
+        totalSupply = result.<<
+      )
+
+  val tokenInfoGetResult: GetResult[TokenInfo] =
+    (result: PositionedResult) =>
+      TokenInfo(
+        token = result.<<,
+        stdInterfaceId = result.<<?
       )
 
   implicit val migrationVersionGetResult: GetResult[AppState.MigrationVersion] =

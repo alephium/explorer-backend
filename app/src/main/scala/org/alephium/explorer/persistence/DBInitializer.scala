@@ -61,7 +61,10 @@ object DBInitializer extends StrictLogging {
       TransactionHistorySchema.table,
       EventSchema.table,
       ContractSchema.table,
-      AppStateSchema.table
+      AppStateSchema.table,
+      FungibleTokenMetadataSchema.table,
+      NFTMetadataSchema.table,
+      NFTCollectionMetadataSchema.table
     )
 
   def initialize()(implicit

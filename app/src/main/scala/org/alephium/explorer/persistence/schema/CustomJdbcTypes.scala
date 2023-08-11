@@ -80,6 +80,19 @@ object CustomJdbcTypes {
     string => Address.fromBase58(string).get
   )
 
+  implicit val addressContractType: JdbcType[Address.Contract] =
+    MappedJdbcType.base[Address.Contract, String](
+      _.toBase58,
+      string =>
+        Address.fromBase58(string) match {
+          case Some(address: Address.Contract) => address
+          case Some(_: Address.Asset) =>
+            throw new Exception(s"Expect contract address, but was asset address: $string")
+          case None =>
+            throw new Exception(s"Unable to decode address from $string")
+        }
+    )
+
   implicit val timestampType: JdbcType[TimeStamp] = MappedJdbcType.base[TimeStamp, Long](
     _.millis,
     long => TimeStamp.unsafe(long)
