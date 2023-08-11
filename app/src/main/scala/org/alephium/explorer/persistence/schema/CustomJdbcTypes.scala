@@ -153,6 +153,12 @@ object CustomJdbcTypes {
       OutputEntity.OutputType.unsafe
     )
 
+  implicit val interfaceIdType: JdbcType[StdInterfaceId] =
+    MappedJdbcType.base[StdInterfaceId, Int](
+      _.id,
+      StdInterfaceId.unsafeFromId
+    )
+
   implicit val appStateKey: JdbcType[AppStateKey[_]] =
     MappedJdbcType.base[AppStateKey[_], String](
       state => state.key,
