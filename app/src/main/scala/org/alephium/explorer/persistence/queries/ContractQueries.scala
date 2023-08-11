@@ -16,12 +16,13 @@
 
 package org.alephium.explorer.persistence.queries
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.api.model.Pagination
+import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model.{ContractEntity, EventEntity}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
@@ -135,5 +136,43 @@ object ContractQueries {
       """
       .paginate(pagination)
       .asASE[Address](addressGetResult)
+  }
+
+  def insertNFTCollectionMetadata(
+      contract: Address,
+      metadata: NFTCollectionMetadata
+  ): DBActionW[Int] = {
+    sqlu"""
+      INSERT INTO nft_collection_metadata (
+        "contract",
+        "collection_uri",
+        "total_supply"
+        )
+      VALUES (${contract},${metadata.collectionUri},${metadata.totalSupply})
+      ON CONFLICT
+      ON CONSTRAINT nft_collection_metadata_pkey
+      DO NOTHING
+    """
+  }
+
+  def listContractWithoutInterfaceIdQuery(): DBActionW[ArraySeq[Address.Contract]] = {
+    sql"""
+      SELECT contract
+      FROM contracts
+      WHERE interface_id IS NULL
+      AND destruction_block_hash IS NULL
+    """.asASE[Address.Contract](addressContractGetResult)
+  }
+
+  def updateContractInterfaceId(
+      contract: Address.Contract,
+      interfaceId: StdInterfaceId
+  ): DBActionW[Int] = {
+    sqlu"""
+      UPDATE contracts
+      SET interface_id = ${interfaceId.id}
+      WHERE contract = $contract
+      AND destruction_block_hash IS NULL
+    """
   }
 }

@@ -20,6 +20,8 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
 import com.typesafe.scalalogging.StrictLogging
+import slick.dbio.DBIOAction
+import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
@@ -178,4 +180,168 @@ object TokenQueries extends StrictLogging {
     """
       .paginate(pagination)
       .asAS[(TokenId, Option[U256], Option[U256])]
+
+  def insertFungibleTokenMetadata(
+      token: TokenId,
+      metadata: FungibleTokenMetadata
+  ): DBActionW[Int] = {
+    sqlu"""
+      INSERT INTO fungible_token_metadata (
+        "token",
+        "name",
+        "symbol",
+        "decimals",
+        "total_supply"
+        )
+      VALUES (${token},${metadata.name},${metadata.symbol},${metadata.decimals},${metadata.totalSupply})
+      ON CONFLICT
+      ON CONSTRAINT fungible_token_metadata_pkey
+      DO NOTHING
+    """
+  }
+
+  def listFungibleTokenMetadataQuery(
+      tokens: ArraySeq[TokenId]
+  ): DBActionW[ArraySeq[FungibleTokenMetadata]] = {
+    if (tokens.nonEmpty) {
+      val params = paramPlaceholder(1, tokens.size)
+
+      val query =
+        s"""
+          SELECT *
+          FROM fungible_token_metadata
+          WHERE token IN $params
+        """
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          tokens foreach { token =>
+            params >> token
+          }
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv = parameters
+      ).asASE[FungibleTokenMetadata](fungibleTokenMetadataGetResult)
+    } else {
+      DBIOAction.successful(ArraySeq.empty)
+    }
+  }
+
+  def listTokenInfosQuery(
+      tokens: ArraySeq[TokenId]
+  ): DBActionW[ArraySeq[TokenInfo]] = {
+    if (tokens.nonEmpty) {
+      val params = paramPlaceholder(1, tokens.size)
+
+      val query =
+        s"""
+          SELECT token, interface_id
+          FROM token_info
+          WHERE token IN $params
+        """
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          tokens foreach { token =>
+            params >> token
+          }
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv = parameters
+      ).asASE[TokenInfo](tokenInfoGetResult)
+    } else {
+      DBIOAction.successful(ArraySeq.empty)
+    }
+  }
+
+  def listNFTMetadataQuery(
+      tokens: ArraySeq[TokenId]
+  ): DBActionW[ArraySeq[NFTMetadata]] = {
+    if (tokens.nonEmpty) {
+      val params = paramPlaceholder(1, tokens.size)
+
+      val query =
+        s"""
+          SELECT *
+          FROM nft_metadata
+          WHERE token IN $params
+        """
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          tokens foreach { token =>
+            params >> token
+          }
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv = parameters
+      ).asASE[NFTMetadata](nftMetadataGetResult)
+    } else {
+      DBIOAction.successful(ArraySeq.empty)
+    }
+  }
+
+  def listNFTCollectionMetadataQuery(
+      addresses: ArraySeq[Address.Contract]
+  ): DBActionW[ArraySeq[NFTCollectionMetadata]] = {
+    if (addresses.nonEmpty) {
+      val params = paramPlaceholder(1, addresses.size)
+
+      val query =
+        s"""
+          SELECT *
+          FROM nft_collection_metadata
+          WHERE address IN $params
+        """
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          addresses foreach { address =>
+            params >> address
+          }
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv = parameters
+      ).asASE[NFTCollectionMetadata](nftCollectionMetadataGetResult)
+    } else {
+      DBIOAction.successful(ArraySeq.empty)
+    }
+  }
+
+  def insertNFTMetadata(
+      token: TokenId,
+      metadata: NFTMetadata
+  ): DBActionW[Int] = {
+    sqlu"""
+      INSERT INTO nft_metadata (
+        "token",
+        "token_uri",
+        "collection_address"
+        )
+      VALUES (${token},${metadata.tokenUri},${metadata.collectionAddress})
+      ON CONFLICT
+      ON CONSTRAINT nft_metadata_pkey
+      DO NOTHING
+    """
+  }
+
+  def listTokenWithoutInterfaceIdQuery(): DBActionW[ArraySeq[TokenId]] = {
+    sql"""
+      SELECT token
+      FROM token_info
+      WHERE interface_id IS NULL
+    """.asAS[TokenId]
+  }
+
+  def updateTokenInterfaceId(token: TokenId, interfaceId: StdInterfaceId): DBActionW[Int] = {
+    sqlu"""
+      UPDATE token_info
+      SET interface_id = ${interfaceId.id}
+      WHERE token = $token
+    """
+  }
 }
