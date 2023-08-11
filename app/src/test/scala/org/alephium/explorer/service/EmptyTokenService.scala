@@ -23,40 +23,81 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.api.model._
-import org.alephium.protocol.model.{Address, TokenId }
+import org.alephium.protocol.model.{Address, TokenId}
 import org.alephium.util.U256
 
 trait EmptyTokenService extends TokenService {
   def getTokenBalance(address: Address, token: TokenId)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
-  ): Future[(U256, U256)]  = ???
+  ): Future[(U256, U256)] = ???
 
   def listTokens(pagination: Pagination)(implicit
       dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[TokenId]]  = ???
+  ): Future[ArraySeq[TokenInfo]] = ???
 
   def listTokenTransactions(token: TokenId, pagination: Pagination)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[Transaction]]  = ???
+  ): Future[ArraySeq[Transaction]] = ???
+
+  def listTokenInfo(tokens: ArraySeq[TokenId])(implicit
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[TokenInfo]] = ???
 
   def listTokenAddresses(token: TokenId, pagination: Pagination)(implicit
       dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[Address]]  = ???
+  ): Future[ArraySeq[Address]] = ???
+
+  def listFungibleTokenMetadata(tokens: ArraySeq[TokenId])(implicit
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[FungibleTokenMetadata]] = ???
+
+  def listNFTMetadata(tokens: ArraySeq[TokenId])(implicit
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[NFTMetadata]] = ???
+
+  def listNFTCollectionMetadata(addresses: ArraySeq[Address.Contract])(implicit
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[NFTCollectionMetadata]] = ???
 
   def listAddressTokens(address: Address, pagination: Pagination)(implicit
       dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[TokenId]]  = ???
+  ): Future[ArraySeq[TokenId]] = ???
 
   def listAddressTokenTransactions(address: Address, token: TokenId, pagination: Pagination)(
       implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[Transaction]]  = ???
+  ): Future[ArraySeq[Transaction]] = ???
 
   def listAddressTokensWithBalance(address: Address, pagination: Pagination)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[(TokenId, U256, U256)]]  = ???
+  ): Future[ArraySeq[(TokenId, U256, U256)]] = ???
+
+  def listTokenWithoutInterfaceId()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[TokenId]] = ???
+
+  def listContractWithoutInterfaceId()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[Address.Contract]] = ???
+
+  def fetchAndStoreTokenMetadata(token: TokenId, blockflowClient: BlockFlowClient)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = ???
+
+  def updateTokensMetadata(blockFlowClient: BlockFlowClient)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = ???
+
+  def updateContractsMetadata(blockFlowClient: BlockFlowClient)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = ???
 }
