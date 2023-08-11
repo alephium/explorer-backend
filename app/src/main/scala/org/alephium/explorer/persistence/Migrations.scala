@@ -29,14 +29,14 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.persistence.model.AppState.{LastFinalizedInputTime, MigrationVersion}
 import org.alephium.explorer.persistence.queries.{AppStateQueries, ContractQueries}
+import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.explorer.persistence.schema.EventSchema
 import org.alephium.util.TimeStamp
 
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(4)
+  val latestVersion: MigrationVersion = MigrationVersion(5)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] =
     EventSchema.table.result.flatMap { events =>
@@ -83,11 +83,19 @@ object Migrations extends StrictLogging {
     } yield ()
   }
 
+  def migration5(implicit ec: ExecutionContext): DBActionAll[Unit] = {
+    for {
+      _ <- sqlu"""ALTER TABLE token_info ADD COLUMN IF NOT EXISTS interface_id integer"""
+      _ <- sqlu"""ALTER TABLE contracts ADD COLUMN IF NOT EXISTS interface_id integer"""
+    } yield ()
+  }
+
   private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
     migration1,
     migration2,
     migration3,
-    migration4
+    migration4,
+    migration5
   )
 
   def migrationsQuery(

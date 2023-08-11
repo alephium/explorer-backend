@@ -16,10 +16,12 @@
 
 package org.alephium.explorer.persistence.model
 
+import org.alephium.explorer.api.model.StdInterfaceId
 import org.alephium.protocol.model.TokenId
 import org.alephium.util.TimeStamp
 
 final case class TokenInfoEntity(
     token: TokenId,
-    lastUsed: TimeStamp
+    lastUsed: TimeStamp,
+    interfaceId: Option[StdInterfaceId]
 )

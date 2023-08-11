@@ -19,6 +19,7 @@ package org.alephium.explorer.persistence.schema
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
+import org.alephium.explorer.api.model.StdInterfaceId
 import org.alephium.explorer.persistence.model.TokenInfoEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.model.TokenId
@@ -27,11 +28,12 @@ import org.alephium.util.TimeStamp
 object TokenInfoSchema extends SchemaMainChain[TokenInfoEntity]("token_info") {
 
   class TokenInfos(tag: Tag) extends Table[TokenInfoEntity](tag, name) {
-    def token: Rep[TokenId]      = column[TokenId]("token", O.PrimaryKey)
-    def lastUsed: Rep[TimeStamp] = column[TimeStamp]("last_used")
+    def token: Rep[TokenId]                      = column[TokenId]("token", O.PrimaryKey)
+    def lastUsed: Rep[TimeStamp]                 = column[TimeStamp]("last_used")
+    def interfaceId: Rep[Option[StdInterfaceId]] = column[Option[StdInterfaceId]]("interface_id")
 
     def * : ProvenShape[TokenInfoEntity] =
-      (token, lastUsed)
+      (token, lastUsed, interfaceId)
         .<>((TokenInfoEntity.apply _).tupled, TokenInfoEntity.unapply)
   }
 
