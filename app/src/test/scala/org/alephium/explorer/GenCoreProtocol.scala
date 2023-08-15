@@ -26,6 +26,7 @@ import org.alephium.protocol.vm.{
   Instr,
   LockupScript,
   Method,
+  StatefulContract,
   StatelessContext,
   StatelessScript,
   UnlockScript
@@ -194,4 +195,10 @@ object GenCoreProtocol {
       unlockScriptProtocolP2PKHGen: Gen[UnlockScript],
       unlockScriptProtocolP2MPKHGen: Gen[UnlockScript]
     )
+
+  val statefulContractGen: Gen[StatefulContract] =
+    for {
+      fieldLength <- Gen.posNum[Int]
+    } yield StatefulContract(fieldLength, AVector.empty)
+
 }

@@ -25,7 +25,7 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
 
 import org.alephium.api.model._
-import org.alephium.explorer.GenApiModel.bytesGen
+import org.alephium.explorer.GenApiModel.{addressGen, bytesGen}
 import org.alephium.explorer.GenCommon.{genInetAddress, genPortNum}
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
@@ -279,4 +279,75 @@ object GenCoreApi {
         })
       }
   }
+
+  val assetStateGen: Gen[AssetState] =
+    for {
+      attoAlphAmount <- amountGen
+    } yield AssetState(attoAlphAmount, None)
+
+  val contractStateGen: Gen[ContractState] =
+    for {
+      address          <- addressContractProtocolGen
+      bytecode         <- statefulContractGen
+      codeHash         <- hashGen
+      initialStateHash <- Gen.option(hashGen)
+      asset            <- assetStateGen
+    } yield ContractState(
+      address,
+      bytecode,
+      codeHash,
+      initialStateHash,
+      AVector.empty,
+      AVector.empty,
+      asset
+    )
+
+  def contractEventByTxIdGen(implicit groupSetting: GroupSetting): Gen[ContractEventByTxId] =
+    for {
+      blockHash       <- blockHashGen
+      contractAddress <- addressContractProtocolGen
+      eventIndex      <- Gen.posNum[Int]
+      fields          <- Gen.listOfN(5, valGen())
+    } yield ContractEventByTxId(
+      blockHash,
+      contractAddress,
+      eventIndex,
+      AVector.from(fields)
+    )
+
+  val callContractFailedGen: Gen[CallContractFailed] = for {
+    error <- Gen.alphaStr
+  } yield CallContractFailed(error)
+
+  def callContractSucceededGen(implicit groupSetting: GroupSetting): Gen[CallContractSucceeded] =
+    for {
+      returns   <- Gen.listOfN(5, valGen())
+      gasUsed   <- Gen.posNum[Int]
+      contracts <- Gen.listOfN(5, contractStateGen)
+      txInputs  <- Gen.listOfN(5, addressGen)
+      txOutputs <- Gen.listOfN(5, outputProtocolGen)
+      events    <- Gen.listOfN(5, contractEventByTxIdGen)
+    } yield CallContractSucceeded(
+      AVector.from(returns),
+      gasUsed,
+      AVector.from(contracts),
+      AVector.from(txInputs),
+      AVector.from(txOutputs),
+      AVector.from(events)
+    )
+
+  def callContractResultGen(implicit groupSetting: GroupSetting): Gen[CallContractResult] =
+    Gen.oneOf(
+      callContractSucceededGen: Gen[CallContractResult],
+      callContractFailedGen: Gen[CallContractResult]
+    )
+
+  def multipleCallContractResult(implicit
+      groupSetting: GroupSetting
+  ): Gen[MultipleCallContractResult] =
+    for {
+      results <- Gen.listOfN(5, callContractResultGen)
+    } yield MultipleCallContractResult(
+      AVector.from(results)
+    )
 }

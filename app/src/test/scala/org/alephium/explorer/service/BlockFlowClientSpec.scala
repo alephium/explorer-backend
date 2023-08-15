@@ -32,14 +32,16 @@ import org.alephium.api
 import org.alephium.api.model
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.ConfigDefaults._
+import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenCoreProtocol._
+import org.alephium.explorer.api.model.{FungibleTokenMetadata, NFTCollectionMetadata, NFTMetadata}
 import org.alephium.explorer.error.ExplorerError
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.web.Server
 import org.alephium.protocol.config.GroupConfig
-import org.alephium.protocol.model.{CliqueId, GroupIndex, NetworkId}
+import org.alephium.protocol.model.{Address, CliqueId, ContractId, GroupIndex, NetworkId}
 import org.alephium.util.AVector
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
@@ -67,6 +69,81 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
         BlockFlowClient(Uri(localhost.getHostAddress, port), groupSetting.groupNum, None, false)
 
       blockFlowClient.fetchBlock(group, blockHashGen.sample.get).futureValue is a[BlockEntity]
+    }
+  }
+  "BlockFlowClient companion" should {
+    def contractResult(value: model.Val): model.CallContractResult = {
+      val result = callContractSucceededGen.sample.get
+      result.copy(returns = value +: result.returns)
+    }
+    "extract fungible token metadata" in {
+      forAll(
+        tokenIdGen,
+        multipleCallContractResult,
+        valByteVecGen,
+        valByteVecGen,
+        valU256Gen,
+        valU256Gen
+      ) { case (token, result, symbol, name, decimals, totalSupply) =>
+        val symbolResult: model.CallContractResult      = contractResult(symbol)
+        val nameResult: model.CallContractResult        = contractResult(name)
+        val decimalsResult: model.CallContractResult    = contractResult(decimals)
+        val totalSupplyResult: model.CallContractResult = contractResult(totalSupply)
+
+        val results: AVector[model.CallContractResult] =
+          AVector(symbolResult, nameResult, decimalsResult, totalSupplyResult) ++ result.results
+        val callContract = result.copy(results = results)
+
+        BlockFlowClient.extractFungibleTokenMetadata(token, callContract) is Some(
+          FungibleTokenMetadata(
+            token,
+            symbol.value.utf8String,
+            name.value.utf8String,
+            decimals.value,
+            totalSupply.value
+          )
+        )
+      }
+    }
+
+    "extract nft metadata" in {
+      forAll(tokenIdGen, multipleCallContractResult, valByteVecGen, valByteVecGen) {
+        case (token, result, uri, address) =>
+          val uriResult: model.CallContractResult     = contractResult(uri)
+          val addressResult: model.CallContractResult = contractResult(address)
+
+          val results: AVector[model.CallContractResult] =
+            AVector(uriResult, addressResult) ++ result.results
+          val callContract = result.copy(results = results)
+
+          BlockFlowClient.extractNFTMetadata(token, callContract) is Some(
+            NFTMetadata(
+              token,
+              uri.value.utf8String,
+              ContractId.from(address.value).map(Address.contract).get
+            )
+          )
+      }
+    }
+
+    "extract nft collection metadata" in {
+      forAll(addressContractProtocolGen, multipleCallContractResult, valByteVecGen, valU256Gen) {
+        case (contractAddress, result, uri, totalSupply) =>
+          val uriResult: model.CallContractResult         = contractResult(uri)
+          val totalSupplyResult: model.CallContractResult = contractResult(totalSupply)
+
+          val results: AVector[model.CallContractResult] =
+            AVector(uriResult, totalSupplyResult) ++ result.results
+          val callContract = result.copy(results = results)
+
+          BlockFlowClient.extractNFTCollectionMetadata(contractAddress, callContract) is Some(
+            NFTCollectionMetadata(
+              contractAddress,
+              uri.value.utf8String,
+              totalSupply.value
+            )
+          )
+      }
     }
   }
 }

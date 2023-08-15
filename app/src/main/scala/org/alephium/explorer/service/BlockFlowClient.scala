@@ -275,7 +275,7 @@ object BlockFlowClient extends StrictLogging {
       fetchMetadata(address, nbArgs)(f)
     }
 
-    private def fetchMetadata[A](address: Address.Contract, nbArgs: Int)(
+    def fetchMetadata[A](address: Address.Contract, nbArgs: Int)(
         f: MultipleCallContractResult => Option[A]
     ): Future[Option[A]] = {
       val group = address.groupIndex(groupSetting.groupConfig)
@@ -299,29 +299,9 @@ object BlockFlowClient extends StrictLogging {
       }
     }
 
-    private def extractVal(result: CallContractResult): Option[api.model.Val] = {
-      result match {
-        case success: CallContractSucceeded => success.returns.headOption
-        case _: CallContractFailed          => None
-      }
-    }
-
     def fetchFungibleTokenMetadata(token: TokenId): Future[Option[FungibleTokenMetadata]] = {
       fetchTokenMetadata[FungibleTokenMetadata](token, 4) { result =>
-        for {
-          symbol      <- extractVal(result.results(0)).flatMap(valToString)
-          name        <- extractVal(result.results(1)).flatMap(valToString)
-          decimals    <- extractVal(result.results(2)).flatMap(valToU256)
-          totalSupply <- extractVal(result.results(3)).flatMap(valToU256)
-        } yield {
-          FungibleTokenMetadata(
-            token,
-            symbol,
-            name,
-            decimals,
-            totalSupply
-          )
-        }
+        extractFungibleTokenMetadata(token, result)
       }
     }
 
@@ -329,55 +309,13 @@ object BlockFlowClient extends StrictLogging {
         contract: Address.Contract
     ): Future[Option[NFTCollectionMetadata]] = {
       fetchMetadata[NFTCollectionMetadata](contract, 2) { result =>
-        for {
-          collectionUri <- extractVal(result.results(0)).flatMap(valToString)
-          totalSupply   <- extractVal(result.results(1)).flatMap(valToU256)
-        } yield {
-          NFTCollectionMetadata(
-            contract,
-            collectionUri,
-            totalSupply
-          )
-        }
+        extractNFTCollectionMetadata(contract, result)
       }
     }
 
     def fetchNFTMetadata(token: TokenId): Future[Option[NFTMetadata]] = {
       fetchTokenMetadata[NFTMetadata](token, 2) { result =>
-        for {
-          tokenUri          <- extractVal(result.results(0)).flatMap(valToString)
-          collectionAddress <- extractVal(result.results(1)).flatMap(valToAddress)
-        } yield {
-          NFTMetadata(
-            token,
-            tokenUri,
-            collectionAddress
-          )
-        }
-      }
-    }
-
-    private def valToU256(value: api.model.Val): Option[U256] =
-      value match {
-        case api.model.ValU256(u256) =>
-          Some(u256)
-        case _ => None
-      }
-
-    private def valToString(value: api.model.Val): Option[String] =
-      value match {
-        case api.model.ValByteVec(bytes) =>
-          Some(bytes.utf8String)
-        case _ => None
-      }
-
-    private def valToAddress(value: api.model.Val): Option[Address] = {
-      value match {
-        case api.model.ValAddress(address) =>
-          Some(address)
-        case api.model.ValByteVec(bytes) =>
-          ContractId.from(bytes).map(Address.contract)
-        case _ => None
+        extractNFTMetadata(token, result)
       }
     }
 
@@ -401,6 +339,88 @@ object BlockFlowClient extends StrictLogging {
 
     override def close(): Future[Unit] = {
       endpointSender.stop()
+    }
+  }
+
+  def extractVal(result: CallContractResult): Option[api.model.Val] = {
+    result match {
+      case success: CallContractSucceeded => success.returns.headOption
+      case _: CallContractFailed          => None
+    }
+  }
+
+  def valToU256(value: api.model.Val): Option[U256] =
+    value match {
+      case api.model.ValU256(u256) =>
+        Some(u256)
+      case _ => None
+    }
+
+  def valToString(value: api.model.Val): Option[String] =
+    value match {
+      case api.model.ValByteVec(bytes) =>
+        Some(bytes.utf8String)
+      case _ => None
+    }
+
+  def valToAddress(value: api.model.Val): Option[Address] = {
+    value match {
+      case api.model.ValAddress(address) =>
+        Some(address)
+      case api.model.ValByteVec(bytes) =>
+        ContractId.from(bytes).map(Address.contract)
+      case _ => None
+    }
+  }
+
+  def extractFungibleTokenMetadata(
+      token: TokenId,
+      result: MultipleCallContractResult
+  ): Option[FungibleTokenMetadata] = {
+    for {
+      symbol      <- extractVal(result.results(0)).flatMap(valToString)
+      name        <- extractVal(result.results(1)).flatMap(valToString)
+      decimals    <- extractVal(result.results(2)).flatMap(valToU256)
+      totalSupply <- extractVal(result.results(3)).flatMap(valToU256)
+    } yield {
+      FungibleTokenMetadata(
+        token,
+        symbol,
+        name,
+        decimals,
+        totalSupply
+      )
+    }
+  }
+
+  def extractNFTCollectionMetadata(
+      contract: Address.Contract,
+      result: MultipleCallContractResult
+  ): Option[NFTCollectionMetadata] = {
+    for {
+      collectionUri <- extractVal(result.results(0)).flatMap(valToString)
+      totalSupply   <- extractVal(result.results(1)).flatMap(valToU256)
+    } yield {
+      NFTCollectionMetadata(
+        contract,
+        collectionUri,
+        totalSupply
+      )
+    }
+  }
+  def extractNFTMetadata(
+      token: TokenId,
+      result: MultipleCallContractResult
+  ): Option[NFTMetadata] = {
+    for {
+      tokenUri          <- extractVal(result.results(0)).flatMap(valToString)
+      collectionAddress <- extractVal(result.results(1)).flatMap(valToAddress)
+    } yield {
+      NFTMetadata(
+        token,
+        tokenUri,
+        collectionAddress
+      )
     }
   }
 
