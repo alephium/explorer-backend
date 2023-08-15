@@ -27,7 +27,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.queries.ExplainResult
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.mining.HashRate
-import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TokenId}
+import org.alephium.protocol.model.{Address, BlockHash, ContractId, GroupIndex, TokenId}
 import org.alephium.util.{Hex, U256}
 
 /** Contains OpenAPI Examples.
@@ -55,6 +55,12 @@ object EndpointExamples extends EndpointsExamples {
 
   private val address2: Address =
     Address.fromBase58("22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM").get
+
+  private val addressContract: Address.Contract = Address.contract(
+    ContractId
+      .from(Hex.from("ac92820d7b37ab2b14eca20839a9c1ad5379e671c687b37a416a2754ea9fc412").get)
+      .get
+  )
 
   private val groupIndex1: GroupIndex = new GroupIndex(1)
   private val groupIndex2: GroupIndex = new GroupIndex(2)
@@ -373,7 +379,7 @@ object EndpointExamples extends EndpointsExamples {
     simpleExample(ArraySeq(NFTMetadata(token, "token://uri", address)))
 
   implicit val nftCollectionsMetadataExample: List[Example[ArraySeq[NFTCollectionMetadata]]] =
-    simpleExample(ArraySeq(NFTCollectionMetadata(contractAddress, "collection://uri", U256.One)))
+    simpleExample(ArraySeq(NFTCollectionMetadata(addressContract, "collection://uri", U256.One)))
 
   implicit val tokenInfosExample: List[Example[ArraySeq[TokenInfo]]] =
     simpleExample(ArraySeq(TokenInfo(token, Some(StdInterfaceId.FungibleToken))))
