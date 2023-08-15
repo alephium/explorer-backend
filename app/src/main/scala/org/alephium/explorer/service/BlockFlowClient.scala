@@ -249,18 +249,23 @@ object BlockFlowClient extends StrictLogging {
 
     def guessStdInterfaceId(address: Address.Contract): Future[Option[StdInterfaceId]] = {
       val group = address.groupIndex(groupSetting.groupConfig)
-      _send(contractState, uri, (address, group)).map { rawState =>
-        rawState.immFields.lastOption match {
-          case Some(api.model.ValByteVec(bytes)) =>
-            val data = Hex.toHexString(bytes)
-            if (data.startsWith(interfaceIdPrefix)) {
-              Some(StdInterfaceId.from(data.drop(interfaceIdPrefix.size)))
-            } else {
-              Some(StdInterfaceId.NonStandard)
-            }
-          case _ => Some(StdInterfaceId.NonStandard)
+      _send(contractState, uri, (address, group))
+        .map { rawState =>
+          rawState.immFields.lastOption match {
+            case Some(api.model.ValByteVec(bytes)) =>
+              val data = Hex.toHexString(bytes)
+              if (data.startsWith(interfaceIdPrefix)) {
+                Some(StdInterfaceId.from(data.drop(interfaceIdPrefix.size)))
+              } else {
+                Some(StdInterfaceId.NonStandard)
+              }
+            case _ => Some(StdInterfaceId.NonStandard)
+          }
         }
-      }
+        .recoverWith { error =>
+          logger.error(s"Cannot fetch std interface id of $address: $error")
+          Future.successful(None)
+        }
     }
 
     private def fetchTokenMetadata[A](token: TokenId, nbArgs: Int)(
