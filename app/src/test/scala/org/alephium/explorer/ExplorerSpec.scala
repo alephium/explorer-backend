@@ -336,18 +336,17 @@ trait ExplorerSpec
       val openApiFile =
         using(
           Source.fromResource("explorer-backend-openapi.json")(Codec.UTF8)
-        )(
-          _.getLines().toList
-            .mkString("\n")
-            // updating address discovery gap limit according to group number
-            .replace(""""maxItems": 80""", s""""maxItems": ${groupSetting.groupNum * 20}""")
-        )
+        )(_.getLines().toList.mkString)
 
+      // `maxItems` is hardcoded on some place and depend on group num in others
+      // Previously we were changing the value based on the group setting of the test,
+      // but with the hardcoded value it's impossible to differentiante those values,
+      // so we remove them from the json.
       val expectedOpenapi =
-        read[ujson.Value](openApiFile)
+        ExplorerSpec.removeField("maxItems", read[ujson.Value](openApiFile))
 
       val openapi =
-        response.as[ujson.Value]
+        ExplorerSpec.removeField("maxItems", response.as[ujson.Value])
 
       openapi is expectedOpenapi
     }
@@ -553,6 +552,32 @@ object ExplorerSpec {
 
     logger.info(s"Full node listening on ${address.getHostAddress}:$port")
     server.listen(port, address.getHostAddress).asScala.futureValue
+  }
+
+  def removeField(name: String, json: ujson.Value): ujson.Value = {
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+    def rec(json: ujson.Value): ujson.Value = {
+      json match {
+        case obj: ujson.Obj =>
+          ujson.Obj.from(
+            obj.value.filterNot { case (key, _) => key == name }.map { case (key, value) =>
+              key -> rec(value)
+            }
+          )
+
+        case arr: ujson.Arr =>
+          val newValues = arr.value.map { value =>
+            rec(value)
+          }
+          ujson.Arr.from(newValues)
+
+        case x => x
+      }
+    }
+    json match {
+      case ujson.Null => ujson.Null
+      case other      => rec(other)
+    }
   }
 }
 
