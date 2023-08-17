@@ -57,18 +57,22 @@ trait EmptyBlockFlowClient extends BlockFlowClient {
   override def fetchMempoolTransactions(uri: Uri): Future[ArraySeq[MempoolTransaction]] =
     ???
 
-  override def guessStdInterfaceId(address: Address.Contract): Future[Option[StdInterfaceId]] = ???
+  override def guessStdInterfaceId(address: Address.Contract): Future[Option[StdInterfaceId]] =
+    Future.successful(None)
 
-  override def guessTokenStdInterfaceId(token: TokenId): Future[Option[StdInterfaceId]] = ???
+  override def guessTokenStdInterfaceId(token: TokenId): Future[Option[StdInterfaceId]] =
+    Future.successful(None)
 
   override def fetchFungibleTokenMetadata(token: TokenId): Future[Option[FungibleTokenMetadata]] =
-    ???
+    Future.successful(None)
 
-  override def fetchNFTMetadata(token: TokenId): Future[Option[NFTMetadata]] = ???
+  override def fetchNFTMetadata(token: TokenId): Future[Option[NFTMetadata]] =
+    Future.successful(None)
 
   override def fetchNFTCollectionMetadata(
       contract: Address.Contract
-  ): Future[Option[NFTCollectionMetadata]] = ???
+  ): Future[Option[NFTCollectionMetadata]] =
+    Future.successful(None)
 
   override def start(): Future[Unit] = ???
 

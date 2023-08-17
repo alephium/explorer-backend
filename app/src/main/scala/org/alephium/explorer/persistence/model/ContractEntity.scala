@@ -57,10 +57,10 @@ object ContractEntity {
       eventOrder: Int
   )
 
-  val createContractEventAddress: Address =
+  val createContractEventAddress: Address.Contract =
     protocol.model.Address.contract(protocol.vm.createContractEventId)
 
-  val destroyContractEventAddress: Address =
+  val destroyContractEventAddress: Address.Contract =
     protocol.model.Address.contract(protocol.vm.destroyContractEventId)
 
   def creationFromEventEntity(event: EventEntity): Option[ContractEntity] = {

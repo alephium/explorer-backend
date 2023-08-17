@@ -137,8 +137,6 @@ object BlockFlowClient extends StrictLogging {
 
     private val endpointSender = new EndpointSender(maybeApiKey)
 
-    private val interfaceIdPrefix = "414c5048"
-
     override def startSelfOnce(): Future[Unit] = {
       endpointSender.start()
     }
@@ -263,7 +261,7 @@ object BlockFlowClient extends StrictLogging {
           }
         }
         .recoverWith { error =>
-          logger.error(s"Cannot fetch std interface id of $address: $error")
+          logger.error(s"Cannot fetch std interface id of $address")
           Future.successful(None)
         }
     }
@@ -293,8 +291,8 @@ object BlockFlowClient extends StrictLogging {
         } else {
           f(result)
         }
-      }.recoverWith { error =>
-        logger.error(s"Cannot fetch metadata of $address: $error")
+      }.recoverWith { _ =>
+        logger.error(s"Cannot fetch metadata of $address")
         Future.successful(None)
       }
     }
@@ -341,6 +339,8 @@ object BlockFlowClient extends StrictLogging {
       endpointSender.stop()
     }
   }
+
+  val interfaceIdPrefix = "414c5048"
 
   def extractVal(result: CallContractResult): Option[api.model.Val] = {
     result match {

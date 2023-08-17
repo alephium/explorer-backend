@@ -25,15 +25,17 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
 
 import org.alephium.api.model._
-import org.alephium.explorer.GenApiModel.{addressGen, bytesGen}
+import org.alephium.explorer.GenApiModel.{addressGen, bytesGen, stdInterfaceIdGen}
 import org.alephium.explorer.GenCommon.{genInetAddress, genPortNum}
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.Height
+import org.alephium.explorer.persistence.model.ContractEntity
+import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.protocol.model.{BlockHash, ChainIndex, CliqueId, NetworkId, Target}
 import org.alephium.serde._
-import org.alephium.util.{AVector, Duration, I256, TimeStamp, U256}
+import org.alephium.util.{AVector, Duration, Hex, I256, TimeStamp, U256}
 
 /** Generators for types supplied by Core `org.alephium.api` package */
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -89,6 +91,10 @@ object GenCoreApi {
 
   def valAddressGen()(implicit groupSetting: GroupSetting): Gen[ValAddress] = {
     addressAssetProtocolGen().map(ValAddress(_))
+  }
+
+  def valContractAddressGen(implicit groupSetting: GroupSetting): Gen[ValAddress] = {
+    addressContractProtocolGen.map(ValAddress(_))
   }
 
   @SuppressWarnings(
@@ -227,16 +233,22 @@ object GenCoreApi {
       ByteString.empty
     )
 
+  def tokenProtocolGen(implicit groupSetting: GroupSetting): Gen[Token] = for {
+    id     <- GenApiModel.tokenIdGen
+    amount <- amountGen
+  } yield Token(id, amount)
+
   def outputAssetProtocolGen(implicit groupSetting: GroupSetting): Gen[AssetOutput] =
     fixedOutputAssetProtocolGen.map(_.upCast())
 
-  def outputContractProtocolGen: Gen[ContractOutput] =
+  def outputContractProtocolGen(implicit groupSetting: GroupSetting): Gen[ContractOutput] =
     for {
       hint    <- Gen.posNum[Int]
       key     <- hashGen
       amount  <- amountGen
       address <- addressContractProtocolGen
-    } yield ContractOutput(hint, key, Amount(amount), address, AVector.empty)
+      tokens  <- Gen.listOfN(1, tokenProtocolGen)
+    } yield ContractOutput(hint, key, Amount(amount), address, AVector.from(tokens))
 
   def outputProtocolGen(implicit groupSetting: GroupSetting): Gen[Output] =
     Gen.oneOf(outputAssetProtocolGen: Gen[Output], outputContractProtocolGen: Gen[Output])
@@ -285,7 +297,7 @@ object GenCoreApi {
       attoAlphAmount <- amountGen
     } yield AssetState(attoAlphAmount, None)
 
-  val contractStateGen: Gen[ContractState] =
+  def contractStateGen(implicit groupSetting: GroupSetting): Gen[ContractState] =
     for {
       address          <- addressContractProtocolGen
       bytecode         <- statefulContractGen
@@ -349,5 +361,33 @@ object GenCoreApi {
       results <- Gen.listOfN(5, callContractResultGen)
     } yield MultipleCallContractResult(
       AVector.from(results)
+    )
+
+  val stdInterfaceIdValGen: Gen[ValByteVec] =
+    for {
+      id <- stdInterfaceIdGen
+    } yield ValByteVec(Hex.from(s"${BlockFlowClient.interfaceIdPrefix}000${id.id}").get)
+
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
+    )
+  )
+  def contractEventByBlockHash(implicit
+      groupSetting: GroupSetting
+  ): Gen[ContractEventByBlockHash] =
+    for {
+      txId        <- transactionHashGen
+      eventIndex  <- Gen.posNum[Int]
+      address     <- valContractAddressGen
+      parent      <- Gen.option(valContractAddressGen)
+      interfaceId <- stdInterfaceIdValGen
+    } yield ContractEventByBlockHash(
+      txId,
+      ContractEntity.createContractEventAddress,
+      eventIndex,
+      AVector(address, parent.getOrElse(ValByteVec(ByteString.empty)), interfaceId)
     )
 }

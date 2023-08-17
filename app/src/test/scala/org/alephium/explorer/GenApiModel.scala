@@ -33,7 +33,11 @@ import org.alephium.protocol.model.{Address, ChainIndex, GroupIndex, TokenId, Tx
 /** Generators for types supplied by `org.alephium.explorer.api.model` package */
 object GenApiModel extends ImplicitConversions {
 
-  val tokenIdGen: Gen[TokenId]              = hashGen.map(TokenId.unsafe)
+  def tokenIdGen(implicit gs: GroupSetting): Gen[TokenId] = for {
+    contractId <- contractIdGen(gs)
+  } yield {
+    TokenId.from(contractId)
+  }
   val outputRefKeyGen: Gen[TxOutputRef.Key] = hashGen.map(new TxOutputRef.Key(_))
   val groupIndexGen: Gen[GroupIndex] =
     Gen.choose(0, groupSetting.groupNum - 1).map(new GroupIndex(_))
@@ -269,6 +273,9 @@ object GenApiModel extends ImplicitConversions {
         blocks
       )
     }
+
+  val stdInterfaceIdGen: Gen[StdInterfaceId] =
+    Gen.oneOf(StdInterfaceId.stdInterfaceIds)
 
   /** Generates [[Pagination]] instance for the generated data.
     *

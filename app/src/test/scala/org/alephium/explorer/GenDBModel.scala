@@ -191,7 +191,7 @@ object GenDBModel {
 
   def transactionPerTokenEntityGen(
       blockHash: Gen[BlockHash] = blockHashGen
-  ): Gen[TransactionPerTokenEntity] =
+  )(implicit groupSetting: GroupSetting): Gen[TransactionPerTokenEntity] =
     for {
       hash      <- transactionHashGen
       blockHash <- blockHash
@@ -210,7 +210,7 @@ object GenDBModel {
 
   def tokenTxPerAddressEntityGen(
       blockHash: Gen[BlockHash] = blockHashGen
-  ): Gen[TokenTxPerAddressEntity] =
+  )(implicit groupSetting: GroupSetting): Gen[TokenTxPerAddressEntity] =
     for {
       address   <- addressGen
       hash      <- transactionHashGen
@@ -256,7 +256,7 @@ object GenDBModel {
       blockHash: Gen[BlockHash] = blockHashGen,
       timestampGen: Gen[TimeStamp] = timestampGen,
       mainChain: Gen[Boolean] = Arbitrary.arbitrary[Boolean]
-  ): Gen[TokenOutputEntity] =
+  )(implicit groupSetting: GroupSetting): Gen[TokenOutputEntity] =
     for {
       blockHash      <- blockHash
       txHash         <- transactionId

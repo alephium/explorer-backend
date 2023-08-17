@@ -20,6 +20,7 @@ import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model.Pagination
