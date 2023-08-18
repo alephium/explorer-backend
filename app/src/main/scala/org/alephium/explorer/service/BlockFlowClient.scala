@@ -261,7 +261,7 @@ object BlockFlowClient extends StrictLogging {
           }
         }
         .recoverWith { error =>
-          logger.error(s"Cannot fetch std interface id of $address")
+          logger.debug(s"Cannot fetch std interface id of $address")
           Future.successful(None)
         }
     }
@@ -292,7 +292,7 @@ object BlockFlowClient extends StrictLogging {
           f(result)
         }
       }.recoverWith { _ =>
-        logger.error(s"Cannot fetch metadata of $address")
+        logger.debug(s"Cannot fetch metadata of $address")
         Future.successful(None)
       }
     }
