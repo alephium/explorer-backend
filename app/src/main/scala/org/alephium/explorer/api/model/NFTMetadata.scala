@@ -18,12 +18,11 @@ package org.alephium.explorer.api.model
 
 import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
-import org.alephium.protocol.model.{Address, TokenId}
+import org.alephium.protocol.model.TokenId
 
 final case class NFTMetadata(
     token: TokenId,
-    tokenUri: String,
-    collectionAddress: Address
+    tokenUri: String
 )
 
 object NFTMetadata {

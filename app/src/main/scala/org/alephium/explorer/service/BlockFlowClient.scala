@@ -312,7 +312,7 @@ object BlockFlowClient extends StrictLogging {
     }
 
     def fetchNFTMetadata(token: TokenId): Future[Option[NFTMetadata]] = {
-      fetchTokenMetadata[NFTMetadata](token, 2) { result =>
+      fetchTokenMetadata[NFTMetadata](token, 1) { result =>
         extractNFTMetadata(token, result)
       }
     }
@@ -413,13 +413,11 @@ object BlockFlowClient extends StrictLogging {
       result: MultipleCallContractResult
   ): Option[NFTMetadata] = {
     for {
-      tokenUri          <- extractVal(result.results(0)).flatMap(valToString)
-      collectionAddress <- extractVal(result.results(1)).flatMap(valToAddress)
+      tokenUri <- extractVal(result.results(0)).flatMap(valToString)
     } yield {
       NFTMetadata(
         token,
-        tokenUri,
-        collectionAddress
+        tokenUri
       )
     }
   }

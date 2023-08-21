@@ -311,8 +311,7 @@ object CustomGetResult {
     (result: PositionedResult) =>
       NFTMetadata(
         token = result.<<,
-        tokenUri = result.<<,
-        collectionAddress = result.<<
+        tokenUri = result.<<
       )
 
   val nftCollectionMetadataGetResult: GetResult[NFTCollectionMetadata] =

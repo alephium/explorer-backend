@@ -41,7 +41,7 @@ import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.web.Server
 import org.alephium.protocol.config.GroupConfig
-import org.alephium.protocol.model.{Address, CliqueId, ContractId, GroupIndex, NetworkId}
+import org.alephium.protocol.model.{CliqueId, GroupIndex, NetworkId}
 import org.alephium.util.AVector
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
@@ -119,8 +119,7 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
           BlockFlowClient.extractNFTMetadata(token, callContract) is Some(
             NFTMetadata(
               token,
-              uri.value.utf8String,
-              ContractId.from(address.value).map(Address.contract).get
+              uri.value.utf8String
             )
           )
       }

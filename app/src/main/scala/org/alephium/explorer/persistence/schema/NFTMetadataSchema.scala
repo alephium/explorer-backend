@@ -21,17 +21,16 @@ import slick.lifted.ProvenShape
 
 import org.alephium.explorer.api.model.NFTMetadata
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.protocol.model.{Address, TokenId}
+import org.alephium.protocol.model.TokenId
 
 object NFTMetadataSchema extends SchemaMainChain[NFTMetadata]("nft_metadata") {
 
   class TokenInfos(tag: Tag) extends Table[NFTMetadata](tag, name) {
-    def token: Rep[TokenId]             = column[TokenId]("token", O.PrimaryKey)
-    def tokenUri: Rep[String]           = column[String]("token_uri")
-    def collectionAddress: Rep[Address] = column[Address]("collection_address")
+    def token: Rep[TokenId]   = column[TokenId]("token", O.PrimaryKey)
+    def tokenUri: Rep[String] = column[String]("token_uri")
 
     def * : ProvenShape[NFTMetadata] =
-      (token, tokenUri, collectionAddress)
+      (token, tokenUri)
         .<>((NFTMetadata.apply _).tupled, NFTMetadata.unapply)
   }
 

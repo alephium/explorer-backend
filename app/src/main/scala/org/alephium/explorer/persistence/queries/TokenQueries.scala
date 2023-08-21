@@ -319,10 +319,9 @@ object TokenQueries extends StrictLogging {
     sqlu"""
       INSERT INTO nft_metadata (
         "token",
-        "token_uri",
-        "collection_address"
+        "token_uri"
         )
-      VALUES (${token},${metadata.tokenUri},${metadata.collectionAddress})
+      VALUES (${token},${metadata.tokenUri})
       ON CONFLICT
       ON CONSTRAINT nft_metadata_pkey
       DO NOTHING
