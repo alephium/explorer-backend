@@ -4347,8 +4347,7 @@
                 "example": [
                   {
                     "address": "26JbotDoUoNzwVACg1YLaNTZKAJvoBDWiXJMnokZxCzvd",
-                    "collectionUri": "collection://uri",
-                    "totalSupply": "1"
+                    "collectionUri": "collection://uri"
                   }
                 ]
               }
@@ -6821,8 +6820,7 @@
       "NFTCollectionMetadata": {
         "required": [
           "address",
-          "collectionUri",
-          "totalSupply"
+          "collectionUri"
         ],
         "type": "object",
         "properties": {
@@ -6832,10 +6830,6 @@
           },
           "collectionUri": {
             "type": "string"
-          },
-          "totalSupply": {
-            "type": "string",
-            "format": "uint256"
           }
         }
       },

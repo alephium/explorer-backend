@@ -126,20 +126,18 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
     }
 
     "extract nft collection metadata" in {
-      forAll(addressContractProtocolGen, multipleCallContractResult, valByteVecGen, valU256Gen) {
-        case (contractAddress, result, uri, totalSupply) =>
-          val uriResult: model.CallContractResult         = contractResult(uri)
-          val totalSupplyResult: model.CallContractResult = contractResult(totalSupply)
+      forAll(addressContractProtocolGen, multipleCallContractResult, valByteVecGen) {
+        case (contractAddress, result, uri) =>
+          val uriResult: model.CallContractResult = contractResult(uri)
 
           val results: AVector[model.CallContractResult] =
-            AVector(uriResult, totalSupplyResult) ++ result.results
+            AVector(uriResult) ++ result.results
           val callContract = result.copy(results = results)
 
           BlockFlowClient.extractNFTCollectionMetadata(contractAddress, callContract) is Some(
             NFTCollectionMetadata(
               contractAddress,
-              uri.value.utf8String,
-              totalSupply.value
+              uri.value.utf8String
             )
           )
       }

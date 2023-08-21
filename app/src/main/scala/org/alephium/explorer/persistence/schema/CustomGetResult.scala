@@ -318,8 +318,7 @@ object CustomGetResult {
     (result: PositionedResult) =>
       NFTCollectionMetadata(
         address = result.<<(addressContractGetResult),
-        collectionUri = result.<<,
-        totalSupply = result.<<
+        collectionUri = result.<<
       )
 
   val tokenInfoGetResult: GetResult[TokenInfo] =

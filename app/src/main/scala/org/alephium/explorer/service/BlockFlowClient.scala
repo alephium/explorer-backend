@@ -306,7 +306,7 @@ object BlockFlowClient extends StrictLogging {
     def fetchNFTCollectionMetadata(
         contract: Address.Contract
     ): Future[Option[NFTCollectionMetadata]] = {
-      fetchMetadata[NFTCollectionMetadata](contract, 2) { result =>
+      fetchMetadata[NFTCollectionMetadata](contract, 1) { result =>
         extractNFTCollectionMetadata(contract, result)
       }
     }
@@ -399,12 +399,10 @@ object BlockFlowClient extends StrictLogging {
   ): Option[NFTCollectionMetadata] = {
     for {
       collectionUri <- extractVal(result.results(0)).flatMap(valToString)
-      totalSupply   <- extractVal(result.results(1)).flatMap(valToU256)
     } yield {
       NFTCollectionMetadata(
         contract,
-        collectionUri,
-        totalSupply
+        collectionUri
       )
     }
   }

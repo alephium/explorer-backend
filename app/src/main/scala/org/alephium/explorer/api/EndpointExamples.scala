@@ -379,7 +379,7 @@ object EndpointExamples extends EndpointsExamples {
     simpleExample(ArraySeq(NFTMetadata(token, "token://uri")))
 
   implicit val nftCollectionsMetadataExample: List[Example[ArraySeq[NFTCollectionMetadata]]] =
-    simpleExample(ArraySeq(NFTCollectionMetadata(addressContract, "collection://uri", U256.One)))
+    simpleExample(ArraySeq(NFTCollectionMetadata(addressContract, "collection://uri")))
 
   implicit val tokenInfosExample: List[Example[ArraySeq[TokenInfo]]] =
     simpleExample(ArraySeq(TokenInfo(token, Some(StdInterfaceId.FungibleToken))))

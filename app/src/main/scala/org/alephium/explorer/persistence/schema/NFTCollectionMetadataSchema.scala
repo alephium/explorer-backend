@@ -22,7 +22,6 @@ import slick.lifted.ProvenShape
 import org.alephium.explorer.api.model.NFTCollectionMetadata
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.model.Address
-import org.alephium.util.U256
 
 object NFTCollectionMetadataSchema
     extends SchemaMainChain[NFTCollectionMetadata]("nft_collection_metadata") {
@@ -30,10 +29,9 @@ object NFTCollectionMetadataSchema
   class TokenInfos(tag: Tag) extends Table[NFTCollectionMetadata](tag, name) {
     def contract: Rep[Address.Contract] = column[Address.Contract]("contract", O.PrimaryKey)
     def collectionUri: Rep[String]      = column[String]("collection_uri")
-    def totalSupply: Rep[U256]          = column[U256]("total_supply")
 
     def * : ProvenShape[NFTCollectionMetadata] =
-      (contract, collectionUri, totalSupply)
+      (contract, collectionUri)
         .<>((NFTCollectionMetadata.apply _).tupled, NFTCollectionMetadata.unapply)
   }
 

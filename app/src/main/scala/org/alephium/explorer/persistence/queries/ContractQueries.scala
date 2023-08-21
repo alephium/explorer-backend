@@ -145,10 +145,9 @@ object ContractQueries {
     sqlu"""
       INSERT INTO nft_collection_metadata (
         "contract",
-        "collection_uri",
-        "total_supply"
+        "collection_uri"
         )
-      VALUES (${contract},${metadata.collectionUri},${metadata.totalSupply})
+      VALUES (${contract},${metadata.collectionUri})
       ON CONFLICT
       ON CONSTRAINT nft_collection_metadata_pkey
       DO NOTHING

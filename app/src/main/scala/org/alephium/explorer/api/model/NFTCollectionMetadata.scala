@@ -19,12 +19,10 @@ package org.alephium.explorer.api.model
 import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
 import org.alephium.protocol.model.Address
-import org.alephium.util.U256
 
 final case class NFTCollectionMetadata(
     address: Address.Contract,
-    collectionUri: String,
-    totalSupply: U256
+    collectionUri: String
 )
 
 object NFTCollectionMetadata {
