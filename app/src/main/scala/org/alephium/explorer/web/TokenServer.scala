@@ -35,9 +35,9 @@ class TokenServer(tokenService: TokenService)(implicit
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
-      route(listTokens.serverLogicSuccess[Future] { pagination =>
+      route(listTokens.serverLogicSuccess[Future] { case (pagination, interfaceIdOpt) =>
         tokenService
-          .listTokens(pagination)
+          .listTokens(pagination, interfaceIdOpt)
       }),
       route(listTokenTransactions.serverLogicSuccess[Future] { case (token, pagination) =>
         tokenService

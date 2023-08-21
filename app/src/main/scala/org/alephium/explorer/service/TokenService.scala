@@ -36,7 +36,7 @@ trait TokenService {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[(U256, U256)]
 
-  def listTokens(pagination: Pagination)(implicit
+  def listTokens(pagination: Pagination, interfaceIdOpt: Option[StdInterfaceId])(implicit
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[TokenInfo]]
 
@@ -114,10 +114,10 @@ object TokenService extends TokenService with StrictLogging {
   ): Future[(U256, U256)] =
     run(getTokenBalanceAction(address, token))
 
-  def listTokens(pagination: Pagination)(implicit
+  def listTokens(pagination: Pagination, interfaceIdOpt: Option[StdInterfaceId])(implicit
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[TokenInfo]] =
-    run(listTokensAction(pagination))
+    run(listTokensAction(pagination, interfaceIdOpt))
 
   def listTokenTransactions(token: TokenId, pagination: Pagination)(implicit
       ec: ExecutionContext,

@@ -351,6 +351,28 @@ trait ExplorerSpec
       val tokensInfos = response.as[ArraySeq[TokenInfo]]
       tokensInfos.size is limit
     }
+
+    forAll(Gen.oneOf(StdInterfaceId.stdInterfaceIds)) { interfaceId =>
+      Get(s"/tokens?limit=${limit}&interface-id=${interfaceId.value}") check { response =>
+        val tokensInfos = response.as[ArraySeq[TokenInfo]]
+        tokensInfos.filter(_.stdInterfaceId == Some(interfaceId)) is tokensInfos
+      }
+    }
+
+    forAll(Gen.oneOf(StdInterfaceId.stdInterfaceIds)) { interfaceId =>
+      Get(s"/tokens?limit=${limit}&interface-id=${interfaceId.value}") check { response =>
+        val tokensInfos = response.as[ArraySeq[TokenInfo]]
+        tokensInfos.filter(_.stdInterfaceId == Some(interfaceId)) is tokensInfos
+      }
+    }
+
+    forAll(Gen.alphaNumStr) { interfaceId =>
+      Get(s"/tokens?limit=${limit}&interface-id=fungible-${interfaceId}") check { response =>
+        response.as[ApiError.BadRequest] is ApiError.BadRequest(
+          s"""Invalid value for: query parameter interface-id (expected value to be one of (FungibleToken, NFT, NFTCollection, NonStandard), but got: "fungible-${interfaceId}")"""
+        )
+      }
+    }
   }
 
   "generate the documentation" in {

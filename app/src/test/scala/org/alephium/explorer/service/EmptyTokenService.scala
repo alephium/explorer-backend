@@ -32,7 +32,7 @@ trait EmptyTokenService extends TokenService {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[(U256, U256)] = ???
 
-  def listTokens(pagination: Pagination)(implicit
+  def listTokens(pagination: Pagination, interfaceIdOpt: Option[StdInterfaceId])(implicit
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[TokenInfo]] = ???
 

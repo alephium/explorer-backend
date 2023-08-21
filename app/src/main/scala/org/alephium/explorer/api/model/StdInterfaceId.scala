@@ -75,17 +75,25 @@ object StdInterfaceId {
   val stdInterfaceIds: ArraySeq[StdInterfaceId] =
     ArraySeq(FungibleToken, NFTCollection, NFT, NonStandard)
 
+  def validate(str: String): Option[StdInterfaceId] =
+    str match {
+      case FungibleToken.value => Some(FungibleToken)
+      case NFTCollection.value => Some(NFTCollection)
+      case NFT.value           => Some(NFT)
+      case NonStandard.value   => Some(NonStandard)
+      case _                   => None
+    }
   implicit val levelReadWriter: ReadWriter[StdInterfaceId] = readwriter[String].bimap(
     _.value,
-    {
-      case FungibleToken.value => FungibleToken
-      case NFTCollection.value => NFTCollection
-      case NFT.value           => NFT
-      case NonStandard.value   => NonStandard
-      case _ => throw new Abort(s"Cannot decode interface id, expected one of: ${stdInterfaceIds}")
+    { str =>
+      validate(str).getOrElse(
+        throw new Abort(
+          s"Cannot decode interface id, expected one of: ${stdInterfaceIds.map(_.value)}"
+        )
+      )
     }
   )
 
   implicit def schema: Schema[StdInterfaceId] =
-    Schema.string.validate(Validator.enumeration(stdInterfaceIds.toList))
+    Schema.string.validate(Validator.enumeration(stdInterfaceIds.toList).encode(_.value))
 }

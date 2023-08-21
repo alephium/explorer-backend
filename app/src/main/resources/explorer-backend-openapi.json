@@ -3487,6 +3487,20 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          {
+            "name": "interface-id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fungible",
+                "non-fungible-collection",
+                "non-fungible",
+                "non-standard"
+              ]
+            }
           }
         ],
         "responses": {
@@ -7107,7 +7121,13 @@
             "format": "32-byte-hash"
           },
           "stdInterfaceId": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "fungible",
+              "non-fungible-collection",
+              "non-fungible",
+              "non-standard"
+            ]
           }
         }
       },

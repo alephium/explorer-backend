@@ -22,7 +22,7 @@ import sttp.tapir.{Codec, DecodeResult}
 import sttp.tapir.Codec.PlainCodec
 
 import org.alephium.api.TapirCodecs
-import org.alephium.explorer.api.model.IntervalType
+import org.alephium.explorer.api.model.{IntervalType, StdInterfaceId}
 import org.alephium.json.Json._
 import org.alephium.protocol.model.Address
 
@@ -42,6 +42,21 @@ object Codecs extends TapirCodecs {
       IntervalType.validate,
       _.string
     )
+
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
+    )
+  ) // Wartremover is complaining, maybe beacause of tapir macros
+  implicit val stdInterfaceIdCodec: PlainCodec[StdInterfaceId] =
+    Codec
+      .derivedEnumeration[String, StdInterfaceId](
+        StdInterfaceId.validate,
+        _.value
+      )
+      .schema(StdInterfaceId.schema)
 
   def explorerFromJson[A: ReadWriter]: PlainCodec[A] =
     Codec.string.mapDecode[A] { raw =>
