@@ -370,10 +370,10 @@ object EndpointExamples extends EndpointsExamples {
     simpleExample(StdInterfaceId.FungibleToken)
 
   implicit val fungibleTokenMetadataExample: List[Example[FungibleTokenMetadata]] =
-    simpleExample(FungibleTokenMetadata(token, "TK", "Token", U256.One, U256.One))
+    simpleExample(FungibleTokenMetadata(token, "TK", "Token", U256.One))
 
   implicit val fungibleTokensMetadataExample: List[Example[ArraySeq[FungibleTokenMetadata]]] =
-    simpleExample(ArraySeq(FungibleTokenMetadata(token, "TK", "Token", U256.One, U256.One)))
+    simpleExample(ArraySeq(FungibleTokenMetadata(token, "TK", "Token", U256.One)))
 
   implicit val nftsMetadataExample: List[Example[ArraySeq[NFTMetadata]]] =
     simpleExample(ArraySeq(NFTMetadata(token, "token://uri")))

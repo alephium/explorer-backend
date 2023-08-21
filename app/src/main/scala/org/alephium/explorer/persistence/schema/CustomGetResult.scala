@@ -303,8 +303,7 @@ object CustomGetResult {
         token = result.<<,
         symbol = result.<<,
         name = result.<<,
-        decimals = result.<<,
-        totalSupply = result.<<
+        decimals = result.<<
       )
 
   val nftMetadataGetResult: GetResult[NFTMetadata] =

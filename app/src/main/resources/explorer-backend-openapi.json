@@ -4118,8 +4118,7 @@
                     "token": "7b3efc0a1c4bc54e7398811f7e474e461a9c00cbc951f33b886a5f207c820ef2",
                     "symbol": "TK",
                     "name": "Token",
-                    "decimals": "1",
-                    "totalSupply": "1"
+                    "decimals": "1"
                   }
                 ]
               }
@@ -6639,8 +6638,7 @@
           "token",
           "symbol",
           "name",
-          "decimals",
-          "totalSupply"
+          "decimals"
         ],
         "type": "object",
         "properties": {
@@ -6655,10 +6653,6 @@
             "type": "string"
           },
           "decimals": {
-            "type": "string",
-            "format": "uint256"
-          },
-          "totalSupply": {
             "type": "string",
             "format": "uint256"
           }

@@ -25,8 +25,7 @@ final case class FungibleTokenMetadata(
     token: TokenId,
     symbol: String,
     name: String,
-    decimals: U256,
-    totalSupply: U256
+    decimals: U256
 )
 
 object FungibleTokenMetadata {

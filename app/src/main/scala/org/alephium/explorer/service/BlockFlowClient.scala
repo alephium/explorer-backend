@@ -298,7 +298,7 @@ object BlockFlowClient extends StrictLogging {
     }
 
     def fetchFungibleTokenMetadata(token: TokenId): Future[Option[FungibleTokenMetadata]] = {
-      fetchTokenMetadata[FungibleTokenMetadata](token, 4) { result =>
+      fetchTokenMetadata[FungibleTokenMetadata](token, 3) { result =>
         extractFungibleTokenMetadata(token, result)
       }
     }
@@ -378,17 +378,15 @@ object BlockFlowClient extends StrictLogging {
       result: MultipleCallContractResult
   ): Option[FungibleTokenMetadata] = {
     for {
-      symbol      <- extractVal(result.results(0)).flatMap(valToString)
-      name        <- extractVal(result.results(1)).flatMap(valToString)
-      decimals    <- extractVal(result.results(2)).flatMap(valToU256)
-      totalSupply <- extractVal(result.results(3)).flatMap(valToU256)
+      symbol   <- extractVal(result.results(0)).flatMap(valToString)
+      name     <- extractVal(result.results(1)).flatMap(valToString)
+      decimals <- extractVal(result.results(2)).flatMap(valToU256)
     } yield {
       FungibleTokenMetadata(
         token,
         symbol,
         name,
-        decimals,
-        totalSupply
+        decimals
       )
     }
   }

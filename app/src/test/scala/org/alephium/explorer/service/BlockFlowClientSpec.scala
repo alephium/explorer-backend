@@ -82,16 +82,14 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
         multipleCallContractResult,
         valByteVecGen,
         valByteVecGen,
-        valU256Gen,
         valU256Gen
-      ) { case (token, result, symbol, name, decimals, totalSupply) =>
-        val symbolResult: model.CallContractResult      = contractResult(symbol)
-        val nameResult: model.CallContractResult        = contractResult(name)
-        val decimalsResult: model.CallContractResult    = contractResult(decimals)
-        val totalSupplyResult: model.CallContractResult = contractResult(totalSupply)
+      ) { case (token, result, symbol, name, decimals) =>
+        val symbolResult: model.CallContractResult   = contractResult(symbol)
+        val nameResult: model.CallContractResult     = contractResult(name)
+        val decimalsResult: model.CallContractResult = contractResult(decimals)
 
         val results: AVector[model.CallContractResult] =
-          AVector(symbolResult, nameResult, decimalsResult, totalSupplyResult) ++ result.results
+          AVector(symbolResult, nameResult, decimalsResult) ++ result.results
         val callContract = result.copy(results = results)
 
         BlockFlowClient.extractFungibleTokenMetadata(token, callContract) is Some(
@@ -99,8 +97,7 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
             token,
             symbol.value.utf8String,
             name.value.utf8String,
-            decimals.value,
-            totalSupply.value
+            decimals.value
           )
         )
       }

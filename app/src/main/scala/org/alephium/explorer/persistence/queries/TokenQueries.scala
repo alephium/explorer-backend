@@ -190,10 +190,9 @@ object TokenQueries extends StrictLogging {
         "token",
         "name",
         "symbol",
-        "decimals",
-        "total_supply"
+        "decimals"
         )
-      VALUES (${token},${metadata.name},${metadata.symbol},${metadata.decimals},${metadata.totalSupply})
+      VALUES (${token},${metadata.name},${metadata.symbol},${metadata.decimals})
       ON CONFLICT
       ON CONSTRAINT fungible_token_metadata_pkey
       DO NOTHING
