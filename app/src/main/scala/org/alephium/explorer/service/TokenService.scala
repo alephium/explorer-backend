@@ -22,6 +22,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DBRunner._
@@ -190,32 +191,34 @@ object TokenService extends TokenService with StrictLogging {
   ): Future[Unit] = {
     logger.debug(s"Update token $token")
     blockflowClient.guessTokenStdInterfaceId(token).flatMap { interfaceIdOpt =>
-      (interfaceIdOpt match {
+      interfaceIdOpt match {
         case Some(StdInterfaceId.FungibleToken) =>
           blockflowClient.fetchFungibleTokenMetadata(token).flatMap {
             case Some(metadata) =>
-              run(insertFungibleTokenMetadata(token, metadata)).map(_ => ())
-            case None => Future.successful(())
+              run((for {
+                _ <- insertFungibleTokenMetadata(token, metadata)
+                _ <- updateTokenInterfaceId(token, StdInterfaceId.FungibleToken)
+              } yield ()).transactionally)
+            case None =>
+              Future.unit
           }
         case Some(StdInterfaceId.NFT) =>
           blockflowClient.fetchNFTMetadata(token).flatMap {
             case Some(metadata) =>
-              run(insertNFTMetadata(token, metadata)).map(_ => ())
-            case None => Future.successful(())
+              run((for {
+                _ <- insertNFTMetadata(token, metadata)
+                _ <- updateTokenInterfaceId(token, StdInterfaceId.NFT)
+              } yield ()).transactionally)
+            case None =>
+              Future.unit
           }
         // NFT collection aren't token
         case Some(StdInterfaceId.NFTCollection) =>
-          Future.successful(())
+          Future.unit
         case Some(StdInterfaceId.NonStandard) =>
-          Future.successful(())
-        case _ =>
-          Future.successful(())
-      }).flatMap { _ =>
-        interfaceIdOpt match {
-          case None              => Future.successful(())
-          case Some(interfaceId) => run(updateTokenInterfaceId(token, interfaceId)).map(_ => ())
-        }
-
+          Future.unit
+        case None =>
+          Future.unit
       }
     }
   }
@@ -227,28 +230,24 @@ object TokenService extends TokenService with StrictLogging {
   ): Future[Unit] = {
     logger.debug(s"Update contract $contract")
     blockflowClient.guessStdInterfaceId(contract).flatMap { interfaceIdOpt =>
-      (interfaceIdOpt match {
+      interfaceIdOpt match {
         case Some(StdInterfaceId.NFTCollection) =>
           blockflowClient.fetchNFTCollectionMetadata(contract).flatMap {
             case Some(metadata) =>
-              run(insertNFTCollectionMetadata(contract, metadata)).map(_ => ())
-            case None => Future.successful(())
+              run((for {
+                _ <- insertNFTCollectionMetadata(contract, metadata)
+                _ <- updateContractInterfaceId(contract, StdInterfaceId.NFTCollection)
+              } yield ()).transactionally)
+            case None => Future.unit
           }
         case Some(StdInterfaceId.FungibleToken) =>
-          Future.successful(())
+          Future.unit
         case Some(StdInterfaceId.NFT) =>
-          Future.successful(())
+          Future.unit
         case Some(StdInterfaceId.NonStandard) =>
-          Future.successful(())
-        case _ =>
-          Future.successful(())
-      }).flatMap { _ =>
-        interfaceIdOpt match {
-          case None => Future.successful(())
-          case Some(interfaceId) =>
-            run(updateContractInterfaceId(contract, interfaceId)).map(_ => ())
-        }
-
+          Future.unit
+        case None =>
+          Future.unit
       }
     }
   }
