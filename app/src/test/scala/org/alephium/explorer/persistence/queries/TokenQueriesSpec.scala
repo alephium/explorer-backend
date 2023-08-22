@@ -142,5 +142,30 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
       result is tokens
     }
+
+    "ignore conflict when inserting fungible token metadata" in {
+      forAll(fungibleTokenMetadataGen, Gen.alphaNumStr) { case (metadata, symbol) =>
+        run(TokenQueries.insertFungibleTokenMetadata(metadata)).futureValue
+        run(TokenQueries.insertFungibleTokenMetadata(metadata.copy(symbol = symbol))).futureValue
+
+        val result =
+          run(TokenQueries.listFungibleTokenMetadataQuery(ArraySeq(metadata.token))).futureValue
+
+        result is ArraySeq(metadata)
+
+      }
+    }
+
+    "ignore conflict when inserting nft metadata" in {
+      forAll(nftMetadataGen, Gen.alphaNumStr) { case (metadata, tokenUri) =>
+        run(TokenQueries.insertNFTMetadata(metadata)).futureValue
+        run(TokenQueries.insertNFTMetadata(metadata.copy(tokenUri = tokenUri))).futureValue
+
+        val result = run(TokenQueries.listNFTMetadataQuery(ArraySeq(metadata.token))).futureValue
+
+        result is ArraySeq(metadata)
+
+      }
+    }
   }
 }

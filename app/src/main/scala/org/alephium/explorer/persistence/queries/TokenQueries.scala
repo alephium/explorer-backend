@@ -208,7 +208,6 @@ object TokenQueries extends StrictLogging {
         )
       VALUES (${metadata.token},${metadata.symbol},${metadata.name},${metadata.decimals})
       ON CONFLICT
-      ON CONSTRAINT fungible_token_metadata_pkey
       DO NOTHING
     """
   }
@@ -335,7 +334,6 @@ object TokenQueries extends StrictLogging {
         )
       VALUES (${metadata.token},${metadata.tokenUri})
       ON CONFLICT
-      ON CONSTRAINT nft_metadata_pkey
       DO NOTHING
     """
   }
