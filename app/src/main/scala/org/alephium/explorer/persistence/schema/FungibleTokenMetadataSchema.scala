@@ -29,12 +29,12 @@ object FungibleTokenMetadataSchema
 
   class TokenInfos(tag: Tag) extends Table[FungibleTokenMetadata](tag, name) {
     def token: Rep[TokenId] = column[TokenId]("token", O.PrimaryKey)
-    def name: Rep[String]   = column[String]("name")
     def symbol: Rep[String] = column[String]("symbol")
+    def name: Rep[String]   = column[String]("name")
     def decimals: Rep[U256] = column[U256]("decimals", O.SqlType("DECIMAL(80,0)"))
 
     def * : ProvenShape[FungibleTokenMetadata] =
-      (token, name, symbol, decimals)
+      (token, symbol, name, decimals)
         .<>((FungibleTokenMetadata.apply _).tupled, FungibleTokenMetadata.unapply)
   }
 

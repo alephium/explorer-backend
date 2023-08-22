@@ -16,7 +16,10 @@
 
 package org.alephium.explorer.persistence.queries
 
+import scala.collection.immutable.ArraySeq
+
 import org.scalacheck.Gen
+import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
@@ -114,6 +117,30 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
         result should contain allElementsOf expected
       }
+    }
+
+    "insert and list fungible token metadata" in {
+      val tokens = Gen.nonEmptyListOf(fungibleTokenMetadataGen).sample.get
+
+      run(
+        DBIOAction.sequence(tokens.map(token => TokenQueries.insertFungibleTokenMetadata(token)))
+      ).futureValue
+
+      val result = run(TokenQueries.listFungibleTokenMetadataQuery(tokens.map(_.token))).futureValue
+
+      result is tokens
+    }
+
+    "insert and list nft metadata" in {
+      val tokens = Gen.nonEmptyListOf(nftMetadataGen).sample.get
+
+      run(
+        DBIOAction.sequence(tokens.map(token => TokenQueries.insertNFTMetadata(token)))
+      ).futureValue
+
+      val result = run(TokenQueries.listNFTMetadataQuery(tokens.map(_.token))).futureValue
+
+      result is tokens
     }
   }
 }

@@ -197,17 +197,16 @@ object TokenQueries extends StrictLogging {
       .asAS[(TokenId, Option[U256], Option[U256])]
 
   def insertFungibleTokenMetadata(
-      token: TokenId,
       metadata: FungibleTokenMetadata
   ): DBActionW[Int] = {
     sqlu"""
       INSERT INTO fungible_token_metadata (
         "token",
-        "name",
         "symbol",
+        "name",
         "decimals"
         )
-      VALUES (${token},${metadata.name},${metadata.symbol},${metadata.decimals})
+      VALUES (${metadata.token},${metadata.symbol},${metadata.name},${metadata.decimals})
       ON CONFLICT
       ON CONSTRAINT fungible_token_metadata_pkey
       DO NOTHING
@@ -327,7 +326,6 @@ object TokenQueries extends StrictLogging {
   }
 
   def insertNFTMetadata(
-      token: TokenId,
       metadata: NFTMetadata
   ): DBActionW[Int] = {
     sqlu"""
@@ -335,7 +333,7 @@ object TokenQueries extends StrictLogging {
         "token",
         "token_uri"
         )
-      VALUES (${token},${metadata.tokenUri})
+      VALUES (${metadata.token},${metadata.tokenUri})
       ON CONFLICT
       ON CONSTRAINT nft_metadata_pkey
       DO NOTHING

@@ -196,7 +196,7 @@ object TokenService extends TokenService with StrictLogging {
           blockflowClient.fetchFungibleTokenMetadata(token).flatMap {
             case Some(metadata) =>
               run((for {
-                _ <- insertFungibleTokenMetadata(token, metadata)
+                _ <- insertFungibleTokenMetadata(metadata)
                 _ <- updateTokenInterfaceId(token, StdInterfaceId.FungibleToken)
               } yield ()).transactionally)
             case None =>
@@ -206,7 +206,7 @@ object TokenService extends TokenService with StrictLogging {
           blockflowClient.fetchNFTMetadata(token).flatMap {
             case Some(metadata) =>
               run((for {
-                _ <- insertNFTMetadata(token, metadata)
+                _ <- insertNFTMetadata(metadata)
                 _ <- updateTokenInterfaceId(token, StdInterfaceId.NFT)
               } yield ()).transactionally)
             case None =>

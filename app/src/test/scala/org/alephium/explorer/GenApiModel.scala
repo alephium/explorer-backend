@@ -250,6 +250,32 @@ object GenApiModel extends ImplicitConversions {
       )
     }
 
+  val fungibleTokenMetadataGen: Gen[FungibleTokenMetadata] =
+    for {
+      tokenId  <- tokenIdGen
+      symbol   <- Gen.alphaStr
+      name     <- Gen.alphaStr
+      decimals <- u256Gen
+    } yield {
+      FungibleTokenMetadata(
+        tokenId,
+        symbol,
+        name,
+        decimals
+      )
+    }
+
+  val nftMetadataGen: Gen[NFTMetadata] =
+    for {
+      tokenId  <- tokenIdGen
+      tokenUri <- Gen.alphaStr
+    } yield {
+      NFTMetadata(
+        tokenId,
+        tokenUri
+      )
+    }
+
   val addressInfoGen: Gen[AddressInfo] =
     for {
       balance       <- u256Gen
