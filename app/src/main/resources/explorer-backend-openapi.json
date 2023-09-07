@@ -160,7 +160,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "block-hash"
             }
           }
         ],
@@ -266,7 +267,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "block-hash"
             }
           },
           {
@@ -525,7 +527,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "32-byte-hash"
             }
           }
         ],
@@ -691,7 +694,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "address"
             }
           }
         ],
@@ -792,7 +796,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "address"
             }
           },
           {
@@ -1321,7 +1326,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "address"
             }
           },
           {
@@ -1600,7 +1606,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "address"
             }
           }
         ],
@@ -1698,7 +1705,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "address"
             }
           }
         ],
@@ -1935,7 +1943,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "address"
             }
           }
         ],
@@ -2035,7 +2044,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "address"
             }
           },
           {
@@ -2159,7 +2169,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "address"
             }
           },
           {
@@ -2167,7 +2178,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "32-byte-hash"
             }
           },
           {
@@ -2426,7 +2438,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "address"
             }
           },
           {
@@ -2434,7 +2447,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "32-byte-hash"
             }
           }
         ],
@@ -2535,7 +2549,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "address"
             }
           },
           {
@@ -2773,7 +2788,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "address"
             }
           },
           {
@@ -2896,7 +2912,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "address"
             }
           },
           {
@@ -3588,7 +3605,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "32-byte-hash"
             }
           },
           {
@@ -4924,7 +4942,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "32-byte-hash"
             }
           }
         ],
@@ -5051,7 +5070,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "address"
             }
           },
           {
@@ -5198,7 +5218,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "address"
             }
           },
           {
@@ -5206,7 +5227,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "address"
             }
           },
           {
@@ -5340,20 +5362,21 @@
         }
       }
     },
-    "/contracts/{contract}/parent": {
+    "/contracts/{contract_address}/parent": {
       "get": {
         "tags": [
           "Contracts"
         ],
         "description": "Get contract parent address if exist",
-        "operationId": "getContractsContractParent",
+        "operationId": "getContractsContract_addressParent",
         "parameters": [
           {
-            "name": "contract",
+            "name": "contract_address",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "address"
             }
           }
         ],
@@ -5439,20 +5462,21 @@
         }
       }
     },
-    "/contracts/{contract}/sub-contracts": {
+    "/contracts/{contract_address}/sub-contracts": {
       "get": {
         "tags": [
           "Contracts"
         ],
         "description": "Get sub contract addresses",
-        "operationId": "getContractsContractSub-contracts",
+        "operationId": "getContractsContract_addressSub-contracts",
         "parameters": [
           {
-            "name": "contract",
+            "name": "contract_address",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "address"
             }
           },
           {

@@ -18,8 +18,10 @@ package org.alephium.explorer.web
 
 import scala.collection.immutable.ArraySeq
 
+import org.alephium.api.ApiError.BadRequest
 import org.alephium.explorer._
-import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.ConfigDefaults._
+import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
@@ -35,17 +37,33 @@ class ContractServerSpec()
   val routes = server.routes
 
   "get parent contract" in {
-    forAll(addressGen) { address =>
+    forAll(addressContractProtocolGen) { address =>
       Get(s"/contracts/$address/parent") check { response =>
         response.as[ContractParent] is ContractParent(None)
+      }
+    }
+
+    forAll(addressAssetProtocolGen()) { address =>
+      Get(s"/contracts/$address/parent") check { response =>
+        response.as[BadRequest] is BadRequest(
+          s"Invalid value for: path parameter contract_address (Expect contract address, but was asset address: $address: $address)"
+        )
       }
     }
   }
 
   "get sub-contracts" in {
-    forAll(addressGen) { address =>
+    forAll(addressContractProtocolGen) { address =>
       Get(s"/contracts/$address/sub-contracts") check { response =>
         response.as[SubContracts] is SubContracts(ArraySeq.empty)
+      }
+    }
+
+    forAll(addressAssetProtocolGen()) { address =>
+      Get(s"/contracts/$address/sub-contracts") check { response =>
+        response.as[BadRequest] is BadRequest(
+          s"Invalid value for: path parameter contract_address (Expect contract address, but was asset address: $address: $address)"
+        )
       }
     }
   }
