@@ -292,4 +292,11 @@ object CustomGetResult {
         case Left(error)  => throw error
         case Right(value) => value
       }
+
+  implicit val backgroundMigrationVersionGetResult: GetResult[AppState.BackgroundMigrationVersion] =
+    (result: PositionedResult) =>
+      AppState.BackgroundMigrationVersion(ByteString.fromArrayUnsafe(result.nextBytes())) match {
+        case Left(error)  => throw error
+        case Right(value) => value
+      }
 }
