@@ -21,22 +21,25 @@ import java.time.temporal.ChronoUnit
 
 import scala.concurrent.{ExecutionContext, Future}
 
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.persistence.model.AppState.{LastFinalizedInputTime, MigrationVersion}
 import org.alephium.explorer.persistence.queries.{AppStateQueries, ContractQueries}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.EventSchema
+import org.alephium.protocol.model.DefaultTxVersion
 import org.alephium.util.TimeStamp
 
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(4)
+  val latestVersion: MigrationVersion = MigrationVersion(5)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] =
     EventSchema.table.result.flatMap { events =>
@@ -83,11 +86,24 @@ object Migrations extends StrictLogging {
     } yield ()
   }
 
+  def migration5(implicit ec: ExecutionContext): DBActionAll[Unit] = {
+    val typesafeConfig         = ConfigFactory.load()
+    val config: ExplorerConfig = ExplorerConfig.load(typesafeConfig)
+    for {
+      _ <-
+        sqlu"""ALTER TABLE transactions ADD COLUMN IF NOT EXISTS version smallint NOT NULL DEFAULT #$DefaultTxVersion"""
+      _ <-
+        sqlu"""ALTER TABLE transactions ADD COLUMN IF NOT EXISTS network_id smallint NOT NULL DEFAULT #${config.networkId.id}"""
+      _ <- sqlu"""ALTER TABLE transactions ADD COLUMN IF NOT EXISTS script character varying"""
+    } yield ()
+  }
+
   private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
     migration1,
     migration2,
     migration3,
-    migration4
+    migration4,
+    migration5
   )
 
   def migrationsQuery(

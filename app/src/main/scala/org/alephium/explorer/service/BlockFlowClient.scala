@@ -432,6 +432,9 @@ object BlockFlowClient extends StrictLogging {
       tx.scriptExecutionOk,
       if (tx.inputSignatures.isEmpty) None else Some(tx.inputSignatures.toArraySeq),
       if (tx.scriptSignatures.isEmpty) None else Some(tx.scriptSignatures.toArraySeq),
+      tx.unsigned.version,
+      tx.unsigned.networkId,
+      tx.unsigned.scriptOpt,
       coinbase
     )
 

@@ -20,6 +20,7 @@ import java.math.BigInteger
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
 
+import org.alephium.api.model.Script
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreApi.{blockEntryProtocolGen, valGen}
 import org.alephium.explorer.GenCoreProtocol._
@@ -352,6 +353,9 @@ object GenDBModel {
       order             <- Gen.posNum[Int]
       mainChain         <- Arbitrary.arbitrary[Boolean]
       scriptExecutionOk <- Arbitrary.arbitrary[Boolean]
+      version           <- Arbitrary.arbitrary[Byte]
+      networkId         <- Arbitrary.arbitrary[Byte]
+      scriptOpt         <- Gen.option(hashGen.map(hash => Script(hash.toHexString)))
       coinbase          <- Arbitrary.arbitrary[Boolean]
     } yield TransactionEntity(
       hash = hash,
@@ -366,6 +370,9 @@ object GenDBModel {
       scriptExecutionOk = scriptExecutionOk,
       inputSignatures = None,
       scriptSignatures = None,
+      version = version,
+      networkId = networkId,
+      scriptOpt = scriptOpt,
       coinbase = coinbase
     )
 

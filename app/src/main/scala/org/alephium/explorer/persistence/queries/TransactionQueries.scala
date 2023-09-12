@@ -54,13 +54,13 @@ object TransactionQueries extends StrictLogging {
   }
 
   /** Inserts transactions or ignore rows with primary key conflict */
-  // scalastyle:off magic.number
+  // scalastyle:off magic.number method.length
   def insertTransactions(transactions: Iterable[TransactionEntity]): DBActionW[Int] =
-    QuerySplitter.splitUpdates(rows = transactions, columnsPerRow = 13) {
+    QuerySplitter.splitUpdates(rows = transactions, columnsPerRow = 16) {
       (transactions, placeholder) =>
         val query =
           s"""
-             |insert into transactions (hash,
+             |INSERT INTO transactions (hash,
              |                          block_hash,
              |                          block_timestamp,
              |                          chain_from,
@@ -72,8 +72,11 @@ object TransactionQueries extends StrictLogging {
              |                          script_execution_ok,
              |                          input_signatures,
              |                          script_signatures,
+             |                          version,
+             |                          network_id,
+             |                          script,
              |                          coinbase)
-             |values $placeholder
+             |VALUES $placeholder
              |ON CONFLICT ON CONSTRAINT txs_pk
              |    DO NOTHING
              |""".stripMargin
@@ -93,6 +96,9 @@ object TransactionQueries extends StrictLogging {
               params >> transaction.scriptExecutionOk
               params >> transaction.inputSignatures
               params >> transaction.scriptSignatures
+              params >> transaction.version
+              params >> transaction.networkId
+              params >> transaction.scriptOpt
               params >> transaction.coinbase
             }
 

@@ -22,6 +22,7 @@ import scala.util.Random
 import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.api.model.Script
 import org.alephium.explorer.{AlephiumFutureSpec, TestQueries}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreProtocol._
@@ -240,6 +241,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       true,
       None,
       None,
+      0.toByte,
+      0.toByte,
+      Gen.option(Script(hashGen.sample.get.toHexString)).sample.get,
       coinbase = false
     )
 
@@ -607,6 +611,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         true,
         true,
         None,
+        None,
+        0.toByte,
+        0.toByte,
         None,
         coinbase = false
       )

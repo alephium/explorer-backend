@@ -26,7 +26,7 @@ import slick.jdbc._
 import slick.jdbc.PostgresProfile._
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.api.model.Val
+import org.alephium.api.model.{Script, Val}
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.{AppState, AppStateKey, OutputEntity}
@@ -149,4 +149,9 @@ object CustomJdbcTypes {
           .find(_.key == key)
           .getOrElse(throw new Exception(s"Invalid ${classOf[AppStateKey[_]].getSimpleName}: $key"))
     )
+
+  implicit val scriptType: JdbcType[Script] = MappedJdbcType.base[Script, String](
+    _.value,
+    string => Script(string)
+  )
 }

@@ -22,6 +22,7 @@ import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
+import org.alephium.api.model.Script
 import org.alephium.explorer.persistence.model.TransactionEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
@@ -45,7 +46,10 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
       column[Option[ArraySeq[ByteString]]]("input_signatures")
     def scriptSignatures: Rep[Option[ArraySeq[ByteString]]] =
       column[Option[ArraySeq[ByteString]]]("script_signatures")
-    def coinbase: Rep[Boolean] = column[Boolean]("coinbase")
+    def version: Rep[Byte]             = column[Byte]("version")
+    def networkId: Rep[Byte]           = column[Byte]("network_id")
+    def scriptOpt: Rep[Option[Script]] = column[Option[Script]]("script")
+    def coinbase: Rep[Boolean]         = column[Boolean]("coinbase")
 
     def pk: PrimaryKey = primaryKey("txs_pk", (hash, blockHash))
 
@@ -68,6 +72,9 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
         scriptExecutionOk,
         inputSignatures,
         scriptSignatures,
+        version,
+        networkId,
+        scriptOpt,
         coinbase
       )
         .<>((TransactionEntity.apply _).tupled, TransactionEntity.unapply)

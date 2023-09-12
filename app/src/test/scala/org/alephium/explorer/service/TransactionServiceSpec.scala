@@ -135,6 +135,9 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       true,
       None,
       None,
+      0.toByte,
+      0.toByte,
+      None,
       coinbase = false
     )
 
@@ -182,6 +185,9 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       true,
       true,
       None,
+      None,
+      0.toByte,
+      0.toByte,
       None,
       coinbase = false
     )
@@ -289,6 +295,9 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
         true,
         true,
         None,
+        None,
+        0.toByte,
+        0.toByte,
         None,
         coinbase = false
       )

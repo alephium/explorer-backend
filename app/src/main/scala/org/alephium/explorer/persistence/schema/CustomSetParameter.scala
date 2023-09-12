@@ -23,7 +23,7 @@ import scala.collection.immutable.ArraySeq
 import akka.util.ByteString
 import slick.jdbc.{PositionedParameters, SetParameter}
 
-import org.alephium.api.model.Val
+import org.alephium.api.model.{Script, Val}
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.OutputEntity
@@ -238,6 +238,17 @@ object CustomSetParameter {
 
         case None =>
           params setTimestampOption None
+      }
+  }
+
+  implicit object OptionScriptSetParameter extends SetParameter[Option[Script]] {
+    override def apply(option: Option[Script], params: PositionedParameters): Unit =
+      option match {
+        case Some(script) =>
+          params setString script.value
+
+        case None =>
+          params setStringOption None
       }
   }
 }

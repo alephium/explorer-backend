@@ -60,6 +60,9 @@ object DataGenerator {
         scriptExecutionOk = Random.nextBoolean(),
         inputSignatures = None,
         scriptSignatures = None,
+        version = 0.toByte,
+        networkId = 0.toByte,
+        scriptOpt = None,
         coinbase = false
       )
     }

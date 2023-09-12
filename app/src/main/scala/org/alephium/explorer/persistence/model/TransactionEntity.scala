@@ -20,6 +20,7 @@ import scala.collection.immutable.ArraySeq
 
 import akka.util.ByteString
 
+import org.alephium.api.model.Script
 import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
@@ -36,5 +37,8 @@ final case class TransactionEntity(
     scriptExecutionOk: Boolean,
     inputSignatures: Option[ArraySeq[ByteString]],
     scriptSignatures: Option[ArraySeq[ByteString]],
+    version: Byte,
+    networkId: Byte,
+    scriptOpt: Option[Script],
     coinbase: Boolean
 )
