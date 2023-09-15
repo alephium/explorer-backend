@@ -56,10 +56,13 @@ object EndpointExamples extends EndpointsExamples {
   private val address2: Address =
     Address.fromBase58("22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM").get
 
-  private val addressContract: Address.Contract = Address.contract(
+  private val contract =
     ContractId
       .from(Hex.from("ac92820d7b37ab2b14eca20839a9c1ad5379e671c687b37a416a2754ea9fc412").get)
       .get
+
+  private val addressContract: Address.Contract = Address.contract(
+    contract
   )
 
   private val groupIndex1: GroupIndex = new GroupIndex(1)
@@ -376,7 +379,7 @@ object EndpointExamples extends EndpointsExamples {
     simpleExample(ArraySeq(FungibleTokenMetadata(token, "TK", "Token", U256.One)))
 
   implicit val nftsMetadataExample: List[Example[ArraySeq[NFTMetadata]]] =
-    simpleExample(ArraySeq(NFTMetadata(token, "token://uri")))
+    simpleExample(ArraySeq(NFTMetadata(token, "token://uri", contract, U256.One)))
 
   implicit val nftCollectionsMetadataExample: List[Example[ArraySeq[NFTCollectionMetadata]]] =
     simpleExample(ArraySeq(NFTCollectionMetadata(addressContract, "collection://uri")))
@@ -385,5 +388,5 @@ object EndpointExamples extends EndpointsExamples {
     simpleExample(ArraySeq(TokenInfo(token, Some(StdInterfaceId.FungibleToken))))
 
   implicit val nftMetadataExample: List[Example[NFTMetadata]] =
-    simpleExample(NFTMetadata(token, "token://uri"))
+    simpleExample(NFTMetadata(token, "token://uri", contract, U256.One))
 }

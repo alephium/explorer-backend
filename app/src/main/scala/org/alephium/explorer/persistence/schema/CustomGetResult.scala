@@ -29,7 +29,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.json.Json._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TokenId, TransactionId}
+import org.alephium.protocol.model.{BlockHeader => _, _}
 import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
 
@@ -48,6 +48,10 @@ object CustomGetResult {
   implicit val tokenIdGetResult: GetResult[TokenId] =
     (result: PositionedResult) =>
       TokenId.unsafe(new Hash(ByteString.fromArrayUnsafe(result.nextBytes())))
+
+  implicit val contractIdGetResult: GetResult[ContractId] =
+    (result: PositionedResult) =>
+      ContractId.unsafe(new Hash(ByteString.fromArrayUnsafe(result.nextBytes())))
 
   implicit val optionTxHashGetResult: GetResult[Option[TransactionId]] =
     (result: PositionedResult) =>
@@ -310,7 +314,9 @@ object CustomGetResult {
     (result: PositionedResult) =>
       NFTMetadata(
         token = result.<<,
-        tokenUri = result.<<
+        tokenUri = result.<<,
+        collectionId = result.<<,
+        nftIndex = result.<<
       )
 
   val nftCollectionMetadataGetResult: GetResult[NFTCollectionMetadata] =

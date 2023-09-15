@@ -18,11 +18,14 @@ package org.alephium.explorer.api.model
 
 import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
-import org.alephium.protocol.model.TokenId
+import org.alephium.protocol.model.{ContractId, TokenId}
+import org.alephium.util.U256
 
 final case class NFTMetadata(
     token: TokenId,
-    tokenUri: String
+    tokenUri: String,
+    collectionId: ContractId,
+    nftIndex: U256
 )
 
 object NFTMetadata {

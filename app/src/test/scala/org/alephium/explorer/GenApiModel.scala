@@ -267,12 +267,16 @@ object GenApiModel extends ImplicitConversions {
 
   val nftMetadataGen: Gen[NFTMetadata] =
     for {
-      tokenId  <- tokenIdGen
-      tokenUri <- Gen.alphaStr
+      tokenId      <- tokenIdGen
+      tokenUri     <- Gen.alphaStr
+      collectionId <- contractIdGen
+      nftIndex     <- u256Gen
     } yield {
       NFTMetadata(
         tokenId,
-        tokenUri
+        tokenUri,
+        collectionId,
+        nftIndex
       )
     }
 

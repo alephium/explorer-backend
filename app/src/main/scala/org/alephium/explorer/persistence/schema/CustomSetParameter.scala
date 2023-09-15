@@ -29,7 +29,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.json.Json._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TokenId, TransactionId}
+import org.alephium.protocol.model._
 import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
 
@@ -193,6 +193,11 @@ object CustomSetParameter {
 
   implicit object TokenIdSetParameter extends SetParameter[TokenId] {
     override def apply(input: TokenId, params: PositionedParameters): Unit =
+      params setBytes input.bytes.toArray
+  }
+
+  implicit object ContractIdSetParameter extends SetParameter[ContractId] {
+    override def apply(input: ContractId, params: PositionedParameters): Unit =
       params setBytes input.bytes.toArray
   }
 

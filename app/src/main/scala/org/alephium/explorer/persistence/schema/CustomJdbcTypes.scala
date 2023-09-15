@@ -32,7 +32,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.{AppState, AppStateKey, OutputEntity}
 import org.alephium.json.Json._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TokenId, TransactionId}
+import org.alephium.protocol.model._
 import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
 
@@ -62,6 +62,12 @@ object CustomJdbcTypes {
   implicit val tokenIdType: JdbcType[TokenId] =
     buildHashTypes(
       TokenId.unsafe(_),
+      _.value
+    )
+
+  implicit val contractIdType: JdbcType[ContractId] =
+    buildHashTypes(
+      ContractId.unsafe(_),
       _.value
     )
 

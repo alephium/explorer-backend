@@ -41,7 +41,7 @@ import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.web.Server
 import org.alephium.protocol.config.GroupConfig
-import org.alephium.protocol.model.{CliqueId, GroupIndex, NetworkId}
+import org.alephium.protocol.model.{CliqueId, ContractId, GroupIndex, NetworkId}
 import org.alephium.util.AVector
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
@@ -104,19 +104,23 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
     }
 
     "extract nft metadata" in {
-      forAll(tokenIdGen, multipleCallContractResult, valByteVecGen, valByteVecGen) {
-        case (token, result, uri, address) =>
-          val uriResult: model.CallContractResult     = contractResult(uri)
-          val addressResult: model.CallContractResult = contractResult(address)
+      forAll(tokenIdGen, multipleCallContractResult, valByteVecGen, valU256Gen, valByteVecGen) {
+
+        case (token, result, contractId, nftIndex, uri) =>
+          val uriResult: model.CallContractResult        = contractResult(uri)
+          val contractIdResult: model.CallContractResult = contractResult(contractId)
+          val nftIndexResult: model.CallContractResult   = contractResult(nftIndex)
 
           val results: AVector[model.CallContractResult] =
-            AVector(uriResult, addressResult) ++ result.results
+            AVector(uriResult, contractIdResult, nftIndexResult) ++ result.results
           val callContract = result.copy(results = results)
 
           BlockFlowClient.extractNFTMetadata(token, callContract) is Some(
             NFTMetadata(
               token,
-              uri.value.utf8String
+              uri.value.utf8String,
+              ContractId.from(contractId.value).get,
+              nftIndex.value
             )
           )
       }
