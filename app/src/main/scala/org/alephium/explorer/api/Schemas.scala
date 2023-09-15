@@ -18,8 +18,9 @@ package org.alephium.explorer.api
 
 import sttp.tapir.Schema
 
+import org.alephium.api.TapirSchemas
 import org.alephium.protocol.model.TokenId
 
 object Schemas {
-  implicit val tokenIdSchema: Schema[TokenId] = Schema.string.format("token-id")
+  implicit val tokenIdSchema: Schema[TokenId] = TapirSchemas.hashSchema.as[TokenId]
 }

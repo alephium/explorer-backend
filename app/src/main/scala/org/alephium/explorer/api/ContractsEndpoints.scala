@@ -32,16 +32,16 @@ trait ContractsEndpoints extends BaseEndpoint with QueryParams {
       .tag("Contracts")
       .in("contracts")
 
-  val getParentAddress: BaseEndpoint[Address, ContractParent] =
+  val getParentAddress: BaseEndpoint[Address.Contract, ContractParent] =
     contractsEndpoint.get
-      .in(path[Address]("contract"))
+      .in(path[Address.Contract]("contract_address"))
       .in("parent")
       .out(jsonBody[ContractParent])
       .description("Get contract parent address if exist")
 
-  val getSubContracts: BaseEndpoint[(Address, Pagination), SubContracts] =
+  val getSubContracts: BaseEndpoint[(Address.Contract, Pagination), SubContracts] =
     contractsEndpoint.get
-      .in(path[Address]("contract"))
+      .in(path[Address.Contract]("contract_address"))
       .in("sub-contracts")
       .in(pagination)
       .out(jsonBody[SubContracts])
