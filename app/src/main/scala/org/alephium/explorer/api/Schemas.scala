@@ -16,11 +16,10 @@
 
 package org.alephium.explorer.api
 
-// import sttp.tapir.Schema
-// import sttp.tapir.SchemaType.SString
+import sttp.tapir.Schema
 
-// import org.alephium.explorer.api.model.LogbackValue
+import org.alephium.protocol.model.TokenId
 
 object Schemas {
-  // implicit val logbackLevel: Schema[LogbackValue.Level] = Schema(SString())
+  implicit val tokenIdSchema: Schema[TokenId] = Schema.string.format("token-id")
 }
