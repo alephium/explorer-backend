@@ -200,7 +200,7 @@ object TokenService extends TokenService with StrictLogging {
                 _ <- updateTokenInterfaceId(token, StdInterfaceId.FungibleToken)
               } yield ()).transactionally)
             case None =>
-              Future.unit
+              run(updateTokenInterfaceId(token, StdInterfaceId.FungibleToken)).map(_ => ())
           }
         case Some(StdInterfaceId.NFT) =>
           blockflowClient.fetchNFTMetadata(token).flatMap {
@@ -210,15 +210,15 @@ object TokenService extends TokenService with StrictLogging {
                 _ <- updateTokenInterfaceId(token, StdInterfaceId.NFT)
               } yield ()).transactionally)
             case None =>
-              Future.unit
+              run(updateTokenInterfaceId(token, StdInterfaceId.NFT)).map(_ => ())
           }
         // NFT collection aren't token
         case Some(StdInterfaceId.NFTCollection) =>
           Future.unit
         case Some(StdInterfaceId.NonStandard) =>
-          Future.unit
+          run(updateTokenInterfaceId(token, StdInterfaceId.NonStandard)).map(_ => ())
         case None =>
-          Future.unit
+          run(updateTokenInterfaceId(token, StdInterfaceId.NonStandard)).map(_ => ())
       }
     }
   }
@@ -241,13 +241,13 @@ object TokenService extends TokenService with StrictLogging {
             case None => Future.unit
           }
         case Some(StdInterfaceId.FungibleToken) =>
-          Future.unit
+          run(updateContractInterfaceId(contract, StdInterfaceId.FungibleToken)).map(_ => ())
         case Some(StdInterfaceId.NFT) =>
-          Future.unit
+          run(updateContractInterfaceId(contract, StdInterfaceId.NFT)).map(_ => ())
         case Some(StdInterfaceId.NonStandard) =>
-          Future.unit
+          run(updateContractInterfaceId(contract, StdInterfaceId.NonStandard)).map(_ => ())
         case None =>
-          Future.unit
+          run(updateContractInterfaceId(contract, StdInterfaceId.NonStandard)).map(_ => ())
       }
     }
   }
