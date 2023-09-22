@@ -30,7 +30,7 @@ import org.alephium.explorer.GenCommon.{genInetAddress, genPortNum}
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.Generators._
-import org.alephium.explorer.api.model.Height
+import org.alephium.explorer.api.model.{Height, StdInterfaceId}
 import org.alephium.explorer.persistence.model.ContractEntity
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.protocol.model.{BlockHash, ChainIndex, CliqueId, NetworkId, Target}
@@ -363,10 +363,15 @@ object GenCoreApi {
       AVector.from(results)
     )
 
-  val stdInterfaceIdValGen: Gen[ValByteVec] =
+  val stdInterfaceIdValGen: Gen[Val] =
     for {
       id <- stdInterfaceIdGen
-    } yield ValByteVec(Hex.from(s"${BlockFlowClient.interfaceIdPrefix}000${id.id}").get)
+    } yield {
+      id match {
+        case StdInterfaceId.NonStandard => ValBool(true)
+        case _ => ValByteVec(Hex.from(s"${BlockFlowClient.interfaceIdPrefix}${id.id}").get)
+      }
+    }
 
   @SuppressWarnings(
     Array(

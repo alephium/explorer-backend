@@ -85,8 +85,8 @@ object Migrations extends StrictLogging {
 
   def migration5(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     for {
-      _ <- sqlu"""ALTER TABLE token_info ADD COLUMN IF NOT EXISTS interface_id integer"""
-      _ <- sqlu"""ALTER TABLE contracts ADD COLUMN IF NOT EXISTS interface_id integer"""
+      _ <- sqlu"""ALTER TABLE token_info ADD COLUMN IF NOT EXISTS interface_id character varying"""
+      _ <- sqlu"""ALTER TABLE contracts ADD COLUMN IF NOT EXISTS interface_id character varying"""
     } yield ()
   }
 

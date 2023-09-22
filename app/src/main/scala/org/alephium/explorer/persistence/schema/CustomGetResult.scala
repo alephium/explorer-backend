@@ -190,10 +190,10 @@ object CustomGetResult {
     (result: PositionedResult) => OutputEntity.OutputType.unsafe(result.nextInt())
 
   implicit val stdInterfaceIdGetResult: GetResult[StdInterfaceId] =
-    (result: PositionedResult) => StdInterfaceId.unsafeFromId(result.nextInt())
+    (result: PositionedResult) => StdInterfaceId.from(result.nextString())
 
   implicit val optionStdInterfaceIdGetResult: GetResult[Option[StdInterfaceId]] =
-    (result: PositionedResult) => result.nextIntOption().map(StdInterfaceId.unsafeFromId)
+    (result: PositionedResult) => result.nextStringOption().map(StdInterfaceId.from)
 
   /** GetResult type for BlockEntryLite
     *

@@ -160,9 +160,9 @@ object CustomJdbcTypes {
     )
 
   implicit val interfaceIdType: JdbcType[StdInterfaceId] =
-    MappedJdbcType.base[StdInterfaceId, Int](
+    MappedJdbcType.base[StdInterfaceId, String](
       _.id,
-      StdInterfaceId.unsafeFromId
+      StdInterfaceId.from
     )
 
   implicit val appStateKey: JdbcType[AppStateKey[_]] =

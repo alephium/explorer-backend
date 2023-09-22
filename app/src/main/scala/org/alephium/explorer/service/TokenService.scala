@@ -215,6 +215,8 @@ object TokenService extends TokenService with StrictLogging {
         // NFT collection aren't token
         case Some(StdInterfaceId.NFTCollection) =>
           Future.unit
+        case Some(unknown: StdInterfaceId.Unknown) =>
+          run(updateTokenInterfaceId(token, unknown)).map(_ => ())
         case Some(StdInterfaceId.NonStandard) =>
           run(updateTokenInterfaceId(token, StdInterfaceId.NonStandard)).map(_ => ())
         case None =>
@@ -246,6 +248,8 @@ object TokenService extends TokenService with StrictLogging {
           run(updateContractInterfaceId(contract, StdInterfaceId.NFT)).map(_ => ())
         case Some(StdInterfaceId.NonStandard) =>
           run(updateContractInterfaceId(contract, StdInterfaceId.NonStandard)).map(_ => ())
+        case Some(unknown: StdInterfaceId.Unknown) =>
+          run(updateContractInterfaceId(contract, unknown)).map(_ => ())
         case None =>
           run(updateContractInterfaceId(contract, StdInterfaceId.NonStandard)).map(_ => ())
       }

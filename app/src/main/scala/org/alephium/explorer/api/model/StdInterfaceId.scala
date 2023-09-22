@@ -16,64 +16,51 @@
 
 package org.alephium.explorer.api.model
 
-import scala.collection.immutable.ArraySeq
-
 import sttp.tapir.{Schema, Validator}
 import upickle.core.Abort
 
 import org.alephium.json.Json._
+import org.alephium.util.Hex
 
 sealed trait StdInterfaceId {
   def value: String
-  def id: Int
+  def id: String
 }
 
 object StdInterfaceId {
 
   case object FungibleToken extends StdInterfaceId {
     val value: String = "fungible"
-    val id: Int       = 1
+    val id: String    = "0001"
   }
 
   case object NFTCollection extends StdInterfaceId {
     val value: String = "non-fungible-collection"
-    val id: Int       = 2
+    val id: String    = "0002"
   }
 
   case object NFT extends StdInterfaceId {
     val value: String = "non-fungible"
-    val id: Int       = 3
+    val id: String    = "0003"
+  }
+
+  final case class Unknown(id: String) extends StdInterfaceId {
+    val value: String = s"$id"
   }
 
   case object NonStandard extends StdInterfaceId {
     val value: String = "non-standard"
-    val id: Int       = 0
+    val id: String    = ""
   }
 
   def from(code: String): StdInterfaceId =
     code match {
-      case "0001" => FungibleToken
-      case "0002" => NFTCollection
-      case "0003" => NFT
-      case _      => NonStandard
+      case "0001"  => FungibleToken
+      case "0002"  => NFTCollection
+      case "0003"  => NFT
+      case "ns"    => NonStandard
+      case unknown => Unknown(unknown)
     }
-
-  def unsafeFromId(id: Int): StdInterfaceId =
-    id match {
-      case 1 => FungibleToken
-      case 2 => NFTCollection
-      case 3 => NFT
-      case 0 => NonStandard
-    }
-  @SuppressWarnings(
-    Array(
-      "org.wartremover.warts.JavaSerializable",
-      "org.wartremover.warts.Product",
-      "org.wartremover.warts.Serializable"
-    )
-  ) // Wartremover is complaining, don't now why :/
-  val stdInterfaceIds: ArraySeq[StdInterfaceId] =
-    ArraySeq(FungibleToken, NFTCollection, NFT, NonStandard)
 
   def validate(str: String): Option[StdInterfaceId] =
     str match {
@@ -81,19 +68,36 @@ object StdInterfaceId {
       case NFTCollection.value => Some(NFTCollection)
       case NFT.value           => Some(NFT)
       case NonStandard.value   => Some(NonStandard)
-      case _                   => None
+      case ""                  => Some(NonStandard)
+      case other =>
+        if (other.sizeIs <= 16 && Hex.from(other).isDefined) {
+          Some(Unknown(other))
+        } else {
+          None
+        }
     }
-  implicit val levelReadWriter: ReadWriter[StdInterfaceId] = readwriter[String].bimap(
+  implicit val readWriter: ReadWriter[StdInterfaceId] = readwriter[String].bimap(
     _.value,
     { str =>
       validate(str).getOrElse(
         throw new Abort(
-          s"Cannot decode interface id, expected one of: ${stdInterfaceIds.map(_.value)}"
+          s"Cannot decode interface id}"
         )
       )
     }
   )
 
-  implicit def schema: Schema[StdInterfaceId] =
-    Schema.string.validate(Validator.enumeration(stdInterfaceIds.toList).encode(_.value))
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
+    )
+  ) // Wartremover is complaining, don't now why :/
+  val tokenSchema: Schema[StdInterfaceId] =
+    Schema.string.validate(
+      Validator
+        .enumeration(List(FungibleToken, NFT, NonStandard): List[StdInterfaceId])
+        .encode(_.value)
+    )
 }

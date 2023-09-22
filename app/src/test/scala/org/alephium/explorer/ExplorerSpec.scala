@@ -352,14 +352,7 @@ trait ExplorerSpec
       tokensInfos.size is limit
     }
 
-    forAll(Gen.oneOf(StdInterfaceId.stdInterfaceIds)) { interfaceId =>
-      Get(s"/tokens?limit=${limit}&interface-id=${interfaceId.value}") check { response =>
-        val tokensInfos = response.as[ArraySeq[TokenInfo]]
-        tokensInfos.filter(_.stdInterfaceId == Some(interfaceId)) is tokensInfos
-      }
-    }
-
-    forAll(Gen.oneOf(StdInterfaceId.stdInterfaceIds)) { interfaceId =>
+    forAll(tokenInterfaceIdGen) { interfaceId =>
       Get(s"/tokens?limit=${limit}&interface-id=${interfaceId.value}") check { response =>
         val tokensInfos = response.as[ArraySeq[TokenInfo]]
         tokensInfos.filter(_.stdInterfaceId == Some(interfaceId)) is tokensInfos
@@ -369,7 +362,7 @@ trait ExplorerSpec
     forAll(Gen.alphaNumStr) { interfaceId =>
       Get(s"/tokens?limit=${limit}&interface-id=fungible-${interfaceId}") check { response =>
         response.as[ApiError.BadRequest] is ApiError.BadRequest(
-          s"""Invalid value for: query parameter interface-id (expected value to be one of (FungibleToken, NFT, NFTCollection, NonStandard), but got: "fungible-${interfaceId}")"""
+          s"""Invalid value for: query parameter interface-id (Cannot decode interface id}: fungible-${interfaceId})"""
         )
       }
     }
@@ -615,7 +608,7 @@ object ExplorerSpec {
             .serverLogicSuccess[Future] { case (address, _) =>
               val interfaceId = Gen.option(stdInterfaceIdGen).sample.get
               val idBytes: Option[model.Val] = interfaceId.map(id =>
-                model.ValByteVec(Hex.from(s"${BlockFlowClient.interfaceIdPrefix}000${id.id}").get)
+                model.ValByteVec(Hex.from(s"${BlockFlowClient.interfaceIdPrefix}${id.id}").get)
               )
               val immFields = idBytes.map(AVector(_)).getOrElse(AVector.empty)
               Future.successful(

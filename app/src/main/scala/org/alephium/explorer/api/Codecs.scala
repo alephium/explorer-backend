@@ -18,7 +18,7 @@ package org.alephium.explorer.api
 
 import scala.util.{Failure, Success, Try}
 
-import sttp.tapir.{Codec, DecodeResult}
+import sttp.tapir.{Codec, CodecFormat, DecodeResult}
 import sttp.tapir.Codec.PlainCodec
 
 import org.alephium.api.TapirCodecs
@@ -43,20 +43,8 @@ object Codecs extends TapirCodecs {
       _.string
     )
 
-  @SuppressWarnings(
-    Array(
-      "org.wartremover.warts.JavaSerializable",
-      "org.wartremover.warts.Product",
-      "org.wartremover.warts.Serializable"
-    )
-  ) // Wartremover is complaining, maybe beacause of tapir macros
-  implicit val stdInterfaceIdCodec: PlainCodec[StdInterfaceId] =
-    Codec
-      .derivedEnumeration[String, StdInterfaceId](
-        StdInterfaceId.validate,
-        _.value
-      )
-      .schema(StdInterfaceId.schema)
+  val tokenStdInterfaceIdCodec: Codec[String, StdInterfaceId, CodecFormat.TextPlain] =
+    fromJson[StdInterfaceId](StdInterfaceId.readWriter, StdInterfaceId.tokenSchema)
 
   def explorerFromJson[A: ReadWriter]: PlainCodec[A] =
     Codec.string.mapDecode[A] { raw =>

@@ -304,8 +304,39 @@ object GenApiModel extends ImplicitConversions {
       )
     }
 
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
+    )
+  )
   val stdInterfaceIdGen: Gen[StdInterfaceId] =
-    Gen.oneOf(StdInterfaceId.stdInterfaceIds)
+    Gen.oneOf(
+      ArraySeq(
+        StdInterfaceId.FungibleToken,
+        StdInterfaceId.NFTCollection,
+        StdInterfaceId.NFT,
+        StdInterfaceId.Unknown("00"),
+        StdInterfaceId.NonStandard
+      )
+    )
+
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
+    )
+  )
+  val tokenInterfaceIdGen: Gen[StdInterfaceId] =
+    Gen.oneOf(
+      ArraySeq(
+        StdInterfaceId.FungibleToken,
+        StdInterfaceId.NFT,
+        StdInterfaceId.NonStandard
+      )
+    )
 
   /** Generates [[Pagination]] instance for the generated data.
     *

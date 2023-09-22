@@ -39,7 +39,7 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
   val listTokens: BaseEndpoint[(Pagination, Option[StdInterfaceId]), ArraySeq[TokenInfo]] =
     tokensEndpoint.get
       .in(pagination)
-      .in(interfaceIdQuery)
+      .in(tokenInterfaceIdQuery)
       .out(jsonBody[ArraySeq[TokenInfo]])
       .description("List token information")
 

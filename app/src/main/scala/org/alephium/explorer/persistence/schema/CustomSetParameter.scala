@@ -58,7 +58,7 @@ object CustomSetParameter {
 
   implicit object StdInterfaceIdSetParameter extends SetParameter[StdInterfaceId] {
     override def apply(input: StdInterfaceId, params: PositionedParameters): Unit =
-      params setInt input.id
+      params setString input.id
   }
 
   implicit object OutputTypeSetParameter extends SetParameter[OutputEntity.OutputType] {

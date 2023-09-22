@@ -351,7 +351,7 @@ object TokenQueries extends StrictLogging {
   def updateTokenInterfaceId(token: TokenId, interfaceId: StdInterfaceId): DBActionW[Int] = {
     sqlu"""
       UPDATE token_info
-      SET interface_id = ${interfaceId.id}
+      SET interface_id = $interfaceId
       WHERE token = $token
     """
   }
