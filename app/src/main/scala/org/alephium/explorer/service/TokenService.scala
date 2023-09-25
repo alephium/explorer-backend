@@ -213,7 +213,7 @@ object TokenService extends TokenService with StrictLogging {
               run(updateTokenInterfaceId(token, StdInterfaceId.NFT)).map(_ => ())
           }
         // NFT collection aren't token
-        case Some(StdInterfaceId.NFTCollection) =>
+        case Some(StdInterfaceId.NFTCollection) | Some(StdInterfaceId.NFTCollectionWithRoyalty) =>
           Future.unit
         case Some(unknown: StdInterfaceId.Unknown) =>
           run(updateTokenInterfaceId(token, unknown)).map(_ => ())
@@ -225,6 +225,7 @@ object TokenService extends TokenService with StrictLogging {
     }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   def fetchAndStoreContractMetadata(contract: Address.Contract, blockflowClient: BlockFlowClient)(
       implicit
       ec: ExecutionContext,
@@ -233,12 +234,12 @@ object TokenService extends TokenService with StrictLogging {
     logger.debug(s"Update contract $contract")
     blockflowClient.guessStdInterfaceId(contract).flatMap { interfaceIdOpt =>
       interfaceIdOpt match {
-        case Some(StdInterfaceId.NFTCollection) =>
+        case Some(StdInterfaceId.NFTCollection) | Some(StdInterfaceId.NFTCollectionWithRoyalty) =>
           blockflowClient.fetchNFTCollectionMetadata(contract).flatMap {
             case Some(metadata) =>
               run((for {
                 _ <- insertNFTCollectionMetadata(contract, metadata)
-                _ <- updateContractInterfaceId(contract, StdInterfaceId.NFTCollection)
+                _ <- updateContractInterfaceId(contract, interfaceIdOpt.get)
               } yield ()).transactionally)
             case None => Future.unit
           }

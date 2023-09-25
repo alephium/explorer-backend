@@ -39,6 +39,11 @@ object StdInterfaceId {
     val id: String    = "0002"
   }
 
+  case object NFTCollectionWithRoyalty extends StdInterfaceId {
+    val value: String = "non-fungible-collection-with-royalty"
+    val id: String    = "000201"
+  }
+
   case object NFT extends StdInterfaceId {
     val value: String = "non-fungible"
     val id: String    = "0003"
@@ -55,20 +60,22 @@ object StdInterfaceId {
 
   def from(code: String): StdInterfaceId =
     code match {
-      case "0001"  => FungibleToken
-      case "0002"  => NFTCollection
-      case "0003"  => NFT
-      case "ns"    => NonStandard
-      case unknown => Unknown(unknown)
+      case "0001"   => FungibleToken
+      case "0002"   => NFTCollection
+      case "0003"   => NFT
+      case "000201" => NFTCollectionWithRoyalty
+      case "ns"     => NonStandard
+      case unknown  => Unknown(unknown)
     }
 
   def validate(str: String): Option[StdInterfaceId] =
     str match {
-      case FungibleToken.value => Some(FungibleToken)
-      case NFTCollection.value => Some(NFTCollection)
-      case NFT.value           => Some(NFT)
-      case NonStandard.value   => Some(NonStandard)
-      case ""                  => Some(NonStandard)
+      case FungibleToken.value            => Some(FungibleToken)
+      case NFTCollection.value            => Some(NFTCollection)
+      case NFTCollectionWithRoyalty.value => Some(NFTCollectionWithRoyalty)
+      case NFT.value                      => Some(NFT)
+      case NonStandard.value              => Some(NonStandard)
+      case ""                             => Some(NonStandard)
       case other =>
         if (other.sizeIs <= 16 && Hex.from(other).isDefined) {
           Some(Unknown(other))

@@ -316,6 +316,7 @@ object GenApiModel extends ImplicitConversions {
       ArraySeq(
         StdInterfaceId.FungibleToken,
         StdInterfaceId.NFTCollection,
+        StdInterfaceId.NFTCollectionWithRoyalty,
         StdInterfaceId.NFT,
         StdInterfaceId.Unknown("00"),
         StdInterfaceId.NonStandard

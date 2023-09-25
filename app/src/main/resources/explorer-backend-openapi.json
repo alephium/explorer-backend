@@ -6899,6 +6899,17 @@
           }
         }
       },
+      "NFTCollectionWithRoyalty": {
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          }
+        }
+      },
       "NFTMetadata": {
         "required": [
           "token",
@@ -7155,6 +7166,9 @@
             "$ref": "#/components/schemas/NFTCollection"
           },
           {
+            "$ref": "#/components/schemas/NFTCollectionWithRoyalty"
+          },
+          {
             "$ref": "#/components/schemas/NonStandard"
           },
           {
@@ -7167,6 +7181,7 @@
             "FungibleToken": "#/components/schemas/FungibleToken",
             "NFT": "#/components/schemas/NFT",
             "NFTCollection": "#/components/schemas/NFTCollection",
+            "NFTCollectionWithRoyalty": "#/components/schemas/NFTCollectionWithRoyalty",
             "NonStandard": "#/components/schemas/NonStandard",
             "Unknown": "#/components/schemas/Unknown"
           }
