@@ -64,7 +64,23 @@ final case class Transaction(
       )
       .map(_.toString)
       .getOrElse("")
-    s"${hash.toHexString},${blockHash.toHexString},${timestamp.millis},$dateTime,$fromAddressesStr,$toAddresses,$amount,$amountHint\n"
+
+    val tokenEntries = UtxoUtil
+      .deltaTokenAmountForAddress(address, inputs, outputs)
+      .map { case (token, delta) =>
+        val tokenFromAddress    = UtxoUtil.fromTokenAddresses(token, inputs)
+        val tokenFromAddressStr = tokenFromAddress.mkString("-")
+        val tokenToAddress =
+          UtxoUtil.toTokenAddressesWithoutChangeAddresses(token, outputs, tokenFromAddress)
+        val tokenToAddressStr = tokenToAddress.mkString("-")
+        val deltaHint         = ""
+        // scalastyle:off
+        s"${hash.toHexString},${blockHash.toHexString},${timestamp.millis},$dateTime,${token.toHexString},$tokenFromAddressStr,$tokenToAddressStr,$delta,$deltaHint\n"
+      // scalastyle:on
+      }
+      .mkString
+
+    s"${hash.toHexString},${blockHash.toHexString},${timestamp.millis},$dateTime,ALPH,$fromAddressesStr,$toAddresses,$amount,$amountHint\n" ++ tokenEntries
   }
 
   def toProtocol(): org.alephium.api.model.Transaction = {
@@ -95,7 +111,7 @@ object Transaction {
   implicit val txRW: ReadWriter[Transaction] = macroRW
 
   val csvHeader: String =
-    "hash,blockHash,unixTimestamp,dateTimeUTC,fromAddresses,toAddresses,amount,hintAmount\n"
+    "hash,blockHash,unixTimestamp,dateTimeUTC,asset,fromAddresses,toAddresses,amount,hintAmount\n"
 
   implicit val schema: Schema[Transaction] = Schema.derived[Transaction]
 }

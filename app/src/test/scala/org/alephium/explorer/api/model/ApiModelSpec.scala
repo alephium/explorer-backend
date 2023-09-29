@@ -143,7 +143,7 @@ class ApiModelSpec() extends AlephiumSpec {
       )
 
       val expected =
-        s"798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef,bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5,1636379973000,2021-11-08T13:59:33Z,1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n,14PqtYSSbwpUi2RJKUvv9yUwGafd6yHbEcke7ionuiE7w-22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM,-2000000000000000000,-2\n"
+        s"798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef,bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5,1636379973000,2021-11-08T13:59:33Z,ALPH,1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n,14PqtYSSbwpUi2RJKUvv9yUwGafd6yHbEcke7ionuiE7w-22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM,-2000000000000000000,-2\n"
 
       transaction.toCsv(address) is expected
     }

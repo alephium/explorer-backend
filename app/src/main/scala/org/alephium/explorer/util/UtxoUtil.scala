@@ -40,6 +40,44 @@ object UtxoUtil {
       .foldLeft(Option(U256.Zero)) { case (acc, amount) => acc.flatMap(_.add(amount)) }
   }
 
+  def tokenAmountForAddressInInputs(
+      address: Address,
+      inputs: ArraySeq[Input]
+  ): Map[TokenId, Option[U256]] = {
+    inputs
+      .filter(_.address == Some(address))
+      .flatMap(_.tokens)
+      .flatten
+      .groupBy(_.id)
+      .map { case (id, tokens) =>
+        (
+          id,
+          tokens.foldLeft(Option(U256.Zero)) { case (acc, token) =>
+            acc.flatMap(_.add(token.amount))
+          }
+        )
+      }
+  }
+
+  def tokenAmountForAddressInOutputs(
+      address: Address,
+      outputs: ArraySeq[Output]
+  ): Map[TokenId, Option[U256]] = {
+    outputs
+      .filter(_.address == address)
+      .flatMap(_.tokens)
+      .flatten
+      .groupBy(_.id)
+      .map { case (id, tokens) =>
+        (
+          id,
+          tokens.foldLeft(Option(U256.Zero)) { case (acc, token) =>
+            acc.flatMap(_.add(token.amount))
+          }
+        )
+      }
+  }
+
   def deltaAmountForAddress(
       address: Address,
       inputs: ArraySeq[Input],
@@ -53,9 +91,34 @@ object UtxoUtil {
     }
   }
 
+  def deltaTokenAmountForAddress(
+      address: Address,
+      inputs: ArraySeq[Input],
+      outputs: ArraySeq[Output]
+  ): Map[TokenId, BigInteger] = {
+    val in  = tokenAmountForAddressInInputs(address, inputs)
+    val out = tokenAmountForAddressInOutputs(address, outputs)
+
+    (in.keySet ++ out.keySet).foldLeft(Map.empty[TokenId, BigInteger]) { case (acc, token) =>
+      val i = in.get(token).flatten.getOrElse(U256.Zero)
+      val o = out.get(token).flatten.getOrElse(U256.Zero)
+
+      acc + (token -> o.v.subtract(i.v))
+    }
+
+  }
+
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   def fromAddresses(inputs: ArraySeq[Input]): ArraySeq[Address] = {
     inputs.collect { case input if input.address.isDefined => input.address.get }.distinct
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  def fromTokenAddresses(token: TokenId, inputs: ArraySeq[Input]): ArraySeq[Address] = {
+    inputs.collect {
+      case input if input.address.isDefined && input.tokens.exists(_.exists(_.id == token)) =>
+        input.address.get
+    }.distinct
   }
 
   def toAddressesWithoutChangeAddresses(
@@ -64,6 +127,19 @@ object UtxoUtil {
   ): ArraySeq[Address] = {
     outputs.collect {
       case output if !changeAddresses.contains(output.address) => output.address
+    }.distinct
+  }
+
+  def toTokenAddressesWithoutChangeAddresses(
+      token: TokenId,
+      outputs: ArraySeq[Output],
+      changeAddresses: ArraySeq[Address]
+  ): ArraySeq[Address] = {
+    outputs.collect {
+      case output
+          if !changeAddresses
+            .contains(output.address) && output.tokens.exists(_.exists(_.id == token)) =>
+        output.address
     }.distinct
   }
 }
