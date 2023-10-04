@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.api.model
 
-import sttp.tapir.{Schema, Validator}
+import sttp.tapir.Schema
 import upickle.core.Abort
 
 import org.alephium.json.Json._
@@ -101,10 +101,7 @@ object StdInterfaceId {
       "org.wartremover.warts.Serializable"
     )
   ) // Wartremover is complaining, don't now why :/
-  val tokenSchema: Schema[StdInterfaceId] =
-    Schema.string.validate(
-      Validator
-        .enumeration(List(FungibleToken, NFT, NonStandard): List[StdInterfaceId])
-        .encode(_.value)
-    )
+  implicit val tokenSchema: Schema[StdInterfaceId] = Schema.string.description(
+    s"${List(FungibleToken, NFT, NonStandard).map(_.value).mkString(", ")} or any interface id in hex-string format, e.g: 0001"
+  )
 }

@@ -3511,11 +3511,7 @@
             "required": false,
             "schema": {
               "type": "string",
-              "enum": [
-                "fungible",
-                "non-fungible",
-                "non-standard"
-              ]
+              "description": "fungible, non-fungible, non-standard or any interface id in hex-string format, e.g: 0001"
             }
           }
         ],
@@ -6672,17 +6668,6 @@
           }
         }
       },
-      "FungibleToken": {
-        "required": [
-          "type"
-        ],
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string"
-          }
-        }
-      },
       "FungibleTokenMetadata": {
         "required": [
           "token",
@@ -6861,28 +6846,6 @@
           }
         }
       },
-      "NFT": {
-        "required": [
-          "type"
-        ],
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string"
-          }
-        }
-      },
-      "NFTCollection": {
-        "required": [
-          "type"
-        ],
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string"
-          }
-        }
-      },
       "NFTCollectionMetadata": {
         "required": [
           "address",
@@ -6895,17 +6858,6 @@
             "format": "address"
           },
           "collectionUri": {
-            "type": "string"
-          }
-        }
-      },
-      "NFTCollectionWithRoyalty": {
-        "required": [
-          "type"
-        ],
-        "type": "object",
-        "properties": {
-          "type": {
             "type": "string"
           }
         }
@@ -6933,17 +6885,6 @@
           "nftIndex": {
             "type": "string",
             "format": "uint256"
-          }
-        }
-      },
-      "NonStandard": {
-        "required": [
-          "type"
-        ],
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string"
           }
         }
       },
@@ -7154,39 +7095,6 @@
           }
         }
       },
-      "StdInterfaceId": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/FungibleToken"
-          },
-          {
-            "$ref": "#/components/schemas/NFT"
-          },
-          {
-            "$ref": "#/components/schemas/NFTCollection"
-          },
-          {
-            "$ref": "#/components/schemas/NFTCollectionWithRoyalty"
-          },
-          {
-            "$ref": "#/components/schemas/NonStandard"
-          },
-          {
-            "$ref": "#/components/schemas/Unknown"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "type",
-          "mapping": {
-            "FungibleToken": "#/components/schemas/FungibleToken",
-            "NFT": "#/components/schemas/NFT",
-            "NFTCollection": "#/components/schemas/NFTCollection",
-            "NFTCollectionWithRoyalty": "#/components/schemas/NFTCollectionWithRoyalty",
-            "NonStandard": "#/components/schemas/NonStandard",
-            "Unknown": "#/components/schemas/Unknown"
-          }
-        }
-      },
       "SubContracts": {
         "type": "object",
         "properties": {
@@ -7244,7 +7152,8 @@
             "format": "32-byte-hash"
           },
           "stdInterfaceId": {
-            "$ref": "#/components/schemas/StdInterfaceId"
+            "type": "string",
+            "description": "fungible, non-fungible, non-standard or any interface id in hex-string format, e.g: 0001"
           }
         }
       },
@@ -7361,21 +7270,6 @@
         "type": "object",
         "properties": {
           "detail": {
-            "type": "string"
-          }
-        }
-      },
-      "Unknown": {
-        "required": [
-          "id",
-          "type"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "type": {
             "type": "string"
           }
         }

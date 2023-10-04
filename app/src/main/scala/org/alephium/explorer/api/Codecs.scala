@@ -43,8 +43,8 @@ object Codecs extends TapirCodecs {
       _.string
     )
 
-  val tokenStdInterfaceIdCodec: Codec[String, StdInterfaceId, CodecFormat.TextPlain] =
-    fromJson[StdInterfaceId](StdInterfaceId.readWriter, StdInterfaceId.tokenSchema)
+  implicit val tokenStdInterfaceIdCodec: Codec[String, StdInterfaceId, CodecFormat.TextPlain] =
+    fromJson[StdInterfaceId]
 
   def explorerFromJson[A: ReadWriter]: PlainCodec[A] =
     Codec.string.mapDecode[A] { raw =>

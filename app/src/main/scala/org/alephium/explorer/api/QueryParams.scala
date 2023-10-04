@@ -101,8 +101,5 @@ trait QueryParams extends TapirCodecs {
     query[IntervalType]("interval-type")
 
   val tokenInterfaceIdQuery: EndpointInput[Option[StdInterfaceId]] =
-    queryAnyFormat[Option[StdInterfaceId], TextPlain](
-      "interface-id",
-      Codec.listHeadOption(tokenStdInterfaceIdCodec)
-    )
+    query[Option[StdInterfaceId]]("interface-id")
 }

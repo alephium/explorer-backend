@@ -357,6 +357,15 @@ trait ExplorerSpec
         val tokensInfos = response.as[ArraySeq[TokenInfo]]
         tokensInfos.filter(_.stdInterfaceId == Some(interfaceId)) is tokensInfos
       }
+      val id = interfaceId match {
+        // Passing empty string works when running app, but not in our test framework
+        case StdInterfaceId.NonStandard => interfaceId.value
+        case _                          => interfaceId.id
+      }
+      Get(s"/tokens?limit=${limit}&interface-id=${id}") check { response =>
+        val tokensInfos = response.as[ArraySeq[TokenInfo]]
+        tokensInfos.filter(_.stdInterfaceId == Some(interfaceId)) is tokensInfos
+      }
     }
 
     forAll(Gen.alphaNumStr) { interfaceId =>
