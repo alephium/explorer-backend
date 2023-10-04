@@ -23,6 +23,7 @@ import org.alephium.util.TimeStamp
 final case class TokenInfoEntity(
     token: TokenId,
     lastUsed: TimeStamp,
+    category: Option[String],
     interfaceId: Option[InterfaceIdEntity]
 ) {
   def toApi(): TokenInfo =

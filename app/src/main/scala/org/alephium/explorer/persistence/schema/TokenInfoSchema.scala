@@ -27,13 +27,14 @@ import org.alephium.util.TimeStamp
 object TokenInfoSchema extends SchemaMainChain[TokenInfoEntity]("token_info") {
 
   class TokenInfos(tag: Tag) extends Table[TokenInfoEntity](tag, name) {
-    def token: Rep[TokenId]      = column[TokenId]("token", O.PrimaryKey)
-    def lastUsed: Rep[TimeStamp] = column[TimeStamp]("last_used")
+    def token: Rep[TokenId]           = column[TokenId]("token", O.PrimaryKey)
+    def lastUsed: Rep[TimeStamp]      = column[TimeStamp]("last_used")
+    def category: Rep[Option[String]] = column[Option[String]]("category")
     def interfaceId: Rep[Option[InterfaceIdEntity]] =
       column[Option[InterfaceIdEntity]]("interface_id")
 
     def * : ProvenShape[TokenInfoEntity] =
-      (token, lastUsed, interfaceId)
+      (token, lastUsed, category, interfaceId)
         .<>((TokenInfoEntity.apply _).tupled, TokenInfoEntity.unapply)
   }
 

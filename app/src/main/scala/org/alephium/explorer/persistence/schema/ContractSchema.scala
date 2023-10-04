@@ -45,6 +45,7 @@ object ContractSchema extends SchemaMainChain[ContractEntity]("contracts") {
     def destructionTimestamp: Rep[Option[TimeStamp]] =
       column[Option[TimeStamp]]("destruction_timestamp")
     def destructionEventOrder: Rep[Option[Int]] = column[Option[Int]]("destruction_event_order")
+    def category: Rep[Option[String]]           = column[Option[String]]("category")
     def interfaceId: Rep[Option[InterfaceIdEntity]] =
       column[Option[InterfaceIdEntity]]("interface_id")
 
@@ -61,6 +62,7 @@ object ContractSchema extends SchemaMainChain[ContractEntity]("contracts") {
         destructionTxHash,
         destructionTimestamp,
         destructionEventOrder,
+        category,
         interfaceId
       )
         .<>((ContractEntity.apply _).tupled, ContractEntity.unapply)

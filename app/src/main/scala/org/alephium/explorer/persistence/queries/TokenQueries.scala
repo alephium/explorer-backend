@@ -74,14 +74,14 @@ object TokenQueries extends StrictLogging {
     val query = interfaceIdOpt match {
       case Some(id) =>
         sql"""
-      SELECT token, last_used, interface_id
+      SELECT token, last_used, category, interface_id
       FROM token_info
       WHERE interface_id = $id
       ORDER BY last_used DESC
     """
       case None =>
         sql"""
-      SELECT token, last_used, interface_id
+      SELECT token, last_used, category, interface_id
       FROM token_info
       ORDER BY last_used DESC
       """
@@ -249,7 +249,7 @@ object TokenQueries extends StrictLogging {
 
       val query =
         s"""
-          SELECT token, last_used, interface_id
+          SELECT token, last_used, category, interface_id
           FROM token_info
           WHERE token IN $params
         """
@@ -352,7 +352,7 @@ object TokenQueries extends StrictLogging {
   def updateTokenInterfaceId(token: TokenId, interfaceId: StdInterfaceId): DBActionW[Int] = {
     sqlu"""
       UPDATE token_info
-      SET interface_id = $interfaceId
+      SET interface_id = $interfaceId, category = ${interfaceId.category}
       WHERE token = $token
     """
   }

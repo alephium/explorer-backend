@@ -25,37 +25,44 @@ import org.alephium.util.Hex
 sealed trait StdInterfaceId {
   def value: String
   def id: String
+  def category: String
 }
 
 object StdInterfaceId {
 
   case object FungibleToken extends StdInterfaceId {
-    val value: String = "fungible"
-    val id: String    = "0001"
+    val value: String    = "fungible"
+    val id: String       = "0001"
+    val category: String = "0001"
   }
 
   case object NFTCollection extends StdInterfaceId {
-    val value: String = "non-fungible-collection"
-    val id: String    = "0002"
+    val value: String    = "non-fungible-collection"
+    val id: String       = "0002"
+    val category: String = "0002"
   }
 
   case object NFTCollectionWithRoyalty extends StdInterfaceId {
-    val value: String = "non-fungible-collection-with-royalty"
-    val id: String    = "000201"
+    val value: String    = "non-fungible-collection-with-royalty"
+    val id: String       = "000201"
+    val category: String = "0002"
   }
 
   case object NFT extends StdInterfaceId {
-    val value: String = "non-fungible"
-    val id: String    = "0003"
+    val value: String    = "non-fungible"
+    val id: String       = "0003"
+    val category: String = "0003"
   }
 
   final case class Unknown(id: String) extends StdInterfaceId {
-    val value: String = s"$id"
+    val value: String    = s"$id"
+    val category: String = ""
   }
 
   case object NonStandard extends StdInterfaceId {
-    val value: String = "non-standard"
-    val id: String    = ""
+    val value: String    = "non-standard"
+    val id: String       = ""
+    val category: String = ""
   }
 
   def from(code: String): StdInterfaceId =

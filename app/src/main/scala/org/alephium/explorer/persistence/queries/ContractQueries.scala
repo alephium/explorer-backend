@@ -169,7 +169,7 @@ object ContractQueries {
   ): DBActionW[Int] = {
     sqlu"""
       UPDATE contracts
-      SET interface_id = $interfaceId
+      SET interface_id = $interfaceId, category = ${interfaceId.category}
       WHERE contract = $contract
       AND destruction_block_hash IS NULL
     """

@@ -331,6 +331,7 @@ object CustomGetResult {
       TokenInfoEntity(
         token = result.<<,
         lastUsed = result.<<,
+        category = result.<<?,
         interfaceId = result.<<?
       )
 

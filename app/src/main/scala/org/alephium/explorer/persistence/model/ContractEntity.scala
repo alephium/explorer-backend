@@ -35,6 +35,7 @@ final case class ContractEntity(
     destructionTxHash: Option[TransactionId],
     destructionTimestamp: Option[TimeStamp],
     destructionEventOrder: Option[Int],
+    category: Option[String],
     interfaceId: Option[InterfaceIdEntity]
 ) {
   def destroyInfo(): Option[ContractEntity.DestroyInfo] =
@@ -77,6 +78,7 @@ object ContractEntity {
           destructionTxHash = None,
           destructionTimestamp = None,
           destructionEventOrder = None,
+          category = None,
           interfaceId = None
         )
       }
