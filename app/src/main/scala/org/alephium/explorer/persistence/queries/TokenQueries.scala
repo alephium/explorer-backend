@@ -26,6 +26,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
+import org.alephium.explorer.persistence.model.TokenInfoEntity
 import org.alephium.explorer.persistence.queries.result.TxByTokenQR
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
@@ -69,18 +70,18 @@ object TokenQueries extends StrictLogging {
   def listTokensAction(
       pagination: Pagination,
       interfaceIdOpt: Option[StdInterfaceId]
-  ): DBActionSR[TokenInfo] = {
+  ): DBActionSR[TokenInfoEntity] = {
     val query = interfaceIdOpt match {
       case Some(id) =>
         sql"""
-      SELECT token, interface_id
+      SELECT token, last_used, interface_id
       FROM token_info
       WHERE interface_id = $id
       ORDER BY last_used DESC
     """
       case None =>
         sql"""
-      SELECT token, interface_id
+      SELECT token, last_used, interface_id
       FROM token_info
       ORDER BY last_used DESC
       """
@@ -88,7 +89,7 @@ object TokenQueries extends StrictLogging {
 
     query
       .paginate(pagination)
-      .asASE[TokenInfo](tokenInfoGetResult)
+      .asASE[TokenInfoEntity](tokenInfoGetResult)
 
   }
 
@@ -242,13 +243,13 @@ object TokenQueries extends StrictLogging {
 
   def listTokenInfosQuery(
       tokens: ArraySeq[TokenId]
-  ): DBActionW[ArraySeq[TokenInfo]] = {
+  ): DBActionW[ArraySeq[TokenInfoEntity]] = {
     if (tokens.nonEmpty) {
       val params = paramPlaceholder(1, tokens.size)
 
       val query =
         s"""
-          SELECT token, interface_id
+          SELECT token, last_used, interface_id
           FROM token_info
           WHERE token IN $params
         """
@@ -262,7 +263,7 @@ object TokenQueries extends StrictLogging {
       SQLActionBuilder(
         queryParts = query,
         unitPConv = parameters
-      ).asASE[TokenInfo](tokenInfoGetResult)
+      ).asASE[TokenInfoEntity](tokenInfoGetResult)
     } else {
       DBIOAction.successful(ArraySeq.empty)
     }

@@ -29,7 +29,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.api.model.Val
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.model.{AppState, AppStateKey, OutputEntity}
+import org.alephium.explorer.persistence.model._
 import org.alephium.json.Json._
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model._
@@ -159,10 +159,10 @@ object CustomJdbcTypes {
       OutputEntity.OutputType.unsafe
     )
 
-  implicit val interfaceIdType: JdbcType[StdInterfaceId] =
-    MappedJdbcType.base[StdInterfaceId, String](
+  implicit val interfaceIdType: JdbcType[InterfaceIdEntity] =
+    MappedJdbcType.base[InterfaceIdEntity, String](
       _.id,
-      StdInterfaceId.from
+      InterfaceIdEntity.from
     )
 
   implicit val appStateKey: JdbcType[AppStateKey[_]] =

@@ -64,7 +64,7 @@ object StdInterfaceId {
       case "0002"   => NFTCollection
       case "0003"   => NFT
       case "000201" => NFTCollectionWithRoyalty
-      case "ns"     => NonStandard
+      case ""       => NonStandard
       case unknown  => Unknown(unknown)
     }
 

@@ -20,8 +20,7 @@ import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
-import org.alephium.explorer.api.model.StdInterfaceId
-import org.alephium.explorer.persistence.model.ContractEntity
+import org.alephium.explorer.persistence.model.{ContractEntity, InterfaceIdEntity}
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.TimeStamp
@@ -45,8 +44,9 @@ object ContractSchema extends SchemaMainChain[ContractEntity]("contracts") {
       column[Option[TransactionId]]("destruction_tx_hash", O.SqlType("BYTEA"))
     def destructionTimestamp: Rep[Option[TimeStamp]] =
       column[Option[TimeStamp]]("destruction_timestamp")
-    def destructionEventOrder: Rep[Option[Int]]  = column[Option[Int]]("destruction_event_order")
-    def interfaceId: Rep[Option[StdInterfaceId]] = column[Option[StdInterfaceId]]("interface_id")
+    def destructionEventOrder: Rep[Option[Int]] = column[Option[Int]]("destruction_event_order")
+    def interfaceId: Rep[Option[InterfaceIdEntity]] =
+      column[Option[InterfaceIdEntity]]("interface_id")
 
     def * : ProvenShape[ContractEntity] =
       (

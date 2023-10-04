@@ -189,11 +189,11 @@ object CustomGetResult {
   implicit val outputTypeGetResult: GetResult[OutputEntity.OutputType] =
     (result: PositionedResult) => OutputEntity.OutputType.unsafe(result.nextInt())
 
-  implicit val stdInterfaceIdGetResult: GetResult[StdInterfaceId] =
-    (result: PositionedResult) => StdInterfaceId.from(result.nextString())
+  implicit val interfaceIdGetResult: GetResult[InterfaceIdEntity] =
+    (result: PositionedResult) => InterfaceIdEntity.from(result.nextString())
 
-  implicit val optionStdInterfaceIdGetResult: GetResult[Option[StdInterfaceId]] =
-    (result: PositionedResult) => result.nextStringOption().map(StdInterfaceId.from)
+  implicit val optionInterfaceIdGetResult: GetResult[Option[InterfaceIdEntity]] =
+    (result: PositionedResult) => result.nextStringOption().map(InterfaceIdEntity.from)
 
   /** GetResult type for BlockEntryLite
     *
@@ -326,11 +326,12 @@ object CustomGetResult {
         collectionUri = result.<<
       )
 
-  val tokenInfoGetResult: GetResult[TokenInfo] =
+  val tokenInfoGetResult: GetResult[TokenInfoEntity] =
     (result: PositionedResult) =>
-      TokenInfo(
+      TokenInfoEntity(
         token = result.<<,
-        stdInterfaceId = result.<<?
+        lastUsed = result.<<,
+        interfaceId = result.<<?
       )
 
   implicit val migrationVersionGetResult: GetResult[AppState.MigrationVersion] =

@@ -19,7 +19,6 @@ package org.alephium.explorer.persistence.model
 import akka.util.ByteString
 
 import org.alephium.api.model.{ValAddress, ValByteVec}
-import org.alephium.explorer.api.model.StdInterfaceId
 import org.alephium.protocol
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.TimeStamp
@@ -36,7 +35,7 @@ final case class ContractEntity(
     destructionTxHash: Option[TransactionId],
     destructionTimestamp: Option[TimeStamp],
     destructionEventOrder: Option[Int],
-    interfaceId: Option[StdInterfaceId]
+    interfaceId: Option[InterfaceIdEntity]
 ) {
   def destroyInfo(): Option[ContractEntity.DestroyInfo] =
     for {

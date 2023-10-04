@@ -26,7 +26,7 @@ import slick.jdbc.{PositionedParameters, SetParameter}
 import org.alephium.api.model.Val
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.model.OutputEntity
+import org.alephium.explorer.persistence.model.{InterfaceIdEntity, OutputEntity}
 import org.alephium.json.Json._
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model._
@@ -58,6 +58,11 @@ object CustomSetParameter {
 
   implicit object StdInterfaceIdSetParameter extends SetParameter[StdInterfaceId] {
     override def apply(input: StdInterfaceId, params: PositionedParameters): Unit =
+      params setString input.id
+  }
+
+  implicit object InterfaceIdSetParameter extends SetParameter[InterfaceIdEntity] {
+    override def apply(input: InterfaceIdEntity, params: PositionedParameters): Unit =
       params setString input.id
   }
 

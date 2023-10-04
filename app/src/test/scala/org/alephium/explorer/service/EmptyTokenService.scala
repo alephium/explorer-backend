@@ -33,6 +33,7 @@ trait EmptyTokenService extends TokenService {
   ): Future[(U256, U256)] = ???
 
   def listTokens(pagination: Pagination, interfaceIdOpt: Option[StdInterfaceId])(implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[TokenInfo]] = ???
 
@@ -42,6 +43,7 @@ trait EmptyTokenService extends TokenService {
   ): Future[ArraySeq[Transaction]] = ???
 
   def listTokenInfo(tokens: ArraySeq[TokenId])(implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[TokenInfo]] = ???
 

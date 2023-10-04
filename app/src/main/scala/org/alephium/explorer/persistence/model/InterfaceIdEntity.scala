@@ -16,18 +16,25 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.api.model.TokenInfo
-import org.alephium.protocol.model.TokenId
-import org.alephium.util.TimeStamp
+import org.alephium.explorer.api.model.StdInterfaceId
 
-final case class TokenInfoEntity(
-    token: TokenId,
-    lastUsed: TimeStamp,
-    interfaceId: Option[InterfaceIdEntity]
-) {
-  def toApi(): TokenInfo =
-    TokenInfo(
-      token,
-      interfaceId.map(InterfaceIdEntity.toApi)
-    )
+sealed trait InterfaceIdEntity {
+  val id: String
+}
+
+object InterfaceIdEntity {
+  final case class StdInterfaceIdEntity(id: String) extends InterfaceIdEntity
+  final case object NoInterfaceIdEntity extends InterfaceIdEntity {
+    val id: String = ""
+  }
+
+  def from(str: String): InterfaceIdEntity =
+    if (str == "") {
+      NoInterfaceIdEntity
+    } else {
+      StdInterfaceIdEntity(str)
+    }
+
+  def toApi(entity: InterfaceIdEntity): StdInterfaceId =
+    StdInterfaceId.from(entity.id)
 }

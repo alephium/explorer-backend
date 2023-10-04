@@ -38,6 +38,7 @@ trait TokenService {
   ): Future[(U256, U256)]
 
   def listTokens(pagination: Pagination, interfaceIdOpt: Option[StdInterfaceId])(implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[TokenInfo]]
 
@@ -47,6 +48,7 @@ trait TokenService {
   ): Future[ArraySeq[Transaction]]
 
   def listTokenInfo(tokens: ArraySeq[TokenId])(implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[TokenInfo]]
 
@@ -116,9 +118,10 @@ object TokenService extends TokenService with StrictLogging {
     run(getTokenBalanceAction(address, token))
 
   def listTokens(pagination: Pagination, interfaceIdOpt: Option[StdInterfaceId])(implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[TokenInfo]] =
-    run(listTokensAction(pagination, interfaceIdOpt))
+    run(listTokensAction(pagination, interfaceIdOpt)).map(_.map(_.toApi()))
 
   def listTokenTransactions(token: TokenId, pagination: Pagination)(implicit
       ec: ExecutionContext,
@@ -132,9 +135,10 @@ object TokenService extends TokenService with StrictLogging {
     run(getAddressesByToken(token, pagination))
 
   def listTokenInfo(tokens: ArraySeq[TokenId])(implicit
+      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[TokenInfo]] =
-    run(listTokenInfosQuery(tokens))
+    run(listTokenInfosQuery(tokens)).map(_.map(_.toApi()))
 
   def listFungibleTokenMetadata(tokens: ArraySeq[TokenId])(implicit
       dc: DatabaseConfig[PostgresProfile]
