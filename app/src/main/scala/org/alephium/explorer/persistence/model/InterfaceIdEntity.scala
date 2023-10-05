@@ -20,6 +20,8 @@ import org.alephium.explorer.api.model.StdInterfaceId
 
 sealed trait InterfaceIdEntity {
   val id: String
+
+  def toApi: StdInterfaceId = StdInterfaceId.from(id)
 }
 
 object InterfaceIdEntity {
@@ -34,7 +36,4 @@ object InterfaceIdEntity {
     } else {
       StdInterfaceIdEntity(str)
     }
-
-  def toApi(entity: InterfaceIdEntity): StdInterfaceId =
-    StdInterfaceId.from(entity.id)
 }

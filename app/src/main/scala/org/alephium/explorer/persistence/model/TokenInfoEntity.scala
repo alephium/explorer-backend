@@ -29,6 +29,6 @@ final case class TokenInfoEntity(
   def toApi(): TokenInfo =
     TokenInfo(
       token,
-      interfaceId.map(InterfaceIdEntity.toApi)
+      interfaceId.map(_.toApi)
     )
 }
