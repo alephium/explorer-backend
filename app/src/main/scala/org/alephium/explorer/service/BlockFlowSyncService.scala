@@ -152,7 +152,24 @@ case object BlockFlowSyncService extends StrictLogging {
           .sequence(multiChain.map(insertBlocks))
           .map(_.sum)
         _ <- dc.db.run(InputUpdateQueries.updateInputs())
+        _ <- updateMetadatas(blockFlowClient)
       } yield res
+    }
+  }
+
+  private def updateMetadatas(blockFlowClient: BlockFlowClient)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = {
+    blockFlowClient.fetchSelfClique().flatMap { selfClique =>
+      if (selfClique.synced) {
+        for {
+          _ <- TokenService.updateContractsMetadata(blockFlowClient)
+          _ <- TokenService.updateTokensMetadata(blockFlowClient)
+        } yield ()
+      } else {
+        Future.unit
+      }
     }
   }
 

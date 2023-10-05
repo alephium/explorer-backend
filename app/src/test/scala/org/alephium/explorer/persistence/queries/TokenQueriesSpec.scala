@@ -16,10 +16,14 @@
 
 package org.alephium.explorer.persistence.queries
 
+import scala.collection.immutable.ArraySeq
+
 import org.scalacheck.Gen
+import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model.Pagination
@@ -112,6 +116,55 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
           .map(t => (t.token, t.amount, if (t.lockTime.exists(_ > now)) t.amount else U256.Zero))
 
         result should contain allElementsOf expected
+      }
+    }
+
+    "insert and list fungible token metadata" in {
+      val tokens = Gen.nonEmptyListOf(fungibleTokenMetadataGen).sample.get
+
+      run(
+        DBIOAction.sequence(tokens.map(token => TokenQueries.insertFungibleTokenMetadata(token)))
+      ).futureValue
+
+      val result = run(TokenQueries.listFungibleTokenMetadataQuery(tokens.map(_.token))).futureValue
+
+      result is tokens
+    }
+
+    "insert and list nft metadata" in {
+      val tokens = Gen.nonEmptyListOf(nftMetadataGen).sample.get
+
+      run(
+        DBIOAction.sequence(tokens.map(token => TokenQueries.insertNFTMetadata(token)))
+      ).futureValue
+
+      val result = run(TokenQueries.listNFTMetadataQuery(tokens.map(_.token))).futureValue
+
+      result is tokens
+    }
+
+    "ignore conflict when inserting fungible token metadata" in {
+      forAll(fungibleTokenMetadataGen, Gen.alphaNumStr) { case (metadata, symbol) =>
+        run(TokenQueries.insertFungibleTokenMetadata(metadata)).futureValue
+        run(TokenQueries.insertFungibleTokenMetadata(metadata.copy(symbol = symbol))).futureValue
+
+        val result =
+          run(TokenQueries.listFungibleTokenMetadataQuery(ArraySeq(metadata.token))).futureValue
+
+        result is ArraySeq(metadata)
+
+      }
+    }
+
+    "ignore conflict when inserting nft metadata" in {
+      forAll(nftMetadataGen, Gen.alphaNumStr) { case (metadata, tokenUri) =>
+        run(TokenQueries.insertNFTMetadata(metadata)).futureValue
+        run(TokenQueries.insertNFTMetadata(metadata.copy(tokenUri = tokenUri))).futureValue
+
+        val result = run(TokenQueries.listNFTMetadataQuery(ArraySeq(metadata.token))).futureValue
+
+        result is ArraySeq(metadata)
+
       }
     }
   }

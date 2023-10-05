@@ -31,6 +31,7 @@ import org.scalacheck.Gen
 import org.scalatest.Assertion
 import org.scalatest.Inspectors
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
+import org.scalatest.time.{Seconds, Span}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.StatusCode
@@ -58,13 +59,16 @@ import org.alephium.explorer.web._
 import org.alephium.json.Json._
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.{Address, BlockHash, CliqueId, GroupIndex, NetworkId}
-import org.alephium.util.{AVector, TimeStamp, U256}
+import org.alephium.util.{AVector, Hex, TimeStamp, U256}
 
 trait ExplorerSpec
     extends AlephiumActorSpecLike
     with AlephiumFutureSpec
     with DatabaseFixtureForAll
     with HttpRouteFixture {
+
+  implicit override val patienceConfig =
+    PatienceConfig(timeout = Span(120, Seconds))
 
   override val name: String = "ExploreSpec"
 
@@ -302,7 +306,13 @@ trait ExplorerSpec
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address}/tokens-balance") check { response =>
         val res = response.as[ArraySeq[AddressTokenBalance]]
-        res.size is 0
+
+        val tokens = blocks
+          .flatMap(_.transactions.flatMap(_.outputs.filter(_.address == address).flatMap(_.tokens)))
+          .flatten
+          .distinct
+
+        res.size is tokens.size
       }
     }
   }
@@ -326,6 +336,47 @@ trait ExplorerSpec
     }
   }
 
+  "list token information" in {
+    val tokens = blocks
+      .flatMap(_.transactions.flatMap(_.outputs.flatMap(_.tokens)))
+      .flatten
+      .distinct
+    val limit =
+      if (tokens.sizeIs > Pagination.maxLimit) {
+        Pagination.maxLimit
+      } else {
+        tokens.size
+      }
+    Get(s"/tokens?limit=${limit}") check { response =>
+      val tokensInfos = response.as[ArraySeq[TokenInfo]]
+      tokensInfos.size is limit
+    }
+
+    forAll(tokenInterfaceIdGen) { interfaceId =>
+      Get(s"/tokens?limit=${limit}&interface-id=${interfaceId.value}") check { response =>
+        val tokensInfos = response.as[ArraySeq[TokenInfo]]
+        tokensInfos.filter(_.stdInterfaceId == Some(interfaceId)) is tokensInfos
+      }
+      val id = interfaceId match {
+        // Passing empty string works when running app, but not in our test framework
+        case StdInterfaceId.NonStandard => interfaceId.value
+        case _                          => interfaceId.id
+      }
+      Get(s"/tokens?limit=${limit}&interface-id=${id}") check { response =>
+        val tokensInfos = response.as[ArraySeq[TokenInfo]]
+        tokensInfos.filter(_.stdInterfaceId == Some(interfaceId)) is tokensInfos
+      }
+    }
+
+    forAll(Gen.alphaNumStr) { interfaceId =>
+      Get(s"/tokens?limit=${limit}&interface-id=fungible-${interfaceId}") check { response =>
+        response.as[ApiError.BadRequest] is ApiError.BadRequest(
+          s"""Invalid value for: query parameter interface-id (Cannot decode interface id}: fungible-${interfaceId})"""
+        )
+      }
+    }
+  }
+
   "generate the documentation" in {
     Get("/docs") check { response =>
       response.code is StatusCode.Ok
@@ -336,18 +387,17 @@ trait ExplorerSpec
       val openApiFile =
         using(
           Source.fromResource("explorer-backend-openapi.json")(Codec.UTF8)
-        )(
-          _.getLines().toList
-            .mkString("\n")
-            // updating address discovery gap limit according to group number
-            .replace(""""maxItems": 80""", s""""maxItems": ${groupSetting.groupNum * 20}""")
-        )
+        )(_.getLines().toList.mkString)
 
+      // `maxItems` is hardcoded on some place and depend on group num in others
+      // Previously we were changing the value based on the group setting of the test,
+      // but with the hardcoded value it's impossible to differentiante those values,
+      // so we remove them from the json.
       val expectedOpenapi =
-        read[ujson.Value](openApiFile)
+        ExplorerSpec.removeField("maxItems", read[ujson.Value](openApiFile))
 
       val openapi =
-        response.as[ujson.Value]
+        ExplorerSpec.removeField("maxItems", response.as[ujson.Value])
 
       openapi is expectedOpenapi
     }
@@ -428,7 +478,12 @@ object ExplorerSpec {
             .out(jsonBody[model.BlockAndEvents])
             .serverLogicSuccess[Future] { hash =>
               Future
-                .successful(model.BlockAndEvents(blocks.find(_.hash === hash).get, AVector.empty))
+                .successful(
+                  model.BlockAndEvents(
+                    blocks.find(_.hash === hash).get,
+                    AVector.from(Gen.listOfN(3, contractEventByBlockHash).sample.get)
+                  )
+                )
             }
         ),
         route(
@@ -471,7 +526,14 @@ object ExplorerSpec {
                       )
                       .map(blocks =>
                         AVector
-                          .from(blocks.map(block => model.BlockAndEvents(block, AVector.empty)))
+                          .from(
+                            blocks.map(block =>
+                              model.BlockAndEvents(
+                                block,
+                                AVector.from(Gen.listOfN(3, contractEventByBlockHash).sample.get)
+                              )
+                            )
+                          )
                       )
                   )
                 )
@@ -544,6 +606,55 @@ object ExplorerSpec {
                 model.ChainParams(networkId, 18, groupSetting.groupNum, groupSetting.groupNum)
               )
             }
+        ),
+        route(
+          baseEndpoint.get
+            .in("contracts")
+            .in(path[Address.Contract]("address"))
+            .in("state")
+            .in(query[GroupIndex]("group"))
+            .out(jsonBody[model.ContractState])
+            .serverLogicSuccess[Future] { case (address, _) =>
+              val interfaceId = Gen.option(stdInterfaceIdGen).sample.get
+              val idBytes: Option[model.Val] = interfaceId.map(id =>
+                model.ValByteVec(Hex.from(s"${BlockFlowClient.interfaceIdPrefix}${id.id}").get)
+              )
+              val immFields = idBytes.map(AVector(_)).getOrElse(AVector.empty)
+              Future.successful(
+                model.ContractState(
+                  address,
+                  statefulContractGen.sample.get,
+                  hashGen.sample.get,
+                  None,
+                  immFields,
+                  AVector.empty,
+                  assetStateGen.sample.get
+                )
+              )
+            }
+        ),
+        route(
+          baseEndpoint.get
+            .in("contracts")
+            .in("multicall-contract")
+            .in(jsonBody[model.MultipleCallContract])
+            .out(jsonBody[model.MultipleCallContractResult])
+            .serverLogicSuccess[Future] { _ =>
+              val symbol                                      = valByteVecGen.sample.get
+              val name                                        = valByteVecGen.sample.get
+              val decimals                                    = valU256Gen.sample.get
+              val totalSupply                                 = valU256Gen.sample.get
+              val symbolResult: model.CallContractResult      = contractResult(symbol)
+              val nameResult: model.CallContractResult        = contractResult(name)
+              val decimalsResult: model.CallContractResult    = contractResult(decimals)
+              val totalSupplyResult: model.CallContractResult = contractResult(totalSupply)
+
+              val results: AVector[model.CallContractResult] =
+                AVector(symbolResult, nameResult, decimalsResult, totalSupplyResult)
+              Future.successful(
+                model.MultipleCallContractResult(results)
+              )
+            }
         )
       )
 
@@ -553,6 +664,37 @@ object ExplorerSpec {
 
     logger.info(s"Full node listening on ${address.getHostAddress}:$port")
     server.listen(port, address.getHostAddress).asScala.futureValue
+  }
+
+  def contractResult(value: model.Val): model.CallContractResult = {
+    val result = callContractSucceededGen.sample.get
+    result.copy(returns = value +: result.returns)
+  }
+
+  def removeField(name: String, json: ujson.Value): ujson.Value = {
+    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+    def rec(json: ujson.Value): ujson.Value = {
+      json match {
+        case obj: ujson.Obj =>
+          ujson.Obj.from(
+            obj.value.filterNot { case (key, _) => key == name }.map { case (key, value) =>
+              key -> rec(value)
+            }
+          )
+
+        case arr: ujson.Arr =>
+          val newValues = arr.value.map { value =>
+            rec(value)
+          }
+          ujson.Arr.from(newValues)
+
+        case x => x
+      }
+    }
+    json match {
+      case ujson.Null => ujson.Null
+      case other      => rec(other)
+    }
   }
 }
 

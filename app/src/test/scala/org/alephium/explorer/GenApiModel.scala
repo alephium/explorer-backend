@@ -33,7 +33,11 @@ import org.alephium.protocol.model.{Address, ChainIndex, GroupIndex, TokenId, Tx
 /** Generators for types supplied by `org.alephium.explorer.api.model` package */
 object GenApiModel extends ImplicitConversions {
 
-  val tokenIdGen: Gen[TokenId]              = hashGen.map(TokenId.unsafe)
+  def tokenIdGen(implicit gs: GroupSetting): Gen[TokenId] = for {
+    contractId <- contractIdGen(gs)
+  } yield {
+    TokenId.from(contractId)
+  }
   val outputRefKeyGen: Gen[TxOutputRef.Key] = hashGen.map(new TxOutputRef.Key(_))
   val groupIndexGen: Gen[GroupIndex] =
     Gen.choose(0, groupSetting.groupNum - 1).map(new GroupIndex(_))
@@ -246,6 +250,36 @@ object GenApiModel extends ImplicitConversions {
       )
     }
 
+  val fungibleTokenMetadataGen: Gen[FungibleTokenMetadata] =
+    for {
+      tokenId  <- tokenIdGen
+      symbol   <- Gen.alphaStr
+      name     <- Gen.alphaStr
+      decimals <- u256Gen
+    } yield {
+      FungibleTokenMetadata(
+        tokenId,
+        symbol,
+        name,
+        decimals
+      )
+    }
+
+  val nftMetadataGen: Gen[NFTMetadata] =
+    for {
+      tokenId      <- tokenIdGen
+      tokenUri     <- Gen.alphaStr
+      collectionId <- contractIdGen
+      nftIndex     <- u256Gen
+    } yield {
+      NFTMetadata(
+        tokenId,
+        tokenUri,
+        collectionId,
+        nftIndex
+      )
+    }
+
   val addressInfoGen: Gen[AddressInfo] =
     for {
       balance       <- u256Gen
@@ -269,6 +303,41 @@ object GenApiModel extends ImplicitConversions {
         blocks
       )
     }
+
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
+    )
+  )
+  val stdInterfaceIdGen: Gen[StdInterfaceId] =
+    Gen.oneOf(
+      ArraySeq(
+        StdInterfaceId.FungibleToken,
+        StdInterfaceId.NFTCollection,
+        StdInterfaceId.NFTCollectionWithRoyalty,
+        StdInterfaceId.NFT,
+        StdInterfaceId.Unknown("1234"),
+        StdInterfaceId.NonStandard
+      )
+    )
+
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
+    )
+  )
+  val tokenInterfaceIdGen: Gen[StdInterfaceId] =
+    Gen.oneOf(
+      ArraySeq(
+        StdInterfaceId.FungibleToken,
+        StdInterfaceId.NFT,
+        StdInterfaceId.NonStandard
+      )
+    )
 
   /** Generates [[Pagination]] instance for the generated data.
     *

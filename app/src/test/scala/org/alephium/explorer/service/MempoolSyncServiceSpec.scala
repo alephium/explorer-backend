@@ -17,23 +17,19 @@
 package org.alephium.explorer.service
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 import org.scalacheck.Gen
 import sttp.model.Uri
 
-import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel.mempooltransactionGen
-import org.alephium.explorer.api.model.{Height, MempoolTransaction}
+import org.alephium.explorer.api.model.MempoolTransaction
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.MempoolDao
-import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.TestUtils._
-import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
-import org.alephium.util.{Service, TimeStamp}
 
 class MempoolSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach {
 
@@ -69,33 +65,9 @@ class MempoolSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
   trait Fixture {
     var mempoolTransactions: ArraySeq[MempoolTransaction] = ArraySeq.empty
 
-    implicit val blockFlowClient: BlockFlowClient = new BlockFlowClient {
-      implicit val executionContext: ExecutionContext = implicitly
-      def startSelfOnce(): Future[Unit]               = Future.unit
-      def stopSelfOnce(): Future[Unit]                = Future.unit
-      def subServices: ArraySeq[Service]              = ArraySeq.empty
-      def fetchMempoolTransactions(uri: Uri): Future[ArraySeq[MempoolTransaction]] =
+    implicit val blockFlowClient: BlockFlowClient = new EmptyBlockFlowClient {
+      override def fetchMempoolTransactions(uri: Uri): Future[ArraySeq[MempoolTransaction]] =
         Future.successful(mempoolTransactions)
-      def fetchBlock(from: GroupIndex, hash: BlockHash): Future[BlockEntity] =
-        ???
-      def fetchBlockAndEvents(
-          fromGroup: GroupIndex,
-          hash: BlockHash
-      ): Future[BlockEntityWithEvents] =
-        ???
-      def fetchBlocks(
-          fromTs: TimeStamp,
-          toTs: TimeStamp,
-          uri: Uri
-      ): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]] =
-        ???
-      def fetchChainInfo(chainIndex: ChainIndex): Future[ChainInfo]                           = ???
-      def fetchHashesAtHeight(chainIndex: ChainIndex, height: Height): Future[HashesAtHeight] = ???
-      def fetchSelfClique(): Future[SelfClique]                                               = ???
-      def fetchChainParams(): Future[ChainParams]                                             = ???
-      override def start(): Future[Unit]                                                      = ???
-      override def close(): Future[Unit]                                                      = ???
     }
-
   }
 }

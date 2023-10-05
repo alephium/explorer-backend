@@ -36,7 +36,7 @@ import org.alephium.explorer.persistence.dao.{MempoolDao, TransactionDao}
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.util.TimeUtil
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{Address, TokenId, TransactionId}
+import org.alephium.protocol.model.{Address, TransactionId}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 trait TransactionService {
@@ -79,11 +79,6 @@ trait TransactionService {
       address: Address
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)]
 
-  def getTokenBalance(address: Address, token: TokenId)(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[(U256, U256)]
-
   def getTotalNumber()(implicit cache: TransactionCache): Int
 
   def areAddressesActive(
@@ -94,36 +89,6 @@ trait TransactionService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[MempoolTransaction]]
-
-  def listTokens(
-      pagination: Pagination
-  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenId]]
-
-  def listTokenTransactions(token: TokenId, pagination: Pagination)(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[Transaction]]
-
-  def listTokenAddresses(token: TokenId, pagination: Pagination)(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[Address]]
-
-  def listAddressTokens(address: Address, pagination: Pagination)(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[TokenId]]
-
-  def listAddressTokenTransactions(address: Address, token: TokenId, pagination: Pagination)(
-      implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[Transaction]]
-
-  def listAddressTokensWithBalance(address: Address, pagination: Pagination)(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[(TokenId, U256, U256)]]
 
   def hasAddressMoreTxsThan(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
       implicit
@@ -199,54 +164,12 @@ object TransactionService extends TransactionService {
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
     TransactionDao.getBalance(address)
 
-  def getTokenBalance(address: Address, token: TokenId)(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[(U256, U256)] =
-    TransactionDao.getTokenBalance(address, token)
-
   def listMempoolTransactions(pagination: Pagination)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[MempoolTransaction]] = {
     MempoolDao.list(pagination)
   }
-
-  def listTokens(
-      pagination: Pagination
-  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[TokenId]] =
-    TransactionDao.listTokens(pagination)
-
-  def listTokenTransactions(token: TokenId, pagination: Pagination)(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[Transaction]] =
-    TransactionDao.listTokenTransactions(token, pagination)
-
-  def listAddressTokens(address: Address, pagination: Pagination)(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[TokenId]] =
-    TransactionDao.listAddressTokens(address, pagination)
-
-  def listTokenAddresses(token: TokenId, pagination: Pagination)(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[Address]] =
-    TransactionDao.listTokenAddresses(token, pagination)
-
-  def listAddressTokenTransactions(address: Address, token: TokenId, pagination: Pagination)(
-      implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[Transaction]] =
-    TransactionDao.listAddressTokenTransactions(address, token, pagination)
-
-  def listAddressTokensWithBalance(address: Address, pagination: Pagination)(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[(TokenId, U256, U256)]] =
-    TransactionDao.listAddressTokensWithBalance(address, pagination)
 
   def areAddressesActive(
       addresses: ArraySeq[Address]

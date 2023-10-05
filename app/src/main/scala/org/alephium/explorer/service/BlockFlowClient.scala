@@ -28,7 +28,18 @@ import sttp.model.Uri
 
 import org.alephium.api
 import org.alephium.api.{ApiModelCodec, Endpoints}
-import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
+import org.alephium.api.model.{
+  CallContract,
+  CallContractFailed,
+  CallContractResult,
+  CallContractSucceeded,
+  ChainInfo,
+  ChainParams,
+  HashesAtHeight,
+  MultipleCallContract,
+  MultipleCallContractResult,
+  SelfClique
+}
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.api.model._
@@ -44,13 +55,15 @@ import org.alephium.protocol.model.{
   Address,
   BlockHash,
   ChainIndex,
+  ContractId,
   GroupIndex,
   Hint,
   Target,
+  TokenId,
   TransactionId
 }
 import org.alephium.protocol.vm.LockupScript
-import org.alephium.util.{AVector, Duration, Service, TimeStamp, U256}
+import org.alephium.util.{AVector, Duration, Hex, Service, TimeStamp, U256}
 
 trait BlockFlowClient extends Service {
   def fetchBlock(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntity]
@@ -84,6 +97,16 @@ trait BlockFlowClient extends Service {
   def fetchChainParams(): Future[ChainParams]
 
   def fetchMempoolTransactions(uri: Uri): Future[ArraySeq[MempoolTransaction]]
+
+  def guessStdInterfaceId(address: Address.Contract): Future[Option[StdInterfaceId]]
+
+  def guessTokenStdInterfaceId(token: TokenId): Future[Option[StdInterfaceId]]
+
+  def fetchFungibleTokenMetadata(token: TokenId): Future[Option[FungibleTokenMetadata]]
+
+  def fetchNFTMetadata(token: TokenId): Future[Option[NFTMetadata]]
+
+  def fetchNFTCollectionMetadata(contract: Address.Contract): Future[Option[NFTCollectionMetadata]]
 
   def start(): Future[Unit]
 
@@ -217,6 +240,83 @@ object BlockFlowClient extends StrictLogging {
     def fetchChainParams(): Future[ChainParams] =
       _send(getChainParams, uri, ())
 
+    def guessTokenStdInterfaceId(token: TokenId): Future[Option[StdInterfaceId]] = {
+      val address = Address.contract(ContractId.unsafe(token.value))
+      guessStdInterfaceId(address)
+    }
+
+    def guessStdInterfaceId(address: Address.Contract): Future[Option[StdInterfaceId]] = {
+      val group = address.groupIndex(groupSetting.groupConfig)
+      _send(contractState, uri, (address, group))
+        .map { rawState =>
+          rawState.immFields.lastOption match {
+            case Some(api.model.ValByteVec(bytes)) =>
+              val data = Hex.toHexString(bytes)
+              if (data.startsWith(interfaceIdPrefix)) {
+                Some(StdInterfaceId.from(data.drop(interfaceIdPrefix.size)))
+              } else {
+                Some(StdInterfaceId.NonStandard)
+              }
+            case _ => Some(StdInterfaceId.NonStandard)
+          }
+        }
+        .recoverWith { error =>
+          logger.debug(s"Cannot fetch std interface id of $address")
+          Future.successful(None)
+        }
+    }
+
+    private def fetchTokenMetadata[A](token: TokenId, nbArgs: Int)(
+        f: MultipleCallContractResult => Option[A]
+    ): Future[Option[A]] = {
+      val address = Address.contract(ContractId.unsafe(token.value))
+      fetchMetadata(address, nbArgs)(f)
+    }
+
+    def fetchMetadata[A](address: Address.Contract, nbArgs: Int)(
+        f: MultipleCallContractResult => Option[A]
+    ): Future[Option[A]] = {
+      val group = address.groupIndex(groupSetting.groupConfig)
+      val calls = AVector.from(0 to (nbArgs - 1)).map { index =>
+        CallContract(group = group.value, address = address, methodIndex = index)
+      }
+
+      _send[MultipleCallContract, MultipleCallContractResult](
+        multiCallContract,
+        uri,
+        MultipleCallContract(calls)
+      ).map { result =>
+        if (result.results.length < nbArgs) {
+          None
+        } else {
+          f(result)
+        }
+      }.recoverWith { _ =>
+        logger.debug(s"Cannot fetch metadata of $address")
+        Future.successful(None)
+      }
+    }
+
+    def fetchFungibleTokenMetadata(token: TokenId): Future[Option[FungibleTokenMetadata]] = {
+      fetchTokenMetadata[FungibleTokenMetadata](token, 3) { result =>
+        extractFungibleTokenMetadata(token, result)
+      }
+    }
+
+    def fetchNFTCollectionMetadata(
+        contract: Address.Contract
+    ): Future[Option[NFTCollectionMetadata]] = {
+      fetchMetadata[NFTCollectionMetadata](contract, 1) { result =>
+        extractNFTCollectionMetadata(contract, result)
+      }
+    }
+
+    def fetchNFTMetadata(token: TokenId): Future[Option[NFTMetadata]] = {
+      fetchTokenMetadata[NFTMetadata](token, 3) { result =>
+        extractNFTMetadata(token, result)
+      }
+    }
+
     private def fetchSelfCliqueAndChainParams(): Future[(SelfClique, ChainParams)] = {
       fetchSelfClique().flatMap { selfClique =>
         fetchChainParams().map(chainParams => (selfClique, chainParams))
@@ -237,6 +337,96 @@ object BlockFlowClient extends StrictLogging {
 
     override def close(): Future[Unit] = {
       endpointSender.stop()
+    }
+  }
+
+  val interfaceIdPrefix = "414c5048"
+
+  def extractVal(result: CallContractResult): Option[api.model.Val] = {
+    result match {
+      case success: CallContractSucceeded => success.returns.headOption
+      case _: CallContractFailed          => None
+    }
+  }
+
+  def valToU256(value: api.model.Val): Option[U256] =
+    value match {
+      case api.model.ValU256(u256) =>
+        Some(u256)
+      case _ => None
+    }
+
+  def valToString(value: api.model.Val): Option[String] =
+    value match {
+      case api.model.ValByteVec(bytes) =>
+        Some(bytes.utf8String)
+      case _ => None
+    }
+
+  def valToContractId(value: api.model.Val): Option[ContractId] = {
+    value match {
+      case api.model.ValByteVec(bytes) =>
+        ContractId.from(bytes)
+      case _ => None
+    }
+  }
+
+  def valToAddress(value: api.model.Val): Option[Address] = {
+    value match {
+      case api.model.ValAddress(address) =>
+        Some(address)
+      case api.model.ValByteVec(bytes) =>
+        ContractId.from(bytes).map(Address.contract)
+      case _ => None
+    }
+  }
+
+  def extractFungibleTokenMetadata(
+      token: TokenId,
+      result: MultipleCallContractResult
+  ): Option[FungibleTokenMetadata] = {
+    for {
+      symbol   <- extractVal(result.results(0)).flatMap(valToString)
+      name     <- extractVal(result.results(1)).flatMap(valToString)
+      decimals <- extractVal(result.results(2)).flatMap(valToU256)
+    } yield {
+      FungibleTokenMetadata(
+        token,
+        symbol,
+        name,
+        decimals
+      )
+    }
+  }
+
+  def extractNFTCollectionMetadata(
+      contract: Address.Contract,
+      result: MultipleCallContractResult
+  ): Option[NFTCollectionMetadata] = {
+    for {
+      collectionUri <- extractVal(result.results(0)).flatMap(valToString)
+    } yield {
+      NFTCollectionMetadata(
+        contract,
+        collectionUri
+      )
+    }
+  }
+  def extractNFTMetadata(
+      token: TokenId,
+      result: MultipleCallContractResult
+  ): Option[NFTMetadata] = {
+    for {
+      tokenUri     <- extractVal(result.results(0)).flatMap(valToString)
+      collectionId <- extractVal(result.results(1)).flatMap(valToContractId)
+      nftIndex     <- extractVal(result.results(2)).flatMap(valToU256)
+    } yield {
+      NFTMetadata(
+        token,
+        tokenUri,
+        collectionId,
+        nftIndex
+      )
     }
   }
 

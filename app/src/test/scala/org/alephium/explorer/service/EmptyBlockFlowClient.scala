@@ -24,7 +24,7 @@ import sttp.model.Uri
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
-import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
+import org.alephium.protocol.model.{Address, BlockHash, ChainIndex, GroupIndex, TokenId}
 import org.alephium.util.{Service, TimeStamp}
 
 trait EmptyBlockFlowClient extends BlockFlowClient {
@@ -56,6 +56,23 @@ trait EmptyBlockFlowClient extends BlockFlowClient {
 
   override def fetchMempoolTransactions(uri: Uri): Future[ArraySeq[MempoolTransaction]] =
     ???
+
+  override def guessStdInterfaceId(address: Address.Contract): Future[Option[StdInterfaceId]] =
+    Future.successful(None)
+
+  override def guessTokenStdInterfaceId(token: TokenId): Future[Option[StdInterfaceId]] =
+    Future.successful(None)
+
+  override def fetchFungibleTokenMetadata(token: TokenId): Future[Option[FungibleTokenMetadata]] =
+    Future.successful(None)
+
+  override def fetchNFTMetadata(token: TokenId): Future[Option[NFTMetadata]] =
+    Future.successful(None)
+
+  override def fetchNFTCollectionMetadata(
+      contract: Address.Contract
+  ): Future[Option[NFTCollectionMetadata]] =
+    Future.successful(None)
 
   override def start(): Future[Unit] = ???
 

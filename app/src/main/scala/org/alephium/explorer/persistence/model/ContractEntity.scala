@@ -34,7 +34,9 @@ final case class ContractEntity(
     destructionBlockHash: Option[BlockHash],
     destructionTxHash: Option[TransactionId],
     destructionTimestamp: Option[TimeStamp],
-    destructionEventOrder: Option[Int]
+    destructionEventOrder: Option[Int],
+    category: Option[String],
+    interfaceId: Option[InterfaceIdEntity]
 ) {
   def destroyInfo(): Option[ContractEntity.DestroyInfo] =
     for {
@@ -55,10 +57,10 @@ object ContractEntity {
       eventOrder: Int
   )
 
-  val createContractEventAddress: Address =
+  val createContractEventAddress: Address.Contract =
     protocol.model.Address.contract(protocol.vm.createContractEventId)
 
-  val destroyContractEventAddress: Address =
+  val destroyContractEventAddress: Address.Contract =
     protocol.model.Address.contract(protocol.vm.destroyContractEventId)
 
   def creationFromEventEntity(event: EventEntity): Option[ContractEntity] = {
@@ -75,7 +77,9 @@ object ContractEntity {
           destructionBlockHash = None,
           destructionTxHash = None,
           destructionTimestamp = None,
-          destructionEventOrder = None
+          destructionEventOrder = None,
+          category = None,
+          interfaceId = None
         )
       }
     } else {

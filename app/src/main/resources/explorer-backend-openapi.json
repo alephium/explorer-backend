@@ -2153,7 +2153,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/addresses/{address}/tokens/{token_id}/transactions": {
@@ -3481,7 +3482,7 @@
         "tags": [
           "Tokens"
         ],
-        "description": "List tokens",
+        "description": "List token information",
         "operationId": "getTokens",
         "parameters": [
           {
@@ -3503,6 +3504,15 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          {
+            "name": "interface-id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "fungible, non-fungible, non-standard or any interface id in hex-string format, e.g: 0001"
+            }
           }
         ],
         "responses": {
@@ -3512,13 +3522,126 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "string",
-                    "format": "32-byte-hash"
+                    "$ref": "#/components/schemas/TokenInfo"
                   }
                 },
                 "example": [
-                  "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
-                  "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
+                  {
+                    "token": "7b3efc0a1c4bc54e7398811f7e474e461a9c00cbc951f33b886a5f207c820ef2",
+                    "stdInterfaceId": "fungible"
+                  }
+                ]
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Tokens"
+        ],
+        "description": "list given tokens information",
+        "operationId": "postTokens",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "32-byte-hash"
+                },
+                "maxItems": 80
+              },
+              "example": [
+                "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
+              ]
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TokenInfo"
+                  }
+                },
+                "example": [
+                  {
+                    "token": "7b3efc0a1c4bc54e7398811f7e474e461a9c00cbc951f33b886a5f207c820ef2",
+                    "stdInterfaceId": "fungible"
+                  }
                 ]
               }
             }
@@ -3907,6 +4030,352 @@
                     "reserved": "10",
                     "locked": "10",
                     "maximum": "1000000000000000000000000000"
+                  }
+                ]
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tokens/fungible-metadata": {
+      "post": {
+        "tags": [
+          "Tokens"
+        ],
+        "description": "Return metadata for the given fungible tokens, if metadata doesn't exist or token isn't a fungible, it won't be in the output list",
+        "operationId": "postTokensFungible-metadata",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "32-byte-hash"
+                },
+                "maxItems": 80
+              },
+              "example": [
+                "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
+              ]
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FungibleTokenMetadata"
+                  }
+                },
+                "example": [
+                  {
+                    "token": "7b3efc0a1c4bc54e7398811f7e474e461a9c00cbc951f33b886a5f207c820ef2",
+                    "symbol": "TK",
+                    "name": "Token",
+                    "decimals": "1"
+                  }
+                ]
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tokens/nft-metadata": {
+      "post": {
+        "tags": [
+          "Tokens"
+        ],
+        "description": "Return metadata for the given nft tokens, if metadata doesn't exist or token isn't a nft, it won't be in the output list",
+        "operationId": "postTokensNft-metadata",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "32-byte-hash"
+                },
+                "maxItems": 80
+              },
+              "example": [
+                "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
+              ]
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NFTMetadata"
+                  }
+                },
+                "example": [
+                  {
+                    "token": "7b3efc0a1c4bc54e7398811f7e474e461a9c00cbc951f33b886a5f207c820ef2",
+                    "tokenUri": "token://uri",
+                    "collectionId": "ac92820d7b37ab2b14eca20839a9c1ad5379e671c687b37a416a2754ea9fc412",
+                    "nftIndex": "1"
+                  }
+                ]
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tokens/nft-collection-metadata": {
+      "post": {
+        "tags": [
+          "Tokens"
+        ],
+        "description": "Return metadata for the given nft collection addresses, if metadata doesn't exist or address isn't a nft collection, it won't be in the output list",
+        "operationId": "postTokensNft-collection-metadata",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "address"
+                },
+                "maxItems": 80
+              },
+              "example": [
+                "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                "22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM"
+              ]
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NFTCollectionMetadata"
+                  }
+                },
+                "example": [
+                  {
+                    "address": "26JbotDoUoNzwVACg1YLaNTZKAJvoBDWiXJMnokZxCzvd",
+                    "collectionUri": "collection://uri"
                   }
                 ]
               }
@@ -6199,6 +6668,31 @@
           }
         }
       },
+      "FungibleTokenMetadata": {
+        "required": [
+          "token",
+          "symbol",
+          "name",
+          "decimals"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "format": "32-byte-hash"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "decimals": {
+            "type": "string",
+            "format": "uint256"
+          }
+        }
+      },
       "Hashrate": {
         "required": [
           "timestamp",
@@ -6349,6 +6843,48 @@
           "lastSeen": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "NFTCollectionMetadata": {
+        "required": [
+          "address",
+          "collectionUri"
+        ],
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "format": "address"
+          },
+          "collectionUri": {
+            "type": "string"
+          }
+        }
+      },
+      "NFTMetadata": {
+        "required": [
+          "token",
+          "tokenUri",
+          "collectionId",
+          "nftIndex"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "format": "32-byte-hash"
+          },
+          "tokenUri": {
+            "type": "string"
+          },
+          "collectionId": {
+            "type": "string",
+            "format": "32-byte-hash"
+          },
+          "nftIndex": {
+            "type": "string",
+            "format": "uint256"
           }
         }
       },
@@ -6602,6 +7138,22 @@
           "amount": {
             "type": "string",
             "format": "uint256"
+          }
+        }
+      },
+      "TokenInfo": {
+        "required": [
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "format": "32-byte-hash"
+          },
+          "stdInterfaceId": {
+            "type": "string",
+            "description": "fungible, non-fungible, non-standard or any interface id in hex-string format, e.g: 0001"
           }
         }
       },

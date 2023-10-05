@@ -35,7 +35,11 @@ import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
-import org.alephium.explorer.service.{EmptyTransactionService, TransactionService}
+import org.alephium.explorer.service.{
+  EmptyTokenService,
+  EmptyTransactionService,
+  TransactionService
+}
 import org.alephium.protocol.model.{Address, TokenId}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
@@ -114,7 +118,9 @@ class AddressServerSpec()
         paralellism: Int
     )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] =
       TransactionService.amountHistoryToJsonFlowable(Flowable.fromIterable(amountHistory.asJava))
+  }
 
+  val tokenService = new EmptyTokenService {
     override def listAddressTokensWithBalance(address: Address, pagination: Pagination)(implicit
         ec: ExecutionContext,
         dc: DatabaseConfig[PostgresProfile]
@@ -125,7 +131,12 @@ class AddressServerSpec()
   }
 
   val server =
-    new AddressServer(transactionService, exportTxsNumberThreshold = 1000, streamParallelism = 8)
+    new AddressServer(
+      transactionService,
+      tokenService,
+      exportTxsNumberThreshold = 1000,
+      streamParallelism = 8
+    )
 
   val routes = server.routes
 

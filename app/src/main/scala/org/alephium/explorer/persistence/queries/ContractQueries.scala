@@ -16,12 +16,13 @@
 
 package org.alephium.explorer.persistence.queries
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.api.model.Pagination
+import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model.{ContractEntity, EventEntity}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
@@ -93,7 +94,8 @@ object ContractQueries {
             s"""
            UPDATE contracts SET destruction_block_hash = ?, destruction_tx_hash = ?, destruction_timestamp = ?, destruction_event_order = ?
            WHERE contract = ?
-         """
+           AND destruction_block_hash IS NULL
+         """ // We update where destruction_block_hash is null, because a contract can be recreated after it was first destroyed.
           }
           .mkString("BEGIN;", ";", ";COMMIT;")
 
@@ -134,5 +136,42 @@ object ContractQueries {
       """
       .paginate(pagination)
       .asASE[Address](addressGetResult)
+  }
+
+  def insertNFTCollectionMetadata(
+      contract: Address,
+      metadata: NFTCollectionMetadata
+  ): DBActionW[Int] = {
+    sqlu"""
+      INSERT INTO nft_collection_metadata (
+        "contract",
+        "collection_uri"
+        )
+      VALUES (${contract},${metadata.collectionUri})
+      ON CONFLICT
+      ON CONSTRAINT nft_collection_metadata_pkey
+      DO NOTHING
+    """
+  }
+
+  def listContractWithoutInterfaceIdQuery(): DBActionW[ArraySeq[Address.Contract]] = {
+    sql"""
+      SELECT contract
+      FROM contracts
+      WHERE interface_id IS NULL
+      AND destruction_block_hash IS NULL
+    """.asASE[Address.Contract](addressContractGetResult)
+  }
+
+  def updateContractInterfaceId(
+      contract: Address.Contract,
+      interfaceId: StdInterfaceId
+  ): DBActionW[Int] = {
+    sqlu"""
+      UPDATE contracts
+      SET interface_id = $interfaceId, category = ${interfaceId.category}
+      WHERE contract = $contract
+      AND destruction_block_hash IS NULL
+    """
   }
 }

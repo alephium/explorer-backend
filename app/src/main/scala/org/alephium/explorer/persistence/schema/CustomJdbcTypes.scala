@@ -29,10 +29,10 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.api.model.Val
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.model.{AppState, AppStateKey, OutputEntity}
+import org.alephium.explorer.persistence.model._
 import org.alephium.json.Json._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TokenId, TransactionId}
+import org.alephium.protocol.model._
 import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
 
@@ -65,6 +65,12 @@ object CustomJdbcTypes {
       _.value
     )
 
+  implicit val contractIdType: JdbcType[ContractId] =
+    buildHashTypes(
+      ContractId.unsafe(_),
+      _.value
+    )
+
   implicit val groupIndexType: JdbcType[GroupIndex] = MappedJdbcType.base[GroupIndex, Int](
     _.value,
     int => new GroupIndex(int)
@@ -79,6 +85,19 @@ object CustomJdbcTypes {
     _.toBase58,
     string => Address.fromBase58(string).get
   )
+
+  implicit val addressContractType: JdbcType[Address.Contract] =
+    MappedJdbcType.base[Address.Contract, String](
+      _.toBase58,
+      string =>
+        Address.fromBase58(string) match {
+          case Some(address: Address.Contract) => address
+          case Some(_: Address.Asset) =>
+            throw new Exception(s"Expect contract address, but was asset address: $string")
+          case None =>
+            throw new Exception(s"Unable to decode address from $string")
+        }
+    )
 
   implicit val timestampType: JdbcType[TimeStamp] = MappedJdbcType.base[TimeStamp, Long](
     _.millis,
@@ -138,6 +157,12 @@ object CustomJdbcTypes {
     MappedJdbcType.base[OutputEntity.OutputType, Int](
       _.value,
       OutputEntity.OutputType.unsafe
+    )
+
+  implicit val interfaceIdType: JdbcType[InterfaceIdEntity] =
+    MappedJdbcType.base[InterfaceIdEntity, String](
+      _.id,
+      InterfaceIdEntity.from
     )
 
   implicit val appStateKey: JdbcType[AppStateKey[_]] =

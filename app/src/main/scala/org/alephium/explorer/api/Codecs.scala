@@ -18,11 +18,11 @@ package org.alephium.explorer.api
 
 import scala.util.{Failure, Success, Try}
 
-import sttp.tapir.{Codec, DecodeResult}
+import sttp.tapir.{Codec, CodecFormat, DecodeResult}
 import sttp.tapir.Codec.PlainCodec
 
 import org.alephium.api.TapirCodecs
-import org.alephium.explorer.api.model.IntervalType
+import org.alephium.explorer.api.model.{IntervalType, StdInterfaceId}
 import org.alephium.json.Json._
 import org.alephium.protocol.model.Address
 
@@ -42,6 +42,9 @@ object Codecs extends TapirCodecs {
       IntervalType.validate,
       _.string
     )
+
+  implicit val tokenStdInterfaceIdCodec: Codec[String, StdInterfaceId, CodecFormat.TextPlain] =
+    fromJson[StdInterfaceId]
 
   def explorerFromJson[A: ReadWriter]: PlainCodec[A] =
     Codec.string.mapDecode[A] { raw =>

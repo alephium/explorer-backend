@@ -14,21 +14,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.model
+package org.alephium.explorer.api.model
 
-import org.alephium.explorer.api.model.TokenInfo
-import org.alephium.protocol.model.TokenId
-import org.alephium.util.TimeStamp
+import org.alephium.explorer.api.Json._
+import org.alephium.json.Json._
+import org.alephium.protocol.model.Address
 
-final case class TokenInfoEntity(
-    token: TokenId,
-    lastUsed: TimeStamp,
-    category: Option[String],
-    interfaceId: Option[InterfaceIdEntity]
-) {
-  def toApi(): TokenInfo =
-    TokenInfo(
-      token,
-      interfaceId.map(_.toApi)
-    )
+final case class NFTCollectionMetadata(
+    address: Address.Contract,
+    collectionUri: String
+)
+
+object NFTCollectionMetadata {
+  implicit val readWriter: ReadWriter[NFTCollectionMetadata] = macroRW
 }

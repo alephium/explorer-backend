@@ -40,7 +40,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.protocol.model.{BlockHash, ChainIndex, CliqueId, GroupIndex, NetworkId}
-import org.alephium.util.{AVector, Duration, Hex, Service, TimeStamp}
+import org.alephium.util.{AVector, Duration, Hex, TimeStamp}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
 class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForAll {
@@ -211,16 +211,11 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
 
     def blocks: ArraySeq[BlockEntry] = blockFlow.flatten
 
-    implicit val blockFlowClient: BlockFlowClient = new BlockFlowClient {
-      implicit val executionContext: ExecutionContext = implicitly
-      def startSelfOnce(): Future[Unit]               = Future.unit
-      def stopSelfOnce(): Future[Unit]                = Future.unit
-      def subServices: ArraySeq[Service]              = ArraySeq.empty
-
-      def fetchBlock(from: GroupIndex, hash: BlockHash): Future[BlockEntity] =
+    implicit val blockFlowClient: BlockFlowClient = new EmptyBlockFlowClient {
+      override def fetchBlock(from: GroupIndex, hash: BlockHash): Future[BlockEntity] =
         Future.successful(blockEntities.find(_.hash === hash).get)
 
-      def fetchBlockAndEvents(
+      override def fetchBlockAndEvents(
           fromGroup: GroupIndex,
           hash: BlockHash
       ): Future[BlockEntityWithEvents] =
@@ -228,7 +223,7 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
           BlockEntityWithEvents(blockEntities.find(_.hash === hash).get, ArraySeq.empty)
         )
 
-      def fetchBlocks(
+      override def fetchBlocks(
           fromTs: TimeStamp,
           toTs: TimeStamp,
           uri: Uri
@@ -242,7 +237,7 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
             .map(_.map(b => BlockEntityWithEvents(b, ArraySeq.empty[EventEntity])))
         )
 
-      def fetchChainInfo(chainIndex: ChainIndex): Future[ChainInfo] =
+      override def fetchChainInfo(chainIndex: ChainIndex): Future[ChainInfo] =
         Future.successful(
           ChainInfo(
             blocks
@@ -254,7 +249,10 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
           )
         )
 
-      def fetchHashesAtHeight(chainIndex: ChainIndex, height: Height): Future[HashesAtHeight] =
+      override def fetchHashesAtHeight(
+          chainIndex: ChainIndex,
+          height: Height
+      ): Future[HashesAtHeight] =
         Future.successful(
           HashesAtHeight(
             AVector.from(
@@ -267,24 +265,18 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
           )
         )
 
-      def fetchSelfClique(): Future[SelfClique] =
+      override def fetchSelfClique(): Future[SelfClique] =
         Future.successful(
           SelfClique(CliqueId.generate, AVector.empty, true, true)
         )
 
-      def fetchChainParams(): Future[ChainParams] =
+      override def fetchChainParams(): Future[ChainParams] =
         Future.successful(
           ChainParams(NetworkId.AlephiumDevNet, 18, 1, 2)
         )
 
-      def fetchMempoolTransactions(uri: Uri): Future[ArraySeq[MempoolTransaction]] =
+      override def fetchMempoolTransactions(uri: Uri): Future[ArraySeq[MempoolTransaction]] =
         Future.successful(ArraySeq.empty)
-
-      override def start(): Future[Unit] =
-        Future.unit
-
-      override def close(): Future[Unit] =
-        Future.unit
     }
 
     def checkBlocks(blocksToCheck: ArraySeq[BlockEntry]) = {

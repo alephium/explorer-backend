@@ -26,6 +26,7 @@ import org.alephium.protocol.vm.{
   Instr,
   LockupScript,
   Method,
+  StatefulContract,
   StatelessContext,
   StatelessScript,
   UnlockScript
@@ -37,8 +38,14 @@ object GenCoreProtocol {
 
   val hashGen: Gen[Hash]                     = Gen.const(()).map(_ => Hash.generate)
   val blockHashGen: Gen[BlockHash]           = Gen.const(()).map(_ => BlockHash.generate)
-  val transactionHashGen: Gen[TransactionId] = hashGen.map(TransactionId.unsafe)
-  val contractIdGen: Gen[ContractId]         = hashGen.map(ContractId.unsafe)
+  val transactionHashGen: Gen[TransactionId] = Gen.const(()).map(_ => TransactionId.generate)
+  def contractIdGen(implicit gs: GroupSetting): Gen[ContractId] = for {
+    txId        <- transactionHashGen
+    outputIndex <- Gen.posNum[Int]
+    groupIndex  <- Gen.choose(0, gs.groupNum - 1).map(new GroupIndex(_))
+  } yield {
+    ContractId.from(txId, outputIndex, groupIndex)
+  }
 
   val genNetworkId: Gen[NetworkId] =
     genBytePositive.map(NetworkId(_))
@@ -137,7 +144,7 @@ object GenCoreProtocol {
       Address.p2pkh(publicKey)
     }
 
-  val addressContractProtocolGen: Gen[Address.Contract] =
+  def addressContractProtocolGen(implicit groupSetting: GroupSetting): Gen[Address.Contract] =
     for {
       contractId <- contractIdGen
     } yield {
@@ -194,4 +201,10 @@ object GenCoreProtocol {
       unlockScriptProtocolP2PKHGen: Gen[UnlockScript],
       unlockScriptProtocolP2MPKHGen: Gen[UnlockScript]
     )
+
+  val statefulContractGen: Gen[StatefulContract] =
+    for {
+      fieldLength <- Gen.posNum[Int]
+    } yield StatefulContract(fieldLength, AVector.empty)
+
 }

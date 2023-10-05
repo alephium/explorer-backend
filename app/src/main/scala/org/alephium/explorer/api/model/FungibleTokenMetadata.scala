@@ -14,21 +14,20 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.model
+package org.alephium.explorer.api.model
 
-import org.alephium.explorer.api.model.TokenInfo
+import org.alephium.explorer.api.Json._
+import org.alephium.json.Json._
 import org.alephium.protocol.model.TokenId
-import org.alephium.util.TimeStamp
+import org.alephium.util.U256
 
-final case class TokenInfoEntity(
+final case class FungibleTokenMetadata(
     token: TokenId,
-    lastUsed: TimeStamp,
-    category: Option[String],
-    interfaceId: Option[InterfaceIdEntity]
-) {
-  def toApi(): TokenInfo =
-    TokenInfo(
-      token,
-      interfaceId.map(_.toApi)
-    )
+    symbol: String,
+    name: String,
+    decimals: U256
+)
+
+object FungibleTokenMetadata {
+  implicit val readWriter: ReadWriter[FungibleTokenMetadata] = macroRW
 }
