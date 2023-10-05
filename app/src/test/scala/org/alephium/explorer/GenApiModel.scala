@@ -318,7 +318,7 @@ object GenApiModel extends ImplicitConversions {
         StdInterfaceId.NFTCollection,
         StdInterfaceId.NFTCollectionWithRoyalty,
         StdInterfaceId.NFT,
-        StdInterfaceId.Unknown("00"),
+        StdInterfaceId.Unknown("1234"),
         StdInterfaceId.NonStandard
       )
     )

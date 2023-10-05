@@ -55,8 +55,8 @@ object StdInterfaceId {
   }
 
   final case class Unknown(id: String) extends StdInterfaceId {
-    val value: String    = s"$id"
-    val category: String = ""
+    val value: String    = id
+    val category: String = id.take(4)
   }
 
   case object NonStandard extends StdInterfaceId {
@@ -84,7 +84,7 @@ object StdInterfaceId {
       case NonStandard.value              => Some(NonStandard)
       case ""                             => Some(NonStandard)
       case other =>
-        if (other.sizeIs <= 16 && Hex.from(other).isDefined) {
+        if (other.sizeIs >= 4 && other.sizeIs <= 16 && Hex.from(other).isDefined) {
           Some(Unknown(other))
         } else {
           None
