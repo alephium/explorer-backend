@@ -87,8 +87,12 @@ object Migrations extends StrictLogging {
     for {
       _ <- sqlu"""ALTER TABLE token_info ADD COLUMN IF NOT EXISTS interface_id character varying"""
       _ <- sqlu"""ALTER TABLE token_info ADD COLUMN IF NOT EXISTS category character varying"""
+      _ <- sqlu"""CREATE INDEX token_info_interface_id_idx ON token_info(interface_id)"""
+      _ <- sqlu"""CREATE INDEX token_info_category_idx ON token_info(category)"""
       _ <- sqlu"""ALTER TABLE contracts ADD COLUMN IF NOT EXISTS interface_id character varying"""
       _ <- sqlu"""ALTER TABLE contracts ADD COLUMN IF NOT EXISTS category character varying"""
+      _ <- sqlu"""CREATE INDEX contracts_interface_id_idx ON contracts(interface_id)"""
+      _ <- sqlu"""CREATE INDEX contracts_category_idx ON contracts(category)"""
     } yield ()
   }
 
