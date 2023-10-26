@@ -307,13 +307,13 @@ object TokenQueries extends StrictLogging {
         s"""
           SELECT *
           FROM nft_collection_metadata
-          WHERE address IN $params
+          WHERE contract IN $params
         """
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
-          addresses foreach { address =>
-            params >> address
+          addresses foreach { contract =>
+            params >> contract
           }
 
       SQLActionBuilder(
