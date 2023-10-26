@@ -126,7 +126,7 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
         DBIOAction.sequence(tokens.map(token => TokenQueries.insertFungibleTokenMetadata(token)))
       ).futureValue
 
-      val result = run(TokenQueries.listFungibleTokenMetadataQuery(tokens.map(_.token))).futureValue
+      val result = run(TokenQueries.listFungibleTokenMetadataQuery(tokens.map(_.id))).futureValue
 
       result is tokens
     }
@@ -138,7 +138,7 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
         DBIOAction.sequence(tokens.map(token => TokenQueries.insertNFTMetadata(token)))
       ).futureValue
 
-      val result = run(TokenQueries.listNFTMetadataQuery(tokens.map(_.token))).futureValue
+      val result = run(TokenQueries.listNFTMetadataQuery(tokens.map(_.id))).futureValue
 
       result is tokens
     }
@@ -149,7 +149,7 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
         run(TokenQueries.insertFungibleTokenMetadata(metadata.copy(symbol = symbol))).futureValue
 
         val result =
-          run(TokenQueries.listFungibleTokenMetadataQuery(ArraySeq(metadata.token))).futureValue
+          run(TokenQueries.listFungibleTokenMetadataQuery(ArraySeq(metadata.id))).futureValue
 
         result is ArraySeq(metadata)
 
@@ -161,7 +161,7 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
         run(TokenQueries.insertNFTMetadata(metadata)).futureValue
         run(TokenQueries.insertNFTMetadata(metadata.copy(tokenUri = tokenUri))).futureValue
 
-        val result = run(TokenQueries.listNFTMetadataQuery(ArraySeq(metadata.token))).futureValue
+        val result = run(TokenQueries.listNFTMetadataQuery(ArraySeq(metadata.id))).futureValue
 
         result is ArraySeq(metadata)
 

@@ -207,7 +207,7 @@ object TokenQueries extends StrictLogging {
         "name",
         "decimals"
         )
-      VALUES (${metadata.token},${metadata.symbol},${metadata.name},${metadata.decimals})
+      VALUES (${metadata.id},${metadata.symbol},${metadata.name},${metadata.decimals})
       ON CONFLICT
       DO NOTHING
     """
@@ -335,7 +335,7 @@ object TokenQueries extends StrictLogging {
         "collection_id",
         "nft_index"
         )
-      VALUES (${metadata.token},${metadata.tokenUri},${metadata.collectionId},${metadata.nftIndex})
+      VALUES (${metadata.id},${metadata.tokenUri},${metadata.collectionId},${metadata.nftIndex})
       ON CONFLICT
       DO NOTHING
     """

@@ -304,7 +304,7 @@ object CustomGetResult {
   val fungibleTokenMetadataGetResult: GetResult[FungibleTokenMetadata] =
     (result: PositionedResult) =>
       FungibleTokenMetadata(
-        token = result.<<,
+        id = result.<<,
         symbol = result.<<,
         name = result.<<,
         decimals = result.<<
@@ -313,7 +313,7 @@ object CustomGetResult {
   val nftMetadataGetResult: GetResult[NFTMetadata] =
     (result: PositionedResult) =>
       NFTMetadata(
-        token = result.<<,
+        id = result.<<,
         tokenUri = result.<<,
         collectionId = result.<<,
         nftIndex = result.<<

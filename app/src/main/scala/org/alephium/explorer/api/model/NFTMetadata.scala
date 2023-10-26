@@ -22,7 +22,7 @@ import org.alephium.protocol.model.{ContractId, TokenId}
 import org.alephium.util.U256
 
 final case class NFTMetadata(
-    token: TokenId,
+    id: TokenId,
     tokenUri: String,
     collectionId: ContractId,
     nftIndex: U256
