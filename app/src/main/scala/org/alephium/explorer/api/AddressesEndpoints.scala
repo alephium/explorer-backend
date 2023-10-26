@@ -40,7 +40,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
   // As defined in https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#address-gap-limit
   private val gapLimit = 20
 
-  private lazy val usedAddressesMaxSize: Int = groupNum * gapLimit
+  lazy val maxSizeAddresses: Int = groupNum * gapLimit
 
   private val oneYear = Duration.ofDaysUnsafe(365)
 
@@ -75,7 +75,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
   lazy val getTransactionsByAddresses
       : BaseEndpoint[(ArraySeq[Address], Pagination), ArraySeq[Transaction]] =
     baseAddressesEndpoint.post
-      .in(jsonBody[ArraySeq[Address]].validate(Validator.maxSize(usedAddressesMaxSize)))
+      .in(jsonBody[ArraySeq[Address]].validate(Validator.maxSize(maxSizeAddresses)))
       .in("transactions")
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])
@@ -144,7 +144,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .tag("Addresses")
       .in("used")
       .post
-      .in(jsonBody[ArraySeq[Address]].validate(Validator.maxSize(usedAddressesMaxSize)))
+      .in(jsonBody[ArraySeq[Address]].validate(Validator.maxSize(maxSizeAddresses)))
       .out(jsonBody[ArraySeq[Boolean]])
       .description("Are the addresses used (at least 1 transaction)")
 

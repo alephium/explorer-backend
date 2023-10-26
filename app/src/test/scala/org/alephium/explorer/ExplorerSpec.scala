@@ -389,15 +389,19 @@ trait ExplorerSpec
           Source.fromResource("explorer-backend-openapi.json")(Codec.UTF8)
         )(_.getLines().toList.mkString)
 
+      def removeVariableOpenApiFields(json: ujson.Value, fields: Seq[String]): ujson.Value = {
+        fields.foldLeft(json) { case (js, field) =>
+          ExplorerSpec.removeField(field, js)
+        }
+      }
       // `maxItems` is hardcoded on some place and depend on group num in others
       // Previously we were changing the value based on the group setting of the test,
       // but with the hardcoded value it's impossible to differentiante those values,
       // so we remove them from the json.
-      val expectedOpenapi =
-        ExplorerSpec.removeField("maxItems", read[ujson.Value](openApiFile))
+      val fields          = Seq("maxItems", "MaxSizeAddresses")
+      val expectedOpenapi = removeVariableOpenApiFields(read[ujson.Value](openApiFile), fields)
 
-      val openapi =
-        ExplorerSpec.removeField("maxItems", response.as[ujson.Value])
+      val openapi = removeVariableOpenApiFields(response.as[ujson.Value], fields)
 
       openapi is expectedOpenapi
     }

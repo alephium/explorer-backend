@@ -107,8 +107,10 @@ object StdInterfaceId {
       "org.wartremover.warts.Product",
       "org.wartremover.warts.Serializable"
     )
-  ) // Wartremover is complaining, don't now why :/
+  )
+  val tokenStdInterfaceIds: Seq[StdInterfaceId] = Seq(FungibleToken, NFT, NonStandard)
+
   implicit val tokenSchema: Schema[StdInterfaceId] = Schema.string.description(
-    s"${List(FungibleToken, NFT, NonStandard).map(_.value).mkString(", ")} or any interface id in hex-string format, e.g: 0001"
+    s"${tokenStdInterfaceIds.map(_.value).mkString(", ")} or any interface id in hex-string format, e.g: 0001"
   )
 }

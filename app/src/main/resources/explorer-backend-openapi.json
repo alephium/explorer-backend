@@ -7403,6 +7403,26 @@
             "type": "string"
           }
         }
+      },
+      "MaxSizeTokens": {
+        "type": "integer",
+        "enum": [
+          80
+        ]
+      },
+      "MaxSizeAddresses": {
+        "type": "integer",
+        "enum": [
+          80
+        ]
+      },
+      "TokenStdInterfaceId": {
+        "type": "string",
+        "enum": [
+          "fungible",
+          "non-fungible",
+          "non-standard"
+        ]
       }
     }
   }
