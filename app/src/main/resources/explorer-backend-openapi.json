@@ -4142,7 +4142,7 @@
                 },
                 "example": [
                   {
-                    "token": "7b3efc0a1c4bc54e7398811f7e474e461a9c00cbc951f33b886a5f207c820ef2",
+                    "id": "7b3efc0a1c4bc54e7398811f7e474e461a9c00cbc951f33b886a5f207c820ef2",
                     "symbol": "TK",
                     "name": "Token",
                     "decimals": "1"
@@ -4258,7 +4258,7 @@
                 },
                 "example": [
                   {
-                    "token": "7b3efc0a1c4bc54e7398811f7e474e461a9c00cbc951f33b886a5f207c820ef2",
+                    "id": "7b3efc0a1c4bc54e7398811f7e474e461a9c00cbc951f33b886a5f207c820ef2",
                     "tokenUri": "token://uri",
                     "collectionId": "ac92820d7b37ab2b14eca20839a9c1ad5379e671c687b37a416a2754ea9fc412",
                     "nftIndex": "1"
@@ -6670,14 +6670,14 @@
       },
       "FungibleTokenMetadata": {
         "required": [
-          "token",
+          "id",
           "symbol",
           "name",
           "decimals"
         ],
         "type": "object",
         "properties": {
-          "token": {
+          "id": {
             "type": "string",
             "format": "32-byte-hash"
           },
@@ -6864,14 +6864,14 @@
       },
       "NFTMetadata": {
         "required": [
-          "token",
+          "id",
           "tokenUri",
           "collectionId",
           "nftIndex"
         ],
         "type": "object",
         "properties": {
-          "token": {
+          "id": {
             "type": "string",
             "format": "32-byte-hash"
           },
@@ -7403,6 +7403,26 @@
             "type": "string"
           }
         }
+      },
+      "MaxSizeTokens": {
+        "type": "integer",
+        "enum": [
+          80
+        ]
+      },
+      "MaxSizeAddresses": {
+        "type": "integer",
+        "enum": [
+          80
+        ]
+      },
+      "TokenStdInterfaceId": {
+        "type": "string",
+        "enum": [
+          "fungible",
+          "non-fungible",
+          "non-standard"
+        ]
       }
     }
   }

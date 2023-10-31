@@ -22,7 +22,7 @@ import org.alephium.protocol.model.TokenId
 import org.alephium.util.U256
 
 final case class FungibleTokenMetadata(
-    token: TokenId,
+    id: TokenId,
     symbol: String,
     name: String,
     decimals: U256

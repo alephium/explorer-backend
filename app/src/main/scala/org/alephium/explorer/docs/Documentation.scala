@@ -16,10 +16,12 @@
 
 package org.alephium.explorer.docs
 
+import sttp.apispec._
 import sttp.apispec.openapi.OpenAPI
 import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
 
 import org.alephium.explorer.api._
+import org.alephium.explorer.api.model.StdInterfaceId
 
 trait Documentation
     extends BlockEndpoints
@@ -33,55 +35,93 @@ trait Documentation
     with ContractsEndpoints
     with UtilsEndpoints
     with OpenAPIDocsInterpreter {
-  lazy val docs: OpenAPI = toOpenAPI(
-    List(
-      listBlocks,
-      getBlockByHash,
-      getBlockTransactions,
-      getTransactionById,
-      getAddressInfo,
-      getTransactionsByAddress,
-      getTransactionsByAddresses,
-      getTransactionsByAddressTimeRanged,
-      getTotalTransactionsByAddress,
-      addressMempoolTransactions,
-      getAddressBalance,
-      listAddressTokens,
-      listAddressTokenTransactions,
-      getAddressTokenBalance,
-      listAddressTokensBalance,
-      areAddressesActive,
-      exportTransactionsCsvByAddress,
-      getAddressAmountHistory,
-      getInfos,
-      getHeights,
-      listMempoolTransactions,
-      listTokens,
-      listTokenTransactions,
-      listTokenSupply,
-      listTokenInfo,
-      listFungibleTokenMetadata,
-      listNFTMetadata,
-      listNFTCollectionMetadata,
-      getTotalSupply,
-      getCirculatingSupply,
-      getReservedSupply,
-      getLockedSupply,
-      getTotalTransactions,
-      getAverageBlockTime,
-      getHashrates,
-      getAllChainsTxCount,
-      getPerChainTxCount,
-      getEventsByTxId,
-      getEventsByContractAddress,
-      getEventsByContractAndInputAddress,
-      getParentAddress,
-      getSubContracts,
-      sanityCheck,
-      changeGlobalLogLevel,
-      changeLogConfig
-    ),
-    "Alephium Explorer API",
-    "1.0"
+
+  lazy val docs: OpenAPI = addComponents(
+    toOpenAPI(
+      List(
+        listBlocks,
+        getBlockByHash,
+        getBlockTransactions,
+        getTransactionById,
+        getAddressInfo,
+        getTransactionsByAddress,
+        getTransactionsByAddresses,
+        getTransactionsByAddressTimeRanged,
+        getTotalTransactionsByAddress,
+        addressMempoolTransactions,
+        getAddressBalance,
+        listAddressTokens,
+        listAddressTokenTransactions,
+        getAddressTokenBalance,
+        listAddressTokensBalance,
+        areAddressesActive,
+        exportTransactionsCsvByAddress,
+        getAddressAmountHistory,
+        getInfos,
+        getHeights,
+        listMempoolTransactions,
+        listTokens,
+        listTokenTransactions,
+        listTokenSupply,
+        listTokenInfo,
+        listFungibleTokenMetadata,
+        listNFTMetadata,
+        listNFTCollectionMetadata,
+        getTotalSupply,
+        getCirculatingSupply,
+        getReservedSupply,
+        getLockedSupply,
+        getTotalTransactions,
+        getAverageBlockTime,
+        getHashrates,
+        getAllChainsTxCount,
+        getPerChainTxCount,
+        getEventsByTxId,
+        getEventsByContractAddress,
+        getEventsByContractAndInputAddress,
+        getParentAddress,
+        getSubContracts,
+        sanityCheck,
+        changeGlobalLogLevel,
+        changeLogConfig
+      ),
+      "Alephium Explorer API",
+      "1.0"
+    )
   )
+
+  // Expose some variables to the openAPI file
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  private def addComponents(openApi: OpenAPI): OpenAPI =
+    openApi.components(
+      openApi.components.get
+        .addSchema(
+          "MaxSizeTokens",
+          Schema(
+            `type` = Some(SchemaType.Integer),
+            `enum` = Some(List(ExampleSingleValue(maxSizeTokens)))
+          )
+        )
+        .addSchema(
+          "MaxSizeAddresses",
+          Schema(
+            `type` = Some(SchemaType.Integer),
+            `enum` = Some(List(ExampleSingleValue(maxSizeAddresses)))
+          )
+        )
+        .addSchema(
+          "TokenStdInterfaceId",
+          Schema(
+            `type` = Some(SchemaType.String),
+            `enum` = Some(
+              List(
+                ExampleSingleValue(StdInterfaceId.FungibleToken.value),
+                ExampleSingleValue(StdInterfaceId.NFT.value),
+                ExampleSingleValue(StdInterfaceId.NonStandard.value)
+              )
+            )
+          )
+        )
+    )
+
 }
