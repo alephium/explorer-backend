@@ -29,6 +29,7 @@ import io.vertx.core.buffer.Buffer
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
+import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.DBRunner._
@@ -84,6 +85,10 @@ trait TransactionService {
   def areAddressesActive(
       addresses: ArraySeq[Address]
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]]
+
+  def numberOfActiveAddresses(
+      timeInterval: Option[TimeInterval]
+  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int]
 
   def listMempoolTransactions(pagination: Pagination)(implicit
       ec: ExecutionContext,
@@ -175,6 +180,11 @@ object TransactionService extends TransactionService {
       addresses: ArraySeq[Address]
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]] =
     TransactionDao.areAddressesActive(addresses)
+
+  def numberOfActiveAddresses(
+      timeInterval: Option[TimeInterval]
+  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int] =
+    run(numberOfActiveAddressesQuery(timeInterval))
 
   def getTotalNumber()(implicit cache: TransactionCache): Int =
     cache.getMainChainTxnCount()

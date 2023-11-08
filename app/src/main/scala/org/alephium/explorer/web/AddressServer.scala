@@ -119,6 +119,9 @@ class AddressServer(
       route(areAddressesActive.serverLogicSuccess[Future] { addresses =>
         transactionService.areAddressesActive(addresses)
       }),
+      route(numberOfActiveAddresses.serverLogicSuccess[Future] { timeInterval =>
+        transactionService.numberOfActiveAddresses(timeInterval)
+      }),
       route(exportTransactionsCsvByAddress.serverLogic[Future] { case (address, timeInterval) =>
         exportTransactions(address, timeInterval).map(_.map { stream =>
           (AddressServer.exportFileNameHeader(address, timeInterval), stream)

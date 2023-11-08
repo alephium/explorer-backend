@@ -24,6 +24,7 @@ import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
@@ -464,6 +465,11 @@ object TransactionQueries extends StrictLogging {
     filterExistingAddresses(addresses.toSet) map { existing =>
       addresses map existing.contains
     }
+
+  def numberOfActiveAddressesQuery(
+      timeInterval: Option[TimeInterval]
+  )(implicit ec: ExecutionContext): DBActionR[Int] =
+    ???
 
   /** Filters input addresses that exist in DB */
   def filterExistingAddresses(addresses: Set[Address]): DBActionR[ArraySeq[Address]] =

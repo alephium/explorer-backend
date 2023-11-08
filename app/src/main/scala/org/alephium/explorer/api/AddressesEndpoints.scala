@@ -139,6 +139,15 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[Transaction]])
       .description("List address tokens")
 
+  lazy val numberOfActiveAddresses: BaseEndpoint[Option[TimeInterval], Int] =
+    baseAddressesEndpoint
+      .tag("Addresses")
+      .in("used")
+      .get
+      .in(optionalTimeIntervalQuery)
+      .out(jsonBody[Int])
+      .description("How many addrresses exist? also between a given time-interval")
+
   lazy val areAddressesActive: BaseEndpoint[ArraySeq[Address], ArraySeq[Boolean]] =
     baseAddressesEndpoint
       .tag("Addresses")
