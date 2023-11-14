@@ -356,4 +356,13 @@ object TokenQueries extends StrictLogging {
       WHERE token = $token
     """
   }
+
+  def countTokenTransactions(token: TokenId): DBActionSR[Int] = {
+    sql"""
+    SELECT COUNT(*)
+    FROM transaction_per_token
+    WHERE main_chain = true AND token = $token
+    """.asAS[Int]
+  }
+
 }

@@ -102,4 +102,8 @@ trait EmptyTokenService extends TokenService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Unit] = ???
+
+  def getTransactionsNumberByToken(
+      token: TokenId
+  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int] = ???
 }

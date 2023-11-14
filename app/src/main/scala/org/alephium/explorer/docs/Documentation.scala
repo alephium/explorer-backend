@@ -62,6 +62,7 @@ trait Documentation
         listMempoolTransactions,
         listTokens,
         listTokenTransactions,
+        getTotalTransactionsByToken,
         listTokenSupply,
         listTokenInfo,
         listFungibleTokenMetadata,

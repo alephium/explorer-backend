@@ -107,6 +107,10 @@ trait TokenService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Unit]
+
+  def getTransactionsNumberByToken(
+      token: TokenId
+  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int]
 }
 
 object TokenService extends TokenService with StrictLogging {
@@ -284,4 +288,9 @@ object TokenService extends TokenService with StrictLogging {
       }
       .map(_ => ())
   }
+
+  def getTransactionsNumberByToken(
+      token: TokenId
+  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int] =
+    run(countTokenTransactions(token)).map(_.headOption.getOrElse(0))
 }

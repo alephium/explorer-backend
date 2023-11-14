@@ -91,4 +91,12 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .description(
         "Return metadata for the given nft collection addresses, if metadata doesn't exist or address isn't a nft collection, it won't be in the output list"
       )
+
+  val getTotalTransactionsByToken: BaseEndpoint[TokenId, Int] =
+    tokensEndpoint.get
+      .in(path[TokenId]("token_id"))
+      .in("total-transactions")
+      .out(jsonBody[Int])
+      .description("Get total transactions of a given token")
+
 }

@@ -43,6 +43,10 @@ class TokenServer(tokenService: TokenService)(implicit
         tokenService
           .listTokenTransactions(token, pagination)
       }),
+      route(getTotalTransactionsByToken.serverLogicSuccess[Future] { token =>
+        tokenService
+          .getTransactionsNumberByToken(token)
+      }),
       route(listTokenAddresses.serverLogicSuccess[Future] { case (token, pagination) =>
         tokenService
           .listTokenAddresses(token, pagination)
