@@ -357,6 +357,34 @@ object TokenQueries extends StrictLogging {
     """
   }
 
+  def sumAddressTokenInputs(address: Address, token: TokenId, from: TimeStamp, to: TimeStamp)(
+      implicit ec: ExecutionContext
+  ): DBActionR[U256] = {
+    sql"""
+      SELECT SUM(token_amount)
+      FROM token_inputs
+      WHERE output_ref_address = $address
+      AND token = $token
+      AND main_chain = true
+      AND block_timestamp >= $from
+      AND block_timestamp <= $to
+    """.asAS[Option[U256]].exactlyOne.map(_.getOrElse(U256.Zero))
+  }
+
+  def sumAddressTokenOutputs(address: Address, token: TokenId, from: TimeStamp, to: TimeStamp)(
+      implicit ec: ExecutionContext
+  ): DBActionR[U256] = {
+    sql"""
+      SELECT SUM(amount)
+      FROM token_outputs
+      WHERE address = $address
+      AND token = $token
+      AND main_chain = true
+      AND block_timestamp >= $from
+      AND block_timestamp <= $to
+    """.asAS[Option[U256]].exactlyOne.map(_.getOrElse(U256.Zero))
+  }
+
   def insertTokenInputs(tokenInputs: ArraySeq[TokenInputEntity]): DBActionWT[Int] = {
     // scalastyle:off magic.number
     QuerySplitter.splitUpdates(rows = tokenInputs, columnsPerRow = 14) { (inputs, placeholder) =>

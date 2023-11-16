@@ -20,6 +20,8 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import com.typesafe.scalalogging.StrictLogging
+import io.reactivex.rxjava3.core.Flowable
+import io.vertx.core.buffer.Buffer
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
@@ -28,8 +30,9 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries.ContractQueries._
 import org.alephium.explorer.persistence.queries.TokenQueries._
+import org.alephium.explorer.util.FlowableUtil
 import org.alephium.protocol.model.{Address, TokenId}
-import org.alephium.util.U256
+import org.alephium.util.{TimeStamp, U256}
 
 trait TokenService {
   def getTokenBalance(address: Address, token: TokenId)(implicit
@@ -107,6 +110,15 @@ trait TokenService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Unit]
+
+  def getAmountHistory(
+      address: Address,
+      token: TokenId,
+      from: TimeStamp,
+      to: TimeStamp,
+      intervalType: IntervalType,
+      paralellism: Int
+  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer]
 }
 
 object TokenService extends TokenService with StrictLogging {
@@ -283,5 +295,31 @@ object TokenService extends TokenService with StrictLogging {
         )
       }
       .map(_ => ())
+  }
+
+  private def getInOutAmount(address: Address, token: TokenId, from: TimeStamp, to: TimeStamp)(
+      implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[(U256, U256, TimeStamp)] = {
+    run(
+      for {
+        in  <- sumAddressTokenInputs(address, token, from, to)
+        out <- sumAddressTokenOutputs(address, token, from, to)
+      } yield (in, out, to)
+    )
+  }
+
+  def getAmountHistory(
+      address: Address,
+      token: TokenId,
+      from: TimeStamp,
+      to: TimeStamp,
+      intervalType: IntervalType,
+      paralellism: Int
+  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = {
+    FlowableUtil.getAmountHistory(from, to, intervalType, paralellism) { case (fromTs, toTs) =>
+      getInOutAmount(address, token, fromTs, toTs)
+    }
   }
 }
