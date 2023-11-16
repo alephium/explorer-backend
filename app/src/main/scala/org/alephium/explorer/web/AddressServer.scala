@@ -33,7 +33,7 @@ import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.service.{TokenService, TransactionService}
-import org.alephium.protocol.model.Address
+import org.alephium.protocol.model.{Address, TokenId}
 import org.alephium.util.Duration
 
 class AddressServer(
@@ -142,6 +142,26 @@ class AddressServer(
               )
             )
           }
+      }),
+      route(getAddressTokenAmountHistory.serverLogic[Future] {
+        case (address, token, timeInterval, intervalType) =>
+          validateTimeInterval(timeInterval, intervalType) {
+            val flowable =
+              tokenService.getAmountHistory(
+                address,
+                token,
+                timeInterval.from,
+                timeInterval.to,
+                intervalType,
+                streamParallelism
+              )
+            Future.successful(
+              (
+                AddressServer.amountTokenHistoryFileNameHeader(address, token, timeInterval),
+                FlowableHelper.toReadStream(flowable)
+              )
+            )
+          }
       })
     )
 
@@ -189,5 +209,13 @@ object AddressServer {
 
   def amountHistoryFileNameHeader(address: Address, timeInterval: TimeInterval): String = {
     s"""attachment;filename="$address-amount-history-${timeInterval.from.millis}-${timeInterval.to.millis}.json""""
+  }
+
+  def amountTokenHistoryFileNameHeader(
+      address: Address,
+      token: TokenId,
+      timeInterval: TimeInterval
+  ): String = {
+    s"""attachment;filename="$address-${token.toHexString}-amount-history-${timeInterval.from.millis}-${timeInterval.to.millis}.json""""
   }
 }
