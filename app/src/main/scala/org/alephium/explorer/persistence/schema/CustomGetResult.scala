@@ -186,6 +186,27 @@ object CustomGetResult {
         outputRefTokens = result.<<?
       )
 
+  val inputWithBooleanGetResult: GetResult[(InputEntity, Boolean)] =
+    (result: PositionedResult) =>
+      (
+        InputEntity(
+          blockHash = result.<<,
+          txHash = result.<<,
+          timestamp = result.<<,
+          hint = result.<<,
+          outputRefKey = result.<<,
+          unlockScript = result.<<?,
+          mainChain = result.<<,
+          inputOrder = result.<<,
+          txOrder = result.<<,
+          outputRefTxHash = result.<<?,
+          outputRefAddress = result.<<?,
+          outputRefAmount = result.<<?,
+          outputRefTokens = result.<<?
+        ),
+        result.<<
+      )
+
   implicit val outputTypeGetResult: GetResult[OutputEntity.OutputType] =
     (result: PositionedResult) => OutputEntity.OutputType.unsafe(result.nextInt())
 

@@ -23,17 +23,15 @@ import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
+import org.alephium.explorer.persistence.model.{InputEntity, TokenInputEntity}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
-import org.alephium.util._
+import org.alephium.explorer.util.SlickUtil._
 
 object InputUpdateQueries {
 
-  private type UpdateReturn =
-    (Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean, Boolean)
+  private type UpdateReturn = (InputEntity, Boolean)
 
   def updateInputs()(implicit ec: ExecutionContext): DBActionWT[Unit] = {
     sql"""
@@ -46,16 +44,19 @@ object InputUpdateQueries {
       FROM outputs
       WHERE inputs.output_ref_key = outputs.key
       AND inputs.output_ref_amount IS NULL
-      RETURNING outputs.address, outputs.tokens, inputs.tx_hash, inputs.block_hash, inputs.block_timestamp, inputs.tx_order, inputs.main_chain, outputs.coinbase
-    """
-      .as[UpdateReturn]
+      RETURNING inputs.block_hash, inputs.tx_hash, inputs.block_timestamp,
+                inputs.hint, inputs.output_ref_key, inputs.unlock_script,
+                inputs.main_chain, inputs.input_order, inputs.tx_order,
+                outputs.tx_hash, outputs.address, outputs.amount,
+                outputs.tokens, outputs.coinbase"""
+      .asASE[UpdateReturn](inputWithBooleanGetResult)
       .flatMap(internalUpdates)
       .transactionally
   }
 
   // format: off
   private def internalUpdates(
-      data: Vector[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean, Boolean)])
+      data: ArraySeq[UpdateReturn])
     : DBActionWT[Unit] = {
   // format: on
     DBIOAction
@@ -68,7 +69,7 @@ object InputUpdateQueries {
 
   // format: off
   private def updateTransactionPerAddresses(
-      data: Vector[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean, Boolean)])
+      data: ArraySeq[UpdateReturn])
     : DBActionWT[Int] = {
   // format: on
     QuerySplitter.splitUpdates(rows = data, columnsPerRow = 7) { (data, placeholder) =>
@@ -81,15 +82,14 @@ object InputUpdateQueries {
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
-          data foreach {
-            case (address, _, txHash, blockHash, timestamp, txOrder, mainChain, coinbase) =>
-              params >> address
-              params >> txHash
-              params >> blockHash
-              params >> timestamp
-              params >> txOrder
-              params >> mainChain
-              params >> coinbase
+          data foreach { case (input, coinbase) =>
+            params >> input.outputRefAddress
+            params >> input.txHash
+            params >> input.blockHash
+            params >> input.timestamp
+            params >> input.txOrder
+            params >> input.mainChain
+            params >> coinbase
           }
 
       SQLActionBuilder(
@@ -101,18 +101,25 @@ object InputUpdateQueries {
 
   // format: off
   private def updateTokenTxPerAddresses(
-      data: Vector[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean, Boolean)])
+      data: ArraySeq[UpdateReturn])
     : DBActionWT[Int] = {
   // format: on
-    val tokenTxPerAddresses = data.flatMap {
-      case (address, tokensOpt, txHash, blockHash, timestamp, txOrder, mainChain, _) =>
-        tokensOpt match {
-          case None => ArraySeq.empty
-          case Some(tokens) =>
-            tokens.map { token =>
-              (address, txHash, blockHash, timestamp, txOrder, mainChain, token.id)
-            }
-        }
+    val tokenTxPerAddresses = data.flatMap { case (input, _) =>
+      input.outputRefTokens match {
+        case None => ArraySeq.empty
+        case Some(tokens) =>
+          tokens.map { token =>
+            (
+              input.outputRefAddress,
+              input.txHash,
+              input.blockHash,
+              input.timestamp,
+              input.txOrder,
+              input.mainChain,
+              token.id
+            )
+          }
+      }
     }
 
     QuerySplitter.splitUpdates(rows = tokenTxPerAddresses, columnsPerRow = 7) {
