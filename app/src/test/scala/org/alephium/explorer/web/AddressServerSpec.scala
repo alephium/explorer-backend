@@ -40,6 +40,7 @@ import org.alephium.explorer.service.{
   EmptyTransactionService,
   TransactionService
 }
+import org.alephium.explorer.util.FlowableUtil
 import org.alephium.protocol.model.{Address, TokenId}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
@@ -117,7 +118,7 @@ class AddressServerSpec()
         intervalType: IntervalType,
         paralellism: Int
     )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] =
-      TransactionService.amountHistoryToJsonFlowable(Flowable.fromIterable(amountHistory.asJava))
+      FlowableUtil.amountHistoryToJsonFlowable(Flowable.fromIterable(amountHistory.asJava))
   }
 
   val tokenService = new EmptyTokenService {

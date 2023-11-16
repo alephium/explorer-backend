@@ -23,7 +23,9 @@ import scala.annotation.tailrec
 import scala.collection.immutable.ArraySeq
 import scala.util.{Failure, Success, Try}
 
+import org.alephium.explorer.api.model.IntervalType
 import org.alephium.explorer.error.ExplorerError.RemoteTimeStampIsBeforeLocal
+import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp}
 
 object TimeUtil {
@@ -125,5 +127,29 @@ object TimeUtil {
       val range           = buildTimestampRange(localTsBackStep, remoteTsPlus1, step)
       Success(range)
     }
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  def amountHistoryTimeRanges(
+      from: TimeStamp,
+      to: TimeStamp,
+      intervalType: IntervalType
+  ): ArraySeq[(TimeStamp, TimeStamp)] = {
+    val fromTruncated =
+      TimeStamp.unsafe(
+        Instant
+          .ofEpochMilli(
+            if (from.isBefore(ALPH.LaunchTimestamp)) ALPH.LaunchTimestamp.millis else from.millis
+          )
+          .truncatedTo(intervalType.chronoUnit)
+          .toEpochMilli
+      )
+
+    val first = (ALPH.GenesisTimestamp, fromTruncated.minusUnsafe(Duration.ofMillisUnsafe(1)))
+    first +: TimeUtil.buildTimestampRange(
+      fromTruncated,
+      to,
+      (intervalType.duration - Duration.ofMillisUnsafe(1)).get
+    )
   }
 }
