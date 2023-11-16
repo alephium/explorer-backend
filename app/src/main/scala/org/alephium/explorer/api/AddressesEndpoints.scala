@@ -166,6 +166,16 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(header[String](HeaderNames.ContentDisposition))
       .out(streamTextBody(VertxStreams)(CodecFormat.Json()))
 
+  val getAddressTokenAmountHistory
+      : BaseEndpoint[(Address, TokenId, TimeInterval, IntervalType), (String, ReadStream[Buffer])] =
+    addressesTokensEndpoint.get
+      .in(path[TokenId]("token_id"))
+      .in("amount-history")
+      .in(timeIntervalQuery)
+      .in(intervalTypeQuery)
+      .out(header[String](HeaderNames.ContentDisposition))
+      .out(streamTextBody(VertxStreams)(CodecFormat.Json()))
+
   private case class TextCsv() extends CodecFormat {
     override val mediaType: MediaType = MediaType.TextCsv
   }
