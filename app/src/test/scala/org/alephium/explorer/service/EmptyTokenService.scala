@@ -19,12 +19,14 @@ package org.alephium.explorer.service
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
+import io.reactivex.rxjava3.core.Flowable
+import io.vertx.core.buffer.Buffer
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.{Address, TokenId}
-import org.alephium.util.U256
+import org.alephium.util.{TimeStamp, U256}
 
 trait EmptyTokenService extends TokenService {
   def getTokenBalance(address: Address, token: TokenId)(implicit
@@ -102,4 +104,13 @@ trait EmptyTokenService extends TokenService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Unit] = ???
+
+  def getAmountHistory(
+      address: Address,
+      token: TokenId,
+      from: TimeStamp,
+      to: TimeStamp,
+      intervalType: IntervalType,
+      paralellism: Int
+  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = ???
 }

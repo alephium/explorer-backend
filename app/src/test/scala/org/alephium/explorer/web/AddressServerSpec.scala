@@ -129,6 +129,16 @@ class AddressServerSpec()
       Future.successful {
         tokens.map(res => (res.tokenId, res.balance, res.lockedBalance))
       }
+
+    override def getAmountHistory(
+        address: Address,
+        token: TokenId,
+        from: TimeStamp,
+        to: TimeStamp,
+        intervalType: IntervalType,
+        paralellism: Int
+    )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] =
+      FlowableUtil.amountHistoryToJsonFlowable(Flowable.fromIterable(amountHistory.asJava))
   }
 
   val server =
@@ -272,7 +282,7 @@ class AddressServerSpec()
     def getToTs(intervalType: IntervalType) =
       fromTs + maxTimeSpan(intervalType).millis
 
-    "return the amount history as json " in {
+    "return the amount history as json" in {
       intervalTypes.foreach { intervalType =>
         val toTs = getToTs(intervalType)
 
@@ -308,6 +318,31 @@ class AddressServerSpec()
         }
       }
     }
+
+    "also work with tokens" in {
+      intervalTypes.foreach { intervalType =>
+        val toTs    = getToTs(intervalTypes.head)
+        val token   = tokens.head
+        val tokenId = token.tokenId.toHexString
+        Get(
+          s"/addresses/$address/tokens/$tokenId/amount-history?fromTs=$fromTs&toTs=$toTs&interval-type=$intervalType"
+        ) check { response =>
+          response.body is Right(
+            s"""{"amountHistory":${amountHistory
+                .map { case (amount, ts) => s"""[${ts.millis},"$amount"]""" }
+                .mkString("[", ",", "]")}}"""
+          )
+
+          val header =
+            Header(
+              "Content-Disposition",
+              s"""attachment;filename="$address-$tokenId-amount-history-$fromTs-$toTs.json""""
+            )
+          response.headers.contains(header) is true
+        }
+      }
+    }
+
   }
 
   "getTransactionsByAddresses" should {

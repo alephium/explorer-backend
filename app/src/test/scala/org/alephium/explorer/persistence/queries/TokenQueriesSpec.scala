@@ -25,6 +25,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
@@ -165,6 +166,82 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
         result is ArraySeq(metadata)
 
+      }
+    }
+
+    "sumAddressTokenInputs" in {
+      forAll(
+        Gen.listOfN(10, tokenInputEntityGen()),
+        Gen.listOfN(10, amountGen),
+        addressGen,
+        tokenIdGen
+      ) { case (tokenInputs, amounts, address, tokenId) =>
+        val inputs = tokenInputs.zip(amounts).map { case (input, amount) =>
+          input.copy(
+            outputRefAddress = Some(address),
+            token = tokenId,
+            tokenAmount = amount,
+            mainChain = true
+          )
+        }
+
+        val timestamps = inputs.map(_.timestamp)
+        val from       = timestamps.min
+        val to         = timestamps.max
+
+        run(TokenQueries.insertTokenInputs(inputs)).futureValue
+
+        val result =
+          run(TokenQueries.sumAddressTokenInputs(address, tokenId, from, to)).futureValue
+
+        result is amounts.foldLeft(U256.Zero)(_ addUnsafe _)
+
+        run(
+          TokenQueries.sumAddressTokenInputs(addressGen.sample.get, tokenId, from, to)
+        ).futureValue is U256.Zero
+        run(
+          TokenQueries.sumAddressTokenInputs(address, tokenIdGen.sample.get, from, to)
+        ).futureValue is U256.Zero
+        run(TokenQueries.sumAddressTokenInputs(address, tokenId, to, from)).futureValue is U256.Zero
+      }
+    }
+
+    "sumAddressTokenOutputs" in {
+      forAll(
+        Gen.listOfN(10, tokenOutputEntityGen()),
+        Gen.listOfN(10, amountGen),
+        addressGen,
+        tokenIdGen
+      ) { case (outputs, amounts, address, tokenId) =>
+        val outs = outputs.zip(amounts).map { case (output, amount) =>
+          output.copy(
+            address = address,
+            token = tokenId,
+            amount = amount,
+            mainChain = true
+          )
+        }
+
+        val timestamps = outs.map(_.timestamp)
+        val from       = timestamps.min
+        val to         = timestamps.max
+
+        run(TokenQueries.insertTokenOutputs(outs)).futureValue
+
+        val result =
+          run(TokenQueries.sumAddressTokenOutputs(address, tokenId, from, to)).futureValue
+
+        result is amounts.foldLeft(U256.Zero)(_ addUnsafe _)
+
+        run(
+          TokenQueries.sumAddressTokenOutputs(addressGen.sample.get, tokenId, from, to)
+        ).futureValue is U256.Zero
+        run(
+          TokenQueries.sumAddressTokenOutputs(address, tokenIdGen.sample.get, from, to)
+        ).futureValue is U256.Zero
+        run(
+          TokenQueries.sumAddressTokenOutputs(address, tokenId, to, from)
+        ).futureValue is U256.Zero
       }
     }
   }

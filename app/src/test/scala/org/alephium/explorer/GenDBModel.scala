@@ -32,6 +32,7 @@ import org.alephium.protocol.model.{Address, BlockHash, ChainIndex, GroupIndex, 
 import org.alephium.util.{AVector, TimeStamp}
 
 /** Test-data generators for types in package [[org.alephium.explorer.persistence.model]] */
+// scalastyle:off number.of.methods
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 object GenDBModel {
 
@@ -292,6 +293,33 @@ object GenDBModel {
       spentFinalized,
       spentTimestamp
     )
+
+  def tokenInputEntityGen()(implicit groupSetting: GroupSetting): Gen[TokenInputEntity] =
+    for {
+      inputEntity  <- inputEntityGen()
+      outputEntity <- outputEntityGen
+      unlockScript <- Gen.option(unlockScriptGen)
+      txOrder      <- arbitrary[Int]
+      token        <- tokenIdGen
+      tokenAmount  <- amountGen
+    } yield {
+      TokenInputEntity(
+        blockHash = inputEntity.blockHash,
+        txHash = inputEntity.txHash,
+        timestamp = inputEntity.timestamp,
+        hint = inputEntity.hint,
+        outputRefKey = outputEntity.key,
+        unlockScript = unlockScript,
+        mainChain = inputEntity.mainChain,
+        inputOrder = inputEntity.inputOrder,
+        txOrder = txOrder,
+        outputRefTxHash = Some(outputEntity.txHash),
+        outputRefAddress = Some(outputEntity.address),
+        outputRefAmount = Some(outputEntity.amount),
+        token,
+        tokenAmount
+      )
+    }
 
   def blockEntityGen(
       chainIndex: ChainIndex
