@@ -154,59 +154,27 @@ object OutputQueries {
   }
 
   // scalastyle:off magic.number
-  private def insertTokenOutputs(tokenOutputs: Iterable[(Token, OutputEntity)]): DBActionW[Int] = {
-    QuerySplitter.splitUpdates(rows = tokenOutputs, columnsPerRow = 16) {
-      (tokenOutputs, placeholder) =>
-        val query =
-          s"""
-             |INSERT INTO token_outputs ("block_hash",
-             |                     "tx_hash",
-             |                     "block_timestamp",
-             |                     "output_type",
-             |                     "hint",
-             |                     "key",
-             |                     "token",
-             |                     "amount",
-             |                     "address",
-             |                     "main_chain",
-             |                     "lock_time",
-             |                     "message",
-             |                     "output_order",
-             |                     "tx_order",
-             |                     "spent_finalized",
-             |                     "spent_timestamp")
-             |VALUES $placeholder
-             |ON CONFLICT
-             |    ON CONSTRAINT token_outputs_pk
-             |    DO NOTHING
-             |""".stripMargin
-
-        val parameters: SetParameter[Unit] =
-          (_: Unit, params: PositionedParameters) =>
-            tokenOutputs foreach { case (token, output) =>
-              params >> output.blockHash
-              params >> output.txHash
-              params >> output.timestamp
-              params >> output.outputType
-              params >> output.hint
-              params >> output.key
-              params >> token.id
-              params >> token.amount
-              params >> output.address
-              params >> output.mainChain
-              params >> output.lockTime
-              params >> output.message
-              params >> output.outputOrder
-              params >> output.txOrder
-              params >> output.spentFinalized
-              params >> output.spentTimestamp
-            }
-
-        SQLActionBuilder(
-          queryParts = query,
-          unitPConv = parameters
-        ).asUpdate
-    }
+  def insertTokenOutputs(tokenOutputs: Iterable[(Token, OutputEntity)]): DBActionW[Int] = {
+    TokenQueries.insertTokenOutputs(tokenOutputs.map { case (token, output) =>
+      TokenOutputEntity(
+        output.blockHash,
+        output.txHash,
+        output.timestamp,
+        output.outputType,
+        output.hint,
+        output.key,
+        token.id,
+        token.amount,
+        output.address,
+        output.mainChain,
+        output.lockTime,
+        output.message,
+        output.outputOrder,
+        output.txOrder,
+        output.spentFinalized,
+        output.spentTimestamp
+      )
+    })
   }
   // scalastyle:on magic.number
 
