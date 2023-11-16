@@ -26,7 +26,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
-import org.alephium.explorer.persistence.model.TokenInfoEntity
+import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.result.TxByTokenQR
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
@@ -355,6 +355,58 @@ object TokenQueries extends StrictLogging {
       SET interface_id = $interfaceId, category = ${interfaceId.category}
       WHERE token = $token
     """
+  }
+
+  def insertTokenInputs(tokenInputs: ArraySeq[TokenInputEntity]): DBActionWT[Int] = {
+    // scalastyle:off magic.number
+    QuerySplitter.splitUpdates(rows = tokenInputs, columnsPerRow = 14) { (inputs, placeholder) =>
+      val query =
+        s"""
+           |INSERT INTO token_inputs (
+           |                    "block_hash",
+           |                    "tx_hash",
+           |                    "block_timestamp",
+           |                    "hint",
+           |                    "output_ref_key",
+           |                    "unlock_script",
+           |                    "main_chain",
+           |                    "input_order",
+           |                    "tx_order",
+           |                    "output_ref_tx_hash",
+           |                    "output_ref_address",
+           |                    "output_ref_amount",
+           |                    "token",
+           |                    "token_amount")
+           |VALUES $placeholder
+           |ON CONFLICT
+           |    ON CONSTRAINT token_inputs_pk
+           |    DO NOTHING
+           |""".stripMargin
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          inputs foreach { input =>
+            params >> input.blockHash
+            params >> input.txHash
+            params >> input.timestamp
+            params >> input.hint
+            params >> input.outputRefKey
+            params >> input.unlockScript
+            params >> input.mainChain
+            params >> input.inputOrder
+            params >> input.txOrder
+            params >> input.outputRefTxHash
+            params >> input.outputRefAddress
+            params >> input.outputRefAmount
+            params >> input.token
+            params >> input.tokenAmount
+          }
+
+      SQLActionBuilder(
+        queryParts = query,
+        unitPConv = parameters
+      ).asUpdate
+    }
   }
 
   // scalastyle:off method.length

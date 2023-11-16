@@ -62,7 +62,8 @@ object InputUpdateQueries {
     DBIOAction
       .seq(
         updateTransactionPerAddresses(data),
-        updateTokenTxPerAddresses(data)
+        updateTokenTxPerAddresses(data),
+        insertTokenInputs(data)
       )
       .transactionally
   }
@@ -149,5 +150,38 @@ object InputUpdateQueries {
           unitPConv = parameters
         ).asUpdate
     }
+  }
+
+  // format: off
+  def insertTokenInputs(
+      data: ArraySeq[UpdateReturn])
+    : DBActionWT[Int] = {
+  // format: on
+    val tokenInputs = data.flatMap { case (input, _) =>
+      input.outputRefTokens match {
+        case None => ArraySeq.empty
+        case Some(tokens) =>
+          tokens.map { token =>
+            TokenInputEntity(
+              input.blockHash,
+              input.txHash,
+              input.timestamp,
+              input.hint,
+              input.outputRefKey,
+              input.unlockScript,
+              input.mainChain,
+              input.inputOrder,
+              input.txOrder,
+              input.outputRefTxHash,
+              input.outputRefAddress,
+              input.outputRefAmount,
+              token.id,
+              token.amount
+            )
+          }
+      }
+    }
+
+    TokenQueries.insertTokenInputs(tokenInputs)
   }
 }
