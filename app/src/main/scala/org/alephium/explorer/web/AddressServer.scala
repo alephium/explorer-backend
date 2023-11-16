@@ -95,7 +95,7 @@ class AddressServer(
       }),
       route(getAddressTokenBalance.serverLogicSuccess[Future] { case (address, token) =>
         for {
-          (balance, locked) <- tokenService.getTokenBalance(address, token)
+          (balance, locked) <- tokenService.getAddressTokenBalance(address, token)
         } yield AddressTokenBalance(token, balance, locked)
       }),
       route(listAddressTokensBalance.serverLogicSuccess[Future] { case (address, pagination) =>

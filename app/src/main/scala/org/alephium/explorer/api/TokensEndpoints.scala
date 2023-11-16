@@ -49,12 +49,17 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[TokenInfo]])
       .description("list given tokens information")
 
-  val listTokenTransactions: BaseEndpoint[(TokenId, Pagination), ArraySeq[Transaction]] =
-    tokensEndpoint.get
+  val listTokenTransactions: BaseEndpoint[(TokenId, Pagination), ArraySeq[Transaction]] = tokensEndpoint.get
       .in(path[TokenId]("token_id"))
       .in("transactions")
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])
+      .description("List token transactions")
+
+  val getTokenBalance: BaseEndpoint[TokenId, TokenBalance] = tokensEndpoint.get
+      .in(path[TokenId]("token_id"))
+      .in("balance")
+      .out(jsonBody[TokenBalance])
       .description("List token transactions")
 
   val listTokenAddresses: BaseEndpoint[(TokenId, Pagination), ArraySeq[Address]] =

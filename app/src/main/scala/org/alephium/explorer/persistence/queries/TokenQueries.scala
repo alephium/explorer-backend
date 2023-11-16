@@ -36,10 +36,10 @@ import org.alephium.util.{TimeStamp, U256}
 
 object TokenQueries extends StrictLogging {
 
-  def getTokenBalanceAction(address: Address, token: TokenId)(implicit
+  def getAddressTokenBalanceAction(address: Address, token: TokenId)(implicit
       ec: ExecutionContext
   ): DBActionR[(U256, U256)] =
-    getTokenBalanceUntilLockTime(
+    getAddressTokenBalanceUntilLockTime(
       address = address,
       token,
       lockTime = TimeStamp.now()
@@ -47,7 +47,17 @@ object TokenQueries extends StrictLogging {
       (total.getOrElse(U256.Zero), locked.getOrElse(U256.Zero))
     }
 
-  def getTokenBalanceUntilLockTime(address: Address, token: TokenId, lockTime: TimeStamp)(implicit
+  def getTokenBalanceAction(token: TokenId)(implicit
+      ec: ExecutionContext
+  ): DBActionR[(U256, U256)] =
+    getTokenBalanceUntilLockTime(
+      token,
+      lockTime = TimeStamp.now()
+    ) map { case (total, locked) =>
+      (total.getOrElse(U256.Zero), locked.getOrElse(U256.Zero))
+    }
+
+  def getAddressTokenBalanceUntilLockTime(address: Address, token: TokenId, lockTime: TimeStamp)(implicit
       ec: ExecutionContext
   ): DBActionR[(Option[U256], Option[U256])] =
     sql"""
@@ -66,6 +76,27 @@ object TokenQueries extends StrictLogging {
         AND token_outputs.main_chain = true
         AND inputs.block_hash IS NULL;
     """.asAS[(Option[U256], Option[U256])].exactlyOne
+
+  def getTokenBalanceUntilLockTime(token: TokenId, lockTime: TimeStamp)(implicit
+      ec: ExecutionContext
+  ): DBActionR[(Option[U256], Option[U256])] =
+    sql"""
+      SELECT sum(token_outputs.amount),
+             sum(CASE
+                     WHEN token_outputs.lock_time is NULL or token_outputs.lock_time < ${lockTime.millis} THEN 0
+                     ELSE token_outputs.amount
+                 END)
+      FROM token_outputs
+               LEFT JOIN inputs
+                         ON token_outputs.key = inputs.output_ref_key
+                             AND inputs.main_chain = true
+      WHERE token_outputs.spent_finalized IS NULL
+        AND token_outputs.address = $address
+        AND token_outputs.token = $token
+        AND token_outputs.main_chain = true
+        AND inputs.block_hash IS NULL;
+    """.asAS[(Option[U256], Option[U256])].exactlyOne
+
 
   def listTokensAction(
       pagination: Pagination,

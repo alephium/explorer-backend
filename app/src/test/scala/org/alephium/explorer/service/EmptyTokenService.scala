@@ -27,7 +27,7 @@ import org.alephium.protocol.model.{Address, TokenId}
 import org.alephium.util.U256
 
 trait EmptyTokenService extends TokenService {
-  def getTokenBalance(address: Address, token: TokenId)(implicit
+  def getAddressTokenBalance(address: Address, token: TokenId)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[(U256, U256)] = ???
