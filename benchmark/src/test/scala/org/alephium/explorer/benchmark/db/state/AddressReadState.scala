@@ -126,7 +126,7 @@ class AddressReadState(val db: DBExecutor)
   def generateData(currentCacheSize: Int): OutputEntity = {
     val blockHash = BlockHash.generate
     val txHash    = TransactionId.generate
-    val timestamp = TimeStamp.now().plusMillisUnsafe(Duration.ofHoursUnsafe(8*currentCacheSize.toLong).millis)
+    val timestamp = TimeStamp.now().plusMillisUnsafe(Duration.ofMinutesUnsafe(10*currentCacheSize.toLong).millis)
 
     OutputEntity(
       blockHash = blockHash,

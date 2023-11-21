@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.service
 
+import java.math.BigInteger
+
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -117,5 +119,5 @@ trait EmptyTransactionService extends TransactionService {
   def getAmountHistory2(address: Address, from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[(TimeStamp, U256)]] = ???
+  ): Future[ArraySeq[(TimeStamp, BigInteger)]] = ???
 }
