@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.service
 
+import java.math.BigInteger
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
@@ -107,6 +108,11 @@ trait TransactionService {
       intervalType: IntervalType,
       paralellism: Int
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer]
+
+  def getAmountHistory2(address: Address, from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[(TimeStamp, U256)]]
 }
 
 object TransactionService extends TransactionService {
@@ -209,6 +215,35 @@ object TransactionService extends TransactionService {
     )
   }
 
+  def getAmountHistory2(address: Address, from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[(TimeStamp, U256)]]= {
+    run(
+      for {
+        ins  <- sumAddressInputs2(address, from, to, intervalType)
+        outs <- sumAddressOutputs2(address, from, to, intervalType)
+      } yield {
+
+        val inss = ins.collect{ case (Some(u256), ts) => (ts, u256)}
+        val out = outs.collect{ case (Some(u256), ts) => (ts, u256)}.toMap
+
+        inss.foldLeft((U256.Zero, ArraySeq.empty[(TimeStamp, U256)])) { case (acc, next) =>
+          val (sum, res)      = acc
+          val (ts, in) = next
+
+          out.get(ts) match {
+            case None => (sum, res)
+            case Some(o)=>
+              //TODO for comprehension for safe
+          val diff          = o.subUnsafe(in)
+          val newSum        = sum.addUnsafe(diff)
+          (newSum, res :+ (to, newSum))
+          }
+        }._2
+      }
+    )
+  }
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   def getAmountHistory(
       address: Address,

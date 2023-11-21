@@ -113,4 +113,9 @@ trait EmptyTransactionService extends TransactionService {
       paralellism: Int
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] =
     ???
+
+  def getAmountHistory2(address: Address, from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[(TimeStamp, U256)]] = ???
 }

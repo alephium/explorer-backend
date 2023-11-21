@@ -39,7 +39,7 @@ import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.protocol.{ALPH, Hash}
 import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.util.{Duration, TimeStamp, U256}
 
 class Queries(val config: DatabaseConfig[PostgresProfile])(implicit
     val executionContext: ExecutionContext
@@ -126,7 +126,7 @@ class AddressReadState(val db: DBExecutor)
   def generateData(currentCacheSize: Int): OutputEntity = {
     val blockHash = BlockHash.generate
     val txHash    = TransactionId.generate
-    val timestamp = TimeStamp.now()
+    val timestamp = TimeStamp.now().plusMillisUnsafe(Duration.ofHoursUnsafe(8*currentCacheSize.toLong).millis)
 
     OutputEntity(
       blockHash = blockHash,

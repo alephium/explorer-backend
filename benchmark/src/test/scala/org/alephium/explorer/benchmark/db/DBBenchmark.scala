@@ -18,13 +18,16 @@ package org.alephium.explorer.benchmark.db
 
 import java.util.concurrent.TimeUnit
 
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
+import scala.collection.immutable.ArraySeq
 import org.openjdk.jmh.annotations._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.{foldFutures, GroupSetting}
+import org.alephium.explorer.service.TransactionService
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model.{IntervalType, Pagination}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
@@ -37,7 +40,7 @@ import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.explorer.util.TimeUtil
 import org.alephium.protocol.model.Address
-import org.alephium.util.TimeStamp
+import org.alephium.util.{Duration, TimeStamp}
 
 /** Implements all JMH functions executing benchmarks on Postgres.
   *
@@ -213,16 +216,16 @@ class DBBenchmark {
 //       state.db.runNow(TransactionQueries.infoFromTxs(state.hashes), requestTimeout)
 //   }
 
-//   @Benchmark
-//   def getTransactionsByAddress(state: Address_ReadState): Unit = {
-//     import state.executionContext
+  // @Benchmark
+  // def getTransactionsByAddress(state: Address_ReadState): Unit = {
+  //   import state.executionContext
 
-//     val _ =
-//       state.db.runNow(
-//         TransactionQueries.getTransactionsByAddress(state.address, state.pagination),
-//         requestTimeout
-//       )
-//   }
+  //   val _ =
+  //     state.db.runNow(
+  //       TransactionQueries.getTransactionsByAddress(state.address, state.pagination),
+  //       requestTimeout
+  //     )
+  // }
 
 //   /** Benchmarks for inserting Blocks. With & without HikariCP */
 
@@ -276,24 +279,34 @@ class DBBenchmark {
 //       Await.result(state.config.db.run(query), requestTimeout)
 //   }
 
-   @Benchmark
-  def sumAddrressOutputs(state: Address_ReadState): Unit = {
+ @Benchmark
+def sumAddrressOutputs(state: Address_ReadState): Unit = {
+  implicit val ec: ExecutionContext = state.config.db.ioExecutionContext
+     implicit val dc: DatabaseConfig[PostgresProfile] = state.config
+  val timestamps = state.blocks.map(_.timestamp)
+      val from = timestamps.min
+      val to = from.plusMillisUnsafe(Duration.ofDaysUnsafe(365L).millis)
+    val intervalType = IntervalType.Daily
+
+      val flowable = TransactionService
+        .getAmountHistory(state.address, from, to, intervalType, 8)
+
+      val res =
+        flowable.toList().blockingGet()
+}
+
+  @Benchmark
+  def sumAddrressOutputs2(state: Address_ReadState): Unit = {
     implicit val ec: ExecutionContext = state.config.db.ioExecutionContext
+     implicit val dc: DatabaseConfig[PostgresProfile] = state.config
     val timestamps = state.blocks.map(_.timestamp)
         val from = timestamps.min
-        val to = timestamps.max
-val intervalType = IntervalType.Hourly
-    val timeranges = TimeUtil.amountHistoryTimeRanges(from, to, intervalType)
-    println(s"${Console.RED}${Console.BOLD}*** timeranges ***${Console.RESET}${timeranges.size}")
-    val query =
-      TransactionQueries.sumAddressOutputs(
-        address = state.address,
-        from = TimeStamp.zero,
-        to = TimeStamp.unsafe(Long.MaxValue)
-      )
+        val to = from.plusMillisUnsafe(Duration.ofDaysUnsafe(365L).millis)
+      val intervalType = IntervalType.Daily
+      val res = TransactionService
+        .getAmountHistory2(state.address, from, to, intervalType)
 
-    val res =
-      Await.result(state.config.db.run(query), requestTimeout)
-      println(s"${Console.RED}${Console.BOLD}*** res ***${Console.RESET}${res}")
+        val res2 =
+      Await.result(res, requestTimeout)
   }
 }

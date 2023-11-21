@@ -346,6 +346,38 @@ object TransactionQueries extends StrictLogging {
     }
   }
 
+  private val timestampTZ = "to_timestamp(block_timestamp/1000.0) AT TIME ZONE 'UTC'"
+
+  private val hourlyQuery =
+    s"DATE_TRUNC('HOUR', $timestampTZ) + ((CEILING((EXTRACT(MINUTE FROM $timestampTZ) + EXTRACT(SECOND FROM $timestampTZ)/60) / 60)) * INTERVAL '1 HOUR')"
+
+  private val dailyQuery =
+    s"""DATE_TRUNC('DAY', $timestampTZ) +
+      ((CEILING((EXTRACT(HOUR FROM $timestampTZ)*60 + EXTRACT(MINUTE FROM $timestampTZ) + EXTRACT(SECOND FROM $timestampTZ)/60)/60/24)) * INTERVAL '1 DAY')
+    """
+
+  def sumAddressOutputs2(address: Address, from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(implicit
+      ec: ExecutionContext
+  ): DBActionSR[(Option[U256], TimeStamp)] = {
+
+    val dateGroup = intervalType match {
+      case IntervalType.Hourly => hourlyQuery
+      case IntervalType.Daily  => dailyQuery
+    }
+
+    sql"""
+      SELECT
+        SUM(amount),
+        EXTRACT(EPOCH FROM ((#$dateGroup) AT TIME ZONE 'UTC')) * 1000 as ts
+      FROM outputs
+      WHERE address = $address
+      AND main_chain = true
+      AND block_timestamp >= $from
+      AND block_timestamp <= $to
+      GROUP BY ts
+      """.asAS[(Option[U256], TimeStamp)]
+  }
+
   def sumAddressOutputs(address: Address, from: TimeStamp, to: TimeStamp)(implicit
       ec: ExecutionContext
   ): DBActionR[U256] = {
@@ -370,6 +402,27 @@ object TransactionQueries extends StrictLogging {
       AND block_timestamp >= $from
       AND block_timestamp <= $to
     """.asAS[Option[U256]].exactlyOne.map(_.getOrElse(U256.Zero))
+  }
+
+  def sumAddressInputs2(address: Address, from: TimeStamp, to: TimeStamp, intervalType:IntervalType)(implicit
+      ec: ExecutionContext
+  ): DBActionSR[(Option[U256], TimeStamp)] = {
+    val dateGroup = intervalType match {
+      case IntervalType.Hourly => hourlyQuery
+      case IntervalType.Daily  => dailyQuery
+    }
+
+    sql"""
+      SELECT
+      SUM(output_ref_amount),
+        EXTRACT(EPOCH FROM ((#$dateGroup) AT TIME ZONE 'UTC')) * 1000 as ts
+      FROM inputs
+      WHERE output_ref_address = $address
+      AND main_chain = true
+      AND block_timestamp >= $from
+      AND block_timestamp <= $to
+      GROUP BY ts
+      """.asAS[(Option[U256], TimeStamp)]
   }
 
   private def buildTransaction(
