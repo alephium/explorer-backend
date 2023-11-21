@@ -30,7 +30,7 @@ import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.EndpointExamples._
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.{Address, TokenId}
-import org.alephium.util.Duration
+import org.alephium.util.{Duration, TimeStamp, U256}
 
 // scalastyle:off magic.number
 trait AddressesEndpoints extends BaseEndpoint with QueryParams {
@@ -165,6 +165,14 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .in(intervalTypeQuery)
       .out(header[String](HeaderNames.ContentDisposition))
       .out(streamTextBody(VertxStreams)(CodecFormat.Json()))
+
+  val getAddressAmountHistory2
+      : BaseEndpoint[(Address, TimeInterval, IntervalType), ArraySeq[String]] =
+    addressesEndpoint.get
+      .in("history")
+      .in(timeIntervalQuery)
+      .in(intervalTypeQuery)
+      .out(jsonBody[ArraySeq[String]])
 
   val getAddressTokenAmountHistory
       : BaseEndpoint[(Address, TokenId, TimeInterval, IntervalType), (String, ReadStream[Buffer])] =

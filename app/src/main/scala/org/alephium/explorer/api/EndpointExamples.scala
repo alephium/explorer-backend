@@ -387,6 +387,9 @@ object EndpointExamples extends EndpointsExamples {
   implicit val tokenInfosExample: List[Example[ArraySeq[TokenInfo]]] =
     simpleExample(ArraySeq(TokenInfo(token, Some(StdInterfaceId.FungibleToken))))
 
+  implicit val prout: List[Example[ArraySeq[String]]] =
+    simpleExample(ArraySeq("arstarstarst"))
+
   implicit val nftMetadataExample: List[Example[NFTMetadata]] =
     simpleExample(NFTMetadata(token, "token://uri", contract, U256.One))
 }

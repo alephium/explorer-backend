@@ -143,6 +143,21 @@ class AddressServer(
             )
           }
       }),
+      route(getAddressAmountHistory2.serverLogic[Future] {
+        case (address, timeInterval, intervalType) =>
+          validateTimeInterval(timeInterval, intervalType) {
+            val res =
+              transactionService.getAmountHistory2(
+                address,
+                timeInterval.from,
+                timeInterval.to,
+                intervalType
+              )
+            res.map(_.map{ case (ts,value)=>
+              s"[${ts.millis},${value.toString}]"
+            })
+          }
+      }),
       route(getAddressTokenAmountHistory.serverLogic[Future] {
         case (address, token, timeInterval, intervalType) =>
           validateTimeInterval(timeInterval, intervalType) {

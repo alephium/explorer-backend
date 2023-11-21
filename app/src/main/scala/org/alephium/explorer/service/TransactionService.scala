@@ -34,7 +34,7 @@ import org.alephium.explorer.persistence.dao.{MempoolDao, TransactionDao}
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.util.FlowableUtil
 import org.alephium.protocol.model.{Address, TransactionId}
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.util.{Duration, TimeStamp, U256}
 
 trait TransactionService {
 
@@ -112,7 +112,7 @@ trait TransactionService {
   def getAmountHistory2(address: Address, from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[(TimeStamp, U256)]]
+  ): Future[ArraySeq[(TimeStamp, BigInteger)]]
 }
 
 object TransactionService extends TransactionService {
@@ -218,7 +218,7 @@ object TransactionService extends TransactionService {
   def getAmountHistory2(address: Address, from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[(TimeStamp, U256)]]= {
+  ): Future[ArraySeq[(TimeStamp, BigInteger)]]= {
     run(
       for {
         ins  <- sumAddressInputs2(address, from, to, intervalType)
@@ -228,7 +228,7 @@ object TransactionService extends TransactionService {
         val inss = ins.collect{ case (Some(u256), ts) => (ts, u256)}
         val out = outs.collect{ case (Some(u256), ts) => (ts, u256)}.toMap
 
-        inss.foldLeft((U256.Zero, ArraySeq.empty[(TimeStamp, U256)])) { case (acc, next) =>
+        inss.foldLeft((BigInteger.ZERO, ArraySeq.empty[(TimeStamp, BigInteger)])) { case (acc, next) =>
           val (sum, res)      = acc
           val (ts, in) = next
 
@@ -236,9 +236,9 @@ object TransactionService extends TransactionService {
             case None => (sum, res)
             case Some(o)=>
               //TODO for comprehension for safe
-          val diff          = o.subUnsafe(in)
-          val newSum        = sum.addUnsafe(diff)
-          (newSum, res :+ (to, newSum))
+          val diff          = o.v.subtract(in.v)
+          val newSum        = sum.add(diff)
+          (newSum, res :+ ((ts.minusUnsafe(Duration.ofMillisUnsafe(1)), newSum)))
           }
         }._2
       }

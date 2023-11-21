@@ -57,6 +57,7 @@ trait Documentation
         areAddressesActive,
         exportTransactionsCsvByAddress,
         getAddressAmountHistory,
+        getAddressAmountHistory2,
         getAddressTokenAmountHistory,
         getInfos,
         getHeights,

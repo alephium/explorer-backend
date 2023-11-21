@@ -368,7 +368,7 @@ object TransactionQueries extends StrictLogging {
     sql"""
       SELECT
         SUM(amount),
-        EXTRACT(EPOCH FROM ((#$dateGroup) AT TIME ZONE 'UTC')) * 1000 as ts
+        (EXTRACT(EPOCH FROM ((#$dateGroup) AT TIME ZONE 'UTC')) * 1000) - 1 as ts
       FROM outputs
       WHERE address = $address
       AND main_chain = true
@@ -415,7 +415,7 @@ object TransactionQueries extends StrictLogging {
     sql"""
       SELECT
       SUM(output_ref_amount),
-        EXTRACT(EPOCH FROM ((#$dateGroup) AT TIME ZONE 'UTC')) * 1000 as ts
+        (EXTRACT(EPOCH FROM ((#$dateGroup) AT TIME ZONE 'UTC')) * 1000) - 1 as ts
       FROM inputs
       WHERE output_ref_address = $address
       AND main_chain = true
