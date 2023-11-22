@@ -291,7 +291,7 @@ def sumAddrressOutputs(state: Address_ReadState): Unit = {
       val flowable = TransactionService
         .getAmountHistory(state.address, from, to, intervalType, 8)
 
-      val res =
+      val _ =
         flowable.toList().blockingGet()
 }
 
@@ -303,10 +303,11 @@ def sumAddrressOutputs(state: Address_ReadState): Unit = {
         val from = timestamps.min
         val to = from.plusMillisUnsafe(Duration.ofDaysUnsafe(365L).millis)
       val intervalType = IntervalType.Daily
+
       val res = TransactionService
         .getAmountHistory2(state.address, from, to, intervalType)
 
-        val res2 =
+        val _ =
       Await.result(res, requestTimeout)
   }
 }
