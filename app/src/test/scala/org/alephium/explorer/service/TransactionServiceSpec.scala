@@ -479,11 +479,16 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       val flowable = TransactionService
         .getAmountHistoryDEPRECATED(address, fromTs, toTs, intervalType, 8)
 
-      val result: Seq[Buffer] =
-        flowable.toList().blockingGet().asScala
+      val result: Seq[Buffer] = flowable.toList().blockingGet().asScala
+      val amountHistory       = read[ujson.Value](result.mkString)
+      val historyDepracted    = read[Seq[(Long, BigInteger)]](amountHistory("amountHistory"))
 
-      val amountHistory = read[ujson.Value](result.mkString)
-      val history       = read[Seq[(Long, BigInteger)]](amountHistory("amountHistory"))
+      val history = TransactionService
+        .getAmountHistory(address, fromTs, toTs, intervalType)
+        .futureValue
+        .map { case (ts, sum) => (ts.millis, sum) }
+
+      history is historyDepracted
 
       val times = history.map(_._1)
 
@@ -491,6 +496,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       times is times.sorted
 
       // TODO Test history amount value
+      history.nonEmpty is true
     }
   }
 

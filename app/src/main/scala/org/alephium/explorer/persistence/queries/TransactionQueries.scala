@@ -35,6 +35,7 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
+import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
@@ -346,6 +347,30 @@ object TransactionQueries extends StrictLogging {
     }
   }
 
+  /*
+   * Sum outputs and group them by the given interval type
+   * LEAST and GREATEST are here to restrict to the `from` and `to` timestamp
+   */
+  def sumAddressOutputs(
+      address: Address,
+      from: TimeStamp,
+      to: TimeStamp,
+      intervalType: IntervalType
+  ): DBActionSR[(TimeStamp, Option[U256])] = {
+    val dateGroup = QueryUtil.dateGroupQuery(intervalType)
+    sql"""
+      SELECT
+        LEAST($to, GREATEST($from, (EXTRACT(EPOCH FROM ((#$dateGroup) AT TIME ZONE 'UTC')) * 1000) - 1)) as ts,
+        SUM(amount)
+      FROM outputs
+      WHERE address = $address
+      AND main_chain = true
+      AND block_timestamp >= ${ALPH.GenesisTimestamp}
+      AND block_timestamp <= $to
+      GROUP BY ts
+      """.asAS[(TimeStamp, Option[U256])]
+  }
+
   def sumAddressOutputsDEPRECATED(address: Address, from: TimeStamp, to: TimeStamp)(implicit
       ec: ExecutionContext
   ): DBActionR[U256] = {
@@ -370,6 +395,31 @@ object TransactionQueries extends StrictLogging {
       AND block_timestamp >= $from
       AND block_timestamp <= $to
     """.asAS[Option[U256]].exactlyOne.map(_.getOrElse(U256.Zero))
+  }
+
+  /*
+   * Sum inputs and group them by the given interval type
+   * LEAST and GREATEST are here to restrict to the `from` and `to` timestamp
+   */
+  def sumAddressInputs(
+      address: Address,
+      from: TimeStamp,
+      to: TimeStamp,
+      intervalType: IntervalType
+  ): DBActionSR[(TimeStamp, Option[U256])] = {
+    val dateGroup = QueryUtil.dateGroupQuery(intervalType)
+
+    sql"""
+      SELECT
+        LEAST($to, GREATEST($from, (EXTRACT(EPOCH FROM ((#$dateGroup) AT TIME ZONE 'UTC')) * 1000) - 1)) as ts,
+        SUM(output_ref_amount)
+      FROM inputs
+      WHERE output_ref_address = $address
+      AND main_chain = true
+      AND block_timestamp >= ${ALPH.GenesisTimestamp}
+      AND block_timestamp <= $to
+      GROUP BY ts
+      """.asAS[(TimeStamp, Option[U256])]
   }
 
   private def buildTransaction(
