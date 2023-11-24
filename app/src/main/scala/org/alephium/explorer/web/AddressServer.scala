@@ -142,6 +142,23 @@ class AddressServer(
               )
             )
           }
+      }),
+      route(getAddressAmountHistory.serverLogic[Future] {
+        case (address, timeInterval, intervalType) =>
+          validateTimeInterval(timeInterval, intervalType) {
+            transactionService
+              .getAmountHistory(
+                address,
+                timeInterval.from,
+                timeInterval.to,
+                intervalType
+              )
+              .map { values =>
+                AmountHistory(values.map { case (ts, value) =>
+                  TimedAmount(ts, value)
+                })
+              }
+          }
       })
     )
 

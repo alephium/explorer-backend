@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.web
 
+import java.math.BigInteger
+
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
@@ -118,6 +120,17 @@ class AddressServerSpec()
         paralellism: Int
     )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] =
       TransactionService.amountHistoryToJsonFlowable(Flowable.fromIterable(amountHistory.asJava))
+
+    override def getAmountHistory(
+        address: Address,
+        from: TimeStamp,
+        to: TimeStamp,
+        intervalType: IntervalType
+    )(implicit
+        ec: ExecutionContext,
+        dc: DatabaseConfig[PostgresProfile]
+    ): Future[ArraySeq[(TimeStamp, BigInteger)]] =
+      Future.successful(amountHistory.map { case (ts, bi) => (bi, ts) })
   }
 
   val tokenService = new EmptyTokenService {
@@ -290,6 +303,22 @@ class AddressServerSpec()
               s"""attachment;filename="$address-amount-history-$fromTs-$toTs.json""""
             )
           response.headers.contains(header) is true
+        }
+      }
+    }
+
+    "return the amount history as json" in {
+      intervalTypes.foreach { intervalType =>
+        val toTs = getToTs(intervalType)
+
+        Get(
+          s"/addresses/${address}/amount-history?fromTs=$fromTs&toTs=$toTs&interval-type=$intervalType"
+        ) check { response =>
+          response.body is Right(
+            s"""{"amountHistory":${amountHistory
+                .map { case (amount, ts) => s"""[${ts.millis},"$amount"]""" }
+                .mkString("[", ",", "]")}}"""
+          )
         }
       }
     }
