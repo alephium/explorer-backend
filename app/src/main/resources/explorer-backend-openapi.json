@@ -2901,12 +2901,12 @@
         }
       }
     },
-    "/addresses/{address}/amount-history": {
+    "/addresses/{address}/amount-history-DEPRECATED": {
       "get": {
         "tags": [
           "Addresses"
         ],
-        "operationId": "getAddressesAddressAmount-history",
+        "operationId": "getAddressesAddressAmount-history-deprecated",
         "parameters": [
           {
             "name": "address",
@@ -3030,6 +3030,10 @@
               }
             }
           }
+        },
+        "deprecated": true
+      }
+    },
         }
       }
     },

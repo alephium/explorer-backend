@@ -346,7 +346,7 @@ object TransactionQueries extends StrictLogging {
     }
   }
 
-  def sumAddressOutputs(address: Address, from: TimeStamp, to: TimeStamp)(implicit
+  def sumAddressOutputsDEPRECATED(address: Address, from: TimeStamp, to: TimeStamp)(implicit
       ec: ExecutionContext
   ): DBActionR[U256] = {
     sql"""
@@ -359,7 +359,7 @@ object TransactionQueries extends StrictLogging {
     """.asAS[Option[U256]].exactlyOne.map(_.getOrElse(U256.Zero))
   }
 
-  def sumAddressInputs(address: Address, from: TimeStamp, to: TimeStamp)(implicit
+  def sumAddressInputsDEPRECATED(address: Address, from: TimeStamp, to: TimeStamp)(implicit
       ec: ExecutionContext
   ): DBActionR[U256] = {
     sql"""

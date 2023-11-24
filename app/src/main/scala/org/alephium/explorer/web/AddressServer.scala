@@ -124,11 +124,11 @@ class AddressServer(
           (AddressServer.exportFileNameHeader(address, timeInterval), stream)
         })
       }),
-      route(getAddressAmountHistory.serverLogic[Future] {
+      route(getAddressAmountHistoryDEPRECATED.serverLogic[Future] {
         case (address, timeInterval, intervalType) =>
           validateTimeInterval(timeInterval, intervalType) {
             val flowable =
-              transactionService.getAmountHistory(
+              transactionService.getAmountHistoryDEPRECATED(
                 address,
                 timeInterval.from,
                 timeInterval.to,

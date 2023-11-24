@@ -104,7 +104,7 @@ trait TransactionService {
       paralellism: Int
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer]
 
-  def getAmountHistory(
+  def getAmountHistoryDEPRECATED(
       address: Address,
       from: TimeStamp,
       to: TimeStamp,
@@ -201,20 +201,22 @@ object TransactionService extends TransactionService {
 
   }
 
-  private def getInOutAmount(address: Address, from: TimeStamp, to: TimeStamp)(implicit
+  private def getInOutAmountDEPRECATED(address: Address, from: TimeStamp, to: TimeStamp)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[(U256, U256, TimeStamp)] = {
     run(
       for {
-        in  <- sumAddressInputs(address, from, to)
-        out <- sumAddressOutputs(address, from, to)
-      } yield (in, out, to)
+        in  <- sumAddressInputsDEPRECATED(address, from, to)
+        out <- sumAddressOutputsDEPRECATED(address, from, to)
+      } yield {
+        (in, out, to)
+      }
     )
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-  def getAmountHistory(
+  def getAmountHistoryDEPRECATED(
       address: Address,
       from: TimeStamp,
       to: TimeStamp,
@@ -226,7 +228,7 @@ object TransactionService extends TransactionService {
       .fromIterable(timeranges.asJava)
       .concatMapEager(
         { case (from: TimeStamp, to: TimeStamp) =>
-          Flowable.fromCompletionStage(getInOutAmount(address, from, to).asJava)
+          Flowable.fromCompletionStage(getInOutAmountDEPRECATED(address, from, to).asJava)
         },
         paralellism,
         1

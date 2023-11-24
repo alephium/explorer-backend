@@ -110,7 +110,7 @@ class AddressServerSpec()
       )
     }
 
-    override def getAmountHistory(
+    override def getAmountHistoryDEPRECATED(
         address: Address,
         from: TimeStamp,
         to: TimeStamp,
@@ -271,12 +271,12 @@ class AddressServerSpec()
     def getToTs(intervalType: IntervalType) =
       fromTs + maxTimeSpan(intervalType).millis
 
-    "return the amount history as json " in {
+    "return the deprecated amount history as json" in {
       intervalTypes.foreach { intervalType =>
         val toTs = getToTs(intervalType)
 
         Get(
-          s"/addresses/${address}/amount-history?fromTs=$fromTs&toTs=$toTs&interval-type=$intervalType"
+          s"/addresses/${address}/amount-history-DEPRECATED?fromTs=$fromTs&toTs=$toTs&interval-type=$intervalType"
         ) check { response =>
           response.body is Right(
             s"""{"amountHistory":${amountHistory

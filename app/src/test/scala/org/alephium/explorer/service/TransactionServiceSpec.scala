@@ -477,7 +477,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
   "get amount history" in new TxsByAddressFixture {
     Seq[IntervalType](IntervalType.Hourly, IntervalType.Daily).foreach { intervalType =>
       val flowable = TransactionService
-        .getAmountHistory(address, fromTs, toTs, intervalType, 8)
+        .getAmountHistoryDEPRECATED(address, fromTs, toTs, intervalType, 8)
 
       val result: Seq[Buffer] =
         flowable.toList().blockingGet().asScala
