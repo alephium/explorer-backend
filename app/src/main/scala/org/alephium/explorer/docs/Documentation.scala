@@ -21,7 +21,6 @@ import sttp.apispec.openapi.OpenAPI
 import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
 
 import org.alephium.explorer.api._
-import org.alephium.explorer.api.model.StdInterfaceId
 
 trait Documentation
     extends BlockEndpoints
@@ -107,19 +106,6 @@ trait Documentation
           Schema(
             `type` = Some(SchemaType.Integer),
             `enum` = Some(List(ExampleSingleValue(maxSizeAddresses)))
-          )
-        )
-        .addSchema(
-          "TokenStdInterfaceId",
-          Schema(
-            `type` = Some(SchemaType.String),
-            `enum` = Some(
-              List(
-                ExampleSingleValue(StdInterfaceId.FungibleToken.value),
-                ExampleSingleValue(StdInterfaceId.NFT.value),
-                ExampleSingleValue(StdInterfaceId.NonStandard.value)
-              )
-            )
           )
         )
     )

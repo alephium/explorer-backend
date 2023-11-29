@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.api.model
 
-import sttp.tapir.Schema
+import sttp.tapir._
 import upickle.core.Abort
 
 import org.alephium.json.Json._
@@ -28,9 +28,11 @@ sealed trait StdInterfaceId {
   def category: String
 }
 
+sealed trait TokenStdInterfaceId extends StdInterfaceId
+
 object StdInterfaceId {
 
-  case object FungibleToken extends StdInterfaceId {
+  case object FungibleToken extends TokenStdInterfaceId {
     val value: String    = "fungible"
     val id: String       = "0001"
     val category: String = "0001"
@@ -48,18 +50,18 @@ object StdInterfaceId {
     val category: String = "0002"
   }
 
-  case object NFT extends StdInterfaceId {
+  case object NFT extends TokenStdInterfaceId {
     val value: String    = "non-fungible"
     val id: String       = "0003"
     val category: String = "0003"
   }
 
-  final case class Unknown(id: String) extends StdInterfaceId {
+  final case class Unknown(id: String) extends TokenStdInterfaceId {
     val value: String    = id
     val category: String = id.take(4)
   }
 
-  case object NonStandard extends StdInterfaceId {
+  case object NonStandard extends TokenStdInterfaceId {
     val value: String    = "non-standard"
     val id: String       = ""
     val category: String = ""
@@ -90,6 +92,7 @@ object StdInterfaceId {
           None
         }
     }
+
   implicit val readWriter: ReadWriter[StdInterfaceId] = readwriter[String].bimap(
     _.value,
     { str =>
@@ -101,6 +104,17 @@ object StdInterfaceId {
     }
   )
 
+  implicit val tokenReadWriter: ReadWriter[TokenStdInterfaceId] = readwriter[StdInterfaceId].bimap(
+    identity,
+    {
+      case token: TokenStdInterfaceId => token
+      case other: StdInterfaceId =>
+        throw new Abort(
+          s"Not a token std interface: ${other.value}"
+        )
+    }
+  )
+
   @SuppressWarnings(
     Array(
       "org.wartremover.warts.JavaSerializable",
@@ -108,9 +122,34 @@ object StdInterfaceId {
       "org.wartremover.warts.Serializable"
     )
   )
-  val tokenStdInterfaceIds: Seq[StdInterfaceId] = Seq(FungibleToken, NFT, NonStandard)
+  val stdInterfaceIds: Seq[StdInterfaceId] =
+    Seq(FungibleToken, NFTCollection, NFTCollectionWithRoyalty, NFT, NonStandard)
 
-  implicit val tokenSchema: Schema[StdInterfaceId] = Schema.string.description(
-    s"${tokenStdInterfaceIds.map(_.value).mkString(", ")} or any interface id in hex-string format, e.g: 0001"
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
+    )
   )
+  val tokenStdInterfaceIds: Seq[TokenStdInterfaceId] = Seq(FungibleToken, NFT, NonStandard)
+
+  val schema: Schema[StdInterfaceId] = Schema.string
+    .name(Schema.SName("StdInterfaceId"))
+    .validate(Validator.enumeration(stdInterfaceIds.toList, v => Some(v.value)))
+
+  val tokenSchema: Schema[TokenStdInterfaceId] = Schema.string
+    .name(Schema.SName("TokenStdInterfaceId"))
+    .validate(Validator.enumeration(tokenStdInterfaceIds.toList, v => Some(v.value)))
+
+  val tokenWithHexStringSchema: Schema[TokenStdInterfaceId] =
+    Schema[TokenStdInterfaceId](
+      SchemaType.SCoproduct(
+        List(
+          StdInterfaceId.tokenSchema,
+          Schema.string.format("hex-string").description("Raw interface id, e.g. 0001")
+        ),
+        None
+      )(_ => None)
+    )
 }
