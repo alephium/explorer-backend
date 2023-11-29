@@ -19,9 +19,12 @@ package org.alephium.explorer.api.model
 import scala.collection.immutable.ArraySeq
 
 import akka.util.ByteString
+import sttp.tapir.Schema
 
+import org.alephium.api.TapirSchemas._
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.api.Json._
+import org.alephium.explorer.api.Schemas.configuration
 import org.alephium.json.Json._
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{Address, TransactionId}
@@ -61,9 +64,13 @@ final case class ContractOutput(
 ) extends Output
 
 object Output {
+
   implicit val assetReadWriter: ReadWriter[AssetOutput]       = macroRW
   implicit val contractReadWriter: ReadWriter[ContractOutput] = macroRW
 
   implicit val outputReadWriter: ReadWriter[Output] =
     ReadWriter.merge(assetReadWriter, contractReadWriter)
+  implicit val contractSchema: Schema[ContractOutput] = Schema.derived[ContractOutput]
+  implicit val AssetSchema: Schema[AssetOutput]       = Schema.derived[AssetOutput]
+  implicit val schema: Schema[Output]                 = Schema.derived[Output]
 }

@@ -16,6 +16,9 @@
 
 package org.alephium.explorer.api.model
 
+import sttp.tapir.Schema
+
+import org.alephium.api.TapirSchemas._
 import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
 import org.alephium.protocol.Hash
@@ -24,4 +27,5 @@ final case class OutputRef(hint: Int, key: Hash)
 
 object OutputRef {
   implicit val readWriter: ReadWriter[OutputRef] = macroRW
+  implicit val schema: Schema[OutputRef]         = Schema.derived[OutputRef]
 }
