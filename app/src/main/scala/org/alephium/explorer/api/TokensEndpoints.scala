@@ -19,10 +19,10 @@ package org.alephium.explorer.api
 import scala.collection.immutable.ArraySeq
 
 import sttp.tapir._
-import sttp.tapir.generic.auto._
 
 import org.alephium.api.Endpoints.jsonBody
 import org.alephium.explorer.api.EndpointExamples._
+import org.alephium.explorer.api.Schemas.tokenIdSchema
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.{Address, TokenId}
 
@@ -36,7 +36,7 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .tag("Tokens")
       .in("tokens")
 
-  val listTokens: BaseEndpoint[(Pagination, Option[StdInterfaceId]), ArraySeq[TokenInfo]] =
+  val listTokens: BaseEndpoint[(Pagination, Option[TokenStdInterfaceId]), ArraySeq[TokenInfo]] =
     tokensEndpoint.get
       .in(pagination)
       .in(tokenInterfaceIdQuery)

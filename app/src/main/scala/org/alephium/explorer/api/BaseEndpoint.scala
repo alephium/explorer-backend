@@ -30,7 +30,7 @@ trait BaseEndpoint extends ErrorExamples with TapirCodecs with TapirSchemasLike 
   import ApiError._
 
   implicit val customConfiguration: Configuration =
-    Configuration.default.withDiscriminator("type")
+    Schemas.configuration
 
   type BaseEndpoint[I, O] = Endpoint[Unit, I, ApiError[_ <: StatusCode], O, VertxStreams]
 

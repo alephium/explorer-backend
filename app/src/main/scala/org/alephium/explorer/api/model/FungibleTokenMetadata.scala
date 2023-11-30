@@ -16,7 +16,11 @@
 
 package org.alephium.explorer.api.model
 
+import sttp.tapir.Schema
+
+import org.alephium.api.TapirSchemas._
 import org.alephium.explorer.api.Json._
+import org.alephium.explorer.api.Schemas._
 import org.alephium.json.Json._
 import org.alephium.protocol.model.TokenId
 import org.alephium.util.U256
@@ -30,4 +34,5 @@ final case class FungibleTokenMetadata(
 
 object FungibleTokenMetadata {
   implicit val readWriter: ReadWriter[FungibleTokenMetadata] = macroRW
+  implicit val schema: Schema[FungibleTokenMetadata]         = Schema.derived[FungibleTokenMetadata]
 }

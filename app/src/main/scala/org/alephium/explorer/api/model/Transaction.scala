@@ -20,6 +20,9 @@ import java.time.Instant
 
 import scala.collection.immutable.ArraySeq
 
+import sttp.tapir.Schema
+
+import org.alephium.api.TapirSchemas._
 import org.alephium.api.UtilJson.{timestampReader, timestampWriter}
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.util.UtxoUtil
@@ -63,4 +66,6 @@ object Transaction {
 
   val csvHeader: String =
     "hash,blockHash,unixTimestamp,dateTimeUTC,fromAddresses,toAddresses,amount,hintAmount\n"
+
+  implicit val schema: Schema[Transaction] = Schema.derived[Transaction]
 }

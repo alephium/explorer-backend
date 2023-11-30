@@ -17,10 +17,14 @@
 package org.alephium.explorer.api
 
 import sttp.tapir.Schema
+import sttp.tapir.generic.Configuration
 
 import org.alephium.api.TapirSchemas
-import org.alephium.protocol.model.TokenId
+import org.alephium.protocol.model._
 
 object Schemas {
-  implicit val tokenIdSchema: Schema[TokenId] = TapirSchemas.hashSchema.as[TokenId]
+  implicit val configuration: Configuration = Configuration.default.withDiscriminator("type")
+
+  implicit val contractIdSchema: Schema[ContractId] = TapirSchemas.hashSchema.as[ContractId]
+  implicit val tokenIdSchema: Schema[TokenId]       = TapirSchemas.hashSchema.as[TokenId]
 }

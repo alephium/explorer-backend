@@ -369,7 +369,7 @@ object EndpointExamples extends EndpointsExamples {
   implicit val logbackValueExample: List[Example[ArraySeq[LogbackValue]]] =
     simpleExample(ArraySeq(logbackValue))
 
-  implicit val stdInterfaceIdExample: List[Example[StdInterfaceId]] =
+  implicit val stdInterfaceIdExample: List[Example[TokenStdInterfaceId]] =
     simpleExample(StdInterfaceId.FungibleToken)
 
   implicit val fungibleTokenMetadataExample: List[Example[FungibleTokenMetadata]] =
