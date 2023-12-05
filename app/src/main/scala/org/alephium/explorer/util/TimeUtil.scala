@@ -41,6 +41,9 @@ object TimeUtil {
   def truncatedToHour(timestamp: TimeStamp): TimeStamp =
     mapInstant(timestamp)(_.truncatedTo(ChronoUnit.HOURS))
 
+  def truncatedToWeek(timestamp: TimeStamp): TimeStamp =
+    mapInstant(timestamp)(_.truncatedTo(ChronoUnit.WEEKS))
+
   private def mapInstant(timestamp: TimeStamp)(f: Instant => Instant): TimeStamp = {
     val instant = toInstant(timestamp)
     TimeStamp

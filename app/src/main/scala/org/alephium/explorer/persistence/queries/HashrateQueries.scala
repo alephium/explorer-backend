@@ -52,7 +52,7 @@ object HashrateQueries {
     sqlu"""
         INSERT INTO hashrates (block_timestamp, value, interval_type)
         SELECT
-        EXTRACT(EPOCH FROM ((#$dateGroup) AT TIME ZONE 'UTC')) * 1000 as ts,
+        #${QueryUtil.extractEpoch(dateGroup)} as ts,
         AVG(hashrate),
         ${intervalType.value}
         FROM block_headers
@@ -100,7 +100,7 @@ object HashrateQueries {
   ) = {
     sql"""
         SELECT
-        EXTRACT(EPOCH FROM ((#$dateGroup) AT TIME ZONE 'UTC')) * 1000 as ts,
+        #${QueryUtil.extractEpoch(dateGroup)} as ts,
         AVG(hashrate),
         ${intervalType.value}
         FROM block_headers

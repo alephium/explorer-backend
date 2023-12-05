@@ -29,7 +29,7 @@ import org.alephium.explorer.api.model.{Hashrate, IntervalType, PerChainTimedCou
 // scalastyle:off magic.number
 trait ChartsEndpoints extends BaseEndpoint with QueryParams {
 
-  val intervalTypes: String = IntervalType.all.map(_.string).mkString(", ")
+  val intervalTypes: String = IntervalType.all.dropRight(1).map(_.string).mkString(", ")
 
   private val chartsEndpoint =
     baseEndpoint

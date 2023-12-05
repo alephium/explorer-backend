@@ -280,6 +280,7 @@ class AddressServerSpec()
     def maxTimeSpan(intervalType: IntervalType) = intervalType match {
       case IntervalType.Hourly => Duration.ofDaysUnsafe(7)
       case IntervalType.Daily  => Duration.ofDaysUnsafe(365)
+      case IntervalType.Weekly => Duration.ofDaysUnsafe(365)
     }
     def getToTs(intervalType: IntervalType) =
       fromTs + maxTimeSpan(intervalType).millis

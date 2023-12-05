@@ -53,6 +53,7 @@ class AddressServer(
   // scalastyle:off magic.number
   private val maxHourlyTimeSpan = Duration.ofDaysUnsafe(7)
   private val maxDailyTimeSpan  = Duration.ofDaysUnsafe(365)
+  private val maxWeeklyTimeSpan = Duration.ofDaysUnsafe(365)
   // scalastyle:on magic.number
 
   val routes: ArraySeq[Router => Route] =
@@ -195,7 +196,8 @@ class AddressServer(
       timeInterval,
       intervalType,
       maxHourlyTimeSpan,
-      maxDailyTimeSpan
+      maxDailyTimeSpan,
+      maxWeeklyTimeSpan
     )(contd)
 }
 

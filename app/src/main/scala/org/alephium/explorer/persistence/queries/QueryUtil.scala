@@ -37,9 +37,18 @@ object QueryUtil {
       ((CEILING((EXTRACT(HOUR FROM $timestampTZ)*60 + EXTRACT(MINUTE FROM $timestampTZ) + EXTRACT(SECOND FROM $timestampTZ)/60)/60/24)) * INTERVAL '1 DAY')
     """
 
+  val weeklyQuery: String =
+    s"""DATE_TRUNC('WEEK', $timestampTZ) +
+      ((CEILING((EXTRACT(HOUR FROM $timestampTZ)*60 + EXTRACT(MINUTE FROM $timestampTZ) + EXTRACT(SECOND FROM $timestampTZ)/60)/60/24)) * INTERVAL '7 DAY')
+    """
+
+  def extractEpoch(query: String): String =
+    s"(EXTRACT(EPOCH FROM (($query) AT TIME ZONE 'UTC')) * 1000)"
+
   def dateGroupQuery(intervalType: IntervalType): String =
     intervalType match {
       case IntervalType.Hourly => hourlyQuery
       case IntervalType.Daily  => dailyQuery
+      case IntervalType.Weekly => weeklyQuery
     }
 }

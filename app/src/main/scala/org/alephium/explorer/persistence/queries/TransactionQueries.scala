@@ -360,7 +360,7 @@ object TransactionQueries extends StrictLogging {
     val dateGroup = QueryUtil.dateGroupQuery(intervalType)
     sql"""
       SELECT
-        LEAST($to, GREATEST($from, (EXTRACT(EPOCH FROM ((#$dateGroup) AT TIME ZONE 'UTC')) * 1000) - 1)) as ts,
+        LEAST($to, GREATEST($from, #${QueryUtil.extractEpoch(dateGroup)} - 1)) as ts,
         SUM(amount)
       FROM outputs
       WHERE address = $address
@@ -411,7 +411,7 @@ object TransactionQueries extends StrictLogging {
 
     sql"""
       SELECT
-        LEAST($to, GREATEST($from, (EXTRACT(EPOCH FROM ((#$dateGroup) AT TIME ZONE 'UTC')) * 1000) - 1)) as ts,
+        LEAST($to, GREATEST($from, #${QueryUtil.extractEpoch(dateGroup)} - 1)) as ts,
         SUM(output_ref_amount)
       FROM inputs
       WHERE output_ref_address = $address

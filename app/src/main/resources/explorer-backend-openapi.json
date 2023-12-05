@@ -6905,7 +6905,8 @@
         "type": "string",
         "enum": [
           "daily",
-          "hourly"
+          "hourly",
+          "weekly"
         ]
       },
       "ListBlocks": {
