@@ -28,20 +28,16 @@ import org.alephium.api.ApiError
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.ChartsEndpoints
 import org.alephium.explorer.api.model.{IntervalType, TimedCount}
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service.{HashrateService, TransactionHistoryService}
-import org.alephium.util.Duration
 
-class ChartsServer()(implicit
+class ChartsServer(
+    maxTimeInterval: ExplorerConfig.MaxTimeInterval
+)(implicit
     val executionContext: ExecutionContext,
     dc: DatabaseConfig[PostgresProfile]
 ) extends Server
     with ChartsEndpoints {
-
-  // scalastyle:off magic.number
-  private val maxHourlyTimeSpan = Duration.ofDaysUnsafe(30)
-  private val maxDailyTimeSpan  = Duration.ofDaysUnsafe(365)
-  private val maxWeeklyTimeSpan = Duration.ofDaysUnsafe(365)
-  // scalastyle:on magic.number
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
@@ -75,8 +71,8 @@ class ChartsServer()(implicit
     IntervalType.validateTimeInterval(
       timeInterval,
       intervalType,
-      maxHourlyTimeSpan,
-      maxDailyTimeSpan,
-      maxWeeklyTimeSpan
+      maxTimeInterval.hourly,
+      maxTimeInterval.daily,
+      maxTimeInterval.weekly
     )(contd)
 }

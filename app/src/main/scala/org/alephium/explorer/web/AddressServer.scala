@@ -32,15 +32,16 @@ import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service.{TokenService, TransactionService}
 import org.alephium.protocol.model.Address
-import org.alephium.util.Duration
 
 class AddressServer(
     transactionService: TransactionService,
     tokenService: TokenService,
     exportTxsNumberThreshold: Int,
-    streamParallelism: Int
+    streamParallelism: Int,
+    maxTimeInterval: ExplorerConfig.MaxTimeInterval
 )(implicit
     val executionContext: ExecutionContext,
     groupSetting: GroupSetting,
@@ -49,12 +50,6 @@ class AddressServer(
     with AddressesEndpoints {
 
   val groupNum = groupSetting.groupNum
-
-  // scalastyle:off magic.number
-  private val maxHourlyTimeSpan = Duration.ofDaysUnsafe(7)
-  private val maxDailyTimeSpan  = Duration.ofDaysUnsafe(365)
-  private val maxWeeklyTimeSpan = Duration.ofDaysUnsafe(365)
-  // scalastyle:on magic.number
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
@@ -195,9 +190,9 @@ class AddressServer(
     IntervalType.validateTimeInterval(
       timeInterval,
       intervalType,
-      maxHourlyTimeSpan,
-      maxDailyTimeSpan,
-      maxWeeklyTimeSpan
+      maxTimeInterval.hourly,
+      maxTimeInterval.daily,
+      maxTimeInterval.weekly
     )(contd)
 }
 

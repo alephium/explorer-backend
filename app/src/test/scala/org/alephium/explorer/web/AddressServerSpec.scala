@@ -148,7 +148,8 @@ class AddressServerSpec()
       transactionService,
       tokenService,
       exportTxsNumberThreshold = 1000,
-      streamParallelism = 8
+      streamParallelism = 8,
+      maxTimeInterval = ConfigDefaults.maxTimeIntervals.amountHistory
     )
 
   val routes = server.routes

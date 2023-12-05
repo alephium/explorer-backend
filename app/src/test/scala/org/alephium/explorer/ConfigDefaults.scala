@@ -16,6 +16,23 @@
 
 package org.alephium.explorer
 
+import org.alephium.explorer.config.ExplorerConfig._
+import org.alephium.util.Duration
+
 object ConfigDefaults {
   implicit val groupSetting: GroupSetting = Generators.groupSettingGen.sample.get
+
+  val maxTimeIntervals: MaxTimeIntervals =
+    MaxTimeIntervals(
+      amountHistory = MaxTimeInterval(
+        hourly = Duration.ofDaysUnsafe(7),
+        daily = Duration.ofDaysUnsafe(365),
+        weekly = Duration.ofDaysUnsafe(365)
+      ),
+      charts = MaxTimeInterval(
+        hourly = Duration.ofDaysUnsafe(30),
+        daily = Duration.ofDaysUnsafe(365),
+        weekly = Duration.ofDaysUnsafe(365)
+      )
+    )
 }
