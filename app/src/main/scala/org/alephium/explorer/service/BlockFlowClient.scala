@@ -312,7 +312,7 @@ object BlockFlowClient extends StrictLogging {
     }
 
     def fetchNFTMetadata(token: TokenId): Future[Option[NFTMetadata]] = {
-      fetchTokenMetadata[NFTMetadata](token, 3) { result =>
+      fetchTokenMetadata[NFTMetadata](token, 2) { result =>
         extractNFTMetadata(token, result)
       }
     }
@@ -342,9 +342,13 @@ object BlockFlowClient extends StrictLogging {
 
   val interfaceIdPrefix = "414c5048"
 
-  def extractVal(result: CallContractResult): Option[api.model.Val] = {
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def extractVal(
+      result: CallContractResult,
+      access: (AVector[api.model.Val] => Option[api.model.Val]) = _.headOption
+  ): Option[api.model.Val] = {
     result match {
-      case success: CallContractSucceeded => success.returns.headOption
+      case success: CallContractSucceeded => access(success.returns)
       case _: CallContractFailed          => None
     }
   }
@@ -419,7 +423,7 @@ object BlockFlowClient extends StrictLogging {
     for {
       tokenUri     <- extractVal(result.results(0)).flatMap(valToString)
       collectionId <- extractVal(result.results(1)).flatMap(valToContractId)
-      nftIndex     <- extractVal(result.results(2)).flatMap(valToU256)
+      nftIndex     <- extractVal(result.results(1), _.tail.headOption).flatMap(valToU256)
     } yield {
       NFTMetadata(
         token,

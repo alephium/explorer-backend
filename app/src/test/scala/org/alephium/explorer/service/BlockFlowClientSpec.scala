@@ -72,9 +72,9 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
     }
   }
   "BlockFlowClient companion" should {
-    def contractResult(value: model.Val): model.CallContractResult = {
+    def contractResult(value: model.Val*): model.CallContractResult = {
       val result = callContractSucceededGen.sample.get
-      result.copy(returns = value +: result.returns)
+      result.copy(returns = AVector.from(value) ++ result.returns)
     }
     "extract fungible token metadata" in {
       forAll(
@@ -107,12 +107,11 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
       forAll(tokenIdGen, multipleCallContractResult, valByteVecGen, valU256Gen, valByteVecGen) {
 
         case (token, result, contractId, nftIndex, uri) =>
-          val uriResult: model.CallContractResult        = contractResult(uri)
-          val contractIdResult: model.CallContractResult = contractResult(contractId)
-          val nftIndexResult: model.CallContractResult   = contractResult(nftIndex)
+          val uriResult: model.CallContractResult             = contractResult(uri)
+          val contractIdIndexResult: model.CallContractResult = contractResult(contractId, nftIndex)
 
           val results: AVector[model.CallContractResult] =
-            AVector(uriResult, contractIdResult, nftIndexResult) ++ result.results
+            AVector(uriResult, contractIdIndexResult) ++ result.results
           val callContract = result.copy(results = results)
 
           BlockFlowClient.extractNFTMetadata(token, callContract) is Some(
