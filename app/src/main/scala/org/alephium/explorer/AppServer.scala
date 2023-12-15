@@ -39,7 +39,8 @@ object AppServer {
       groupSetting: GroupSetting
   ): ArraySeq[Router => Route] = {
 
-    val blockServer = new BlockServer()
+    val marketService = MarketService.CoinGecko.default()
+    val blockServer   = new BlockServer()
     val addressServer =
       new AddressServer(
         TransactionService,
@@ -55,6 +56,7 @@ object AppServer {
     val mempoolServer              = new MempoolServer()
     val eventServer                = new EventServer()
     val contractServer             = new ContractServer()
+    val marketServer               = new MarketServer(marketService)
     val documentationServer        = new DocumentationServer()
 
     blockServer.routes ++
@@ -67,6 +69,7 @@ object AppServer {
       mempoolServer.routes ++
       eventServer.routes ++
       contractServer.routes ++
+      marketServer.routes ++
       documentationServer.routes :+
       Metrics.route
   }

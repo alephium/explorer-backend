@@ -389,4 +389,13 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val nftMetadataExample: List[Example[NFTMetadata]] =
     simpleExample(NFTMetadata(token, "token://uri", contract, U256.One))
+
+  implicit val pricesExample: List[Example[ArraySeq[Price]]] =
+    simpleExample(ArraySeq(Price("alph", "alephium", 0.01, "chf")))
+
+  implicit val exchangeRatesExample: List[Example[ArraySeq[ExchangeRate]]] =
+    simpleExample(ArraySeq(ExchangeRate("chf", "Swiss Franc", "Fr.", 0.01)))
+
+  implicit val priceChartExample: List[Example[ArraySeq[(Long, Double)]]] =
+    simpleExample(ArraySeq((1234545L, 0.01)))
 }
