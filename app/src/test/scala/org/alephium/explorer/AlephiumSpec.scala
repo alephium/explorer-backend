@@ -43,7 +43,6 @@ trait AlephiumSpec
     def is(right: ResultOfATypeInvocation[_]): Assertion    = left shouldBe right
     def isnot(right: A): Assertion                          = left should not equal right
     def isnot(right: ResultOfATypeInvocation[_]): Assertion = left should not be right
-    // scalastyle:on scalatest-matcher
   }
 
   implicit class IsEOps[A: Equality, L](left: Either[L, A])(implicit pos: Position) {
@@ -64,6 +63,7 @@ trait AlephiumSpec
     def isnotE(right: A): Assertion                          = rightValue should not equal right
     def isnotE(right: ResultOfATypeInvocation[_]): Assertion = rightValue should not be right
   }
+  // scalastyle:on
 }
 
 trait AlephiumFutures extends ScalaFutures with Eventually with IntegrationPatience {

@@ -1,3 +1,19 @@
+// Copyright 2018 The Alephium Authors
+// This file is part of the alephium project.
+//
+// The library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the library. If not, see <http://www.gnu.org/licenses/>.
+
 package org.alephium.explorer.service
 
 import scala.collection.immutable.{ArraySeq, ListMap}
@@ -7,14 +23,13 @@ import scala.util.{Failure, Success, Try}
 import com.typesafe.scalalogging.StrictLogging
 import sttp.client3._
 import sttp.client3.asynchttpclient.future.AsyncHttpClientFutureBackend
-import sttp.model.Method
+import sttp.model.{Method, StatusCode}
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.json.Json._
 import org.alephium.util.{Duration, Math}
-import sttp.model.StatusCode
 
 trait MarketService {
   def getPrices(ids: List[String], currency: String)(implicit
@@ -73,6 +88,7 @@ object MarketService extends StrictLogging {
       ec: ExecutionContext
   ) extends MarketService {
 
+    // scalastyle:off magic.number
     val pricesExpirationTime: Duration      = Duration.ofMinutesUnsafe(5)
     val ratesExpirationTime: Duration       = Duration.ofMinutesUnsafe(5)
     val priceChartsExpirationTime: Duration = Duration.ofMinutesUnsafe(30)
@@ -87,7 +103,7 @@ object MarketService extends StrictLogging {
     def baseDelay: Duration = Duration.ofSecondsUnsafe(60)
     def maxDelay: Duration  = Duration.ofMinutesUnsafe(8)
     def maxRetry: Int       = 4
-
+    // scalastyle:on magic.number
     private val backend   = AsyncHttpClientFutureBackend()
     private val scheduler = Scheduler("MARKET_SERVICE_SCHEDULER")
 
