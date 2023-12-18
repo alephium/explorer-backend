@@ -39,7 +39,7 @@ import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.protocol.{ALPH, Hash}
 import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.util.{Duration, TimeStamp, U256}
 
 class Queries(val config: DatabaseConfig[PostgresProfile])(implicit
     val executionContext: ExecutionContext
@@ -53,7 +53,7 @@ class Queries(val config: DatabaseConfig[PostgresProfile])(implicit
   Array("org.wartremover.warts.OptionPartial", "org.wartremover.warts.GlobalExecutionContext")
 )
 class AddressReadState(val db: DBExecutor)
-    extends ReadBenchmarkState[OutputEntity](testDataCount = 4000, db = db) {
+    extends ReadBenchmarkState[OutputEntity](testDataCount = 10000, db = db) {
 
   val ec: ExecutionContext = ExecutionContext.global
 
@@ -126,7 +126,8 @@ class AddressReadState(val db: DBExecutor)
   def generateData(currentCacheSize: Int): OutputEntity = {
     val blockHash = BlockHash.generate
     val txHash    = TransactionId.generate
-    val timestamp = TimeStamp.now()
+    val timestamp =
+      TimeStamp.now().plusMillisUnsafe(Duration.ofHoursUnsafe(12 * currentCacheSize.toLong).millis)
 
     OutputEntity(
       blockHash = blockHash,
@@ -136,7 +137,7 @@ class AddressReadState(val db: DBExecutor)
       hint = Random.nextInt(),
       key = Hash.generate,
       amount = ALPH.alph(1),
-      address = address,
+      address = if (currentCacheSize % 2 == 0) address else DataGenerator.genAddress(),
       tokens = None,
       mainChain = true,
       lockTime = None,
@@ -196,6 +197,7 @@ class AddressReadState(val db: DBExecutor)
     val _ = db.dropTableIfExists(TransactionSchema.table)
     val _ = db.dropTableIfExists(InputSchema.table)
     val _ = db.dropTableIfExists(OutputSchema.table)
+    val _ = db.dropTableIfExists(TokenOutputSchema.table)
     val _ = db.dropTableIfExists(TransactionPerAddressSchema.table)
     val _ = db.dropTableIfExists(AppStateSchema.table)
 
@@ -204,6 +206,7 @@ class AddressReadState(val db: DBExecutor)
         .andThen(TransactionSchema.table.schema.create)
         .andThen(InputSchema.table.schema.create)
         .andThen(OutputSchema.table.schema.create)
+        .andThen(TokenOutputSchema.table.schema.create)
         .andThen(TransactionPerAddressSchema.table.schema.create)
         .andThen(AppStateSchema.table.schema.create)
         .andThen(BlockHeaderSchema.createBlockHeadersIndexes())

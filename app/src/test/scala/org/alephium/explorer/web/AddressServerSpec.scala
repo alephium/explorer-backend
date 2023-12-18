@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.web
 
+import java.math.BigInteger
+
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
@@ -110,7 +112,7 @@ class AddressServerSpec()
       )
     }
 
-    override def getAmountHistory(
+    override def getAmountHistoryDEPRECATED(
         address: Address,
         from: TimeStamp,
         to: TimeStamp,
@@ -118,6 +120,17 @@ class AddressServerSpec()
         paralellism: Int
     )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] =
       TransactionService.amountHistoryToJsonFlowable(Flowable.fromIterable(amountHistory.asJava))
+
+    override def getAmountHistory(
+        address: Address,
+        from: TimeStamp,
+        to: TimeStamp,
+        intervalType: IntervalType
+    )(implicit
+        ec: ExecutionContext,
+        dc: DatabaseConfig[PostgresProfile]
+    ): Future[ArraySeq[(TimeStamp, BigInteger)]] =
+      Future.successful(amountHistory.map { case (ts, bi) => (bi, ts) })
   }
 
   val tokenService = new EmptyTokenService {
@@ -135,7 +148,8 @@ class AddressServerSpec()
       transactionService,
       tokenService,
       exportTxsNumberThreshold = 1000,
-      streamParallelism = 8
+      streamParallelism = 8,
+      maxTimeInterval = ConfigDefaults.maxTimeIntervals.amountHistory
     )
 
   val routes = server.routes
@@ -267,16 +281,17 @@ class AddressServerSpec()
     def maxTimeSpan(intervalType: IntervalType) = intervalType match {
       case IntervalType.Hourly => Duration.ofDaysUnsafe(7)
       case IntervalType.Daily  => Duration.ofDaysUnsafe(365)
+      case IntervalType.Weekly => Duration.ofDaysUnsafe(365)
     }
     def getToTs(intervalType: IntervalType) =
       fromTs + maxTimeSpan(intervalType).millis
 
-    "return the amount history as json " in {
+    "return the deprecated amount history as json" in {
       intervalTypes.foreach { intervalType =>
         val toTs = getToTs(intervalType)
 
         Get(
-          s"/addresses/${address}/amount-history?fromTs=$fromTs&toTs=$toTs&interval-type=$intervalType"
+          s"/addresses/${address}/amount-history-DEPRECATED?fromTs=$fromTs&toTs=$toTs&interval-type=$intervalType"
         ) check { response =>
           response.body is Right(
             s"""{"amountHistory":${amountHistory
@@ -290,6 +305,22 @@ class AddressServerSpec()
               s"""attachment;filename="$address-amount-history-$fromTs-$toTs.json""""
             )
           response.headers.contains(header) is true
+        }
+      }
+    }
+
+    "return the amount history as json" in {
+      intervalTypes.foreach { intervalType =>
+        val toTs = getToTs(intervalType)
+
+        Get(
+          s"/addresses/${address}/amount-history?fromTs=$fromTs&toTs=$toTs&interval-type=$intervalType"
+        ) check { response =>
+          response.body is Right(
+            s"""{"amountHistory":${amountHistory
+                .map { case (amount, ts) => s"""[${ts.millis},"$amount"]""" }
+                .mkString("[", ",", "]")}}"""
+          )
         }
       }
     }

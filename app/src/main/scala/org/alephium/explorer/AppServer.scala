@@ -24,13 +24,18 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.cache.{BlockCache, TransactionCache}
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service._
 import org.alephium.explorer.web._
 
 // scalastyle:off magic.number
 object AppServer {
 
-  def routes(exportTxsNumberThreshold: Int, streamParallelism: Int)(implicit
+  def routes(
+      exportTxsNumberThreshold: Int,
+      streamParallelism: Int,
+      maxTimeIntervals: ExplorerConfig.MaxTimeIntervals
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
@@ -45,12 +50,13 @@ object AppServer {
         TransactionService,
         TokenService,
         exportTxsNumberThreshold,
-        streamParallelism
+        streamParallelism,
+        maxTimeIntervals.amountHistory
       )
     val transactionServer = new TransactionServer()
     val infosServer       = new InfosServer(TokenSupplyService, BlockService, TransactionService)
     val utilsServer: UtilsServer   = new UtilsServer()
-    val chartsServer: ChartsServer = new ChartsServer()
+    val chartsServer: ChartsServer = new ChartsServer(maxTimeIntervals.charts)
     val tokenServer: TokenServer   = new TokenServer(TokenService)
     val mempoolServer              = new MempoolServer()
     val eventServer                = new EventServer()

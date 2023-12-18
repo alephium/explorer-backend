@@ -46,6 +46,7 @@ case object TransactionHistoryService extends StrictLogging {
 
   val hourlyStepBack: Duration = Duration.ofHoursUnsafe(2)
   val dailyStepBack: Duration  = Duration.ofDaysUnsafe(1)
+  val weeklyStepBack: Duration = Duration.ofDaysUnsafe(7)
 
   def start(interval: FiniteDuration)(implicit
       executionContext: ExecutionContext,
@@ -148,8 +149,9 @@ case object TransactionHistoryService extends StrictLogging {
 
   private def truncate(timestamp: TimeStamp, intervalType: IntervalType): TimeStamp =
     intervalType match {
-      case IntervalType.Daily  => truncatedToDay(timestamp)
       case IntervalType.Hourly => truncatedToHour(timestamp)
+      case IntervalType.Daily  => truncatedToDay(timestamp)
+      case IntervalType.Weekly => truncatedToWeek(timestamp)
     }
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
@@ -167,8 +169,9 @@ case object TransactionHistoryService extends StrictLogging {
       ArraySeq.empty
     } else {
       val step = (intervalType match {
-        case IntervalType.Daily  => Duration.ofDaysUnsafe(1)
         case IntervalType.Hourly => Duration.ofHoursUnsafe(1)
+        case IntervalType.Daily  => Duration.ofDaysUnsafe(1)
+        case IntervalType.Weekly => Duration.ofDaysUnsafe(7)
       }).-(oneMillis).get
 
       buildTimestampRange(start, end, step)
@@ -181,8 +184,9 @@ case object TransactionHistoryService extends StrictLogging {
    */
   private def stepBack(timestamp: TimeStamp, intervalType: IntervalType): TimeStamp =
     intervalType match {
-      case IntervalType.Daily  => timestamp.minusUnsafe(dailyStepBack)
       case IntervalType.Hourly => timestamp.minusUnsafe(hourlyStepBack)
+      case IntervalType.Daily  => timestamp.minusUnsafe(dailyStepBack)
+      case IntervalType.Weekly => timestamp.minusUnsafe(weeklyStepBack)
     }
 
   // TODO Replace by accessing a `Latest Transaction cache`

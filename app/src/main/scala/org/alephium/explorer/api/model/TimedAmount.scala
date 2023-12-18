@@ -14,25 +14,23 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer
+package org.alephium.explorer.api.model
 
-import org.alephium.explorer.config.ExplorerConfig._
-import org.alephium.util.Duration
+import java.math.BigInteger
 
-object ConfigDefaults {
-  implicit val groupSetting: GroupSetting = Generators.groupSettingGen.sample.get
+import org.alephium.api.UtilJson._
+import org.alephium.json.Json._
+import org.alephium.util.TimeStamp
 
-  val maxTimeIntervals: MaxTimeIntervals =
-    MaxTimeIntervals(
-      amountHistory = MaxTimeInterval(
-        hourly = Duration.ofDaysUnsafe(7),
-        daily = Duration.ofDaysUnsafe(365),
-        weekly = Duration.ofDaysUnsafe(365)
-      ),
-      charts = MaxTimeInterval(
-        hourly = Duration.ofDaysUnsafe(30),
-        daily = Duration.ofDaysUnsafe(365),
-        weekly = Duration.ofDaysUnsafe(365)
-      )
-    )
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+final case class TimedAmount(
+    timestamp: TimeStamp,
+    amount: BigInteger
+)
+
+object TimedAmount {
+  implicit val readWriter: ReadWriter[TimedAmount] = readwriter[(TimeStamp, BigInteger)].bimap(
+    timedAmount => (timedAmount.timestamp, timedAmount.amount),
+    { case (time, amount) => TimedAmount(time, amount) }
+  )
 }
