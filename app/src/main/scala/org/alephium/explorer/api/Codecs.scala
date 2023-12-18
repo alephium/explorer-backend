@@ -22,7 +22,7 @@ import sttp.tapir.{Codec, CodecFormat, DecodeResult}
 import sttp.tapir.Codec.PlainCodec
 
 import org.alephium.api.TapirCodecs
-import org.alephium.explorer.api.model.{IntervalType, StdInterfaceId}
+import org.alephium.explorer.api.model._
 import org.alephium.json.Json._
 import org.alephium.protocol.model.Address
 
@@ -43,8 +43,11 @@ object Codecs extends TapirCodecs {
       _.string
     )
 
-  implicit val tokenStdInterfaceIdCodec: Codec[String, StdInterfaceId, CodecFormat.TextPlain] =
-    fromJson[StdInterfaceId]
+  implicit val tokenStdInterfaceIdCodec: Codec[String, TokenStdInterfaceId, CodecFormat.TextPlain] =
+    fromJson[TokenStdInterfaceId](
+      StdInterfaceId.tokenReadWriter,
+      StdInterfaceId.tokenWithHexStringSchema
+    )
 
   def explorerFromJson[A: ReadWriter]: PlainCodec[A] =
     Codec.string.mapDecode[A] { raw =>

@@ -23,7 +23,7 @@ import org.alephium.api.TapirCodecs
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.Codecs._
 import org.alephium.explorer.api.Schemas._
-import org.alephium.explorer.api.model.{IntervalType, Pagination, StdInterfaceId}
+import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.TokenId
 import org.alephium.util.{Duration, TimeStamp}
 
@@ -100,6 +100,10 @@ trait QueryParams extends TapirCodecs {
   val intervalTypeQuery: EndpointInput[IntervalType] =
     query[IntervalType]("interval-type")
 
-  val tokenInterfaceIdQuery: EndpointInput[Option[StdInterfaceId]] =
-    query[Option[StdInterfaceId]]("interface-id")
+  val tokenInterfaceIdQuery: EndpointInput[Option[TokenStdInterfaceId]] =
+    query[Option[TokenStdInterfaceId]]("interface-id")
+      .description(
+        s"${StdInterfaceId.tokenStdInterfaceIds.map(_.value).mkString(", ")} or any interface id in hex-string format, e.g: 0001"
+      )
+      .schema(StdInterfaceId.tokenWithHexStringSchema.format("string").asOption)
 }

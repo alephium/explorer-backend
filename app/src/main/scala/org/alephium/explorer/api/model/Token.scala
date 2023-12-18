@@ -16,7 +16,11 @@
 
 package org.alephium.explorer.api.model
 
+import sttp.tapir.Schema
+
+import org.alephium.api.TapirSchemas._
 import org.alephium.explorer.api.Json._
+import org.alephium.explorer.api.Schemas._
 import org.alephium.json.Json._
 import org.alephium.protocol.model.TokenId
 import org.alephium.serde._
@@ -31,4 +35,5 @@ object Token {
       Token.apply,
       t => (t.id, t.amount)
     )
+  implicit val schema: Schema[Token] = Schema.derived[Token]
 }

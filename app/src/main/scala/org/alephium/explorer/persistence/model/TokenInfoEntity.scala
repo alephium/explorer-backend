@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.explorer.api.model.TokenInfo
+import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.TokenId
 import org.alephium.util.TimeStamp
 
@@ -29,6 +29,11 @@ final case class TokenInfoEntity(
   def toApi(): TokenInfo =
     TokenInfo(
       token,
-      interfaceId.map(_.toApi)
+      interfaceId.map(
+        _.toApi match {
+          case tokenInterface: TokenStdInterfaceId => tokenInterface
+          case other                               => StdInterfaceId.Unknown(other.id)
+        }
+      )
     )
 }

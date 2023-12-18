@@ -3641,10 +3641,20 @@
           {
             "name": "interface-id",
             "in": "query",
+            "description": "fungible, non-fungible, non-standard or any interface id in hex-string format, e.g: 0001",
             "required": false,
             "schema": {
-              "type": "string",
-              "description": "fungible, non-fungible, non-standard or any interface id in hex-string format, e.g: 0001"
+              "format": "string",
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/TokenStdInterfaceId"
+                },
+                {
+                  "type": "string",
+                  "description": "Raw interface id, e.g. 0001",
+                  "format": "hex-string"
+                }
+              ]
             }
           }
         ],
@@ -7314,10 +7324,26 @@
             "format": "32-byte-hash"
           },
           "stdInterfaceId": {
-            "type": "string",
-            "description": "fungible, non-fungible, non-standard or any interface id in hex-string format, e.g: 0001"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TokenStdInterfaceId"
+              },
+              {
+                "type": "string",
+                "description": "Raw interface id, e.g. 0001",
+                "format": "hex-string"
+              }
+            ]
           }
         }
+      },
+      "TokenStdInterfaceId": {
+        "type": "string",
+        "enum": [
+          "fungible",
+          "non-fungible",
+          "non-standard"
+        ]
       },
       "TokenSupply": {
         "required": [
@@ -7576,14 +7602,6 @@
         "type": "integer",
         "enum": [
           80
-        ]
-      },
-      "TokenStdInterfaceId": {
-        "type": "string",
-        "enum": [
-          "fungible",
-          "non-fungible",
-          "non-standard"
         ]
       }
     }

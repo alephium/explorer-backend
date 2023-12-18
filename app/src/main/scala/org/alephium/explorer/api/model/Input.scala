@@ -19,7 +19,9 @@ package org.alephium.explorer.api.model
 import scala.collection.immutable.ArraySeq
 
 import akka.util.ByteString
+import sttp.tapir.Schema
 
+import org.alephium.api.TapirSchemas._
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
@@ -38,5 +40,5 @@ final case class Input(
 
 object Input {
   implicit val readWriter: ReadWriter[Input] = macroRW
-
+  implicit val schema: Schema[Input]         = Schema.derived[Input]
 }
