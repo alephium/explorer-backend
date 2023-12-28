@@ -107,6 +107,14 @@ trait TokenService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Unit]
+
+  def listTokenHolders(token: TokenId)(implicit
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[Address]]
+
+  def listTokenInteractedAddresses(token: TokenId)(implicit
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[Address]]
 }
 
 object TokenService extends TokenService with StrictLogging {
@@ -186,6 +194,16 @@ object TokenService extends TokenService with StrictLogging {
   ): Future[ArraySeq[Address.Contract]] = {
     run(listContractWithoutInterfaceIdQuery())
   }
+
+  def listTokenHolders(token: TokenId)(implicit
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[Address]] =
+    run(getTokenHolders(token))
+
+  def listTokenInteractedAddresses(token: TokenId)(implicit
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[Address]] =
+    run(getTokenInteractedAddresses(token))
 
   // Interface Id is store after the metadata is stored in case it fail in the middle of the
   // metadata insert. As we rely on the empyt interface id to know which token to update.

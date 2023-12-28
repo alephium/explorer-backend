@@ -92,4 +92,19 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .description(
         "Return metadata for the given nft collection addresses, if metadata doesn't exist or address isn't a nft collection, it won't be in the output list"
       )
+
+  val listTokenHolders: BaseEndpoint[TokenId, ArraySeq[Address]] =
+    tokensEndpoint.get
+      .in(path[TokenId]("token_id"))
+      .in("holders")
+      .out(jsonBody[ArraySeq[Address]])
+      .description("Get token holders")
+
+  val listTokenInteractedAddresses: BaseEndpoint[TokenId, ArraySeq[Address]] =
+    tokensEndpoint.get
+      .in(path[TokenId]("token_id"))
+      .in("addresses-used")
+      .out(jsonBody[ArraySeq[Address]])
+      .description("Get token holders")
+
 }

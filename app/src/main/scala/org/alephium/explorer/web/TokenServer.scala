@@ -59,6 +59,15 @@ class TokenServer(tokenService: TokenService)(implicit
       route(listNFTCollectionMetadata.serverLogicSuccess[Future] { addresses =>
         val contracts = addresses.collect { case address: Address.Contract => address }
         tokenService.listNFTCollectionMetadata(contracts)
+      }),
+      route(listTokenHolders.serverLogicSuccess[Future] { token =>
+        tokenService
+          .listTokenHolders(token)
+      }),
+      route(listTokenInteractedAddresses.serverLogicSuccess[Future] { token =>
+        tokenService
+          .listTokenInteractedAddresses(token)
       })
+
     )
 }
