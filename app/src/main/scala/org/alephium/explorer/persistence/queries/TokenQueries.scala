@@ -108,7 +108,7 @@ object TokenQueries extends StrictLogging {
       FROM token_tx_per_addresses
       WHERE token = $token
     """
-      .paginate(pagination)
+      //.paginate(pagination)
       .asAS[Address]
   }
 
@@ -355,5 +355,31 @@ object TokenQueries extends StrictLogging {
       SET interface_id = $interfaceId, category = ${interfaceId.category}
       WHERE token = $token
     """
+  }
+
+    def getTokenHolders(token:TokenId): DBActionR[ArraySeq[Address]] = {
+  sql"""
+      SELECT
+        token_outputs.address
+      FROM token_outputs
+        LEFT JOIN inputs
+        ON token_outputs.key = inputs.output_ref_key
+        AND inputs.main_chain = true
+      WHERE token_outputs.spent_finalized IS NULL
+        AND token_outputs.token = $token
+        AND token_outputs.main_chain = true
+        AND inputs.block_hash IS NULL
+      GROUP BY token_outputs.address
+    """.asAS[Address]
+  }
+
+  def getTokenInteractedAddresses(token:TokenId): DBActionR[ArraySeq[Address]] = {
+  sql"""
+      SELECT token_outputs.address
+      FROM token_outputs
+      WHERE token_outputs.token = $token
+        AND token_outputs.main_chain = true
+      GROUP BY token_outputs.address;
+    """.asAS[Address]
   }
 }
