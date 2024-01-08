@@ -6213,14 +6213,18 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Tuple2_Long_Double"
+                    "$ref": "#/components/schemas/TimedPrice"
                   }
                 },
                 "example": [
-                  [
-                    1234545,
-                    0.01
-                  ]
+                  {
+                    "timestamp": 1611041396892,
+                    "price": 0.123
+                  },
+                  {
+                    "timestamp": 1611041396892,
+                    "price": 0.123
+                  }
                 ]
               }
             }
@@ -7505,6 +7509,23 @@
           }
         }
       },
+      "TimedPrice": {
+        "required": [
+          "timestamp",
+          "price"
+        ],
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
       "Token": {
         "required": [
           "id",
@@ -7657,23 +7678,6 @@
           "mapping": {
             "AcceptedTransaction": "#/components/schemas/AcceptedTransaction",
             "PendingTransaction": "#/components/schemas/PendingTransaction"
-          }
-        }
-      },
-      "Tuple2_Long_Double": {
-        "required": [
-          "_1",
-          "_2"
-        ],
-        "type": "object",
-        "properties": {
-          "_1": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "_2": {
-            "type": "number",
-            "format": "double"
           }
         }
       },

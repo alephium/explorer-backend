@@ -31,7 +31,7 @@ import org.alephium.explorer.util.Scheduler
 import org.alephium.json.Json._
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.TokenId
-import org.alephium.util.{Duration, Hex, Math}
+import org.alephium.util.{Duration, Hex, Math, TimeStamp}
 
 trait MarketService {
   def getPrices(ids: List[TokenId], currency: String)(implicit
@@ -44,7 +44,7 @@ trait MarketService {
 
   def getPriceChart(tokenId: TokenId, currency: String)(implicit
       ec: ExecutionContext
-  ): Future[Either[String, ArraySeq[(Long, Double)]]]
+  ): Future[Either[String, ArraySeq[TimedPrice]]]
 }
 
 object MarketService extends StrictLogging {
@@ -140,11 +140,11 @@ object MarketService extends StrictLogging {
       )(_ => getExchangeRatesRemote(0))
 
     private val priceChartsCache
-        : ListMap[TokenId, AsyncReloadingCache[Either[String, ArraySeq[(Long, Double)]]]] =
+        : ListMap[TokenId, AsyncReloadingCache[Either[String, ArraySeq[(TimeStamp, Double)]]]] =
       ids.map { case (id, name) =>
         (
           id,
-          AsyncReloadingCache[Either[String, ArraySeq[(Long, Double)]]](
+          AsyncReloadingCache[Either[String, ArraySeq[(TimeStamp, Double)]]](
             Left(s"Price chart not fetched for $id"),
             priceChartsExpirationTime.asScala
           )(_ => getPriceChartRemote(name, 0))
@@ -247,7 +247,7 @@ object MarketService extends StrictLogging {
 
     def getPriceChart(tokenId: TokenId, currency: String)(implicit
         ec: ExecutionContext
-    ): Future[Either[String, ArraySeq[(Long, Double)]]] = {
+    ): Future[Either[String, ArraySeq[TimedPrice]]] = {
       Future.successful(
         for {
           rates <- ratesCache.get()
@@ -258,7 +258,7 @@ object MarketService extends StrictLogging {
           priceChart <- cache.get()
         } yield {
           priceChart.map { case (ts, price) =>
-            (ts, price * rate.value)
+            TimedPrice(ts, price * rate.value)
           }
         }
       )
@@ -266,7 +266,7 @@ object MarketService extends StrictLogging {
 
     def getPriceChartRemote(id: String, retried: Int)(implicit
         ec: ExecutionContext
-    ): Future[Either[String, ArraySeq[(Long, Double)]]] = {
+    ): Future[Either[String, ArraySeq[(TimeStamp, Double)]]] = {
       logger.debug(s"Query coingecko `/coins/$id/market_chart`, nb of attempts $retried")
       basicRequest
         .method(Method.GET, uri"$baseUri/coins/$id/market_chart?vs_currency=$baseCurrency&days=365")
@@ -280,7 +280,7 @@ object MarketService extends StrictLogging {
         id: String,
         response: Response[Either[String, String]],
         retried: Int
-    ): Future[Either[String, ArraySeq[(Long, Double)]]] = {
+    ): Future[Either[String, ArraySeq[(TimeStamp, Double)]]] = {
       handleResponseAndRetry(
         s"/coins/$id/market_chart",
         response,
@@ -354,7 +354,9 @@ object MarketService extends StrictLogging {
       }
     }
 
-    def convertJsonToPriceChart(json: ujson.Value): Either[String, ArraySeq[(Long, Double)]] = {
+    def convertJsonToPriceChart(
+        json: ujson.Value
+    ): Either[String, ArraySeq[(TimeStamp, Double)]] = {
       json match {
         case obj: ujson.Obj =>
           Try {
@@ -363,7 +365,7 @@ object MarketService extends StrictLogging {
                 Right(
                   ArraySeq.from(prices.arr.flatMap {
                     case values: ujson.Arr =>
-                      Some((values(0).num.toLong, values(1).num))
+                      Some((TimeStamp.unsafe(values(0).num.toLong), values(1).num))
                     case _ => None
                   })
                 )

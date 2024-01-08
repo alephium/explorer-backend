@@ -219,6 +219,12 @@ object EndpointExamples extends EndpointsExamples {
       totalCountAllChains = 10000000
     )
 
+  private val timedPrice =
+    TimedPrice(
+      timestamp = ts,
+      price = 0.123
+    )
+
   private val perChainCount =
     PerChainCount(
       chainFrom = 1,
@@ -347,6 +353,9 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val timedCountExample: List[Example[ArraySeq[TimedCount]]] =
     simpleExample(ArraySeq(timedCount, timedCount))
+
+  implicit val timedPriceExample: List[Example[ArraySeq[TimedPrice]]] =
+    simpleExample(ArraySeq(timedPrice, timedPrice))
 
   implicit val perChainTimedCountExample: List[Example[ArraySeq[PerChainTimedCount]]] =
     simpleExample(ArraySeq(perChainTimedCount, perChainTimedCount))

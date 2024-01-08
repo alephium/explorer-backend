@@ -32,6 +32,7 @@ import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.api.BaseEndpoint
+import org.alephium.explorer.api.model.TimedPrice
 import org.alephium.explorer.web.Server
 import org.alephium.json.Json._
 import org.alephium.protocol.Hash
@@ -94,7 +95,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
         val exchangeRate =
           marketService.getExchangeRates().futureValue.rightValue.find(_.currency == currency).get
 
-        chart is btcChart.map { case (ts, price) => (ts, price * exchangeRate.value) }
+        chart is btcChart.map { tp => TimedPrice(tp.timestamp, tp.price * exchangeRate.value) }
       }
 
     }
