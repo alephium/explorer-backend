@@ -29,4 +29,3 @@ final case class TimedPrice(
 object TimedPrice {
   implicit val readWriter: ReadWriter[TimedPrice] = macroRW
 }
-

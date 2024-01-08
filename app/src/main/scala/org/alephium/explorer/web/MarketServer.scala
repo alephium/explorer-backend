@@ -34,7 +34,7 @@ class MarketServer(
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
-      route(getPrices.serverLogic[Future] { case (ids, currency) =>
+      route(getPrices.serverLogic[Future] { case (currency, ids) =>
         marketService
           .getPrices(ids, currency)
           .map(_.left.map { error =>

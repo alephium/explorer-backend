@@ -50,7 +50,8 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     }
 
     eventually {
-      val prices = marketService.getPrices(List(TokenId.alph, usdt), "chf").futureValue.rightValue
+      val prices =
+        marketService.getPrices(ArraySeq(TokenId.alph, usdt), "chf").futureValue.rightValue
       prices.map(p => p.tokenId).toSet is Set(
         TokenId.alph,
         usdt
@@ -65,7 +66,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     eventually {
       val btcPrice =
         marketService
-          .getPrices(List(TokenId.alph), "btc")
+          .getPrices(ArraySeq(TokenId.alph), "btc")
           .futureValue
           .rightValue
           .map(p => (p.currency, p.price))
@@ -73,7 +74,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
       MarketService.currencies.foreach { currency =>
         val price = marketService
-          .getPrices(List(TokenId.alph), currency)
+          .getPrices(ArraySeq(TokenId.alph), currency)
           .futureValue
           .rightValue
           .map(p => (p.currency, p.price))

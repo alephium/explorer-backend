@@ -34,7 +34,7 @@ import org.alephium.protocol.model.TokenId
 import org.alephium.util.{Duration, Hex, Math, TimeStamp}
 
 trait MarketService {
-  def getPrices(ids: List[TokenId], currency: String)(implicit
+  def getPrices(ids: ArraySeq[TokenId], currency: String)(implicit
       ec: ExecutionContext
   ): Future[Either[String, ArraySeq[Price]]]
 
@@ -168,7 +168,7 @@ object MarketService extends StrictLogging {
       )(Future.successful(caches.foreach(_._2.expireAndReload())))
     }
 
-    def getPrices(ids: List[TokenId], currency: String)(implicit
+    def getPrices(ids: ArraySeq[TokenId], currency: String)(implicit
         ec: ExecutionContext
     ): Future[Either[String, ArraySeq[Price]]] = {
       Future.successful(

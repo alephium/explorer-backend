@@ -6065,24 +6065,12 @@
       }
     },
     "/market/prices": {
-      "get": {
+      "post": {
         "tags": [
           "Market"
         ],
-        "operationId": "getMarketPrices",
+        "operationId": "postMarketPrices",
         "parameters": [
-          {
-            "name": "token-ids",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "format": "32-byte-hash"
-              }
-            }
-          },
           {
             "name": "currency",
             "in": "query",
@@ -6092,6 +6080,24 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "32-byte-hash"
+                }
+              },
+              "example": [
+                "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
+              ]
+            }
+          },
+          "required": false
+        },
         "responses": {
           "200": {
             "content": {
