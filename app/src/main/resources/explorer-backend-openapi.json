@@ -6072,13 +6072,14 @@
         "operationId": "getMarketPrices",
         "parameters": [
           {
-            "name": "ids",
+            "name": "token-ids",
             "in": "query",
             "required": false,
             "schema": {
               "type": "array",
               "items": {
-                "type": "string"
+                "type": "string",
+                "format": "32-byte-hash"
               }
             }
           },
@@ -6103,8 +6104,7 @@
                 },
                 "example": [
                   {
-                    "id": "alph",
-                    "name": "alephium",
+                    "tokenId": "7b3efc0a1c4bc54e7398811f7e474e461a9c00cbc951f33b886a5f207c820ef2",
                     "price": 0.01,
                     "currency": "chf"
                   }
@@ -6193,7 +6193,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "32-byte-hash"
             }
           },
           {
@@ -7445,18 +7446,15 @@
       },
       "Price": {
         "required": [
-          "id",
-          "name",
+          "tokenId",
           "price",
           "currency"
         ],
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
+          "tokenId": {
+            "type": "string",
+            "format": "32-byte-hash"
           },
           "price": {
             "type": "number",

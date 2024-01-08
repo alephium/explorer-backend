@@ -29,10 +29,12 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.json.Json._
-import org.alephium.util.{Duration, Math}
+import org.alephium.protocol.Hash
+import org.alephium.protocol.model.TokenId
+import org.alephium.util.{Duration, Hex, Math}
 
 trait MarketService {
-  def getPrices(ids: List[String], currency: String)(implicit
+  def getPrices(ids: List[TokenId], currency: String)(implicit
       ec: ExecutionContext
   ): Future[Either[String, ArraySeq[Price]]]
 
@@ -40,7 +42,7 @@ trait MarketService {
       ec: ExecutionContext
   ): Future[Either[String, ArraySeq[ExchangeRate]]]
 
-  def getPriceChart(id: String, currency: String)(implicit
+  def getPriceChart(tokenId: TokenId, currency: String)(implicit
       ec: ExecutionContext
   ): Future[Either[String, ArraySeq[(Long, Double)]]]
 }
@@ -49,17 +51,29 @@ object MarketService extends StrictLogging {
   // TODO add proper types and expose enum in open-api
   // ListMap to preserve order when intialy loading, first ones being the
   // most priority ones
-  val ids: ListMap[String, String] = ListMap(
-    "alph" -> "alephium",
-    "usdc" -> "usd-coin",
-    "usdt" -> "tether",
-    "wbtc" -> "wrapped-bitcoin",
-    "weth" -> "weth",
-    "dai"  -> "dai",
-    "ayin" -> "ayin"
+  val ids: ListMap[TokenId, String] = ListMap(
+    TokenId.alph -> "alephium",
+    TokenId.unsafe(
+      Hash.unsafe(Hex.unsafe("722954d9067c5a5ad532746a024f2a9d7a18ed9b90e27d0a3a504962160b5600"))
+    ) -> "usd-coin",
+    TokenId.unsafe(
+      Hash.unsafe(Hex.unsafe("556d9582463fe44fbd108aedc9f409f69086dc78d994b88ea6c9e65f8bf98e00"))
+    ) -> "tether",
+    TokenId.unsafe(
+      Hash.unsafe(Hex.unsafe("383bc735a4de6722af80546ec9eeb3cff508f2f68e97da19489ce69f3e703200"))
+    ) -> "wrapped-bitcoin",
+    TokenId.unsafe(
+      Hash.unsafe(Hex.unsafe("19246e8c2899bc258a1156e08466e3cdd3323da756d8a543c7fc911847b96f00"))
+    ) -> "weth",
+    TokenId.unsafe(
+      Hash.unsafe(Hex.unsafe("3d0a1895108782acfa875c2829b0bf76cb586d95ffa4ea9855982667cc73b700"))
+    ) -> "dai",
+    TokenId.unsafe(
+      Hash.unsafe(Hex.unsafe("1a281053ba8601a658368594da034c2e99a0fb951b86498d05e76aedfe666800"))
+    ) -> "ayin"
   )
 
-  val idsR: ListMap[String, String] = ids.map(_.swap)
+  val idsR: ListMap[String, TokenId] = ids.map(_.swap)
 
   // TODO add proper types and expose enum in open-api
   val currencies: ArraySeq[String] = ArraySeq(
@@ -126,7 +140,7 @@ object MarketService extends StrictLogging {
       )(_ => getExchangeRatesRemote(0))
 
     private val priceChartsCache
-        : ListMap[String, AsyncReloadingCache[Either[String, ArraySeq[(Long, Double)]]]] =
+        : ListMap[TokenId, AsyncReloadingCache[Either[String, ArraySeq[(Long, Double)]]]] =
       ids.map { case (id, name) =>
         (
           id,
@@ -154,7 +168,7 @@ object MarketService extends StrictLogging {
       )(Future.successful(caches.foreach(_._2.expireAndReload())))
     }
 
-    def getPrices(ids: List[String], currency: String)(implicit
+    def getPrices(ids: List[TokenId], currency: String)(implicit
         ec: ExecutionContext
     ): Future[Either[String, ArraySeq[Price]]] = {
       Future.successful(
@@ -166,7 +180,7 @@ object MarketService extends StrictLogging {
           prices <- pricesCache.get()
         } yield {
           prices
-            .filter(price => ids.contains(price.id))
+            .filter(price => ids.contains(price.tokenId))
             .map(price => price.copy(price = price.price * rate.value, currency = currency))
         }
       )
@@ -231,7 +245,7 @@ object MarketService extends StrictLogging {
       )
     }
 
-    def getPriceChart(id: String, currency: String)(implicit
+    def getPriceChart(tokenId: TokenId, currency: String)(implicit
         ec: ExecutionContext
     ): Future[Either[String, ArraySeq[(Long, Double)]]] = {
       Future.successful(
@@ -240,7 +254,7 @@ object MarketService extends StrictLogging {
           rate <- rates
             .find(_.currency == currency)
             .toRight(s"Cannot find price for currency $currency")
-          cache      <- priceChartsCache.get(id).toRight(s"Not price chart for $id")
+          cache      <- priceChartsCache.get(tokenId).toRight(s"Not price chart for $tokenId")
           priceChart <- cache.get()
         } yield {
           priceChart.map { case (ts, price) =>
@@ -305,7 +319,7 @@ object MarketService extends StrictLogging {
           Try {
             ArraySeq.from(obj.value.flatMap { case (name, value) =>
               idsR.get(name).map { id =>
-                Price(id, name, value(baseCurrency).num, baseCurrency)
+                Price(id, value(baseCurrency).num, baseCurrency)
               }
             })
           }.toEither.left.map { error =>

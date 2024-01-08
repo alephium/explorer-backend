@@ -24,6 +24,7 @@ import sttp.tapir.generic.auto._
 import org.alephium.api.Endpoints.jsonBody
 import org.alephium.explorer.api.EndpointExamples._
 import org.alephium.explorer.api.model._
+import org.alephium.protocol.model.TokenId
 
 // scalastyle:off magic.number
 trait MarketEndpoints extends BaseEndpoint with QueryParams {
@@ -35,17 +36,17 @@ trait MarketEndpoints extends BaseEndpoint with QueryParams {
 
   implicit val valueSchema: Schema[ujson.Value] = Schema.string
 
-  val getPrices: BaseEndpoint[(List[String], String), ArraySeq[Price]] =
+  val getPrices: BaseEndpoint[(List[TokenId], String), ArraySeq[Price]] =
     basePricesEndpoint.get
       .in("prices")
-      .in(query[List[String]]("ids"))
+      .in(query[List[TokenId]]("token-ids"))
       .in(query[String]("currency"))
       .out(jsonBody[ArraySeq[Price]])
 
-  val getPriceChart: BaseEndpoint[(String, String), ArraySeq[(Long, Double)]] =
+  val getPriceChart: BaseEndpoint[(TokenId, String), ArraySeq[(Long, Double)]] =
     basePricesEndpoint.get
       .in("prices")
-      .in(path[String]("id"))
+      .in(path[TokenId]("id"))
       .in(query[String]("currency"))
       .in("charts")
       .out(jsonBody[ArraySeq[(Long, Double)]])

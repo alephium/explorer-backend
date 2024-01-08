@@ -34,6 +34,9 @@ import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.web.Server
 import org.alephium.json.Json._
+import org.alephium.protocol.Hash
+import org.alephium.protocol.model.TokenId
+import org.alephium.util.Hex
 
 class MarketServiceSpec extends AlephiumFutureSpec {
 
@@ -42,14 +45,14 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     eventually {
       val prices =
         marketService.getPrices(MarketService.ids.keys.toList, "chf").futureValue.rightValue
-      prices.map(_.id).toSet is MarketService.ids.keys.toSet
+      prices.map(_.tokenId).toSet is MarketService.ids.keys.toSet
     }
 
     eventually {
-      val prices = marketService.getPrices(List("alph", "usdt"), "chf").futureValue.rightValue
-      prices.map(p => (p.id, p.name)).toSet is Set(
-        ("alph", "alephium"),
-        ("usdt", "tether")
+      val prices = marketService.getPrices(List(TokenId.alph, usdt), "chf").futureValue.rightValue
+      prices.map(p => p.tokenId).toSet is Set(
+        TokenId.alph,
+        usdt
       )
     }
 
@@ -61,7 +64,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     eventually {
       val btcPrice =
         marketService
-          .getPrices(List("alph"), "btc")
+          .getPrices(List(TokenId.alph), "btc")
           .futureValue
           .rightValue
           .map(p => (p.currency, p.price))
@@ -69,7 +72,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
       MarketService.currencies.foreach { currency =>
         val price = marketService
-          .getPrices(List("alph"), currency)
+          .getPrices(List(TokenId.alph), currency)
           .futureValue
           .rightValue
           .map(p => (p.currency, p.price))
@@ -83,11 +86,11 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     }
 
     eventually {
-      val btcChart = marketService.getPriceChart("alph", "btc").futureValue.rightValue
+      val btcChart = marketService.getPriceChart(TokenId.alph, "btc").futureValue.rightValue
 
       MarketService.currencies.foreach { currency =>
         val chart =
-          marketService.getPriceChart("alph", currency).futureValue.rightValue
+          marketService.getPriceChart(TokenId.alph, currency).futureValue.rightValue
         val exchangeRate =
           marketService.getExchangeRates().futureValue.rightValue.find(_.currency == currency).get
 
@@ -102,6 +105,9 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     val localhost: InetAddress = InetAddress.getByName("127.0.0.1")
     val port                   = SocketUtil.temporaryLocalPort(SocketUtil.Both)
 
+    val usdt = TokenId.unsafe(
+      Hash.unsafe(Hex.unsafe("556d9582463fe44fbd108aedc9f409f69086dc78d994b88ea6c9e65f8bf98e00"))
+    )
     val coingecko: MarketServiceSpec.CoingGeckoMock =
       new MarketServiceSpec.CoingGeckoMock(localhost, port)
     val marketService: MarketService =
