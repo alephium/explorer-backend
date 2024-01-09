@@ -17,7 +17,6 @@
 package org.alephium.explorer.persistence.schema
 
 import slick.jdbc.PostgresProfile.api._
-import slick.lifted.ProvenShape
 
 import org.alephium.explorer.{AlephiumFutureSpec, GenDBModel}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
@@ -25,12 +24,13 @@ import org.alephium.explorer.persistence.queries.OutputQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.persistence.schema.TimeStampTableFixture._
 import org.alephium.protocol.ALPH
 import org.alephium.util._
 
 class CustomJdbcTypesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
-  "convert TimeStamp" in new Fixture {
+  "convert TimeStamp" in {
 
     run(sqlu"DROP TABLE IF EXISTS timestamps;").futureValue
     run(timestampTable.schema.create).futureValue
@@ -47,28 +47,28 @@ class CustomJdbcTypesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
      * by 1 here in Switzerland
      */
     run(
-      sql"SELECT * from timestamps WHERE timestamp = $t1"
+      sql"SELECT * from timestamps WHERE block_timestamp = $t1"
         .as[TimeStamp]
     ).futureValue is Vector(t1)
 
     run(timestampTable.filter(_.timestamp === t1).result).futureValue is Seq(t1)
 
     run(
-      sql"SELECT * from timestamps WHERE timestamp = $t2"
+      sql"SELECT * from timestamps WHERE block_timestamp = $t2"
         .as[TimeStamp]
     ).futureValue is Vector(t2)
 
     run(timestampTable.filter(_.timestamp === t2).result).futureValue is Seq(t2)
 
     run(
-      sql"SELECT * from timestamps WHERE timestamp <= $t1"
+      sql"SELECT * from timestamps WHERE block_timestamp <= $t1"
         .as[TimeStamp]
     ).futureValue is Vector(t1, t2)
 
     run(timestampTable.filter(_.timestamp <= t1).result).futureValue is Seq(t1, t2)
   }
 
-  "set/get tokens" in new Fixture {
+  "set/get tokens" in {
 
     forAll(GenDBModel.outputEntityGen) { output =>
       run(OutputSchema.table.delete).futureValue
@@ -84,17 +84,5 @@ class CustomJdbcTypesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
       }
 
     }
-  }
-
-  trait Fixture {
-
-    def ts(str: String): TimeStamp = TimeStamp.unsafe(java.time.Instant.parse(str).toEpochMilli)
-
-    class TimeStamps(tag: Tag) extends Table[TimeStamp](tag, "timestamps") {
-      def timestamp: Rep[TimeStamp]  = column[TimeStamp]("timestamp")
-      def * : ProvenShape[TimeStamp] = timestamp
-    }
-
-    val timestampTable: TableQuery[TimeStamps] = TableQuery[TimeStamps]
   }
 }

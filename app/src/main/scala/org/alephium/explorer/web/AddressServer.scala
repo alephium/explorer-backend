@@ -32,15 +32,16 @@ import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service.{TokenService, TransactionService}
 import org.alephium.protocol.model.Address
-import org.alephium.util.Duration
 
 class AddressServer(
     transactionService: TransactionService,
     tokenService: TokenService,
     exportTxsNumberThreshold: Int,
-    streamParallelism: Int
+    streamParallelism: Int,
+    maxTimeInterval: ExplorerConfig.MaxTimeInterval
 )(implicit
     val executionContext: ExecutionContext,
     groupSetting: GroupSetting,
@@ -49,11 +50,6 @@ class AddressServer(
     with AddressesEndpoints {
 
   val groupNum = groupSetting.groupNum
-
-  // scalastyle:off magic.number
-  private val maxHourlyTimeSpan = Duration.ofDaysUnsafe(7)
-  private val maxDailyTimeSpan  = Duration.ofDaysUnsafe(365)
-  // scalastyle:on magic.number
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
@@ -124,11 +120,11 @@ class AddressServer(
           (AddressServer.exportFileNameHeader(address, timeInterval), stream)
         })
       }),
-      route(getAddressAmountHistory.serverLogic[Future] {
+      route(getAddressAmountHistoryDEPRECATED.serverLogic[Future] {
         case (address, timeInterval, intervalType) =>
           validateTimeInterval(timeInterval, intervalType) {
             val flowable =
-              transactionService.getAmountHistory(
+              transactionService.getAmountHistoryDEPRECATED(
                 address,
                 timeInterval.from,
                 timeInterval.to,
@@ -141,6 +137,23 @@ class AddressServer(
                 FlowableHelper.toReadStream(flowable)
               )
             )
+          }
+      }),
+      route(getAddressAmountHistory.serverLogic[Future] {
+        case (address, timeInterval, intervalType) =>
+          validateTimeInterval(timeInterval, intervalType) {
+            transactionService
+              .getAmountHistory(
+                address,
+                timeInterval.from,
+                timeInterval.to,
+                intervalType
+              )
+              .map { values =>
+                AmountHistory(values.map { case (ts, value) =>
+                  TimedAmount(ts, value)
+                })
+              }
           }
       })
     )
@@ -177,8 +190,9 @@ class AddressServer(
     IntervalType.validateTimeInterval(
       timeInterval,
       intervalType,
-      maxHourlyTimeSpan,
-      maxDailyTimeSpan
+      maxTimeInterval.hourly,
+      maxTimeInterval.daily,
+      maxTimeInterval.weekly
     )(contd)
 }
 

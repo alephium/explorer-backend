@@ -26,7 +26,7 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.GroupSetting
-import org.alephium.explorer.api.model.Pagination
+import org.alephium.explorer.api.model.{IntervalType, Pagination}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.state._
 import org.alephium.explorer.cache.BlockCache
@@ -35,8 +35,9 @@ import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
+import org.alephium.explorer.service.TransactionService
 import org.alephium.protocol.model.Address
-import org.alephium.util.TimeStamp
+import org.alephium.util.{Duration, TimeStamp}
 
 /** Implements all JMH functions executing benchmarks on Postgres.
   *
@@ -273,5 +274,37 @@ class DBBenchmark {
 
     val _ =
       Await.result(state.config.db.run(query), requestTimeout)
+  }
+
+  @Benchmark
+  def getAmountHistoryDEPRECATED(state: Address_ReadState): Unit = {
+    implicit val ec: ExecutionContext                = state.config.db.ioExecutionContext
+    implicit val dc: DatabaseConfig[PostgresProfile] = state.config
+    val timestamps                                   = state.blocks.map(_.timestamp)
+    val from                                         = timestamps.min
+    val to           = from.plusMillisUnsafe(Duration.ofDaysUnsafe(365L).millis)
+    val intervalType = IntervalType.Daily
+
+    val flowable = TransactionService
+      .getAmountHistoryDEPRECATED(state.address, from, to, intervalType, 8)
+
+    val _ =
+      flowable.toList().blockingGet()
+  }
+
+  @Benchmark
+  def getAmountHistory(state: Address_ReadState): Unit = {
+    implicit val ec: ExecutionContext                = state.config.db.ioExecutionContext
+    implicit val dc: DatabaseConfig[PostgresProfile] = state.config
+    val timestamps                                   = state.blocks.map(_.timestamp)
+    val from                                         = timestamps.min
+    val to           = from.plusMillisUnsafe(Duration.ofDaysUnsafe(365L).millis)
+    val intervalType = IntervalType.Daily
+
+    val res = TransactionService
+      .getAmountHistory(state.address, from, to, intervalType)
+
+    val _ =
+      Await.result(res, requestTimeout)
   }
 }

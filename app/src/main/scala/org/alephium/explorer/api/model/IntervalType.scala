@@ -53,14 +53,26 @@ object IntervalType {
     override def toString()    = string
   }
 
-  val all: ArraySeq[IntervalType] = ArraySeq(Hourly: IntervalType, Daily: IntervalType)
+  case object Weekly extends IntervalType {
+    val value: Int             = 2
+    val string: String         = "weekly"
+    val chronoUnit: ChronoUnit = ChronoUnit.WEEKS
+    val duration: Duration     = Duration.ofDaysUnsafe(7)
+    override def toString()    = string
+  }
+
+  val all: ArraySeq[IntervalType] =
+    ArraySeq(Hourly: IntervalType, Daily: IntervalType, Weekly: IntervalType)
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   implicit val reader: Reader[IntervalType] =
     StringReader.map {
       validate(_) match {
         case Some(intervalType) => intervalType
-        case None => throw new Abort("Cannot decode time-step, expected one of: hourly, daily")
+        case None =>
+          throw new Abort(
+            s"Cannot decode time-step, expected one of: ${all.map(_.string).mkString(", ")}"
+          )
       }
     }
 
@@ -68,6 +80,7 @@ object IntervalType {
     str match {
       case Hourly.string => Some(Hourly)
       case Daily.string  => Some(Daily)
+      case Weekly.string => Some(Weekly)
       case _             => None
     }
 
@@ -76,8 +89,9 @@ object IntervalType {
 
   def unsafe(int: Int): IntervalType = {
     int match {
-      case IntervalType.Daily.value  => IntervalType.Daily
       case IntervalType.Hourly.value => IntervalType.Hourly
+      case IntervalType.Daily.value  => IntervalType.Daily
+      case IntervalType.Weekly.value => IntervalType.Weekly
     }
   }
 
@@ -85,14 +99,16 @@ object IntervalType {
       timeInterval: TimeInterval,
       intervalType: IntervalType,
       maxHourlyTimeSpan: Duration,
-      maxDailyTimeSpan: Duration
+      maxDailyTimeSpan: Duration,
+      maxWeeklyTimeSpan: Duration
   )(
       contd: => Future[A]
   )(implicit executionContext: ExecutionContext): Future[Either[ApiError[_ <: StatusCode], A]] = {
     val timeSpan =
       intervalType match {
-        case IntervalType.Daily  => maxDailyTimeSpan
         case IntervalType.Hourly => maxHourlyTimeSpan
+        case IntervalType.Daily  => maxDailyTimeSpan
+        case IntervalType.Weekly => maxWeeklyTimeSpan
       }
     timeInterval.validateTimeSpan(timeSpan) match {
       case Left(error) => Future.successful(Left(error))

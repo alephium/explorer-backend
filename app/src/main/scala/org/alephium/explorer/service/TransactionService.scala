@@ -104,13 +104,23 @@ trait TransactionService {
       paralellism: Int
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer]
 
-  def getAmountHistory(
+  def getAmountHistoryDEPRECATED(
       address: Address,
       from: TimeStamp,
       to: TimeStamp,
       intervalType: IntervalType,
       paralellism: Int
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer]
+
+  def getAmountHistory(
+      address: Address,
+      from: TimeStamp,
+      to: TimeStamp,
+      intervalType: IntervalType
+  )(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[(TimeStamp, BigInteger)]]
 }
 
 object TransactionService extends TransactionService {
@@ -201,20 +211,22 @@ object TransactionService extends TransactionService {
 
   }
 
-  private def getInOutAmount(address: Address, from: TimeStamp, to: TimeStamp)(implicit
+  private def getInOutAmountDEPRECATED(address: Address, from: TimeStamp, to: TimeStamp)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[(U256, U256, TimeStamp)] = {
     run(
       for {
-        in  <- sumAddressInputs(address, from, to)
-        out <- sumAddressOutputs(address, from, to)
-      } yield (in, out, to)
+        in  <- sumAddressInputsDEPRECATED(address, from, to)
+        out <- sumAddressOutputsDEPRECATED(address, from, to)
+      } yield {
+        (in, out, to)
+      }
     )
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-  def getAmountHistory(
+  def getAmountHistoryDEPRECATED(
       address: Address,
       from: TimeStamp,
       to: TimeStamp,
@@ -226,7 +238,7 @@ object TransactionService extends TransactionService {
       .fromIterable(timeranges.asJava)
       .concatMapEager(
         { case (from: TimeStamp, to: TimeStamp) =>
-          Flowable.fromCompletionStage(getInOutAmount(address, from, to).asJava)
+          Flowable.fromCompletionStage(getInOutAmountDEPRECATED(address, from, to).asJava)
         },
         paralellism,
         1
@@ -249,6 +261,52 @@ object TransactionService extends TransactionService {
 
     amountHistoryToJsonFlowable(
       amountHistory
+    )
+  }
+
+  def getAmountHistory(
+      address: Address,
+      from: TimeStamp,
+      to: TimeStamp,
+      intervalType: IntervalType
+  )(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[(TimeStamp, BigInteger)]] = {
+    run(
+      for {
+        inputs  <- sumAddressInputs(address, from, to, intervalType)
+        outputs <- sumAddressOutputs(address, from, to, intervalType)
+      } yield {
+        val ins  = inputs.collect { case (ts, Some(u256)) => (ts, u256) }.toMap
+        val outs = outputs.collect { case (ts, Some(u256)) => (ts, u256) }.toMap
+
+        val timestamps = scala.collection.SortedSet.from(ins.keys ++ outs.keys)
+
+        val (_, result) = timestamps
+          .foldLeft((BigInteger.ZERO, ArraySeq.empty[(TimeStamp, BigInteger)])) { case (acc, ts) =>
+            val (sum, res) = acc
+
+            (ins.get(ts), outs.get(ts)) match {
+              case (Some(in), Some(out)) =>
+                val diff   = out.v.subtract(in.v)
+                val newSum = sum.add(diff)
+                (newSum, res :+ (ts, newSum))
+              case (Some(in), None) =>
+                // No Output, all inputs are spent
+                val newSum = sum.subtract(in.v)
+                (newSum, res :+ (ts, newSum))
+              case (None, Some(out)) =>
+                // No Input, all outputs are for the address
+                val newSum = sum.add(out.v)
+                (newSum, res :+ (ts, newSum))
+              case (None, None) =>
+                (sum, res)
+            }
+          }
+
+        result
+      }
     )
   }
 

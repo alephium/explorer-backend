@@ -14,25 +14,24 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer
+package org.alephium.explorer.persistence.schema
 
-import org.alephium.explorer.config.ExplorerConfig._
-import org.alephium.util.Duration
+import slick.jdbc.PostgresProfile.api._
+import slick.lifted.ProvenShape
 
-object ConfigDefaults {
-  implicit val groupSetting: GroupSetting = Generators.groupSettingGen.sample.get
+import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.util._
 
-  val maxTimeIntervals: MaxTimeIntervals =
-    MaxTimeIntervals(
-      amountHistory = MaxTimeInterval(
-        hourly = Duration.ofDaysUnsafe(7),
-        daily = Duration.ofDaysUnsafe(365),
-        weekly = Duration.ofDaysUnsafe(365)
-      ),
-      charts = MaxTimeInterval(
-        hourly = Duration.ofDaysUnsafe(30),
-        daily = Duration.ofDaysUnsafe(365),
-        weekly = Duration.ofDaysUnsafe(365)
-      )
-    )
+object TimeStampTableFixture {
+
+  def ts(str: String): TimeStamp = {
+    TimeStamp.unsafe(java.time.Instant.parse(str).toEpochMilli)
+  }
+
+  class TimeStamps(tag: Tag) extends Table[TimeStamp](tag, "timestamps") {
+    def timestamp: Rep[TimeStamp]  = column[TimeStamp]("block_timestamp")
+    def * : ProvenShape[TimeStamp] = timestamp
+  }
+
+  val timestampTable: TableQuery[TimeStamps] = TableQuery[TimeStamps]
 }

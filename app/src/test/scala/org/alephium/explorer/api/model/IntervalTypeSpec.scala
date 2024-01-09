@@ -36,7 +36,7 @@ class IntervalTypeSpec() extends AlephiumFutureSpec {
         val timeInterval = TimeInterval(now, to)
 
         IntervalType
-          .validateTimeInterval(timeInterval, intervalType, duration, duration)(
+          .validateTimeInterval(timeInterval, intervalType, duration, duration, duration)(
             Future.successful(())
           )
           .futureValue is Right(())
@@ -44,7 +44,13 @@ class IntervalTypeSpec() extends AlephiumFutureSpec {
         val shorterDuration = (duration - (Duration.ofMillisUnsafe(1))).get
 
         IntervalType
-          .validateTimeInterval(timeInterval, intervalType, shorterDuration, shorterDuration)(
+          .validateTimeInterval(
+            timeInterval,
+            intervalType,
+            shorterDuration,
+            shorterDuration,
+            shorterDuration
+          )(
             Future.successful(())
           )
           .futureValue is Left(

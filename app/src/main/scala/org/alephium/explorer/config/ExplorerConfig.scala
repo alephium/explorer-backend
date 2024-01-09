@@ -33,6 +33,7 @@ import org.alephium.api.model.ApiKey
 import org.alephium.conf._
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.protocol.model.NetworkId
+import org.alephium.util
 
 @SuppressWarnings(Array("org.wartremover.warts.TryPartial"))
 object ExplorerConfig {
@@ -143,7 +144,8 @@ object ExplorerConfig {
           explorer.cacheBlockTimesReloadPeriod,
           explorer.cacheLatestBlocksReloadPeriod,
           explorer.exportTxsNumberThreshold,
-          explorer.streamParallelism
+          explorer.streamParallelism,
+          explorer.maxTimeIntervals
         )
       }).get
     }
@@ -160,6 +162,17 @@ object ExplorerConfig {
       apiKey: Option[ApiKey]
   )
 
+  final case class MaxTimeInterval(
+      hourly: util.Duration,
+      daily: util.Duration,
+      weekly: util.Duration
+  )
+
+  final case class MaxTimeIntervals(
+      amountHistory: MaxTimeInterval,
+      charts: MaxTimeInterval
+  )
+
   final private case class Explorer(
       host: String,
       port: Int,
@@ -173,7 +186,8 @@ object ExplorerConfig {
       cacheBlockTimesReloadPeriod: FiniteDuration,
       cacheLatestBlocksReloadPeriod: FiniteDuration,
       exportTxsNumberThreshold: Int,
-      streamParallelism: Int
+      streamParallelism: Int,
+      maxTimeIntervals: MaxTimeIntervals
   )
 
 }
@@ -200,5 +214,6 @@ final case class ExplorerConfig private (
     cacheBlockTimesReloadPeriod: FiniteDuration,
     cacheLatestBlocksReloadPeriod: FiniteDuration,
     exportTxsNumberThreshold: Int,
-    streamParallelism: Int
+    streamParallelism: Int,
+    maxTimeInterval: ExplorerConfig.MaxTimeIntervals
 )
