@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.service
 
-import scala.collection.immutable.{ArraySeq, ListMap}
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -27,11 +27,11 @@ import sttp.model.{Method, StatusCode}
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache._
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.util.Scheduler
 import org.alephium.json.Json._
-import org.alephium.protocol.Hash
 import org.alephium.protocol.model.TokenId
-import org.alephium.util.{Duration, Hex, Math, TimeStamp}
+import org.alephium.util.{Duration, Math, TimeStamp}
 
 trait MarketService {
   def getPrices(ids: ArraySeq[TokenId], currency: String)(implicit
@@ -48,33 +48,6 @@ trait MarketService {
 }
 
 object MarketService extends StrictLogging {
-  // TODO add proper types and expose enum in open-api
-  // ListMap to preserve order when intialy loading, first ones being the
-  // most priority ones
-  val ids: ListMap[TokenId, String] = ListMap(
-    TokenId.alph -> "alephium",
-    TokenId.unsafe(
-      Hash.unsafe(Hex.unsafe("722954d9067c5a5ad532746a024f2a9d7a18ed9b90e27d0a3a504962160b5600"))
-    ) -> "usd-coin",
-    TokenId.unsafe(
-      Hash.unsafe(Hex.unsafe("556d9582463fe44fbd108aedc9f409f69086dc78d994b88ea6c9e65f8bf98e00"))
-    ) -> "tether",
-    TokenId.unsafe(
-      Hash.unsafe(Hex.unsafe("383bc735a4de6722af80546ec9eeb3cff508f2f68e97da19489ce69f3e703200"))
-    ) -> "wrapped-bitcoin",
-    TokenId.unsafe(
-      Hash.unsafe(Hex.unsafe("19246e8c2899bc258a1156e08466e3cdd3323da756d8a543c7fc911847b96f00"))
-    ) -> "weth",
-    TokenId.unsafe(
-      Hash.unsafe(Hex.unsafe("3d0a1895108782acfa875c2829b0bf76cb586d95ffa4ea9855982667cc73b700"))
-    ) -> "dai",
-    TokenId.unsafe(
-      Hash.unsafe(Hex.unsafe("1a281053ba8601a658368594da034c2e99a0fb951b86498d05e76aedfe666800"))
-    ) -> "ayin"
-  )
-
-  val idsR: ListMap[String, TokenId] = ids.map(_.swap)
-
   // TODO add proper types and expose enum in open-api
   val currencies: ArraySeq[String] = ArraySeq(
     "btc",
@@ -93,14 +66,17 @@ object MarketService extends StrictLogging {
   object CoinGecko {
     val defaultUri = "https://api.coingecko.com/api/v3"
 
-    def default()(implicit
+    def default(marketConfig: ExplorerConfig.Market)(implicit
         ec: ExecutionContext
-    ): MarketService = new CoinGecko(defaultUri)
+    ): MarketService = new CoinGecko(defaultUri, marketConfig)
   }
 
-  class CoinGecko(val baseUri: String)(implicit
+  class CoinGecko(val baseUri: String, marketConfig: ExplorerConfig.Market)(implicit
       ec: ExecutionContext
   ) extends MarketService {
+
+    private val ids: Map[TokenId, String] = marketConfig.tokenIdName
+    private val idsR                      = ids.map(_.swap)
 
     // scalastyle:off magic.number
     val pricesExpirationTime: Duration      = Duration.ofMinutesUnsafe(5)
@@ -140,7 +116,7 @@ object MarketService extends StrictLogging {
       )(_ => getExchangeRatesRemote(0))
 
     private val priceChartsCache
-        : ListMap[TokenId, AsyncReloadingCache[Either[String, ArraySeq[(TimeStamp, Double)]]]] =
+        : Map[TokenId, AsyncReloadingCache[Either[String, ArraySeq[(TimeStamp, Double)]]]] =
       ids.map { case (id, name) =>
         (
           id,

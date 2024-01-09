@@ -93,7 +93,12 @@ sealed trait ExplorerStateRead extends ExplorerState {
       config.host,
       config.port,
       AppServer
-        .routes(config.exportTxsNumberThreshold, config.streamParallelism, config.maxTimeInterval)(
+        .routes(
+          config.exportTxsNumberThreshold,
+          config.streamParallelism,
+          config.maxTimeInterval,
+          config.market
+        )(
           executionContext,
           database.databaseConfig,
           blockFlowClient,

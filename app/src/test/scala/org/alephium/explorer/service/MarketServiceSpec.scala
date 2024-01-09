@@ -33,6 +33,7 @@ import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.api.model.TimedPrice
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.web.Server
 import org.alephium.json.Json._
 import org.alephium.protocol.Hash
@@ -45,8 +46,8 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
     eventually {
       val prices =
-        marketService.getPrices(MarketService.ids.keys.toList, "chf").futureValue.rightValue
-      prices.map(_.tokenId).toSet is MarketService.ids.keys.toSet
+        marketService.getPrices(marketConfig.tokenIdName.keys.toList, "chf").futureValue.rightValue
+      prices.map(_.tokenId).toSet is marketConfig.tokenIdName.keys.toSet
     }
 
     eventually {
@@ -110,10 +111,26 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     val usdt = TokenId.unsafe(
       Hash.unsafe(Hex.unsafe("556d9582463fe44fbd108aedc9f409f69086dc78d994b88ea6c9e65f8bf98e00"))
     )
+    def tokenId(str: String) = TokenId.unsafe(Hash.unsafe(Hex.unsafe(str)))
+
+    val marketConfig = ExplorerConfig.Market(
+      Map(
+        TokenId.alph                                                                -> "alephium",
+        tokenId("722954d9067c5a5ad532746a024f2a9d7a18ed9b90e27d0a3a504962160b5600") -> "usd-coin",
+        tokenId("556d9582463fe44fbd108aedc9f409f69086dc78d994b88ea6c9e65f8bf98e00") -> "tether",
+        tokenId(
+          "383bc735a4de6722af80546ec9eeb3cff508f2f68e97da19489ce69f3e703200"
+        ) -> "wrapped-bitcoin",
+        tokenId("19246e8c2899bc258a1156e08466e3cdd3323da756d8a543c7fc911847b96f00") -> "weth",
+        tokenId("3d0a1895108782acfa875c2829b0bf76cb586d95ffa4ea9855982667cc73b700") -> "dai",
+        tokenId("1a281053ba8601a658368594da034c2e99a0fb951b86498d05e76aedfe666800") -> "ayin"
+      )
+    )
+
     val coingecko: MarketServiceSpec.CoingGeckoMock =
       new MarketServiceSpec.CoingGeckoMock(localhost, port)
     val marketService: MarketService =
-      new MarketService.CoinGecko(s"http://${localhost.getHostAddress()}:$port")
+      new MarketService.CoinGecko(s"http://${localhost.getHostAddress()}:$port", marketConfig)
   }
 }
 

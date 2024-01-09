@@ -32,7 +32,8 @@ import sttp.model.Uri
 import org.alephium.api.model.ApiKey
 import org.alephium.conf._
 import org.alephium.explorer.error.ExplorerError._
-import org.alephium.protocol.model.NetworkId
+import org.alephium.protocol.Hash
+import org.alephium.protocol.model.{NetworkId, TokenId}
 import org.alephium.util
 
 @SuppressWarnings(Array("org.wartremover.warts.TryPartial"))
@@ -90,6 +91,11 @@ object ExplorerConfig {
       Success(interval)
     }
 
+  def validateTokenId(tokenId: String): Try[TokenId] =
+    Try(
+      TokenId.unsafe(Hash.unsafe(util.Hex.unsafe(tokenId)))
+    ).orElse(Failure(InvalidTokenId(tokenId)))
+
   implicit val networkIdReader: ValueReader[NetworkId] =
     ValueReader[Int].map { id =>
       validateNetworkId(id).get
@@ -98,6 +104,18 @@ object ExplorerConfig {
   implicit val apiKeyReader: ValueReader[ApiKey] =
     ValueReader[String].map { input =>
       validateApiKey(input).get
+    }
+
+  implicit val tokenIdReader: ValueReader[TokenId] =
+    ValueReader[String].map { input =>
+      validateTokenId(input).get
+    }
+
+  implicit val tokenIdMapReader: ValueReader[Map[TokenId, String]] =
+    ValueReader[Map[String, String]].map { input =>
+      input.map { case (key, value) =>
+        (validateTokenId(key).get, value)
+      }
     }
 
   implicit val validateFiniteDuration: ValueReader[FiniteDuration] =
@@ -145,7 +163,8 @@ object ExplorerConfig {
           explorer.cacheLatestBlocksReloadPeriod,
           explorer.exportTxsNumberThreshold,
           explorer.streamParallelism,
-          explorer.maxTimeIntervals
+          explorer.maxTimeIntervals,
+          explorer.market
         )
       }).get
     }
@@ -173,6 +192,10 @@ object ExplorerConfig {
       charts: MaxTimeInterval
   )
 
+  final case class Market(
+      tokenIdName: Map[TokenId, String]
+  )
+
   final private case class Explorer(
       host: String,
       port: Int,
@@ -187,7 +210,8 @@ object ExplorerConfig {
       cacheLatestBlocksReloadPeriod: FiniteDuration,
       exportTxsNumberThreshold: Int,
       streamParallelism: Int,
-      maxTimeIntervals: MaxTimeIntervals
+      maxTimeIntervals: MaxTimeIntervals,
+      market: Market
   )
 
 }
@@ -215,5 +239,6 @@ final case class ExplorerConfig private (
     cacheLatestBlocksReloadPeriod: FiniteDuration,
     exportTxsNumberThreshold: Int,
     streamParallelism: Int,
-    maxTimeInterval: ExplorerConfig.MaxTimeIntervals
+    maxTimeInterval: ExplorerConfig.MaxTimeIntervals,
+    market: ExplorerConfig.Market
 )
