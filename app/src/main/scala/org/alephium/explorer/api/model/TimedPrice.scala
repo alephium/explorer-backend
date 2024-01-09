@@ -23,7 +23,7 @@ import org.alephium.util.TimeStamp
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 final case class TimedPrice(
     timestamp: TimeStamp,
-    price: Double
+    value: Double
 )
 
 object TimedPrice {

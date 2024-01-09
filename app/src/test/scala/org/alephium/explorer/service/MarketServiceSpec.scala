@@ -96,7 +96,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
         val exchangeRate =
           marketService.getExchangeRates().futureValue.rightValue.find(_.currency == currency).get
 
-        chart is btcChart.map { tp => TimedPrice(tp.timestamp, tp.price * exchangeRate.value) }
+        chart is btcChart.map { tp => TimedPrice(tp.timestamp, tp.value * exchangeRate.value) }
       }
 
     }

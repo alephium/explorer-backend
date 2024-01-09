@@ -222,7 +222,7 @@ object EndpointExamples extends EndpointsExamples {
   private val timedPrice =
     TimedPrice(
       timestamp = ts,
-      price = 0.123
+      value = 0.123
     )
 
   private val perChainCount =
