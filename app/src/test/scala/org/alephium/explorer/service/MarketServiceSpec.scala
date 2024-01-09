@@ -61,7 +61,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
     eventually {
       val exchangeRates = marketService.getExchangeRates().futureValue.rightValue
-      exchangeRates.map(_.currency).toSet is MarketService.currencies.toSet
+      exchangeRates.map(_.currency).toSet is marketConfig.currencies.toSet
     }
 
     eventually {
@@ -73,7 +73,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
           .map(p => (p.currency, p.price))
           .head
 
-      MarketService.currencies.foreach { currency =>
+      marketConfig.currencies.foreach { currency =>
         val price = marketService
           .getPrices(ArraySeq(TokenId.alph), currency)
           .futureValue
@@ -91,7 +91,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     eventually {
       val btcChart = marketService.getPriceChart(TokenId.alph, "btc").futureValue.rightValue
 
-      MarketService.currencies.foreach { currency =>
+      marketConfig.currencies.foreach { currency =>
         val chart =
           marketService.getPriceChart(TokenId.alph, currency).futureValue.rightValue
         val exchangeRate =
@@ -124,7 +124,8 @@ class MarketServiceSpec extends AlephiumFutureSpec {
         tokenId("19246e8c2899bc258a1156e08466e3cdd3323da756d8a543c7fc911847b96f00") -> "weth",
         tokenId("3d0a1895108782acfa875c2829b0bf76cb586d95ffa4ea9855982667cc73b700") -> "dai",
         tokenId("1a281053ba8601a658368594da034c2e99a0fb951b86498d05e76aedfe666800") -> "ayin"
-      )
+      ),
+      ArraySeq("btc", "usd", "eur", "chf", "gbp", "idr", "vnd", "rub", "try")
     )
 
     val coingecko: MarketServiceSpec.CoingGeckoMock =

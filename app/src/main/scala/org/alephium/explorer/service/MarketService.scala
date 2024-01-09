@@ -48,19 +48,6 @@ trait MarketService {
 }
 
 object MarketService extends StrictLogging {
-  // TODO add proper types and expose enum in open-api
-  val currencies: ArraySeq[String] = ArraySeq(
-    "btc",
-    "usd",
-    "eur",
-    "chf",
-    "gbp",
-    "idr",
-    "vnd",
-    "rub",
-    "try"
-  )
-
   val baseCurrency: String = "btc"
 
   object CoinGecko {
@@ -312,7 +299,7 @@ object MarketService extends StrictLogging {
           Try {
             obj("rates") match {
               case rates: ujson.Obj =>
-                Right(currencies.flatMap { currency =>
+                Right(marketConfig.currencies.flatMap { currency =>
                   rates.value.get(currency).map { rate =>
                     ExchangeRate(currency, rate("name").str, rate("unit").str, rate("value").num)
                   }

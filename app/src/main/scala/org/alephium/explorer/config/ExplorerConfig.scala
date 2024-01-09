@@ -19,6 +19,7 @@ package org.alephium.explorer.config
 import java.net.InetAddress
 import java.time.LocalTime
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
@@ -193,7 +194,8 @@ object ExplorerConfig {
   )
 
   final case class Market(
-      tokenIdName: Map[TokenId, String]
+      tokenIdName: Map[TokenId, String],
+      currencies: ArraySeq[String]
   )
 
   final private case class Explorer(
