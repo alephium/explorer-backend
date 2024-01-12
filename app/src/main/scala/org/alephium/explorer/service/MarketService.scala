@@ -143,7 +143,7 @@ object MarketService extends StrictLogging {
         } yield {
           prices
             .filter(price => ids.contains(price.symbol))
-            .map(price => price.copy(price = price.price * rate.value, currency = currency))
+            .map(price => price.copy(price = price.price * rate.value))
         }
       )
     }
@@ -281,7 +281,7 @@ object MarketService extends StrictLogging {
           Try {
             ArraySeq.from(obj.value.flatMap { case (name, value) =>
               idsR.get(name).map { id =>
-                Price(id, value(baseCurrency).num, baseCurrency)
+                Price(id, value(baseCurrency).num)
               }
             })
           }.toEither.left.map { error =>

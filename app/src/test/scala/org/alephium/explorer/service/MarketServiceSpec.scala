@@ -67,7 +67,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
           .getPrices(ArraySeq(alph), "btc")
           .futureValue
           .rightValue
-          .map(p => (p.currency, p.price))
+          .map(p => p.price)
           .head
 
       marketConfig.currencies.foreach { currency =>
@@ -75,13 +75,13 @@ class MarketServiceSpec extends AlephiumFutureSpec {
           .getPrices(ArraySeq(alph), currency)
           .futureValue
           .rightValue
-          .map(p => (p.currency, p.price))
+          .map(p => p.price)
           .head
         val exchangeRate =
           marketService.getExchangeRates().futureValue.rightValue.find(_.currency == currency).get
 
-        btcPrice is ("btc", 2.013e-5)
-        price is (currency, btcPrice._2 * exchangeRate.value)
+        btcPrice is 2.013e-5
+        price is btcPrice * exchangeRate.value
       }
     }
 

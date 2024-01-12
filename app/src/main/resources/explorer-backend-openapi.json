@@ -6243,8 +6243,7 @@
                 "example": [
                   {
                     "symbol": "ALPH",
-                    "price": 0.01,
-                    "currency": "chf"
+                    "price": 0.01
                   }
                 ]
               }
@@ -7600,8 +7599,7 @@
       "Price": {
         "required": [
           "symbol",
-          "price",
-          "currency"
+          "price"
         ],
         "type": "object",
         "properties": {
@@ -7611,9 +7609,6 @@
           "price": {
             "type": "number",
             "format": "double"
-          },
-          "currency": {
-            "type": "string"
           }
         }
       },
