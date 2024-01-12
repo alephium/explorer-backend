@@ -16,11 +16,9 @@
 
 package org.alephium.explorer.api.model
 
-import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
-import org.alephium.protocol.model.TokenId
 
-final case class Price(tokenId: TokenId, price: Double, currency: String)
+final case class Price(symbol: String, price: Double, currency: String)
 
 object Price {
   implicit val readWriter: ReadWriter[Price] = macroRW

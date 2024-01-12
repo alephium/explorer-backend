@@ -19,11 +19,12 @@ package org.alephium.explorer.config
 import java.net.InetAddress
 import java.time.LocalTime
 
-import scala.collection.immutable.ArraySeq
+import scala.collection.immutable.{ArraySeq, ListMap}
 import scala.concurrent.duration._
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigUtil}
 import net.ceedubs.ficus.Ficus
 import net.ceedubs.ficus.Ficus.{finiteDurationReader => _, _}
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
@@ -33,8 +34,7 @@ import sttp.model.Uri
 import org.alephium.api.model.ApiKey
 import org.alephium.conf._
 import org.alephium.explorer.error.ExplorerError._
-import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{NetworkId, TokenId}
+import org.alephium.protocol.model.NetworkId
 import org.alephium.util
 
 @SuppressWarnings(Array("org.wartremover.warts.TryPartial"))
@@ -92,11 +92,6 @@ object ExplorerConfig {
       Success(interval)
     }
 
-  def validateTokenId(tokenId: String): Try[TokenId] =
-    Try(
-      TokenId.unsafe(Hash.unsafe(util.Hex.unsafe(tokenId)))
-    ).orElse(Failure(InvalidTokenId(tokenId)))
-
   implicit val networkIdReader: ValueReader[NetworkId] =
     ValueReader[Int].map { id =>
       validateNetworkId(id).get
@@ -105,18 +100,6 @@ object ExplorerConfig {
   implicit val apiKeyReader: ValueReader[ApiKey] =
     ValueReader[String].map { input =>
       validateApiKey(input).get
-    }
-
-  implicit val tokenIdReader: ValueReader[TokenId] =
-    ValueReader[String].map { input =>
-      validateTokenId(input).get
-    }
-
-  implicit val tokenIdMapReader: ValueReader[Map[TokenId, String]] =
-    ValueReader[Map[String, String]].map { input =>
-      input.map { case (key, value) =>
-        (validateTokenId(key).get, value)
-      }
     }
 
   implicit val validateFiniteDuration: ValueReader[FiniteDuration] =
@@ -132,6 +115,19 @@ object ExplorerConfig {
   implicit val bootUpMode: ValueReader[BootMode] =
     ValueReader[String](Ficus.stringValueReader).map { input =>
       BootMode.validate(input).get
+    }
+
+  implicit def listMapValueReader[A](implicit
+      entryReader: ValueReader[A]
+  ): ValueReader[ListMap[String, A]] =
+    new ValueReader[ListMap[String, A]] {
+      def read(config: Config, path: String): ListMap[String, A] = {
+        val relativeConfig = config.getConfig(path)
+        ListMap.from(relativeConfig.root().entrySet().asScala map { entry =>
+          val key = entry.getKey
+          key -> entryReader.read(relativeConfig, ConfigUtil.quoteString(key))
+        })
+      }
     }
 
   implicit val explorerConfigReader: ValueReader[ExplorerConfig] =
@@ -194,7 +190,7 @@ object ExplorerConfig {
   )
 
   final case class Market(
-      tokenIdName: Map[TokenId, String],
+      symbolName: ListMap[String, String],
       currencies: ArraySeq[String]
   )
 

@@ -6219,13 +6219,12 @@
               "schema": {
                 "type": "array",
                 "items": {
-                  "type": "string",
-                  "format": "32-byte-hash"
+                  "type": "string"
                 }
               },
               "example": [
-                "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
-                "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
+                "ALPH",
+                "USDT"
               ]
             }
           },
@@ -6243,7 +6242,7 @@
                 },
                 "example": [
                   {
-                    "tokenId": "7b3efc0a1c4bc54e7398811f7e474e461a9c00cbc951f33b886a5f207c820ef2",
+                    "symbol": "ALPH",
                     "price": 0.01,
                     "currency": "chf"
                   }
@@ -6320,20 +6319,19 @@
         }
       }
     },
-    "/market/prices/{id}/charts": {
+    "/market/prices/{symbol}/charts": {
       "get": {
         "tags": [
           "Market"
         ],
-        "operationId": "getMarketPricesIdCharts",
+        "operationId": "getMarketPricesSymbolCharts",
         "parameters": [
           {
-            "name": "id",
+            "name": "symbol",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "32-byte-hash"
+              "type": "string"
             }
           },
           {
@@ -7601,15 +7599,14 @@
       },
       "Price": {
         "required": [
-          "tokenId",
+          "symbol",
           "price",
           "currency"
         ],
         "type": "object",
         "properties": {
-          "tokenId": {
-            "type": "string",
-            "format": "32-byte-hash"
+          "symbol": {
+            "type": "string"
           },
           "price": {
             "type": "number",

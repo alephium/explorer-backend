@@ -18,7 +18,7 @@ package org.alephium.explorer.service
 
 import java.net.InetAddress
 
-import scala.collection.immutable.ArraySeq
+import scala.collection.immutable.{ArraySeq, ListMap}
 import scala.concurrent.Future
 
 import akka.testkit.SocketUtil
@@ -36,9 +36,6 @@ import org.alephium.explorer.api.model.TimedPrice
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.web.Server
 import org.alephium.json.Json._
-import org.alephium.protocol.Hash
-import org.alephium.protocol.model.TokenId
-import org.alephium.util.Hex
 
 class MarketServiceSpec extends AlephiumFutureSpec {
 
@@ -46,15 +43,15 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
     eventually {
       val prices =
-        marketService.getPrices(marketConfig.tokenIdName.keys.toList, "chf").futureValue.rightValue
-      prices.map(_.tokenId).toSet is marketConfig.tokenIdName.keys.toSet
+        marketService.getPrices(marketConfig.symbolName.keys.toList, "chf").futureValue.rightValue
+      prices.map(_.symbol).toSet is marketConfig.symbolName.keys.toSet
     }
 
     eventually {
       val prices =
-        marketService.getPrices(ArraySeq(TokenId.alph, usdt), "chf").futureValue.rightValue
-      prices.map(p => p.tokenId).toSet is Set(
-        TokenId.alph,
+        marketService.getPrices(ArraySeq(alph, usdt), "chf").futureValue.rightValue
+      prices.map(p => p.symbol).toSet is Set(
+        alph,
         usdt
       )
     }
@@ -67,7 +64,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     eventually {
       val btcPrice =
         marketService
-          .getPrices(ArraySeq(TokenId.alph), "btc")
+          .getPrices(ArraySeq(alph), "btc")
           .futureValue
           .rightValue
           .map(p => (p.currency, p.price))
@@ -75,7 +72,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
       marketConfig.currencies.foreach { currency =>
         val price = marketService
-          .getPrices(ArraySeq(TokenId.alph), currency)
+          .getPrices(ArraySeq(alph), currency)
           .futureValue
           .rightValue
           .map(p => (p.currency, p.price))
@@ -89,11 +86,11 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     }
 
     eventually {
-      val btcChart = marketService.getPriceChart(TokenId.alph, "btc").futureValue.rightValue
+      val btcChart = marketService.getPriceChart(alph, "btc").futureValue.rightValue
 
       marketConfig.currencies.foreach { currency =>
         val chart =
-          marketService.getPriceChart(TokenId.alph, currency).futureValue.rightValue
+          marketService.getPriceChart(alph, currency).futureValue.rightValue
         val exchangeRate =
           marketService.getExchangeRates().futureValue.rightValue.find(_.currency == currency).get
 
@@ -108,22 +105,18 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     val localhost: InetAddress = InetAddress.getByName("127.0.0.1")
     val port                   = SocketUtil.temporaryLocalPort(SocketUtil.Both)
 
-    val usdt = TokenId.unsafe(
-      Hash.unsafe(Hex.unsafe("556d9582463fe44fbd108aedc9f409f69086dc78d994b88ea6c9e65f8bf98e00"))
-    )
-    def tokenId(str: String) = TokenId.unsafe(Hash.unsafe(Hex.unsafe(str)))
+    val alph = "ALPH"
+    val usdt = "USDT"
 
     val marketConfig = ExplorerConfig.Market(
-      Map(
-        TokenId.alph                                                                -> "alephium",
-        tokenId("722954d9067c5a5ad532746a024f2a9d7a18ed9b90e27d0a3a504962160b5600") -> "usd-coin",
-        tokenId("556d9582463fe44fbd108aedc9f409f69086dc78d994b88ea6c9e65f8bf98e00") -> "tether",
-        tokenId(
-          "383bc735a4de6722af80546ec9eeb3cff508f2f68e97da19489ce69f3e703200"
-        ) -> "wrapped-bitcoin",
-        tokenId("19246e8c2899bc258a1156e08466e3cdd3323da756d8a543c7fc911847b96f00") -> "weth",
-        tokenId("3d0a1895108782acfa875c2829b0bf76cb586d95ffa4ea9855982667cc73b700") -> "dai",
-        tokenId("1a281053ba8601a658368594da034c2e99a0fb951b86498d05e76aedfe666800") -> "ayin"
+      ListMap(
+        "ALPH" -> "alephium",
+        "USDC" -> "usd-coin",
+        "USDT" -> "tether",
+        "WBTC" -> "wrapped-bitcoin",
+        "WETH" -> "weth",
+        "DAI"  -> "dai",
+        "AYIN" -> "ayin"
       ),
       ArraySeq("btc", "usd", "eur", "chf", "gbp", "idr", "vnd", "rub", "try")
     )

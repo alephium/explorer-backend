@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.service
 
-import scala.collection.immutable.ArraySeq
+import scala.collection.immutable.{ArraySeq, ListMap}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -30,11 +30,10 @@ import org.alephium.explorer.cache._
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.util.Scheduler
 import org.alephium.json.Json._
-import org.alephium.protocol.model.TokenId
 import org.alephium.util.{Duration, Math, TimeStamp}
 
 trait MarketService {
-  def getPrices(ids: ArraySeq[TokenId], currency: String)(implicit
+  def getPrices(ids: ArraySeq[String], currency: String)(implicit
       ec: ExecutionContext
   ): Future[Either[String, ArraySeq[Price]]]
 
@@ -42,7 +41,7 @@ trait MarketService {
       ec: ExecutionContext
   ): Future[Either[String, ArraySeq[ExchangeRate]]]
 
-  def getPriceChart(tokenId: TokenId, currency: String)(implicit
+  def getPriceChart(symbol: String, currency: String)(implicit
       ec: ExecutionContext
   ): Future[Either[String, ArraySeq[TimedPrice]]]
 }
@@ -62,8 +61,8 @@ object MarketService extends StrictLogging {
       ec: ExecutionContext
   ) extends MarketService {
 
-    private val ids: Map[TokenId, String] = marketConfig.tokenIdName
-    private val idsR                      = ids.map(_.swap)
+    private val ids: ListMap[String, String] = marketConfig.symbolName
+    private val idsR                         = ids.map(_.swap)
 
     // scalastyle:off magic.number
     val pricesExpirationTime: Duration      = Duration.ofMinutesUnsafe(5)
@@ -103,7 +102,7 @@ object MarketService extends StrictLogging {
       )(_ => getExchangeRatesRemote(0))
 
     private val priceChartsCache
-        : Map[TokenId, AsyncReloadingCache[Either[String, ArraySeq[(TimeStamp, Double)]]]] =
+        : Map[String, AsyncReloadingCache[Either[String, ArraySeq[(TimeStamp, Double)]]]] =
       ids.map { case (id, name) =>
         (
           id,
@@ -131,7 +130,7 @@ object MarketService extends StrictLogging {
       )(Future.successful(caches.foreach(_._2.expireAndReload())))
     }
 
-    def getPrices(ids: ArraySeq[TokenId], currency: String)(implicit
+    def getPrices(ids: ArraySeq[String], currency: String)(implicit
         ec: ExecutionContext
     ): Future[Either[String, ArraySeq[Price]]] = {
       Future.successful(
@@ -143,7 +142,7 @@ object MarketService extends StrictLogging {
           prices <- pricesCache.get()
         } yield {
           prices
-            .filter(price => ids.contains(price.tokenId))
+            .filter(price => ids.contains(price.symbol))
             .map(price => price.copy(price = price.price * rate.value, currency = currency))
         }
       )
@@ -208,7 +207,7 @@ object MarketService extends StrictLogging {
       )
     }
 
-    def getPriceChart(tokenId: TokenId, currency: String)(implicit
+    def getPriceChart(symbol: String, currency: String)(implicit
         ec: ExecutionContext
     ): Future[Either[String, ArraySeq[TimedPrice]]] = {
       Future.successful(
@@ -217,7 +216,7 @@ object MarketService extends StrictLogging {
           rate <- rates
             .find(_.currency == currency)
             .toRight(s"Cannot find price for currency $currency")
-          cache      <- priceChartsCache.get(tokenId).toRight(s"Not price chart for $tokenId")
+          cache      <- priceChartsCache.get(symbol).toRight(s"Not price chart for $symbol")
           priceChart <- cache.get()
         } yield {
           priceChart.map { case (ts, price) =>

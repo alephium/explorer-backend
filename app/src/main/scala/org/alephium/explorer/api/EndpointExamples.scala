@@ -309,6 +309,9 @@ object EndpointExamples extends EndpointsExamples {
   implicit val listTokensExample: List[Example[ArraySeq[TokenId]]] =
     simpleExample(tokens.map(_.id))
 
+  implicit val symbolExample: List[Example[ArraySeq[String]]] =
+    simpleExample(ArraySeq("ALPH", "USDT"))
+
   implicit val listAddressesExample: List[Example[ArraySeq[Address]]] =
     simpleExample(ArraySeq(address1, address2))
 
@@ -403,7 +406,7 @@ object EndpointExamples extends EndpointsExamples {
     simpleExample(NFTMetadata(token, "token://uri", contract, U256.One))
 
   implicit val pricesExample: List[Example[ArraySeq[Price]]] =
-    simpleExample(ArraySeq(Price(token, 0.01, "chf")))
+    simpleExample(ArraySeq(Price("ALPH", 0.01, "chf")))
 
   implicit val exchangeRatesExample: List[Example[ArraySeq[ExchangeRate]]] =
     simpleExample(ArraySeq(ExchangeRate("chf", "Swiss Franc", "Fr.", 0.01)))
