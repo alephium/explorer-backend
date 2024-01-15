@@ -44,6 +44,10 @@ trait MarketService {
   def getPriceChart(symbol: String, currency: String)(implicit
       ec: ExecutionContext
   ): Future[Either[String, ArraySeq[TimedPrice]]]
+
+  def getTokenSymbols()(implicit
+      ec: ExecutionContext
+  ): Future[ArraySeq[String]]
 }
 
 object MarketService extends StrictLogging {
@@ -236,6 +240,12 @@ object MarketService extends StrictLogging {
         .flatMap { response =>
           handleChartResponse(id, response, retried)
         }
+    }
+
+    def getTokenSymbols()(implicit
+        ec: ExecutionContext
+    ): Future[ArraySeq[String]] = {
+      Future.successful(ArraySeq.from(ids.keys))
     }
 
     def handleChartResponse(

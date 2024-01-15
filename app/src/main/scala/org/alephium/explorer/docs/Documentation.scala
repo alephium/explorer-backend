@@ -85,6 +85,7 @@ trait Documentation
         getPrices,
         getPriceChart,
         getExchangeRates,
+        getTokenSymbols,
         sanityCheck,
         changeGlobalLogLevel,
         changeLogConfig
