@@ -50,16 +50,16 @@ object MarketService extends StrictLogging {
   val baseCurrency: String = "btc"
 
   object CoinGecko {
-    val defaultUri = "https://api.coingecko.com/api/v3"
-
     def default(marketConfig: ExplorerConfig.Market)(implicit
         ec: ExecutionContext
-    ): MarketService = new CoinGecko(defaultUri, marketConfig)
+    ): MarketService = new CoinGecko(marketConfig)
   }
 
-  class CoinGecko(val baseUri: String, marketConfig: ExplorerConfig.Market)(implicit
+  class CoinGecko(marketConfig: ExplorerConfig.Market)(implicit
       ec: ExecutionContext
   ) extends MarketService {
+
+    private val baseUri = marketConfig.coingeckoUri
 
     private val ids: ListMap[String, String] = marketConfig.symbolName
     private val idsR                         = ids.map(_.swap)

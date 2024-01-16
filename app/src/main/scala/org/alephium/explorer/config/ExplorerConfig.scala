@@ -191,7 +191,8 @@ object ExplorerConfig {
 
   final case class Market(
       symbolName: ListMap[String, String],
-      currencies: ArraySeq[String]
+      currencies: ArraySeq[String],
+      coingeckoUri: String
   )
 
   final private case class Explorer(

@@ -108,13 +108,14 @@ class MarketServiceSpec extends AlephiumFutureSpec {
         "DAI"  -> "dai",
         "AYIN" -> "ayin"
       ),
-      ArraySeq("btc", "usd", "eur", "chf", "gbp", "idr", "vnd", "rub", "try")
+      ArraySeq("btc", "usd", "eur", "chf", "gbp", "idr", "vnd", "rub", "try"),
+      s"http://${localhost.getHostAddress()}:$port"
     )
 
-    val coingecko: MarketServiceSpec.CoingGeckoMock =
-      new MarketServiceSpec.CoingGeckoMock(localhost, port)
+    val coingecko: MarketServiceSpec.CoingeckoMock =
+      new MarketServiceSpec.CoingeckoMock(localhost, port)
     val marketService: MarketService =
-      new MarketService.CoinGecko(s"http://${localhost.getHostAddress()}:$port", marketConfig)
+      new MarketService.CoinGecko(marketConfig)
   }
 }
 
@@ -127,7 +128,7 @@ object MarketServiceSpec {
   val alphPrice = 2.013e-5
   val usdtPrice = 2.392e-5
 
-  class CoingGeckoMock(
+  class CoingeckoMock(
       uri: InetAddress,
       port: Int
   ) extends ScalaFutures
