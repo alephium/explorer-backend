@@ -54,9 +54,6 @@ class MarketServer(
           .map(_.left.map { error =>
             ApiError.ServiceUnavailable(error)
           })
-      }),
-      route(getTokenSymbols.serverLogicSuccess[Future] { _ =>
-        marketService.getTokenSymbols()
       })
     )
 }

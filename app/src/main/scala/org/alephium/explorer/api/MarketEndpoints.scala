@@ -55,9 +55,4 @@ trait MarketEndpoints extends BaseEndpoint with QueryParams {
       .in("exchange-rates")
       .out(jsonBody[ArraySeq[ExchangeRate]])
 
-  val getTokenSymbols: BaseEndpoint[Unit, ArraySeq[String]] =
-    basePricesEndpoint.get
-      .in("tokens")
-      .out(jsonBody[ArraySeq[String]])
-      .description("Get supported token symbols")
 }
