@@ -84,7 +84,6 @@ trait Documentation
         getSubContracts,
         getPrices,
         getPriceChart,
-        getExchangeRates,
         sanityCheck,
         changeGlobalLogLevel,
         changeLogConfig

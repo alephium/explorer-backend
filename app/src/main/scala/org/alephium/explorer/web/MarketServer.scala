@@ -41,13 +41,6 @@ class MarketServer(
             ApiError.ServiceUnavailable(error)
           })
       }),
-      route(getExchangeRates.serverLogic[Future] { _ =>
-        marketService
-          .getExchangeRates()
-          .map(_.left.map { error =>
-            ApiError.ServiceUnavailable(error)
-          })
-      }),
       route(getPriceChart.serverLogic[Future] { case (id, currency) =>
         marketService
           .getPriceChart(id, currency)
