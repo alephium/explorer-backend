@@ -413,4 +413,7 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val priceChartExample: List[Example[ArraySeq[(Long, Double)]]] =
     simpleExample(ArraySeq((1234545L, 0.01)))
+
+  implicit val priceExample: List[Example[ArraySeq[Option[Double]]]] =
+    simpleExample(ArraySeq(Option(0.01)))
 }

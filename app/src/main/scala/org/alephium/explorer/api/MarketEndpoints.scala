@@ -35,12 +35,12 @@ trait MarketEndpoints extends BaseEndpoint with QueryParams {
 
   implicit val valueSchema: Schema[ujson.Value] = Schema.string
 
-  val getPrices: BaseEndpoint[(String, ArraySeq[String]), ArraySeq[Price]] =
+  val getPrices: BaseEndpoint[(String, ArraySeq[String]), ArraySeq[Option[Double]]] =
     basePricesEndpoint.post
       .in("prices")
       .in(query[String]("currency"))
       .in(jsonBody[ArraySeq[String]])
-      .out(jsonBody[ArraySeq[Price]])
+      .out(jsonBody[ArraySeq[Option[Double]]])
 
   val getPriceChart: BaseEndpoint[(String, String), ArraySeq[TimedPrice]] =
     basePricesEndpoint.get

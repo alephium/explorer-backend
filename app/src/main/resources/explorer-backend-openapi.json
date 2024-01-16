@@ -6242,14 +6242,12 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Price"
+                    "type": "number",
+                    "format": "double"
                   }
                 },
                 "example": [
-                  {
-                    "symbol": "ALPH",
-                    "price": 0.01
-                  }
+                  0.01
                 ]
               }
             }
@@ -7478,22 +7476,6 @@
             "items": {
               "$ref": "#/components/schemas/PerChainCount"
             }
-          }
-        }
-      },
-      "Price": {
-        "required": [
-          "symbol",
-          "price"
-        ],
-        "type": "object",
-        "properties": {
-          "symbol": {
-            "type": "string"
-          },
-          "price": {
-            "type": "number",
-            "format": "double"
           }
         }
       },

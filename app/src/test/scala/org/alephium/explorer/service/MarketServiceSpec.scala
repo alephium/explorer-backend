@@ -38,51 +38,43 @@ import org.alephium.explorer.web.Server
 import org.alephium.json.Json._
 
 class MarketServiceSpec extends AlephiumFutureSpec {
+  import MarketServiceSpec._
 
   "get prices, exchange rates and charts" in new Fixture {
 
     eventually {
       val prices =
-        marketService.getPrices(marketConfig.symbolName.keys.toList, "chf").futureValue.rightValue
-      prices.map(_.symbol).toSet is marketConfig.symbolName.keys.toSet
+        marketService.getPrices(marketConfig.symbolName.keys.toList, "btc").futureValue.rightValue
+
+      prices.length is marketConfig.symbolName.length
+
+      prices(marketConfig.symbolName.keys.indexOf(alph)) is Some(alphPrice)
+      prices(marketConfig.symbolName.keys.indexOf(usdt)) is Some(usdtPrice)
     }
 
     eventually {
-      val prices =
-        marketService.getPrices(ArraySeq(alph, usdt), "chf").futureValue.rightValue
-      prices.map(p => p.symbol).toSet is Set(
-        alph,
-        usdt
-      )
+      marketConfig.currencies.foreach { currency =>
+        val prices =
+          marketService.getPrices(ArraySeq(alph, usdt), currency).futureValue.rightValue
+
+        val exchangeRate =
+          marketService.getExchangeRates().futureValue.rightValue.find(_.currency == currency).get
+
+        prices(0) is Some(alphPrice * exchangeRate.value)
+        prices(1) is Some(usdtPrice * exchangeRate.value)
+      }
+    }
+
+    eventually {
+      val prices = marketService.getPrices(ArraySeq("ALPH", "EMPTY"), "chf").futureValue.rightValue
+
+      prices.length is 2
+      prices(1) is None
     }
 
     eventually {
       val exchangeRates = marketService.getExchangeRates().futureValue.rightValue
       exchangeRates.map(_.currency).toSet is marketConfig.currencies.toSet
-    }
-
-    eventually {
-      val btcPrice =
-        marketService
-          .getPrices(ArraySeq(alph), "btc")
-          .futureValue
-          .rightValue
-          .map(p => p.price)
-          .head
-
-      marketConfig.currencies.foreach { currency =>
-        val price = marketService
-          .getPrices(ArraySeq(alph), currency)
-          .futureValue
-          .rightValue
-          .map(p => p.price)
-          .head
-        val exchangeRate =
-          marketService.getExchangeRates().futureValue.rightValue.find(_.currency == currency).get
-
-        btcPrice is 2.013e-5
-        price is btcPrice * exchangeRate.value
-      }
     }
 
     eventually {
@@ -96,9 +88,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
         chart is btcChart.map { tp => TimedPrice(tp.timestamp, tp.value * exchangeRate.value) }
       }
-
     }
-
   }
 
   trait Fixture {
@@ -133,6 +123,9 @@ object MarketServiceSpec {
   implicit val jsonSchema: Schema[ujson.Value] = Schema.string
   implicit val jsoncodec: Codec[String, ujson.Value, TextPlain] =
     Codec.string.map(value => ujson.read(value))(_.toString)
+
+  val alphPrice = 2.013e-5
+  val usdtPrice = 2.392e-5
 
   class CoingGeckoMock(
       uri: InetAddress,
@@ -186,8 +179,8 @@ object MarketServiceSpec {
     server.listen(port, uri.getHostAddress).asScala.futureValue
   }
 
-  val prices: String = """
-    {"alephium":{"btc":2.013E-5},"ayin":{"btc":9.572E-5},"dai":{"btc":2.389E-5},"tether":{"btc":2.392E-5},"usd-coin":{"btc":2.392E-5},"weth":{"btc":0.05312674},"wrapped-bitcoin":{"btc":1.000324}}
+  val prices: String = s"""
+    {"alephium":{"btc":$alphPrice},"ayin":{"btc":9.572E-5},"dai":{"btc":2.389E-5},"tether":{"btc":$usdtPrice},"usd-coin":{"btc":2.392E-5},"weth":{"btc":0.05312674},"wrapped-bitcoin":{"btc":1.000324}}
   """
 
   val exchangeRates: String = """

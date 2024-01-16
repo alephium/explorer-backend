@@ -35,7 +35,7 @@ import org.alephium.util.{Duration, Math, TimeStamp}
 trait MarketService {
   def getPrices(ids: ArraySeq[String], currency: String)(implicit
       ec: ExecutionContext
-  ): Future[Either[String, ArraySeq[Price]]]
+  ): Future[Either[String, ArraySeq[Option[Double]]]]
 
   def getExchangeRates()(implicit
       ec: ExecutionContext
@@ -132,7 +132,7 @@ object MarketService extends StrictLogging {
 
     def getPrices(ids: ArraySeq[String], currency: String)(implicit
         ec: ExecutionContext
-    ): Future[Either[String, ArraySeq[Price]]] = {
+    ): Future[Either[String, ArraySeq[Option[Double]]]] = {
       Future.successful(
         for {
           rates <- ratesCache.get()
@@ -141,9 +141,8 @@ object MarketService extends StrictLogging {
             .toRight(s"Cannot find price for currency $currency")
           prices <- pricesCache.get()
         } yield {
-          prices
-            .filter(price => ids.contains(price.symbol))
-            .map(price => price.copy(price = price.price * rate.value))
+          ids
+            .map(id => prices.find(_.symbol == id).map(price => price.price * rate.value))
         }
       )
     }
