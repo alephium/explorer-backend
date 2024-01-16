@@ -6224,7 +6224,12 @@
               },
               "example": [
                 "ALPH",
-                "USDT"
+                "USDC",
+                "USDT",
+                "WBTC",
+                "WETH",
+                "DAI",
+                "AYIN"
               ]
             }
           },

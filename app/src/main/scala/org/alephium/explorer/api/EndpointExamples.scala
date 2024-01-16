@@ -310,7 +310,7 @@ object EndpointExamples extends EndpointsExamples {
     simpleExample(tokens.map(_.id))
 
   implicit val symbolExample: List[Example[ArraySeq[String]]] =
-    simpleExample(ArraySeq("ALPH", "USDT"))
+    simpleExample(ArraySeq("ALPH", "USDC", "USDT", "WBTC", "WETH", "DAI", "AYIN"))
 
   implicit val listAddressesExample: List[Example[ArraySeq[Address]]] =
     simpleExample(ArraySeq(address1, address2))
