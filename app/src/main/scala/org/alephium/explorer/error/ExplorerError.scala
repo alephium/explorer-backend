@@ -102,6 +102,10 @@ object ExplorerError {
       extends Exception(s"Invalid apiKey: $message")
       with ConfigError
 
+  final case class InvalidTokenId(message: String)
+      extends Exception(s"Invalid token id: $message")
+      with ConfigError
+
   final case class InvalidSyncPeriod(syncPeriod: FiniteDuration)
       extends Exception(s"Invalid syncPeriod: ${syncPeriod.toString}. Sync-period must be > 0.")
       with ConfigError

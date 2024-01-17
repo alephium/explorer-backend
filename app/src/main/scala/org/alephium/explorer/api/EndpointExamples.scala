@@ -219,6 +219,12 @@ object EndpointExamples extends EndpointsExamples {
       totalCountAllChains = 10000000
     )
 
+  private val timedPrice =
+    TimedPrices(
+      timestamps = ArraySeq(ts, ts),
+      prices = ArraySeq(0.123, 0.123)
+    )
+
   private val perChainCount =
     PerChainCount(
       chainFrom = 1,
@@ -303,6 +309,9 @@ object EndpointExamples extends EndpointsExamples {
   implicit val listTokensExample: List[Example[ArraySeq[TokenId]]] =
     simpleExample(tokens.map(_.id))
 
+  implicit val symbolExample: List[Example[ArraySeq[String]]] =
+    simpleExample(ArraySeq("ALPH", "USDC", "USDT", "WBTC", "WETH", "DAI", "AYIN"))
+
   implicit val listAddressesExample: List[Example[ArraySeq[Address]]] =
     simpleExample(ArraySeq(address1, address2))
 
@@ -348,6 +357,9 @@ object EndpointExamples extends EndpointsExamples {
   implicit val timedCountExample: List[Example[ArraySeq[TimedCount]]] =
     simpleExample(ArraySeq(timedCount, timedCount))
 
+  implicit val timedPriceExample: List[Example[TimedPrices]] =
+    simpleExample(timedPrice)
+
   implicit val perChainTimedCountExample: List[Example[ArraySeq[PerChainTimedCount]]] =
     simpleExample(ArraySeq(perChainTimedCount, perChainTimedCount))
 
@@ -392,4 +404,16 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val nftMetadataExample: List[Example[NFTMetadata]] =
     simpleExample(NFTMetadata(token, "token://uri", contract, U256.One))
+
+  implicit val pricesExample: List[Example[ArraySeq[Price]]] =
+    simpleExample(ArraySeq(Price("ALPH", 0.01)))
+
+  implicit val exchangeRatesExample: List[Example[ArraySeq[ExchangeRate]]] =
+    simpleExample(ArraySeq(ExchangeRate("chf", "Swiss Franc", "Fr.", 0.01)))
+
+  implicit val priceChartExample: List[Example[ArraySeq[(Long, Double)]]] =
+    simpleExample(ArraySeq((1234545L, 0.01)))
+
+  implicit val priceExample: List[Example[ArraySeq[Option[Double]]]] =
+    simpleExample(ArraySeq(Option(0.01)))
 }

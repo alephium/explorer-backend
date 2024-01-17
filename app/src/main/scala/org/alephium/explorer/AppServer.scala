@@ -28,13 +28,14 @@ import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service._
 import org.alephium.explorer.web._
 
-// scalastyle:off magic.number
+// scalastyle:off magic.number parameter.number
 object AppServer {
 
   def routes(
       exportTxsNumberThreshold: Int,
       streamParallelism: Int,
-      maxTimeIntervals: ExplorerConfig.MaxTimeIntervals
+      maxTimeIntervals: ExplorerConfig.MaxTimeIntervals,
+      marketConfig: ExplorerConfig.Market
   )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
@@ -44,7 +45,8 @@ object AppServer {
       groupSetting: GroupSetting
   ): ArraySeq[Router => Route] = {
 
-    val blockServer = new BlockServer()
+    val marketService = MarketService.CoinGecko.default(marketConfig)
+    val blockServer   = new BlockServer()
     val addressServer =
       new AddressServer(
         TransactionService,
@@ -61,6 +63,7 @@ object AppServer {
     val mempoolServer              = new MempoolServer()
     val eventServer                = new EventServer()
     val contractServer             = new ContractServer()
+    val marketServer               = new MarketServer(marketService)
     val documentationServer        = new DocumentationServer()
 
     blockServer.routes ++
@@ -73,6 +76,7 @@ object AppServer {
       mempoolServer.routes ++
       eventServer.routes ++
       contractServer.routes ++
+      marketServer.routes ++
       documentationServer.routes :+
       Metrics.route
   }

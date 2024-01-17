@@ -19,10 +19,12 @@ package org.alephium.explorer.config
 import java.net.InetAddress
 import java.time.LocalTime
 
+import scala.collection.immutable.{ArraySeq, ListMap}
 import scala.concurrent.duration._
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigUtil}
 import net.ceedubs.ficus.Ficus
 import net.ceedubs.ficus.Ficus.{finiteDurationReader => _, _}
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
@@ -115,6 +117,19 @@ object ExplorerConfig {
       BootMode.validate(input).get
     }
 
+  implicit def listMapValueReader[A](implicit
+      entryReader: ValueReader[A]
+  ): ValueReader[ListMap[String, A]] =
+    new ValueReader[ListMap[String, A]] {
+      def read(config: Config, path: String): ListMap[String, A] = {
+        val relativeConfig = config.getConfig(path)
+        ListMap.from(relativeConfig.root().entrySet().asScala map { entry =>
+          val key = entry.getKey
+          key -> entryReader.read(relativeConfig, ConfigUtil.quoteString(key))
+        })
+      }
+    }
+
   implicit val explorerConfigReader: ValueReader[ExplorerConfig] =
     valueReader { implicit cfg =>
       val explorer  = as[Explorer]("explorer")
@@ -145,7 +160,8 @@ object ExplorerConfig {
           explorer.cacheLatestBlocksReloadPeriod,
           explorer.exportTxsNumberThreshold,
           explorer.streamParallelism,
-          explorer.maxTimeIntervals
+          explorer.maxTimeIntervals,
+          explorer.market
         )
       }).get
     }
@@ -173,6 +189,12 @@ object ExplorerConfig {
       charts: MaxTimeInterval
   )
 
+  final case class Market(
+      symbolName: ListMap[String, String],
+      currencies: ArraySeq[String],
+      coingeckoUri: String
+  )
+
   final private case class Explorer(
       host: String,
       port: Int,
@@ -187,7 +209,8 @@ object ExplorerConfig {
       cacheLatestBlocksReloadPeriod: FiniteDuration,
       exportTxsNumberThreshold: Int,
       streamParallelism: Int,
-      maxTimeIntervals: MaxTimeIntervals
+      maxTimeIntervals: MaxTimeIntervals,
+      market: Market
   )
 
 }
@@ -215,5 +238,6 @@ final case class ExplorerConfig private (
     cacheLatestBlocksReloadPeriod: FiniteDuration,
     exportTxsNumberThreshold: Int,
     streamParallelism: Int,
-    maxTimeInterval: ExplorerConfig.MaxTimeIntervals
+    maxTimeInterval: ExplorerConfig.MaxTimeIntervals,
+    market: ExplorerConfig.Market
 )

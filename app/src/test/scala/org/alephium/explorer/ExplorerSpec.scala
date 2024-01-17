@@ -53,7 +53,7 @@ import org.alephium.explorer.config.{BootMode, ExplorerConfig}
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.persistence.model.BlockEntity
-import org.alephium.explorer.service.BlockFlowClient
+import org.alephium.explorer.service.{BlockFlowClient, MarketServiceSpec}
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.explorer.web._
 import org.alephium.json.Json._
@@ -97,6 +97,10 @@ trait ExplorerSpec
   val blockFlowMock =
     new ExplorerSpec.BlockFlowServerMock(localhost, blockFlowPort, blockflow, networkId)
 
+  val coingeckoPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
+  val coingeckoUri  = s"http://${localhost.getHostAddress()}:$coingeckoPort"
+  val coingecko     = new MarketServiceSpec.CoingeckoMock(localhost, coingeckoPort)
+
   val blockflowBinding = blockFlowMock.server
 
   def createApp(bootMode: BootMode.Readable): ExplorerState = {
@@ -109,6 +113,7 @@ trait ExplorerSpec
     val configValues: Map[String, Any] = Map(
       ("alephium.explorer.boot-mode", bootMode.productPrefix),
       ("alephium.explorer.port", explorerPort),
+      ("alephium.explorer.market.coingecko-uri", coingeckoUri),
       ("alephium.blockflow.port", blockFlowPort),
       ("alephium.blockflow.network-id", networkId.id),
       ("alephium.blockflow.group-num", groupSetting.groupNum)

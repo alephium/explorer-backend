@@ -32,6 +32,7 @@ trait Documentation
     with EventsEndpoints
     with MempoolEndpoints
     with ContractsEndpoints
+    with MarketEndpoints
     with UtilsEndpoints
     with OpenAPIDocsInterpreter {
 
@@ -81,6 +82,8 @@ trait Documentation
         getEventsByContractAndInputAddress,
         getParentAddress,
         getSubContracts,
+        getPrices,
+        getPriceChart,
         sanityCheck,
         changeGlobalLogLevel,
         changeLogConfig
