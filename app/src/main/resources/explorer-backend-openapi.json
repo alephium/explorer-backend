@@ -6357,7 +6357,7 @@
                     1611041396892,
                     1611041396892
                   ],
-                  "values": [
+                  "prices": [
                     0.123,
                     0.123
                   ]
@@ -7543,7 +7543,7 @@
               "format": "int64"
             }
           },
-          "values": {
+          "prices": {
             "type": "array",
             "items": {
               "type": "number",
