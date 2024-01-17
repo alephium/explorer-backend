@@ -6350,21 +6350,18 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TimedPrice"
-                  }
+                  "$ref": "#/components/schemas/TimedPrices"
                 },
-                "example": [
-                  {
-                    "timestamp": 1611041396892,
-                    "value": 0.123
-                  },
-                  {
-                    "timestamp": 1611041396892,
-                    "value": 0.123
-                  }
-                ]
+                "example": {
+                  "timestamps": [
+                    1611041396892,
+                    1611041396892
+                  ],
+                  "values": [
+                    0.123,
+                    0.123
+                  ]
+                }
               }
             }
           },
@@ -7536,20 +7533,22 @@
           }
         }
       },
-      "TimedPrice": {
-        "required": [
-          "timestamp",
-          "value"
-        ],
+      "TimedPrices": {
         "type": "object",
         "properties": {
-          "timestamp": {
-            "type": "integer",
-            "format": "int64"
+          "timestamps": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
           },
-          "value": {
-            "type": "number",
-            "format": "double"
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "format": "double"
+            }
           }
         }
       },

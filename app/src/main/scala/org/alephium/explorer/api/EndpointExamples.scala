@@ -220,9 +220,9 @@ object EndpointExamples extends EndpointsExamples {
     )
 
   private val timedPrice =
-    TimedPrice(
-      timestamp = ts,
-      value = 0.123
+    TimedPrices(
+      timestamps = ArraySeq(ts, ts),
+      values = ArraySeq(0.123, 0.123)
     )
 
   private val perChainCount =
@@ -357,8 +357,8 @@ object EndpointExamples extends EndpointsExamples {
   implicit val timedCountExample: List[Example[ArraySeq[TimedCount]]] =
     simpleExample(ArraySeq(timedCount, timedCount))
 
-  implicit val timedPriceExample: List[Example[ArraySeq[TimedPrice]]] =
-    simpleExample(ArraySeq(timedPrice, timedPrice))
+  implicit val timedPriceExample: List[Example[TimedPrices]] =
+    simpleExample(timedPrice)
 
   implicit val perChainTimedCountExample: List[Example[ArraySeq[PerChainTimedCount]]] =
     simpleExample(ArraySeq(perChainTimedCount, perChainTimedCount))

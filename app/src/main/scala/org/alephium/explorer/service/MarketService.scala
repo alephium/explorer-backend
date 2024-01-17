@@ -43,7 +43,7 @@ trait MarketService {
 
   def getPriceChart(symbol: String, currency: String)(implicit
       ec: ExecutionContext
-  ): Future[Either[String, ArraySeq[TimedPrice]]]
+  ): Future[Either[String, TimedPrices]]
 }
 
 object MarketService extends StrictLogging {
@@ -208,7 +208,7 @@ object MarketService extends StrictLogging {
 
     def getPriceChart(symbol: String, currency: String)(implicit
         ec: ExecutionContext
-    ): Future[Either[String, ArraySeq[TimedPrice]]] = {
+    ): Future[Either[String, TimedPrices]] = {
       Future.successful(
         for {
           rates <- ratesCache.get()
@@ -218,9 +218,9 @@ object MarketService extends StrictLogging {
           cache      <- priceChartsCache.get(symbol).toRight(s"Not price chart for $symbol")
           priceChart <- cache.get()
         } yield {
-          priceChart.map { case (ts, price) =>
-            TimedPrice(ts, price * rate.value)
-          }
+          val timestamps = priceChart.map { case (ts, _) => ts }
+          val values     = priceChart.map { case (_, price) => price * rate.value }
+          TimedPrices(timestamps, values)
         }
       )
     }

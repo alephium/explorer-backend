@@ -42,11 +42,11 @@ trait MarketEndpoints extends BaseEndpoint with QueryParams {
       .in(jsonBody[ArraySeq[String]])
       .out(jsonBody[ArraySeq[Option[Double]]])
 
-  val getPriceChart: BaseEndpoint[(String, String), ArraySeq[TimedPrice]] =
+  val getPriceChart: BaseEndpoint[(String, String), TimedPrices] =
     basePricesEndpoint.get
       .in("prices")
       .in(path[String]("symbol"))
       .in(query[String]("currency"))
       .in("charts")
-      .out(jsonBody[ArraySeq[TimedPrice]])
+      .out(jsonBody[TimedPrices])
 }
