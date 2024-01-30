@@ -24,8 +24,8 @@ jobs:
           - 5432:5432
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-java@v1
+    - uses: actions/checkout@v4
+    - uses: actions/setup-java@v3
       with:
         java-version: 11
     - run: sbt ";scalafmtCheck;test:scalafmtCheck;scalafmtSbtCheck;scalastyle;test:scalastyle;test;unidoc;app/assembly"
