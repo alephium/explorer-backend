@@ -125,4 +125,14 @@ trait EmptyTransactionService extends TransactionService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[(TimeStamp, BigInteger)]] = ???
+
+  def getAmountHistoryAsDeltas(
+      address: Address,
+      from: TimeStamp,
+      to: TimeStamp,
+      intervalType: IntervalType
+  )(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[(TimeStamp, BigInteger)]] = ???
 }

@@ -131,6 +131,17 @@ class AddressServerSpec()
         dc: DatabaseConfig[PostgresProfile]
     ): Future[ArraySeq[(TimeStamp, BigInteger)]] =
       Future.successful(amountHistory.map { case (ts, bi) => (bi, ts) })
+
+    override def getAmountHistoryAsDeltas(
+        address: Address,
+        from: TimeStamp,
+        to: TimeStamp,
+        intervalType: IntervalType
+    )(implicit
+        ec: ExecutionContext,
+        dc: DatabaseConfig[PostgresProfile]
+    ): Future[ArraySeq[(TimeStamp, BigInteger)]] =
+      Future.successful(amountHistory.map { case (ts, bi) => (bi, ts) })
   }
 
   val tokenService = new EmptyTokenService {
@@ -331,6 +342,50 @@ class AddressServerSpec()
 
         Get(
           s"/addresses/${address}/amount-history?fromTs=$fromTs&toTs=$wrongToTs&interval-type=$intervalType"
+        ) check { response =>
+          response.body is Left(
+            s"""{"detail":"Time span cannot be greater than ${maxTimeSpan(intervalType)}"}"""
+          )
+        }
+      }
+    }
+  }
+
+  "/addresses/<address>/amount-history-deltas" should {
+    val address       = addressGen.sample.get
+    val timestamps    = transactions.map(_.timestamp.millis).sorted
+    val intervalTypes = ArraySeq[IntervalType](IntervalType.Hourly, IntervalType.Daily)
+    val fromTs        = timestamps.head
+    def maxTimeSpan(intervalType: IntervalType) = intervalType match {
+      case IntervalType.Hourly => Duration.ofDaysUnsafe(7)
+      case IntervalType.Daily  => Duration.ofDaysUnsafe(365)
+      case IntervalType.Weekly => Duration.ofDaysUnsafe(365)
+    }
+    def getToTs(intervalType: IntervalType) =
+      fromTs + maxTimeSpan(intervalType).millis
+
+    "return the amount history deltas as json" in {
+      intervalTypes.foreach { intervalType =>
+        val toTs = getToTs(intervalType)
+
+        Get(
+          s"/addresses/${address}/amount-history-deltas?fromTs=$fromTs&toTs=$toTs&interval-type=$intervalType"
+        ) check { response =>
+          response.body is Right(
+            s"""{"amountHistory":${amountHistory
+                .map { case (amount, ts) => s"""[${ts.millis},"$amount"]""" }
+                .mkString("[", ",", "]")}}"""
+          )
+        }
+      }
+    }
+
+    "respect the time range and time interval" in {
+      intervalTypes.foreach { intervalType =>
+        val wrongToTs = getToTs(intervalType) + 1
+
+        Get(
+          s"/addresses/${address}/amount-history-deltas?fromTs=$fromTs&toTs=$wrongToTs&interval-type=$intervalType"
         ) check { response =>
           response.body is Left(
             s"""{"detail":"Time span cannot be greater than ${maxTimeSpan(intervalType)}"}"""

@@ -121,6 +121,16 @@ trait TransactionService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[(TimeStamp, BigInteger)]]
+
+  def getAmountHistoryAsDeltas(
+      address: Address,
+      from: TimeStamp,
+      to: TimeStamp,
+      intervalType: IntervalType
+  )(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[(TimeStamp, BigInteger)]]
 }
 
 object TransactionService extends TransactionService {
@@ -306,6 +316,44 @@ object TransactionService extends TransactionService {
           }
 
         result
+      }
+    )
+  }
+
+  def getAmountHistoryAsDeltas(
+      address: Address,
+      from: TimeStamp,
+      to: TimeStamp,
+      intervalType: IntervalType
+  )(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[(TimeStamp, BigInteger)]] = {
+    run(
+      for {
+        inputs  <- sumAddressInputsAsDeltas(address, from, to, intervalType)
+        outputs <- sumAddressOutputsAsDeltas(address, from, to, intervalType)
+      } yield {
+        val ins  = inputs.collect { case (ts, Some(u256)) => (ts, u256) }.toMap
+        val outs = outputs.collect { case (ts, Some(u256)) => (ts, u256) }.toMap
+
+        val timestamps = scala.collection.SortedSet.from(ins.keys ++ outs.keys)
+
+        timestamps
+          .foldLeft(ArraySeq.empty[(TimeStamp, BigInteger)]) { case (res, ts) =>
+            (ins.get(ts), outs.get(ts)) match {
+              case (Some(in), Some(out)) =>
+                val diff = out.v.subtract(in.v)
+                res :+ (ts, diff)
+              case (Some(in), None) =>
+                // No Output, all inputs are spent
+                res :+ (ts, in.v.negate)
+              case (None, Some(out)) =>
+                res :+ (ts, out.v)
+              case (None, None) =>
+                res
+            }
+          }
       }
     )
   }

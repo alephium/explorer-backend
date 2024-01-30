@@ -490,6 +490,14 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
       history is historyDepracted
 
+      val deltas = TransactionService
+        .getAmountHistoryAsDeltas(address, fromTs, toTs, intervalType)
+        .futureValue
+        .map { case (ts, sum) => (ts.millis, sum) }
+      val deltaResult = deltas.map(_._2).fold(java.math.BigInteger.ZERO)(_ add _)
+
+      deltaResult is history.last._2
+
       val times = history.map(_._1)
 
       // Test that history is always ordered correctly

@@ -58,6 +58,7 @@ trait Documentation
         exportTransactionsCsvByAddress,
         getAddressAmountHistoryDEPRECATED,
         getAddressAmountHistory,
+        getAddressAmountHistoryDeltas,
         getInfos,
         getHeights,
         listMempoolTransactions,

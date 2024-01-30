@@ -297,12 +297,28 @@ class DBBenchmark {
     implicit val ec: ExecutionContext                = state.config.db.ioExecutionContext
     implicit val dc: DatabaseConfig[PostgresProfile] = state.config
     val timestamps                                   = state.blocks.map(_.timestamp)
-    val from                                         = timestamps.min
+    val from                                         = timestamps.drop(timestamps.length / 2).min
     val to           = from.plusMillisUnsafe(Duration.ofDaysUnsafe(365L).millis)
     val intervalType = IntervalType.Daily
 
     val res = TransactionService
       .getAmountHistory(state.address, from, to, intervalType)
+
+    val _ =
+      Await.result(res, requestTimeout)
+  }
+
+  @Benchmark
+  def getAmountHistoryDeltas(state: Address_ReadState): Unit = {
+    implicit val ec: ExecutionContext                = state.config.db.ioExecutionContext
+    implicit val dc: DatabaseConfig[PostgresProfile] = state.config
+    val timestamps                                   = state.blocks.map(_.timestamp)
+    val from                                         = timestamps.drop(timestamps.length / 2).min
+    val to           = from.plusMillisUnsafe(Duration.ofDaysUnsafe(365L).millis)
+    val intervalType = IntervalType.Daily
+
+    val res = TransactionService
+      .getAmountHistoryAsDeltas(state.address, from, to, intervalType)
 
     val _ =
       Await.result(res, requestTimeout)

@@ -174,6 +174,14 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .in(intervalTypeQuery)
       .out(jsonBody[AmountHistory])
 
+  val getAddressAmountHistoryDeltas
+      : BaseEndpoint[(Address, TimeInterval, IntervalType), AmountHistory] =
+    addressesEndpoint.get
+      .in("amount-history-deltas")
+      .in(timeIntervalQuery)
+      .in(intervalTypeQuery)
+      .out(jsonBody[AmountHistory])
+
   private case class TextCsv() extends CodecFormat {
     override val mediaType: MediaType = MediaType.TextCsv
   }

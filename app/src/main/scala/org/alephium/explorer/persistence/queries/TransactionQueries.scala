@@ -39,6 +39,7 @@ import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
+// scalastyle:off number.of.methods
 object TransactionQueries extends StrictLogging {
 
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
@@ -371,6 +372,26 @@ object TransactionQueries extends StrictLogging {
       """.asAS[(TimeStamp, Option[U256])]
   }
 
+  def sumAddressOutputsAsDeltas(
+      address: Address,
+      from: TimeStamp,
+      to: TimeStamp,
+      intervalType: IntervalType
+  ): DBActionSR[(TimeStamp, Option[U256])] = {
+    val dateGroup = QueryUtil.dateGroupQuery(intervalType)
+    sql"""
+      SELECT
+        LEAST($to, GREATEST($from, #${QueryUtil.extractEpoch(dateGroup)} - 1)) as ts,
+        SUM(amount)
+      FROM outputs
+      WHERE address = $address
+      AND main_chain = true
+      AND block_timestamp >= $from
+      AND block_timestamp <= $to
+      GROUP BY ts
+      """.asAS[(TimeStamp, Option[U256])]
+  }
+
   def sumAddressOutputsDEPRECATED(address: Address, from: TimeStamp, to: TimeStamp)(implicit
       ec: ExecutionContext
   ): DBActionR[U256] = {
@@ -417,6 +438,27 @@ object TransactionQueries extends StrictLogging {
       WHERE output_ref_address = $address
       AND main_chain = true
       AND block_timestamp >= ${ALPH.GenesisTimestamp}
+      AND block_timestamp <= $to
+      GROUP BY ts
+      """.asAS[(TimeStamp, Option[U256])]
+  }
+
+  def sumAddressInputsAsDeltas(
+      address: Address,
+      from: TimeStamp,
+      to: TimeStamp,
+      intervalType: IntervalType
+  ): DBActionSR[(TimeStamp, Option[U256])] = {
+    val dateGroup = QueryUtil.dateGroupQuery(intervalType)
+
+    sql"""
+      SELECT
+        LEAST($to, GREATEST($from, #${QueryUtil.extractEpoch(dateGroup)} - 1)) as ts,
+        SUM(output_ref_amount)
+      FROM inputs
+      WHERE output_ref_address = $address
+      AND main_chain = true
+      AND block_timestamp >= $from
       AND block_timestamp <= $to
       GROUP BY ts
       """.asAS[(TimeStamp, Option[U256])]
