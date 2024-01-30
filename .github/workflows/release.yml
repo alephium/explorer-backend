@@ -14,7 +14,9 @@ jobs:
           submodules: true
       - uses: actions/setup-java@v3
         with:
+          distribution: temurin
           java-version: 11
+          cache: sbt
       - name: Get the version
         id: get_version
         run: |

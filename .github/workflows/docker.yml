@@ -22,8 +22,10 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push Docker image
-        uses: olafurpg/setup-scala@v10
+        uses: actions/setup-java@v3
         with:
-          java-version: 8
+          distribution: temurin
+          java-version: 11
+          cache: sbt
       - run: sbt app/docker
         shell: bash
