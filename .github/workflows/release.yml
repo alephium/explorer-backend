@@ -8,18 +8,20 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: true
-      - uses: actions/setup-java@v1
+      - uses: actions/setup-java@v3
         with:
-          java-version: 8
+          distribution: temurin
+          java-version: 11
+          cache: sbt
       - name: Get the version
         id: get_version
         run: |
           version=$(echo ${GITHUB_REF/refs\/tags\//} | cut -c 2-)
-          echo ::set-output name=VERSION::$version
+          echo "VERSION=$version" >> $GITHUB_OUTPUT
         shell: bash
       - run: sbt app/assembly
       - name: Create Release
