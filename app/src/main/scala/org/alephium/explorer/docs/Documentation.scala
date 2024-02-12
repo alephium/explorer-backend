@@ -107,6 +107,13 @@ trait Documentation
           )
         )
         .addSchema(
+          "MaxSizeAddressesForTokens",
+          Schema(
+            `type` = Some(SchemaType.Integer),
+            `enum` = Some(List(ExampleSingleValue(maxSizeAddressesForTokens)))
+          )
+        )
+        .addSchema(
           "MaxSizeAddresses",
           Schema(
             `type` = Some(SchemaType.Integer),

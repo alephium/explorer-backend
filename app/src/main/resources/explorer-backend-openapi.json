@@ -1073,6 +1073,7 @@
           }
         ],
         "requestBody": {
+          "description": "List of addresses, max items: 80",
           "content": {
             "application/json": {
               "schema": {
@@ -2671,6 +2672,7 @@
         "description": "Are the addresses used (at least 1 transaction)",
         "operationId": "postAddressesUsed",
         "requestBody": {
+          "description": "List of addresses, max items: 80",
           "content": {
             "application/json": {
               "schema": {
@@ -3746,9 +3748,10 @@
         "tags": [
           "Tokens"
         ],
-        "description": "list given tokens information",
+        "description": "List given tokens information",
         "operationId": "postTokens",
         "requestBody": {
+          "description": "List of token ids, max items: 80",
           "content": {
             "application/json": {
               "schema": {
@@ -4375,6 +4378,7 @@
         "description": "Return metadata for the given fungible tokens, if metadata doesn't exist or token isn't a fungible, it won't be in the output list",
         "operationId": "postTokensFungible-metadata",
         "requestBody": {
+          "description": "List of token ids, max items: 80",
           "content": {
             "application/json": {
               "schema": {
@@ -4490,6 +4494,7 @@
         "description": "Return metadata for the given nft tokens, if metadata doesn't exist or token isn't a nft, it won't be in the output list",
         "operationId": "postTokensNft-metadata",
         "requestBody": {
+          "description": "List of token ids, max items: 80",
           "content": {
             "application/json": {
               "schema": {
@@ -4605,6 +4610,7 @@
         "description": "Return metadata for the given nft collection addresses, if metadata doesn't exist or address isn't a nft collection, it won't be in the output list",
         "operationId": "postTokensNft-collection-metadata",
         "requestBody": {
+          "description": "List of addresses, max items: 80",
           "content": {
             "application/json": {
               "schema": {
@@ -7966,6 +7972,12 @@
         }
       },
       "MaxSizeTokens": {
+        "type": "integer",
+        "enum": [
+          80
+        ]
+      },
+      "MaxSizeAddressesForTokens": {
         "type": "integer",
         "enum": [
           80

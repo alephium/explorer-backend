@@ -399,14 +399,20 @@ trait ExplorerSpec
           ExplorerSpec.removeField(field, js)
         }
       }
+
       // `maxItems` is hardcoded on some place and depend on group num in others
       // Previously we were changing the value based on the group setting of the test,
       // but with the hardcoded value it's impossible to differentiante those values,
       // so we remove them from the json.
-      val fields          = Seq("maxItems", "MaxSizeAddresses")
-      val expectedOpenapi = removeVariableOpenApiFields(read[ujson.Value](openApiFile), fields)
+      val fields = Seq("maxItems", "MaxSizeAddresses")
 
-      val openapi = removeVariableOpenApiFields(response.as[ujson.Value], fields)
+      def cleanOpenApi(json: ujson.Value): ujson.Value = {
+        val tmp = removeVariableOpenApiFields(json, fields)
+        ExplorerSpec.removeValueField("List of addresses, max items:", tmp)
+      }
+
+      val expectedOpenapi = cleanOpenApi(read[ujson.Value](openApiFile))
+      val openapi         = cleanOpenApi(response.as[ujson.Value])
 
       openapi is expectedOpenapi
     }
@@ -681,12 +687,30 @@ object ExplorerSpec {
   }
 
   def removeField(name: String, json: ujson.Value): ujson.Value = {
+    mapJson(json) { obj =>
+      obj.value.filterNot { case (key, _) => key == name }
+    }
+  }
+
+  def removeValueField(value: String, json: ujson.Value): ujson.Value = {
+    mapJson(json) { obj =>
+      obj.value.filterNot {
+        case (_, str: ujson.Str) =>
+          str.value.contains(value)
+        case _ => false
+      }
+    }
+  }
+
+  def mapJson(
+      json: ujson.Value
+  )(f: ujson.Obj => scala.collection.mutable.LinkedHashMap[String, ujson.Value]): ujson.Value = {
     @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     def rec(json: ujson.Value): ujson.Value = {
       json match {
         case obj: ujson.Obj =>
           ujson.Obj.from(
-            obj.value.filterNot { case (key, _) => key == name }.map { case (key, value) =>
+            f(obj).map { case (key, value) =>
               key -> rec(value)
             }
           )

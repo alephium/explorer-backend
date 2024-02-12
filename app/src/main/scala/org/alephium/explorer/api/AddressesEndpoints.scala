@@ -75,7 +75,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
   lazy val getTransactionsByAddresses
       : BaseEndpoint[(ArraySeq[Address], Pagination), ArraySeq[Transaction]] =
     baseAddressesEndpoint.post
-      .in(jsonBody[ArraySeq[Address]].validate(Validator.maxSize(maxSizeAddresses)))
+      .in(arrayBody[Address]("addresses", maxSizeAddresses))
       .in("transactions")
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])
@@ -144,7 +144,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .tag("Addresses")
       .in("used")
       .post
-      .in(jsonBody[ArraySeq[Address]].validate(Validator.maxSize(maxSizeAddresses)))
+      .in(arrayBody[Address]("addresses", maxSizeAddresses))
       .out(jsonBody[ArraySeq[Boolean]])
       .description("Are the addresses used (at least 1 transaction)")
 
