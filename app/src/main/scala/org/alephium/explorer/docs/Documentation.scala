@@ -63,6 +63,7 @@ trait Documentation
         listMempoolTransactions,
         listTokens,
         listTokenTransactions,
+        listTokenAddresses,
         listTokenSupply,
         listTokenInfo,
         listFungibleTokenMetadata,
@@ -103,6 +104,13 @@ trait Documentation
           Schema(
             `type` = Some(SchemaType.Integer),
             `enum` = Some(List(ExampleSingleValue(maxSizeTokens)))
+          )
+        )
+        .addSchema(
+          "MaxSizeAddressesForTokens",
+          Schema(
+            `type` = Some(SchemaType.Integer),
+            `enum` = Some(List(ExampleSingleValue(maxSizeAddressesForTokens)))
           )
         )
         .addSchema(
