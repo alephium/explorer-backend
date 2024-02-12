@@ -307,13 +307,13 @@ object EndpointExamples extends EndpointsExamples {
     simpleExample(ListBlocks(2, ArraySeq(blockEntryLite, blockEntryLite)))
 
   implicit val listTokensExample: List[Example[ArraySeq[TokenId]]] =
-    simpleExample(tokens.map(_.id))
+    simpleExample(ArraySeq(token))
 
   implicit val symbolExample: List[Example[ArraySeq[String]]] =
     simpleExample(ArraySeq("ALPH", "USDC", "USDT", "WBTC", "WETH", "DAI", "AYIN"))
 
   implicit val listAddressesExample: List[Example[ArraySeq[Address]]] =
-    simpleExample(ArraySeq(address1, address2))
+    simpleExample(ArraySeq(address1))
 
   implicit val transactionLikeExample: List[Example[TransactionLike]] =
     simpleExample(acceptedTransaction)
