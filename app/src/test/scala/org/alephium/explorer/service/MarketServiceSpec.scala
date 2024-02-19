@@ -109,7 +109,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
         "DAI"  -> "dai",
         "AYIN" -> "ayin"
       ),
-      ArraySeq("btc", "usd", "eur", "chf", "gbp", "idr", "vnd", "rub", "try"),
+      ArraySeq("btc", "usd", "eur", "chf", "gbp", "idr", "vnd", "rub", "try", "cad"),
       s"http://${localhost.getHostAddress()}:$port"
     )
 
