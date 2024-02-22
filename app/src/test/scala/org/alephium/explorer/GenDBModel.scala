@@ -32,6 +32,7 @@ import org.alephium.protocol.model.{Address, BlockHash, ChainIndex, GroupIndex, 
 import org.alephium.util.{AVector, TimeStamp}
 
 /** Test-data generators for types in package [[org.alephium.explorer.persistence.model]] */
+// scalastyle:off number.of.methods
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 object GenDBModel {
 
@@ -292,6 +293,13 @@ object GenDBModel {
       spentFinalized,
       spentTimestamp
     )
+
+  def blockEntityGen()(implicit groupSetting: GroupSetting): Gen[BlockEntity] =
+    blockEntryProtocolGen.map { block =>
+      BlockFlowClient.blockProtocolToEntity(
+        block
+      )
+    }
 
   def blockEntityGen(
       chainIndex: ChainIndex

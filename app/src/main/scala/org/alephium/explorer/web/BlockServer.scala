@@ -24,6 +24,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.ApiError
+import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.BlockEndpoints
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.service.BlockService
@@ -31,12 +32,16 @@ import org.alephium.explorer.service.BlockService
 class BlockServer(implicit
     val executionContext: ExecutionContext,
     dc: DatabaseConfig[PostgresProfile],
-    blockCache: BlockCache
+    blockCache: BlockCache,
+    groupSetting: GroupSetting
 ) extends Server
     with BlockEndpoints {
+  override val groupNum = groupSetting.groupNum
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
-      route(listBlocks.serverLogicSuccess[Future](BlockService.listBlocks(_))),
+      route(listBlocks.serverLogicSuccess[Future] { case (pagination, chainFrom, chainTo) =>
+        BlockService.listBlocks(pagination, chainFrom, chainTo)
+      }),
       route(getBlockByHash.serverLogic[Future] { hash =>
         BlockService
           .getLiteBlockByHash(hash)

@@ -249,6 +249,31 @@ trait ExplorerSpec
         "Invalid value for: query parameter page (expected value to be greater than or equal to 1, but got 0)"
       )
     }
+
+    Get(s"/blocks?chainFrom=0") check { response =>
+      val blocks = response.as[ListBlocks].blocks
+      Inspectors.forAll(blocks)(_.chainFrom.value is 0)
+    }
+
+    Get(s"/blocks?chainTo=0") check { response =>
+      val blocks = response.as[ListBlocks].blocks
+      Inspectors.forAll(blocks)(_.chainTo.value is 0)
+    }
+
+    Get(s"/blocks?chainFrom=0&chainTo=0") check { response =>
+      val blocks = response.as[ListBlocks].blocks
+      Inspectors.forAll(blocks) { block =>
+        block.chainFrom.value is 0
+        block.chainTo.value is 0
+      }
+    }
+
+    Get(s"/blocks?chainTo=10") check { response =>
+      response.code is StatusCode.BadRequest
+      response.as[ApiError.BadRequest] is ApiError.BadRequest(
+        "Invalid value for: query parameter chainTo (Invalid group index: 10)"
+      )
+    }
   }
 
   "get a transaction by its id" in {

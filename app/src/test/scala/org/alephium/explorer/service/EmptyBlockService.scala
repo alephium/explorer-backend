@@ -25,7 +25,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.{BlockHash, GroupIndex}
 
 trait EmptyBlockService extends BlockService {
 
@@ -41,7 +41,11 @@ trait EmptyBlockService extends BlockService {
   ): Future[ArraySeq[Transaction]] =
     Future.successful(ArraySeq.empty)
 
-  def listBlocks(pagination: Pagination.Reversible)(implicit
+  def listBlocks(
+      pagination: Pagination.Reversible,
+      chainFrom: Option[GroupIndex],
+      chainTo: Option[GroupIndex]
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       cache: BlockCache

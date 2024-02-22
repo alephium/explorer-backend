@@ -26,7 +26,7 @@ import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.dao.BlockDao
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.{BlockHash, GroupIndex}
 
 trait BlockService {
   def getLiteBlockByHash(hash: BlockHash)(implicit
@@ -39,7 +39,11 @@ trait BlockService {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]]
 
-  def listBlocks(pagination: Pagination.Reversible)(implicit
+  def listBlocks(
+      pagination: Pagination.Reversible,
+      chainFrom: Option[GroupIndex],
+      chainTo: Option[GroupIndex]
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       cache: BlockCache
@@ -72,12 +76,16 @@ object BlockService extends BlockService {
   ): Future[ArraySeq[Transaction]] =
     BlockDao.getTransactions(hash, pagination)
 
-  def listBlocks(pagination: Pagination.Reversible)(implicit
+  def listBlocks(
+      pagination: Pagination.Reversible,
+      chainFrom: Option[GroupIndex],
+      chainTo: Option[GroupIndex]
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       cache: BlockCache
   ): Future[ListBlocks] =
-    BlockDao.listMainChain(pagination).map { case (blocks, total) =>
+    BlockDao.listMainChain(pagination, chainFrom, chainTo).map { case (blocks, total) =>
       ListBlocks(total, blocks)
     }
 

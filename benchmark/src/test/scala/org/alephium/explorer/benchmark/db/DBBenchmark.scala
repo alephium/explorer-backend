@@ -127,7 +127,7 @@ class DBBenchmark {
     implicit val cache: BlockCache                   = state.blockCache
 
     val _ =
-      Await.result(BlockDao.listMainChain(state.next), requestTimeout)
+      Await.result(BlockDao.listMainChain(state.next, None, None), requestTimeout)
   }
 
   @Benchmark
@@ -137,7 +137,7 @@ class DBBenchmark {
     implicit val cache: BlockCache                   = state.blockCache
 
     val _ =
-      Await.result(BlockDao.listMainChain(state.next), requestTimeout)
+      Await.result(BlockDao.listMainChain(state.next, None, None), requestTimeout)
   }
 
   /** CONNECTION POOL = HIKARI
@@ -152,7 +152,7 @@ class DBBenchmark {
     implicit val cache: BlockCache                   = state.blockCache
 
     val _ =
-      Await.result(BlockDao.listMainChain(state.next), requestTimeout)
+      Await.result(BlockDao.listMainChain(state.next, None, None), requestTimeout)
   }
 
   /** Address benchmarks

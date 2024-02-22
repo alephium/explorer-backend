@@ -94,12 +94,16 @@ object BlockDao {
   ): Future[Unit] =
     run(insertBlockEntity(blocks, groupSetting.groupNum)).map(_ => ())
 
-  def listMainChain(pagination: Pagination.Reversible)(implicit
+  def listMainChain(
+      pagination: Pagination.Reversible,
+      chainFrom: Option[GroupIndex],
+      chainTo: Option[GroupIndex]
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       cache: BlockCache
   ): Future[(ArraySeq[BlockEntryLite], Int)] = {
-    run(listMainChainHeadersWithTxnNumber(pagination)).map { blockEntries =>
+    run(listMainChainHeadersWithTxnNumber(pagination, chainFrom, chainTo)).map { blockEntries =>
       (blockEntries, cache.getMainChainBlockCount())
     }
   }

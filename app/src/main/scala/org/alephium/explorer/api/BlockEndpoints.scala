@@ -24,9 +24,14 @@ import sttp.tapir.generic.auto._
 import org.alephium.api.Endpoints.jsonBody
 import org.alephium.explorer.api.EndpointExamples._
 import org.alephium.explorer.api.model._
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.config.GroupConfig
+import org.alephium.protocol.model.{BlockHash, GroupIndex}
 
 trait BlockEndpoints extends BaseEndpoint with QueryParams {
+  def groupNum: Int
+  implicit lazy val groupConfig: GroupConfig = new GroupConfig {
+    val groups = groupNum
+  }
 
   private val blocksEndpoint =
     baseEndpoint
@@ -47,9 +52,26 @@ trait BlockEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[Transaction]])
       .description("Get block's transactions")
 
-  val listBlocks: BaseEndpoint[Pagination.Reversible, ListBlocks] =
+  lazy val listBlocks
+      : BaseEndpoint[(Pagination.Reversible, Option[GroupIndex], Option[GroupIndex]), ListBlocks] =
     blocksEndpoint.get
       .in(paginationReversible)
+      .in(groupIndexOpt("chainFrom"))
+      .in(groupIndexOpt("chainTo"))
       .out(jsonBody[ListBlocks])
       .description("List latest blocks")
+
+  private def groupIndexOpt(name: String)(implicit groupConfig: GroupConfig) =
+    query[Option[GroupIndex]](name).validate(Validator.custom { groupIndex =>
+      groupIndex match {
+        case None =>
+          ValidationResult.Valid
+        case Some(groupIndex) =>
+          if (GroupIndex.validate(groupIndex.value)) {
+            ValidationResult.Valid
+          } else {
+            ValidationResult.Invalid(s"Invalid group index: ${groupIndex.value}")
+          }
+      }
+    })
 }

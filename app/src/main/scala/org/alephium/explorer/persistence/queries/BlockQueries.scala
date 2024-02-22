@@ -176,26 +176,33 @@ object BlockQueries extends StrictLogging {
     * rows
     */
   def listMainChainHeadersWithTxnNumber(
-      pagination: Pagination.Reversible
+      pagination: Pagination.Reversible,
+      chainFrom: Option[GroupIndex],
+      chainTo: Option[GroupIndex]
   ): DBActionRWT[ArraySeq[BlockEntryLite]] =
-    listMainChainHeadersWithTxnNumberBuilder(pagination)
+    listMainChainHeadersWithTxnNumberBuilder(pagination, chainFrom, chainTo)
       .asASE[BlockEntryLite](blockEntryListGetResult)
 
   def explainListMainChainHeadersWithTxnNumber(
-      pagination: Pagination.Reversible
+      pagination: Pagination.Reversible,
+      chainFrom: Option[GroupIndex],
+      chainTo: Option[GroupIndex]
   )(implicit ec: ExecutionContext): DBActionR[ExplainResult] =
-    listMainChainHeadersWithTxnNumberBuilder(pagination).explainAnalyze() map { explain =>
-      ExplainResult(
-        queryName = "listMainChainHeadersWithTxnNumber",
-        queryInput = pagination.toString,
-        explain = explain,
-        messages = Iterable.empty,
-        passed = explain.mkString contains "block_headers_full_index"
-      )
+    listMainChainHeadersWithTxnNumberBuilder(pagination, chainFrom, chainTo).explainAnalyze() map {
+      explain =>
+        ExplainResult(
+          queryName = "listMainChainHeadersWithTxnNumber",
+          queryInput = pagination.toString,
+          explain = explain,
+          messages = Iterable.empty,
+          passed = explain.mkString contains "block_headers_full_index"
+        )
     }
 
   def listMainChainHeadersWithTxnNumberBuilder(
-      pagination: Pagination.Reversible
+      pagination: Pagination.Reversible,
+      chainFrom: Option[GroupIndex],
+      chainTo: Option[GroupIndex]
   ): SQLActionBuilder = {
     // order by for inner query
     val orderBy =
@@ -205,20 +212,42 @@ object BlockQueries extends StrictLogging {
         LIST_BLOCKS_ORDER_BY_FORWARD
       }
 
-    sql"""
-         |select hash,
-         |       block_timestamp,
-         |       chain_from,
-         |       chain_to,
-         |       height,
-         |       main_chain,
-         |       hashrate,
-         |       txs_count
-         |from #$block_headers
-         |where main_chain = true
-         |#$orderBy
-         |limit ${pagination.limit} offset ${pagination.offset}
-         |""".stripMargin
+    val selection = s"""
+                       |select hash,
+                       |       block_timestamp,
+                       |       chain_from,
+                       |       chain_to,
+                       |       height,
+                       |       main_chain,
+                       |       hashrate,
+                       |       txs_count
+                       |from $block_headers
+                       |where main_chain = true
+      """.stripMargin
+
+    // Here we match every case of chainFrom and chainTo so we could have efficient prepared statements.
+    (chainFrom, chainTo) match {
+      case (None, None) => sql"""
+             #$selection
+             #$orderBy
+             limit ${pagination.limit} offset ${pagination.offset}"""
+      case (Some(from), None) => sql"""
+             #$selection
+             AND chain_from = $from
+             #$orderBy
+             limit ${pagination.limit} offset ${pagination.offset}"""
+      case (None, Some(to)) => sql"""
+             #$selection
+             AND chain_to = $to
+             #$orderBy
+             limit ${pagination.limit} offset ${pagination.offset}"""
+      case (Some(from), Some(to)) => sql"""
+             #$selection
+             AND chain_from = $from
+             AND chain_to = $to
+             #$orderBy
+             limit ${pagination.limit} offset ${pagination.offset}"""
+    }
   }
 
   def updateMainChainStatusQuery(block: BlockHash, mainChain: Boolean): DBActionRWT[Int] =

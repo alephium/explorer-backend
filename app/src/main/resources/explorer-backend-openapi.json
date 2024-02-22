@@ -41,6 +41,24 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "chainFrom",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "chainTo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {

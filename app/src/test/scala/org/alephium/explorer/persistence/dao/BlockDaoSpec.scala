@@ -176,7 +176,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
       // invoking listMainChainSQL would populate the cache with the row count
       eventually {
         BlockDao
-          .listMainChain(Pagination.Reversible.unsafe(1, 1))
+          .listMainChain(Pagination.Reversible.unsafe(1, 1), None, None)
           .futureValue
           ._2 is expectedMainChainCount
       }
@@ -201,7 +201,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
       // Assert the query return expected count
       eventually {
         BlockDao
-          .listMainChain(Pagination.Reversible.unsafe(1, 1, Random.nextBoolean()))
+          .listMainChain(Pagination.Reversible.unsafe(1, 1, Random.nextBoolean()), None, None)
           .futureValue
           ._2 is expectedMainChainCount
       }
@@ -214,9 +214,37 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
       // Dispatch a query so the cache get populated
       eventually {
         BlockDao
-          .listMainChain(Pagination.Reversible.unsafe(1, 1, Random.nextBoolean()))
+          .listMainChain(Pagination.Reversible.unsafe(1, 1, Random.nextBoolean()), None, None)
           .futureValue
           ._2 is expectedMainChainCountTotal
+      }
+    }
+  }
+
+  "list main chain with chain filtering" in new Fixture {
+    val entities: List[BlockEntity] =
+      Gen
+        .listOf(blockEntityGen())
+        .sample
+        .get
+        .map(_.copy(mainChain = true))
+
+    // clear existing data
+    run(BlockHeaderSchema.table.delete).futureValue
+    BlockDao.insertAll(entities).futureValue
+
+    forAll(Gen.option(groupIndexGen), Gen.option(groupIndexGen)) { case (from, to) =>
+      val expected = entities.filter(block =>
+        from.map(_ == block.chainFrom).getOrElse(true) && to.map(_ == block.chainTo).getOrElse(true)
+      )
+
+      eventually {
+        BlockDao
+          .listMainChain(Pagination.Reversible.unsafe(1, entities.length), from, to)
+          .futureValue
+          ._1
+          .map(_.hash)
+          .toSet is expected.map(_.hash).toSet
       }
     }
   }
