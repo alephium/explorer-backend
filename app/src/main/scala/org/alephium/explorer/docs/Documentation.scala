@@ -60,6 +60,7 @@ trait Documentation
         getAddressAmountHistory,
         getInfos,
         getHeights,
+        latestBlocks,
         listMempoolTransactions,
         listTokens,
         listTokenTransactions,

@@ -18,9 +18,15 @@ package org.alephium.explorer.persistence.model
 
 import java.math.BigInteger
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 
+import org.alephium.api.UtilJson._
+import org.alephium.explorer.api.Codecs._
+import org.alephium.explorer.api.Json.groupIndexReadWriter
 import org.alephium.explorer.api.model.Height
+import org.alephium.json.Json._
 import org.alephium.protocol.model.{BlockHash, GroupIndex}
 import org.alephium.util.TimeStamp
 
@@ -30,11 +36,14 @@ final case class LatestBlock(
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     height: Height,
+    deps: Option[ArraySeq[BlockHash]], // currently optional for backward compatibility
     target: ByteString,
-    hashrate: BigInteger
+    hashRate: BigInteger
 )
 
 object LatestBlock {
+  implicit val codec: ReadWriter[LatestBlock] = macroRW
+
   def fromEntity(block: BlockEntity): LatestBlock = {
     LatestBlock(
       block.hash,
@@ -42,6 +51,7 @@ object LatestBlock {
       block.chainFrom,
       block.chainTo,
       block.height,
+      Some(block.deps),
       block.target,
       block.hashrate
     )

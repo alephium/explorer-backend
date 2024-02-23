@@ -92,6 +92,9 @@ class InfosServer(
       route(getHeights.serverLogicSuccess[Future]{ _ =>
          blockService.listMaxHeights()
       }) ,
+      route(latestBlocks.serverLogicSuccess[Future]{ _ =>
+         blockService.latestBlocks()
+      }),
       route(getTotalTransactions.serverLogicSuccess[Future]{ _=>
         Future(transactionService.getTotalNumber())
       }),

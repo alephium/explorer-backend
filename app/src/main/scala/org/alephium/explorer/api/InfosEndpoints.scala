@@ -26,6 +26,7 @@ import sttp.tapir.generic.auto._
 import org.alephium.api.Endpoints.jsonBody
 import org.alephium.explorer.api.EndpointExamples._
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.persistence.model.LatestBlock
 
 // scalastyle:off magic.number
 trait InfosEndpoints extends BaseEndpoint with QueryParams {
@@ -78,6 +79,12 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
     infosEndpoint.get
       .in("heights")
       .out(jsonBody[ArraySeq[PerChainHeight]])
+      .description("List latest height for each chain")
+
+  val latestBlocks: BaseEndpoint[Unit, ArraySeq[LatestBlock]] =
+    infosEndpoint.get
+      .in("latest-blocks")
+      .out(jsonBody[ArraySeq[LatestBlock]])
       .description("List latest height for each chain")
 
   val getTotalTransactions: BaseEndpoint[Unit, Int] =

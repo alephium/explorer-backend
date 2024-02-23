@@ -25,6 +25,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.persistence.model.LatestBlock
 import org.alephium.protocol.model.{BlockHash, GroupIndex}
 
 trait EmptyBlockService extends BlockService {
@@ -57,6 +58,13 @@ trait EmptyBlockService extends BlockService {
       groupSetting: GroupSetting,
       ec: ExecutionContext
   ): Future[ArraySeq[PerChainHeight]] =
+    Future.successful(ArraySeq.empty)
+
+  def latestBlocks()(implicit
+      cache: BlockCache,
+      groupSetting: GroupSetting,
+      ec: ExecutionContext
+  ): Future[ArraySeq[LatestBlock]] =
     Future.successful(ArraySeq.empty)
 
   def getAverageBlockTime()(implicit

@@ -26,6 +26,7 @@ import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.persistence.dao.BlockDao
+import org.alephium.explorer.persistence.model.LatestBlock
 import org.alephium.protocol.model.{BlockHash, GroupIndex}
 
 trait BlockService {
@@ -54,6 +55,12 @@ trait BlockService {
       groupSetting: GroupSetting,
       ec: ExecutionContext
   ): Future[ArraySeq[PerChainHeight]]
+
+  def latestBlocks()(implicit
+      cache: BlockCache,
+      groupSetting: GroupSetting,
+      ec: ExecutionContext
+  ): Future[ArraySeq[LatestBlock]]
 
   def getAverageBlockTime()(implicit
       cache: BlockCache,
@@ -100,6 +107,15 @@ object BlockService extends BlockService {
         val height = block.height.value.toLong
         PerChainHeight(chainIndex.from.value, chainIndex.to.value, height, height)
       })
+
+  def latestBlocks()(implicit
+      cache: BlockCache,
+      groupSetting: GroupSetting,
+      ec: ExecutionContext
+  ): Future[ArraySeq[LatestBlock]] =
+    BlockDao
+      .latestBlocks()
+      .map(_.map(_._2))
 
   def getAverageBlockTime()(implicit
       cache: BlockCache,

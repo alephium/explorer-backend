@@ -147,6 +147,16 @@ object CustomJdbcTypes {
       bytes => readBinary[ArraySeq[Val]](bytes)
     )
 
+  implicit val blockHashesType: JdbcType[ArraySeq[BlockHash]] =
+    MappedJdbcType.base[ArraySeq[BlockHash], Array[Byte]](
+      blockHashes => serialize(blockHashes).toArray,
+      bytes =>
+        deserialize[ArraySeq[BlockHash]](ByteString.fromArrayUnsafe(bytes)) match {
+          case Left(error)  => throw error
+          case Right(value) => value
+        }
+    )
+
   implicit val intervalTypeType: JdbcType[IntervalType] =
     MappedJdbcType.base[IntervalType, Int](
       _.value,

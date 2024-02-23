@@ -24,6 +24,7 @@ import sttp.tapir.EndpointIO.Example
 import org.alephium.api.EndpointsExamples
 import org.alephium.api.model.{Amount, ValBool}
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.persistence.model.LatestBlock
 import org.alephium.explorer.persistence.queries.ExplainResult
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.mining.HashRate
@@ -117,6 +118,18 @@ object EndpointExamples extends EndpointsExamples {
       height = Height.unsafe(42),
       txNumber = 1,
       mainChain = true,
+      hashRate = HashRate.a128EhPerSecond.value
+    )
+
+  private val latestBlock: LatestBlock =
+    LatestBlock(
+      hash = blockHash,
+      timestamp = ts,
+      chainFrom = groupIndex1,
+      chainTo = groupIndex2,
+      height = Height.unsafe(42),
+      deps = Some(ArraySeq(blockHash)),
+      target = ByteString.empty,
       hashRate = HashRate.a128EhPerSecond.value
     )
 
@@ -299,6 +312,9 @@ object EndpointExamples extends EndpointsExamples {
     */
   implicit val blockEntryLiteExample: List[Example[BlockEntryLite]] =
     simpleExample(blockEntryLite)
+
+  implicit val latestBlocksExample: List[Example[ArraySeq[LatestBlock]]] =
+    simpleExample(ArraySeq(latestBlock))
 
   implicit val transactionsExample: List[Example[ArraySeq[Transaction]]] =
     simpleExample(ArraySeq(transaction, transaction))

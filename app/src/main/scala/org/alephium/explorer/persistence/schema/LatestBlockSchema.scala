@@ -18,6 +18,8 @@ package org.alephium.explorer.persistence.schema
 
 import java.math.BigInteger
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{PrimaryKey, ProvenShape}
@@ -31,12 +33,13 @@ import org.alephium.util.TimeStamp
 object LatestBlockSchema extends Schema[LatestBlock]("latest_blocks") {
 
   class LatestBlocks(tag: Tag) extends Table[LatestBlock](tag, name) {
-    def hash: Rep[BlockHash]       = column[BlockHash]("hash", O.SqlType("bytea"))
-    def timestamp: Rep[TimeStamp]  = column[TimeStamp]("block_timestamp")
-    def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
-    def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
-    def height: Rep[Height]        = column[Height]("height")
-    def target: Rep[ByteString]    = column[ByteString]("target")
+    def hash: Rep[BlockHash]                   = column[BlockHash]("hash", O.SqlType("bytea"))
+    def timestamp: Rep[TimeStamp]              = column[TimeStamp]("block_timestamp")
+    def chainFrom: Rep[GroupIndex]             = column[GroupIndex]("chain_from")
+    def chainTo: Rep[GroupIndex]               = column[GroupIndex]("chain_to")
+    def height: Rep[Height]                    = column[Height]("height")
+    def deps: Rep[Option[ArraySeq[BlockHash]]] = column[Option[ArraySeq[BlockHash]]]("deps")
+    def target: Rep[ByteString]                = column[ByteString]("target")
     def hashrate: Rep[BigInteger] =
       column[BigInteger](
         "hashrate",
@@ -46,7 +49,7 @@ object LatestBlockSchema extends Schema[LatestBlock]("latest_blocks") {
     def pk: PrimaryKey = primaryKey("latest_block_pk", (chainFrom, chainTo))
 
     def * : ProvenShape[LatestBlock] =
-      (hash, timestamp, chainFrom, chainTo, height, target, hashrate)
+      (hash, timestamp, chainFrom, chainTo, height, deps, target, hashrate)
         .<>((LatestBlock.apply _).tupled, LatestBlock.unapply)
   }
 

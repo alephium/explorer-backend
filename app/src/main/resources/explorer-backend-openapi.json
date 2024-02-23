@@ -3378,6 +3378,109 @@
         }
       }
     },
+    "/infos/latest-blocks": {
+      "get": {
+        "tags": [
+          "Infos"
+        ],
+        "description": "List latest height for each chain",
+        "operationId": "getInfosLatest-blocks",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LatestBlock"
+                  }
+                },
+                "example": [
+                  {
+                    "hash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "timestamp": 1611041396892,
+                    "chainFrom": 1,
+                    "chainTo": 2,
+                    "height": 42,
+                    "deps": [
+                      "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5"
+                    ],
+                    "target": "",
+                    "hashRate": "147573952589676412928"
+                  }
+                ]
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mempool/transactions": {
       "get": {
         "tags": [
@@ -7296,6 +7399,55 @@
           "hourly",
           "weekly"
         ]
+      },
+      "LatestBlock": {
+        "required": [
+          "hash",
+          "timestamp",
+          "chainFrom",
+          "chainTo",
+          "height",
+          "target",
+          "hashRate"
+        ],
+        "type": "object",
+        "properties": {
+          "hash": {
+            "type": "string",
+            "format": "block-hash"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "chainFrom": {
+            "type": "integer",
+            "format": "group-index"
+          },
+          "chainTo": {
+            "type": "integer",
+            "format": "group-index"
+          },
+          "height": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "deps": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "block-hash"
+            }
+          },
+          "target": {
+            "type": "string",
+            "format": "hex-string"
+          },
+          "hashRate": {
+            "type": "string",
+            "format": "bigint"
+          }
+        }
       },
       "ListBlocks": {
         "required": [
