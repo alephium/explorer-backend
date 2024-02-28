@@ -246,8 +246,7 @@ object BlockFlowClient extends StrictLogging {
     }
 
     def guessStdInterfaceId(address: Address.Contract): Future[Option[StdInterfaceId]] = {
-      val group = address.groupIndex(groupSetting.groupConfig)
-      _send(contractState, uri, (address, group))
+      _send(contractState, uri, address)
         .map { rawState =>
           rawState.immFields.lastOption match {
             case Some(api.model.ValByteVec(bytes)) =>

@@ -331,21 +331,29 @@ object GenCoreApi {
     error <- Gen.alphaStr
   } yield CallContractFailed(error)
 
+  def debugMessageGen(implicit groupSetting: GroupSetting): Gen[DebugMessage] =
+    for {
+      contractAddress <- addressContractProtocolGen
+      message         <- Gen.alphaStr
+    } yield DebugMessage(contractAddress, message)
+
   def callContractSucceededGen(implicit groupSetting: GroupSetting): Gen[CallContractSucceeded] =
     for {
-      returns   <- Gen.listOfN(5, valGen())
-      gasUsed   <- Gen.posNum[Int]
-      contracts <- Gen.listOfN(5, contractStateGen)
-      txInputs  <- Gen.listOfN(5, addressGen)
-      txOutputs <- Gen.listOfN(5, outputProtocolGen)
-      events    <- Gen.listOfN(5, contractEventByTxIdGen)
+      returns       <- Gen.listOfN(5, valGen())
+      gasUsed       <- Gen.posNum[Int]
+      contracts     <- Gen.listOfN(5, contractStateGen)
+      txInputs      <- Gen.listOfN(5, addressGen)
+      txOutputs     <- Gen.listOfN(5, outputProtocolGen)
+      events        <- Gen.listOfN(5, contractEventByTxIdGen)
+      debugMessages <- Gen.listOfN(2, debugMessageGen)
     } yield CallContractSucceeded(
       AVector.from(returns),
       gasUsed,
       AVector.from(contracts),
       AVector.from(txInputs),
       AVector.from(txOutputs),
-      AVector.from(events)
+      AVector.from(events),
+      AVector.from(debugMessages)
     )
 
   def callContractResultGen(implicit groupSetting: GroupSetting): Gen[CallContractResult] =
