@@ -53,7 +53,8 @@ object AppServer {
         TokenService,
         exportTxsNumberThreshold,
         streamParallelism,
-        maxTimeIntervals.amountHistory
+        maxTimeIntervals.amountHistory,
+        maxTimeIntervals.exportTxs
       )
     val transactionServer = new TransactionServer()
     val infosServer       = new InfosServer(TokenSupplyService, BlockService, TransactionService)
@@ -64,7 +65,7 @@ object AppServer {
     val eventServer                = new EventServer()
     val contractServer             = new ContractServer()
     val marketServer               = new MarketServer(marketService)
-    val documentationServer        = new DocumentationServer()
+    val documentationServer        = new DocumentationServer(maxTimeIntervals.exportTxs)
 
     blockServer.routes ++
       addressServer.routes ++

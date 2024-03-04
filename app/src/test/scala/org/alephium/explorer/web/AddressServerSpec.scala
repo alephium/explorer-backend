@@ -149,7 +149,8 @@ class AddressServerSpec()
       tokenService,
       exportTxsNumberThreshold = 1000,
       streamParallelism = 8,
-      maxTimeInterval = ConfigDefaults.maxTimeIntervals.amountHistory
+      maxTimeInterval = ConfigDefaults.maxTimeIntervals.amountHistory,
+      maxTimeIntervalExportTxs = ConfigDefaults.maxTimeIntervals.exportTxs
     )
 
   val routes = server.routes
@@ -247,7 +248,7 @@ class AddressServerSpec()
       val address = addressGen.sample.get
       val long    = Gen.posNum[Long].sample.get
       val fromTs  = TimeStamp.now().millis
-      val toTs    = fromTs + Duration.ofDaysUnsafe(365).millis
+      val toTs    = fromTs + Duration.ofDaysUnsafe(366).millis
 
       Get(s"/addresses/${address}/export-transactions/csv?fromTs=$fromTs&toTs=$toTs") check {
         response =>
@@ -280,8 +281,8 @@ class AddressServerSpec()
     val fromTs        = timestamps.head
     def maxTimeSpan(intervalType: IntervalType) = intervalType match {
       case IntervalType.Hourly => Duration.ofDaysUnsafe(7)
-      case IntervalType.Daily  => Duration.ofDaysUnsafe(365)
-      case IntervalType.Weekly => Duration.ofDaysUnsafe(365)
+      case IntervalType.Daily  => Duration.ofDaysUnsafe(366)
+      case IntervalType.Weekly => Duration.ofDaysUnsafe(366)
     }
     def getToTs(intervalType: IntervalType) =
       fromTs + maxTimeSpan(intervalType).millis

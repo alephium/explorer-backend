@@ -186,13 +186,15 @@ object ExplorerConfig {
 
   final case class MaxTimeIntervals(
       amountHistory: MaxTimeInterval,
-      charts: MaxTimeInterval
+      charts: MaxTimeInterval,
+      exportTxs: util.Duration
   )
 
   final case class Market(
       symbolName: ListMap[String, String],
       currencies: ArraySeq[String],
-      coingeckoUri: String
+      coingeckoUri: String,
+      marketChartDays: Int
   )
 
   final private case class Explorer(

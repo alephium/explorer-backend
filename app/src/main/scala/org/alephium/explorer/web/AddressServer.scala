@@ -35,13 +35,15 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service.{TokenService, TransactionService}
 import org.alephium.protocol.model.Address
+import org.alephium.util.Duration
 
 class AddressServer(
     transactionService: TransactionService,
     tokenService: TokenService,
     exportTxsNumberThreshold: Int,
     streamParallelism: Int,
-    maxTimeInterval: ExplorerConfig.MaxTimeInterval
+    maxTimeInterval: ExplorerConfig.MaxTimeInterval,
+    val maxTimeIntervalExportTxs: Duration
 )(implicit
     val executionContext: ExecutionContext,
     groupSetting: GroupSetting,
