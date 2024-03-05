@@ -230,7 +230,10 @@ object MarketService extends StrictLogging {
     ): Future[Either[String, ArraySeq[(TimeStamp, Double)]]] = {
       logger.debug(s"Query coingecko `/coins/$id/market_chart`, nb of attempts $retried")
       basicRequest
-        .method(Method.GET, uri"$baseUri/coins/$id/market_chart?vs_currency=$baseCurrency&days=365")
+        .method(
+          Method.GET,
+          uri"$baseUri/coins/$id/market_chart?vs_currency=$baseCurrency&days=${marketConfig.marketChartDays}"
+        )
         .send(backend)
         .flatMap { response =>
           handleChartResponse(id, response, retried)

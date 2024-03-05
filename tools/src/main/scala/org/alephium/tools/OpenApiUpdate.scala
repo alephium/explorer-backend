@@ -18,14 +18,17 @@ package org.alephium.tools
 
 import org.alephium.api.OpenAPIWriters.openApiJson
 import org.alephium.explorer.docs.Documentation
-import org.alephium.util.discard
+import org.alephium.util.{discard, Duration}
 
 object OpenApiUpdate {
   def main(args: Array[String]): Unit = {
     discard {
       new Documentation {
 
-        val groupNum = 4
+        // scalastyle:off magic.number
+        val groupNum                           = 4
+        val maxTimeIntervalExportTxs: Duration = Duration.ofDaysUnsafe(366)
+        // scalastyle:on magic.number
 
         private val json = openApiJson(docs, dropAuth = false)
 

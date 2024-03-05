@@ -110,7 +110,8 @@ class MarketServiceSpec extends AlephiumFutureSpec {
         "AYIN" -> "ayin"
       ),
       ArraySeq("btc", "usd", "eur", "chf", "gbp", "idr", "vnd", "rub", "try", "cad"),
-      s"http://${localhost.getHostAddress()}:$port"
+      s"http://${localhost.getHostAddress()}:$port",
+      marketChartDays = 366
     )
 
     val coingecko: MarketServiceSpec.CoingeckoMock =

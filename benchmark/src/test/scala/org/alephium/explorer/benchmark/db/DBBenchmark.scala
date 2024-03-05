@@ -282,7 +282,7 @@ class DBBenchmark {
     implicit val dc: DatabaseConfig[PostgresProfile] = state.config
     val timestamps                                   = state.blocks.map(_.timestamp)
     val from                                         = timestamps.min
-    val to           = from.plusMillisUnsafe(Duration.ofDaysUnsafe(365L).millis)
+    val to           = from.plusMillisUnsafe(Duration.ofDaysUnsafe(366L).millis)
     val intervalType = IntervalType.Daily
 
     val flowable = TransactionService
@@ -298,7 +298,7 @@ class DBBenchmark {
     implicit val dc: DatabaseConfig[PostgresProfile] = state.config
     val timestamps                                   = state.blocks.map(_.timestamp)
     val from                                         = timestamps.min
-    val to           = from.plusMillisUnsafe(Duration.ofDaysUnsafe(365L).millis)
+    val to           = from.plusMillisUnsafe(Duration.ofDaysUnsafe(366L).millis)
     val intervalType = IntervalType.Daily
 
     val res = TransactionService

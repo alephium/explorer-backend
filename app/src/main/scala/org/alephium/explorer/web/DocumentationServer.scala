@@ -24,8 +24,12 @@ import org.alephium.api.OpenAPIWriters.openApiJson
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.docs.Documentation
 import org.alephium.http.SwaggerUI
+import org.alephium.util.Duration
 
-class DocumentationServer()(implicit groupSetting: GroupSetting) extends Server with Documentation {
+class DocumentationServer(val maxTimeIntervalExportTxs: Duration)(implicit
+    groupSetting: GroupSetting
+) extends Server
+    with Documentation {
 
   val groupNum = groupSetting.groupNum
 

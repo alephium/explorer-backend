@@ -42,7 +42,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
 
   lazy val maxSizeAddresses: Int = groupNum * gapLimit
 
-  private val oneYear = Duration.ofDaysUnsafe(365)
+  def maxTimeIntervalExportTxs: Duration
 
   private val baseAddressesEndpoint =
     baseEndpoint
@@ -148,12 +148,12 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[Boolean]])
       .description("Are the addresses used (at least 1 transaction)")
 
-  val exportTransactionsCsvByAddress
+  lazy val exportTransactionsCsvByAddress
       : BaseEndpoint[(Address, TimeInterval), (String, ReadStream[Buffer])] =
     addressesEndpoint.get
       .in("export-transactions")
       .in("csv")
-      .in(timeIntervalWithMaxQuery(oneYear))
+      .in(timeIntervalWithMaxQuery(maxTimeIntervalExportTxs))
       .out(header[String](HeaderNames.ContentDisposition))
       .out(streamTextBody(VertxStreams)(TextCsv()))
 
