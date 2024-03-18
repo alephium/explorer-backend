@@ -27,13 +27,15 @@ You need to have [Postgresql][postgresql] and [sbt][sbt] installed in your syste
    postgres=# CREATE DATABASE explorer;
    ```
 
-### 3. Start the server
+### 3. Run explorer-backend
+#### 3.1 Using `sbt`
+##### Start the server
 
 ```shell
 sbt app/run
 ```
 
-### 4. Single Jar
+##### Build the Jar
 
 ```shell
 sbt app/assembly
@@ -41,6 +43,24 @@ sbt app/assembly
 
 The resulting assembly file will appear in `app/target/scala-2.13/` directory.
 
+#### 3.2 Run the released jar
+
+Download the lastest jar in our [release page](https://github.com/alephium/explorer-backend/releases/latest)
+
+Run it with:
+
+```shell
+java -jar explorer-backend-x.x.x.jar
+```
+
+### 4. Configuration
+
+Configuration file at [`/app/src/main/resources/application.conf`](https://github.com/alephium/explorer-backend/blob/master/app/src/main/resources/application.conf) can be customized using environment variables
+
+```shell
+export ALEPHIUM_API_KEY="full-node-api-key"; export BLOCKFLOW_DIRECT_CLIQUE_ACCESS=true; java -jar  explorer-backend-x.x.x.jar
+
+```
 
 ### 5. Restore archived database
 
@@ -129,38 +149,3 @@ apiMappings ++=
     )
   )
 ```
-
-## Node Customization
-
-The steps below are for developers who want to reference a full node on another computer, such as a Raspberry Pi, that is on the same subnet.
-
-### Explorer: `/app/src/main/resources/application.conf`
-
-```shell
-blockflow {
-    host = "full-node-ip-address"
-    port = 12973
-
-    direct-clique-access = false
-    direct-clique-access = ${?BLOCKFLOW_DIRECT_CLIQUE_ACCESS}
-
-    network-id = 0
-    network-id = ${?BLOCKFLOW_NETWORK_ID}
-    groupNum = 4
-    api-key = "full-node-api-key"
-}
-```
-
-### Full Node: `user.conf`
-
-```shell
-alephium.api.api-key = "full-node-api-key"
-alephium.api.network-interface = "0.0.0.0"
-
-alephium.network.bind-address  = "0.0.0.0:9973"
-alephium.network.internal-address  = "full-node-ip-address:9973"
-alephium.network.coordinator-address  = "full-node-ip-address:9973"
-```
-
-
-
