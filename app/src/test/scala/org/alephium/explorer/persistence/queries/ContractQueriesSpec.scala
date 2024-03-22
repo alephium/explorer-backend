@@ -34,7 +34,7 @@ import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.{ContractEntity, EventEntity}
 import org.alephium.explorer.persistence.queries.ContractQueries
 import org.alephium.explorer.persistence.schema.ContractSchema
-import org.alephium.protocol.model.Address
+import org.alephium.protocol.model.{Address, ChainIndex, GroupIndex}
 
 @SuppressWarnings(
   Array("org.wartremover.warts.DefaultArguments", "org.wartremover.warts.AsInstanceOf")
@@ -47,14 +47,14 @@ class ContractQueriesSpec
 
   val emptyByteVec: Val = ValByteVec(ByteString.empty)
 
-  def createEventGen(parentOpt: Option[Address] = None): Gen[EventEntity] =
+  def createEventGen(groupIndex: GroupIndex, parentOpt: Option[Address] = None): Gen[EventEntity] =
     for {
       event       <- eventEntityGen()
       contract    <- addressGen
       interfaceId <- Gen.option(valByteVecGen)
     } yield {
       event.copy(
-        contractAddress = ContractEntity.createContractEventAddress,
+        contractAddress = ContractEntity.createContractEventAddress(groupIndex),
         fields = ArraySeq(
           ValAddress(contract),
           parentOpt.map(ValAddress.apply).getOrElse(emptyByteVec),
@@ -62,13 +62,19 @@ class ContractQueriesSpec
         )
       )
     }
+  def createEventsGen(parentOpt: Option[Address] = None): Gen[(GroupIndex, Seq[EventEntity])] =
+    for {
+      groupIndex <- groupIndexGen
+      events     <- Gen.nonEmptyListOf(createEventGen(groupIndex, parentOpt))
+    } yield (groupIndex, events)
 
   def destroyEventGen(contract: Address): Gen[EventEntity] =
     for {
       event <- eventEntityGen()
     } yield {
+      val groupIndex = ChainIndex.from(event.blockHash).from
       event.copy(
-        contractAddress = ContractEntity.destroyContractEventAddress,
+        contractAddress = ContractEntity.destroyContractEventAddress(groupIndex),
         fields = ArraySeq(
           ValAddress(contract)
         )
@@ -81,32 +87,32 @@ class ContractQueriesSpec
 
   "Contract Queries" should {
     "insertContractCreation and updateContractDestruction" in {
-      forAll(Gen.nonEmptyListOf(createEventGen())) { events =>
+      forAll(createEventsGen()) { case (groupIndex, events) =>
         // Creation
         run(ContractSchema.table.delete).futureValue
-        run(ContractQueries.insertContractCreation(events)).futureValue
+        run(ContractQueries.insertContractCreation(events, groupIndex)).futureValue
         run(ContractSchema.table.result).futureValue.sortBy(_.creationTimestamp) is events
-          .flatMap(ContractEntity.creationFromEventEntity)
+          .flatMap(ContractEntity.creationFromEventEntity(_, groupIndex))
           .sortBy(_.creationTimestamp)
 
         // Destruction
         val destroyEvents = events.map(e => destroyEventGen(contractAddressFromEvent(e)).sample.get)
-        run(ContractQueries.updateContractDestruction(destroyEvents)).futureValue
+        run(ContractQueries.updateContractDestruction(destroyEvents, groupIndex)).futureValue
 
         run(ContractSchema.table.result).futureValue
           .sortBy(_.destructionTimestamp)
           .flatMap(_.destroyInfo()) is destroyEvents
-          .flatMap(ContractEntity.destructionFromEventEntity)
+          .flatMap(ContractEntity.destructionFromEventEntity(_, groupIndex))
           .sortBy(_.timestamp)
       }
     }
 
     "getParentAddressQuery" in {
-      forAll(Gen.nonEmptyListOf(createEventGen())) { events =>
+      forAll(createEventsGen()) { case (groupIndex, events) =>
         run(ContractSchema.table.delete).futureValue
-        run(ContractQueries.insertContractCreation(events)).futureValue
+        run(ContractQueries.insertContractCreation(events, groupIndex)).futureValue
 
-        events.flatMap(ContractEntity.creationFromEventEntity).foreach { event =>
+        events.flatMap(ContractEntity.creationFromEventEntity(_, groupIndex)).foreach { event =>
           run(ContractQueries.getParentAddressQuery(event.contract)).futureValue is
             event.parent
         }
@@ -120,17 +126,18 @@ class ContractQueriesSpec
       val pagination = Pagination.unsafe(1, 5)
 
       forAll(
-        Gen.nonEmptyListOf(createEventGen(Some(parent))),
-        Gen.nonEmptyListOf(createEventGen())
-      ) { case (events, otherEvents) =>
+        createEventsGen(Some(parent)),
+        createEventsGen()
+      ) { case ((groupIndex, events), (otherGroup, otherEvents)) =>
         run(ContractSchema.table.delete).futureValue
-        run(ContractQueries.insertContractCreation(events ++ otherEvents)).futureValue
+        run(ContractQueries.insertContractCreation(events, groupIndex)).futureValue
+        run(ContractQueries.insertContractCreation(otherEvents, otherGroup)).futureValue
 
         run(ContractQueries.getSubContractsQuery(parent, pagination)).futureValue is events
           .sortBy(_.timestamp)
           .reverse
           .take(pagination.limit)
-          .flatMap(ContractEntity.creationFromEventEntity)
+          .flatMap(ContractEntity.creationFromEventEntity(_, groupIndex))
           .map(_.contract)
 
       }

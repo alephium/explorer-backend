@@ -28,6 +28,7 @@ import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.persistence.model.ContractEntity
+import org.alephium.protocol.model.ChainIndex
 
 class ContractEntitySpec extends AlephiumSpec {
 
@@ -37,16 +38,18 @@ class ContractEntitySpec extends AlephiumSpec {
   "ContractEntity.creationFromEventEntity" should {
     "return None for a random event" in {
       forAll(eventEntityGen()) { event =>
-        ContractEntity.creationFromEventEntity(event) is None
+        val groupIndex = ChainIndex.from(event.blockHash).from
+        ContractEntity.creationFromEventEntity(event, groupIndex) is None
       }
     }
 
     "convert the event for a correct create contract events" in {
       forAll(eventEntityGen(), addressGen, Gen.option(addressGen), Gen.option(interfaceIdGen)) {
         case (event, contract, parentOpt, interfaceIdOpt) =>
+          val groupIndex  = ChainIndex.from(event.blockHash).from
           val parent: Val = parentOpt.map(ValAddress.apply).getOrElse(emptyByteVec)
           val createSubContractEvent = event.copy(
-            contractAddress = ContractEntity.createContractEventAddress,
+            contractAddress = ContractEntity.createContractEventAddress(groupIndex),
             fields = ArraySeq[Val](
               ValAddress(contract),
               parent,
@@ -54,7 +57,7 @@ class ContractEntitySpec extends AlephiumSpec {
             )
           )
 
-          ContractEntity.creationFromEventEntity(createSubContractEvent) is Some(
+          ContractEntity.creationFromEventEntity(createSubContractEvent, groupIndex) is Some(
             ContractEntity(
               contract,
               parentOpt,
@@ -77,12 +80,13 @@ class ContractEntitySpec extends AlephiumSpec {
     "fail to convert the event if there isn't 3 correct fields" in {
       forAll(eventEntityGen(), addressGen, addressGen, interfaceIdGen) {
         case (event, contract, parent, interfaceId) =>
+          val groupIndex = ChainIndex.from(event.blockHash).from
           val zeroField = event.copy(
-            contractAddress = ContractEntity.createContractEventAddress,
+            contractAddress = ContractEntity.createContractEventAddress(groupIndex),
             fields = ArraySeq.empty
           )
 
-          ContractEntity.creationFromEventEntity(zeroField) is None
+          ContractEntity.creationFromEventEntity(zeroField, groupIndex) is None
 
           val oneField = zeroField.copy(
             fields = ArraySeq(
@@ -90,7 +94,7 @@ class ContractEntitySpec extends AlephiumSpec {
             )
           )
 
-          ContractEntity.creationFromEventEntity(oneField) is None
+          ContractEntity.creationFromEventEntity(oneField, groupIndex) is None
 
           val twoFields = zeroField.copy(
             fields = ArraySeq(
@@ -99,7 +103,7 @@ class ContractEntitySpec extends AlephiumSpec {
             )
           )
 
-          ContractEntity.creationFromEventEntity(twoFields) is None
+          ContractEntity.creationFromEventEntity(twoFields, groupIndex) is None
 
           val fourFields = zeroField.copy(
             fields = ArraySeq[Val](
@@ -110,7 +114,7 @@ class ContractEntitySpec extends AlephiumSpec {
             )
           )
 
-          ContractEntity.creationFromEventEntity(fourFields) is None
+          ContractEntity.creationFromEventEntity(fourFields, groupIndex) is None
 
           val wrongVals = zeroField.copy(
             fields = ArraySeq[Val](
@@ -120,7 +124,7 @@ class ContractEntitySpec extends AlephiumSpec {
             )
           )
 
-          ContractEntity.creationFromEventEntity(wrongVals) is None
+          ContractEntity.creationFromEventEntity(wrongVals, groupIndex) is None
 
           val wrongInterfaceId = zeroField.copy(
             fields = ArraySeq[Val](
@@ -131,7 +135,7 @@ class ContractEntitySpec extends AlephiumSpec {
             )
           )
 
-          ContractEntity.creationFromEventEntity(wrongInterfaceId) is None
+          ContractEntity.creationFromEventEntity(wrongInterfaceId, groupIndex) is None
       }
     }
   }
