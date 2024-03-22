@@ -28,28 +28,29 @@ import org.alephium.explorer.persistence.model.{ContractEntity, EventEntity}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.Address
+import org.alephium.protocol.model.{Address, GroupIndex}
 
 object ContractQueries {
   def insertOrUpdateContracts(
-      events: Iterable[EventEntity]
+      events: Iterable[EventEntity],
+      from: GroupIndex
   )(implicit ec: ExecutionContext): DBActionW[Unit] = {
     for {
-      _ <- insertContractCreation(events)
-      _ <- updateContractDestruction(events)
+      _ <- insertContractCreation(events, from)
+      _ <- updateContractDestruction(events, from)
     } yield ()
   }
 
-  def insertContractCreation(events: Iterable[EventEntity]): DBActionW[Int] = {
+  def insertContractCreation(events: Iterable[EventEntity], from: GroupIndex): DBActionW[Int] = {
     insertContractCreationEventEntities(
-      events.flatMap(ContractEntity.creationFromEventEntity)
+      events.flatMap(ContractEntity.creationFromEventEntity(_, from))
     )
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
-  def updateContractDestruction(events: Iterable[EventEntity]): DBActionW[Int] = {
+  def updateContractDestruction(events: Iterable[EventEntity], from: GroupIndex): DBActionW[Int] = {
     updateContractDestructionEventEntities(
-      events.flatMap(ContractEntity.destructionFromEventEntity)
+      events.flatMap(ContractEntity.destructionFromEventEntity(_, from))
     )
   }
 
