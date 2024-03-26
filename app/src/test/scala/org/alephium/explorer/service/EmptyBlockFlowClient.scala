@@ -36,8 +36,10 @@ trait EmptyBlockFlowClient extends BlockFlowClient {
 
   override def fetchChainInfo(chainIndex: ChainIndex): Future[ChainInfo] = ???
 
-  override def fetchHashesAtHeight(chainIndex: ChainIndex, height: Height): Future[HashesAtHeight] =
-    ???
+  override def fetchHashesAtHeight(
+      chainIndex: ChainIndex,
+      height: Height
+  ): Future[HashesAtHeight] = ???
 
   override def fetchBlockAndEvents(
       fromGroup: GroupIndex,
@@ -54,8 +56,7 @@ trait EmptyBlockFlowClient extends BlockFlowClient {
 
   override def fetchChainParams(): Future[ChainParams] = ???
 
-  override def fetchMempoolTransactions(uri: Uri): Future[ArraySeq[MempoolTransaction]] =
-    ???
+  override def fetchMempoolTransactions(uri: Uri): Future[ArraySeq[MempoolTransaction]] = ???
 
   override def guessStdInterfaceId(address: Address.Contract): Future[Option[StdInterfaceId]] =
     Future.successful(None)

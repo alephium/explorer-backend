@@ -83,7 +83,7 @@ object BlockDao {
     run((for {
       _ <- insertBlockEntity(ArraySeq(block), groupSetting.groupNum)
       _ <- insertEventsQuery(events)
-      _ <- insertOrUpdateContracts(events)
+      _ <- insertOrUpdateContracts(events, block.chainFrom)
     } yield ()).transactionally)
 
   /** Inserts a multiple blocks transactionally via SQL */

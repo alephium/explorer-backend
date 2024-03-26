@@ -16,9 +16,6 @@
 
 package org.alephium.explorer.persistence
 
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-
 import scala.concurrent.{ExecutionContext, Future}
 
 import com.typesafe.scalalogging.StrictLogging
@@ -27,82 +24,16 @@ import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.persistence.model.AppState.{LastFinalizedInputTime, MigrationVersion}
-import org.alephium.explorer.persistence.queries.{AppStateQueries, ContractQueries}
-import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.model.AppState.MigrationVersion
+import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.util.TimeStamp
 
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(5)
+  val latestVersion: MigrationVersion = MigrationVersion(0)
 
-  def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] =
-    EventSchema.table.result.flatMap { events =>
-      for {
-        _ <- ContractQueries.insertContractCreation(events)
-        _ <- ContractQueries.updateContractDestruction(events)
-      } yield ()
-    }
-
-  def migration2(implicit ec: ExecutionContext): DBActionAll[Unit] =
-    for {
-      _ <- sqlu"""ALTER TABLE contracts ADD COLUMN IF NOT EXISTS std_interface_id_guessed bytea"""
-      _ <-
-        sqlu"""CREATE INDEX IF NOT EXISTS contracts_std_interface_id_guessed_idx ON contracts (std_interface_id_guessed)"""
-    } yield ()
-
-  def migration3(implicit ec: ExecutionContext): DBActionAll[Unit] =
-    for {
-      _ <- sqlu"""ALTER TABLE outputs ADD COLUMN IF NOT EXISTS spent_timestamp bigint"""
-      _ <- sqlu"""ALTER TABLE token_outputs ADD COLUMN IF NOT EXISTS spent_timestamp bigint"""
-      _ <-
-        sqlu"""CREATE INDEX IF NOT EXISTS outputs_spent_timestamp_idx ON outputs(spent_timestamp)"""
-      _ <-
-        sqlu"""CREATE INDEX IF NOT EXISTS token_outputs_spent_timestamp_idx ON token_outputs(spent_timestamp)"""
-      // Reset `last_finalized_input_time` and let `FinalizerService` update all `spent_timestamp`
-      _ <- sqlu"""DELETE FROM app_state WHERE key = 'last_finalized_input_time'"""
-    } yield ()
-
-  def migration4(implicit ec: ExecutionContext): DBActionAll[Unit] = {
-    val currentDay =
-      Instant.ofEpochMilli(TimeStamp.now().millis).truncatedTo(ChronoUnit.DAYS).toEpochMilli
-    for {
-      lastFinalizedInputTimeOpt <- AppStateQueries.get(LastFinalizedInputTime)
-      _ <-
-        if (lastFinalizedInputTimeOpt.map(_.time.millis < currentDay).getOrElse(true)) {
-          DBIOAction.failed(
-            new Throwable(
-              "`spent_timestamp` update isn't finish, please continue to run version `v1.14.1`"
-            )
-          )
-        } else {
-          DBIOAction.successful(())
-        }
-    } yield ()
-  }
-
-  def migration5(implicit ec: ExecutionContext): DBActionAll[Unit] = {
-    for {
-      _ <- sqlu"""ALTER TABLE token_info ADD COLUMN IF NOT EXISTS interface_id character varying"""
-      _ <- sqlu"""ALTER TABLE token_info ADD COLUMN IF NOT EXISTS category character varying"""
-      _ <- sqlu"""CREATE INDEX token_info_interface_id_idx ON token_info(interface_id)"""
-      _ <- sqlu"""CREATE INDEX token_info_category_idx ON token_info(category)"""
-      _ <- sqlu"""ALTER TABLE contracts ADD COLUMN IF NOT EXISTS interface_id character varying"""
-      _ <- sqlu"""ALTER TABLE contracts ADD COLUMN IF NOT EXISTS category character varying"""
-      _ <- sqlu"""CREATE INDEX contracts_interface_id_idx ON contracts(interface_id)"""
-      _ <- sqlu"""CREATE INDEX contracts_category_idx ON contracts(category)"""
-    } yield ()
-  }
-
-  private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
-    migration1,
-    migration2,
-    migration3,
-    migration4,
-    migration5
-  )
+  private val migrations: Seq[DBActionAll[Unit]] = Seq()
 
   def migrationsQuery(
       versionOpt: Option[MigrationVersion]

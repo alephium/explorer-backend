@@ -21,6 +21,7 @@ import org.alephium.util.Duration
 
 object ConfigDefaults {
   implicit val groupSetting: GroupSetting = Generators.groupSettingGen.sample.get
+  implicit val groupConfig                = groupSetting.groupConfig
 
   val maxTimeIntervals: MaxTimeIntervals =
     MaxTimeIntervals(

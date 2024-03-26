@@ -399,7 +399,7 @@ object GenCoreApi {
       interfaceId <- stdInterfaceIdValGen
     } yield ContractEventByBlockHash(
       txId,
-      ContractEntity.createContractEventAddress,
+      ContractEntity.createContractEventAddress(address.value.groupIndex(groupSetting.groupConfig)),
       eventIndex,
       AVector(address, parent.getOrElse(ValByteVec(ByteString.empty)), interfaceId)
     )

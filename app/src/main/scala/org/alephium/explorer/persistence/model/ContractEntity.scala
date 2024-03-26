@@ -20,7 +20,7 @@ import akka.util.ByteString
 
 import org.alephium.api.model.{ValAddress, ValByteVec}
 import org.alephium.protocol
-import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.TimeStamp
 
 final case class ContractEntity(
@@ -57,14 +57,19 @@ object ContractEntity {
       eventOrder: Int
   )
 
-  val createContractEventAddress: Address.Contract =
-    protocol.model.Address.contract(protocol.vm.createContractEventId)
+  def createContractEventAddress(from: GroupIndex): Address.Contract = {
+    protocol.model.Address.contract(
+      protocol.vm.createContractEventId(from.value)
+    )
+  }
 
-  val destroyContractEventAddress: Address.Contract =
-    protocol.model.Address.contract(protocol.vm.destroyContractEventId)
+  def destroyContractEventAddress(from: GroupIndex): Address.Contract =
+    protocol.model.Address.contract(
+      protocol.vm.destroyContractEventId(from.value)
+    )
 
-  def creationFromEventEntity(event: EventEntity): Option[ContractEntity] = {
-    if (event.contractAddress == createContractEventAddress) {
+  def creationFromEventEntity(event: EventEntity, from: GroupIndex): Option[ContractEntity] = {
+    if (event.contractAddress == createContractEventAddress(from)) {
       extractAddresses(event).map { case (contract, parent, stdInterfaceIdGuessed) =>
         ContractEntity(
           contract = contract,
@@ -110,8 +115,8 @@ object ContractEntity {
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
-  def destructionFromEventEntity(event: EventEntity): Option[DestroyInfo] = {
-    if (event.contractAddress == destroyContractEventAddress && event.fields.sizeIs == 1) {
+  def destructionFromEventEntity(event: EventEntity, from: GroupIndex): Option[DestroyInfo] = {
+    if (event.contractAddress == destroyContractEventAddress(from) && event.fields.sizeIs == 1) {
       event.fields(0) match {
         case ValAddress(contract) =>
           Some(
