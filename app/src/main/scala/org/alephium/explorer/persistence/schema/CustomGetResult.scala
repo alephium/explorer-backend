@@ -298,7 +298,8 @@ object CustomGetResult {
         timestamp = result.<<,
         eventIndex = result.<<,
         fields = result.<<,
-        eventOrder = result.<<
+        eventOrder = result.<<,
+        mainChain = result.<<
       )
 
   val fungibleTokenMetadataGetResult: GetResult[FungibleTokenMetadata] =

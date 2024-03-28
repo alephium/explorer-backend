@@ -48,6 +48,7 @@ object ContractSchema extends SchemaMainChain[ContractEntity]("contracts") {
     def category: Rep[Option[String]]           = column[Option[String]]("category")
     def interfaceId: Rep[Option[InterfaceIdEntity]] =
       column[Option[InterfaceIdEntity]]("interface_id")
+    def mainChain: Rep[Boolean] = column[Boolean]("main_chain")
 
     def * : ProvenShape[ContractEntity] =
       (
@@ -63,7 +64,8 @@ object ContractSchema extends SchemaMainChain[ContractEntity]("contracts") {
         destructionTimestamp,
         destructionEventOrder,
         category,
-        interfaceId
+        interfaceId,
+        mainChain
       )
         .<>((ContractEntity.apply _).tupled, ContractEntity.unapply)
 
