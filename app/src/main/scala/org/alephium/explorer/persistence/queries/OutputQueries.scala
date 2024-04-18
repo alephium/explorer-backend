@@ -461,4 +461,13 @@ object OutputQueries {
         AND outputs.main_chain = true
         AND inputs.block_hash IS NULL;
     """.asAS[(Option[U256], Option[U256])].exactlyOne
+
+  def estimateTotalHolders(
+  )(implicit ec: ExecutionContext): DBActionR[Int] =
+    sql"""
+     SELECT COUNT(DISTINCT address)
+     FROM outputs
+     WHERE spent_finalized IS NULL
+     AND main_chain = true
+    """.asAS[Int].headOrNone.map(_.getOrElse(0))
 }

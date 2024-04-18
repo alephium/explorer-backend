@@ -24,7 +24,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.persistence.Database
 import org.alephium.explorer.persistence.DBRunner._
-import org.alephium.explorer.persistence.queries.TransactionQueries
+import org.alephium.explorer.persistence.queries.{OutputQueries, TransactionQueries}
 import org.alephium.util.Service
 
 object TransactionCache {
@@ -65,11 +65,20 @@ class TransactionCache(
     }
   }
 
+  private val holderEstimationCount: AsyncReloadingCache[Int] = {
+    AsyncReloadingCache(0, cacheAddressCountReloadPeriod) { _ =>
+      run(OutputQueries.estimateTotalHolders())(database.databaseConfig)
+    }
+  }
+
   def getMainChainTxnCount(): Int =
     mainChainTxnCount.get()
 
   def getAddressCount(): Int =
     addressCount.get()
+
+  def getHolderEstimationCount(): Int =
+    holderEstimationCount.get()
 
   override def startSelfOnce(): Future[Unit] = {
     for {

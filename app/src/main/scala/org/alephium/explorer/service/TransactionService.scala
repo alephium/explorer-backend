@@ -85,7 +85,11 @@ trait TransactionService {
       addresses: ArraySeq[Address]
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]]
 
-  def numberOfActiveAddresses()(implicit cache: TransactionCache): Int
+  def numberOfActiveAddresses(
+  )(implicit cache: TransactionCache): Int
+
+  def holderEstimation(
+  )(implicit cache: TransactionCache): Int
 
   def listMempoolTransactions(pagination: Pagination)(implicit
       ec: ExecutionContext,
@@ -191,6 +195,10 @@ object TransactionService extends TransactionService {
   def numberOfActiveAddresses(
   )(implicit cache: TransactionCache): Int =
     cache.getAddressCount()
+
+  def holderEstimation(
+  )(implicit cache: TransactionCache): Int =
+    cache.getHolderEstimationCount()
 
   def getTotalNumber()(implicit cache: TransactionCache): Int =
     cache.getMainChainTxnCount()

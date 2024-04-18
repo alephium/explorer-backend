@@ -98,6 +98,9 @@ class InfosServer(
       route(getTotalAddresses.serverLogicSuccess[Future]{ _=>
         Future(transactionService.numberOfActiveAddresses())
       }),
+      route(estimateTotalHolders.serverLogicSuccess[Future]{ _=>
+        Future(transactionService.holderEstimation())
+      }),
 
       route(getAverageBlockTime.serverLogicSuccess[Future]{ _=>
         blockService.getAverageBlockTime()

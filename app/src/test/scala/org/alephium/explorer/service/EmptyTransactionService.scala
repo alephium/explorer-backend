@@ -96,6 +96,8 @@ trait EmptyTransactionService extends TransactionService {
 
   def numberOfActiveAddresses()(implicit cache: TransactionCache): Int = ???
 
+  def holderEstimation()(implicit cache: TransactionCache): Int = ???
+
   def hasAddressMoreTxsThan(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
       implicit
       ec: ExecutionContext,

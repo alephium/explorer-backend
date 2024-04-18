@@ -75,6 +75,7 @@ trait Documentation
         getLockedSupply,
         getTotalTransactions,
         getTotalAddresses,
+        estimateTotalHolders,
         getAverageBlockTime,
         getHashrates,
         getAllChainsTxCount,
