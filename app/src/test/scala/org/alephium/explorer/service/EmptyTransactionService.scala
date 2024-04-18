@@ -93,6 +93,9 @@ trait EmptyTransactionService extends TransactionService {
   ): Future[ArraySeq[Boolean]] = {
     Future.successful(ArraySeq(true))
   }
+
+  def numberOfActiveAddresses()(implicit cache: TransactionCache): Int = ???
+
   def hasAddressMoreTxsThan(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
       implicit
       ec: ExecutionContext,

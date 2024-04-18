@@ -94,7 +94,8 @@ class InfosServerSpec()
     new Database(BootMode.ReadWrite)
   )
   val transactionService = new EmptyTransactionService {
-    override def getTotalNumber()(implicit cache: TransactionCache): Int = 10
+    override def getTotalNumber()(implicit cache: TransactionCache): Int          = 10
+    override def numberOfActiveAddresses()(implicit cache: TransactionCache): Int = 10
   }
 
   val infoServer =
@@ -155,6 +156,13 @@ class InfosServerSpec()
 
   "return the total transactions number" in {
     Get(s"/infos/total-transactions") check { response =>
+      val total = response.as[Int]
+      total is 10
+    }
+  }
+
+  "return the total addresses number" in {
+    Get(s"/infos/total-addresses") check { response =>
       val total = response.as[Int]
       total is 10
     }

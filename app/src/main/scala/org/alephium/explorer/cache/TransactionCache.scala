@@ -30,10 +30,14 @@ import org.alephium.util.Service
 object TransactionCache {
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def apply(database: Database, reloadAfter: FiniteDuration = 5.seconds)(implicit
+  def apply(
+      database: Database,
+      cacheTxCountReloadPeriod: FiniteDuration = 5.seconds,
+      cacheAddressCountReloadPeriod: FiniteDuration = 5.minutes
+  )(implicit
       ec: ExecutionContext
   ): TransactionCache =
-    new TransactionCache(database, reloadAfter)
+    new TransactionCache(database, cacheTxCountReloadPeriod, cacheAddressCountReloadPeriod)
 }
 
 /** Transaction related cache
@@ -41,21 +45,37 @@ object TransactionCache {
   * @param mainChainTxnCount
   *   Stores current total number of `main_chain` transaction.
   */
-class TransactionCache(database: Database, reloadAfter: FiniteDuration)(implicit
+class TransactionCache(
+    database: Database,
+    cacheTxCountReloadPeriod: FiniteDuration,
+    cacheAddressCountReloadPeriod: FiniteDuration
+)(implicit
     val executionContext: ExecutionContext
 ) extends Service {
 
   private val mainChainTxnCount: AsyncReloadingCache[Int] = {
-    AsyncReloadingCache(0, reloadAfter) { _ =>
+    AsyncReloadingCache(0, cacheTxCountReloadPeriod) { _ =>
       run(TransactionQueries.mainTransactions.length.result)(database.databaseConfig)
+    }
+  }
+
+  private val addressCount: AsyncReloadingCache[Int] = {
+    AsyncReloadingCache(0, cacheAddressCountReloadPeriod) { _ =>
+      run(TransactionQueries.numberOfActiveAddressesQuery())(database.databaseConfig)
     }
   }
 
   def getMainChainTxnCount(): Int =
     mainChainTxnCount.get()
 
+  def getAddressCount(): Int =
+    addressCount.get()
+
   override def startSelfOnce(): Future[Unit] = {
-    mainChainTxnCount.expireAndReloadFuture().map(_ => ())
+    for {
+      _ <- mainChainTxnCount.expireAndReloadFuture()
+      _ <- addressCount.expireAndReloadFuture()
+    } yield ()
   }
 
   override def stopSelfOnce(): Future[Unit] = {

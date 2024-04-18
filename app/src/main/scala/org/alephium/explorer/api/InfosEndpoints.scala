@@ -86,6 +86,12 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
       .out(plainBody[Int])
       .description("Get the total number of transactions")
 
+  val getTotalAddresses: BaseEndpoint[Unit, Int] =
+    infosEndpoint.get
+      .in("total-addresses")
+      .out(plainBody[Int])
+      .description("Get the total number of addresses")
+
   val getAverageBlockTime: BaseEndpoint[Unit, ArraySeq[PerChainDuration]] =
     infosEndpoint.get
       .in("average-block-times")

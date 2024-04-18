@@ -515,6 +515,14 @@ object TransactionQueries extends StrictLogging {
       addresses map existing.contains
     }
 
+  def numberOfActiveAddressesQuery(
+  )(implicit ec: ExecutionContext): DBActionR[Int] =
+    sql"""
+      SELECT COUNT(DISTINCT address)
+      FROM transaction_per_addresses
+      WHERE main_chain = true
+    """.asAS[Int].headOrNone.map(_.getOrElse(0))
+
   /** Filters input addresses that exist in DB */
   def filterExistingAddresses(addresses: Set[Address]): DBActionR[ArraySeq[Address]] =
     if (addresses.isEmpty) {
