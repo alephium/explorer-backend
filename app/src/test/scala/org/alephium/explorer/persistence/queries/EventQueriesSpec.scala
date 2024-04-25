@@ -79,7 +79,7 @@ class EventQueriesSpec
         events.map { event =>
           val result =
             run(
-              EventQueries.getEventsByContractAddressQuery(event.contractAddress, pagination)
+              EventQueries.getEventsByContractAddressQuery(event.contractAddress, None, pagination)
             ).futureValue
           result.size is 1
           result.head.toApi is event.toApi
@@ -100,7 +100,7 @@ class EventQueriesSpec
 
         val result =
           run(
-            EventQueries.getEventsByContractAddressQuery(contractAddress, fullPagination)
+            EventQueries.getEventsByContractAddressQuery(contractAddress, None, fullPagination)
           ).futureValue
 
         result.size is uniqueContractAddressEvents.size
@@ -110,12 +110,45 @@ class EventQueriesSpec
         }
 
         val paginatedResult =
-          run(EventQueries.getEventsByContractAddressQuery(contractAddress, pagination)).futureValue
+          run(
+            EventQueries.getEventsByContractAddressQuery(contractAddress, None, pagination)
+          ).futureValue
 
         if (uniqueContractAddressEvents.sizeIs > pagination.limit) {
           paginatedResult.size is pagination.limit
         } else {
           paginatedResult.size is uniqueContractAddressEvents.size
+        }
+      }
+    }
+
+    "filter event by event index" in {
+      forAll(Gen.nonEmptyListOf(eventEntityGen())) { events =>
+        val events2 = events.map(event =>
+          event.copy(eventOrder = event.eventOrder + 1, eventIndex = event.eventIndex + 1)
+        )
+
+        insert(events ++ events2)
+
+        events.map { event =>
+          val withoutFilter =
+            run(
+              EventQueries.getEventsByContractAddressQuery(event.contractAddress, None, pagination)
+            ).futureValue
+
+          withoutFilter.size is 2
+
+          val result =
+            run(
+              EventQueries.getEventsByContractAddressQuery(
+                event.contractAddress,
+                Some(event.eventIndex),
+                pagination
+              )
+            ).futureValue
+
+          result.size is 1
+          result.head.toApi is event.toApi
         }
       }
     }
@@ -132,6 +165,7 @@ class EventQueriesSpec
                   EventQueries.getEventsByContractAndInputAddressQuery(
                     event.contractAddress,
                     inputAddress,
+                    None,
                     pagination
                   )
                 ).futureValue
@@ -143,6 +177,7 @@ class EventQueriesSpec
                 EventQueries.getEventsByContractAndInputAddressQuery(
                   event.contractAddress,
                   addressGen.sample.get,
+                  None,
                   pagination
                 )
               ).futureValue is ArraySeq.empty
@@ -169,6 +204,7 @@ class EventQueriesSpec
             EventQueries.getEventsByContractAndInputAddressQuery(
               contractAddress,
               inputAddress,
+              None,
               fullPagination
             )
           ).futureValue
@@ -184,6 +220,7 @@ class EventQueriesSpec
             EventQueries.getEventsByContractAndInputAddressQuery(
               contractAddress,
               inputAddress,
+              None,
               pagination
             )
           ).futureValue
@@ -197,6 +234,54 @@ class EventQueriesSpec
     }
   }
 
+  "get event by contract address, input address and filter event index" in {
+    forAll(Gen.nonEmptyListOf(eventEntityGen())) { events =>
+      val events2 = events.map(event =>
+        event.copy(eventOrder = event.eventOrder + 1, eventIndex = event.eventIndex + 1)
+      )
+
+      insert(events ++ events2)
+
+      events.map { event =>
+        event.inputAddress match {
+          case Some(inputAddress) =>
+            val withoutFilter =
+              run(
+                EventQueries.getEventsByContractAndInputAddressQuery(
+                  event.contractAddress,
+                  inputAddress,
+                  None,
+                  pagination
+                )
+              ).futureValue
+
+            withoutFilter.size is 2
+
+            val result =
+              run(
+                EventQueries.getEventsByContractAndInputAddressQuery(
+                  event.contractAddress,
+                  inputAddress,
+                  Some(event.eventIndex),
+                  pagination
+                )
+              ).futureValue
+
+            result.size is 1
+
+          case None =>
+            run(
+              EventQueries.getEventsByContractAndInputAddressQuery(
+                event.contractAddress,
+                addressGen.sample.get,
+                Some(event.eventIndex),
+                pagination
+              )
+            ).futureValue is ArraySeq.empty
+        }
+      }
+    }
+  }
   def insert(events: ArraySeq[EventEntity]) = {
     run(EventSchema.table.delete).futureValue
     run(EventSchema.table ++= events).futureValue
