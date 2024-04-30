@@ -1,2 +1,5 @@
 target
 *.mv.db
+node_modules
+coverage
+dist
