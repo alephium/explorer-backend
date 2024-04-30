@@ -1,0 +1,84 @@
+name: E2E
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+    #######################
+    #### Setup phases
+    #######################
+      - name: Checkout explorer-backend
+        uses: actions/checkout@v4
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: sbt
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Start full node
+        run: |
+          pushd e2e/docker
+          docker compose up -d
+          popd
+          SECONDS=0
+          until curl http://localhost:22973/infos/self-clique
+          do
+            if (( SECONDS > 60 ))
+            then
+               echo "Alephium full node not working after 1 min..."
+               exit 1
+            fi
+            echo "Waiting..."
+            sleep 5
+          done
+          echo "Alephium full node is up"
+      - name: Start explorer-backend
+        run: |
+          export BLOCKFLOW_HOST=127.0.0.1
+          export BLOCKFLOW_PORT=22973
+          export BLOCKFLOW_NETWORK_ID=4
+          export BLOCKFLOW_DIRECT_CLIQUE_ACCESS=true
+          export DB_NAME=postgres
+          sbt app/run &
+          until curl http://localhost:9090/infos
+          do
+            if (( SECONDS > 300 ))
+            then
+               echo "explorer-backend not working after 5 min..."
+               exit 1
+            fi
+            echo "Waiting..."
+            sleep 5
+          done
+          echo "explorer-backend is up"
+      #######################
+      #### Test phase
+      #######################
+      - name: Run E2E tests
+        run: |
+          cd e2e
+          npm i
+          npm run test
