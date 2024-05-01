@@ -16,11 +16,8 @@
 
 package org.alephium.explorer
 
-import java.time.LocalTime
-
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 import com.typesafe.scalalogging.StrictLogging
@@ -62,11 +59,7 @@ object SyncServices extends StrictLogging {
         ) flatMap { peers =>
           startSyncServices(
             peers = peers,
-            syncPeriod = config.services.blockflowSync.syncPeriod,
-            tokenSupplyServiceScheduleTime = config.services.tokenSupply.scheduleTime,
-            hashRateServiceSyncPeriod = config.services.hashrate.syncPeriod,
-            finalizerServiceSyncPeriod = config.services.finalizer.syncPeriod,
-            transactionHistoryServiceSyncPeriod = config.services.txHistory.syncPeriod
+            config = config.services
           )
         }
     }
@@ -75,11 +68,7 @@ object SyncServices extends StrictLogging {
   // scalastyle:off
   def startSyncServices(
       peers: ArraySeq[Uri],
-      syncPeriod: FiniteDuration,
-      tokenSupplyServiceScheduleTime: LocalTime,
-      hashRateServiceSyncPeriod: FiniteDuration,
-      finalizerServiceSyncPeriod: FiniteDuration,
-      transactionHistoryServiceSyncPeriod: FiniteDuration
+      config: ExplorerConfig.Services
   )(implicit
       scheduler: Scheduler,
       ec: ExecutionContext,
@@ -93,13 +82,23 @@ object SyncServices extends StrictLogging {
         Future
           .sequence(
             ArraySeq(
-              BlockFlowSyncService.start(peers, syncPeriod),
-              MempoolSyncService.start(peers, syncPeriod),
-              TokenSupplyService.start(tokenSupplyServiceScheduleTime),
-              HashrateService.start(hashRateServiceSyncPeriod),
-              FinalizerService.start(finalizerServiceSyncPeriod),
-              TransactionHistoryService.start(transactionHistoryServiceSyncPeriod)
-            )
+              BlockFlowSyncService.start(peers, config.blockflowSync.syncPeriod),
+              FinalizerService.start(config.finalizer.syncPeriod)
+            ) ++
+              ArraySeq(
+                Option.when(config.mempoolSync.enable)(
+                  MempoolSyncService.start(peers, config.mempoolSync.syncPeriod)
+                ),
+                Option.when(config.tokenSupply.enable)(
+                  TokenSupplyService.start(config.tokenSupply.scheduleTime)
+                ),
+                Option.when(config.hashrate.enable)(
+                  HashrateService.start(config.hashrate.syncPeriod)
+                ),
+                Option.when(config.txHistory.enable)(
+                  TransactionHistoryService.start(config.txHistory.syncPeriod)
+                )
+              ).flatten
           )
           .onComplete {
             case Failure(error) =>
