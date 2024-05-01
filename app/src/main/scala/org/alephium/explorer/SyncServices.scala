@@ -62,11 +62,11 @@ object SyncServices extends StrictLogging {
         ) flatMap { peers =>
           startSyncServices(
             peers = peers,
-            syncPeriod = config.syncPeriod,
-            tokenSupplyServiceScheduleTime = config.tokenSupplyServiceScheduleTime,
-            hashRateServiceSyncPeriod = config.hashRateServiceSyncPeriod,
-            finalizerServiceSyncPeriod = config.finalizerServiceSyncPeriod,
-            transactionHistoryServiceSyncPeriod = config.transactionHistoryServiceSyncPeriod
+            syncPeriod = config.services.blockflowSync.syncPeriod,
+            tokenSupplyServiceScheduleTime = config.services.tokenSupply.scheduleTime,
+            hashRateServiceSyncPeriod = config.services.hashrate.syncPeriod,
+            finalizerServiceSyncPeriod = config.services.finalizer.syncPeriod,
+            transactionHistoryServiceSyncPeriod = config.services.txHistory.syncPeriod
           )
         }
     }

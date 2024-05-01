@@ -150,11 +150,7 @@ object ExplorerConfig {
           host,
           port,
           explorer.bootMode,
-          explorer.syncPeriod,
-          explorer.tokenSupplyServiceScheduleTime,
-          explorer.hashRateServiceSyncPeriod,
-          explorer.finalizerServiceSyncPeriod,
-          explorer.transactionHistoryServiceSyncPeriod,
+          explorer.services,
           explorer.cacheRowCountReloadPeriod,
           explorer.cacheBlockTimesReloadPeriod,
           explorer.cacheLatestBlocksReloadPeriod,
@@ -197,15 +193,50 @@ object ExplorerConfig {
       marketChartDays: Int
   )
 
+  final case class Services(
+      blockflowSync: Services.BlockflowSync,
+      mempoolSync: Services.MempoolSync,
+      tokenSupply: Services.TokenSupply,
+      hashrate: Services.Hashrate,
+      txHistory: Services.TxHistory,
+      finalizer: Services.Finalizer
+  )
+
+  object Services {
+    final case class BlockflowSync(
+        syncPeriod: FiniteDuration
+    )
+
+    final case class MempoolSync(
+        enable: Boolean,
+        syncPeriod: FiniteDuration
+    )
+
+    final case class TokenSupply(
+        enable: Boolean,
+        scheduleTime: LocalTime
+    )
+
+    final case class Hashrate(
+        enable: Boolean,
+        syncPeriod: FiniteDuration
+    )
+
+    final case class TxHistory(
+        enable: Boolean,
+        syncPeriod: FiniteDuration
+    )
+
+    final case class Finalizer(
+        syncPeriod: FiniteDuration
+    )
+  }
+
   final private case class Explorer(
       host: String,
       port: Int,
       bootMode: BootMode,
-      syncPeriod: FiniteDuration,
-      tokenSupplyServiceScheduleTime: LocalTime,
-      hashRateServiceSyncPeriod: FiniteDuration,
-      finalizerServiceSyncPeriod: FiniteDuration,
-      transactionHistoryServiceSyncPeriod: FiniteDuration,
+      services: Services,
       cacheRowCountReloadPeriod: FiniteDuration,
       cacheBlockTimesReloadPeriod: FiniteDuration,
       cacheLatestBlocksReloadPeriod: FiniteDuration,
@@ -230,11 +261,7 @@ final case class ExplorerConfig private (
     host: String,
     port: Int,
     bootMode: BootMode,
-    syncPeriod: FiniteDuration,
-    tokenSupplyServiceScheduleTime: LocalTime,
-    hashRateServiceSyncPeriod: FiniteDuration,
-    finalizerServiceSyncPeriod: FiniteDuration,
-    transactionHistoryServiceSyncPeriod: FiniteDuration,
+    services: ExplorerConfig.Services,
     cacheRowCountReloadPeriod: FiniteDuration,
     cacheBlockTimesReloadPeriod: FiniteDuration,
     cacheLatestBlocksReloadPeriod: FiniteDuration,
