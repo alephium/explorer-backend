@@ -31,11 +31,13 @@ import org.alephium.explorer.web._
 // scalastyle:off magic.number parameter.number
 object AppServer {
 
+  // scalastyle:off method.length
   def routes(
       exportTxsNumberThreshold: Int,
       streamParallelism: Int,
       maxTimeIntervals: ExplorerConfig.MaxTimeIntervals,
-      marketConfig: ExplorerConfig.Market
+      marketConfig: ExplorerConfig.Market,
+      servicesConfig: ExplorerConfig.Services
   )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
@@ -57,15 +59,16 @@ object AppServer {
         maxTimeIntervals.exportTxs
       )
     val transactionServer = new TransactionServer()
-    val infosServer       = new InfosServer(TokenSupplyService, BlockService, TransactionService)
+    val infosServer =
+      new InfosServer(TokenSupplyService, BlockService, TransactionService, servicesConfig)
     val utilsServer: UtilsServer   = new UtilsServer()
-    val chartsServer: ChartsServer = new ChartsServer(maxTimeIntervals.charts)
+    val chartsServer: ChartsServer = new ChartsServer(maxTimeIntervals.charts, servicesConfig)
     val tokenServer: TokenServer   = new TokenServer(TokenService)
-    val mempoolServer              = new MempoolServer()
+    val mempoolServer              = new MempoolServer(servicesConfig.mempoolSync)
     val eventServer                = new EventServer()
     val contractServer             = new ContractServer()
     val marketServer               = new MarketServer(marketService)
-    val documentationServer        = new DocumentationServer(maxTimeIntervals.exportTxs)
+    val documentationServer = new DocumentationServer(maxTimeIntervals.exportTxs, servicesConfig)
 
     blockServer.routes ++
       addressServer.routes ++

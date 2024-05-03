@@ -16,7 +16,10 @@
 
 package org.alephium.tools
 
+import com.typesafe.config.ConfigFactory
+
 import org.alephium.api.OpenAPIWriters.openApiJson
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.docs.Documentation
 import org.alephium.util.{discard, Duration}
 
@@ -24,6 +27,11 @@ object OpenApiUpdate {
   def main(args: Array[String]): Unit = {
     discard {
       new Documentation {
+
+        private val typesafeConfig = ConfigFactory.load()
+
+        val config: ExplorerConfig = ExplorerConfig.load(typesafeConfig)
+        val servicesConfig         = config.services
 
         // scalastyle:off magic.number
         val groupNum                           = 4
