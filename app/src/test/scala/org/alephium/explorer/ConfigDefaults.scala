@@ -16,6 +16,8 @@
 
 package org.alephium.explorer
 
+import java.time.LocalTime
+
 import org.alephium.explorer.config.ExplorerConfig._
 import org.alephium.util.Duration
 
@@ -37,4 +39,29 @@ object ConfigDefaults {
       ),
       exportTxs = Duration.ofDaysUnsafe(366)
     )
+
+  val servicesConfig: Services = Services(
+    Services.BlockflowSync(
+      syncPeriod = Duration.ofSecondsUnsafe(5).asScala
+    ),
+    Services.MempoolSync(
+      enable = true,
+      syncPeriod = Duration.ofSecondsUnsafe(5).asScala
+    ),
+    Services.TokenSupply(
+      enable = true,
+      scheduleTime = LocalTime.parse("02:00")
+    ),
+    Services.Hashrate(
+      enable = true,
+      syncPeriod = Duration.ofMinutesUnsafe(60).asScala
+    ),
+    Services.TxHistory(
+      enable = true,
+      syncPeriod = Duration.ofMinutesUnsafe(15).asScala
+    ),
+    Services.Finalizer(
+      syncPeriod = Duration.ofMinutesUnsafe(10).asScala
+    )
+  )
 }

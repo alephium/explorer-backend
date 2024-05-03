@@ -18,7 +18,7 @@ package org.alephium.explorer.web
 
 import org.scalacheck.Gen
 
-import org.alephium.explorer.{AlephiumActorSpecLike, HttpServerFixture}
+import org.alephium.explorer.{AlephiumActorSpecLike, ConfigDefaults, HttpServerFixture}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model._
@@ -31,7 +31,7 @@ class MempoolServerSpec()
     with HttpServerFixture
     with DatabaseFixtureForAll {
 
-  val utxServer = new MempoolServer()
+  val utxServer = new MempoolServer(ConfigDefaults.servicesConfig.mempoolSync)
 
   val routes = utxServer.routes
 

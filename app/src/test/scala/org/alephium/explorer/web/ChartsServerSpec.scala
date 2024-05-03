@@ -30,7 +30,8 @@ class ChartsServerSpec()
     with HttpServerFixture {
 
   val chartServer = new ChartsServer(
-    maxTimeInterval = ConfigDefaults.maxTimeIntervals.charts
+    maxTimeInterval = ConfigDefaults.maxTimeIntervals.charts,
+    services = ConfigDefaults.servicesConfig
   )
   override val routes = chartServer.routes
 
