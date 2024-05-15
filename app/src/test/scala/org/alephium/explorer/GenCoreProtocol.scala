@@ -179,6 +179,7 @@ object GenCoreProtocol {
         isPublic = true,
         usePreapprovedAssets = false,
         useContractAssets,
+        usePayToContractOnly = false,
         argsLength = 0,
         localsLength = 0,
         returnLength = 0,

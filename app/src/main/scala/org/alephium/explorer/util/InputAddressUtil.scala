@@ -44,6 +44,8 @@ object InputAddressUtil extends StrictLogging {
           case protocol.vm.UnlockScript.P2SH(script, _) =>
             val lockup = protocol.vm.LockupScript.p2sh(protocol.Hash.hash(script))
             Some(protocol.model.Address.from(lockup))
+          case protocol.vm.UnlockScript.PoLW(pk) =>
+            Some(protocol.model.Address.p2pkh(pk))
           case protocol.vm.UnlockScript.SameAsPrevious =>
             None
           case protocol.vm.UnlockScript.P2MPKH(_) =>
