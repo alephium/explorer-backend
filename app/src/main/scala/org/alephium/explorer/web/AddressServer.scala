@@ -19,6 +19,7 @@ package org.alephium.explorer.web
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
+import akka.util.ByteString
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.streams.ReadStream
 import io.vertx.ext.web._
@@ -34,7 +35,10 @@ import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service.{TokenService, TransactionService}
+import org.alephium.protocol.PublicKey
 import org.alephium.protocol.model.Address
+import org.alephium.protocol.vm.{LockupScript, UnlockScript}
+import org.alephium.serde._
 import org.alephium.util.Duration
 
 class AddressServer(
@@ -157,6 +161,19 @@ class AddressServer(
                 })
               }
           }
+      }),
+      route(getPublicKey.serverLogic[Future] { address =>
+        address match {
+          case Address.Asset(LockupScript.P2PKH(_)) =>
+            transactionService.getUnlockScript(address).map {
+              case None =>
+                Left(ApiError.NotFound(s"No input found for address $address"))
+              case Some(unlockScript) =>
+                AddressServer.bytesToPublicKey(unlockScript)
+            }
+          case _ =>
+            Future.successful(Left(ApiError.BadRequest(s"Only P2PKH addresses supported")))
+        }
       })
     )
 
@@ -206,4 +223,18 @@ object AddressServer {
   def amountHistoryFileNameHeader(address: Address, timeInterval: TimeInterval): String = {
     s"""attachment;filename="$address-amount-history-${timeInterval.from.millis}-${timeInterval.to.millis}.json""""
   }
+
+  def bytesToPublicKey(
+      unlockScript: ByteString
+  ): Either[ApiError[_ <: StatusCode], PublicKey] =
+    deserialize[UnlockScript](unlockScript).left
+      .map { error =>
+        ApiError.InternalServerError(s"Failed to deserialize unlock script: $error")
+      }
+      .flatMap {
+        case UnlockScript.P2PKH(publickKey) =>
+          Right(publickKey)
+        case _ =>
+          Left(ApiError.BadRequest(s"Invalid unlock script, require P2PKH"))
+      }
 }

@@ -532,6 +532,25 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     }
   }
 
+  "get unlock script" in new Fixture {
+
+    val blocks = Gen
+      .listOfN(20, blockEntityGen(chainIndex))
+      .sample
+      .get
+
+    BlockDao.insertAll(blocks).futureValue
+
+    val addresses = blocks.flatMap(_.inputs.flatMap(_.outputRefAddress)).distinct
+
+    addresses.foreach { address =>
+      TransactionService
+        .getUnlockScript(address)
+        .futureValue
+        .isDefined is true
+    }
+  }
+
   trait Fixture {
     implicit val blockCache: BlockCache = TestBlockCache()
 

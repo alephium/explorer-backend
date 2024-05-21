@@ -25,7 +25,7 @@ import org.alephium.api.EndpointsExamples
 import org.alephium.api.model.{Amount, ValBool}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.queries.ExplainResult
-import org.alephium.protocol.ALPH
+import org.alephium.protocol.{ALPH, PublicKey}
 import org.alephium.protocol.mining.HashRate
 import org.alephium.protocol.model.{Address, BlockHash, ContractId, GroupIndex, TokenId}
 import org.alephium.util.{Hex, U256}
@@ -47,8 +47,9 @@ object EndpointExamples extends EndpointsExamples {
   private val outputRef: OutputRef =
     OutputRef(hint = 23412, key = hash)
 
+  private val publicKey = "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28"
   private val unlockScript: ByteString =
-    Hex.unsafe("d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28")
+    Hex.unsafe(publicKey)
 
   private val address1: Address =
     Address.fromBase58("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n").get
@@ -416,4 +417,7 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val priceExample: List[Example[ArraySeq[Option[Double]]]] =
     simpleExample(ArraySeq(Option(0.01)))
+
+  implicit val publicKeyExample: List[Example[PublicKey]] =
+    simpleExample(PublicKey.unsafe(Hex.unsafe(publicKey)))
 }

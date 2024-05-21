@@ -21,6 +21,7 @@ import java.math.BigInteger
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
+import akka.util.ByteString
 import io.reactivex.rxjava3.core.Flowable
 import io.vertx.core.buffer.Buffer
 import slick.basic.DatabaseConfig
@@ -98,6 +99,13 @@ trait EmptyTransactionService extends TransactionService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Boolean] = ???
+
+  def getUnlockScript(
+      address: Address
+  )(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[ByteString]] = Future.successful(None)
 
   def exportTransactionsByAddress(
       address: Address,
