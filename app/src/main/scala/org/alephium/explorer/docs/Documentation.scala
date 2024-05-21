@@ -53,6 +53,7 @@ trait Documentation
         listAddressTokens,
         listAddressTokenTransactions,
         getAddressTokenBalance,
+        getPublicKey,
         listAddressTokensBalance,
         areAddressesActive,
         exportTransactionsCsvByAddress,

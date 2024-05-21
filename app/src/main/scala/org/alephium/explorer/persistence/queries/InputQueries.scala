@@ -19,6 +19,7 @@ package org.alephium.explorer.persistence.queries
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
+import akka.util.ByteString
 import slick.dbio.DBIOAction
 import slick.jdbc._
 import slick.jdbc.PostgresProfile.api._
@@ -30,7 +31,7 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.{BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 
 object InputQueries {
 
@@ -159,6 +160,17 @@ object InputQueries {
         WHERE main_chain = true
         ORDER BY block_timestamp #${if (ascendingOrder) "" else "DESC"}
     """.asASE[InputEntity](inputGetResult)
+
+  def getUnlockScript(address: Address)(implicit
+      ec: ExecutionContext
+  ): DBActionR[Option[ByteString]] = {
+    sql"""
+      select unlock_script
+      FROM inputs
+      WHERE output_ref_address = $address
+      LIMIT 1
+    """.asAS[ByteString].headOrNone
+  }
 
   /** Runs explain on query `inputsFromTxs` and checks the index `inputs_tx_hash_block_hash_idx` is
     * being used

@@ -29,6 +29,7 @@ import org.alephium.api.Endpoints.jsonBody
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.EndpointExamples._
 import org.alephium.explorer.api.model._
+import org.alephium.protocol.PublicKey
 import org.alephium.protocol.model.{Address, TokenId}
 import org.alephium.util.Duration
 
@@ -173,6 +174,14 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .in(timeIntervalQuery)
       .in(intervalTypeQuery)
       .out(jsonBody[AmountHistory])
+
+  val getPublicKey: BaseEndpoint[Address, PublicKey] =
+    addressesEndpoint.get
+      .in("public-key")
+      .out(jsonBody[PublicKey])
+      .description(
+        "Get public key of p2pkh addresses, the address needs to have at least one input."
+      )
 
   private case class TextCsv() extends CodecFormat {
     override val mediaType: MediaType = MediaType.TextCsv

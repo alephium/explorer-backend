@@ -24,6 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
 
+import akka.util.ByteString
 import io.reactivex.rxjava3.core.Flowable
 import io.vertx.core.buffer.Buffer
 import slick.basic.DatabaseConfig
@@ -33,6 +34,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.{MempoolDao, TransactionDao}
+import org.alephium.explorer.persistence.queries.InputQueries
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.util.TimeUtil
 import org.alephium.protocol.ALPH
@@ -95,6 +97,10 @@ trait TransactionService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Boolean]
+
+  def getUnlockScript(
+      address: Address
+  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Option[ByteString]]
 
   def exportTransactionsByAddress(
       address: Address,
@@ -223,6 +229,13 @@ object TransactionService extends TransactionService {
         (in, out, to)
       }
     )
+  }
+
+  def getUnlockScript(address: Address)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[ByteString]] = {
+    run(InputQueries.getUnlockScript(address))
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
