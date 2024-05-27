@@ -107,6 +107,20 @@ class ContractQueriesSpec
       }
     }
 
+    "getContractEntity" in {
+      forAll(createEventsGen()) { case (groupIndex, events) =>
+        run(ContractSchema.table.delete).futureValue
+        run(ContractQueries.insertContractCreation(events, groupIndex)).futureValue
+
+        events.flatMap(ContractEntity.creationFromEventEntity(_, groupIndex)).foreach { event =>
+          run(ContractQueries.getContractEntity(event.contract)).futureValue is
+            ArraySeq(event)
+        }
+
+        run(ContractQueries.getContractEntity(addressGen.sample.get)).futureValue is ArraySeq.empty
+      }
+    }
+
     "getParentAddressQuery" in {
       forAll(createEventsGen()) { case (groupIndex, events) =>
         run(ContractSchema.table.delete).futureValue

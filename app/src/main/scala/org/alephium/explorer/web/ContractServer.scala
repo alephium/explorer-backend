@@ -35,6 +35,9 @@ class ContractServer(implicit
     with ContractsEndpoints {
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
+      route(getContractInfo.serverLogicSuccess[Future] { contract =>
+        run(getContractEntity(contract).map(_.map(_.toApi)))
+      }),
       route(getParentAddress.serverLogicSuccess[Future] { contract =>
         run(getParentAddressQuery(contract).map(ContractParent.apply))
       }),

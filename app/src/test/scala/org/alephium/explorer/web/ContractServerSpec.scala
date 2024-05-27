@@ -36,6 +36,14 @@ class ContractServerSpec()
 
   val routes = server.routes
 
+  "get contract info" in {
+    forAll(addressContractProtocolGen) { address =>
+      Get(s"/contracts/$address/info") check { response =>
+        response.as[ArraySeq[ContractInfo]] is ArraySeq.empty
+      }
+    }
+  }
+
   "get parent contract" in {
     forAll(addressContractProtocolGen) { address =>
       Get(s"/contracts/$address/parent") check { response =>

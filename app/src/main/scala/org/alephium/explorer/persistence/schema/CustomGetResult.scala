@@ -335,6 +335,24 @@ object CustomGetResult {
         interfaceId = result.<<?
       )
 
+  val contractEntityGetResult: GetResult[ContractEntity] =
+    (result: PositionedResult) =>
+      ContractEntity(
+        contract = result.<<,
+        parent = result.<<?,
+        stdInterfaceIdGuessed = result.<<?,
+        creationBlockHash = result.<<,
+        creationTxHash = result.<<,
+        creationTimestamp = result.<<,
+        creationEventOrder = result.<<,
+        destructionBlockHash = result.<<?,
+        destructionTxHash = result.<<?,
+        destructionTimestamp = result.<<?,
+        destructionEventOrder = result.<<?,
+        category = result.<<?,
+        interfaceId = result.<<?
+      )
+
   implicit val migrationVersionGetResult: GetResult[AppState.MigrationVersion] =
     (result: PositionedResult) =>
       AppState.MigrationVersion(ByteString.fromArrayUnsafe(result.nextBytes())) match {
