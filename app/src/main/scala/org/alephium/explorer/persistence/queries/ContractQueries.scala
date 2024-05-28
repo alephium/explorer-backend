@@ -117,6 +117,16 @@ object ContractQueries {
     }
   }
 
+  def getContractEntity(
+      contract: Address
+  ): DBActionSR[ContractEntity] = {
+    sql"""
+      SELECT *
+      FROM contracts
+      WHERE contract = $contract
+      """.asASE[ContractEntity](contractEntityGetResult)
+  }
+
   def getParentAddressQuery(
       contract: Address
   )(implicit ec: ExecutionContext): DBActionR[Option[Address]] = {

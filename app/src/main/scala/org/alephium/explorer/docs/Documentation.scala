@@ -82,6 +82,7 @@ trait Documentation
         getEventsByTxId,
         getEventsByContractAddress,
         getEventsByContractAndInputAddress,
+        getContractInfo,
         getParentAddress,
         getSubContracts,
         getPrices,

@@ -6196,6 +6196,111 @@
         }
       }
     },
+    "/contracts/{contract_address}/current-liveness": {
+      "get": {
+        "tags": [
+          "Contracts"
+        ],
+        "description": "Get contract liveness",
+        "operationId": "getContractsContract_addressCurrent-liveness",
+        "parameters": [
+          {
+            "name": "contract_address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "address"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractLiveness"
+                },
+                "example": {
+                  "parent": "26JbotDoUoNzwVACg1YLaNTZKAJvoBDWiXJMnokZxCzvd",
+                  "creation": {
+                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                    "txHash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "timestamp": 1611041396892
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/contracts/{contract_address}/parent": {
       "get": {
         "tags": [
@@ -7169,6 +7274,49 @@
           }
         }
       },
+      "ContractLiveness": {
+        "required": [
+          "creation"
+        ],
+        "type": "object",
+        "properties": {
+          "parent": {
+            "type": "string",
+            "format": "address"
+          },
+          "creation": {
+            "$ref": "#/components/schemas/ContractLivenessLocation"
+          },
+          "destruction": {
+            "$ref": "#/components/schemas/ContractLivenessLocation"
+          },
+          "interfaceId": {
+            "$ref": "#/components/schemas/StdInterfaceId"
+          }
+        }
+      },
+      "ContractLivenessLocation": {
+        "required": [
+          "blockHash",
+          "txHash",
+          "timestamp"
+        ],
+        "type": "object",
+        "properties": {
+          "blockHash": {
+            "type": "string",
+            "format": "block-hash"
+          },
+          "txHash": {
+            "type": "string",
+            "format": "32-byte-hash"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "ContractOutput": {
         "required": [
           "hint",
@@ -7278,6 +7426,17 @@
           "lastFinalizedInputTime": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "FungibleToken": {
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
           }
         }
       },
@@ -7460,6 +7619,28 @@
           }
         }
       },
+      "NFT": {
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "NFTCollection": {
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          }
+        }
+      },
       "NFTCollectionMetadata": {
         "required": [
           "address",
@@ -7472,6 +7653,17 @@
             "format": "address"
           },
           "collectionUri": {
+            "type": "string"
+          }
+        }
+      },
+      "NFTCollectionWithRoyalty": {
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
             "type": "string"
           }
         }
@@ -7499,6 +7691,17 @@
           "nftIndex": {
             "type": "string",
             "format": "uint256"
+          }
+        }
+      },
+      "NonStandard": {
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
           }
         }
       },
@@ -7706,6 +7909,39 @@
         "properties": {
           "detail": {
             "type": "string"
+          }
+        }
+      },
+      "StdInterfaceId": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/FungibleToken"
+          },
+          {
+            "$ref": "#/components/schemas/NFT"
+          },
+          {
+            "$ref": "#/components/schemas/NFTCollection"
+          },
+          {
+            "$ref": "#/components/schemas/NFTCollectionWithRoyalty"
+          },
+          {
+            "$ref": "#/components/schemas/NonStandard"
+          },
+          {
+            "$ref": "#/components/schemas/Unknown"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "FungibleToken": "#/components/schemas/FungibleToken",
+            "NFT": "#/components/schemas/NFT",
+            "NFTCollection": "#/components/schemas/NFTCollection",
+            "NFTCollectionWithRoyalty": "#/components/schemas/NFTCollectionWithRoyalty",
+            "NonStandard": "#/components/schemas/NonStandard",
+            "Unknown": "#/components/schemas/Unknown"
           }
         }
       },
@@ -7936,6 +8172,21 @@
         "type": "object",
         "properties": {
           "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "Unknown": {
+        "required": [
+          "id",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
             "type": "string"
           }
         }

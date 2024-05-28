@@ -17,11 +17,15 @@ package org.alephium.explorer
 
 import java.math.BigInteger
 
+import scala.collection.immutable.ArraySeq
+
+import akka.util.ByteString
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
 
+import org.alephium.api.model.{Val, ValAddress, ValByteVec}
 import org.alephium.explorer.GenApiModel._
-import org.alephium.explorer.GenCoreApi.{blockEntryProtocolGen, valGen}
+import org.alephium.explorer.GenCoreApi.{blockEntryProtocolGen, valByteVecGen, valGen}
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model.Height
@@ -33,6 +37,7 @@ import org.alephium.util.{AVector, TimeStamp}
 
 /** Test-data generators for types in package [[org.alephium.explorer.persistence.model]] */
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+// scalastyle:off number.of.methods
 object GenDBModel {
 
   val outputTypeGen: Gen[OutputEntity.OutputType] =
@@ -645,4 +650,43 @@ object GenDBModel {
       }
     }
 
+  private val emptyByteVec: Val = ValByteVec(ByteString.empty)
+
+  def createEventGen(groupIndex: GroupIndex, parentOpt: Option[Address] = None)(implicit
+      groupSetting: GroupSetting
+  ): Gen[EventEntity] =
+    for {
+      event       <- eventEntityGen()
+      contract    <- addressContractProtocolGen
+      interfaceId <- Gen.option(valByteVecGen)
+    } yield {
+      event.copy(
+        contractAddress = ContractEntity.createContractEventAddress(groupIndex),
+        fields = ArraySeq(
+          ValAddress(contract),
+          parentOpt.map(ValAddress.apply).getOrElse(emptyByteVec),
+          interfaceId.getOrElse(emptyByteVec)
+        )
+      )
+    }
+  def createEventsGen(parentOpt: Option[Address] = None)(implicit
+      groupSetting: GroupSetting
+  ): Gen[(GroupIndex, Seq[EventEntity])] =
+    for {
+      groupIndex <- groupIndexGen
+      events     <- Gen.nonEmptyListOf(createEventGen(groupIndex, parentOpt))
+    } yield (groupIndex, events)
+
+  def destroyEventGen(contract: Address)(implicit groupSetting: GroupSetting): Gen[EventEntity] =
+    for {
+      event <- eventEntityGen()
+    } yield {
+      val groupIndex = ChainIndex.from(event.blockHash)(groupSetting.groupConfig).from
+      event.copy(
+        contractAddress = ContractEntity.destroyContractEventAddress(groupIndex),
+        fields = ArraySeq(
+          ValAddress(contract)
+        )
+      )
+    }
 }

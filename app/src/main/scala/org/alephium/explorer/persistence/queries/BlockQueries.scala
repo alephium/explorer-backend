@@ -375,6 +375,16 @@ object BlockQueries extends StrictLogging {
     query.transactionally
   }
 
+  def getMainChain(
+      blockHash: BlockHash
+  )(implicit
+      ec: ExecutionContext
+  ): DBActionR[Option[Boolean]] = {
+    sql"""
+      SELECT main_chain FROM block_headers
+      WHERE hash = $blockHash
+    """.asAS[Boolean].headOrNone
+  }
   def getBlockTimes(
       fromGroup: GroupIndex,
       toGroup: GroupIndex,

@@ -19,6 +19,7 @@ package org.alephium.explorer.persistence.model
 import akka.util.ByteString
 
 import org.alephium.api.model.{ValAddress, ValByteVec}
+import org.alephium.explorer.api.model.ContractLiveness
 import org.alephium.protocol
 import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.TimeStamp
@@ -45,6 +46,29 @@ final case class ContractEntity(
       timestamp  <- destructionTimestamp
       eventOrder <- destructionEventOrder
     } yield ContractEntity.DestroyInfo(contract, blockHash, txHash, timestamp, eventOrder)
+
+  def toApi: ContractLiveness = {
+    val construction =
+      ContractLiveness.Location(
+        creationBlockHash,
+        creationTxHash,
+        creationTimestamp
+      )
+    val destruction = for {
+      blockHash <- destructionBlockHash
+      txHash    <- destructionTxHash
+      timestamp <- destructionTimestamp
+    } yield {
+      ContractLiveness.Location(blockHash, txHash, timestamp)
+    }
+
+    ContractLiveness(
+      parent,
+      construction,
+      destruction,
+      interfaceId.map(_.toApi)
+    )
+  }
 }
 
 object ContractEntity {

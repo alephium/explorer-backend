@@ -191,6 +191,18 @@ object EndpointExamples extends EndpointsExamples {
       lockedBalance = U256.Two
     )
 
+  private val contractInfo =
+    ContractLiveness(
+      Some(addressContract),
+      ContractLiveness.Location(
+        blockHash,
+        txId,
+        ts
+      ),
+      None,
+      None
+    )
+
   private val contractParent =
     ContractParent(Some(address1))
 
@@ -342,6 +354,9 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val contractParentExample: List[Example[ContractParent]] =
     simpleExample(contractParent)
+
+  implicit val contractInfoExample: List[Example[ContractLiveness]] =
+    simpleExample(contractInfo)
 
   implicit val subContractsExample: List[Example[SubContracts]] =
     simpleExample(subContracts)
