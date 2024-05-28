@@ -16,26 +16,35 @@
 
 package org.alephium.explorer.api.model
 
+import sttp.tapir.Schema
+
+import org.alephium.api.TapirSchemas._
 import org.alephium.api.UtilJson.{timestampReader, timestampWriter}
 import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.TimeStamp
 
-final case class ContractInfo(
+final case class ContractLiveness(
     parent: Option[Address],
-    creationBlockHash: BlockHash,
-    creationTxHash: TransactionId,
-    creationTimestamp: TimeStamp,
-    creationEventOrder: Int,
-    destructionBlockHash: Option[BlockHash],
-    destructionTxHash: Option[TransactionId],
-    destructionTimestamp: Option[TimeStamp],
-    destructionEventOrder: Option[Int],
-    category: Option[String],
+    creation: ContractLiveness.Location,
+    destruction: Option[ContractLiveness.Location],
     interfaceId: Option[StdInterfaceId]
 )
 
-object ContractInfo {
-  implicit val readWriter: ReadWriter[ContractInfo] = macroRW
+object ContractLiveness {
+
+  final case class Location(
+      blockHash: BlockHash,
+      txHash: TransactionId,
+      timestamp: TimeStamp
+  )
+  object Location {
+    implicit val readWriter: ReadWriter[Location] = macroRW
+    implicit val schema: Schema[Location] = Schema
+      .derived[Location]
+      .name(Schema.SName("ContractLivenessLocation"))
+  }
+
+  implicit val readWriter: ReadWriter[ContractLiveness] = macroRW
 }

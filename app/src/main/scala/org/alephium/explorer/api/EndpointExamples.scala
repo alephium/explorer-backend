@@ -192,16 +192,13 @@ object EndpointExamples extends EndpointsExamples {
     )
 
   private val contractInfo =
-    ContractInfo(
+    ContractLiveness(
       Some(addressContract),
-      blockHash,
-      txId,
-      ts,
-      0,
-      None,
-      None,
-      None,
-      None,
+      ContractLiveness.Location(
+        blockHash,
+        txId,
+        ts
+      ),
       None,
       None
     )
@@ -358,8 +355,8 @@ object EndpointExamples extends EndpointsExamples {
   implicit val contractParentExample: List[Example[ContractParent]] =
     simpleExample(contractParent)
 
-  implicit val contractInfoExample: List[Example[ArraySeq[ContractInfo]]] =
-    simpleExample(ArraySeq(contractInfo))
+  implicit val contractInfoExample: List[Example[ContractLiveness]] =
+    simpleExample(contractInfo)
 
   implicit val subContractsExample: List[Example[SubContracts]] =
     simpleExample(subContracts)
