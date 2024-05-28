@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.web
 
+import scala.annotation.tailrec
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -31,6 +32,7 @@ import org.alephium.explorer.persistence.model.ContractEntity
 import org.alephium.explorer.persistence.queries.BlockQueries.getMainChain
 import org.alephium.explorer.persistence.queries.ContractQueries._
 import org.alephium.protocol.model.Address
+import org.alephium.util.TimeStamp
 
 class ContractServer(implicit
     val executionContext: ExecutionContext,
@@ -66,9 +68,8 @@ object ContractServer {
       } else if (entities.sizeIs == 1) {
         Future.successful(Right(entities.head.toApi))
       } else {
-        // Find latest contract info
-        collectMainChainContractEntities(entities)
-          .map(_.maxByOption(_.creationTimestamp) match {
+        findFirstMainChainEntity(entities.sortBy(_.creationTimestamp)(TimeStamp.ordering.reverse))
+          .map {
             case Some(entity) => Right(entity.toApi)
             case None =>
               Left(
@@ -76,24 +77,35 @@ object ContractServer {
                   s"Contract not found in main chain: ${contract.toBase58}"
                 )
               )
-          })
+          }
       }
     }
   }
 
-  private def collectMainChainContractEntities(entities: ArraySeq[ContractEntity])(implicit
+  private def findFirstMainChainEntity(entities: ArraySeq[ContractEntity])(implicit
       executionContext: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[ContractEntity]] = {
-    Future
-      .sequence(
-        entities.map { entity =>
-          run(getMainChain(entity.creationBlockHash)).map {
-            case Some(true) => Some(entity)
-            case _          => None
+  ): Future[Option[ContractEntity]] = {
+
+    @tailrec
+    def find(
+        remainingEntities: ArraySeq[ContractEntity],
+        acc: Future[Option[ContractEntity]]
+    ): Future[Option[ContractEntity]] =
+      remainingEntities.headOption match {
+        case Some(entity) =>
+          val result = acc.flatMap {
+            case None =>
+              run(getMainChain(entity.creationBlockHash)).map {
+                case Some(true) => Some(entity)
+                case _          => None
+              }
+            case Some(_) => acc
           }
-        }
-      )
-      .map(_.collect { case Some(entity) => entity })
+          find(remainingEntities.drop(1), result)
+        case None => acc
+      }
+
+    find(entities, Future.successful(None))
   }
 }
