@@ -88,6 +88,9 @@ sealed trait ExplorerState extends Service with StrictLogging {
 }
 
 sealed trait ExplorerStateRead extends ExplorerState {
+
+  val marketService: MarketService.CoinGecko = MarketService.CoinGecko.default(config.market)
+
   lazy val httpServer: ExplorerHttpServer =
     new ExplorerHttpServer(
       config.host,
@@ -96,19 +99,19 @@ sealed trait ExplorerStateRead extends ExplorerState {
         .routes(
           config.exportTxsNumberThreshold,
           config.streamParallelism,
-          config.maxTimeInterval,
-          config.market
+          config.maxTimeInterval
         )(
           executionContext,
           database.databaseConfig,
           blockFlowClient,
+          marketService,
           blockCache,
           transactionCache,
           groupSettings
         )
     )
 
-  override lazy val customServices: ArraySeq[Service] = ArraySeq(httpServer)
+  override lazy val customServices: ArraySeq[Service] = ArraySeq(marketService, httpServer)
 }
 
 object ExplorerState {

@@ -34,19 +34,18 @@ object AppServer {
   def routes(
       exportTxsNumberThreshold: Int,
       streamParallelism: Int,
-      maxTimeIntervals: ExplorerConfig.MaxTimeIntervals,
-      marketConfig: ExplorerConfig.Market
+      maxTimeIntervals: ExplorerConfig.MaxTimeIntervals
   )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
+      marketService: MarketService,
       blockCache: BlockCache,
       transactionCache: TransactionCache,
       groupSetting: GroupSetting
   ): ArraySeq[Router => Route] = {
 
-    val marketService = MarketService.CoinGecko.default(marketConfig)
-    val blockServer   = new BlockServer()
+    val blockServer = new BlockServer()
     val addressServer =
       new AddressServer(
         TransactionService,

@@ -39,7 +39,17 @@ import org.alephium.json.Json._
 class MarketServiceSpec extends AlephiumFutureSpec {
   import MarketServiceSpec._
 
+  "return error when not started" in new Fixture {
+    eventually {
+      marketService.getPrices(marketConfig.symbolName.keys.toList, "btc").futureValue.isLeft is true
+      marketService.getExchangeRates().futureValue.isLeft is true
+      marketService.getPriceChart(alph, "usd").futureValue.isLeft is true
+    }
+  }
+
   "get prices, exchange rates and charts" in new Fixture {
+
+    marketService.start().futureValue
 
     eventually {
       val prices =
@@ -116,7 +126,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
     val coingecko: MarketServiceSpec.CoingeckoMock =
       new MarketServiceSpec.CoingeckoMock(localhost, port)
-    val marketService: MarketService =
+    val marketService: MarketService.CoinGecko =
       new MarketService.CoinGecko(marketConfig)
   }
 }
