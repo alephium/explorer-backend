@@ -32,6 +32,7 @@ import org.alephium.explorer.web._
 object AppServer {
 
   def routes(
+      marketService: MarketService,
       exportTxsNumberThreshold: Int,
       streamParallelism: Int,
       maxTimeIntervals: ExplorerConfig.MaxTimeIntervals
@@ -39,7 +40,6 @@ object AppServer {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
-      marketService: MarketService,
       blockCache: BlockCache,
       transactionCache: TransactionCache,
       groupSetting: GroupSetting
