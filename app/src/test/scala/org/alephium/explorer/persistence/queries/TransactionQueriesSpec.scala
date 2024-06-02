@@ -365,6 +365,28 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     }
   }
 
+  "numberOfActiveAddressesQuery" should {
+    "return numbe of distinc addresses having at least 1 tx" in {
+      forAll(
+        Gen.listOf(genTransactionPerAddressEntity(mainChain = true)),
+        Gen.listOf(genTransactionPerAddressEntity(mainChain = false)),
+        blockHashGen
+      ) { case (mainChainAddresses, otherAddresses, blockHash) =>
+        // clear the table
+        run(TransactionPerAddressSchema.table.delete).futureValue
+
+        // persist mainChain addresses twice to make sure the count is correct
+        val otherMainChainAddresses = mainChainAddresses.map(_.copy(blockHash = blockHash))
+        run(
+          TransactionPerAddressSchema.table ++= (otherMainChainAddresses ++ mainChainAddresses ++ otherAddresses)
+        ).futureValue
+
+        val addressCount = run(TransactionQueries.numberOfActiveAddressesQuery()).futureValue
+        addressCount is mainChainAddresses.map(_.address).distinct.size
+      }
+    }
+  }
+
   "getTxHashesByAddressQueryTimeRanged" should {
     "return empty" when {
       "database is empty" in {

@@ -54,7 +54,11 @@ sealed trait ExplorerState extends Service with StrictLogging {
     )(groupSettings, executionContext, database.databaseConfig)
 
   lazy val transactionCache: TransactionCache =
-    TransactionCache(database)(executionContext)
+    TransactionCache(
+      database,
+      config.cacheTxCountReloadPeriod,
+      config.cacheAddressCountReloadPeriod
+    )(executionContext)
 
   implicit lazy val blockFlowClient: BlockFlowClient =
     BlockFlowClient(
