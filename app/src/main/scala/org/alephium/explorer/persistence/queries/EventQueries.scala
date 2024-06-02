@@ -71,14 +71,29 @@ object EventQueries {
 
   def getEventsByContractAddressQuery(
       address: Address,
+      eventIndex: Option[Int],
       pagination: Pagination
   ): DBActionSR[EventEntity] = {
-    sql"""
-      SELECT *
-      FROM events
-      WHERE contract_address = $address
-      ORDER BY block_timestamp DESC, event_order_in_block
-      """
+    // We map to add or not the event index, we duplicate the rest of the
+    // query to have proper prepared statements
+    eventIndex
+      .map { i =>
+        sql"""
+          SELECT *
+          FROM events
+          WHERE contract_address = $address
+          AND event_index = $i
+          ORDER BY block_timestamp DESC, event_order_in_block
+        """
+      }
+      .getOrElse {
+        sql"""
+          SELECT *
+          FROM events
+          WHERE contract_address = $address
+          ORDER BY block_timestamp DESC, event_order_in_block
+        """
+      }
       .paginate(pagination)
       .asASE[EventEntity](eventGetResult)
   }
@@ -86,15 +101,29 @@ object EventQueries {
   def getEventsByContractAndInputAddressQuery(
       contract: Address,
       input: Address,
+      eventIndex: Option[Int],
       pagination: Pagination
   ): DBActionSR[EventEntity] = {
-    sql"""
-      SELECT *
-      FROM events
-      WHERE contract_address = $contract
-      AND input_address = $input
-      ORDER BY block_timestamp DESC
-      """
+    eventIndex
+      .map { i =>
+        sql"""
+          SELECT *
+          FROM events
+          WHERE contract_address = $contract
+          AND input_address = $input
+          AND event_index = $i
+          ORDER BY block_timestamp DESC
+        """
+      }
+      .getOrElse {
+        sql"""
+          SELECT *
+          FROM events
+          WHERE contract_address = $contract
+          AND input_address = $input
+          ORDER BY block_timestamp DESC
+        """
+      }
       .paginate(pagination)
       .asASE[EventEntity](eventGetResult)
   }

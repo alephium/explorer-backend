@@ -5909,6 +5909,15 @@
             }
           },
           {
+            "name": "event_index",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
             "name": "page",
             "in": "query",
             "description": "Page number",
@@ -6063,6 +6072,15 @@
             "schema": {
               "type": "string",
               "format": "address"
+            }
+          },
+          {
+            "name": "event_index",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
             }
           },
           {
