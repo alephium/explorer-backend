@@ -69,7 +69,7 @@ class BootUp extends StrictLogging {
     explorer
       .start()
       .onComplete {
-        case Success(_) => ()
+        case Success(_) => logger.info(WelcomeMessage.message(config))
         case Failure(error) =>
           logger.error("Fatal error during initialization", error)
           explorer.stop().failed foreach { error =>
