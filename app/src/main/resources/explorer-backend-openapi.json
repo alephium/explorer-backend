@@ -8338,6 +8338,34 @@
         "enum": [
           80
         ]
+      },
+      "TokensWithPrice": {
+        "type": "string",
+        "enum": [
+          "WETH",
+          "ALPH",
+          "USDT",
+          "AYIN",
+          "DAI",
+          "USDC",
+          "WBTC"
+        ]
+      },
+      "Currencies": {
+        "type": "string",
+        "enum": [
+          "btc",
+          "usd",
+          "eur",
+          "chf",
+          "gbp",
+          "idr",
+          "vnd",
+          "rub",
+          "try",
+          "cad",
+          "aud"
+        ]
       }
     }
   }
