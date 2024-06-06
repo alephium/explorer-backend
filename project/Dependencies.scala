@@ -17,18 +17,18 @@
 import sbt._
 
 object Version {
-  lazy val common = "2.14.2"
+  lazy val common = "3.0.2"
 
   lazy val akka       = "2.6.20"
-  lazy val rxJava     = "3.1.6"
-  lazy val tapir      = "1.2.8"
-  lazy val vertx      = "4.3.8"
-  lazy val slick      = "3.3.2"
-  lazy val postgresql = "42.2.12"
-  lazy val sttp       = "3.7.4"
-  lazy val apispec    = "0.3.2"
-  lazy val prometheus = "0.15.0"
-  lazy val micrometer = "1.7.4"
+  lazy val rxJava     = "3.1.8"
+  lazy val tapir      = "1.10.7"
+  lazy val vertx      = "4.5.7"
+  lazy val slick      = "3.5.1"
+  lazy val postgresql = "42.7.3"
+  lazy val sttp       = "3.9.6"
+  lazy val apispec    = "0.10.0"
+  lazy val prometheus = "0.16.0"
+  lazy val micrometer = "1.13.0"
 }
 
 object Dependencies {
@@ -58,18 +58,18 @@ object Dependencies {
   lazy val sttpBackend =
     "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % Version.sttp
 
-  lazy val `upickle` = "com.lihaoyi" %% "upickle" % "1.6.0"
+  lazy val `upickle` = "com.lihaoyi" %% "upickle" % "3.3.0"
 
-  lazy val caffeine = "com.github.ben-manes.caffeine" % "caffeine" % "3.0.5"
+  lazy val caffeine = "com.github.ben-manes.caffeine" % "caffeine" % "3.1.8"
 
   lazy val ficus = "com.iheart" %% "ficus" % "1.5.2"
 
-  lazy val scalatest     = "org.scalatest"              %% "scalatest"       % "3.2.13"   % Test
-  lazy val scalacheck    = "org.scalacheck"             %% "scalacheck"      % "1.14.3"   % Test
-  lazy val scalatestplus = "org.scalatestplus"          %% "scalacheck-1-16" % "3.2.13.0" % Test
-  lazy val scalaMock     = "org.scalamock"              %% "scalamock"       % "5.2.0"    % Test
-  lazy val scalaLogging  = "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.2"
-  lazy val logback       = "ch.qos.logback"              % "logback-classic" % "1.2.3"
+  lazy val scalatest     = "org.scalatest"              %% "scalatest"       % "3.2.18"   % Test
+  lazy val scalacheck    = "org.scalacheck"             %% "scalacheck"      % "1.17.1"   % Test
+  lazy val scalatestplus = "org.scalatestplus"          %% "scalacheck-1-17" % "3.2.18.0" % Test
+  lazy val scalaMock     = "org.scalamock"              %% "scalamock"       % "6.0.0"    % Test
+  lazy val scalaLogging  = "com.typesafe.scala-logging" %% "scala-logging"   % "3.9.5"
+  lazy val logback       = "ch.qos.logback"              % "logback-classic" % "1.5.6"
 
   lazy val slick      = "com.typesafe.slick" %% "slick"      % Version.slick
   lazy val postgresql = "org.postgresql"      % "postgresql" % Version.postgresql

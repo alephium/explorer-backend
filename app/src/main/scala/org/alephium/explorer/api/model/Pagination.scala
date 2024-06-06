@@ -16,12 +16,14 @@
 
 package org.alephium.explorer.api.model
 
+@scala.annotation.nowarn
 final case class Pagination private (page: Int, limit: Int) {
   val offset: Int = (page - 1) * limit
 }
 
 object Pagination {
 
+  @scala.annotation.nowarn
   final case class Reversible private (page: Int, limit: Int, reverse: Boolean) {
     val offset: Int = (page - 1) * limit
   }

@@ -58,13 +58,13 @@ object ContractQueries {
     QuerySplitter.splitUpdates(rows = events, columnsPerRow = 7) { (events, placeholder) =>
       val query =
         s"""
-           |INSERT INTO contracts
-           |("contract", "parent", "std_interface_id_guessed", "creation_block_hash", "creation_tx_hash","creation_timestamp","creation_event_order")
-           |VALUES $placeholder
-           |ON CONFLICT
-           | ON CONSTRAINT contracts_pk
-           | DO NOTHING
-           |""".stripMargin
+           INSERT INTO contracts
+           ("contract", "parent", "std_interface_id_guessed", "creation_block_hash", "creation_tx_hash","creation_timestamp","creation_event_order")
+           VALUES $placeholder
+           ON CONFLICT
+            ON CONSTRAINT contracts_pk
+            DO NOTHING
+           """
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
@@ -79,8 +79,8 @@ object ContractQueries {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asUpdate
     }
   }
@@ -111,8 +111,8 @@ object ContractQueries {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asUpdate
     }
   }

@@ -104,7 +104,7 @@ val inliningOptions =
 val commonSettings = Seq(
   name         := "explorer-backend",
   organization := "org.alephium",
-  scalaVersion := "2.13.10",
+  scalaVersion := "2.13.14",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding",
@@ -113,7 +113,6 @@ val commonSettings = Seq(
     "-feature",
     "-unchecked",
     "-Xsource:3.1",
-    "-Xfatal-warnings",
     "-Xlint:adapted-args",
     "-Xlint:constant",
     "-Xlint:delayedinit-select",
@@ -316,5 +315,7 @@ val wartsTestExcludes = wartsCompileExcludes ++ Seq(
   Wart.Equals,
   Wart.MutableDataStructures,
   Wart.Recursion,
-  Wart.GlobalExecutionContext
+  Wart.GlobalExecutionContext,
+  Wart.TripleQuestionMark,
+  Wart.SeqApply
 )

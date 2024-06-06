@@ -93,6 +93,11 @@ object GenCoreApi {
     addressAssetProtocolGen().map(ValAddress(_))
   }
 
+  def ghostUncleBlockEntry(implicit groupSetting: GroupSetting): Gen[GhostUncleBlockEntry] = for {
+    blockHash <- blockHashGen
+    miner     <- addressAssetProtocolGen()
+  } yield GhostUncleBlockEntry(blockHash, miner)
+
   def valContractAddressGen(implicit groupSetting: GroupSetting): Gen[ValAddress] = {
     addressContractProtocolGen.map(ValAddress(_))
   }
@@ -147,6 +152,8 @@ object GenCoreApi {
       version         <- Gen.posNum[Byte]
       depStateHash    <- hashGen
       txsHash         <- hashGen
+      ghostUnclesSize <- Gen.choose(0, 5)
+      ghostUncles     <- Gen.listOfN(ghostUnclesSize, ghostUncleBlockEntry)
     } yield {
       // From `alephium` repo
       val numZerosAtLeastInHash = 37
@@ -166,7 +173,8 @@ object GenCoreApi {
         version,
         depStateHash,
         txsHash,
-        target.bits
+        target.bits,
+        AVector.from(ghostUncles)
       )
     }
 

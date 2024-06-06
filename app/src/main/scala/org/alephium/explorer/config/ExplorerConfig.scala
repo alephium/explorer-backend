@@ -221,6 +221,7 @@ object ExplorerConfig {
   *
   * The default constructor is private to ensure the configurations are always valid.
   */
+@scala.annotation.nowarn
 final case class ExplorerConfig private (
     groupNum: Int,
     directCliqueAccess: Boolean,

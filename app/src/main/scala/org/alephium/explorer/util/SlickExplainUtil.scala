@@ -65,7 +65,7 @@ object SlickExplainUtil {
       prefix: String
   ): SqlStreamingAction[Vector[String], String, Effect.Read] =
     sql
-      .copy(queryParts = sql.queryParts.updated(0, s"$prefix ${sql.queryParts.head}"))
+      .copy(sql = s"$prefix ${sql.sql}")
       .as[String]
 
   /** Alter's first query with the prefix. */

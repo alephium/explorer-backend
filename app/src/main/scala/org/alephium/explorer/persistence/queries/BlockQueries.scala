@@ -79,12 +79,12 @@ object BlockQueries extends StrictLogging {
   /** For a given `BlockHash` returns its basic chain information */
   def getBlockChainInfo(hash: BlockHash): DBActionR[Option[(GroupIndex, GroupIndex, Boolean)]] =
     sql"""
-         |SELECT chain_from,
-         |       chain_to,
-         |       main_chain
-         |FROM block_headers
-         |WHERE hash = $hash
-         |""".stripMargin
+         SELECT chain_from,
+                chain_to,
+                main_chain
+         FROM block_headers
+         WHERE hash = $hash
+         """
       .asAS[(GroupIndex, GroupIndex, Boolean)]
       .headOption
 
@@ -98,10 +98,10 @@ object BlockQueries extends StrictLogging {
 
   def getBlockHeaderAction(hash: BlockHash): DBActionR[Option[BlockHeader]] =
     sql"""
-         |SELECT *
-         |FROM #$block_headers
-         |WHERE hash = $hash
-         |""".stripMargin
+         SELECT *
+         FROM #$block_headers
+         WHERE hash = $hash
+         """
       .asASE[BlockHeader](blockHeaderGetResult)
       .headOption
 
@@ -111,12 +111,12 @@ object BlockQueries extends StrictLogging {
       height: Height
   ): DBActionSR[BlockHeader] =
     sql"""
-         |SELECT *
-         |FROM #$block_headers
-         |WHERE chain_from = $fromGroup
-         |AND chain_to = $toGroup
-         |AND height = $height
-         |""".stripMargin
+         SELECT *
+         FROM #$block_headers
+         WHERE chain_from = $fromGroup
+         AND chain_to = $toGroup
+         AND height = $height
+         """
       .asASE[BlockHeader](blockHeaderGetResult)
 
   /** Fetch bloch-hashes belonging to the input chain-index at a height, ignoring/filtering-out one
@@ -138,13 +138,13 @@ object BlockQueries extends StrictLogging {
       hashToIgnore: BlockHash
   ): DBActionSR[BlockHash] =
     sql"""
-         |SELECT hash
-         |FROM #$block_headers
-         |WHERE chain_from = $fromGroup
-         |AND chain_to = $toGroup
-         |AND height = $height
-         |AND hash != $hashToIgnore
-         |""".stripMargin
+         SELECT hash
+         FROM #$block_headers
+         WHERE chain_from = $fromGroup
+         AND chain_to = $toGroup
+         AND height = $height
+         AND hash != $hashToIgnore
+         """
       .asASE[BlockHash](blockEntryHashGetResult)
 
   def getAtHeightAction(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(implicit
@@ -206,19 +206,19 @@ object BlockQueries extends StrictLogging {
       }
 
     sql"""
-         |select hash,
-         |       block_timestamp,
-         |       chain_from,
-         |       chain_to,
-         |       height,
-         |       main_chain,
-         |       hashrate,
-         |       txs_count
-         |from #$block_headers
-         |where main_chain = true
-         |#$orderBy
-         |limit ${pagination.limit} offset ${pagination.offset}
-         |""".stripMargin
+         select hash,
+                block_timestamp,
+                chain_from,
+                chain_to,
+                height,
+                main_chain,
+                hashrate,
+                txs_count
+         from #$block_headers
+         where main_chain = true
+         #$orderBy
+         limit ${pagination.limit} offset ${pagination.offset}
+         """
   }
 
   def updateMainChainStatusQuery(block: BlockHash, mainChain: Boolean): DBActionRWT[Int] =
@@ -243,17 +243,17 @@ object BlockQueries extends StrictLogging {
 
       val query =
         s"""
-           |BEGIN;
-           |UPDATE transactions              SET main_chain = ? WHERE ${whereClause("block_hash")};
-           |UPDATE outputs                   SET main_chain = ? WHERE ${whereClause("block_hash")};
-           |UPDATE inputs                    SET main_chain = ? WHERE ${whereClause("block_hash")};
-           |UPDATE block_headers             SET main_chain = ? WHERE ${whereClause("hash")};
-           |UPDATE transaction_per_addresses SET main_chain = ? WHERE ${whereClause("block_hash")};
-           |UPDATE transaction_per_token     SET main_chain = ? WHERE ${whereClause("block_hash")};
-           |UPDATE token_tx_per_addresses    SET main_chain = ? WHERE ${whereClause("block_hash")};
-           |UPDATE token_outputs             SET main_chain = ? WHERE ${whereClause("block_hash")};
-           |COMMIT;
-           |""".stripMargin
+           BEGIN;
+           UPDATE transactions              SET main_chain = ? WHERE ${whereClause("block_hash")};
+           UPDATE outputs                   SET main_chain = ? WHERE ${whereClause("block_hash")};
+           UPDATE inputs                    SET main_chain = ? WHERE ${whereClause("block_hash")};
+           UPDATE block_headers             SET main_chain = ? WHERE ${whereClause("hash")};
+           UPDATE transaction_per_addresses SET main_chain = ? WHERE ${whereClause("block_hash")};
+           UPDATE transaction_per_token     SET main_chain = ? WHERE ${whereClause("block_hash")};
+           UPDATE token_tx_per_addresses    SET main_chain = ? WHERE ${whereClause("block_hash")};
+           UPDATE token_outputs             SET main_chain = ? WHERE ${whereClause("block_hash")};
+           COMMIT;
+           """
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
@@ -263,8 +263,8 @@ object BlockQueries extends StrictLogging {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asUpdate
     }
 
@@ -298,24 +298,24 @@ object BlockQueries extends StrictLogging {
     QuerySplitter.splitUpdates(rows = blocks, columnsPerRow = 14) { (blocks, placeholder) =>
       val query =
         s"""
-           |insert into $block_headers ("hash",
-           |                            "block_timestamp",
-           |                            "chain_from",
-           |                            "chain_to",
-           |                            "height",
-           |                            "main_chain",
-           |                            "nonce",
-           |                            "block_version",
-           |                            "dep_state_hash",
-           |                            "txs_hash",
-           |                            "txs_count",
-           |                            "target",
-           |                            "hashrate",
-           |                            "parent")
-           |values $placeholder
-           |ON CONFLICT ON CONSTRAINT block_headers_pkey
-           |    DO NOTHING
-           |""".stripMargin
+           insert into $block_headers ("hash",
+                                       "block_timestamp",
+                                       "chain_from",
+                                       "chain_to",
+                                       "height",
+                                       "main_chain",
+                                       "nonce",
+                                       "block_version",
+                                       "dep_state_hash",
+                                       "txs_hash",
+                                       "txs_count",
+                                       "target",
+                                       "hashrate",
+                                       "parent")
+           values $placeholder
+           ON CONFLICT ON CONSTRAINT block_headers_pkey
+               DO NOTHING
+           """
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
@@ -337,8 +337,8 @@ object BlockQueries extends StrictLogging {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asUpdate
     }
   // scalastyle:on magic.number
@@ -434,10 +434,10 @@ object BlockQueries extends StrictLogging {
     // fetch maximum `block_timestamp` and sum all `heights` for all unions
     val query =
       s"""
-         |SELECT max(block_timestamp),
-         |       sum(height)
-         |FROM ($unions) as max_block_timestamps_and_num_of_blocks;
-         |""".stripMargin
+         SELECT max(block_timestamp),
+                sum(height)
+         FROM ($unions) as max_block_timestamps_and_num_of_blocks;
+         """
 
     val parameters: SetParameter[Unit] =
       (_: Unit, params: PositionedParameters) =>
@@ -449,8 +449,8 @@ object BlockQueries extends StrictLogging {
         }
 
     SQLActionBuilder(
-      queryParts = query,
-      unitPConv = parameters
+      sql = query,
+      setParameter = parameters
     ).asAS[Option[(TimeStamp, Height)]].oneOrNone
   }
 
@@ -472,11 +472,11 @@ object BlockQueries extends StrictLogging {
       // Parameter index is used for ordering the output collection
       def maxHeight(index: Int): String =
         s"""
-           |SELECT max(height), $index
-           |FROM $block_headers
-           |WHERE chain_from = ?
-           |  AND chain_to = ?
-           |""".stripMargin
+           SELECT max(height), $index
+           FROM $block_headers
+           WHERE chain_from = ?
+             AND chain_to = ?
+           """.stripMargin
 
       val query =
         Array
@@ -492,8 +492,8 @@ object BlockQueries extends StrictLogging {
 
       val queryResult =
         SQLActionBuilder(
-          queryParts = query,
-          unitPConv = parameters
+          sql = query,
+          setParameter = parameters
         ).asAS[(Option[Height], Int)]
 
       // Sort by index and then return just the heights

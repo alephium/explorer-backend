@@ -45,29 +45,6 @@
         </triggeringPolicy>
     </appender>
 
-    <if condition='Boolean.valueOf(property("EXPLORER_ENABLE_DEBUG_LOGGING"))'>
-        <then>
-            <appender name="DEBUGFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-                <file>${EXPLORER_HOME:-${user.home}/.explorer}/logs/explorer-debug.log</file>
-                <append>true</append>
-                <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-                    <level>DEBUG</level>
-                </filter>
-                <encoder>
-                    <pattern>${filePattern}</pattern>
-                </encoder>
-                <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-                    <fileNamePattern>
-                        ${EXPLORER_HOME:-${user.home}/.explorer}/logs/explorer-debug.%d{yyyy-MM-dd}.%i.log
-                    </fileNamePattern>
-                    <maxFileSize>100MB</maxFileSize>
-                    <maxHistory>60</maxHistory>
-                    <totalSizeCap>1GB</totalSizeCap>
-                </rollingPolicy>
-            </appender>
-        </then>
-    </if>
-
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>${consolePattern}</pattern>
@@ -84,6 +61,5 @@
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="ERRFILE"/>
         <appender-ref ref="INFOFILE"/>
-        <appender-ref ref="DEBUGFILE"/>
     </root>
 </configuration>

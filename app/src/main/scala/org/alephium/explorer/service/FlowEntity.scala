@@ -18,10 +18,12 @@ package org.alephium.explorer.service
 
 import scala.collection.immutable.ArraySeq
 
+import org.alephium.explorer.AnyOps
 import org.alephium.explorer.api.model.Height
 import org.alephium.protocol.model.{BlockHash, GroupIndex}
 import org.alephium.util.TimeStamp
 
+@SuppressWarnings(Array("org.wartremover.warts.SeqApply"))
 trait FlowEntity {
   def hash: BlockHash
   def timestamp: TimeStamp

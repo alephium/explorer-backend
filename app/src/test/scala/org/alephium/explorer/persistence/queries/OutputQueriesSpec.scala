@@ -203,10 +203,10 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
           outputs foreach { output =>
             val query =
               sql"""
-                   |SELECT *
-                   |FROM outputs
-                   |where tx_hash = ${output.txHash}
-                   |""".stripMargin
+                   SELECT *
+                   FROM outputs
+                   where tx_hash = ${output.txHash}
+                   """
 
             val explain = run(query.explain()).futureValue.mkString("\n")
 
