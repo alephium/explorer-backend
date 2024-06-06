@@ -8355,6 +8355,7 @@
         "type": "string",
         "enum": [
           "btc",
+          "eth",
           "usd",
           "eur",
           "chf",
