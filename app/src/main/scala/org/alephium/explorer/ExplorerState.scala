@@ -100,7 +100,8 @@ sealed trait ExplorerStateRead extends ExplorerState {
           marketService,
           config.exportTxsNumberThreshold,
           config.streamParallelism,
-          config.maxTimeInterval
+          config.maxTimeInterval,
+          config.market
         )(
           executionContext,
           database.databaseConfig,
