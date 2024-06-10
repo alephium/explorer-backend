@@ -109,28 +109,28 @@ trait Documentation
         .addSchema(
           "MaxSizeTokens",
           Schema(
-            `type` = Some(SchemaType.Integer),
+            `type` = Some(List(SchemaType.Integer)),
             `enum` = Some(List(ExampleSingleValue(maxSizeTokens)))
           )
         )
         .addSchema(
           "MaxSizeAddressesForTokens",
           Schema(
-            `type` = Some(SchemaType.Integer),
+            `type` = Some(List(SchemaType.Integer)),
             `enum` = Some(List(ExampleSingleValue(maxSizeAddressesForTokens)))
           )
         )
         .addSchema(
           "MaxSizeAddresses",
           Schema(
-            `type` = Some(SchemaType.Integer),
+            `type` = Some(List(SchemaType.Integer)),
             `enum` = Some(List(ExampleSingleValue(maxSizeAddresses)))
           )
         )
         .addSchema(
           "TokensWithPrice",
           Schema(
-            `type` = Some(SchemaType.String),
+            `type` = Some(List(SchemaType.String)),
             enum = Some(
               tokensWithPrice.map { case (symbol, _) => ExampleSingleValue(symbol) }.toList
             )
@@ -139,7 +139,7 @@ trait Documentation
         .addSchema(
           "Currencies",
           Schema(
-            `type` = Some(SchemaType.String),
+            `type` = Some(List(SchemaType.String)),
             enum = Some(currencies.map { name => ExampleSingleValue(name) }.toList)
           )
         )

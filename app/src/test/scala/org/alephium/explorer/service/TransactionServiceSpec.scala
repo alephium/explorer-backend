@@ -470,7 +470,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       // Checking the final csv has the correct number of lines
       val csvFile = result.map(_.toString()).mkString.split('\n')
 
-      csvFile.size is (transactions.size + 1)
+      csvFile.length is (transactions.length + 1)
     }
   }
 

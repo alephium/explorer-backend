@@ -61,23 +61,23 @@ object TransactionQueries extends StrictLogging {
       (transactions, placeholder) =>
         val query =
           s"""
-             |insert into transactions (hash,
-             |                          block_hash,
-             |                          block_timestamp,
-             |                          chain_from,
-             |                          chain_to,
-             |                          gas_amount,
-             |                          gas_price,
-             |                          tx_order,
-             |                          main_chain,
-             |                          script_execution_ok,
-             |                          input_signatures,
-             |                          script_signatures,
-             |                          coinbase)
-             |values $placeholder
-             |ON CONFLICT ON CONSTRAINT txs_pk
-             |    DO NOTHING
-             |""".stripMargin
+             insert into transactions (hash,
+                                       block_hash,
+                                       block_timestamp,
+                                       chain_from,
+                                       chain_to,
+                                       gas_amount,
+                                       gas_price,
+                                       tx_order,
+                                       main_chain,
+                                       script_execution_ok,
+                                       input_signatures,
+                                       script_signatures,
+                                       coinbase)
+             values $placeholder
+             ON CONFLICT ON CONSTRAINT txs_pk
+                 DO NOTHING
+             """
 
         val parameters: SetParameter[Unit] =
           (_: Unit, params: PositionedParameters) =>
@@ -98,19 +98,19 @@ object TransactionQueries extends StrictLogging {
             }
 
         SQLActionBuilder(
-          queryParts = query,
-          unitPConv = parameters
+          sql = query,
+          setParameter = parameters
         ).asUpdate
     }
 
-  private val countBlockHashTransactionsQuery = Compiled { blockHash: Rep[BlockHash] =>
+  private val countBlockHashTransactionsQuery = Compiled { (blockHash: Rep[BlockHash]) =>
     TransactionSchema.table.filter(_.blockHash === blockHash).length
   }
 
   def countBlockHashTransactions(blockHash: BlockHash): DBActionR[Int] =
     countBlockHashTransactionsQuery(blockHash).result
 
-  private val getTransactionQuery = Compiled { txHash: Rep[TransactionId] =>
+  private val getTransactionQuery = Compiled { (txHash: Rep[TransactionId]) =>
     mainTransactions
       .filter(_.hash === txHash)
       .map(tx =>
@@ -202,12 +202,12 @@ object TransactionQueries extends StrictLogging {
 
       val query =
         s"""
-           |SELECT ${TxByAddressQR.selectFields}
-           |FROM transaction_per_addresses
-           |WHERE main_chain = true
-           |  AND address IN $placeholder
-           |ORDER BY block_timestamp DESC, tx_order
-           |""".stripMargin
+           SELECT ${TxByAddressQR.selectFields}
+           FROM transaction_per_addresses
+           WHERE main_chain = true
+             AND address IN $placeholder
+           ORDER BY block_timestamp DESC, tx_order
+           """
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) => {
@@ -215,8 +215,8 @@ object TransactionQueries extends StrictLogging {
         }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).paginate(pagination)
         .asAS[TxByAddressQR]
     }
@@ -462,10 +462,10 @@ object TransactionQueries extends StrictLogging {
     if (hashes.nonEmpty) {
       val params = paramPlaceholderTuple2(1, hashes.size)
       val query = s"""
-    SELECT hash, gas_amount, gas_price, script_execution_ok
-    FROM transactions
-    WHERE (hash, block_hash) IN $params
-    """
+        SELECT hash, gas_amount, gas_price, script_execution_ok
+        FROM transactions
+        WHERE (hash, block_hash) IN $params
+      """
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
           hashes foreach { case (txId, blockHash) =>
@@ -474,8 +474,8 @@ object TransactionQueries extends StrictLogging {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asAS[InfoFromTxsQR]
     } else {
       DBIOAction.successful(ArraySeq.empty)
@@ -534,8 +534,8 @@ object TransactionQueries extends StrictLogging {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asAS[Address]
     }
 

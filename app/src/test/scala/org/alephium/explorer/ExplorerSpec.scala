@@ -67,7 +67,7 @@ trait ExplorerSpec
     with DatabaseFixtureForAll
     with HttpRouteFixture {
 
-  implicit override val patienceConfig =
+  implicit override val patienceConfig: PatienceConfig =
     PatienceConfig(timeout = Span(120, Seconds))
 
   override val name: String = "ExploreSpec"
@@ -704,7 +704,7 @@ object ExplorerSpec {
 
   def mapJson(
       json: ujson.Value
-  )(f: ujson.Obj => scala.collection.mutable.LinkedHashMap[String, ujson.Value]): ujson.Value = {
+  )(f: ujson.Obj => scala.collection.mutable.Map[String, ujson.Value]): ujson.Value = {
     @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     def rec(json: ujson.Value): ujson.Value = {
       json match {

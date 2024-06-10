@@ -28,7 +28,7 @@ class BootModeSpec extends AlephiumSpec with ScalaCheckDrivenPropertyChecks {
   "validate" should {
     "fail" when {
       "input mode is invalid" in {
-        forAll { mode: String =>
+        forAll { (mode: String) =>
           BootMode.validate(mode) is Failure(InvalidBootMode(mode))
         }
       }
