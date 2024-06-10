@@ -30,7 +30,7 @@
         <file>${EXPLORER_HOME:-${user.home}/.explorer}/logs/explorer-info.log</file>
         <append>true</append>
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>INFO</level>
+            <level>${EXPLORER_FILE_LOG_LEVEL:-INFO}</level>
         </filter>
         <encoder>
             <pattern>${filePattern}</pattern>
