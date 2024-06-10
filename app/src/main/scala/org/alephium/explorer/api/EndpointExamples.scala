@@ -44,6 +44,9 @@ object EndpointExamples extends EndpointsExamples {
       .from(Hex.unsafe("bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5"))
       .get
 
+  val version: Byte   = 1
+  val networkId: Byte = 0
+
   private val outputRef: OutputRef =
     OutputRef(hint = 23412, key = hash)
 
@@ -84,7 +87,8 @@ object EndpointExamples extends EndpointsExamples {
       txHashRef = Some(txId),
       address = Some(address1),
       attoAlphAmount = Some(U256.Two),
-      tokens = Some(tokens)
+      tokens = Some(tokens),
+      contractInput = false
     )
 
   private val outputAsset: AssetOutput =
@@ -95,7 +99,8 @@ object EndpointExamples extends EndpointsExamples {
       address = address1,
       tokens = Some(tokens),
       lockTime = Some(ts),
-      message = Some(hash.bytes)
+      message = Some(hash.bytes),
+      fixedOutput = true
     )
 
   private val outputContract: Output =
@@ -104,7 +109,8 @@ object EndpointExamples extends EndpointsExamples {
       key = hash,
       attoAlphAmount = U256.Two,
       address = address1,
-      tokens = Some(tokens)
+      tokens = Some(tokens),
+      fixedOutput = false
     )
 
   /** Main API objects
@@ -128,9 +134,14 @@ object EndpointExamples extends EndpointsExamples {
       timestamp = ts,
       inputs = ArraySeq(input),
       outputs = ArraySeq(outputAsset, outputContract),
+      version = version,
+      networkId = networkId,
+      scriptOpt = None,
       gasAmount = org.alephium.protocol.model.minimalGas.value,
       gasPrice = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
       scriptExecutionOk = true,
+      inputSignatures = ArraySeq(hash.bytes),
+      scriptSignatures = ArraySeq(hash.bytes),
       coinbase = false
     )
 
@@ -141,9 +152,14 @@ object EndpointExamples extends EndpointsExamples {
       timestamp = ts,
       inputs = ArraySeq(input),
       outputs = ArraySeq(outputAsset, outputContract),
+      version = version,
+      networkId = networkId,
+      scriptOpt = None,
       gasAmount = org.alephium.protocol.model.minimalGas.value,
       gasPrice = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
       scriptExecutionOk = true,
+      inputSignatures = ArraySeq(hash.bytes),
+      scriptSignatures = ArraySeq(hash.bytes),
       coinbase = false
     )
 

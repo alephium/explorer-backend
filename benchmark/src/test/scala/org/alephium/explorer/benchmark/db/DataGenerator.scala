@@ -53,6 +53,9 @@ object DataGenerator {
         timestamp = blockTimestamp,
         chainFrom = new GroupIndex(1),
         chainTo = new GroupIndex(3),
+        version = 1,
+        networkId = 1,
+        scriptOpt = Some(Random.alphanumeric.take(10).mkString),
         gasAmount = Random.nextInt(1000),
         gasPrice = U256.unsafe(0),
         order = Random.nextInt(1000),
@@ -84,7 +87,8 @@ object DataGenerator {
         txOrder = order,
         coinbase = transaction.hash == coinbaseTxHash,
         spentFinalized = None,
-        spentTimestamp = None
+        spentTimestamp = None,
+        fixedOutput = Random.nextBoolean()
       )
     }
   }
@@ -104,7 +108,8 @@ object DataGenerator {
         None,
         None,
         None,
-        None
+        None,
+        contractInput = Random.nextBoolean()
       )
     }
 
@@ -144,7 +149,8 @@ object DataGenerator {
       depStateHash = Hash.generate,
       txsHash = Hash.generate,
       target = ByteString.fromString(Random.alphanumeric.take(10).mkString),
-      hashrate = BigInteger.valueOf(Random.nextLong(Long.MaxValue))
+      hashrate = BigInteger.valueOf(Random.nextLong(Long.MaxValue)),
+      ghostUncles = None
     )
   }
 

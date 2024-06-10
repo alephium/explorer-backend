@@ -42,7 +42,8 @@ final case class OutputEntity(
     txOrder: Int,
     coinbase: Boolean,
     spentFinalized: Option[TransactionId],
-    spentTimestamp: Option[TimeStamp]
+    spentTimestamp: Option[TimeStamp],
+    fixedOutput: Boolean
 )
 
 object OutputEntity {

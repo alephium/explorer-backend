@@ -14,30 +14,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.model
+package org.alephium.explorer.api.model
 
-import scala.collection.immutable.ArraySeq
+import org.alephium.api.model.GhostUncleBlockEntry
+import org.alephium.explorer.api.Codecs._
+import org.alephium.json.Json._
+import org.alephium.protocol.model.{Address, BlockHash}
 
-import akka.util.ByteString
+final case class GhostUncle(blockHash: BlockHash, miner: Address.Asset){
+  def toProtocol(): GhostUncleBlockEntry = GhostUncleBlockEntry(blockHash, miner)
+}
 
-import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
-import org.alephium.util.{TimeStamp, U256}
-
-final case class TransactionEntity(
-    hash: TransactionId,
-    blockHash: BlockHash,
-    timestamp: TimeStamp,
-    chainFrom: GroupIndex,
-    chainTo: GroupIndex,
-    version: Byte,
-    networkId: Byte,
-    scriptOpt: Option[String],
-    gasAmount: Int,
-    gasPrice: U256,
-    order: Int,
-    mainChain: Boolean,
-    scriptExecutionOk: Boolean,
-    inputSignatures: Option[ArraySeq[ByteString]],
-    scriptSignatures: Option[ArraySeq[ByteString]],
-    coinbase: Boolean
-)
+object GhostUncle{
+  implicit val codec: ReadWriter[GhostUncle] = macroRW
+}

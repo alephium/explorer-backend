@@ -80,7 +80,8 @@ class ListBlocksReadState(
       txsCount = scala.math.abs(Random.nextInt()),
       target = ByteString.emptyByteString,
       hashrate = BigInteger.ONE,
-      parent = Some(BlockHash.generate)
+      parent = Some(BlockHash.generate),
+      ghostUncles = None
     )
 
   private def generateTransactions(header: BlockHeader): Seq[TransactionEntity] =
@@ -91,6 +92,9 @@ class ListBlocksReadState(
         timestamp = header.timestamp,
         chainFrom = new GroupIndex(1),
         chainTo = new GroupIndex(3),
+        version = 1,
+        networkId = 0,
+        scriptOpt = Some(Random.alphanumeric.take(10).mkString),
         gasAmount = 0,
         gasPrice = U256.unsafe(0),
         order = 0,

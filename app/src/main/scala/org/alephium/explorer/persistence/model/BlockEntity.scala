@@ -22,7 +22,7 @@ import scala.collection.immutable.ArraySeq
 
 import akka.util.ByteString
 
-import org.alephium.explorer.api.model.Height
+import org.alephium.explorer.api.model.{GhostUncle, Height}
 import org.alephium.explorer.service.FlowEntity
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{BlockHash, GroupIndex}
@@ -44,7 +44,8 @@ final case class BlockEntity(
     depStateHash: Hash,
     txsHash: Hash,
     target: ByteString,
-    hashrate: BigInteger
+    hashrate: BigInteger,
+    ghostUncles: Option[ArraySeq[GhostUncle]]
 ) extends FlowEntity {
   def updateMainChain(newMainChain: Boolean): BlockEntity = {
     this.copy(

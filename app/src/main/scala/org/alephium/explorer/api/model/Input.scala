@@ -35,8 +35,15 @@ final case class Input(
     txHashRef: Option[TransactionId] = None,
     address: Option[Address] = None,
     attoAlphAmount: Option[U256] = None,
-    tokens: Option[ArraySeq[Token]] = None
-)
+    tokens: Option[ArraySeq[Token]] = None,
+    contractInput: Boolean
+) {
+  def toAsset(): org.alephium.api.model.AssetInput =
+    org.alephium.api.model.AssetInput(
+      outputRef = outputRef.toProtocol(),
+      unlockScript = unlockScript.getOrElse(ByteString.empty)
+    )
+}
 
 object Input {
   implicit val readWriter: ReadWriter[Input] = macroRW

@@ -37,7 +37,8 @@ object InputsQR {
         outputRefTxHash = result.<<?,
         outputRefAddress = result.<<?,
         outputRefAmount = result.<<?,
-        outputRefTokens = result.<<?
+        outputRefTokens = result.<<?,
+        contractInput = result.<<
       )
 }
 
@@ -49,7 +50,8 @@ final case class InputsQR(
     outputRefTxHash: Option[TransactionId],
     outputRefAddress: Option[Address],
     outputRefAmount: Option[U256],
-    outputRefTokens: Option[ArraySeq[Token]]
+    outputRefTokens: Option[ArraySeq[Token]],
+    contractInput: Boolean
 ) {
 
   def toApiInput(): Input =
@@ -59,6 +61,7 @@ final case class InputsQR(
       txHashRef = outputRefTxHash,
       address = outputRefAddress,
       attoAlphAmount = outputRefAmount,
-      tokens = outputRefTokens
+      tokens = outputRefTokens,
+      contractInput = contractInput
     )
 }

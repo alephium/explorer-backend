@@ -61,6 +61,9 @@
               "$ref": "#/components/schemas/Token"
             }
           },
+          "fixedOutput": {
+            "type": "boolean"
+          },
           "type": {
             "type": "string"
           },
@@ -74,6 +77,7 @@
           "key",
           "attoAlphAmount",
           "address",
+          "fixedOutput",
           "type"
         ]
       },
@@ -188,6 +192,9 @@
             "format": "address",
             "type": "string"
           },
+          "contractInput": {
+            "type": "boolean"
+          },
           "unlockScript": {
             "format": "hex-string",
             "type": "string"
@@ -211,7 +218,8 @@
           }
         },
         "required": [
-          "outputRef"
+          "outputRef",
+          "contractInput"
         ]
       },
       "PerChainCount": {
@@ -344,6 +352,9 @@
               "$ref": "#/components/schemas/Token"
             }
           },
+          "fixedOutput": {
+            "type": "boolean"
+          },
           "type": {
             "type": "string"
           },
@@ -361,6 +372,7 @@
           "key",
           "attoAlphAmount",
           "address",
+          "fixedOutput",
           "type"
         ]
       },
@@ -390,8 +402,12 @@
             "format": "block-hash",
             "type": "string"
           },
-          "coinbase": {
-            "type": "boolean"
+          "scriptSignatures": {
+            "type": "array",
+            "items": {
+              "format": "hex-string",
+              "type": "string"
+            }
           },
           "inputs": {
             "type": "array",
@@ -399,15 +415,34 @@
               "$ref": "#/components/schemas/Input"
             }
           },
-          "gasAmount": {
-            "format": "int32",
-            "type": "integer"
-          },
           "scriptExecutionOk": {
             "type": "boolean"
           },
           "type": {
             "type": "string"
+          },
+          "scriptOpt": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer"
+          },
+          "coinbase": {
+            "type": "boolean"
+          },
+          "inputSignatures": {
+            "type": "array",
+            "items": {
+              "format": "hex-string",
+              "type": "string"
+            }
+          },
+          "gasAmount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "networkId": {
+            "type": "integer"
           },
           "hash": {
             "format": "32-byte-hash",
@@ -426,6 +461,8 @@
           "hash",
           "blockHash",
           "timestamp",
+          "version",
+          "networkId",
           "gasAmount",
           "gasPrice",
           "scriptExecutionOk",
@@ -769,8 +806,12 @@
             "format": "block-hash",
             "type": "string"
           },
-          "coinbase": {
-            "type": "boolean"
+          "scriptSignatures": {
+            "type": "array",
+            "items": {
+              "format": "hex-string",
+              "type": "string"
+            }
           },
           "inputs": {
             "type": "array",
@@ -778,12 +819,31 @@
               "$ref": "#/components/schemas/Input"
             }
           },
+          "scriptExecutionOk": {
+            "type": "boolean"
+          },
+          "scriptOpt": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer"
+          },
+          "coinbase": {
+            "type": "boolean"
+          },
+          "inputSignatures": {
+            "type": "array",
+            "items": {
+              "format": "hex-string",
+              "type": "string"
+            }
+          },
           "gasAmount": {
             "format": "int32",
             "type": "integer"
           },
-          "scriptExecutionOk": {
-            "type": "boolean"
+          "networkId": {
+            "type": "integer"
           },
           "hash": {
             "format": "32-byte-hash",
@@ -802,6 +862,8 @@
           "hash",
           "blockHash",
           "timestamp",
+          "version",
+          "networkId",
           "gasAmount",
           "gasPrice",
           "scriptExecutionOk",
@@ -2964,6 +3026,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": true,
                         "type": "AssetOutput",
                         "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
@@ -2982,6 +3045,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": false,
                         "type": "ContractOutput",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
                       }
@@ -2992,6 +3056,7 @@
                     "inputs": [
                       {
                         "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "contractInput": false,
                         "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
                         "attoAlphAmount": "2",
                         "tokens": [
@@ -3032,6 +3097,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": true,
                         "type": "AssetOutput",
                         "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
@@ -3050,6 +3116,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": false,
                         "type": "ContractOutput",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
                       }
@@ -3060,6 +3127,7 @@
                     "inputs": [
                       {
                         "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "contractInput": false,
                         "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
                         "attoAlphAmount": "2",
                         "tokens": [
@@ -3202,6 +3270,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": true,
                         "type": "AssetOutput",
                         "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
@@ -3220,15 +3289,19 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": false,
                         "type": "ContractOutput",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
                       }
                     ],
                     "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
-                    "coinbase": false,
+                    "scriptSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
                     "inputs": [
                       {
                         "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "contractInput": false,
                         "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
                         "attoAlphAmount": "2",
                         "tokens": [
@@ -3248,8 +3321,14 @@
                         }
                       }
                     ],
-                    "gasAmount": 20000,
                     "scriptExecutionOk": true,
+                    "version": 1,
+                    "coinbase": false,
+                    "inputSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
+                    "gasAmount": 20000,
+                    "networkId": 0,
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
                     "gasPrice": "100000000000",
                     "timestamp": 1611041396892
@@ -3271,6 +3350,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": true,
                         "type": "AssetOutput",
                         "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
@@ -3289,15 +3369,19 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": false,
                         "type": "ContractOutput",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
                       }
                     ],
                     "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
-                    "coinbase": false,
+                    "scriptSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
                     "inputs": [
                       {
                         "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "contractInput": false,
                         "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
                         "attoAlphAmount": "2",
                         "tokens": [
@@ -3317,8 +3401,14 @@
                         }
                       }
                     ],
-                    "gasAmount": 20000,
                     "scriptExecutionOk": true,
+                    "version": 1,
+                    "coinbase": false,
+                    "inputSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
+                    "gasAmount": 20000,
+                    "networkId": 0,
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
                     "gasPrice": "100000000000",
                     "timestamp": 1611041396892
@@ -3474,6 +3564,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": true,
                         "type": "AssetOutput",
                         "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
@@ -3492,15 +3583,19 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": false,
                         "type": "ContractOutput",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
                       }
                     ],
                     "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
-                    "coinbase": false,
+                    "scriptSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
                     "inputs": [
                       {
                         "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "contractInput": false,
                         "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
                         "attoAlphAmount": "2",
                         "tokens": [
@@ -3520,8 +3615,14 @@
                         }
                       }
                     ],
-                    "gasAmount": 20000,
                     "scriptExecutionOk": true,
+                    "version": 1,
+                    "coinbase": false,
+                    "inputSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
+                    "gasAmount": 20000,
+                    "networkId": 0,
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
                     "gasPrice": "100000000000",
                     "timestamp": 1611041396892
@@ -3543,6 +3644,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": true,
                         "type": "AssetOutput",
                         "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
@@ -3561,15 +3663,19 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": false,
                         "type": "ContractOutput",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
                       }
                     ],
                     "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
-                    "coinbase": false,
+                    "scriptSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
                     "inputs": [
                       {
                         "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "contractInput": false,
                         "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
                         "attoAlphAmount": "2",
                         "tokens": [
@@ -3589,8 +3695,14 @@
                         }
                       }
                     ],
-                    "gasAmount": 20000,
                     "scriptExecutionOk": true,
+                    "version": 1,
+                    "coinbase": false,
+                    "inputSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
+                    "gasAmount": 20000,
+                    "networkId": 0,
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
                     "gasPrice": "100000000000",
                     "timestamp": 1611041396892
@@ -3832,6 +3944,7 @@
                           "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                         }
                       ],
+                      "fixedOutput": true,
                       "type": "AssetOutput",
                       "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
                       "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
@@ -3850,15 +3963,19 @@
                           "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                         }
                       ],
+                      "fixedOutput": false,
                       "type": "ContractOutput",
                       "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
                     }
                   ],
                   "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
-                  "coinbase": false,
+                  "scriptSignatures": [
+                    "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                  ],
                   "inputs": [
                     {
                       "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                      "contractInput": false,
                       "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
                       "attoAlphAmount": "2",
                       "tokens": [
@@ -3878,9 +3995,15 @@
                       }
                     }
                   ],
-                  "gasAmount": 20000,
                   "scriptExecutionOk": true,
                   "type": "Accepted",
+                  "version": 1,
+                  "coinbase": false,
+                  "inputSignatures": [
+                    "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                  ],
+                  "gasAmount": 20000,
+                  "networkId": 0,
                   "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
                   "gasPrice": "100000000000",
                   "timestamp": 1611041396892
@@ -4003,6 +4126,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": true,
                         "type": "AssetOutput",
                         "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
@@ -4021,15 +4145,19 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": false,
                         "type": "ContractOutput",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
                       }
                     ],
                     "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
-                    "coinbase": false,
+                    "scriptSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
                     "inputs": [
                       {
                         "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "contractInput": false,
                         "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
                         "attoAlphAmount": "2",
                         "tokens": [
@@ -4049,8 +4177,14 @@
                         }
                       }
                     ],
-                    "gasAmount": 20000,
                     "scriptExecutionOk": true,
+                    "version": 1,
+                    "coinbase": false,
+                    "inputSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
+                    "gasAmount": 20000,
+                    "networkId": 0,
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
                     "gasPrice": "100000000000",
                     "timestamp": 1611041396892
@@ -4072,6 +4206,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": true,
                         "type": "AssetOutput",
                         "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
@@ -4090,15 +4225,19 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": false,
                         "type": "ContractOutput",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
                       }
                     ],
                     "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
-                    "coinbase": false,
+                    "scriptSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
                     "inputs": [
                       {
                         "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "contractInput": false,
                         "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
                         "attoAlphAmount": "2",
                         "tokens": [
@@ -4118,8 +4257,14 @@
                         }
                       }
                     ],
-                    "gasAmount": 20000,
                     "scriptExecutionOk": true,
+                    "version": 1,
+                    "coinbase": false,
+                    "inputSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
+                    "gasAmount": 20000,
+                    "networkId": 0,
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
                     "gasPrice": "100000000000",
                     "timestamp": 1611041396892
@@ -4286,6 +4431,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": true,
                         "type": "AssetOutput",
                         "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
@@ -4304,15 +4450,19 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": false,
                         "type": "ContractOutput",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
                       }
                     ],
                     "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
-                    "coinbase": false,
+                    "scriptSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
                     "inputs": [
                       {
                         "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "contractInput": false,
                         "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
                         "attoAlphAmount": "2",
                         "tokens": [
@@ -4332,8 +4482,14 @@
                         }
                       }
                     ],
-                    "gasAmount": 20000,
                     "scriptExecutionOk": true,
+                    "version": 1,
+                    "coinbase": false,
+                    "inputSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
+                    "gasAmount": 20000,
+                    "networkId": 0,
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
                     "gasPrice": "100000000000",
                     "timestamp": 1611041396892
@@ -4355,6 +4511,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": true,
                         "type": "AssetOutput",
                         "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
@@ -4373,15 +4530,19 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": false,
                         "type": "ContractOutput",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
                       }
                     ],
                     "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
-                    "coinbase": false,
+                    "scriptSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
                     "inputs": [
                       {
                         "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "contractInput": false,
                         "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
                         "attoAlphAmount": "2",
                         "tokens": [
@@ -4401,8 +4562,14 @@
                         }
                       }
                     ],
-                    "gasAmount": 20000,
                     "scriptExecutionOk": true,
+                    "version": 1,
+                    "coinbase": false,
+                    "inputSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
+                    "gasAmount": 20000,
+                    "networkId": 0,
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
                     "gasPrice": "100000000000",
                     "timestamp": 1611041396892
@@ -4700,6 +4867,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": true,
                         "type": "AssetOutput",
                         "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
@@ -4718,15 +4886,19 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": false,
                         "type": "ContractOutput",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
                       }
                     ],
                     "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
-                    "coinbase": false,
+                    "scriptSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
                     "inputs": [
                       {
                         "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "contractInput": false,
                         "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
                         "attoAlphAmount": "2",
                         "tokens": [
@@ -4746,8 +4918,14 @@
                         }
                       }
                     ],
-                    "gasAmount": 20000,
                     "scriptExecutionOk": true,
+                    "version": 1,
+                    "coinbase": false,
+                    "inputSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
+                    "gasAmount": 20000,
+                    "networkId": 0,
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
                     "gasPrice": "100000000000",
                     "timestamp": 1611041396892
@@ -4769,6 +4947,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": true,
                         "type": "AssetOutput",
                         "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
@@ -4787,15 +4966,19 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": false,
                         "type": "ContractOutput",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
                       }
                     ],
                     "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
-                    "coinbase": false,
+                    "scriptSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
                     "inputs": [
                       {
                         "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "contractInput": false,
                         "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
                         "attoAlphAmount": "2",
                         "tokens": [
@@ -4815,8 +4998,14 @@
                         }
                       }
                     ],
-                    "gasAmount": 20000,
                     "scriptExecutionOk": true,
+                    "version": 1,
+                    "coinbase": false,
+                    "inputSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
+                    "gasAmount": 20000,
+                    "networkId": 0,
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
                     "gasPrice": "100000000000",
                     "timestamp": 1611041396892
@@ -5590,6 +5779,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": true,
                         "type": "AssetOutput",
                         "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
@@ -5608,15 +5798,19 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": false,
                         "type": "ContractOutput",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
                       }
                     ],
                     "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
-                    "coinbase": false,
+                    "scriptSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
                     "inputs": [
                       {
                         "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "contractInput": false,
                         "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
                         "attoAlphAmount": "2",
                         "tokens": [
@@ -5636,8 +5830,14 @@
                         }
                       }
                     ],
-                    "gasAmount": 20000,
                     "scriptExecutionOk": true,
+                    "version": 1,
+                    "coinbase": false,
+                    "inputSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
+                    "gasAmount": 20000,
+                    "networkId": 0,
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
                     "gasPrice": "100000000000",
                     "timestamp": 1611041396892
@@ -5659,6 +5859,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": true,
                         "type": "AssetOutput",
                         "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
@@ -5677,15 +5878,19 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": false,
                         "type": "ContractOutput",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
                       }
                     ],
                     "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
-                    "coinbase": false,
+                    "scriptSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
                     "inputs": [
                       {
                         "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "contractInput": false,
                         "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
                         "attoAlphAmount": "2",
                         "tokens": [
@@ -5705,8 +5910,14 @@
                         }
                       }
                     ],
-                    "gasAmount": 20000,
                     "scriptExecutionOk": true,
+                    "version": 1,
+                    "coinbase": false,
+                    "inputSignatures": [
+                      "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                    ],
+                    "gasAmount": 20000,
+                    "networkId": 0,
                     "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
                     "gasPrice": "100000000000",
                     "timestamp": 1611041396892
@@ -8243,6 +8454,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": true,
                         "type": "AssetOutput",
                         "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
@@ -8261,6 +8473,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": false,
                         "type": "ContractOutput",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
                       }
@@ -8271,6 +8484,7 @@
                     "inputs": [
                       {
                         "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "contractInput": false,
                         "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
                         "attoAlphAmount": "2",
                         "tokens": [
@@ -8311,6 +8525,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": true,
                         "type": "AssetOutput",
                         "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
@@ -8329,6 +8544,7 @@
                             "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf"
                           }
                         ],
+                        "fixedOutput": false,
                         "type": "ContractOutput",
                         "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
                       }
@@ -8339,6 +8555,7 @@
                     "inputs": [
                       {
                         "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "contractInput": false,
                         "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
                         "attoAlphAmount": "2",
                         "tokens": [

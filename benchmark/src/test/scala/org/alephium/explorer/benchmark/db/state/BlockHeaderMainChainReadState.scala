@@ -59,7 +59,8 @@ class BlockHeaderMainChainReadState(
       txsCount = Random.nextInt(),
       target = ByteString.emptyByteString,
       hashrate = BigInteger.ONE,
-      parent = Some(BlockHash.generate)
+      parent = Some(BlockHash.generate),
+      ghostUncles = None
     )
 
   def persist(data: Array[BlockHeader]): Unit = {

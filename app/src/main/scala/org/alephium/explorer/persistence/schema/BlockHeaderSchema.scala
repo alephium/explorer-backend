@@ -18,12 +18,14 @@ package org.alephium.explorer.persistence.schema
 
 import java.math.BigInteger
 
+import scala.collection.immutable.ArraySeq
+
 import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, ProvenShape}
 import slick.sql.SqlAction
 
-import org.alephium.explorer.api.model.Height
+import org.alephium.explorer.api.model.{GhostUncle, Height}
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.Hash
@@ -52,6 +54,8 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
         O.SqlType("DECIMAL(80,0)")
       ) // TODO How much decimal we need? this one is the same as for U256
     def parent: Rep[Option[BlockHash]] = column[Option[BlockHash]]("parent")
+    def ghostUncles: Rep[Option[ArraySeq[GhostUncle]]] =
+      column[Option[ArraySeq[GhostUncle]]]("ghost_uncles")
 
     def timestampIdx: Index = index("blocks_timestamp_idx", timestamp)
     def heightIdx: Index    = index("blocks_height_idx", height)
@@ -71,7 +75,8 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
         txsCount,
         target,
         hashrate,
-        parent
+        parent,
+        ghostUncles
       )
         .<>((BlockHeader.apply _).tupled, BlockHeader.unapply)
   }

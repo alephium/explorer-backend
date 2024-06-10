@@ -128,6 +128,9 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       ts0,
       groupIndex,
       groupIndex,
+      version,
+      networkId,
+      scriptOpt,
       gasAmount,
       gasPrice,
       0,
@@ -156,7 +159,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
         0,
         coinbase = false,
         None,
-        None
+        None,
+        fixedOutput = true
       )
 
     val block0 = defaultBlockEntity.copy(
@@ -176,6 +180,9 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       ts1,
       groupIndex,
       groupIndex,
+      version,
+      networkId,
+      scriptOpt,
       gasAmount1,
       gasPrice1,
       0,
@@ -198,7 +205,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       None,
       None,
       None,
-      None
+      None,
+      contractInput = false
     )
     val output1 = OutputEntity(
       blockHash1,
@@ -217,7 +225,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       0,
       coinbase = false,
       None,
-      None
+      None,
+      fixedOutput = true
     )
 
     val block1 = defaultBlockEntity.copy(
@@ -242,11 +251,26 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       ts0,
       ArraySeq.empty,
       ArraySeq(
-        AssetOutput(output0.hint, output0.key, U256.One, address0, None, None, None, Some(tx1.hash))
+        AssetOutput(
+          output0.hint,
+          output0.key,
+          U256.One,
+          address0,
+          None,
+          None,
+          None,
+          Some(tx1.hash),
+          true
+        )
       ),
+      version,
+      networkId,
+      scriptOpt,
       gasAmount,
       gasPrice,
       scriptExecutionOk = true,
+      scriptSignatures = ArraySeq.empty,
+      inputSignatures = ArraySeq.empty,
       coinbase = false
     )
 
@@ -255,12 +279,27 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       blockHash1,
       ts1,
       ArraySeq(
-        Input(OutputRef(0, output0.key), None, Some(output0.txHash), Some(address0), Some(U256.One))
+        Input(
+          OutputRef(0, output0.key),
+          None,
+          Some(output0.txHash),
+          Some(address0),
+          Some(U256.One),
+          None,
+          false
+        )
       ),
-      ArraySeq(AssetOutput(output1.hint, output1.key, U256.One, address1, None, None, None, None)),
+      ArraySeq(
+        AssetOutput(output1.hint, output1.key, U256.One, address1, None, None, None, None, true)
+      ),
+      version,
+      networkId,
+      scriptOpt,
       gasAmount1,
       gasPrice1,
       scriptExecutionOk = true,
+      scriptSignatures = ArraySeq.empty,
+      inputSignatures = ArraySeq.empty,
       coinbase = false
     )
 
@@ -283,6 +322,9 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
         ts0,
         groupIndex,
         groupIndex,
+        version,
+        networkId,
+        scriptOpt,
         Gen.posNum[Int].sample.get,
         amountGen.sample.get,
         0,
@@ -311,7 +353,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
           0,
           coinbase = false,
           None,
-          None
+          None,
+          fixedOutput = true
         )
 
       val block0 = defaultBlockEntity.copy(
@@ -554,8 +597,11 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
   trait Fixture {
     implicit val blockCache: BlockCache = TestBlockCache()
 
-    val groupIndex = GroupIndex.Zero
-    val chainIndex = ChainIndex(groupIndex, groupIndex)
+    val groupIndex      = GroupIndex.Zero
+    val chainIndex      = ChainIndex(groupIndex, groupIndex)
+    val version: Byte   = 1
+    val networkId: Byte = 1
+    val scriptOpt       = None
 
     val defaultBlockEntity: BlockEntity =
       BlockEntity(
@@ -574,7 +620,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
         depStateHash = hashGen.sample.get,
         txsHash = hashGen.sample.get,
         target = bytesGen.sample.get,
-        hashrate = BigInteger.ZERO
+        hashrate = BigInteger.ZERO,
+        ghostUncles = None
       )
 
   }

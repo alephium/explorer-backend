@@ -50,7 +50,7 @@ object OutputQueries {
   // scalastyle:off magic.number method.length
   private def insertBasicOutputs(outputs: Iterable[OutputEntity]): DBActionW[Int] =
     QuerySplitter
-      .splitUpdates(rows = outputs, columnsPerRow = 17) { (outputs, placeholder) =>
+      .splitUpdates(rows = outputs, columnsPerRow = 18) { (outputs, placeholder) =>
         val query =
           s"""
              INSERT INTO outputs ("block_hash",
@@ -69,7 +69,8 @@ object OutputQueries {
                                   "tx_order",
                                   "coinbase",
                                   "spent_finalized",
-                                  "spent_timestamp")
+                                  "spent_timestamp",
+                                  "fixed_output")
              VALUES $placeholder
              ON CONFLICT
                  ON CONSTRAINT outputs_pk
@@ -96,6 +97,7 @@ object OutputQueries {
               params >> output.coinbase
               params >> output.spentFinalized
               params >> output.spentTimestamp
+              params >> output.fixedOutput
             }
 
         SQLActionBuilder(
@@ -326,7 +328,8 @@ object OutputQueries {
                   outputs.tokens,
                   outputs.lock_time,
                   outputs.message,
-                  outputs.spent_finalized
+                  outputs.spent_finalized,
+                  outputs.fixed_output
            FROM outputs
            WHERE (outputs.tx_hash, outputs.block_hash) IN $params
            """
@@ -356,7 +359,8 @@ object OutputQueries {
                tokens,
                lock_time,
                message,
-               spent_finalized
+               spent_finalized,
+               fixed_output
         FROM outputs
         WHERE tx_hash = $txHash
           AND block_hash = $blockHash
@@ -383,7 +387,9 @@ object OutputQueries {
         output_order,
         tx_order,
         coinbase,
-        spent_finalized
+        spent_finalized,
+        spent_timestamp,
+        fixed_output
       FROM outputs
       WHERE main_chain = true
       ORDER BY block_timestamp #${if (ascendingOrder) "" else "DESC"}

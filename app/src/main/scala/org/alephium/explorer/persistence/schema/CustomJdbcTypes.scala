@@ -174,4 +174,10 @@ object CustomJdbcTypes {
           .find(_.key == key)
           .getOrElse(throw new Exception(s"Invalid ${classOf[AppStateKey[_]].getSimpleName}: $key"))
     )
+
+  implicit val ghostUnclesType: JdbcType[ArraySeq[GhostUncle]] =
+    MappedJdbcType.base[ArraySeq[GhostUncle], Array[Byte]](
+      uncles => writeBinary(uncles),
+      bytes => readBinary[ArraySeq[GhostUncle]](bytes)
+    )
 }

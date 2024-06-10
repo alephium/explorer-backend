@@ -255,4 +255,22 @@ object CustomSetParameter {
           params setTimestampOption None
       }
   }
+
+  implicit object GhostUnclesSetParameter extends SetParameter[ArraySeq[GhostUncle]] {
+    override def apply(input: ArraySeq[GhostUncle], params: PositionedParameters): Unit =
+      params setBytes writeBinary(input)
+  }
+
+  implicit object GhostUnclesOptionSetParameter extends SetParameter[Option[ArraySeq[GhostUncle]]] {
+    override def apply(option: Option[ArraySeq[GhostUncle]], params: PositionedParameters): Unit =
+      option match {
+        case Some(ghostUncles) =>
+          GhostUnclesSetParameter(ghostUncles, params)
+
+        case None =>
+          // scalastyle:off null
+          params setBytes null
+        // scalastyle:on null
+      }
+  }
 }

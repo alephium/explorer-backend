@@ -60,6 +60,7 @@ object GenDBModel {
       outputOrder <- arbitrary[Int]
       txOrder     <- arbitrary[Int]
       coinbase    <- arbitrary[Boolean]
+      fixedOutput <- arbitrary[Boolean]
     } yield OutputEntity(
       blockHash = blockHash,
       txHash = txHash,
@@ -77,7 +78,8 @@ object GenDBModel {
       txOrder = txOrder,
       spentFinalized = None,
       spentTimestamp = None,
-      coinbase = coinbase
+      coinbase = coinbase,
+      fixedOutput = fixedOutput
     )
 
   val finalizedOutputEntityGen: Gen[OutputEntity] =
@@ -118,9 +120,10 @@ object GenDBModel {
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def inputEntityGen(outputEntityGen: Gen[OutputEntity] = outputEntityGen): Gen[InputEntity] =
     for {
-      outputEntity <- outputEntityGen
-      unlockScript <- Gen.option(unlockScriptGen)
-      txOrder      <- arbitrary[Int]
+      outputEntity  <- outputEntityGen
+      unlockScript  <- Gen.option(unlockScriptGen)
+      txOrder       <- arbitrary[Int]
+      contractInput <- arbitrary[Boolean]
     } yield {
       InputEntity(
         blockHash = outputEntity.blockHash,
@@ -135,7 +138,8 @@ object GenDBModel {
         None,
         None,
         None,
-        None
+        None,
+        contractInput
       )
     }
 
@@ -352,6 +356,9 @@ object GenDBModel {
       timestamp         <- timestampGen
       chainFrom         <- groupIndexGen
       chainTo           <- groupIndexGen
+      version           <- arbitrary[Byte]
+      networkId         <- arbitrary[Byte]
+      scriptOpt         <- Gen.option(hashGen.map(_.toHexString))
       gasAmount         <- Gen.posNum[Int]
       gasPrice          <- u256Gen
       order             <- Gen.posNum[Int]
@@ -364,6 +371,9 @@ object GenDBModel {
       timestamp = timestamp,
       chainFrom = chainFrom,
       chainTo = chainTo,
+      version = version,
+      networkId = networkId,
+      scriptOpt = scriptOpt,
       gasAmount = gasAmount,
       gasPrice = gasPrice,
       order = order,
@@ -429,7 +439,8 @@ object GenDBModel {
       txsCount = txsCount,
       target = target,
       hashrate = hashrate,
-      parent = parent
+      parent = parent,
+      ghostUncles = None
     )
 
   val blockHeaderTransactionEntityGen: Gen[(BlockHeader, List[TransactionEntity])] =
@@ -438,7 +449,9 @@ object GenDBModel {
       transaction <- Gen.listOf(transactionEntityGen(Gen.const(blockHeader.hash)))
     } yield (blockHeader, transaction)
 
-  def blockHeaderWithHashrate(timestamp: TimeStamp, hashrate: Double): Gen[BlockHeader] = {
+  def blockHeaderWithHashrate(timestamp: TimeStamp, hashrate: Double)(implicit
+      groupSetting: GroupSetting
+  ): Gen[BlockHeader] = {
     for {
       hash         <- blockHashGen
       from         <- groupIndexGen
@@ -451,6 +464,7 @@ object GenDBModel {
       txsCount     <- Gen.posNum[Int]
       target       <- bytesGen
       parent       <- Gen.option(blockHashGen)
+      ghostUncles  <- Gen.option(Gen.listOf(ghostUncleGen()))
     } yield {
       BlockHeader(
         hash,
@@ -466,7 +480,8 @@ object GenDBModel {
         txsCount,
         target,
         BigDecimal(hashrate).toBigInt.bigInteger,
-        parent
+        parent,
+        ghostUncles
       )
     }
   }

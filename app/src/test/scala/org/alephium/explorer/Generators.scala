@@ -52,9 +52,14 @@ object Generators {
                 inputEntityToApi(input, outputs.head)
               ), // TODO Fix when we have a valid blockchain generator
             block.outputs.filter(_.txHash === tx.hash).map(out => outputEntityToApi(out, None)),
+            tx.version,
+            tx.networkId,
+            tx.scriptOpt,
             tx.gasAmount,
             tx.gasPrice,
             tx.scriptExecutionOk,
+            tx.inputSignatures.getOrElse(ArraySeq.empty),
+            tx.scriptSignatures.getOrElse(ArraySeq.empty),
             coinbase = coinbaseTxId == tx.hash
           )
         }
@@ -79,15 +84,26 @@ object Generators {
       Some(outputRef.txHash),
       Some(outputRef.address),
       Some(outputRef.amount),
-      outputRef.tokens
+      outputRef.tokens,
+      input.contractInput
     )
 
   def outputEntityToApi(o: OutputEntity, spent: Option[TransactionId]): Output = {
     o.outputType match {
       case OutputEntity.Asset =>
-        AssetOutput(o.hint, o.key, o.amount, o.address, o.tokens, o.lockTime, o.message, spent)
+        AssetOutput(
+          o.hint,
+          o.key,
+          o.amount,
+          o.address,
+          o.tokens,
+          o.lockTime,
+          o.message,
+          spent,
+          o.fixedOutput
+        )
       case OutputEntity.Contract =>
-        ContractOutput(o.hint, o.key, o.amount, o.address, o.tokens, spent)
+        ContractOutput(o.hint, o.key, o.amount, o.address, o.tokens, spent, o.fixedOutput)
     }
   }
 }

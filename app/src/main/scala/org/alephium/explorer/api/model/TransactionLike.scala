@@ -18,7 +18,9 @@ package org.alephium.explorer.api.model
 
 import scala.collection.immutable.ArraySeq
 
-import org.alephium.api.UtilJson.{timestampReader, timestampWriter}
+import akka.util.ByteString
+
+import org.alephium.api.UtilJson._
 import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
 import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
@@ -42,9 +44,14 @@ final case class AcceptedTransaction(
     timestamp: TimeStamp,
     inputs: ArraySeq[Input],
     outputs: ArraySeq[Output],
+    version: Byte,
+    networkId: Byte,
+    scriptOpt: Option[String],
     gasAmount: Int,
     gasPrice: U256,
     scriptExecutionOk: Boolean,
+    inputSignatures: ArraySeq[ByteString],
+    scriptSignatures: ArraySeq[ByteString],
     coinbase: Boolean
 ) extends TransactionLike
 
@@ -56,9 +63,14 @@ object AcceptedTransaction {
     tx.timestamp,
     tx.inputs,
     tx.outputs,
+    tx.version,
+    tx.networkId,
+    tx.scriptOpt,
     tx.gasAmount,
     tx.gasPrice,
     tx.scriptExecutionOk,
+    tx.inputSignatures,
+    tx.scriptSignatures,
     tx.coinbase
   )
 }

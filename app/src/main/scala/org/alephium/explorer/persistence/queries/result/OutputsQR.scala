@@ -40,7 +40,8 @@ object OutputsQR {
         tokens = result.<<?,
         lockTime = result.<<?,
         message = result.<<?,
-        spentFinalized = result.<<?
+        spentFinalized = result.<<?,
+        fixedOutput = result.<<
       )
 }
 
@@ -54,7 +55,8 @@ final case class OutputsQR(
     tokens: Option[ArraySeq[Token]],
     lockTime: Option[TimeStamp],
     message: Option[ByteString],
-    spentFinalized: Option[TransactionId]
+    spentFinalized: Option[TransactionId],
+    fixedOutput: Boolean
 ) {
 
   def toApiOutput(): Output =
@@ -68,7 +70,8 @@ final case class OutputsQR(
           tokens = tokens,
           lockTime = lockTime,
           message = message,
-          spent = spentFinalized
+          spent = spentFinalized,
+          fixedOutput = fixedOutput
         )
 
       case OutputEntity.Contract =>
@@ -78,7 +81,8 @@ final case class OutputsQR(
           attoAlphAmount = amount,
           address = address,
           tokens = tokens,
-          spent = spentFinalized
+          spent = spentFinalized,
+          fixedOutput = fixedOutput
         )
     }
 }

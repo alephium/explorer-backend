@@ -42,7 +42,8 @@ object OutputsFromTxQR {
         tokens = result.<<?,
         lockTime = result.<<?,
         message = result.<<?,
-        spent = result.<<?
+        spent = result.<<?,
+        fixedOutput = result.<<
       )
 }
 
@@ -58,7 +59,8 @@ final case class OutputsFromTxQR(
     tokens: Option[ArraySeq[Token]],
     lockTime: Option[TimeStamp],
     message: Option[ByteString],
-    spent: Option[TransactionId]
+    spent: Option[TransactionId],
+    fixedOutput: Boolean
 ) {
   def toApiOutput(): Output =
     outputType match {
@@ -71,7 +73,8 @@ final case class OutputsFromTxQR(
           tokens = tokens,
           lockTime = lockTime,
           message = message,
-          spent = spent
+          spent = spent,
+          fixedOutput = fixedOutput
         )
 
       case OutputEntity.Contract =>
@@ -81,7 +84,8 @@ final case class OutputsFromTxQR(
           attoAlphAmount = amount,
           address = address,
           tokens = tokens,
-          spent = spent
+          spent = spent,
+          fixedOutput = fixedOutput
         )
     }
 }

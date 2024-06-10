@@ -101,7 +101,8 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
                 tokens = entity.tokens,
                 lockTime = entity.lockTime,
                 message = entity.message,
-                spent = entity.spentFinalized
+                spent = entity.spentFinalized,
+                fixedOutput = entity.fixedOutput
               )
             }
 
@@ -149,7 +150,8 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
               tokens = output.tokens,
               lockTime = output.lockTime,
               message = output.message,
-              spentFinalized = output.spentFinalized
+              spentFinalized = output.spentFinalized,
+              fixedOutput = output.fixedOutput
             )
 
           actual.toList should contain only expected

@@ -200,9 +200,14 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         output.timestamp,
         inputs,
         ArraySeq(outputEntityToApi(output, spent)),
+        version = 1,
+        networkId = 1,
+        scriptOpt = None,
         1,
         ALPH.alph(1),
         scriptExecutionOk = true,
+        inputSignatures = ArraySeq.empty,
+        scriptSignatures = ArraySeq.empty,
         coinbase = false
       )
     }
@@ -233,6 +238,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       tx1.timestamp,
       chainFrom,
       chainTo,
+      tx1.version,
+      tx1.networkId,
+      tx1.scriptOpt,
       tx1.gasAmount,
       tx1.gasPrice,
       0,
@@ -575,7 +583,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         0,
         false,
         None,
-        None
+        None,
+        fixedOutput = false
       )
 
     def input(hint: Int, outputRefKey: Hash): InputEntity =
@@ -592,7 +601,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         None,
         None,
         None,
-        None
+        None,
+        contractInput = false
       )
     def transaction(output: OutputEntity): TransactionEntity = {
       TransactionEntity(
@@ -601,6 +611,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         output.timestamp,
         GroupIndex.Zero,
         new GroupIndex(1),
+        version = 1,
+        networkId = 1,
+        scriptOpt = None,
         1,
         ALPH.alph(1),
         0,

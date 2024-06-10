@@ -109,7 +109,8 @@ class InputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
                 txHashRef = entity.outputRefTxHash,
                 address = entity.outputRefAddress,
                 amount = entity.outputRefAmount,
-                token = entity.outputRefTokens
+                token = entity.outputRefTokens,
+                contractInput = entity.contractInput
               )
             }
 
@@ -155,7 +156,8 @@ class InputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
               outputRefTxHash = input.outputRefTxHash,
               outputRefAddress = input.outputRefAddress,
               outputRefAmount = input.outputRefAmount,
-              outputRefTokens = input.outputRefTokens
+              outputRefTokens = input.outputRefTokens,
+              contractInput = input.contractInput
             )
 
           actual.toList should contain only expected

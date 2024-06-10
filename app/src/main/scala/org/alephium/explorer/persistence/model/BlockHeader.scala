@@ -22,10 +22,11 @@ import scala.collection.immutable.ArraySeq
 
 import akka.util.ByteString
 
-import org.alephium.explorer.api.model.{BlockEntry, BlockEntryLite, Height, Transaction}
+import org.alephium.api.model.GhostUncleBlockEntry
+import org.alephium.explorer.api.model.{BlockEntry, BlockEntryLite, GhostUncle, Height, Transaction}
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{BlockHash, GroupIndex}
-import org.alephium.util.TimeStamp
+import org.alephium.util.{AVector, TimeStamp}
 
 final case class BlockHeader(
     hash: BlockHash,
@@ -41,10 +42,37 @@ final case class BlockHeader(
     txsCount: Int,
     target: ByteString,
     hashrate: BigInteger,
-    parent: Option[BlockHash]
+    parent: Option[BlockHash],
+    ghostUncles: Option[ArraySeq[GhostUncle]]
 ) {
   def toApi(deps: ArraySeq[BlockHash], transactions: ArraySeq[Transaction]): BlockEntry =
     BlockEntry(hash, timestamp, chainFrom, chainTo, height, deps, transactions, mainChain, hashrate)
+
+  @SuppressWarnings(Array("org.wartremover.warts.TripleQuestionMark"))
+  def toProtocol(
+      deps: ArraySeq[BlockHash],
+      transactions: ArraySeq[Transaction]
+  ): org.alephium.api.model.BlockEntry = {
+    val uncles: AVector[GhostUncleBlockEntry] = ghostUncles match {
+      case Some(uncles) => AVector.from(uncles.map(_.toProtocol()))
+      case None         => AVector.empty
+    }
+    org.alephium.api.model.BlockEntry(
+      hash,
+      timestamp,
+      chainFrom.value,
+      chainTo.value,
+      height.value,
+      AVector.from(deps),
+      AVector.from(transactions.map(_.toProtocol())),
+      nonce,
+      version,
+      depStateHash,
+      txsHash,
+      target,
+      uncles
+    )
+  }
 
   val toLiteApi: BlockEntryLite =
     BlockEntryLite(hash, timestamp, chainFrom, chainTo, height, txsCount, mainChain, hashrate)
@@ -66,6 +94,7 @@ object BlockHeader {
       blockEntity.transactions.size,
       blockEntity.target,
       blockEntity.hashrate,
-      blockEntity.parent(groupNum)
+      blockEntity.parent(groupNum),
+      blockEntity.ghostUncles
     )
 }

@@ -45,6 +45,7 @@ final case class UOutputEntity(
       tokens,
       lockTime,
       message,
-      None
+      None,
+      fixedOutput = true
     )
 }
