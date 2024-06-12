@@ -53,28 +53,28 @@ object OutputQueries {
       .splitUpdates(rows = outputs, columnsPerRow = 17) { (outputs, placeholder) =>
         val query =
           s"""
-             |INSERT INTO outputs ("block_hash",
-             |                     "tx_hash",
-             |                     "block_timestamp",
-             |                     "output_type",
-             |                     "hint",
-             |                     "key",
-             |                     "amount",
-             |                     "address",
-             |                     "tokens",
-             |                     "main_chain",
-             |                     "lock_time",
-             |                     "message",
-             |                     "output_order",
-             |                     "tx_order",
-             |                     "coinbase",
-             |                     "spent_finalized",
-             |                     "spent_timestamp")
-             |VALUES $placeholder
-             |ON CONFLICT
-             |    ON CONSTRAINT outputs_pk
-             |    DO NOTHING
-             |""".stripMargin
+             INSERT INTO outputs ("block_hash",
+                                  "tx_hash",
+                                  "block_timestamp",
+                                  "output_type",
+                                  "hint",
+                                  "key",
+                                  "amount",
+                                  "address",
+                                  "tokens",
+                                  "main_chain",
+                                  "lock_time",
+                                  "message",
+                                  "output_order",
+                                  "tx_order",
+                                  "coinbase",
+                                  "spent_finalized",
+                                  "spent_timestamp")
+             VALUES $placeholder
+             ON CONFLICT
+                 ON CONSTRAINT outputs_pk
+                 DO NOTHING
+             """
 
         val parameters: SetParameter[Unit] =
           (_: Unit, params: PositionedParameters) =>
@@ -99,8 +99,8 @@ object OutputQueries {
             }
 
         SQLActionBuilder(
-          queryParts = query,
-          unitPConv = parameters
+          sql = query,
+          setParameter = parameters
         ).asUpdate
       }
   // scalastyle:on magic.number
@@ -109,11 +109,11 @@ object OutputQueries {
     QuerySplitter.splitUpdates(rows = outputs, columnsPerRow = 7) { (outputs, placeholder) =>
       val query =
         s"""
-           |INSERT INTO transaction_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, coinbase)
-           |VALUES $placeholder
-           |ON CONFLICT (tx_hash, block_hash, address)
-           |DO NOTHING
-           |""".stripMargin
+           INSERT INTO transaction_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, coinbase)
+           VALUES $placeholder
+           ON CONFLICT (tx_hash, block_hash, address)
+           DO NOTHING
+           """
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
@@ -128,8 +128,8 @@ object OutputQueries {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asUpdate
     }
   }
@@ -159,27 +159,27 @@ object OutputQueries {
       (tokenOutputs, placeholder) =>
         val query =
           s"""
-             |INSERT INTO token_outputs ("block_hash",
-             |                     "tx_hash",
-             |                     "block_timestamp",
-             |                     "output_type",
-             |                     "hint",
-             |                     "key",
-             |                     "token",
-             |                     "amount",
-             |                     "address",
-             |                     "main_chain",
-             |                     "lock_time",
-             |                     "message",
-             |                     "output_order",
-             |                     "tx_order",
-             |                     "spent_finalized",
-             |                     "spent_timestamp")
-             |VALUES $placeholder
-             |ON CONFLICT
-             |    ON CONSTRAINT token_outputs_pk
-             |    DO NOTHING
-             |""".stripMargin
+             INSERT INTO token_outputs ("block_hash",
+                                  "tx_hash",
+                                  "block_timestamp",
+                                  "output_type",
+                                  "hint",
+                                  "key",
+                                  "token",
+                                  "amount",
+                                  "address",
+                                  "main_chain",
+                                  "lock_time",
+                                  "message",
+                                  "output_order",
+                                  "tx_order",
+                                  "spent_finalized",
+                                  "spent_timestamp")
+             VALUES $placeholder
+             ON CONFLICT
+                 ON CONSTRAINT token_outputs_pk
+                 DO NOTHING
+             """
 
         val parameters: SetParameter[Unit] =
           (_: Unit, params: PositionedParameters) =>
@@ -203,8 +203,8 @@ object OutputQueries {
             }
 
         SQLActionBuilder(
-          queryParts = query,
-          unitPConv = parameters
+          sql = query,
+          setParameter = parameters
         ).asUpdate
     }
   }
@@ -217,10 +217,10 @@ object OutputQueries {
       (tokenOutputs, placeholder) =>
         val query =
           s"""
-             |  INSERT INTO transaction_per_token (tx_hash, block_hash, token, block_timestamp, tx_order, main_chain )
-             |  VALUES $placeholder
-             |  ON CONFLICT (tx_hash, block_hash, token) DO NOTHING
-             |""".stripMargin
+               INSERT INTO transaction_per_token (tx_hash, block_hash, token, block_timestamp, tx_order, main_chain )
+               VALUES $placeholder
+               ON CONFLICT (tx_hash, block_hash, token) DO NOTHING
+             """
 
         val parameters: SetParameter[Unit] =
           (_: Unit, params: PositionedParameters) =>
@@ -234,8 +234,8 @@ object OutputQueries {
             }
 
         SQLActionBuilder(
-          queryParts = query,
-          unitPConv = parameters
+          sql = query,
+          setParameter = parameters
         ).asUpdate
     }
   }
@@ -247,11 +247,11 @@ object OutputQueries {
       (tokenOutputs, placeholder) =>
         val query =
           s"""
-             |INSERT INTO token_tx_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
-             |VALUES $placeholder
-             |ON CONFLICT (tx_hash, block_hash, address, token)
-             |DO NOTHING
-             |""".stripMargin
+             INSERT INTO token_tx_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
+             VALUES $placeholder
+             ON CONFLICT (tx_hash, block_hash, address, token)
+             DO NOTHING
+             """
 
         val parameters: SetParameter[Unit] =
           (_: Unit, params: PositionedParameters) =>
@@ -266,8 +266,8 @@ object OutputQueries {
             }
 
         SQLActionBuilder(
-          queryParts = query,
-          unitPConv = parameters
+          sql = query,
+          setParameter = parameters
         ).asUpdate
     }
   }
@@ -286,13 +286,13 @@ object OutputQueries {
     QuerySplitter.splitUpdates(rows = tokens, columnsPerRow = 2) { (tokens, placeholder) =>
       val query =
         s"""
-           |INSERT INTO token_info (token, last_used)
-           |VALUES $placeholder
-           |ON CONFLICT
-           |ON CONSTRAINT token_info_pkey
-           |DO UPDATE
-           |SET last_used = EXCLUDED.last_used
-           |""".stripMargin
+           INSERT INTO token_info (token, last_used)
+           VALUES $placeholder
+           ON CONFLICT
+           ON CONSTRAINT token_info_pkey
+           DO UPDATE
+           SET last_used = EXCLUDED.last_used
+           """
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
@@ -302,8 +302,8 @@ object OutputQueries {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asUpdate
     }
   }
@@ -316,20 +316,20 @@ object OutputQueries {
 
       val query =
         s"""
-           |SELECT outputs.tx_hash,
-           |       outputs.output_order,
-           |       outputs.output_type,
-           |       outputs.hint,
-           |       outputs.key,
-           |       outputs.amount,
-           |       outputs.address,
-           |       outputs.tokens,
-           |       outputs.lock_time,
-           |       outputs.message,
-           |       outputs.spent_finalized
-           |FROM outputs
-           |WHERE (outputs.tx_hash, outputs.block_hash) IN $params
-           |""".stripMargin
+           SELECT outputs.tx_hash,
+                  outputs.output_order,
+                  outputs.output_type,
+                  outputs.hint,
+                  outputs.key,
+                  outputs.amount,
+                  outputs.address,
+                  outputs.tokens,
+                  outputs.lock_time,
+                  outputs.message,
+                  outputs.spent_finalized
+           FROM outputs
+           WHERE (outputs.tx_hash, outputs.block_hash) IN $params
+           """
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
@@ -339,8 +339,8 @@ object OutputQueries {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asAS[OutputsFromTxQR]
     } else {
       DBIOAction.successful(ArraySeq.empty)

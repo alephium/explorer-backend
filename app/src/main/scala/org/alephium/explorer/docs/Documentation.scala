@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.docs
 
+import scala.collection.immutable.{ArraySeq, ListMap}
+
 import sttp.apispec._
 import sttp.apispec.openapi.OpenAPI
 import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
@@ -35,6 +37,9 @@ trait Documentation
     with MarketEndpoints
     with UtilsEndpoints
     with OpenAPIDocsInterpreter {
+
+  def currencies: ArraySeq[String]
+  def tokensWithPrice: ListMap[String, String]
 
   lazy val docs: OpenAPI = addComponents(
     toOpenAPI(
@@ -104,24 +109,39 @@ trait Documentation
         .addSchema(
           "MaxSizeTokens",
           Schema(
-            `type` = Some(SchemaType.Integer),
+            `type` = Some(List(SchemaType.Integer)),
             `enum` = Some(List(ExampleSingleValue(maxSizeTokens)))
           )
         )
         .addSchema(
           "MaxSizeAddressesForTokens",
           Schema(
-            `type` = Some(SchemaType.Integer),
+            `type` = Some(List(SchemaType.Integer)),
             `enum` = Some(List(ExampleSingleValue(maxSizeAddressesForTokens)))
           )
         )
         .addSchema(
           "MaxSizeAddresses",
           Schema(
-            `type` = Some(SchemaType.Integer),
+            `type` = Some(List(SchemaType.Integer)),
             `enum` = Some(List(ExampleSingleValue(maxSizeAddresses)))
           )
         )
+        .addSchema(
+          "TokensWithPrice",
+          Schema(
+            `type` = Some(List(SchemaType.String)),
+            enum = Some(
+              tokensWithPrice.map { case (symbol, _) => ExampleSingleValue(symbol) }.toList
+            )
+          )
+        )
+        .addSchema(
+          "Currencies",
+          Schema(
+            `type` = Some(List(SchemaType.String)),
+            enum = Some(currencies.map { name => ExampleSingleValue(name) }.toList)
+          )
+        )
     )
-
 }

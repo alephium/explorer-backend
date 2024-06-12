@@ -252,7 +252,7 @@ object BlockFlowClient extends StrictLogging {
             case Some(api.model.ValByteVec(bytes)) =>
               val data = Hex.toHexString(bytes)
               if (data.startsWith(interfaceIdPrefix)) {
-                Some(StdInterfaceId.from(data.drop(interfaceIdPrefix.size)))
+                Some(StdInterfaceId.from(data.drop(interfaceIdPrefix.length)))
               } else {
                 Some(StdInterfaceId.NonStandard)
               }

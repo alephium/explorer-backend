@@ -62,7 +62,6 @@ object InputAddressUtil extends StrictLogging {
    * If every addresses are the same, we consider it as the correct address.
    * If no address or > 1 address are found, we return `None`
    */
-  @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
   def addressFromProtocolInputs(inputs: ArraySeq[api.model.AssetInput]): Option[Address] = {
     if (inputs.isEmpty) {
       None
@@ -72,10 +71,12 @@ object InputAddressUtil extends StrictLogging {
         case None => None
         case Some(_) =>
           if (
-            inputs.tail.forall(input =>
-              input.unlockScript === sameAsPrevious || InputAddressUtil
-                .addressFromProtocolInput(input) === addressOpt
-            )
+            inputs
+              .drop(1)
+              .forall(input =>
+                input.unlockScript === sameAsPrevious || InputAddressUtil
+                  .addressFromProtocolInput(input) === addressOpt
+              )
           ) {
             addressOpt
           } else {
@@ -85,7 +86,7 @@ object InputAddressUtil extends StrictLogging {
     }
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
+  @SuppressWarnings(Array("org.wartremover.warts.SeqApply"))
   def convertSameAsPrevious(
       inputs: ArraySeq[api.model.AssetInput]
   ): ArraySeq[api.model.AssetInput] = {

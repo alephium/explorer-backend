@@ -74,10 +74,10 @@ object InputUpdateQueries {
     QuerySplitter.splitUpdates(rows = data, columnsPerRow = 7) { (data, placeholder) =>
       val query =
         s"""
-           | INSERT INTO transaction_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, coinbase)
-           | VALUES $placeholder
-           | ON CONFLICT ON CONSTRAINT txs_per_address_pk DO NOTHING
-           |""".stripMargin
+            INSERT INTO transaction_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, coinbase)
+            VALUES $placeholder
+            ON CONFLICT ON CONSTRAINT txs_per_address_pk DO NOTHING
+           """.stripMargin
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
@@ -93,8 +93,8 @@ object InputUpdateQueries {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asUpdate
     }
   }
@@ -119,10 +119,10 @@ object InputUpdateQueries {
       (tokenTxPerAddresses, placeholder) =>
         val query =
           s"""
-             | INSERT INTO token_tx_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
-             | VALUES $placeholder
-             | ON CONFLICT ON CONSTRAINT token_tx_per_address_pk DO NOTHING
-             |""".stripMargin
+              INSERT INTO token_tx_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
+              VALUES $placeholder
+              ON CONFLICT ON CONSTRAINT token_tx_per_address_pk DO NOTHING
+             """
 
         val parameters: SetParameter[Unit] =
           (_: Unit, params: PositionedParameters) =>
@@ -138,8 +138,8 @@ object InputUpdateQueries {
             }
 
         SQLActionBuilder(
-          queryParts = query,
-          unitPConv = parameters
+          sql = query,
+          setParameter = parameters
         ).asUpdate
     }
   }

@@ -100,7 +100,8 @@ sealed trait ExplorerStateRead extends ExplorerState {
           marketService,
           config.exportTxsNumberThreshold,
           config.streamParallelism,
-          config.maxTimeInterval
+          config.maxTimeInterval,
+          config.market
         )(
           executionContext,
           database.databaseConfig,
@@ -141,7 +142,7 @@ object ExplorerState {
       val executionContext: ExecutionContext
   ) extends ExplorerStateRead {
 
-    implicit private val scheduler = Scheduler("SYNC_SERVICES")
+    implicit private val scheduler: Scheduler = Scheduler("SYNC_SERVICES")
 
     override def startSelfOnce(): Future[Unit] = {
       SyncServices.startSyncServices(config)
@@ -156,7 +157,7 @@ object ExplorerState {
   ) extends ExplorerState {
 
     // See issue #356
-    implicit private val scheduler = Scheduler("SYNC_SERVICES")
+    implicit private val scheduler: Scheduler = Scheduler("SYNC_SERVICES")
 
     override lazy val customServices: ArraySeq[Service] = ArraySeq()
 

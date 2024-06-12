@@ -233,8 +233,8 @@ object TokenQueries extends StrictLogging {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asASE[FungibleTokenMetadata](fungibleTokenMetadataGetResult)
     } else {
       DBIOAction.successful(ArraySeq.empty)
@@ -261,8 +261,8 @@ object TokenQueries extends StrictLogging {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asASE[TokenInfoEntity](tokenInfoGetResult)
     } else {
       DBIOAction.successful(ArraySeq.empty)
@@ -289,8 +289,8 @@ object TokenQueries extends StrictLogging {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asASE[NFTMetadata](nftMetadataGetResult)
     } else {
       DBIOAction.successful(ArraySeq.empty)
@@ -317,8 +317,8 @@ object TokenQueries extends StrictLogging {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asASE[NFTCollectionMetadata](nftCollectionMetadataGetResult)
     } else {
       DBIOAction.successful(ArraySeq.empty)

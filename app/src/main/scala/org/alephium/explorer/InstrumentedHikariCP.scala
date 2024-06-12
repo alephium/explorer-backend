@@ -22,7 +22,7 @@ import com.typesafe.config.Config
 import com.zaxxer.hikari.metrics.prometheus.PrometheusMetricsTrackerFactory
 import io.micrometer.core.instrument.Clock
 import io.micrometer.core.instrument.binder.db.PostgreSQLDatabaseMetrics
-import io.micrometer.prometheus.{PrometheusConfig, PrometheusMeterRegistry}
+import io.micrometer.prometheusmetrics.{PrometheusConfig, PrometheusMeterRegistry}
 import slick.jdbc.{JdbcDataSource, JdbcDataSourceFactory}
 import slick.jdbc.hikaricp.HikariCPJdbcDataSource
 

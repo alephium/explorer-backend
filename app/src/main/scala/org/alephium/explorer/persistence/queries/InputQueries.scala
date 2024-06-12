@@ -41,23 +41,23 @@ object InputQueries {
     QuerySplitter.splitUpdates(rows = inputs, columnsPerRow = 12) { (inputs, placeholder) =>
       val query =
         s"""
-           |INSERT INTO inputs ("block_hash",
-           |                    "tx_hash",
-           |                    "block_timestamp",
-           |                    "hint",
-           |                    "output_ref_key",
-           |                    "unlock_script",
-           |                    "main_chain",
-           |                    "input_order",
-           |                    "tx_order",
-           |                    "output_ref_tx_hash",
-           |                    "output_ref_address",
-           |                    "output_ref_amount")
-           |VALUES $placeholder
-           |ON CONFLICT
-           |    ON CONSTRAINT inputs_pk
-           |    DO NOTHING
-           |""".stripMargin
+           INSERT INTO inputs ("block_hash",
+                               "tx_hash",
+                               "block_timestamp",
+                               "hint",
+                               "output_ref_key",
+                               "unlock_script",
+                               "main_chain",
+                               "input_order",
+                               "tx_order",
+                               "output_ref_tx_hash",
+                               "output_ref_address",
+                               "output_ref_amount")
+           VALUES $placeholder
+           ON CONFLICT
+               ON CONSTRAINT inputs_pk
+               DO NOTHING
+           """.stripMargin
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
@@ -77,8 +77,8 @@ object InputQueries {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asUpdate
     }
 
@@ -98,19 +98,19 @@ object InputQueries {
 
     val query =
       s"""
-         |SELECT tx_hash,
-         |       input_order,
-         |       hint,
-         |       output_ref_key,
-         |       unlock_script,
-         |       output_ref_tx_hash,
-         |       output_ref_address,
-         |       output_ref_amount,
-         |       output_ref_tokens
-         |FROM inputs
-         |WHERE (tx_hash, block_hash) IN $params
-         |
-         |""".stripMargin
+         SELECT tx_hash,
+                input_order,
+                hint,
+                output_ref_key,
+                unlock_script,
+                output_ref_tx_hash,
+                output_ref_address,
+                output_ref_amount,
+                output_ref_tokens
+         FROM inputs
+         WHERE (tx_hash, block_hash) IN $params
+
+         """
 
     val parameters: SetParameter[Unit] =
       (_: Unit, params: PositionedParameters) =>
@@ -120,8 +120,8 @@ object InputQueries {
         }
 
     SQLActionBuilder(
-      queryParts = query,
-      unitPConv = parameters
+      sql = query,
+      setParameter = parameters
     )
   }
 

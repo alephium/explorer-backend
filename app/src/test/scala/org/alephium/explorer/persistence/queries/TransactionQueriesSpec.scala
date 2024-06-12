@@ -310,10 +310,10 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
           transactions foreach { transaction =>
             val query =
               sql"""
-                   |SELECT *
-                   |FROM #${TransactionSchema.name}
-                   |where hash = ${transaction.hash}
-                   |""".stripMargin
+                   SELECT *
+                   FROM #${TransactionSchema.name}
+                   where hash = ${transaction.hash}
+                   """
 
             val explain = run(query.explain()).futureValue.mkString("\n")
 
@@ -440,7 +440,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
           // for each address run the query for randomly selected time-range and expect entities
           // only for that time-range to be returned
-          entities.groupBy(_.address) foreach { case (address, entities) =>
+          entities.groupBy(_.address) foreachEntry { case (address, entities) =>
             val minTime = entities.map(_.timestamp).min.millis // minimum time
             val maxTime = entities.map(_.timestamp).max.millis // maximum time
 

@@ -116,7 +116,7 @@ object ContractEntity {
     }
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
+  @SuppressWarnings(Array("org.wartremover.warts.SeqApply"))
   def extractAddresses(
       event: EventEntity
   ): Option[(Address, Option[Address], Option[ByteString])] = {
@@ -138,7 +138,7 @@ object ContractEntity {
     }
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
+  @SuppressWarnings(Array("org.wartremover.warts.SeqApply"))
   def destructionFromEventEntity(event: EventEntity, from: GroupIndex): Option[DestroyInfo] = {
     if (event.contractAddress == destroyContractEventAddress(from) && event.fields.sizeIs == 1) {
       event.fields(0) match {
