@@ -40,7 +40,7 @@ import org.alephium.api.model.{
   MultipleCallContractResult,
   SelfClique
 }
-import org.alephium.explorer.GroupSetting
+import org.alephium.explorer.{Consensus, GroupSetting}
 import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.error.ExplorerError
@@ -63,7 +63,7 @@ import org.alephium.protocol.model.{
   TransactionId
 }
 import org.alephium.protocol.vm.LockupScript
-import org.alephium.util.{AVector, Duration, Hex, Service, TimeStamp, U256}
+import org.alephium.util.{AVector, Hex, Service, TimeStamp, U256}
 
 trait BlockFlowClient extends Service {
   def fetchBlock(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntity]
@@ -550,7 +550,7 @@ object BlockFlowClient extends StrictLogging {
       block.depStateHash,
       block.txsHash,
       block.target,
-      computeHashRate(block.target)
+      computeHashRate(block.target, block.timestamp)
     )
   }
   // scalastyle:on null
@@ -780,11 +780,10 @@ object BlockFlowClient extends StrictLogging {
     )
   }
 
-  // scalastyle:off magic.number
-  def computeHashRate(targetBytes: ByteString)(implicit groupSetting: GroupSetting): BigInteger = {
-    val target          = Target.unsafe(targetBytes)
-    val blockTargetTime = Duration.ofSecondsUnsafe(64) // TODO add this to config
-    HashRate.from(target, blockTargetTime)(groupSetting.groupConfig).value
+  def computeHashRate(targetBytes: ByteString, timestamp: TimeStamp)(implicit
+      groupSetting: GroupSetting
+  ): BigInteger = {
+    val target = Target.unsafe(targetBytes)
+    HashRate.from(target, Consensus.blockTargetTime(timestamp))(groupSetting.groupConfig).value
   }
-  // scalastyle:on magic.number
 }
