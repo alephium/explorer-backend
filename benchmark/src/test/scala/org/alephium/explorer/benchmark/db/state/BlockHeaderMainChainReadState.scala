@@ -18,6 +18,7 @@ package org.alephium.explorer.benchmark.db.state
 
 import java.math.BigInteger
 
+import scala.collection.immutable.ArraySeq
 import scala.util.Random
 
 import akka.util.ByteString
@@ -60,6 +61,7 @@ class BlockHeaderMainChainReadState(
       target = ByteString.emptyByteString,
       hashrate = BigInteger.ONE,
       parent = Some(BlockHash.generate),
+      deps = ArraySeq.from(0 to 4).map(_ => BlockHash.generate),
       ghostUncles = None
     )
 

@@ -327,9 +327,18 @@ class ApiModelSpec() extends AlephiumSpec {
                         |  "chainTo": ${block.chainTo.value},
                         |  "height": ${block.height.value},
                         |  "deps": ${write(block.deps)},
-                        |  "transactions": ${write(block.transactions)},
+                        |  "nonce": ${write(block.nonce)},
+                        |  "version": ${block.version},
+                        |  "depStateHash": "${block.depStateHash.toHexString}",
+                        |  "txsHash": "${block.txsHash.toHexString}",
+                        |  "txNumber": ${block.txNumber},
+                        |  "target": ${write(block.target)},
+                        |  "hashRate": ${write(block.hashRate)},
+                        |  "parent": ${if (block.parent.isDefined) {
+                         s""""${block.parent.get.toHexString}""""
+                       } else { "null" }},
                         |  "mainChain": ${block.mainChain},
-                        |  "hashRate": "${block.hashRate}"
+                        |  "ghostUncles": ${write(block.ghostUncles)}
                         |}""".stripMargin
       check(block, expected)
     }

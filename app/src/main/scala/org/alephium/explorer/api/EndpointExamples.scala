@@ -69,6 +69,8 @@ object EndpointExamples extends EndpointsExamples {
     contract
   )
 
+  private val addressAsset: Address.Asset = Address.asset(address1.toBase58).get
+
   private val groupIndex1: GroupIndex = new GroupIndex(1)
   private val groupIndex2: GroupIndex = new GroupIndex(2)
 
@@ -125,6 +127,26 @@ object EndpointExamples extends EndpointsExamples {
       txNumber = 1,
       mainChain = true,
       hashRate = HashRate.a128EhPerSecond.value
+    )
+
+  private val blockEntry: BlockEntry =
+    BlockEntry(
+      hash = blockHash,
+      timestamp = ts,
+      chainFrom = groupIndex1,
+      chainTo = groupIndex2,
+      height = Height.unsafe(42),
+      deps = ArraySeq(blockHash),
+      nonce = hash.bytes,
+      version = 1,
+      depStateHash = hash,
+      txsHash = hash,
+      txNumber = 1,
+      target = hash.bytes,
+      hashRate = HashRate.a128EhPerSecond.value,
+      parent = Some(blockHash),
+      mainChain = true,
+      ghostUncles = ArraySeq(GhostUncle(blockHash, addressAsset))
     )
 
   private val transaction: Transaction =
@@ -328,6 +350,9 @@ object EndpointExamples extends EndpointsExamples {
     */
   implicit val blockEntryLiteExample: List[Example[BlockEntryLite]] =
     simpleExample(blockEntryLite)
+
+  implicit val blockEntryExample: List[Example[BlockEntry]] =
+    simpleExample(blockEntry)
 
   implicit val transactionsExample: List[Example[ArraySeq[Transaction]]] =
     simpleExample(ArraySeq(transaction, transaction))

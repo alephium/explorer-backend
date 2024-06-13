@@ -261,6 +261,94 @@
           "type"
         ]
       },
+      "BlockEntry": {
+        "type": "object",
+        "title": "BlockEntry",
+        "properties": {
+          "parent": {
+            "format": "block-hash",
+            "type": "string"
+          },
+          "chainFrom": {
+            "format": "group-index",
+            "type": "integer"
+          },
+          "depStateHash": {
+            "format": "32-byte-hash",
+            "type": "string"
+          },
+          "deps": {
+            "type": "array",
+            "items": {
+              "format": "block-hash",
+              "type": "string"
+            }
+          },
+          "nonce": {
+            "format": "hex-string",
+            "type": "string"
+          },
+          "version": {
+            "type": "integer"
+          },
+          "target": {
+            "format": "hex-string",
+            "type": "string"
+          },
+          "mainChain": {
+            "type": "boolean"
+          },
+          "txsHash": {
+            "format": "32-byte-hash",
+            "type": "string"
+          },
+          "chainTo": {
+            "format": "group-index",
+            "type": "integer"
+          },
+          "ghostUncles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GhostUncle"
+            }
+          },
+          "hashRate": {
+            "format": "bigint",
+            "type": "string"
+          },
+          "txNumber": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "hash": {
+            "format": "block-hash",
+            "type": "string"
+          },
+          "height": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "timestamp": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "hash",
+          "timestamp",
+          "chainFrom",
+          "chainTo",
+          "height",
+          "nonce",
+          "version",
+          "depStateHash",
+          "txsHash",
+          "txNumber",
+          "target",
+          "hashRate",
+          "mainChain"
+        ]
+      },
       "ContractParent": {
         "type": "object",
         "title": "ContractParent",
@@ -880,6 +968,24 @@
         },
         "required": [
           "type"
+        ]
+      },
+      "GhostUncle": {
+        "type": "object",
+        "title": "GhostUncle",
+        "properties": {
+          "blockHash": {
+            "format": "block-hash",
+            "type": "string"
+          },
+          "miner": {
+            "format": "address",
+            "type": "string"
+          }
+        },
+        "required": [
+          "blockHash",
+          "miner"
         ]
       },
       "NFTCollectionWithRoyalty": {
@@ -5419,12 +5525,27 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BlockEntryLite"
+                  "$ref": "#/components/schemas/BlockEntry"
                 },
                 "example": {
-                  "mainChain": true,
+                  "parent": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
                   "chainFrom": 1,
+                  "depStateHash": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                  "deps": [
+                    "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5"
+                  ],
+                  "nonce": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                  "version": 1,
+                  "target": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                  "mainChain": true,
+                  "txsHash": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
                   "chainTo": 2,
+                  "ghostUncles": [
+                    {
+                      "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                      "miner": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y"
+                    }
+                  ],
                   "hashRate": "147573952589676412928",
                   "txNumber": 1,
                   "hash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
