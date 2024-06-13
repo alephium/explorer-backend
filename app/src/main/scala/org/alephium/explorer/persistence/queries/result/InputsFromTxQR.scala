@@ -22,12 +22,17 @@ import akka.util.ByteString
 import slick.jdbc.{GetResult, PositionedResult}
 
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.persistence.model.InputEntityLike
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{Address, TransactionId}
 import org.alephium.util.U256
 
 object InputsFromTxQR {
+
+  val selectFields: String =
+    "tx_hash, input_order, hint, output_ref_key, unlock_script, output_ref_tx_hash, output_ref_address, output_ref_amount, output_ref_tokens, contract_input"
+
   implicit val inputsFromTxQRGetResult: GetResult[InputsFromTxQR] =
     (result: PositionedResult) =>
       InputsFromTxQR(
@@ -36,10 +41,10 @@ object InputsFromTxQR {
         hint = result.<<,
         outputRefKey = result.<<,
         unlockScript = result.<<?,
-        txHashRef = result.<<?,
-        address = result.<<?,
-        amount = result.<<?,
-        token = result.<<?,
+        outputRefTxHash = result.<<?,
+        outputRefAddress = result.<<?,
+        outputRefAmount = result.<<?,
+        outputRefTokens = result.<<?,
         contractInput = result.<<
       )
 }
@@ -51,21 +56,9 @@ final case class InputsFromTxQR(
     hint: Int,
     outputRefKey: Hash,
     unlockScript: Option[ByteString],
-    txHashRef: Option[TransactionId],
-    address: Option[Address],
-    amount: Option[U256],
-    token: Option[ArraySeq[Token]],
+    outputRefTxHash: Option[TransactionId],
+    outputRefAddress: Option[Address],
+    outputRefAmount: Option[U256],
+    outputRefTokens: Option[ArraySeq[Token]],
     contractInput: Boolean
-) {
-
-  def toApiInput(): Input =
-    Input(
-      outputRef = OutputRef(hint, outputRefKey),
-      unlockScript = unlockScript,
-      txHashRef = txHashRef,
-      address = address,
-      attoAlphAmount = amount,
-      tokens = token,
-      contractInput = contractInput
-    )
-}
+) extends InputEntityLike

@@ -20,10 +20,51 @@ import scala.collection.immutable.ArraySeq
 
 import akka.util.ByteString
 
-import org.alephium.explorer.api.model.Token
+import org.alephium.explorer.api.model.{AssetOutput, ContractOutput, Output, Token}
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
+
+trait OutputEntityLike {
+
+  def outputType: OutputEntity.OutputType
+  def hint: Int
+  def key: Hash
+  def amount: U256
+  def address: Address
+  def tokens: Option[ArraySeq[Token]]
+  def lockTime: Option[TimeStamp]
+  def message: Option[ByteString]
+  def spentFinalized: Option[TransactionId]
+  def fixedOutput: Boolean
+
+  def toApi(): Output =
+    outputType match {
+      case OutputEntity.Asset =>
+        AssetOutput(
+          hint = hint,
+          key = key,
+          attoAlphAmount = amount,
+          address = address,
+          tokens = tokens,
+          lockTime = lockTime,
+          message = message,
+          spent = spentFinalized,
+          fixedOutput = fixedOutput
+        )
+
+      case OutputEntity.Contract =>
+        ContractOutput(
+          hint = hint,
+          key = key,
+          attoAlphAmount = amount,
+          address = address,
+          tokens = tokens,
+          spent = spentFinalized,
+          fixedOutput = fixedOutput
+        )
+    }
+}
 
 final case class OutputEntity(
     blockHash: BlockHash,
@@ -44,7 +85,7 @@ final case class OutputEntity(
     spentFinalized: Option[TransactionId],
     spentTimestamp: Option[TimeStamp],
     fixedOutput: Boolean
-)
+) extends OutputEntityLike
 
 object OutputEntity {
   sealed trait OutputType {

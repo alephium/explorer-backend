@@ -24,6 +24,7 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
 
 import org.alephium.api.model.{Val, ValAddress, ValByteVec}
+import org.alephium.explorer.ConfigDefaults.groupSetting
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreApi.{blockEntryProtocolGen, valByteVecGen, valGen}
 import org.alephium.explorer.GenCoreProtocol._
@@ -455,18 +456,20 @@ object GenDBModel {
       groupSetting: GroupSetting
   ): Gen[BlockHeader] = {
     for {
-      hash         <- blockHashGen
-      from         <- groupIndexGen
-      to           <- groupIndexGen
-      height       <- heightGen
-      nonce        <- bytesGen
-      version      <- Gen.posNum[Byte]
-      depStateHash <- hashGen
-      txsHash      <- hashGen
-      txsCount     <- Gen.posNum[Int]
-      target       <- bytesGen
-      parent       <- Gen.option(blockHashGen)
-      ghostUncles  <- Gen.option(Gen.listOf(ghostUncleGen()))
+      hash            <- blockHashGen
+      from            <- groupIndexGen
+      to              <- groupIndexGen
+      height          <- heightGen
+      nonce           <- bytesGen
+      version         <- Gen.posNum[Byte]
+      depStateHash    <- hashGen
+      txsHash         <- hashGen
+      txsCount        <- Gen.posNum[Int]
+      target          <- bytesGen
+      parent          <- Gen.option(blockHashGen)
+      deps            <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockHashGen)
+      ghostUnclesSize <- Gen.choose(0, 5)
+      ghostUncles     <- Gen.option(Gen.listOfN(ghostUnclesSize, ghostUncleGen()))
     } yield {
       BlockHeader(
         hash,

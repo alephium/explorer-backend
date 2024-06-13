@@ -150,7 +150,7 @@ object DataGenerator {
       txsHash = Hash.generate,
       target = ByteString.fromString(Random.alphanumeric.take(10).mkString),
       hashrate = BigInteger.valueOf(Random.nextLong(Long.MaxValue)),
-      ghostUncles = None
+      ghostUncles = ArraySeq.empty
     )
   }
 

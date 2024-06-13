@@ -21,10 +21,10 @@ import org.alephium.explorer.api.Codecs._
 import org.alephium.json.Json._
 import org.alephium.protocol.model.{Address, BlockHash}
 
-final case class GhostUncle(blockHash: BlockHash, miner: Address.Asset){
+final case class GhostUncle(blockHash: BlockHash, miner: Address.Asset) {
   def toProtocol(): GhostUncleBlockEntry = GhostUncleBlockEntry(blockHash, miner)
 }
 
-object GhostUncle{
+object GhostUncle {
   implicit val codec: ReadWriter[GhostUncle] = macroRW
 }

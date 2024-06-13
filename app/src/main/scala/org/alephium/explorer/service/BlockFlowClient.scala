@@ -511,7 +511,7 @@ object BlockFlowClient extends StrictLogging {
             mainChain,
             txOrder,
             coinbase = false,
-            fixedOutput = true
+            fixedOutput = false
           )
         }
       }
@@ -544,10 +544,9 @@ object BlockFlowClient extends StrictLogging {
     // Genesis blocks don't have any transactions
     val coinbaseTxId =
       if (block.height == Height.genesis.value) null else block.transactions.last.unsigned.txId
-    val ghostUncles =
-      Option.when(block.ghostUncles.nonEmpty)(block.ghostUncles.toArraySeq.map { ghostUncle =>
-        GhostUncle(ghostUncle.blockHash, ghostUncle.miner)
-      })
+    val ghostUncles = block.ghostUncles.toArraySeq.map { ghostUncle =>
+      GhostUncle(ghostUncle.blockHash, ghostUncle.miner)
+    }
 
     BlockEntity(
       hash,
@@ -771,11 +770,6 @@ object BlockFlowClient extends StrictLogging {
       case _                                                         => None
     }
 
-    val hint = output.address.lockupScript match {
-      case asset: LockupScript.Asset  => Hint.ofAsset(asset.scriptHint)
-      case contract: LockupScript.P2C => Hint.ofContract(contract.scriptHint)
-    }
-
     val outputType: OutputEntity.OutputType = output match {
       case _: api.model.AssetOutput    => OutputEntity.Asset
       case _: api.model.ContractOutput => OutputEntity.Contract
@@ -793,8 +787,8 @@ object BlockFlowClient extends StrictLogging {
       txId,
       timestamp,
       outputType,
-      hint.value,
-      protocol.model.TxOutputRef.key(txId, index).value,
+      output.hint,
+      output.key,
       output.attoAlphAmount.value,
       output.address,
       tokens,

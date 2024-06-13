@@ -26,7 +26,8 @@ import org.alephium.util.TimeStamp
 
 object TxByTokenQR {
 
-  val selectFields = "tx_hash, block_hash, block_timestamp, tx_order"
+  val selectFields: String =
+    "tx_hash, block_hash, block_timestamp, tx_order"
 
   private type Tuple = (TransactionId, BlockHash, TimeStamp, Int, Boolean)
 

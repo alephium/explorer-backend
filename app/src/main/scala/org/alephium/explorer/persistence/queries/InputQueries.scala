@@ -100,16 +100,7 @@ object InputQueries {
 
     val query =
       s"""
-         SELECT tx_hash,
-                input_order,
-                hint,
-                output_ref_key,
-                unlock_script,
-                output_ref_tx_hash,
-                output_ref_address,
-                output_ref_amount,
-                output_ref_tokens,
-                contract_input
+         SELECT ${InputsFromTxQR.selectFields}
          FROM inputs
          WHERE (tx_hash, block_hash) IN $params
 
@@ -130,14 +121,7 @@ object InputQueries {
 
   def getInputsQuery(txHash: TransactionId, blockHash: BlockHash): DBActionSR[InputsQR] =
     sql"""
-        SELECT hint,
-               output_ref_key,
-               unlock_script,
-               output_ref_tx_hash,
-               output_ref_address,
-               output_ref_amount,
-               output_ref_tokens,
-               contract_input
+        SELECT #${InputsQR.selectFields}
         FROM inputs
         WHERE tx_hash = $txHash
           AND block_hash = $blockHash

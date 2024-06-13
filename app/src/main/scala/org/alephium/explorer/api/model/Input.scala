@@ -21,6 +21,7 @@ import scala.collection.immutable.ArraySeq
 import akka.util.ByteString
 import sttp.tapir.Schema
 
+import org.alephium.api.{model => protocol}
 import org.alephium.api.TapirSchemas._
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.api.Json._
@@ -38,8 +39,8 @@ final case class Input(
     tokens: Option[ArraySeq[Token]] = None,
     contractInput: Boolean
 ) {
-  def toAsset(): org.alephium.api.model.AssetInput =
-    org.alephium.api.model.AssetInput(
+  def toProtocol(): protocol.AssetInput =
+    protocol.AssetInput(
       outputRef = outputRef.toProtocol(),
       unlockScript = unlockScript.getOrElse(ByteString.empty)
     )

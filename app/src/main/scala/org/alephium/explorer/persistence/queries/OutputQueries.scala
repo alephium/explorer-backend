@@ -318,18 +318,7 @@ object OutputQueries {
 
       val query =
         s"""
-           SELECT outputs.tx_hash,
-                  outputs.output_order,
-                  outputs.output_type,
-                  outputs.hint,
-                  outputs.key,
-                  outputs.amount,
-                  outputs.address,
-                  outputs.tokens,
-                  outputs.lock_time,
-                  outputs.message,
-                  outputs.spent_finalized,
-                  outputs.fixed_output
+           SELECT ${OutputsFromTxQR.selectFields}
            FROM outputs
            WHERE (outputs.tx_hash, outputs.block_hash) IN $params
            """
@@ -351,16 +340,7 @@ object OutputQueries {
 
   def getOutputsQuery(txHash: TransactionId, blockHash: BlockHash): DBActionSR[OutputsQR] =
     sql"""
-        SELECT output_type,
-               hint,
-               key,
-               amount,
-               address,
-               tokens,
-               lock_time,
-               message,
-               spent_finalized,
-               fixed_output
+        SELECT #${OutputsQR.selectFields}
         FROM outputs
         WHERE tx_hash = $txHash
           AND block_hash = $blockHash

@@ -23,6 +23,7 @@ import scala.collection.immutable.ArraySeq
 import akka.util.ByteString
 import sttp.tapir.Schema
 
+import org.alephium.api.{model => protocol}
 import org.alephium.api.TapirSchemas._
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.api.Json._
@@ -67,7 +68,6 @@ final case class Transaction(
     s"${hash.toHexString},${blockHash.toHexString},${timestamp.millis},$dateTime,$fromAddressesStr,$toAddresses,$amount,$amountHint\n"
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.TripleQuestionMark"))
   def toProtocol(): org.alephium.api.model.Transaction = {
     val (inputContracts, inputAssets)    = inputs.partition(_.contractInput)
     val (fixedOutputs, generatedOutputs) = outputs.partition(_.fixedOutput)
@@ -78,7 +78,7 @@ final case class Transaction(
       scriptOpt = scriptOpt.map(org.alephium.api.model.Script.apply),
       gasAmount = gasAmount,
       gasPrice = gasPrice,
-      inputs = AVector.from(inputAssets.map(_.toAsset())),
+      inputs = AVector.from(inputAssets.map(_.toProtocol())),
       fixedOutputs = AVector.from(fixedOutputs.flatMap(Output.toFixedAssetOutput))
     )
     org.alephium.api.model.Transaction(

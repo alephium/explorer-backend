@@ -103,10 +103,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
     val fetchedAmout =
       BlockDao
-        .get(block.hash)
+        .getTransactions(block.hash, Pagination.unsafe(1, 1000))
         .futureValue
-        .get
-        .transactions
         .flatMap(_.outputs.map(_.attoAlphAmount))
         .head
     fetchedAmout is amount
@@ -621,7 +619,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
         txsHash = hashGen.sample.get,
         target = bytesGen.sample.get,
         hashrate = BigInteger.ZERO,
-        ghostUncles = None
+        ghostUncles = ArraySeq.empty
       )
 
   }

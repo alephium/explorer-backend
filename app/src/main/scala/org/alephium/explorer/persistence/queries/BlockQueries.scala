@@ -60,20 +60,21 @@ object BlockQueries extends StrictLogging {
       )
     }
 
-  def buildBlockEntryAction(
-      blockHeader: BlockHeader
-  )(implicit ec: ExecutionContext): DBActionR[BlockEntry] =
-    for {
-      deps <- getDepsForBlock(blockHeader.hash)
-      txs  <- getTransactionsByBlockHash(blockHeader.hash)
-    } yield blockHeader.toApi(deps, txs)
-
   def getBlockEntryLiteAction(
       hash: BlockHash
-  )(implicit ec: ExecutionContext): DBActionR[Option[BlockEntryLite]] =
-    for {
-      header <- BlockHeaderSchema.table.filter(_.hash === hash).result.headOption
-    } yield header.map(_.toLiteApi)
+  ): DBActionR[Option[BlockEntryLite]] =
+    sql"""
+         select hash,
+                block_timestamp,
+                chain_from,
+                chain_to,
+                height,
+                main_chain,
+                hashrate,
+                txs_count
+         from #$block_headers
+         where hash = $hash
+         """.asASE[BlockEntryLite](blockEntryListGetResult).headOption
 
   /** For a given `BlockHash` returns its basic chain information */
   def getBlockChainInfo(hash: BlockHash): DBActionR[Option[(GroupIndex, GroupIndex, Boolean)]] =
@@ -92,8 +93,7 @@ object BlockQueries extends StrictLogging {
   )(implicit ec: ExecutionContext): DBActionR[Option[BlockEntry]] =
     for {
       headers <- BlockHeaderSchema.table.filter(_.hash === hash).result
-      blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
-    } yield blocks.headOption
+    } yield headers.headOption.map(_.toApi())
 
   def getBlockHeaderAction(hash: BlockHash): DBActionR[Option[BlockHeader]] =
     sql"""
@@ -151,8 +151,7 @@ object BlockQueries extends StrictLogging {
   ): DBActionR[ArraySeq[BlockEntry]] =
     for {
       headers <- getHeadersAtHeightQuery(fromGroup, toGroup, height)
-      blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
-    } yield blocks
+    } yield headers.map(_.toApi())
 
   /** Order by query for [[org.alephium.explorer.persistence.schema.BlockHeaderSchema.table]]
     */

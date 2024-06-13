@@ -22,11 +22,10 @@ import scala.collection.immutable.ArraySeq
 
 import akka.util.ByteString
 
-import org.alephium.api.model.GhostUncleBlockEntry
-import org.alephium.explorer.api.model.{BlockEntry, BlockEntryLite, GhostUncle, Height, Transaction}
+import org.alephium.explorer.api.model.{BlockEntry, BlockEntryLite, GhostUncle, Height}
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{BlockHash, GroupIndex}
-import org.alephium.util.{AVector, TimeStamp}
+import org.alephium.util.TimeStamp
 
 final case class BlockHeader(
     hash: BlockHash,
@@ -46,41 +45,43 @@ final case class BlockHeader(
     deps: ArraySeq[BlockHash],
     ghostUncles: Option[ArraySeq[GhostUncle]]
 ) {
-  def toApi(deps: ArraySeq[BlockHash], transactions: ArraySeq[Transaction]): BlockEntry =
-    BlockEntry(hash, timestamp, chainFrom, chainTo, height, deps, transactions, mainChain, hashrate)
 
-  @SuppressWarnings(Array("org.wartremover.warts.TripleQuestionMark"))
-  def toProtocol(
-      deps: ArraySeq[BlockHash],
-      transactions: ArraySeq[Transaction]
-  ): org.alephium.api.model.BlockEntry = {
-    val uncles: AVector[GhostUncleBlockEntry] = ghostUncles match {
-      case Some(uncles) => AVector.from(uncles.map(_.toProtocol()))
-      case None         => AVector.empty
-    }
-    org.alephium.api.model.BlockEntry(
+  def toApi(): BlockEntry =
+    BlockEntry(
       hash,
       timestamp,
-      chainFrom.value,
-      chainTo.value,
-      height.value,
+      chainFrom,
+      chainTo,
+      height,
       deps,
-      AVector.from(transactions.map(_.toProtocol())),
       nonce,
       version,
       depStateHash,
       txsHash,
+      txsCount,
       target,
-      uncles
+      hashrate,
+      parent,
+      mainChain,
+      ghostUncles.getOrElse(ArraySeq.empty)
     )
-  }
 
   val toLiteApi: BlockEntryLite =
-    BlockEntryLite(hash, timestamp, chainFrom, chainTo, height, txsCount, mainChain, hashrate)
+    BlockEntryLite(
+      hash,
+      timestamp,
+      chainFrom,
+      chainTo,
+      height,
+      txsCount,
+      mainChain,
+      hashrate
+    )
 }
 
 object BlockHeader {
-  def fromEntity(blockEntity: BlockEntity, groupNum: Int): BlockHeader =
+  def fromEntity(blockEntity: BlockEntity, groupNum: Int): BlockHeader = {
+    val ghostUncles = if (blockEntity.ghostUncles.isEmpty) None else Some(blockEntity.ghostUncles)
     BlockHeader(
       blockEntity.hash,
       blockEntity.timestamp,
@@ -97,7 +98,7 @@ object BlockHeader {
       blockEntity.hashrate,
       blockEntity.parent(groupNum),
       blockEntity.deps,
-      blockEntity.ghostUncles
+      ghostUncles
     )
   }
 }

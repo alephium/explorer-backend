@@ -83,7 +83,9 @@ trait ExplorerSpec
   val blockEntities: ArraySeq[BlockEntity] =
     blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
 
-  val blocks: ArraySeq[BlockEntry] = blockEntitiesToBlockEntries(ArraySeq(blockEntities)).flatten
+  val blocks: ArraySeq[BlockEntryTest] = blockEntitiesToBlockEntries(
+    ArraySeq(blockEntities)
+  ).flatten
 
   val transactions: ArraySeq[Transaction] = blocks.flatMap(_.transactions)
 

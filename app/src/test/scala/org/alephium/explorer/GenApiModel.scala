@@ -203,15 +203,23 @@ object GenApiModel extends ImplicitConversions {
 
   def blockEntryGen(implicit groupSetting: GroupSetting): Gen[BlockEntry] =
     for {
-      hash         <- blockHashGen
-      timestamp    <- timestampGen
-      chainFrom    <- groupIndexGen
-      chainTo      <- groupIndexGen
-      height       <- heightGen
-      deps         <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockHashGen)
-      transactions <- Gen.listOfN(2, transactionGen)
-      mainChain    <- arbitrary[Boolean]
-      hashrate     <- arbitrary[Long].map(BigInteger.valueOf)
+      hash            <- blockHashGen
+      timestamp       <- timestampGen
+      chainFrom       <- groupIndexGen
+      chainTo         <- groupIndexGen
+      height          <- heightGen
+      deps            <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockHashGen)
+      nonce           <- bytesGen
+      depStateHash    <- hashGen
+      txsHash         <- hashGen
+      txsCount        <- Gen.posNum[Int]
+      target          <- bytesGen
+      version         <- arbitrary[Byte]
+      mainChain       <- arbitrary[Boolean]
+      hashrate        <- arbitrary[Long].map(BigInteger.valueOf)
+      parent          <- Gen.option(blockHashGen)
+      ghostUnclesSize <- Gen.choose(0, 5)
+      ghostUncles     <- Gen.listOfN(ghostUnclesSize, ghostUncleGen())
     } yield {
       BlockEntry(
         hash,
@@ -220,9 +228,16 @@ object GenApiModel extends ImplicitConversions {
         chainTo,
         height,
         deps,
-        transactions,
+        nonce,
+        version,
+        depStateHash,
+        txsHash,
+        txsCount,
+        target,
+        hashrate,
+        parent,
         mainChain,
-        hashrate
+        ghostUncles
       )
     }
 

@@ -425,12 +425,12 @@ object TransactionQueries extends StrictLogging {
     val insByTx = inputs.groupBy(_.txHash).view.mapValues { values =>
       values
         .sortBy(_.inputOrder)
-        .map(_.toApiInput())
+        .map(_.toApi())
     }
     val ousByTx = outputs.groupBy(_.txHash).view.mapValues { values =>
       values
         .sortBy(_.outputOrder)
-        .map(_.toApiOutput())
+        .map(_.toApi())
     }
     val gasByTx = gases.groupBy(_.txHash)
     txHashesTs.map { txn =>
@@ -461,7 +461,7 @@ object TransactionQueries extends StrictLogging {
     if (hashes.nonEmpty) {
       val params = paramPlaceholderTuple2(1, hashes.size)
       val query = s"""
-        SELECT ${InfoFromTxsQR.selectedFields}
+        SELECT ${InfoFromTxsQR.selectFields}
         FROM transactions
         WHERE (hash, block_hash) IN $params
       """
@@ -492,8 +492,8 @@ object TransactionQueries extends StrictLogging {
         tx.hash,
         tx.blockHash,
         tx.timestamp,
-        ins.map(_.toApiInput()),
-        outs.map(_.toApiOutput()),
+        ins.map(_.toApi()),
+        outs.map(_.toApi()),
         tx.version,
         tx.networkId,
         tx.scriptOpt,

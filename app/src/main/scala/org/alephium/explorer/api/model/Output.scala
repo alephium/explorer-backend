@@ -73,31 +73,21 @@ object Output {
       output: Output
   ): Option[org.alephium.api.model.FixedAssetOutput] = {
     output match {
-      case AssetOutput(
-            hint,
-            key,
-            attoAlphAmount,
-            address,
-            tokens,
-            lockTime,
-            message,
-            _,
-            fixedOutput
-          ) if fixedOutput =>
-        address match {
+      case asset: AssetOutput if asset.fixedOutput =>
+        asset.address match {
           case assetAddress: Address.Asset =>
-            val amount = org.alephium.api.model.Amount(attoAlphAmount)
+            val amount = org.alephium.api.model.Amount(asset.attoAlphAmount)
             Some(
               org.alephium.api.model.FixedAssetOutput(
-                hint,
-                key,
+                asset.hint,
+                asset.key,
                 amount,
                 assetAddress,
-                tokens = tokens
+                tokens = asset.tokens
                   .map(tokens => AVector.from(tokens.map(_.toProtocol())))
                   .getOrElse(AVector.empty),
-                lockTime = lockTime.getOrElse(TimeStamp.zero),
-                message.getOrElse(ByteString.empty)
+                lockTime = asset.lockTime.getOrElse(TimeStamp.zero),
+                asset.message.getOrElse(ByteString.empty)
               )
             )
           case _ => None

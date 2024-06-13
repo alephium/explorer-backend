@@ -202,14 +202,14 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     def blockFlowEntity: ArraySeq[ArraySeq[BlockEntity]] =
       chains :+ chainOToO
 
-    def blockFlow: ArraySeq[ArraySeq[BlockEntry]] =
+    def blockFlow: ArraySeq[ArraySeq[BlockEntryTest]] =
       blockEntitiesToBlockEntries(blockFlowEntity)
 
     implicit val blockCache: BlockCache = TestBlockCache()
 
     def blockEntities = ArraySeq.from(blockFlowEntity.flatten)
 
-    def blocks: ArraySeq[BlockEntry] = blockFlow.flatten
+    def blocks: ArraySeq[BlockEntryTest] = blockFlow.flatten
 
     implicit val blockFlowClient: BlockFlowClient = new EmptyBlockFlowClient {
       override def fetchBlock(from: GroupIndex, hash: BlockHash): Future[BlockEntity] =

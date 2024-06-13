@@ -194,7 +194,7 @@ class AddressReadState(val db: DBExecutor)
         txsHash = Blake2b.generate,
         target = ByteString.emptyByteString,
         hashrate = BigInteger.ONE,
-        ghostUncles = None
+        ghostUncles = ArraySeq.empty
       )
     })
 

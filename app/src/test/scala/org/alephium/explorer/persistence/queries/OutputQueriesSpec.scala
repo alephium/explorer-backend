@@ -101,7 +101,7 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
                 tokens = entity.tokens,
                 lockTime = entity.lockTime,
                 message = entity.message,
-                spent = entity.spentFinalized,
+                spentFinalized = entity.spentFinalized,
                 fixedOutput = entity.fixedOutput
               )
             }

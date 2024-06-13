@@ -27,7 +27,7 @@ import org.alephium.util.U256
 
 object InfoFromTxsQR {
 
-  val selectedFields: String =
+  val selectFields: String =
     "hash, version, network_id, script_opt, gas_amount, gas_price, script_execution_ok, input_signatures, script_signatures"
 
   implicit val infoFromTxsQRGetResult: GetResult[InfoFromTxsQR] =
