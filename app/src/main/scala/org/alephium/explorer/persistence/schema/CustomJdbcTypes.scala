@@ -141,6 +141,16 @@ object CustomJdbcTypes {
         }
     )
 
+  implicit val seqBlockHashType: JdbcType[ArraySeq[BlockHash]] =
+    MappedJdbcType.base[ArraySeq[BlockHash], Array[Byte]](
+      hashes => serialize(hashes).toArray,
+      bytes =>
+        deserialize[ArraySeq[BlockHash]](ByteString.fromArrayUnsafe(bytes)) match {
+          case Left(error)  => throw error
+          case Right(value) => value
+        }
+    )
+
   implicit val valsType: JdbcType[ArraySeq[Val]] =
     MappedJdbcType.base[ArraySeq[Val], Array[Byte]](
       vals => writeBinary(vals),

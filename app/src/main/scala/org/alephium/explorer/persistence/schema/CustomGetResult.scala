@@ -122,6 +122,13 @@ object CustomGetResult {
           }
         }
 
+  implicit val blockHashesGetResult: GetResult[ArraySeq[BlockHash]] =
+    (result: PositionedResult) =>
+      deserialize[ArraySeq[BlockHash]](ByteString.fromArrayUnsafe(result.nextBytes())) match {
+        case Left(error)  => throw error
+        case Right(value) => value
+      }
+
   implicit val valsGetResult: GetResult[ArraySeq[Val]] =
     (result: PositionedResult) => readBinary[ArraySeq[Val]](result.nextBytes())
 
@@ -252,6 +259,7 @@ object CustomGetResult {
         target = result.<<,
         hashrate = result.<<,
         parent = result.<<?,
+        deps = result.<<,
         ghostUncles = result.<<?
       )
 

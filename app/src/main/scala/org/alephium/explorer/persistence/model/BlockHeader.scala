@@ -43,6 +43,7 @@ final case class BlockHeader(
     target: ByteString,
     hashrate: BigInteger,
     parent: Option[BlockHash],
+    deps: ArraySeq[BlockHash],
     ghostUncles: Option[ArraySeq[GhostUncle]]
 ) {
   def toApi(deps: ArraySeq[BlockHash], transactions: ArraySeq[Transaction]): BlockEntry =
@@ -63,7 +64,7 @@ final case class BlockHeader(
       chainFrom.value,
       chainTo.value,
       height.value,
-      AVector.from(deps),
+      deps,
       AVector.from(transactions.map(_.toProtocol())),
       nonce,
       version,
@@ -95,6 +96,8 @@ object BlockHeader {
       blockEntity.target,
       blockEntity.hashrate,
       blockEntity.parent(groupNum),
+      blockEntity.deps,
       blockEntity.ghostUncles
     )
+  }
 }

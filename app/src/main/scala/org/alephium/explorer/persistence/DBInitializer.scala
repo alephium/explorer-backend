@@ -43,7 +43,6 @@ object DBInitializer extends StrictLogging {
   val allTables =
     ArraySeq(
       BlockHeaderSchema.table,
-      BlockDepsSchema.table,
       TransactionSchema.table,
       InputSchema.table,
       OutputSchema.table,

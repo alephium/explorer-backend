@@ -424,6 +424,7 @@ object GenDBModel {
       target       <- bytesGen
       hashrate     <- arbitrary[Long].map(BigInteger.valueOf)
       mainChain    <- Arbitrary.arbitrary[Boolean]
+      deps         <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockHashGen)
       parent       <- Gen.option(blockHashGen)
     } yield BlockHeader(
       hash = hash,
@@ -440,6 +441,7 @@ object GenDBModel {
       target = target,
       hashrate = hashrate,
       parent = parent,
+      deps = deps,
       ghostUncles = None
     )
 
@@ -481,39 +483,11 @@ object GenDBModel {
         target,
         BigDecimal(hashrate).toBigInt.bigInteger,
         parent,
+        deps,
         ghostUncles
       )
     }
   }
-
-  /** Update toUpdate's primary key to be the same as `original` */
-  def copyPrimaryKeys(original: BlockDepEntity, toUpdate: BlockDepEntity): BlockDepEntity =
-    toUpdate.copy(
-      hash = original.hash,
-      dep = original.dep
-    )
-
-  val blockDepGen: Gen[BlockDepEntity] =
-    for {
-      hash  <- blockHashGen
-      dep   <- blockHashGen
-      order <- Gen.posNum[Int]
-    } yield BlockDepEntity(
-      hash = hash,
-      dep = dep,
-      order = order
-    )
-
-  /** Generates a tuple2 of [[BlockDepEntity]] where the second one has the same primary key as the
-    * first one but with different values
-    */
-  val blockDepUpdatedGen: Gen[(BlockDepEntity, BlockDepEntity)] =
-    for {
-      dep1 <- blockDepGen
-      dep2 <- blockDepGen
-    } yield {
-      (dep1, copyPrimaryKeys(dep1, dep2))
-    }
 
   /** Table `uinputs` applies uniqueness on `(output_ref_key, tx_hash)`.
     *

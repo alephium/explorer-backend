@@ -54,6 +54,7 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
         O.SqlType("DECIMAL(80,0)")
       ) // TODO How much decimal we need? this one is the same as for U256
     def parent: Rep[Option[BlockHash]] = column[Option[BlockHash]]("parent")
+    def deps: Rep[ArraySeq[BlockHash]] = column[ArraySeq[BlockHash]]("deps")
     def ghostUncles: Rep[Option[ArraySeq[GhostUncle]]] =
       column[Option[ArraySeq[GhostUncle]]]("ghost_uncles")
 
@@ -76,6 +77,7 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
         target,
         hashrate,
         parent,
+        deps,
         ghostUncles
       )
         .<>((BlockHeader.apply _).tupled, BlockHeader.unapply)

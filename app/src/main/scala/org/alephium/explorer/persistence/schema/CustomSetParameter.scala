@@ -176,6 +176,11 @@ object CustomSetParameter {
       }
   }
 
+  implicit object BlockHashesStringsOptionSetParameter extends SetParameter[ArraySeq[BlockHash]] {
+    override def apply(input: ArraySeq[BlockHash], params: PositionedParameters): Unit =
+      params setBytes serialize(input).toArray
+  }
+
   implicit object ValsSetParameter extends SetParameter[ArraySeq[Val]] {
     override def apply(input: ArraySeq[Val], params: PositionedParameters): Unit =
       params setBytes writeBinary(input)
