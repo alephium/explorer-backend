@@ -202,6 +202,12 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     def blockFlowEntity: ArraySeq[ArraySeq[BlockEntity]] =
       chains :+ chainOToO
 
+    val uncles = blockFlowEntity.map(_.flatMap { block =>
+      block.ghostUncles.map { uncle =>
+        blockEntity(None, ChainIndex(block.chainFrom, block.chainTo)).copy(hash = uncle.blockHash)
+      }
+    })
+
     def blockFlow: ArraySeq[ArraySeq[BlockEntryTest]] =
       blockEntitiesToBlockEntries(blockFlowEntity)
 
@@ -209,18 +215,22 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
 
     def blockEntities = ArraySeq.from(blockFlowEntity.flatten)
 
+    def unclesEntities = ArraySeq.from(uncles.flatten)
+
+    def blocksAndUncles = blockEntities ++ unclesEntities
+
     def blocks: ArraySeq[BlockEntryTest] = blockFlow.flatten
 
     implicit val blockFlowClient: BlockFlowClient = new EmptyBlockFlowClient {
       override def fetchBlock(from: GroupIndex, hash: BlockHash): Future[BlockEntity] =
-        Future.successful(blockEntities.find(_.hash === hash).get)
+        Future.successful(blocksAndUncles.find(_.hash === hash).get)
 
       override def fetchBlockAndEvents(
           fromGroup: GroupIndex,
           hash: BlockHash
       ): Future[BlockEntityWithEvents] =
         Future.successful(
-          BlockEntityWithEvents(blockEntities.find(_.hash === hash).get, ArraySeq.empty)
+          BlockEntityWithEvents(blocksAndUncles.find(_.hash === hash).get, ArraySeq.empty)
         )
 
       override def fetchBlocks(
