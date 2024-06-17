@@ -317,29 +317,6 @@ class AddressServerSpec()
     def getToTs(intervalType: IntervalType) =
       fromTs + maxTimeSpan(intervalType).millis
 
-    "return the deprecated amount history as json" in {
-      intervalTypes.foreach { intervalType =>
-        val toTs = getToTs(intervalType)
-
-        Get(
-          s"/addresses/${address}/amount-history-DEPRECATED?fromTs=$fromTs&toTs=$toTs&interval-type=$intervalType"
-        ) check { response =>
-          response.body is Right(
-            s"""{"amountHistory":${amountHistory
-                .map { case (amount, ts) => s"""[${ts.millis},"$amount"]""" }
-                .mkString("[", ",", "]")}}"""
-          )
-
-          val header =
-            Header(
-              "Content-Disposition",
-              s"""attachment;filename="$address-amount-history-$fromTs-$toTs.json""""
-            )
-          response.headers.contains(header) is true
-        }
-      }
-    }
-
     "return the amount history as json" in {
       intervalTypes.foreach { intervalType =>
         val toTs = getToTs(intervalType)
