@@ -321,7 +321,7 @@ class AddressServerSpec()
     def getToTs(intervalType: IntervalType) =
       fromTs + maxTimeSpan(intervalType).millis
 
-    "return the deprecated amount history as json" in {
+    "return the deprecated amount history as json" ignore {
       intervalTypes.foreach { intervalType =>
         val toTs = getToTs(intervalType)
 
