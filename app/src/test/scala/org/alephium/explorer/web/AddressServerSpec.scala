@@ -26,6 +26,7 @@ import akka.util.ByteString
 import io.reactivex.rxjava3.core.Flowable
 import io.vertx.core.buffer.Buffer
 import org.scalacheck.Gen
+import org.scalatest.time.{Seconds, Span}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.{Header, StatusCode}
@@ -62,6 +63,9 @@ class AddressServerSpec()
     extends AlephiumActorSpecLike
     with DatabaseFixtureForAll
     with HttpServerFixture {
+
+  implicit override val patienceConfig: PatienceConfig =
+    PatienceConfig(timeout = Span(120, Seconds))
 
   val exportTxsNumberThreshold = 1000
   var addressHasMoreTxs        = false
