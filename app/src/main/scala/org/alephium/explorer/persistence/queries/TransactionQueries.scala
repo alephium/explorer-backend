@@ -365,32 +365,6 @@ object TransactionQueries extends StrictLogging {
       """.asAS[(TimeStamp, Option[U256])]
   }
 
-  def sumAddressOutputsDEPRECATED(address: Address, from: TimeStamp, to: TimeStamp)(implicit
-      ec: ExecutionContext
-  ): DBActionR[U256] = {
-    sql"""
-      SELECT SUM(amount)
-      FROM outputs
-      WHERE address = $address
-      AND main_chain = true
-      AND block_timestamp >= $from
-      AND block_timestamp <= $to
-    """.asAS[Option[U256]].exactlyOne.map(_.getOrElse(U256.Zero))
-  }
-
-  def sumAddressInputsDEPRECATED(address: Address, from: TimeStamp, to: TimeStamp)(implicit
-      ec: ExecutionContext
-  ): DBActionR[U256] = {
-    sql"""
-      SELECT SUM(output_ref_amount)
-      FROM inputs
-      WHERE output_ref_address = $address
-      AND main_chain = true
-      AND block_timestamp >= $from
-      AND block_timestamp <= $to
-    """.asAS[Option[U256]].exactlyOne.map(_.getOrElse(U256.Zero))
-  }
-
   /*
    * Sum inputs and group them by the given interval type
    * LEAST and GREATEST are here to restrict to the `from` and `to` timestamp

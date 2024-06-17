@@ -17,7 +17,6 @@
 package org.alephium.explorer.service
 
 import java.math.BigInteger
-import java.time.Instant
 
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
@@ -36,10 +35,8 @@ import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.{MempoolDao, TransactionDao}
 import org.alephium.explorer.persistence.queries.InputQueries
 import org.alephium.explorer.persistence.queries.TransactionQueries._
-import org.alephium.explorer.util.TimeUtil
-import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{Address, TransactionId}
-import org.alephium.util.{Duration, TimeStamp, U256}
+import org.alephium.util.{TimeStamp, U256}
 
 trait TransactionService {
 
@@ -107,14 +104,6 @@ trait TransactionService {
       fromTime: TimeStamp,
       toTime: TimeStamp,
       batchSize: Int,
-      paralellism: Int
-  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer]
-
-  def getAmountHistoryDEPRECATED(
-      address: Address,
-      from: TimeStamp,
-      to: TimeStamp,
-      intervalType: IntervalType,
       paralellism: Int
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer]
 
@@ -217,64 +206,11 @@ object TransactionService extends TransactionService {
 
   }
 
-  private def getInOutAmountDEPRECATED(address: Address, from: TimeStamp, to: TimeStamp)(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[(U256, U256, TimeStamp)] = {
-    run(
-      for {
-        in  <- sumAddressInputsDEPRECATED(address, from, to)
-        out <- sumAddressOutputsDEPRECATED(address, from, to)
-      } yield {
-        (in, out, to)
-      }
-    )
-  }
-
   def getUnlockScript(address: Address)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Option[ByteString]] = {
     run(InputQueries.getUnlockScript(address))
-  }
-
-  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-  def getAmountHistoryDEPRECATED(
-      address: Address,
-      from: TimeStamp,
-      to: TimeStamp,
-      intervalType: IntervalType,
-      paralellism: Int
-  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = {
-    val timeranges = amountHistoryTimeRanges(from, to, intervalType)
-    val amountHistory = Flowable
-      .fromIterable(timeranges.asJava)
-      .concatMapEager(
-        { case (from: TimeStamp, to: TimeStamp) =>
-          Flowable.fromCompletionStage(getInOutAmountDEPRECATED(address, from, to).asJava)
-        },
-        paralellism,
-        1
-      )
-      .filter {
-        // Ignore time ranges without data
-        case (in, out, _) => in != U256.Zero || out != U256.Zero
-      }
-      .scan(
-        (BigInteger.ZERO, TimeStamp.zero),
-        { (acc: (BigInteger, TimeStamp), next) =>
-          val (sum, _)      = acc
-          val (in, out, to) = next
-          val diff          = out.v.subtract(in.v)
-          val newSum        = sum.add(diff)
-          (newSum, to)
-        }
-      )
-      .skip(1) // Drop first elem which is the seed of the scan (0,0)
-
-    amountHistoryToJsonFlowable(
-      amountHistory
-    )
   }
 
   def getAmountHistory(
@@ -320,42 +256,6 @@ object TransactionService extends TransactionService {
 
         result
       }
-    )
-  }
-
-  def amountHistoryToJsonFlowable(history: Flowable[(BigInteger, TimeStamp)]): Flowable[Buffer] = {
-    history
-      .concatMap { case (diff, to: TimeStamp) =>
-        val str = s"""[${to.millis},"$diff"]"""
-        Flowable.just(str, ",")
-      }
-      .skipLast(1) // Removing latest "," it replace the missing `intersperse`
-      .startWith(Flowable.just("""{"amountHistory":["""))
-      .concatWith(Flowable.just("]}"))
-      .map(Buffer.buffer)
-  }
-
-  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-  private def amountHistoryTimeRanges(
-      from: TimeStamp,
-      to: TimeStamp,
-      intervalType: IntervalType
-  ): ArraySeq[(TimeStamp, TimeStamp)] = {
-    val fromTruncated =
-      TimeStamp.unsafe(
-        Instant
-          .ofEpochMilli(
-            if (from.isBefore(ALPH.LaunchTimestamp)) ALPH.LaunchTimestamp.millis else from.millis
-          )
-          .truncatedTo(intervalType.chronoUnit)
-          .toEpochMilli
-      )
-
-    val first = (ALPH.GenesisTimestamp, fromTruncated.minusUnsafe(Duration.ofMillisUnsafe(1)))
-    first +: TimeUtil.buildTimestampRange(
-      fromTruncated,
-      to,
-      (intervalType.duration - Duration.ofMillisUnsafe(1)).get
     )
   }
 

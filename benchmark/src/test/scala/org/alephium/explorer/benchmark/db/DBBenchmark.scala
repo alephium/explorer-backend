@@ -277,22 +277,6 @@ class DBBenchmark {
   }
 
   @Benchmark
-  def getAmountHistoryDEPRECATED(state: Address_ReadState): Unit = {
-    implicit val ec: ExecutionContext                = state.config.db.ioExecutionContext
-    implicit val dc: DatabaseConfig[PostgresProfile] = state.config
-    val timestamps                                   = state.blocks.map(_.timestamp)
-    val from                                         = timestamps.min
-    val to           = from.plusMillisUnsafe(Duration.ofDaysUnsafe(366L).millis)
-    val intervalType = IntervalType.Daily
-
-    val flowable = TransactionService
-      .getAmountHistoryDEPRECATED(state.address, from, to, intervalType, 8)
-
-    val _ =
-      flowable.toList().blockingGet()
-  }
-
-  @Benchmark
   def getAmountHistory(state: Address_ReadState): Unit = {
     implicit val ec: ExecutionContext                = state.config.db.ioExecutionContext
     implicit val dc: DatabaseConfig[PostgresProfile] = state.config

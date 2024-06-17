@@ -26,7 +26,6 @@ import akka.util.ByteString
 import io.reactivex.rxjava3.core.Flowable
 import io.vertx.core.buffer.Buffer
 import org.scalacheck.Gen
-import org.scalatest.time.{Seconds, Span}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.{Header, StatusCode}
@@ -63,9 +62,6 @@ class AddressServerSpec()
     extends AlephiumActorSpecLike
     with DatabaseFixtureForAll
     with HttpServerFixture {
-
-  implicit override val patienceConfig: PatienceConfig =
-    PatienceConfig(timeout = Span(120, Seconds))
 
   val exportTxsNumberThreshold = 1000
   var addressHasMoreTxs        = false
@@ -131,15 +127,6 @@ class AddressServerSpec()
           .map(l => ArraySeq.from(l.asScala))
       )
     }
-
-    override def getAmountHistoryDEPRECATED(
-        address: Address,
-        from: TimeStamp,
-        to: TimeStamp,
-        intervalType: IntervalType,
-        paralellism: Int
-    )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] =
-      TransactionService.amountHistoryToJsonFlowable(Flowable.fromIterable(amountHistory.asJava))
 
     override def getAmountHistory(
         address: Address,
@@ -320,29 +307,6 @@ class AddressServerSpec()
     }
     def getToTs(intervalType: IntervalType) =
       fromTs + maxTimeSpan(intervalType).millis
-
-    "return the deprecated amount history as json" ignore {
-      intervalTypes.foreach { intervalType =>
-        val toTs = getToTs(intervalType)
-
-        Get(
-          s"/addresses/${address}/amount-history-DEPRECATED?fromTs=$fromTs&toTs=$toTs&interval-type=$intervalType"
-        ) check { response =>
-          response.body is Right(
-            s"""{"amountHistory":${amountHistory
-                .map { case (amount, ts) => s"""[${ts.millis},"$amount"]""" }
-                .mkString("[", ",", "]")}}"""
-          )
-
-          val header =
-            Header(
-              "Content-Disposition",
-              s"""attachment;filename="$address-amount-history-$fromTs-$toTs.json""""
-            )
-          response.headers.contains(header) is true
-        }
-      }
-    }
 
     "return the amount history as json" in {
       intervalTypes.foreach { intervalType =>

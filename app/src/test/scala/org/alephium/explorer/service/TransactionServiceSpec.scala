@@ -25,7 +25,6 @@ import scala.jdk.CollectionConverters._
 import io.vertx.core.buffer.Buffer
 import org.scalacheck.Gen
 
-import org.alephium.api.UtilJson._
 import org.alephium.explorer.AlephiumActorSpecLike
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
@@ -38,7 +37,6 @@ import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.{BlockDao, MempoolDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
-import org.alephium.json.Json._
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
 import org.alephium.util.{Duration, TimeStamp, U256}
@@ -517,19 +515,10 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
   "get amount history" in new TxsByAddressFixture {
     Seq[IntervalType](IntervalType.Hourly, IntervalType.Daily).foreach { intervalType =>
-      val flowable = TransactionService
-        .getAmountHistoryDEPRECATED(address, fromTs, toTs, intervalType, 8)
-
-      val result: Seq[Buffer] = flowable.toList().blockingGet().asScala
-      val amountHistory       = read[ujson.Value](result.mkString)
-      val historyDepracted    = read[Seq[(Long, BigInteger)]](amountHistory("amountHistory"))
-
       val history = TransactionService
         .getAmountHistory(address, fromTs, toTs, intervalType)
         .futureValue
         .map { case (ts, sum) => (ts.millis, sum) }
-
-      history is historyDepracted
 
       val times = history.map(_._1)
 
