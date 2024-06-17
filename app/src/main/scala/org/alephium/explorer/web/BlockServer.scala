@@ -39,7 +39,7 @@ class BlockServer(implicit
       route(listBlocks.serverLogicSuccess[Future](BlockService.listBlocks(_))),
       route(getBlockByHash.serverLogic[Future] { hash =>
         BlockService
-          .getLiteBlockByHash(hash)
+          .getBlockByHash(hash)
           .map(_.toRight(ApiError.NotFound(hash.value.toHexString)))
       }),
       route(getBlockTransactions.serverLogicSuccess[Future] { case (hash, pagination) =>

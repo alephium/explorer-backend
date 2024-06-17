@@ -23,7 +23,11 @@ import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
 import org.alephium.protocol.Hash
 
-final case class OutputRef(hint: Int, key: Hash)
+final case class OutputRef(hint: Int, key: Hash) {
+
+  def toProtocol(): org.alephium.api.model.OutputRef =
+    org.alephium.api.model.OutputRef(hint, key)
+}
 
 object OutputRef {
   implicit val readWriter: ReadWriter[OutputRef] = macroRW

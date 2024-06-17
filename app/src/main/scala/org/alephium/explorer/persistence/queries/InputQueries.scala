@@ -38,7 +38,7 @@ object InputQueries {
   /** Inserts inputs or ignore rows with primary key conflict */
   // scalastyle:off magic.number
   def insertInputs(inputs: Iterable[InputEntity]): DBActionW[Int] =
-    QuerySplitter.splitUpdates(rows = inputs, columnsPerRow = 12) { (inputs, placeholder) =>
+    QuerySplitter.splitUpdates(rows = inputs, columnsPerRow = 13) { (inputs, placeholder) =>
       val query =
         s"""
            INSERT INTO inputs ("block_hash",
@@ -52,7 +52,8 @@ object InputQueries {
                                "tx_order",
                                "output_ref_tx_hash",
                                "output_ref_address",
-                               "output_ref_amount")
+                               "output_ref_amount",
+                               "contract_input")
            VALUES $placeholder
            ON CONFLICT
                ON CONSTRAINT inputs_pk
@@ -74,6 +75,7 @@ object InputQueries {
             params >> input.outputRefTxHash
             params >> input.outputRefAddress
             params >> input.outputRefAmount
+            params >> input.contractInput
           }
 
       SQLActionBuilder(
@@ -98,15 +100,7 @@ object InputQueries {
 
     val query =
       s"""
-         SELECT tx_hash,
-                input_order,
-                hint,
-                output_ref_key,
-                unlock_script,
-                output_ref_tx_hash,
-                output_ref_address,
-                output_ref_amount,
-                output_ref_tokens
+         SELECT ${InputsFromTxQR.selectFields}
          FROM inputs
          WHERE (tx_hash, block_hash) IN $params
 
@@ -127,13 +121,7 @@ object InputQueries {
 
   def getInputsQuery(txHash: TransactionId, blockHash: BlockHash): DBActionSR[InputsQR] =
     sql"""
-        SELECT hint,
-               output_ref_key,
-               unlock_script,
-               output_ref_tx_hash,
-               output_ref_address,
-               output_ref_amount,
-               output_ref_tokens
+        SELECT #${InputsQR.selectFields}
         FROM inputs
         WHERE tx_hash = $txHash
           AND block_hash = $blockHash
@@ -155,7 +143,8 @@ object InputQueries {
           output_ref_tx_hash,
           output_ref_address,
           output_ref_amount,
-          output_ref_tokens
+          output_ref_tokens,
+          contract_input
         FROM inputs
         WHERE main_chain = true
         ORDER BY block_timestamp #${if (ascendingOrder) "" else "DESC"}

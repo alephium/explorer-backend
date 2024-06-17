@@ -79,11 +79,27 @@ trait ExplorerSpec
   val blockflow: ArraySeq[ArraySeq[model.BlockEntry]] =
     blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
 
+  val uncles = blockflow
+    .map(_.flatMap { block =>
+      block.ghostUncles.map { uncle =>
+        blockEntryProtocolGen.sample.get.copy(
+          hash = uncle.blockHash,
+          timestamp = block.timestamp,
+          chainFrom = block.chainFrom,
+          chainTo = block.chainTo
+        )
+
+      }
+    })
+    .flatten
+
   val blocksProtocol: ArraySeq[model.BlockEntry] = blockflow.flatten
   val blockEntities: ArraySeq[BlockEntity] =
     blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
 
-  val blocks: ArraySeq[BlockEntry] = blockEntitiesToBlockEntries(ArraySeq(blockEntities)).flatten
+  val blocks: ArraySeq[BlockEntryTest] = blockEntitiesToBlockEntries(
+    ArraySeq(blockEntities)
+  ).flatten
 
   val transactions: ArraySeq[Transaction] = blocks.flatMap(_.transactions)
 
@@ -95,7 +111,7 @@ trait ExplorerSpec
 
   val blockFlowPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
   val blockFlowMock =
-    new ExplorerSpec.BlockFlowServerMock(localhost, blockFlowPort, blockflow, networkId)
+    new ExplorerSpec.BlockFlowServerMock(localhost, blockFlowPort, blockflow, uncles, networkId)
 
   val coingeckoPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
   val coingeckoUri  = s"http://${localhost.getHostAddress()}:$coingeckoPort"
@@ -382,6 +398,15 @@ trait ExplorerSpec
     }
   }
 
+  "insert uncle blocks" in {
+    uncles.foreach { uncle =>
+      Get(s"/blocks/${uncle.hash.toHexString}") check { response =>
+        val res = response.as[BlockEntry]
+        res.mainChain is false
+      }
+    }
+  }
+
   "generate the documentation" in {
     Get("/docs") check { response =>
       response.code is StatusCode.Ok
@@ -425,6 +450,7 @@ object ExplorerSpec {
       address: InetAddress,
       port: Int,
       blockflow: ArraySeq[ArraySeq[model.BlockEntry]],
+      uncles: ArraySeq[model.BlockEntry],
       networkId: NetworkId
   )(implicit groupSetting: GroupSetting)
       extends ApiModelCodec
@@ -436,6 +462,7 @@ object ExplorerSpec {
 
     implicit val groupConfig: GroupConfig = groupSetting.groupConfig
     val blocks                            = blockflow.flatten
+    val blocksWithUncles                  = blockflow.flatten ++ uncles
 
     val cliqueId = CliqueId.generate
 
@@ -482,7 +509,7 @@ object ExplorerSpec {
             .in(path[BlockHash])
             .out(jsonBody[model.BlockEntry])
             .serverLogicSuccess[Future] { hash =>
-              Future.successful(blocks.find(_.hash === hash).get)
+              Future.successful(blocksWithUncles.find(_.hash === hash).get)
             }
         ),
         route(
@@ -495,7 +522,7 @@ object ExplorerSpec {
               Future
                 .successful(
                   model.BlockAndEvents(
-                    blocks.find(_.hash === hash).get,
+                    blocksWithUncles.find(_.hash === hash).get,
                     AVector.from(Gen.listOfN(3, contractEventByBlockHash).sample.get)
                   )
                 )

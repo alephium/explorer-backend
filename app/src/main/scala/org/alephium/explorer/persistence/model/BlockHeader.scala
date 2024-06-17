@@ -22,7 +22,7 @@ import scala.collection.immutable.ArraySeq
 
 import akka.util.ByteString
 
-import org.alephium.explorer.api.model.{BlockEntry, BlockEntryLite, Height, Transaction}
+import org.alephium.explorer.api.model.{BlockEntry, BlockEntryLite, GhostUncle, Height}
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{BlockHash, GroupIndex}
 import org.alephium.util.TimeStamp
@@ -41,17 +41,47 @@ final case class BlockHeader(
     txsCount: Int,
     target: ByteString,
     hashrate: BigInteger,
-    parent: Option[BlockHash]
+    parent: Option[BlockHash],
+    deps: ArraySeq[BlockHash],
+    ghostUncles: Option[ArraySeq[GhostUncle]]
 ) {
-  def toApi(deps: ArraySeq[BlockHash], transactions: ArraySeq[Transaction]): BlockEntry =
-    BlockEntry(hash, timestamp, chainFrom, chainTo, height, deps, transactions, mainChain, hashrate)
+
+  def toApi(): BlockEntry =
+    BlockEntry(
+      hash,
+      timestamp,
+      chainFrom,
+      chainTo,
+      height,
+      deps,
+      nonce,
+      version,
+      depStateHash,
+      txsHash,
+      txsCount,
+      target,
+      hashrate,
+      parent,
+      mainChain,
+      ghostUncles.getOrElse(ArraySeq.empty)
+    )
 
   val toLiteApi: BlockEntryLite =
-    BlockEntryLite(hash, timestamp, chainFrom, chainTo, height, txsCount, mainChain, hashrate)
+    BlockEntryLite(
+      hash,
+      timestamp,
+      chainFrom,
+      chainTo,
+      height,
+      txsCount,
+      mainChain,
+      hashrate
+    )
 }
 
 object BlockHeader {
-  def fromEntity(blockEntity: BlockEntity, groupNum: Int): BlockHeader =
+  def fromEntity(blockEntity: BlockEntity, groupNum: Int): BlockHeader = {
+    val ghostUncles = if (blockEntity.ghostUncles.isEmpty) None else Some(blockEntity.ghostUncles)
     BlockHeader(
       blockEntity.hash,
       blockEntity.timestamp,
@@ -66,6 +96,9 @@ object BlockHeader {
       blockEntity.transactions.size,
       blockEntity.target,
       blockEntity.hashrate,
-      blockEntity.parent(groupNum)
+      blockEntity.parent(groupNum),
+      blockEntity.deps,
+      ghostUncles
     )
+  }
 }

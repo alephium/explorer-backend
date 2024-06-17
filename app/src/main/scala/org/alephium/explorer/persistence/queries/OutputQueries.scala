@@ -50,7 +50,7 @@ object OutputQueries {
   // scalastyle:off magic.number method.length
   private def insertBasicOutputs(outputs: Iterable[OutputEntity]): DBActionW[Int] =
     QuerySplitter
-      .splitUpdates(rows = outputs, columnsPerRow = 17) { (outputs, placeholder) =>
+      .splitUpdates(rows = outputs, columnsPerRow = 18) { (outputs, placeholder) =>
         val query =
           s"""
              INSERT INTO outputs ("block_hash",
@@ -69,7 +69,8 @@ object OutputQueries {
                                   "tx_order",
                                   "coinbase",
                                   "spent_finalized",
-                                  "spent_timestamp")
+                                  "spent_timestamp",
+                                  "fixed_output")
              VALUES $placeholder
              ON CONFLICT
                  ON CONSTRAINT outputs_pk
@@ -96,6 +97,7 @@ object OutputQueries {
               params >> output.coinbase
               params >> output.spentFinalized
               params >> output.spentTimestamp
+              params >> output.fixedOutput
             }
 
         SQLActionBuilder(
@@ -316,17 +318,7 @@ object OutputQueries {
 
       val query =
         s"""
-           SELECT outputs.tx_hash,
-                  outputs.output_order,
-                  outputs.output_type,
-                  outputs.hint,
-                  outputs.key,
-                  outputs.amount,
-                  outputs.address,
-                  outputs.tokens,
-                  outputs.lock_time,
-                  outputs.message,
-                  outputs.spent_finalized
+           SELECT ${OutputsFromTxQR.selectFields}
            FROM outputs
            WHERE (outputs.tx_hash, outputs.block_hash) IN $params
            """
@@ -348,15 +340,7 @@ object OutputQueries {
 
   def getOutputsQuery(txHash: TransactionId, blockHash: BlockHash): DBActionSR[OutputsQR] =
     sql"""
-        SELECT output_type,
-               hint,
-               key,
-               amount,
-               address,
-               tokens,
-               lock_time,
-               message,
-               spent_finalized
+        SELECT #${OutputsQR.selectFields}
         FROM outputs
         WHERE tx_hash = $txHash
           AND block_hash = $blockHash
@@ -383,7 +367,9 @@ object OutputQueries {
         output_order,
         tx_order,
         coinbase,
-        spent_finalized
+        spent_finalized,
+        spent_timestamp,
+        fixed_output
       FROM outputs
       WHERE main_chain = true
       ORDER BY block_timestamp #${if (ascendingOrder) "" else "DESC"}

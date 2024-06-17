@@ -20,10 +20,12 @@ import java.time.Instant
 
 import scala.collection.immutable.ArraySeq
 
+import akka.util.ByteString
 import sttp.tapir.Schema
 
+import org.alephium.api.{model => protocol}
 import org.alephium.api.TapirSchemas._
-import org.alephium.api.UtilJson.{timestampReader, timestampWriter}
+import org.alephium.api.UtilJson._
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.util.UtxoUtil
 import org.alephium.json.Json._
@@ -31,6 +33,7 @@ import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.protocol.model.Address
 import org.alephium.util.{TimeStamp, U256}
+import org.alephium.util.AVector
 
 final case class Transaction(
     hash: TransactionId,
@@ -38,9 +41,14 @@ final case class Transaction(
     timestamp: TimeStamp,
     inputs: ArraySeq[Input],
     outputs: ArraySeq[Output],
+    version: Byte,
+    networkId: Byte,
+    scriptOpt: Option[String],
     gasAmount: Int,
     gasPrice: U256,
     scriptExecutionOk: Boolean,
+    inputSignatures: ArraySeq[ByteString],
+    scriptSignatures: ArraySeq[ByteString],
     coinbase: Boolean
 ) {
   def toCsv(address: Address): String = {
@@ -58,6 +66,29 @@ final case class Transaction(
       .map(_.toString)
       .getOrElse("")
     s"${hash.toHexString},${blockHash.toHexString},${timestamp.millis},$dateTime,$fromAddressesStr,$toAddresses,$amount,$amountHint\n"
+  }
+
+  def toProtocol(): org.alephium.api.model.Transaction = {
+    val (inputContracts, inputAssets)    = inputs.partition(_.contractInput)
+    val (fixedOutputs, generatedOutputs) = outputs.partition(_.fixedOutput)
+    val unsigned: org.alephium.api.model.UnsignedTx = org.alephium.api.model.UnsignedTx(
+      txId = hash,
+      version = version,
+      networkId = networkId,
+      scriptOpt = scriptOpt.map(org.alephium.api.model.Script.apply),
+      gasAmount = gasAmount,
+      gasPrice = gasPrice,
+      inputs = AVector.from(inputAssets.map(_.toProtocol())),
+      fixedOutputs = AVector.from(fixedOutputs.flatMap(Output.toFixedAssetOutput))
+    )
+    org.alephium.api.model.Transaction(
+      unsigned = unsigned,
+      scriptExecutionOk = scriptExecutionOk,
+      contractInputs = AVector.from(inputContracts.map(_.outputRef.toProtocol())),
+      generatedOutputs = AVector.from(generatedOutputs.flatMap(Output.toProtocol)),
+      inputSignatures = AVector.from(inputSignatures),
+      scriptSignatures = AVector.from(scriptSignatures)
+    )
   }
 }
 

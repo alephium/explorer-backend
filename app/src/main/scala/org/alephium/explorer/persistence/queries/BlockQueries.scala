@@ -29,7 +29,6 @@ import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries.BlockDepQueries._
 import org.alephium.explorer.persistence.queries.InputQueries.insertInputs
 import org.alephium.explorer.persistence.queries.OutputQueries.insertOutputs
 import org.alephium.explorer.persistence.queries.TransactionQueries._
@@ -61,20 +60,21 @@ object BlockQueries extends StrictLogging {
       )
     }
 
-  def buildBlockEntryAction(
-      blockHeader: BlockHeader
-  )(implicit ec: ExecutionContext): DBActionR[BlockEntry] =
-    for {
-      deps <- getDepsForBlock(blockHeader.hash)
-      txs  <- getTransactionsByBlockHash(blockHeader.hash)
-    } yield blockHeader.toApi(deps, txs)
-
   def getBlockEntryLiteAction(
       hash: BlockHash
-  )(implicit ec: ExecutionContext): DBActionR[Option[BlockEntryLite]] =
-    for {
-      header <- BlockHeaderSchema.table.filter(_.hash === hash).result.headOption
-    } yield header.map(_.toLiteApi)
+  ): DBActionR[Option[BlockEntryLite]] =
+    sql"""
+         select hash,
+                block_timestamp,
+                chain_from,
+                chain_to,
+                height,
+                main_chain,
+                hashrate,
+                txs_count
+         from #$block_headers
+         where hash = $hash
+         """.asASE[BlockEntryLite](blockEntryListGetResult).headOption
 
   /** For a given `BlockHash` returns its basic chain information */
   def getBlockChainInfo(hash: BlockHash): DBActionR[Option[(GroupIndex, GroupIndex, Boolean)]] =
@@ -93,8 +93,7 @@ object BlockQueries extends StrictLogging {
   )(implicit ec: ExecutionContext): DBActionR[Option[BlockEntry]] =
     for {
       headers <- BlockHeaderSchema.table.filter(_.hash === hash).result
-      blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
-    } yield blocks.headOption
+    } yield headers.headOption.map(_.toApi())
 
   def getBlockHeaderAction(hash: BlockHash): DBActionR[Option[BlockHeader]] =
     sql"""
@@ -152,8 +151,7 @@ object BlockQueries extends StrictLogging {
   ): DBActionR[ArraySeq[BlockEntry]] =
     for {
       headers <- getHeadersAtHeightQuery(fromGroup, toGroup, height)
-      blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
-    } yield blocks
+    } yield headers.map(_.toApi())
 
   /** Order by query for [[org.alephium.explorer.persistence.schema.BlockHeaderSchema.table]]
     */
@@ -268,21 +266,6 @@ object BlockQueries extends StrictLogging {
       ).asUpdate
     }
 
-  def buildBlockEntryWithoutTxsAction(
-      blockHeader: BlockHeader
-  )(implicit ec: ExecutionContext): DBActionR[BlockEntry] =
-    for {
-      deps <- getDepsForBlock(blockHeader.hash)
-    } yield blockHeader.toApi(deps, ArraySeq.empty)
-
-  def getBlockEntryWithoutTxsAction(
-      hash: BlockHash
-  )(implicit ec: ExecutionContext): DBActionR[Option[BlockEntry]] =
-    for {
-      headers <- BlockHeaderSchema.table.filter(_.hash === hash).result
-      blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryWithoutTxsAction))
-    } yield blocks.headOption
-
   def getLatestBlock(chainFrom: GroupIndex, chainTo: GroupIndex): DBActionR[Option[LatestBlock]] = {
     LatestBlockSchema.table
       .filter { block =>
@@ -295,10 +278,10 @@ object BlockQueries extends StrictLogging {
   /** Inserts block_headers or ignore them if there is a primary key conflict */
   // scalastyle:off magic.number
   def insertBlockHeaders(blocks: Iterable[BlockHeader]): DBActionW[Int] =
-    QuerySplitter.splitUpdates(rows = blocks, columnsPerRow = 14) { (blocks, placeholder) =>
+    QuerySplitter.splitUpdates(rows = blocks, columnsPerRow = 16) { (blocks, placeholder) =>
       val query =
         s"""
-           insert into $block_headers ("hash",
+           INSERT INTO $block_headers ("hash",
                                        "block_timestamp",
                                        "chain_from",
                                        "chain_to",
@@ -311,8 +294,10 @@ object BlockQueries extends StrictLogging {
                                        "txs_count",
                                        "target",
                                        "hashrate",
-                                       "parent")
-           values $placeholder
+                                       "parent",
+                                       "deps",
+                                       "ghost_uncles")
+           VALUES $placeholder
            ON CONFLICT ON CONSTRAINT block_headers_pkey
                DO NOTHING
            """
@@ -334,6 +319,8 @@ object BlockQueries extends StrictLogging {
             params >> block.target
             params >> block.hashrate
             params >> block.parent
+            params >> block.deps
+            params >> block.ghostUncles
           }
 
       SQLActionBuilder(
@@ -348,7 +335,6 @@ object BlockQueries extends StrictLogging {
     Array("org.wartremover.warts.MutableDataStructures", "org.wartremover.warts.NonUnitStatements")
   )
   def insertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int): DBActionRWT[Unit] = {
-    val blockDeps    = ListBuffer.empty[BlockDepEntity]
     val transactions = ListBuffer.empty[TransactionEntity]
     val inputs       = ListBuffer.empty[InputEntity]
     val outputs      = ListBuffer.empty[OutputEntity]
@@ -356,7 +342,6 @@ object BlockQueries extends StrictLogging {
 
     // build data for all insert queries in single iteration
     blocks foreach { block =>
-      if (block.height.value != 0) blockDeps addAll block.toBlockDepEntities()
       transactions addAll block.transactions
       inputs addAll block.inputs
       outputs addAll block.outputs
@@ -365,7 +350,6 @@ object BlockQueries extends StrictLogging {
 
     val query =
       DBIOAction.seq(
-        insertBlockDeps(blockDeps),
         insertTransactions(transactions),
         insertOutputs(outputs),
         insertInputs(inputs),

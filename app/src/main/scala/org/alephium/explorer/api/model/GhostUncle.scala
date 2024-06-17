@@ -14,10 +14,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.model
+package org.alephium.explorer.api.model
 
-import org.alephium.protocol.model.BlockHash
+import org.alephium.api.model.GhostUncleBlockEntry
+import org.alephium.explorer.api.Codecs._
+import org.alephium.json.Json._
+import org.alephium.protocol.model.{Address, BlockHash}
 
-/** Class for defining rows in table [[org.alephium.explorer.persistence.schema.BlockDepsSchema]]
-  */
-final case class BlockDepEntity(hash: BlockHash, dep: BlockHash, order: Int)
+final case class GhostUncle(blockHash: BlockHash, miner: Address.Asset) {
+  def toProtocol(): GhostUncleBlockEntry = GhostUncleBlockEntry(blockHash, miner)
+}
+
+object GhostUncle {
+  implicit val codec: ReadWriter[GhostUncle] = macroRW
+}

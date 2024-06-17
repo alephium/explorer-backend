@@ -344,6 +344,7 @@ case object BlockFlowSyncService extends StrictLogging {
     }).flatMap { _ =>
       for {
         _ <- BlockDao.insertWithEvents(block, events)
+        _ <- handleUncles(block.ghostUncles.map(_.blockHash), block.chainFrom)
         _ <- BlockDao.updateMainChain(
           block.hash,
           block.chainFrom,
@@ -380,5 +381,26 @@ case object BlockFlowSyncService extends StrictLogging {
   ): Future[Unit] = {
     logger.debug(s"Downloading missing block $missing")
     blockFlowClient.fetchBlockAndEvents(chainFrom, missing).flatMap(insertWithEvents)
+  }
+
+  // Ghost uncle blocks are only insterted in the database, we don't update the main chain
+  private def handleUncles(uncles: ArraySeq[BlockHash], chainFrom: GroupIndex)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      groupSetting: GroupSetting
+  ): Future[Unit] = {
+    if (uncles.nonEmpty) {
+      logger.debug(s"Downloading ghost uncles ${uncles}")
+      Future
+        .sequence(uncles.map { uncle =>
+          blockFlowClient
+            .fetchBlockAndEvents(chainFrom, uncle)
+            .flatMap(bwe => BlockDao.insertWithEvents(bwe.block, bwe.events))
+        })
+        .map(_ => ())
+    } else {
+      Future.successful(())
+    }
   }
 }

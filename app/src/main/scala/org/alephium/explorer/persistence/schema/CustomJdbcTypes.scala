@@ -141,6 +141,16 @@ object CustomJdbcTypes {
         }
     )
 
+  implicit val seqBlockHashType: JdbcType[ArraySeq[BlockHash]] =
+    MappedJdbcType.base[ArraySeq[BlockHash], Array[Byte]](
+      hashes => serialize(hashes).toArray,
+      bytes =>
+        deserialize[ArraySeq[BlockHash]](ByteString.fromArrayUnsafe(bytes)) match {
+          case Left(error)  => throw error
+          case Right(value) => value
+        }
+    )
+
   implicit val valsType: JdbcType[ArraySeq[Val]] =
     MappedJdbcType.base[ArraySeq[Val], Array[Byte]](
       vals => writeBinary(vals),
@@ -173,5 +183,11 @@ object CustomJdbcTypes {
           .keys()
           .find(_.key == key)
           .getOrElse(throw new Exception(s"Invalid ${classOf[AppStateKey[_]].getSimpleName}: $key"))
+    )
+
+  implicit val ghostUnclesType: JdbcType[ArraySeq[GhostUncle]] =
+    MappedJdbcType.base[ArraySeq[GhostUncle], Array[Byte]](
+      uncles => writeBinary(uncles),
+      bytes => readBinary[ArraySeq[GhostUncle]](bytes)
     )
 }
