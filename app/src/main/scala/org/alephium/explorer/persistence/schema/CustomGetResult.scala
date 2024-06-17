@@ -215,9 +215,6 @@ object CustomGetResult {
   implicit val optionInterfaceIdGetResult: GetResult[Option[InterfaceIdEntity]] =
     (result: PositionedResult) => result.nextStringOption().map(InterfaceIdEntity.from)
 
-  implicit val ghostUnclesGetResult: GetResult[ArraySeq[GhostUncle]] =
-    (result: PositionedResult) => readBinary[ArraySeq[GhostUncle]](result.nextBytes())
-
   implicit val optionGhostUnclesGetResult: GetResult[Option[ArraySeq[GhostUncle]]] =
     (result: PositionedResult) =>
       result.nextBytesOption().map(bytes => readBinary[ArraySeq[GhostUncle]](bytes))
