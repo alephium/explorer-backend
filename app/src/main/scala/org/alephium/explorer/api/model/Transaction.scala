@@ -23,7 +23,6 @@ import scala.collection.immutable.ArraySeq
 import akka.util.ByteString
 import sttp.tapir.Schema
 
-import org.alephium.api.{model => protocol}
 import org.alephium.api.TapirSchemas._
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.api.Json._
