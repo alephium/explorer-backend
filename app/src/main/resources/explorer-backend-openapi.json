@@ -1421,7 +1421,10 @@
           "amountHistory": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TimedAmount"
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         }
@@ -1519,24 +1522,6 @@
         },
         "required": [
           "token"
-        ]
-      },
-      "TimedAmount": {
-        "type": "object",
-        "title": "TimedAmount",
-        "properties": {
-          "amount": {
-            "format": "bigint",
-            "type": "string"
-          },
-          "timestamp": {
-            "format": "int64",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "timestamp",
-          "amount"
         ]
       },
       "NotFound": {

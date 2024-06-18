@@ -128,6 +128,7 @@ val commonSettings = Seq(
     "-Xlint:stars-align",
     "-Xlint:type-parameter-shadow",
     "-Xlint:nonlocal-return",
+    "-Xfatal-warnings",
     "-Ywarn-dead-code",
     "-Ywarn-extra-implicit",
     "-Ywarn-numeric-widen",

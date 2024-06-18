@@ -49,7 +49,6 @@ import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.util.InputAddressUtil
 import org.alephium.http.EndpointSender
-import org.alephium.protocol
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.mining.HashRate
 import org.alephium.protocol.model.{
@@ -58,12 +57,10 @@ import org.alephium.protocol.model.{
   ChainIndex,
   ContractId,
   GroupIndex,
-  Hint,
   Target,
   TokenId,
   TransactionId
 }
-import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.{AVector, Hex, Service, TimeStamp, U256}
 
 trait BlockFlowClient extends Service {
