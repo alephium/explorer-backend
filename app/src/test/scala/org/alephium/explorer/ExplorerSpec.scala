@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
+//scalastyle:off file.size.limit
 package org.alephium.explorer
 
 import java.net.InetAddress
@@ -403,6 +404,62 @@ trait ExplorerSpec
       Get(s"/blocks/${uncle.hash.toHexString}") check { response =>
         val res = response.as[BlockEntry]
         res.mainChain is false
+      }
+    }
+  }
+
+  "Market price endpoints" when {
+    "correctly return price" in {
+      val body = """["ALPH", "WETH"]"""
+      Post(s"/market/prices?currency=btc", body) check { response =>
+        val prices = response.as[ArraySeq[Option[Double]]]
+        prices.foreach(_.isDefined is true)
+        response.code is StatusCode.Ok
+      }
+    }
+
+    "ignore unknown symbol" in {
+      val body = """["ALPH", "yop", "nop"]"""
+      Post(s"/market/prices?currency=btc", body) check { response =>
+        val prices = response.as[ArraySeq[Option[Double]]]
+        prices.head.isDefined is true
+        prices.tail.foreach(_.isEmpty is true)
+        response.code is StatusCode.Ok
+      }
+    }
+
+    "return 404 when unknown currency" in {
+      forAll(hashGen) { currency =>
+        Post(s"/market/prices?currency=${currency}", "[]") check { response =>
+          response.code is StatusCode.NotFound
+        }
+      }
+    }
+  }
+
+  "Market chart endpoints" when {
+    "correctly return price charts" in {
+      List("ALPH", "WETH").map { symbol =>
+        Get(s"/market/prices/$symbol/charts?currency=btc") check { response =>
+          response.as[TimedPrices]
+          response.code is StatusCode.Ok
+        }
+      }
+    }
+
+    "return 404 when unknown currency" in {
+      forAll(hashGen) { currency =>
+        Get(s"/market/prices/ALPH/charts?currency=${currency}") check { response =>
+          response.code is StatusCode.NotFound
+        }
+      }
+    }
+
+    "return 404 when unknown symbol" in {
+      forAll(hashGen) { symbol =>
+        Get(s"/market/prices/$symbol/charts?currency=btc") check { response =>
+          response.code is StatusCode.NotFound
+        }
       }
     }
   }
