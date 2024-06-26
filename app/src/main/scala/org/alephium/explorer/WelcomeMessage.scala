@@ -16,11 +16,13 @@
 
 package org.alephium.explorer
 
+import com.typesafe.config.Config
+
 import org.alephium.explorer.config.{BootMode, ExplorerConfig}
 
 object WelcomeMessage {
 
-  def message(config: ExplorerConfig): String = {
+  def message(config: ExplorerConfig, typesafeConfig: Config): String = {
 
     val logCurl =
       s"The API: curl -X 'PUT' '${config.host}:${config.port}/utils/update-global-loglevel' -d 'DEBUG'"
@@ -52,9 +54,19 @@ object WelcomeMessage {
         "No syncing in this mode"
       }
 
+    val networkInfo = {
+      s"Network id: ${config.networkId.id}"
+    }
+
+    val dbInfo = {
+      s"Database: ${typesafeConfig.getString("db.db.url")}"
+    }
+
     s"""|
         |############################################
         |Explorer-backend started with ${config.bootMode} mode
+        |${networkInfo}
+        |${dbInfo}
         |${writeInfo}
         |${readInfo}
         |${loggingInfo}
