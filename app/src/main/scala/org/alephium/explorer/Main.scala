@@ -20,7 +20,6 @@ import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
 import scala.util._
 
-import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.StrictLogging
 import io.prometheus.client.hotspot.DefaultExports
 import slick.basic.DatabaseConfig
@@ -48,7 +47,10 @@ class BootUp extends StrictLogging {
 
   DefaultExports.initialize()
 
-  private val typesafeConfig = ConfigFactory.load()
+  private val typesafeConfig = ExplorerConfig.loadConfig(Platform.getRootPath()) match {
+    case Success(config) => config
+    case Failure(error)  => throw error
+  }
 
   implicit val config: ExplorerConfig = ExplorerConfig.load(typesafeConfig)
 

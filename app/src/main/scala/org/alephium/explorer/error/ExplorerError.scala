@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.error
 
+import java.io.File
+
 import scala.concurrent.duration.FiniteDuration
 
 import org.postgresql.util.PSQLException
@@ -82,6 +84,10 @@ object ExplorerError {
 
   /** ****** Group: [[ConfigError]] *******
     */
+  final case class ConfigParsingError(file: File, exception: Exception)
+      extends Exception(s"Cannot parse config file: $file", exception)
+      with ConfigError
+
   final case class InvalidGroupNumber(groupNum: Int)
       extends Exception(s"Invalid groupNum: $groupNum. It should be > 0")
       with ConfigError
