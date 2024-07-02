@@ -31,29 +31,9 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(1)
+  val latestVersion: MigrationVersion = MigrationVersion(0)
 
-  def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] =
-    for {
-      _ <-
-        sqlu"""ALTER TABLE contracts ADD COLUMN IF NOT EXISTS main_chain boolean NOT NULL DEFAULT TRUE"""
-      _ <-
-        sqlu"""ALTER TABLE events ADD COLUMN IF NOT EXISTS main_chain boolean NOT NULL DEFAULT TRUE"""
-      _ <- sqlu"""
-              UPDATE contracts
-              SET main_chain = false
-              WHERE block_hash IN (SELECT hash FROM block_headers WHERE main_chain = false)
-              """
-      _ <- sqlu"""
-              UPDATE events
-              SET main_chain = false
-              WHERE block_hash IN (SELECT hash FROM block_headers WHERE main_chain = false)
-              """
-    } yield ()
-
-  private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
-    migration1
-  )
+  private val migrations: Seq[DBActionAll[Unit]] = Seq()
 
   def migrationsQuery(
       versionOpt: Option[MigrationVersion]
