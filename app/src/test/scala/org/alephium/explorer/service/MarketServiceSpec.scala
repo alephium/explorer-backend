@@ -41,9 +41,9 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
   "return error when not started" in new Fixture {
     eventually {
-      marketService.getPrices(marketConfig.symbolName.keys.toList, "btc").futureValue.isLeft is true
-      marketService.getExchangeRates().futureValue.isLeft is true
-      marketService.getPriceChart(alph, "usd").futureValue.isLeft is true
+      marketService.getPrices(marketConfig.symbolName.keys.toList, "btc").isLeft is true
+      marketService.getExchangeRates().isLeft is true
+      marketService.getPriceChart(alph, "usd").isLeft is true
     }
   }
 
@@ -53,7 +53,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
     eventually {
       val prices =
-        marketService.getPrices(marketConfig.symbolName.keys.toList, "btc").futureValue.rightValue
+        marketService.getPrices(marketConfig.symbolName.keys.toList, "btc").rightValue
 
       prices.length is marketConfig.symbolName.length
 
@@ -64,10 +64,10 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     eventually {
       marketConfig.currencies.foreach { currency =>
         val prices =
-          marketService.getPrices(ArraySeq(alph, usdt), currency).futureValue.rightValue
+          marketService.getPrices(ArraySeq(alph, usdt), currency).rightValue
 
         val exchangeRate =
-          marketService.getExchangeRates().futureValue.rightValue.find(_.currency == currency).get
+          marketService.getExchangeRates().rightValue.find(_.currency == currency).get
 
         prices(0) is Some(alphPrice * exchangeRate.value)
         prices(1) is Some(usdtPrice * exchangeRate.value)
@@ -75,25 +75,25 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     }
 
     eventually {
-      val prices = marketService.getPrices(ArraySeq("ALPH", "EMPTY"), "chf").futureValue.rightValue
+      val prices = marketService.getPrices(ArraySeq("ALPH", "EMPTY"), "chf").rightValue
 
       prices.length is 2
       prices(1) is None
     }
 
     eventually {
-      val exchangeRates = marketService.getExchangeRates().futureValue.rightValue
+      val exchangeRates = marketService.getExchangeRates().rightValue
       exchangeRates.map(_.currency).toSet is marketConfig.currencies.toSet
     }
 
     eventually {
-      val btcChart = marketService.getPriceChart(alph, "btc").futureValue.rightValue
+      val btcChart = marketService.getPriceChart(alph, "btc").rightValue
 
       marketConfig.currencies.foreach { currency =>
         val chart =
-          marketService.getPriceChart(alph, currency).futureValue.rightValue
+          marketService.getPriceChart(alph, currency).rightValue
         val exchangeRate =
-          marketService.getExchangeRates().futureValue.rightValue.find(_.currency == currency).get
+          marketService.getExchangeRates().rightValue.find(_.currency == currency).get
 
         chart.timestamps.length is chart.prices.length
         chart.timestamps is btcChart.timestamps
@@ -110,16 +110,8 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     val usdt = "USDT"
 
     val marketConfig = ExplorerConfig.Market(
-      ListMap(
-        "ALPH" -> "alephium",
-        "USDC" -> "usd-coin",
-        "USDT" -> "tether",
-        "WBTC" -> "wrapped-bitcoin",
-        "WETH" -> "weth",
-        "DAI"  -> "dai",
-        "AYIN" -> "ayin"
-      ),
-      ArraySeq("btc", "usd", "eur", "chf", "gbp", "idr", "vnd", "rub", "try", "cad", "aud"),
+      MarketServiceSpec.symbolNames,
+      MarketServiceSpec.currencies,
       s"http://${localhost.getHostAddress()}:$port",
       marketChartDays = 366
     )
@@ -139,6 +131,18 @@ object MarketServiceSpec {
 
   val alphPrice = 2.013e-5
   val usdtPrice = 2.392e-5
+
+  val symbolNames = ListMap(
+    "ALPH" -> "alephium",
+    "USDC" -> "usd-coin",
+    "USDT" -> "tether",
+    "WBTC" -> "wrapped-bitcoin",
+    "WETH" -> "weth",
+    "DAI"  -> "dai",
+    "AYIN" -> "ayin"
+  )
+  val currencies =
+    ArraySeq("btc", "usd", "eur", "chf", "gbp", "idr", "vnd", "rub", "try", "cad", "aud")
 
   class CoingeckoMock(
       uri: InetAddress,
