@@ -200,9 +200,14 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         output.timestamp,
         inputs,
         ArraySeq(outputEntityToApi(output, spent)),
+        version = 1,
+        networkId = 1,
+        scriptOpt = None,
         1,
         ALPH.alph(1),
         scriptExecutionOk = true,
+        inputSignatures = ArraySeq.empty,
+        scriptSignatures = ArraySeq.empty,
         coinbase = false
       )
     }
@@ -233,6 +238,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       tx1.timestamp,
       chainFrom,
       chainTo,
+      tx1.version,
+      tx1.networkId,
+      tx1.scriptOpt,
       tx1.gasAmount,
       tx1.gasPrice,
       0,
@@ -310,10 +318,10 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
           transactions foreach { transaction =>
             val query =
               sql"""
-                   |SELECT *
-                   |FROM #${TransactionSchema.name}
-                   |where hash = ${transaction.hash}
-                   |""".stripMargin
+                   SELECT *
+                   FROM #${TransactionSchema.name}
+                   where hash = ${transaction.hash}
+                   """
 
             val explain = run(query.explain()).futureValue.mkString("\n")
 
@@ -440,7 +448,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
           // for each address run the query for randomly selected time-range and expect entities
           // only for that time-range to be returned
-          entities.groupBy(_.address) foreach { case (address, entities) =>
+          entities.groupBy(_.address) foreachEntry { case (address, entities) =>
             val minTime = entities.map(_.timestamp).min.millis // minimum time
             val maxTime = entities.map(_.timestamp).max.millis // maximum time
 
@@ -575,7 +583,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         0,
         false,
         None,
-        None
+        None,
+        fixedOutput = false
       )
 
     def input(hint: Int, outputRefKey: Hash): InputEntity =
@@ -592,7 +601,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         None,
         None,
         None,
-        None
+        None,
+        contractInput = false
       )
     def transaction(output: OutputEntity): TransactionEntity = {
       TransactionEntity(
@@ -601,6 +611,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         output.timestamp,
         GroupIndex.Zero,
         new GroupIndex(1),
+        version = 1,
+        networkId = 1,
+        scriptOpt = None,
         1,
         ALPH.alph(1),
         0,

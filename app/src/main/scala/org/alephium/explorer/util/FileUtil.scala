@@ -14,20 +14,28 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.api.model
+package org.alephium.explorer.util
 
-import scala.collection.immutable.ArraySeq
+import java.io.File
+import java.nio.file.{Files, Path}
 
-import sttp.tapir.Schema
+import org.alephium.util.discard
 
-import org.alephium.json.Json._
+object FileUtil {
 
-@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-final case class AmountHistory(
-    amountHistory: ArraySeq[TimedAmount]
-)
+  def createFileIfNotExists(file: File): Unit = {
+    if (!file.exists) {
+      discard(file.createNewFile)
+    } else {
+      ()
+    }
+  }
 
-object AmountHistory {
-  implicit val readWriter: ReadWriter[AmountHistory] = macroRW[AmountHistory]
-  implicit val schema: Schema[AmountHistory]         = Schema.derived[AmountHistory]
+  def createDirIfNotExists(path: Path): Unit = {
+    if (!Files.exists(path)) {
+      discard(path.toFile.mkdir())
+    } else {
+      ()
+    }
+  }
 }

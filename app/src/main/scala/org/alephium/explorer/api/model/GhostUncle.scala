@@ -16,18 +16,15 @@
 
 package org.alephium.explorer.api.model
 
-import scala.collection.immutable.ArraySeq
-
-import sttp.tapir.Schema
-
+import org.alephium.api.model.GhostUncleBlockEntry
+import org.alephium.explorer.api.Codecs._
 import org.alephium.json.Json._
+import org.alephium.protocol.model.{Address, BlockHash}
 
-@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-final case class AmountHistory(
-    amountHistory: ArraySeq[TimedAmount]
-)
+final case class GhostUncle(blockHash: BlockHash, miner: Address.Asset) {
+  def toProtocol(): GhostUncleBlockEntry = GhostUncleBlockEntry(blockHash, miner)
+}
 
-object AmountHistory {
-  implicit val readWriter: ReadWriter[AmountHistory] = macroRW[AmountHistory]
-  implicit val schema: Schema[AmountHistory]         = Schema.derived[AmountHistory]
+object GhostUncle {
+  implicit val codec: ReadWriter[GhostUncle] = macroRW
 }

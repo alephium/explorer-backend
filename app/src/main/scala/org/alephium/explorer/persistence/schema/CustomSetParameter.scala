@@ -176,6 +176,11 @@ object CustomSetParameter {
       }
   }
 
+  implicit object BlockHashesStringsOptionSetParameter extends SetParameter[ArraySeq[BlockHash]] {
+    override def apply(input: ArraySeq[BlockHash], params: PositionedParameters): Unit =
+      params setBytes serialize(input).toArray
+  }
+
   implicit object ValsSetParameter extends SetParameter[ArraySeq[Val]] {
     override def apply(input: ArraySeq[Val], params: PositionedParameters): Unit =
       params setBytes writeBinary(input)
@@ -253,6 +258,24 @@ object CustomSetParameter {
 
         case None =>
           params setTimestampOption None
+      }
+  }
+
+  implicit object GhostUnclesSetParameter extends SetParameter[ArraySeq[GhostUncle]] {
+    override def apply(input: ArraySeq[GhostUncle], params: PositionedParameters): Unit =
+      params setBytes writeBinary(input)
+  }
+
+  implicit object GhostUnclesOptionSetParameter extends SetParameter[Option[ArraySeq[GhostUncle]]] {
+    override def apply(option: Option[ArraySeq[GhostUncle]], params: PositionedParameters): Unit =
+      option match {
+        case Some(ghostUncles) =>
+          GhostUnclesSetParameter(ghostUncles, params)
+
+        case None =>
+          // scalastyle:off null
+          params setBytes null
+        // scalastyle:on null
       }
   }
 }

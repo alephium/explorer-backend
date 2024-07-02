@@ -16,18 +16,33 @@
 
 package org.alephium.explorer.api.model
 
+import java.math.BigInteger
+
 import scala.collection.immutable.ArraySeq
 
-import sttp.tapir.Schema
+import akka.util.ByteString
 
-import org.alephium.json.Json._
+import org.alephium.explorer.service.FlowEntity
+import org.alephium.protocol.Hash
+import org.alephium.protocol.model.{BlockHash, GroupIndex}
+import org.alephium.util.TimeStamp
 
-@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-final case class AmountHistory(
-    amountHistory: ArraySeq[TimedAmount]
-)
-
-object AmountHistory {
-  implicit val readWriter: ReadWriter[AmountHistory] = macroRW[AmountHistory]
-  implicit val schema: Schema[AmountHistory]         = Schema.derived[AmountHistory]
-}
+final case class BlockEntryTest(
+    hash: BlockHash,
+    timestamp: TimeStamp,
+    chainFrom: GroupIndex,
+    chainTo: GroupIndex,
+    height: Height,
+    transactions: ArraySeq[Transaction],
+    deps: ArraySeq[BlockHash],
+    nonce: ByteString,
+    version: Byte,
+    depStateHash: Hash,
+    txsHash: Hash,
+    txsCount: Int,
+    target: ByteString,
+    hashRate: BigInteger,
+    parent: Option[BlockHash],
+    mainChain: Boolean,
+    ghostUncles: ArraySeq[GhostUncle]
+) extends FlowEntity

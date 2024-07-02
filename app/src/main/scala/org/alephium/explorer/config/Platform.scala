@@ -14,20 +14,26 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.api.model
+package org.alephium.explorer.config
 
-import scala.collection.immutable.ArraySeq
+import java.nio.file.{Path, Paths}
 
-import sttp.tapir.Schema
+import org.alephium.explorer.util.FileUtil
+import org.alephium.util.Files
 
-import org.alephium.json.Json._
+object Platform {
 
-@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-final case class AmountHistory(
-    amountHistory: ArraySeq[TimedAmount]
-)
+  val defaultHome: String = ".alephium-explorer-backend"
 
-object AmountHistory {
-  implicit val readWriter: ReadWriter[AmountHistory] = macroRW[AmountHistory]
-  implicit val schema: Schema[AmountHistory]         = Schema.derived[AmountHistory]
+  def getRootPath(): Path = {
+    val rootPath =
+      sys.env.get("EXPLORER_HOME") match {
+        case Some(rawPath) => Paths.get(rawPath)
+        case None          => Files.homeDir.resolve(defaultHome)
+      }
+
+    FileUtil.createDirIfNotExists(rootPath)
+
+    rootPath
+  }
 }

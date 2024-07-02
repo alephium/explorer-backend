@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
+//scalastyle:off file.size.limit
 package org.alephium.explorer
 
 import java.net.InetAddress
@@ -67,7 +68,7 @@ trait ExplorerSpec
     with DatabaseFixtureForAll
     with HttpRouteFixture {
 
-  implicit override val patienceConfig =
+  implicit override val patienceConfig: PatienceConfig =
     PatienceConfig(timeout = Span(120, Seconds))
 
   override val name: String = "ExploreSpec"
@@ -79,11 +80,27 @@ trait ExplorerSpec
   val blockflow: ArraySeq[ArraySeq[model.BlockEntry]] =
     blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
 
+  val uncles = blockflow
+    .map(_.flatMap { block =>
+      block.ghostUncles.map { uncle =>
+        blockEntryProtocolGen.sample.get.copy(
+          hash = uncle.blockHash,
+          timestamp = block.timestamp,
+          chainFrom = block.chainFrom,
+          chainTo = block.chainTo
+        )
+
+      }
+    })
+    .flatten
+
   val blocksProtocol: ArraySeq[model.BlockEntry] = blockflow.flatten
   val blockEntities: ArraySeq[BlockEntity] =
     blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
 
-  val blocks: ArraySeq[BlockEntry] = blockEntitiesToBlockEntries(ArraySeq(blockEntities)).flatten
+  val blocks: ArraySeq[BlockEntryTest] = blockEntitiesToBlockEntries(
+    ArraySeq(blockEntities)
+  ).flatten
 
   val transactions: ArraySeq[Transaction] = blocks.flatMap(_.transactions)
 
@@ -95,7 +112,7 @@ trait ExplorerSpec
 
   val blockFlowPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
   val blockFlowMock =
-    new ExplorerSpec.BlockFlowServerMock(localhost, blockFlowPort, blockflow, networkId)
+    new ExplorerSpec.BlockFlowServerMock(localhost, blockFlowPort, blockflow, uncles, networkId)
 
   val coingeckoPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
   val coingeckoUri  = s"http://${localhost.getHostAddress()}:$coingeckoPort"
@@ -382,6 +399,71 @@ trait ExplorerSpec
     }
   }
 
+  "insert uncle blocks" in {
+    uncles.foreach { uncle =>
+      Get(s"/blocks/${uncle.hash.toHexString}") check { response =>
+        val res = response.as[BlockEntry]
+        res.mainChain is false
+      }
+    }
+  }
+
+  "Market price endpoints" when {
+    "correctly return price" in {
+      val body = """["ALPH", "WETH"]"""
+      Post(s"/market/prices?currency=btc", body) check { response =>
+        val prices = response.as[ArraySeq[Option[Double]]]
+        prices.foreach(_.isDefined is true)
+        response.code is StatusCode.Ok
+      }
+    }
+
+    "ignore unknown symbol" in {
+      val body = """["ALPH", "yop", "nop"]"""
+      Post(s"/market/prices?currency=btc", body) check { response =>
+        val prices = response.as[ArraySeq[Option[Double]]]
+        prices.head.isDefined is true
+        prices.tail.foreach(_.isEmpty is true)
+        response.code is StatusCode.Ok
+      }
+    }
+
+    "return 404 when unknown currency" in {
+      forAll(hashGen) { currency =>
+        Post(s"/market/prices?currency=${currency}", "[]") check { response =>
+          response.code is StatusCode.NotFound
+        }
+      }
+    }
+  }
+
+  "Market chart endpoints" when {
+    "correctly return price charts" in {
+      List("ALPH", "WETH").map { symbol =>
+        Get(s"/market/prices/$symbol/charts?currency=btc") check { response =>
+          response.as[TimedPrices]
+          response.code is StatusCode.Ok
+        }
+      }
+    }
+
+    "return 404 when unknown currency" in {
+      forAll(hashGen) { currency =>
+        Get(s"/market/prices/ALPH/charts?currency=${currency}") check { response =>
+          response.code is StatusCode.NotFound
+        }
+      }
+    }
+
+    "return 404 when unknown symbol" in {
+      forAll(hashGen) { symbol =>
+        Get(s"/market/prices/$symbol/charts?currency=btc") check { response =>
+          response.code is StatusCode.NotFound
+        }
+      }
+    }
+  }
+
   "generate the documentation" in {
     Get("/docs") check { response =>
       response.code is StatusCode.Ok
@@ -425,6 +507,7 @@ object ExplorerSpec {
       address: InetAddress,
       port: Int,
       blockflow: ArraySeq[ArraySeq[model.BlockEntry]],
+      uncles: ArraySeq[model.BlockEntry],
       networkId: NetworkId
   )(implicit groupSetting: GroupSetting)
       extends ApiModelCodec
@@ -436,6 +519,7 @@ object ExplorerSpec {
 
     implicit val groupConfig: GroupConfig = groupSetting.groupConfig
     val blocks                            = blockflow.flatten
+    val blocksWithUncles                  = blockflow.flatten ++ uncles
 
     val cliqueId = CliqueId.generate
 
@@ -482,7 +566,7 @@ object ExplorerSpec {
             .in(path[BlockHash])
             .out(jsonBody[model.BlockEntry])
             .serverLogicSuccess[Future] { hash =>
-              Future.successful(blocks.find(_.hash === hash).get)
+              Future.successful(blocksWithUncles.find(_.hash === hash).get)
             }
         ),
         route(
@@ -495,7 +579,7 @@ object ExplorerSpec {
               Future
                 .successful(
                   model.BlockAndEvents(
-                    blocks.find(_.hash === hash).get,
+                    blocksWithUncles.find(_.hash === hash).get,
                     AVector.from(Gen.listOfN(3, contractEventByBlockHash).sample.get)
                   )
                 )
@@ -704,7 +788,7 @@ object ExplorerSpec {
 
   def mapJson(
       json: ujson.Value
-  )(f: ujson.Obj => scala.collection.mutable.LinkedHashMap[String, ujson.Value]): ujson.Value = {
+  )(f: ujson.Obj => scala.collection.mutable.Map[String, ujson.Value]): ujson.Value = {
     @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     def rec(json: ujson.Value): ujson.Value = {
       json match {

@@ -69,12 +69,14 @@ object GenApiModel extends ImplicitConversions {
   val unlockScriptGen: Gen[ByteString] = hashGen.map(_.bytes)
 
   val inputGen: Gen[Input] = for {
-    outputRef    <- outputRefGen
-    unlockScript <- Gen.option(unlockScriptGen)
-    txHashRef    <- Gen.option(transactionHashGen)
-    address      <- Gen.option(addressGen)
-    amount       <- Gen.option(amountGen)
-  } yield Input(outputRef, unlockScript, txHashRef, address, amount)
+    outputRef     <- outputRefGen
+    unlockScript  <- Gen.option(unlockScriptGen)
+    txHashRef     <- Gen.option(transactionHashGen)
+    address       <- Gen.option(addressGen)
+    amount        <- Gen.option(amountGen)
+    tokens        <- Gen.option(tokensGen)
+    contractInput <- arbitrary[Boolean]
+  } yield Input(outputRef, unlockScript, txHashRef, address, amount, tokens, contractInput)
 
   val tokenGen: Gen[Token] = for {
     id     <- tokenIdGen
@@ -92,8 +94,9 @@ object GenApiModel extends ImplicitConversions {
       spent    <- Gen.option(transactionHashGen)
       message  <- Gen.option(bytesGen)
       hint = 0
-      key <- outputRefKeyGen.map(_.value)
-    } yield AssetOutput(hint, key, amount, address, tokens, lockTime, message, spent)
+      key         <- outputRefKeyGen.map(_.value)
+      fixedOutput <- arbitrary[Boolean]
+    } yield AssetOutput(hint, key, amount, address, tokens, lockTime, message, spent, fixedOutput)
 
   val contractOutputGen: Gen[ContractOutput] =
     for {
@@ -103,7 +106,7 @@ object GenApiModel extends ImplicitConversions {
       spent   <- Gen.option(transactionHashGen)
       hint = 0
       key <- outputRefKeyGen.map(_.value)
-    } yield ContractOutput(hint, key, amount, address, tokens, spent)
+    } yield ContractOutput(hint, key, amount, address, tokens, spent, fixedOutput = false)
 
   val outputGen: Gen[Output] =
     Gen.oneOf(assetOutputGen: Gen[Output], contractOutputGen: Gen[Output])
@@ -114,9 +117,14 @@ object GenApiModel extends ImplicitConversions {
       blockHash         <- blockHashGen
       timestamp         <- timestampGen
       outputs           <- Gen.listOfN(5, outputGen)
+      version           <- arbitrary[Byte]
+      networkId         <- arbitrary[Byte]
+      scriptOpt         <- Gen.option(hashGen.map(_.toHexString))
       gasAmount         <- Gen.posNum[Int]
       gasPrice          <- u256Gen
       scriptExecutionOk <- arbitrary[Boolean]
+      inputSignatures   <- Gen.listOfN(2, bytesGen)
+      scriptSignatures  <- Gen.listOfN(2, bytesGen)
       coinbase          <- arbitrary[Boolean]
     } yield Transaction(
       hash,
@@ -124,9 +132,14 @@ object GenApiModel extends ImplicitConversions {
       timestamp,
       ArraySeq.empty,
       ArraySeq.from(outputs),
+      version,
+      networkId,
+      scriptOpt,
       gasAmount,
       gasPrice,
       scriptExecutionOk,
+      inputSignatures,
+      scriptSignatures,
       coinbase
     )
 
@@ -135,8 +148,13 @@ object GenApiModel extends ImplicitConversions {
       hash      <- transactionHashGen
       chainFrom <- groupIndexGen
       chainTo   <- groupIndexGen
-      inputs    <- Gen.listOfN(3, inputGen.map(_.copy(attoAlphAmount = None, txHashRef = None)))
-      outputs   <- Gen.listOfN(3, assetOutputGen.map(_.copy(spent = None)))
+      inputs <- Gen.listOfN(
+        3,
+        inputGen.map(
+          _.copy(attoAlphAmount = None, txHashRef = None, tokens = None, contractInput = false)
+        )
+      )
+      outputs   <- Gen.listOfN(3, assetOutputGen.map(_.copy(spent = None, fixedOutput = true)))
       gasAmount <- Gen.posNum[Int]
       gasPrice  <- u256Gen
       lastSeen  <- timestampGen
@@ -185,15 +203,23 @@ object GenApiModel extends ImplicitConversions {
 
   def blockEntryGen(implicit groupSetting: GroupSetting): Gen[BlockEntry] =
     for {
-      hash         <- blockHashGen
-      timestamp    <- timestampGen
-      chainFrom    <- groupIndexGen
-      chainTo      <- groupIndexGen
-      height       <- heightGen
-      deps         <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockHashGen)
-      transactions <- Gen.listOfN(2, transactionGen)
-      mainChain    <- arbitrary[Boolean]
-      hashrate     <- arbitrary[Long].map(BigInteger.valueOf)
+      hash            <- blockHashGen
+      timestamp       <- timestampGen
+      chainFrom       <- groupIndexGen
+      chainTo         <- groupIndexGen
+      height          <- heightGen
+      deps            <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockHashGen)
+      nonce           <- bytesGen
+      depStateHash    <- hashGen
+      txsHash         <- hashGen
+      txsCount        <- Gen.posNum[Int]
+      target          <- bytesGen
+      version         <- arbitrary[Byte]
+      mainChain       <- arbitrary[Boolean]
+      hashrate        <- arbitrary[Long].map(BigInteger.valueOf)
+      parent          <- Gen.option(blockHashGen)
+      ghostUnclesSize <- Gen.choose(0, 5)
+      ghostUncles     <- Gen.listOfN(ghostUnclesSize, ghostUncleGen())
     } yield {
       BlockEntry(
         hash,
@@ -202,9 +228,16 @@ object GenApiModel extends ImplicitConversions {
         chainTo,
         height,
         deps,
-        transactions,
+        nonce,
+        version,
+        depStateHash,
+        txsHash,
+        txsCount,
+        target,
+        hashrate,
+        parent,
         mainChain,
-        hashrate
+        ghostUncles
       )
     }
 
@@ -338,6 +371,11 @@ object GenApiModel extends ImplicitConversions {
         StdInterfaceId.NonStandard
       )
     )
+
+  def ghostUncleGen()(implicit groupSetting: GroupSetting): Gen[GhostUncle] = for {
+    blockHash <- blockHashGen
+    miner     <- addressAssetProtocolGen()
+  } yield GhostUncle(blockHash, miner)
 
   /** Generates [[Pagination]] instance for the generated data.
     *

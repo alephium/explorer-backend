@@ -166,7 +166,7 @@ object SanityChecker extends StrictLogging {
         s"Checked $blockNum blocks , progress ${(nextBlockNum.toFloat / totalNbOfBlocks * 100.0).toInt}%"
       )
     }
-    getBlockEntryWithoutTxsAction(hash)
+    getBlockEntryAction(hash)
       .flatMap {
         case Some(block) if !block.mainChain =>
           logger.debug(s"Updating block ${block.hash} which should be on the mainChain")

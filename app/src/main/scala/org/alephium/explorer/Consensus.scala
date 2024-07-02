@@ -14,10 +14,20 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.model
+package org.alephium.explorer
 
-import org.alephium.protocol.model.BlockHash
+import org.alephium.util.{Duration, TimeStamp}
 
-/** Class for defining rows in table [[org.alephium.explorer.persistence.schema.BlockDepsSchema]]
-  */
-final case class BlockDepEntity(hash: BlockHash, dep: BlockHash, order: Int)
+object Consensus {
+  // TODO Add this to config
+  // scalastyle:off magic.number
+  val rhoneHardForkTimestamp: TimeStamp = TimeStamp.unsafe(1718186400000L)
+
+  def blockTargetTime(timestamp: TimeStamp): Duration =
+    if (timestamp.isBefore(rhoneHardForkTimestamp)) {
+      Duration.ofSecondsUnsafe(64)
+    } else {
+      Duration.ofSecondsUnsafe(16)
+    }
+  // scalastyle:on magic.number
+}

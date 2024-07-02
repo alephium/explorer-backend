@@ -25,7 +25,7 @@ import org.alephium.api.EndpointsExamples
 import org.alephium.api.model.{Amount, ValBool}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.queries.ExplainResult
-import org.alephium.protocol.ALPH
+import org.alephium.protocol.{ALPH, PublicKey}
 import org.alephium.protocol.mining.HashRate
 import org.alephium.protocol.model.{Address, BlockHash, ContractId, GroupIndex, TokenId}
 import org.alephium.util.{Hex, U256}
@@ -44,11 +44,15 @@ object EndpointExamples extends EndpointsExamples {
       .from(Hex.unsafe("bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5"))
       .get
 
+  val version: Byte   = 1
+  val networkId: Byte = 0
+
   private val outputRef: OutputRef =
     OutputRef(hint = 23412, key = hash)
 
+  private val publicKey = "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28"
   private val unlockScript: ByteString =
-    Hex.unsafe("d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28")
+    Hex.unsafe(publicKey)
 
   private val address1: Address =
     Address.fromBase58("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n").get
@@ -64,6 +68,8 @@ object EndpointExamples extends EndpointsExamples {
   private val addressContract: Address.Contract = Address.contract(
     contract
   )
+
+  private val addressAsset: Address.Asset = Address.asset(address1.toBase58).get
 
   private val groupIndex1: GroupIndex = new GroupIndex(1)
   private val groupIndex2: GroupIndex = new GroupIndex(2)
@@ -83,7 +89,8 @@ object EndpointExamples extends EndpointsExamples {
       txHashRef = Some(txId),
       address = Some(address1),
       attoAlphAmount = Some(U256.Two),
-      tokens = Some(tokens)
+      tokens = Some(tokens),
+      contractInput = false
     )
 
   private val outputAsset: AssetOutput =
@@ -94,7 +101,8 @@ object EndpointExamples extends EndpointsExamples {
       address = address1,
       tokens = Some(tokens),
       lockTime = Some(ts),
-      message = Some(hash.bytes)
+      message = Some(hash.bytes),
+      fixedOutput = true
     )
 
   private val outputContract: Output =
@@ -103,7 +111,8 @@ object EndpointExamples extends EndpointsExamples {
       key = hash,
       attoAlphAmount = U256.Two,
       address = address1,
-      tokens = Some(tokens)
+      tokens = Some(tokens),
+      fixedOutput = false
     )
 
   /** Main API objects
@@ -120,6 +129,26 @@ object EndpointExamples extends EndpointsExamples {
       hashRate = HashRate.a128EhPerSecond.value
     )
 
+  private val blockEntry: BlockEntry =
+    BlockEntry(
+      hash = blockHash,
+      timestamp = ts,
+      chainFrom = groupIndex1,
+      chainTo = groupIndex2,
+      height = Height.unsafe(42),
+      deps = ArraySeq(blockHash),
+      nonce = hash.bytes,
+      version = 1,
+      depStateHash = hash,
+      txsHash = hash,
+      txNumber = 1,
+      target = hash.bytes,
+      hashRate = HashRate.a128EhPerSecond.value,
+      parent = Some(blockHash),
+      mainChain = true,
+      ghostUncles = ArraySeq(GhostUncle(blockHash, addressAsset))
+    )
+
   private val transaction: Transaction =
     Transaction(
       hash = txId,
@@ -127,9 +156,14 @@ object EndpointExamples extends EndpointsExamples {
       timestamp = ts,
       inputs = ArraySeq(input),
       outputs = ArraySeq(outputAsset, outputContract),
+      version = version,
+      networkId = networkId,
+      scriptOpt = None,
       gasAmount = org.alephium.protocol.model.minimalGas.value,
       gasPrice = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
       scriptExecutionOk = true,
+      inputSignatures = ArraySeq(hash.bytes),
+      scriptSignatures = ArraySeq(hash.bytes),
       coinbase = false
     )
 
@@ -140,9 +174,14 @@ object EndpointExamples extends EndpointsExamples {
       timestamp = ts,
       inputs = ArraySeq(input),
       outputs = ArraySeq(outputAsset, outputContract),
+      version = version,
+      networkId = networkId,
+      scriptOpt = None,
       gasAmount = org.alephium.protocol.model.minimalGas.value,
       gasPrice = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
       scriptExecutionOk = true,
+      inputSignatures = ArraySeq(hash.bytes),
+      scriptSignatures = ArraySeq(hash.bytes),
       coinbase = false
     )
 
@@ -188,6 +227,18 @@ object EndpointExamples extends EndpointsExamples {
       tokenId = token,
       balance = U256.Ten,
       lockedBalance = U256.Two
+    )
+
+  private val contractInfo =
+    ContractLiveness(
+      Some(addressContract),
+      ContractLiveness.Location(
+        blockHash,
+        txId,
+        ts
+      ),
+      None,
+      None
     )
 
   private val contractParent =
@@ -300,6 +351,9 @@ object EndpointExamples extends EndpointsExamples {
   implicit val blockEntryLiteExample: List[Example[BlockEntryLite]] =
     simpleExample(blockEntryLite)
 
+  implicit val blockEntryExample: List[Example[BlockEntry]] =
+    simpleExample(blockEntry)
+
   implicit val transactionsExample: List[Example[ArraySeq[Transaction]]] =
     simpleExample(ArraySeq(transaction, transaction))
 
@@ -341,6 +395,9 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val contractParentExample: List[Example[ContractParent]] =
     simpleExample(contractParent)
+
+  implicit val contractInfoExample: List[Example[ContractLiveness]] =
+    simpleExample(contractInfo)
 
   implicit val subContractsExample: List[Example[SubContracts]] =
     simpleExample(subContracts)
@@ -416,4 +473,7 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val priceExample: List[Example[ArraySeq[Option[Double]]]] =
     simpleExample(ArraySeq(Option(0.01)))
+
+  implicit val publicKeyExample: List[Example[PublicKey]] =
+    simpleExample(PublicKey.unsafe(Hex.unsafe(publicKey)))
 }

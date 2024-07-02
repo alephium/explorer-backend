@@ -51,7 +51,7 @@ class AsyncReloadingCacheSpec extends AlephiumFutureSpec {
   }
 
   "not allow multiple threads to concurrently execute reload" in {
-    forAll { cacheValue: Int =>
+    forAll { (cacheValue: Int) =>
       // 1 atomic and 1 non-atomic counter. If the cache is thread-safe then
       // the output of both counters will be same when the cache is concurrently
       // read and dropped by multiple threads

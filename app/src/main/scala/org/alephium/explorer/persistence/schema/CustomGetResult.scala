@@ -100,6 +100,17 @@ object CustomGetResult {
     (result: PositionedResult) =>
       result.nextBytesOption().map(bytes => ByteString.fromArrayUnsafe(bytes))
 
+  implicit val optionByteStringsGetResult: GetResult[Option[ArraySeq[ByteString]]] =
+    (result: PositionedResult) =>
+      result
+        .nextBytesOption()
+        .map { bytes =>
+          deserialize[ArraySeq[ByteString]](ByteString.fromArrayUnsafe(bytes)) match {
+            case Left(error)  => throw error
+            case Right(value) => value
+          }
+        }
+
   implicit val optionTokensGetResult: GetResult[Option[ArraySeq[Token]]] =
     (result: PositionedResult) =>
       result
@@ -110,6 +121,13 @@ object CustomGetResult {
             case Right(value) => value
           }
         }
+
+  implicit val blockHashesGetResult: GetResult[ArraySeq[BlockHash]] =
+    (result: PositionedResult) =>
+      deserialize[ArraySeq[BlockHash]](ByteString.fromArrayUnsafe(result.nextBytes())) match {
+        case Left(error)  => throw error
+        case Right(value) => value
+      }
 
   implicit val valsGetResult: GetResult[ArraySeq[Val]] =
     (result: PositionedResult) => readBinary[ArraySeq[Val]](result.nextBytes())
@@ -165,7 +183,8 @@ object CustomGetResult {
         txOrder = result.<<,
         coinbase = result.<<,
         spentFinalized = result.<<?,
-        spentTimestamp = result.<<?
+        spentTimestamp = result.<<?,
+        fixedOutput = result.<<
       )
 
   val inputGetResult: GetResult[InputEntity] =
@@ -183,7 +202,8 @@ object CustomGetResult {
         outputRefTxHash = result.<<?,
         outputRefAddress = result.<<?,
         outputRefAmount = result.<<?,
-        outputRefTokens = result.<<?
+        outputRefTokens = result.<<?,
+        contractInput = result.<<
       )
 
   implicit val outputTypeGetResult: GetResult[OutputEntity.OutputType] =
@@ -194,6 +214,10 @@ object CustomGetResult {
 
   implicit val optionInterfaceIdGetResult: GetResult[Option[InterfaceIdEntity]] =
     (result: PositionedResult) => result.nextStringOption().map(InterfaceIdEntity.from)
+
+  implicit val optionGhostUnclesGetResult: GetResult[Option[ArraySeq[GhostUncle]]] =
+    (result: PositionedResult) =>
+      result.nextBytesOption().map(bytes => readBinary[ArraySeq[GhostUncle]](bytes))
 
   /** GetResult type for BlockEntryLite
     *
@@ -231,7 +255,9 @@ object CustomGetResult {
         txsCount = result.<<,
         target = result.<<,
         hashrate = result.<<,
-        parent = result.<<?
+        parent = result.<<?,
+        deps = result.<<,
+        ghostUncles = result.<<?
       )
 
   val mempoolTransactionGetResult: GetResult[MempoolTransactionEntity] =
@@ -332,6 +358,24 @@ object CustomGetResult {
       TokenInfoEntity(
         token = result.<<,
         lastUsed = result.<<,
+        category = result.<<?,
+        interfaceId = result.<<?
+      )
+
+  val contractEntityGetResult: GetResult[ContractEntity] =
+    (result: PositionedResult) =>
+      ContractEntity(
+        contract = result.<<,
+        parent = result.<<?,
+        stdInterfaceIdGuessed = result.<<?,
+        creationBlockHash = result.<<,
+        creationTxHash = result.<<,
+        creationTimestamp = result.<<,
+        creationEventOrder = result.<<,
+        destructionBlockHash = result.<<?,
+        destructionTxHash = result.<<?,
+        destructionTimestamp = result.<<?,
+        destructionEventOrder = result.<<?,
         category = result.<<?,
         interfaceId = result.<<?
       )

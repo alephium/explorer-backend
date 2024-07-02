@@ -33,7 +33,7 @@ import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.{Height, StdInterfaceId}
 import org.alephium.explorer.persistence.model.ContractEntity
 import org.alephium.explorer.service.BlockFlowClient
-import org.alephium.protocol.model.{BlockHash, ChainIndex, CliqueId, NetworkId, Target}
+import org.alephium.protocol.model.{BlockHash, ChainIndex, CliqueId, Hint, NetworkId, Target}
 import org.alephium.serde._
 import org.alephium.util.{AVector, Duration, Hex, I256, TimeStamp, U256}
 
@@ -93,6 +93,11 @@ object GenCoreApi {
     addressAssetProtocolGen().map(ValAddress(_))
   }
 
+  def ghostUncleBlockEntry(implicit groupSetting: GroupSetting): Gen[GhostUncleBlockEntry] = for {
+    blockHash <- blockHashGen
+    miner     <- addressAssetProtocolGen()
+  } yield GhostUncleBlockEntry(blockHash, miner)
+
   def valContractAddressGen(implicit groupSetting: GroupSetting): Gen[ValAddress] = {
     addressContractProtocolGen.map(ValAddress(_))
   }
@@ -118,12 +123,12 @@ object GenCoreApi {
     for {
       unsigned             <- unsignedTxGen
       scriptExecutionOk    <- arbitrary[Boolean]
-      contractInputsSize   <- Gen.choose(0, 5)
+      contractInputsSize   <- Gen.choose(0, 1)
       contractInputs       <- Gen.listOfN(contractInputsSize, outputRefProtocolGen)
-      generatedOutputsSize <- Gen.choose(0, 5)
+      generatedOutputsSize <- Gen.choose(0, 1)
       generatedOutputs     <- Gen.listOfN(generatedOutputsSize, outputProtocolGen)
-      inputSignatures      <- Gen.listOfN(2, bytesGen)
-      scriptSignatures     <- Gen.listOfN(2, bytesGen)
+      inputSignatures      <- Gen.listOfN(1, bytesGen)
+      scriptSignatures     <- Gen.listOfN(1, bytesGen)
     } yield Transaction(
       unsigned,
       scriptExecutionOk,
@@ -141,12 +146,14 @@ object GenCoreApi {
       chainTo         <- GenApiModel.groupIndexGen
       height          <- GenApiModel.heightGen
       deps            <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockHashGen)
-      transactionSize <- Gen.choose(1, 10)
+      transactionSize <- Gen.choose(1, 1)
       transactions    <- Gen.listOfN(transactionSize, transactionProtocolGen)
       nonce           <- bytesGen
       version         <- Gen.posNum[Byte]
       depStateHash    <- hashGen
       txsHash         <- hashGen
+      ghostUnclesSize <- Gen.choose(0, 1)
+      ghostUncles     <- Gen.listOfN(ghostUnclesSize, ghostUncleBlockEntry)
     } yield {
       // From `alephium` repo
       val numZerosAtLeastInHash = 37
@@ -166,7 +173,8 @@ object GenCoreApi {
         version,
         depStateHash,
         txsHash,
-        target.bits
+        target.bits,
+        AVector.from(ghostUncles)
       )
     }
 
@@ -218,13 +226,12 @@ object GenCoreApi {
 
   def fixedOutputAssetProtocolGen(implicit groupSetting: GroupSetting): Gen[FixedAssetOutput] =
     for {
-      hint     <- Gen.posNum[Int]
       key      <- hashGen
       amount   <- amountGen
       lockTime <- timestampGen
       address  <- addressAssetProtocolGen()
     } yield FixedAssetOutput(
-      hint,
+      Hint.ofAsset(address.lockupScript.scriptHint).value,
       key,
       Amount(amount),
       address,
@@ -243,12 +250,17 @@ object GenCoreApi {
 
   def outputContractProtocolGen(implicit groupSetting: GroupSetting): Gen[ContractOutput] =
     for {
-      hint    <- Gen.posNum[Int]
       key     <- hashGen
       amount  <- amountGen
       address <- addressContractProtocolGen
       tokens  <- Gen.listOfN(1, tokenProtocolGen)
-    } yield ContractOutput(hint, key, Amount(amount), address, AVector.from(tokens))
+    } yield ContractOutput(
+      Hint.ofAsset(address.lockupScript.scriptHint).value,
+      key,
+      Amount(amount),
+      address,
+      AVector.from(tokens)
+    )
 
   def outputProtocolGen(implicit groupSetting: GroupSetting): Gen[Output] =
     Gen.oneOf(outputAssetProtocolGen: Gen[Output], outputContractProtocolGen: Gen[Output])

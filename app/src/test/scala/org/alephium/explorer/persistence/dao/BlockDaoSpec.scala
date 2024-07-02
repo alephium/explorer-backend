@@ -88,12 +88,10 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
 
       val inputQuery  = InputSchema.table.filter(_.blockHash === block.hash).result
       val outputQuery = OutputSchema.table.filter(_.blockHash === block.hash).result
-      val blockDepsQuery =
-        BlockDepsSchema.table.filter(_.hash === block.hash).map(_.dep).result
       val transactionsQuery =
         TransactionSchema.table.filter(_.blockHash === block.hash).result
-      val queries  = Seq(inputQuery, outputQuery, blockDepsQuery, transactionsQuery)
-      val dbInputs = Seq(block.inputs, block.outputs, block.deps, block.transactions)
+      val queries  = Seq(inputQuery, outputQuery, transactionsQuery)
+      val dbInputs = Seq(block.inputs, block.outputs, block.transactions)
 
       def checkDuplicates[T](dbInput: Seq[T], dbOutput: Seq[T]) = {
         dbOutput.size is dbInput.size

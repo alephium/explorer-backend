@@ -16,9 +16,8 @@
 
 package org.alephium.explorer
 
-import java.math.BigInteger
-
 import scala.collection.immutable.ArraySeq
+import scala.util.Random
 
 import org.scalacheck.Gen
 
@@ -33,41 +32,58 @@ object Generators {
   def parentIndex(chainTo: GroupIndex)(implicit groupSetting: GroupSetting) =
     groupSetting.groupNum - 1 + chainTo.value
 
+  def blockEntityToTransactions(
+      block: BlockEntity,
+      outputs: ArraySeq[OutputEntity]
+  ): ArraySeq[Transaction] = {
+    val coinbaseTxId = block.transactions.last.hash
+    block.transactions.map { tx =>
+      Transaction(
+        tx.hash,
+        block.hash,
+        block.timestamp,
+        block.inputs
+          .filter(_.txHash === tx.hash)
+          .map(input =>
+            inputEntityToApi(input, outputs(Random.nextInt(outputs.size)))
+          ), // TODO Fix when we have a valid blockchain generator
+        block.outputs.filter(_.txHash === tx.hash).map(out => outputEntityToApi(out, None)),
+        tx.version,
+        tx.networkId,
+        tx.scriptOpt,
+        tx.gasAmount,
+        tx.gasPrice,
+        tx.scriptExecutionOk,
+        tx.inputSignatures.getOrElse(ArraySeq.empty),
+        tx.scriptSignatures.getOrElse(ArraySeq.empty),
+        coinbase = coinbaseTxId == tx.hash
+      )
+    }
+  }
+
   def blockEntitiesToBlockEntries(
       blocks: ArraySeq[ArraySeq[BlockEntity]]
-  ): ArraySeq[ArraySeq[BlockEntry]] = {
-    val outputs: ArraySeq[OutputEntity] = blocks.flatMap(_.flatMap(_.outputs))
-
+  ): ArraySeq[ArraySeq[BlockEntryTest]] = {
     blocks.map(_.map { block =>
-      val coinbaseTxId = block.transactions.last.hash
-      val transactions =
-        block.transactions.map { tx =>
-          Transaction(
-            tx.hash,
-            block.hash,
-            block.timestamp,
-            block.inputs
-              .filter(_.txHash === tx.hash)
-              .map(input =>
-                inputEntityToApi(input, outputs.head)
-              ), // TODO Fix when we have a valid blockchain generator
-            block.outputs.filter(_.txHash === tx.hash).map(out => outputEntityToApi(out, None)),
-            tx.gasAmount,
-            tx.gasPrice,
-            tx.scriptExecutionOk,
-            coinbase = coinbaseTxId == tx.hash
-          )
-        }
-      BlockEntry(
+      val transactions = blockEntityToTransactions(block, blocks.flatMap(_.flatMap(_.outputs)))
+      BlockEntryTest(
         block.hash,
         block.timestamp,
         block.chainFrom,
         block.chainTo,
         block.height,
-        block.deps,
         transactions,
+        block.deps,
+        block.nonce,
+        block.version,
+        block.depStateHash,
+        block.txsHash,
+        transactions.size,
+        block.target,
+        block.hashrate,
+        None,
         mainChain = true,
-        BigInteger.ZERO
+        ghostUncles = block.ghostUncles
       )
     })
   }
@@ -79,15 +95,26 @@ object Generators {
       Some(outputRef.txHash),
       Some(outputRef.address),
       Some(outputRef.amount),
-      outputRef.tokens
+      outputRef.tokens,
+      input.contractInput
     )
 
   def outputEntityToApi(o: OutputEntity, spent: Option[TransactionId]): Output = {
     o.outputType match {
       case OutputEntity.Asset =>
-        AssetOutput(o.hint, o.key, o.amount, o.address, o.tokens, o.lockTime, o.message, spent)
+        AssetOutput(
+          o.hint,
+          o.key,
+          o.amount,
+          o.address,
+          o.tokens,
+          o.lockTime,
+          o.message,
+          spent,
+          o.fixedOutput
+        )
       case OutputEntity.Contract =>
-        ContractOutput(o.hint, o.key, o.amount, o.address, o.tokens, spent)
+        ContractOutput(o.hint, o.key, o.amount, o.address, o.tokens, spent, o.fixedOutput)
     }
   }
 }
