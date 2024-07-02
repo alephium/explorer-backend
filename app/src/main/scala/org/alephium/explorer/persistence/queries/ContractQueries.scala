@@ -55,16 +55,24 @@ object ContractQueries {
   }
 
   def insertContractCreationEventEntities(events: Iterable[ContractEntity]): DBActionW[Int] = {
-    QuerySplitter.splitUpdates(rows = events, columnsPerRow = 7) { (events, placeholder) =>
+    QuerySplitter.splitUpdates(rows = events, columnsPerRow = 8) { (events, placeholder) =>
       val query =
         s"""
-           INSERT INTO contracts
-           ("contract", "parent", "std_interface_id_guessed", "creation_block_hash", "creation_tx_hash","creation_timestamp","creation_event_order")
+           INSERT INTO contracts (
+             "contract",
+             "parent",
+             "std_interface_id_guessed",
+             "creation_block_hash",
+             "creation_tx_hash",
+             "creation_timestamp",
+             "creation_event_order",
+             "main_chain"
+           )
            VALUES $placeholder
            ON CONFLICT
             ON CONSTRAINT contracts_pk
             DO NOTHING
-           """
+           """.stripMargin
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
@@ -76,6 +84,7 @@ object ContractQueries {
             params >> event.creationTxHash
             params >> event.creationTimestamp
             params >> event.creationEventOrder
+            params >> event.mainChain
           }
 
       SQLActionBuilder(
@@ -143,6 +152,7 @@ object ContractQueries {
       SELECT contract
       FROM contracts
       WHERE parent = $parent
+      AND main_chain = true
       ORDER BY creation_timestamp DESC, creation_event_order
       """
       .paginate(pagination)
