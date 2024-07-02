@@ -36,11 +36,15 @@ trait MarketService {
   def getPrices(
       ids: ArraySeq[String],
       currency: String
-  ): Future[Either[String, ArraySeq[Option[Double]]]]
+  ): Either[String, ArraySeq[Option[Double]]]
 
-  def getExchangeRates(): Future[Either[String, ArraySeq[ExchangeRate]]]
+  def getExchangeRates(): Either[String, ArraySeq[ExchangeRate]]
 
-  def getPriceChart(symbol: String, currency: String): Future[Either[String, TimedPrices]]
+  def getPriceChart(symbol: String, currency: String): Either[String, TimedPrices]
+
+  def symbolNames: ListMap[String, String]
+
+  def currencies: ArraySeq[String]
 }
 
 object MarketService extends StrictLogging {
@@ -143,22 +147,23 @@ object MarketService extends StrictLogging {
       }
     }
 
+    override def symbolNames: ListMap[String, String] = ids
+    override def currencies: ArraySeq[String]         = marketConfig.currencies
+
     def getPrices(
         ids: ArraySeq[String],
         currency: String
-    ): Future[Either[String, ArraySeq[Option[Double]]]] = {
-      Future.successful(
-        for {
-          rates <- ratesCache.get()
-          rate <- rates
-            .find(_.currency == currency)
-            .toRight(s"Cannot find price for currency $currency")
-          prices <- pricesCache.get()
-        } yield {
-          ids
-            .map(id => prices.find(_.symbol == id).map(price => price.price * rate.value))
-        }
-      )
+    ): Either[String, ArraySeq[Option[Double]]] = {
+      for {
+        rates <- ratesCache.get()
+        rate <- rates
+          .find(_.currency == currency)
+          .toRight(s"Cannot find price for currency $currency")
+        prices <- pricesCache.get()
+      } yield {
+        ids
+          .map(id => prices.find(_.symbol == id).map(price => price.price * rate.value))
+      }
     }
 
     private def getPricesRemote(retried: Int): Future[Either[String, ArraySeq[Price]]] = {
@@ -183,8 +188,8 @@ object MarketService extends StrictLogging {
       )
     }
 
-    def getExchangeRates(): Future[Either[String, ArraySeq[ExchangeRate]]] = {
-      Future.successful(ratesCache.get())
+    def getExchangeRates(): Either[String, ArraySeq[ExchangeRate]] = {
+      ratesCache.get()
     }
 
     private def getExchangeRatesRemote(
@@ -209,21 +214,19 @@ object MarketService extends StrictLogging {
       )
     }
 
-    def getPriceChart(symbol: String, currency: String): Future[Either[String, TimedPrices]] = {
-      Future.successful(
-        for {
-          rates <- ratesCache.get()
-          rate <- rates
-            .find(_.currency == currency)
-            .toRight(s"Cannot find price for currency $currency")
-          cache      <- priceChartsCache.get(symbol).toRight(s"Not price chart for $symbol")
-          priceChart <- cache.get()
-        } yield {
-          val timestamps = priceChart.map { case (ts, _) => ts }
-          val values     = priceChart.map { case (_, price) => price * rate.value }
-          TimedPrices(timestamps, values)
-        }
-      )
+    def getPriceChart(symbol: String, currency: String): Either[String, TimedPrices] = {
+      for {
+        rates <- ratesCache.get()
+        rate <- rates
+          .find(_.currency == currency)
+          .toRight(s"Cannot find price for currency $currency")
+        cache      <- priceChartsCache.get(symbol).toRight(s"Not price chart for $symbol")
+        priceChart <- cache.get()
+      } yield {
+        val timestamps = priceChart.map { case (ts, _) => ts }
+        val values     = priceChart.map { case (_, price) => price * rate.value }
+        TimedPrices(timestamps, values)
+      }
     }
 
     def getPriceChartRemote(
