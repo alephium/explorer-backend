@@ -16,7 +16,9 @@
 
 package org.alephium.explorer.config
 
+import java.io.File
 import java.net.InetAddress
+import java.nio.file.Path
 import java.time.LocalTime
 
 import scala.collection.immutable.{ArraySeq, ListMap}
@@ -24,7 +26,7 @@ import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
-import com.typesafe.config.{Config, ConfigUtil}
+import com.typesafe.config.{Config, ConfigException, ConfigFactory, ConfigUtil}
 import net.ceedubs.ficus.Ficus
 import net.ceedubs.ficus.Ficus.{finiteDurationReader => _, _}
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
@@ -34,11 +36,42 @@ import sttp.model.Uri
 import org.alephium.api.model.ApiKey
 import org.alephium.conf._
 import org.alephium.explorer.error.ExplorerError._
+import org.alephium.explorer.util.FileUtil
 import org.alephium.protocol.model.NetworkId
 import org.alephium.util
 
 @SuppressWarnings(Array("org.wartremover.warts.TryPartial"))
 object ExplorerConfig {
+
+  def getConfigFile(rootPath: Path, name: String): File =
+    rootPath.resolve(s"$name.conf").toFile
+
+  def getUserConfig(rootPath: Path): File = {
+    val file = getConfigFile(rootPath, "user")
+    FileUtil.createFileIfNotExists(file)
+    file
+  }
+
+  def loadConfig(rootPath: Path): Try[Config] = {
+    for {
+      userConfig <- parseConfigFile(getUserConfig(rootPath))
+    } yield {
+      val defaultConfig = ConfigFactory.parseResources("application.conf")
+      ConfigFactory.load(userConfig.withFallback(defaultConfig))
+    }
+  }
+
+  def parseConfigFile(file: File): Try[Config] =
+    try {
+      if (file.exists()) {
+        Success(ConfigFactory.parseFile(file))
+      } else {
+        Success(ConfigFactory.empty())
+      }
+    } catch {
+      case e: ConfigException =>
+        Failure(ConfigParsingError(file, e))
+    }
 
   def validateGroupNum(groupNum: Int): Try[Int] =
     if (groupNum < 0) {
