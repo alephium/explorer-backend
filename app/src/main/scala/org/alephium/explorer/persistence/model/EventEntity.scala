@@ -34,7 +34,8 @@ final case class EventEntity(
     timestamp: TimeStamp,
     eventIndex: Int,
     fields: ArraySeq[Val],
-    eventOrder: Int
+    eventOrder: Int,
+    mainChain: Boolean
 ) {
   def toApi: Event = Event(
     blockHash,
@@ -65,7 +66,8 @@ object EventEntity {
       timestamp,
       eventIndex,
       fields,
-      order
+      order,
+      mainChain = false
     )
   }
 }

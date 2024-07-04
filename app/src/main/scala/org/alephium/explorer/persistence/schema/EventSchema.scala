@@ -38,9 +38,20 @@ object EventSchema extends SchemaMainChain[EventEntity]("events") {
     def eventIndex: Rep[Int]               = column[Int]("event_index")
     def fields: Rep[ArraySeq[Val]]         = column[ArraySeq[Val]]("fields")
     def eventOrder: Rep[Int]               = column[Int]("event_order_in_block")
+    def mainChain: Rep[Boolean]            = column[Boolean]("main_chain")
 
     def * : ProvenShape[EventEntity] =
-      (blockHash, txHash, contractAddress, inputAddress, timestamp, eventIndex, fields, eventOrder)
+      (
+        blockHash,
+        txHash,
+        contractAddress,
+        inputAddress,
+        timestamp,
+        eventIndex,
+        fields,
+        eventOrder,
+        mainChain
+      )
         .<>((EventEntity.apply _).tupled, EventEntity.unapply)
 
     def pk: PrimaryKey = primaryKey("events_pk", (blockHash, eventOrder))

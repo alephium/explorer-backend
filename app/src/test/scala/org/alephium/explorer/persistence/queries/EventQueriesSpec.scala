@@ -43,7 +43,7 @@ class EventQueriesSpec
 
   "Event Queries" should {
     "get event by tx hash" in {
-      forAll(Gen.nonEmptyListOf(eventEntityGen())) { events =>
+      forAll(Gen.nonEmptyListOf(eventEntityGen(true))) { events =>
         insert(events)
 
         events.map { event =>
@@ -55,7 +55,7 @@ class EventQueriesSpec
     }
 
     "get all events with same tx hash" in {
-      forAll(Gen.nonEmptyListOf(eventEntityGen())) { events =>
+      forAll(Gen.nonEmptyListOf(eventEntityGen(true))) { events =>
         val txHash = transactionHashGen.sample.get
         val uniqueTxHashEvents = events.zipWithIndex.map { case (event, order) =>
           event.copy(txHash = txHash, eventOrder = order)
@@ -73,7 +73,7 @@ class EventQueriesSpec
     }
 
     "get event by contract address" in {
-      forAll(Gen.nonEmptyListOf(eventEntityGen())) { events =>
+      forAll(Gen.nonEmptyListOf(eventEntityGen(true))) { events =>
         insert(events)
 
         events.map { event =>
@@ -88,7 +88,7 @@ class EventQueriesSpec
     }
 
     "get all events with same contractAddress" in {
-      forAll(Gen.nonEmptyListOf(eventEntityGen())) { events =>
+      forAll(Gen.nonEmptyListOf(eventEntityGen(true))) { events =>
         val contractAddress = addressGen.sample.get
         val uniqueContractAddressEvents = events.map { event =>
           event.copy(contractAddress = contractAddress)
@@ -121,7 +121,7 @@ class EventQueriesSpec
     }
 
     "get event by contract address and input address" in {
-      forAll(Gen.nonEmptyListOf(eventEntityGen())) { events =>
+      forAll(Gen.nonEmptyListOf(eventEntityGen(true))) { events =>
         insert(events)
 
         events.map { event =>
@@ -153,7 +153,7 @@ class EventQueriesSpec
     }
 
     "get all events with same contractAddress and input address" in {
-      forAll(Gen.nonEmptyListOf(eventEntityGen())) { events =>
+      forAll(Gen.nonEmptyListOf(eventEntityGen(true))) { events =>
         val contractAddress = addressGen.sample.get
         val inputAddress    = addressGen.sample.get
         val uniqueContractAddressEvents = events.map { event =>
