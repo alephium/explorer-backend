@@ -72,7 +72,7 @@ class ContractEntitySpec extends AlephiumSpec {
               None,
               None,
               None,
-              true
+              false
             )
           )
       }

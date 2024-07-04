@@ -110,7 +110,7 @@ object ContractEntity {
           destructionEventOrder = None,
           category = None,
           interfaceId = None,
-          mainChain = true
+          mainChain = false
         )
       }
     } else {

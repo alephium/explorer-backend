@@ -377,7 +377,8 @@ object CustomGetResult {
         destructionTimestamp = result.<<?,
         destructionEventOrder = result.<<?,
         category = result.<<?,
-        interfaceId = result.<<?
+        interfaceId = result.<<?,
+        mainChain = result.<<
       )
 
   implicit val migrationVersionGetResult: GetResult[AppState.MigrationVersion] =

@@ -67,7 +67,7 @@ object EventEntity {
       eventIndex,
       fields,
       order,
-      mainChain = true
+      mainChain = false
     )
   }
 }

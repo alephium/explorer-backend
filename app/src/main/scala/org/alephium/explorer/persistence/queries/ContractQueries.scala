@@ -133,6 +133,7 @@ object ContractQueries {
       SELECT *
       FROM contracts
       WHERE contract = $contract
+      AND main_chain = true
       """.asASE[ContractEntity](contractEntityGetResult)
   }
 
@@ -143,6 +144,7 @@ object ContractQueries {
       SELECT parent
       FROM contracts
       WHERE contract = $contract
+      AND main_chain = true
       LIMIT 1
       """.asASE[Option[Address]](optionAddressGetResult).headOrNone.map(_.flatten)
   }
