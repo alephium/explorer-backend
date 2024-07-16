@@ -347,10 +347,10 @@ object GenApiModel extends ImplicitConversions {
   val stdInterfaceIdGen: Gen[StdInterfaceId] =
     Gen.oneOf(
       ArraySeq(
-        StdInterfaceId.FungibleToken,
+        StdInterfaceId.FungibleToken.default,
         StdInterfaceId.NFTCollection,
         StdInterfaceId.NFTCollectionWithRoyalty,
-        StdInterfaceId.NFT,
+        StdInterfaceId.NFT.default,
         StdInterfaceId.Unknown("1234"),
         StdInterfaceId.NonStandard
       )
@@ -366,8 +366,8 @@ object GenApiModel extends ImplicitConversions {
   val tokenInterfaceIdGen: Gen[StdInterfaceId] =
     Gen.oneOf(
       ArraySeq(
-        StdInterfaceId.FungibleToken,
-        StdInterfaceId.NFT,
+        StdInterfaceId.FungibleToken.default,
+        StdInterfaceId.NFT.default,
         StdInterfaceId.NonStandard
       )
     )

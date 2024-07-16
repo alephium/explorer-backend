@@ -31,9 +31,21 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(0)
+  val latestVersion: MigrationVersion = MigrationVersion(1)
 
-  private val migrations: Seq[DBActionAll[Unit]] = Seq()
+  def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] = {
+    // We retrigger the download of fungible and non-fungible tokens' metadata that have sub-category
+    for {
+      _ <-
+        sqlu"""UPDATE token_info SET interface_id = NULL WHERE category = '0001' AND interface_id != '0001'"""
+      _ <-
+        sqlu"""UPDATE token_info SET interface_id = NULL WHERE category = '0003' AND interface_id != '0003'"""
+    } yield ()
+  }
+
+  private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
+    migration1
+  )
 
   def migrationsQuery(
       versionOpt: Option[MigrationVersion]
