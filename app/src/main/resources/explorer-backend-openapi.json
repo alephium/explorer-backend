@@ -468,11 +468,15 @@
         "type": "object",
         "title": "NFT",
         "properties": {
+          "id": {
+            "type": "string"
+          },
           "type": {
             "type": "string"
           }
         },
         "required": [
+          "id",
           "type"
         ]
       },
@@ -962,11 +966,15 @@
         "type": "object",
         "title": "FungibleToken",
         "properties": {
+          "id": {
+            "type": "string"
+          },
           "type": {
             "type": "string"
           }
         },
         "required": [
+          "id",
           "type"
         ]
       },
@@ -2142,6 +2150,8 @@
                 },
                 "example": [
                   {
+                    "interfaceId": "000101",
+                    "category": "0001",
                     "stdInterfaceId": "fungible",
                     "token": "7b3efc0a1c4bc54e7398811f7e474e461a9c00cbc951f33b886a5f207c820ef2"
                   }
@@ -2235,6 +2245,8 @@
                 },
                 "example": [
                   {
+                    "interfaceId": "000101",
+                    "category": "0001",
                     "stdInterfaceId": "fungible",
                     "token": "7b3efc0a1c4bc54e7398811f7e474e461a9c00cbc951f33b886a5f207c820ef2"
                   }

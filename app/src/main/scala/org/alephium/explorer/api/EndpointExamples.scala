@@ -439,7 +439,7 @@ object EndpointExamples extends EndpointsExamples {
     simpleExample(ArraySeq(logbackValue))
 
   implicit val stdInterfaceIdExample: List[Example[TokenStdInterfaceId]] =
-    simpleExample(StdInterfaceId.FungibleToken)
+    simpleExample(StdInterfaceId.FungibleToken.default)
 
   implicit val fungibleTokenMetadataExample: List[Example[FungibleTokenMetadata]] =
     simpleExample(FungibleTokenMetadata(token, "TK", "Token", U256.One))
@@ -454,7 +454,16 @@ object EndpointExamples extends EndpointsExamples {
     simpleExample(ArraySeq(NFTCollectionMetadata(addressContract, "collection://uri")))
 
   implicit val tokenInfosExample: List[Example[ArraySeq[TokenInfo]]] =
-    simpleExample(ArraySeq(TokenInfo(token, Some(StdInterfaceId.FungibleToken))))
+    simpleExample(
+      ArraySeq(
+        TokenInfo(
+          token,
+          Some(StdInterfaceId.FungibleToken.default),
+          Some(StdInterfaceId.FungibleToken("000101").id),
+          Some(StdInterfaceId.FungibleToken.default.category)
+        )
+      )
+    )
 
   implicit val amountHistory: List[Example[AmountHistory]] =
     simpleExample(AmountHistory(ArraySeq(TimedAmount(ts, U256.One.v))))

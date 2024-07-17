@@ -23,7 +23,12 @@ import org.alephium.explorer.api.Schemas.tokenIdSchema
 import org.alephium.json.Json._
 import org.alephium.protocol.model.TokenId
 
-final case class TokenInfo(token: TokenId, stdInterfaceId: Option[TokenStdInterfaceId])
+final case class TokenInfo(
+    token: TokenId,
+    stdInterfaceId: Option[TokenStdInterfaceId],
+    interfaceId: Option[String],
+    category: Option[String]
+)
 
 object TokenInfo {
 
