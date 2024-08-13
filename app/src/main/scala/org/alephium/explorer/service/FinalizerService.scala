@@ -131,34 +131,26 @@ case object FinalizerService extends StrictLogging {
       executionContext: ExecutionContext
   ): DBActionR[Option[(TimeStamp, TimeStamp)]] = {
     val ft = finalizationTime
-    getMinMaxInputsTs.flatMap(_ match {
+    getMaxInputsTs.flatMap(_ match {
       // No input in db
-      case None | Some((TimeStamp.zero, TimeStamp.zero)) => DBIOAction.successful(None)
-      // inputs are only after finalization time, noop
-      case Some((start, _)) if ft.isBefore(start) => DBIOAction.successful(None)
-      case Some((start, _end)) =>
+      case None | Some(TimeStamp.zero) => DBIOAction.successful(None)
+      case Some(_end) =>
         val end = if (_end.isBefore(ft)) _end else ft
-        getLastFinalizedInputTime().map {
-          case None =>
-            Some((start, end))
+        getLastFinalizedInputTime().flatMap {
           case Some(lastFinalizedInputTime) =>
-            Some((lastFinalizedInputTime, end))
+            DBIOAction.successful(Some((lastFinalizedInputTime, end)))
+          case None =>
+            getMinInputsTs.map {
+              // No input in db
+              case None | Some(TimeStamp.zero)       => None
+              case Some(start) if ft.isBefore(start) =>
+                // inputs are only after finalization time, noop
+                None
+              case Some(start) =>
+                Some((start, end))
+            }
         }
     })
-  }
-
-  private def getMinMaxInputsTs(implicit
-      ec: ExecutionContext
-  ): DBActionR[Option[(TimeStamp, TimeStamp)]] = {
-    for {
-      minOpt <- getMinInputsTs
-      maxOpt <- getMaxInputsTs
-    } yield {
-      for {
-        min <- minOpt
-        max <- maxOpt
-      } yield (min, max)
-    }
   }
 
   private def getMinInputsTs(implicit ec: ExecutionContext): DBActionR[Option[TimeStamp]] =
