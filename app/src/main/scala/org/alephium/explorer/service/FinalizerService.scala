@@ -131,7 +131,7 @@ case object FinalizerService extends StrictLogging {
       executionContext: ExecutionContext
   ): DBActionR[Option[(TimeStamp, TimeStamp)]] = {
     val ft = finalizationTime
-    getMinMaxInputsTs.flatMap(_.headOption match {
+    getMinMaxInputsTs.flatMap(_ match {
       // No input in db
       case None | Some((TimeStamp.zero, TimeStamp.zero)) => DBIOAction.successful(None)
       // inputs are only after finalization time, noop
@@ -147,10 +147,31 @@ case object FinalizerService extends StrictLogging {
     })
   }
 
-  private val getMinMaxInputsTs: DBActionSR[(TimeStamp, TimeStamp)] =
+  private def getMinMaxInputsTs(implicit
+      ec: ExecutionContext
+  ): DBActionR[Option[(TimeStamp, TimeStamp)]] = {
+    for {
+      minOpt <- getMinInputsTs
+      maxOpt <- getMaxInputsTs
+    } yield {
+      for {
+        min <- minOpt
+        max <- maxOpt
+      } yield (min, max)
+    }
+  }
+
+  private def getMinInputsTs(implicit ec: ExecutionContext): DBActionR[Option[TimeStamp]] =
     sql"""
-    SELECT MIN(block_timestamp),Max(block_timestamp) FROM inputs WHERE main_chain = true
-    """.asAS[(TimeStamp, TimeStamp)]
+      SELECT MIN(block_timestamp) FROM inputs WHERE main_chain = true
+    """.asAS[TimeStamp].headOrNone
+
+  private def getMaxInputsTs(implicit ec: ExecutionContext): DBActionR[Option[TimeStamp]] =
+    sql"""
+      SELECT MAX(block_timestamp)
+      FROM block_headers
+      GROUP BY chain_from, chain_to order by max LIMIT 1;
+    """.asAS[TimeStamp].headOrNone
 
   private def getLastFinalizedInputTime()(implicit
       executionContext: ExecutionContext
