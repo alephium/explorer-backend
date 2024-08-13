@@ -31,7 +31,7 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(1)
+  val latestVersion: MigrationVersion = MigrationVersion(3)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     // We retrigger the download of fungible and non-fungible tokens' metadata that have sub-category
@@ -43,8 +43,49 @@ object Migrations extends StrictLogging {
     } yield ()
   }
 
+  def migration2(implicit ec: ExecutionContext): DBActionAll[Unit] = {
+    // Finalize missing outputs and token_outputs
+    // Due to finalization concurrency issue.
+    for {
+      _ <-
+        sqlu"""
+          UPDATE outputs o
+          SET spent_finalized = i.tx_hash, spent_timestamp = i.block_timestamp
+          FROM inputs i
+          WHERE i.output_ref_key = o.key
+          AND o.main_chain=true
+          AND i.main_chain=true
+          AND o.spent_finalized IS NULL
+        """
+      _ <-
+        sqlu"""
+          UPDATE token_outputs o
+          SET spent_finalized = i.tx_hash, spent_timestamp = i.block_timestamp
+          FROM inputs i
+          WHERE i.output_ref_key = o.key
+          AND o.main_chain=true
+          AND i.main_chain=true
+          AND o.spent_finalized IS NULL
+        """
+    } yield ()
+  }
+
+  def migration3(implicit ec: ExecutionContext): DBActionAll[Unit] = {
+    // Reset token_supply table as some supply was wrong due to the finalization concurrency issue
+    // Token supply will be re-computed from scratch, this will take some time until the newest
+    // latest supply is computed.
+    for {
+      _ <-
+        sqlu"""
+          TRUNCATE token_supply
+        """
+    } yield ()
+  }
+
   private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
-    migration1
+    migration1,
+    migration2,
+    migration3
   )
 
   def migrationsQuery(
