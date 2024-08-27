@@ -291,7 +291,7 @@
             "type": "prometheus",
             "uid": "FWwc47WVk"
           },
-          "expr": "hikaricp_idle_connections",
+          "expr": "hikaricp_connections_idle",
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -355,7 +355,7 @@
             "type": "prometheus",
             "uid": "FWwc47WVk"
           },
-          "expr": "hikaricp_pending_threads",
+          "expr": "hikaricp_connections_pending",
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -492,7 +492,7 @@
             "type": "prometheus",
             "uid": "FWwc47WVk"
           },
-          "expr": "hikaricp_active_connections",
+          "expr": "hikaricp_connections_active",
           "instant": true,
           "interval": "",
           "legendFormat": "",
