@@ -22,6 +22,7 @@ import scala.concurrent.duration._
 import scala.jdk.FutureConverters._
 
 import com.github.benmanes.caffeine.cache.{AsyncCacheLoader, Caffeine}
+import io.prometheus.metrics.core.metrics.Gauge
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
@@ -60,7 +61,7 @@ object BlockCache {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): BlockCache = {
-    val groupConfig: GroupConfig = groupSetting.groupConfig
+    implicit val groupConfig: GroupConfig = groupSetting.groupConfig
 
     /*
      * `Option.get` is used to avoid unnecessary memory allocations.
@@ -125,6 +126,16 @@ object BlockCache {
     )
   }
 
+  val latestBlocksSynced: Gauge = Gauge
+    .builder()
+    .name(
+      "alephimum_explorer_backend_latest_blocks_synced"
+    )
+    .help(
+      "Latest blocks synced per chainindex"
+    )
+    .labelNames("chain_from", "chain_to")
+    .register()
 }
 
 /** Cache used by Block queries.
@@ -135,7 +146,13 @@ class BlockCache(
     blockTimes: CaffeineAsyncCache[ChainIndex, Duration],
     rowCount: AsyncReloadingCache[Int],
     latestBlocks: CaffeineAsyncCache[ChainIndex, LatestBlock]
-) {
+)(implicit groupConfig: GroupConfig) {
+
+  private val latestBlocksSyncedLabeled =
+    groupConfig.cliqueChainIndexes.map(chainIndex =>
+      BlockCache.latestBlocksSynced
+        .labelValues(chainIndex.from.value.toString, chainIndex.to.value.toString)
+    )
 
   /** Operations on `blockTimes` cache */
   def getAllBlockTimes(chainIndexes: Iterable[ChainIndex])(implicit
@@ -150,8 +167,12 @@ class BlockCache(
   ): Future[ArraySeq[(ChainIndex, LatestBlock)]] =
     latestBlocks.getAll(groupSetting.chainIndexes)
 
-  def putLatestBlock(chainIndex: ChainIndex, block: LatestBlock): Unit =
+  def putLatestBlock(chainIndex: ChainIndex, block: LatestBlock): Unit = {
     latestBlocks.put(chainIndex, block)
+    latestBlocksSyncedLabeled
+      .get(chainIndex.flattenIndex)
+      .foreach(_.set(block.height.value.toDouble))
+  }
 
   def getMainChainBlockCount(): Int =
     rowCount.get()

@@ -32,9 +32,10 @@ import org.alephium.explorer.GenCoreUtil.timestampMaxValue
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
+import org.alephium.explorer.cache._
+import org.alephium.explorer.config.BootMode
 import org.alephium.explorer.error.ExplorerError
-import org.alephium.explorer.persistence.DatabaseFixtureForAll
+import org.alephium.explorer.persistence.{Database, DatabaseFixtureForAll}
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.util.Scheduler
@@ -211,7 +212,8 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     def blockFlow: ArraySeq[ArraySeq[BlockEntryTest]] =
       blockEntitiesToBlockEntries(blockFlowEntity)
 
-    implicit val blockCache: BlockCache = TestBlockCache()
+    implicit val blockCache: BlockCache   = TestBlockCache()
+    implicit val metricCache: MetricCache = TestMetricCache(new Database(BootMode.ReadWrite))
 
     def blockEntities = ArraySeq.from(blockFlowEntity.flatten)
 

@@ -23,7 +23,7 @@ import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.cache.{BlockCache, TransactionCache}
+import org.alephium.explorer.cache.{BlockCache, MetricCache, TransactionCache}
 import org.alephium.explorer.config.{BootMode, ExplorerConfig}
 import org.alephium.explorer.persistence.Database
 import org.alephium.explorer.service._
@@ -64,6 +64,12 @@ sealed trait ExplorerState extends Service with StrictLogging {
       directCliqueAccess = config.directCliqueAccess
     )
 
+  implicit lazy val metricCache: MetricCache =
+    new MetricCache(
+      database,
+      config.cacheRowCountReloadPeriod
+    )
+
   override def startSelfOnce(): Future[Unit] = {
     Future.unit
   }
@@ -77,6 +83,7 @@ sealed trait ExplorerState extends Service with StrictLogging {
   override def subServices: ArraySeq[Service] = {
     val writeOnlyServices =
       ArraySeq(
+        metricCache,
         transactionCache,
         blockFlowClient,
         database
