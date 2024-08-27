@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.persistence.queries
 
+import scala.concurrent.ExecutionContext
+
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
@@ -97,5 +99,14 @@ object EventQueries {
       """
       .paginate(pagination)
       .asASE[EventEntity](eventGetResult)
+  }
+
+  def countEvents()(implicit
+      ec: ExecutionContext
+  ): DBActionR[Int] = {
+    sql"""
+      SELECT count(*)
+      FROM events
+    """.asAS[Int].exactlyOne
   }
 }
