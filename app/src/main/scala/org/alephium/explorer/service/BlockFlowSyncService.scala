@@ -30,7 +30,7 @@ import sttp.model.Uri
 
 import org.alephium.explorer.{foldFutures, GroupSetting}
 import org.alephium.explorer.api.model.Height
-import org.alephium.explorer.cache.{BlockCache, MetricCache}
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.error.ExplorerError.BlocksInDifferentChains
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.BlockDao
@@ -73,7 +73,6 @@ case object BlockFlowSyncService extends StrictLogging {
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
-      metricCache: MetricCache,
       groupSetting: GroupSetting,
       scheduler: Scheduler
   ): Future[Unit] =
@@ -89,7 +88,6 @@ case object BlockFlowSyncService extends StrictLogging {
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
-      metricCache: MetricCache,
       groupSetting: GroupSetting
   ): Future[Unit] = {
     if (initialBackStepDone.get()) {
@@ -107,7 +105,6 @@ case object BlockFlowSyncService extends StrictLogging {
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
-      metricCache: MetricCache,
       groupSetting: GroupSetting
   ): Future[Unit] = {
     logger.debug("Start syncing")
@@ -147,7 +144,6 @@ case object BlockFlowSyncService extends StrictLogging {
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
-      metricCache: MetricCache,
       groupSetting: GroupSetting
   ): Future[Int] = {
     blockFlowClient.fetchBlocks(from, to, uri).flatMap { multiChain =>
@@ -359,23 +355,11 @@ case object BlockFlowSyncService extends StrictLogging {
     }
   }
 
-  private def reloadMetricCache(blocks: ArraySeq[BlockEntityWithEvents])(implicit
-      metricCache: MetricCache
-  ): Unit = {
-    if (blocks.map(_.block).exists(_.outputs.exists(_.tokens.map(_.nonEmpty).getOrElse(false)))) {
-      metricCache.reloadTokenCountIfOverdue()
-    }
-    if (blocks.flatMap(_.events).nonEmpty) {
-      metricCache.reloadEventCountIfOverdue()
-    }
-  }
-
   private def insertBlocks(blocksWithEvents: ArraySeq[BlockEntityWithEvents])(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
-      metricCache: MetricCache,
       groupSetting: GroupSetting
   ): Future[Int] = {
     if (blocksWithEvents.nonEmpty) {
@@ -383,7 +367,6 @@ case object BlockFlowSyncService extends StrictLogging {
         _ <- foldFutures(blocksWithEvents)(insertWithEvents)
         _ <- BlockDao.updateLatestBlock(blocksWithEvents.last.block)
       } yield {
-        reloadMetricCache(blocksWithEvents)
         blocksWithEvents.size
       }
     } else {

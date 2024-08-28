@@ -30,7 +30,7 @@ import sttp.model.Uri
 
 import org.alephium.api.model.{ChainParams, PeerAddress}
 import org.alephium.explorer.RichAVector._
-import org.alephium.explorer.cache.{BlockCache, MetricCache}
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.config.{BootMode, ExplorerConfig}
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.service._
@@ -47,7 +47,6 @@ object SyncServices extends StrictLogging {
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       blockCache: BlockCache,
-      metricCache: MetricCache,
       groupSetting: GroupSetting
   ): Future[Unit] =
     config.bootMode match {
@@ -87,7 +86,6 @@ object SyncServices extends StrictLogging {
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       blockCache: BlockCache,
-      metricCache: MetricCache,
       groupSetting: GroupSetting
   ): Future[Unit] =
     Future.fromTry {

@@ -274,7 +274,7 @@ final case class ExplorerConfig private (
     cacheRowCountReloadPeriod: FiniteDuration,
     cacheBlockTimesReloadPeriod: FiniteDuration,
     cacheLatestBlocksReloadPeriod: FiniteDuration,
-    cacheMetricsReloadPeriod:FiniteDuration,
+    cacheMetricsReloadPeriod: FiniteDuration,
     exportTxsNumberThreshold: Int,
     streamParallelism: Int,
     maxTimeInterval: ExplorerConfig.MaxTimeIntervals,

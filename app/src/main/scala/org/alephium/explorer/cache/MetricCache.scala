@@ -20,8 +20,6 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
-import io.prometheus.metrics.core.metrics.Gauge
-
 import org.alephium.explorer.persistence.Database
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries.{EventQueries, TokenQueries}
@@ -33,39 +31,25 @@ class MetricCache(database: Database, reloadPeriod: FiniteDuration)(implicit
 
   private val fungibleCount: AsyncReloadingCache[Int] = {
     AsyncReloadingCache(0, reloadPeriod) { _ =>
-      run(TokenQueries.countFungibles())(database.databaseConfig).map { count =>
-        MetricCache.fungibleCountGauge.set(count.toDouble)
-        count
-      }
+      run(TokenQueries.countFungibles())(database.databaseConfig)
     }
   }
 
   private val nftCount: AsyncReloadingCache[Int] = {
     AsyncReloadingCache(0, reloadPeriod) { _ =>
-      run(TokenQueries.countNFT())(database.databaseConfig).map { count =>
-        MetricCache.nftCountGauge.set(count.toDouble)
-        count
-      }
+      run(TokenQueries.countNFT())(database.databaseConfig)
     }
   }
 
   private val eventCount: AsyncReloadingCache[Int] = {
     AsyncReloadingCache(0, reloadPeriod) { _ =>
-      run(EventQueries.countEvents())(database.databaseConfig).map { count =>
-        MetricCache.eventCountGauge.set(count.toDouble)
-        count
-      }
+      run(EventQueries.countEvents())(database.databaseConfig)
     }
   }
 
-  def reloadTokenCountIfOverdue(): Unit = {
-    val _ = fungibleCount.get()
-    val _ = nftCount.get()
-  }
-
-  def reloadEventCountIfOverdue(): Unit = {
-    val _ = eventCount.get()
-  }
+  def getFungibleCount(): Int = fungibleCount.get()
+  def getNFTCount(): Int      = nftCount.get()
+  def getEventCount(): Int    = eventCount.get()
 
   override def startSelfOnce(): Future[Unit] = {
     for {
@@ -80,36 +64,4 @@ class MetricCache(database: Database, reloadPeriod: FiniteDuration)(implicit
   }
 
   override def subServices: ArraySeq[Service] = ArraySeq(database)
-}
-object MetricCache {
-  val fungibleCountGauge: Gauge = Gauge
-    .builder()
-    .name(
-      "alephimum_explorer_backend_fungible_count"
-    )
-    .help(
-      "Number of fungible tokens in the system"
-    )
-    .register()
-
-  val nftCountGauge: Gauge = Gauge
-    .builder()
-    .name(
-      "alephimum_explorer_backend_nft_count"
-    )
-    .help(
-      "Number of NFT in the system"
-    )
-    .register()
-
-  val eventCountGauge: Gauge = Gauge
-    .builder()
-    .name(
-      "alephimum_explorer_backend_event_count"
-    )
-    .help(
-      "Number of events in the system"
-    )
-    .register()
-
 }
