@@ -67,7 +67,7 @@ sealed trait ExplorerState extends Service with StrictLogging {
   implicit lazy val metricCache: MetricCache =
     new MetricCache(
       database,
-      config.cacheRowCountReloadPeriod
+      config.cacheMetricsReloadPeriod,
     )
 
   override def startSelfOnce(): Future[Unit] = {
