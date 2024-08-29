@@ -366,7 +366,9 @@ case object BlockFlowSyncService extends StrictLogging {
       for {
         _ <- foldFutures(blocksWithEvents)(insertWithEvents)
         _ <- BlockDao.updateLatestBlock(blocksWithEvents.last.block)
-      } yield blocksWithEvents.size
+      } yield {
+        blocksWithEvents.size
+      }
     } else {
       Future.successful(0)
     }

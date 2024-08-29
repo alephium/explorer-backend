@@ -356,4 +356,24 @@ object TokenQueries extends StrictLogging {
       WHERE token = $token
     """
   }
+
+  def countFungibles()(implicit
+      ec: ExecutionContext
+  ): DBActionR[Int] = {
+    sql"""
+      SELECT count(*)
+      FROM token_info
+      WHERE interface_id = '0001'
+    """.asAS[Int].exactlyOne
+  }
+
+  def countNFT()(implicit
+      ec: ExecutionContext
+  ): DBActionR[Int] = {
+    sql"""
+      SELECT count(*)
+      FROM token_info
+      WHERE interface_id = '0003' OR interface_id = '000301'
+    """.asAS[Int].exactlyOne
+  }
 }

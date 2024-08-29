@@ -23,7 +23,7 @@ import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.cache.{BlockCache, TransactionCache}
+import org.alephium.explorer.cache.{BlockCache, MetricCache, TransactionCache}
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service._
 import org.alephium.explorer.web._
@@ -42,6 +42,7 @@ object AppServer {
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       blockCache: BlockCache,
+      metricCache: MetricCache,
       transactionCache: TransactionCache,
       groupSetting: GroupSetting
   ): ArraySeq[Router => Route] = {
@@ -65,6 +66,7 @@ object AppServer {
     val eventServer                = new EventServer()
     val contractServer             = new ContractServer()
     val marketServer               = new MarketServer(marketService)
+    val metricsServer              = new MetricsServer(metricCache)
     val documentationServer = new DocumentationServer(
       maxTimeIntervals.exportTxs,
       marketConfig.currencies,
@@ -82,7 +84,7 @@ object AppServer {
       eventServer.routes ++
       contractServer.routes ++
       marketServer.routes ++
-      documentationServer.routes :+
-      Metrics.route
+      documentationServer.routes ++
+      metricsServer.routes
   }
 }
