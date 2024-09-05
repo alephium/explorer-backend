@@ -16,9 +16,10 @@
 
 package org.alephium.explorer.service
 
+import java.time.{Instant, LocalTime, ZonedDateTime, ZoneOffset}
+
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
@@ -68,16 +69,20 @@ case object HolderService extends HolderService with StrictLogging {
     })
   }
 
-  def start(interval: FiniteDuration)(implicit
+  def start(scheduleTime: LocalTime)(implicit
       executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile],
       scheduler: Scheduler
   ): Future[Unit] = {
-    scheduler.scheduleLoop(
-      taskId = FinalizerService.productPrefix,
-      firstInterval = ScalaDuration.Zero,
-      loopInterval = interval
-    )(syncOnce())
+    // Sync once on start to make sure we are up to date and then sync once a day at the given time.
+    syncOnce().map { _ =>
+      scheduler.scheduleDailyAt(
+        taskId = TokenSupplyService.productPrefix,
+        at = ZonedDateTime
+          .ofInstant(Instant.EPOCH, ZoneOffset.UTC)
+          .plusSeconds(scheduleTime.toSecondOfDay().toLong)
+      )(syncOnce())
+    }
   }
 
   def syncOnce()(implicit
