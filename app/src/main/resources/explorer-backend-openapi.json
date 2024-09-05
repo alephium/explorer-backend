@@ -562,6 +562,24 @@
           "type"
         ]
       },
+      "HolderInfo": {
+        "type": "object",
+        "title": "HolderInfo",
+        "properties": {
+          "address": {
+            "format": "address",
+            "type": "string"
+          },
+          "balance": {
+            "format": "uint256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "address",
+          "balance"
+        ]
+      },
       "TokenSupply": {
         "type": "object",
         "title": "TokenSupply",
@@ -3922,6 +3940,135 @@
         ]
       }
     },
+    "/infos/addresses/balance/{token_id}": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HolderInfo"
+                  }
+                },
+                "example": [
+                  {
+                    "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                    "balance": "10"
+                  }
+                ]
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get a sorted list of top addresses by {token_id} balance. Updates once per day.",
+        "operationId": "getInfosAddressesBalanceToken_id",
+        "parameters": [
+          {
+            "schema": {
+              "format": "32-byte-hash",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "token_id",
+            "required": true
+          },
+          {
+            "schema": {
+              "format": "int32",
+              "type": "integer",
+              "minimum": "1"
+            },
+            "in": "query",
+            "name": "page",
+            "description": "Page number",
+            "required": false
+          },
+          {
+            "schema": {
+              "format": "int32",
+              "maximum": "100",
+              "type": "integer",
+              "minimum": "0"
+            },
+            "in": "query",
+            "name": "limit",
+            "description": "Number of items per page",
+            "required": false
+          }
+        ],
+        "tags": [
+          "Infos"
+        ]
+      }
+    },
     "/addresses/{address}/total-transactions": {
       "get": {
         "responses": {
@@ -6813,6 +6960,126 @@
         },
         "description": "Get the ALPH reserved supply",
         "operationId": "getInfosSupplyReserved-alph",
+        "tags": [
+          "Infos"
+        ]
+      }
+    },
+    "/infos/addresses/balance/alph": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HolderInfo"
+                  }
+                },
+                "example": [
+                  {
+                    "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                    "balance": "10"
+                  }
+                ]
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get a sorted list of top addresses by ALPH balance. Updates once per day.",
+        "operationId": "getInfosAddressesBalanceAlph",
+        "parameters": [
+          {
+            "schema": {
+              "format": "int32",
+              "type": "integer",
+              "minimum": "1"
+            },
+            "in": "query",
+            "name": "page",
+            "description": "Page number",
+            "required": false
+          },
+          {
+            "schema": {
+              "format": "int32",
+              "maximum": "100",
+              "type": "integer",
+              "minimum": "0"
+            },
+            "in": "query",
+            "name": "limit",
+            "description": "Number of items per page",
+            "required": false
+          }
+        ],
         "tags": [
           "Infos"
         ]
