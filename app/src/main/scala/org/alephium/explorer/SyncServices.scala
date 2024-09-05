@@ -98,6 +98,7 @@ object SyncServices extends StrictLogging {
               TokenSupplyService.start(tokenSupplyServiceScheduleTime),
               HashrateService.start(hashRateServiceSyncPeriod),
               FinalizerService.start(finalizerServiceSyncPeriod),
+              HolderService.start(finalizerServiceSyncPeriod),
               TransactionHistoryService.start(transactionHistoryServiceSyncPeriod)
             )
           )
