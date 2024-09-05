@@ -392,4 +392,11 @@ object CustomGetResult {
         case Left(error)  => throw error
         case Right(value) => value
       }
+
+  implicit val lastHolderUpdateGetResult: GetResult[AppState.LastHoldersUpdate] =
+    (result: PositionedResult) =>
+      AppState.LastHoldersUpdate(ByteString.fromArrayUnsafe(result.nextBytes())) match {
+        case Left(error)  => throw error
+        case Right(value) => value
+      }
 }

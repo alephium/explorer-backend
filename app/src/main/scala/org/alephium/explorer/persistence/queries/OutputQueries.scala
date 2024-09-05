@@ -447,4 +447,5 @@ object OutputQueries {
         AND outputs.main_chain = true
         AND inputs.block_hash IS NULL;
     """.asAS[(Option[U256], Option[U256])].exactlyOne
+
 }
