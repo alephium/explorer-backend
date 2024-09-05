@@ -119,11 +119,13 @@ case object HolderService extends HolderService with StrictLogging {
   def insertInitialHolders(lastFinalizedInputTime: TimeStamp)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
-  ): Future[Unit] = run(for {
-    _ <- insertInitialAlphHolders(lastFinalizedInputTime)
-    _ <- insertInitialTokenHolders(lastFinalizedInputTime)
-    _ <- AppStateQueries.insertOrUpdate(LastHoldersUpdate(lastFinalizedInputTime))
-  } yield ())
+  ): Future[Unit] = {
+    run(for {
+      _ <- insertInitialAlphHolders(lastFinalizedInputTime)
+      _ <- insertInitialTokenHolders(lastFinalizedInputTime)
+      _ <- AppStateQueries.insertOrUpdate(LastHoldersUpdate(lastFinalizedInputTime))
+    } yield ())
+  }
 
   def updateHolders(lastRichListUpdate: TimeStamp, lastFinalizedInputTime: TimeStamp)(implicit
       ec: ExecutionContext,
@@ -147,7 +149,6 @@ case object HolderService extends HolderService with StrictLogging {
         AND (outputs.spent_finalized IS NULL OR outputs.spent_timestamp > $time)
         AND outputs.main_chain = true
     GROUP BY outputs.address
-    ORDER BY total_balance DESC;
   """
 
   def updateAlphHolders(from: TimeStamp, to: TimeStamp): DBActionW[Int] =
@@ -202,7 +203,6 @@ case object HolderService extends HolderService with StrictLogging {
         AND (token_outputs.spent_finalized IS NULL OR token_outputs.spent_timestamp > $time)
         AND token_outputs.main_chain = true
     GROUP BY token_outputs.address, token_outputs.token
-    ORDER BY total_balance DESC;
   """
 
   def updateTokenHolders(from: TimeStamp, to: TimeStamp): DBActionW[Int] =

@@ -34,7 +34,7 @@ import org.alephium.explorer.persistence.DBRunner
 import org.alephium.explorer.persistence.model.AppState
 import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.explorer.service.{BlockService, TokenSupplyService, TransactionService}
+import org.alephium.explorer.service._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{TimeStamp, U256}
 
