@@ -372,6 +372,12 @@ object GenApiModel extends ImplicitConversions {
       )
     )
 
+  def holderInfoGen: Gen[HolderInfo] =
+    for {
+      address <- addressGen
+      balance <- amountGen
+    } yield HolderInfo(address, balance)
+
   def ghostUncleGen()(implicit groupSetting: GroupSetting): Gen[GhostUncle] = for {
     blockHash <- blockHashGen
     miner     <- addressAssetProtocolGen()

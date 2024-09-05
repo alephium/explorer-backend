@@ -19,11 +19,13 @@ package org.alephium.explorer.web
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
+import org.scalacheck.Gen
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer._
 import org.alephium.explorer.ConfigDefaults._
+import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache, TransactionCache}
@@ -31,6 +33,7 @@ import org.alephium.explorer.config.BootMode
 import org.alephium.explorer.persistence.{Database, DatabaseFixtureForAll, Migrations}
 import org.alephium.explorer.service._
 import org.alephium.protocol.ALPH
+import org.alephium.protocol.model.TokenId
 import org.alephium.util.TimeStamp
 
 @SuppressWarnings(Array("org.wartremover.warts.Var"))
@@ -97,8 +100,22 @@ class InfosServerSpec()
     override def getTotalNumber()(implicit cache: TransactionCache): Int = 10
   }
 
+  val holderInfos = ArraySeq.from(Gen.listOf(holderInfoGen).sample.get)
+
+  val holderService = new EmptyHolderService {
+    override def getAlphHolders(pagination: Pagination)(implicit
+        ec: ExecutionContext,
+        dc: DatabaseConfig[PostgresProfile]
+    ): Future[ArraySeq[HolderInfo]] = Future.successful(holderInfos)
+
+    override def getTokenHolders(token: TokenId, pagination: Pagination)(implicit
+        ec: ExecutionContext,
+        dc: DatabaseConfig[PostgresProfile]
+    ): Future[ArraySeq[HolderInfo]] = Future.successful(holderInfos)
+  }
+
   val infoServer =
-    new InfosServer(tokenSupplyService, blockService, transactionService)
+    new InfosServer(tokenSupplyService, blockService, transactionService, holderService)
 
   val routes = infoServer.routes
 
@@ -163,6 +180,18 @@ class InfosServerSpec()
   "return the average block times" in {
     Get(s"/infos/average-block-times") check { response =>
       response.as[ArraySeq[PerChainDuration]] is ArraySeq(blockTime)
+    }
+  }
+
+  "return alph holders" in {
+    Get(s"/infos/addresses/balance/alph") check { response =>
+      response.as[ArraySeq[HolderInfo]] is holderInfos
+    }
+  }
+
+  "return token holders" in {
+    Get(s"/infos/addresses/balance/token/${tokenIdGen.sample.get.toHexString}") check { response =>
+      response.as[ArraySeq[HolderInfo]] is holderInfos
     }
   }
 }

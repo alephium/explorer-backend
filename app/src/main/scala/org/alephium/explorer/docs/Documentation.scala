@@ -81,6 +81,8 @@ trait Documentation
         getLockedSupply,
         getTotalTransactions,
         getAverageBlockTime,
+        getAlphHolders,
+        getTokenHolders,
         getHashrates,
         getAllChainsTxCount,
         getPerChainTxCount,
