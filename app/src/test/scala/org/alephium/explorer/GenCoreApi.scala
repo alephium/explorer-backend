@@ -33,13 +33,28 @@ import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.{Height, StdInterfaceId}
 import org.alephium.explorer.persistence.model.ContractEntity
 import org.alephium.explorer.service.BlockFlowClient
-import org.alephium.protocol.model.{BlockHash, ChainIndex, CliqueId, Hint, NetworkId, Target}
+import org.alephium.protocol.Hash
+import org.alephium.protocol.model
+import org.alephium.protocol.model.{
+  Address,
+  BlockHash,
+  ChainIndex,
+  CliqueId,
+  GroupIndex,
+  Hint,
+  NetworkId,
+  Target
+}
 import org.alephium.serde._
 import org.alephium.util.{AVector, Duration, Hex, I256, TimeStamp, U256}
 
 /** Generators for types supplied by Core `org.alephium.api` package */
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 object GenCoreApi {
+  val gasAmountGen = Gen.choose(model.minimalGas.value, 5 * model.minimalGas.value)
+  val gasPriceGen = Gen
+    .choose(model.coinbaseGasPrice.value.v, model.nonCoinbaseMinGasPrice.value.v)
+    .map(U256.unsafe)
 
   val genPeerAddress: Gen[PeerAddress] =
     for {
@@ -138,6 +153,18 @@ object GenCoreApi {
       AVector.from(scriptSignatures)
     )
 
+  def coinbaseTransactionProtocolGen(implicit groupSetting: GroupSetting): Gen[Transaction] =
+    for {
+      unsigned <- blockRewardUnsignedTxGen
+    } yield Transaction(
+      unsigned,
+      scriptExecutionOk = true,
+      AVector.empty,
+      AVector.empty,
+      AVector.empty,
+      AVector.empty
+    )
+
   def blockEntryProtocolGen(implicit groupSetting: GroupSetting): Gen[BlockEntry] =
     for {
       hash            <- blockHashGen
@@ -178,6 +205,159 @@ object GenCoreApi {
       )
     }
 
+  def genesisBlockEntryProtocolGen(
+      timestamp: TimeStamp,
+      chainFrom: GroupIndex,
+      chainTo: GroupIndex
+  )(implicit groupSetting: GroupSetting): Gen[BlockEntry] =
+    for {
+      hash        <- blockHashGen
+      transaction <- coinbaseTransactionProtocolGen
+      nonce       <- bytesGen
+      version     <- Gen.posNum[Byte]
+      txsHash     <- hashGen
+    } yield {
+      // From `alephium` repo
+      val numZerosAtLeastInHash = 37
+      val target = Target.unsafe(
+        BigInteger.ONE.shiftLeft(256 - numZerosAtLeastInHash).subtract(BigInteger.ONE)
+      )
+
+      BlockEntry(
+        hash,
+        timestamp,
+        chainFrom.value,
+        chainTo.value,
+        Height.genesis.value,
+        AVector.empty,
+        AVector(transaction),
+        nonce,
+        version,
+        Hash.zero,
+        txsHash,
+        target.bits,
+        AVector.empty
+      )
+    }
+
+  def blockEntryGen(
+      previousBlocks: AVector[BlockEntry],
+      chainFrom: GroupIndex,
+      chainTo: GroupIndex
+  )(implicit groupSetting: GroupSetting): Gen[BlockEntry] = {
+    val outputRefs =
+      previousBlocks.flatMap(_.transactions.flatMap(_.unsigned.inputs.map(_.outputRef.key)))
+    val initAvailableOutputs = previousBlocks
+      .flatMap(_.transactions.flatMap(_.unsigned.fixedOutputs))
+      .filterNot(output => outputRefs.contains(output.key))
+      .toSeq
+    var availableOutputs = initAvailableOutputs
+
+    for {
+      hash            <- blockHashGen
+      nonce           <- bytesGen
+      version         <- Gen.posNum[Byte]
+      depStateHash    <- hashGen
+      txsHash         <- hashGen
+      deps            <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockHashGen)
+      ghostUnclesSize <- Gen.choose(0, 1)
+      ghostUncles     <- Gen.listOfN(ghostUnclesSize, ghostUncleBlockEntry)
+      // Generate number of transactions
+      nbOfTxs <- Gen.const(1) // Gen.choose(1, 1)
+      // Generate transactions
+      unsignedTxs <- Gen.sequence[Vector[UnsignedTx], UnsignedTx](
+        Vector.fill(nbOfTxs)(
+          for {
+            // Random number of inputs for this transaction
+            nbOfInputs <- Gen.const(1) // Gen.choose(1, availableOutputs.size/nbOfTxs)
+            // Pick distinct outputs from availableOutputs for inputs
+            inputs <- Gen.pick(nbOfInputs, availableOutputs)
+            // Remove the selected outputs from the available pool to prevent reuse
+            _ = availableOutputs = availableOutputs.diff(inputs)
+            // Generate unsigned transaction with selected inputs
+            unsignedTx <- unsignedTxGen(AVector.from(inputs))
+          } yield unsignedTx
+        )
+      )
+      inputSignatures <- Gen.listOfN(1, bytesGen)
+    } yield {
+      val timestamp = previousBlocks.last.timestamp + Duration.unsafe(10000)
+      val height    = previousBlocks.last.height + 1
+      val txs = unsignedTxs.map { tx =>
+        Transaction(
+          tx,
+          scriptExecutionOk = true,
+          AVector.empty,
+          AVector.empty,
+          AVector.from(inputSignatures),
+          AVector.empty
+        )
+      }
+      val numZerosAtLeastInHash = 37
+      val target = Target.unsafe(
+        BigInteger.ONE.shiftLeft(256 - numZerosAtLeastInHash).subtract(BigInteger.ONE)
+      )
+
+      BlockEntry(
+        hash,
+        timestamp,
+        chainFrom.value,
+        chainTo.value,
+        height,
+        AVector.from(deps).replace(parentIndex(chainTo), previousBlocks.last.hash),
+        AVector.from(txs),
+        nonce,
+        version,
+        depStateHash,
+        txsHash,
+        target.bits,
+        AVector.from(ghostUncles)
+      )
+    }
+  }
+
+  def unsignedTxGen(
+      outputRefs: AVector[FixedAssetOutput]
+  )(implicit groupSetting: GroupSetting): Gen[UnsignedTx] = {
+    val totalAmount = outputRefs.map(_.attoAlphAmount.value).fold(U256.Zero)(_ addUnsafe _)
+    val addresses   = outputRefs.map(_.address).toSeq.distinct
+    for {
+      hash       <- transactionHashGen
+      version    <- Gen.posNum[Byte]
+      networkId  <- Gen.posNum[Byte]
+      scriptOpt  <- Gen.option(scriptGen)
+      outputSize <- Gen.choose(2, 10)
+      gasAmount  <- gasAmountGen
+      gasPrice   <- gasPriceGen
+      remainder       = totalAmount.modUnsafe(U256.unsafe(outputSize))
+      gas             = gasPrice.mulUnsafe(U256.unsafe(gasAmount)).addUnsafe(remainder)
+      amount          = totalAmount.subUnsafe(gas)
+      amountPerOutput = amount.divUnsafe(U256.unsafe(outputSize))
+      address <- addressAssetProtocolGen()
+      outputs <- Gen.listOfN(
+        outputSize,
+        fixedOutputAssetProtocolGen(
+          amount = Some(amountPerOutput),
+          address = Some(Gen.oneOf(addresses :+ address).sample.get)
+        )
+      )
+      unlockScript <- unlockScriptProtocolGen
+    } yield UnsignedTx(
+      hash,
+      version,
+      networkId,
+      scriptOpt,
+      gasAmount,
+      gasPrice,
+      AVector.from(
+        outputRefs.map(output =>
+          AssetInput(OutputRef(output.hint, output.key), serialize(unlockScript))
+        )
+      ),
+      AVector.from(outputs)
+    )
+  }
+
   def unsignedTxGen(implicit groupSetting: GroupSetting): Gen[UnsignedTx] =
     for {
       hash       <- transactionHashGen
@@ -187,9 +367,9 @@ object GenCoreApi {
       inputSize  <- Gen.choose(0, 10)
       inputs     <- Gen.listOfN(inputSize, inputProtocolGen)
       outputSize <- Gen.choose(2, 10)
-      outputs    <- Gen.listOfN(outputSize, fixedOutputAssetProtocolGen)
-      gasAmount  <- Gen.posNum[Int]
-      gasPrice   <- Gen.posNum[Long].map(U256.unsafe)
+      outputs    <- Gen.listOfN(outputSize, fixedOutputAssetProtocolGen())
+      gasAmount  <- gasAmountGen
+      gasPrice   <- gasPriceGen
     } yield UnsignedTx(
       hash,
       version,
@@ -198,6 +378,26 @@ object GenCoreApi {
       gasAmount,
       gasPrice,
       AVector.from(inputs),
+      AVector.from(outputs)
+    )
+
+  def blockRewardUnsignedTxGen(implicit groupSetting: GroupSetting): Gen[UnsignedTx] =
+    for {
+      hash       <- transactionHashGen
+      version    <- Gen.posNum[Byte]
+      networkId  <- Gen.posNum[Byte]
+      outputSize <- Gen.const(1) // Gen.choose(2, 10)
+      outputs    <- Gen.listOfN(outputSize, fixedOutputAssetProtocolGen())
+      gasAmount  <- gasAmountGen
+      gasPrice   <- gasPriceGen
+    } yield UnsignedTx(
+      hash,
+      version,
+      networkId,
+      scriptOpt = None,
+      gasAmount,
+      gasPrice,
+      AVector.empty,
       AVector.from(outputs)
     )
 
@@ -224,12 +424,15 @@ object GenCoreApi {
     unlockScript <- unlockScriptProtocolGen
   } yield AssetInput(outputRef, serialize(unlockScript))
 
-  def fixedOutputAssetProtocolGen(implicit groupSetting: GroupSetting): Gen[FixedAssetOutput] =
+  def fixedOutputAssetProtocolGen(
+      amount: Option[U256] = None,
+      address: Option[Address.Asset] = None
+  )(implicit groupSetting: GroupSetting): Gen[FixedAssetOutput] =
     for {
       key      <- hashGen
-      amount   <- amountGen
+      amount   <- amount.map(Gen.const).getOrElse(amountGen)
       lockTime <- timestampGen
-      address  <- addressAssetProtocolGen()
+      address  <- address.map(Gen.const).getOrElse(addressAssetProtocolGen())
     } yield FixedAssetOutput(
       Hint.ofAsset(address.lockupScript.scriptHint).value,
       key,
@@ -246,7 +449,7 @@ object GenCoreApi {
   } yield Token(id, amount)
 
   def outputAssetProtocolGen(implicit groupSetting: GroupSetting): Gen[AssetOutput] =
-    fixedOutputAssetProtocolGen.map(_.upCast())
+    fixedOutputAssetProtocolGen().map(_.upCast())
 
   def outputContractProtocolGen(implicit groupSetting: GroupSetting): Gen[ContractOutput] =
     for {
@@ -267,7 +470,7 @@ object GenCoreApi {
 
   def scriptGen: Gen[Script] = Gen.hexStr.map(Script.apply)
 
-  def chainGen(size: Int, startTimestamp: TimeStamp, chainIndex: ChainIndex)(implicit
+  def chainGen2(size: Int, startTimestamp: TimeStamp, chainIndex: ChainIndex)(implicit
       groupSetting: GroupSetting
   ): Gen[ArraySeq[BlockEntry]] =
     Gen.listOfN(size, blockEntryProtocolGen).map { blocks =>
@@ -290,6 +493,17 @@ object GenCoreApi {
             (acc :+ newBlock, Height.unsafe(height.value + 1), timestamp + Duration.unsafe(1))
         } match { case (block, _, _) => block }
     }
+
+  def chainGen(size: Int, startTimestamp: TimeStamp, chainIndex: ChainIndex)(implicit
+      groupSetting: GroupSetting
+  ): Gen[ArraySeq[BlockEntry]] = {
+    genesisBlockEntryProtocolGen(startTimestamp, chainIndex.from, chainIndex.to).map { block =>
+      ArraySeq.from((0 to (size - 1)).foldLeft(AVector(block)) { case (blocks, _) =>
+        val newBlock = blockEntryGen(blocks, chainIndex.from, chainIndex.to).sample.get
+        blocks :+ newBlock
+      })
+    }
+  }
 
   def blockFlowGen(maxChainSize: Int, startTimestamp: TimeStamp)(implicit
       groupSetting: GroupSetting

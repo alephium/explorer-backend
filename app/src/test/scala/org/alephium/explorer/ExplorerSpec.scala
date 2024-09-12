@@ -24,6 +24,7 @@ import scala.concurrent.Future
 import scala.io.{Codec, Source}
 import scala.jdk.CollectionConverters._
 
+import akka.util.ByteString
 import akka.testkit.SocketUtil
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import io.vertx.core.Vertx
@@ -56,10 +57,20 @@ import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service.{BlockFlowClient, MarketServiceSpec}
 import org.alephium.explorer.util.TestUtils._
+import org.alephium.crypto.Blake2b
 import org.alephium.explorer.web._
+import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
+import org.alephium.protocol.Hash
 import org.alephium.protocol.config.GroupConfig
-import org.alephium.protocol.model.{Address, BlockHash, CliqueId, GroupIndex, NetworkId}
+import org.alephium.protocol.model.{
+  Address,
+  BlockHash,
+  CliqueId,
+  GroupIndex,
+  NetworkId,
+  TransactionId
+}
 import org.alephium.util.{AVector, Hex, TimeStamp, U256}
 
 trait ExplorerSpec
@@ -153,7 +164,10 @@ trait ExplorerSpec
   def initApp(app: ExplorerState): Assertion = {
     app.start().futureValue
     // let it sync
-    eventually(app.blockCache.getMainChainBlockCount() is blocks.size)
+    eventually {
+      val p = app.blockCache.getMainChainBlockCount()
+      p is blocks.size
+    }
   }
 
   def app: ExplorerState
@@ -285,21 +299,42 @@ trait ExplorerSpec
   }
 
   "get address' info" in {
-    forAll(Gen.oneOf(addresses)) { address =>
-      Get(s"/addresses/${address}") check { response =>
+    blocks.foreach { block =>
+      Get(s"/blocks/${block.hash.toHexString}/transactions") check { response =>
+        val res = response.as[ArraySeq[Transaction]]
+        true is true
+      }
+    }
+    addresses.foreach { address =>
+      Get(s"/addresses/${address}?limit=100") check { response =>
         val expectedTransactions =
           transactions
-            .filter(_.outputs.exists(_.address == address))
+            .filter(tx =>
+              tx.outputs.exists(_.address == address) || tx.inputs
+                .exists(_.address == Some(address))
+            )
             .sorted(Ordering.by((_: Transaction).timestamp))
-        val expectedBalance =
+
+        val outs =
           expectedTransactions
             .map(
               _.outputs
-                .filter(out => out.spent.isEmpty && out.address == address)
+                .filter(_.address == address)
                 .map(_.attoAlphAmount)
                 .fold(U256.Zero)(_ addUnsafe _)
             )
             .fold(U256.Zero)(_ addUnsafe _)
+        val ins =
+          expectedTransactions
+            .map(
+              _.inputs
+                .filter(in => in.address == Some(address))
+                .map(_.attoAlphAmount.getOrElse(U256.Zero))
+                .fold(U256.Zero)(_ addUnsafe _)
+            )
+            .fold(U256.Zero)(_ addUnsafe _)
+
+        val expectedBalance = outs.subUnsafe(ins)
 
         val res = response.as[AddressInfo]
 
@@ -313,7 +348,9 @@ trait ExplorerSpec
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address}/transactions") check { response =>
         val expectedTransactions =
-          transactions.filter(_.outputs.exists(_.address == address)).take(txLimit)
+          transactions.filter(tx =>
+            tx.outputs.exists(_.address == address) || tx.inputs.exists(_.address == Some(address))
+          )
         val res = response.as[ArraySeq[Transaction]]
 
         res.size is expectedTransactions.size
@@ -340,19 +377,29 @@ trait ExplorerSpec
   }
 
   "get all transactions for addresses" in {
-    forAll(Gen.someOf(transactions)) { transactions =>
-      val limitedAddresses = transactions.flatMap(_.outputs.map(_.address)).take(txLimit)
-      val addressesBody = limitedAddresses.map(address => s""""$address"""").mkString("[", ",", "]")
+    val maxSizeAddresses: Int = groupSetting.groupNum * 20
+
+    forAll(Gen.someOf(addresses)) { someAddresses =>
+      val selectedAddresses = someAddresses.take(maxSizeAddresses)
+      // val limitedAddresses = transactions.flatMap(tx => tx.outputs.map(_.address) ++ tx.inputs.flatMap(_.address)).distinct.take(txLimit)
+      val addressesBody =
+        selectedAddresses.map(address => s""""$address"""").mkString("[", ",", "]")
 
       Post("/addresses/transactions", addressesBody) check { response =>
         val expectedTransactions =
-          transactions.filter(_.outputs.exists(limitedAddresses.contains)).take(txLimit)
+          selectedAddresses
+            .flatMap { address =>
+              transactions.filter { tx =>
+                tx.outputs.exists(_.address == address) || tx.inputs
+                  .exists(_.address == Some(address))
+              }
+            }
 
         val res = response.as[ArraySeq[Transaction]]
 
-        res.size is limitedAddresses.size
-        Inspectors.forAll(expectedTransactions) { transaction =>
-          res.map(_.hash) should contain(transaction.hash)
+        res.size is expectedTransactions.take(txLimit).size
+        Inspectors.forAll(res) { transaction =>
+          expectedTransactions.map(_.hash) should contain(transaction.hash)
         }
       }
     }

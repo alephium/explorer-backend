@@ -29,6 +29,7 @@ import org.alephium.api.UtilJson._
 import org.alephium.explorer.AlephiumActorSpecLike
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.GenDBModel._
@@ -117,8 +118,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
     val ts0        = TimeStamp.unsafe(0)
     val blockHash0 = blockHashGen.sample.get
-    val gasAmount  = Gen.posNum[Int].sample.get
-    val gasPrice   = amountGen.sample.get
+    val gasAmount  = gasAmountGen.sample.get
+    val gasPrice   = gasPriceGen.sample.get
 
     val tx0 = TransactionEntity(
       transactionHashGen.sample.get,
@@ -170,8 +171,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
     val ts1        = TimeStamp.unsafe(1)
     val blockHash1 = blockHashGen.sample.get
-    val gasAmount1 = Gen.posNum[Int].sample.get
-    val gasPrice1  = amountGen.sample.get
+    val gasAmount1 = gasAmountGen.sample.get
+    val gasPrice1  = gasPriceGen.sample.get
     val tx1 = TransactionEntity(
       transactionHashGen.sample.get,
       blockHash1,

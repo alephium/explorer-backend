@@ -45,7 +45,7 @@ object Generators {
         block.inputs
           .filter(_.txHash === tx.hash)
           .map(input =>
-            inputEntityToApi(input, outputs(Random.nextInt(outputs.size)))
+            inputEntityToApi(input, outputs.find(_.key == input.outputRefKey))
           ), // TODO Fix when we have a valid blockchain generator
         block.outputs.filter(_.txHash === tx.hash).map(out => outputEntityToApi(out, None)),
         tx.version,
@@ -88,14 +88,14 @@ object Generators {
     })
   }
 
-  def inputEntityToApi(input: InputEntity, outputRef: OutputEntity): Input =
+  def inputEntityToApi(input: InputEntity, outputRef: Option[OutputEntity]): Input =
     Input(
       OutputRef(input.hint, input.outputRefKey),
       input.unlockScript,
-      Some(outputRef.txHash),
-      Some(outputRef.address),
-      Some(outputRef.amount),
-      outputRef.tokens,
+      outputRef.map(_.txHash),
+      outputRef.map(_.address),
+      outputRef.map(_.amount),
+      outputRef.flatMap(_.tokens),
       input.contractInput
     )
 

@@ -26,6 +26,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.util.SlickUtil._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.DBRunner._
@@ -35,8 +36,8 @@ import org.alephium.explorer.persistence.queries.InfoQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.Scheduler
-import org.alephium.protocol.model.TokenId
-import org.alephium.util.TimeStamp
+import org.alephium.protocol.model.{Address, TokenId}
+import org.alephium.util.{TimeStamp, U256}
 
 trait HolderService {
   def getAlphHolders(pagination: Pagination)(implicit
@@ -124,11 +125,18 @@ case object HolderService extends HolderService with StrictLogging {
   def insertInitialHolders(lastFinalizedInputTime: TimeStamp)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
-  ): Future[Unit] = run(for {
-    _ <- insertInitialAlphHolders(lastFinalizedInputTime)
-    _ <- insertInitialTokenHolders(lastFinalizedInputTime)
-    _ <- AppStateQueries.insertOrUpdate(LastHoldersUpdate(lastFinalizedInputTime))
-  } yield ())
+  ): Future[Unit] = {
+    println(
+      s"${Console.RED}${Console.BOLD}*** lastFinalizedInputTime ***${Console.RESET}${lastFinalizedInputTime}"
+    )
+    run(for {
+      inHo <- insertInitialAlphHolders(lastFinalizedInputTime)
+      _    <- insertInitialTokenHolders(lastFinalizedInputTime)
+      _    <- AppStateQueries.insertOrUpdate(LastHoldersUpdate(lastFinalizedInputTime))
+    } yield {
+      println(s"${Console.RED}${Console.BOLD}*** inHo ***${Console.RESET}${inHo}")
+    })
+  }
 
   def updateHolders(lastRichListUpdate: TimeStamp, lastFinalizedInputTime: TimeStamp)(implicit
       ec: ExecutionContext,
@@ -141,6 +149,17 @@ case object HolderService extends HolderService with StrictLogging {
     } yield ()
   )
 
+  def getBalance(address: Address, time: TimeStamp): DBActionR[ArraySeq[U256]] =
+    sql"""
+    SELECT COALESCE(SUM(outputs.amount), 0) AS total_balance
+    FROM outputs
+    WHERE
+        outputs.block_timestamp <= $time
+        AND (outputs.spent_finalized IS NULL OR outputs.spent_timestamp > $time)
+        AND outputs.main_chain = true
+        AND outputs.address = $address
+  """.asAS[U256]
+
   def insertInitialAlphHolders(time: TimeStamp): DBActionW[Int] =
     sqlu"""
     INSERT INTO holders (address, balance)
@@ -152,7 +171,6 @@ case object HolderService extends HolderService with StrictLogging {
         AND (outputs.spent_finalized IS NULL OR outputs.spent_timestamp > $time)
         AND outputs.main_chain = true
     GROUP BY outputs.address
-    ORDER BY total_balance DESC;
   """
 
   def updateAlphHolders(from: TimeStamp, to: TimeStamp): DBActionW[Int] =
@@ -207,7 +225,6 @@ case object HolderService extends HolderService with StrictLogging {
         AND (token_outputs.spent_finalized IS NULL OR token_outputs.spent_timestamp > $time)
         AND token_outputs.main_chain = true
     GROUP BY token_outputs.address, token_outputs.token
-    ORDER BY total_balance DESC;
   """
 
   def updateTokenHolders(from: TimeStamp, to: TimeStamp): DBActionW[Int] =
