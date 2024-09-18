@@ -109,19 +109,23 @@ class InfosServer(
         for {
           migrationsVersionOpt      <- AppStateQueries.get(AppState.MigrationVersion)
           lastFinalizedInputTimeOpt <- AppStateQueries.get(AppState.LastFinalizedInputTime)
+          lastHoldersUpdateOpt      <- AppStateQueries.get(AppState.LastHoldersUpdate)
         } yield {
           val migrationsVersion = migrationsVersionOpt.map(_.version).getOrElse(0)
           val lastFinalizedInputTime =
             lastFinalizedInputTimeOpt.map(_.time).getOrElse(TimeStamp.zero)
-          (migrationsVersion, lastFinalizedInputTime)
+          val lastHoldersUpdate =
+            lastHoldersUpdateOpt.map(_.time).getOrElse(TimeStamp.zero)
+          (migrationsVersion, lastFinalizedInputTime, lastHoldersUpdate)
         }
       )
-      .map { case (migrationsVersion, lastFinalizedInputTime) =>
+      .map { case (migrationsVersion, lastFinalizedInputTime, lastHoldersUpdate) =>
         ExplorerInfo(
           BuildInfo.releaseVersion,
           BuildInfo.commitId,
           migrationsVersion,
-          lastFinalizedInputTime
+          lastFinalizedInputTime,
+          lastHoldersUpdate
         )
       }
   }

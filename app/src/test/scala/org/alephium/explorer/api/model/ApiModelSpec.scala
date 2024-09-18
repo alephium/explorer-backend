@@ -411,9 +411,13 @@ class ApiModelSpec() extends AlephiumSpec {
                       |  "releaseVersion": "1.2.3",
                       |  "commit": "b96f64ff",
                       |  "migrationsVersion": 0,
-                      |  "lastFinalizedInputTime": 1234
+                      |  "lastFinalizedInputTime": 1234,
+                      |  "lastHoldersUpdate": 1234
                       |}""".stripMargin
-    check(ExplorerInfo("1.2.3", "b96f64ff", 0, TimeStamp.unsafe(1234)), expected)
+    check(
+      ExplorerInfo("1.2.3", "b96f64ff", 0, TimeStamp.unsafe(1234), TimeStamp.unsafe(1234)),
+      expected
+    )
   }
 
   "ContractParent" in {

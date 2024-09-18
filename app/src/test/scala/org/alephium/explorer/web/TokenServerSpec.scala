@@ -38,7 +38,7 @@ class TokenServerSpec()
     with HttpServerFixture
     with DatabaseFixtureForAll {
 
-  val tokenService = new EmptyTokenService { }
+  val tokenService = new EmptyTokenService {}
   val holdertokens = ArraySeq.from(Gen.listOf(holderInfoGen).sample.get)
 
   val holderService = new EmptyHolderService {
@@ -58,7 +58,6 @@ class TokenServerSpec()
 
   val routes = tokenServer.routes
 
-
   "return alph holders" in {
     Get(s"/tokens/holders/alph") check { response =>
       response.as[ArraySeq[HolderInfo]] is holdertokens
@@ -71,4 +70,3 @@ class TokenServerSpec()
     }
   }
 }
-

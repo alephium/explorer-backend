@@ -834,6 +834,10 @@
           "commit": {
             "type": "string"
           },
+          "lastHoldersUpdate": {
+            "format": "int64",
+            "type": "integer"
+          },
           "migrationsVersion": {
             "format": "int32",
             "type": "integer"
@@ -847,7 +851,8 @@
           "releaseVersion",
           "commit",
           "migrationsVersion",
-          "lastFinalizedInputTime"
+          "lastFinalizedInputTime",
+          "lastHoldersUpdate"
         ]
       },
       "ValArray": {
@@ -3166,6 +3171,7 @@
                 "example": {
                   "releaseVersion": "1.11.2+17-00593e8e-SNAPSHOT",
                   "commit": "00593e8e8c718d6bd27fe218e7aa438ef56611cc",
+                  "lastHoldersUpdate": 1611041396892,
                   "migrationsVersion": 1,
                   "lastFinalizedInputTime": 1611041396892
                 }
