@@ -26,7 +26,6 @@ import sttp.tapir.generic.auto._
 import org.alephium.api.Endpoints.jsonBody
 import org.alephium.explorer.api.EndpointExamples._
 import org.alephium.explorer.api.model._
-import org.alephium.protocol.model.TokenId
 
 // scalastyle:off magic.number
 trait InfosEndpoints extends BaseEndpoint with QueryParams {
@@ -92,25 +91,4 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
       .in("average-block-times")
       .out(jsonBody[ArraySeq[PerChainDuration]])
       .description("Get the average block time for each chain")
-
-  val getAlphHolders: BaseEndpoint[Pagination, ArraySeq[HolderInfo]] =
-    infosEndpoint.get
-      .in("addresses")
-      .in("balance")
-      .in("alph")
-      .in(pagination)
-      .out(jsonBody[ArraySeq[HolderInfo]])
-      .description("Get a sorted list of top addresses by ALPH balance. Updates once per day.")
-
-  val getTokenHolders: BaseEndpoint[(TokenId, Pagination), ArraySeq[HolderInfo]] =
-    infosEndpoint.get
-      .in("addresses")
-      .in("balance")
-      .in("token")
-      .in(path[TokenId]("token_id"))
-      .in(pagination)
-      .out(jsonBody[ArraySeq[HolderInfo]])
-      .description(
-        "Get a sorted list of top addresses by {token_id} balance. Updates once per day."
-      )
 }

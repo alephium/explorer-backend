@@ -41,8 +41,7 @@ import org.alephium.util.{TimeStamp, U256}
 class InfosServer(
     tokenSupplyService: TokenSupplyService,
     blockService: BlockService,
-    transactionService: TransactionService,
-    holderService: HolderService
+    transactionService: TransactionService
 )(implicit
     val executionContext: ExecutionContext,
     dc: DatabaseConfig[PostgresProfile],
@@ -98,14 +97,7 @@ class InfosServer(
       }),
       route(getAverageBlockTime.serverLogicSuccess[Future]{ _=>
         blockService.getAverageBlockTime()
-      }),
-      route(getAlphHolders.serverLogicSuccess[Future]{ pagination =>
-        holderService.getAlphHolders( pagination)
-      }),
-      route(getTokenHolders.serverLogicSuccess[Future]{ case (tokenId, pagination) =>
-        holderService.getTokenHolders(tokenId, pagination)
-      })
-      )
+      })      )
   // format: on
 
   def getExplorerInfo()(implicit
