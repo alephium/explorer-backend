@@ -26,7 +26,7 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.alephium.api.model.{Val, ValAddress, ValByteVec}
 import org.alephium.explorer.ConfigDefaults.groupSetting
 import org.alephium.explorer.GenApiModel._
-import org.alephium.explorer.GenCoreApi.{blockEntryProtocolGen, valByteVecGen, valGen}
+import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model.Height
@@ -360,7 +360,7 @@ object GenDBModel {
       version           <- arbitrary[Byte]
       networkId         <- arbitrary[Byte]
       scriptOpt         <- Gen.option(hashGen.map(_.toHexString))
-      gasAmount         <- Gen.posNum[Int]
+      gasAmount         <- gasAmountGen
       gasPrice          <- u256Gen
       order             <- Gen.posNum[Int]
       mainChain         <- Arbitrary.arbitrary[Boolean]
@@ -390,7 +390,7 @@ object GenDBModel {
       hash      <- transactionHashGen
       chainFrom <- groupIndexGen
       chainTo   <- groupIndexGen
-      gasAmount <- Gen.posNum[Int]
+      gasAmount <- gasAmountGen
       gasPrice  <- u256Gen
       timestamp <- timestampGen
     } yield MempoolTransactionEntity(

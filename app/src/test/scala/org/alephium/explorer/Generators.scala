@@ -17,7 +17,6 @@
 package org.alephium.explorer
 
 import scala.collection.immutable.ArraySeq
-import scala.util.Random
 
 import org.scalacheck.Gen
 
@@ -44,9 +43,7 @@ object Generators {
         block.timestamp,
         block.inputs
           .filter(_.txHash === tx.hash)
-          .map(input =>
-            inputEntityToApi(input, outputs(Random.nextInt(outputs.size)))
-          ), // TODO Fix when we have a valid blockchain generator
+          .map(input => inputEntityToApi(input, outputs.find(_.key == input.outputRefKey))),
         block.outputs.filter(_.txHash === tx.hash).map(out => outputEntityToApi(out, None)),
         tx.version,
         tx.networkId,
@@ -88,14 +85,14 @@ object Generators {
     })
   }
 
-  def inputEntityToApi(input: InputEntity, outputRef: OutputEntity): Input =
+  def inputEntityToApi(input: InputEntity, outputRef: Option[OutputEntity]): Input =
     Input(
       OutputRef(input.hint, input.outputRefKey),
       input.unlockScript,
-      Some(outputRef.txHash),
-      Some(outputRef.address),
-      Some(outputRef.amount),
-      outputRef.tokens,
+      outputRef.map(_.txHash),
+      outputRef.map(_.address),
+      outputRef.map(_.amount),
+      outputRef.flatMap(_.tokens),
       input.contractInput
     )
 

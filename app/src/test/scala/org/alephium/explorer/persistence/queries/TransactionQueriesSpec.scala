@@ -220,7 +220,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val expected = ArraySeq(
       tx(output1, None, ArraySeq.empty),
       tx(output2, Some(input1.txHash), ArraySeq.empty),
-      tx(output4, None, ArraySeq(inputEntityToApi(input1, output2)))
+      tx(output4, None, ArraySeq(inputEntityToApi(input1, Some(output2))))
     ).sortBy(_.timestamp).reverse
 
     txs.size is 3

@@ -50,5 +50,23 @@ class InputUpdateQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         updatedInput.outputRefAmount is Some(output.amount)
       }
     }
+
+    "update inputs when address is not set" in {
+      forAll(outputEntityGen, inputEntityGen()) { case (output, input) =>
+        run(for {
+          _ <- OutputSchema.table += output
+          _ <- InputSchema.table +=
+            input.copy(outputRefKey = output.key)
+        } yield ()).futureValue
+
+        run(InputUpdateQueries.updateInputs()).futureValue
+
+        val updatedInput =
+          run(InputSchema.table.filter(_.outputRefKey === output.key).result.head).futureValue
+
+        updatedInput.outputRefAddress is Some(output.address)
+        updatedInput.outputRefAmount is Some(output.amount)
+      }
+    }
   }
 }

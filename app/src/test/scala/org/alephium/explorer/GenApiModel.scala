@@ -25,6 +25,7 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 
 import org.alephium.explorer.ConfigDefaults._
+import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model._
@@ -120,7 +121,7 @@ object GenApiModel extends ImplicitConversions {
       version           <- arbitrary[Byte]
       networkId         <- arbitrary[Byte]
       scriptOpt         <- Gen.option(hashGen.map(_.toHexString))
-      gasAmount         <- Gen.posNum[Int]
+      gasAmount         <- gasAmountGen
       gasPrice          <- u256Gen
       scriptExecutionOk <- arbitrary[Boolean]
       inputSignatures   <- Gen.listOfN(2, bytesGen)
@@ -155,7 +156,7 @@ object GenApiModel extends ImplicitConversions {
         )
       )
       outputs   <- Gen.listOfN(3, assetOutputGen.map(_.copy(spent = None, fixedOutput = true)))
-      gasAmount <- Gen.posNum[Int]
+      gasAmount <- gasAmountGen
       gasPrice  <- u256Gen
       lastSeen  <- timestampGen
     } yield MempoolTransaction(

@@ -38,6 +38,8 @@ object Pagination {
   val maxLimit: Int     = 100
   val thousand: Int     = 1000
 
+  def default: Pagination = Pagination(defaultPage, defaultLimit)
+
   def unsafe(page: Int, limit: Int): Pagination = {
     Pagination(page, limit)
   }
