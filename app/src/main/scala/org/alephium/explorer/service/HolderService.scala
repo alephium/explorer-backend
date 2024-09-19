@@ -77,7 +77,7 @@ case object HolderService extends HolderService with StrictLogging {
     // Sync once on start to make sure we are up to date and then sync once a day at the given time.
     syncOnce().map { _ =>
       scheduler.scheduleDailyAt(
-        taskId = TokenSupplyService.productPrefix,
+        taskId = HolderService.productPrefix,
         at = ZonedDateTime
           .ofInstant(Instant.EPOCH, ZoneOffset.UTC)
           .plusSeconds(scheduleTime.toSecondOfDay().toLong)
