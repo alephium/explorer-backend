@@ -145,7 +145,7 @@ case object HolderService extends HolderService with StrictLogging {
 
   def insertInitialAlphHolders(time: TimeStamp): DBActionW[Int] =
     sqlu"""
-    INSERT INTO holders (address, balance)
+    INSERT INTO alph_holders (address, balance)
     SELECT outputs.address,
            COALESCE(SUM(outputs.amount), 0) AS total_balance
     FROM outputs
@@ -187,13 +187,13 @@ case object HolderService extends HolderService with StrictLogging {
         FROM inflow
         FULL OUTER JOIN outflow ON inflow.address = outflow.address
     )
-    INSERT INTO holders (address, balance)
+    INSERT INTO alph_holders (address, balance)
     SELECT bd.address,
            bd.total_received - bd.total_spent AS balance
     FROM balance_diff bd
     ON CONFLICT (address)
     DO UPDATE SET
-        balance = holders.balance + EXCLUDED.balance;
+        balance = alph_holders.balance + EXCLUDED.balance;
   """
 
   def insertInitialTokenHolders(time: TimeStamp): DBActionW[Int] =

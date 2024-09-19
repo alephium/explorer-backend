@@ -24,9 +24,9 @@ import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.model.Address
 import org.alephium.util.U256
 
-object HolderSchema extends SchemaMainChain[HolderEntity]("holders") {
+object AlphHolderSchema extends SchemaMainChain[HolderEntity]("alph_holders") {
 
-  class Holders(tag: Tag) extends Table[HolderEntity](tag, name) {
+  class AlphHolders(tag: Tag) extends Table[HolderEntity](tag, name) {
     def address: Rep[Address] = column[Address]("address", O.PrimaryKey)
     def balance: Rep[U256] =
       column[U256]("balance", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
@@ -39,5 +39,5 @@ object HolderSchema extends SchemaMainChain[HolderEntity]("holders") {
         .<>((HolderEntity.apply _).tupled, HolderEntity.unapply)
   }
 
-  val table: TableQuery[Holders] = TableQuery[Holders]
+  val table: TableQuery[AlphHolders] = TableQuery[AlphHolders]
 }

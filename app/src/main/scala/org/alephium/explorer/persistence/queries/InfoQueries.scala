@@ -33,7 +33,7 @@ object InfoQueries {
         address,
         balance
       FROM
-        holders
+        alph_holders
       ORDER BY
         balance DESC
     """
