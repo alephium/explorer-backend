@@ -129,7 +129,7 @@ class HolderServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureForEac
         address,
         balance
       FROM
-        holders
+        alph_holders
       ORDER BY
         balance DESC
     """
