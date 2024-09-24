@@ -194,6 +194,7 @@ lazy val app = mainProject("app")
       slickHikaricp,
       postgresql,
       prometheusSimpleClient,
+      prometheusSimpleClientCommon,
       prometheusSimpleClientHotspot,
       tapirPrometheusMetrics,
       micrometerCore,

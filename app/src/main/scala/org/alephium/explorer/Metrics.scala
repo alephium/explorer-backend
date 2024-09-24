@@ -19,14 +19,8 @@ package org.alephium.explorer
 import scala.concurrent.Future
 
 import io.prometheus.metrics.model.registry.PrometheusRegistry
-import io.vertx.ext.web._
-import sttp.monad.MonadError
-import sttp.tapir._
-import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.metrics.MetricLabels
 import sttp.tapir.server.metrics.prometheus.PrometheusMetrics
-import sttp.tapir.server.metrics.prometheus.PrometheusMetrics._
-import sttp.tapir.server.vertx.VertxFutureServerInterpreter
 
 object Metrics {
   val defaultRegistry: PrometheusRegistry = PrometheusRegistry.defaultRegistry
@@ -38,22 +32,6 @@ object Metrics {
       PrometheusMetrics.requestTotal(defaultRegistry, namespace, MetricLabels.Default),
       PrometheusMetrics.requestDuration(defaultRegistry, namespace, MetricLabels.Default),
       PrometheusMetrics.requestActive(defaultRegistry, namespace, MetricLabels.Default)
-    )
-  )
-
-  /** Endpoint to expose the metrics
-    *
-    * @param callback
-    *   a block of code to execute before serving the metrics, for example to reload
-    */
-  def endpoint(callback: => Unit): Router => Route = VertxFutureServerInterpreter().route(
-    ServerEndpoint.public(
-      sttp.tapir.endpoint.get.in(prometheus.endpointPrefix).out(plainBody[PrometheusRegistry]),
-      (monad: MonadError[Future]) =>
-        (_: Unit) => {
-          callback
-          monad.eval(Right(defaultRegistry): Either[Unit, PrometheusRegistry])
-        }
     )
   )
 }
