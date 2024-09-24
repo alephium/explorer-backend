@@ -77,6 +77,8 @@ object Dependencies {
   lazy val slickHikaricp = "com.typesafe.slick" %% "slick-hikaricp" % Version.slick
 
   lazy val prometheusSimpleClient = "io.prometheus" % "simpleclient" % Version.prometheus
+  lazy val prometheusSimpleClientCommon =
+    "io.prometheus" % "simpleclient_common" % Version.prometheus
   lazy val prometheusSimpleClientHotspot =
     "io.prometheus" % "simpleclient_hotspot" % Version.prometheus
   lazy val tapirPrometheusMetrics =
