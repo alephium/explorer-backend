@@ -58,10 +58,11 @@ object AppServer {
         maxTimeIntervals.exportTxs
       )
     val transactionServer = new TransactionServer()
-    val infosServer       = new InfosServer(TokenSupplyService, BlockService, TransactionService)
+    val infosServer =
+      new InfosServer(TokenSupplyService, BlockService, TransactionService)
     val utilsServer: UtilsServer   = new UtilsServer()
     val chartsServer: ChartsServer = new ChartsServer(maxTimeIntervals.charts)
-    val tokenServer: TokenServer   = new TokenServer(TokenService)
+    val tokenServer: TokenServer   = new TokenServer(TokenService, HolderService)
     val mempoolServer              = new MempoolServer()
     val eventServer                = new EventServer()
     val contractServer             = new ContractServer()

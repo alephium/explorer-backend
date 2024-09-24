@@ -14,20 +14,14 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.api.model
+package org.alephium.explorer.persistence.model
 
-import org.alephium.api.UtilJson._
-import org.alephium.json.Json._
-import org.alephium.util.TimeStamp
+import org.alephium.protocol.model.Address
+import org.alephium.protocol.model.TokenId
+import org.alephium.util.U256
 
-final case class ExplorerInfo(
-    releaseVersion: String,
-    commit: String,
-    migrationsVersion: Int,
-    lastFinalizedInputTime: TimeStamp,
-    lastHoldersUpdate: TimeStamp
+final case class TokenHolderEntity(
+    address: Address,
+    tokenId: TokenId,
+    balance: U256
 )
-
-object ExplorerInfo {
-  implicit val readWriter: ReadWriter[ExplorerInfo] = macroRW
-}

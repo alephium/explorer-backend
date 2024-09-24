@@ -229,6 +229,12 @@ object EndpointExamples extends EndpointsExamples {
       lockedBalance = U256.Two
     )
 
+  private val alphHolder =
+    HolderInfo(
+      address = address,
+      balance = U256.Ten
+    )
+
   private val contractInfo =
     ContractLiveness(
       Some(addressContract),
@@ -294,7 +300,8 @@ object EndpointExamples extends EndpointsExamples {
       releaseVersion = "1.11.2+17-00593e8e-SNAPSHOT",
       commit = "00593e8e8c718d6bd27fe218e7aa438ef56611cc",
       migrationsVersion = 1,
-      lastFinalizedInputTime = ts
+      lastFinalizedInputTime = ts,
+      lastHoldersUpdate = ts
     )
 
   private val tokenSupply =
@@ -392,6 +399,9 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val addressTokensBalanceExample: List[Example[ArraySeq[AddressTokenBalance]]] =
     simpleExample(ArraySeq(addressTokenBalance))
+
+  implicit val alphHoldersExample: List[Example[ArraySeq[HolderInfo]]] =
+    simpleExample(ArraySeq(alphHolder))
 
   implicit val contractParentExample: List[Example[ContractParent]] =
     simpleExample(contractParent)

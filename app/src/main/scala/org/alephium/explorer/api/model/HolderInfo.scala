@@ -16,18 +16,13 @@
 
 package org.alephium.explorer.api.model
 
-import org.alephium.api.UtilJson._
+import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
-import org.alephium.util.TimeStamp
+import org.alephium.protocol.model.Address
+import org.alephium.util.U256
 
-final case class ExplorerInfo(
-    releaseVersion: String,
-    commit: String,
-    migrationsVersion: Int,
-    lastFinalizedInputTime: TimeStamp,
-    lastHoldersUpdate: TimeStamp
-)
+final case class HolderInfo(address: Address, balance: U256)
 
-object ExplorerInfo {
-  implicit val readWriter: ReadWriter[ExplorerInfo] = macroRW
+object HolderInfo {
+  implicit val readWriter: ReadWriter[HolderInfo] = macroRW
 }

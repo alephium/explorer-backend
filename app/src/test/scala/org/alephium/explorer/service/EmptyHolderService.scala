@@ -14,20 +14,26 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.api.model
+package org.alephium.explorer.service
 
-import org.alephium.api.UtilJson._
-import org.alephium.json.Json._
-import org.alephium.util.TimeStamp
+import scala.collection.immutable.ArraySeq
+import scala.concurrent.{ExecutionContext, Future}
 
-final case class ExplorerInfo(
-    releaseVersion: String,
-    commit: String,
-    migrationsVersion: Int,
-    lastFinalizedInputTime: TimeStamp,
-    lastHoldersUpdate: TimeStamp
-)
+import slick.basic.DatabaseConfig
+import slick.jdbc.PostgresProfile
 
-object ExplorerInfo {
-  implicit val readWriter: ReadWriter[ExplorerInfo] = macroRW
+import org.alephium.explorer.api.model._
+import org.alephium.protocol.model.TokenId
+
+trait EmptyHolderService extends HolderService {
+
+  def getAlphHolders(pagination: Pagination)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[HolderInfo]] = Future.successful(ArraySeq.empty)
+
+  def getTokenHolders(token: TokenId, pagination: Pagination)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[HolderInfo]] = Future.successful(ArraySeq.empty)
 }
