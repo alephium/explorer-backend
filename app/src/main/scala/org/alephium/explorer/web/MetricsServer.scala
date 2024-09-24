@@ -35,13 +35,13 @@ class MetricsServer(cache: MetricCache)(implicit
     )
 
   def reloadMetrics(): Unit = {
-    MetricServer.fungibleCountGauge.set(cache.getFungibleCount().toDouble)
-    MetricServer.nftCountGauge.set(cache.getNFTCount().toDouble)
-    MetricServer.eventCountGauge.set(cache.getEventCount().toDouble)
+    MetricsServer.fungibleCountGauge.set(cache.getFungibleCount().toDouble)
+    MetricsServer.nftCountGauge.set(cache.getNFTCount().toDouble)
+    MetricsServer.eventCountGauge.set(cache.getEventCount().toDouble)
   }
 }
 
-object MetricServer {
+object MetricsServer {
   val fungibleCountGauge: Gauge = Gauge
     .builder()
     .name(
