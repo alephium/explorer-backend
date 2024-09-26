@@ -97,6 +97,12 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[Int])
       .description("Get total transactions of a given address")
 
+  val getLatestTransactionInfo: BaseEndpoint[Address, TransactionInfo] =
+    addressesEndpoint.get
+      .in("latest-transaction")
+      .out(jsonBody[TransactionInfo])
+      .description("Get latest transaction information of a given address")
+
   val addressMempoolTransactions: BaseEndpoint[Address, ArraySeq[MempoolTransaction]] =
     addressesEndpoint.get
       .in("mempool")

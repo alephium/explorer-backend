@@ -282,6 +282,20 @@ object TransactionQueries extends StrictLogging {
     } yield txs
   }
 
+  def getLatestTransactionInfoByAddressAction(
+      address: Address
+  )(implicit ec: ExecutionContext): DBActionR[Option[TxByAddressQR]] = {
+    sql"""
+      SELECT #${TxByAddressQR.selectFields}
+      FROM transaction_per_addresses
+      WHERE main_chain = true AND address = $address
+      ORDER BY block_timestamp DESC, tx_order
+      LIMIT 1
+    """
+      .asAS[TxByAddressQR]
+      .headOrNone
+  }
+
   def getTransactionsByAddressTimeRanged(
       address: Address,
       fromTime: TimeStamp,

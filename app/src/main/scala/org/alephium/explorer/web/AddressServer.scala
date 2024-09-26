@@ -90,6 +90,12 @@ class AddressServer(
       route(getTotalTransactionsByAddress.serverLogic[Future] { address =>
         transactionService.getTransactionsNumberByAddress(address).map(Right(_))
       }),
+      route(getLatestTransactionInfo.serverLogic[Future] { address =>
+        transactionService.getLatestTransactionInfoByAddress(address).map {
+          case None         => Left(ApiError.NotFound(s"No transaction found for address $address"))
+          case Some(txInfo) => Right(txInfo)
+        }
+      }),
       route(getAddressBalance.serverLogicSuccess[Future] { address =>
         for {
           (balance, locked) <- transactionService.getBalance(address)

@@ -86,6 +86,15 @@ class AddressServerSpec()
 
   val tokens = Gen.listOf(addressTokenBalanceGen).sample.get
 
+  val transactionInfo = transactions.headOption.map { tx =>
+    TransactionInfo(
+      tx.hash,
+      tx.blockHash,
+      tx.timestamp,
+      tx.coinbase
+    )
+  }
+
   var testLimit = 0
 
   val publicKeyAddresses = Gen.listOfN(10, publicKeyGen).sample.get.map { publicKey =>
@@ -131,6 +140,12 @@ class AddressServerSpec()
           .map(l => ArraySeq.from(l.asScala))
       )
     }
+
+    override def getLatestTransactionInfoByAddress(address: Address)(implicit
+        ec: ExecutionContext,
+        dc: DatabaseConfig[PostgresProfile]
+    ): Future[Option[TransactionInfo]] =
+      Future.successful(transactionInfo)
 
     override def getAmountHistoryDEPRECATED(
         address: Address,
@@ -219,6 +234,14 @@ class AddressServerSpec()
     forAll(addressGen) { case address =>
       Get(s"/addresses/${address}/total-transactions") check { response =>
         response.as[Int] is 0
+      }
+    }
+  }
+
+  "get latest transaction info" in {
+    forAll(addressGen) { case address =>
+      Get(s"/addresses/${address}/latest-transaction") check { response =>
+        response.as[TransactionInfo] is transactionInfo.get
       }
     }
   }

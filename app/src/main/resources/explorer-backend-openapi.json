@@ -1293,6 +1293,33 @@
           "propertyName": "type"
         }
       },
+      "TransactionInfo": {
+        "type": "object",
+        "title": "TransactionInfo",
+        "properties": {
+          "blockHash": {
+            "format": "block-hash",
+            "type": "string"
+          },
+          "coinbase": {
+            "type": "boolean"
+          },
+          "hash": {
+            "format": "32-byte-hash",
+            "type": "string"
+          },
+          "timestamp": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "hash",
+          "blockHash",
+          "timestamp",
+          "coinbase"
+        ]
+      },
       "Unauthorized": {
         "type": "object",
         "title": "Unauthorized",
@@ -4072,6 +4099,109 @@
         ],
         "tags": [
           "Blocks"
+        ]
+      }
+    },
+    "/addresses/{address}/latest-transaction": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionInfo"
+                },
+                "example": {
+                  "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
+                  "coinbase": false,
+                  "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                  "timestamp": 1611041396892
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          }
+        },
+        "description": "Get latest transaction information of a given address",
+        "operationId": "getAddressesAddressLatest-transaction",
+        "parameters": [
+          {
+            "schema": {
+              "format": "address",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "address",
+            "required": true
+          }
+        ],
+        "tags": [
+          "Addresses"
         ]
       }
     },
