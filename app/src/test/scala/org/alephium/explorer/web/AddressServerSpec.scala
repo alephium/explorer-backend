@@ -190,7 +190,7 @@ class AddressServerSpec()
   val routes = server.routes
 
   "validate and forward `txLimit` query param" in {
-
+    val maxLimit = 20
     forAll(addressGen, Gen.chooseNum[Int](-10, 120)) { case (address, txLimit) =>
       Get(s"/addresses/${address}/transactions?limit=$txLimit") check { response =>
         if (txLimit < 0) {
@@ -198,10 +198,10 @@ class AddressServerSpec()
           response.as[ApiError.BadRequest] is ApiError.BadRequest(
             s"Invalid value for: query parameter limit (expected value to be greater than or equal to 0, but got $txLimit)"
           )
-        } else if (txLimit > 100) {
+        } else if (txLimit > maxLimit) {
           response.code is StatusCode.BadRequest
           response.as[ApiError.BadRequest] is ApiError.BadRequest(
-            s"Invalid value for: query parameter limit (expected value to be less than or equal to 100, but got $txLimit)"
+            s"Invalid value for: query parameter limit (expected value to be less than or equal to $maxLimit, but got $txLimit)"
           )
         } else {
           response.code is StatusCode.Ok
@@ -210,7 +210,7 @@ class AddressServerSpec()
       }
 
       Get(s"/addresses/${address}/transactions") check { _ =>
-        testLimit is 20 // default txLimit
+        testLimit is 10 // default txLimit
       }
     }
   }

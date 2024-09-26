@@ -34,9 +34,8 @@ object Pagination {
     }
   }
   val defaultPage: Int  = 1
-  val defaultLimit: Int = 20
-  val maxLimit: Int     = 100
-  val thousand: Int     = 1000
+  val defaultLimit: Int = 10
+  val maxLimit: Int     = 20
 
   def default: Pagination = Pagination(defaultPage, defaultLimit)
 

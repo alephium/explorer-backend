@@ -1686,7 +1686,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "100",
+              "maximum": "20",
               "type": "integer",
               "minimum": "0"
             },
@@ -1931,7 +1931,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "100",
+              "maximum": "20",
               "type": "integer",
               "minimum": "0"
             },
@@ -2361,7 +2361,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "100",
+              "maximum": "20",
               "type": "integer",
               "minimum": "0"
             },
@@ -2633,7 +2633,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "100",
+              "maximum": "20",
               "type": "integer",
               "minimum": "0"
             },
@@ -3775,7 +3775,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "100",
+              "maximum": "20",
               "type": "integer",
               "minimum": "0"
             },
@@ -4060,7 +4060,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "100",
+              "maximum": "20",
               "type": "integer",
               "minimum": "0"
             },
@@ -4642,7 +4642,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "1000",
+              "maximum": "20",
               "type": "integer",
               "minimum": "0"
             },
@@ -4927,7 +4927,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "100",
+              "maximum": "20",
               "type": "integer",
               "minimum": "0"
             },
@@ -5354,7 +5354,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "100",
+              "maximum": "20",
               "type": "integer",
               "minimum": "0"
             },
@@ -6290,7 +6290,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "100",
+              "maximum": "20",
               "type": "integer",
               "minimum": "0"
             },
@@ -6418,7 +6418,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "100",
+              "maximum": "20",
               "type": "integer",
               "minimum": "0"
             },
@@ -6870,7 +6870,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "100",
+              "maximum": "20",
               "type": "integer",
               "minimum": "0"
             },
@@ -7086,7 +7086,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "100",
+              "maximum": "20",
               "type": "integer",
               "minimum": "0"
             },
@@ -7222,7 +7222,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "100",
+              "maximum": "20",
               "type": "integer",
               "minimum": "0"
             },
@@ -7768,7 +7768,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "100",
+              "maximum": "20",
               "type": "integer",
               "minimum": "0"
             },
@@ -8100,7 +8100,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "100",
+              "maximum": "20",
               "type": "integer",
               "minimum": "0"
             },
@@ -8220,7 +8220,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "100",
+              "maximum": "20",
               "type": "integer",
               "minimum": "0"
             },
@@ -9058,7 +9058,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "100",
+              "maximum": "20",
               "type": "integer",
               "minimum": "0"
             },
