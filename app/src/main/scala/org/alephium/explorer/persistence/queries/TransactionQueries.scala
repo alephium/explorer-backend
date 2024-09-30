@@ -196,7 +196,7 @@ object TransactionQueries extends StrictLogging {
 
       val query =
         s"""
-           SELECT ${TxByAddressQR.selectFields}
+           SELECT DISTINCT ${TxByAddressQR.selectFields}
            FROM transaction_per_addresses
            WHERE main_chain = true
              AND address IN $placeholder

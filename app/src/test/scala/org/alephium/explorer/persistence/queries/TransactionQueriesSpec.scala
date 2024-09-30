@@ -555,6 +555,41 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         }
       }
     }
+
+    "return distinct transactions" when {
+      "a transaction is associated with multiple addresses" in {
+        forAll(Gen.listOf(genTransactionPerAddressEntity(mainChain = Gen.const(true)))) {
+          entities =>
+            val toPersist = entities.flatMap { entity =>
+              // We copy the entity and change the address
+              Seq(entity, entity.copy(address = addressGen.sample.get))
+            }
+
+            // clear table and insert entities
+            run(TransactionPerAddressSchema.table.delete).futureValue
+            run(TransactionPerAddressSchema.table ++= toPersist).futureValue
+
+            val query =
+              TransactionQueries.getTxHashesByAddressesQuery(
+                toPersist.map(_.address),
+                Pagination.unsafe(1, Int.MaxValue)
+              )
+
+            val expectedResult =
+              entities map { entity =>
+                TxByAddressQR(
+                  entity.hash,
+                  entity.blockHash,
+                  entity.timestamp,
+                  entity.txOrder,
+                  entity.coinbase
+                )
+              }
+
+            run(query).futureValue should contain theSameElementsAs expectedResult
+        }
+      }
+    }
   }
 
   trait Fixture {
