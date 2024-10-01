@@ -508,6 +508,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
             val query =
               TransactionQueries.getTxHashesByAddressesQuery(
                 addresses,
+                None,
+                None,
                 Pagination.unsafe(page, limit)
               )
 
@@ -536,6 +538,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
             val query =
               TransactionQueries.getTxHashesByAddressesQuery(
                 shuffledAddresses,
+                None,
+                None,
                 Pagination.unsafe(1, Int.MaxValue)
               )
 
@@ -561,7 +565,6 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         forAll(Gen.listOf(genTransactionPerAddressEntity(mainChain = Gen.const(true)))) {
           entities =>
             val toPersist = entities.flatMap { entity =>
-              // We copy the entity and change the address
               Seq(entity, entity.copy(address = addressGen.sample.get))
             }
 
@@ -572,6 +575,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
             val query =
               TransactionQueries.getTxHashesByAddressesQuery(
                 toPersist.map(_.address),
+                None,
+                None,
                 Pagination.unsafe(1, Int.MaxValue)
               )
 
@@ -588,6 +593,76 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
             run(query).futureValue should contain theSameElementsAs expectedResult
         }
+      }
+    }
+
+    "return timed range transactions" in new Fixture {
+      forAll(
+        Gen.nonEmptyListOf(
+          genTransactionPerAddressEntity(
+            addressGen = Gen.const(address),
+            mainChain = Gen.const(true)
+          )
+        )
+      ) { entities =>
+        run(TransactionPerAddressSchema.table.delete).futureValue
+        run(TransactionPerAddressSchema.table ++= entities).futureValue
+
+        val timestamps = entities.map(_.timestamp).distinct
+        val max        = timestamps.max
+        val min        = timestamps.min
+
+        def query(fromTs: Option[TimeStamp], toTs: Option[TimeStamp]) = {
+          run(
+            TransactionQueries.getTxHashesByAddressesQuery(
+              Seq(address),
+              fromTs,
+              toTs,
+              Pagination.unsafe(1, Int.MaxValue)
+            )
+          ).futureValue
+        }
+
+        def expected(entities: Seq[TransactionPerAddressEntity]) = {
+          entities.map { entity =>
+            TxByAddressQR(
+              entity.hash,
+              entity.blockHash,
+              entity.timestamp,
+              entity.txOrder,
+              entity.coinbase
+            )
+          }
+        }
+
+        def test(
+            fromTs: Option[TimeStamp],
+            toTs: Option[TimeStamp],
+            expectedEntites: Seq[TxByAddressQR]
+        ) = {
+          query(fromTs, toTs) should contain theSameElementsAs expectedEntites
+        }
+
+        // fromTs is inclusive
+        test(fromTs = Some(max), toTs = None, expected(Seq(entities.maxBy(_.timestamp))))
+
+        // toTs is exclusive
+        test(fromTs = None, toTs = Some(max), expected(entities.sortBy(_.timestamp).init))
+
+        // Verifying  max+1 include the last element
+        test(
+          fromTs = None,
+          toTs = Some(max.plusMillisUnsafe(1)),
+          expected(entities.sortBy(_.timestamp))
+        )
+
+        // excluding min and max elememt
+        test(
+          fromTs = Some(min.plusMillisUnsafe(1)),
+          toTs = Some(max),
+          expected(entities.sortBy(_.timestamp).init.drop(1))
+        )
+
       }
     }
   }

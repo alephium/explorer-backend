@@ -51,8 +51,12 @@ trait EmptyTransactionService extends TransactionService {
   ): Future[ArraySeq[Transaction]] =
     Future.successful(ArraySeq.empty)
 
-  override def getTransactionsByAddresses(addresses: ArraySeq[Address], pagination: Pagination)(
-      implicit
+  override def getTransactionsByAddresses(
+      addresses: ArraySeq[Address],
+      fromTs: Option[TimeStamp],
+      toTs: Option[TimeStamp],
+      pagination: Pagination
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]] =
