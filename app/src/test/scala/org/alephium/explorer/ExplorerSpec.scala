@@ -330,12 +330,17 @@ trait ExplorerSpec
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address}/transactions") check { response =>
         val expectedTransactions =
-          transactions.filter(tx =>
-            tx.outputs.exists(_.address == address) || tx.inputs.exists(_.address == Some(address))
-          )
+          transactions
+            .filter(tx =>
+              tx.outputs.exists(_.address == address) || tx.inputs.exists(
+                _.address == Some(address)
+              )
+            )
+            .sortBy(_.timestamp)
+            .reverse
         val res = response.as[ArraySeq[Transaction]]
 
-        res.size is expectedTransactions.size
+        res.size is expectedTransactions.take(txLimit).size
         Inspectors.forAll(expectedTransactions) { transaction =>
           res.map(_.hash) should contain(transaction.hash)
         }
@@ -368,13 +373,12 @@ trait ExplorerSpec
 
       Post("/addresses/transactions", addressesBody) check { response =>
         val expectedTransactions =
-          selectedAddresses
-            .flatMap { address =>
-              transactions.filter { tx =>
-                tx.outputs.exists(_.address == address) || tx.inputs
-                  .exists(_.address == Some(address))
-              }
+          selectedAddresses.flatMap { address =>
+            transactions.filter { tx =>
+              tx.outputs.exists(_.address == address) || tx.inputs
+                .exists(_.address == Some(address))
             }
+          }.distinct
 
         val res = response.as[ArraySeq[Transaction]]
 
