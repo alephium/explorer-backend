@@ -63,9 +63,10 @@ class AddressServer(
         transactionService
           .getTransactionsByAddress(address, pagination)
       }),
-      route(getTransactionsByAddresses.serverLogicSuccess[Future] { case (addresses, pagination) =>
-        transactionService
-          .getTransactionsByAddresses(addresses, pagination)
+      route(getTransactionsByAddresses.serverLogicSuccess[Future] {
+        case (addresses, fromTsOpt, toTsOpt, pagination) =>
+          transactionService
+            .getTransactionsByAddresses(addresses, fromTsOpt, toTsOpt, pagination)
       }),
       route(getTransactionsByAddressTimeRanged.serverLogicSuccess[Future] {
         case (address, timeInterval, pagination) =>

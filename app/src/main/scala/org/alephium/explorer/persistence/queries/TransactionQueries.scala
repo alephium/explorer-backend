@@ -182,11 +182,17 @@ object TransactionQueries extends StrictLogging {
     *   Page number (starting from 0)
     * @param limit
     *   Maximum rows
+    * @param fromTs
+    *   From TimeStamp of the time-range (inclusive)
+    * @param toTs
+    *   To TimeStamp of the time-range (exclusive)
     * @return
     *   Paginated transactions
     */
   def getTxHashesByAddressesQuery(
       addresses: ArraySeq[Address],
+      fromTs: Option[TimeStamp],
+      toTs: Option[TimeStamp],
       pagination: Pagination
   ): DBActionSR[TxByAddressQR] =
     if (addresses.isEmpty) {
@@ -196,10 +202,12 @@ object TransactionQueries extends StrictLogging {
 
       val query =
         s"""
-           SELECT ${TxByAddressQR.selectFields}
+           SELECT DISTINCT ${TxByAddressQR.selectFields}
            FROM transaction_per_addresses
            WHERE main_chain = true
              AND address IN $placeholder
+             ${fromTs.map(ts => s"AND block_timestamp >= ${ts.millis}").getOrElse("")}
+             ${toTs.map(ts => s"AND block_timestamp < ${ts.millis}").getOrElse("")}
            ORDER BY block_timestamp DESC, tx_order
            """
 
@@ -273,11 +281,16 @@ object TransactionQueries extends StrictLogging {
     } yield txs
   }
 
-  def getTransactionsByAddresses(addresses: ArraySeq[Address], pagination: Pagination)(implicit
+  def getTransactionsByAddresses(
+      addresses: ArraySeq[Address],
+      fromTime: Option[TimeStamp],
+      toTime: Option[TimeStamp],
+      pagination: Pagination
+  )(implicit
       ec: ExecutionContext
   ): DBActionR[ArraySeq[Transaction]] = {
     for {
-      txHashesTs <- getTxHashesByAddressesQuery(addresses, pagination)
+      txHashesTs <- getTxHashesByAddressesQuery(addresses, fromTime, toTime, pagination)
       txs        <- getTransactions(txHashesTs)
     } yield txs
   }

@@ -68,7 +68,12 @@ trait TransactionService {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Option[TransactionInfo]]
 
-  def getTransactionsByAddresses(addresses: ArraySeq[Address], pagination: Pagination)(implicit
+  def getTransactionsByAddresses(
+      addresses: ArraySeq[Address],
+      fromTime: Option[TimeStamp],
+      toTime: Option[TimeStamp],
+      pagination: Pagination
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]]
@@ -168,11 +173,16 @@ object TransactionService extends TransactionService {
   ): Future[Option[TransactionInfo]] =
     TransactionDao.getLatestTransactionInfoByAddress(address)
 
-  def getTransactionsByAddresses(addresses: ArraySeq[Address], pagination: Pagination)(implicit
+  def getTransactionsByAddresses(
+      addresses: ArraySeq[Address],
+      fromTime: Option[TimeStamp],
+      toTime: Option[TimeStamp],
+      pagination: Pagination
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]] =
-    TransactionDao.getByAddresses(addresses, pagination)
+    TransactionDao.getByAddresses(addresses, fromTime, toTime, pagination)
 
   def listMempoolTransactionsByAddress(address: Address)(implicit
       ec: ExecutionContext,

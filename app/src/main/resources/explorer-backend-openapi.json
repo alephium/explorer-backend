@@ -5472,6 +5472,28 @@
         "parameters": [
           {
             "schema": {
+              "format": "int64",
+              "type": "integer",
+              "minimum": "0"
+            },
+            "in": "query",
+            "name": "fromTs",
+            "description": "inclusive",
+            "required": false
+          },
+          {
+            "schema": {
+              "format": "int64",
+              "type": "integer",
+              "minimum": "0"
+            },
+            "in": "query",
+            "name": "toTs",
+            "description": "exclusive",
+            "required": false
+          },
+          {
+            "schema": {
               "format": "int32",
               "type": "integer",
               "minimum": "1"

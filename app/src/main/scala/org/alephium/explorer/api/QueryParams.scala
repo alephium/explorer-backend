@@ -97,6 +97,17 @@ trait QueryParams extends TapirCodecs {
         }
       })
 
+  val optionalTimeIntervalQuery: EndpointInput[(Option[TimeStamp], Option[TimeStamp])] =
+    query[Option[TimeStamp]]("fromTs")
+      .description("inclusive")
+      .and(query[Option[TimeStamp]]("toTs").description("exclusive"))
+      .validate(Validator.custom {
+        case (Some(fromTs), Some(toTs)) if fromTs >= toTs =>
+          ValidationResult.Invalid(s"`fromTs` must be before `toTs`")
+        case _ =>
+          ValidationResult.Valid
+      })
+
   val intervalTypeQuery: EndpointInput[IntervalType] =
     query[IntervalType]("interval-type")
 

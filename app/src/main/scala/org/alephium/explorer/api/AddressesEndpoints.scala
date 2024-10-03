@@ -31,7 +31,7 @@ import org.alephium.explorer.api.EndpointExamples._
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.PublicKey
 import org.alephium.protocol.model.{Address, TokenId}
-import org.alephium.util.Duration
+import org.alephium.util.{Duration, TimeStamp}
 
 // scalastyle:off magic.number
 trait AddressesEndpoints extends BaseEndpoint with QueryParams {
@@ -73,14 +73,16 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[Transaction]])
       .description("List transactions of a given address")
 
-  lazy val getTransactionsByAddresses
-      : BaseEndpoint[(ArraySeq[Address], Pagination), ArraySeq[Transaction]] =
+  // format: off
+  lazy val getTransactionsByAddresses: BaseEndpoint[(ArraySeq[Address], Option[TimeStamp], Option[TimeStamp], Pagination), ArraySeq[Transaction]] =
     baseAddressesEndpoint.post
       .in(arrayBody[Address]("addresses", maxSizeAddresses))
       .in("transactions")
+      .in(optionalTimeIntervalQuery)
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])
       .description("List transactions for given addresses")
+  // format: on
 
   val getTransactionsByAddressTimeRanged
       : BaseEndpoint[(Address, TimeInterval, Pagination), ArraySeq[Transaction]] =
