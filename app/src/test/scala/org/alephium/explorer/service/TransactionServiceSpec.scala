@@ -497,6 +497,23 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     )
   }
 
+  "get latest transactionInfo" in new TxsByAddressFixture {
+    forAll(addressGen) { randomAddress =>
+      TransactionService.getLatestTransactionInfoByAddress(randomAddress).futureValue is None
+    }
+
+    val expected = transactions.maxBy(_.timestamp)
+    val info = TransactionInfo(
+      expected.hash,
+      expected.blockHash,
+      expected.timestamp,
+      expected.coinbase
+    )
+
+    TransactionService.getLatestTransactionInfoByAddress(address).futureValue is Some(info)
+
+  }
+
   "export transactions by address" in new TxsByAddressFixture {
     forAll(Gen.choose(1, 4)) { batchSize =>
       val flowable = TransactionService

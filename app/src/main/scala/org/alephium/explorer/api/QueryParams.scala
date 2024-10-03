@@ -51,14 +51,14 @@ trait QueryParams extends TapirCodecs {
       )
 
   def paginator(
-      defaultLimit: Int = Pagination.defaultLimit,
+      limit: Int = Pagination.defaultLimit,
       maxLimit: Int = Pagination.maxLimit
   ): EndpointInput[Pagination] =
-    paginatorParams(defaultLimit, maxLimit)
+    paginatorParams(limit, maxLimit)
       .map { case (page, limit) => Pagination.unsafe(page, limit) }(p => (p.page, p.limit))
 
   private def paginatorParams(
-      defaultLimit: Int = Pagination.defaultLimit,
+      limit: Int = Pagination.defaultLimit,
       maxLimit: Int = Pagination.maxLimit
   ): EndpointInput[(Int, Int)] =
     query[Option[Int]]("page")
@@ -73,7 +73,7 @@ trait QueryParams extends TapirCodecs {
           .description("Number of items per page")
           .map {
             case Some(limit) => limit
-            case None        => defaultLimit
+            case None        => limit
           }(Some(_))
           .validate(Validator.min(0))
           .validate(Validator.max(maxLimit))

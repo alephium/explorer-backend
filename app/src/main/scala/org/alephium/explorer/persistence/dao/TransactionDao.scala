@@ -59,6 +59,14 @@ object TransactionDao {
   ): Future[ArraySeq[Transaction]] =
     run(getTransactionsByAddressTimeRanged(address, fromTime, toTime, pagination))
 
+  def getLatestTransactionInfoByAddress(address: Address)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[TransactionInfo]] =
+    run(getLatestTransactionInfoByAddressAction(address).map(_.map { tx =>
+      TransactionInfo(tx.txHash, tx.blockHash, tx.blockTimestamp, tx.coinbase)
+    }))
+
   def getNumberByAddress(
       address: Address
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int] =

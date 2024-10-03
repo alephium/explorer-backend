@@ -16,30 +16,19 @@
 
 package org.alephium.explorer.api.model
 
-@scala.annotation.nowarn
-final case class Pagination private (page: Int, limit: Int) {
-  val offset: Int = (page - 1) * limit
-}
+import org.alephium.api.UtilJson._
+import org.alephium.explorer.api.Json._
+import org.alephium.json.Json._
+import org.alephium.protocol.model.{BlockHash, TransactionId}
+import org.alephium.util.TimeStamp
 
-object Pagination {
+final case class TransactionInfo(
+    hash: TransactionId,
+    blockHash: BlockHash,
+    timestamp: TimeStamp,
+    coinbase: Boolean
+)
 
-  @scala.annotation.nowarn
-  final case class Reversible private (page: Int, limit: Int, reverse: Boolean) {
-    val offset: Int = (page - 1) * limit
-  }
-  object Reversible {
-    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-    def unsafe(page: Int, limit: Int, reverse: Boolean = false): Reversible = {
-      Reversible(page, limit, reverse)
-    }
-  }
-  val defaultPage: Int  = 1
-  val defaultLimit: Int = 10
-  val maxLimit: Int     = 20
-
-  def default: Pagination = Pagination(defaultPage, defaultLimit)
-
-  def unsafe(page: Int, limit: Int): Pagination = {
-    Pagination(page, limit)
-  }
+object TransactionInfo {
+  implicit val readWriter: ReadWriter[TransactionInfo] = macroRW
 }

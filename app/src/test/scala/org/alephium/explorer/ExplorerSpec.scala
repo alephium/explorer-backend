@@ -75,7 +75,7 @@ trait ExplorerSpec
 
   val networkId: NetworkId = NetworkId.AlephiumDevNet
 
-  val txLimit = 20
+  val txLimit = 10
 
   val blockflow: ArraySeq[ArraySeq[model.BlockEntry]] =
     blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
@@ -217,35 +217,36 @@ trait ExplorerSpec
       res.size is scala.math.min(Pagination.defaultLimit, blocks.size)
     }
 
-    Get(s"/blocks?limit=${blocks.size}") check { response =>
+    val limit = math.min(blocks.size, Pagination.maxLimit)
+    Get(s"/blocks?limit=${limit}") check { response =>
       val res = response.as[ListBlocks].blocks.map(_.hash)
-      res.size is blocks.size
-      Inspectors.forAll(blocks)(block => res should contain(block.hash))
-    }
-
-    var blocksPage1: ArraySeq[BlockHash] = ArraySeq.empty
-    Get(s"/blocks?page=1&limit=${blocks.size / 2 + 1}") check { response =>
-      blocksPage1 = response.as[ListBlocks].blocks.map(_.hash)
-      response.code is StatusCode.Ok
+      res.size is limit
+      Inspectors.forAll(res)(hash => blocks.map(_.hash) should contain(hash))
     }
 
     var allBlocks: ArraySeq[BlockHash] = ArraySeq.empty
-    Get(s"/blocks?page=2&limit=${blocks.size / 2 + 1}") check { response =>
-      val res = response.as[ListBlocks].blocks.map(_.hash)
 
-      allBlocks = blocksPage1 ++ res
-
-      allBlocks.size is blocks.size
-      allBlocks.distinct.size is allBlocks.size
-
-      Inspectors.forAll(blocks)(block => allBlocks should contain(block.hash))
+    for (i <- 1 to blocks.size) {
+      Get(s"/blocks?page=${i}&limit=1") check { response =>
+        val res = response.as[ListBlocks].blocks.map(_.hash)
+        allBlocks = allBlocks :+ res.head
+        res.size is 1
+      }
     }
 
-    Get(s"/blocks?limit=${blocks.size}&reverse=true") check { response =>
-      val res = response.as[ListBlocks].blocks.map(_.hash)
+    Inspectors.forAll(blocks)(block => allBlocks should contain(block.hash))
 
-      res is allBlocks.reverse
+    val numberOfIteration                     = blocks.size / limit
+    var allBlocksReverse: ArraySeq[BlockHash] = ArraySeq.empty
+    for (i <- 1 to numberOfIteration + 1) {
+      Get(s"/blocks?page=${i}&limit=${limit}&reverse=true") check { response =>
+        val res = response.as[ListBlocks].blocks.map(_.hash)
+        allBlocksReverse = allBlocksReverse ++ res
+        Inspectors.forAll(res)(hash => blocks.map(_.hash) should contain(hash))
+      }
     }
+
+    allBlocksReverse.reverse is allBlocks
 
     Get(s"/blocks?page=0") check { response =>
       response.code is StatusCode.BadRequest
@@ -329,12 +330,17 @@ trait ExplorerSpec
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address}/transactions") check { response =>
         val expectedTransactions =
-          transactions.filter(tx =>
-            tx.outputs.exists(_.address == address) || tx.inputs.exists(_.address == Some(address))
-          )
+          transactions
+            .filter(tx =>
+              tx.outputs.exists(_.address == address) || tx.inputs.exists(
+                _.address == Some(address)
+              )
+            )
+            .sortBy(_.timestamp)
+            .reverse
         val res = response.as[ArraySeq[Transaction]]
 
-        res.size is expectedTransactions.size
+        res.size is expectedTransactions.take(txLimit).size
         Inspectors.forAll(expectedTransactions) { transaction =>
           res.map(_.hash) should contain(transaction.hash)
         }
@@ -367,13 +373,12 @@ trait ExplorerSpec
 
       Post("/addresses/transactions", addressesBody) check { response =>
         val expectedTransactions =
-          selectedAddresses
-            .flatMap { address =>
-              transactions.filter { tx =>
-                tx.outputs.exists(_.address == address) || tx.inputs
-                  .exists(_.address == Some(address))
-              }
+          selectedAddresses.flatMap { address =>
+            transactions.filter { tx =>
+              tx.outputs.exists(_.address == address) || tx.inputs
+                .exists(_.address == Some(address))
             }
+          }.distinct
 
         val res = response.as[ArraySeq[Transaction]]
 

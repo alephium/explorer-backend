@@ -86,6 +86,15 @@ class AddressServerSpec()
 
   val tokens = Gen.listOf(addressTokenBalanceGen).sample.get
 
+  val transactionInfo = transactions.headOption.map { tx =>
+    TransactionInfo(
+      tx.hash,
+      tx.blockHash,
+      tx.timestamp,
+      tx.coinbase
+    )
+  }
+
   var testLimit = 0
 
   val publicKeyAddresses = Gen.listOfN(10, publicKeyGen).sample.get.map { publicKey =>
@@ -131,6 +140,12 @@ class AddressServerSpec()
           .map(l => ArraySeq.from(l.asScala))
       )
     }
+
+    override def getLatestTransactionInfoByAddress(address: Address)(implicit
+        ec: ExecutionContext,
+        dc: DatabaseConfig[PostgresProfile]
+    ): Future[Option[TransactionInfo]] =
+      Future.successful(transactionInfo)
 
     override def getAmountHistoryDEPRECATED(
         address: Address,
@@ -190,7 +205,7 @@ class AddressServerSpec()
   val routes = server.routes
 
   "validate and forward `txLimit` query param" in {
-
+    val maxLimit = 20
     forAll(addressGen, Gen.chooseNum[Int](-10, 120)) { case (address, txLimit) =>
       Get(s"/addresses/${address}/transactions?limit=$txLimit") check { response =>
         if (txLimit < 0) {
@@ -198,10 +213,10 @@ class AddressServerSpec()
           response.as[ApiError.BadRequest] is ApiError.BadRequest(
             s"Invalid value for: query parameter limit (expected value to be greater than or equal to 0, but got $txLimit)"
           )
-        } else if (txLimit > 100) {
+        } else if (txLimit > maxLimit) {
           response.code is StatusCode.BadRequest
           response.as[ApiError.BadRequest] is ApiError.BadRequest(
-            s"Invalid value for: query parameter limit (expected value to be less than or equal to 100, but got $txLimit)"
+            s"Invalid value for: query parameter limit (expected value to be less than or equal to $maxLimit, but got $txLimit)"
           )
         } else {
           response.code is StatusCode.Ok
@@ -210,7 +225,7 @@ class AddressServerSpec()
       }
 
       Get(s"/addresses/${address}/transactions") check { _ =>
-        testLimit is 20 // default txLimit
+        testLimit is 10 // default txLimit
       }
     }
   }
@@ -219,6 +234,14 @@ class AddressServerSpec()
     forAll(addressGen) { case address =>
       Get(s"/addresses/${address}/total-transactions") check { response =>
         response.as[Int] is 0
+      }
+    }
+  }
+
+  "get latest transaction info" in {
+    forAll(addressGen) { case address =>
+      Get(s"/addresses/${address}/latest-transaction") check { response =>
+        response.as[TransactionInfo] is transactionInfo.get
       }
     }
   }

@@ -63,6 +63,11 @@ trait TransactionService {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]]
 
+  def getLatestTransactionInfoByAddress(address: Address)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[TransactionInfo]]
+
   def getTransactionsByAddresses(addresses: ArraySeq[Address], pagination: Pagination)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
@@ -156,6 +161,12 @@ object TransactionService extends TransactionService {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]] =
     TransactionDao.getByAddressTimeRanged(address, fromTime, toTime, pagination)
+
+  def getLatestTransactionInfoByAddress(address: Address)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[TransactionInfo]] =
+    TransactionDao.getLatestTransactionInfoByAddress(address)
 
   def getTransactionsByAddresses(addresses: ArraySeq[Address], pagination: Pagination)(implicit
       ec: ExecutionContext,
