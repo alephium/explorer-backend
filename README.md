@@ -65,6 +65,28 @@ from "utransactions"
 where "hash" = decode('f25f43b7fb13b1ec5f1a2d3acd1bebb9d27143cdc4586725162b9d88301b9bd7', 'hex');
 ```
 
+### 6. Configuration
+
+There are two ways to configure the application:
+
+#### Environment variables
+
+Every value in [application.conf](/app/src/main/resources/application.conf) file can be overridden by an environment variable.
+
+```shell
+export BLOCKFLOW_NETWORK_ID = 1
+export DB_NAME = "testnet"
+```
+
+#### Using `user.conf` file
+
+The same way it's done in our full node, you can override the [application.conf](/app/src/main/resources/application.conf) file by creating a `user.conf` file in the `EXPLORER_HOME` folder, which default to `~/.alephium-explorer-backend`.
+
+```conf
+alephium.blockflow.network-id = 1
+db.db.name = "testnet"
+```
+
 ## Benchmark
 
 ### 1. Create benchmark database

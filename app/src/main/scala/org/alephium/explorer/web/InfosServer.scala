@@ -34,7 +34,7 @@ import org.alephium.explorer.persistence.DBRunner
 import org.alephium.explorer.persistence.model.AppState
 import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.explorer.service.{BlockService, TokenSupplyService, TransactionService}
+import org.alephium.explorer.service._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{TimeStamp, U256}
 
@@ -97,8 +97,7 @@ class InfosServer(
       }),
       route(getAverageBlockTime.serverLogicSuccess[Future]{ _=>
         blockService.getAverageBlockTime()
-      })
-      )
+      })      )
   // format: on
 
   def getExplorerInfo()(implicit
@@ -110,19 +109,23 @@ class InfosServer(
         for {
           migrationsVersionOpt      <- AppStateQueries.get(AppState.MigrationVersion)
           lastFinalizedInputTimeOpt <- AppStateQueries.get(AppState.LastFinalizedInputTime)
+          lastHoldersUpdateOpt      <- AppStateQueries.get(AppState.LastHoldersUpdate)
         } yield {
           val migrationsVersion = migrationsVersionOpt.map(_.version).getOrElse(0)
           val lastFinalizedInputTime =
             lastFinalizedInputTimeOpt.map(_.time).getOrElse(TimeStamp.zero)
-          (migrationsVersion, lastFinalizedInputTime)
+          val lastHoldersUpdate =
+            lastHoldersUpdateOpt.map(_.time).getOrElse(TimeStamp.zero)
+          (migrationsVersion, lastFinalizedInputTime, lastHoldersUpdate)
         }
       )
-      .map { case (migrationsVersion, lastFinalizedInputTime) =>
+      .map { case (migrationsVersion, lastFinalizedInputTime, lastHoldersUpdate) =>
         ExplorerInfo(
           BuildInfo.releaseVersion,
           BuildInfo.commitId,
           migrationsVersion,
-          lastFinalizedInputTime
+          lastFinalizedInputTime,
+          lastHoldersUpdate
         )
       }
   }

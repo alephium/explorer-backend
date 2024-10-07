@@ -19,6 +19,7 @@ package org.alephium.explorer.persistence.queries
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
+import akka.util.ByteString
 import slick.dbio.DBIOAction
 import slick.jdbc._
 import slick.jdbc.PostgresProfile.api._
@@ -30,33 +31,34 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.{BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 
 object InputQueries {
 
   /** Inserts inputs or ignore rows with primary key conflict */
   // scalastyle:off magic.number
   def insertInputs(inputs: Iterable[InputEntity]): DBActionW[Int] =
-    QuerySplitter.splitUpdates(rows = inputs, columnsPerRow = 12) { (inputs, placeholder) =>
+    QuerySplitter.splitUpdates(rows = inputs, columnsPerRow = 13) { (inputs, placeholder) =>
       val query =
         s"""
-           |INSERT INTO inputs ("block_hash",
-           |                    "tx_hash",
-           |                    "block_timestamp",
-           |                    "hint",
-           |                    "output_ref_key",
-           |                    "unlock_script",
-           |                    "main_chain",
-           |                    "input_order",
-           |                    "tx_order",
-           |                    "output_ref_tx_hash",
-           |                    "output_ref_address",
-           |                    "output_ref_amount")
-           |VALUES $placeholder
-           |ON CONFLICT
-           |    ON CONSTRAINT inputs_pk
-           |    DO NOTHING
-           |""".stripMargin
+           INSERT INTO inputs ("block_hash",
+                               "tx_hash",
+                               "block_timestamp",
+                               "hint",
+                               "output_ref_key",
+                               "unlock_script",
+                               "main_chain",
+                               "input_order",
+                               "tx_order",
+                               "output_ref_tx_hash",
+                               "output_ref_address",
+                               "output_ref_amount",
+                               "contract_input")
+           VALUES $placeholder
+           ON CONFLICT
+               ON CONSTRAINT inputs_pk
+               DO NOTHING
+           """.stripMargin
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
@@ -73,11 +75,12 @@ object InputQueries {
             params >> input.outputRefTxHash
             params >> input.outputRefAddress
             params >> input.outputRefAmount
+            params >> input.contractInput
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asUpdate
     }
 
@@ -97,19 +100,11 @@ object InputQueries {
 
     val query =
       s"""
-         |SELECT tx_hash,
-         |       input_order,
-         |       hint,
-         |       output_ref_key,
-         |       unlock_script,
-         |       output_ref_tx_hash,
-         |       output_ref_address,
-         |       output_ref_amount,
-         |       output_ref_tokens
-         |FROM inputs
-         |WHERE (tx_hash, block_hash) IN $params
-         |
-         |""".stripMargin
+         SELECT ${InputsFromTxQR.selectFields}
+         FROM inputs
+         WHERE (tx_hash, block_hash) IN $params
+
+         """
 
     val parameters: SetParameter[Unit] =
       (_: Unit, params: PositionedParameters) =>
@@ -119,20 +114,14 @@ object InputQueries {
         }
 
     SQLActionBuilder(
-      queryParts = query,
-      unitPConv = parameters
+      sql = query,
+      setParameter = parameters
     )
   }
 
   def getInputsQuery(txHash: TransactionId, blockHash: BlockHash): DBActionSR[InputsQR] =
     sql"""
-        SELECT hint,
-               output_ref_key,
-               unlock_script,
-               output_ref_tx_hash,
-               output_ref_address,
-               output_ref_amount,
-               output_ref_tokens
+        SELECT #${InputsQR.selectFields}
         FROM inputs
         WHERE tx_hash = $txHash
           AND block_hash = $blockHash
@@ -154,11 +143,23 @@ object InputQueries {
           output_ref_tx_hash,
           output_ref_address,
           output_ref_amount,
-          output_ref_tokens
+          output_ref_tokens,
+          contract_input
         FROM inputs
         WHERE main_chain = true
         ORDER BY block_timestamp #${if (ascendingOrder) "" else "DESC"}
     """.asASE[InputEntity](inputGetResult)
+
+  def getUnlockScript(address: Address)(implicit
+      ec: ExecutionContext
+  ): DBActionR[Option[ByteString]] = {
+    sql"""
+      select unlock_script
+      FROM inputs
+      WHERE output_ref_address = $address
+      LIMIT 1
+    """.asAS[ByteString].headOrNone
+  }
 
   /** Runs explain on query `inputsFromTxs` and checks the index `inputs_tx_hash_block_hash_idx` is
     * being used

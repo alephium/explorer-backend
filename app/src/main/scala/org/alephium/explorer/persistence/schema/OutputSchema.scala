@@ -52,6 +52,7 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
     def spentFinalized: Rep[Option[TransactionId]] =
       column[Option[TransactionId]]("spent_finalized", O.Default(None))
     def spentTimestamp: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("spent_timestamp")
+    def fixedOutput: Rep[Boolean]              = column[Boolean]("fixed_output")
 
     def pk: PrimaryKey = primaryKey("outputs_pk", (key, blockHash))
 
@@ -80,7 +81,8 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
         txOrder,
         coinbase,
         spentFinalized,
-        spentTimestamp
+        spentTimestamp,
+        fixedOutput
       )
         .<>((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }

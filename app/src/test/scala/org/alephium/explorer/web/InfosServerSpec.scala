@@ -108,6 +108,7 @@ class InfosServerSpec()
         BuildInfo.releaseVersion,
         BuildInfo.commitId,
         Migrations.latestVersion.version,
+        TimeStamp.zero,
         TimeStamp.zero
       )
     }

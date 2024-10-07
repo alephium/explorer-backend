@@ -22,7 +22,7 @@ import sttp.tapir.generic.auto._
 import org.alephium.api.Endpoints.jsonBody
 import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.api.EndpointExamples._
-import org.alephium.explorer.api.model.{ContractParent, Pagination, SubContracts}
+import org.alephium.explorer.api.model.{ContractLiveness, ContractParent, Pagination, SubContracts}
 import org.alephium.protocol.model.Address
 
 trait ContractsEndpoints extends BaseEndpoint with QueryParams {
@@ -31,6 +31,13 @@ trait ContractsEndpoints extends BaseEndpoint with QueryParams {
     baseEndpoint
       .tag("Contracts")
       .in("contracts")
+
+  val getContractInfo: BaseEndpoint[Address.Contract, ContractLiveness] =
+    contractsEndpoint.get
+      .in(path[Address.Contract]("contract_address"))
+      .in("current-liveness")
+      .out(jsonBody[ContractLiveness])
+      .description("Get contract liveness")
 
   val getParentAddress: BaseEndpoint[Address.Contract, ContractParent] =
     contractsEndpoint.get

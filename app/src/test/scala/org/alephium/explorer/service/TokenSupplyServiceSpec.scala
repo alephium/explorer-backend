@@ -207,7 +207,8 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
             None,
             None,
             None,
-            None
+            None,
+            contractInput = false
           )
 
         },

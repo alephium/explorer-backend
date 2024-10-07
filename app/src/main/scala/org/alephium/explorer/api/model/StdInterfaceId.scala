@@ -32,10 +32,15 @@ sealed trait TokenStdInterfaceId extends StdInterfaceId
 
 object StdInterfaceId {
 
-  case object FungibleToken extends TokenStdInterfaceId {
-    val value: String    = "fungible"
-    val id: String       = "0001"
-    val category: String = "0001"
+  final case class FungibleToken(id: String) extends TokenStdInterfaceId {
+    val value: String    = FungibleToken.value
+    val category: String = FungibleToken.category
+  }
+
+  object FungibleToken {
+    val category: String       = "0001"
+    val value: String          = "fungible"
+    val default: FungibleToken = FungibleToken(category)
   }
 
   case object NFTCollection extends StdInterfaceId {
@@ -50,10 +55,15 @@ object StdInterfaceId {
     val category: String = "0002"
   }
 
-  case object NFT extends TokenStdInterfaceId {
+  final case class NFT(id: String) extends TokenStdInterfaceId {
+    val value: String    = NFT.value
+    val category: String = NFT.category
+  }
+
+  object NFT {
     val value: String    = "non-fungible"
-    val id: String       = "0003"
     val category: String = "0003"
+    val default: NFT     = NFT(category)
   }
 
   final case class Unknown(id: String) extends TokenStdInterfaceId {
@@ -69,20 +79,20 @@ object StdInterfaceId {
 
   def from(code: String): StdInterfaceId =
     code match {
-      case "0001"   => FungibleToken
-      case "0002"   => NFTCollection
-      case "0003"   => NFT
-      case "000201" => NFTCollectionWithRoyalty
-      case ""       => NonStandard
-      case unknown  => Unknown(unknown)
+      case id if id.startsWith(FungibleToken.category) => FungibleToken(id)
+      case id if id.startsWith(NFT.category)           => NFT(id)
+      case NFTCollection.id                            => NFTCollection
+      case NFTCollectionWithRoyalty.id                 => NFTCollectionWithRoyalty
+      case ""                                          => NonStandard
+      case unknown                                     => Unknown(unknown)
     }
 
   def validate(str: String): Option[StdInterfaceId] =
     str match {
-      case FungibleToken.value            => Some(FungibleToken)
+      case FungibleToken.value            => Some(FungibleToken.default)
       case NFTCollection.value            => Some(NFTCollection)
       case NFTCollectionWithRoyalty.value => Some(NFTCollectionWithRoyalty)
-      case NFT.value                      => Some(NFT)
+      case NFT.value                      => Some(NFT.default)
       case NonStandard.value              => Some(NonStandard)
       case ""                             => Some(NonStandard)
       case other =>
@@ -123,7 +133,7 @@ object StdInterfaceId {
     )
   )
   val stdInterfaceIds: Seq[StdInterfaceId] =
-    Seq(FungibleToken, NFTCollection, NFTCollectionWithRoyalty, NFT, NonStandard)
+    Seq(FungibleToken.default, NFTCollection, NFTCollectionWithRoyalty, NFT.default, NonStandard)
 
   @SuppressWarnings(
     Array(
@@ -132,7 +142,8 @@ object StdInterfaceId {
       "org.wartremover.warts.Serializable"
     )
   )
-  val tokenStdInterfaceIds: Seq[TokenStdInterfaceId] = Seq(FungibleToken, NFT, NonStandard)
+  val tokenStdInterfaceIds: Seq[TokenStdInterfaceId] =
+    Seq(FungibleToken.default, NFT.default, NonStandard)
 
   val schema: Schema[StdInterfaceId] = Schema.string
     .name(Schema.SName("StdInterfaceId"))

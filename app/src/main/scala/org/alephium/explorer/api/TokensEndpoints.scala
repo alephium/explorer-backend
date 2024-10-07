@@ -19,6 +19,7 @@ package org.alephium.explorer.api
 import scala.collection.immutable.ArraySeq
 
 import sttp.tapir._
+import sttp.tapir.generic.auto._
 
 import org.alephium.api.Endpoints.jsonBody
 import org.alephium.explorer.api.EndpointExamples._
@@ -91,5 +92,24 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[NFTCollectionMetadata]])
       .description(
         "Return metadata for the given nft collection addresses, if metadata doesn't exist or address isn't a nft collection, it won't be in the output list"
+      )
+
+  val getAlphHolders: BaseEndpoint[Pagination, ArraySeq[HolderInfo]] =
+    tokensEndpoint.get
+      .in("holders")
+      .in("alph")
+      .in(pagination)
+      .out(jsonBody[ArraySeq[HolderInfo]])
+      .description("Get a sorted list of top addresses by ALPH balance. Updates once per day.")
+
+  val getTokenHolders: BaseEndpoint[(TokenId, Pagination), ArraySeq[HolderInfo]] =
+    tokensEndpoint.get
+      .in("holders")
+      .in("token")
+      .in(path[TokenId]("token_id"))
+      .in(pagination)
+      .out(jsonBody[ArraySeq[HolderInfo]])
+      .description(
+        "Get a sorted list of top addresses by {token_id} balance. Updates once per day."
       )
 }

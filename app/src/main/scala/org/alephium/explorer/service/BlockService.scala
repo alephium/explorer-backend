@@ -29,6 +29,11 @@ import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.protocol.model.BlockHash
 
 trait BlockService {
+  def getBlockByHash(hash: BlockHash)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[BlockEntry]]
+
   def getLiteBlockByHash(hash: BlockHash)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
@@ -59,6 +64,11 @@ trait BlockService {
 }
 
 object BlockService extends BlockService {
+  def getBlockByHash(hash: BlockHash)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[BlockEntry]] =
+    BlockDao.get(hash)
 
   def getLiteBlockByHash(hash: BlockHash)(implicit
       ec: ExecutionContext,

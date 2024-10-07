@@ -17,11 +17,12 @@
 package org.alephium.explorer
 
 import org.alephium.explorer.config.ExplorerConfig._
+import org.alephium.protocol.config.GroupConfig
 import org.alephium.util.Duration
 
 object ConfigDefaults {
   implicit val groupSetting: GroupSetting = Generators.groupSettingGen.sample.get
-  implicit val groupConfig                = groupSetting.groupConfig
+  implicit val groupConfig: GroupConfig   = groupSetting.groupConfig
 
   val maxTimeIntervals: MaxTimeIntervals =
     MaxTimeIntervals(

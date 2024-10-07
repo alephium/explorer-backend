@@ -29,6 +29,7 @@ import org.alephium.json.Json._
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{Address, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
+import org.alephium.util.AVector
 
 sealed trait Output {
   def hint: Int
@@ -37,6 +38,7 @@ sealed trait Output {
   def address: Address
   def tokens: Option[ArraySeq[Token]]
   def spent: Option[TransactionId]
+  def fixedOutput: Boolean
 }
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -49,8 +51,9 @@ final case class AssetOutput(
     tokens: Option[ArraySeq[Token]] = None,
     lockTime: Option[TimeStamp] = None,
     message: Option[ByteString] = None,
-    spent: Option[TransactionId] = None
-) extends Output
+    spent: Option[TransactionId] = None,
+    fixedOutput: Boolean
+) extends Output {}
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 @upickle.implicits.key("ContractOutput")
@@ -60,10 +63,68 @@ final case class ContractOutput(
     attoAlphAmount: U256,
     address: Address,
     tokens: Option[ArraySeq[Token]] = None,
-    spent: Option[TransactionId] = None
+    spent: Option[TransactionId] = None,
+    fixedOutput: Boolean
 ) extends Output
 
 object Output {
+
+  def toFixedAssetOutput(
+      output: Output
+  ): Option[org.alephium.api.model.FixedAssetOutput] = {
+    output match {
+      case asset: AssetOutput if asset.fixedOutput =>
+        asset.address match {
+          case assetAddress: Address.Asset =>
+            val amount = org.alephium.api.model.Amount(asset.attoAlphAmount)
+            Some(
+              org.alephium.api.model.FixedAssetOutput(
+                asset.hint,
+                asset.key,
+                amount,
+                assetAddress,
+                tokens = asset.tokens
+                  .map(tokens => AVector.from(tokens.map(_.toProtocol())))
+                  .getOrElse(AVector.empty),
+                lockTime = asset.lockTime.getOrElse(TimeStamp.zero),
+                asset.message.getOrElse(ByteString.empty)
+              )
+            )
+          case _ => None
+        }
+      case _ => None
+    }
+  }
+
+  def toProtocol(output: Output): Option[org.alephium.api.model.Output] =
+    (output, output.address) match {
+      case (asset: AssetOutput, assetAddress: Address.Asset) =>
+        Some(
+          org.alephium.api.model.AssetOutput(
+            output.hint,
+            output.key,
+            org.alephium.api.model.Amount(output.attoAlphAmount),
+            assetAddress,
+            tokens =
+              output.tokens.map(t => AVector.from(t.map(_.toProtocol()))).getOrElse(AVector.empty),
+            lockTime = asset.lockTime.getOrElse(TimeStamp.zero),
+            message = asset.message.getOrElse(ByteString.empty)
+          )
+        )
+      case (_: ContractOutput, contractAddress: Address.Contract) =>
+        Some(
+          org.alephium.api.model.ContractOutput(
+            output.hint,
+            output.key,
+            org.alephium.api.model.Amount(output.attoAlphAmount),
+            contractAddress,
+            tokens = output.tokens
+              .map(tokens => AVector.from(tokens.map(_.toProtocol())))
+              .getOrElse(AVector.empty)
+          )
+        )
+      case _ => None
+    }
 
   implicit val assetReadWriter: ReadWriter[AssetOutput]       = macroRW
   implicit val contractReadWriter: ReadWriter[ContractOutput] = macroRW

@@ -18,10 +18,15 @@ package org.alephium.explorer.service
 
 import scala.collection.immutable.ArraySeq
 
-import org.alephium.explorer.api.model.Height
+import akka.util.ByteString
+
+import org.alephium.explorer.AnyOps
+import org.alephium.explorer.api.model.{GhostUncle, Height}
+import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{BlockHash, GroupIndex}
 import org.alephium.util.TimeStamp
 
+@SuppressWarnings(Array("org.wartremover.warts.SeqApply"))
 trait FlowEntity {
   def hash: BlockHash
   def timestamp: TimeStamp
@@ -29,6 +34,12 @@ trait FlowEntity {
   def chainTo: GroupIndex
   def height: Height
   def deps: ArraySeq[BlockHash]
+  def nonce: ByteString
+  def version: Byte
+  def depStateHash: Hash
+  def txsHash: Hash
+  def target: ByteString
+  def ghostUncles: ArraySeq[GhostUncle]
   def mainChain: Boolean
 
   def parent(groupNum: Int): Option[BlockHash] =

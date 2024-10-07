@@ -30,12 +30,15 @@ import org.alephium.util.{TimeStamp, U256}
 object TransactionSchema extends SchemaMainChain[TransactionEntity]("transactions") {
 
   class Transactions(tag: Tag) extends Table[TransactionEntity](tag, name) {
-    def hash: Rep[TransactionId]   = column[TransactionId]("hash", O.SqlType("BYTEA"))
-    def blockHash: Rep[BlockHash]  = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
-    def timestamp: Rep[TimeStamp]  = column[TimeStamp]("block_timestamp")
-    def chainFrom: Rep[GroupIndex] = column[GroupIndex]("chain_from")
-    def chainTo: Rep[GroupIndex]   = column[GroupIndex]("chain_to")
-    def gasAmount: Rep[Int]        = column[Int]("gas_amount")
+    def hash: Rep[TransactionId]       = column[TransactionId]("hash", O.SqlType("BYTEA"))
+    def blockHash: Rep[BlockHash]      = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
+    def timestamp: Rep[TimeStamp]      = column[TimeStamp]("block_timestamp")
+    def chainFrom: Rep[GroupIndex]     = column[GroupIndex]("chain_from")
+    def chainTo: Rep[GroupIndex]       = column[GroupIndex]("chain_to")
+    def version: Rep[Byte]             = column[Byte]("version")
+    def networkId: Rep[Byte]           = column[Byte]("network_id")
+    def scriptOpt: Rep[Option[String]] = column[Option[String]]("script_opt")
+    def gasAmount: Rep[Int]            = column[Int]("gas_amount")
     def gasPrice: Rep[U256] =
       column[U256]("gas_price", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
     def txOrder: Rep[Int]               = column[Int]("tx_order")
@@ -61,6 +64,9 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
         timestamp,
         chainFrom,
         chainTo,
+        version,
+        networkId,
+        scriptOpt,
         gasAmount,
         gasPrice,
         txOrder,

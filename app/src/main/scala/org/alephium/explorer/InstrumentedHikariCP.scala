@@ -19,27 +19,28 @@ package org.alephium.explorer
 import java.sql.Driver
 
 import com.typesafe.config.Config
-import com.zaxxer.hikari.metrics.prometheus.PrometheusMetricsTrackerFactory
 import io.micrometer.core.instrument.Clock
 import io.micrometer.core.instrument.binder.db.PostgreSQLDatabaseMetrics
-import io.micrometer.prometheus.{PrometheusConfig, PrometheusMeterRegistry}
+import io.micrometer.prometheusmetrics.{PrometheusConfig, PrometheusMeterRegistry}
 import slick.jdbc.{JdbcDataSource, JdbcDataSourceFactory}
 import slick.jdbc.hikaricp.HikariCPJdbcDataSource
 
 object InstrumentedHikariCP extends JdbcDataSourceFactory {
   override def forConfig(
-      c: Config,
+      config: Config,
       driver: Driver,
       name: String,
       classLoader: ClassLoader
   ): JdbcDataSource = {
-    val hikariCPDataSource = HikariCPJdbcDataSource.forConfig(c, driver, name, classLoader)
-    hikariCPDataSource.ds.setMetricsTrackerFactory(new PrometheusMetricsTrackerFactory())
-    val databaseName = c.getString("name")
-    val pgMetrics    = new PostgreSQLDatabaseMetrics(hikariCPDataSource.ds, databaseName)
     val registry =
       new PrometheusMeterRegistry(PrometheusConfig.DEFAULT, Metrics.defaultRegistry, Clock.SYSTEM)
+    val hikariCPDataSource = HikariCPJdbcDataSource.forConfig(config, driver, name, classLoader)
+    val databaseName       = config.getString("name")
+    val pgMetrics          = new PostgreSQLDatabaseMetrics(hikariCPDataSource.ds, databaseName)
+
+    hikariCPDataSource.ds.setMetricRegistry(registry)
     pgMetrics.bindTo(registry)
+
     hikariCPDataSource
   }
 }

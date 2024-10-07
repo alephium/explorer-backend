@@ -19,9 +19,10 @@ package org.alephium.explorer.service
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.model.{BlockHeader, InputEntity}
 import org.alephium.explorer.persistence.model.AppState.LastFinalizedInputTime
-import org.alephium.explorer.persistence.model.InputEntity
-import org.alephium.explorer.persistence.queries.{AppStateQueries, InputQueries}
+import org.alephium.explorer.persistence.queries.{AppStateQueries, BlockQueries, InputQueries}
+import org.alephium.protocol.model.GroupIndex
 import org.alephium.util.{Duration, TimeStamp}
 
 class FinalizerServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
@@ -56,14 +57,15 @@ class FinalizerServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEac
     val input1 = input(
       firstFinalizationTime.minusUnsafe(Duration.ofHoursUnsafe(10))
     )
-    val input2 = input(firstFinalizationTime.minusUnsafe(Duration.ofHoursUnsafe(1)))
+    val blockHeader2 = block(firstFinalizationTime.minusUnsafe(Duration.ofHoursUnsafe(1)))
 
-    run(InputQueries.insertInputs(Seq(input1, input2))).futureValue
+    run(BlockQueries.insertBlockHeaders(Seq(blockHeader2))).futureValue
+    run(InputQueries.insertInputs(Seq(input1))).futureValue
 
     val Some((start1, end1)) = run(FinalizerService.getStartEndTime()).futureValue
 
     start1 is input1.timestamp
-    end1 is input2.timestamp
+    end1 is blockHeader2.timestamp
 
     val input3 = input(TimeStamp.now())
 
@@ -76,11 +78,11 @@ class FinalizerServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEac
     firstFinalizationTime.isBefore(end2)
     end2.isBefore(FinalizerService.finalizationTime)
 
-    run(AppStateQueries.insertOrUpdate(LastFinalizedInputTime(input2.timestamp))).futureValue
+    run(AppStateQueries.insertOrUpdate(LastFinalizedInputTime(blockHeader2.timestamp))).futureValue
 
     val Some((start3, _)) = run(FinalizerService.getStartEndTime()).futureValue
 
-    start3 is input2.timestamp
+    start3 is blockHeader2.timestamp
   }
 
   trait Fixture {
@@ -89,5 +91,13 @@ class FinalizerServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEac
 
     def input(timestamp: TimeStamp): InputEntity =
       inputEntityGen().sample.get.copy(timestamp = timestamp, mainChain = true)
+
+    def block(timestamp: TimeStamp): BlockHeader =
+      blockHeaderGen.sample.get.copy(
+        timestamp = timestamp,
+        chainFrom = new GroupIndex(0),
+        chainTo = new GroupIndex(0),
+        mainChain = true
+      )
   }
 }

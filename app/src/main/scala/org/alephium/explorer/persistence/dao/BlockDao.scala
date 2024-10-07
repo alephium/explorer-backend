@@ -44,7 +44,6 @@ import org.alephium.util.{Duration, TimeStamp}
 object BlockDao {
 
   def getLite(hash: BlockHash)(implicit
-      ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Option[BlockEntryLite]] =
     run(getBlockEntryLiteAction(hash))

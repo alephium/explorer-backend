@@ -52,6 +52,7 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
       ) // U256.MaxValue has 78 digits
     def outputRefTokens: Rep[Option[ArraySeq[Token]]] =
       column[Option[ArraySeq[Token]]]("output_ref_tokens")
+    def contractInput: Rep[Boolean] = column[Boolean]("contract_input")
 
     def pk: PrimaryKey = primaryKey("inputs_pk", (outputRefKey, blockHash))
 
@@ -75,7 +76,8 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
         outputRefTxHash,
         outputRefAddress,
         outputRefAmount,
-        outputRefTokens
+        outputRefTokens,
+        contractInput
       )
         .<>((InputEntity.apply _).tupled, InputEntity.unapply)
   }

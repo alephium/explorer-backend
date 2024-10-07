@@ -29,15 +29,16 @@ object BootMode {
 
   /** [[BootMode]]s with reads enabled */
   sealed trait Readable extends BootMode
+  sealed trait Writable extends BootMode
 
   /** Serve HTTP requests only. Disables Sync. */
   case object ReadOnly extends Readable
 
   /** Enables both Read and Sync */
-  case object ReadWrite extends Readable
+  case object ReadWrite extends Readable with Writable
 
   /** Enables Sync only */
-  case object WriteOnly extends BootMode
+  case object WriteOnly extends Writable
 
   /** All boot modes */
   def all: Array[BootMode] =
@@ -54,4 +55,14 @@ object BootMode {
       case None       => Failure(InvalidBootMode(mode))
     }
 
+  def writable(mode: BootMode): Boolean =
+    mode match {
+      case _: Writable => true
+      case _           => false
+    }
+  def readable(mode: BootMode): Boolean =
+    mode match {
+      case _: Readable => true
+      case _           => false
+    }
 }

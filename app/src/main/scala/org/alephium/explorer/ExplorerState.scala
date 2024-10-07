@@ -23,7 +23,7 @@ import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.cache.{BlockCache, TransactionCache}
+import org.alephium.explorer.cache.{BlockCache, MetricCache, TransactionCache}
 import org.alephium.explorer.config.{BootMode, ExplorerConfig}
 import org.alephium.explorer.persistence.Database
 import org.alephium.explorer.service._
@@ -64,6 +64,12 @@ sealed trait ExplorerState extends Service with StrictLogging {
       directCliqueAccess = config.directCliqueAccess
     )
 
+  implicit lazy val metricCache: MetricCache =
+    new MetricCache(
+      database,
+      config.cacheMetricsReloadPeriod
+    )
+
   override def startSelfOnce(): Future[Unit] = {
     Future.unit
   }
@@ -77,6 +83,7 @@ sealed trait ExplorerState extends Service with StrictLogging {
   override def subServices: ArraySeq[Service] = {
     val writeOnlyServices =
       ArraySeq(
+        metricCache,
         transactionCache,
         blockFlowClient,
         database
@@ -88,12 +95,16 @@ sealed trait ExplorerState extends Service with StrictLogging {
 }
 
 sealed trait ExplorerStateRead extends ExplorerState {
+
+  val marketService: MarketService.CoinGecko = MarketService.CoinGecko.default(config.market)
+
   lazy val httpServer: ExplorerHttpServer =
     new ExplorerHttpServer(
       config.host,
       config.port,
       AppServer
         .routes(
+          marketService,
           config.exportTxsNumberThreshold,
           config.streamParallelism,
           config.maxTimeInterval,
@@ -103,12 +114,13 @@ sealed trait ExplorerStateRead extends ExplorerState {
           database.databaseConfig,
           blockFlowClient,
           blockCache,
+          metricCache,
           transactionCache,
           groupSettings
         )
     )
 
-  override lazy val customServices: ArraySeq[Service] = ArraySeq(httpServer)
+  override lazy val customServices: ArraySeq[Service] = ArraySeq(marketService, httpServer)
 }
 
 object ExplorerState {
@@ -138,7 +150,7 @@ object ExplorerState {
       val executionContext: ExecutionContext
   ) extends ExplorerStateRead {
 
-    implicit private val scheduler = Scheduler("SYNC_SERVICES")
+    implicit private val scheduler: Scheduler = Scheduler("SYNC_SERVICES")
 
     override def startSelfOnce(): Future[Unit] = {
       SyncServices.startSyncServices(config)
@@ -153,7 +165,7 @@ object ExplorerState {
   ) extends ExplorerState {
 
     // See issue #356
-    implicit private val scheduler = Scheduler("SYNC_SERVICES")
+    implicit private val scheduler: Scheduler = Scheduler("SYNC_SERVICES")
 
     override lazy val customServices: ArraySeq[Service] = ArraySeq()
 

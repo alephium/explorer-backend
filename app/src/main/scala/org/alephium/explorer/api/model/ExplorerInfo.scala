@@ -24,7 +24,8 @@ final case class ExplorerInfo(
     releaseVersion: String,
     commit: String,
     migrationsVersion: Int,
-    lastFinalizedInputTime: TimeStamp
+    lastFinalizedInputTime: TimeStamp,
+    lastHoldersUpdate: TimeStamp
 )
 
 object ExplorerInfo {

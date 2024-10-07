@@ -29,6 +29,11 @@ import org.alephium.protocol.model.BlockHash
 
 trait EmptyBlockService extends BlockService {
 
+  def getBlockByHash(hash: BlockHash)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[BlockEntry]] = Future.successful(None)
+
   def getLiteBlockByHash(hash: BlockHash)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]

@@ -21,6 +21,7 @@ import scala.collection.immutable.ArraySeq
 import akka.util.ByteString
 import sttp.tapir.Schema
 
+import org.alephium.api.{model => protocol}
 import org.alephium.api.TapirSchemas._
 import org.alephium.api.UtilJson._
 import org.alephium.explorer.api.Json._
@@ -35,8 +36,15 @@ final case class Input(
     txHashRef: Option[TransactionId] = None,
     address: Option[Address] = None,
     attoAlphAmount: Option[U256] = None,
-    tokens: Option[ArraySeq[Token]] = None
-)
+    tokens: Option[ArraySeq[Token]] = None,
+    contractInput: Boolean
+) {
+  def toProtocol(): protocol.AssetInput =
+    protocol.AssetInput(
+      outputRef = outputRef.toProtocol(),
+      unlockScript = unlockScript.getOrElse(ByteString.empty)
+    )
+}
 
 object Input {
   implicit val readWriter: ReadWriter[Input] = macroRW

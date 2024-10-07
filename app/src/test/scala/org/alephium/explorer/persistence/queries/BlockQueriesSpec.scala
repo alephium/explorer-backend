@@ -122,7 +122,6 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
       run(TransactionSchema.table.delete).futureValue
       run(InputSchema.table.delete).futureValue
       run(OutputSchema.table.delete).futureValue
-      run(BlockDepsSchema.table.delete).futureValue
 
       // execute insert on blocks and expect all tables get inserted
       run(BlockQueries.insertBlockEntity(entities, groupSetting.groupNum)).futureValue is ()
@@ -146,11 +145,6 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
       // val actualOutputs   = run(outputsTable.result).futureValue
       // val expectedOutputs = entities.flatMap(_.outputs)
       // actualOutputs should contain allElementsOf expectedOutputs
-
-      // check block_deps table
-      val actualDeps        = run(BlockDepsSchema.table.result).futureValue
-      val expectedBlockDeps = entities.flatMap(_.toBlockDepEntities())
-      actualDeps should contain allElementsOf expectedBlockDeps
 
       // There is no need for testing updates here since updates are already
       // tested each table's individual test-cases.

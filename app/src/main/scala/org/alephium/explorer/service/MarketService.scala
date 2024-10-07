@@ -23,27 +23,28 @@ import scala.util.{Failure, Success, Try}
 import com.typesafe.scalalogging.StrictLogging
 import sttp.client3._
 import sttp.client3.asynchttpclient.future.AsyncHttpClientFutureBackend
-import sttp.model.{Method, StatusCode}
+import sttp.model.{Method, StatusCode, Uri}
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache._
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.util.Scheduler
 import org.alephium.json.Json._
-import org.alephium.util.{Duration, Math, TimeStamp}
+import org.alephium.util.{Duration, Math, Service, TimeStamp}
 
 trait MarketService {
-  def getPrices(ids: ArraySeq[String], currency: String)(implicit
-      ec: ExecutionContext
-  ): Future[Either[String, ArraySeq[Option[Double]]]]
+  def getPrices(
+      ids: ArraySeq[String],
+      currency: String
+  ): Either[String, ArraySeq[Option[Double]]]
 
-  def getExchangeRates()(implicit
-      ec: ExecutionContext
-  ): Future[Either[String, ArraySeq[ExchangeRate]]]
+  def getExchangeRates(): Either[String, ArraySeq[ExchangeRate]]
 
-  def getPriceChart(symbol: String, currency: String)(implicit
-      ec: ExecutionContext
-  ): Future[Either[String, TimedPrices]]
+  def getPriceChart(symbol: String, currency: String): Either[String, TimedPrices]
+
+  def symbolNames: ListMap[String, String]
+
+  def currencies: ArraySeq[String]
 }
 
 object MarketService extends StrictLogging {
@@ -52,12 +53,13 @@ object MarketService extends StrictLogging {
   object CoinGecko {
     def default(marketConfig: ExplorerConfig.Market)(implicit
         ec: ExecutionContext
-    ): MarketService = new CoinGecko(marketConfig)
+    ): CoinGecko = new CoinGecko(marketConfig)
   }
 
   class CoinGecko(marketConfig: ExplorerConfig.Market)(implicit
-      ec: ExecutionContext
-  ) extends MarketService {
+      val executionContext: ExecutionContext
+  ) extends MarketService
+      with Service {
 
     private val baseUri = marketConfig.coingeckoUri
 
@@ -80,9 +82,22 @@ object MarketService extends StrictLogging {
     def maxDelay: Duration  = Duration.ofMinutesUnsafe(8)
     def maxRetry: Int       = 4
     // scalastyle:on magic.number
-    private val backend   = AsyncHttpClientFutureBackend()
-    private val scheduler = Scheduler("MARKET_SERVICE_SCHEDULER")
 
+    // scalastyle:off null
+    private var backend: SttpBackend[Future, Any] = null
+    private val scheduler                         = Scheduler("MARKET_SERVICE_SCHEDULER")
+
+    override def startSelfOnce(): Future[Unit] = {
+      backend = AsyncHttpClientFutureBackend()
+      expireAndReloadCaches()
+      Future.unit
+    }
+
+    override def stopSelfOnce(): Future[Unit] = {
+      backend.close()
+    }
+
+    override def subServices: ArraySeq[Service] = ArraySeq.empty
     /*
      * We use our `AsyncReloadCache` that always return the latest cached value
      * even if it's expired, like this we guarantee to always return fast a data.
@@ -120,46 +135,44 @@ object MarketService extends StrictLogging {
      * on start, we delay the load of 2 price charts every minute
      * eventually every charts will be in caches.
      */
-    logger.debug("Load initial price and exchange rate caches")
-    pricesCache.expireAndReload()
-    ratesCache.expireAndReload()
-    priceChartsCache.grouped(2).zipWithIndex.foreach { case (caches, idx) =>
-      scheduler.scheduleOnce(
-        s"Expire and reload chart prices for ${caches.map(_._1).mkString(", ")}",
-        Duration.ofMinutesUnsafe((1 * idx).toLong).asScala
-      )(Future.successful(caches.foreach(_._2.expireAndReload())))
+    def expireAndReloadCaches(): Unit = {
+      logger.debug("Load initial price and exchange rate caches")
+      pricesCache.expireAndReload()
+      ratesCache.expireAndReload()
+      priceChartsCache.grouped(2).zipWithIndex.foreach { case (caches, idx) =>
+        scheduler.scheduleOnce(
+          s"Expire and reload chart prices for ${caches.map(_._1).mkString(", ")}",
+          Duration.ofMinutesUnsafe((1 * idx).toLong).asScala
+        )(Future.successful(caches.foreach(_._2.expireAndReload())))
+      }
     }
 
-    def getPrices(ids: ArraySeq[String], currency: String)(implicit
-        ec: ExecutionContext
-    ): Future[Either[String, ArraySeq[Option[Double]]]] = {
-      Future.successful(
-        for {
-          rates <- ratesCache.get()
-          rate <- rates
-            .find(_.currency == currency)
-            .toRight(s"Cannot find price for currency $currency")
-          prices <- pricesCache.get()
-        } yield {
-          ids
-            .map(id => prices.find(_.symbol == id).map(price => price.price * rate.value))
-        }
-      )
+    override def symbolNames: ListMap[String, String] = ids
+    override def currencies: ArraySeq[String]         = marketConfig.currencies
+
+    def getPrices(
+        ids: ArraySeq[String],
+        currency: String
+    ): Either[String, ArraySeq[Option[Double]]] = {
+      for {
+        rates <- ratesCache.get()
+        rate <- rates
+          .find(_.currency == currency)
+          .toRight(s"Cannot find price for currency $currency")
+        prices <- pricesCache.get()
+      } yield {
+        ids
+          .map(id => prices.find(_.symbol == id).map(price => price.price * rate.value))
+      }
     }
 
-    private def getPricesRemote(retried: Int)(implicit
-        ec: ExecutionContext
-    ): Future[Either[String, ArraySeq[Price]]] = {
+    private def getPricesRemote(retried: Int): Future[Either[String, ArraySeq[Price]]] = {
       logger.debug(s"Query coingecko `/price`, nb of attempts $retried")
-      basicRequest
-        .method(
-          Method.GET,
-          uri"$baseUri/simple/price?ids=${ids.values.mkString(",")}&vs_currencies=$baseCurrency"
-        )
-        .send(backend)
-        .flatMap { response =>
-          handlePricesRateResponse(response, retried)
-        }
+      request(
+        uri"$baseUri/simple/price?ids=${ids.values.mkString(",")}&vs_currencies=$baseCurrency"
+      ) { response =>
+        handlePricesRateResponse(response, retried)
+      }
     }
 
     private def handlePricesRateResponse(
@@ -175,22 +188,17 @@ object MarketService extends StrictLogging {
       )
     }
 
-    def getExchangeRates()(implicit
-        ec: ExecutionContext
-    ): Future[Either[String, ArraySeq[ExchangeRate]]] = {
-      Future.successful(ratesCache.get())
+    def getExchangeRates(): Either[String, ArraySeq[ExchangeRate]] = {
+      ratesCache.get()
     }
 
-    private def getExchangeRatesRemote(retried: Int)(implicit
-        ec: ExecutionContext
+    private def getExchangeRatesRemote(
+        retried: Int
     ): Future[Either[String, ArraySeq[ExchangeRate]]] = {
       logger.debug(s"Query coingecko `/exchange_rates`, nb of attempts $retried")
-      basicRequest
-        .method(Method.GET, uri"$baseUri/exchange_rates")
-        .send(backend)
-        .flatMap { response =>
-          handleExchangeRateResponse(response, retried)
-        }
+      request(uri"$baseUri/exchange_rates") { response =>
+        handleExchangeRateResponse(response, retried)
+      }
     }
 
     private def handleExchangeRateResponse(
@@ -206,38 +214,44 @@ object MarketService extends StrictLogging {
       )
     }
 
-    def getPriceChart(symbol: String, currency: String)(implicit
-        ec: ExecutionContext
-    ): Future[Either[String, TimedPrices]] = {
-      Future.successful(
-        for {
-          rates <- ratesCache.get()
-          rate <- rates
-            .find(_.currency == currency)
-            .toRight(s"Cannot find price for currency $currency")
-          cache      <- priceChartsCache.get(symbol).toRight(s"Not price chart for $symbol")
-          priceChart <- cache.get()
-        } yield {
-          val timestamps = priceChart.map { case (ts, _) => ts }
-          val values     = priceChart.map { case (_, price) => price * rate.value }
-          TimedPrices(timestamps, values)
-        }
-      )
+    def getPriceChart(symbol: String, currency: String): Either[String, TimedPrices] = {
+      for {
+        rates <- ratesCache.get()
+        rate <- rates
+          .find(_.currency == currency)
+          .toRight(s"Cannot find price for currency $currency")
+        cache      <- priceChartsCache.get(symbol).toRight(s"Not price chart for $symbol")
+        priceChart <- cache.get()
+      } yield {
+        val timestamps = priceChart.map { case (ts, _) => ts }
+        val values     = priceChart.map { case (_, price) => price * rate.value }
+        TimedPrices(timestamps, values)
+      }
     }
 
-    def getPriceChartRemote(id: String, retried: Int)(implicit
-        ec: ExecutionContext
+    def getPriceChartRemote(
+        id: String,
+        retried: Int
     ): Future[Either[String, ArraySeq[(TimeStamp, Double)]]] = {
       logger.debug(s"Query coingecko `/coins/$id/market_chart`, nb of attempts $retried")
-      basicRequest
-        .method(
-          Method.GET,
-          uri"$baseUri/coins/$id/market_chart?vs_currency=$baseCurrency&days=${marketConfig.marketChartDays}"
-        )
-        .send(backend)
-        .flatMap { response =>
-          handleChartResponse(id, response, retried)
-        }
+      request(
+        uri"$baseUri/coins/$id/market_chart?vs_currency=$baseCurrency&days=${marketConfig.marketChartDays}"
+      ) { response =>
+        handleChartResponse(id, response, retried)
+      }
+    }
+
+    def request[A](uri: Uri)(
+        f: Response[Either[String, String]] => Future[Either[String, A]]
+    ): Future[Either[String, A]] = {
+      if (backend == null) {
+        Future.successful(Left("Market service not initialized"))
+      } else {
+        basicRequest
+          .method(Method.GET, uri)
+          .send(backend)
+          .flatMap(f)
+      }
     }
 
     def handleChartResponse(

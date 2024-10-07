@@ -99,7 +99,8 @@ class AddressReadState(val db: DBExecutor)
       None,
       None,
       None,
-      None
+      None,
+      contractInput = false
     )
   }
   private def generateTransaction(
@@ -113,6 +114,9 @@ class AddressReadState(val db: DBExecutor)
       timestamp = timestamp,
       chainFrom = new GroupIndex(1),
       chainTo = new GroupIndex(3),
+      version = 1,
+      networkId = 1,
+      scriptOpt = Some(Random.alphanumeric.take(10).mkString),
       gasAmount = 0,
       gasPrice = U256.unsafe(0),
       order = 0,
@@ -146,7 +150,8 @@ class AddressReadState(val db: DBExecutor)
       txOrder = 0,
       coinbase = false,
       spentFinalized = None,
-      spentTimestamp = None
+      spentTimestamp = None,
+      fixedOutput = Random.nextBoolean()
     )
   }
 
@@ -188,7 +193,8 @@ class AddressReadState(val db: DBExecutor)
         depStateHash = Blake2b.generate,
         txsHash = Blake2b.generate,
         target = ByteString.emptyByteString,
-        hashrate = BigInteger.ONE
+        hashrate = BigInteger.ONE,
+        ghostUncles = ArraySeq.empty
       )
     })
 

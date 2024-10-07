@@ -161,12 +161,12 @@ object BlockFlowClientSpec extends ScalaFutures with IntegrationPatience {
 
     val routes: ArraySeq[Router => Route] =
       ArraySeq(
-        route(getSelfClique.serverLogicSuccess(_ => { _: Unit =>
+        route(getSelfClique.serverLogicSuccess(_ => { (_: Unit) =>
           Future.successful(
             model.SelfClique(cliqueId, AVector(peer), true, true)
           )
         })),
-        route(getChainParams.serverLogicSuccess(_ => { _: Unit =>
+        route(getChainParams.serverLogicSuccess(_ => { (_: Unit) =>
           Future.successful(
             model.ChainParams(
               NetworkId.AlephiumDevNet,

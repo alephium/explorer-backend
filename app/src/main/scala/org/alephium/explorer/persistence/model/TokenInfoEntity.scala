@@ -26,14 +26,19 @@ final case class TokenInfoEntity(
     category: Option[String],
     interfaceId: Option[InterfaceIdEntity]
 ) {
-  def toApi(): TokenInfo =
-    TokenInfo(
-      token,
+  def toApi(): TokenInfo = {
+    val stdInterfaceId =
       interfaceId.map(
         _.toApi match {
           case tokenInterface: TokenStdInterfaceId => tokenInterface
           case other                               => StdInterfaceId.Unknown(other.id)
         }
       )
+    TokenInfo(
+      token,
+      stdInterfaceId,
+      stdInterfaceId.map(_.id),
+      stdInterfaceId.map(_.category)
     )
+  }
 }

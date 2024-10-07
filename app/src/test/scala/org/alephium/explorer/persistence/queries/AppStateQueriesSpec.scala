@@ -44,7 +44,7 @@ class AppStateQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
     }
 
     "write MigrationVersion key-value" in {
-      forAll { int: Int =>
+      forAll { (int: Int) =>
         run(AppStateSchema.table.delete).futureValue
         val insertValue = AppState.MigrationVersion(int)
         run(AppStateQueries.insert(insertValue)).futureValue is 1
@@ -55,7 +55,7 @@ class AppStateQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
 
   "insertOrUpdate" should {
     "overwrite key-values" in {
-      forAll { int: Int =>
+      forAll { (int: Int) =>
         val insertValue = AppState.MigrationVersion(int)
         run(AppStateQueries.insertOrUpdate(insertValue)).futureValue is 1
         run(AppStateQueries.get(AppState.MigrationVersion)).futureValue is Some(insertValue)

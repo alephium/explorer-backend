@@ -17,25 +17,27 @@
 package org.alephium.explorer.persistence.schema
 
 import slick.jdbc.PostgresProfile.api._
-import slick.lifted.{Index, PrimaryKey, ProvenShape}
+import slick.lifted.ProvenShape
 
-import org.alephium.explorer.persistence.model.BlockDepEntity
+import org.alephium.explorer.persistence.model.HolderEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.Address
+import org.alephium.util.U256
 
-object BlockDepsSchema extends Schema[BlockDepEntity]("block_deps") {
+object AlphHolderSchema extends SchemaMainChain[HolderEntity]("alph_holders") {
 
-  class BlockDeps(tag: Tag) extends Table[BlockDepEntity](tag, name) {
-    def hash: Rep[BlockHash] = column[BlockHash]("hash", O.SqlType("BYTEA"))
-    def dep: Rep[BlockHash]  = column[BlockHash]("dep", O.SqlType("BYTEA"))
-    def depOrder: Rep[Int]   = column[Int]("dep_order")
+  class AlphHolders(tag: Tag) extends Table[HolderEntity](tag, name) {
+    def address: Rep[Address] = column[Address]("address", O.PrimaryKey)
+    def balance: Rep[U256] =
+      column[U256]("balance", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
 
-    def pk: PrimaryKey = primaryKey("hash_deps_pk", (hash, dep))
-    def depIdx: Index  = index("deps_dep_idx", dep)
-
-    def * : ProvenShape[BlockDepEntity] =
-      (hash, dep, depOrder).<>((BlockDepEntity.apply _).tupled, BlockDepEntity.unapply)
+    def * : ProvenShape[HolderEntity] =
+      (
+        address,
+        balance
+      )
+        .<>((HolderEntity.apply _).tupled, HolderEntity.unapply)
   }
 
-  val table: TableQuery[BlockDeps] = TableQuery[BlockDeps]
+  val table: TableQuery[AlphHolders] = TableQuery[AlphHolders]
 }

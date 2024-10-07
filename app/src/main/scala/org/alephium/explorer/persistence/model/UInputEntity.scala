@@ -37,6 +37,7 @@ final case class UInputEntity(
     None,
     address,
     None,
-    None
+    None,
+    contractInput = false
   )
 }

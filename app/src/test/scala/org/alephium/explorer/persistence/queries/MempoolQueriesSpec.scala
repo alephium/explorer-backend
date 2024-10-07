@@ -147,7 +147,7 @@ class MempoolQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
               (address, entities.map { case (_, txHashes) => txHashes }.flatten)
             }
 
-        addressAndExpectedTx foreach { case (address, expectedTx) =>
+        addressAndExpectedTx foreachEntry { case (address, expectedTx) =>
           val actual =
             run(MempoolQueries.listUTXHashesByAddress(address)).futureValue
 

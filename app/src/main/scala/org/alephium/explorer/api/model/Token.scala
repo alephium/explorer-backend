@@ -26,7 +26,9 @@ import org.alephium.protocol.model.TokenId
 import org.alephium.serde._
 import org.alephium.util.U256
 
-final case class Token(id: TokenId, amount: U256)
+final case class Token(id: TokenId, amount: U256) {
+  def toProtocol(): org.alephium.api.model.Token = org.alephium.api.model.Token(id, amount)
+}
 
 object Token {
   implicit val readWriter: ReadWriter[Token] = macroRW

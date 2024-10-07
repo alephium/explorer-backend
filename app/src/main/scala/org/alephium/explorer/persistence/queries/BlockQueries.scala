@@ -29,7 +29,6 @@ import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries.BlockDepQueries._
 import org.alephium.explorer.persistence.queries.InputQueries.insertInputs
 import org.alephium.explorer.persistence.queries.OutputQueries.insertOutputs
 import org.alephium.explorer.persistence.queries.TransactionQueries._
@@ -61,30 +60,31 @@ object BlockQueries extends StrictLogging {
       )
     }
 
-  def buildBlockEntryAction(
-      blockHeader: BlockHeader
-  )(implicit ec: ExecutionContext): DBActionR[BlockEntry] =
-    for {
-      deps <- getDepsForBlock(blockHeader.hash)
-      txs  <- getTransactionsByBlockHash(blockHeader.hash)
-    } yield blockHeader.toApi(deps, txs)
-
   def getBlockEntryLiteAction(
       hash: BlockHash
-  )(implicit ec: ExecutionContext): DBActionR[Option[BlockEntryLite]] =
-    for {
-      header <- BlockHeaderSchema.table.filter(_.hash === hash).result.headOption
-    } yield header.map(_.toLiteApi)
+  ): DBActionR[Option[BlockEntryLite]] =
+    sql"""
+         select hash,
+                block_timestamp,
+                chain_from,
+                chain_to,
+                height,
+                main_chain,
+                hashrate,
+                txs_count
+         from #$block_headers
+         where hash = $hash
+         """.asASE[BlockEntryLite](blockEntryListGetResult).headOption
 
   /** For a given `BlockHash` returns its basic chain information */
   def getBlockChainInfo(hash: BlockHash): DBActionR[Option[(GroupIndex, GroupIndex, Boolean)]] =
     sql"""
-         |SELECT chain_from,
-         |       chain_to,
-         |       main_chain
-         |FROM block_headers
-         |WHERE hash = $hash
-         |""".stripMargin
+         SELECT chain_from,
+                chain_to,
+                main_chain
+         FROM block_headers
+         WHERE hash = $hash
+         """
       .asAS[(GroupIndex, GroupIndex, Boolean)]
       .headOption
 
@@ -93,15 +93,14 @@ object BlockQueries extends StrictLogging {
   )(implicit ec: ExecutionContext): DBActionR[Option[BlockEntry]] =
     for {
       headers <- BlockHeaderSchema.table.filter(_.hash === hash).result
-      blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
-    } yield blocks.headOption
+    } yield headers.headOption.map(_.toApi())
 
   def getBlockHeaderAction(hash: BlockHash): DBActionR[Option[BlockHeader]] =
     sql"""
-         |SELECT *
-         |FROM #$block_headers
-         |WHERE hash = $hash
-         |""".stripMargin
+         SELECT *
+         FROM #$block_headers
+         WHERE hash = $hash
+         """
       .asASE[BlockHeader](blockHeaderGetResult)
       .headOption
 
@@ -111,12 +110,12 @@ object BlockQueries extends StrictLogging {
       height: Height
   ): DBActionSR[BlockHeader] =
     sql"""
-         |SELECT *
-         |FROM #$block_headers
-         |WHERE chain_from = $fromGroup
-         |AND chain_to = $toGroup
-         |AND height = $height
-         |""".stripMargin
+         SELECT *
+         FROM #$block_headers
+         WHERE chain_from = $fromGroup
+         AND chain_to = $toGroup
+         AND height = $height
+         """
       .asASE[BlockHeader](blockHeaderGetResult)
 
   /** Fetch bloch-hashes belonging to the input chain-index at a height, ignoring/filtering-out one
@@ -138,13 +137,13 @@ object BlockQueries extends StrictLogging {
       hashToIgnore: BlockHash
   ): DBActionSR[BlockHash] =
     sql"""
-         |SELECT hash
-         |FROM #$block_headers
-         |WHERE chain_from = $fromGroup
-         |AND chain_to = $toGroup
-         |AND height = $height
-         |AND hash != $hashToIgnore
-         |""".stripMargin
+         SELECT hash
+         FROM #$block_headers
+         WHERE chain_from = $fromGroup
+         AND chain_to = $toGroup
+         AND height = $height
+         AND hash != $hashToIgnore
+         """
       .asASE[BlockHash](blockEntryHashGetResult)
 
   def getAtHeightAction(fromGroup: GroupIndex, toGroup: GroupIndex, height: Height)(implicit
@@ -152,8 +151,7 @@ object BlockQueries extends StrictLogging {
   ): DBActionR[ArraySeq[BlockEntry]] =
     for {
       headers <- getHeadersAtHeightQuery(fromGroup, toGroup, height)
-      blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryAction))
-    } yield blocks
+    } yield headers.map(_.toApi())
 
   /** Order by query for [[org.alephium.explorer.persistence.schema.BlockHeaderSchema.table]]
     */
@@ -206,19 +204,19 @@ object BlockQueries extends StrictLogging {
       }
 
     sql"""
-         |select hash,
-         |       block_timestamp,
-         |       chain_from,
-         |       chain_to,
-         |       height,
-         |       main_chain,
-         |       hashrate,
-         |       txs_count
-         |from #$block_headers
-         |where main_chain = true
-         |#$orderBy
-         |limit ${pagination.limit} offset ${pagination.offset}
-         |""".stripMargin
+         select hash,
+                block_timestamp,
+                chain_from,
+                chain_to,
+                height,
+                main_chain,
+                hashrate,
+                txs_count
+         from #$block_headers
+         where main_chain = true
+         #$orderBy
+         limit ${pagination.limit} offset ${pagination.offset}
+         """
   }
 
   def updateMainChainStatusQuery(block: BlockHash, mainChain: Boolean): DBActionRWT[Int] =
@@ -243,17 +241,17 @@ object BlockQueries extends StrictLogging {
 
       val query =
         s"""
-           |BEGIN;
-           |UPDATE transactions              SET main_chain = ? WHERE ${whereClause("block_hash")};
-           |UPDATE outputs                   SET main_chain = ? WHERE ${whereClause("block_hash")};
-           |UPDATE inputs                    SET main_chain = ? WHERE ${whereClause("block_hash")};
-           |UPDATE block_headers             SET main_chain = ? WHERE ${whereClause("hash")};
-           |UPDATE transaction_per_addresses SET main_chain = ? WHERE ${whereClause("block_hash")};
-           |UPDATE transaction_per_token     SET main_chain = ? WHERE ${whereClause("block_hash")};
-           |UPDATE token_tx_per_addresses    SET main_chain = ? WHERE ${whereClause("block_hash")};
-           |UPDATE token_outputs             SET main_chain = ? WHERE ${whereClause("block_hash")};
-           |COMMIT;
-           |""".stripMargin
+           BEGIN;
+           UPDATE transactions              SET main_chain = ? WHERE ${whereClause("block_hash")};
+           UPDATE outputs                   SET main_chain = ? WHERE ${whereClause("block_hash")};
+           UPDATE inputs                    SET main_chain = ? WHERE ${whereClause("block_hash")};
+           UPDATE block_headers             SET main_chain = ? WHERE ${whereClause("hash")};
+           UPDATE transaction_per_addresses SET main_chain = ? WHERE ${whereClause("block_hash")};
+           UPDATE transaction_per_token     SET main_chain = ? WHERE ${whereClause("block_hash")};
+           UPDATE token_tx_per_addresses    SET main_chain = ? WHERE ${whereClause("block_hash")};
+           UPDATE token_outputs             SET main_chain = ? WHERE ${whereClause("block_hash")};
+           COMMIT;
+           """
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
@@ -263,25 +261,10 @@ object BlockQueries extends StrictLogging {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asUpdate
     }
-
-  def buildBlockEntryWithoutTxsAction(
-      blockHeader: BlockHeader
-  )(implicit ec: ExecutionContext): DBActionR[BlockEntry] =
-    for {
-      deps <- getDepsForBlock(blockHeader.hash)
-    } yield blockHeader.toApi(deps, ArraySeq.empty)
-
-  def getBlockEntryWithoutTxsAction(
-      hash: BlockHash
-  )(implicit ec: ExecutionContext): DBActionR[Option[BlockEntry]] =
-    for {
-      headers <- BlockHeaderSchema.table.filter(_.hash === hash).result
-      blocks  <- DBIOAction.sequence(headers.map(buildBlockEntryWithoutTxsAction))
-    } yield blocks.headOption
 
   def getLatestBlock(chainFrom: GroupIndex, chainTo: GroupIndex): DBActionR[Option[LatestBlock]] = {
     LatestBlockSchema.table
@@ -295,27 +278,29 @@ object BlockQueries extends StrictLogging {
   /** Inserts block_headers or ignore them if there is a primary key conflict */
   // scalastyle:off magic.number
   def insertBlockHeaders(blocks: Iterable[BlockHeader]): DBActionW[Int] =
-    QuerySplitter.splitUpdates(rows = blocks, columnsPerRow = 14) { (blocks, placeholder) =>
+    QuerySplitter.splitUpdates(rows = blocks, columnsPerRow = 16) { (blocks, placeholder) =>
       val query =
         s"""
-           |insert into $block_headers ("hash",
-           |                            "block_timestamp",
-           |                            "chain_from",
-           |                            "chain_to",
-           |                            "height",
-           |                            "main_chain",
-           |                            "nonce",
-           |                            "block_version",
-           |                            "dep_state_hash",
-           |                            "txs_hash",
-           |                            "txs_count",
-           |                            "target",
-           |                            "hashrate",
-           |                            "parent")
-           |values $placeholder
-           |ON CONFLICT ON CONSTRAINT block_headers_pkey
-           |    DO NOTHING
-           |""".stripMargin
+           INSERT INTO $block_headers ("hash",
+                                       "block_timestamp",
+                                       "chain_from",
+                                       "chain_to",
+                                       "height",
+                                       "main_chain",
+                                       "nonce",
+                                       "block_version",
+                                       "dep_state_hash",
+                                       "txs_hash",
+                                       "txs_count",
+                                       "target",
+                                       "hashrate",
+                                       "parent",
+                                       "deps",
+                                       "ghost_uncles")
+           VALUES $placeholder
+           ON CONFLICT ON CONSTRAINT block_headers_pkey
+               DO NOTHING
+           """
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
@@ -334,11 +319,13 @@ object BlockQueries extends StrictLogging {
             params >> block.target
             params >> block.hashrate
             params >> block.parent
+            params >> block.deps
+            params >> block.ghostUncles
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asUpdate
     }
   // scalastyle:on magic.number
@@ -348,7 +335,6 @@ object BlockQueries extends StrictLogging {
     Array("org.wartremover.warts.MutableDataStructures", "org.wartremover.warts.NonUnitStatements")
   )
   def insertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int): DBActionRWT[Unit] = {
-    val blockDeps    = ListBuffer.empty[BlockDepEntity]
     val transactions = ListBuffer.empty[TransactionEntity]
     val inputs       = ListBuffer.empty[InputEntity]
     val outputs      = ListBuffer.empty[OutputEntity]
@@ -356,7 +342,6 @@ object BlockQueries extends StrictLogging {
 
     // build data for all insert queries in single iteration
     blocks foreach { block =>
-      if (block.height.value != 0) blockDeps addAll block.toBlockDepEntities()
       transactions addAll block.transactions
       inputs addAll block.inputs
       outputs addAll block.outputs
@@ -365,7 +350,6 @@ object BlockQueries extends StrictLogging {
 
     val query =
       DBIOAction.seq(
-        insertBlockDeps(blockDeps),
         insertTransactions(transactions),
         insertOutputs(outputs),
         insertInputs(inputs),
@@ -375,6 +359,16 @@ object BlockQueries extends StrictLogging {
     query.transactionally
   }
 
+  def getMainChain(
+      blockHash: BlockHash
+  )(implicit
+      ec: ExecutionContext
+  ): DBActionR[Option[Boolean]] = {
+    sql"""
+      SELECT main_chain FROM block_headers
+      WHERE hash = $blockHash
+    """.asAS[Boolean].headOrNone
+  }
   def getBlockTimes(
       fromGroup: GroupIndex,
       toGroup: GroupIndex,
@@ -424,10 +418,10 @@ object BlockQueries extends StrictLogging {
     // fetch maximum `block_timestamp` and sum all `heights` for all unions
     val query =
       s"""
-         |SELECT max(block_timestamp),
-         |       sum(height)
-         |FROM ($unions) as max_block_timestamps_and_num_of_blocks;
-         |""".stripMargin
+         SELECT max(block_timestamp),
+                sum(height)
+         FROM ($unions) as max_block_timestamps_and_num_of_blocks;
+         """
 
     val parameters: SetParameter[Unit] =
       (_: Unit, params: PositionedParameters) =>
@@ -439,8 +433,8 @@ object BlockQueries extends StrictLogging {
         }
 
     SQLActionBuilder(
-      queryParts = query,
-      unitPConv = parameters
+      sql = query,
+      setParameter = parameters
     ).asAS[Option[(TimeStamp, Height)]].oneOrNone
   }
 
@@ -462,11 +456,11 @@ object BlockQueries extends StrictLogging {
       // Parameter index is used for ordering the output collection
       def maxHeight(index: Int): String =
         s"""
-           |SELECT max(height), $index
-           |FROM $block_headers
-           |WHERE chain_from = ?
-           |  AND chain_to = ?
-           |""".stripMargin
+           SELECT max(height), $index
+           FROM $block_headers
+           WHERE chain_from = ?
+             AND chain_to = ?
+           """.stripMargin
 
       val query =
         Array
@@ -482,8 +476,8 @@ object BlockQueries extends StrictLogging {
 
       val queryResult =
         SQLActionBuilder(
-          queryParts = query,
-          unitPConv = parameters
+          sql = query,
+          setParameter = parameters
         ).asAS[(Option[Height], Int)]
 
       // Sort by index and then return just the heights

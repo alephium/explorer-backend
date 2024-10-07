@@ -97,20 +97,16 @@ object SlickUtil {
     def asAS[R: ClassTag](implicit
         rconv: GetResult[R]
     ): SqlStreamingAction[ArraySeq[R], R, Effect] = {
-      val query =
-        if (action.queryParts.lengthIs == 1 && action.queryParts(0).isInstanceOf[String]) {
-          action.queryParts(0).asInstanceOf[String]
-        } else {
-          action.queryParts.iterator.map(String.valueOf).mkString
-        }
+      val query = action.sql
       new StreamingInvokerAction[ArraySeq[R], R, Effect] {
-        def statements = List(query)
-        protected[this] def createInvoker(statements: Iterable[String]) = new StatementInvoker[R] {
-          val getStatement = statements.head
-          protected def setParam(st: PreparedStatement) =
-            action.unitPConv((), new PositionedParameters(st))
-          protected def extractValue(rs: PositionedResult): R = rconv(rs)
-        }
+        def statements: Iterable[String] = List(query)
+        protected[this] def createInvoker(statements: Iterable[String]): Invoker[R] =
+          new StatementInvoker[R] {
+            val getStatement = statements.head
+            protected def setParam(st: PreparedStatement) =
+              action.setParameter((), new PositionedParameters(st))
+            protected def extractValue(rs: PositionedResult): R = rconv(rs)
+          }
         protected[this] def createBuilder = ArraySeq.newBuilder[R]
       }
     }
@@ -123,20 +119,16 @@ object SlickUtil {
       )
     )
     def asASE[R: ClassTag](rconv: GetResult[R]): SqlStreamingAction[ArraySeq[R], R, Effect] = {
-      val query =
-        if (action.queryParts.lengthIs == 1 && action.queryParts(0).isInstanceOf[String]) {
-          action.queryParts(0).asInstanceOf[String]
-        } else {
-          action.queryParts.iterator.map(String.valueOf).mkString
-        }
+      val query = action.sql
       new StreamingInvokerAction[ArraySeq[R], R, Effect] {
-        def statements = List(query)
-        protected[this] def createInvoker(statements: Iterable[String]) = new StatementInvoker[R] {
-          val getStatement = statements.head
-          protected def setParam(st: PreparedStatement) =
-            action.unitPConv((), new PositionedParameters(st))
-          protected def extractValue(rs: PositionedResult): R = rconv(rs)
-        }
+        def statements: Iterable[String] = List(query)
+        protected[this] def createInvoker(statements: Iterable[String]): Invoker[R] =
+          new StatementInvoker[R] {
+            val getStatement = statements.head
+            protected def setParam(st: PreparedStatement) =
+              action.setParameter((), new PositionedParameters(st))
+            protected def extractValue(rs: PositionedResult): R = rconv(rs)
+          }
         protected[this] def createBuilder = ArraySeq.newBuilder[R]
       }
     }
@@ -145,14 +137,14 @@ object SlickUtil {
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) => {
-          action.unitPConv((), params)
+          action.setParameter((), params)
           params >> pagination.limit
           params >> pagination.offset
         }
 
       action.copy(
-        queryParts = action.queryParts :+ "LIMIT ? OFFSET ?",
-        unitPConv = parameters
+        sql = action.sql ++ "LIMIT ? OFFSET ?",
+        setParameter = parameters
       )
     }
   }
