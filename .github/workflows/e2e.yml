@@ -41,7 +41,7 @@ jobs:
       - name: Start full node
         run: |
           pushd e2e/docker
-          docker-compose up -d
+          docker compose up -d
           popd
           SECONDS=0
           until curl http://localhost:22973/infos/self-clique
