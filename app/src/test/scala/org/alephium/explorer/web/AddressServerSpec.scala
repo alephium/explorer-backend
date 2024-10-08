@@ -205,7 +205,7 @@ class AddressServerSpec()
   val routes = server.routes
 
   "validate and forward `txLimit` query param" in {
-    val maxLimit = 20
+    val maxLimit = Pagination.maxLimit
     forAll(addressGen, Gen.chooseNum[Int](-10, 120)) { case (address, txLimit) =>
       Get(s"/addresses/${address}/transactions?limit=$txLimit") check { response =>
         if (txLimit < 0) {
@@ -225,7 +225,7 @@ class AddressServerSpec()
       }
 
       Get(s"/addresses/${address}/transactions") check { _ =>
-        testLimit is 10 // default txLimit
+        testLimit is Pagination.defaultLimit // default txLimit
       }
     }
   }
