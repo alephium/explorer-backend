@@ -23,6 +23,7 @@ import sttp.apispec.openapi.OpenAPI
 import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
 
 import org.alephium.explorer.api._
+import org.alephium.explorer.api.model.Pagination
 
 trait Documentation
     extends BlockEndpoints
@@ -105,10 +106,46 @@ trait Documentation
   )
 
   // Expose some variables to the openAPI file
+  // scalastyle:off method.length
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   private def addComponents(openApi: OpenAPI): OpenAPI =
     openApi.components(
       openApi.components.get
+        .addSchema(
+          "PaginationLimitDefault",
+          Schema(
+            `type` = Some(List(SchemaType.Integer)),
+            `enum` = Some(
+              List(
+                ExampleSingleValue(Pagination.defaultLimit),
+                ExampleSingleValue(Pagination.futureDefaultLimit)
+              )
+            )
+          )
+        )
+        .addSchema(
+          "PaginationLimitMax",
+          Schema(
+            `type` = Some(List(SchemaType.Integer)),
+            `enum` = Some(
+              List(
+                ExampleSingleValue(Pagination.maxLimit),
+                ExampleSingleValue(Pagination.futureMaxLimit)
+              )
+            )
+          )
+        )
+        .addSchema(
+          "PaginationPageDefault",
+          Schema(
+            `type` = Some(List(SchemaType.Integer)),
+            `enum` = Some(
+              List(
+                ExampleSingleValue(Pagination.defaultPage)
+              )
+            )
+          )
+        )
         .addSchema(
           "MaxSizeTokens",
           Schema(

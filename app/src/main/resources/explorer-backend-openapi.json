@@ -1366,6 +1366,12 @@
           "type"
         ]
       },
+      "PaginationPageDefault": {
+        "type": "integer",
+        "enum": [
+          1
+        ]
+      },
       "ValBool": {
         "type": "object",
         "title": "ValBool",
@@ -1380,6 +1386,13 @@
         "required": [
           "value",
           "type"
+        ]
+      },
+      "PaginationLimitMax": {
+        "type": "integer",
+        "enum": [
+          100,
+          20
         ]
       },
       "FungibleTokenMetadata": {
@@ -1429,6 +1442,13 @@
           "try",
           "cad",
           "aud"
+        ]
+      },
+      "PaginationLimitDefault": {
+        "type": "integer",
+        "enum": [
+          20,
+          10
         ]
       },
       "AddressInfo": {
@@ -1713,7 +1733,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "20",
+              "maximum": "100",
               "type": "integer",
               "minimum": "0"
             },
@@ -1958,7 +1978,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "20",
+              "maximum": "100",
               "type": "integer",
               "minimum": "0"
             },
@@ -2388,7 +2408,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "20",
+              "maximum": "100",
               "type": "integer",
               "minimum": "0"
             },
@@ -2660,7 +2680,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "20",
+              "maximum": "100",
               "type": "integer",
               "minimum": "0"
             },
@@ -3802,7 +3822,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "20",
+              "maximum": "100",
               "type": "integer",
               "minimum": "0"
             },
@@ -4087,7 +4107,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "20",
+              "maximum": "100",
               "type": "integer",
               "minimum": "0"
             },
@@ -4772,7 +4792,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "20",
+              "maximum": "100",
               "type": "integer",
               "minimum": "0"
             },
@@ -5057,7 +5077,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "20",
+              "maximum": "100",
               "type": "integer",
               "minimum": "0"
             },
@@ -5506,7 +5526,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "20",
+              "maximum": "100",
               "type": "integer",
               "minimum": "0"
             },
@@ -6442,7 +6462,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "20",
+              "maximum": "100",
               "type": "integer",
               "minimum": "0"
             },
@@ -6570,7 +6590,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "20",
+              "maximum": "100",
               "type": "integer",
               "minimum": "0"
             },
@@ -7022,7 +7042,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "20",
+              "maximum": "100",
               "type": "integer",
               "minimum": "0"
             },
@@ -7238,7 +7258,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "20",
+              "maximum": "100",
               "type": "integer",
               "minimum": "0"
             },
@@ -7374,7 +7394,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "20",
+              "maximum": "100",
               "type": "integer",
               "minimum": "0"
             },
@@ -7920,7 +7940,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "20",
+              "maximum": "100",
               "type": "integer",
               "minimum": "0"
             },
@@ -8252,7 +8272,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "20",
+              "maximum": "100",
               "type": "integer",
               "minimum": "0"
             },
@@ -8372,7 +8392,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "20",
+              "maximum": "100",
               "type": "integer",
               "minimum": "0"
             },
@@ -9210,7 +9230,7 @@
           {
             "schema": {
               "format": "int32",
-              "maximum": "20",
+              "maximum": "100",
               "type": "integer",
               "minimum": "0"
             },
