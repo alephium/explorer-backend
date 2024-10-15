@@ -75,7 +75,7 @@ trait ExplorerSpec
 
   val networkId: NetworkId = NetworkId.AlephiumDevNet
 
-  val txLimit = 10
+  val txLimit = Pagination.defaultLimit
 
   val blockflow: ArraySeq[ArraySeq[model.BlockEntry]] =
     blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get

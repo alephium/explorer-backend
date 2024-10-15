@@ -33,9 +33,11 @@ object Pagination {
       Reversible(page, limit, reverse)
     }
   }
-  val defaultPage: Int  = 1
-  val defaultLimit: Int = 10
-  val maxLimit: Int     = 20
+  val defaultPage: Int        = 1
+  val defaultLimit: Int       = 20
+  val futureDefaultLimit: Int = 10
+  val maxLimit: Int           = 100
+  val futureMaxLimit: Int     = 20
 
   def default: Pagination = Pagination(defaultPage, defaultLimit)
 
