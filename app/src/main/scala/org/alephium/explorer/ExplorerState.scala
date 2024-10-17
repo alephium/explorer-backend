@@ -96,7 +96,8 @@ sealed trait ExplorerState extends Service with StrictLogging {
 
 sealed trait ExplorerStateRead extends ExplorerState {
 
-  val marketService: MarketService.CoinGecko = MarketService.CoinGecko.default(config.market)
+  val marketService: MarketService.Impl =
+    MarketService.Impl.default(config.market, config.networkId)
 
   lazy val httpServer: ExplorerHttpServer =
     new ExplorerHttpServer(

@@ -71,7 +71,7 @@ object AppServer {
     val documentationServer = new DocumentationServer(
       maxTimeIntervals.exportTxs,
       marketConfig.currencies,
-      marketConfig.symbolName
+      marketConfig.chartSymbolName
     )
 
     blockServer.routes ++

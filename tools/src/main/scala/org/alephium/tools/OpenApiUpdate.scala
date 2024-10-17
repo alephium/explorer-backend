@@ -34,7 +34,7 @@ object OpenApiUpdate {
         val groupNum                           = config.groupNum
         val maxTimeIntervalExportTxs: Duration = config.maxTimeInterval.exportTxs
         val currencies                         = config.market.currencies
-        val tokensWithPrice                    = config.market.symbolName
+        val tokensWithPrice                    = config.market.chartSymbolName
 
         private val json = openApiJson(docs, dropAuth = false)
 

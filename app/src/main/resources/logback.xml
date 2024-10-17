@@ -30,7 +30,7 @@
         <file>${EXPLORER_HOME:-${user.home}/.explorer}/logs/explorer-info.log</file>
         <append>true</append>
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>${EXPLORER_FILE_LOG_LEVEL:-INFO}</level>
+            <level>${EXPLORER_FILE_LOG_LEVEL:-DEBUG}</level>
         </filter>
         <encoder>
             <pattern>${filePattern}</pattern>
@@ -57,7 +57,7 @@
     <logger name="io.netty" level="WARN"/>
     <logger name="org.asynchttpclient" level="WARN"/>
 
-    <root level="${EXPLORER_LOG_LEVEL:-INFO}">
+    <root level="${EXPLORER_LOG_LEVEL:-DEBUG}">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="ERRFILE"/>
         <appender-ref ref="INFOFILE"/>

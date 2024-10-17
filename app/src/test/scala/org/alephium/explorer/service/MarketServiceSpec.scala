@@ -25,6 +25,7 @@ import akka.testkit.SocketUtil
 import io.vertx.core.Vertx
 import io.vertx.ext.web._
 import org.scalatest.concurrent.ScalaFutures
+import sttp.client3._
 import sttp.tapir._
 import sttp.tapir.CodecFormat.TextPlain
 import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
@@ -41,7 +42,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
   "return error when not started" in new Fixture {
     eventually {
-      marketService.getPrices(marketConfig.symbolName.keys.toList, "btc").isLeft is true
+      marketService.getPrices(marketConfig.chartSymbolName.keys.toList, "btc").isLeft is true
       marketService.getExchangeRates().isLeft is true
       marketService.getPriceChart(alph, "usd").isLeft is true
     }
@@ -53,12 +54,13 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
     eventually {
       val prices =
-        marketService.getPrices(marketConfig.symbolName.keys.toList, "btc").rightValue
+        marketService.getPrices(marketConfig.chartSymbolName.keys.toList, "btc").rightValue
 
-      prices.length is marketConfig.symbolName.length
+      prices.length is marketConfig.chartSymbolName.length
 
-      prices(marketConfig.symbolName.keys.indexOf(alph)) is Some(alphPrice)
-      prices(marketConfig.symbolName.keys.indexOf(usdt)) is Some(usdtPrice)
+      println(s"${Console.RED}${Console.BOLD}*** prices(marketConfig.chartSymbolName.keys.indexOf(alph)) ***${Console.RESET}${prices(marketConfig.chartSymbolName.keys.indexOf(alph))}")
+      prices(marketConfig.chartSymbolName.keys.indexOf(alph)) is Some(alphPrice)
+      prices(marketConfig.chartSymbolName.keys.indexOf(usdt)) is Some(usdtPrice)
     }
 
     eventually {
@@ -104,7 +106,9 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
   trait Fixture {
     val localhost: InetAddress = InetAddress.getByName("127.0.0.1")
-    val port                   = SocketUtil.temporaryLocalPort(SocketUtil.Both)
+    val coingeckoPort                   = SocketUtil.temporaryLocalPort(SocketUtil.Both)
+    val mobulaPort                   = SocketUtil.temporaryLocalPort(SocketUtil.Both)
+    val tokenListPort                   = SocketUtil.temporaryLocalPort(SocketUtil.Both)
 
     val alph = "ALPH"
     val usdt = "USDT"
@@ -112,14 +116,20 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     val marketConfig = ExplorerConfig.Market(
       MarketServiceSpec.symbolNames,
       MarketServiceSpec.currencies,
-      s"http://${localhost.getHostAddress()}:$port",
-      marketChartDays = 366
+      s"http://${localhost.getHostAddress()}:$mobulaPort",
+      s"http://${localhost.getHostAddress()}:$coingeckoPort",
+      marketChartDays = 366,
+      "master"
     )
 
     val coingecko: MarketServiceSpec.CoingeckoMock =
-      new MarketServiceSpec.CoingeckoMock(localhost, port)
-    val marketService: MarketService.CoinGecko =
-      new MarketService.CoinGecko(marketConfig)
+      new MarketServiceSpec.CoingeckoMock(localhost, coingeckoPort)
+    val mobula: MarketServiceSpec.MobulaMock =
+      new MarketServiceSpec.MobulaMock(localhost, mobulaPort)
+    val tokenList: MarketServiceSpec.TokenListMock =
+      new MarketServiceSpec.TokenListMock(localhost, tokenListPort)
+    val marketService: MarketService.Impl =
+      new MarketService.Impl(marketConfig, uri"http://${localhost.getHostAddress}:$tokenListPort")
   }
 }
 
@@ -158,17 +168,6 @@ object MarketServiceSpec {
       ArraySeq(
         route(
           baseEndpoint.get
-            .in("simple")
-            .in("price")
-            .in(query[List[String]]("ids"))
-            .in(query[String]("vs_currencies"))
-            .out(jsonBody[ujson.Value])
-            .serverLogicSuccess[Future] { case (_, _) =>
-              Future.successful(ujson.read(prices))
-            }
-        ),
-        route(
-          baseEndpoint.get
             .in("exchange_rates")
             .out(jsonBody[ujson.Value])
             .serverLogicSuccess[Future] { _ =>
@@ -196,8 +195,78 @@ object MarketServiceSpec {
     server.listen(port, uri.getHostAddress).asScala.futureValue
   }
 
-  val prices: String = s"""
-    {"alephium":{"btc":$alphPrice},"ayin":{"btc":9.572E-5},"dai":{"btc":2.389E-5},"tether":{"btc":$usdtPrice},"usd-coin":{"btc":2.392E-5},"weth":{"btc":0.05312674},"wrapped-bitcoin":{"btc":1.000324}}
+  class MobulaMock(
+      uri: InetAddress,
+      port: Int
+  ) extends ScalaFutures
+      with BaseEndpoint
+      with Server {
+
+    private val vertx  = Vertx.vertx()
+    private val router = Router.router(vertx)
+
+    val routes: ArraySeq[Router => Route] =
+      ArraySeq(
+        route(
+          baseEndpoint.get
+            .in("market")
+            .in("multi-data")
+            .in(query[List[String]]("assets"))
+            .in(query[List[String]]("blockchains"))
+            .out(jsonBody[ujson.Value])
+            .serverLogicSuccess[Future] { case (assets, _) =>
+              println(s"${Console.RED}${Console.BOLD}*** assets ***${Console.RESET}${assets}")
+              Future.successful(ujson.read(prices))
+            }
+        )
+      )
+
+    val server = vertx.createHttpServer().requestHandler(router)
+
+    routes.foreach(route => route(router))
+
+    server.listen(port, uri.getHostAddress).asScala.futureValue
+  }
+
+  class TokenListMock(
+      uri: InetAddress,
+      port: Int
+  ) extends ScalaFutures
+      with BaseEndpoint
+      with Server {
+
+    private val vertx  = Vertx.vertx()
+    private val router = Router.router(vertx)
+
+    val routes: ArraySeq[Router => Route] =
+      ArraySeq(
+        route(
+          baseEndpoint.get
+            .out(jsonBody[ujson.Value])
+            .serverLogicSuccess[Future] { prout =>
+              Future.successful(ujson.read(tokenList))
+            }
+        )
+      )
+
+    val server = vertx.createHttpServer().requestHandler(router)
+
+    routes.foreach(route => route(router))
+    println(s"${Console.RED}${Console.BOLD}*** uri.getHostAddress ***${Console.RESET}${uri.getHostAddress}")
+
+    server.listen(port, uri.getHostAddress).asScala.futureValue
+  }
+
+val prices:String = s"""{"data":{
+    "tgx7VNFoP9DJiFMFgXXtafQZkUvyEdDHT9ryamHJYrjq":{"price":$alphPrice},
+    "vT49PY8ksoUL6NcXiZ1t2wAmC7tTPRfFfER8n3UCLvXy":{"price":4.249879356316158},
+    "xoDuoek5V2T1dL2HWwvbHT1JEHjMjtJfJoUS2xKsjFg3":{"price":2.389E-5},
+    "zSRgc7goAYUgYsEBYdAzogyyeKv3ne3uvWb3VDtxnaEK":{"price":$usdtPrice},
+    "22Nb9JajRpAh9A2fWNgoKt867PA6zNyi541rtoraDfKXV":{"price":2.392E-5},
+    "vP6XSUyjmgWCB2B9tD5Rqun56WJqDdExWnfwZVEqzhQb":{"price":0.05312674},
+    "xUTp3RXGJ1fJpCGqsAY6GgyfRQ3WQ1MdcYR1SiwndAbR":{"price":1.000324}
+    }
+    }
   """
 
   val exchangeRates: String = """
@@ -206,4 +275,67 @@ object MarketServiceSpec {
   val priceChart: String    = """
 {"prices":[[1702080000000,1.6446899669484214e-05],[1702166400000,1.9116562906218465e-05],[1702252800000,1.907096268974158e-05],[1702339200000,1.793183990141821e-05],[1702425600000,2.007992246841523e-05],[1702476909000,1.895741967034403e-05]],"market_caps":[[1702080000000,962.8363048250048],[1702166400000,1130.2772632375334],[1702252800000,1112.6226095555962],[1702339200000,1056.405418156789],[1702425600000,1169.6932210440375],[1702476909000,1112.06422242096]],"total_volumes":[[1702080000000,37.05462537510952],[1702166400000,36.88409762749114],[1702252800000,31.872659876055597],[1702339200000,28.975784486778313],[1702425600000,50.43927040460545],[1702476909000,36.16062757872036]]}
                 """
+              val tokenList: String = """
+{
+  "networkId": 1,
+  "tokens": [
+    {
+      "id": "0000000000000000000000000000000000000000000000000000000000000000",
+      "name": "Alephium",
+      "symbol": "ALPH",
+      "decimals": 18,
+      "description": "Alephium is a scalable, decentralized, and secure blockchain platform that enables the creation of fast and secure applications.",
+      "logoURI": "https://raw.githubusercontent.com/alephium/token-list/master/logos/ALPH.png"
+    },
+    {
+      "id": "722954d9067c5a5ad532746a024f2a9d7a18ed9b90e27d0a3a504962160b5600",
+      "name": "USD Coin (AlphBridge)",
+      "symbol": "USDC",
+      "decimals": 6,
+      "description": "USDC Bridged to Alephium from Alephium Bridge",
+      "logoURI": "https://raw.githubusercontent.com/alephium/token-list/master/logos/USDC.png"
+    },
+    {
+      "id": "1a281053ba8601a658368594da034c2e99a0fb951b86498d05e76aedfe666800",
+      "name": "AYIN",
+      "symbol": "AYIN",
+      "decimals": 18,
+      "description": "$AYIN is a DEX token, that incentivises users through fees and other mechanisms to participate in trading on Alephium",
+      "logoURI": "https://raw.githubusercontent.com/alephium/token-list/master/logos/AYIN.png"
+    },
+    {
+      "id": "3d0a1895108782acfa875c2829b0bf76cb586d95ffa4ea9855982667cc73b700",
+      "name": "Dai Stablecoin (AlphBridge)",
+      "symbol": "DAI",
+      "decimals": 18,
+      "description": "DAI Bridged to Alephium from Alephium Bridge",
+      "logoURI": "https://raw.githubusercontent.com/alephium/token-list/master/logos/DAI.png"
+    },
+    {
+      "id": "556d9582463fe44fbd108aedc9f409f69086dc78d994b88ea6c9e65f8bf98e00",
+      "name": "Tether USD (AlphBridge)",
+      "symbol": "USDT",
+      "decimals": 6,
+      "description": "USDT Bridged to Alephium from Alephium Bridge",
+      "logoURI": "https://raw.githubusercontent.com/alephium/token-list/master/logos/USDT.png"
+    },
+    {
+      "id": "19246e8c2899bc258a1156e08466e3cdd3323da756d8a543c7fc911847b96f00",
+      "name": "Wrapped Ether (AlphBridge)",
+      "symbol": "WETH",
+      "decimals": 18,
+      "description": "ETH Bridged to Alephium from Alephium Bridge",
+      "logoURI": "https://raw.githubusercontent.com/alephium/token-list/master/logos/WETH.png"
+    },
+    {
+      "id": "383bc735a4de6722af80546ec9eeb3cff508f2f68e97da19489ce69f3e703200",
+      "name": "Wrapped BTC (AlphBridge)",
+      "symbol": "WBTC",
+      "decimals": 8,
+      "description": "wBTC Bridged to Alephium from Alephium Bridge",
+      "logoURI": "https://raw.githubusercontent.com/alephium/token-list/master/logos/WBTC.png"
+    }
+  ]
+}
+"""
 }
