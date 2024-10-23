@@ -182,7 +182,10 @@ object BlockFlowClient extends StrictLogging {
         _send(getBlock, uri, hash).map(blockProtocolToEntity)
       }
 
-    def fetchBlockAndEvents(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntityWithEvents] = {
+    def fetchBlockAndEvents(
+        fromGroup: GroupIndex,
+        hash: BlockHash
+    ): Future[BlockEntityWithEvents] = {
       if (directCliqueAccess) {
         fetchSelfCliqueAndChainParams().flatMap { case (selfClique, chainParams) =>
           selfCliqueIndex(selfClique, chainParams, fromGroup) match {
