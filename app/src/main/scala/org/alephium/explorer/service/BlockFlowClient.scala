@@ -133,6 +133,8 @@ object BlockFlowClient extends StrictLogging {
       with Endpoints
       with ApiModelCodec {
 
+    override val apiKeys: AVector[api.model.ApiKey] = AVector.empty
+
     private val endpointSender = new EndpointSender(maybeApiKey)
 
     override def startSelfOnce(): Future[Unit] = {
