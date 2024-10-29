@@ -21,7 +21,7 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "1"
+              "minimum": 1
             }
           },
           {
@@ -32,8 +32,8 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "0",
-              "maximum": "100"
+              "minimum": 0,
+              "maximum": 100
             }
           },
           {
@@ -48,6 +48,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -170,6 +171,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -297,7 +299,7 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "1"
+              "minimum": 1
             }
           },
           {
@@ -308,13 +310,14 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "0",
-              "maximum": "100"
+              "minimum": 0,
+              "maximum": 100
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -577,6 +580,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -755,6 +759,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -862,7 +867,7 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "1"
+              "minimum": 1
             }
           },
           {
@@ -873,13 +878,14 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "0",
-              "maximum": "100"
+              "minimum": 0,
+              "maximum": 100
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -1138,7 +1144,7 @@
             "schema": {
               "type": "integer",
               "format": "int64",
-              "minimum": "0"
+              "minimum": 0
             }
           },
           {
@@ -1149,7 +1155,7 @@
             "schema": {
               "type": "integer",
               "format": "int64",
-              "minimum": "0"
+              "minimum": 0
             }
           },
           {
@@ -1160,7 +1166,7 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "1"
+              "minimum": 1
             }
           },
           {
@@ -1171,8 +1177,8 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "0",
-              "maximum": "100"
+              "minimum": 0,
+              "maximum": 100
             }
           }
         ],
@@ -1197,6 +1203,7 @@
         },
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -1463,7 +1470,7 @@
             "schema": {
               "type": "integer",
               "format": "int64",
-              "minimum": "0"
+              "minimum": 0
             }
           },
           {
@@ -1473,7 +1480,7 @@
             "schema": {
               "type": "integer",
               "format": "int64",
-              "minimum": "0"
+              "minimum": 0
             }
           },
           {
@@ -1484,7 +1491,7 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "1"
+              "minimum": 1
             }
           },
           {
@@ -1495,13 +1502,14 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "0",
-              "maximum": "100"
+              "minimum": 0,
+              "maximum": 100
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -1764,6 +1772,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -1863,6 +1872,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -1966,6 +1976,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -2210,6 +2221,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -2316,7 +2328,7 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "1"
+              "minimum": 1
             }
           },
           {
@@ -2327,13 +2339,14 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "0",
-              "maximum": "100"
+              "minimum": 0,
+              "maximum": 100
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -2453,7 +2466,7 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "1"
+              "minimum": 1
             }
           },
           {
@@ -2464,13 +2477,14 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "0",
-              "maximum": "100"
+              "minimum": 0,
+              "maximum": 100
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -2742,6 +2756,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -2844,6 +2859,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -2948,7 +2964,7 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "1"
+              "minimum": 1
             }
           },
           {
@@ -2959,13 +2975,14 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "0",
-              "maximum": "100"
+              "minimum": 0,
+              "maximum": 100
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -3082,6 +3099,7 @@
         },
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -3189,7 +3207,7 @@
             "schema": {
               "type": "integer",
               "format": "int64",
-              "minimum": "0"
+              "minimum": 0
             }
           },
           {
@@ -3199,12 +3217,13 @@
             "schema": {
               "type": "integer",
               "format": "int64",
-              "minimum": "0"
+              "minimum": 0
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "headers": {
               "Content-Disposition": {
                 "required": true,
@@ -3313,7 +3332,7 @@
             "schema": {
               "type": "integer",
               "format": "int64",
-              "minimum": "0"
+              "minimum": 0
             }
           },
           {
@@ -3323,7 +3342,7 @@
             "schema": {
               "type": "integer",
               "format": "int64",
-              "minimum": "0"
+              "minimum": 0
             }
           },
           {
@@ -3337,6 +3356,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "headers": {
               "Content-Disposition": {
                 "required": true,
@@ -3446,7 +3466,7 @@
             "schema": {
               "type": "integer",
               "format": "int64",
-              "minimum": "0"
+              "minimum": 0
             }
           },
           {
@@ -3456,7 +3476,7 @@
             "schema": {
               "type": "integer",
               "format": "int64",
-              "minimum": "0"
+              "minimum": 0
             }
           },
           {
@@ -3470,6 +3490,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -3564,6 +3585,7 @@
         "operationId": "getInfos",
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -3657,6 +3679,7 @@
         "operationId": "getInfosHeights",
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -3767,7 +3790,7 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "1"
+              "minimum": 1
             }
           },
           {
@@ -3778,13 +3801,14 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "0",
-              "maximum": "100"
+              "minimum": 0,
+              "maximum": 100
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -4025,7 +4049,7 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "1"
+              "minimum": 1
             }
           },
           {
@@ -4036,8 +4060,8 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "0",
-              "maximum": "100"
+              "minimum": 0,
+              "maximum": 100
             }
           },
           {
@@ -4062,6 +4086,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -4176,6 +4201,7 @@
         },
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -4289,7 +4315,7 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "1"
+              "minimum": 1
             }
           },
           {
@@ -4300,13 +4326,14 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "0",
-              "maximum": "100"
+              "minimum": 0,
+              "maximum": 100
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -4574,7 +4601,7 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "1"
+              "minimum": 1
             }
           },
           {
@@ -4585,13 +4612,14 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "0",
-              "maximum": "100"
+              "minimum": 0,
+              "maximum": 100
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -4692,7 +4720,7 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "1"
+              "minimum": 1
             }
           },
           {
@@ -4703,13 +4731,14 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "0",
-              "maximum": "100"
+              "minimum": 0,
+              "maximum": 100
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -4836,6 +4865,7 @@
         },
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -4952,6 +4982,7 @@
         },
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -5068,6 +5099,7 @@
         },
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -5163,6 +5195,7 @@
         "operationId": "getInfosSupplyTotal-alph",
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "text/plain": {
                 "schema": {
@@ -5249,6 +5282,7 @@
         "operationId": "getInfosSupplyCirculating-alph",
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "text/plain": {
                 "schema": {
@@ -5335,6 +5369,7 @@
         "operationId": "getInfosSupplyReserved-alph",
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "text/plain": {
                 "schema": {
@@ -5421,6 +5456,7 @@
         "operationId": "getInfosSupplyLocked-alph",
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "text/plain": {
                 "schema": {
@@ -5507,6 +5543,7 @@
         "operationId": "getInfosTotal-transactions",
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "text/plain": {
                 "schema": {
@@ -5594,6 +5631,7 @@
         "operationId": "getInfosAverage-block-times",
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -5704,7 +5742,7 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "1"
+              "minimum": 1
             }
           },
           {
@@ -5715,13 +5753,14 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "0",
-              "maximum": "100"
+              "minimum": 0,
+              "maximum": 100
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -5833,7 +5872,7 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "1"
+              "minimum": 1
             }
           },
           {
@@ -5844,13 +5883,14 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "0",
-              "maximum": "100"
+              "minimum": 0,
+              "maximum": 100
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -5953,7 +5993,7 @@
             "schema": {
               "type": "integer",
               "format": "int64",
-              "minimum": "0"
+              "minimum": 0
             }
           },
           {
@@ -5963,7 +6003,7 @@
             "schema": {
               "type": "integer",
               "format": "int64",
-              "minimum": "0"
+              "minimum": 0
             }
           },
           {
@@ -5977,6 +6017,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -6085,7 +6126,7 @@
             "schema": {
               "type": "integer",
               "format": "int64",
-              "minimum": "0"
+              "minimum": 0
             }
           },
           {
@@ -6095,7 +6136,7 @@
             "schema": {
               "type": "integer",
               "format": "int64",
-              "minimum": "0"
+              "minimum": 0
             }
           },
           {
@@ -6109,6 +6150,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -6215,7 +6257,7 @@
             "schema": {
               "type": "integer",
               "format": "int64",
-              "minimum": "0"
+              "minimum": 0
             }
           },
           {
@@ -6225,7 +6267,7 @@
             "schema": {
               "type": "integer",
               "format": "int64",
-              "minimum": "0"
+              "minimum": 0
             }
           },
           {
@@ -6239,6 +6281,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -6371,6 +6414,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -6504,7 +6548,7 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "1"
+              "minimum": 1
             }
           },
           {
@@ -6515,13 +6559,14 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "0",
-              "maximum": "100"
+              "minimum": 0,
+              "maximum": 100
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -6664,7 +6709,7 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "1"
+              "minimum": 1
             }
           },
           {
@@ -6675,13 +6720,14 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "0",
-              "maximum": "100"
+              "minimum": 0,
+              "maximum": 100
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -6810,6 +6856,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -6915,6 +6962,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -7020,7 +7068,7 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "1"
+              "minimum": 1
             }
           },
           {
@@ -7031,13 +7079,14 @@
             "schema": {
               "type": "integer",
               "format": "int32",
-              "minimum": "0",
-              "maximum": "100"
+              "minimum": 0,
+              "maximum": 100
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -7161,6 +7210,7 @@
         },
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -7271,6 +7321,7 @@
         ],
         "responses": {
           "200": {
+            "description": "Ok",
             "content": {
               "application/json": {
                 "schema": {
@@ -7366,7 +7417,9 @@
         "description": "Perform a sanity check",
         "operationId": "putUtilsSanity-check",
         "responses": {
-          "200": {},
+          "200": {
+            "description": "Ok"
+          },
           "400": {
             "description": "BadRequest",
             "content": {
@@ -7461,7 +7514,9 @@
           "required": true
         },
         "responses": {
-          "200": {},
+          "200": {
+            "description": "Ok"
+          },
           "400": {
             "description": "BadRequest",
             "content": {
@@ -7558,7 +7613,9 @@
           "required": false
         },
         "responses": {
-          "200": {},
+          "200": {
+            "description": "Ok"
+          },
           "400": {
             "description": "BadRequest",
             "content": {

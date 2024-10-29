@@ -40,6 +40,7 @@ trait BaseEndpoint extends ErrorExamples with TapirCodecs with TapirSchemasLike 
 
   val baseEndpoint: BaseEndpoint[Unit, Unit] =
     endpoint
+      .out(emptyOutput.description("Ok"))
       .errorOut(
         oneOf[ApiError[_ <: StatusCode]](
           error(BadRequest, { case BadRequest(_) => true }),
