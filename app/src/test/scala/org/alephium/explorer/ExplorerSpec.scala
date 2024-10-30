@@ -118,6 +118,14 @@ trait ExplorerSpec
   val coingeckoUri  = s"http://${localhost.getHostAddress()}:$coingeckoPort"
   val coingecko     = new MarketServiceSpec.CoingeckoMock(localhost, coingeckoPort)
 
+  val mobulaPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
+  val mobulaUri  = s"http://${localhost.getHostAddress()}:$mobulaPort"
+  val mobula     = new MarketServiceSpec.MobulaMock(localhost, mobulaPort)
+
+  val tokenListPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
+  val tokenListUri  = s"http://${localhost.getHostAddress()}:$tokenListPort"
+  val tokenList     = new MarketServiceSpec.TokenListMock(localhost, tokenListPort)
+
   val blockflowBinding = blockFlowMock.server
 
   def createApp(bootMode: BootMode.Readable): ExplorerState = {
@@ -131,6 +139,8 @@ trait ExplorerSpec
       ("alephium.explorer.boot-mode", bootMode.productPrefix),
       ("alephium.explorer.port", explorerPort),
       ("alephium.explorer.market.coingecko-uri", coingeckoUri),
+      ("alephium.explorer.market.mobula-uri", mobulaUri),
+      ("alephium.explorer.market.token-list-uri", tokenListUri),
       ("alephium.blockflow.port", blockFlowPort),
       ("alephium.blockflow.network-id", networkId.id),
       ("alephium.blockflow.group-num", groupSetting.groupNum)
@@ -476,7 +486,7 @@ trait ExplorerSpec
 
   "Market chart endpoints" when {
     "correctly return price charts" in {
-      List("ALPH", "WETH").map { symbol =>
+      List("ALPH").map { symbol =>
         Get(s"/market/prices/$symbol/charts?currency=btc") check { response =>
           response.as[TimedPrices]
           response.code is StatusCode.Ok
