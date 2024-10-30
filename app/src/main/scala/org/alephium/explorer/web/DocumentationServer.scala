@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.web
 
-import scala.collection.immutable.{ArraySeq, ListMap}
+import scala.collection.immutable.ArraySeq
 
 import io.vertx.ext.web._
 
@@ -28,8 +28,7 @@ import org.alephium.util.Duration
 
 class DocumentationServer(
     val maxTimeIntervalExportTxs: Duration,
-    val currencies: ArraySeq[String],
-    val tokensWithPrice: ListMap[String, String]
+    val currencies: ArraySeq[String]
 )(implicit
     groupSetting: GroupSetting
 ) extends Server
