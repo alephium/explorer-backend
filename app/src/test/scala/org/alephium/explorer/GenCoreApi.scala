@@ -344,10 +344,12 @@ object GenCoreApi {
       unsigned         <- unsignedTxGen
       inputSignatures  <- Gen.listOfN(2, bytesGen)
       scriptSignatures <- Gen.listOfN(2, bytesGen)
+      seenAt           <- timestampGen
     } yield TransactionTemplate(
       unsigned,
       AVector.from(inputSignatures),
-      AVector.from(scriptSignatures)
+      AVector.from(scriptSignatures),
+      seenAt
     )
 
   val outputRefProtocolGen: Gen[OutputRef] = for {

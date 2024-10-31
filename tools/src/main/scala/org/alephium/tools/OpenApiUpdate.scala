@@ -36,7 +36,7 @@ object OpenApiUpdate {
         val currencies                         = config.market.currencies
         val tokensWithPrice                    = config.market.symbolName
 
-        private val json = openApiJson(docs, dropAuth = false)
+        private val json = openApiJson(docs, dropAuth = false, truncateAddresses = true)
 
         import java.io.PrintWriter
         new PrintWriter("../app/src/main/resources/explorer-backend-openapi.json") {

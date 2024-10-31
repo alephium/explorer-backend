@@ -148,8 +148,9 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
 object BlockFlowClientSpec extends ScalaFutures with IntegrationPatience {
   class BlockFlowServerMock(localhost: InetAddress, port: Int) extends api.Endpoints with Server {
 
-    implicit val groupConfig: GroupConfig     = groupSetting.groupConfig
-    val maybeApiKey: Option[api.model.ApiKey] = None
+    implicit val groupConfig: GroupConfig           = groupSetting.groupConfig
+    override val apiKeys: AVector[api.model.ApiKey] = AVector.empty
+    val maybeApiKey: Option[api.model.ApiKey]       = None
 
     val cliqueId = CliqueId.generate
 

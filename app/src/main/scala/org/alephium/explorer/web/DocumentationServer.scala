@@ -40,7 +40,7 @@ class DocumentationServer(
   val routes: ArraySeq[Router => Route] =
     ArraySeq.from(
       SwaggerUI(
-        openApiJson(docs, dropAuth = false),
+        openApiJson(docs, dropAuth = false, truncateAddresses = true),
         openapiFileName = "explorer-backend-openapi.json"
       ).map(route(_))
     )
