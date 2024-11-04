@@ -341,13 +341,13 @@ trait ExplorerSpec
                 _.address == Some(address)
               )
             )
-            .sortBy(_.timestamp)
-            .reverse
+            .distinct
+
         val res = response.as[ArraySeq[Transaction]]
 
         res.size is expectedTransactions.take(txLimit).size
-        Inspectors.forAll(expectedTransactions) { transaction =>
-          res.map(_.hash) should contain(transaction.hash)
+        Inspectors.forAll(res) { transaction =>
+          expectedTransactions.map(_.hash) should contain(transaction.hash)
         }
       }
     }
