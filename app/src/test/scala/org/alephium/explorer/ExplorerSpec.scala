@@ -158,10 +158,15 @@ trait ExplorerSpec
 
   def app: ExplorerState
 
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    val result = initApp(app)
+    logger.info(s"ExplorerSpec initialized: $result")
+  }
+
   lazy val port = app.config.port
 
   "get a block by its id" in {
-    initApp(app)
 
     // forAll(Gen.oneOf(blocks)) { block =>
     val block = Gen.oneOf(blocks).sample.get
