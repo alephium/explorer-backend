@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.persistence
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import com.typesafe.scalalogging.StrictLogging
@@ -24,14 +25,18 @@ import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence.model.AppState.MigrationVersion
 import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.util.SlickUtil._
+import org.alephium.protocol.model.BlockHash
 
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(3)
+  val latestVersion: MigrationVersion = MigrationVersion(4)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     // We retrigger the download of fungible and non-fungible tokens' metadata that have sub-category
@@ -88,6 +93,61 @@ object Migrations extends StrictLogging {
     migration3
   )
 
+  def backgroundCoinbaseMigration()(implicit
+      ec: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = {
+    logger.info(s"Starting coinbase value migration")
+    DBRunner
+      // First find all blocks containing a tx with 2 different coinbase value
+      .run(sql"""
+        SELECT DISTINCT t.block_hash
+        FROM transaction_per_addresses AS t
+        GROUP BY t.block_hash, t.tx_hash
+        HAVING COUNT(DISTINCT t.coinbase) = 2;
+      """.asAS[BlockHash])
+      .flatMap { blocks =>
+        logger.info(s"Coinbase value migration started for ${blocks.size} blocks")
+        var count = 0
+        // scalastyle:off magic.number
+        foldFutures(ArraySeq.from(blocks.grouped(1000))) { group =>
+          // scalastyle:on magic.number
+          DBRunner.run(DBIOAction.sequence(group.map(updateBlockCoinbaseTx))).map { _ =>
+            count += group.size
+            logger.info(s"Coinbase value migration done for $count blocks")
+          }
+        }
+      }
+      .map { _ =>
+        logger.info("Coinbase value migration done")
+      }
+  }
+
+  def updateBlockCoinbaseTx(blockHash: BlockHash): DBActionRWT[Int] = {
+    sqlu"""
+      BEGIN;
+
+      -- Set coinbase = false for all transactions in the specified block
+      UPDATE transaction_per_addresses
+      SET coinbase = false
+      WHERE block_hash = $blockHash;
+
+      -- Set coinbase = true for the last transaction in the specified block
+      WITH LastTransaction AS (
+          SELECT MAX(tx_order) AS max_tx_order
+          FROM transaction_per_addresses
+          WHERE block_hash = $blockHash
+      )
+      UPDATE transaction_per_addresses AS t
+      SET coinbase = true
+      FROM LastTransaction AS lt
+      WHERE t.block_hash = $blockHash
+        AND t.tx_order = lt.max_tx_order;
+
+      COMMIT;
+      """
+  }
+
   def migrationsQuery(
       versionOpt: Option[MigrationVersion]
   )(implicit ec: ExecutionContext): DBActionAll[Unit] = {
@@ -109,18 +169,45 @@ object Migrations extends StrictLogging {
     }
   }
 
+  def migrateInBackground(
+      versionOpt: Option[MigrationVersion]
+  )(implicit
+      ec: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = {
+    (versionOpt match {
+      // noop
+      case None | Some(MigrationVersion(latestVersion.version)) =>
+        logger.info(s"No background migrations needed")
+        Future.unit
+      case Some(MigrationVersion(current)) if current > latestVersion.version =>
+        throw new Exception("Incompatible migration versions, please reset your database")
+      case Some(MigrationVersion(current)) =>
+        if (current <= 3) {
+          logger.info(s"Background migrations needed")
+          backgroundCoinbaseMigration()
+        } else {
+          Future.unit
+        }
+    }).flatMap(_ => DBRunner.run(updateVersion(Some(latestVersion))))
+  }
+
   def migrate(
       databaseConfig: DatabaseConfig[PostgresProfile]
   )(implicit ec: ExecutionContext): Future[Unit] = {
     logger.info("Migrating")
     for {
-      _ <- DBRunner
+      currentVersion <- DBRunner
         .run(databaseConfig)(for {
           version <- getVersion()
           _       <- migrationsQuery(version)
         } yield version)
-      _ <- DBRunner.run(databaseConfig)(updateVersion(Some(latestVersion)))
-    } yield ()
+    } yield {
+      migrateInBackground(currentVersion)(ec, databaseConfig).onComplete {
+        case scala.util.Success(_) => logger.info("Background migration completed successfully")
+        case scala.util.Failure(exception) => logger.error("Background migration failed", exception)
+      }
+    }
   }
 
   def getVersion()(implicit ec: ExecutionContext): DBActionAll[Option[MigrationVersion]] = {
