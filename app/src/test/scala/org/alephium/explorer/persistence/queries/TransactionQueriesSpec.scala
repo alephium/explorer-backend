@@ -669,8 +669,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
   trait Fixture {
 
-    val address = addressGen.sample.get
-    def now     = TimeStamp.now().plusMinutesUnsafe(scala.util.Random.nextLong(240))
+    val address   = addressGen.sample.get
+    def timestamp = timestampGen.sample.get
 
     val chainFrom = GroupIndex.Zero
     val chainTo   = GroupIndex.Zero
@@ -679,7 +679,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       OutputEntity(
         blockHashGen.sample.get,
         transactionHashGen.sample.get,
-        now,
+        timestamp,
         outputTypeGen.sample.get,
         0,
         hashGen.sample.get,
@@ -701,7 +701,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       InputEntity(
         blockHashGen.sample.get,
         transactionHashGen.sample.get,
-        now,
+        timestamp,
         hint,
         outputRefKey,
         None,
