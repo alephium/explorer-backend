@@ -141,10 +141,14 @@ object ContractQueries {
   def getSubContractsQuery(parent: Address, pagination: Pagination): DBActionSR[Address] = {
     sql"""
       SELECT contract
-      FROM contracts
-      WHERE parent = $parent
+      FROM (
+        SELECT DISTINCT ON (contract) contract, creation_timestamp, creation_event_order
+        FROM contracts
+        WHERE parent = $parent
+        ORDER BY contract, creation_timestamp DESC, creation_event_order
+      ) AS distinct_contracts
       ORDER BY creation_timestamp DESC, creation_event_order
-      """
+    """
       .paginate(pagination)
       .asASE[Address](addressGetResult)
   }
