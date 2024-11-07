@@ -324,7 +324,8 @@ object CustomGetResult {
         timestamp = result.<<,
         eventIndex = result.<<,
         fields = result.<<,
-        eventOrder = result.<<
+        eventOrder = result.<<,
+        mainChain = result.<<
       )
 
   val fungibleTokenMetadataGetResult: GetResult[FungibleTokenMetadata] =
@@ -376,7 +377,8 @@ object CustomGetResult {
         destructionTimestamp = result.<<?,
         destructionEventOrder = result.<<?,
         category = result.<<?,
-        interfaceId = result.<<?
+        interfaceId = result.<<?,
+        mainChain = result.<<
       )
 
   implicit val migrationVersionGetResult: GetResult[AppState.MigrationVersion] =

@@ -37,7 +37,8 @@ final case class ContractEntity(
     destructionTimestamp: Option[TimeStamp],
     destructionEventOrder: Option[Int],
     category: Option[String],
-    interfaceId: Option[InterfaceIdEntity]
+    interfaceId: Option[InterfaceIdEntity],
+    mainChain: Boolean
 ) {
   def destroyInfo(): Option[ContractEntity.DestroyInfo] =
     for {
@@ -108,7 +109,8 @@ object ContractEntity {
           destructionTimestamp = None,
           destructionEventOrder = None,
           category = None,
-          interfaceId = None
+          interfaceId = None,
+          mainChain = false
         )
       }
     } else {

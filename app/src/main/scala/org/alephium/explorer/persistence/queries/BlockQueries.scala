@@ -239,6 +239,7 @@ object BlockQueries extends StrictLogging {
       def whereClause(columnName: String): String =
         Array.fill(blocks.size)(s"$columnName = ?").mkString(" OR ")
 
+      // format: off
       val query =
         s"""
            BEGIN;
@@ -250,12 +251,14 @@ object BlockQueries extends StrictLogging {
            UPDATE transaction_per_token     SET main_chain = ? WHERE ${whereClause("block_hash")};
            UPDATE token_tx_per_addresses    SET main_chain = ? WHERE ${whereClause("block_hash")};
            UPDATE token_outputs             SET main_chain = ? WHERE ${whereClause("block_hash")};
+           UPDATE events                    SET main_chain = ? WHERE ${whereClause("block_hash")};
+           UPDATE contracts                 SET main_chain = ? WHERE ${whereClause("creation_block_hash")};
            COMMIT;
            """
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
-          (1 to 8) foreach { _ =>
+          (1 to 10) foreach { _ =>
             params >> mainChain
             blocks foreach (params >> _)
           }

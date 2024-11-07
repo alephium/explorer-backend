@@ -55,6 +55,9 @@ class ContractQueriesSpec
         run(ContractSchema.table.result).futureValue.sortBy(_.creationTimestamp) is events
           .flatMap(ContractEntity.creationFromEventEntity(_, groupIndex))
           .sortBy(_.creationTimestamp)
+        events.foreach(event =>
+          run(BlockQueries.updateMainChainStatusQuery(event.blockHash, true)).futureValue
+        )
 
         // Destruction
         val destroyEvents = events.map(e => destroyEventGen(contractAddressFromEvent(e)).sample.get)
@@ -72,10 +75,13 @@ class ContractQueriesSpec
       forAll(createEventsGen()) { case (groupIndex, events) =>
         run(ContractSchema.table.delete).futureValue
         run(ContractQueries.insertContractCreation(events, groupIndex)).futureValue
+        events.foreach(event =>
+          run(BlockQueries.updateMainChainStatusQuery(event.blockHash, true)).futureValue
+        )
 
         events.flatMap(ContractEntity.creationFromEventEntity(_, groupIndex)).foreach { event =>
           run(ContractQueries.getContractEntity(event.contract)).futureValue is
-            ArraySeq(event)
+            ArraySeq(event.copy(mainChain = true))
         }
 
         run(ContractQueries.getContractEntity(addressGen.sample.get)).futureValue is ArraySeq.empty
@@ -86,6 +92,9 @@ class ContractQueriesSpec
       forAll(createEventsGen()) { case (groupIndex, events) =>
         run(ContractSchema.table.delete).futureValue
         run(ContractQueries.insertContractCreation(events, groupIndex)).futureValue
+        events.foreach(event =>
+          run(BlockQueries.updateMainChainStatusQuery(event.blockHash, true)).futureValue
+        )
 
         events.flatMap(ContractEntity.creationFromEventEntity(_, groupIndex)).foreach { event =>
           run(ContractQueries.getParentAddressQuery(event.contract)).futureValue is
@@ -107,6 +116,9 @@ class ContractQueriesSpec
         run(ContractSchema.table.delete).futureValue
         run(ContractQueries.insertContractCreation(events, groupIndex)).futureValue
         run(ContractQueries.insertContractCreation(otherEvents, otherGroup)).futureValue
+        (events ++ otherEvents).foreach(event =>
+          run(BlockQueries.updateMainChainStatusQuery(event.blockHash, true)).futureValue
+        )
 
         run(ContractQueries.getSubContractsQuery(parent, pagination)).futureValue is events
           .sortBy(_.timestamp)
