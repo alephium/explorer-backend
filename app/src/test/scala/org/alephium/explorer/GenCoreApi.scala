@@ -249,6 +249,7 @@ object GenCoreApi {
       blockEntry     <- blockEntryProtocolGen
       nbOfTxs        <- Gen.choose(1, availableOutputs.size)
       maxInputsPerTx <- Gen.choose(1, availableOutputs.size / nbOfTxs)
+      coinbaseTx     <- coinbaseTransactionProtocolGen
       txs <- Gen.sequence[Vector[Transaction], Transaction](
         Vector.fill(nbOfTxs)(
           for {
@@ -271,7 +272,7 @@ object GenCoreApi {
         height = height,
         chainFrom = previousBlocks.last.chainFrom,
         chainTo = previousBlocks.last.chainTo,
-        transactions = AVector.from(txs),
+        transactions = AVector.from(txs :+ coinbaseTx),
         deps = blockEntry.deps.replace(
           parentIndex(new GroupIndex(previousBlocks.last.chainTo)),
           previousBlocks.last.hash

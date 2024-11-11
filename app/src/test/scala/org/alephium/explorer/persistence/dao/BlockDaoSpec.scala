@@ -276,7 +276,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
         timestamp = output.timestamp,
         txOrder = input.txOrder,
         mainChain = output.mainChain,
-        coinbase = output.coinbase
+        coinbase = false
       )
 
     /** Convert multiple input-outputs to

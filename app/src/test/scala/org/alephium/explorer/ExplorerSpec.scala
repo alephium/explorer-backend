@@ -158,10 +158,15 @@ trait ExplorerSpec
 
   def app: ExplorerState
 
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    val result = initApp(app)
+    logger.info(s"ExplorerSpec initialized: $result")
+  }
+
   lazy val port = app.config.port
 
   "get a block by its id" in {
-    initApp(app)
 
     // forAll(Gen.oneOf(blocks)) { block =>
     val block = Gen.oneOf(blocks).sample.get
@@ -336,13 +341,13 @@ trait ExplorerSpec
                 _.address == Some(address)
               )
             )
-            .sortBy(_.timestamp)
-            .reverse
+            .distinct
+
         val res = response.as[ArraySeq[Transaction]]
 
         res.size is expectedTransactions.take(txLimit).size
-        Inspectors.forAll(expectedTransactions) { transaction =>
-          res.map(_.hash) should contain(transaction.hash)
+        Inspectors.forAll(res) { transaction =>
+          expectedTransactions.map(_.hash) should contain(transaction.hash)
         }
       }
     }

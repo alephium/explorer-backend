@@ -33,7 +33,7 @@ import org.alephium.util._
 object InputUpdateQueries {
 
   private type UpdateReturn =
-    (Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean, Boolean)
+    (Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean)
 
   def updateInputs()(implicit ec: ExecutionContext): DBActionWT[Unit] = {
     sql"""
@@ -46,7 +46,7 @@ object InputUpdateQueries {
       FROM outputs
       WHERE inputs.output_ref_key = outputs.key
       AND inputs.output_ref_amount IS NULL
-      RETURNING outputs.address, outputs.tokens, inputs.tx_hash, inputs.block_hash, inputs.block_timestamp, inputs.tx_order, inputs.main_chain, outputs.coinbase
+      RETURNING outputs.address, outputs.tokens, inputs.tx_hash, inputs.block_hash, inputs.block_timestamp, inputs.tx_order, inputs.main_chain
     """
       .as[UpdateReturn]
       .flatMap(internalUpdates)
@@ -55,7 +55,7 @@ object InputUpdateQueries {
 
   // format: off
   private def internalUpdates(
-      data: Vector[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean, Boolean)])
+      data: Vector[UpdateReturn])
     : DBActionWT[Unit] = {
   // format: on
     DBIOAction
@@ -68,7 +68,7 @@ object InputUpdateQueries {
 
   // format: off
   private def updateTransactionPerAddresses(
-      data: Vector[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean, Boolean)])
+      data: Vector[UpdateReturn])
     : DBActionWT[Int] = {
   // format: on
     QuerySplitter.splitUpdates(rows = data, columnsPerRow = 7) { (data, placeholder) =>
@@ -81,15 +81,14 @@ object InputUpdateQueries {
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
-          data foreach {
-            case (address, _, txHash, blockHash, timestamp, txOrder, mainChain, coinbase) =>
-              params >> address
-              params >> txHash
-              params >> blockHash
-              params >> timestamp
-              params >> txOrder
-              params >> mainChain
-              params >> coinbase
+          data foreach { case (address, _, txHash, blockHash, timestamp, txOrder, mainChain) =>
+            params >> address
+            params >> txHash
+            params >> blockHash
+            params >> timestamp
+            params >> txOrder
+            params >> mainChain
+            params >> false
           }
 
       SQLActionBuilder(
@@ -101,11 +100,11 @@ object InputUpdateQueries {
 
   // format: off
   private def updateTokenTxPerAddresses(
-      data: Vector[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean, Boolean)])
+      data: Vector[UpdateReturn])
     : DBActionWT[Int] = {
   // format: on
     val tokenTxPerAddresses = data.flatMap {
-      case (address, tokensOpt, txHash, blockHash, timestamp, txOrder, mainChain, _) =>
+      case (address, tokensOpt, txHash, blockHash, timestamp, txOrder, mainChain) =>
         tokensOpt match {
           case None => ArraySeq.empty
           case Some(tokens) =>

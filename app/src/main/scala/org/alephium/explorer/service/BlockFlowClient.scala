@@ -491,8 +491,8 @@ object BlockFlowClient extends StrictLogging {
       if (block.height == Height.genesis.value) null else block.transactions.last.unsigned.txId
     val outputs =
       transactions.flatMap { case (tx, txOrder) =>
+        val txId = tx.unsigned.txId
         tx.unsigned.fixedOutputs.toArraySeq.zipWithIndex.map { case (out, index) =>
-          val txId = tx.unsigned.txId
           outputToEntity(
             out.upCast(),
             hash,
