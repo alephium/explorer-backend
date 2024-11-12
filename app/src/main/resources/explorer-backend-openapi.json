@@ -7197,8 +7197,7 @@
               },
               "example": [
                 "ALPH",
-                "USDC",
-                "USDT",
+                "USDCeth",
                 "WBTC",
                 "WETH",
                 "DAI",
