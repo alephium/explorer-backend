@@ -165,7 +165,7 @@ object TransactionQueries extends StrictLogging {
       pagination: Pagination
   ): DBActionSR[TxByAddressQR] = {
     sql"""
-      SELECT DISTINCT #${TxByAddressQR.selectFields}
+      SELECT #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
       WHERE main_chain = true AND address = $address
       ORDER BY block_timestamp DESC, tx_order
