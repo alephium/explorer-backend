@@ -108,22 +108,18 @@ case object BlockFlowSyncService extends StrictLogging {
       groupSetting: GroupSetting
   ): Future[Unit] = {
     logger.debug("Start syncing")
-    val startedAt  = TimeStamp.now()
-    var downloaded = 0
+    val startedAt = TimeStamp.now()
 
     getTimeStampRange(step, backStep)
-      .flatMap { case (ranges, nbOfBlocksToDownloads) =>
-        logger.debug(s"Downloading $nbOfBlocksToDownloads blocks")
+      .flatMap { ranges =>
         Future.sequence {
           nodeUris.map { uri =>
             foldFutures(ranges) { case (from, to) =>
-              syncTimeRange(from, to, uri).map { num =>
-                synchronized {
-                  downloaded = downloaded + num
-                  logger.debug(s"Downloaded ${downloaded}, progress ${scala.math
-                      .min(100, (downloaded.toFloat / nbOfBlocksToDownloads * 100.0).toInt)}%")
-                }
-              }
+              logger.debug(
+                s"Syncing from ${TimeUtil.toInstant(from)} to ${TimeUtil
+                    .toInstant(to)} (${from.millis} - ${to.millis})"
+              )
+              syncTimeRange(from, to, uri)
             }
           }
         }
@@ -205,10 +201,10 @@ case object BlockFlowSyncService extends StrictLogging {
       blockFlowClient: BlockFlowClient,
       cache: BlockCache,
       groupSetting: GroupSetting
-  ): Future[(ArraySeq[(TimeStamp, TimeStamp)], Int)] =
+  ): Future[ArraySeq[(TimeStamp, TimeStamp)]] =
     for {
       localTs  <- getLocalMaxTimestamp()
-      remoteTs <- getRemoteMaxTimestamp()
+      remoteTs <- getRemoteMaxTimestamp(localTs)
       result <- TimeUtil.buildTimeStampRangeOrEmpty(step, backStep, localTs, remoteTs) match {
         case Failure(exception) =>
           Future.failed(exception)
@@ -221,40 +217,46 @@ case object BlockFlowSyncService extends StrictLogging {
       ec: ExecutionContext,
       cache: BlockCache,
       groupSetting: GroupSetting
-  ): Future[Option[(TimeStamp, Int)]] = {
+  ): Future[Option[TimeStamp]] = {
     cache.getAllLatestBlocks().map { chainIndexlatestBlocks =>
-      val latestBlocks = chainIndexlatestBlocks.map { case (_, latestBlock) => latestBlock }
-      for {
-        timestamp <- latestBlocks.map(_.timestamp).maxOption
-      } yield {
-        (timestamp, latestBlocks.map(_.height.value).sum)
-      }
+      chainIndexlatestBlocks.map { case (_, latestBlock) => latestBlock }.map(_.timestamp).maxOption
     }
   }
 
-  private def getRemoteMaxTimestamp()(implicit
+  private def getRemoteMaxTimestamp(localTsOpt: Option[TimeStamp])(implicit
       ec: ExecutionContext,
       blockFlowClient: BlockFlowClient,
       groupSetting: GroupSetting
-  ): Future[Option[(TimeStamp, Int)]] = {
-    Future
-      .sequence(groupSetting.chainIndexes.map { chainIndex =>
-        blockFlowClient
-          .fetchChainInfo(chainIndex)
-          .flatMap { chainInfo =>
-            blockFlowClient
-              .fetchBlocksAtHeight(chainIndex, Height.unsafe(chainInfo.currentHeight))
-              .map { blocks =>
-                blocks.map(_.timestamp).maxOption.map(ts => (ts, chainInfo.currentHeight))
-              }
-          }
+  ): Future[Option[TimeStamp]] = {
+    val now = TimeStamp.now()
+    /*
+     * If the local timestamp is closed to now, it means the node is up to date
+     * and we can directly fetch blocks up to now.
+     * Otherwise it's safer to ask the node what are the latest blocks
+     */
+    if (
+      localTsOpt.map(localTs => now.minusUnsafe(defaultBackStep).isBefore(localTs)).getOrElse(false)
+    ) {
+      Future.successful(Some(now))
+    } else {
+      Future
+        .sequence(groupSetting.chainIndexes.map { chainIndex =>
+          blockFlowClient
+            .fetchChainInfo(chainIndex)
+            .flatMap { chainInfo =>
+              blockFlowClient
+                .fetchBlocksAtHeight(chainIndex, Height.unsafe(chainInfo.currentHeight))
+                .map { blocks =>
+                  blocks.map(_.timestamp).maxOption.map(ts => (ts, chainInfo.currentHeight))
+                }
+            }
 
-      })
-      .map { res =>
-        val tsHeights  = res.flatten
-        val nbOfBlocks = tsHeights.map { case (_, height) => height }.sum
-        tsHeights.map { case (ts, _) => ts }.maxOption.map(max => (max, nbOfBlocks))
-      }
+        })
+        .map { res =>
+          val tsHeights = res.flatten
+          tsHeights.map { case (ts, _) => ts }.maxOption
+        }
+    }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
@@ -391,7 +393,7 @@ case object BlockFlowSyncService extends StrictLogging {
       groupSetting: GroupSetting
   ): Future[Unit] = {
     if (uncles.nonEmpty) {
-      logger.debug(s"Downloading ghost uncles ${uncles}")
+      logger.trace(s"Downloading ghost uncles ${uncles}")
       Future
         .sequence(uncles.map { uncle =>
           blockFlowClient
