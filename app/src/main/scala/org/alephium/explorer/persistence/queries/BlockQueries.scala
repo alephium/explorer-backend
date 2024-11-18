@@ -265,13 +265,14 @@ object BlockQueries extends StrictLogging {
       ).asUpdate
     }
 
-  def getLatestBlock(chainFrom: GroupIndex, chainTo: GroupIndex): DBActionR[Option[LatestBlock]] = {
-    LatestBlockSchema.table
-      .filter { block =>
-        block.chainFrom === chainFrom && block.chainTo === chainTo
-      }
-      .result
-      .headOption
+  def getLatestBlock(chainFrom: GroupIndex, chainTo: GroupIndex): DBActionSR[LatestBlock] = {
+    sql"""
+         SELECT *
+         FROM latest_blocks
+         WHERE chain_from = $chainFrom
+         AND chain_to = $chainTo
+       """
+      .asASE[LatestBlock](latestBlockGetResult)
   }
 
   /** Inserts block_headers or ignore them if there is a primary key conflict */

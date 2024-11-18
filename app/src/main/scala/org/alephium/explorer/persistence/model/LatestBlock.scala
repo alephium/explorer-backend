@@ -46,4 +46,16 @@ object LatestBlock {
       block.hashrate
     )
   }
+
+  def empty(): LatestBlock = {
+    LatestBlock(
+      BlockHash.zero,
+      TimeStamp.zero,
+      new GroupIndex(-1),
+      new GroupIndex(-1),
+      Height.unsafe(-1),
+      ByteString.empty,
+      BigInteger.ZERO
+    )
+  }
 }

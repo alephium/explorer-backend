@@ -183,18 +183,29 @@ case object BlockFlowSyncService extends StrictLogging {
           latestBlocks.collectFirst {
             case (index, block) if index == chainIndex => block.height
           } match {
+            case None =>
+              initFromScratch(chainIndex)
+            case Some(height) if height.value == -1 =>
+              initFromScratch(chainIndex)
             case Some(height) if height.value == 0 =>
               syncAt(chainIndex, Height.unsafe(1)).map(_.nonEmpty)
-            case None =>
-              for {
-                _      <- syncAt(chainIndex, Height.unsafe(0))
-                blocks <- syncAt(chainIndex, Height.unsafe(1))
-              } yield blocks.nonEmpty
             case _ => Future.successful(true)
           }
         }
         .map(_.contains(true))
     }
+
+  private def initFromScratch(chainIndex: ChainIndex)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      cache: BlockCache,
+      groupSetting: GroupSetting
+  ) =
+    for {
+      _      <- syncAt(chainIndex, Height.unsafe(0))
+      blocks <- syncAt(chainIndex, Height.unsafe(1))
+    } yield blocks.nonEmpty
 
   private def getTimeStampRange(step: Duration, backStep: Duration)(implicit
       ec: ExecutionContext,

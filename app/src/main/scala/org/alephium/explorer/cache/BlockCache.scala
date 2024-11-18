@@ -75,7 +75,7 @@ object BlockCache {
     val latestBlockAsyncLoader: AsyncCacheLoader[ChainIndex, LatestBlock] = { case (key, _) =>
       run(
         BlockQueries.getLatestBlock(key.from, key.to)
-      ).map(_.get).asJava.toCompletableFuture
+      ).map(_.headOption.getOrElse(LatestBlock.empty())).asJava.toCompletableFuture
     }
 
     val cachedLatestBlocks: CaffeineAsyncCache[ChainIndex, LatestBlock] =
