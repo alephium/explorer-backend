@@ -181,10 +181,12 @@ case object BlockFlowSyncService extends StrictLogging {
       cache: BlockCache,
       groupSetting: GroupSetting
   ): Future[Boolean] =
-    run(BlockQueries.maxHeightZipped(groupSetting.chainIndexes)) flatMap { heightAndGroups =>
+    cache.getAllLatestBlocks().flatMap { latestBlocks =>
       Future
-        .traverse(heightAndGroups) { case (height, chainIndex) =>
-          height match {
+        .traverse(groupSetting.chainIndexes) { chainIndex =>
+          latestBlocks.collectFirst {
+            case (index, block) if index == chainIndex => block.height
+          } match {
             case Some(height) if height.value == 0 =>
               syncAt(chainIndex, Height.unsafe(1)).map(_.nonEmpty)
             case None =>
@@ -200,8 +202,8 @@ case object BlockFlowSyncService extends StrictLogging {
 
   private def getTimeStampRange(step: Duration, backStep: Duration)(implicit
       ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
+      cache: BlockCache,
       groupSetting: GroupSetting
   ): Future[(ArraySeq[(TimeStamp, TimeStamp)], Int)] =
     for {
@@ -215,23 +217,19 @@ case object BlockFlowSyncService extends StrictLogging {
       }
     } yield result
 
-  /** @see
-    *   [[org.alephium.explorer.persistence.queries.BlockQueries.numOfBlocksAndMaxBlockTimestamp]]
-    */
   def getLocalMaxTimestamp()(implicit
       ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile],
+      cache: BlockCache,
       groupSetting: GroupSetting
   ): Future[Option[(TimeStamp, Int)]] = {
-    // Convert query result to return `Height` as `Int` value.
-    val queryResultToIntHeight =
-      BlockQueries.numOfBlocksAndMaxBlockTimestamp() map { optionResult =>
-        optionResult map { case (timestamp, height) =>
-          (timestamp, height.value)
-        }
+    cache.getAllLatestBlocks().map { chainIndexlatestBlocks =>
+      val latestBlocks = chainIndexlatestBlocks.map { case (_, latestBlock) => latestBlock }
+      for {
+        timestamp <- latestBlocks.map(_.timestamp).maxOption
+      } yield {
+        (timestamp, latestBlocks.map(_.height.value).sum)
       }
-
-    run(queryResultToIntHeight)
+    }
   }
 
   private def getRemoteMaxTimestamp()(implicit
