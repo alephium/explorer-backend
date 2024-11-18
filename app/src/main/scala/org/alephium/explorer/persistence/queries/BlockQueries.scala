@@ -25,7 +25,6 @@ import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
@@ -38,7 +37,7 @@ import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
+import org.alephium.protocol.model.{BlockHash, GroupIndex}
 import org.alephium.util.TimeStamp
 
 object BlockQueries extends StrictLogging {
@@ -380,113 +379,4 @@ object BlockQueries extends StrictLogging {
       ORDER BY block_timestamp
     """.asAS[TimeStamp]
   }
-
-  /** Fetches the maximum `block_timestamp` from blocks with maximum height within the given chain.
-    */
-  val maxBlockTimestampForMaxHeightForChain: String =
-    s"""
-       |SELECT max(block_timestamp) as block_timestamp,
-       |       height
-       |FROM $block_headers
-       |WHERE height = (SELECT max(height)
-       |                FROM $block_headers
-       |                WHERE chain_from = ?
-       |                  AND chain_to = ?)
-       |  AND chain_from = ?
-       |  AND chain_to = ?
-       |GROUP BY height
-       |""".stripMargin
-
-  /** Fetches the maximum `block_timestamp` and sum height of all blocks filtered with maximum
-    * height for all input chain chains provided by [[GroupSetting.chainIndexes]]
-    *
-    * @param groupSetting
-    *   Provides the list of chains to run this query on
-    * @return
-    *   Maximum timestamp and sum of all heights i.e. the total number of blocks.
-    */
-  def numOfBlocksAndMaxBlockTimestamp()(implicit
-      groupSetting: GroupSetting,
-      ec: ExecutionContext
-  ): DBActionR[Option[(TimeStamp, Height)]] = {
-    // build queries for each chainFrom-chainTo and merge them into a single UNION query
-    val unions: String =
-      Array
-        .fill(groupSetting.chainIndexes.size)(maxBlockTimestampForMaxHeightForChain)
-        .mkString("UNION")
-
-    // fetch maximum `block_timestamp` and sum all `heights` for all unions
-    val query =
-      s"""
-         SELECT max(block_timestamp),
-                sum(height)
-         FROM ($unions) as max_block_timestamps_and_num_of_blocks;
-         """
-
-    val parameters: SetParameter[Unit] =
-      (_: Unit, params: PositionedParameters) =>
-        groupSetting.chainIndexes foreach { chainIndex =>
-          params >> chainIndex.from
-          params >> chainIndex.to
-          params >> chainIndex.from
-          params >> chainIndex.to
-        }
-
-    SQLActionBuilder(
-      sql = query,
-      setParameter = parameters
-    ).asAS[Option[(TimeStamp, Height)]].oneOrNone
-  }
-
-  /** Fetches maximum `Height` for each `GroupIndex` pair.
-    *
-    * @see
-    *   [[maxHeightZipped]] for paired output with input.
-    *
-    * @return
-    *   A collection of optional `Height` values in the same order as the input `GroupIndex` pair.
-    *   Collection items will be `Some(height)` when `GroupIndex` pair exists, else `None`.
-    */
-  def maxHeight(
-      chainIndexes: Iterable[ChainIndex]
-  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[Option[Height]]] =
-    if (chainIndexes.isEmpty) {
-      DBIOAction.successful(ArraySeq.empty)
-    } else {
-      // Parameter index is used for ordering the output collection
-      def maxHeight(index: Int): String =
-        s"""
-           SELECT max(height), $index
-           FROM $block_headers
-           WHERE chain_from = ?
-             AND chain_to = ?
-           """.stripMargin
-
-      val query =
-        Array
-          .tabulate(chainIndexes.size)(maxHeight)
-          .mkString("UNION ALL")
-
-      val parameters: SetParameter[Unit] =
-        (_: Unit, params: PositionedParameters) =>
-          chainIndexes foreach { chainIndex =>
-            params >> chainIndex.from
-            params >> chainIndex.to
-          }
-
-      val queryResult =
-        SQLActionBuilder(
-          sql = query,
-          setParameter = parameters
-        ).asAS[(Option[Height], Int)]
-
-      // Sort by index and then return just the heights
-      queryResult.map(_.sortBy(_._2).map(_._1))
-    }
-
-  /** Pairs input to it's output value */
-  def maxHeightZipped(chainIndexes: Iterable[ChainIndex])(implicit
-      ec: ExecutionContext
-  ): DBActionR[ArraySeq[(Option[Height], ChainIndex)]] =
-    maxHeight(chainIndexes).map(_.zip(chainIndexes))
 }
