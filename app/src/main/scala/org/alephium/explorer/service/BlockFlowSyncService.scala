@@ -107,9 +107,6 @@ case object BlockFlowSyncService extends StrictLogging {
       cache: BlockCache,
       groupSetting: GroupSetting
   ): Future[Unit] = {
-    logger.debug("Start syncing")
-    val startedAt = TimeStamp.now()
-
     getTimeStampRange(step, backStep)
       .flatMap { ranges =>
         Future.sequence {
@@ -124,10 +121,7 @@ case object BlockFlowSyncService extends StrictLogging {
           }
         }
       }
-      .map { _ =>
-        val duration = TimeStamp.now().deltaUnsafe(startedAt)
-        logger.debug(s"Syncing done in ${duration.toMinutes} min")
-      }
+      .map(_ => ())
   }
   // scalastyle:on magic.number
 
