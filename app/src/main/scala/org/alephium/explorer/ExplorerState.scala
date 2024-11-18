@@ -98,26 +98,29 @@ sealed trait ExplorerStateRead extends ExplorerState {
 
   val marketService: MarketService.CoinGecko = MarketService.CoinGecko.default(config.market)
 
+  private lazy val routes =
+    AppServer
+      .routes(
+        marketService,
+        config.exportTxsNumberThreshold,
+        config.streamParallelism,
+        config.maxTimeInterval,
+        config.market
+      )(
+        executionContext,
+        database.databaseConfig,
+        blockFlowClient,
+        blockCache,
+        metricCache,
+        transactionCache,
+        groupSettings
+      )
   lazy val httpServer: ExplorerHttpServer =
     new ExplorerHttpServer(
       config.host,
       config.port,
-      AppServer
-        .routes(
-          marketService,
-          config.exportTxsNumberThreshold,
-          config.streamParallelism,
-          config.maxTimeInterval,
-          config.market
-        )(
-          executionContext,
-          database.databaseConfig,
-          blockFlowClient,
-          blockCache,
-          metricCache,
-          transactionCache,
-          groupSettings
-        )
+      routes,
+      database
     )
 
   override lazy val customServices: ArraySeq[Service] = ArraySeq(marketService, httpServer)
