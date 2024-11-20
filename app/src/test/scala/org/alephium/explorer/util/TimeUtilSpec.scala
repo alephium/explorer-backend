@@ -21,7 +21,6 @@ import java.time.{Instant, LocalDateTime, OffsetTime, ZoneId}
 import scala.collection.immutable.ArraySeq
 
 import org.scalacheck.Gen
-import org.scalatest.OptionValues._
 import org.scalatest.TryValues._
 import org.scalatest.matchers.should.Matchers
 
@@ -142,13 +141,13 @@ class TimeUtilSpec extends AlephiumSpec with Matchers {
   "buildTimeStampRangeOption" should {
     "return None" when {
       "local timestamp is None" in {
-        forAll(Gen.posNum[Long], Gen.posNum[Long], timestampGen, Gen.posNum[Int]) {
-          case (step, backStep, timeStamp, numOfBlocks) =>
+        forAll(Gen.posNum[Long], Gen.posNum[Long], timestampGen) {
+          case (step, backStep, timeStamp) =>
             TimeUtil
               .buildTimeStampRangeOption(
                 step = Duration.ofMillisUnsafe(step),
                 backStep = Duration.ofMillisUnsafe(backStep),
-                localTs = Some((timeStamp, numOfBlocks)),
+                localTs = Some(timeStamp),
                 remoteTs = None
               )
               .is(None)
@@ -156,43 +155,16 @@ class TimeUtilSpec extends AlephiumSpec with Matchers {
       }
 
       "remote timestamp is None" in {
-        forAll(Gen.posNum[Long], Gen.posNum[Long], timestampGen, Gen.posNum[Int]) {
-          case (step, backStep, timeStamp, numOfBlocks) =>
+        forAll(Gen.posNum[Long], Gen.posNum[Long], timestampGen) {
+          case (step, backStep, timeStamp) =>
             TimeUtil
               .buildTimeStampRangeOption(
                 step = Duration.ofMillisUnsafe(step),
                 backStep = Duration.ofMillisUnsafe(backStep),
                 localTs = None,
-                remoteTs = Some((timeStamp, numOfBlocks))
+                remoteTs = Some(timeStamp)
               )
               .is(None)
-        }
-      }
-    }
-
-    "return total number of blocks (remoteNumOfBlocks - localNumOfBlocks)" when {
-      "all inputs are valid" in {
-        // Test: When all inputs are valid, NumOfBlocks should be (remoteNumOfBlocks - localNumOfBlocks)
-        forAll(Gen.posNum[Long], Gen.posNum[Int], Gen.posNum[Int]) {
-          case (timestamp, localNumOfBlocks, remoteNumOfBlocks) =>
-            // localNumBlocks should be greater than or equal to remoteNumBlocks
-            val localBlocks = remoteNumOfBlocks min localNumOfBlocks
-
-            // Only test for numOfBlocks. It should be (remote - local)
-            val (_, numOfBlocks) =
-              TimeUtil
-                .buildTimeStampRangeOption(
-                  step = Duration.ofMillisUnsafe(0),
-                  backStep = Duration.ofMillisUnsafe(0),
-                  localTs = Some((TimeStamp.unsafe(timestamp), localBlocks)),
-                  remoteTs = Some((TimeStamp.unsafe(timestamp + 1), remoteNumOfBlocks))
-                )
-                .value
-                .success
-                .value
-
-            // Num of blocks returned should be (remote - local)
-            numOfBlocks is (remoteNumOfBlocks - localBlocks)
         }
       }
     }

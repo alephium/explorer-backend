@@ -184,8 +184,15 @@ object Migrations extends StrictLogging {
         throw new Exception("Incompatible migration versions, please reset your database")
       case Some(MigrationVersion(current)) =>
         if (current <= 3) {
-          logger.info(s"Background migrations needed")
-          backgroundCoinbaseMigration()
+          logger.info(s"Background migrations needed, but will be done in a future release")
+          /*
+           * The coinbase migration is heavy and we had some performance issues due to the increase of users.
+           * First, we need to optimize some queries in the syncing process, and then we can re-enable this migration.
+           * For now, we will just update the version and perform the migration in the next release.
+           * We can't just remove it and revert to the previous version because some users might have already completed the migration.
+           */
+          // backgroundCoinbaseMigration()
+          Future.unit
         } else {
           Future.unit
         }

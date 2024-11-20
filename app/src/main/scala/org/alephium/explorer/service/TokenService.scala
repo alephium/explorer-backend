@@ -218,8 +218,15 @@ object TokenService extends TokenService with StrictLogging {
               run(updateTokenInterfaceId(token, nft)).map(_ => ())
           }
         // NFT collection aren't token
-        case Some(StdInterfaceId.NFTCollection) | Some(StdInterfaceId.NFTCollectionWithRoyalty) =>
-          Future.unit
+        // We store them anyway to avoid fetching them again
+        case Some(collection: StdInterfaceId.NFTCollection.type) =>
+          logger.error(s"Token $token has a NFTCollection as token interface id")
+          run(updateTokenInterfaceId(token, collection)).map(_ => ())
+        // NFT collection with royalty aren't token
+        // We store them anyway to avoid fetching them again
+        case Some(collection: StdInterfaceId.NFTCollectionWithRoyalty.type) =>
+          logger.error(s"Token $token has a NFTCollectionWithRoyalty as token interface id")
+          run(updateTokenInterfaceId(token, collection)).map(_ => ())
         case Some(unknown: StdInterfaceId.Unknown) =>
           run(updateTokenInterfaceId(token, unknown)).map(_ => ())
         case Some(StdInterfaceId.NonStandard) =>
@@ -246,7 +253,11 @@ object TokenService extends TokenService with StrictLogging {
                 _ <- insertNFTCollectionMetadata(contract, metadata)
                 _ <- updateContractInterfaceId(contract, interfaceIdOpt.get)
               } yield ()).transactionally)
-            case None => Future.unit
+            case None =>
+              logger.error(
+                s"Contract $contract is a NFTCollection or NFTCollectionWithRoyalty but no metadata found"
+              )
+              run(updateContractInterfaceId(contract, interfaceIdOpt.get)).map(_ => ())
           }
         case Some(fungible: StdInterfaceId.FungibleToken) =>
           run(updateContractInterfaceId(contract, fungible)).map(_ => ())

@@ -90,11 +90,11 @@ object TimeUtil {
   def buildTimeStampRangeOrEmpty(
       step: Duration,
       backStep: Duration,
-      localTs: Option[(TimeStamp, Int)],
-      remoteTs: Option[(TimeStamp, Int)]
-  ): Try[(ArraySeq[(TimeStamp, TimeStamp)], Int)] =
+      localTs: Option[TimeStamp],
+      remoteTs: Option[TimeStamp]
+  ): Try[ArraySeq[(TimeStamp, TimeStamp)]] =
     buildTimeStampRangeOption(step, backStep, localTs, remoteTs) match {
-      case None         => Success((ArraySeq.empty, 0))
+      case None         => Success(ArraySeq.empty)
       case Some(result) => result
     }
 
@@ -102,14 +102,11 @@ object TimeUtil {
   def buildTimeStampRangeOption(
       step: Duration,
       backStep: Duration,
-      localTs: Option[(TimeStamp, Int)],
-      remoteTs: Option[(TimeStamp, Int)]
-  ): Option[Try[(ArraySeq[(TimeStamp, TimeStamp)], Int)]] =
-    localTs.zip(remoteTs) map { case ((localTs, localNbOfBlocks), (remoteTs, remoteNbOfBlocks)) =>
-      buildTimeStampRange(step, backStep, localTs, remoteTs) map { result =>
-        val numOfBlocks = remoteNbOfBlocks - localNbOfBlocks
-        (result, numOfBlocks)
-      }
+      localTs: Option[TimeStamp],
+      remoteTs: Option[TimeStamp]
+  ): Option[Try[ArraySeq[(TimeStamp, TimeStamp)]]] =
+    localTs.zip(remoteTs) map { case (localTs, remoteTs) =>
+      buildTimeStampRange(step, backStep, localTs, remoteTs)
     }
 
   /** @see [[buildTimeStampRangeOrEmpty]] */
