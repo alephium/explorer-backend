@@ -68,7 +68,7 @@ object Scheduler extends StrictLogging {
     } else { // time is in the future. Good!
       val nextSchedule = timeLeft.toNanos.nanos
       // calculate first schedule using today's date.
-      logger.debug(s"$id: Scheduled delay ${nextSchedule.toSeconds}.seconds")
+      logger.trace(s"$id: Scheduled delay ${nextSchedule.toSeconds}.seconds")
       nextSchedule
     }
   }
@@ -96,7 +96,7 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
       }
 
     timer.schedule(task, delay.toMillis max 0)
-    logger.debug(
+    logger.trace(
       s"${logId(taskId)}: Scheduled with delay ${delay.toSeconds}.seconds"
     )
     promise.future
@@ -197,14 +197,14 @@ class Scheduler private (name: String, timer: Timer, @volatile private var termi
       } else { // Not initialised! Invoke init!
         init flatMap { initResult =>
           if (initResult) { // Init successful! Invoke block!
-            logger.debug(
+            logger.trace(
               s"${logId(taskId)}: Task initialisation result: $initResult. Executing block"
             )
             initialized = initResult
             block(state)
           } else {
             // Init returned false. Do not execute block.
-            logger.debug(
+            logger.trace(
               s"${logId(taskId)}: Task initialisation result: $initResult. Executing block delayed."
             )
             Future.unit

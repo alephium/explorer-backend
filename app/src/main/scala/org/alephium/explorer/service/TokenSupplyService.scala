@@ -88,8 +88,7 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
       groupSetting: GroupSetting,
       scheduler: Scheduler
   ): Future[Unit] = {
-    // Sync once on start to make sure we are up to date and then sync once a day at the given time.
-    syncOnce().map { _ =>
+    Future.successful {
       scheduler.scheduleDailyAt(
         taskId = TokenSupplyService.productPrefix,
         at = ZonedDateTime

@@ -55,7 +55,7 @@ class TransactionCache(database: Database, reloadAfter: FiniteDuration)(implicit
     mainChainTxnCount.get()
 
   override def startSelfOnce(): Future[Unit] = {
-    mainChainTxnCount.expireAndReloadFuture().map(_ => ())
+    Future.successful(mainChainTxnCount.expire())
   }
 
   override def stopSelfOnce(): Future[Unit] = {
