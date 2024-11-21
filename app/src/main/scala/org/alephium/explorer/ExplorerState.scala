@@ -73,7 +73,6 @@ sealed trait ExplorerState extends Service with StrictLogging {
 
 sealed trait ExplorerStateRead extends ExplorerState {
 
-
   implicit lazy val metricCache: MetricCache =
     new MetricCache(
       database,
