@@ -60,7 +60,7 @@ import org.alephium.explorer.web._
 import org.alephium.json.Json._
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.{Address, BlockHash, CliqueId, GroupIndex, NetworkId}
-import org.alephium.util.{AVector, Hex, TimeStamp, U256}
+import org.alephium.util.{AVector, Duration, Hex, TimeStamp, U256}
 
 trait ExplorerSpec
     extends AlephiumActorSpecLike
@@ -78,7 +78,10 @@ trait ExplorerSpec
   val txLimit = Pagination.defaultLimit
 
   val blockflow: ArraySeq[ArraySeq[model.BlockEntry]] =
-    blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
+    blockFlowGen(
+      maxChainSize = 5,
+      startTimestamp = TimeStamp.now().minusUnsafe(Duration.ofDaysUnsafe(1))
+    ).sample.get
 
   val uncles = blockflow
     .map(_.flatMap { block =>

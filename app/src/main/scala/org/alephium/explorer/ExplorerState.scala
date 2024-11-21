@@ -53,21 +53,12 @@ sealed trait ExplorerState extends Service with StrictLogging {
       config.cacheLatestBlocksReloadPeriod
     )(groupSettings, executionContext, database.databaseConfig)
 
-  lazy val transactionCache: TransactionCache =
-    TransactionCache(database)(executionContext)
-
   implicit lazy val blockFlowClient: BlockFlowClient =
     BlockFlowClient(
       uri = config.blockFlowUri,
       groupNum = config.groupNum,
       maybeApiKey = config.maybeBlockFlowApiKey,
       directCliqueAccess = config.directCliqueAccess
-    )
-
-  implicit lazy val metricCache: MetricCache =
-    new MetricCache(
-      database,
-      config.cacheMetricsReloadPeriod
     )
 
   override def startSelfOnce(): Future[Unit] = {
@@ -78,49 +69,56 @@ sealed trait ExplorerState extends Service with StrictLogging {
     Future.unit
   }
 
-  def customServices: ArraySeq[Service]
-
-  override def subServices: ArraySeq[Service] = {
-    val writeOnlyServices =
-      ArraySeq(
-        metricCache,
-        transactionCache,
-        blockFlowClient,
-        database
-      )
-
-    customServices ++ writeOnlyServices
-  }
-
 }
 
 sealed trait ExplorerStateRead extends ExplorerState {
 
-  val marketService: MarketService.Impl = MarketService.Impl.default(config.market)
 
+  implicit lazy val metricCache: MetricCache =
+    new MetricCache(
+      database,
+      config.cacheMetricsReloadPeriod
+    )
+
+  lazy val transactionCache: TransactionCache =
+    TransactionCache(database)(executionContext)
+
+  lazy val marketService: MarketService.Impl = MarketService.Impl.default(config.market)
+
+  private lazy val routes =
+    AppServer
+      .routes(
+        marketService,
+        config.exportTxsNumberThreshold,
+        config.streamParallelism,
+        config.maxTimeInterval,
+        config.market
+      )(
+        executionContext,
+        database.databaseConfig,
+        blockFlowClient,
+        blockCache,
+        metricCache,
+        transactionCache,
+        groupSettings
+      )
   lazy val httpServer: ExplorerHttpServer =
     new ExplorerHttpServer(
       config.host,
       config.port,
-      AppServer
-        .routes(
-          marketService,
-          config.exportTxsNumberThreshold,
-          config.streamParallelism,
-          config.maxTimeInterval,
-          config.market
-        )(
-          executionContext,
-          database.databaseConfig,
-          blockFlowClient,
-          blockCache,
-          metricCache,
-          transactionCache,
-          groupSettings
-        )
+      routes,
+      database
     )
+}
 
-  override lazy val customServices: ArraySeq[Service] = ArraySeq(marketService, httpServer)
+sealed trait ExplorerStateWrite extends ExplorerState {
+
+  // See issue #356
+  implicit private val scheduler: Scheduler = Scheduler("SYNC_SERVICES")
+
+  override def startSelfOnce(): Future[Unit] = {
+    SyncServices.startSyncServices(config)
+  }
 }
 
 object ExplorerState {
@@ -141,20 +139,35 @@ object ExplorerState {
       val config: ExplorerConfig,
       val databaseConfig: DatabaseConfig[PostgresProfile],
       val executionContext: ExecutionContext
-  ) extends ExplorerStateRead
+  ) extends ExplorerStateRead {
+
+    override def subServices: ArraySeq[Service] =
+      ArraySeq(
+        httpServer,
+        marketService,
+        metricCache,
+        transactionCache,
+        database
+      )
+  }
 
   /** State of Explorer is started in read-write mode */
   final case class ReadWrite()(implicit
       val config: ExplorerConfig,
       val databaseConfig: DatabaseConfig[PostgresProfile],
       val executionContext: ExecutionContext
-  ) extends ExplorerStateRead {
+  ) extends ExplorerStateRead
+      with ExplorerStateWrite {
 
-    implicit private val scheduler: Scheduler = Scheduler("SYNC_SERVICES")
-
-    override def startSelfOnce(): Future[Unit] = {
-      SyncServices.startSyncServices(config)
-    }
+    override def subServices: ArraySeq[Service] =
+      ArraySeq(
+        httpServer,
+        marketService,
+        metricCache,
+        transactionCache,
+        database,
+        blockFlowClient
+      )
   }
 
   /** State of Explorer is started in Sync only mode */
@@ -162,15 +175,12 @@ object ExplorerState {
       val config: ExplorerConfig,
       val databaseConfig: DatabaseConfig[PostgresProfile],
       val executionContext: ExecutionContext
-  ) extends ExplorerState {
+  ) extends ExplorerStateWrite {
 
-    // See issue #356
-    implicit private val scheduler: Scheduler = Scheduler("SYNC_SERVICES")
-
-    override lazy val customServices: ArraySeq[Service] = ArraySeq()
-
-    override def startSelfOnce(): Future[Unit] = {
-      SyncServices.startSyncServices(config)
-    }
+    override def subServices: ArraySeq[Service] =
+      ArraySeq(
+        blockFlowClient,
+        database
+      )
   }
 }
