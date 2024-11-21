@@ -51,10 +51,7 @@ case object MempoolSyncService extends StrictLogging {
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient
   ): Future[Unit] = {
-    logger.debug("Syncing mempol")
-    Future.sequence(nodeUris.map(syncMempool)).map { _ =>
-      logger.debug("Mempool synced")
-    }
+    Future.sequence(nodeUris.map(syncMempool)).map(_ => ())
   }
 
   private def syncMempool(uri: Uri)(implicit

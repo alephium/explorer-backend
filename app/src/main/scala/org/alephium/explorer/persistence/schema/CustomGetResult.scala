@@ -379,6 +379,18 @@ object CustomGetResult {
         interfaceId = result.<<?
       )
 
+  val latestBlockGetResult: GetResult[LatestBlock] =
+    (result: PositionedResult) =>
+      LatestBlock(
+        hash = result.<<,
+        timestamp = result.<<,
+        chainFrom = result.<<,
+        chainTo = result.<<,
+        height = result.<<,
+        target = result.<<,
+        hashrate = result.<<
+      )
+
   implicit val migrationVersionGetResult: GetResult[AppState.MigrationVersion] =
     (result: PositionedResult) =>
       AppState.MigrationVersion(ByteString.fromArrayUnsafe(result.nextBytes())) match {

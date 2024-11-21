@@ -52,11 +52,11 @@ class MetricCache(database: Database, reloadPeriod: FiniteDuration)(implicit
   def getEventCount(): Int    = eventCount.get()
 
   override def startSelfOnce(): Future[Unit] = {
-    for {
-      _ <- fungibleCount.expireAndReloadFuture().map(_ => ())
-      _ <- nftCount.expireAndReloadFuture().map(_ => ())
-      _ <- eventCount.expireAndReloadFuture().map(_ => ())
-    } yield ()
+    Future.successful {
+      fungibleCount.expire()
+      nftCount.expire()
+      eventCount.expire()
+    }
   }
 
   override def stopSelfOnce(): Future[Unit] = {

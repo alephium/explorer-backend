@@ -26,11 +26,17 @@ import io.vertx.ext.web._
 import io.vertx.ext.web.handler.CorsHandler
 import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 
+import org.alephium.explorer.persistence.Database
 import org.alephium.util.Service
 
 /** Stores AkkaHttp related instances created on boot-up */
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
-class ExplorerHttpServer(host: String, port: Int, val routes: ArraySeq[Router => Route])(implicit
+class ExplorerHttpServer(
+    host: String,
+    port: Int,
+    val routes: ArraySeq[Router => Route],
+    database: Database
+)(implicit
     val executionContext: ExecutionContext
 ) extends Service
     with StrictLogging {
@@ -89,5 +95,5 @@ class ExplorerHttpServer(host: String, port: Int, val routes: ArraySeq[Router =>
     }
   }
 
-  override def subServices: ArraySeq[Service] = ArraySeq.empty
+  override def subServices: ArraySeq[Service] = ArraySeq(database)
 }

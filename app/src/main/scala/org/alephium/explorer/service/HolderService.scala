@@ -74,8 +74,7 @@ case object HolderService extends HolderService with StrictLogging {
       databaseConfig: DatabaseConfig[PostgresProfile],
       scheduler: Scheduler
   ): Future[Unit] = {
-    // Sync once on start to make sure we are up to date and then sync once a day at the given time.
-    syncOnce().map { _ =>
+    Future.successful {
       scheduler.scheduleDailyAt(
         taskId = HolderService.productPrefix,
         at = ZonedDateTime

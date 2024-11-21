@@ -149,7 +149,7 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     def h(str: String) = BlockHash.unsafe(Hex.unsafe(str))
 
     val block0 = blockEntity(None)
-      .copy(timestamp = TimeStamp.now())
+      .copy(timestamp = TimeStamp.now().minusUnsafe(Duration.ofDaysUnsafe(1)))
       .copy(hash = h("0000000000000000000000000000000000000000000000000000000000000000"))
     val block1 = blockEntity(Some(block0))
       .copy(hash = h("1111111111111111111111111111111111111111111111111111111111111111"))

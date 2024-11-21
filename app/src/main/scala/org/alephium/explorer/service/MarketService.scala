@@ -37,7 +37,7 @@ import org.alephium.util.{discard, Duration, Hex, Math, Service, TimeStamp}
 trait MarketService {
   def getPrices(
       ids: ArraySeq[String],
-      chartIurrency: String
+      chartCurrency: String
   ): Either[String, ArraySeq[Option[Double]]]
 
   def getExchangeRates(): Either[String, ArraySeq[ExchangeRate]]
@@ -106,7 +106,7 @@ object MarketService extends StrictLogging {
      * We use our `AsyncReloadCache` that always return the latest cached value
      * even if it's expired, like this we guarantee to always return fast a data.
      * We use an `Either` value because we cannot control what's returned by
-     * coingecko and it might be that their endoints ret60rn something else.
+     * coingecko and it might be that their endoints return something else.
      */
     private val pricesCache: AsyncReloadingCache[Either[String, ArraySeq[Price]]] =
       AsyncReloadingCache[Either[String, ArraySeq[Price]]](
