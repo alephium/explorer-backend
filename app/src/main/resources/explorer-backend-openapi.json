@@ -7197,8 +7197,7 @@
               },
               "example": [
                 "ALPH",
-                "USDC",
-                "USDT",
+                "USDCeth",
                 "WBTC",
                 "WETH",
                 "DAI",
@@ -9274,18 +9273,6 @@
         "type": "integer",
         "enum": [
           80
-        ]
-      },
-      "TokensWithPrice": {
-        "type": "string",
-        "enum": [
-          "WETH",
-          "ALPH",
-          "USDT",
-          "AYIN",
-          "DAI",
-          "USDC",
-          "WBTC"
         ]
       },
       "Currencies": {

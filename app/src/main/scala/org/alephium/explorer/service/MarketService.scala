@@ -30,46 +30,50 @@ import org.alephium.explorer.cache._
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.util.Scheduler
 import org.alephium.json.Json._
-import org.alephium.util.{Duration, Math, Service, TimeStamp}
+import org.alephium.protocol.Hash
+import org.alephium.protocol.model.{Address, ContractId}
+import org.alephium.util.{discard, Duration, Hex, Math, Service, TimeStamp}
 
 trait MarketService {
   def getPrices(
       ids: ArraySeq[String],
-      currency: String
+      chartCurrency: String
   ): Either[String, ArraySeq[Option[Double]]]
 
   def getExchangeRates(): Either[String, ArraySeq[ExchangeRate]]
 
   def getPriceChart(symbol: String, currency: String): Either[String, TimedPrices]
 
-  def symbolNames: ListMap[String, String]
+  def chartSymbolNames: ListMap[String, String]
 
   def currencies: ArraySeq[String]
 }
 
 object MarketService extends StrictLogging {
-  val baseCurrency: String = "btc"
+  val baseCurrency: String = "usd"
 
-  object CoinGecko {
+  object Impl {
     def default(marketConfig: ExplorerConfig.Market)(implicit
         ec: ExecutionContext
-    ): CoinGecko = new CoinGecko(marketConfig)
+    ): Impl = new Impl(marketConfig)
   }
 
-  class CoinGecko(marketConfig: ExplorerConfig.Market)(implicit
+  class Impl(marketConfig: ExplorerConfig.Market)(implicit
       val executionContext: ExecutionContext
   ) extends MarketService
       with Service {
 
-    private val baseUri = marketConfig.coingeckoUri
+    private val coingeckoBaseUri = marketConfig.coingeckoUri
+    private val mobulaBaseUri    = marketConfig.mobulaUri
+    private val tokenListUri     = marketConfig.tokenListUri
 
-    private val ids: ListMap[String, String] = marketConfig.symbolName
-    private val idsR                         = ids.map(_.swap)
+    private val chartIds: ListMap[String, String] = marketConfig.chartSymbolName
 
     // scalastyle:off magic.number
-    val pricesExpirationTime: Duration      = Duration.ofMinutesUnsafe(5)
+    val pricesExpirationTime: Duration      = Duration.ofSecondsUnsafe(5)
     val ratesExpirationTime: Duration       = Duration.ofMinutesUnsafe(5)
     val priceChartsExpirationTime: Duration = Duration.ofMinutesUnsafe(30)
+    val tokenListExpirationTime: Duration   = Duration.ofHoursUnsafe(12)
 
     /*
      * Coingecko rate limit is 15 queries per minutes
@@ -118,7 +122,7 @@ object MarketService extends StrictLogging {
 
     private val priceChartsCache
         : Map[String, AsyncReloadingCache[Either[String, ArraySeq[(TimeStamp, Double)]]]] =
-      ids.map { case (id, name) =>
+      chartIds.map { case (id, name) =>
         (
           id,
           AsyncReloadingCache[Either[String, ArraySeq[(TimeStamp, Double)]]](
@@ -127,6 +131,12 @@ object MarketService extends StrictLogging {
           )(_ => getPriceChartRemote(name, 0))
         )
       }
+
+    private val tokenListCache: AsyncReloadingCache[Either[String, ArraySeq[TokenList.Entry]]] =
+      AsyncReloadingCache[Either[String, ArraySeq[TokenList.Entry]]](
+        Left("Token list not fetched"),
+        tokenListExpirationTime.asScala
+      )(_ => getTokenListRemote(0))
 
     /*
      * Load data on start
@@ -137,7 +147,12 @@ object MarketService extends StrictLogging {
      */
     def expireAndReloadCaches(): Unit = {
       logger.debug("Load initial price and exchange rate caches")
-      pricesCache.expireAndReload()
+      // We cant' fetch price without token list, so we make sure to have it before reloading other caches
+      discard(
+        tokenListCache.expireAndReloadFuture().map { _ =>
+          pricesCache.expireAndReload()
+        }
+      )
       ratesCache.expireAndReload()
       priceChartsCache.grouped(2).zipWithIndex.foreach { case (caches, idx) =>
         scheduler.scheduleOnce(
@@ -147,8 +162,8 @@ object MarketService extends StrictLogging {
       }
     }
 
-    override def symbolNames: ListMap[String, String] = ids
-    override def currencies: ArraySeq[String]         = marketConfig.currencies
+    override def chartSymbolNames: ListMap[String, String] = chartIds
+    override def currencies: ArraySeq[String]              = marketConfig.currencies
 
     def getPrices(
         ids: ArraySeq[String],
@@ -156,34 +171,53 @@ object MarketService extends StrictLogging {
     ): Either[String, ArraySeq[Option[Double]]] = {
       for {
         rates <- ratesCache.get()
+        usd <- rates
+          .find(_.currency == "usd")
+          .toRight(s"Cannot find currency usd")
         rate <- rates
           .find(_.currency == currency)
           .toRight(s"Cannot find price for currency $currency")
         prices <- pricesCache.get()
       } yield {
+        // Rates from coingecko are based on BTC, but mobula prices are in dollars, so we need to convert them
         ids
-          .map(id => prices.find(_.symbol == id).map(price => price.price * rate.value))
+          .map(id => prices.find(_.symbol == id).map(price => price.price * rate.value / usd.value))
+      }
+    }
+
+    private def tokenListToAddresses(tokens: ArraySeq[TokenList.Entry]): ArraySeq[Address] = {
+      tokens.map { token =>
+        Address.contract(ContractId.unsafe(Hash.unsafe(Hex.unsafe(token.id))))
       }
     }
 
     private def getPricesRemote(retried: Int): Future[Either[String, ArraySeq[Price]]] = {
-      logger.debug(s"Query coingecko `/price`, nb of attempts $retried")
-      request(
-        uri"$baseUri/simple/price?ids=${ids.values.mkString(",")}&vs_currencies=$baseCurrency"
-      ) { response =>
-        handlePricesRateResponse(response, retried)
+      tokenListCache.get() match {
+        case Right(tokens) =>
+          logger.debug(s"Query mobula `/market/multi-data`, nb of attempts $retried")
+          val assets      = tokenListToAddresses(tokens)
+          val assetsStr   = assets.map { _.toBase58 }.mkString(",")
+          val blockchains = assets.map { _ => "alephium" }.mkString(",")
+          request(
+            uri"$mobulaBaseUri/market/multi-data?assets=${assetsStr}&blockchains=${blockchains}"
+          ) { response =>
+            handleMobulaPricesRateResponse(response, tokens, retried)
+          }
+        case Left(error) =>
+          Future.successful(Left(s"Token list not fetched at $tokenListUri: $error"))
       }
     }
 
-    private def handlePricesRateResponse(
+    private def handleMobulaPricesRateResponse(
         response: Response[Either[String, String]],
+        assets: ArraySeq[TokenList.Entry],
         retried: Int
     ): Future[Either[String, ArraySeq[Price]]] = {
-      handleResponseAndRetry(
-        "/simple/prices",
+      handleResponseAndRetryOnTooManyRequests(
+        "mobula/price",
         response,
         retried,
-        convertJsonToPrices,
+        convertJsonToMobulaPrices(assets),
         getPricesRemote
       )
     }
@@ -196,7 +230,7 @@ object MarketService extends StrictLogging {
         retried: Int
     ): Future[Either[String, ArraySeq[ExchangeRate]]] = {
       logger.debug(s"Query coingecko `/exchange_rates`, nb of attempts $retried")
-      request(uri"$baseUri/exchange_rates") { response =>
+      request(uri"$coingeckoBaseUri/exchange_rates") { response =>
         handleExchangeRateResponse(response, retried)
       }
     }
@@ -205,13 +239,41 @@ object MarketService extends StrictLogging {
         response: Response[Either[String, String]],
         retried: Int
     ): Future[Either[String, ArraySeq[ExchangeRate]]] = {
-      handleResponseAndRetry(
+      handleResponseAndRetryOnTooManyRequests(
         "/exchange_rates",
         response,
         retried,
         convertJsonToExchangeRates,
         getExchangeRatesRemote
       )
+    }
+
+    private def handleTokenListResponse(
+        response: Response[Either[String, String]],
+        retried: Int
+    ): Future[Either[String, ArraySeq[TokenList.Entry]]] = {
+      handleResponseAndRetryWithCondition(
+        tokenListUri,
+        response,
+        _.code != StatusCode.Ok,
+        retried,
+        ujson =>
+          Try(read[TokenList](ujson).tokens).toEither.left.map { error =>
+            s"Cannode decode token list ${error.getMessage}"
+          },
+        getTokenListRemote(_),
+        "Cannot fetch token list"
+      )
+    }
+
+    private def getTokenListRemote(
+        retried: Int
+    ): Future[Either[String, ArraySeq[TokenList.Entry]]] = {
+      request(
+        uri"$tokenListUri"
+      ) { response =>
+        handleTokenListResponse(response, retried)
+      }
     }
 
     def getPriceChart(symbol: String, currency: String): Either[String, TimedPrices] = {
@@ -235,7 +297,7 @@ object MarketService extends StrictLogging {
     ): Future[Either[String, ArraySeq[(TimeStamp, Double)]]] = {
       logger.debug(s"Query coingecko `/coins/$id/market_chart`, nb of attempts $retried")
       request(
-        uri"$baseUri/coins/$id/market_chart?vs_currency=$baseCurrency&days=${marketConfig.marketChartDays}"
+        uri"$coingeckoBaseUri/coins/$id/market_chart?vs_currency=$baseCurrency&days=${marketConfig.marketChartDays}"
       ) { response =>
         handleChartResponse(id, response, retried)
       }
@@ -259,7 +321,7 @@ object MarketService extends StrictLogging {
         response: Response[Either[String, String]],
         retried: Int
     ): Future[Either[String, ArraySeq[(TimeStamp, Double)]]] = {
-      handleResponseAndRetry(
+      handleResponseAndRetryOnTooManyRequests(
         s"/coins/$id/market_chart",
         response,
         retried,
@@ -268,16 +330,37 @@ object MarketService extends StrictLogging {
       )
     }
 
-    def handleResponseAndRetry[T](
+    def handleResponseAndRetryOnTooManyRequests[T](
         endpointDescription: String,
         response: Response[Either[String, String]],
         retried: Int,
         reader: ujson.Value => Either[String, T],
         retry: Int => Future[Either[String, T]]
+    ): Future[Either[String, T]] =
+      handleResponseAndRetryWithCondition(
+        endpointDescription,
+        response,
+        _.code == StatusCode.TooManyRequests,
+        retried,
+        reader,
+        retry,
+        "Too many requests"
+      )
+
+    def handleResponseAndRetryWithCondition[T](
+        endpointDescription: String,
+        response: Response[Either[String, String]],
+        condition: Response[Either[String, String]] => Boolean,
+        retried: Int,
+        reader: ujson.Value => Either[String, T],
+        retry: Int => Future[Either[String, T]],
+        errorMessage: String
     ): Future[Either[String, T]] = {
-      if (response.code == StatusCode.TooManyRequests && retried >= maxRetry) {
-        Future.successful(Left(s"Too many requests for $endpointDescription"))
-      } else if (response.code == StatusCode.TooManyRequests) {
+      if (condition(response) && retried >= maxRetry) {
+        val error = s"$errorMessage for $endpointDescription"
+        logger.error(error)
+        Future.successful(Left(error))
+      } else if (condition(response)) {
         val duration = Math.min(baseDelay.timesUnsafe(1L << retried.toLong), maxDelay)
         scheduler.scheduleOnce(s"Retrying $endpointDescription", duration.asScala)(
           retry(retried + 1)
@@ -291,17 +374,30 @@ object MarketService extends StrictLogging {
       }
     }
 
-    def convertJsonToPrices(json: ujson.Value): Either[String, ArraySeq[Price]] = {
+    @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
+    def convertJsonToMobulaPrices(
+        assets: ArraySeq[TokenList.Entry]
+    )(json: ujson.Value): Either[String, ArraySeq[Price]] = {
       json match {
         case obj: ujson.Obj =>
-          Try {
-            ArraySeq.from(obj.value.flatMap { case (name, value) =>
-              idsR.get(name).map { id =>
-                Price(id, value(baseCurrency).num)
+          obj.value.get("data") match {
+            case Some(data: ujson.Obj) =>
+              Try {
+                ArraySeq.from(assets.flatMap { asset =>
+                  val address = tokenListToAddresses(ArraySeq(asset)).head
+                  data.value.get(address.toBase58) match {
+                    case Some(value) =>
+                      val price = value("price").num
+                      Some(Price(asset.symbol, price))
+                    case None =>
+                      None
+                  }
+                })
+              }.toEither.left.map { error =>
+                error.getMessage
               }
-            })
-          }.toEither.left.map { error =>
-            error.getMessage
+            case _ =>
+              Left(s"JSON isn't an object: $obj")
           }
         case other =>
           Left(s"JSON isn't an object: $other")
@@ -358,6 +454,19 @@ object MarketService extends StrictLogging {
         case other =>
           Left(s"Invalid json object for price chart: $other")
       }
+    }
+  }
+
+  final case class TokenList(tokens: ArraySeq[TokenList.Entry])
+
+  object TokenList {
+    implicit val readWriter: ReadWriter[TokenList] = macroRW
+    final case class Entry(
+        id: String,
+        symbol: String
+    )
+    object Entry {
+      implicit val readWriter: ReadWriter[Entry] = macroRW
     }
   }
 }
