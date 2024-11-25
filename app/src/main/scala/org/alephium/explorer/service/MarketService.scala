@@ -50,7 +50,6 @@ trait MarketService {
 }
 
 object MarketService extends StrictLogging {
-  val baseCurrency: String = "usd"
 
   object Impl {
     def default(marketConfig: ExplorerConfig.Market)(implicit
@@ -297,7 +296,7 @@ object MarketService extends StrictLogging {
     ): Future[Either[String, ArraySeq[(TimeStamp, Double)]]] = {
       logger.debug(s"Query coingecko `/coins/$id/market_chart`, nb of attempts $retried")
       request(
-        uri"$coingeckoBaseUri/coins/$id/market_chart?vs_currency=$baseCurrency&days=${marketConfig.marketChartDays}"
+        uri"$coingeckoBaseUri/coins/$id/market_chart?vs_currency=btc&days=${marketConfig.marketChartDays}"
       ) { response =>
         handleChartResponse(id, response, retried)
       }
