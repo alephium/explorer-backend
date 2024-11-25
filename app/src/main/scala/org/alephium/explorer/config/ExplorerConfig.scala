@@ -228,6 +228,7 @@ object ExplorerConfig {
   final case class Market(
       chartSymbolName: ListMap[String, String],
       currencies: ArraySeq[String],
+      liquidityMinimum: Double,
       mobulaUri: String,
       coingeckoUri: String,
       tokenListUri: String,

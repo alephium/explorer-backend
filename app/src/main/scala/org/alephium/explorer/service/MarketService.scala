@@ -387,8 +387,14 @@ object MarketService extends StrictLogging {
                   val address = tokenListToAddresses(ArraySeq(asset)).head
                   data.value.get(address.toBase58) match {
                     case Some(value) =>
-                      val price = value("price").num
-                      Some(Price(asset.symbol, price))
+                      val price     = value("price").num
+                      val liquidity = value("liquidity").num
+                      // If the liquidity is below the minimum, we return a price of 0
+                      if (liquidity < marketConfig.liquidityMinimum) {
+                        Some(Price(asset.symbol, 0, liquidity))
+                      } else {
+                        Some(Price(asset.symbol, price, liquidity))
+                      }
                     case None =>
                       None
                   }
