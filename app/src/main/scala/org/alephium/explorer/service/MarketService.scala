@@ -389,9 +389,9 @@ object MarketService extends StrictLogging {
                     case Some(value) =>
                       val price     = value("price").num
                       val liquidity = value("liquidity").num
-                      // If the liquidity is below the minimum, we return a price of 0
+                      // If the liquidity is below the minimum, the price is unavailable
                       if (liquidity < marketConfig.liquidityMinimum) {
-                        Some(Price(asset.symbol, 0, liquidity))
+                        None
                       } else {
                         Some(Price(asset.symbol, price, liquidity))
                       }

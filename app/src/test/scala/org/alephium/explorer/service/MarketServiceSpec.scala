@@ -60,7 +60,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
       prices(marketConfig.chartSymbolName.keys.indexOf(alph)) is Some(alphPrice)
       prices(marketConfig.chartSymbolName.keys.indexOf(usdt)) is Some(usdtPrice)
       // WETH liquidity is not enough
-      prices(marketConfig.chartSymbolName.keys.indexOf(weth)) is Some(0.0)
+      prices(marketConfig.chartSymbolName.keys.indexOf(weth)) is None
     }
 
     eventually {
