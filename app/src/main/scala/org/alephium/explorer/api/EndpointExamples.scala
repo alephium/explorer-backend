@@ -492,7 +492,7 @@ object EndpointExamples extends EndpointsExamples {
     simpleExample(NFTMetadata(token, "token://uri", contract, U256.One))
 
   implicit val pricesExample: List[Example[ArraySeq[Price]]] =
-    simpleExample(ArraySeq(Price("ALPH", 0.01)))
+    simpleExample(ArraySeq(Price("ALPH", 0.01, 100)))
 
   implicit val exchangeRatesExample: List[Example[ArraySeq[ExchangeRate]]] =
     simpleExample(ArraySeq(ExchangeRate("chf", "Swiss Franc", "Fr.", 0.01)))

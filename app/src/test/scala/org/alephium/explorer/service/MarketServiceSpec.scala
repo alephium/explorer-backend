@@ -59,6 +59,8 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
       prices(marketConfig.chartSymbolName.keys.indexOf(alph)) is Some(alphPrice)
       prices(marketConfig.chartSymbolName.keys.indexOf(usdt)) is Some(usdtPrice)
+      // WETH liquidity is not enough
+      prices(marketConfig.chartSymbolName.keys.indexOf(weth)) is None
     }
 
     eventually {
@@ -113,10 +115,12 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
     val alph = "ALPH"
     val usdt = "USDT"
+    val weth = "WETH"
 
     val marketConfig = ExplorerConfig.Market(
       MarketServiceSpec.symbolNames,
       MarketServiceSpec.currencies,
+      liquidityMinimum = 100,
       s"http://${localhost.getHostAddress()}:$mobulaPort",
       s"http://${localhost.getHostAddress()}:$coingeckoPort",
       s"http://${localhost.getHostAddress()}:$tokenListPort",
@@ -258,25 +262,32 @@ object MarketServiceSpec {
 
   val prices: String = s"""{"data": {
       "tgx7VNFoP9DJiFMFgXXtafQZkUvyEdDHT9ryamHJYrjq": {
-        "price": $alphPrice
+        "price": $alphPrice,
+        "liquidity": 1000
       },
       "vT49PY8ksoUL6NcXiZ1t2wAmC7tTPRfFfER8n3UCLvXy": {
-        "price": 4.213296507259207
+        "price": 4.213296507259207,
+        "liquidity": 1000
       },
       "xoDuoek5V2T1dL2HWwvbHT1JEHjMjtJfJoUS2xKsjFg3": {
-        "price": 1.0001333774731636
+        "price": 1.0001333774731636,
+        "liquidity": 1000
       },
       "zSRgc7goAYUgYsEBYdAzogyyeKv3ne3uvWb3VDtxnaEK": {
-        "price": $usdtPrice
+        "price": $usdtPrice,
+        "liquidity": 1000
       },
       "22Nb9JajRpAh9A2fWNgoKt867PA6zNyi541rtoraDfKXV": {
-        "price": 0.999953840448559
+        "price": 0.999953840448559,
+        "liquidity": 99
       },
       "vP6XSUyjmgWCB2B9tD5Rqun56WJqDdExWnfwZVEqzhQb": {
-        "price": 2609.03101054154
+        "price": 2609.03101054154,
+        "liquidity": 10
       },
       "xUTp3RXGJ1fJpCGqsAY6GgyfRQ3WQ1MdcYR1SiwndAbR": {
-        "price": 67214.51967683395
+        "price": 67214.51967683395,
+        "liquidity": 1000
       }
     }
   }"""

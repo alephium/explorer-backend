@@ -460,7 +460,7 @@ trait ExplorerSpec
 
   "Market price endpoints" when {
     "correctly return price" in {
-      val body = """["ALPH", "WETH"]"""
+      val body = """["ALPH", "WBTC"]"""
       Post(s"/market/prices?currency=btc", body) check { response =>
         val prices = response.as[ArraySeq[Option[Double]]]
         prices.foreach(_.isDefined is true)
