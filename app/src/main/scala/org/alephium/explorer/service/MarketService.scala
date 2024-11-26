@@ -69,7 +69,7 @@ object MarketService extends StrictLogging {
     private val chartIds: ListMap[String, String] = marketConfig.chartSymbolName
 
     // scalastyle:off magic.number
-    val pricesExpirationTime: Duration      = Duration.ofSecondsUnsafe(5)
+    val pricesExpirationTime: Duration      = Duration.ofSecondsUnsafe(30)
     val ratesExpirationTime: Duration       = Duration.ofMinutesUnsafe(5)
     val priceChartsExpirationTime: Duration = Duration.ofMinutesUnsafe(30)
     val tokenListExpirationTime: Duration   = Duration.ofHoursUnsafe(12)
@@ -212,12 +212,14 @@ object MarketService extends StrictLogging {
         assets: ArraySeq[TokenList.Entry],
         retried: Int
     ): Future[Either[String, ArraySeq[Price]]] = {
-      handleResponseAndRetryOnTooManyRequests(
+      handleResponseAndRetryWithCondition(
         "mobula/price",
         response,
+        _.code != StatusCode.Ok,
         retried,
         convertJsonToMobulaPrices(assets),
-        getPricesRemote
+        getPricesRemote,
+        "Cannot fetch prices"
       )
     }
 
