@@ -163,7 +163,10 @@ class DBBenchmark {
     import state.executionContext
 
     val _ =
-      state.db.runNow(TransactionQueries.getBalanceAction(state.address), requestTimeout)
+      state.db.runNow(
+        TransactionQueries.getBalanceAction(state.address, TimeStamp.zero),
+        requestTimeout
+      )
   }
 
   @Benchmark
@@ -188,7 +191,7 @@ class DBBenchmark {
 
     val _ = Await.result(
       for {
-        _ <- TransactionDao.getBalance(state.address)
+        _ <- TransactionDao.getBalance(state.address, TimeStamp.zero)
         _ <- TransactionDao.getNumberByAddress(state.address)
       } yield (),
       requestTimeout

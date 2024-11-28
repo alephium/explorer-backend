@@ -564,10 +564,13 @@ object TransactionQueries extends StrictLogging {
       ).asAS[Address]
     }
 
-  def getBalanceAction(address: Address)(implicit ec: ExecutionContext): DBActionR[(U256, U256)] =
+  def getBalanceAction(address: Address, latestFinalizedTimestamp: TimeStamp)(implicit
+      ec: ExecutionContext
+  ): DBActionR[(U256, U256)] =
     getBalanceUntilLockTime(
       address = address,
-      lockTime = TimeStamp.now()
+      lockTime = TimeStamp.now(),
+      latestFinalizedTimestamp = latestFinalizedTimestamp
     ) map { case (total, locked) =>
       (total.getOrElse(U256.Zero), locked.getOrElse(U256.Zero))
     }
