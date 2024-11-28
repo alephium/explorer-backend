@@ -62,6 +62,9 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
     def inputsBlockHashTxHashIdx: Index =
       index("inputs_tx_hash_block_hash_idx", (txHash, blockHash))
 
+    def idxInputsRefAddressMainChainTimestamp: Index =
+      index("idx_inputs_ref_address_main_chain_timestamp", (outputRefAddress, mainChain, timestamp))
+
     def * : ProvenShape[InputEntity] =
       (
         blockHash,

@@ -90,5 +90,11 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
   def createNonSpentIndex(): DBActionW[Int] =
     sqlu"create unique index if not exists non_spent_output_idx on #${name} (address, main_chain, key, block_hash) where spent_finalized IS NULL;"
 
+  def createNonSpentOutputCoveringIndex(): DBActionW[Int] =
+    sqlu"""
+      CREATE INDEX IF NOT EXISTS non_spent_output_covering_idx
+      ON #${name} (address, main_chain, spent_finalized, key, amount, lock_time)
+      WHERE spent_finalized IS NULL AND main_chain = true;
+    """
   val table: TableQuery[Outputs] = TableQuery[Outputs]
 }
