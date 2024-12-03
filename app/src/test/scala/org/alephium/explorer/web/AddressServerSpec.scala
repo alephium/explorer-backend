@@ -40,6 +40,7 @@ import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.service.{
   EmptyTokenService,
@@ -191,6 +192,8 @@ class AddressServerSpec()
         tokens.map(res => (res.tokenId, res.balance, res.lockedBalance))
       }
   }
+
+  implicit val blockCache: BlockCache = TestBlockCache()
 
   val server =
     new AddressServer(
