@@ -83,6 +83,9 @@ object GenDBModel {
       fixedOutput = fixedOutput
     )
 
+  val fixedOutputEntityGen: Gen[OutputEntity]    = outputEntityGen.map(_.copy(fixedOutput = true))
+  val contractOutputEntityGen: Gen[OutputEntity] = outputEntityGen.map(_.copy(fixedOutput = false))
+
   val finalizedOutputEntityGen: Gen[OutputEntity] =
     for {
       output         <- outputEntityGen
@@ -143,6 +146,14 @@ object GenDBModel {
         contractInput
       )
     }
+
+  def fixedInputEntityGen(outputEntityGen: Gen[OutputEntity] = outputEntityGen): Gen[InputEntity] =
+    inputEntityGen(outputEntityGen).map(_.copy(contractInput = false))
+
+  def contractInputEntityGen(
+      outputEntityGen: Gen[OutputEntity] = outputEntityGen
+  ): Gen[InputEntity] =
+    inputEntityGen(outputEntityGen).map(_.copy(contractInput = true))
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def uinputEntityGen(
