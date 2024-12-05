@@ -658,7 +658,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         false,
         None,
         None,
-        fixedOutput = false
+        fixedOutput = true
       )
 
     def input(hint: Int, outputRefKey: Hash): InputEntity =

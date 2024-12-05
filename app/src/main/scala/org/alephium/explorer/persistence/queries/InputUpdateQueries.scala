@@ -36,6 +36,22 @@ object InputUpdateQueries {
     (Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean)
 
   def updateInputs()(implicit ec: ExecutionContext): DBActionWT[Unit] = {
+    (for {
+      fixed            <- updateFixedInputs()
+      mutableContracts <- updateMutableContractInputs()
+      contracts        <- updateContractInputs()
+      _                <- internalUpdates(fixed ++ contracts ++ mutableContracts)
+    } yield {}).transactionally
+  }
+
+  /*
+   * Updates the inputs table with information from fixed (immutable) outputs.
+   *
+   * This function handles cases where the output is guaranteed to be immutable, meaning:
+   * - Each output reference key (`output_ref_key`) is unique.
+   * - The output's amount, tokens, and address will always remain the same for a given key.
+   */
+  private def updateFixedInputs() = {
     sql"""
       UPDATE inputs
       SET
@@ -46,11 +62,65 @@ object InputUpdateQueries {
       FROM outputs
       WHERE inputs.output_ref_key = outputs.key
       AND inputs.output_ref_amount IS NULL
+      AND inputs.contract_input = false
+      AND outputs.fixed_output = true
       RETURNING outputs.address, outputs.tokens, inputs.tx_hash, inputs.block_hash, inputs.block_timestamp, inputs.tx_order, inputs.main_chain
     """
       .as[UpdateReturn]
-      .flatMap(internalUpdates)
-      .transactionally
+  }
+
+  /*
+   * Updates the inputs table with information from mutable contract outputs.
+   *
+   * This function handles cases where:
+   * - The referenced contract outputs are mutable, meaning their amount can differ for the same key
+   *   based on blockchain context (e.g., main chain vs. side chains).
+   * - Each input-output pair may have different amounts, depending on whether it's
+   *   from the main chain, side chain, or an uncle block.
+   */
+  private def updateMutableContractInputs() = {
+    sql"""
+      UPDATE inputs
+      SET
+        output_ref_tx_hash = outputs.tx_hash,
+        output_ref_address = outputs.address,
+        output_ref_amount = outputs.amount,
+        output_ref_tokens = outputs.tokens
+      FROM outputs
+      WHERE inputs.output_ref_key = outputs.key
+      AND inputs.output_ref_amount IS NULL
+      AND inputs.main_chain = outputs.main_chain
+      AND inputs.contract_input = true
+      AND outputs.fixed_output = false
+      RETURNING outputs.address, outputs.tokens, inputs.tx_hash, inputs.block_hash, inputs.block_timestamp, inputs.tx_order, inputs.main_chain
+    """
+      .as[UpdateReturn]
+  }
+
+  /*
+   * Updates the inputs table for contract outputs where the amount is the same
+   * between main chain and side chain outputs.
+   *
+   * This function is similar to `updateMutableContractInputs`, but it does **not**
+   * require the `main_chain` status to match between inputs and outputs.
+   * This is useful for general contract outputs not covered by `updateMutableContractInputs`.
+   */
+  private def updateContractInputs() = {
+    sql"""
+      UPDATE inputs
+      SET
+        output_ref_tx_hash = outputs.tx_hash,
+        output_ref_address = outputs.address,
+        output_ref_amount = outputs.amount,
+        output_ref_tokens = outputs.tokens
+      FROM outputs
+      WHERE inputs.output_ref_key = outputs.key
+      AND inputs.output_ref_amount IS NULL
+      AND inputs.contract_input = true
+      AND outputs.fixed_output = false
+      RETURNING outputs.address, outputs.tokens, inputs.tx_hash, inputs.block_hash, inputs.block_timestamp, inputs.tx_order, inputs.main_chain
+    """
+      .as[UpdateReturn]
   }
 
   // format: off

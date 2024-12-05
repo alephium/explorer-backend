@@ -42,6 +42,7 @@ import org.alephium.protocol.model.{
   GroupIndex,
   Hint,
   NetworkId,
+  ScriptHint,
   Target
 }
 import org.alephium.serde._
@@ -144,7 +145,7 @@ object GenCoreApi {
       unsigned             <- unsignedTxGen
       scriptExecutionOk    <- arbitrary[Boolean]
       contractInputsSize   <- Gen.choose(0, 1)
-      contractInputs       <- Gen.listOfN(contractInputsSize, outputRefProtocolGen)
+      contractInputs       <- Gen.listOfN(contractInputsSize, contractOutputRefProtocolGen)
       generatedOutputsSize <- Gen.choose(0, 1)
       generatedOutputs     <- Gen.listOfN(generatedOutputsSize, outputProtocolGen)
       inputSignatures      <- Gen.listOfN(1, bytesGen)
@@ -357,6 +358,11 @@ object GenCoreApi {
     hint <- arbitrary[Int]
     key  <- hashGen
   } yield OutputRef(hint, key)
+
+  val contractOutputRefProtocolGen: Gen[OutputRef] = for {
+    scriptHash <- hashGen
+    key        <- hashGen
+  } yield OutputRef(Hint.ofContract(ScriptHint.fromHash(scriptHash)).value, key)
 
   val inputProtocolGen: Gen[AssetInput] = for {
     outputRef    <- outputRefProtocolGen
