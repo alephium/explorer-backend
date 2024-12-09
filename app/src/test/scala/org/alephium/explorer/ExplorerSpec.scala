@@ -396,7 +396,7 @@ trait ExplorerSpec
               tx.outputs.exists(_.address == address) || tx.inputs
                 .exists(_.address == Some(address))
             }
-          }.distinct
+          }
 
         val res = response.as[ArraySeq[Transaction]]
 

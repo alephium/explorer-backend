@@ -83,6 +83,9 @@ object GenDBModel {
       fixedOutput = fixedOutput
     )
 
+  val fixedOutputEntityGen: Gen[OutputEntity]    = outputEntityGen.map(_.copy(fixedOutput = true))
+  val contractOutputEntityGen: Gen[OutputEntity] = outputEntityGen.map(_.copy(fixedOutput = false))
+
   val finalizedOutputEntityGen: Gen[OutputEntity] =
     for {
       output         <- outputEntityGen
@@ -121,10 +124,9 @@ object GenDBModel {
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def inputEntityGen(outputEntityGen: Gen[OutputEntity] = outputEntityGen): Gen[InputEntity] =
     for {
-      outputEntity  <- outputEntityGen
-      unlockScript  <- Gen.option(unlockScriptGen)
-      txOrder       <- arbitrary[Int]
-      contractInput <- arbitrary[Boolean]
+      outputEntity <- outputEntityGen
+      unlockScript <- Gen.option(unlockScriptGen)
+      txOrder      <- arbitrary[Int]
     } yield {
       InputEntity(
         blockHash = outputEntity.blockHash,
@@ -140,9 +142,17 @@ object GenDBModel {
         None,
         None,
         None,
-        contractInput
+        !outputEntity.fixedOutput
       )
     }
+
+  def fixedInputEntityGen(outputEntityGen: Gen[OutputEntity] = outputEntityGen): Gen[InputEntity] =
+    inputEntityGen(outputEntityGen).map(_.copy(contractInput = false))
+
+  def contractInputEntityGen(
+      outputEntityGen: Gen[OutputEntity] = outputEntityGen
+  ): Gen[InputEntity] =
+    inputEntityGen(outputEntityGen).map(_.copy(contractInput = true))
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def uinputEntityGen(
