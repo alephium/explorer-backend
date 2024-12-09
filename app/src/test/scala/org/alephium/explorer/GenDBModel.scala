@@ -124,10 +124,9 @@ object GenDBModel {
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def inputEntityGen(outputEntityGen: Gen[OutputEntity] = outputEntityGen): Gen[InputEntity] =
     for {
-      outputEntity  <- outputEntityGen
-      unlockScript  <- Gen.option(unlockScriptGen)
-      txOrder       <- arbitrary[Int]
-      contractInput <- arbitrary[Boolean]
+      outputEntity <- outputEntityGen
+      unlockScript <- Gen.option(unlockScriptGen)
+      txOrder      <- arbitrary[Int]
     } yield {
       InputEntity(
         blockHash = outputEntity.blockHash,
@@ -143,7 +142,7 @@ object GenDBModel {
         None,
         None,
         None,
-        contractInput
+        !outputEntity.fixedOutput
       )
     }
 
