@@ -36,7 +36,7 @@ import org.alephium.protocol.model.BlockHash
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(4)
+  val latestVersion: MigrationVersion = MigrationVersion(5)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     // We retrigger the download of fungible and non-fungible tokens' metadata that have sub-category
@@ -90,7 +90,9 @@ object Migrations extends StrictLogging {
   private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
     migration1,
     migration2,
-    migration3
+    migration3,
+    migration4,
+    migration5
   )
 
   def backgroundCoinbaseMigration()(implicit
@@ -148,6 +150,66 @@ object Migrations extends StrictLogging {
       """
   }
 
+  /*
+   * Empty transaction due to the coinbase migration being disabled.
+   */
+  def migration4: DBActionAll[Unit] = DBIOAction.successful(())
+
+  /*
+   * Update the inputs with the correct output amount from the mutable contract outputs.
+   */
+  def migration5(implicit ec: ExecutionContext): DBActionAll[Unit] = {
+    for {
+      i1 <- sqlu"""
+      UPDATE inputs i
+      SET output_ref_tx_hash = o2.tx_hash, output_ref_amount = o2.amount, output_ref_tokens = o2.tokens
+      FROM outputs o1
+      JOIN outputs o2
+      ON
+              o1.address = o2.address
+          AND o1.key = o2.key
+          AND o1.tx_hash = o2.tx_hash
+          AND o1.main_chain = FALSE
+          AND o2.main_chain = TRUE
+          AND o1.amount <> o2.amount
+          AND o1.block_hash <> o2.block_hash
+          AND o1.fixed_output = FALSE
+          AND o2.fixed_output = FALSE
+      WHERE
+              i.output_ref_address = o1.address
+          AND i.output_ref_key = o1.key
+          AND i.output_ref_tx_hash = o1.tx_hash
+          AND i.main_chain = TRUE
+          AND i.output_ref_amount <> o2.amount;
+        """
+      i2 <- sqlu"""
+      -- Update inputs with the correct output amount from main_chain = FALSE
+      UPDATE inputs i
+      SET output_ref_tx_hash = o1.tx_hash, output_ref_amount = o1.amount, output_ref_tokens = o1.tokens
+      FROM outputs o1
+      JOIN outputs o2
+      ON
+              o1.address = o2.address
+          AND o1.key = o2.key
+          AND o1.tx_hash = o2.tx_hash
+          AND o1.main_chain = FALSE
+          AND o2.main_chain = TRUE
+          AND o1.amount <> o2.amount
+          AND o1.block_hash <> o2.block_hash
+          AND o1.fixed_output = FALSE
+          AND o2.fixed_output = FALSE
+      WHERE
+              i.output_ref_address = o1.address
+          AND i.output_ref_key = o1.key
+          AND i.output_ref_tx_hash = o1.tx_hash
+          AND i.main_chain = FALSE
+          AND i.output_ref_amount <> o1.amount;
+    """
+    } yield {
+      logger.info(s"Updated ${i1 + i2} inputs with the correct output amount")
+    }
+  }
+
   def migrationsQuery(
       versionOpt: Option[MigrationVersion]
   )(implicit ec: ExecutionContext): DBActionAll[Unit] = {
@@ -183,7 +245,7 @@ object Migrations extends StrictLogging {
       case Some(MigrationVersion(current)) if current > latestVersion.version =>
         throw new Exception("Incompatible migration versions, please reset your database")
       case Some(MigrationVersion(current)) =>
-        if (current <= 3) {
+        if (current <= 5) {
           logger.info(s"Background migrations needed, but will be done in a future release")
           /*
            * The coinbase migration is heavy and we had some performance issues due to the increase of users.
