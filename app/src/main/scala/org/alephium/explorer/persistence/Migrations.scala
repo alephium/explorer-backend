@@ -36,7 +36,7 @@ import org.alephium.protocol.model.BlockHash
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(4)
+  val latestVersion: MigrationVersion = MigrationVersion(5)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     // We retrigger the download of fungible and non-fungible tokens' metadata that have sub-category
@@ -83,6 +83,19 @@ object Migrations extends StrictLogging {
       _ <-
         sqlu"""
           TRUNCATE token_supply
+        """
+    } yield ()
+  }
+  /*
+   * Empty transaction due to the coinbase migration being disabled.
+   */
+  def migration4: DBActionAll[Unit] = DBIOAction.successful(())
+
+  def migration5(implicit ec: ExecutionContext): DBActionAll[Unit] = {
+    for {
+      _ <-
+        sqlu"""
+        CREATE INDEX IF NOT EXISTS idx_inputs_ref_address_main_chain_timestamp ON inputs (output_ref_address, main_chain, block_timestamp);
         """
     } yield ()
   }
@@ -183,7 +196,7 @@ object Migrations extends StrictLogging {
       case Some(MigrationVersion(current)) if current > latestVersion.version =>
         throw new Exception("Incompatible migration versions, please reset your database")
       case Some(MigrationVersion(current)) =>
-        if (current <= 3) {
+        if (current <= 5) {
           logger.info(s"Background migrations needed, but will be done in a future release")
           /*
            * The coinbase migration is heavy and we had some performance issues due to the increase of users.

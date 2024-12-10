@@ -29,8 +29,9 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.persistence.DBRunner._
-import org.alephium.explorer.persistence.model.LatestBlock
-import org.alephium.explorer.persistence.queries.BlockQueries
+import org.alephium.explorer.persistence.model.{AppState, LatestBlock}
+import org.alephium.explorer.persistence.queries.{AppStateQueries, BlockQueries}
+import org.alephium.explorer.persistence.schema.CustomGetResult.lastFinalizedInputTimeGetResult
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.ChainIndex
 import org.alephium.util.{Duration, TimeStamp}
@@ -119,10 +120,19 @@ object BlockCache {
         run(BlockQueries.mainChainQuery.length.result)
       }
 
+    val latestFinalizeTime: AsyncReloadingCache[TimeStamp] =
+      AsyncReloadingCache(TimeStamp.zero, 5.minutes) { _ =>
+        run(AppStateQueries.get(AppState.LastFinalizedInputTime))
+          .map(_.map(_.time).getOrElse(TimeStamp.zero))
+      }
+
+    latestFinalizeTime.expireAndReload()
+
     new BlockCache(
       blockTimes = cachedBlockTimes,
       rowCount = cacheRowCount,
-      latestBlocks = cachedLatestBlocks
+      latestBlocks = cachedLatestBlocks,
+      lastFinalizedTimestamp = latestFinalizeTime
     )
   }
 
@@ -145,7 +155,8 @@ object BlockCache {
 class BlockCache(
     blockTimes: CaffeineAsyncCache[ChainIndex, Duration],
     rowCount: AsyncReloadingCache[Int],
-    latestBlocks: CaffeineAsyncCache[ChainIndex, LatestBlock]
+    latestBlocks: CaffeineAsyncCache[ChainIndex, LatestBlock],
+    lastFinalizedTimestamp: AsyncReloadingCache[TimeStamp]
 )(implicit groupConfig: GroupConfig) {
 
   private val latestBlocksSyncedLabeled =
@@ -176,4 +187,7 @@ class BlockCache(
 
   def getMainChainBlockCount(): Int =
     rowCount.get()
+
+  def getLastFinalizedTimestamp(): TimeStamp =
+    lastFinalizedTimestamp.get()
 }

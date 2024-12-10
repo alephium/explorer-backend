@@ -87,7 +87,8 @@ trait EmptyTransactionService extends TransactionService {
   }
 
   override def getBalance(
-      address: Address
+      address: Address,
+      from: TimeStamp
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
     Future.successful((U256.Zero, U256.Zero))
 

@@ -88,7 +88,8 @@ trait TransactionService {
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int]
 
   def getBalance(
-      address: Address
+      address: Address,
+      latestFinalizedBlock: TimeStamp
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)]
 
   def getTotalNumber()(implicit cache: TransactionCache): Int
@@ -197,9 +198,10 @@ object TransactionService extends TransactionService {
     TransactionDao.getNumberByAddress(address)
 
   def getBalance(
-      address: Address
+      address: Address,
+      latestFinalizedBlock: TimeStamp
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
-    TransactionDao.getBalance(address)
+    TransactionDao.getBalance(address, latestFinalizedBlock)
 
   def listMempoolTransactions(pagination: Pagination)(implicit
       ec: ExecutionContext,

@@ -421,15 +421,11 @@ object OutputQueries {
         AND key = $key
     """
 
-  def getBalanceActionOption(
-      address: Address
-  )(implicit ec: ExecutionContext): DBActionR[(Option[U256], Option[U256])] =
-    getBalanceUntilLockTime(
-      address = address,
-      lockTime = TimeStamp.now()
-    )
-
-  def getBalanceUntilLockTime(address: Address, lockTime: TimeStamp)(implicit
+  def getBalanceUntilLockTime(
+      address: Address,
+      lockTime: TimeStamp,
+      latestFinalizedTimestamp: TimeStamp
+  )(implicit
       ec: ExecutionContext
   ): DBActionR[(Option[U256], Option[U256])] =
     sql"""
@@ -442,6 +438,8 @@ object OutputQueries {
                LEFT JOIN inputs
                          ON outputs.key = inputs.output_ref_key
                              AND inputs.main_chain = true
+                             AND inputs.output_ref_address = $address
+                             AND inputs.block_timestamp > ${latestFinalizedTimestamp.millis}
       WHERE outputs.spent_finalized IS NULL
         AND outputs.address = $address
         AND outputs.main_chain = true
