@@ -92,7 +92,7 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
 
   def createNonSpentOutputCoveringIndex(): DBActionW[Int] =
     sqlu"""
-      CREATE INDEX non_spent_output_covering_include_idx
+      CREATE INDEX IF NOT EXISTS non_spent_output_covering_include_idx
       ON #${name} (address, main_chain, spent_finalized, key)
       INCLUDE (amount, lock_time)
       WHERE spent_finalized IS NULL AND main_chain = true;
