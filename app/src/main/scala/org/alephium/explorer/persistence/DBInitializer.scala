@@ -29,6 +29,7 @@ import slick.jdbc.meta.MTable
 import org.alephium.explorer.AnyOps
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.schema._
+import org.alephium.util.discard
 
 object DBInitializer extends StrictLogging {
 
@@ -76,7 +77,9 @@ object DBInitializer extends StrictLogging {
       _ <- createTables()
       _ <- Migrations.migrate(databaseConfig)
       _ <- createIndexes()
-    } yield ()
+    } yield {
+      discard(createIndexesInBackground())
+    }
   }
 
   private def createTables()(implicit
@@ -113,11 +116,28 @@ object DBInitializer extends StrictLogging {
       _ <- OutputSchema.createMainChainIndex()
       _ <- TransactionPerAddressSchema.createIndexes()
       _ <- OutputSchema.createNonSpentIndex()
-      _ <- OutputSchema.createNonSpentOutputCoveringIndex()
       _ <- InputSchema.createOutputRefAddressNullIndex()
       _ <- TransactionPerTokenSchema.createIndexes()
       _ <- TokenPerAddressSchema.createIndexes()
-    } yield ())
+    } yield {
+      logger.info("Indexes created")
+    })
+  }
+
+  /*
+   * Create some new indexes in the background to avoid downtime of the API
+   */
+  private def createIndexesInBackground()(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = {
+    logger.info("Create Background Indexes")
+    run(for {
+      _ <- OutputSchema.createNonSpentOutputCoveringIndex()
+      _ <- InputSchema.createOutupRefAddressMainChainTimestampIndex()
+    } yield {
+      logger.info("Background Indexes created")
+    })
   }
 
   def dropTables()(implicit

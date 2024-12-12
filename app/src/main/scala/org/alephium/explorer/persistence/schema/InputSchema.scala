@@ -62,9 +62,6 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
     def inputsBlockHashTxHashIdx: Index =
       index("inputs_tx_hash_block_hash_idx", (txHash, blockHash))
 
-    def idxInputsRefAddressMainChainTimestamp: Index =
-      index("idx_inputs_ref_address_main_chain_timestamp", (outputRefAddress, mainChain, timestamp))
-
     def * : ProvenShape[InputEntity] =
       (
         blockHash,
@@ -89,6 +86,11 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
     sqlu"""CREATE INDEX IF NOT EXISTS inputs_output_ref_amount_null_idx
       ON #${name} (output_ref_tx_hash, output_ref_address, output_ref_amount, output_ref_tokens)
       WHERE output_ref_amount IS NULL"""
+
+  def createOutupRefAddressMainChainTimestampIndex(): DBActionW[Int] =
+    sqlu"""
+    CREATE INDEX CONCURRENTLY IF NOT EXISTS inputs_ref_address_main_chain_timestamp_idx ON inputs (output_ref_address, main_chain, block_timestamp);
+    """
 
   val table: TableQuery[Inputs] = TableQuery[Inputs]
 }
