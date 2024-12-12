@@ -103,7 +103,9 @@ object Migrations extends StrictLogging {
   private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
     migration1,
     migration2,
-    migration3
+    migration3,
+    migration4,
+    migration5
   )
 
   def backgroundCoinbaseMigration()(implicit
