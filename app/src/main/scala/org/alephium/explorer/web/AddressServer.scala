@@ -33,6 +33,7 @@ import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service.{TokenService, TransactionService}
 import org.alephium.protocol.PublicKey
@@ -51,6 +52,7 @@ class AddressServer(
 )(implicit
     val executionContext: ExecutionContext,
     groupSetting: GroupSetting,
+    blockCache: BlockCache,
     dc: DatabaseConfig[PostgresProfile]
 ) extends Server
     with AddressesEndpoints {
@@ -84,8 +86,9 @@ class AddressServer(
       }),
       route(getAddressInfo.serverLogicSuccess[Future] { address =>
         for {
-          (balance, locked) <- transactionService.getBalance(address)
-          txNumber          <- transactionService.getTransactionsNumberByAddress(address)
+          (balance, locked) <- transactionService
+            .getBalance(address, blockCache.getLastFinalizedTimestamp())
+          txNumber <- transactionService.getTransactionsNumberByAddress(address)
         } yield AddressInfo(balance, locked, txNumber)
       }),
       route(getTotalTransactionsByAddress.serverLogic[Future] { address =>
@@ -99,7 +102,8 @@ class AddressServer(
       }),
       route(getAddressBalance.serverLogicSuccess[Future] { address =>
         for {
-          (balance, locked) <- transactionService.getBalance(address)
+          (balance, locked) <- transactionService
+            .getBalance(address, blockCache.getLastFinalizedTimestamp())
         } yield AddressBalance(balance, locked)
       }),
       route(getAddressTokenBalance.serverLogicSuccess[Future] { case (address, token) =>

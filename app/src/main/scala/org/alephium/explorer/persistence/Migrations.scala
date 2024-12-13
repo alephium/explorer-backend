@@ -86,11 +86,16 @@ object Migrations extends StrictLogging {
         """
     } yield ()
   }
+  /*
+   * Empty transaction due to the coinbase migration being disabled.
+   */
+  def migration4: DBActionAll[Unit] = DBIOAction.successful(())
 
   private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
     migration1,
     migration2,
-    migration3
+    migration3,
+    migration4
   )
 
   def backgroundCoinbaseMigration()(implicit
@@ -183,7 +188,7 @@ object Migrations extends StrictLogging {
       case Some(MigrationVersion(current)) if current > latestVersion.version =>
         throw new Exception("Incompatible migration versions, please reset your database")
       case Some(MigrationVersion(current)) =>
-        if (current <= 3) {
+        if (current <= 5) {
           logger.info(s"Background migrations needed, but will be done in a future release")
           /*
            * The coinbase migration is heavy and we had some performance issues due to the increase of users.

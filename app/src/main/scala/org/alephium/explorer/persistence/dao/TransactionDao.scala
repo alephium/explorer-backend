@@ -78,9 +78,10 @@ object TransactionDao {
     run(countAddressTransactions(address)).map(_.headOption.getOrElse(0))
 
   def getBalance(
-      address: Address
+      address: Address,
+      latestFinalizedTimestamp: TimeStamp
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
-    run(getBalanceAction(address))
+    run(getBalanceAction(address, latestFinalizedTimestamp))
 
   def areAddressesActive(
       addresses: ArraySeq[Address]
