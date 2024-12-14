@@ -148,13 +148,16 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
     "insert and list nft metadata with token uri that contains null bytes" in {
       val metadata = nftMetadataGen.sample.get
       val tokenUri = "8e6877d8dee708506625a77d73f62210dce24564cfa9ec93c0df02f2ba519b00"
-      val tokenUriWithNullBytes = new String(BigInt(tokenUri, 16).toByteArray, StandardCharsets.UTF_8)
+      val tokenUriWithNullBytes =
+        new String(BigInt(tokenUri, 16).toByteArray, StandardCharsets.UTF_8)
       val updatedMetadata = metadata.copy(tokenUri = tokenUriWithNullBytes)
 
       run(TokenQueries.insertNFTMetadata(updatedMetadata)).futureValue
 
       val result = run(TokenQueries.listNFTMetadataQuery(ArraySeq(updatedMetadata.id))).futureValue
-      result.head is updatedMetadata.copy(tokenUri = updatedMetadata.tokenUri.replaceAll("\u0000", ""))
+      result.head is updatedMetadata.copy(tokenUri =
+        updatedMetadata.tokenUri.replaceAll("\u0000", "")
+      )
     }
 
     "ignore conflict when inserting fungible token metadata" in {
