@@ -24,11 +24,13 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.ApiError
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.api.TransactionEndpoints
 import org.alephium.explorer.service.TransactionService
 
 class TransactionServer(implicit
     val executionContext: ExecutionContext,
+    val serverConfig: ExplorerConfig.Server,
     dc: DatabaseConfig[PostgresProfile]
 ) extends Server
     with TransactionEndpoints {

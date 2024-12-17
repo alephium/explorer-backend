@@ -34,6 +34,7 @@ import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
+import scala.concurrent.duration.FiniteDuration
 
 object OutputQueries {
 
@@ -424,10 +425,11 @@ object OutputQueries {
   def getBalanceUntilLockTime(
       address: Address,
       lockTime: TimeStamp,
-      latestFinalizedTimestamp: TimeStamp
+      latestFinalizedTimestamp: TimeStamp,
+      timeout: FiniteDuration
   )(implicit
       ec: ExecutionContext
-  ): DBActionR[(Option[U256], Option[U256])] =
+  ): DBActionRT[(Option[U256], Option[U256])] =
     sql"""
       SELECT sum(outputs.amount),
              sum(CASE
@@ -444,5 +446,9 @@ object OutputQueries {
         AND outputs.address = $address
         AND outputs.main_chain = true
         AND inputs.block_hash IS NULL;
-    """.asAS[(Option[U256], Option[U256])].exactlyOne
+    """
+      .asAS[(Option[U256], Option[U256])]
+      .exactlyOne
+      .statementTimeout(timeout.toMillis)
+
 }

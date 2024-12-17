@@ -33,6 +33,18 @@ import org.alephium.explorer.persistence.{DBActionR, DBActionSR}
 /** Convenience functions for Slick */
 object SlickUtil {
 
+  implicit class ResultEnrichmentT[A, S <: NoStream, E <: Effect](val action: DBIOAction[A, S, E])
+      extends AnyVal {
+    def statementTimeout(
+        millis: Long
+    )(implicit ec: ExecutionContext): DBIOAction[A, NoStream, E with Effect.Transactional] = {
+      (for {
+        _      <- sqlu"""SET LOCAL statement_timeout = #$millis"""
+        result <- action
+      } yield result).transactionally
+    }
+  }
+
   implicit class ResultEnrichment[A](val action: DBActionSR[A]) extends AnyVal {
 
     /** Fetch single row else fail.

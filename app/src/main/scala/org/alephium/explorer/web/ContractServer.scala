@@ -27,6 +27,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.api.ApiError
 import org.alephium.explorer.api.ContractsEndpoints
 import org.alephium.explorer.api.model.{ContractLiveness, ContractParent, SubContracts}
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.model.ContractEntity
 import org.alephium.explorer.persistence.queries.BlockQueries.getMainChain
@@ -36,6 +37,7 @@ import org.alephium.util.TimeStamp
 
 class ContractServer(implicit
     val executionContext: ExecutionContext,
+    val serverConfig: ExplorerConfig.Server,
     dc: DatabaseConfig[PostgresProfile]
 ) extends Server
     with ContractsEndpoints {

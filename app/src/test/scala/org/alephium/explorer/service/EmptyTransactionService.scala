@@ -32,6 +32,7 @@ import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.service.TransactionService
 import org.alephium.protocol.model.{Address, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
+import scala.concurrent.duration.FiniteDuration
 
 trait EmptyTransactionService extends TransactionService {
   override def getTransaction(transactionHash: TransactionId)(implicit
@@ -88,7 +89,8 @@ trait EmptyTransactionService extends TransactionService {
 
   override def getBalance(
       address: Address,
-      from: TimeStamp
+      from: TimeStamp,
+      timeout: FiniteDuration
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
     Future.successful((U256.Zero, U256.Zero))
 

@@ -19,10 +19,12 @@ package org.alephium.explorer
 import org.alephium.explorer.config.ExplorerConfig._
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.util.Duration
+import scala.concurrent.duration.FiniteDuration
 
 object ConfigDefaults {
   implicit val groupSetting: GroupSetting = Generators.groupSettingGen.sample.get
   implicit val groupConfig: GroupConfig   = groupSetting.groupConfig
+  implicit val serverConfig: Server       = Server("slowqueries", FiniteDuration(60, "seconds"))
 
   val maxTimeIntervals: MaxTimeIntervals =
     MaxTimeIntervals(

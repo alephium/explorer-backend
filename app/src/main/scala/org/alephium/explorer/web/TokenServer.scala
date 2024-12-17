@@ -24,11 +24,13 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.api.TokensEndpoints
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service.{HolderService, TokenService}
 import org.alephium.protocol.model.Address
 
 class TokenServer(tokenService: TokenService, holderService: HolderService)(implicit
     val executionContext: ExecutionContext,
+    val serverConfig: ExplorerConfig.Server,
     dc: DatabaseConfig[PostgresProfile]
 ) extends Server
     with TokensEndpoints {

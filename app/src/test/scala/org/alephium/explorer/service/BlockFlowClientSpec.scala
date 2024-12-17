@@ -43,6 +43,8 @@ import org.alephium.explorer.web.Server
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.{CliqueId, ContractId, GroupIndex, NetworkId}
 import org.alephium.util.AVector
+import org.alephium.explorer.ConfigDefaults
+import org.alephium.explorer.config.ExplorerConfig
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
 class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll {
@@ -148,9 +150,10 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
 object BlockFlowClientSpec extends ScalaFutures with IntegrationPatience {
   class BlockFlowServerMock(localhost: InetAddress, port: Int) extends api.Endpoints with Server {
 
-    implicit val groupConfig: GroupConfig           = groupSetting.groupConfig
-    override val apiKeys: AVector[api.model.ApiKey] = AVector.empty
-    val maybeApiKey: Option[api.model.ApiKey]       = None
+    implicit val groupConfig: GroupConfig            = groupSetting.groupConfig
+    implicit val serverConfig: ExplorerConfig.Server = ConfigDefaults.serverConfig
+    override val apiKeys: AVector[api.model.ApiKey]  = AVector.empty
+    val maybeApiKey: Option[api.model.ApiKey]        = None
 
     val cliqueId = CliqueId.generate
 

@@ -32,11 +32,13 @@ import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.UtilsEndpoints
 import org.alephium.explorer.api.model.LogbackValue
 import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service.{BlockFlowClient, IndexChecker, SanityChecker}
 import org.alephium.util.discard
 
 class UtilsServer()(implicit
     val executionContext: ExecutionContext,
+    val serverConfig: ExplorerConfig.Server,
     dc: DatabaseConfig[PostgresProfile],
     blockFlowClient: BlockFlowClient,
     blockCache: BlockCache,

@@ -82,6 +82,10 @@ object ExplorerError {
       extends Exception(s"Database error.", cause)
       with FatalSystemExit
 
+  final case class UnknownError(cause: Throwable)
+      extends Exception(s"Database error.", cause)
+      with FatalSystemExit
+
   /** ****** Group: [[ConfigError]] *******
     */
   final case class ConfigParsingError(file: File, exception: Exception)

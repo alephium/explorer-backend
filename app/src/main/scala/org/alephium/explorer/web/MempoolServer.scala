@@ -24,10 +24,12 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.api.MempoolEndpoints
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service.TransactionService
 
 class MempoolServer(implicit
     val executionContext: ExecutionContext,
+    val serverConfig: ExplorerConfig.Server,
     dc: DatabaseConfig[PostgresProfile]
 ) extends Server
     with MempoolEndpoints {

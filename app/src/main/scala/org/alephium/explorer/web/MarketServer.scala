@@ -22,13 +22,15 @@ import scala.concurrent.{ExecutionContext, Future}
 import io.vertx.ext.web._
 
 import org.alephium.api.ApiError
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.api.MarketEndpoints
 import org.alephium.explorer.service.MarketService
 
 class MarketServer(
     marketService: MarketService
 )(implicit
-    val executionContext: ExecutionContext
+    val executionContext: ExecutionContext,
+    val serverConfig: ExplorerConfig.Server
 ) extends Server
     with MarketEndpoints {
 

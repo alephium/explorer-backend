@@ -35,6 +35,7 @@ class ChartsServer(
     maxTimeInterval: ExplorerConfig.MaxTimeInterval
 )(implicit
     val executionContext: ExecutionContext,
+    val serverConfig: ExplorerConfig.Server,
     dc: DatabaseConfig[PostgresProfile]
 ) extends Server
     with ChartsEndpoints {

@@ -40,6 +40,7 @@ import org.alephium.explorer.util.TimeUtil
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{Address, TransactionId}
 import org.alephium.util.{Duration, TimeStamp, U256}
+import scala.concurrent.duration.FiniteDuration
 
 trait TransactionService {
 
@@ -89,7 +90,8 @@ trait TransactionService {
 
   def getBalance(
       address: Address,
-      latestFinalizedBlock: TimeStamp
+      latestFinalizedBlock: TimeStamp,
+      timeout: FiniteDuration
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)]
 
   def getTotalNumber()(implicit cache: TransactionCache): Int
@@ -199,9 +201,10 @@ object TransactionService extends TransactionService {
 
   def getBalance(
       address: Address,
-      latestFinalizedBlock: TimeStamp
+      latestFinalizedBlock: TimeStamp,
+      timeout: FiniteDuration
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
-    TransactionDao.getBalance(address, latestFinalizedBlock)
+    TransactionDao.getBalance(address, latestFinalizedBlock, timeout)
 
   def listMempoolTransactions(pagination: Pagination)(implicit
       ec: ExecutionContext,

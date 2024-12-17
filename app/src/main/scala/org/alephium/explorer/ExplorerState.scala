@@ -95,6 +95,7 @@ sealed trait ExplorerStateRead extends ExplorerState {
       )(
         executionContext,
         database.databaseConfig,
+        config.server,
         blockFlowClient,
         blockCache,
         metricCache,

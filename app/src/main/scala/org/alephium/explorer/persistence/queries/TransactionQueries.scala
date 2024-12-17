@@ -38,6 +38,7 @@ import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
+import scala.concurrent.duration.FiniteDuration
 
 object TransactionQueries extends StrictLogging {
 
@@ -564,13 +565,18 @@ object TransactionQueries extends StrictLogging {
       ).asAS[Address]
     }
 
-  def getBalanceAction(address: Address, latestFinalizedTimestamp: TimeStamp)(implicit
+  def getBalanceAction(
+      address: Address,
+      latestFinalizedTimestamp: TimeStamp,
+      timeout: FiniteDuration
+  )(implicit
       ec: ExecutionContext
-  ): DBActionR[(U256, U256)] =
+  ): DBActionRT[(U256, U256)] =
     getBalanceUntilLockTime(
       address = address,
       lockTime = TimeStamp.now(),
-      latestFinalizedTimestamp = latestFinalizedTimestamp
+      latestFinalizedTimestamp = latestFinalizedTimestamp,
+      timeout = timeout
     ) map { case (total, locked) =>
       (total.getOrElse(U256.Zero), locked.getOrElse(U256.Zero))
     }

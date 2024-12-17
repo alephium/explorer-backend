@@ -26,10 +26,12 @@ import slick.jdbc.PostgresProfile
 import org.alephium.api.ApiError
 import org.alephium.explorer.api.BlockEndpoints
 import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service.BlockService
 
 class BlockServer(implicit
     val executionContext: ExecutionContext,
+    val serverConfig: ExplorerConfig.Server,
     dc: DatabaseConfig[PostgresProfile],
     blockCache: BlockCache
 ) extends Server

@@ -39,11 +39,13 @@ import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.protocol.{ALPH, Hash}
 import org.alephium.protocol.model.{Address, GroupIndex, TransactionId}
 import org.alephium.util.{Duration, TimeStamp, U256}
+import scala.concurrent.duration.FiniteDuration
 
 class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
   "compute locked balance when empty" in new Fixture {
-    val balance = run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
+    val balance =
+      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime, timeout)).futureValue
     balance is ((U256.Zero, U256.Zero))
   }
 
@@ -58,7 +60,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     run(OutputSchema.table ++= ArraySeq(output1, output2, output3, output4)).futureValue
 
     val (total, locked) =
-      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
+      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime, timeout)).futureValue
 
     total is ALPH.alph(10)
     locked is ALPH.alph(7)
@@ -75,7 +77,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     run(InputSchema.table += input1).futureValue
 
     val (total, _) =
-      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
+      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime, timeout)).futureValue
 
     total is ALPH.alph(1)
 
@@ -84,7 +86,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from)).futureValue
 
     val (totalFinalized, _) =
-      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
+      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime, timeout)).futureValue
 
     totalFinalized is ALPH.alph(1)
   }
@@ -99,7 +101,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     run(InputSchema.table += input1).futureValue
 
     val (total, _) =
-      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
+      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime, timeout)).futureValue
 
     total is ALPH.alph(1)
   }
@@ -645,6 +647,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     val lastFinalizedTime = TimeStamp.zero
 
+    val timeout = FiniteDuration(10, "seconds")
     def output(address: Address, amount: U256, lockTime: Option[TimeStamp]): OutputEntity =
       OutputEntity(
         blockHashGen.sample.get,

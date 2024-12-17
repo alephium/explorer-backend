@@ -31,10 +31,12 @@ import sttp.tapir.server.metrics.prometheus.PrometheusMetrics.prometheusRegistry
 import org.alephium.explorer.Metrics
 import org.alephium.explorer.api.MetricsEndpoints
 import org.alephium.explorer.cache.MetricCache
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.util.discard
 
 class MetricsServer(cache: MetricCache)(implicit
-    val executionContext: ExecutionContext
+    val executionContext: ExecutionContext,
+    val serverConfig: ExplorerConfig.Server
 ) extends Server
     with MetricsEndpoints {
 

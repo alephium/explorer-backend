@@ -19,6 +19,7 @@ package org.alephium.explorer.web
 import org.scalacheck.Gen
 
 import org.alephium.explorer.{AlephiumActorSpecLike, HttpServerFixture}
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model._

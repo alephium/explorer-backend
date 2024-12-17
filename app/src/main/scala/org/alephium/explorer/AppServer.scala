@@ -40,6 +40,7 @@ object AppServer {
   )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
+      serverConfig: ExplorerConfig.Server,
       blockFlowClient: BlockFlowClient,
       blockCache: BlockCache,
       metricCache: MetricCache,

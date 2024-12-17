@@ -18,6 +18,7 @@ package org.alephium.explorer.web
 
 import org.alephium.api.ApiError
 import org.alephium.explorer._
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DatabaseFixtureForAll

@@ -26,6 +26,7 @@ package object persistence {
 
   type DBAction[A, E <: Effect] = DBIOAction[A, NoStream, E]
   type DBActionR[A]             = DBIOAction[A, NoStream, Effect.Read]
+  type DBActionRT[A]            = DBIOAction[A, NoStream, Effect.Read with Effect.Transactional]
   type DBActionW[A]             = DBIOAction[A, NoStream, Effect.Write]
   type DBActionT[A] =
     DBIOAction[A, NoStream, Effect.Write with Effect.Transactional] // Transaction DBAction

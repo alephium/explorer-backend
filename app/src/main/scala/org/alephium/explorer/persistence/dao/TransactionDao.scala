@@ -27,6 +27,7 @@ import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.protocol.model.{Address, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
+import scala.concurrent.duration.FiniteDuration
 
 object TransactionDao {
 
@@ -79,9 +80,10 @@ object TransactionDao {
 
   def getBalance(
       address: Address,
-      latestFinalizedTimestamp: TimeStamp
+      latestFinalizedTimestamp: TimeStamp,
+      timeout: FiniteDuration
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
-    run(getBalanceAction(address, latestFinalizedTimestamp))
+    run(getBalanceAction(address, latestFinalizedTimestamp, timeout))
 
   def areAddressesActive(
       addresses: ArraySeq[Address]

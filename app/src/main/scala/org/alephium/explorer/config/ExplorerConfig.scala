@@ -183,6 +183,7 @@ object ExplorerConfig {
           host,
           port,
           explorer.bootMode,
+          explorer.server,
           explorer.syncPeriod,
           explorer.holderServiceScheduleTime,
           explorer.tokenSupplyServiceScheduleTime,
@@ -235,10 +236,16 @@ object ExplorerConfig {
       marketChartDays: Int
   )
 
+  final case class Server(
+      slowQueriesUri: String,
+      statementTimeout: FiniteDuration
+  )
+
   final private case class Explorer(
       host: String,
       port: Int,
       bootMode: BootMode,
+      server: Server,
       syncPeriod: FiniteDuration,
       holderServiceScheduleTime: LocalTime,
       tokenSupplyServiceScheduleTime: LocalTime,
@@ -271,6 +278,7 @@ final case class ExplorerConfig private (
     host: String,
     port: Int,
     bootMode: BootMode,
+    server: ExplorerConfig.Server,
     syncPeriod: FiniteDuration,
     holderServiceScheduleTime: LocalTime,
     tokenSupplyServiceScheduleTime: LocalTime,

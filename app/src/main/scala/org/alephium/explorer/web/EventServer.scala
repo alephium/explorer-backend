@@ -24,11 +24,13 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.api.EventsEndpoints
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries.EventQueries._
 
 class EventServer(implicit
     val executionContext: ExecutionContext,
+    val serverConfig: ExplorerConfig.Server,
     dc: DatabaseConfig[PostgresProfile]
 ) extends Server
     with EventsEndpoints {

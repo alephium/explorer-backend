@@ -30,6 +30,7 @@ import org.alephium.explorer.{BuildInfo, GroupSetting}
 import org.alephium.explorer.api.InfosEndpoints
 import org.alephium.explorer.api.model.{ExplorerInfo, TokenSupply}
 import org.alephium.explorer.cache.{AsyncReloadingCache, BlockCache, TransactionCache}
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.persistence.DBRunner
 import org.alephium.explorer.persistence.model.AppState
 import org.alephium.explorer.persistence.queries.AppStateQueries
@@ -44,6 +45,7 @@ class InfosServer(
     transactionService: TransactionService
 )(implicit
     val executionContext: ExecutionContext,
+    val serverConfig: ExplorerConfig.Server,
     dc: DatabaseConfig[PostgresProfile],
     blockCache: BlockCache,
     transactionCache: TransactionCache,

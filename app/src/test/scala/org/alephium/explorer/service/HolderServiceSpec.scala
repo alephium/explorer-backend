@@ -37,6 +37,7 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.model.{Address, ChainIndex, GroupIndex}
 import org.alephium.util.{Duration, TimeStamp, U256}
+import scala.concurrent.duration.FiniteDuration
 
 class HolderServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureForEach {
 
@@ -87,7 +88,9 @@ class HolderServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureForEac
       val addresses = blocks.flatMap(_.transactions.flatMap(_.unsigned.fixedOutputs.map(_.address)))
 
       addresses.distinct.foreach { address =>
-        val (balance, _)  = TransactionDao.getBalance(address, TimeStamp.zero).futureValue
+        val (balance, _) = TransactionDao
+          .getBalance(address, TimeStamp.zero, FiniteDuration(10, "seconds"))
+          .futureValue
         val holderBalance = holders.find(_._1 == address).map(_._2).getOrElse(U256.Zero)
 
         balance is holderBalance

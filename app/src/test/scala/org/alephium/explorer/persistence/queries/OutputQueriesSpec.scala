@@ -29,6 +29,7 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.persistence.schema.OutputSchema
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.util.TimeStamp
+import scala.concurrent.duration.FiniteDuration
 
 class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
@@ -191,7 +192,14 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
     "return None" when {
       "address does not exist" in {
         val address = addressGen.sample getOrElse fail("Failed to sample address")
-        run(getBalanceUntilLockTime(address, TimeStamp.now(), TimeStamp.now())).futureValue is ((
+        run(
+          getBalanceUntilLockTime(
+            address,
+            TimeStamp.now(),
+            TimeStamp.now(),
+            FiniteDuration(10, "seconds")
+          )
+        ).futureValue is ((
           None,
           None
         ))

@@ -35,6 +35,7 @@ import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.web.Server
 import org.alephium.json.Json._
+import org.alephium.explorer.ConfigDefaults
 
 class MarketServiceSpec extends AlephiumFutureSpec {
   import MarketServiceSpec._
@@ -166,6 +167,8 @@ object MarketServiceSpec {
       with BaseEndpoint
       with Server {
 
+    implicit val serverConfig: ExplorerConfig.Server = ConfigDefaults.serverConfig
+
     private val vertx  = Vertx.vertx()
     private val router = Router.router(vertx)
 
@@ -207,6 +210,8 @@ object MarketServiceSpec {
       with BaseEndpoint
       with Server {
 
+    implicit val serverConfig: ExplorerConfig.Server = ConfigDefaults.serverConfig
+
     private val vertx  = Vertx.vertx()
     private val router = Router.router(vertx)
 
@@ -238,6 +243,8 @@ object MarketServiceSpec {
   ) extends ScalaFutures
       with BaseEndpoint
       with Server {
+
+    implicit val serverConfig: ExplorerConfig.Server = ConfigDefaults.serverConfig
 
     private val vertx  = Vertx.vertx()
     private val router = Router.router(vertx)

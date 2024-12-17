@@ -30,10 +30,10 @@ import sttp.model.StatusCode
 
 import org.alephium.api.ApiError
 import org.alephium.api.model.TimeInterval
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service.{TokenService, TransactionService}
 import org.alephium.protocol.PublicKey
@@ -41,6 +41,7 @@ import org.alephium.protocol.model.Address
 import org.alephium.protocol.vm.{LockupScript, UnlockScript}
 import org.alephium.serde._
 import org.alephium.util.Duration
+import scala.concurrent.duration.FiniteDuration
 
 class AddressServer(
     transactionService: TransactionService,
@@ -51,13 +52,15 @@ class AddressServer(
     val maxTimeIntervalExportTxs: Duration
 )(implicit
     val executionContext: ExecutionContext,
+    val serverConfig: ExplorerConfig.Server,
     groupSetting: GroupSetting,
     blockCache: BlockCache,
     dc: DatabaseConfig[PostgresProfile]
 ) extends Server
     with AddressesEndpoints {
 
-  val groupNum = groupSetting.groupNum
+  private val balanceTimeout = FiniteDuration(60, "seconds")
+  val groupNum               = groupSetting.groupNum
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
@@ -87,7 +90,7 @@ class AddressServer(
       route(getAddressInfo.serverLogicSuccess[Future] { address =>
         for {
           (balance, locked) <- transactionService
-            .getBalance(address, blockCache.getLastFinalizedTimestamp())
+            .getBalance(address, blockCache.getLastFinalizedTimestamp(), balanceTimeout)
           txNumber <- transactionService.getTransactionsNumberByAddress(address)
         } yield AddressInfo(balance, locked, txNumber)
       }),
@@ -103,7 +106,7 @@ class AddressServer(
       route(getAddressBalance.serverLogicSuccess[Future] { address =>
         for {
           (balance, locked) <- transactionService
-            .getBalance(address, blockCache.getLastFinalizedTimestamp())
+            .getBalance(address, blockCache.getLastFinalizedTimestamp(), balanceTimeout)
         } yield AddressBalance(balance, locked)
       }),
       route(getAddressTokenBalance.serverLogicSuccess[Future] { case (address, token) =>
