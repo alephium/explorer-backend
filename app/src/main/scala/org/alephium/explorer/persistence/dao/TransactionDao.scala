@@ -83,7 +83,7 @@ object TransactionDao {
       latestFinalizedTimestamp: TimeStamp,
       timeout: FiniteDuration
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
-    run(getBalanceAction(address, latestFinalizedTimestamp, timeout))
+    runT(getBalanceAction(address, latestFinalizedTimestamp), timeout)
 
   def areAddressesActive(
       addresses: ArraySeq[Address]

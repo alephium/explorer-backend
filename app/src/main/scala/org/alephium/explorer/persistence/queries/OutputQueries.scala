@@ -425,8 +425,7 @@ object OutputQueries {
   def getBalanceUntilLockTime(
       address: Address,
       lockTime: TimeStamp,
-      latestFinalizedTimestamp: TimeStamp,
-      timeout: FiniteDuration
+      latestFinalizedTimestamp: TimeStamp
   )(implicit
       ec: ExecutionContext
   ): DBActionRT[(Option[U256], Option[U256])] =
@@ -449,6 +448,5 @@ object OutputQueries {
     """
       .asAS[(Option[U256], Option[U256])]
       .exactlyOne
-      .statementTimeout(timeout.toMillis)
 
 }

@@ -16,12 +16,15 @@
 
 package org.alephium.explorer.persistence
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 import org.reactivestreams.Publisher
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
+import scala.concurrent.duration.FiniteDuration
+
+import org.alephium.explorer.util.SlickUtil._
 
 trait DBRunner {
   def databaseConfig: DatabaseConfig[PostgresProfile]
@@ -49,6 +52,15 @@ object DBRunner {
       databaseConfig: DatabaseConfig[PostgresProfile]
   ): Future[R] =
     databaseConfig.db.run(action)
+
+  /** Temporary function until all things are made stateless */
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
+  def runT[R, E <: Effect](action: DBAction[R, E], timeout:FiniteDuration)(implicit
+      ec: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[R] =
+    databaseConfig.db.run(action.statementTimeout(timeout.toMillis))
+
 
   def stream[R](action: StreamAction[R])(implicit
       databaseConfig: DatabaseConfig[PostgresProfile]

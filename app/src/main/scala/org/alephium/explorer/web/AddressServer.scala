@@ -59,7 +59,7 @@ class AddressServer(
 ) extends Server
     with AddressesEndpoints {
 
-  private val balanceTimeout = FiniteDuration(60, "seconds")
+  private val balanceTimeout = FiniteDuration(1, "milliseconds")
   val groupNum               = groupSetting.groupNum
 
   val routes: ArraySeq[Router => Route] =

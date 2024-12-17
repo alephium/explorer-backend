@@ -567,16 +567,14 @@ object TransactionQueries extends StrictLogging {
 
   def getBalanceAction(
       address: Address,
-      latestFinalizedTimestamp: TimeStamp,
-      timeout: FiniteDuration
+      latestFinalizedTimestamp: TimeStamp
   )(implicit
       ec: ExecutionContext
   ): DBActionRT[(U256, U256)] =
     getBalanceUntilLockTime(
       address = address,
       lockTime = TimeStamp.now(),
-      latestFinalizedTimestamp = latestFinalizedTimestamp,
-      timeout = timeout
+      latestFinalizedTimestamp = latestFinalizedTimestamp
     ) map { case (total, locked) =>
       (total.getOrElse(U256.Zero), locked.getOrElse(U256.Zero))
     }
