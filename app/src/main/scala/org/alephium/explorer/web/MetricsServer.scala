@@ -25,7 +25,6 @@ import scala.util.Using
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.exporter.common.TextFormat
 import io.prometheus.metrics.core.metrics.Gauge
-import io.vertx.ext.web._
 import sttp.tapir.server.metrics.prometheus.PrometheusMetrics.prometheusRegistryCodec
 
 import org.alephium.explorer.Metrics
@@ -38,9 +37,9 @@ class MetricsServer(cache: MetricCache)(implicit
 ) extends Server
     with MetricsEndpoints {
 
-  val routes: ArraySeq[Router => Route] =
+  def endpointsLogic: ArraySeq[EndpointLogic] = {
     ArraySeq(
-      route(metrics.serverLogicSuccess[Future] { _ =>
+      metrics.serverLogicSuccess[Future] { _ =>
         Future.successful {
           // Reload metrics cache on request
           discard(reloadMetrics())
@@ -54,8 +53,9 @@ class MetricsServer(cache: MetricCache)(implicit
 
         }
 
-      })
+      }
     )
+  }
 
   def reloadMetrics(): Unit = {
     MetricsServer.fungibleCountGauge.set(cache.getFungibleCount().toDouble)

@@ -195,7 +195,7 @@ class AddressServerSpec()
 
   implicit val blockCache: BlockCache = TestBlockCache()
 
-  val server =
+  val server: Server =
     new AddressServer(
       transactionService,
       tokenService,
@@ -204,8 +204,6 @@ class AddressServerSpec()
       maxTimeInterval = ConfigDefaults.maxTimeIntervals.amountHistory,
       maxTimeIntervalExportTxs = ConfigDefaults.maxTimeIntervals.exportTxs
     )
-
-  val routes = server.routes
 
   "validate and forward `txLimit` query param" in {
     val maxLimit = Pagination.maxLimit

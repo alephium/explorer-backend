@@ -19,7 +19,6 @@ package org.alephium.explorer.web
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
-import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -34,16 +33,22 @@ class BlockServer(implicit
     blockCache: BlockCache
 ) extends Server
     with BlockEndpoints {
-  val routes: ArraySeq[Router => Route] =
-    ArraySeq(
-      route(listBlocks.serverLogicSuccess[Future](BlockService.listBlocks(_))),
-      route(getBlockByHash.serverLogic[Future] { hash =>
-        BlockService
-          .getBlockByHash(hash)
-          .map(_.toRight(ApiError.NotFound(hash.value.toHexString)))
-      }),
-      route(getBlockTransactions.serverLogicSuccess[Future] { case (hash, pagination) =>
-        BlockService.getBlockTransactions(hash, pagination)
-      })
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
     )
+  )
+  def endpointsLogic: ArraySeq[EndpointLogic] = ArraySeq(
+    listBlocks.serverLogicSuccess[Future](BlockService.listBlocks(_)),
+    getBlockByHash.serverLogic[Future] { hash =>
+      BlockService
+        .getBlockByHash(hash)
+        .map(_.toRight(ApiError.NotFound(hash.value.toHexString)))
+    },
+    getBlockTransactions.serverLogicSuccess[Future] { case (hash, pagination) =>
+      BlockService.getBlockTransactions(hash, pagination)
+    }
+  )
 }

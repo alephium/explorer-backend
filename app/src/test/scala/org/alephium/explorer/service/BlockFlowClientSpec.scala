@@ -16,21 +16,17 @@
 
 package org.alephium.explorer.service
 
-import java.net.InetAddress
-
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 import akka.testkit.SocketUtil
-import io.vertx.core.Vertx
-import io.vertx.ext.web._
+import org.scalatest.Suite
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import sttp.model.Uri
-import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 
 import org.alephium.api
 import org.alephium.api.model
-import org.alephium.explorer.AlephiumFutureSpec
+import org.alephium.explorer._
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreApi._
@@ -45,18 +41,27 @@ import org.alephium.protocol.model.{CliqueId, ContractId, GroupIndex, NetworkId}
 import org.alephium.util.AVector
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
-class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll {
+class BlockFlowClientSpec
+    extends AlephiumFutureSpec
+    with DatabaseFixtureForAll
+    with HttpServersFixture {
 
-  val group                  = GroupIndex.Zero
-  val localhost: InetAddress = InetAddress.getByName("127.0.0.1")
+  val group = GroupIndex.Zero
+
+  val blockflow = new BlockFlowClientSpec.BlockFlowServerMock()
+
+  val servers: ArraySeq[TestHttpServer] = ArraySeq(blockflow)
 
   "BlockFlowClient.fetchBlock" should {
-    val port = SocketUtil.temporaryLocalPort(SocketUtil.Both)
-    val _    = new BlockFlowClientSpec.BlockFlowServerMock(localhost, port)
 
     "fail if `directCliqueAccess = true` but other clique nodes aren't reachable" in {
       val blockFlowClient =
-        BlockFlowClient(Uri(localhost.getHostAddress, port), groupSetting.groupNum, None, true)
+        BlockFlowClient(
+          Uri(blockflow.host.getHostAddress, blockflow.port),
+          groupSetting.groupNum,
+          None,
+          true
+        )
 
       blockFlowClient
         .fetchBlock(group, blockHashGen.sample.get)
@@ -66,7 +71,12 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
 
     "succeed if `directCliqueAccess = false`" in {
       val blockFlowClient =
-        BlockFlowClient(Uri(localhost.getHostAddress, port), groupSetting.groupNum, None, false)
+        BlockFlowClient(
+          Uri(blockflow.host.getHostAddress, blockflow.port),
+          groupSetting.groupNum,
+          None,
+          false
+        )
 
       blockFlowClient.fetchBlock(group, blockHashGen.sample.get).futureValue is a[BlockEntity]
     }
@@ -145,8 +155,13 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
   }
 }
 
-object BlockFlowClientSpec extends ScalaFutures with IntegrationPatience {
-  class BlockFlowServerMock(localhost: InetAddress, port: Int) extends api.Endpoints with Server {
+object BlockFlowClientSpec {
+  class BlockFlowServerMock()(implicit val executionContext: ExecutionContext)
+      extends api.Endpoints
+      with Suite
+      with ScalaFutures
+      with IntegrationPatience
+      with TestHttpServer {
 
     implicit val groupConfig: GroupConfig           = groupSetting.groupConfig
     override val apiKeys: AVector[api.model.ApiKey] = AVector.empty
@@ -155,38 +170,30 @@ object BlockFlowClientSpec extends ScalaFutures with IntegrationPatience {
     val cliqueId = CliqueId.generate
 
     private val peer =
-      model.PeerAddress(localhost, SocketUtil.temporaryLocalPort(SocketUtil.Both), 0, 0)
+      model.PeerAddress(host, SocketUtil.temporaryLocalPort(SocketUtil.Both), 0, 0)
 
-    private val vertx  = Vertx.vertx()
-    private val router = Router.router(vertx)
-
-    val routes: ArraySeq[Router => Route] =
-      ArraySeq(
-        route(getSelfClique.serverLogicSuccess(_ => { (_: Unit) =>
-          Future.successful(
-            model.SelfClique(cliqueId, AVector(peer), true, true)
-          )
-        })),
-        route(getChainParams.serverLogicSuccess(_ => { (_: Unit) =>
-          Future.successful(
-            model.ChainParams(
-              NetworkId.AlephiumDevNet,
-              18,
-              groupSetting.groupNum,
-              groupSetting.groupNum
+    val server: Server = new Server {
+      val endpointsLogic: ArraySeq[EndpointLogic] =
+        ArraySeq(
+          getSelfClique.serverLogicSuccess(_ => { (_: Unit) =>
+            Future.successful(
+              model.SelfClique(cliqueId, AVector(peer), true, true)
             )
-          )
-        })),
-        route(getBlock.serverLogicSuccess(_ => { _ =>
-          Future.successful(blockEntryProtocolGen.sample.get)
-        }))
-      )
-
-    val server = vertx.createHttpServer().requestHandler(router)
-
-    routes.foreach(route => route(router))
-
-    logger.info(s"Full node listening on ${localhost.getHostAddress}:$port")
-    server.listen(port, localhost.getHostAddress).asScala.futureValue
+          }),
+          getChainParams.serverLogicSuccess(_ => { (_: Unit) =>
+            Future.successful(
+              model.ChainParams(
+                NetworkId.AlephiumDevNet,
+                18,
+                groupSetting.groupNum,
+                groupSetting.groupNum
+              )
+            )
+          }),
+          getBlock.serverLogicSuccess(_ => { _ =>
+            Future.successful(blockEntryProtocolGen.sample.get)
+          })
+        )
+    }
   }
 }

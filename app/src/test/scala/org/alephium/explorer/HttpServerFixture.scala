@@ -14,27 +14,19 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.web
+package org.alephium.explorer
 
-import scala.collection.immutable.ArraySeq
-import scala.concurrent.{ExecutionContext, Future}
+import org.scalatest.Suite
 
-import slick.basic.DatabaseConfig
-import slick.jdbc.PostgresProfile
+trait HttpServerFixture extends HttpRouteFixture with TestHttpServer { this: Suite =>
 
-import org.alephium.explorer.api.MempoolEndpoints
-import org.alephium.explorer.service.TransactionService
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    start().futureValue
+  }
 
-class MempoolServer(implicit
-    val executionContext: ExecutionContext,
-    dc: DatabaseConfig[PostgresProfile]
-) extends Server
-    with MempoolEndpoints {
-
-  def endpointsLogic: ArraySeq[EndpointLogic] = ArraySeq(
-    listMempoolTransactions.serverLogicSuccess[Future] { pagination =>
-      TransactionService
-        .listMempoolTransactions(pagination)
-    }
-  )
+  override def afterAll(): Unit = {
+    super.afterAll()
+    stop().futureValue
+  }
 }

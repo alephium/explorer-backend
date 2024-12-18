@@ -18,8 +18,6 @@ package org.alephium.explorer.web
 
 import scala.collection.immutable.ArraySeq
 
-import io.vertx.ext.web._
-
 import org.alephium.api.OpenAPIWriters.openApiJson
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.docs.Documentation
@@ -36,11 +34,11 @@ class DocumentationServer(
 
   val groupNum = groupSetting.groupNum
 
-  val routes: ArraySeq[Router => Route] =
+  def endpointsLogic: ArraySeq[EndpointLogic] =
     ArraySeq.from(
       SwaggerUI(
         openApiJson(docs, dropAuth = false, truncateAddresses = true),
         openapiFileName = "explorer-backend-openapi.json"
-      ).map(route(_))
+      )
     )
 }

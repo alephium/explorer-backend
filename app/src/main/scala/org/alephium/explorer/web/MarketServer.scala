@@ -19,8 +19,6 @@ package org.alephium.explorer.web
 import scala.collection.immutable.{ArraySeq, ListMap}
 import scala.concurrent.{ExecutionContext, Future}
 
-import io.vertx.ext.web._
-
 import org.alephium.api.ApiError
 import org.alephium.explorer.api.MarketEndpoints
 import org.alephium.explorer.service.MarketService
@@ -32,32 +30,38 @@ class MarketServer(
 ) extends Server
     with MarketEndpoints {
 
-  val routes: ArraySeq[Router => Route] =
-    ArraySeq(
-      route(getPrices.serverLogicPure[Future] { case (currency, ids) =>
-        for {
-          _ <- MarketServer.validateCurrency(currency, marketService.currencies)
-          result <- marketService
-            .getPrices(ids, currency)
-            .left
-            .map { error =>
-              ApiError.ServiceUnavailable(error)
-            }
-        } yield result
-      }),
-      route(getPriceChart.serverLogicPure[Future] { case (id, currency) =>
-        for {
-          _ <- MarketServer.validateSymbol(id, marketService.chartSymbolNames)
-          _ <- MarketServer.validateCurrency(currency, marketService.currencies)
-          result <- marketService
-            .getPriceChart(id, currency)
-            .left
-            .map { error =>
-              ApiError.ServiceUnavailable(error)
-            }
-        } yield result
-      })
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
     )
+  )
+  def endpointsLogic: ArraySeq[EndpointLogic] = ArraySeq(
+    getPrices.serverLogicPure[Future] { case (currency, ids) =>
+      for {
+        _ <- MarketServer.validateCurrency(currency, marketService.currencies)
+        result <- marketService
+          .getPrices(ids, currency)
+          .left
+          .map { error =>
+            ApiError.ServiceUnavailable(error)
+          }
+      } yield result
+    },
+    getPriceChart.serverLogicPure[Future] { case (id, currency) =>
+      for {
+        _ <- MarketServer.validateSymbol(id, marketService.chartSymbolNames)
+        _ <- MarketServer.validateCurrency(currency, marketService.currencies)
+        result <- marketService
+          .getPriceChart(id, currency)
+          .left
+          .map { error =>
+            ApiError.ServiceUnavailable(error)
+          }
+      } yield result
+    }
+  )
 }
 
 object MarketServer {

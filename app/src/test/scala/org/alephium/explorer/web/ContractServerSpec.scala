@@ -44,9 +44,7 @@ class ContractServerSpec()
     with DBRunner
     with HttpServerFixture {
 
-  val server = new ContractServer()
-
-  val routes = server.routes
+  val server: Server = new ContractServer()
 
   "get contract liveness" should {
     "return the liveness when only 1 entry is in DB" in {

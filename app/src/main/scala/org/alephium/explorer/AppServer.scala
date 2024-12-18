@@ -22,6 +22,7 @@ import scala.concurrent.ExecutionContext
 import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
+import sttp.tapir.server.vertx.VertxFutureServerInterpreter
 
 import org.alephium.explorer.cache.{BlockCache, MetricCache, TransactionCache}
 import org.alephium.explorer.config.ExplorerConfig
@@ -46,6 +47,8 @@ object AppServer {
       transactionCache: TransactionCache,
       groupSetting: GroupSetting
   ): ArraySeq[Router => Route] = {
+
+    val serverInterpreter: VertxFutureServerInterpreter = Server.interpreter()
 
     val blockServer = new BlockServer()
     val addressServer =
@@ -73,18 +76,20 @@ object AppServer {
       marketConfig.currencies
     )
 
-    blockServer.routes ++
-      addressServer.routes ++
-      transactionServer.routes ++
-      tokenServer.routes ++
-      infosServer.routes ++
-      chartsServer.routes ++
-      utilsServer.routes ++
-      mempoolServer.routes ++
-      eventServer.routes ++
-      contractServer.routes ++
-      marketServer.routes ++
-      documentationServer.routes ++
-      metricsServer.routes
+    ArraySeq(
+      blockServer,
+      addressServer,
+      transactionServer,
+      tokenServer,
+      infosServer,
+      chartsServer,
+      utilsServer,
+      mempoolServer,
+      eventServer,
+      contractServer,
+      marketServer,
+      documentationServer,
+      metricsServer
+    ).flatMap(server => server.endpointsLogic.map(serverInterpreter.route))
   }
 }

@@ -20,7 +20,6 @@ import scala.annotation.tailrec
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
-import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -39,18 +38,24 @@ class ContractServer(implicit
     dc: DatabaseConfig[PostgresProfile]
 ) extends Server
     with ContractsEndpoints {
-  val routes: ArraySeq[Router => Route] =
-    ArraySeq(
-      route(getContractInfo.serverLogic[Future] { contract =>
-        ContractServer.getLatestContractInfo(contract)
-      }),
-      route(getParentAddress.serverLogicSuccess[Future] { contract =>
-        run(getParentAddressQuery(contract).map(ContractParent.apply))
-      }),
-      route(getSubContracts.serverLogicSuccess[Future] { case (contract, pagination) =>
-        run(getSubContractsQuery(contract, pagination).map(SubContracts.apply))
-      })
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
     )
+  )
+  def endpointsLogic: ArraySeq[EndpointLogic] = ArraySeq(
+    getContractInfo.serverLogic[Future] { contract =>
+      ContractServer.getLatestContractInfo(contract)
+    },
+    getParentAddress.serverLogicSuccess[Future] { contract =>
+      run(getParentAddressQuery(contract).map(ContractParent.apply))
+    },
+    getSubContracts.serverLogicSuccess[Future] { case (contract, pagination) =>
+      run(getSubContractsQuery(contract, pagination).map(SubContracts.apply))
+    }
+  )
 }
 
 object ContractServer {

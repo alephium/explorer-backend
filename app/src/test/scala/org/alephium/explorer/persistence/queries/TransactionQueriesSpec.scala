@@ -17,6 +17,7 @@
 package org.alephium.explorer.persistence.queries
 
 import scala.collection.immutable.ArraySeq
+import scala.concurrent.duration.FiniteDuration
 import scala.util.Random
 
 import org.scalacheck.Gen
@@ -43,7 +44,8 @@ import org.alephium.util.{Duration, TimeStamp, U256}
 class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
   "compute locked balance when empty" in new Fixture {
-    val balance = run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
+    val balance =
+      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
     balance is ((U256.Zero, U256.Zero))
   }
 
@@ -645,6 +647,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     val lastFinalizedTime = TimeStamp.zero
 
+    val timeout = FiniteDuration(10, "seconds")
     def output(address: Address, amount: U256, lockTime: Option[TimeStamp]): OutputEntity =
       OutputEntity(
         blockHashGen.sample.get,

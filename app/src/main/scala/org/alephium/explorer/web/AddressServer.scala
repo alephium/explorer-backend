@@ -22,7 +22,6 @@ import scala.concurrent.{ExecutionContext, Future}
 import akka.util.ByteString
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.streams.ReadStream
-import io.vertx.ext.web._
 import io.vertx.rxjava3.FlowableHelper
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
@@ -59,134 +58,158 @@ class AddressServer(
 
   val groupNum = groupSetting.groupNum
 
-  val routes: ArraySeq[Router => Route] =
-    ArraySeq(
-      route(getTransactionsByAddress.serverLogicSuccess[Future] { case (address, pagination) =>
-        transactionService
-          .getTransactionsByAddress(address, pagination)
-      }),
-      route(getTransactionsByAddresses.serverLogicSuccess[Future] {
-        case (addresses, fromTsOpt, toTsOpt, pagination) =>
-          transactionService
-            .getTransactionsByAddresses(addresses, fromTsOpt, toTsOpt, pagination)
-      }),
-      route(getTransactionsByAddressTimeRanged.serverLogicSuccess[Future] {
-        case (address, timeInterval, pagination) =>
-          transactionService
-            .getTransactionsByAddressTimeRanged(
+  def endpointsLogic: ArraySeq[EndpointLogic] =
+    transactionEndpoints ++
+      addressEndpoints ++
+      tokenEndpoints ++
+      miscEndpoints
+
+  // 1. Transactions Endpoints
+  private def transactionEndpoints: ArraySeq[EndpointLogic] = ArraySeq(
+    getTransactionsByAddress.serverLogicSuccess[Future] { case (address, pagination) =>
+      transactionService.getTransactionsByAddress(address, pagination)
+    },
+    getTransactionsByAddresses.serverLogicSuccess[Future] {
+      case (addresses, fromTsOpt, toTsOpt, pagination) =>
+        transactionService.getTransactionsByAddresses(addresses, fromTsOpt, toTsOpt, pagination)
+    },
+    getTransactionsByAddressTimeRanged.serverLogicSuccess[Future] {
+      case (address, timeInterval, pagination) =>
+        transactionService.getTransactionsByAddressTimeRanged(
+          address,
+          timeInterval.from,
+          timeInterval.to,
+          pagination
+        )
+    },
+    addressMempoolTransactions.serverLogicSuccess[Future] { address =>
+      transactionService.listMempoolTransactionsByAddress(address)
+    },
+    getTotalTransactionsByAddress.serverLogic[Future] { address =>
+      transactionService.getTransactionsNumberByAddress(address).map(Right(_))
+    },
+    getLatestTransactionInfo.serverLogic[Future] { address =>
+      transactionService.getLatestTransactionInfoByAddress(address).map {
+        case None         => Left(ApiError.NotFound(s"No transaction found for address $address"))
+        case Some(txInfo) => Right(txInfo)
+      }
+    },
+    exportTransactionsCsvByAddress.serverLogic[Future] { case (address, timeInterval) =>
+      exportTransactions(address, timeInterval).map(_.map { stream =>
+        (AddressServer.exportFileNameHeader(address, timeInterval), stream)
+      })
+    }
+  )
+
+  // 2. Address Information Endpoints
+  private def addressEndpoints: ArraySeq[EndpointLogic] = ArraySeq(
+    getAddressInfo.serverLogicSuccess[Future] { address =>
+      for {
+        (balance, locked) <- transactionService.getBalance(
+          address,
+          blockCache.getLastFinalizedTimestamp()
+        )
+        txNumber <- transactionService.getTransactionsNumberByAddress(address)
+      } yield AddressInfo(balance, locked, txNumber)
+    },
+    getAddressBalance.serverLogicSuccess[Future] { address =>
+      for {
+        (balance, locked) <- transactionService.getBalance(
+          address,
+          blockCache.getLastFinalizedTimestamp()
+        )
+      } yield AddressBalance(balance, locked)
+    },
+    areAddressesActive.serverLogicSuccess[Future] { addresses =>
+      transactionService.areAddressesActive(addresses)
+    },
+    getPublicKey.serverLogic[Future] { address =>
+      address match {
+        case Address.Asset(LockupScript.P2PKH(_)) =>
+          transactionService.getUnlockScript(address).map {
+            case None =>
+              Left(ApiError.NotFound(s"No input found for address $address"))
+            case Some(unlockScript) =>
+              AddressServer.bytesToPublicKey(unlockScript)
+          }
+        case _ =>
+          Future.successful(Left(ApiError.BadRequest(s"Only P2PKH addresses supported")))
+      }
+    }
+  )
+
+  // 3. Token-Related Endpoints
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
+    )
+  )
+  private def tokenEndpoints: ArraySeq[EndpointLogic] = ArraySeq(
+    getAddressTokenBalance.serverLogicSuccess[Future] { case (address, token) =>
+      for {
+        (balance, locked) <- tokenService.getTokenBalance(address, token)
+      } yield AddressTokenBalance(token, balance, locked)
+    },
+    listAddressTokensBalance.serverLogicSuccess[Future] { case (address, pagination) =>
+      tokenService
+        .listAddressTokensWithBalance(address, pagination)
+        .map(_.map { case (tokenId, balance, locked) =>
+          AddressTokenBalance(tokenId, balance, locked)
+        })
+    },
+    listAddressTokens.serverLogicSuccess[Future] { case (address, pagination) =>
+      tokenService.listAddressTokens(address, pagination)
+    },
+    listAddressTokenTransactions.serverLogicSuccess[Future] { case (address, token, pagination) =>
+      tokenService.listAddressTokenTransactions(address, token, pagination)
+    }
+  )
+
+  // 4. Miscellaneous Endpoints
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
+    )
+  )
+  private def miscEndpoints: ArraySeq[EndpointLogic] = ArraySeq(
+    getAddressAmountHistoryDEPRECATED.serverLogic[Future] {
+      case (address, timeInterval, intervalType) =>
+        validateTimeInterval(timeInterval, intervalType) {
+          val flowable =
+            transactionService.getAmountHistoryDEPRECATED(
               address,
               timeInterval.from,
               timeInterval.to,
-              pagination
+              intervalType,
+              streamParallelism
             )
-      }),
-      route(addressMempoolTransactions.serverLogicSuccess[Future] { address =>
+          Future.successful(
+            (
+              AddressServer.amountHistoryFileNameHeader(address, timeInterval),
+              FlowableHelper.toReadStream(flowable)
+            )
+          )
+        }
+    },
+    getAddressAmountHistory.serverLogic[Future] { case (address, timeInterval, intervalType) =>
+      validateTimeInterval(timeInterval, intervalType) {
         transactionService
-          .listMempoolTransactionsByAddress(address)
-      }),
-      route(getAddressInfo.serverLogicSuccess[Future] { address =>
-        for {
-          (balance, locked) <- transactionService
-            .getBalance(address, blockCache.getLastFinalizedTimestamp())
-          txNumber <- transactionService.getTransactionsNumberByAddress(address)
-        } yield AddressInfo(balance, locked, txNumber)
-      }),
-      route(getTotalTransactionsByAddress.serverLogic[Future] { address =>
-        transactionService.getTransactionsNumberByAddress(address).map(Right(_))
-      }),
-      route(getLatestTransactionInfo.serverLogic[Future] { address =>
-        transactionService.getLatestTransactionInfoByAddress(address).map {
-          case None         => Left(ApiError.NotFound(s"No transaction found for address $address"))
-          case Some(txInfo) => Right(txInfo)
-        }
-      }),
-      route(getAddressBalance.serverLogicSuccess[Future] { address =>
-        for {
-          (balance, locked) <- transactionService
-            .getBalance(address, blockCache.getLastFinalizedTimestamp())
-        } yield AddressBalance(balance, locked)
-      }),
-      route(getAddressTokenBalance.serverLogicSuccess[Future] { case (address, token) =>
-        for {
-          (balance, locked) <- tokenService.getTokenBalance(address, token)
-        } yield AddressTokenBalance(token, balance, locked)
-      }),
-      route(listAddressTokensBalance.serverLogicSuccess[Future] { case (address, pagination) =>
-        tokenService
-          .listAddressTokensWithBalance(address, pagination)
-          .map(_.map { case (tokenId, balance, locked) =>
-            AddressTokenBalance(tokenId, balance, locked)
-          })
-      }),
-      route(listAddressTokens.serverLogicSuccess[Future] { case (address, pagination) =>
-        for {
-          tokens <- tokenService.listAddressTokens(address, pagination)
-        } yield tokens
-      }),
-      route(listAddressTokenTransactions.serverLogicSuccess[Future] {
-        case (address, token, pagination) =>
-          for {
-            tokens <- tokenService.listAddressTokenTransactions(address, token, pagination)
-          } yield tokens
-      }),
-      route(areAddressesActive.serverLogicSuccess[Future] { addresses =>
-        transactionService.areAddressesActive(addresses)
-      }),
-      route(exportTransactionsCsvByAddress.serverLogic[Future] { case (address, timeInterval) =>
-        exportTransactions(address, timeInterval).map(_.map { stream =>
-          (AddressServer.exportFileNameHeader(address, timeInterval), stream)
-        })
-      }),
-      route(getAddressAmountHistoryDEPRECATED.serverLogic[Future] {
-        case (address, timeInterval, intervalType) =>
-          validateTimeInterval(timeInterval, intervalType) {
-            val flowable =
-              transactionService.getAmountHistoryDEPRECATED(
-                address,
-                timeInterval.from,
-                timeInterval.to,
-                intervalType,
-                streamParallelism
-              )
-            Future.successful(
-              (
-                AddressServer.amountHistoryFileNameHeader(address, timeInterval),
-                FlowableHelper.toReadStream(flowable)
-              )
-            )
+          .getAmountHistory(
+            address,
+            timeInterval.from,
+            timeInterval.to,
+            intervalType
+          )
+          .map { values =>
+            AmountHistory(values.map { case (ts, value) => TimedAmount(ts, value) })
           }
-      }),
-      route(getAddressAmountHistory.serverLogic[Future] {
-        case (address, timeInterval, intervalType) =>
-          validateTimeInterval(timeInterval, intervalType) {
-            transactionService
-              .getAmountHistory(
-                address,
-                timeInterval.from,
-                timeInterval.to,
-                intervalType
-              )
-              .map { values =>
-                AmountHistory(values.map { case (ts, value) =>
-                  TimedAmount(ts, value)
-                })
-              }
-          }
-      }),
-      route(getPublicKey.serverLogic[Future] { address =>
-        address match {
-          case Address.Asset(LockupScript.P2PKH(_)) =>
-            transactionService.getUnlockScript(address).map {
-              case None =>
-                Left(ApiError.NotFound(s"No input found for address $address"))
-              case Some(unlockScript) =>
-                AddressServer.bytesToPublicKey(unlockScript)
-            }
-          case _ =>
-            Future.successful(Left(ApiError.BadRequest(s"Only P2PKH addresses supported")))
-        }
-      })
-    )
+      }
+    }
+  )
 
   private def exportTransactions(
       address: Address,

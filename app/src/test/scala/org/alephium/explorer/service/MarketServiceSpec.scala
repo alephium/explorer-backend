@@ -16,28 +16,44 @@
 
 package org.alephium.explorer.service
 
-import java.net.InetAddress
-
 import scala.collection.immutable.{ArraySeq, ListMap}
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-import akka.testkit.SocketUtil
-import io.vertx.core.Vertx
-import io.vertx.ext.web._
 import org.scalatest.concurrent.ScalaFutures
 import sttp.tapir._
 import sttp.tapir.CodecFormat.TextPlain
-import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
-import org.alephium.explorer.AlephiumFutureSpec
+import org.alephium.explorer._
 import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.web.Server
 import org.alephium.json.Json._
 
-class MarketServiceSpec extends AlephiumFutureSpec {
+class MarketServiceSpec extends AlephiumFutureSpec with HttpServersFixture {
   import MarketServiceSpec._
+
+  val coingecko: MarketServiceSpec.CoingeckoMock =
+    new MarketServiceSpec.CoingeckoMock()
+  val mobula: MarketServiceSpec.MobulaMock =
+    new MarketServiceSpec.MobulaMock()
+  val tokenList: MarketServiceSpec.TokenListMock =
+    new MarketServiceSpec.TokenListMock()
+
+  val marketConfig = ExplorerConfig.Market(
+    MarketServiceSpec.symbolNames,
+    MarketServiceSpec.currencies,
+    liquidityMinimum = 100,
+    s"http://${mobula.host.getHostAddress()}:${mobula.port}",
+    s"http://${coingecko.host.getHostAddress()}:${coingecko.port}",
+    s"http://${tokenList.host.getHostAddress()}:${tokenList.port}",
+    marketChartDays = 366
+  )
+
+  val marketService: MarketService.Impl =
+    new MarketService.Impl(marketConfig)
+
+  val servers: ArraySeq[TestHttpServer] = ArraySeq(coingecko, mobula, tokenList)
 
   "return error when not started" in new Fixture {
     eventually {
@@ -108,33 +124,10 @@ class MarketServiceSpec extends AlephiumFutureSpec {
   }
 
   trait Fixture {
-    val localhost: InetAddress = InetAddress.getByName("127.0.0.1")
-    val coingeckoPort          = SocketUtil.temporaryLocalPort(SocketUtil.Both)
-    val mobulaPort             = SocketUtil.temporaryLocalPort(SocketUtil.Both)
-    val tokenListPort          = SocketUtil.temporaryLocalPort(SocketUtil.Both)
-
     val alph = "ALPH"
     val usdt = "USDT"
     val weth = "WETH"
 
-    val marketConfig = ExplorerConfig.Market(
-      MarketServiceSpec.symbolNames,
-      MarketServiceSpec.currencies,
-      liquidityMinimum = 100,
-      s"http://${localhost.getHostAddress()}:$mobulaPort",
-      s"http://${localhost.getHostAddress()}:$coingeckoPort",
-      s"http://${localhost.getHostAddress()}:$tokenListPort",
-      marketChartDays = 366
-    )
-
-    val coingecko: MarketServiceSpec.CoingeckoMock =
-      new MarketServiceSpec.CoingeckoMock(localhost, coingeckoPort)
-    val mobula: MarketServiceSpec.MobulaMock =
-      new MarketServiceSpec.MobulaMock(localhost, mobulaPort)
-    val tokenList: MarketServiceSpec.TokenListMock =
-      new MarketServiceSpec.TokenListMock(localhost, tokenListPort)
-    val marketService: MarketService.Impl =
-      new MarketService.Impl(marketConfig)
   }
 }
 
@@ -160,26 +153,20 @@ object MarketServiceSpec {
     ArraySeq("btc", "usd", "eur", "chf", "gbp", "idr", "vnd", "rub", "try", "cad", "aud")
 
   class CoingeckoMock(
-      uri: InetAddress,
-      port: Int
-  ) extends ScalaFutures
+  )(implicit val executionContext: ExecutionContext)
+      extends ScalaFutures
       with BaseEndpoint
-      with Server {
+      with TestHttpServer {
 
-    private val vertx  = Vertx.vertx()
-    private val router = Router.router(vertx)
-
-    val routes: ArraySeq[Router => Route] =
-      ArraySeq(
-        route(
+    val server: Server = new Server {
+      val endpointsLogic: ArraySeq[EndpointLogic] =
+        ArraySeq(
           baseEndpoint.get
             .in("exchange_rates")
             .out(jsonBody[ujson.Value])
             .serverLogicSuccess[Future] { _ =>
               Future.successful(ujson.read(exchangeRates))
-            }
-        ),
-        route(
+            },
           baseEndpoint.get
             .in("coins")
             .in(path[String]("coin"))
@@ -191,28 +178,19 @@ object MarketServiceSpec {
               Future.successful(ujson.read(priceChart))
             }
         )
-      )
+    }
 
-    val server = vertx.createHttpServer().requestHandler(router)
-
-    routes.foreach(route => route(router))
-
-    server.listen(port, uri.getHostAddress).asScala.futureValue
   }
 
   class MobulaMock(
-      uri: InetAddress,
-      port: Int
-  ) extends ScalaFutures
+  )(implicit val executionContext: ExecutionContext)
+      extends ScalaFutures
       with BaseEndpoint
-      with Server {
+      with TestHttpServer {
 
-    private val vertx  = Vertx.vertx()
-    private val router = Router.router(vertx)
-
-    val routes: ArraySeq[Router => Route] =
-      ArraySeq(
-        route(
+    val server: Server = new Server {
+      val endpointsLogic: ArraySeq[EndpointLogic] =
+        ArraySeq(
           baseEndpoint.get
             .in("market")
             .in("multi-data")
@@ -223,41 +201,27 @@ object MarketServiceSpec {
               Future.successful(ujson.read(prices))
             }
         )
-      )
+    }
 
-    val server = vertx.createHttpServer().requestHandler(router)
-
-    routes.foreach(route => route(router))
-
-    server.listen(port, uri.getHostAddress).asScala.futureValue
   }
 
   class TokenListMock(
-      uri: InetAddress,
-      port: Int
-  ) extends ScalaFutures
+  )(implicit val executionContext: ExecutionContext)
+      extends ScalaFutures
       with BaseEndpoint
-      with Server {
+      with TestHttpServer {
 
-    private val vertx  = Vertx.vertx()
-    private val router = Router.router(vertx)
-
-    val routes: ArraySeq[Router => Route] =
-      ArraySeq(
-        route(
+    val server: Server = new Server {
+      val endpointsLogic: ArraySeq[EndpointLogic] =
+        ArraySeq(
           baseEndpoint.get
             .out(jsonBody[ujson.Value])
             .serverLogicSuccess[Future] { _ =>
               Future.successful(ujson.read(tokenList))
             }
         )
-      )
+    }
 
-    val server = vertx.createHttpServer().requestHandler(router)
-
-    routes.foreach(route => route(router))
-
-    server.listen(port, uri.getHostAddress).asScala.futureValue
   }
 
   val prices: String = s"""{"data": {

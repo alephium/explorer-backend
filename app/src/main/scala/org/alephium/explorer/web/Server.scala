@@ -17,21 +17,71 @@
 package org.alephium.explorer.web
 
 import scala.collection.immutable.ArraySeq
+import scala.concurrent.Future
 
-import io.vertx.ext.web._
+import org.postgresql.util.PSQLException
+import sttp.tapir.server.ServerEndpoint
+import sttp.tapir.server.interceptor.exception._
+import sttp.tapir.server.model.ValuedEndpointOutput
 import sttp.tapir.server.vertx.{VertxFutureServerInterpreter, VertxFutureServerOptions}
+import sttp.tapir.server.vertx.streams.VertxStreams
+import sttp.tapir.statusCode
 
-import org.alephium.api.DecodeFailureHandler
+import org.alephium.api.{ApiError, DecodeFailureHandler}
+import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.explorer.Metrics
 
-trait Server extends DecodeFailureHandler with VertxFutureServerInterpreter {
-  override def vertxFutureServerOptions: VertxFutureServerOptions =
-    VertxFutureServerOptions.customiseInterceptors
-      .decodeFailureHandler(
-        myDecodeFailureHandler
-      )
-      .metricsInterceptor(Metrics.prometheus.metricsInterceptor())
-      .options
+trait Server {
 
-  def routes: ArraySeq[Router => Route]
+  type EndpointLogic = ServerEndpoint.Full[_, _, _, _, _, VertxStreams, Future]
+
+  def endpointsLogic: ArraySeq[EndpointLogic]
+}
+
+object Server {
+
+  def interpreter(): VertxFutureServerInterpreter = {
+
+    val statementTimeoutMessage = "ERROR: canceling statement due to statement timeout"
+
+    val exceptionHandler = new ExceptionHandler[Future] {
+      override def apply(
+          ctx: ExceptionContext
+      )(implicit monad: sttp.monad.MonadError[Future]): Future[Option[ValuedEndpointOutput[_]]] = {
+        ctx.e match {
+          case psql: PSQLException if psql.getMessage == statementTimeoutMessage =>
+            Future.successful(
+              Some(
+                ValuedEndpointOutput(
+                  statusCode.and(jsonBody[ApiError.GatewayTimeout]),
+                  (ApiError.GatewayTimeout.statusCode, ApiError.GatewayTimeout(s"Query timeout"))
+                )
+              )
+            )
+          case e =>
+            Future.successful(
+              Some(
+                ValuedEndpointOutput(
+                  statusCode.and(jsonBody[ApiError.InternalServerError]),
+                  (
+                    ApiError.InternalServerError.statusCode,
+                    ApiError.InternalServerError(s"Internal Server Error: ${e.getMessage}")
+                  )
+                )
+              )
+            )
+        }
+      }
+    }
+
+    val decodeFailureHandler = new DecodeFailureHandler {}.myDecodeFailureHandler
+
+    VertxFutureServerInterpreter(
+      VertxFutureServerOptions.customiseInterceptors
+        .decodeFailureHandler(decodeFailureHandler)
+        .exceptionHandler(exceptionHandler)
+        .metricsInterceptor(Metrics.prometheus.metricsInterceptor())
+        .options
+    )
+  }
 }

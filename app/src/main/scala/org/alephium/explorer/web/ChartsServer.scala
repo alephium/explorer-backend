@@ -19,7 +19,6 @@ package org.alephium.explorer.web
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
-import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.StatusCode
@@ -39,31 +38,37 @@ class ChartsServer(
 ) extends Server
     with ChartsEndpoints {
 
-  val routes: ArraySeq[Router => Route] =
-    ArraySeq(
-      route(getHashrates.serverLogic[Future] { case (timeInterval, interval) =>
-        validateTimeInterval(timeInterval, interval) {
-          HashrateService.get(timeInterval.from, timeInterval.to, interval)
-        }
-      }),
-      route(getAllChainsTxCount.serverLogic[Future] { case (timeInterval, interval) =>
-        validateTimeInterval(timeInterval, interval) {
-          TransactionHistoryService
-            .getAllChains(timeInterval.from, timeInterval.to, interval)
-            .map { seq =>
-              seq.map { case (timestamp, count) =>
-                TimedCount(timestamp, count)
-              }
-            }
-        }
-      }),
-      route(getPerChainTxCount.serverLogic[Future] { case (timeInterval, interval) =>
-        validateTimeInterval(timeInterval, interval) {
-          TransactionHistoryService
-            .getPerChain(timeInterval.from, timeInterval.to, interval)
-        }
-      })
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
     )
+  )
+  def endpointsLogic: ArraySeq[EndpointLogic] = ArraySeq(
+    getHashrates.serverLogic[Future] { case (timeInterval, interval) =>
+      validateTimeInterval(timeInterval, interval) {
+        HashrateService.get(timeInterval.from, timeInterval.to, interval)
+      }
+    },
+    getAllChainsTxCount.serverLogic[Future] { case (timeInterval, interval) =>
+      validateTimeInterval(timeInterval, interval) {
+        TransactionHistoryService
+          .getAllChains(timeInterval.from, timeInterval.to, interval)
+          .map { seq =>
+            seq.map { case (timestamp, count) =>
+              TimedCount(timestamp, count)
+            }
+          }
+      }
+    },
+    getPerChainTxCount.serverLogic[Future] { case (timeInterval, interval) =>
+      validateTimeInterval(timeInterval, interval) {
+        TransactionHistoryService
+          .getPerChain(timeInterval.from, timeInterval.to, interval)
+      }
+    }
+  )
 
   private def validateTimeInterval[A](timeInterval: TimeInterval, intervalType: IntervalType)(
       contd: => Future[A]

@@ -21,7 +21,6 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util._
 
 import ch.qos.logback.classic.{Level, Logger, LoggerContext}
-import io.vertx.ext.web._
 import org.slf4j.LoggerFactory
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
@@ -44,22 +43,21 @@ class UtilsServer()(implicit
 ) extends Server
     with UtilsEndpoints {
 
-  val routes: ArraySeq[Router => Route] =
-    ArraySeq(
-      route(sanityCheck.serverLogicSuccess[Future] { _ =>
-        discard(SanityChecker.check())
-        Future.successful(())
-      }),
-      route(indexCheck.serverLogic[Future] { _ =>
-        IndexChecker.check().map(Right(_))
-      }),
-      route(changeGlobalLogLevel.serverLogic[Future] { level =>
-        Future.successful(updateGlobalLevel(level))
-      }),
-      route(changeLogConfig.serverLogic[Future] { values =>
-        Future.successful(updateLoggerContext(values))
-      })
-    )
+  def endpointsLogic: ArraySeq[EndpointLogic] = ArraySeq(
+    sanityCheck.serverLogicSuccess[Future] { _ =>
+      discard(SanityChecker.check())
+      Future.successful(())
+    },
+    indexCheck.serverLogic[Future] { _ =>
+      IndexChecker.check().map(Right(_))
+    },
+    changeGlobalLogLevel.serverLogic[Future] { level =>
+      Future.successful(updateGlobalLevel(level))
+    },
+    changeLogConfig.serverLogic[Future] { values =>
+      Future.successful(updateLoggerContext(values))
+    }
+  )
 
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   private def updateGlobalLevel(level: String): Either[ApiError[_ <: StatusCode], Unit] = {

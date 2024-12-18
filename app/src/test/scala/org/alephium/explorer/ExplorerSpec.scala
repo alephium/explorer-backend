@@ -17,28 +17,22 @@
 //scalastyle:off file.size.limit
 package org.alephium.explorer
 
-import java.net.InetAddress
-
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.io.{Codec, Source}
 import scala.jdk.CollectionConverters._
 
 import akka.testkit.SocketUtil
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
-import io.vertx.core.Vertx
-import io.vertx.ext.web._
 import org.scalacheck.Gen
 import org.scalatest.Assertion
 import org.scalatest.Inspectors
-import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.StatusCode
 import sttp.tapir._
 import sttp.tapir.generic.auto._
-import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 
 import org.alephium.api.{model, ApiError, ApiModelCodec}
 import org.alephium.api.{alphJsonBody => jsonBody}
@@ -66,7 +60,8 @@ trait ExplorerSpec
     extends AlephiumActorSpecLike
     with AlephiumFutureSpec
     with DatabaseFixtureForAll
-    with HttpRouteFixture {
+    with HttpRouteFixture
+    with HttpServersFixture {
 
   implicit override val patienceConfig: PatienceConfig =
     PatienceConfig(timeout = Span(120, Seconds))
@@ -111,25 +106,19 @@ trait ExplorerSpec
     .flatMap(_.transactions.flatMap(_.outputs.map(_.address)))
     .distinct
 
-  val localhost: InetAddress = InetAddress.getByName("127.0.0.1")
-
-  val blockFlowPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
   val blockFlowMock =
-    new ExplorerSpec.BlockFlowServerMock(localhost, blockFlowPort, blockflow, uncles, networkId)
+    new ExplorerSpec.BlockFlowServerMock(blockflow, uncles, networkId)
 
-  val coingeckoPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
-  val coingeckoUri  = s"http://${localhost.getHostAddress()}:$coingeckoPort"
-  val coingecko     = new MarketServiceSpec.CoingeckoMock(localhost, coingeckoPort)
+  val coingecko    = new MarketServiceSpec.CoingeckoMock()
+  val coingeckoUri = s"http://${coingecko.host.getHostAddress()}:${coingecko.port}"
 
-  val mobulaPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
-  val mobulaUri  = s"http://${localhost.getHostAddress()}:$mobulaPort"
-  val mobula     = new MarketServiceSpec.MobulaMock(localhost, mobulaPort)
+  val mobula    = new MarketServiceSpec.MobulaMock()
+  val mobulaUri = s"http://${mobula.host.getHostAddress()}:${mobula.port}"
 
-  val tokenListPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
-  val tokenListUri  = s"http://${localhost.getHostAddress()}:$tokenListPort"
-  val tokenList     = new MarketServiceSpec.TokenListMock(localhost, tokenListPort)
+  val tokenList    = new MarketServiceSpec.TokenListMock()
+  val tokenListUri = s"http://${tokenList.host.getHostAddress()}:${tokenList.port}"
 
-  val blockflowBinding = blockFlowMock.server
+  val servers: ArraySeq[TestHttpServer] = ArraySeq(blockFlowMock, coingecko, mobula, tokenList)
 
   def createApp(bootMode: BootMode.Readable): ExplorerState = {
     // We create a `databaseConfig` for each `ExplorerState`. If we use
@@ -144,7 +133,7 @@ trait ExplorerSpec
       ("alephium.explorer.market.coingecko-uri", coingeckoUri),
       ("alephium.explorer.market.mobula-uri", mobulaUri),
       ("alephium.explorer.market.token-list-uri", tokenListUri),
-      ("alephium.blockflow.port", blockFlowPort),
+      ("alephium.blockflow.port", blockFlowMock.port),
       ("alephium.blockflow.network-id", networkId.id),
       ("alephium.blockflow.group-num", groupSetting.groupNum)
     )
@@ -554,18 +543,14 @@ trait ExplorerSpec
 object ExplorerSpec {
 
   class BlockFlowServerMock(
-      address: InetAddress,
-      port: Int,
       blockflow: ArraySeq[ArraySeq[model.BlockEntry]],
       uncles: ArraySeq[model.BlockEntry],
       networkId: NetworkId
-  )(implicit groupSetting: GroupSetting)
+  )(implicit groupSetting: GroupSetting, val executionContext: ExecutionContext)
       extends ApiModelCodec
       with BaseEndpoint
-      with ScalaFutures
       with QueryParams
-      with Server
-      with IntegrationPatience {
+      with TestHttpServer {
 
     implicit val groupConfig: GroupConfig = groupSetting.groupConfig
     val blocks                            = blockflow.flatten
@@ -573,7 +558,7 @@ object ExplorerSpec {
 
     val cliqueId = CliqueId.generate
 
-    private val peer = model.PeerAddress(address, port, 0, 0)
+    private val peer = model.PeerAddress(host, port, 0, 0)
 
     def fetchHashesAtHeight(
         from: GroupIndex,
@@ -598,18 +583,9 @@ object ExplorerSpec {
       )
     }
 
-    private val vertx  = Vertx.vertx()
-    private val router = Router.router(vertx)
-
-    vertx
-      .fileSystem()
-      .existsBlocking(
-        "META-INF/resources/webjars/swagger-ui/"
-      ) // Fix swagger ui being not found on the first call
-
-    val routes: ArraySeq[Router => Route] =
-      ArraySeq(
-        route(
+    val server: Server = new Server {
+      val endpointsLogic: ArraySeq[EndpointLogic] =
+        ArraySeq(
           baseEndpoint.get
             .in("blockflow")
             .in("blocks")
@@ -617,9 +593,7 @@ object ExplorerSpec {
             .out(jsonBody[model.BlockEntry])
             .serverLogicSuccess[Future] { hash =>
               Future.successful(blocksWithUncles.find(_.hash === hash).get)
-            }
-        ),
-        route(
+            },
           baseEndpoint.get
             .in("blockflow")
             .in("blocks-with-events")
@@ -633,9 +607,7 @@ object ExplorerSpec {
                     AVector.from(Gen.listOfN(3, contractEventByBlockHash).sample.get)
                   )
                 )
-            }
-        ),
-        route(
+            },
           baseEndpoint.get
             .in("blockflow")
             .in("blocks")
@@ -655,9 +627,7 @@ object ExplorerSpec {
                   )
                 )
               )
-            }
-        ),
-        route(
+            },
           baseEndpoint.get
             .in("blockflow")
             .in("blocks-with-events")
@@ -687,9 +657,7 @@ object ExplorerSpec {
                   )
                 )
               )
-            }
-        ),
-        route(
+            },
           baseEndpoint.get
             .in("blockflow")
             .in("hashes")
@@ -705,9 +673,7 @@ object ExplorerSpec {
                   Height.unsafe(height)
                 )
               )
-            }
-        ),
-        route(
+            },
           baseEndpoint.get
             .in("blockflow")
             .in("chain-info")
@@ -718,9 +684,7 @@ object ExplorerSpec {
               Future.successful(
                 getChainInfo(GroupIndex.unsafe(from), GroupIndex.unsafe(to))
               )
-            }
-        ),
-        route(
+            },
           baseEndpoint.get
             .in("mempool")
             .in("transactions")
@@ -732,9 +696,7 @@ object ExplorerSpec {
               Future.successful(
                 ArraySeq(model.MempoolTransactions(from, to, AVector.from(txs)))
               )
-            }
-        ),
-        route(
+            },
           baseEndpoint.get
             .in("infos")
             .in("self-clique")
@@ -743,9 +705,7 @@ object ExplorerSpec {
               Future.successful(
                 model.SelfClique(cliqueId, AVector(peer), true, true)
               )
-            }
-        ),
-        route(
+            },
           baseEndpoint.get
             .in("infos")
             .in("chain-params")
@@ -754,9 +714,7 @@ object ExplorerSpec {
               Future.successful(
                 model.ChainParams(networkId, 18, groupSetting.groupNum, groupSetting.groupNum)
               )
-            }
-        ),
-        route(
+            },
           baseEndpoint.get
             .in("contracts")
             .in(path[Address.Contract]("address"))
@@ -780,9 +738,7 @@ object ExplorerSpec {
                   assetStateGen.sample.get
                 )
               )
-            }
-        ),
-        route(
+            },
           baseEndpoint.get
             .in("contracts")
             .in("multicall-contract")
@@ -805,14 +761,7 @@ object ExplorerSpec {
               )
             }
         )
-      )
-
-    val server = vertx.createHttpServer().requestHandler(router)
-
-    routes.foreach(route => route(router))
-
-    logger.info(s"Full node listening on ${address.getHostAddress}:$port")
-    server.listen(port, address.getHostAddress).asScala.futureValue
+    }
   }
 
   def contractResult(value: model.Val): model.CallContractResult = {

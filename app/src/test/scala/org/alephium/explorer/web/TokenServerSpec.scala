@@ -53,10 +53,8 @@ class TokenServerSpec()
     ): Future[ArraySeq[HolderInfo]] = Future.successful(holdertokens)
   }
 
-  val tokenServer =
+  val server: Server =
     new TokenServer(tokenService, holderService)
-
-  val routes = tokenServer.routes
 
   "return alph holders" in {
     Get(s"/tokens/holders/alph") check { response =>

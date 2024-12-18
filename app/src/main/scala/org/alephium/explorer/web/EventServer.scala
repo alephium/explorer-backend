@@ -19,7 +19,6 @@ package org.alephium.explorer.web
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
-import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -32,18 +31,24 @@ class EventServer(implicit
     dc: DatabaseConfig[PostgresProfile]
 ) extends Server
     with EventsEndpoints {
-  val routes: ArraySeq[Router => Route] =
-    ArraySeq(
-      route(getEventsByTxId.serverLogicSuccess[Future] { txId =>
-        run(getEventsByTxIdQuery(txId)).map(_.map(_.toApi))
-      }),
-      route(getEventsByContractAddress.serverLogicSuccess[Future] { case (address, pagination) =>
-        run(getEventsByContractAddressQuery(address, pagination)).map(_.map(_.toApi))
-      }),
-      route(getEventsByContractAndInputAddress.serverLogicSuccess[Future] {
-        case (contract, input, pagination) =>
-          run(getEventsByContractAndInputAddressQuery(contract, input, pagination))
-            .map(_.map(_.toApi))
-      })
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
     )
+  )
+  def endpointsLogic: ArraySeq[EndpointLogic] = ArraySeq(
+    getEventsByTxId.serverLogicSuccess[Future] { txId =>
+      run(getEventsByTxIdQuery(txId)).map(_.map(_.toApi))
+    },
+    getEventsByContractAddress.serverLogicSuccess[Future] { case (address, pagination) =>
+      run(getEventsByContractAddressQuery(address, pagination)).map(_.map(_.toApi))
+    },
+    getEventsByContractAndInputAddress.serverLogicSuccess[Future] {
+      case (contract, input, pagination) =>
+        run(getEventsByContractAndInputAddressQuery(contract, input, pagination))
+          .map(_.map(_.toApi))
+    }
+  )
 }

@@ -29,10 +29,9 @@ class ChartsServerSpec()
     with DatabaseFixtureForAll
     with HttpServerFixture {
 
-  val chartServer = new ChartsServer(
+  val server: Server = new ChartsServer(
     maxTimeInterval = ConfigDefaults.maxTimeIntervals.charts
   )
-  override val routes = chartServer.routes
 
   "validate hourly/daily time range " in {
     val now     = TimeStamp.now().millis

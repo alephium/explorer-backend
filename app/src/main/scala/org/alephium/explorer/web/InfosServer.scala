@@ -22,7 +22,6 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
-import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -51,54 +50,51 @@ class InfosServer(
 ) extends Server
     with InfosEndpoints {
 
-  // scalafmt is struggling on this one, maybe latest version wil work.
-  // format: off
-  val routes: ArraySeq[Router=>Route] =
-    ArraySeq(
-      route(getInfos.serverLogicSuccess[Future] { _ =>
-        getExplorerInfo()
-      }) ,
-      route(listTokenSupply.serverLogicSuccess[Future] { pagination =>
-        tokenSupplyService.listTokenSupply(pagination)
-      }) ,
-      route(getCirculatingSupply.serverLogicSuccess[Future] { _ =>
-          getLatestTokenSupply()
-          .map { supply =>
-            val circulating = supply.map(_.circulating).getOrElse(U256.Zero)
-            toALPH(circulating)
-          }
-      }) ,
-      route(getTotalSupply.serverLogicSuccess[Future] { _ =>
-          getLatestTokenSupply()
-          .map { supply =>
-            val total = supply.map(_.total).getOrElse(U256.Zero)
-            toALPH(total)
-          }
-      }) ,
-      route(getReservedSupply.serverLogicSuccess[Future] { _ =>
-          getLatestTokenSupply()
-          .map { supply =>
-            val reserved = supply.map(_.reserved).getOrElse(U256.Zero)
-            toALPH(reserved)
-          }
-      }) ,
-      route(getLockedSupply.serverLogicSuccess[Future] { _ =>
-          getLatestTokenSupply()
-          .map { supply =>
-            val locked = supply.map(_.locked).getOrElse(U256.Zero)
-            toALPH(locked)
-          }
-      }) ,
-      route(getHeights.serverLogicSuccess[Future]{ _ =>
-         blockService.listMaxHeights()
-      }) ,
-      route(getTotalTransactions.serverLogicSuccess[Future]{ _=>
-        Future(transactionService.getTotalNumber())
-      }),
-      route(getAverageBlockTime.serverLogicSuccess[Future]{ _=>
-        blockService.getAverageBlockTime()
-      })      )
-  // format: on
+  def endpointsLogic: ArraySeq[EndpointLogic] = ArraySeq(
+    getInfos.serverLogicSuccess[Future] { _ =>
+      getExplorerInfo()
+    },
+    listTokenSupply.serverLogicSuccess[Future] { pagination =>
+      tokenSupplyService.listTokenSupply(pagination)
+    },
+    getCirculatingSupply.serverLogicSuccess[Future] { _ =>
+      getLatestTokenSupply()
+        .map { supply =>
+          val circulating = supply.map(_.circulating).getOrElse(U256.Zero)
+          toALPH(circulating)
+        }
+    },
+    getTotalSupply.serverLogicSuccess[Future] { _ =>
+      getLatestTokenSupply()
+        .map { supply =>
+          val total = supply.map(_.total).getOrElse(U256.Zero)
+          toALPH(total)
+        }
+    },
+    getReservedSupply.serverLogicSuccess[Future] { _ =>
+      getLatestTokenSupply()
+        .map { supply =>
+          val reserved = supply.map(_.reserved).getOrElse(U256.Zero)
+          toALPH(reserved)
+        }
+    },
+    getLockedSupply.serverLogicSuccess[Future] { _ =>
+      getLatestTokenSupply()
+        .map { supply =>
+          val locked = supply.map(_.locked).getOrElse(U256.Zero)
+          toALPH(locked)
+        }
+    },
+    getHeights.serverLogicSuccess[Future] { _ =>
+      blockService.listMaxHeights()
+    },
+    getTotalTransactions.serverLogicSuccess[Future] { _ =>
+      Future(transactionService.getTotalNumber())
+    },
+    getAverageBlockTime.serverLogicSuccess[Future] { _ =>
+      blockService.getAverageBlockTime()
+    }
+  )
 
   def getExplorerInfo()(implicit
       executionContext: ExecutionContext,

@@ -191,7 +191,13 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
     "return None" when {
       "address does not exist" in {
         val address = addressGen.sample getOrElse fail("Failed to sample address")
-        run(getBalanceUntilLockTime(address, TimeStamp.now(), TimeStamp.now())).futureValue is ((
+        run(
+          getBalanceUntilLockTime(
+            address,
+            TimeStamp.now(),
+            TimeStamp.now()
+          )
+        ).futureValue is ((
           None,
           None
         ))

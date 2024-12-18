@@ -308,6 +308,10 @@ val wartsCompileExcludes = Seq(
 )
 
 val wartsTestExcludes = wartsCompileExcludes ++ Seq(
+  Wart.JavaSerializable,
+  Wart.Product,
+  Wart.Serializable,
+  Wart.AnyVal,
   Wart.PublicInference,
   Wart.OptionPartial,
   Wart.Overloading,

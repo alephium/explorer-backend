@@ -97,10 +97,8 @@ class InfosServerSpec()
     override def getTotalNumber()(implicit cache: TransactionCache): Int = 10
   }
 
-  val infoServer =
+  val server: Server =
     new InfosServer(tokenSupplyService, blockService, transactionService)
-
-  val routes = infoServer.routes
 
   "return the explorer infos" in {
     Get(s"/infos") check { response =>

@@ -31,9 +31,7 @@ class MempoolServerSpec()
     with HttpServerFixture
     with DatabaseFixtureForAll {
 
-  val utxServer = new MempoolServer()
-
-  val routes = utxServer.routes
+  val server: Server = new MempoolServer()
 
   "listMempoolTransactions" in {
     Get(s"/mempool/transactions") check { response =>
