@@ -25,7 +25,6 @@ import com.github.benmanes.caffeine.cache.{AsyncCacheLoader, Caffeine}
 import io.prometheus.metrics.core.metrics.Gauge
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
-import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.persistence.DBRunner._
@@ -117,7 +116,11 @@ object BlockCache {
 
     val cacheRowCount: AsyncReloadingCache[Int] =
       AsyncReloadingCache(0, cacheRowCountReloadPeriod) { _ =>
-        run(BlockQueries.mainChainQuery.length.result)
+        cachedLatestBlocks
+          .getAll(groupConfig.cliqueChainIndexes.toArray)
+          .map(_.collect {
+            case (_, block) if block.height.value >= 0 => block.height.value + 1
+          }.sum)
       }
 
     val latestFinalizeTime: AsyncReloadingCache[TimeStamp] =
