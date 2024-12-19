@@ -17,7 +17,7 @@
 import sbt._
 
 object Version {
-  lazy val common = "3.10.0+10-30c59df0+20241218-1555-SNAPSHOT"
+  lazy val common = "3.11.0"
 
   lazy val akka       = "2.6.20"
   lazy val rxJava     = "3.1.8"
