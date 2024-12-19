@@ -30,7 +30,7 @@ import org.alephium.util.Service
 object TransactionCache {
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def apply(database: Database, reloadAfter: FiniteDuration = 5.seconds)(implicit
+  def apply(database: Database, reloadAfter: FiniteDuration = 10.minutes)(implicit
       ec: ExecutionContext
   ): TransactionCache =
     new TransactionCache(database, reloadAfter)
