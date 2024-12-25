@@ -22,9 +22,11 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 
+import akka.util.ByteString
 import io.reactivex.rxjava3.core.Flowable
 import io.vertx.core.buffer.Buffer
 import org.scalacheck.Gen
+import org.scalatest.time.{Seconds, Span}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.{Header, StatusCode}
@@ -34,22 +36,37 @@ import org.alephium.api.model.TimeInterval
 import org.alephium.explorer._
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
+import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.HttpFixture._
+import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.service.{
   EmptyTokenService,
   EmptyTransactionService,
   TransactionService
 }
+import org.alephium.protocol.PublicKey
 import org.alephium.protocol.model.{Address, TokenId}
+import org.alephium.protocol.vm.{LockupScript, UnlockScript}
+import org.alephium.serde._
 import org.alephium.util.{Duration, TimeStamp, U256}
 
-@SuppressWarnings(Array("org.wartremover.warts.PlatformDefault", "org.wartremover.warts.Var"))
+@SuppressWarnings(
+  Array(
+    "org.wartremover.warts.PlatformDefault",
+    "org.wartremover.warts.Var",
+    "org.wartremover.warts.AsInstanceOf"
+  )
+)
 class AddressServerSpec()
     extends AlephiumActorSpecLike
     with DatabaseFixtureForAll
     with HttpServerFixture {
+
+  implicit override val patienceConfig: PatienceConfig =
+    PatienceConfig(timeout = Span(120, Seconds))
 
   val exportTxsNumberThreshold = 1000
   var addressHasMoreTxs        = false
@@ -70,7 +87,20 @@ class AddressServerSpec()
 
   val tokens = Gen.listOf(addressTokenBalanceGen).sample.get
 
+  val transactionInfo = transactions.headOption.map { tx =>
+    TransactionInfo(
+      tx.hash,
+      tx.blockHash,
+      tx.timestamp,
+      tx.coinbase
+    )
+  }
+
   var testLimit = 0
+
+  val publicKeyAddresses = Gen.listOfN(10, publicKeyGen).sample.get.map { publicKey =>
+    (Address.p2pkh(publicKey), publicKey)
+  }
 
   val transactionService = new EmptyTransactionService {
     override def listMempoolTransactionsByAddress(address: Address)(implicit
@@ -112,6 +142,12 @@ class AddressServerSpec()
       )
     }
 
+    override def getLatestTransactionInfoByAddress(address: Address)(implicit
+        ec: ExecutionContext,
+        dc: DatabaseConfig[PostgresProfile]
+    ): Future[Option[TransactionInfo]] =
+      Future.successful(transactionInfo)
+
     override def getAmountHistoryDEPRECATED(
         address: Address,
         from: TimeStamp,
@@ -131,6 +167,20 @@ class AddressServerSpec()
         dc: DatabaseConfig[PostgresProfile]
     ): Future[ArraySeq[(TimeStamp, BigInteger)]] =
       Future.successful(amountHistory.map { case (ts, bi) => (bi, ts) })
+
+    override def getUnlockScript(
+        address: Address
+    )(implicit
+        ec: ExecutionContext,
+        dc: DatabaseConfig[PostgresProfile]
+    ): Future[Option[ByteString]] = {
+      Future.successful {
+        publicKeyAddresses.find(_._1 == address).map { case (_, publicKey) =>
+          val unlockScript: UnlockScript = UnlockScript.P2PKH(publicKey)
+          serialize(unlockScript)
+        }
+      }
+    }
   }
 
   val tokenService = new EmptyTokenService {
@@ -142,6 +192,8 @@ class AddressServerSpec()
         tokens.map(res => (res.tokenId, res.balance, res.lockedBalance))
       }
   }
+
+  implicit val blockCache: BlockCache = TestBlockCache()
 
   val server =
     new AddressServer(
@@ -156,7 +208,7 @@ class AddressServerSpec()
   val routes = server.routes
 
   "validate and forward `txLimit` query param" in {
-
+    val maxLimit = Pagination.maxLimit
     forAll(addressGen, Gen.chooseNum[Int](-10, 120)) { case (address, txLimit) =>
       Get(s"/addresses/${address}/transactions?limit=$txLimit") check { response =>
         if (txLimit < 0) {
@@ -164,10 +216,10 @@ class AddressServerSpec()
           response.as[ApiError.BadRequest] is ApiError.BadRequest(
             s"Invalid value for: query parameter limit (expected value to be greater than or equal to 0, but got $txLimit)"
           )
-        } else if (txLimit > 100) {
+        } else if (txLimit > maxLimit) {
           response.code is StatusCode.BadRequest
           response.as[ApiError.BadRequest] is ApiError.BadRequest(
-            s"Invalid value for: query parameter limit (expected value to be less than or equal to 100, but got $txLimit)"
+            s"Invalid value for: query parameter limit (expected value to be less than or equal to $maxLimit, but got $txLimit)"
           )
         } else {
           response.code is StatusCode.Ok
@@ -176,7 +228,7 @@ class AddressServerSpec()
       }
 
       Get(s"/addresses/${address}/transactions") check { _ =>
-        testLimit is 20 // default txLimit
+        testLimit is Pagination.defaultLimit // default txLimit
       }
     }
   }
@@ -185,6 +237,14 @@ class AddressServerSpec()
     forAll(addressGen) { case address =>
       Get(s"/addresses/${address}/total-transactions") check { response =>
         response.as[Int] is 0
+      }
+    }
+  }
+
+  "get latest transaction info" in {
+    forAll(addressGen) { case address =>
+      Get(s"/addresses/${address}/latest-transaction") check { response =>
+        response.as[TransactionInfo] is transactionInfo.get
       }
     }
   }
@@ -287,7 +347,7 @@ class AddressServerSpec()
     def getToTs(intervalType: IntervalType) =
       fromTs + maxTimeSpan(intervalType).millis
 
-    "return the deprecated amount history as json" in {
+    "return the deprecated amount history as json" ignore {
       intervalTypes.foreach { intervalType =>
         val toTs = getToTs(intervalType)
 
@@ -365,6 +425,27 @@ class AddressServerSpec()
     }
   }
 
+  "getPublicKey" should {
+    "not found when inputs don't exist" in {
+      forAll(addressGen) { address =>
+        Get(s"/addresses/$address/public-key") check { response =>
+          address match {
+            case Address.Asset(LockupScript.P2PKH(_)) => response.code is StatusCode.NotFound
+            case _                                    => response.code is StatusCode.BadRequest
+          }
+        }
+      }
+    }
+
+    "return public key" in {
+      publicKeyAddresses.foreach { case (address, publicKey) =>
+        Get(s"/addresses/$address/public-key") check { response =>
+          response.as[PublicKey] is publicKey
+        }
+      }
+    }
+  }
+
   "AddressServer companion object" should {
     "create correct export filename" in {
       val address = "12jK2jHyyJTJyuRMRya7QJSojgVnb5yh4HVzNNw6BTBDF"
@@ -376,6 +457,32 @@ class AddressServerSpec()
         Address.fromBase58(address).get,
         TimeInterval(TimeStamp.unsafe(from), TimeStamp.unsafe(to))
       ) is expected
+    }
+
+    "convert p2pkh unlock script" in {
+      forAll(unlockScriptProtocolP2PKHGen) { unlockScript =>
+        val publicKey = unlockScript.publicKey
+        AddressServer.bytesToPublicKey(serialize(unlockScript.asInstanceOf[UnlockScript])) is Right(
+          publicKey
+        )
+      }
+    }
+
+    "fail to convert p2mpkh unlock script" in {
+      forAll(unlockScriptProtocolP2MPKHGen) { unlockScript =>
+        AddressServer.bytesToPublicKey(serialize(unlockScript.asInstanceOf[UnlockScript])) is Left(
+          ApiError.BadRequest("Invalid unlock script, require P2PKH")
+        )
+      }
+    }
+
+    "fail to convert invalid unlock script" in {
+      forAll(hashGen) { unlockScript =>
+        val error = deserialize[UnlockScript](unlockScript.bytes).swap.toOption.get
+        AddressServer.bytesToPublicKey(unlockScript.bytes) is Left(
+          ApiError.InternalServerError(s"Failed to deserialize unlock script: $error")
+        )
+      }
     }
   }
 

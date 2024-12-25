@@ -23,15 +23,16 @@ import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.cache.{BlockCache, TransactionCache}
+import org.alephium.explorer.cache.{BlockCache, MetricCache, TransactionCache}
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service._
 import org.alephium.explorer.web._
 
-// scalastyle:off magic.number parameter.number
+// scalastyle:off magic.number parameter.number method.length
 object AppServer {
 
   def routes(
+      marketService: MarketService,
       exportTxsNumberThreshold: Int,
       streamParallelism: Int,
       maxTimeIntervals: ExplorerConfig.MaxTimeIntervals,
@@ -41,12 +42,12 @@ object AppServer {
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       blockCache: BlockCache,
+      metricCache: MetricCache,
       transactionCache: TransactionCache,
       groupSetting: GroupSetting
   ): ArraySeq[Router => Route] = {
 
-    val marketService = MarketService.CoinGecko.default(marketConfig)
-    val blockServer   = new BlockServer()
+    val blockServer = new BlockServer()
     val addressServer =
       new AddressServer(
         TransactionService,
@@ -57,15 +58,20 @@ object AppServer {
         maxTimeIntervals.exportTxs
       )
     val transactionServer = new TransactionServer()
-    val infosServer       = new InfosServer(TokenSupplyService, BlockService, TransactionService)
+    val infosServer =
+      new InfosServer(TokenSupplyService, BlockService, TransactionService)
     val utilsServer: UtilsServer   = new UtilsServer()
     val chartsServer: ChartsServer = new ChartsServer(maxTimeIntervals.charts)
-    val tokenServer: TokenServer   = new TokenServer(TokenService)
+    val tokenServer: TokenServer   = new TokenServer(TokenService, HolderService)
     val mempoolServer              = new MempoolServer()
     val eventServer                = new EventServer()
     val contractServer             = new ContractServer()
     val marketServer               = new MarketServer(marketService)
-    val documentationServer        = new DocumentationServer(maxTimeIntervals.exportTxs)
+    val metricsServer              = new MetricsServer(metricCache)
+    val documentationServer = new DocumentationServer(
+      maxTimeIntervals.exportTxs,
+      marketConfig.currencies
+    )
 
     blockServer.routes ++
       addressServer.routes ++
@@ -78,7 +84,7 @@ object AppServer {
       eventServer.routes ++
       contractServer.routes ++
       marketServer.routes ++
-      documentationServer.routes :+
-      Metrics.route
+      documentationServer.routes ++
+      metricsServer.routes
   }
 }

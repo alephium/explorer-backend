@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
+//scalastyle:off file.size.limit
 package org.alephium.explorer.service
 
 import java.math.BigInteger
@@ -40,7 +41,7 @@ import org.alephium.api.model.{
   MultipleCallContractResult,
   SelfClique
 }
-import org.alephium.explorer.GroupSetting
+import org.alephium.explorer.{Consensus, GroupSetting}
 import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.error.ExplorerError
@@ -48,7 +49,6 @@ import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.util.InputAddressUtil
 import org.alephium.http.EndpointSender
-import org.alephium.protocol
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.mining.HashRate
 import org.alephium.protocol.model.{
@@ -57,13 +57,11 @@ import org.alephium.protocol.model.{
   ChainIndex,
   ContractId,
   GroupIndex,
-  Hint,
   Target,
   TokenId,
   TransactionId
 }
-import org.alephium.protocol.vm.LockupScript
-import org.alephium.util.{AVector, Duration, Hex, Service, TimeStamp, U256}
+import org.alephium.util.{AVector, Hex, Service, TimeStamp, U256}
 
 trait BlockFlowClient extends Service {
   def fetchBlock(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntity]
@@ -135,6 +133,8 @@ object BlockFlowClient extends StrictLogging {
       with Endpoints
       with ApiModelCodec {
 
+    override val apiKeys: AVector[api.model.ApiKey] = AVector.empty
+
     private val endpointSender = new EndpointSender(maybeApiKey)
 
     override def startSelfOnce(): Future[Unit] = {
@@ -184,15 +184,24 @@ object BlockFlowClient extends StrictLogging {
         _send(getBlock, uri, hash).map(blockProtocolToEntity)
       }
 
-    def fetchBlockAndEvents(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntityWithEvents] =
-      fetchSelfCliqueAndChainParams().flatMap { case (selfClique, chainParams) =>
-        selfCliqueIndex(selfClique, chainParams, fromGroup) match {
-          case Left(error) => Future.failed(new Throwable(error))
-          case Right((nodeAddress, restPort)) =>
-            val uri = Uri(nodeAddress.getHostAddress, restPort)
-            _send(getBlockAndEvents, uri, hash).map(blockAndEventsToEntities)
+    def fetchBlockAndEvents(
+        fromGroup: GroupIndex,
+        hash: BlockHash
+    ): Future[BlockEntityWithEvents] = {
+      if (directCliqueAccess) {
+        fetchSelfCliqueAndChainParams().flatMap { case (selfClique, chainParams) =>
+          selfCliqueIndex(selfClique, chainParams, fromGroup) match {
+            case Left(error) => Future.failed(new Throwable(error))
+            case Right((nodeAddress, restPort)) =>
+              val uri = Uri(nodeAddress.getHostAddress, restPort)
+              _send(getBlockAndEvents, uri, hash).map(blockAndEventsToEntities)
+          }
         }
+      } else {
+        _send(getBlockAndEvents, uri, hash).map(blockAndEventsToEntities)
       }
+    }
+
     def fetchChainInfo(chainIndex: ChainIndex): Future[ChainInfo] = {
       _send(getChainInfo, uri, chainIndex)
     }
@@ -252,7 +261,7 @@ object BlockFlowClient extends StrictLogging {
             case Some(api.model.ValByteVec(bytes)) =>
               val data = Hex.toHexString(bytes)
               if (data.startsWith(interfaceIdPrefix)) {
-                Some(StdInterfaceId.from(data.drop(interfaceIdPrefix.size)))
+                Some(StdInterfaceId.from(data.drop(interfaceIdPrefix.length)))
               } else {
                 Some(StdInterfaceId.NonStandard)
               }
@@ -441,7 +450,16 @@ object BlockFlowClient extends StrictLogging {
       transactions.flatMap { case (tx, txOrder) =>
         InputAddressUtil.convertSameAsPrevious(tx.unsigned.inputs.toArraySeq).zipWithIndex.map {
           case (in, index) =>
-            inputToEntity(in, hash, tx.unsigned.txId, block.timestamp, mainChain, index, txOrder)
+            inputToEntity(
+              in,
+              hash,
+              tx.unsigned.txId,
+              block.timestamp,
+              mainChain,
+              index,
+              txOrder,
+              contractInput = false
+            )
         }
       }
     val contractInputs =
@@ -455,7 +473,8 @@ object BlockFlowClient extends StrictLogging {
             block.timestamp,
             mainChain,
             shiftIndex,
-            txOrder
+            txOrder,
+            contractInput = true
           )
         }
       }
@@ -472,8 +491,8 @@ object BlockFlowClient extends StrictLogging {
       if (block.height == Height.genesis.value) null else block.transactions.last.unsigned.txId
     val outputs =
       transactions.flatMap { case (tx, txOrder) =>
+        val txId = tx.unsigned.txId
         tx.unsigned.fixedOutputs.toArraySeq.zipWithIndex.map { case (out, index) =>
-          val txId = tx.unsigned.txId
           outputToEntity(
             out.upCast(),
             hash,
@@ -482,7 +501,8 @@ object BlockFlowClient extends StrictLogging {
             block.timestamp,
             mainChain,
             txOrder,
-            txId == coinbaseTxId
+            coinbase = txId == coinbaseTxId,
+            fixedOutput = true
           )
         }
       }
@@ -498,7 +518,8 @@ object BlockFlowClient extends StrictLogging {
             block.timestamp,
             mainChain,
             txOrder,
-            false
+            coinbase = false,
+            fixedOutput = false
           )
         }
       }
@@ -531,6 +552,10 @@ object BlockFlowClient extends StrictLogging {
     // Genesis blocks don't have any transactions
     val coinbaseTxId =
       if (block.height == Height.genesis.value) null else block.transactions.last.unsigned.txId
+    val ghostUncles = block.ghostUncles.toArraySeq.map { ghostUncle =>
+      GhostUncle(ghostUncle.blockHash, ghostUncle.miner)
+    }
+
     BlockEntity(
       hash,
       block.timestamp,
@@ -550,7 +575,8 @@ object BlockFlowClient extends StrictLogging {
       block.depStateHash,
       block.txsHash,
       block.target,
-      computeHashRate(block.target)
+      computeHashRate(block.target, block.timestamp),
+      ghostUncles
     )
   }
   // scalastyle:on null
@@ -618,6 +644,9 @@ object BlockFlowClient extends StrictLogging {
       timestamp,
       chainFrom,
       chainTo,
+      tx.unsigned.version,
+      tx.unsigned.networkId,
+      tx.unsigned.scriptOpt.map(_.value),
       tx.unsigned.gasAmount,
       tx.unsigned.gasPrice,
       index,
@@ -635,7 +664,8 @@ object BlockFlowClient extends StrictLogging {
       None,
       InputAddressUtil.addressFromProtocolInput(input),
       None,
-      None
+      None,
+      contractInput = false
     )
   }
 
@@ -646,7 +676,8 @@ object BlockFlowClient extends StrictLogging {
       timestamp: TimeStamp,
       mainChain: Boolean,
       index: Int,
-      txOrder: Int
+      txOrder: Int,
+      contractInput: Boolean
   ): InputEntity = {
     InputEntity(
       blockHash,
@@ -661,7 +692,8 @@ object BlockFlowClient extends StrictLogging {
       None,
       InputAddressUtil.addressFromProtocolInput(input),
       None,
-      None
+      None,
+      contractInput = contractInput
     )
   }
 
@@ -672,7 +704,8 @@ object BlockFlowClient extends StrictLogging {
       timestamp: TimeStamp,
       mainChain: Boolean,
       index: Int,
-      txOrder: Int
+      txOrder: Int,
+      contractInput: Boolean
   ): InputEntity = {
     InputEntity(
       blockHash,
@@ -687,7 +720,8 @@ object BlockFlowClient extends StrictLogging {
       None,
       None,
       None,
-      None
+      None,
+      contractInput = contractInput
     )
   }
 
@@ -704,7 +738,8 @@ object BlockFlowClient extends StrictLogging {
       protocolTokensToTokens(output.tokens),
       lockTime,
       Some(output.message),
-      None
+      None,
+      fixedOutput = true
     )
   }
 
@@ -735,16 +770,12 @@ object BlockFlowClient extends StrictLogging {
       timestamp: TimeStamp,
       mainChain: Boolean,
       txOrder: Int,
-      coinbase: Boolean
+      coinbase: Boolean,
+      fixedOutput: Boolean
   ): OutputEntity = {
     val lockTime = output match {
       case asset: api.model.AssetOutput if asset.lockTime.millis > 0 => Some(asset.lockTime)
       case _                                                         => None
-    }
-
-    val hint = output.address.lockupScript match {
-      case asset: LockupScript.Asset  => Hint.ofAsset(asset.scriptHint)
-      case contract: LockupScript.P2C => Hint.ofContract(contract.scriptHint)
     }
 
     val outputType: OutputEntity.OutputType = output match {
@@ -764,8 +795,8 @@ object BlockFlowClient extends StrictLogging {
       txId,
       timestamp,
       outputType,
-      hint.value,
-      protocol.model.TxOutputRef.key(txId, index).value,
+      output.hint,
+      output.key,
       output.attoAlphAmount.value,
       output.address,
       tokens,
@@ -776,15 +807,15 @@ object BlockFlowClient extends StrictLogging {
       txOrder,
       coinbase,
       None,
-      None
+      None,
+      fixedOutput
     )
   }
 
-  // scalastyle:off magic.number
-  def computeHashRate(targetBytes: ByteString)(implicit groupSetting: GroupSetting): BigInteger = {
-    val target          = Target.unsafe(targetBytes)
-    val blockTargetTime = Duration.ofSecondsUnsafe(64) // TODO add this to config
-    HashRate.from(target, blockTargetTime)(groupSetting.groupConfig).value
+  def computeHashRate(targetBytes: ByteString, timestamp: TimeStamp)(implicit
+      groupSetting: GroupSetting
+  ): BigInteger = {
+    val target = Target.unsafe(targetBytes)
+    HashRate.from(target, Consensus.blockTargetTime(timestamp))(groupSetting.groupConfig).value
   }
-  // scalastyle:on magic.number
 }

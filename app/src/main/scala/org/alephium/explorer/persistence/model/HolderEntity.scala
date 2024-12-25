@@ -16,8 +16,10 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.Address
+import org.alephium.util.U256
 
-/** Class for defining rows in table [[org.alephium.explorer.persistence.schema.BlockDepsSchema]]
-  */
-final case class BlockDepEntity(hash: BlockHash, dep: BlockHash, order: Int)
+final case class HolderEntity(
+    address: Address,
+    balance: U256
+)

@@ -19,6 +19,7 @@ package org.alephium.explorer.persistence.model
 import akka.util.ByteString
 
 import org.alephium.api.model.{ValAddress, ValByteVec}
+import org.alephium.explorer.api.model.ContractLiveness
 import org.alephium.protocol
 import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.TimeStamp
@@ -45,6 +46,29 @@ final case class ContractEntity(
       timestamp  <- destructionTimestamp
       eventOrder <- destructionEventOrder
     } yield ContractEntity.DestroyInfo(contract, blockHash, txHash, timestamp, eventOrder)
+
+  def toApi: ContractLiveness = {
+    val construction =
+      ContractLiveness.Location(
+        creationBlockHash,
+        creationTxHash,
+        creationTimestamp
+      )
+    val destruction = for {
+      blockHash <- destructionBlockHash
+      txHash    <- destructionTxHash
+      timestamp <- destructionTimestamp
+    } yield {
+      ContractLiveness.Location(blockHash, txHash, timestamp)
+    }
+
+    ContractLiveness(
+      parent,
+      construction,
+      destruction,
+      interfaceId.map(_.toApi)
+    )
+  }
 }
 
 object ContractEntity {
@@ -92,7 +116,7 @@ object ContractEntity {
     }
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
+  @SuppressWarnings(Array("org.wartremover.warts.SeqApply"))
   def extractAddresses(
       event: EventEntity
   ): Option[(Address, Option[Address], Option[ByteString])] = {
@@ -114,7 +138,7 @@ object ContractEntity {
     }
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
+  @SuppressWarnings(Array("org.wartremover.warts.SeqApply"))
   def destructionFromEventEntity(event: EventEntity, from: GroupIndex): Option[DestroyInfo] = {
     if (event.contractAddress == destroyContractEventAddress(from) && event.fields.sizeIs == 1) {
       event.fields(0) match {

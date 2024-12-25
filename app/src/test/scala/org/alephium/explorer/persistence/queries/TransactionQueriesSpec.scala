@@ -43,7 +43,7 @@ import org.alephium.util.{Duration, TimeStamp, U256}
 class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
   "compute locked balance when empty" in new Fixture {
-    val balance = run(TransactionQueries.getBalanceAction(address)).futureValue
+    val balance = run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
     balance is ((U256.Zero, U256.Zero))
   }
 
@@ -57,7 +57,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     run(OutputSchema.table ++= ArraySeq(output1, output2, output3, output4)).futureValue
 
-    val (total, locked) = run(TransactionQueries.getBalanceAction(address)).futureValue
+    val (total, locked) =
+      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
 
     total is ALPH.alph(10)
     locked is ALPH.alph(7)
@@ -68,12 +69,13 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
-    val input1  = input(output2.hint, output2.key)
+    val input1  = input(output2.hint, output2.key).copy(outputRefAddress = Some(address))
 
     run(OutputSchema.table ++= ArraySeq(output1, output2)).futureValue
     run(InputSchema.table += input1).futureValue
 
-    val (total, _) = run(TransactionQueries.getBalanceAction(address)).futureValue
+    val (total, _) =
+      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
 
     total is ALPH.alph(1)
 
@@ -81,7 +83,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val to   = timestampMaxValue
     FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from)).futureValue
 
-    val (totalFinalized, _) = run(TransactionQueries.getBalanceAction(address)).futureValue
+    val (totalFinalized, _) =
+      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
 
     totalFinalized is ALPH.alph(1)
   }
@@ -95,7 +98,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     run(OutputSchema.table ++= ArraySeq(output1, output2)).futureValue
     run(InputSchema.table += input1).futureValue
 
-    val (total, _) = run(TransactionQueries.getBalanceAction(address)).futureValue
+    val (total, _) =
+      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
 
     total is ALPH.alph(1)
   }
@@ -200,9 +204,14 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         output.timestamp,
         inputs,
         ArraySeq(outputEntityToApi(output, spent)),
+        version = 1,
+        networkId = 1,
+        scriptOpt = None,
         1,
         ALPH.alph(1),
         scriptExecutionOk = true,
+        inputSignatures = ArraySeq.empty,
+        scriptSignatures = ArraySeq.empty,
         coinbase = false
       )
     }
@@ -215,7 +224,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val expected = ArraySeq(
       tx(output1, None, ArraySeq.empty),
       tx(output2, Some(input1.txHash), ArraySeq.empty),
-      tx(output4, None, ArraySeq(inputEntityToApi(input1, output2)))
+      tx(output4, None, ArraySeq(inputEntityToApi(input1, Some(output2))))
     ).sortBy(_.timestamp).reverse
 
     txs.size is 3
@@ -233,6 +242,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       tx1.timestamp,
       chainFrom,
       chainTo,
+      tx1.version,
+      tx1.networkId,
+      tx1.scriptOpt,
       tx1.gasAmount,
       tx1.gasPrice,
       0,
@@ -310,10 +322,10 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
           transactions foreach { transaction =>
             val query =
               sql"""
-                   |SELECT *
-                   |FROM #${TransactionSchema.name}
-                   |where hash = ${transaction.hash}
-                   |""".stripMargin
+                   SELECT *
+                   FROM #${TransactionSchema.name}
+                   where hash = ${transaction.hash}
+                   """
 
             val explain = run(query.explain()).futureValue.mkString("\n")
 
@@ -440,7 +452,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
           // for each address run the query for randomly selected time-range and expect entities
           // only for that time-range to be returned
-          entities.groupBy(_.address) foreach { case (address, entities) =>
+          entities.groupBy(_.address) foreachEntry { case (address, entities) =>
             val minTime = entities.map(_.timestamp).min.millis // minimum time
             val maxTime = entities.map(_.timestamp).max.millis // maximum time
 
@@ -500,6 +512,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
             val query =
               TransactionQueries.getTxHashesByAddressesQuery(
                 addresses,
+                None,
+                None,
                 Pagination.unsafe(page, limit)
               )
 
@@ -528,6 +542,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
             val query =
               TransactionQueries.getTxHashesByAddressesQuery(
                 shuffledAddresses,
+                None,
+                None,
                 Pagination.unsafe(1, Int.MaxValue)
               )
 
@@ -547,21 +563,93 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         }
       }
     }
+
+    "return timed range transactions" in new Fixture {
+      forAll(
+        Gen.nonEmptyListOf(
+          genTransactionPerAddressEntity(
+            addressGen = Gen.const(address),
+            mainChain = Gen.const(true)
+          )
+        )
+      ) { entities =>
+        run(TransactionPerAddressSchema.table.delete).futureValue
+        run(TransactionPerAddressSchema.table ++= entities).futureValue
+
+        val timestamps = entities.map(_.timestamp).distinct
+        val max        = timestamps.max
+        val min        = timestamps.min
+
+        def query(fromTs: Option[TimeStamp], toTs: Option[TimeStamp]) = {
+          run(
+            TransactionQueries.getTxHashesByAddressesQuery(
+              Seq(address),
+              fromTs,
+              toTs,
+              Pagination.unsafe(1, Int.MaxValue)
+            )
+          ).futureValue
+        }
+
+        def expected(entities: Seq[TransactionPerAddressEntity]) = {
+          entities.map { entity =>
+            TxByAddressQR(
+              entity.hash,
+              entity.blockHash,
+              entity.timestamp,
+              entity.txOrder,
+              entity.coinbase
+            )
+          }
+        }
+
+        def test(
+            fromTs: Option[TimeStamp],
+            toTs: Option[TimeStamp],
+            expectedEntites: Seq[TxByAddressQR]
+        ) = {
+          query(fromTs, toTs) should contain theSameElementsAs expectedEntites
+        }
+
+        // fromTs is inclusive
+        test(fromTs = Some(max), toTs = None, expected(Seq(entities.maxBy(_.timestamp))))
+
+        // toTs is exclusive
+        test(fromTs = None, toTs = Some(max), expected(entities.sortBy(_.timestamp).init))
+
+        // Verifying  max+1 include the last element
+        test(
+          fromTs = None,
+          toTs = Some(max.plusMillisUnsafe(1)),
+          expected(entities.sortBy(_.timestamp))
+        )
+
+        // excluding min and max elememt
+        test(
+          fromTs = Some(min.plusMillisUnsafe(1)),
+          toTs = Some(max),
+          expected(entities.sortBy(_.timestamp).init.drop(1))
+        )
+
+      }
+    }
   }
 
   trait Fixture {
 
-    val address = addressGen.sample.get
-    def now     = TimeStamp.now().plusMinutesUnsafe(scala.util.Random.nextLong(240))
+    val address   = addressGen.sample.get
+    def timestamp = timestampGen.sample.get
 
     val chainFrom = GroupIndex.Zero
     val chainTo   = GroupIndex.Zero
+
+    val lastFinalizedTime = TimeStamp.zero
 
     def output(address: Address, amount: U256, lockTime: Option[TimeStamp]): OutputEntity =
       OutputEntity(
         blockHashGen.sample.get,
         transactionHashGen.sample.get,
-        now,
+        timestamp,
         outputTypeGen.sample.get,
         0,
         hashGen.sample.get,
@@ -575,14 +663,15 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         0,
         false,
         None,
-        None
+        None,
+        fixedOutput = false
       )
 
     def input(hint: Int, outputRefKey: Hash): InputEntity =
       InputEntity(
         blockHashGen.sample.get,
         transactionHashGen.sample.get,
-        now,
+        timestamp,
         hint,
         outputRefKey,
         None,
@@ -592,7 +681,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         None,
         None,
         None,
-        None
+        None,
+        contractInput = false
       )
     def transaction(output: OutputEntity): TransactionEntity = {
       TransactionEntity(
@@ -601,6 +691,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         output.timestamp,
         GroupIndex.Zero,
         new GroupIndex(1),
+        version = 1,
+        networkId = 1,
+        scriptOpt = None,
         1,
         ALPH.alph(1),
         0,

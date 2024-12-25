@@ -19,6 +19,7 @@ package org.alephium.explorer.web
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
+import akka.util.ByteString
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.streams.ReadStream
 import io.vertx.ext.web._
@@ -32,9 +33,13 @@ import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service.{TokenService, TransactionService}
+import org.alephium.protocol.PublicKey
 import org.alephium.protocol.model.Address
+import org.alephium.protocol.vm.{LockupScript, UnlockScript}
+import org.alephium.serde._
 import org.alephium.util.Duration
 
 class AddressServer(
@@ -47,6 +52,7 @@ class AddressServer(
 )(implicit
     val executionContext: ExecutionContext,
     groupSetting: GroupSetting,
+    blockCache: BlockCache,
     dc: DatabaseConfig[PostgresProfile]
 ) extends Server
     with AddressesEndpoints {
@@ -59,9 +65,10 @@ class AddressServer(
         transactionService
           .getTransactionsByAddress(address, pagination)
       }),
-      route(getTransactionsByAddresses.serverLogicSuccess[Future] { case (addresses, pagination) =>
-        transactionService
-          .getTransactionsByAddresses(addresses, pagination)
+      route(getTransactionsByAddresses.serverLogicSuccess[Future] {
+        case (addresses, fromTsOpt, toTsOpt, pagination) =>
+          transactionService
+            .getTransactionsByAddresses(addresses, fromTsOpt, toTsOpt, pagination)
       }),
       route(getTransactionsByAddressTimeRanged.serverLogicSuccess[Future] {
         case (address, timeInterval, pagination) =>
@@ -79,16 +86,24 @@ class AddressServer(
       }),
       route(getAddressInfo.serverLogicSuccess[Future] { address =>
         for {
-          (balance, locked) <- transactionService.getBalance(address)
-          txNumber          <- transactionService.getTransactionsNumberByAddress(address)
+          (balance, locked) <- transactionService
+            .getBalance(address, blockCache.getLastFinalizedTimestamp())
+          txNumber <- transactionService.getTransactionsNumberByAddress(address)
         } yield AddressInfo(balance, locked, txNumber)
       }),
       route(getTotalTransactionsByAddress.serverLogic[Future] { address =>
         transactionService.getTransactionsNumberByAddress(address).map(Right(_))
       }),
+      route(getLatestTransactionInfo.serverLogic[Future] { address =>
+        transactionService.getLatestTransactionInfoByAddress(address).map {
+          case None         => Left(ApiError.NotFound(s"No transaction found for address $address"))
+          case Some(txInfo) => Right(txInfo)
+        }
+      }),
       route(getAddressBalance.serverLogicSuccess[Future] { address =>
         for {
-          (balance, locked) <- transactionService.getBalance(address)
+          (balance, locked) <- transactionService
+            .getBalance(address, blockCache.getLastFinalizedTimestamp())
         } yield AddressBalance(balance, locked)
       }),
       route(getAddressTokenBalance.serverLogicSuccess[Future] { case (address, token) =>
@@ -157,6 +172,19 @@ class AddressServer(
                 })
               }
           }
+      }),
+      route(getPublicKey.serverLogic[Future] { address =>
+        address match {
+          case Address.Asset(LockupScript.P2PKH(_)) =>
+            transactionService.getUnlockScript(address).map {
+              case None =>
+                Left(ApiError.NotFound(s"No input found for address $address"))
+              case Some(unlockScript) =>
+                AddressServer.bytesToPublicKey(unlockScript)
+            }
+          case _ =>
+            Future.successful(Left(ApiError.BadRequest(s"Only P2PKH addresses supported")))
+        }
       })
     )
 
@@ -206,4 +234,18 @@ object AddressServer {
   def amountHistoryFileNameHeader(address: Address, timeInterval: TimeInterval): String = {
     s"""attachment;filename="$address-amount-history-${timeInterval.from.millis}-${timeInterval.to.millis}.json""""
   }
+
+  def bytesToPublicKey(
+      unlockScript: ByteString
+  ): Either[ApiError[_ <: StatusCode], PublicKey] =
+    deserialize[UnlockScript](unlockScript).left
+      .map { error =>
+        ApiError.InternalServerError(s"Failed to deserialize unlock script: $error")
+      }
+      .flatMap {
+        case UnlockScript.P2PKH(publickKey) =>
+          Right(publickKey)
+        case _ =>
+          Left(ApiError.BadRequest(s"Invalid unlock script, require P2PKH"))
+      }
 }

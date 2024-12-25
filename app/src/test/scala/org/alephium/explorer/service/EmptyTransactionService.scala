@@ -21,6 +21,7 @@ import java.math.BigInteger
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
+import akka.util.ByteString
 import io.reactivex.rxjava3.core.Flowable
 import io.vertx.core.buffer.Buffer
 import slick.basic.DatabaseConfig
@@ -50,8 +51,12 @@ trait EmptyTransactionService extends TransactionService {
   ): Future[ArraySeq[Transaction]] =
     Future.successful(ArraySeq.empty)
 
-  override def getTransactionsByAddresses(addresses: ArraySeq[Address], pagination: Pagination)(
-      implicit
+  override def getTransactionsByAddresses(
+      addresses: ArraySeq[Address],
+      fromTs: Option[TimeStamp],
+      toTs: Option[TimeStamp],
+      pagination: Pagination
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]] =
@@ -68,6 +73,12 @@ trait EmptyTransactionService extends TransactionService {
   ): Future[ArraySeq[Transaction]] =
     Future.successful(ArraySeq.empty)
 
+  override def getLatestTransactionInfoByAddress(address: Address)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[TransactionInfo]] =
+    Future.successful(None)
+
   override def listMempoolTransactionsByAddress(address: Address)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
@@ -76,7 +87,8 @@ trait EmptyTransactionService extends TransactionService {
   }
 
   override def getBalance(
-      address: Address
+      address: Address,
+      from: TimeStamp
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
     Future.successful((U256.Zero, U256.Zero))
 
@@ -98,6 +110,13 @@ trait EmptyTransactionService extends TransactionService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Boolean] = ???
+
+  def getUnlockScript(
+      address: Address
+  )(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[ByteString]] = Future.successful(None)
 
   def exportTransactionsByAddress(
       address: Address,

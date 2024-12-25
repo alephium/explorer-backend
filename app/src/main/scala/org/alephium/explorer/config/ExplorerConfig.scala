@@ -16,7 +16,9 @@
 
 package org.alephium.explorer.config
 
+import java.io.File
 import java.net.InetAddress
+import java.nio.file.Path
 import java.time.LocalTime
 
 import scala.collection.immutable.{ArraySeq, ListMap}
@@ -24,7 +26,7 @@ import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
-import com.typesafe.config.{Config, ConfigUtil}
+import com.typesafe.config.{Config, ConfigException, ConfigFactory, ConfigUtil}
 import net.ceedubs.ficus.Ficus
 import net.ceedubs.ficus.Ficus.{finiteDurationReader => _, _}
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
@@ -34,11 +36,42 @@ import sttp.model.Uri
 import org.alephium.api.model.ApiKey
 import org.alephium.conf._
 import org.alephium.explorer.error.ExplorerError._
+import org.alephium.explorer.util.FileUtil
 import org.alephium.protocol.model.NetworkId
 import org.alephium.util
 
 @SuppressWarnings(Array("org.wartremover.warts.TryPartial"))
 object ExplorerConfig {
+
+  def getConfigFile(rootPath: Path, name: String): File =
+    rootPath.resolve(s"$name.conf").toFile
+
+  def getUserConfig(rootPath: Path): File = {
+    val file = getConfigFile(rootPath, "user")
+    FileUtil.createFileIfNotExists(file)
+    file
+  }
+
+  def loadConfig(rootPath: Path): Try[Config] = {
+    for {
+      userConfig <- parseConfigFile(getUserConfig(rootPath))
+    } yield {
+      val defaultConfig = ConfigFactory.parseResources("application.conf")
+      ConfigFactory.load(userConfig.withFallback(defaultConfig))
+    }
+  }
+
+  def parseConfigFile(file: File): Try[Config] =
+    try {
+      if (file.exists()) {
+        Success(ConfigFactory.parseFile(file))
+      } else {
+        Success(ConfigFactory.empty())
+      }
+    } catch {
+      case e: ConfigException =>
+        Failure(ConfigParsingError(file, e))
+    }
 
   def validateGroupNum(groupNum: Int): Try[Int] =
     if (groupNum < 0) {
@@ -151,6 +184,7 @@ object ExplorerConfig {
           port,
           explorer.bootMode,
           explorer.syncPeriod,
+          explorer.holderServiceScheduleTime,
           explorer.tokenSupplyServiceScheduleTime,
           explorer.hashRateServiceSyncPeriod,
           explorer.finalizerServiceSyncPeriod,
@@ -158,6 +192,7 @@ object ExplorerConfig {
           explorer.cacheRowCountReloadPeriod,
           explorer.cacheBlockTimesReloadPeriod,
           explorer.cacheLatestBlocksReloadPeriod,
+          explorer.cacheMetricsReloadPeriod,
           explorer.exportTxsNumberThreshold,
           explorer.streamParallelism,
           explorer.maxTimeIntervals,
@@ -191,9 +226,12 @@ object ExplorerConfig {
   )
 
   final case class Market(
-      symbolName: ListMap[String, String],
+      chartSymbolName: ListMap[String, String],
       currencies: ArraySeq[String],
+      liquidityMinimum: Double,
+      mobulaUri: String,
       coingeckoUri: String,
+      tokenListUri: String,
       marketChartDays: Int
   )
 
@@ -202,6 +240,7 @@ object ExplorerConfig {
       port: Int,
       bootMode: BootMode,
       syncPeriod: FiniteDuration,
+      holderServiceScheduleTime: LocalTime,
       tokenSupplyServiceScheduleTime: LocalTime,
       hashRateServiceSyncPeriod: FiniteDuration,
       finalizerServiceSyncPeriod: FiniteDuration,
@@ -209,6 +248,7 @@ object ExplorerConfig {
       cacheRowCountReloadPeriod: FiniteDuration,
       cacheBlockTimesReloadPeriod: FiniteDuration,
       cacheLatestBlocksReloadPeriod: FiniteDuration,
+      cacheMetricsReloadPeriod: FiniteDuration,
       exportTxsNumberThreshold: Int,
       streamParallelism: Int,
       maxTimeIntervals: MaxTimeIntervals,
@@ -221,6 +261,7 @@ object ExplorerConfig {
   *
   * The default constructor is private to ensure the configurations are always valid.
   */
+@scala.annotation.nowarn
 final case class ExplorerConfig private (
     groupNum: Int,
     directCliqueAccess: Boolean,
@@ -231,6 +272,7 @@ final case class ExplorerConfig private (
     port: Int,
     bootMode: BootMode,
     syncPeriod: FiniteDuration,
+    holderServiceScheduleTime: LocalTime,
     tokenSupplyServiceScheduleTime: LocalTime,
     hashRateServiceSyncPeriod: FiniteDuration,
     finalizerServiceSyncPeriod: FiniteDuration,
@@ -238,6 +280,7 @@ final case class ExplorerConfig private (
     cacheRowCountReloadPeriod: FiniteDuration,
     cacheBlockTimesReloadPeriod: FiniteDuration,
     cacheLatestBlocksReloadPeriod: FiniteDuration,
+    cacheMetricsReloadPeriod: FiniteDuration,
     exportTxsNumberThreshold: Int,
     streamParallelism: Int,
     maxTimeInterval: ExplorerConfig.MaxTimeIntervals,

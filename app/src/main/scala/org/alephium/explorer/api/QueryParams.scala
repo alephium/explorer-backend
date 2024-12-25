@@ -51,14 +51,14 @@ trait QueryParams extends TapirCodecs {
       )
 
   def paginator(
-      defaultLimit: Int = Pagination.defaultLimit,
+      limit: Int = Pagination.defaultLimit,
       maxLimit: Int = Pagination.maxLimit
   ): EndpointInput[Pagination] =
-    paginatorParams(defaultLimit, maxLimit)
+    paginatorParams(limit, maxLimit)
       .map { case (page, limit) => Pagination.unsafe(page, limit) }(p => (p.page, p.limit))
 
   private def paginatorParams(
-      defaultLimit: Int = Pagination.defaultLimit,
+      limit: Int = Pagination.defaultLimit,
       maxLimit: Int = Pagination.maxLimit
   ): EndpointInput[(Int, Int)] =
     query[Option[Int]]("page")
@@ -73,7 +73,7 @@ trait QueryParams extends TapirCodecs {
           .description("Number of items per page")
           .map {
             case Some(limit) => limit
-            case None        => defaultLimit
+            case None        => limit
           }(Some(_))
           .validate(Validator.min(0))
           .validate(Validator.max(maxLimit))
@@ -95,6 +95,17 @@ trait QueryParams extends TapirCodecs {
         } else {
           ValidationResult.Valid
         }
+      })
+
+  val optionalTimeIntervalQuery: EndpointInput[(Option[TimeStamp], Option[TimeStamp])] =
+    query[Option[TimeStamp]]("fromTs")
+      .description("inclusive")
+      .and(query[Option[TimeStamp]]("toTs").description("exclusive"))
+      .validate(Validator.custom {
+        case (Some(fromTs), Some(toTs)) if fromTs >= toTs =>
+          ValidationResult.Invalid(s"`fromTs` must be before `toTs`")
+        case _ =>
+          ValidationResult.Valid
       })
 
   val intervalTypeQuery: EndpointInput[IntervalType] =

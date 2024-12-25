@@ -44,6 +44,8 @@ object InputAddressUtil extends StrictLogging {
           case protocol.vm.UnlockScript.P2SH(script, _) =>
             val lockup = protocol.vm.LockupScript.p2sh(protocol.Hash.hash(script))
             Some(protocol.model.Address.from(lockup))
+          case protocol.vm.UnlockScript.PoLW(pk) =>
+            Some(protocol.model.Address.p2pkh(pk))
           case protocol.vm.UnlockScript.SameAsPrevious =>
             None
           case protocol.vm.UnlockScript.P2MPKH(_) =>
@@ -60,7 +62,6 @@ object InputAddressUtil extends StrictLogging {
    * If every addresses are the same, we consider it as the correct address.
    * If no address or > 1 address are found, we return `None`
    */
-  @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
   def addressFromProtocolInputs(inputs: ArraySeq[api.model.AssetInput]): Option[Address] = {
     if (inputs.isEmpty) {
       None
@@ -70,10 +71,12 @@ object InputAddressUtil extends StrictLogging {
         case None => None
         case Some(_) =>
           if (
-            inputs.tail.forall(input =>
-              input.unlockScript === sameAsPrevious || InputAddressUtil
-                .addressFromProtocolInput(input) === addressOpt
-            )
+            inputs
+              .drop(1)
+              .forall(input =>
+                input.unlockScript === sameAsPrevious || InputAddressUtil
+                  .addressFromProtocolInput(input) === addressOpt
+              )
           ) {
             addressOpt
           } else {
@@ -83,7 +86,7 @@ object InputAddressUtil extends StrictLogging {
     }
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
+  @SuppressWarnings(Array("org.wartremover.warts.SeqApply"))
   def convertSameAsPrevious(
       inputs: ArraySeq[api.model.AssetInput]
   ): ArraySeq[api.model.AssetInput] = {

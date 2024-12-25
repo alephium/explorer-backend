@@ -32,9 +32,10 @@ import org.alephium.explorer.GenCoreUtil.timestampMaxValue
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
+import org.alephium.explorer.cache._
+import org.alephium.explorer.config.BootMode
 import org.alephium.explorer.error.ExplorerError
-import org.alephium.explorer.persistence.DatabaseFixtureForAll
+import org.alephium.explorer.persistence.{Database, DatabaseFixtureForAll}
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.util.Scheduler
@@ -148,7 +149,7 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     def h(str: String) = BlockHash.unsafe(Hex.unsafe(str))
 
     val block0 = blockEntity(None)
-      .copy(timestamp = TimeStamp.now())
+      .copy(timestamp = TimeStamp.now().minusUnsafe(Duration.ofDaysUnsafe(1)))
       .copy(hash = h("0000000000000000000000000000000000000000000000000000000000000000"))
     val block1 = blockEntity(Some(block0))
       .copy(hash = h("1111111111111111111111111111111111111111111111111111111111111111"))
@@ -202,25 +203,36 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     def blockFlowEntity: ArraySeq[ArraySeq[BlockEntity]] =
       chains :+ chainOToO
 
-    def blockFlow: ArraySeq[ArraySeq[BlockEntry]] =
+    val uncles = blockFlowEntity.map(_.flatMap { block =>
+      block.ghostUncles.map { uncle =>
+        blockEntity(None, ChainIndex(block.chainFrom, block.chainTo)).copy(hash = uncle.blockHash)
+      }
+    })
+
+    def blockFlow: ArraySeq[ArraySeq[BlockEntryTest]] =
       blockEntitiesToBlockEntries(blockFlowEntity)
 
-    implicit val blockCache: BlockCache = TestBlockCache()
+    implicit val blockCache: BlockCache   = TestBlockCache()
+    implicit val metricCache: MetricCache = TestMetricCache(new Database(BootMode.ReadWrite))
 
     def blockEntities = ArraySeq.from(blockFlowEntity.flatten)
 
-    def blocks: ArraySeq[BlockEntry] = blockFlow.flatten
+    def unclesEntities = ArraySeq.from(uncles.flatten)
+
+    def blocksAndUncles = blockEntities ++ unclesEntities
+
+    def blocks: ArraySeq[BlockEntryTest] = blockFlow.flatten
 
     implicit val blockFlowClient: BlockFlowClient = new EmptyBlockFlowClient {
       override def fetchBlock(from: GroupIndex, hash: BlockHash): Future[BlockEntity] =
-        Future.successful(blockEntities.find(_.hash === hash).get)
+        Future.successful(blocksAndUncles.find(_.hash === hash).get)
 
       override def fetchBlockAndEvents(
           fromGroup: GroupIndex,
           hash: BlockHash
       ): Future[BlockEntityWithEvents] =
         Future.successful(
-          BlockEntityWithEvents(blockEntities.find(_.hash === hash).get, ArraySeq.empty)
+          BlockEntityWithEvents(blocksAndUncles.find(_.hash === hash).get, ArraySeq.empty)
         )
 
       override def fetchBlocks(

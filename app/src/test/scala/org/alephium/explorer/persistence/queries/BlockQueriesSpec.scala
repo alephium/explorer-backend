@@ -23,12 +23,11 @@ import scala.util.Random
 import org.scalacheck.{Arbitrary, Gen}
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
+import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenDBModel._
-import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model.Height
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.BlockHeader
@@ -122,7 +121,6 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
       run(TransactionSchema.table.delete).futureValue
       run(InputSchema.table.delete).futureValue
       run(OutputSchema.table.delete).futureValue
-      run(BlockDepsSchema.table.delete).futureValue
 
       // execute insert on blocks and expect all tables get inserted
       run(BlockQueries.insertBlockEntity(entities, groupSetting.groupNum)).futureValue is ()
@@ -146,11 +144,6 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
       // val actualOutputs   = run(outputsTable.result).futureValue
       // val expectedOutputs = entities.flatMap(_.outputs)
       // actualOutputs should contain allElementsOf expectedOutputs
-
-      // check block_deps table
-      val actualDeps        = run(BlockDepsSchema.table.result).futureValue
-      val expectedBlockDeps = entities.flatMap(_.toBlockDepEntities())
-      actualDeps should contain allElementsOf expectedBlockDeps
 
       // There is no need for testing updates here since updates are already
       // tested each table's individual test-cases.
@@ -181,116 +174,6 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
           run(BlockHeaderSchema.table.length.result).futureValue is 0
           // expect None
           run(BlockQueries.getBlockHeaderAction(hash)).futureValue is None
-        }
-      }
-    }
-  }
-
-  "noOfBlocksAndMaxBlockTimestamp" should {
-    "return None" when {
-      "there is no data" in {
-        forAll(groupSettingGen) { implicit groupSetting =>
-          run(BlockQueries.numOfBlocksAndMaxBlockTimestamp()).futureValue is None
-        }
-      }
-
-      "chains being queries do not exists in database" in {
-        forAll(Gen.listOf(blockHeaderGen), groupSettingGen) { case (blocks, groupSetting) =>
-          // fetch the maximum chain-index from the groupSetting
-          val maxChainIndex = groupSetting.chainIndexes.map(_.to.value).max
-
-          // set the block's chainFrom to maxChainIndex + 1 so no blocks match the groupSetting
-          val updatedBlocks = blocks.map { block =>
-            block.copy(
-              chainFrom = new GroupIndex(maxChainIndex + 1),
-              chainTo = new GroupIndex(maxChainIndex + 10)
-            )
-          }
-
-          run(BlockHeaderSchema.table.delete).futureValue            // clear table
-          run(BlockHeaderSchema.table ++= updatedBlocks).futureValue // persist test data
-
-          implicit val implicitGroupSetting: GroupSetting = groupSetting
-          // No blocks exists for the groupSetting so result is None
-          run(BlockQueries.numOfBlocksAndMaxBlockTimestamp()).futureValue is None
-
-        }
-      }
-    }
-
-    "return total number of blocks and max timeStamp" in {
-      forAll(Gen.listOf(blockHeaderGen)) { blocks =>
-        run(BlockHeaderSchema.table.delete).futureValue     // clear table
-        run(BlockHeaderSchema.table ++= blocks).futureValue // persist test data
-
-        // To cover more cases, run multiple tests for different groupsSettings on the same persisted blocks.
-        forAll(groupSettingGen) { implicit groupSetting =>
-          // All blocks with maximum height
-          val maxHeightBlocks =
-            groupSetting.chainIndexes
-              .flatMap { chainIndex =>
-                val blocksInThisChain = filterBlocksInChain(blocks, chainIndex)
-                maxHeight(blocksInThisChain)
-              }
-
-          // expected total number of blocks
-          val expectedNumberOfBlocks =
-            sumHeight(maxHeightBlocks)
-
-          // expected maximum timestamp
-          val expectedMaxTimeStamp =
-            maxTimeStamp(maxHeightBlocks).map(_.timestamp)
-
-          // Queried result Option[(TimeStamp, Height)]
-          val actualTimeStampAndNumberOfBlocks =
-            run(BlockQueries.numOfBlocksAndMaxBlockTimestamp()).futureValue
-
-          actualTimeStampAndNumberOfBlocks.map(_._1) is expectedMaxTimeStamp
-          actualTimeStampAndNumberOfBlocks.map(_._2) is expectedNumberOfBlocks
-        }
-      }
-    }
-  }
-
-  "maxHeight" should {
-    "return empty List" when {
-      "input is empty" in {
-        run(BlockQueries.maxHeight(Iterable.empty)).futureValue is ArraySeq.empty
-      }
-    }
-
-    "return non-empty List with None values" when {
-      "there is no data" in {
-        forAll(groupSettingGen) { implicit groupSetting =>
-          val expected = ArraySeq.fill(groupSetting.chainIndexes.size)(None)
-          run(BlockQueries.maxHeight(groupSetting.chainIndexes)).futureValue is expected
-        }
-      }
-    }
-
-    "return non-empty list with Some values" when {
-      "there is data" in {
-        // short range GroupIndex so there are enough valid groups for this test
-        val genGroupIndex = Gen.choose(1, 5).map(new GroupIndex(_))
-
-        forAll(Gen.listOf(blockHeaderGenWithDefaults(genGroupIndex, genGroupIndex))) { blocks =>
-          run(BlockHeaderSchema.table.delete).futureValue     // clear table
-          run(BlockHeaderSchema.table ++= blocks).futureValue // persist test data
-
-          forAll(groupSettingGen) { implicit groupSetting =>
-            // All blocks with maximum height
-            val expectedHeights =
-              groupSetting.chainIndexes
-                .map { chainIndex =>
-                  val blocksInThisChain = filterBlocksInChain(blocks, chainIndex)
-                  maxHeight(blocksInThisChain).map(_.height)
-                }
-
-            val actualHeights =
-              run(BlockQueries.maxHeight(groupSetting.chainIndexes)).futureValue
-
-            actualHeights is expectedHeights
-          }
         }
       }
     }

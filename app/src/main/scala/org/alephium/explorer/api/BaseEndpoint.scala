@@ -40,13 +40,15 @@ trait BaseEndpoint extends ErrorExamples with TapirCodecs with TapirSchemasLike 
 
   val baseEndpoint: BaseEndpoint[Unit, Unit] =
     endpoint
+      .out(emptyOutput.description("Ok"))
       .errorOut(
         oneOf[ApiError[_ <: StatusCode]](
           error(BadRequest, { case BadRequest(_) => true }),
           error(InternalServerError, { case InternalServerError(_) => true }),
           error(NotFound, { case NotFound(_) => true }),
           error(ServiceUnavailable, { case ServiceUnavailable(_) => true }),
-          error(Unauthorized, { case Unauthorized(_) => true })
+          error(Unauthorized, { case Unauthorized(_) => true }),
+          error(GatewayTimeout, { case GatewayTimeout(_) => true })
         )
       )
 

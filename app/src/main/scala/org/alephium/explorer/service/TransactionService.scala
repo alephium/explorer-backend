@@ -24,6 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 import scala.jdk.FutureConverters._
 
+import akka.util.ByteString
 import io.reactivex.rxjava3.core.Flowable
 import io.vertx.core.buffer.Buffer
 import slick.basic.DatabaseConfig
@@ -33,6 +34,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.{MempoolDao, TransactionDao}
+import org.alephium.explorer.persistence.queries.InputQueries
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.util.TimeUtil
 import org.alephium.protocol.ALPH
@@ -61,7 +63,17 @@ trait TransactionService {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]]
 
-  def getTransactionsByAddresses(addresses: ArraySeq[Address], pagination: Pagination)(implicit
+  def getLatestTransactionInfoByAddress(address: Address)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[TransactionInfo]]
+
+  def getTransactionsByAddresses(
+      addresses: ArraySeq[Address],
+      fromTime: Option[TimeStamp],
+      toTime: Option[TimeStamp],
+      pagination: Pagination
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]]
@@ -76,7 +88,8 @@ trait TransactionService {
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int]
 
   def getBalance(
-      address: Address
+      address: Address,
+      latestFinalizedBlock: TimeStamp
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)]
 
   def getTotalNumber()(implicit cache: TransactionCache): Int
@@ -95,6 +108,10 @@ trait TransactionService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Boolean]
+
+  def getUnlockScript(
+      address: Address
+  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Option[ByteString]]
 
   def exportTransactionsByAddress(
       address: Address,
@@ -151,11 +168,22 @@ object TransactionService extends TransactionService {
   ): Future[ArraySeq[Transaction]] =
     TransactionDao.getByAddressTimeRanged(address, fromTime, toTime, pagination)
 
-  def getTransactionsByAddresses(addresses: ArraySeq[Address], pagination: Pagination)(implicit
+  def getLatestTransactionInfoByAddress(address: Address)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[TransactionInfo]] =
+    TransactionDao.getLatestTransactionInfoByAddress(address)
+
+  def getTransactionsByAddresses(
+      addresses: ArraySeq[Address],
+      fromTime: Option[TimeStamp],
+      toTime: Option[TimeStamp],
+      pagination: Pagination
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]] =
-    TransactionDao.getByAddresses(addresses, pagination)
+    TransactionDao.getByAddresses(addresses, fromTime, toTime, pagination)
 
   def listMempoolTransactionsByAddress(address: Address)(implicit
       ec: ExecutionContext,
@@ -170,9 +198,10 @@ object TransactionService extends TransactionService {
     TransactionDao.getNumberByAddress(address)
 
   def getBalance(
-      address: Address
+      address: Address,
+      latestFinalizedBlock: TimeStamp
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
-    TransactionDao.getBalance(address)
+    TransactionDao.getBalance(address, latestFinalizedBlock)
 
   def listMempoolTransactions(pagination: Pagination)(implicit
       ec: ExecutionContext,
@@ -223,6 +252,13 @@ object TransactionService extends TransactionService {
         (in, out, to)
       }
     )
+  }
+
+  def getUnlockScript(address: Address)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[ByteString]] = {
+    run(InputQueries.getUnlockScript(address))
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))

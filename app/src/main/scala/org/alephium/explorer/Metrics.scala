@@ -18,15 +18,13 @@ package org.alephium.explorer
 
 import scala.concurrent.Future
 
-import io.prometheus.client.CollectorRegistry
-import io.vertx.ext.web._
+import io.prometheus.metrics.model.registry.PrometheusRegistry
 import sttp.tapir.server.metrics.MetricLabels
 import sttp.tapir.server.metrics.prometheus.PrometheusMetrics
-import sttp.tapir.server.vertx.VertxFutureServerInterpreter
 
 object Metrics {
-  val defaultRegistry: CollectorRegistry = CollectorRegistry.defaultRegistry
-  val namespace                          = "explorer_backend"
+  val defaultRegistry: PrometheusRegistry = PrometheusRegistry.defaultRegistry
+  val namespace                           = "explorer_backend"
   val prometheus: PrometheusMetrics[Future] = PrometheusMetrics[Future](
     namespace = namespace,
     registry = defaultRegistry,
@@ -36,7 +34,4 @@ object Metrics {
       PrometheusMetrics.requestActive(defaultRegistry, namespace, MetricLabels.Default)
     )
   )
-
-  val route: Router => Route =
-    VertxFutureServerInterpreter().route(prometheus.metricsEndpoint)
 }

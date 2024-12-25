@@ -22,14 +22,15 @@ import scala.concurrent.duration._
 import scala.jdk.FutureConverters._
 
 import com.github.benmanes.caffeine.cache.{AsyncCacheLoader, Caffeine}
+import io.prometheus.metrics.core.metrics.Gauge
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
-import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.persistence.DBRunner._
-import org.alephium.explorer.persistence.model.LatestBlock
-import org.alephium.explorer.persistence.queries.BlockQueries
+import org.alephium.explorer.persistence.model.{AppState, LatestBlock}
+import org.alephium.explorer.persistence.queries.{AppStateQueries, BlockQueries}
+import org.alephium.explorer.persistence.schema.CustomGetResult.lastFinalizedInputTimeGetResult
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.ChainIndex
 import org.alephium.util.{Duration, TimeStamp}
@@ -60,7 +61,7 @@ object BlockCache {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): BlockCache = {
-    val groupConfig: GroupConfig = groupSetting.groupConfig
+    implicit val groupConfig: GroupConfig = groupSetting.groupConfig
 
     /*
      * `Option.get` is used to avoid unnecessary memory allocations.
@@ -74,7 +75,7 @@ object BlockCache {
     val latestBlockAsyncLoader: AsyncCacheLoader[ChainIndex, LatestBlock] = { case (key, _) =>
       run(
         BlockQueries.getLatestBlock(key.from, key.to)
-      ).map(_.get).asJava.toCompletableFuture
+      ).map(_.headOption.getOrElse(LatestBlock.empty())).asJava.toCompletableFuture
     }
 
     val cachedLatestBlocks: CaffeineAsyncCache[ChainIndex, LatestBlock] =
@@ -115,16 +116,39 @@ object BlockCache {
 
     val cacheRowCount: AsyncReloadingCache[Int] =
       AsyncReloadingCache(0, cacheRowCountReloadPeriod) { _ =>
-        run(BlockQueries.mainChainQuery.length.result)
+        cachedLatestBlocks
+          .getAll(groupConfig.cliqueChainIndexes.toArray)
+          .map(_.collect {
+            case (_, block) if block.height.value >= 0 => block.height.value + 1
+          }.sum)
       }
+
+    val latestFinalizeTime: AsyncReloadingCache[TimeStamp] =
+      AsyncReloadingCache(TimeStamp.zero, 5.minutes) { _ =>
+        run(AppStateQueries.get(AppState.LastFinalizedInputTime))
+          .map(_.map(_.time).getOrElse(TimeStamp.zero))
+      }
+
+    latestFinalizeTime.expireAndReload()
 
     new BlockCache(
       blockTimes = cachedBlockTimes,
       rowCount = cacheRowCount,
-      latestBlocks = cachedLatestBlocks
+      latestBlocks = cachedLatestBlocks,
+      lastFinalizedTimestamp = latestFinalizeTime
     )
   }
 
+  val latestBlocksSynced: Gauge = Gauge
+    .builder()
+    .name(
+      "alephimum_explorer_backend_latest_blocks_synced"
+    )
+    .help(
+      "Latest blocks synced per chainindex"
+    )
+    .labelNames("chain_from", "chain_to")
+    .register()
 }
 
 /** Cache used by Block queries.
@@ -134,8 +158,15 @@ object BlockCache {
 class BlockCache(
     blockTimes: CaffeineAsyncCache[ChainIndex, Duration],
     rowCount: AsyncReloadingCache[Int],
-    latestBlocks: CaffeineAsyncCache[ChainIndex, LatestBlock]
-) {
+    latestBlocks: CaffeineAsyncCache[ChainIndex, LatestBlock],
+    lastFinalizedTimestamp: AsyncReloadingCache[TimeStamp]
+)(implicit groupConfig: GroupConfig) {
+
+  private val latestBlocksSyncedLabeled =
+    groupConfig.cliqueChainIndexes.map(chainIndex =>
+      BlockCache.latestBlocksSynced
+        .labelValues(chainIndex.from.value.toString, chainIndex.to.value.toString)
+    )
 
   /** Operations on `blockTimes` cache */
   def getAllBlockTimes(chainIndexes: Iterable[ChainIndex])(implicit
@@ -150,9 +181,16 @@ class BlockCache(
   ): Future[ArraySeq[(ChainIndex, LatestBlock)]] =
     latestBlocks.getAll(groupSetting.chainIndexes)
 
-  def putLatestBlock(chainIndex: ChainIndex, block: LatestBlock): Unit =
+  def putLatestBlock(chainIndex: ChainIndex, block: LatestBlock): Unit = {
     latestBlocks.put(chainIndex, block)
+    latestBlocksSyncedLabeled
+      .get(chainIndex.flattenIndex)
+      .foreach(_.set(block.height.value.toDouble))
+  }
 
   def getMainChainBlockCount(): Int =
     rowCount.get()
+
+  def getLastFinalizedTimestamp(): TimeStamp =
+    lastFinalizedTimestamp.get()
 }

@@ -52,6 +52,7 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
     def spentFinalized: Rep[Option[TransactionId]] =
       column[Option[TransactionId]]("spent_finalized", O.Default(None))
     def spentTimestamp: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("spent_timestamp")
+    def fixedOutput: Rep[Boolean]              = column[Boolean]("fixed_output")
 
     def pk: PrimaryKey = primaryKey("outputs_pk", (key, blockHash))
 
@@ -80,7 +81,8 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
         txOrder,
         coinbase,
         spentFinalized,
-        spentTimestamp
+        spentTimestamp,
+        fixedOutput
       )
         .<>((OutputEntity.apply _).tupled, OutputEntity.unapply)
   }
@@ -88,5 +90,12 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
   def createNonSpentIndex(): DBActionW[Int] =
     sqlu"create unique index if not exists non_spent_output_idx on #${name} (address, main_chain, key, block_hash) where spent_finalized IS NULL;"
 
+  def createNonSpentOutputCoveringIndex(): DBActionW[Int] =
+    sqlu"""
+      CREATE INDEX CONCURRENTLY IF NOT EXISTS non_spent_output_covering_include_idx
+      ON #${name} (address, main_chain, spent_finalized, key)
+      INCLUDE (amount, lock_time)
+      WHERE spent_finalized IS NULL AND main_chain = true;
+    """
   val table: TableQuery[Outputs] = TableQuery[Outputs]
 }

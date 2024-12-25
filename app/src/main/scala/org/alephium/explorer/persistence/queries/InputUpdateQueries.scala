@@ -33,7 +33,7 @@ import org.alephium.util._
 object InputUpdateQueries {
 
   private type UpdateReturn =
-    (Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean, Boolean)
+    (Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean)
 
   def updateInputs()(implicit ec: ExecutionContext): DBActionWT[Unit] = {
     sql"""
@@ -46,7 +46,7 @@ object InputUpdateQueries {
       FROM outputs
       WHERE inputs.output_ref_key = outputs.key
       AND inputs.output_ref_amount IS NULL
-      RETURNING outputs.address, outputs.tokens, inputs.tx_hash, inputs.block_hash, inputs.block_timestamp, inputs.tx_order, inputs.main_chain, outputs.coinbase
+      RETURNING outputs.address, outputs.tokens, inputs.tx_hash, inputs.block_hash, inputs.block_timestamp, inputs.tx_order, inputs.main_chain
     """
       .as[UpdateReturn]
       .flatMap(internalUpdates)
@@ -55,7 +55,7 @@ object InputUpdateQueries {
 
   // format: off
   private def internalUpdates(
-      data: Vector[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean, Boolean)])
+      data: Vector[UpdateReturn])
     : DBActionWT[Unit] = {
   // format: on
     DBIOAction
@@ -68,44 +68,43 @@ object InputUpdateQueries {
 
   // format: off
   private def updateTransactionPerAddresses(
-      data: Vector[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean, Boolean)])
+      data: Vector[UpdateReturn])
     : DBActionWT[Int] = {
   // format: on
     QuerySplitter.splitUpdates(rows = data, columnsPerRow = 7) { (data, placeholder) =>
       val query =
         s"""
-           | INSERT INTO transaction_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, coinbase)
-           | VALUES $placeholder
-           | ON CONFLICT ON CONSTRAINT txs_per_address_pk DO NOTHING
-           |""".stripMargin
+            INSERT INTO transaction_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, coinbase)
+            VALUES $placeholder
+            ON CONFLICT ON CONSTRAINT txs_per_address_pk DO NOTHING
+           """.stripMargin
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
-          data foreach {
-            case (address, _, txHash, blockHash, timestamp, txOrder, mainChain, coinbase) =>
-              params >> address
-              params >> txHash
-              params >> blockHash
-              params >> timestamp
-              params >> txOrder
-              params >> mainChain
-              params >> coinbase
+          data foreach { case (address, _, txHash, blockHash, timestamp, txOrder, mainChain) =>
+            params >> address
+            params >> txHash
+            params >> blockHash
+            params >> timestamp
+            params >> txOrder
+            params >> mainChain
+            params >> false
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asUpdate
     }
   }
 
   // format: off
   private def updateTokenTxPerAddresses(
-      data: Vector[(Address, Option[ArraySeq[Token]], TransactionId, BlockHash, TimeStamp, Int, Boolean, Boolean)])
+      data: Vector[UpdateReturn])
     : DBActionWT[Int] = {
   // format: on
     val tokenTxPerAddresses = data.flatMap {
-      case (address, tokensOpt, txHash, blockHash, timestamp, txOrder, mainChain, _) =>
+      case (address, tokensOpt, txHash, blockHash, timestamp, txOrder, mainChain) =>
         tokensOpt match {
           case None => ArraySeq.empty
           case Some(tokens) =>
@@ -119,10 +118,10 @@ object InputUpdateQueries {
       (tokenTxPerAddresses, placeholder) =>
         val query =
           s"""
-             | INSERT INTO token_tx_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
-             | VALUES $placeholder
-             | ON CONFLICT ON CONSTRAINT token_tx_per_address_pk DO NOTHING
-             |""".stripMargin
+              INSERT INTO token_tx_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
+              VALUES $placeholder
+              ON CONFLICT ON CONSTRAINT token_tx_per_address_pk DO NOTHING
+             """
 
         val parameters: SetParameter[Unit] =
           (_: Unit, params: PositionedParameters) =>
@@ -138,8 +137,8 @@ object InputUpdateQueries {
             }
 
         SQLActionBuilder(
-          queryParts = query,
-          unitPConv = parameters
+          sql = query,
+          setParameter = parameters
         ).asUpdate
     }
   }

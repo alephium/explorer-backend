@@ -17,11 +17,16 @@ package org.alephium.explorer
 
 import java.math.BigInteger
 
+import scala.collection.immutable.ArraySeq
+
+import akka.util.ByteString
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
 
+import org.alephium.api.model.{Val, ValAddress, ValByteVec}
+import org.alephium.explorer.ConfigDefaults.groupSetting
 import org.alephium.explorer.GenApiModel._
-import org.alephium.explorer.GenCoreApi.{blockEntryProtocolGen, valGen}
+import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model.Height
@@ -33,6 +38,7 @@ import org.alephium.util.{AVector, TimeStamp}
 
 /** Test-data generators for types in package [[org.alephium.explorer.persistence.model]] */
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+// scalastyle:off number.of.methods
 object GenDBModel {
 
   val outputTypeGen: Gen[OutputEntity.OutputType] =
@@ -55,6 +61,7 @@ object GenDBModel {
       outputOrder <- arbitrary[Int]
       txOrder     <- arbitrary[Int]
       coinbase    <- arbitrary[Boolean]
+      fixedOutput <- arbitrary[Boolean]
     } yield OutputEntity(
       blockHash = blockHash,
       txHash = txHash,
@@ -72,7 +79,8 @@ object GenDBModel {
       txOrder = txOrder,
       spentFinalized = None,
       spentTimestamp = None,
-      coinbase = coinbase
+      coinbase = coinbase,
+      fixedOutput = fixedOutput
     )
 
   val finalizedOutputEntityGen: Gen[OutputEntity] =
@@ -113,9 +121,10 @@ object GenDBModel {
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def inputEntityGen(outputEntityGen: Gen[OutputEntity] = outputEntityGen): Gen[InputEntity] =
     for {
-      outputEntity <- outputEntityGen
-      unlockScript <- Gen.option(unlockScriptGen)
-      txOrder      <- arbitrary[Int]
+      outputEntity  <- outputEntityGen
+      unlockScript  <- Gen.option(unlockScriptGen)
+      txOrder       <- arbitrary[Int]
+      contractInput <- arbitrary[Boolean]
     } yield {
       InputEntity(
         blockHash = outputEntity.blockHash,
@@ -130,7 +139,8 @@ object GenDBModel {
         None,
         None,
         None,
-        None
+        None,
+        contractInput
       )
     }
 
@@ -347,7 +357,10 @@ object GenDBModel {
       timestamp         <- timestampGen
       chainFrom         <- groupIndexGen
       chainTo           <- groupIndexGen
-      gasAmount         <- Gen.posNum[Int]
+      version           <- arbitrary[Byte]
+      networkId         <- arbitrary[Byte]
+      scriptOpt         <- Gen.option(hashGen.map(_.toHexString))
+      gasAmount         <- gasAmountGen
       gasPrice          <- u256Gen
       order             <- Gen.posNum[Int]
       mainChain         <- Arbitrary.arbitrary[Boolean]
@@ -359,6 +372,9 @@ object GenDBModel {
       timestamp = timestamp,
       chainFrom = chainFrom,
       chainTo = chainTo,
+      version = version,
+      networkId = networkId,
+      scriptOpt = scriptOpt,
       gasAmount = gasAmount,
       gasPrice = gasPrice,
       order = order,
@@ -374,7 +390,7 @@ object GenDBModel {
       hash      <- transactionHashGen
       chainFrom <- groupIndexGen
       chainTo   <- groupIndexGen
-      gasAmount <- Gen.posNum[Int]
+      gasAmount <- gasAmountGen
       gasPrice  <- u256Gen
       timestamp <- timestampGen
     } yield MempoolTransactionEntity(
@@ -409,6 +425,7 @@ object GenDBModel {
       target       <- bytesGen
       hashrate     <- arbitrary[Long].map(BigInteger.valueOf)
       mainChain    <- Arbitrary.arbitrary[Boolean]
+      deps         <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockHashGen)
       parent       <- Gen.option(blockHashGen)
     } yield BlockHeader(
       hash = hash,
@@ -424,7 +441,9 @@ object GenDBModel {
       txsCount = txsCount,
       target = target,
       hashrate = hashrate,
-      parent = parent
+      parent = parent,
+      deps = deps,
+      ghostUncles = None
     )
 
   val blockHeaderTransactionEntityGen: Gen[(BlockHeader, List[TransactionEntity])] =
@@ -433,19 +452,24 @@ object GenDBModel {
       transaction <- Gen.listOf(transactionEntityGen(Gen.const(blockHeader.hash)))
     } yield (blockHeader, transaction)
 
-  def blockHeaderWithHashrate(timestamp: TimeStamp, hashrate: Double): Gen[BlockHeader] = {
+  def blockHeaderWithHashrate(timestamp: TimeStamp, hashrate: Double)(implicit
+      groupSetting: GroupSetting
+  ): Gen[BlockHeader] = {
     for {
-      hash         <- blockHashGen
-      from         <- groupIndexGen
-      to           <- groupIndexGen
-      height       <- heightGen
-      nonce        <- bytesGen
-      version      <- Gen.posNum[Byte]
-      depStateHash <- hashGen
-      txsHash      <- hashGen
-      txsCount     <- Gen.posNum[Int]
-      target       <- bytesGen
-      parent       <- Gen.option(blockHashGen)
+      hash            <- blockHashGen
+      from            <- groupIndexGen
+      to              <- groupIndexGen
+      height          <- heightGen
+      nonce           <- bytesGen
+      version         <- Gen.posNum[Byte]
+      depStateHash    <- hashGen
+      txsHash         <- hashGen
+      txsCount        <- Gen.posNum[Int]
+      target          <- bytesGen
+      parent          <- Gen.option(blockHashGen)
+      deps            <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockHashGen)
+      ghostUnclesSize <- Gen.choose(0, 5)
+      ghostUncles     <- Gen.option(Gen.listOfN(ghostUnclesSize, ghostUncleGen()))
     } yield {
       BlockHeader(
         hash,
@@ -461,39 +485,12 @@ object GenDBModel {
         txsCount,
         target,
         BigDecimal(hashrate).toBigInt.bigInteger,
-        parent
+        parent,
+        deps,
+        ghostUncles
       )
     }
   }
-
-  /** Update toUpdate's primary key to be the same as `original` */
-  def copyPrimaryKeys(original: BlockDepEntity, toUpdate: BlockDepEntity): BlockDepEntity =
-    toUpdate.copy(
-      hash = original.hash,
-      dep = original.dep
-    )
-
-  val blockDepGen: Gen[BlockDepEntity] =
-    for {
-      hash  <- blockHashGen
-      dep   <- blockHashGen
-      order <- Gen.posNum[Int]
-    } yield BlockDepEntity(
-      hash = hash,
-      dep = dep,
-      order = order
-    )
-
-  /** Generates a tuple2 of [[BlockDepEntity]] where the second one has the same primary key as the
-    * first one but with different values
-    */
-  val blockDepUpdatedGen: Gen[(BlockDepEntity, BlockDepEntity)] =
-    for {
-      dep1 <- blockDepGen
-      dep2 <- blockDepGen
-    } yield {
-      (dep1, copyPrimaryKeys(dep1, dep2))
-    }
 
   /** Table `uinputs` applies uniqueness on `(output_ref_key, tx_hash)`.
     *
@@ -645,4 +642,43 @@ object GenDBModel {
       }
     }
 
+  private val emptyByteVec: Val = ValByteVec(ByteString.empty)
+
+  def createEventGen(groupIndex: GroupIndex, parentOpt: Option[Address] = None)(implicit
+      groupSetting: GroupSetting
+  ): Gen[EventEntity] =
+    for {
+      event       <- eventEntityGen()
+      contract    <- addressContractProtocolGen
+      interfaceId <- Gen.option(valByteVecGen)
+    } yield {
+      event.copy(
+        contractAddress = ContractEntity.createContractEventAddress(groupIndex),
+        fields = ArraySeq(
+          ValAddress(contract),
+          parentOpt.map(ValAddress.apply).getOrElse(emptyByteVec),
+          interfaceId.getOrElse(emptyByteVec)
+        )
+      )
+    }
+  def createEventsGen(parentOpt: Option[Address] = None)(implicit
+      groupSetting: GroupSetting
+  ): Gen[(GroupIndex, Seq[EventEntity])] =
+    for {
+      groupIndex <- groupIndexGen
+      events     <- Gen.nonEmptyListOf(createEventGen(groupIndex, parentOpt))
+    } yield (groupIndex, events)
+
+  def destroyEventGen(contract: Address)(implicit groupSetting: GroupSetting): Gen[EventEntity] =
+    for {
+      event <- eventEntityGen()
+    } yield {
+      val groupIndex = ChainIndex.from(event.blockHash)(groupSetting.groupConfig).from
+      event.copy(
+        contractAddress = ContractEntity.destroyContractEventAddress(groupIndex),
+        fields = ArraySeq(
+          ValAddress(contract)
+        )
+      )
+    }
 }

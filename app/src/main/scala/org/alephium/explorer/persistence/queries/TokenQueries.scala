@@ -233,8 +233,8 @@ object TokenQueries extends StrictLogging {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asASE[FungibleTokenMetadata](fungibleTokenMetadataGetResult)
     } else {
       DBIOAction.successful(ArraySeq.empty)
@@ -261,8 +261,8 @@ object TokenQueries extends StrictLogging {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asASE[TokenInfoEntity](tokenInfoGetResult)
     } else {
       DBIOAction.successful(ArraySeq.empty)
@@ -289,8 +289,8 @@ object TokenQueries extends StrictLogging {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asASE[NFTMetadata](nftMetadataGetResult)
     } else {
       DBIOAction.successful(ArraySeq.empty)
@@ -317,8 +317,8 @@ object TokenQueries extends StrictLogging {
           }
 
       SQLActionBuilder(
-        queryParts = query,
-        unitPConv = parameters
+        sql = query,
+        setParameter = parameters
       ).asASE[NFTCollectionMetadata](nftCollectionMetadataGetResult)
     } else {
       DBIOAction.successful(ArraySeq.empty)
@@ -328,6 +328,7 @@ object TokenQueries extends StrictLogging {
   def insertNFTMetadata(
       metadata: NFTMetadata
   ): DBActionW[Int] = {
+    val cleanedTokenUri = metadata.tokenUri.replaceAll("\u0000", "")
     sqlu"""
       INSERT INTO nft_metadata (
         "token",
@@ -335,7 +336,7 @@ object TokenQueries extends StrictLogging {
         "collection_id",
         "nft_index"
         )
-      VALUES (${metadata.id},${metadata.tokenUri},${metadata.collectionId},${metadata.nftIndex})
+      VALUES (${metadata.id},${cleanedTokenUri},${metadata.collectionId},${metadata.nftIndex})
       ON CONFLICT
       DO NOTHING
     """
@@ -355,5 +356,25 @@ object TokenQueries extends StrictLogging {
       SET interface_id = $interfaceId, category = ${interfaceId.category}
       WHERE token = $token
     """
+  }
+
+  def countFungibles()(implicit
+      ec: ExecutionContext
+  ): DBActionR[Int] = {
+    sql"""
+      SELECT count(*)
+      FROM token_info
+      WHERE interface_id = '0001'
+    """.asAS[Int].exactlyOne
+  }
+
+  def countNFT()(implicit
+      ec: ExecutionContext
+  ): DBActionR[Int] = {
+    sql"""
+      SELECT count(*)
+      FROM token_info
+      WHERE interface_id = '0003' OR interface_id = '000301'
+    """.asAS[Int].exactlyOne
   }
 }

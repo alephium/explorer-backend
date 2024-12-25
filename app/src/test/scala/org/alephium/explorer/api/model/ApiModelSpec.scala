@@ -54,9 +54,14 @@ class ApiModelSpec() extends AlephiumSpec {
                           |  "timestamp": ${tx.timestamp.millis},
                           |  "inputs": [],
                           |  "outputs": ${write(tx.outputs)},
+                          |  "version": ${tx.version},
+                          |  "networkId": ${tx.networkId},
+                          |  "scriptOpt": ${tx.scriptOpt.map(s => s""""$s"""").getOrElse("null")},
                           |  "gasAmount": ${tx.gasAmount},
                           |  "gasPrice": "${tx.gasPrice}",
                           |  "scriptExecutionOk": ${tx.scriptExecutionOk},
+                          |  "inputSignatures": ${write(tx.inputSignatures)},
+                          |  "scriptSignatures": ${write(tx.scriptSignatures)},
                           |  "coinbase": ${tx.coinbase}
                           |}""".stripMargin
         check(tx, expected)
@@ -87,7 +92,8 @@ class ApiModelSpec() extends AlephiumSpec {
             unlockScript = None,
             address = Some(address),
             attoAlphAmount = Some(ALPH.alph(10)),
-            tokens = None
+            tokens = None,
+            contractInput = false
           )
         ),
         ArraySeq(
@@ -99,7 +105,8 @@ class ApiModelSpec() extends AlephiumSpec {
             tokens = None,
             lockTime = None,
             message = None,
-            spent = None
+            spent = None,
+            fixedOutput = true
           ),
           AssetOutput(
             hint = 0,
@@ -109,7 +116,8 @@ class ApiModelSpec() extends AlephiumSpec {
             tokens = None,
             lockTime = None,
             message = None,
-            spent = None
+            spent = None,
+            fixedOutput = true
           ),
           AssetOutput(
             hint = 0,
@@ -119,12 +127,18 @@ class ApiModelSpec() extends AlephiumSpec {
             tokens = None,
             lockTime = None,
             message = None,
-            spent = None
+            spent = None,
+            fixedOutput = true
           )
         ),
+        version = 0,
+        networkId = 0,
+        scriptOpt = None,
         gasAmount = 1,
         gasPrice = ALPH.alph(1),
         false,
+        ArraySeq.empty,
+        ArraySeq.empty,
         true
       )
 
@@ -145,9 +159,14 @@ class ApiModelSpec() extends AlephiumSpec {
                         |  "timestamp": ${tx.timestamp.millis},
                         |  "inputs": ${write(tx.inputs)},
                         |  "outputs": ${write(tx.outputs)},
+                        |  "version": ${tx.version},
+                        |  "networkId": ${tx.networkId},
+                        |  "scriptOpt": ${tx.scriptOpt.map(s => s""""$s"""").getOrElse("null")},
                         |  "gasAmount": ${tx.gasAmount},
                         |  "gasPrice": "${tx.gasPrice}",
                         |  "scriptExecutionOk": ${tx.scriptExecutionOk},
+                        |  "inputSignatures": ${write(tx.inputSignatures)},
+                        |  "scriptSignatures": ${write(tx.scriptSignatures)},
                         |  "coinbase": ${tx.coinbase}
                         |}""".stripMargin
       check(AcceptedTransaction.from(tx), expected)
@@ -196,6 +215,7 @@ class ApiModelSpec() extends AlephiumSpec {
            |  ${output.spent
             .map(spent => s""","spent": "${spent.value.toHexString}"""")
             .getOrElse("")}
+           |  ,"fixedOutput": ${output.fixedOutput}
            |}""".stripMargin
       check(output, expected)
     }
@@ -215,6 +235,7 @@ class ApiModelSpec() extends AlephiumSpec {
            |  ${output.spent
             .map(spent => s""","spent": "${spent.value.toHexString}"""")
             .getOrElse("")}
+           |  ,"fixedOutput": ${output.fixedOutput}
            |}""".stripMargin
       check(output, expected)
     }
@@ -236,6 +257,10 @@ class ApiModelSpec() extends AlephiumSpec {
            |  ${input.attoAlphAmount
             .map(attoAlphAmount => s""","attoAlphAmount": "${attoAlphAmount}"""")
             .getOrElse("")}
+           |  ${input.tokens
+            .map(tokens => s""","tokens": ${write(tokens)}""")
+            .getOrElse("")}
+           |  ,"contractInput": ${input.contractInput}
            |}""".stripMargin
       check(input, expected)
     }
@@ -302,9 +327,18 @@ class ApiModelSpec() extends AlephiumSpec {
                         |  "chainTo": ${block.chainTo.value},
                         |  "height": ${block.height.value},
                         |  "deps": ${write(block.deps)},
-                        |  "transactions": ${write(block.transactions)},
+                        |  "nonce": ${write(block.nonce)},
+                        |  "version": ${block.version},
+                        |  "depStateHash": "${block.depStateHash.toHexString}",
+                        |  "txsHash": "${block.txsHash.toHexString}",
+                        |  "txNumber": ${block.txNumber},
+                        |  "target": ${write(block.target)},
+                        |  "hashRate": ${write(block.hashRate)},
+                        |  "parent": ${if (block.parent.isDefined) {
+                         s""""${block.parent.get.toHexString}""""
+                       } else { "null" }},
                         |  "mainChain": ${block.mainChain},
-                        |  "hashRate": "${block.hashRate}"
+                        |  "ghostUncles": ${write(block.ghostUncles)}
                         |}""".stripMargin
       check(block, expected)
     }
@@ -377,9 +411,13 @@ class ApiModelSpec() extends AlephiumSpec {
                       |  "releaseVersion": "1.2.3",
                       |  "commit": "b96f64ff",
                       |  "migrationsVersion": 0,
-                      |  "lastFinalizedInputTime": 1234
+                      |  "lastFinalizedInputTime": 1234,
+                      |  "lastHoldersUpdate": 1234
                       |}""".stripMargin
-    check(ExplorerInfo("1.2.3", "b96f64ff", 0, TimeStamp.unsafe(1234)), expected)
+    check(
+      ExplorerInfo("1.2.3", "b96f64ff", 0, TimeStamp.unsafe(1234), TimeStamp.unsafe(1234)),
+      expected
+    )
   }
 
   "ContractParent" in {

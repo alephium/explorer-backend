@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
+//scalastyle:off file.size.limit
 package org.alephium.explorer
 
 import java.net.InetAddress
@@ -59,7 +60,7 @@ import org.alephium.explorer.web._
 import org.alephium.json.Json._
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.{Address, BlockHash, CliqueId, GroupIndex, NetworkId}
-import org.alephium.util.{AVector, Hex, TimeStamp, U256}
+import org.alephium.util.{AVector, Duration, Hex, TimeStamp, U256}
 
 trait ExplorerSpec
     extends AlephiumActorSpecLike
@@ -67,23 +68,42 @@ trait ExplorerSpec
     with DatabaseFixtureForAll
     with HttpRouteFixture {
 
-  implicit override val patienceConfig =
+  implicit override val patienceConfig: PatienceConfig =
     PatienceConfig(timeout = Span(120, Seconds))
 
   override val name: String = "ExploreSpec"
 
   val networkId: NetworkId = NetworkId.AlephiumDevNet
 
-  val txLimit = 20
+  val txLimit = Pagination.defaultLimit
 
   val blockflow: ArraySeq[ArraySeq[model.BlockEntry]] =
-    blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
+    blockFlowGen(
+      maxChainSize = 5,
+      startTimestamp = TimeStamp.now().minusUnsafe(Duration.ofDaysUnsafe(1))
+    ).sample.get
+
+  val uncles = blockflow
+    .map(_.flatMap { block =>
+      block.ghostUncles.map { uncle =>
+        blockEntryProtocolGen.sample.get.copy(
+          hash = uncle.blockHash,
+          timestamp = block.timestamp,
+          chainFrom = block.chainFrom,
+          chainTo = block.chainTo
+        )
+
+      }
+    })
+    .flatten
 
   val blocksProtocol: ArraySeq[model.BlockEntry] = blockflow.flatten
   val blockEntities: ArraySeq[BlockEntity] =
     blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
 
-  val blocks: ArraySeq[BlockEntry] = blockEntitiesToBlockEntries(ArraySeq(blockEntities)).flatten
+  val blocks: ArraySeq[BlockEntryTest] = blockEntitiesToBlockEntries(
+    ArraySeq(blockEntities)
+  ).flatten
 
   val transactions: ArraySeq[Transaction] = blocks.flatMap(_.transactions)
 
@@ -95,11 +115,19 @@ trait ExplorerSpec
 
   val blockFlowPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
   val blockFlowMock =
-    new ExplorerSpec.BlockFlowServerMock(localhost, blockFlowPort, blockflow, networkId)
+    new ExplorerSpec.BlockFlowServerMock(localhost, blockFlowPort, blockflow, uncles, networkId)
 
   val coingeckoPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
   val coingeckoUri  = s"http://${localhost.getHostAddress()}:$coingeckoPort"
   val coingecko     = new MarketServiceSpec.CoingeckoMock(localhost, coingeckoPort)
+
+  val mobulaPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
+  val mobulaUri  = s"http://${localhost.getHostAddress()}:$mobulaPort"
+  val mobula     = new MarketServiceSpec.MobulaMock(localhost, mobulaPort)
+
+  val tokenListPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
+  val tokenListUri  = s"http://${localhost.getHostAddress()}:$tokenListPort"
+  val tokenList     = new MarketServiceSpec.TokenListMock(localhost, tokenListPort)
 
   val blockflowBinding = blockFlowMock.server
 
@@ -114,6 +142,8 @@ trait ExplorerSpec
       ("alephium.explorer.boot-mode", bootMode.productPrefix),
       ("alephium.explorer.port", explorerPort),
       ("alephium.explorer.market.coingecko-uri", coingeckoUri),
+      ("alephium.explorer.market.mobula-uri", mobulaUri),
+      ("alephium.explorer.market.token-list-uri", tokenListUri),
       ("alephium.blockflow.port", blockFlowPort),
       ("alephium.blockflow.network-id", networkId.id),
       ("alephium.blockflow.group-num", groupSetting.groupNum)
@@ -141,10 +171,15 @@ trait ExplorerSpec
 
   def app: ExplorerState
 
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    val result = initApp(app)
+    logger.info(s"ExplorerSpec initialized: $result")
+  }
+
   lazy val port = app.config.port
 
   "get a block by its id" in {
-    initApp(app)
 
     // forAll(Gen.oneOf(blocks)) { block =>
     val block = Gen.oneOf(blocks).sample.get
@@ -168,11 +203,12 @@ trait ExplorerSpec
   }
 
   "get block's transactions" in {
-    forAll(Gen.oneOf(blocks)) { block =>
-      Get(s"/blocks/${block.hash.value.toHexString}/transactions") check { response =>
-        val txs = response.as[ArraySeq[Transaction]]
+    forAll(Gen.oneOf(blocks), Gen.choose(1, Pagination.maxLimit)) { case (block, limit) =>
+      Get(s"/blocks/${block.hash.value.toHexString}/transactions?limit=$limit") check { response =>
+        val txs          = response.as[ArraySeq[Transaction]]
+        val expectedSize = scala.math.min(limit, block.transactions.size)
         txs.sizeIs > 0 is true
-        txs.size is block.transactions.size
+        txs.size is expectedSize
         Inspectors.forAll(txs.map(_.hash))(tx => block.transactions.map(_.hash) should contain(tx))
       }
     }
@@ -199,35 +235,36 @@ trait ExplorerSpec
       res.size is scala.math.min(Pagination.defaultLimit, blocks.size)
     }
 
-    Get(s"/blocks?limit=${blocks.size}") check { response =>
+    val limit = math.min(blocks.size, Pagination.maxLimit)
+    Get(s"/blocks?limit=${limit}") check { response =>
       val res = response.as[ListBlocks].blocks.map(_.hash)
-      res.size is blocks.size
-      Inspectors.forAll(blocks)(block => res should contain(block.hash))
-    }
-
-    var blocksPage1: ArraySeq[BlockHash] = ArraySeq.empty
-    Get(s"/blocks?page=1&limit=${blocks.size / 2 + 1}") check { response =>
-      blocksPage1 = response.as[ListBlocks].blocks.map(_.hash)
-      response.code is StatusCode.Ok
+      res.size is limit
+      Inspectors.forAll(res)(hash => blocks.map(_.hash) should contain(hash))
     }
 
     var allBlocks: ArraySeq[BlockHash] = ArraySeq.empty
-    Get(s"/blocks?page=2&limit=${blocks.size / 2 + 1}") check { response =>
-      val res = response.as[ListBlocks].blocks.map(_.hash)
 
-      allBlocks = blocksPage1 ++ res
-
-      allBlocks.size is blocks.size
-      allBlocks.distinct.size is allBlocks.size
-
-      Inspectors.forAll(blocks)(block => allBlocks should contain(block.hash))
+    for (i <- 1 to blocks.size) {
+      Get(s"/blocks?page=${i}&limit=1") check { response =>
+        val res = response.as[ListBlocks].blocks.map(_.hash)
+        allBlocks = allBlocks :+ res.head
+        res.size is 1
+      }
     }
 
-    Get(s"/blocks?limit=${blocks.size}&reverse=true") check { response =>
-      val res = response.as[ListBlocks].blocks.map(_.hash)
+    Inspectors.forAll(blocks)(block => allBlocks should contain(block.hash))
 
-      res is allBlocks.reverse
+    val numberOfIteration                     = blocks.size / limit
+    var allBlocksReverse: ArraySeq[BlockHash] = ArraySeq.empty
+    for (i <- 1 to numberOfIteration + 1) {
+      Get(s"/blocks?page=${i}&limit=${limit}&reverse=true") check { response =>
+        val res = response.as[ListBlocks].blocks.map(_.hash)
+        allBlocksReverse = allBlocksReverse ++ res
+        Inspectors.forAll(res)(hash => blocks.map(_.hash) should contain(hash))
+      }
     }
+
+    allBlocksReverse.reverse is allBlocks
 
     Get(s"/blocks?page=0") check { response =>
       response.code is StatusCode.BadRequest
@@ -268,21 +305,36 @@ trait ExplorerSpec
   }
 
   "get address' info" in {
-    forAll(Gen.oneOf(addresses)) { address =>
-      Get(s"/addresses/${address}") check { response =>
+    addresses.foreach { address =>
+      Get(s"/addresses/${address}?limit=100") check { response =>
         val expectedTransactions =
           transactions
-            .filter(_.outputs.exists(_.address == address))
+            .filter(tx =>
+              tx.outputs.exists(_.address == address) || tx.inputs
+                .exists(_.address == Some(address))
+            )
             .sorted(Ordering.by((_: Transaction).timestamp))
-        val expectedBalance =
+
+        val outs =
           expectedTransactions
             .map(
               _.outputs
-                .filter(out => out.spent.isEmpty && out.address == address)
+                .filter(_.address == address)
                 .map(_.attoAlphAmount)
                 .fold(U256.Zero)(_ addUnsafe _)
             )
             .fold(U256.Zero)(_ addUnsafe _)
+        val ins =
+          expectedTransactions
+            .map(
+              _.inputs
+                .filter(in => in.address == Some(address))
+                .map(_.attoAlphAmount.getOrElse(U256.Zero))
+                .fold(U256.Zero)(_ addUnsafe _)
+            )
+            .fold(U256.Zero)(_ addUnsafe _)
+
+        val expectedBalance = outs.subUnsafe(ins)
 
         val res = response.as[AddressInfo]
 
@@ -296,12 +348,19 @@ trait ExplorerSpec
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address}/transactions") check { response =>
         val expectedTransactions =
-          transactions.filter(_.outputs.exists(_.address == address)).take(txLimit)
+          transactions
+            .filter(tx =>
+              tx.outputs.exists(_.address == address) || tx.inputs.exists(
+                _.address == Some(address)
+              )
+            )
+            .distinct
+
         val res = response.as[ArraySeq[Transaction]]
 
-        res.size is expectedTransactions.size
-        Inspectors.forAll(expectedTransactions) { transaction =>
-          res.map(_.hash) should contain(transaction.hash)
+        res.size is expectedTransactions.take(txLimit).size
+        Inspectors.forAll(res) { transaction =>
+          expectedTransactions.map(_.hash) should contain(transaction.hash)
         }
       }
     }
@@ -323,19 +382,27 @@ trait ExplorerSpec
   }
 
   "get all transactions for addresses" in {
-    forAll(Gen.someOf(transactions)) { transactions =>
-      val limitedAddresses = transactions.flatMap(_.outputs.map(_.address)).take(txLimit)
-      val addressesBody = limitedAddresses.map(address => s""""$address"""").mkString("[", ",", "]")
+    val maxSizeAddresses: Int = groupSetting.groupNum * 20
+
+    forAll(Gen.someOf(addresses)) { someAddresses =>
+      val selectedAddresses = someAddresses.take(maxSizeAddresses)
+      val addressesBody =
+        selectedAddresses.map(address => s""""$address"""").mkString("[", ",", "]")
 
       Post("/addresses/transactions", addressesBody) check { response =>
         val expectedTransactions =
-          transactions.filter(_.outputs.exists(limitedAddresses.contains)).take(txLimit)
+          selectedAddresses.flatMap { address =>
+            transactions.filter { tx =>
+              tx.outputs.exists(_.address == address) || tx.inputs
+                .exists(_.address == Some(address))
+            }
+          }
 
         val res = response.as[ArraySeq[Transaction]]
 
-        res.size is limitedAddresses.size
-        Inspectors.forAll(expectedTransactions) { transaction =>
-          res.map(_.hash) should contain(transaction.hash)
+        res.size is expectedTransactions.take(txLimit).size
+        Inspectors.forAll(res) { transaction =>
+          expectedTransactions.map(_.hash) should contain(transaction.hash)
         }
       }
     }
@@ -378,6 +445,71 @@ trait ExplorerSpec
         response.as[ApiError.BadRequest] is ApiError.BadRequest(
           s"""Invalid value for: query parameter interface-id (Cannot decode interface id}: fungible-${interfaceId})"""
         )
+      }
+    }
+  }
+
+  "insert uncle blocks" in {
+    uncles.foreach { uncle =>
+      Get(s"/blocks/${uncle.hash.toHexString}") check { response =>
+        val res = response.as[BlockEntry]
+        res.mainChain is false
+      }
+    }
+  }
+
+  "Market price endpoints" when {
+    "correctly return price" in {
+      val body = """["ALPH", "WBTC"]"""
+      Post(s"/market/prices?currency=btc", body) check { response =>
+        val prices = response.as[ArraySeq[Option[Double]]]
+        prices.foreach(_.isDefined is true)
+        response.code is StatusCode.Ok
+      }
+    }
+
+    "ignore unknown symbol" in {
+      val body = """["ALPH", "yop", "nop"]"""
+      Post(s"/market/prices?currency=btc", body) check { response =>
+        val prices = response.as[ArraySeq[Option[Double]]]
+        prices.head.isDefined is true
+        prices.tail.foreach(_.isEmpty is true)
+        response.code is StatusCode.Ok
+      }
+    }
+
+    "return 404 when unknown currency" in {
+      forAll(hashGen) { currency =>
+        Post(s"/market/prices?currency=${currency}", "[]") check { response =>
+          response.code is StatusCode.NotFound
+        }
+      }
+    }
+  }
+
+  "Market chart endpoints" when {
+    "correctly return price charts" in {
+      List("ALPH").map { symbol =>
+        Get(s"/market/prices/$symbol/charts?currency=btc") check { response =>
+          response.as[TimedPrices]
+          response.code is StatusCode.Ok
+        }
+      }
+    }
+
+    "return 404 when unknown currency" in {
+      forAll(hashGen) { currency =>
+        Get(s"/market/prices/ALPH/charts?currency=${currency}") check { response =>
+          response.code is StatusCode.NotFound
+        }
+      }
+    }
+
+    "return 404 when unknown symbol" in {
+      forAll(hashGen) { symbol =>
+        Get(s"/market/prices/$symbol/charts?currency=btc") check { response =>
+          response.code is StatusCode.NotFound
+        }
       }
     }
   }
@@ -425,6 +557,7 @@ object ExplorerSpec {
       address: InetAddress,
       port: Int,
       blockflow: ArraySeq[ArraySeq[model.BlockEntry]],
+      uncles: ArraySeq[model.BlockEntry],
       networkId: NetworkId
   )(implicit groupSetting: GroupSetting)
       extends ApiModelCodec
@@ -436,6 +569,7 @@ object ExplorerSpec {
 
     implicit val groupConfig: GroupConfig = groupSetting.groupConfig
     val blocks                            = blockflow.flatten
+    val blocksWithUncles                  = blockflow.flatten ++ uncles
 
     val cliqueId = CliqueId.generate
 
@@ -482,7 +616,7 @@ object ExplorerSpec {
             .in(path[BlockHash])
             .out(jsonBody[model.BlockEntry])
             .serverLogicSuccess[Future] { hash =>
-              Future.successful(blocks.find(_.hash === hash).get)
+              Future.successful(blocksWithUncles.find(_.hash === hash).get)
             }
         ),
         route(
@@ -495,7 +629,7 @@ object ExplorerSpec {
               Future
                 .successful(
                   model.BlockAndEvents(
-                    blocks.find(_.hash === hash).get,
+                    blocksWithUncles.find(_.hash === hash).get,
                     AVector.from(Gen.listOfN(3, contractEventByBlockHash).sample.get)
                   )
                 )
@@ -704,7 +838,7 @@ object ExplorerSpec {
 
   def mapJson(
       json: ujson.Value
-  )(f: ujson.Obj => scala.collection.mutable.LinkedHashMap[String, ujson.Value]): ujson.Value = {
+  )(f: ujson.Obj => scala.collection.mutable.Map[String, ujson.Value]): ujson.Value = {
     @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     def rec(json: ujson.Value): ujson.Value = {
       json match {

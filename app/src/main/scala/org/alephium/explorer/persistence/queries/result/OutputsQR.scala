@@ -22,13 +22,17 @@ import akka.util.ByteString
 import slick.jdbc.{GetResult, PositionedResult}
 
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.model.OutputEntity
+import org.alephium.explorer.persistence.model.{OutputEntity, OutputEntityLike}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{Address, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputsQR {
+
+  val selectFields: String =
+    "output_type, hint, key, amount, address, tokens, lock_time, message, spent_finalized, fixed_output"
+
   implicit val outputsQRGetResult: GetResult[OutputsQR] =
     (result: PositionedResult) =>
       OutputsQR(
@@ -40,7 +44,8 @@ object OutputsQR {
         tokens = result.<<?,
         lockTime = result.<<?,
         message = result.<<?,
-        spentFinalized = result.<<?
+        spentFinalized = result.<<?,
+        fixedOutput = result.<<
       )
 }
 
@@ -54,31 +59,6 @@ final case class OutputsQR(
     tokens: Option[ArraySeq[Token]],
     lockTime: Option[TimeStamp],
     message: Option[ByteString],
-    spentFinalized: Option[TransactionId]
-) {
-
-  def toApiOutput(): Output =
-    outputType match {
-      case OutputEntity.Asset =>
-        AssetOutput(
-          hint = hint,
-          key = key,
-          attoAlphAmount = amount,
-          address = address,
-          tokens = tokens,
-          lockTime = lockTime,
-          message = message,
-          spent = spentFinalized
-        )
-
-      case OutputEntity.Contract =>
-        ContractOutput(
-          hint = hint,
-          key = key,
-          attoAlphAmount = amount,
-          address = address,
-          tokens = tokens,
-          spent = spentFinalized
-        )
-    }
-}
+    spentFinalized: Option[TransactionId],
+    fixedOutput: Boolean
+) extends OutputEntityLike

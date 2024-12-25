@@ -16,7 +16,10 @@
 
 package org.alephium.tools
 
+import com.typesafe.config.ConfigFactory
+
 import org.alephium.api.OpenAPIWriters.openApiJson
+import org.alephium.explorer.config._
 import org.alephium.explorer.docs.Documentation
 import org.alephium.util.{discard, Duration}
 
@@ -25,12 +28,14 @@ object OpenApiUpdate {
     discard {
       new Documentation {
 
-        // scalastyle:off magic.number
-        val groupNum                           = 4
-        val maxTimeIntervalExportTxs: Duration = Duration.ofDaysUnsafe(366)
-        // scalastyle:on magic.number
+        private val typesafeConfig         = ConfigFactory.load()
+        private val config: ExplorerConfig = ExplorerConfig.load(typesafeConfig)
 
-        private val json = openApiJson(docs, dropAuth = false)
+        val groupNum                           = config.groupNum
+        val maxTimeIntervalExportTxs: Duration = config.maxTimeInterval.exportTxs
+        val currencies                         = config.market.currencies
+
+        private val json = openApiJson(docs, dropAuth = false, truncateAddresses = true)
 
         import java.io.PrintWriter
         new PrintWriter("../app/src/main/resources/explorer-backend-openapi.json") {

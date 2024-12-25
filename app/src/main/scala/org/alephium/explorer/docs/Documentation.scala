@@ -16,11 +16,14 @@
 
 package org.alephium.explorer.docs
 
+import scala.collection.immutable.ArraySeq
+
 import sttp.apispec._
 import sttp.apispec.openapi.OpenAPI
 import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
 
 import org.alephium.explorer.api._
+import org.alephium.explorer.api.model.Pagination
 
 trait Documentation
     extends BlockEndpoints
@@ -36,6 +39,8 @@ trait Documentation
     with UtilsEndpoints
     with OpenAPIDocsInterpreter {
 
+  def currencies: ArraySeq[String]
+
   lazy val docs: OpenAPI = addComponents(
     toOpenAPI(
       List(
@@ -48,11 +53,13 @@ trait Documentation
         getTransactionsByAddresses,
         getTransactionsByAddressTimeRanged,
         getTotalTransactionsByAddress,
+        getLatestTransactionInfo,
         addressMempoolTransactions,
         getAddressBalance,
         listAddressTokens,
         listAddressTokenTransactions,
         getAddressTokenBalance,
+        getPublicKey,
         listAddressTokensBalance,
         areAddressesActive,
         exportTransactionsCsvByAddress,
@@ -75,12 +82,15 @@ trait Documentation
         getLockedSupply,
         getTotalTransactions,
         getAverageBlockTime,
+        getAlphHolders,
+        getTokenHolders,
         getHashrates,
         getAllChainsTxCount,
         getPerChainTxCount,
         getEventsByTxId,
         getEventsByContractAddress,
         getEventsByContractAndInputAddress,
+        getContractInfo,
         getParentAddress,
         getSubContracts,
         getPrices,
@@ -95,31 +105,73 @@ trait Documentation
   )
 
   // Expose some variables to the openAPI file
+  // scalastyle:off method.length
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   private def addComponents(openApi: OpenAPI): OpenAPI =
     openApi.components(
       openApi.components.get
         .addSchema(
+          "PaginationLimitDefault",
+          Schema(
+            `type` = Some(List(SchemaType.Integer)),
+            `enum` = Some(
+              List(
+                ExampleSingleValue(Pagination.defaultLimit),
+                ExampleSingleValue(Pagination.futureDefaultLimit)
+              )
+            )
+          )
+        )
+        .addSchema(
+          "PaginationLimitMax",
+          Schema(
+            `type` = Some(List(SchemaType.Integer)),
+            `enum` = Some(
+              List(
+                ExampleSingleValue(Pagination.maxLimit),
+                ExampleSingleValue(Pagination.futureMaxLimit)
+              )
+            )
+          )
+        )
+        .addSchema(
+          "PaginationPageDefault",
+          Schema(
+            `type` = Some(List(SchemaType.Integer)),
+            `enum` = Some(
+              List(
+                ExampleSingleValue(Pagination.defaultPage)
+              )
+            )
+          )
+        )
+        .addSchema(
           "MaxSizeTokens",
           Schema(
-            `type` = Some(SchemaType.Integer),
+            `type` = Some(List(SchemaType.Integer)),
             `enum` = Some(List(ExampleSingleValue(maxSizeTokens)))
           )
         )
         .addSchema(
           "MaxSizeAddressesForTokens",
           Schema(
-            `type` = Some(SchemaType.Integer),
+            `type` = Some(List(SchemaType.Integer)),
             `enum` = Some(List(ExampleSingleValue(maxSizeAddressesForTokens)))
           )
         )
         .addSchema(
           "MaxSizeAddresses",
           Schema(
-            `type` = Some(SchemaType.Integer),
+            `type` = Some(List(SchemaType.Integer)),
             `enum` = Some(List(ExampleSingleValue(maxSizeAddresses)))
           )
         )
+        .addSchema(
+          "Currencies",
+          Schema(
+            `type` = Some(List(SchemaType.String)),
+            enum = Some(currencies.map { name => ExampleSingleValue(name) }.toList)
+          )
+        )
     )
-
 }

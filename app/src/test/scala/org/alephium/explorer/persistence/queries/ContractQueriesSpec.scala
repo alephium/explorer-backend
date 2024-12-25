@@ -18,23 +18,20 @@ package org.alephium.explorer.persistence.queries
 
 import scala.collection.immutable.ArraySeq
 
-import akka.util.ByteString
-import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.api.model.{Val, ValAddress, ValByteVec}
+import org.alephium.api.model.ValAddress
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
-import org.alephium.explorer.GenCoreApi.valByteVecGen
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model.{ContractEntity, EventEntity}
 import org.alephium.explorer.persistence.queries.ContractQueries
 import org.alephium.explorer.persistence.schema.ContractSchema
-import org.alephium.protocol.model.{Address, ChainIndex, GroupIndex}
+import org.alephium.protocol.model.Address
 
 @SuppressWarnings(
   Array("org.wartremover.warts.DefaultArguments", "org.wartremover.warts.AsInstanceOf")
@@ -44,42 +41,6 @@ class ContractQueriesSpec
     with DatabaseFixtureForEach
     with DBRunner
     with ScalaFutures {
-
-  val emptyByteVec: Val = ValByteVec(ByteString.empty)
-
-  def createEventGen(groupIndex: GroupIndex, parentOpt: Option[Address] = None): Gen[EventEntity] =
-    for {
-      event       <- eventEntityGen()
-      contract    <- addressGen
-      interfaceId <- Gen.option(valByteVecGen)
-    } yield {
-      event.copy(
-        contractAddress = ContractEntity.createContractEventAddress(groupIndex),
-        fields = ArraySeq(
-          ValAddress(contract),
-          parentOpt.map(ValAddress.apply).getOrElse(emptyByteVec),
-          interfaceId.getOrElse(emptyByteVec)
-        )
-      )
-    }
-  def createEventsGen(parentOpt: Option[Address] = None): Gen[(GroupIndex, Seq[EventEntity])] =
-    for {
-      groupIndex <- groupIndexGen
-      events     <- Gen.nonEmptyListOf(createEventGen(groupIndex, parentOpt))
-    } yield (groupIndex, events)
-
-  def destroyEventGen(contract: Address): Gen[EventEntity] =
-    for {
-      event <- eventEntityGen()
-    } yield {
-      val groupIndex = ChainIndex.from(event.blockHash).from
-      event.copy(
-        contractAddress = ContractEntity.destroyContractEventAddress(groupIndex),
-        fields = ArraySeq(
-          ValAddress(contract)
-        )
-      )
-    }
 
   def contractAddressFromEvent(event: EventEntity): Address = {
     event.fields.head.asInstanceOf[ValAddress].value
@@ -104,6 +65,20 @@ class ContractQueriesSpec
           .flatMap(_.destroyInfo()) is destroyEvents
           .flatMap(ContractEntity.destructionFromEventEntity(_, groupIndex))
           .sortBy(_.timestamp)
+      }
+    }
+
+    "getContractEntity" in {
+      forAll(createEventsGen()) { case (groupIndex, events) =>
+        run(ContractSchema.table.delete).futureValue
+        run(ContractQueries.insertContractCreation(events, groupIndex)).futureValue
+
+        events.flatMap(ContractEntity.creationFromEventEntity(_, groupIndex)).foreach { event =>
+          run(ContractQueries.getContractEntity(event.contract)).futureValue is
+            ArraySeq(event)
+        }
+
+        run(ContractQueries.getContractEntity(addressGen.sample.get)).futureValue is ArraySeq.empty
       }
     }
 
@@ -139,6 +114,35 @@ class ContractQueriesSpec
           .take(pagination.limit)
           .flatMap(ContractEntity.creationFromEventEntity(_, groupIndex))
           .map(_.contract)
+
+      }
+    }
+
+    "getSubContractsQuery when duplicate contracts exists" in {
+      val parent     = addressGen.sample.get
+      val pagination = Pagination.unsafe(1, 5)
+
+      forAll(
+        createEventsGen(Some(parent)),
+        createEventsGen()
+      ) { case ((groupIndex, events), (otherGroup, otherEvents)) =>
+        val eventsWithDuplicates = events ++ events.map(event =>
+          event.copy(timestamp = event.timestamp.plusSecondsUnsafe(1))
+        )
+
+        run(ContractSchema.table.delete).futureValue
+        run(ContractQueries.insertContractCreation(eventsWithDuplicates, groupIndex)).futureValue
+        run(ContractQueries.insertContractCreation(otherEvents, otherGroup)).futureValue
+
+        run(
+          ContractQueries.getSubContractsQuery(parent, pagination)
+        ).futureValue is eventsWithDuplicates
+          .sortBy(_.timestamp)
+          .reverse
+          .flatMap(ContractEntity.creationFromEventEntity(_, groupIndex))
+          .map(_.contract)
+          .distinct
+          .take(pagination.limit)
 
       }
     }
