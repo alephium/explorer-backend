@@ -256,6 +256,7 @@ object EndpointExamples extends EndpointsExamples {
   private val event =
     Event(
       blockHash,
+      ts,
       txId,
       address1,
       Some(address1),
