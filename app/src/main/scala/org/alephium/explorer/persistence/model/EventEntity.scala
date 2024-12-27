@@ -38,6 +38,7 @@ final case class EventEntity(
 ) {
   def toApi: Event = Event(
     blockHash,
+    timestamp,
     txHash,
     contractAddress,
     inputAddress,
