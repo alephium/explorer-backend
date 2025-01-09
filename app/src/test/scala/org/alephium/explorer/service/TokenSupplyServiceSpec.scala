@@ -167,6 +167,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       val block =
         blockEntityWithParentGen(chainIndex, None).sample.get
       block.copy(
+        transactions = block.transactions.map(_.copy(timestamp = block.timestamp)),
         outputs = block.outputs.map(
           _.copy(timestamp = block.timestamp, lockTime = lockTime, address = genesisAddress)
         )
@@ -182,6 +183,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       block.copy(
         timestamp = timestamp,
         outputs = block.outputs.map(_.copy(timestamp = timestamp, lockTime = lockTime)),
+        transactions = block.transactions.map(_.copy(timestamp = timestamp)),
         inputs = block.inputs.map(_.copy(timestamp = timestamp))
       )
     }
@@ -189,7 +191,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     lazy val block2 = {
       val block =
         blockEntityWithParentGen(chainIndex, Some(block1)).sample.get
-      val txHash    = transactionHashGen.sample.get
+      val txHash    = block.transactions.head.hash
       val timestamp = block.timestamp.plusHoursUnsafe(24)
       block.copy(
         timestamp = timestamp,
@@ -212,6 +214,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
           )
 
         },
+        transactions = block.transactions.map(_.copy(timestamp = timestamp)),
         outputs = block.outputs.map(_.copy(timestamp = timestamp, lockTime = None))
       )
     }
@@ -228,6 +231,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
           .get
       block.copy(
         timestamp = timestamp,
+        transactions = block.transactions.map(_.copy(timestamp = timestamp)),
         outputs = block.outputs.map(_.copy(timestamp = timestamp, address = address))
       )
     }
@@ -236,7 +240,11 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       val block =
         blockEntityWithParentGen(chainIndex, Some(block3)).sample.get
       val timestamp = block.timestamp.plusHoursUnsafe(24)
-      block.copy(timestamp = timestamp, outputs = block.outputs.map(_.copy(timestamp = timestamp)))
+      block.copy(
+        timestamp = timestamp,
+        transactions = block.transactions.map(_.copy(timestamp = timestamp)),
+        outputs = block.outputs.map(_.copy(timestamp = timestamp))
+      )
     }
 
     def test(blocks: BlockEntity*)(amounts: ArraySeq[U256]) = {
