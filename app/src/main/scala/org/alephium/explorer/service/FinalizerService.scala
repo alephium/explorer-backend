@@ -16,6 +16,7 @@
 
 package org.alephium.explorer.service
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 
@@ -34,6 +35,8 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.{Scheduler, TimeUtil}
 import org.alephium.explorer.util.SlickUtil._
+import org.alephium.protocol.Hash
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.{Duration, TimeStamp}
 
 /*
@@ -92,7 +95,6 @@ case object FinalizerService extends StrictLogging {
         (
           for {
             nb <- updateOutputs(from, to)
-            _  <- updateTokenOutputs(from, to)
             _  <- updateLastFinalizedInputTime(to)
           } yield nb
         ).transactionally
@@ -103,29 +105,108 @@ case object FinalizerService extends StrictLogging {
     }.map(_ => logger.debug(s"Outputs updated"))
   }
 
-  private def updateOutputs(from: TimeStamp, to: TimeStamp): DBActionR[Int] =
-    sqlu"""
-      UPDATE outputs o
-      SET spent_finalized = i.tx_hash, spent_timestamp = i.block_timestamp
-      FROM inputs i
-      WHERE i.output_ref_key = o.key
-      AND o.main_chain=true
-      AND i.main_chain=true
-      AND i.block_timestamp >= $from
-      AND i.block_timestamp <= $to;
-      """
+  /*
+   * Update the `outputs` and `token_outputs` tables based on data from `inputs` within the specified time range.
+   */
+  private def updateOutputs(from: TimeStamp, to: TimeStamp)(implicit
+      ec: ExecutionContext
+  ): DBActionR[Int] =
+    for {
+      txs    <- findTransactions(from, to)
+      inputs <- findInputs(txs)
+      nb     <- updateOutputsWithInputs(inputs)
+    } yield nb
 
-  private def updateTokenOutputs(from: TimeStamp, to: TimeStamp): DBActionR[Int] =
+  /*
+   * Search for transactions within the specified time range.
+   */
+  private def findTransactions(
+      from: TimeStamp,
+      to: TimeStamp
+  ): StreamAction[(TransactionId, BlockHash, TimeStamp)] =
+    sql"""
+      SELECT hash, block_hash, block_timestamp
+      FROM transactions
+      WHERE main_chain = true
+      AND block_timestamp >= $from
+      AND block_timestamp <= $to;
+      """.asAS[(TransactionId, BlockHash, TimeStamp)]
+
+  /*
+   * Search for inputs for the specified transactions.
+   */
+  private def findInputs(
+      txs: ArraySeq[(TransactionId, BlockHash, TimeStamp)]
+  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[(TransactionId, TimeStamp, Hash)]] =
+    DBIO
+      .sequence(txs.map { case (txHash, blockHash, blockTimestamp) =>
+        findInputsForTx(txHash, blockHash).map { outputRefKeys =>
+          outputRefKeys.map { case outputRefKey =>
+            (txHash, blockTimestamp, outputRefKey)
+          }
+        }
+      })
+      .map(_.flatten)
+
+  /*
+   * Search inputs for a given `txHash` and `blockHash` using the `inputs_tx_hash_block_hash_idx` index (txHash, blockHash).
+   */
+  private def findInputsForTx(txId: TransactionId, blockHash: BlockHash): StreamAction[Hash] =
+    sql"""
+      SELECT output_ref_key
+      FROM inputs
+      WHERE main_chain = true
+      AND tx_hash = $txId
+      AND block_hash = $blockHash;
+      """.asAS[Hash]
+
+  /*
+   * Update `outputs` and `token_outputs` tables with `txHash` and `blockTimestamp`
+   * based on their corresponding `outputRefKeys`.
+   */
+  private def updateOutputsWithInputs(
+      inputs: ArraySeq[(TransactionId, TimeStamp, Hash)]
+  )(implicit ec: ExecutionContext): DBActionR[Int] =
+    DBIO
+      .sequence(inputs.map { case (txHash, blockTimestamp, outputRefKey) =>
+        for {
+          nb <- updateOutput(txHash, blockTimestamp, outputRefKey)
+          _  <- updateTokenOutput(txHash, blockTimestamp, outputRefKey)
+        } yield nb
+      })
+      .map(_.sum)
+
+  /*
+   * Update the `output` with `txHash` and `blockTimestamp`
+   * for the specified `outputRefKey` using the primary key index.
+   */
+  private def updateOutput(
+      txHash: TransactionId,
+      blockTimestamp: TimeStamp,
+      outputRefKey: Hash
+  ): DBActionR[Int] =
     sqlu"""
-      UPDATE token_outputs o
-      SET spent_finalized = i.tx_hash, spent_timestamp = i.block_timestamp
-      FROM inputs i
-      WHERE i.output_ref_key = o.key
-      AND o.main_chain=true
-      AND i.main_chain=true
-      AND i.block_timestamp >= $from
-      AND i.block_timestamp <= $to;
-      """
+    UPDATE outputs
+    SET spent_finalized = $txHash, spent_timestamp = $blockTimestamp
+    WHERE key = $outputRefKey
+    AND main_chain = true
+  """
+
+  /*
+   * Update the `token_output` with `txHash` and `blockTimestamp`
+   * for the specified `outputRefKey` using the primary key index.
+   */
+  private def updateTokenOutput(
+      txHash: TransactionId,
+      blockTimestamp: TimeStamp,
+      outputRefKey: Hash
+  ): DBActionR[Int] =
+    sqlu"""
+      UPDATE token_outputs
+      SET spent_finalized = $txHash, spent_timestamp = $blockTimestamp
+      WHERE key = $outputRefKey
+      AND main_chain = true
+    """
 
   def getStartEndTime()(implicit
       executionContext: ExecutionContext
