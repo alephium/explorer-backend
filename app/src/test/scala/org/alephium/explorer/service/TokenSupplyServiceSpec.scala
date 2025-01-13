@@ -23,7 +23,6 @@ import scala.collection.immutable.ArraySeq
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
-import org.alephium.explorer.GenCoreProtocol.transactionHashGen
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
