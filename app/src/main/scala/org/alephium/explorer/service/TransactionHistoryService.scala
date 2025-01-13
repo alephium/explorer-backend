@@ -189,13 +189,12 @@ case object TransactionHistoryService extends StrictLogging {
       case IntervalType.Weekly => timestamp.minusUnsafe(weeklyStepBack)
     }
 
-  // TODO Replace by accessing a `Latest Transaction cache`
   private def findLatestTransationTimestamp()(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Option[TimeStamp]] = {
     run(sql"""
-    SELECT MAX(block_timestamp) FROM transactions WHERE main_chain = true
+    SELECT MAX(block_timestamp) FROM latest_blocks
     """.asAS[Option[TimeStamp]].exactlyOne)
   }
 

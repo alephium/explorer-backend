@@ -27,9 +27,9 @@ import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
-import org.alephium.explorer.persistence.model.TransactionEntity
-import org.alephium.explorer.persistence.schema.TransactionSchema
-import org.alephium.protocol.model.GroupIndex
+import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.persistence.schema._
+import org.alephium.protocol.model.{ChainIndex, GroupIndex}
 import org.alephium.util._
 
 class TransactionHistoryServiceSpec
@@ -115,21 +115,36 @@ class TransactionHistoryServiceSpec
 
       val tx11 = txGroup("2021-11-10T01:00:00.000Z", group0)
 
+      val txs = ArraySeq(
+        tx1,
+        tx2,
+        tx3,
+        tx4,
+        tx5,
+        tx6,
+        tx7,
+        tx8,
+        tx9,
+        tx10,
+        tx11
+      )
       run(
-        TransactionSchema.table ++= ArraySeq(
-          tx1,
-          tx2,
-          tx3,
-          tx4,
-          tx5,
-          tx6,
-          tx7,
-          tx8,
-          tx9,
-          tx10,
-          tx11
-        )
+        TransactionSchema.table ++= txs
       ).futureValue
+
+      val latestBlocks = txs
+        .groupBy(tx => (tx.chainFrom, tx.chainTo))
+        .view
+        .mapValues(_.maxBy(_.timestamp))
+        .values
+        .map { tx =>
+          LatestBlock.fromEntity(
+            blockEntityGen(ChainIndex.unsafe(tx.chainFrom.value, tx.chainTo.value)).sample.get
+              .copy(timestamp = tx.timestamp)
+          )
+        }
+
+      run(LatestBlockSchema.table ++= latestBlocks).futureValue
 
       TransactionHistoryService.syncOnce().futureValue
 
