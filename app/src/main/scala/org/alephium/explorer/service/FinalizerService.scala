@@ -241,9 +241,8 @@ case object FinalizerService extends StrictLogging {
 
   private def getMaxInputsTs(implicit ec: ExecutionContext): DBActionR[Option[TimeStamp]] =
     sql"""
-      SELECT MAX(block_timestamp)
-      FROM block_headers
-      GROUP BY chain_from, chain_to order by max LIMIT 1;
+      SELECT MIN(block_timestamp)
+      FROM latest_blocks
     """.asAS[TimeStamp].headOrNone
 
   private def getLastFinalizedInputTime()(implicit

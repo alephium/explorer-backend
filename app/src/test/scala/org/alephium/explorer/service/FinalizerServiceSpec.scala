@@ -16,12 +16,15 @@
 
 package org.alephium.explorer.service
 
+import slick.jdbc.PostgresProfile.api._
+
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
-import org.alephium.explorer.persistence.model.{BlockHeader, InputEntity}
+import org.alephium.explorer.persistence.model.{BlockHeader, InputEntity, LatestBlock}
 import org.alephium.explorer.persistence.model.AppState.LastFinalizedInputTime
 import org.alephium.explorer.persistence.queries.{AppStateQueries, BlockQueries, InputQueries}
+import org.alephium.explorer.persistence.schema.LatestBlockSchema
 import org.alephium.protocol.model.GroupIndex
 import org.alephium.util.{Duration, TimeStamp}
 
@@ -61,6 +64,7 @@ class FinalizerServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEac
 
     run(BlockQueries.insertBlockHeaders(Seq(blockHeader2))).futureValue
     run(InputQueries.insertInputs(Seq(input1))).futureValue
+    run(LatestBlockSchema.table += latestBlock(blockHeader2)).futureValue
 
     val Some((start1, end1)) = run(FinalizerService.getStartEndTime()).futureValue
 
@@ -98,6 +102,17 @@ class FinalizerServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEac
         chainFrom = new GroupIndex(0),
         chainTo = new GroupIndex(0),
         mainChain = true
+      )
+
+    def latestBlock(block: BlockHeader): LatestBlock =
+      LatestBlock(
+        block.hash,
+        block.timestamp,
+        block.chainFrom,
+        block.chainTo,
+        block.height,
+        block.target,
+        block.hashrate
       )
   }
 }
