@@ -252,6 +252,15 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         BlockDao.updateMainChainStatus(block.hash, true).futureValue
       }
 
+      val latestBlocks = blocks
+        .groupBy(block => (block.chainFrom, block.chainTo))
+        .view
+        .mapValues(_.maxBy(_.timestamp))
+        .values
+        .map(block => LatestBlock.fromEntity(block))
+
+      run(LatestBlockSchema.table ++= latestBlocks).futureValue
+
       val timestamps = blocks.map(_.timestamp)
       val minTs      = timestamps.min
       val maxTs      = timestamps.max
