@@ -375,6 +375,19 @@ object MarketService extends StrictLogging {
       }
     }
 
+    private def validateData(
+        asset: TokenList.Entry,
+        price: Double,
+        liquidity: Double
+    ): Option[Price] = {
+      // If the liquidity is below the minimum, the price is unavailable
+      if (liquidity < marketConfig.liquidityMinimum) {
+        None
+      } else {
+        Some(Price(asset.symbol, price, liquidity))
+      }
+    }
+
     @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
     def convertJsonToMobulaPrices(
         assets: ArraySeq[TokenList.Entry]
@@ -386,18 +399,14 @@ object MarketService extends StrictLogging {
               Try {
                 ArraySeq.from(assets.flatMap { asset =>
                   val address = tokenListToAddresses(ArraySeq(asset)).head
-                  data.value.get(address.toBase58) match {
-                    case Some(value) =>
-                      val price     = value("price").num
-                      val liquidity = value("liquidity").num
-                      // If the liquidity is below the minimum, the price is unavailable
-                      if (liquidity < marketConfig.liquidityMinimum) {
-                        None
-                      } else {
-                        Some(Price(asset.symbol, price, liquidity))
-                      }
-                    case None =>
-                      None
+                  data.value.get(address.toBase58).flatMap { value =>
+                    for {
+                      price     <- value("price").numOpt
+                      liquidity <- value("liquidity").numOpt
+                      result    <- validateData(asset, price, liquidity)
+                    } yield {
+                      result
+                    }
                   }
                 })
               }.toEither.left.map { error =>
