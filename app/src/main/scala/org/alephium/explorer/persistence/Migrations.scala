@@ -36,7 +36,7 @@ import org.alephium.protocol.model.BlockHash
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(4)
+  val latestVersion: MigrationVersion = MigrationVersion(5)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     // We retrigger the download of fungible and non-fungible tokens' metadata that have sub-category
@@ -91,11 +91,22 @@ object Migrations extends StrictLogging {
    */
   def migration4: DBActionAll[Unit] = DBIOAction.successful(())
 
+  def migration5(implicit ec: ExecutionContext): DBActionAll[Unit] = {
+    for {
+      _ <-
+        sqlu"""
+          CREATE INDEX txs_mainchain_timestamp_chain
+          ON transactions (block_timestamp, chain_from, chain_to)
+          WHERE main_chain = true;
+        """
+    } yield ()
+  }
   private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
     migration1,
     migration2,
     migration3,
-    migration4
+    migration4,
+    migration5
   )
 
   def backgroundCoinbaseMigration()(implicit
