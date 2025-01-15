@@ -128,23 +128,38 @@ class TransactionHistoryServiceSpec
         tx10,
         tx11
       )
-      run(
-        TransactionSchema.table ++= txs
-      ).futureValue
 
-      val latestBlocks = txs
-        .groupBy(tx => (tx.chainFrom, tx.chainTo))
+      val blocks = txs.map { tx =>
+        blockHeaderGen.sample.get
+          .copy(
+            hash = tx.blockHash,
+            mainChain = tx.mainChain,
+            timestamp = tx.timestamp,
+            chainFrom = tx.chainFrom,
+            chainTo = tx.chainTo,
+            txsCount = 1
+          )
+      }
+
+      val latestBlocks = blocks
+        .groupBy(block => (block.chainFrom, block.chainTo))
         .view
         .mapValues(_.maxBy(_.timestamp))
         .values
-        .map { tx =>
+        .map { block =>
           LatestBlock.fromEntity(
-            blockEntityGen(ChainIndex.unsafe(tx.chainFrom.value, tx.chainTo.value)).sample.get
-              .copy(timestamp = tx.timestamp)
+            blockEntityGen(ChainIndex.unsafe(block.chainFrom.value, block.chainTo.value)).sample.get
+              .copy(timestamp = block.timestamp)
           )
         }
 
-      run(LatestBlockSchema.table ++= latestBlocks).futureValue
+      run(
+        for {
+          _ <- BlockHeaderSchema.table ++= blocks
+          _ <- TransactionSchema.table ++= txs
+          _ <- LatestBlockSchema.table ++= latestBlocks
+        } yield ()
+      ).futureValue
 
       TransactionHistoryService.syncOnce().futureValue
 
