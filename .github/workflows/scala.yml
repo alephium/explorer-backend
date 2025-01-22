@@ -32,4 +32,4 @@ jobs:
         cache: sbt
     - name: Setup sbt launcher
       uses: sbt/setup-sbt@v1
-    - run: sbt ";scalafmtCheck;test:scalafmtCheck;scalafmtSbtCheck;scalastyle;test:scalastyle;test;unidoc;app/assembly"
+    - run: sbt ";scalafmtCheck;test:scalafmtCheck;scalafmtSbtCheck;scalastyle;test:scalastyle;test;app/assembly"
