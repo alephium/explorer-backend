@@ -221,6 +221,7 @@ class AddressReadState(val db: DBExecutor)
         .andThen(OutputSchema.createMainChainIndex())
         .andThen(TransactionPerAddressSchema.createMainChainIndex())
         .andThen(OutputSchema.createNonSpentIndex())
+        .andThen(OutputSchema.createNonSpentOutputCoveringIndex())
 
     val _ = db.runNow(
       action = createTable,

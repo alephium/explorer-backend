@@ -25,12 +25,12 @@ import com.github.benmanes.caffeine.cache.{AsyncCacheLoader, Caffeine}
 import io.prometheus.metrics.core.metrics.Gauge
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
-import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.persistence.DBRunner._
-import org.alephium.explorer.persistence.model.LatestBlock
-import org.alephium.explorer.persistence.queries.BlockQueries
+import org.alephium.explorer.persistence.model.{AppState, LatestBlock}
+import org.alephium.explorer.persistence.queries.{AppStateQueries, BlockQueries}
+import org.alephium.explorer.persistence.schema.CustomGetResult.lastFinalizedInputTimeGetResult
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.ChainIndex
 import org.alephium.util.{Duration, TimeStamp}
@@ -75,7 +75,7 @@ object BlockCache {
     val latestBlockAsyncLoader: AsyncCacheLoader[ChainIndex, LatestBlock] = { case (key, _) =>
       run(
         BlockQueries.getLatestBlock(key.from, key.to)
-      ).map(_.get).asJava.toCompletableFuture
+      ).map(_.headOption.getOrElse(LatestBlock.empty())).asJava.toCompletableFuture
     }
 
     val cachedLatestBlocks: CaffeineAsyncCache[ChainIndex, LatestBlock] =
@@ -116,13 +116,26 @@ object BlockCache {
 
     val cacheRowCount: AsyncReloadingCache[Int] =
       AsyncReloadingCache(0, cacheRowCountReloadPeriod) { _ =>
-        run(BlockQueries.mainChainQuery.length.result)
+        cachedLatestBlocks
+          .getAll(groupConfig.cliqueChainIndexes.toArray)
+          .map(_.collect {
+            case (_, block) if block.height.value >= 0 => block.height.value + 1
+          }.sum)
       }
+
+    val latestFinalizeTime: AsyncReloadingCache[TimeStamp] =
+      AsyncReloadingCache(TimeStamp.zero, 5.minutes) { _ =>
+        run(AppStateQueries.get(AppState.LastFinalizedInputTime))
+          .map(_.map(_.time).getOrElse(TimeStamp.zero))
+      }
+
+    latestFinalizeTime.expireAndReload()
 
     new BlockCache(
       blockTimes = cachedBlockTimes,
       rowCount = cacheRowCount,
-      latestBlocks = cachedLatestBlocks
+      latestBlocks = cachedLatestBlocks,
+      lastFinalizedTimestamp = latestFinalizeTime
     )
   }
 
@@ -145,7 +158,8 @@ object BlockCache {
 class BlockCache(
     blockTimes: CaffeineAsyncCache[ChainIndex, Duration],
     rowCount: AsyncReloadingCache[Int],
-    latestBlocks: CaffeineAsyncCache[ChainIndex, LatestBlock]
+    latestBlocks: CaffeineAsyncCache[ChainIndex, LatestBlock],
+    lastFinalizedTimestamp: AsyncReloadingCache[TimeStamp]
 )(implicit groupConfig: GroupConfig) {
 
   private val latestBlocksSyncedLabeled =
@@ -176,4 +190,7 @@ class BlockCache(
 
   def getMainChainBlockCount(): Int =
     rowCount.get()
+
+  def getLastFinalizedTimestamp(): TimeStamp =
+    lastFinalizedTimestamp.get()
 }

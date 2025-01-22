@@ -117,5 +117,34 @@ class ContractQueriesSpec
 
       }
     }
+
+    "getSubContractsQuery when duplicate contracts exists" in {
+      val parent     = addressGen.sample.get
+      val pagination = Pagination.unsafe(1, 5)
+
+      forAll(
+        createEventsGen(Some(parent)),
+        createEventsGen()
+      ) { case ((groupIndex, events), (otherGroup, otherEvents)) =>
+        val eventsWithDuplicates = events ++ events.map(event =>
+          event.copy(timestamp = event.timestamp.plusSecondsUnsafe(1))
+        )
+
+        run(ContractSchema.table.delete).futureValue
+        run(ContractQueries.insertContractCreation(eventsWithDuplicates, groupIndex)).futureValue
+        run(ContractQueries.insertContractCreation(otherEvents, otherGroup)).futureValue
+
+        run(
+          ContractQueries.getSubContractsQuery(parent, pagination)
+        ).futureValue is eventsWithDuplicates
+          .sortBy(_.timestamp)
+          .reverse
+          .flatMap(ContractEntity.creationFromEventEntity(_, groupIndex))
+          .map(_.contract)
+          .distinct
+          .take(pagination.limit)
+
+      }
+    }
   }
 }

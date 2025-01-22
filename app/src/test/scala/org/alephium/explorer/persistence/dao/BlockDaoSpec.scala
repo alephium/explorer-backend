@@ -156,66 +156,73 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
   }
 
   "cache mainChainQuery's rowCount when table is non-empty" in new Fixture {
-    // generate some entities with random mainChain value
-    val entitiesGenerator: Gen[List[BlockEntity]] =
-      Gen
-        .listOf(genBlockEntityWithOptionalParent(randomMainChainGen = Some(arbitrary[Boolean])))
-        .map(_.map(_._1))
 
-    forAll(entitiesGenerator) { blockEntities =>
-      // clear existing data
-      run(BlockHeaderSchema.table.delete).futureValue
+    BlockDao.insertAll(blockEntities).futureValue
 
-      BlockDao.insertAll(blockEntities).futureValue
-
-      // expected row count in cache
-      val expectedMainChainCount = blockEntities.count(_.mainChain)
-
-      // invoking listMainChainSQL would populate the cache with the row count
-      eventually {
-        BlockDao
-          .listMainChain(Pagination.Reversible.unsafe(1, 1))
-          .futureValue
-          ._2 is expectedMainChainCount
+    val highestBlocksByChain = blockEntitiesPerChain
+      .map { blocks =>
+        blocks.maxByOption(_.height)
       }
+
+    highestBlocksByChain.foreach {
+      case Some(block) => BlockDao.updateLatestBlock(block).futureValue
+      case _           => ()
+    }
+
+    val expectedRowCount = highestBlocksByChain.map(_.map(b => b.height.value + 1).getOrElse(0)).sum
+
+    // invoking listMainChainSQL would populate the cache with the row count
+    eventually {
+      val p = BlockDao
+        .listMainChain(Pagination.Reversible.unsafe(1, 1))
+        .futureValue
+        ._2
+
+      p is expectedRowCount
     }
   }
 
   "refresh row count cache of mainChainQuery when new data is inserted" in new Fixture {
-    // generate some entities with random mainChain value
-    val entitiesGenerator: Gen[List[BlockEntity]] =
-      Gen
-        .listOf(genBlockEntityWithOptionalParent(randomMainChainGen = Some(arbitrary[Boolean])))
-        .map(_.map(_._1))
+    val halfBlocks = blockEntitiesPerChain.map(chain => chain.take(chain.size / 2))
 
-    forAll(entitiesGenerator, entitiesGenerator) { case (entities1, entities2) =>
-      // clear existing data
-      run(BlockHeaderSchema.table.delete).futureValue
-
-      /** INSERT BATCH 1 - [[entities1]] */
-      BlockDao.insertAll(entities1).futureValue
-      // expected count
-      val expectedMainChainCount = entities1.count(_.mainChain)
-      // Assert the query return expected count
-      eventually {
-        BlockDao
-          .listMainChain(Pagination.Reversible.unsafe(1, 1, Random.nextBoolean()))
-          .futureValue
-          ._2 is expectedMainChainCount
+    /** INSERT BATCH 1 */
+    BlockDao.insertAll(halfBlocks.flatMap(identity)).futureValue
+    halfBlocks.foreach { chain =>
+      chain.maxByOption(_.height) match {
+        case Some(block) => BlockDao.updateLatestBlock(block).futureValue
+        case _           => ()
       }
+    }
+    // expected count
+    val expectedMainChainCount =
+      halfBlocks.map(chain => chain.maxByOption(_.height).map(_.height.value + 1).getOrElse(0)).sum
+    // Assert the query return expected count
+    eventually {
+      BlockDao
+        .listMainChain(Pagination.Reversible.unsafe(1, 1, Random.nextBoolean()))
+        .futureValue
+        ._2 is expectedMainChainCount
+    }
 
-      /** INSERT BATCH 2 - [[entities2]] */
-      // insert the next batch of block entities
-      BlockDao.insertAll(entities2).futureValue
-      // Expected total row count in cache
-      val expectedMainChainCountTotal = entities2.count(_.mainChain) + expectedMainChainCount
-      // Dispatch a query so the cache get populated
-      eventually {
-        BlockDao
-          .listMainChain(Pagination.Reversible.unsafe(1, 1, Random.nextBoolean()))
-          .futureValue
-          ._2 is expectedMainChainCountTotal
+    // /** INSERT BATCH 2 */
+    val halfBlocks2 = blockEntitiesPerChain.map(chain => chain.drop(chain.size / 2))
+    // insert the next batch of block entities
+    BlockDao.insertAll(halfBlocks2.flatMap(identity)).futureValue
+    halfBlocks2.foreach { chain =>
+      chain.maxByOption(_.height) match {
+        case Some(block) => BlockDao.updateLatestBlock(block).futureValue
+        case _           => ()
       }
+    }
+    // Expected total row count in cache
+    val expectedMainChainCountTotal =
+      halfBlocks2.map(chain => chain.maxByOption(_.height).map(_.height.value + 1).getOrElse(0)).sum
+    // Dispatch a query so the cache get populated
+    eventually {
+      BlockDao
+        .listMainChain(Pagination.Reversible.unsafe(1, 1, Random.nextBoolean()))
+        .futureValue
+        ._2 is expectedMainChainCountTotal
     }
   }
 
@@ -259,8 +266,9 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
 
     val blockflow: Seq[Seq[model.BlockEntry]] =
       blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
-    val blocksProtocol: Seq[model.BlockEntry] = blockflow.flatten
-    val blockEntities: Seq[BlockEntity] = blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
+    val blockEntitiesPerChain: Seq[Seq[BlockEntity]] =
+      blockflow.map(_.map(BlockFlowClient.blockProtocolToEntity))
+    val blockEntities: Seq[BlockEntity] = blockEntitiesPerChain.flatten
 
     /** Convert input-output to
       * [[org.alephium.explorer.persistence.model.TransactionPerAddressEntity]]
@@ -276,7 +284,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
         timestamp = output.timestamp,
         txOrder = input.txOrder,
         mainChain = output.mainChain,
-        coinbase = output.coinbase
+        coinbase = false
       )
 
     /** Convert multiple input-outputs to

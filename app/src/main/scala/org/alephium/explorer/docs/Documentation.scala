@@ -16,7 +16,7 @@
 
 package org.alephium.explorer.docs
 
-import scala.collection.immutable.{ArraySeq, ListMap}
+import scala.collection.immutable.ArraySeq
 
 import sttp.apispec._
 import sttp.apispec.openapi.OpenAPI
@@ -40,7 +40,6 @@ trait Documentation
     with OpenAPIDocsInterpreter {
 
   def currencies: ArraySeq[String]
-  def tokensWithPrice: ListMap[String, String]
 
   lazy val docs: OpenAPI = addComponents(
     toOpenAPI(
@@ -165,15 +164,6 @@ trait Documentation
           Schema(
             `type` = Some(List(SchemaType.Integer)),
             `enum` = Some(List(ExampleSingleValue(maxSizeAddresses)))
-          )
-        )
-        .addSchema(
-          "TokensWithPrice",
-          Schema(
-            `type` = Some(List(SchemaType.String)),
-            enum = Some(
-              tokensWithPrice.map { case (symbol, _) => ExampleSingleValue(symbol) }.toList
-            )
           )
         )
         .addSchema(

@@ -37,12 +37,13 @@ class EventServer(implicit
       route(getEventsByTxId.serverLogicSuccess[Future] { txId =>
         run(getEventsByTxIdQuery(txId)).map(_.map(_.toApi))
       }),
-      route(getEventsByContractAddress.serverLogicSuccess[Future] { case (address, pagination) =>
-        run(getEventsByContractAddressQuery(address, pagination)).map(_.map(_.toApi))
+      route(getEventsByContractAddress.serverLogicSuccess[Future] {
+        case (address, eventIndex, pagination) =>
+          run(getEventsByContractAddressQuery(address, eventIndex, pagination)).map(_.map(_.toApi))
       }),
       route(getEventsByContractAndInputAddress.serverLogicSuccess[Future] {
-        case (contract, input, pagination) =>
-          run(getEventsByContractAndInputAddressQuery(contract, input, pagination))
+        case (contract, input, eventIndex, pagination) =>
+          run(getEventsByContractAndInputAddressQuery(contract, input, eventIndex, pagination))
             .map(_.map(_.toApi))
       })
     )

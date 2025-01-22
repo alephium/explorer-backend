@@ -47,7 +47,7 @@ class MarketServer(
       }),
       route(getPriceChart.serverLogicPure[Future] { case (id, currency) =>
         for {
-          _ <- MarketServer.validateSymbol(id, marketService.symbolNames)
+          _ <- MarketServer.validateSymbol(id, marketService.chartSymbolNames)
           _ <- MarketServer.validateCurrency(currency, marketService.currencies)
           result <- marketService
             .getPriceChart(id, currency)

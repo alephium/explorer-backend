@@ -60,7 +60,7 @@ import org.alephium.explorer.web._
 import org.alephium.json.Json._
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.{Address, BlockHash, CliqueId, GroupIndex, NetworkId}
-import org.alephium.util.{AVector, Hex, TimeStamp, U256}
+import org.alephium.util.{AVector, Duration, Hex, TimeStamp, U256}
 
 trait ExplorerSpec
     extends AlephiumActorSpecLike
@@ -78,7 +78,10 @@ trait ExplorerSpec
   val txLimit = Pagination.defaultLimit
 
   val blockflow: ArraySeq[ArraySeq[model.BlockEntry]] =
-    blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
+    blockFlowGen(
+      maxChainSize = 5,
+      startTimestamp = TimeStamp.now().minusUnsafe(Duration.ofDaysUnsafe(1))
+    ).sample.get
 
   val uncles = blockflow
     .map(_.flatMap { block =>
@@ -118,6 +121,14 @@ trait ExplorerSpec
   val coingeckoUri  = s"http://${localhost.getHostAddress()}:$coingeckoPort"
   val coingecko     = new MarketServiceSpec.CoingeckoMock(localhost, coingeckoPort)
 
+  val mobulaPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
+  val mobulaUri  = s"http://${localhost.getHostAddress()}:$mobulaPort"
+  val mobula     = new MarketServiceSpec.MobulaMock(localhost, mobulaPort)
+
+  val tokenListPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
+  val tokenListUri  = s"http://${localhost.getHostAddress()}:$tokenListPort"
+  val tokenList     = new MarketServiceSpec.TokenListMock(localhost, tokenListPort)
+
   val blockflowBinding = blockFlowMock.server
 
   def createApp(bootMode: BootMode.Readable): ExplorerState = {
@@ -131,6 +142,8 @@ trait ExplorerSpec
       ("alephium.explorer.boot-mode", bootMode.productPrefix),
       ("alephium.explorer.port", explorerPort),
       ("alephium.explorer.market.coingecko-uri", coingeckoUri),
+      ("alephium.explorer.market.mobula-uri", mobulaUri),
+      ("alephium.explorer.market.token-list-uri", tokenListUri),
       ("alephium.blockflow.port", blockFlowPort),
       ("alephium.blockflow.network-id", networkId.id),
       ("alephium.blockflow.group-num", groupSetting.groupNum)
@@ -158,10 +171,15 @@ trait ExplorerSpec
 
   def app: ExplorerState
 
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    val result = initApp(app)
+    logger.info(s"ExplorerSpec initialized: $result")
+  }
+
   lazy val port = app.config.port
 
   "get a block by its id" in {
-    initApp(app)
 
     // forAll(Gen.oneOf(blocks)) { block =>
     val block = Gen.oneOf(blocks).sample.get
@@ -336,13 +354,13 @@ trait ExplorerSpec
                 _.address == Some(address)
               )
             )
-            .sortBy(_.timestamp)
-            .reverse
+            .distinct
+
         val res = response.as[ArraySeq[Transaction]]
 
         res.size is expectedTransactions.take(txLimit).size
-        Inspectors.forAll(expectedTransactions) { transaction =>
-          res.map(_.hash) should contain(transaction.hash)
+        Inspectors.forAll(res) { transaction =>
+          expectedTransactions.map(_.hash) should contain(transaction.hash)
         }
       }
     }
@@ -378,7 +396,7 @@ trait ExplorerSpec
               tx.outputs.exists(_.address == address) || tx.inputs
                 .exists(_.address == Some(address))
             }
-          }.distinct
+          }
 
         val res = response.as[ArraySeq[Transaction]]
 
@@ -442,7 +460,7 @@ trait ExplorerSpec
 
   "Market price endpoints" when {
     "correctly return price" in {
-      val body = """["ALPH", "WETH"]"""
+      val body = """["ALPH", "WBTC"]"""
       Post(s"/market/prices?currency=btc", body) check { response =>
         val prices = response.as[ArraySeq[Option[Double]]]
         prices.foreach(_.isDefined is true)
@@ -471,7 +489,7 @@ trait ExplorerSpec
 
   "Market chart endpoints" when {
     "correctly return price charts" in {
-      List("ALPH", "WETH").map { symbol =>
+      List("ALPH").map { symbol =>
         Get(s"/market/prices/$symbol/charts?currency=btc") check { response =>
           response.as[TimedPrices]
           response.code is StatusCode.Ok

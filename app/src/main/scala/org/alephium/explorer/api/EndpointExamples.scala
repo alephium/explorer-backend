@@ -256,6 +256,7 @@ object EndpointExamples extends EndpointsExamples {
   private val event =
     Event(
       blockHash,
+      ts,
       txId,
       address1,
       Some(address1),
@@ -371,7 +372,7 @@ object EndpointExamples extends EndpointsExamples {
     simpleExample(ArraySeq(token))
 
   implicit val symbolExample: List[Example[ArraySeq[String]]] =
-    simpleExample(ArraySeq("ALPH", "USDC", "USDT", "WBTC", "WETH", "DAI", "AYIN"))
+    simpleExample(ArraySeq("ALPH", "USDCeth", "WBTC", "WETH", "DAI", "AYIN"))
 
   implicit val listAddressesExample: List[Example[ArraySeq[Address]]] =
     simpleExample(ArraySeq(address1))
@@ -492,7 +493,7 @@ object EndpointExamples extends EndpointsExamples {
     simpleExample(NFTMetadata(token, "token://uri", contract, U256.One))
 
   implicit val pricesExample: List[Example[ArraySeq[Price]]] =
-    simpleExample(ArraySeq(Price("ALPH", 0.01)))
+    simpleExample(ArraySeq(Price("ALPH", 0.01, 100)))
 
   implicit val exchangeRatesExample: List[Example[ArraySeq[ExchangeRate]]] =
     simpleExample(ArraySeq(ExchangeRate("chf", "Swiss Franc", "Fr.", 0.01)))

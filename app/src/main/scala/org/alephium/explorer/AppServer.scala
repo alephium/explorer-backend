@@ -70,8 +70,7 @@ object AppServer {
     val metricsServer              = new MetricsServer(metricCache)
     val documentationServer = new DocumentationServer(
       maxTimeIntervals.exportTxs,
-      marketConfig.currencies,
-      marketConfig.symbolName
+      marketConfig.currencies
     )
 
     blockServer.routes ++

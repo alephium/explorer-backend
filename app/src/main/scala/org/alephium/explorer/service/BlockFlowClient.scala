@@ -371,7 +371,7 @@ object BlockFlowClient extends StrictLogging {
   def valToString(value: api.model.Val): Option[String] =
     value match {
       case api.model.ValByteVec(bytes) =>
-        Some(bytes.utf8String)
+        Some(bytes.utf8String.replaceAll("\u0000", ""))
       case _ => None
     }
 
@@ -491,8 +491,8 @@ object BlockFlowClient extends StrictLogging {
       if (block.height == Height.genesis.value) null else block.transactions.last.unsigned.txId
     val outputs =
       transactions.flatMap { case (tx, txOrder) =>
+        val txId = tx.unsigned.txId
         tx.unsigned.fixedOutputs.toArraySeq.zipWithIndex.map { case (out, index) =>
-          val txId = tx.unsigned.txId
           outputToEntity(
             out.upCast(),
             hash,
