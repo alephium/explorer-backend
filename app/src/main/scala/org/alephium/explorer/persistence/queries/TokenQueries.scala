@@ -328,7 +328,6 @@ object TokenQueries extends StrictLogging {
   def insertNFTMetadata(
       metadata: NFTMetadata
   ): DBActionW[Int] = {
-    val cleanedTokenUri = metadata.tokenUri.replaceAll("\u0000", "")
     sqlu"""
       INSERT INTO nft_metadata (
         "token",
@@ -336,7 +335,7 @@ object TokenQueries extends StrictLogging {
         "collection_id",
         "nft_index"
         )
-      VALUES (${metadata.id},${cleanedTokenUri},${metadata.collectionId},${metadata.nftIndex})
+      VALUES (${metadata.id},${metadata.tokenUri},${metadata.collectionId},${metadata.nftIndex})
       ON CONFLICT
       DO NOTHING
     """

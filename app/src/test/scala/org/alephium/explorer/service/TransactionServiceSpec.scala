@@ -241,6 +241,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val blocks = ArraySeq(block0, block1)
 
     Future.sequence(blocks.map(BlockDao.insert)).futureValue
+    BlockDao.updateLatestBlock(block1).futureValue
     databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
     FinalizerService.finalizeOutputs().futureValue
 
