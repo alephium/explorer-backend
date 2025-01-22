@@ -371,7 +371,7 @@ object BlockFlowClient extends StrictLogging {
   def valToString(value: api.model.Val): Option[String] =
     value match {
       case api.model.ValByteVec(bytes) =>
-        Some(bytes.utf8String)
+        Some(bytes.utf8String.replaceAll("\u0000", ""))
       case _ => None
     }
 

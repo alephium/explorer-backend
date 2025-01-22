@@ -23,7 +23,6 @@ import scala.collection.immutable.ArraySeq
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
-import org.alephium.explorer.GenCoreProtocol.transactionHashGen
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
@@ -167,6 +166,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       val block =
         blockEntityWithParentGen(chainIndex, None).sample.get
       block.copy(
+        transactions = block.transactions.map(_.copy(timestamp = block.timestamp)),
         outputs = block.outputs.map(
           _.copy(timestamp = block.timestamp, lockTime = lockTime, address = genesisAddress)
         )
@@ -182,6 +182,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       block.copy(
         timestamp = timestamp,
         outputs = block.outputs.map(_.copy(timestamp = timestamp, lockTime = lockTime)),
+        transactions = block.transactions.map(_.copy(timestamp = timestamp)),
         inputs = block.inputs.map(_.copy(timestamp = timestamp))
       )
     }
@@ -189,7 +190,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     lazy val block2 = {
       val block =
         blockEntityWithParentGen(chainIndex, Some(block1)).sample.get
-      val txHash    = transactionHashGen.sample.get
+      val txHash    = block.transactions.head.hash
       val timestamp = block.timestamp.plusHoursUnsafe(24)
       block.copy(
         timestamp = timestamp,
@@ -212,6 +213,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
           )
 
         },
+        transactions = block.transactions.map(_.copy(timestamp = timestamp)),
         outputs = block.outputs.map(_.copy(timestamp = timestamp, lockTime = None))
       )
     }
@@ -228,6 +230,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
           .get
       block.copy(
         timestamp = timestamp,
+        transactions = block.transactions.map(_.copy(timestamp = timestamp)),
         outputs = block.outputs.map(_.copy(timestamp = timestamp, address = address))
       )
     }
@@ -236,7 +239,11 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       val block =
         blockEntityWithParentGen(chainIndex, Some(block3)).sample.get
       val timestamp = block.timestamp.plusHoursUnsafe(24)
-      block.copy(timestamp = timestamp, outputs = block.outputs.map(_.copy(timestamp = timestamp)))
+      block.copy(
+        timestamp = timestamp,
+        transactions = block.transactions.map(_.copy(timestamp = timestamp)),
+        outputs = block.outputs.map(_.copy(timestamp = timestamp))
+      )
     }
 
     def test(blocks: BlockEntity*)(amounts: ArraySeq[U256]) = {
@@ -244,6 +251,15 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       blocks.foreach { block =>
         BlockDao.updateMainChainStatus(block.hash, true).futureValue
       }
+
+      val latestBlocks = blocks
+        .groupBy(block => (block.chainFrom, block.chainTo))
+        .view
+        .mapValues(_.maxBy(_.timestamp))
+        .values
+        .map(block => LatestBlock.fromEntity(block))
+
+      run(LatestBlockSchema.table ++= latestBlocks).futureValue
 
       val timestamps = blocks.map(_.timestamp)
       val minTs      = timestamps.min

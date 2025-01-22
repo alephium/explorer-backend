@@ -22,18 +22,15 @@ import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
-import slick.dbio.DBIO
-import slick.jdbc.PostgresProfile
+import slick.jdbc.{PositionedParameters, PostgresProfile, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.DBRunner._
-import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.queries.QuerySplitter
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.SlickUtil._
@@ -113,13 +110,33 @@ case object TransactionHistoryService extends StrictLogging {
       case None => Future.successful(()) // noop
       case Some(latestTxTs) =>
         for {
-          _ <- updateTxHistoryCountForInterval(latestTxTs, IntervalType.Daily)
-          _ <- updateTxHistoryCountForInterval(latestTxTs, IntervalType.Hourly)
+          _ <- updateHourlyTxHistoryCount(latestTxTs)
+          _ <- updateDailyTxHistoryCount(latestTxTs)
         } yield ()
     }
   }
 
-  def updateTxHistoryCountForInterval(latestTxTs: TimeStamp, intervalType: IntervalType)(implicit
+  def updateHourlyTxHistoryCount(latestTxTs: TimeStamp)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      gs: GroupSetting
+  ): Future[Unit] = {
+    updateTxHistoryCountForInterval(IntervalType.Hourly, latestTxTs, getTxsCountFromTo)
+  }
+
+  def updateDailyTxHistoryCount(latestTxTs: TimeStamp)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      gs: GroupSetting
+  ): Future[Unit] = {
+    updateTxHistoryCountForInterval(IntervalType.Daily, latestTxTs, getHourlyCountFromTo)
+  }
+
+  private def updateTxHistoryCountForInterval(
+      intervalType: IntervalType,
+      latestTxTs: TimeStamp,
+      fetchData: (TimeStamp, TimeStamp) => DBActionSR[(TimeStamp, Int, Int, Long)]
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       gs: GroupSetting
@@ -132,20 +149,104 @@ case object TransactionHistoryService extends StrictLogging {
         .getOrElse(ALPH.LaunchTimestamp)
 
       val ranges = getTimeRanges(start, latestTxTs, intervalType)
+      val allTs  = ranges.flatMap { case (from, to) => Seq(from, to) }
 
-      foldFutures(ranges) { case (from, to) =>
-        run(
-          DBIO
-            .sequence(
-              gs.chainIndexes.map { chainIndex =>
-                countAndInsertPerChain(intervalType, from, to, chainIndex.from, chainIndex.to)
-              } :+ countAndInsertAllChains(intervalType, from, to)
-            )
-            .transactionally
-        )
-      }.map(_ => ())
+      (for {
+        minTs <- allTs.minOption
+        maxTs <- allTs.maxOption
+      } yield (minTs, maxTs)) match {
+        case Some((minTs, maxTs)) =>
+          run(fetchData(minTs, maxTs)).flatMap { data =>
+            val processedData = processDataForTimeRanges(data, ranges, intervalType)
+            run(insertValues(processedData)).map(_ => ())
+          }
+        case None => Future.successful(())
+      }
     }
   }
+
+  private def processDataForTimeRanges(
+      data: Seq[(TimeStamp, Int, Int, Long)],
+      ranges: Seq[(TimeStamp, TimeStamp)],
+      intervalType: IntervalType
+  )(implicit gs: GroupSetting): Seq[(TimeStamp, Int, Int, Long, IntervalType)] = {
+    ranges.flatMap { case (from, to) =>
+      val perChainCount = gs.chainIndexes.map { chainIndex =>
+        (
+          chainIndex.from.value,
+          chainIndex.to.value,
+          data
+            .filter { case (timestamp, chainFrom, chainTo, _) =>
+              timestamp >= from &&
+              timestamp <= to &&
+              chainFrom == chainIndex.from.value &&
+              chainTo == chainIndex.to.value
+            }
+            .map { case (_, _, _, count) => count }
+            .sum
+        )
+      }
+      val allCount = (-1, -1, perChainCount.map { case (_, _, count) => count }.sum)
+
+      (perChainCount :+ allCount).map { case (chainFrom, chainTo, count) =>
+        (from, chainFrom, chainTo, count, intervalType)
+      }
+    }
+  }
+
+  private def getTxsCountFromTo(
+      from: TimeStamp,
+      to: TimeStamp
+  ): DBActionSR[(TimeStamp, Int, Int, Long)] = {
+    sql"""
+      SELECT block_timestamp, chain_from, chain_to, txs_count
+      FROM block_headers
+      WHERE block_timestamp >= $from
+      AND block_timestamp <= $to
+      AND main_chain = true
+    """.asAS[(TimeStamp, Int, Int, Long)]
+  }
+
+  private def getHourlyCountFromTo(
+      from: TimeStamp,
+      to: TimeStamp
+  ): DBActionSR[(TimeStamp, Int, Int, Long)] = {
+    sql"""
+      SELECT timestamp, chain_from, chain_to, value
+      FROM transactions_history
+      WHERE timestamp >= $from
+      AND timestamp <= $to
+      AND interval_type = ${IntervalType.Hourly}
+    """.asAS[(TimeStamp, Int, Int, Long)]
+  }
+
+  private def insertValues(
+      values: Iterable[(TimeStamp, Int, Int, Long, IntervalType)]
+  ): DBActionW[Int] =
+    QuerySplitter.splitUpdates(rows = values, columnsPerRow = 5) { (values, placeholder) =>
+      val query =
+        s"""
+          INSERT INTO transactions_history(timestamp, chain_from, chain_to, value, interval_type)
+          VALUES $placeholder
+          ON CONFLICT (interval_type, timestamp, chain_from, chain_to) DO UPDATE
+          SET value = EXCLUDED.value
+        """
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) =>
+          values foreach { case (from, chainFrom, chainTo, count, intervalType) =>
+            params >> from
+            params >> chainFrom
+            params >> chainTo
+            params >> count
+            params >> intervalType
+          }
+
+      SQLActionBuilder(
+        sql = query,
+        setParameter = parameters
+      ).asUpdate
+    }
 
   private def truncate(timestamp: TimeStamp, intervalType: IntervalType): TimeStamp =
     intervalType match {
@@ -189,64 +290,22 @@ case object TransactionHistoryService extends StrictLogging {
       case IntervalType.Weekly => timestamp.minusUnsafe(weeklyStepBack)
     }
 
-  // TODO Replace by accessing a `Latest Transaction cache`
   private def findLatestTransationTimestamp()(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Option[TimeStamp]] = {
     run(sql"""
-    SELECT MAX(block_timestamp) FROM transactions WHERE main_chain = true
+    SELECT MAX(block_timestamp) FROM latest_blocks
     """.asAS[Option[TimeStamp]].exactlyOne)
   }
 
   private def findLatestHistoryTimestamp(
       intervalType: IntervalType
   )(implicit ec: ExecutionContext): DBActionR[Option[TimeStamp]] = {
-    TransactionHistorySchema.table
-      .filter(_.intervalType === intervalType)
-      .sortBy(_.timestamp.desc)
-      .result
-      .headOption
-      .map(_.map(_.timestamp))
-  }
-
-  private def countAndInsertPerChain(
-      intervalType: IntervalType,
-      from: TimeStamp,
-      to: TimeStamp,
-      chainFrom: GroupIndex,
-      chainTo: GroupIndex
-  ) = {
-    sqlu"""
-      INSERT INTO transactions_history(timestamp, chain_from, chain_to, value, interval_type)
-        SELECT $from, $chainFrom, $chainTo, COUNT(*), $intervalType
-        FROM transactions
-        WHERE main_chain = true
-        AND block_timestamp >= $from
-        AND block_timestamp <= $to
-        AND chain_from = $chainFrom
-        and chain_to = $chainTo
-        ON CONFLICT (interval_type, timestamp, chain_from, chain_to) DO UPDATE
-        SET value = EXCLUDED.value
-    """
-  }
-
-  // count all chains tx and insert with special group index -1
-  private def countAndInsertAllChains(
-      intervalType: IntervalType,
-      from: TimeStamp,
-      to: TimeStamp
-  ) = {
-    sqlu"""
-      INSERT INTO transactions_history(timestamp, chain_from, chain_to, value, interval_type)
-        SELECT $from, -1, -1, COUNT(*), $intervalType
-        FROM transactions
-        WHERE main_chain = true
-        AND block_timestamp >= $from
-        AND block_timestamp <= $to
-        ON CONFLICT (interval_type, timestamp, chain_from, chain_to) DO UPDATE
-        SET value = EXCLUDED.value
-    """
+    sql"""
+      SELECT MAX(timestamp) FROM transactions_history
+      WHERE interval_type = $intervalType
+    """.asAS[Option[TimeStamp]].exactlyOne
   }
 
   def getPerChainQuery(

@@ -27,9 +27,9 @@ import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
-import org.alephium.explorer.persistence.model.TransactionEntity
-import org.alephium.explorer.persistence.schema.TransactionSchema
-import org.alephium.protocol.model.GroupIndex
+import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.persistence.schema._
+import org.alephium.protocol.model.{ChainIndex, GroupIndex}
 import org.alephium.util._
 
 class TransactionHistoryServiceSpec
@@ -115,20 +115,50 @@ class TransactionHistoryServiceSpec
 
       val tx11 = txGroup("2021-11-10T01:00:00.000Z", group0)
 
+      val txs = ArraySeq(
+        tx1,
+        tx2,
+        tx3,
+        tx4,
+        tx5,
+        tx6,
+        tx7,
+        tx8,
+        tx9,
+        tx10,
+        tx11
+      )
+
+      val blocks = txs.map { tx =>
+        blockHeaderGen.sample.get
+          .copy(
+            hash = tx.blockHash,
+            mainChain = tx.mainChain,
+            timestamp = tx.timestamp,
+            chainFrom = tx.chainFrom,
+            chainTo = tx.chainTo,
+            txsCount = 1
+          )
+      }
+
+      val latestBlocks = blocks
+        .groupBy(block => (block.chainFrom, block.chainTo))
+        .view
+        .mapValues(_.maxBy(_.timestamp))
+        .values
+        .map { block =>
+          LatestBlock.fromEntity(
+            blockEntityGen(ChainIndex.unsafe(block.chainFrom.value, block.chainTo.value)).sample.get
+              .copy(timestamp = block.timestamp)
+          )
+        }
+
       run(
-        TransactionSchema.table ++= ArraySeq(
-          tx1,
-          tx2,
-          tx3,
-          tx4,
-          tx5,
-          tx6,
-          tx7,
-          tx8,
-          tx9,
-          tx10,
-          tx11
-        )
+        for {
+          _ <- BlockHeaderSchema.table ++= blocks
+          _ <- TransactionSchema.table ++= txs
+          _ <- LatestBlockSchema.table ++= latestBlocks
+        } yield ()
       ).futureValue
 
       TransactionHistoryService.syncOnce().futureValue

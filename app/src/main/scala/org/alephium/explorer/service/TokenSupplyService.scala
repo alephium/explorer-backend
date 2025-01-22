@@ -142,6 +142,7 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
         SELECT *
         FROM token_supply
         ORDER BY block_timestamp DESC
+        LIMIT 1
       """.asASE[TokenSupplyEntity](tokenSupplyGetResult).headOrNone
     ).map(_.map { entity =>
       TokenSupply(
@@ -225,12 +226,9 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
         groupSetting.chainIndexes.map { chainIndex =>
           sql"""
               SELECT block_timestamp
-              FROM block_headers
-              WHERE main_chain = true
-              AND chain_from = ${chainIndex.from}
+              FROM latest_blocks
+              WHERE chain_from = ${chainIndex.from}
               AND chain_to = ${chainIndex.to}
-              ORDER BY block_timestamp DESC
-              LIMIT 1
             """.asAS[TimeStamp].headOrNone
         }
       )
