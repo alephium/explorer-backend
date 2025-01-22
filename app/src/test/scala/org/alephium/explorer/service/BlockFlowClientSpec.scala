@@ -22,6 +22,7 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.Future
 
 import akka.testkit.SocketUtil
+import akka.util.ByteString
 import io.vertx.core.Vertx
 import io.vertx.ext.web._
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
@@ -49,6 +50,8 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
 
   val group                  = GroupIndex.Zero
   val localhost: InetAddress = InetAddress.getByName("127.0.0.1")
+
+  def bytesToString(bytes: ByteString): String = bytes.utf8String.replaceAll("\u0000", "")
 
   "BlockFlowClient.fetchBlock" should {
     val port = SocketUtil.temporaryLocalPort(SocketUtil.Both)
@@ -95,8 +98,8 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
         BlockFlowClient.extractFungibleTokenMetadata(token, callContract) is Some(
           FungibleTokenMetadata(
             token,
-            symbol.value.utf8String,
-            name.value.utf8String,
+            bytesToString(symbol.value),
+            bytesToString(name.value),
             decimals.value
           )
         )
@@ -117,7 +120,7 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
           BlockFlowClient.extractNFTMetadata(token, callContract) is Some(
             NFTMetadata(
               token,
-              uri.value.utf8String,
+              bytesToString(uri.value),
               ContractId.from(contractId.value).get,
               nftIndex.value
             )
@@ -137,7 +140,7 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
           BlockFlowClient.extractNFTCollectionMetadata(contractAddress, callContract) is Some(
             NFTCollectionMetadata(
               contractAddress,
-              uri.value.utf8String
+              bytesToString(uri.value)
             )
           )
       }
