@@ -100,6 +100,14 @@ object ExplorerError {
       extends Exception(s"Invalid host: $host", cause)
       with ConfigError
 
+  final case class InvalidScheme(scheme: String)
+      extends Exception(s"Invalid scheme: $scheme")
+      with ConfigError
+
+  final case class InvalidUri(scheme: String, host: String, port: Int, cause: String)
+      extends Exception(s"Invalid Uri: $scheme$host:$port. Cause: $cause")
+      with ConfigError
+
   final case class InvalidNetworkId(networkId: Int)
       extends Exception(s"Invalid networkId: $networkId")
       with ConfigError

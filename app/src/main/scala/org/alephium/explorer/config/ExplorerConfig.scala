@@ -95,11 +95,24 @@ object ExplorerConfig {
         Failure(InvalidHost(host, throwable))
       }
 
-  def validateUri(blockFlowHost: String, blockFlowPort: Int): Try[Uri] =
+  def validateScheme(scheme: String): Try[String] =
+    if (scheme == "http" || scheme == "https") {
+      Success(scheme)
+    } else {
+      Failure(InvalidScheme(scheme))
+    }
+
+  def validateUri(scheme: String, host: String, port: Int): Try[Uri] =
     for {
-      host <- validateHost(blockFlowHost)
-      port <- validatePort(blockFlowPort)
-    } yield Uri(host, port)
+      scheme <- validateScheme(scheme)
+      host   <- validateHost(host)
+      port   <- validatePort(port)
+      uri <- Uri
+        .safeApply(scheme, host, port)
+        .left
+        .map(err => InvalidUri(scheme, host, port, err))
+        .toTry
+    } yield uri
 
   def validateNetworkId(networkId: Int): Try[NetworkId] =
     NetworkId.from(networkId) match {
@@ -170,7 +183,7 @@ object ExplorerConfig {
 
       (for {
         groupNum     <- validateGroupNum(blockflow.groupNum)
-        blockflowUri <- validateUri(blockflow.host, blockflow.port)
+        blockflowUri <- validateUri(blockflow.scheme, blockflow.host, blockflow.port)
         host         <- validateHost(explorer.host)
         port         <- validatePort(explorer.port)
       } yield {
@@ -207,6 +220,7 @@ object ExplorerConfig {
   final private case class BlockFlow(
       groupNum: Int,
       directCliqueAccess: Boolean,
+      scheme: String,
       host: String,
       port: Int,
       networkId: NetworkId,
