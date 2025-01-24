@@ -46,8 +46,8 @@ object ExplorerError {
 
   /** ****** Group: [[FatalSystemExit]] *******
     */
-  final case class UnreachableNode(cause: Throwable)
-      extends Exception(s"Could not reach node.", cause)
+  final case class NodeError(cause: Throwable)
+      extends Exception(s"Node error.", cause)
       with FatalSystemExit
 
   final case class NodeApiError(message: String)

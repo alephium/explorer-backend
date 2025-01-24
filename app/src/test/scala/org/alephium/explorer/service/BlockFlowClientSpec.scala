@@ -64,7 +64,7 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
       blockFlowClient
         .fetchBlock(group, blockHashGen.sample.get)
         .failed
-        .futureValue is a[ExplorerError.UnreachableNode]
+        .futureValue is a[ExplorerError.NodeError]
     }
 
     "succeed if `directCliqueAccess = false`" in {

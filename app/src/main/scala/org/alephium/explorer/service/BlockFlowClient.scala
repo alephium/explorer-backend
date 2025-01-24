@@ -164,7 +164,7 @@ object BlockFlowClient extends StrictLogging {
             Future.failed(NodeApiError(error.detail))
         }
         .recoverWith { error =>
-          Future.failed(UnreachableNode(error))
+          Future.failed(NodeError(error))
         }
     }
 
