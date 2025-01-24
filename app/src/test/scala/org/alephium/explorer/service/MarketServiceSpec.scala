@@ -18,8 +18,9 @@ package org.alephium.explorer.service
 
 import java.net.InetAddress
 
+import scala.util._
 import scala.collection.immutable.{ArraySeq, ListMap}
-import scala.concurrent.Future
+import scala.concurrent._
 
 import akka.testkit.SocketUtil
 import io.vertx.core.Vertx
@@ -45,6 +46,17 @@ class MarketServiceSpec extends AlephiumFutureSpec {
       marketService.getExchangeRates().isLeft is true
       marketService.getPriceChart(alph, "usd").isLeft is true
     }
+  }
+
+  "don't throw error when stopped while requesting" in new Fixture {
+
+    val promise = Promise[Any]()
+
+    marketService.start().futureValue
+    marketService.getTokenListRemote(0).onComplete(result => promise.complete(result))
+    marketService.stop().futureValue
+
+    Try(promise.future.futureValue).isFailure is true
   }
 
   "get prices, exchange rates and charts" in new Fixture {
