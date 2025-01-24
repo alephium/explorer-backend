@@ -18,9 +18,9 @@ package org.alephium.explorer.service
 
 import java.net.InetAddress
 
-import scala.util._
 import scala.collection.immutable.{ArraySeq, ListMap}
 import scala.concurrent._
+import scala.util._
 
 import akka.testkit.SocketUtil
 import io.vertx.core.Vertx
@@ -56,7 +56,9 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     marketService.getTokenListRemote(0).onComplete(result => promise.complete(result))
     marketService.stop().futureValue
 
-    Try(promise.future.futureValue).isFailure is true
+    Try(promise.future.futureValue) is Success(
+      Left(s"Exception when sending request: GET http://${localhost.getHostAddress}:$tokenListPort")
+    )
   }
 
   "get prices, exchange rates and charts" in new Fixture {
