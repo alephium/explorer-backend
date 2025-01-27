@@ -33,7 +33,6 @@ import org.alephium.explorer.persistence.queries.OutputQueries.insertOutputs
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
@@ -90,9 +89,7 @@ object BlockQueries extends StrictLogging {
   def getBlockEntryAction(
       hash: BlockHash
   )(implicit ec: ExecutionContext): DBActionR[Option[BlockEntry]] =
-    for {
-      headers <- BlockHeaderSchema.table.filter(_.hash === hash).result
-    } yield headers.headOption.map(_.toApi())
+    getBlockHeaderAction(hash).map(_.map(_.toApi()))
 
   def getBlockHeaderAction(hash: BlockHash): DBActionR[Option[BlockHeader]] =
     sql"""

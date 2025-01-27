@@ -32,7 +32,6 @@ import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.queries.result._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.ALPH
@@ -109,24 +108,20 @@ object TransactionQueries extends StrictLogging {
         ).asUpdate
     }
 
-  private val countBlockHashTransactionsQuery = Compiled { (blockHash: Rep[BlockHash]) =>
-    TransactionSchema.table.filter(_.blockHash === blockHash).length
-  }
-
-  def countBlockHashTransactions(blockHash: BlockHash): DBActionR[Int] =
-    countBlockHashTransactionsQuery(blockHash).result
-
-  private val getTransactionQuery = Compiled { (txHash: Rep[TransactionId]) =>
-    mainTransactions
-      .filter(_.hash === txHash)
-  }
+  private def getTransactionQuery(txHash: TransactionId) =
+    sql"""
+      SELECT *
+      FROM transactions
+      WHERE hash = $txHash
+      AND main_chain = true
+    """.asASE[TransactionEntity](transactionEntityGetResult).headOption
 
   def getTransactionAction(
       txHash: TransactionId
   )(implicit ec: ExecutionContext): DBActionR[Option[Transaction]] =
-    getTransactionQuery(txHash).result.headOption.flatMap {
-      case None     => DBIOAction.successful(None)
+    getTransactionQuery(txHash).flatMap {
       case Some(tx) => getKnownTransactionAction(tx).map(Some.apply)
+      case None     => DBIOAction.successful(None)
     }
 
   private def getTxHashesByBlockHashQuery(
