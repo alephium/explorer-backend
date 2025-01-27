@@ -373,7 +373,10 @@ object BlockQueries extends StrictLogging {
   ): DBActionSR[TimeStamp] = {
     sql"""
       SELECT block_timestamp FROM  block_headers
-      WHERE chain_from = $fromGroup AND chain_to = $toGroup AND block_timestamp > $after
+      WHERE chain_from = $fromGroup
+      AND chain_to = $toGroup
+      AND block_timestamp > $after
+      AND main_chain = true
       ORDER BY block_timestamp
     """.asAS[TimeStamp]
   }
