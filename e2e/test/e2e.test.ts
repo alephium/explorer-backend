@@ -1,18 +1,19 @@
-import { ExplorerProvider, NodeProvider } from '@alephium/web3'
+import { ExplorerProvider, NodeProvider, ONE_ALPH } from '@alephium/web3'
 import { PrivateKeyWallet } from '@alephium/web3-wallet'
+import { getSigner, testPrivateKeyWallet } from '@alephium/web3-test'
 import  configuration  from './config'
+import  { eventually }  from './utils'
 
-describe('e2e', () => {
+describe('e2e', function () {
+
+  let wallet: PrivateKeyWallet
+
+  beforeAll(async () => {
+    wallet = await getSigner()
+  })
 
   const nodeProvider = new NodeProvider(configuration.nodeUrl)
   const explorerProvider = new ExplorerProvider(configuration.explorerUrl)
-
-  const oneAlph = 10n ** 18n
-
-  const wallet = PrivateKeyWallet.FromMnemonic({
-    mnemonic: configuration.mnemonic,
-    nodeProvider
-  })
 
   //Check if the balance of the wallet in the node and the explorer is the same
   async function checkSameBalance(address: string) {
@@ -23,14 +24,12 @@ describe('e2e', () => {
   }
 
   it('simple transfer', async () => {
-    const destinationWallet = PrivateKeyWallet.FromMnemonic({
-      mnemonic: configuration.mnemonic,
-      addressIndex: 1,
-      nodeProvider
-    })
+    const destinationWallet = await getSigner()
 
-    checkSameBalance(wallet.account.address)
-    checkSameBalance(destinationWallet.account.address)
+    await eventually(async () => {
+      await checkSameBalance(wallet.account.address)
+      await checkSameBalance(destinationWallet.account.address)
+    })
 
     const nodeBalance = await nodeProvider.addresses.getAddressesAddressBalance(destinationWallet.account.address)
 
@@ -38,21 +37,21 @@ describe('e2e', () => {
       signerAddress: wallet.account.address,
       destinations: [{
         address: destinationWallet.account.address,
-        attoAlphAmount: oneAlph
+        attoAlphAmount: ONE_ALPH
       }]
     })
 
     let value:Number = Number((await explorerProvider.addresses.getAddressesAddressBalance(destinationWallet.account.address)).balance)
 
-    const expectedValue:Number = Number(nodeBalance.balance) + Number(oneAlph)
+    const expectedValue:Number = Number(nodeBalance.balance) + Number(ONE_ALPH)
 
     //Wait until the explorer balance is the same as the expected value
-    while (Number(value) !== expectedValue) {
-      await new Promise(resolve => setTimeout(resolve, 500)); // Wait for 500ms
-      value = Number((await explorerProvider.addresses.getAddressesAddressBalance(destinationWallet.account.address)).balance)
-    }
+    eventually(async () => Number((await explorerProvider.addresses.getAddressesAddressBalance(destinationWallet.account.address)).balance) === expectedValue)
 
-    checkSameBalance(wallet.account.address)
-    checkSameBalance(destinationWallet.account.address)
+    //Check explorer-backend is synced with the node
+    eventually(async () => {
+      checkSameBalance(wallet.account.address)
+      checkSameBalance(destinationWallet.account.address)
+    })
   })
 })
