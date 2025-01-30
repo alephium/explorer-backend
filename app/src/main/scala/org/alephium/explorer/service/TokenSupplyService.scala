@@ -229,6 +229,7 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
               FROM latest_blocks
               WHERE chain_from = ${chainIndex.from}
               AND chain_to = ${chainIndex.to}
+              LIMIT 1
             """.asAS[TimeStamp].headOrNone
         }
       )

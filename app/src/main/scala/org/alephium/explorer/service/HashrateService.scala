@@ -101,6 +101,7 @@ case object HashrateService extends StrictLogging {
       FROM hashrates
       WHERE interval_type = $intervalType
       ORDER BY block_timestamp DESC
+      LIMIT 1
     """.asAS[TimeStamp].headOrNone
 
   private def findLatestHashrateAndStepBack(

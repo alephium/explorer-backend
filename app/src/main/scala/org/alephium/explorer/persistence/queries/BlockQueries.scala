@@ -72,6 +72,7 @@ object BlockQueries extends StrictLogging {
                 txs_count
          from #$block_headers
          where hash = $hash
+         LIMIT 1
          """.asASE[BlockEntryLite](blockEntryListGetResult).headOption
 
   /** For a given `BlockHash` returns its basic chain information */
@@ -82,6 +83,7 @@ object BlockQueries extends StrictLogging {
                 main_chain
          FROM block_headers
          WHERE hash = $hash
+         LIMIT 1
          """
       .asAS[(GroupIndex, GroupIndex, Boolean)]
       .headOption
@@ -96,6 +98,7 @@ object BlockQueries extends StrictLogging {
          SELECT *
          FROM #$block_headers
          WHERE hash = $hash
+         LIMIT 1
          """
       .asASE[BlockHeader](blockHeaderGetResult)
       .headOption
@@ -364,6 +367,7 @@ object BlockQueries extends StrictLogging {
     sql"""
       SELECT main_chain FROM block_headers
       WHERE hash = $blockHash
+      LIMIT 1
     """.asAS[Boolean].headOrNone
   }
   def getBlockTimes(

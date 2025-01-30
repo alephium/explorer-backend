@@ -114,6 +114,7 @@ object TransactionQueries extends StrictLogging {
       FROM transactions
       WHERE hash = $txHash
       AND main_chain = true
+      LIMIT 1
     """.asASE[TransactionEntity](transactionEntityGetResult).headOption
 
   def getTransactionAction(
