@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.service
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 import scala.collection.immutable.{ArraySeq, ListMap}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -90,13 +92,18 @@ object MarketService extends StrictLogging {
     private var backend: SttpBackend[Future, Any] = null
     private val scheduler                         = Scheduler("MARKET_SERVICE_SCHEDULER")
 
+    private val isRunning: AtomicBoolean = new AtomicBoolean(false)
+
     override def startSelfOnce(): Future[Unit] = {
       backend = AsyncHttpClientFutureBackend()
+      isRunning.set(true)
       expireAndReloadCaches()
       Future.unit
     }
 
     override def stopSelfOnce(): Future[Unit] = {
+      isRunning.set(false)
+      scheduler.close()
       backend.close()
     }
 
@@ -267,7 +274,7 @@ object MarketService extends StrictLogging {
       )
     }
 
-    private def getTokenListRemote(
+    def getTokenListRemote(
         retried: Int
     ): Future[Either[String, ArraySeq[TokenList.Entry]]] = {
       request(
@@ -307,13 +314,21 @@ object MarketService extends StrictLogging {
     def request[A](uri: Uri)(
         f: Response[Either[String, String]] => Future[Either[String, A]]
     ): Future[Either[String, A]] = {
-      if (backend == null) {
+      if (backend == null || !isRunning.get()) {
         Future.successful(Left("Market service not initialized"))
       } else {
         basicRequest
           .method(Method.GET, uri)
           .send(backend)
           .flatMap(f)
+          .recover { case e: Throwable =>
+            // If the service is stopped, we don't want to throw an exception
+            if (isRunning.get()) {
+              throw e
+            } else {
+              Left(e.getMessage)
+            }
+          }
       }
     }
 

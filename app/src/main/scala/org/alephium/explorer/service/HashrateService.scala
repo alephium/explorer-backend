@@ -28,11 +28,11 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.api.model.{Hashrate, IntervalType}
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.DBRunner._
-import org.alephium.explorer.persistence.model.HashrateEntity
 import org.alephium.explorer.persistence.queries.HashrateQueries._
-import org.alephium.explorer.persistence.schema._
-import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
+import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.Scheduler
+import org.alephium.explorer.util.SlickUtil._
 import org.alephium.explorer.util.TimeUtil._
 import org.alephium.protocol.ALPH
 import org.alephium.util.{Duration, TimeStamp}
@@ -93,19 +93,23 @@ case object HashrateService extends StrictLogging {
       } yield ()
     )
 
-  private def findLatestHashrate(intervalType: IntervalType): DBActionR[Option[HashrateEntity]] =
-    HashrateSchema.table
-      .filter(_.intervalType === intervalType)
-      .sortBy(_.timestamp.desc)
-      .result
-      .headOption
+  private def findLatestHashrate(intervalType: IntervalType)(implicit
+      ec: ExecutionContext
+  ): DBActionR[Option[TimeStamp]] =
+    sql"""
+      SELECT block_timestamp
+      FROM hashrates
+      WHERE interval_type = $intervalType
+      ORDER BY block_timestamp DESC
+      LIMIT 1
+    """.asAS[TimeStamp].headOrNone
 
   private def findLatestHashrateAndStepBack(
       intervalType: IntervalType,
       computeStepBack: TimeStamp => TimeStamp
   )(implicit ec: ExecutionContext): DBActionR[TimeStamp] = {
     findLatestHashrate(intervalType).map(
-      _.map(h => computeStepBack(h.timestamp)).getOrElse(ALPH.LaunchTimestamp)
+      _.map(timestamp => computeStepBack(timestamp)).getOrElse(ALPH.LaunchTimestamp)
     )
   }
 

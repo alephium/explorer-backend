@@ -42,7 +42,12 @@ sealed trait AppStateKey[V <: AppState] {
       gr: GetResult[V],
       ec: ExecutionContext
   ): DBActionR[Option[V]] =
-    sql"""SELECT value FROM app_state WHERE key = $key""".asAS[V].headOrNone
+    sql"""
+      SELECT value
+      FROM app_state
+      WHERE key = $key
+      LIMIT 1
+      """.asAS[V].headOrNone
 }
 
 object AppState {

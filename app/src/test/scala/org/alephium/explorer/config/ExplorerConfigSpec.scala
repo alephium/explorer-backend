@@ -103,6 +103,28 @@ class ExplorerConfigSpec extends AlephiumSpec with ScalaCheckDrivenPropertyCheck
     }
   }
 
+  "validateScheme" should {
+    "pass validation" when {
+      "with suported scheme" in {
+        validateScheme("http").success.value is "http"
+        validateScheme("https").success.value is "https"
+      }
+    }
+
+    "fail validation" when {
+      "scheme isn't supported" in {
+        validateScheme("ftp").failure.exception is InvalidScheme("ftp")
+        validateScheme("ws").failure.exception is InvalidScheme("ws")
+        validateScheme("wss").failure.exception is InvalidScheme("wss")
+        validateScheme("file").failure.exception is InvalidScheme("file")
+
+        forAll(genStringOfLength(5)) { string =>
+          validateScheme(string).failure.exception is InvalidScheme(string)
+        }
+      }
+    }
+  }
+
   "validateNetworkId" should {
     "fail validation" when {
       "networkId is greater than Byte.MaxValue" in {
