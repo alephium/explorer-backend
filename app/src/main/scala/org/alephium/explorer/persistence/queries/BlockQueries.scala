@@ -33,7 +33,6 @@ import org.alephium.explorer.persistence.queries.OutputQueries.insertOutputs
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
@@ -73,6 +72,7 @@ object BlockQueries extends StrictLogging {
                 txs_count
          from #$block_headers
          where hash = $hash
+         LIMIT 1
          """.asASE[BlockEntryLite](blockEntryListGetResult).headOption
 
   /** For a given `BlockHash` returns its basic chain information */
@@ -83,6 +83,7 @@ object BlockQueries extends StrictLogging {
                 main_chain
          FROM block_headers
          WHERE hash = $hash
+         LIMIT 1
          """
       .asAS[(GroupIndex, GroupIndex, Boolean)]
       .headOption
@@ -90,15 +91,14 @@ object BlockQueries extends StrictLogging {
   def getBlockEntryAction(
       hash: BlockHash
   )(implicit ec: ExecutionContext): DBActionR[Option[BlockEntry]] =
-    for {
-      headers <- BlockHeaderSchema.table.filter(_.hash === hash).result
-    } yield headers.headOption.map(_.toApi())
+    getBlockHeaderAction(hash).map(_.map(_.toApi()))
 
   def getBlockHeaderAction(hash: BlockHash): DBActionR[Option[BlockHeader]] =
     sql"""
          SELECT *
          FROM #$block_headers
          WHERE hash = $hash
+         LIMIT 1
          """
       .asASE[BlockHeader](blockHeaderGetResult)
       .headOption
@@ -367,6 +367,7 @@ object BlockQueries extends StrictLogging {
     sql"""
       SELECT main_chain FROM block_headers
       WHERE hash = $blockHash
+      LIMIT 1
     """.asAS[Boolean].headOrNone
   }
   def getBlockTimes(
@@ -376,7 +377,10 @@ object BlockQueries extends StrictLogging {
   ): DBActionSR[TimeStamp] = {
     sql"""
       SELECT block_timestamp FROM  block_headers
-      WHERE chain_from = $fromGroup AND chain_to = $toGroup AND block_timestamp > $after
+      WHERE chain_from = $fromGroup
+      AND chain_to = $toGroup
+      AND block_timestamp > $after
+      AND main_chain = true
       ORDER BY block_timestamp
     """.asAS[TimeStamp]
   }

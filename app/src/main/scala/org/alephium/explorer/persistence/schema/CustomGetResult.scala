@@ -260,6 +260,27 @@ object CustomGetResult {
         ghostUncles = result.<<?
       )
 
+  val transactionEntityGetResult: GetResult[TransactionEntity] =
+    (result: PositionedResult) =>
+      TransactionEntity(
+        hash = result.<<,
+        blockHash = result.<<,
+        timestamp = result.<<,
+        chainFrom = result.<<,
+        chainTo = result.<<,
+        version = result.<<,
+        networkId = result.<<,
+        scriptOpt = result.<<?,
+        gasAmount = result.<<,
+        gasPrice = result.<<,
+        order = result.<<,
+        mainChain = result.<<,
+        scriptExecutionOk = result.<<,
+        inputSignatures = result.<<?,
+        scriptSignatures = result.<<?,
+        coinbase = result.<<
+      )
+
   val mempoolTransactionGetResult: GetResult[MempoolTransactionEntity] =
     (result: PositionedResult) =>
       MempoolTransactionEntity(

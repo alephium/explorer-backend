@@ -46,8 +46,8 @@ object ExplorerError {
 
   /** ****** Group: [[FatalSystemExit]] *******
     */
-  final case class UnreachableNode(cause: Throwable)
-      extends Exception(s"Could not reach node.", cause)
+  final case class NodeError(cause: Throwable)
+      extends Exception(s"Node error.", cause)
       with FatalSystemExit
 
   final case class NodeApiError(message: String)
@@ -98,6 +98,14 @@ object ExplorerError {
 
   final case class InvalidHost(host: String, cause: Throwable)
       extends Exception(s"Invalid host: $host", cause)
+      with ConfigError
+
+  final case class InvalidScheme(scheme: String)
+      extends Exception(s"Invalid scheme: $scheme")
+      with ConfigError
+
+  final case class InvalidUri(scheme: String, host: String, port: Int, cause: String)
+      extends Exception(s"Invalid Uri: $scheme$host:$port. Cause: $cause")
       with ConfigError
 
   final case class InvalidNetworkId(networkId: Int)

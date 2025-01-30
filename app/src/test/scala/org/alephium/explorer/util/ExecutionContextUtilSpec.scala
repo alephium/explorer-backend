@@ -39,7 +39,7 @@ class ExecutionContextSpec extends AlephiumSpec with Eventually {
     val executionContext = ExecutionContextUtil.fromExecutor(ExecutionContext.global, exit())
 
     "exit on a fatal explorer error" in {
-      executionContext.reportFailure(new UnreachableNode(new Throwable("error")))
+      executionContext.reportFailure(new NodeError(new Throwable("error")))
       eventually(count.get() is 1)
     }
 
