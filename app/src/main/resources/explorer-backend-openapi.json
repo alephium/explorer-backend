@@ -791,6 +791,278 @@
         }
       }
     },
+    "/mempool/transactions": {
+      "get": {
+        "tags": [
+          "Mempool"
+        ],
+        "description": "list mempool transactions",
+        "operationId": "getMempoolTransactions",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MempoolTransaction"
+                  }
+                },
+                "example": [
+                  {
+                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "chainFrom": 1,
+                    "chainTo": 2,
+                    "inputs": [
+                      {
+                        "outputRef": {
+                          "hint": 23412,
+                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                        },
+                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "attoAlphAmount": "2",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "contractInput": false
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "type": "AssetOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "lockTime": 1611041396892,
+                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "fixedOutput": true
+                      },
+                      {
+                        "type": "ContractOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "fixedOutput": false
+                      }
+                    ],
+                    "gasAmount": 20000,
+                    "gasPrice": "100000000000",
+                    "lastSeen": 1611041396892
+                  },
+                  {
+                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                    "chainFrom": 1,
+                    "chainTo": 2,
+                    "inputs": [
+                      {
+                        "outputRef": {
+                          "hint": 23412,
+                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
+                        },
+                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "attoAlphAmount": "2",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "contractInput": false
+                      }
+                    ],
+                    "outputs": [
+                      {
+                        "type": "AssetOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "lockTime": 1611041396892,
+                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "fixedOutput": true
+                      },
+                      {
+                        "type": "ContractOutput",
+                        "hint": 1,
+                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
+                        "attoAlphAmount": "2",
+                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                        "tokens": [
+                          {
+                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
+                            "amount": "42000000000000000000"
+                          },
+                          {
+                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
+                            "amount": "1000000000000000000000"
+                          }
+                        ],
+                        "fixedOutput": false
+                      }
+                    ],
+                    "gasAmount": 20000,
+                    "gasPrice": "100000000000",
+                    "lastSeen": 1611041396892
+                  }
+                ]
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "GatewayTimeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayTimeout"
+                },
+                "example": {
+                  "detail": "The network is slow"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/addresses/{address}": {
       "get": {
         "tags": [
@@ -1969,123 +2241,6 @@
         }
       }
     },
-    "/addresses/{address}/latest-transaction": {
-      "get": {
-        "tags": [
-          "Addresses"
-        ],
-        "description": "Get latest transaction information of a given address",
-        "operationId": "getAddressesAddressLatest-transaction",
-        "parameters": [
-          {
-            "name": "address",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "address"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Ok",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TransactionInfo"
-                },
-                "example": {
-                  "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
-                  "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
-                  "timestamp": 1611041396892,
-                  "coinbase": false
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "BadRequest",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequest"
-                },
-                "example": {
-                  "detail": "Something bad in the request"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NotFound",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotFound"
-                },
-                "example": {
-                  "resource": "wallet-name",
-                  "detail": "wallet-name not found"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "InternalServerError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
-                },
-                "example": {
-                  "detail": "Ouch"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "ServiceUnavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServiceUnavailable"
-                },
-                "example": {
-                  "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "GatewayTimeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GatewayTimeout"
-                },
-                "example": {
-                  "detail": "The network is slow"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/addresses/{address}/mempool/transactions": {
       "get": {
         "tags": [
@@ -2949,119 +3104,6 @@
                   "balance": "10",
                   "lockedBalance": "2"
                 }
-              }
-            }
-          },
-          "400": {
-            "description": "BadRequest",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequest"
-                },
-                "example": {
-                  "detail": "Something bad in the request"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NotFound",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotFound"
-                },
-                "example": {
-                  "resource": "wallet-name",
-                  "detail": "wallet-name not found"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "InternalServerError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
-                },
-                "example": {
-                  "detail": "Ouch"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "ServiceUnavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServiceUnavailable"
-                },
-                "example": {
-                  "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "GatewayTimeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GatewayTimeout"
-                },
-                "example": {
-                  "detail": "The network is slow"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/addresses/{address}/public-key": {
-      "get": {
-        "tags": [
-          "Addresses"
-        ],
-        "description": "Get public key of p2pkh addresses, the address needs to have at least one input.",
-        "operationId": "getAddressesAddressPublic-key",
-        "parameters": [
-          {
-            "name": "address",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "address"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Ok",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "string",
-                  "format": "public-key"
-                },
-                "example": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28"
               }
             }
           },
@@ -4073,13 +4115,130 @@
         }
       }
     },
-    "/mempool/transactions": {
+    "/infos/average-block-times": {
       "get": {
         "tags": [
-          "Mempool"
+          "Infos"
         ],
-        "description": "list mempool transactions",
-        "operationId": "getMempoolTransactions",
+        "description": "Get the average block time for each chain",
+        "operationId": "getInfosAverage-block-times",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PerChainDuration"
+                  }
+                },
+                "example": [
+                  {
+                    "chainFrom": 1,
+                    "chainTo": 2,
+                    "duration": 60,
+                    "value": 60
+                  },
+                  {
+                    "chainFrom": 1,
+                    "chainTo": 2,
+                    "duration": 60,
+                    "value": 60
+                  }
+                ]
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "GatewayTimeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayTimeout"
+                },
+                "example": {
+                  "detail": "The network is slow"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/infos/supply": {
+      "get": {
+        "tags": [
+          "Infos"
+        ],
+        "description": "Get token supply list",
+        "operationId": "getInfosSupply",
         "parameters": [
           {
             "name": "page",
@@ -4113,153 +4272,427 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/MempoolTransaction"
+                    "$ref": "#/components/schemas/TokenSupply"
                   }
                 },
                 "example": [
                   {
-                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
-                    "chainFrom": 1,
-                    "chainTo": 2,
-                    "inputs": [
-                      {
-                        "outputRef": {
-                          "hint": 23412,
-                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
-                        },
-                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
-                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
-                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
-                        "attoAlphAmount": "2",
-                        "tokens": [
-                          {
-                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
-                            "amount": "42000000000000000000"
-                          },
-                          {
-                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
-                            "amount": "1000000000000000000000"
-                          }
-                        ],
-                        "contractInput": false
-                      }
-                    ],
-                    "outputs": [
-                      {
-                        "type": "AssetOutput",
-                        "hint": 1,
-                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
-                        "attoAlphAmount": "2",
-                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
-                        "tokens": [
-                          {
-                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
-                            "amount": "42000000000000000000"
-                          },
-                          {
-                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
-                            "amount": "1000000000000000000000"
-                          }
-                        ],
-                        "lockTime": 1611041396892,
-                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
-                        "fixedOutput": true
-                      },
-                      {
-                        "type": "ContractOutput",
-                        "hint": 1,
-                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
-                        "attoAlphAmount": "2",
-                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
-                        "tokens": [
-                          {
-                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
-                            "amount": "42000000000000000000"
-                          },
-                          {
-                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
-                            "amount": "1000000000000000000000"
-                          }
-                        ],
-                        "fixedOutput": false
-                      }
-                    ],
-                    "gasAmount": 20000,
-                    "gasPrice": "100000000000",
-                    "lastSeen": 1611041396892
+                    "timestamp": 1611041396892,
+                    "total": "1000000000000000000",
+                    "circulating": "500000000000000000",
+                    "reserved": "10",
+                    "locked": "10",
+                    "maximum": "1000000000000000000000000000"
                   },
                   {
-                    "hash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
-                    "chainFrom": 1,
-                    "chainTo": 2,
-                    "inputs": [
-                      {
-                        "outputRef": {
-                          "hint": 23412,
-                          "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"
-                        },
-                        "unlockScript": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
-                        "txHashRef": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
-                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
-                        "attoAlphAmount": "2",
-                        "tokens": [
-                          {
-                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
-                            "amount": "42000000000000000000"
-                          },
-                          {
-                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
-                            "amount": "1000000000000000000000"
-                          }
-                        ],
-                        "contractInput": false
-                      }
-                    ],
-                    "outputs": [
-                      {
-                        "type": "AssetOutput",
-                        "hint": 1,
-                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
-                        "attoAlphAmount": "2",
-                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
-                        "tokens": [
-                          {
-                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
-                            "amount": "42000000000000000000"
-                          },
-                          {
-                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
-                            "amount": "1000000000000000000000"
-                          }
-                        ],
-                        "lockTime": 1611041396892,
-                        "message": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
-                        "fixedOutput": true
-                      },
-                      {
-                        "type": "ContractOutput",
-                        "hint": 1,
-                        "key": "798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef",
-                        "attoAlphAmount": "2",
-                        "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
-                        "tokens": [
-                          {
-                            "id": "2d11fd6c12435ffb07aaed4d190a505b621b927a5f6e51b61ce0ebe186397bdd",
-                            "amount": "42000000000000000000"
-                          },
-                          {
-                            "id": "bd165d20bd063c7a023d22232a1e75bf46e904067f92b49323fe89fa0fd586bf",
-                            "amount": "1000000000000000000000"
-                          }
-                        ],
-                        "fixedOutput": false
-                      }
-                    ],
-                    "gasAmount": 20000,
-                    "gasPrice": "100000000000",
-                    "lastSeen": 1611041396892
+                    "timestamp": 1611041396892,
+                    "total": "1000000000000000000",
+                    "circulating": "500000000000000000",
+                    "reserved": "10",
+                    "locked": "10",
+                    "maximum": "1000000000000000000000000000"
                   }
                 ]
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "GatewayTimeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayTimeout"
+                },
+                "example": {
+                  "detail": "The network is slow"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/infos/supply/circulating-alph": {
+      "get": {
+        "tags": [
+          "Infos"
+        ],
+        "description": "Get the ALPH circulating supply",
+        "operationId": "getInfosSupplyCirculating-alph",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "GatewayTimeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayTimeout"
+                },
+                "example": {
+                  "detail": "The network is slow"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/infos/supply/total-alph": {
+      "get": {
+        "tags": [
+          "Infos"
+        ],
+        "description": "Get the ALPH total supply",
+        "operationId": "getInfosSupplyTotal-alph",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "GatewayTimeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayTimeout"
+                },
+                "example": {
+                  "detail": "The network is slow"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/infos/supply/reserved-alph": {
+      "get": {
+        "tags": [
+          "Infos"
+        ],
+        "description": "Get the ALPH reserved supply",
+        "operationId": "getInfosSupplyReserved-alph",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "GatewayTimeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayTimeout"
+                },
+                "example": {
+                  "detail": "The network is slow"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/infos/supply/locked-alph": {
+      "get": {
+        "tags": [
+          "Infos"
+        ],
+        "description": "Get the ALPH locked supply",
+        "operationId": "getInfosSupplyLocked-alph",
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "number"
+                }
               }
             }
           },
@@ -5068,152 +5501,6 @@
         }
       }
     },
-    "/infos/supply": {
-      "get": {
-        "tags": [
-          "Infos"
-        ],
-        "description": "Get token supply list",
-        "operationId": "getInfosSupply",
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "description": "Page number",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 1
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "Number of items per page",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0,
-              "maximum": 100
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Ok",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TokenSupply"
-                  }
-                },
-                "example": [
-                  {
-                    "timestamp": 1611041396892,
-                    "total": "1000000000000000000",
-                    "circulating": "500000000000000000",
-                    "reserved": "10",
-                    "locked": "10",
-                    "maximum": "1000000000000000000000000000"
-                  },
-                  {
-                    "timestamp": 1611041396892,
-                    "total": "1000000000000000000",
-                    "circulating": "500000000000000000",
-                    "reserved": "10",
-                    "locked": "10",
-                    "maximum": "1000000000000000000000000000"
-                  }
-                ]
-              }
-            }
-          },
-          "400": {
-            "description": "BadRequest",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequest"
-                },
-                "example": {
-                  "detail": "Something bad in the request"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NotFound",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotFound"
-                },
-                "example": {
-                  "resource": "wallet-name",
-                  "detail": "wallet-name not found"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "InternalServerError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
-                },
-                "example": {
-                  "detail": "Ouch"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "ServiceUnavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServiceUnavailable"
-                },
-                "example": {
-                  "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "GatewayTimeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GatewayTimeout"
-                },
-                "example": {
-                  "detail": "The network is slow"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/tokens/fungible-metadata": {
       "post": {
         "tags": [
@@ -5515,1357 +5802,6 @@
                   {
                     "address": "26JbotDoUoNzwVACg1YLaNTZKAJvoBDWiXJMnokZxCzvd",
                     "collectionUri": "collection://uri"
-                  }
-                ]
-              }
-            }
-          },
-          "400": {
-            "description": "BadRequest",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequest"
-                },
-                "example": {
-                  "detail": "Something bad in the request"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NotFound",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotFound"
-                },
-                "example": {
-                  "resource": "wallet-name",
-                  "detail": "wallet-name not found"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "InternalServerError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
-                },
-                "example": {
-                  "detail": "Ouch"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "ServiceUnavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServiceUnavailable"
-                },
-                "example": {
-                  "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "GatewayTimeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GatewayTimeout"
-                },
-                "example": {
-                  "detail": "The network is slow"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/infos/supply/total-alph": {
-      "get": {
-        "tags": [
-          "Infos"
-        ],
-        "description": "Get the ALPH total supply",
-        "operationId": "getInfosSupplyTotal-alph",
-        "responses": {
-          "200": {
-            "description": "Ok",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "number"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "BadRequest",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequest"
-                },
-                "example": {
-                  "detail": "Something bad in the request"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NotFound",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotFound"
-                },
-                "example": {
-                  "resource": "wallet-name",
-                  "detail": "wallet-name not found"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "InternalServerError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
-                },
-                "example": {
-                  "detail": "Ouch"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "ServiceUnavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServiceUnavailable"
-                },
-                "example": {
-                  "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "GatewayTimeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GatewayTimeout"
-                },
-                "example": {
-                  "detail": "The network is slow"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/infos/supply/circulating-alph": {
-      "get": {
-        "tags": [
-          "Infos"
-        ],
-        "description": "Get the ALPH circulating supply",
-        "operationId": "getInfosSupplyCirculating-alph",
-        "responses": {
-          "200": {
-            "description": "Ok",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "number"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "BadRequest",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequest"
-                },
-                "example": {
-                  "detail": "Something bad in the request"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NotFound",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotFound"
-                },
-                "example": {
-                  "resource": "wallet-name",
-                  "detail": "wallet-name not found"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "InternalServerError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
-                },
-                "example": {
-                  "detail": "Ouch"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "ServiceUnavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServiceUnavailable"
-                },
-                "example": {
-                  "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "GatewayTimeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GatewayTimeout"
-                },
-                "example": {
-                  "detail": "The network is slow"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/infos/supply/reserved-alph": {
-      "get": {
-        "tags": [
-          "Infos"
-        ],
-        "description": "Get the ALPH reserved supply",
-        "operationId": "getInfosSupplyReserved-alph",
-        "responses": {
-          "200": {
-            "description": "Ok",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "number"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "BadRequest",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequest"
-                },
-                "example": {
-                  "detail": "Something bad in the request"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NotFound",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotFound"
-                },
-                "example": {
-                  "resource": "wallet-name",
-                  "detail": "wallet-name not found"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "InternalServerError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
-                },
-                "example": {
-                  "detail": "Ouch"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "ServiceUnavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServiceUnavailable"
-                },
-                "example": {
-                  "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "GatewayTimeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GatewayTimeout"
-                },
-                "example": {
-                  "detail": "The network is slow"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/infos/supply/locked-alph": {
-      "get": {
-        "tags": [
-          "Infos"
-        ],
-        "description": "Get the ALPH locked supply",
-        "operationId": "getInfosSupplyLocked-alph",
-        "responses": {
-          "200": {
-            "description": "Ok",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "number"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "BadRequest",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequest"
-                },
-                "example": {
-                  "detail": "Something bad in the request"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NotFound",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotFound"
-                },
-                "example": {
-                  "resource": "wallet-name",
-                  "detail": "wallet-name not found"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "InternalServerError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
-                },
-                "example": {
-                  "detail": "Ouch"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "ServiceUnavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServiceUnavailable"
-                },
-                "example": {
-                  "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "GatewayTimeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GatewayTimeout"
-                },
-                "example": {
-                  "detail": "The network is slow"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/infos/total-transactions": {
-      "get": {
-        "tags": [
-          "Infos"
-        ],
-        "description": "Get the total number of transactions",
-        "operationId": "getInfosTotal-transactions",
-        "responses": {
-          "200": {
-            "description": "Ok",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "integer",
-                  "format": "int32"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "BadRequest",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequest"
-                },
-                "example": {
-                  "detail": "Something bad in the request"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NotFound",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotFound"
-                },
-                "example": {
-                  "resource": "wallet-name",
-                  "detail": "wallet-name not found"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "InternalServerError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
-                },
-                "example": {
-                  "detail": "Ouch"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "ServiceUnavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServiceUnavailable"
-                },
-                "example": {
-                  "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "GatewayTimeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GatewayTimeout"
-                },
-                "example": {
-                  "detail": "The network is slow"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/infos/average-block-times": {
-      "get": {
-        "tags": [
-          "Infos"
-        ],
-        "description": "Get the average block time for each chain",
-        "operationId": "getInfosAverage-block-times",
-        "responses": {
-          "200": {
-            "description": "Ok",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PerChainDuration"
-                  }
-                },
-                "example": [
-                  {
-                    "chainFrom": 1,
-                    "chainTo": 2,
-                    "duration": 60,
-                    "value": 60
-                  },
-                  {
-                    "chainFrom": 1,
-                    "chainTo": 2,
-                    "duration": 60,
-                    "value": 60
-                  }
-                ]
-              }
-            }
-          },
-          "400": {
-            "description": "BadRequest",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequest"
-                },
-                "example": {
-                  "detail": "Something bad in the request"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NotFound",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotFound"
-                },
-                "example": {
-                  "resource": "wallet-name",
-                  "detail": "wallet-name not found"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "InternalServerError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
-                },
-                "example": {
-                  "detail": "Ouch"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "ServiceUnavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServiceUnavailable"
-                },
-                "example": {
-                  "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "GatewayTimeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GatewayTimeout"
-                },
-                "example": {
-                  "detail": "The network is slow"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/tokens/holders/alph": {
-      "get": {
-        "tags": [
-          "Tokens"
-        ],
-        "description": "Get a sorted list of top addresses by ALPH balance. Updates once per day.",
-        "operationId": "getTokensHoldersAlph",
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "description": "Page number",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 1
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "Number of items per page",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0,
-              "maximum": 100
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Ok",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/HolderInfo"
-                  }
-                },
-                "example": [
-                  {
-                    "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
-                    "balance": "10"
-                  }
-                ]
-              }
-            }
-          },
-          "400": {
-            "description": "BadRequest",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequest"
-                },
-                "example": {
-                  "detail": "Something bad in the request"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NotFound",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotFound"
-                },
-                "example": {
-                  "resource": "wallet-name",
-                  "detail": "wallet-name not found"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "InternalServerError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
-                },
-                "example": {
-                  "detail": "Ouch"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "ServiceUnavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServiceUnavailable"
-                },
-                "example": {
-                  "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "GatewayTimeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GatewayTimeout"
-                },
-                "example": {
-                  "detail": "The network is slow"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/tokens/holders/token/{token_id}": {
-      "get": {
-        "tags": [
-          "Tokens"
-        ],
-        "description": "Get a sorted list of top addresses by {token_id} balance. Updates once per day.",
-        "operationId": "getTokensHoldersTokenToken_id",
-        "parameters": [
-          {
-            "name": "token_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "32-byte-hash"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "description": "Page number",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 1
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "Number of items per page",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0,
-              "maximum": 100
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Ok",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/HolderInfo"
-                  }
-                },
-                "example": [
-                  {
-                    "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
-                    "balance": "10"
-                  }
-                ]
-              }
-            }
-          },
-          "400": {
-            "description": "BadRequest",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequest"
-                },
-                "example": {
-                  "detail": "Something bad in the request"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NotFound",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotFound"
-                },
-                "example": {
-                  "resource": "wallet-name",
-                  "detail": "wallet-name not found"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "InternalServerError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
-                },
-                "example": {
-                  "detail": "Ouch"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "ServiceUnavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServiceUnavailable"
-                },
-                "example": {
-                  "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "GatewayTimeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GatewayTimeout"
-                },
-                "example": {
-                  "detail": "The network is slow"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/charts/hashrates": {
-      "get": {
-        "tags": [
-          "Charts"
-        ],
-        "summary": "Get hashrate chart in H/s",
-        "description": "`interval-type` query param: hourly, daily",
-        "operationId": "getChartsHashrates",
-        "parameters": [
-          {
-            "name": "fromTs",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64",
-              "minimum": 0
-            }
-          },
-          {
-            "name": "toTs",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64",
-              "minimum": 0
-            }
-          },
-          {
-            "name": "interval-type",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/IntervalType"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Ok",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Hashrate"
-                  }
-                },
-                "example": [
-                  {
-                    "timestamp": 1611041396892,
-                    "hashrate": "147573952589676412928",
-                    "value": "147573952589676412928"
-                  },
-                  {
-                    "timestamp": 1611041396892,
-                    "hashrate": "147573952589676412928",
-                    "value": "147573952589676412928"
-                  }
-                ]
-              }
-            }
-          },
-          "400": {
-            "description": "BadRequest",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequest"
-                },
-                "example": {
-                  "detail": "Something bad in the request"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NotFound",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotFound"
-                },
-                "example": {
-                  "resource": "wallet-name",
-                  "detail": "wallet-name not found"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "InternalServerError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
-                },
-                "example": {
-                  "detail": "Ouch"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "ServiceUnavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServiceUnavailable"
-                },
-                "example": {
-                  "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "GatewayTimeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GatewayTimeout"
-                },
-                "example": {
-                  "detail": "The network is slow"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/charts/transactions-count": {
-      "get": {
-        "tags": [
-          "Charts"
-        ],
-        "summary": "Get transaction count history",
-        "description": "`interval-type` query param: hourly, daily",
-        "operationId": "getChartsTransactions-count",
-        "parameters": [
-          {
-            "name": "fromTs",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64",
-              "minimum": 0
-            }
-          },
-          {
-            "name": "toTs",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64",
-              "minimum": 0
-            }
-          },
-          {
-            "name": "interval-type",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/IntervalType"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Ok",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TimedCount"
-                  }
-                },
-                "example": [
-                  {
-                    "timestamp": 1611041396892,
-                    "totalCountAllChains": 10000000
-                  },
-                  {
-                    "timestamp": 1611041396892,
-                    "totalCountAllChains": 10000000
-                  }
-                ]
-              }
-            }
-          },
-          "400": {
-            "description": "BadRequest",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequest"
-                },
-                "example": {
-                  "detail": "Something bad in the request"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Unauthorized"
-                },
-                "example": {
-                  "detail": "You shall not pass"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NotFound",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotFound"
-                },
-                "example": {
-                  "resource": "wallet-name",
-                  "detail": "wallet-name not found"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "InternalServerError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalServerError"
-                },
-                "example": {
-                  "detail": "Ouch"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "ServiceUnavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServiceUnavailable"
-                },
-                "example": {
-                  "detail": "Self clique unsynced"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "GatewayTimeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GatewayTimeout"
-                },
-                "example": {
-                  "detail": "The network is slow"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/charts/transactions-count-per-chain": {
-      "get": {
-        "tags": [
-          "Charts"
-        ],
-        "summary": "Get transaction count history per chain",
-        "description": "`interval-type` query param: hourly, daily",
-        "operationId": "getChartsTransactions-count-per-chain",
-        "parameters": [
-          {
-            "name": "fromTs",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64",
-              "minimum": 0
-            }
-          },
-          {
-            "name": "toTs",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64",
-              "minimum": 0
-            }
-          },
-          {
-            "name": "interval-type",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/IntervalType"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Ok",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PerChainTimedCount"
-                  }
-                },
-                "example": [
-                  {
-                    "timestamp": 1611041396892,
-                    "totalCountPerChain": [
-                      {
-                        "chainFrom": 1,
-                        "chainTo": 2,
-                        "count": 10000000
-                      },
-                      {
-                        "chainFrom": 1,
-                        "chainTo": 2,
-                        "count": 10000000
-                      }
-                    ]
-                  },
-                  {
-                    "timestamp": 1611041396892,
-                    "totalCountPerChain": [
-                      {
-                        "chainFrom": 1,
-                        "chainTo": 2,
-                        "count": 10000000
-                      },
-                      {
-                        "chainFrom": 1,
-                        "chainTo": 2,
-                        "count": 10000000
-                      }
-                    ]
                   }
                 ]
               }
@@ -7458,21 +6394,35 @@
         }
       }
     },
-    "/contracts/{contract_address}/current-liveness": {
+    "/tokens/holders/alph": {
       "get": {
         "tags": [
-          "Contracts"
+          "Tokens"
         ],
-        "description": "Get contract liveness",
-        "operationId": "getContractsContract_addressCurrent-liveness",
+        "description": "Get a sorted list of top addresses by ALPH balance. Updates once per day.",
+        "operationId": "getTokensHoldersAlph",
         "parameters": [
           {
-            "name": "contract_address",
-            "in": "path",
-            "required": true,
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "required": false,
             "schema": {
-              "type": "string",
-              "format": "address"
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0,
+              "maximum": 100
             }
           }
         ],
@@ -7482,16 +6432,160 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ContractLiveness"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HolderInfo"
+                  }
+                },
+                "example": [
+                  {
+                    "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                    "balance": "10"
+                  }
+                ]
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
                 },
                 "example": {
-                  "parent": "26JbotDoUoNzwVACg1YLaNTZKAJvoBDWiXJMnokZxCzvd",
-                  "creation": {
-                    "blockHash": "bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5",
-                    "txHash": "503bfb16230888af4924aa8f8250d7d348b862e267d75d3147f1998050b6da69",
-                    "timestamp": 1611041396892
-                  }
+                  "detail": "Something bad in the request"
                 }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "GatewayTimeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayTimeout"
+                },
+                "example": {
+                  "detail": "The network is slow"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tokens/holders/token/{token_id}": {
+      "get": {
+        "tags": [
+          "Tokens"
+        ],
+        "description": "Get a sorted list of top addresses by {token_id} balance. Updates once per day.",
+        "operationId": "getTokensHoldersTokenToken_id",
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "32-byte-hash"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HolderInfo"
+                  }
+                },
+                "example": [
+                  {
+                    "address": "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y",
+                    "balance": "10"
+                  }
+                ]
               }
             }
           },
@@ -7746,6 +6840,462 @@
                     "22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM"
                   ]
                 }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "GatewayTimeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayTimeout"
+                },
+                "example": {
+                  "detail": "The network is slow"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/charts/hashrates": {
+      "get": {
+        "tags": [
+          "Charts"
+        ],
+        "summary": "Get hashrate chart in H/s",
+        "description": "`interval-type` query param: hourly, daily",
+        "operationId": "getChartsHashrates",
+        "parameters": [
+          {
+            "name": "fromTs",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "toTs",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "interval-type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/IntervalType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Hashrate"
+                  }
+                },
+                "example": [
+                  {
+                    "timestamp": 1611041396892,
+                    "hashrate": "147573952589676412928",
+                    "value": "147573952589676412928"
+                  },
+                  {
+                    "timestamp": 1611041396892,
+                    "hashrate": "147573952589676412928",
+                    "value": "147573952589676412928"
+                  }
+                ]
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "GatewayTimeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayTimeout"
+                },
+                "example": {
+                  "detail": "The network is slow"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/charts/transactions-count": {
+      "get": {
+        "tags": [
+          "Charts"
+        ],
+        "summary": "Get transaction count history",
+        "description": "`interval-type` query param: hourly, daily",
+        "operationId": "getChartsTransactions-count",
+        "parameters": [
+          {
+            "name": "fromTs",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "toTs",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "interval-type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/IntervalType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TimedCount"
+                  }
+                },
+                "example": [
+                  {
+                    "timestamp": 1611041396892,
+                    "totalCountAllChains": 10000000
+                  },
+                  {
+                    "timestamp": 1611041396892,
+                    "totalCountAllChains": 10000000
+                  }
+                ]
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "GatewayTimeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayTimeout"
+                },
+                "example": {
+                  "detail": "The network is slow"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/charts/transactions-count-per-chain": {
+      "get": {
+        "tags": [
+          "Charts"
+        ],
+        "summary": "Get transaction count history per chain",
+        "description": "`interval-type` query param: hourly, daily",
+        "operationId": "getChartsTransactions-count-per-chain",
+        "parameters": [
+          {
+            "name": "fromTs",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "toTs",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "interval-type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/IntervalType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PerChainTimedCount"
+                  }
+                },
+                "example": [
+                  {
+                    "timestamp": 1611041396892,
+                    "totalCountPerChain": [
+                      {
+                        "chainFrom": 1,
+                        "chainTo": 2,
+                        "count": 10000000
+                      },
+                      {
+                        "chainFrom": 1,
+                        "chainTo": 2,
+                        "count": 10000000
+                      }
+                    ]
+                  },
+                  {
+                    "timestamp": 1611041396892,
+                    "totalCountPerChain": [
+                      {
+                        "chainFrom": 1,
+                        "chainTo": 2,
+                        "count": 10000000
+                      },
+                      {
+                        "chainFrom": 1,
+                        "chainTo": 2,
+                        "count": 10000000
+                      }
+                    ]
+                  }
+                ]
               }
             }
           },
@@ -8775,51 +8325,6 @@
           }
         }
       },
-      "ContractLiveness": {
-        "title": "ContractLiveness",
-        "type": "object",
-        "required": [
-          "creation"
-        ],
-        "properties": {
-          "parent": {
-            "type": "string",
-            "format": "address"
-          },
-          "creation": {
-            "$ref": "#/components/schemas/ContractLivenessLocation"
-          },
-          "destruction": {
-            "$ref": "#/components/schemas/ContractLivenessLocation"
-          },
-          "interfaceId": {
-            "$ref": "#/components/schemas/StdInterfaceId"
-          }
-        }
-      },
-      "ContractLivenessLocation": {
-        "title": "ContractLivenessLocation",
-        "type": "object",
-        "required": [
-          "blockHash",
-          "txHash",
-          "timestamp"
-        ],
-        "properties": {
-          "blockHash": {
-            "type": "string",
-            "format": "block-hash"
-          },
-          "txHash": {
-            "type": "string",
-            "format": "32-byte-hash"
-          },
-          "timestamp": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
       "ContractOutput": {
         "title": "ContractOutput",
         "type": "object",
@@ -8947,22 +8452,6 @@
           "lastHoldersUpdate": {
             "type": "integer",
             "format": "int64"
-          }
-        }
-      },
-      "FungibleToken": {
-        "title": "FungibleToken",
-        "type": "object",
-        "required": [
-          "id",
-          "type"
-        ],
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
           }
         }
       },
@@ -9205,34 +8694,6 @@
           }
         }
       },
-      "NFT": {
-        "title": "NFT",
-        "type": "object",
-        "required": [
-          "id",
-          "type"
-        ],
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
-          }
-        }
-      },
-      "NFTCollection": {
-        "title": "NFTCollection",
-        "type": "object",
-        "required": [
-          "type"
-        ],
-        "properties": {
-          "type": {
-            "type": "string"
-          }
-        }
-      },
       "NFTCollectionMetadata": {
         "title": "NFTCollectionMetadata",
         "type": "object",
@@ -9246,18 +8707,6 @@
             "format": "address"
           },
           "collectionUri": {
-            "type": "string"
-          }
-        }
-      },
-      "NFTCollectionWithRoyalty": {
-        "title": "NFTCollectionWithRoyalty",
-        "type": "object",
-        "required": [
-          "type"
-        ],
-        "properties": {
-          "type": {
             "type": "string"
           }
         }
@@ -9286,18 +8735,6 @@
           "nftIndex": {
             "type": "string",
             "format": "uint256"
-          }
-        }
-      },
-      "NonStandard": {
-        "title": "NonStandard",
-        "type": "object",
-        "required": [
-          "type"
-        ],
-        "properties": {
-          "type": {
-            "type": "string"
           }
         }
       },
@@ -9514,40 +8951,6 @@
         "properties": {
           "detail": {
             "type": "string"
-          }
-        }
-      },
-      "StdInterfaceId": {
-        "title": "StdInterfaceId",
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/FungibleToken"
-          },
-          {
-            "$ref": "#/components/schemas/NFT"
-          },
-          {
-            "$ref": "#/components/schemas/NFTCollection"
-          },
-          {
-            "$ref": "#/components/schemas/NFTCollectionWithRoyalty"
-          },
-          {
-            "$ref": "#/components/schemas/NonStandard"
-          },
-          {
-            "$ref": "#/components/schemas/Unknown"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "type",
-          "mapping": {
-            "FungibleToken": "#/components/schemas/FungibleToken",
-            "NFT": "#/components/schemas/NFT",
-            "NFTCollection": "#/components/schemas/NFTCollection",
-            "NFTCollectionWithRoyalty": "#/components/schemas/NFTCollectionWithRoyalty",
-            "NonStandard": "#/components/schemas/NonStandard",
-            "Unknown": "#/components/schemas/Unknown"
           }
         }
       },
@@ -9770,33 +9173,6 @@
           }
         }
       },
-      "TransactionInfo": {
-        "title": "TransactionInfo",
-        "type": "object",
-        "required": [
-          "hash",
-          "blockHash",
-          "timestamp",
-          "coinbase"
-        ],
-        "properties": {
-          "hash": {
-            "type": "string",
-            "format": "32-byte-hash"
-          },
-          "blockHash": {
-            "type": "string",
-            "format": "block-hash"
-          },
-          "timestamp": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "coinbase": {
-            "type": "boolean"
-          }
-        }
-      },
       "TransactionLike": {
         "title": "TransactionLike",
         "oneOf": [
@@ -9823,22 +9199,6 @@
         ],
         "properties": {
           "detail": {
-            "type": "string"
-          }
-        }
-      },
-      "Unknown": {
-        "title": "Unknown",
-        "type": "object",
-        "required": [
-          "id",
-          "type"
-        ],
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "type": {
             "type": "string"
           }
         }

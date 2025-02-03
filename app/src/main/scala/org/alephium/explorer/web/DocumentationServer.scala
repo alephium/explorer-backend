@@ -22,13 +22,15 @@ import io.vertx.ext.web._
 
 import org.alephium.api.OpenAPIWriters.openApiJson
 import org.alephium.explorer.GroupSetting
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.docs.Documentation
 import org.alephium.http.SwaggerUI
 import org.alephium.util.Duration
 
 class DocumentationServer(
     val maxTimeIntervalExportTxs: Duration,
-    val currencies: ArraySeq[String]
+    val currencies: ArraySeq[String],
+    val servicesConfig: ExplorerConfig.Services
 )(implicit
     groupSetting: GroupSetting
 ) extends Server

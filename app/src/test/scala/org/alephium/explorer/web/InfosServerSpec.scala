@@ -98,7 +98,7 @@ class InfosServerSpec()
   }
 
   val infoServer =
-    new InfosServer(tokenSupplyService, blockService, transactionService)
+    new InfosServer(tokenSupplyService, blockService, transactionService, servicesConfig)
 
   val routes = infoServer.routes
 

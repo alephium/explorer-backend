@@ -30,6 +30,7 @@ import org.alephium.explorer.{BuildInfo, GroupSetting}
 import org.alephium.explorer.api.InfosEndpoints
 import org.alephium.explorer.api.model.{ExplorerInfo, TokenSupply}
 import org.alephium.explorer.cache.{AsyncReloadingCache, BlockCache, TransactionCache}
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.persistence.DBRunner
 import org.alephium.explorer.persistence.model.AppState
 import org.alephium.explorer.persistence.queries.AppStateQueries
@@ -41,7 +42,8 @@ import org.alephium.util.{TimeStamp, U256}
 class InfosServer(
     tokenSupplyService: TokenSupplyService,
     blockService: BlockService,
-    transactionService: TransactionService
+    transactionService: TransactionService,
+    config: ExplorerConfig.Services
 )(implicit
     val executionContext: ExecutionContext,
     dc: DatabaseConfig[PostgresProfile],
@@ -51,53 +53,59 @@ class InfosServer(
 ) extends Server
     with InfosEndpoints {
 
-  // scalafmt is struggling on this one, maybe latest version wil work.
-  // format: off
-  val routes: ArraySeq[Router=>Route] =
+  val tokenSupplyRoutes: Option[ArraySeq[Router => Route]] =
+    Option
+      .when(config.tokenSupply.enable)(
+        ArraySeq(
+          route(listTokenSupply.serverLogicSuccess[Future] { pagination =>
+            tokenSupplyService.listTokenSupply(pagination)
+          }),
+          route(getCirculatingSupply.serverLogicSuccess[Future] { _ =>
+            getLatestTokenSupply()
+              .map { supply =>
+                val circulating = supply.map(_.circulating).getOrElse(U256.Zero)
+                toALPH(circulating)
+              }
+          }),
+          route(getTotalSupply.serverLogicSuccess[Future] { _ =>
+            getLatestTokenSupply()
+              .map { supply =>
+                val total = supply.map(_.total).getOrElse(U256.Zero)
+                toALPH(total)
+              }
+          }),
+          route(getReservedSupply.serverLogicSuccess[Future] { _ =>
+            getLatestTokenSupply()
+              .map { supply =>
+                val reserved = supply.map(_.reserved).getOrElse(U256.Zero)
+                toALPH(reserved)
+              }
+          }),
+          route(getLockedSupply.serverLogicSuccess[Future] { _ =>
+            getLatestTokenSupply()
+              .map { supply =>
+                val locked = supply.map(_.locked).getOrElse(U256.Zero)
+                toALPH(locked)
+              }
+          })
+        )
+      )
+
+  val routes: ArraySeq[Router => Route] =
     ArraySeq(
       route(getInfos.serverLogicSuccess[Future] { _ =>
         getExplorerInfo()
-      }) ,
-      route(listTokenSupply.serverLogicSuccess[Future] { pagination =>
-        tokenSupplyService.listTokenSupply(pagination)
-      }) ,
-      route(getCirculatingSupply.serverLogicSuccess[Future] { _ =>
-          getLatestTokenSupply()
-          .map { supply =>
-            val circulating = supply.map(_.circulating).getOrElse(U256.Zero)
-            toALPH(circulating)
-          }
-      }) ,
-      route(getTotalSupply.serverLogicSuccess[Future] { _ =>
-          getLatestTokenSupply()
-          .map { supply =>
-            val total = supply.map(_.total).getOrElse(U256.Zero)
-            toALPH(total)
-          }
-      }) ,
-      route(getReservedSupply.serverLogicSuccess[Future] { _ =>
-          getLatestTokenSupply()
-          .map { supply =>
-            val reserved = supply.map(_.reserved).getOrElse(U256.Zero)
-            toALPH(reserved)
-          }
-      }) ,
-      route(getLockedSupply.serverLogicSuccess[Future] { _ =>
-          getLatestTokenSupply()
-          .map { supply =>
-            val locked = supply.map(_.locked).getOrElse(U256.Zero)
-            toALPH(locked)
-          }
-      }) ,
-      route(getHeights.serverLogicSuccess[Future]{ _ =>
-         blockService.listMaxHeights()
-      }) ,
-      route(getTotalTransactions.serverLogicSuccess[Future]{ _=>
+      }),
+      route(getHeights.serverLogicSuccess[Future] { _ =>
+        blockService.listMaxHeights()
+      }),
+      route(getTotalTransactions.serverLogicSuccess[Future] { _ =>
         Future(transactionService.getTotalNumber())
       }),
-      route(getAverageBlockTime.serverLogicSuccess[Future]{ _=>
+      route(getAverageBlockTime.serverLogicSuccess[Future] { _ =>
         blockService.getAverageBlockTime()
-      })      )
+      })
+    ) ++ tokenSupplyRoutes.getOrElse(ArraySeq.empty)
   // format: on
 
   def getExplorerInfo()(implicit

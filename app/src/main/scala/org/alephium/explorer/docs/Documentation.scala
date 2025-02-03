@@ -24,7 +24,15 @@ import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
 
 import org.alephium.explorer.api._
 import org.alephium.explorer.api.model.Pagination
+import org.alephium.explorer.config.ExplorerConfig
 
+@SuppressWarnings(
+  Array(
+    "org.wartremover.warts.JavaSerializable",
+    "org.wartremover.warts.Product",
+    "org.wartremover.warts.Serializable"
+  )
+)
 trait Documentation
     extends BlockEndpoints
     with TransactionEndpoints
@@ -39,66 +47,138 @@ trait Documentation
     with UtilsEndpoints
     with OpenAPIDocsInterpreter {
 
+  def servicesConfig: ExplorerConfig.Services
   def currencies: ArraySeq[String]
+
+  private lazy val blocks = List(
+    listBlocks,
+    getBlockByHash,
+    getBlockTransactions
+  )
+
+  private lazy val transactions = List(
+    getTransactionById
+  )
+
+  private lazy val addresses = List(
+    getTransactionById,
+    getAddressInfo,
+    getTransactionsByAddress,
+    getTransactionsByAddresses,
+    getTransactionsByAddressTimeRanged,
+    getTotalTransactionsByAddress,
+    addressMempoolTransactions,
+    getAddressBalance,
+    listAddressTokens,
+    listAddressTokenTransactions,
+    getAddressTokenBalance,
+    listAddressTokensBalance,
+    areAddressesActive,
+    exportTransactionsCsvByAddress,
+    getAddressAmountHistoryDEPRECATED,
+    getAddressAmountHistory
+  )
+
+  private lazy val infos = List(
+    getInfos,
+    getHeights,
+    getAverageBlockTime
+  )
+
+  private lazy val tokens = List(
+    listTokens,
+    listTokenTransactions,
+    listTokenAddresses,
+    listTokenInfo,
+    listFungibleTokenMetadata,
+    listNFTMetadata,
+    listNFTCollectionMetadata
+  )
+
+  private lazy val events = List(
+    getEventsByTxId,
+    getEventsByContractAddress,
+    getEventsByContractAndInputAddress
+  )
+
+  private lazy val contracts = List(
+    getParentAddress,
+    getSubContracts
+  )
+
+  private lazy val mempool =
+    if (servicesConfig.mempoolSync.enable) {
+      List(
+        listMempoolTransactions
+      )
+    } else {
+      List.empty
+    }
+
+  private lazy val tokenSupply =
+    if (servicesConfig.tokenSupply.enable) {
+      List(
+        listTokenSupply,
+        getCirculatingSupply,
+        getTotalSupply,
+        getReservedSupply,
+        getLockedSupply
+      )
+    } else {
+      List.empty
+    }
+
+  private lazy val holders =
+    if (servicesConfig.holder.enable) {
+      List(
+        getAlphHolders,
+        getTokenHolders
+      )
+    } else {
+      List.empty
+    }
+
+  private lazy val hashrate =
+    if (servicesConfig.hashrate.enable) {
+      List(getHashrates)
+    } else {
+      List.empty
+    }
+
+  private lazy val txHistory =
+    if (servicesConfig.txHistory.enable) {
+      List(getAllChainsTxCount, getPerChainTxCount)
+    } else {
+      List.empty
+    }
+
+  private lazy val market = List(
+    getPrices,
+    getPriceChart
+  )
+
+  private lazy val utils = List(
+    sanityCheck,
+    changeGlobalLogLevel,
+    changeLogConfig
+  )
 
   lazy val docs: OpenAPI = addComponents(
     toOpenAPI(
-      List(
-        listBlocks,
-        getBlockByHash,
-        getBlockTransactions,
-        getTransactionById,
-        getAddressInfo,
-        getTransactionsByAddress,
-        getTransactionsByAddresses,
-        getTransactionsByAddressTimeRanged,
-        getTotalTransactionsByAddress,
-        getLatestTransactionInfo,
-        addressMempoolTransactions,
-        getAddressBalance,
-        listAddressTokens,
-        listAddressTokenTransactions,
-        getAddressTokenBalance,
-        getPublicKey,
-        listAddressTokensBalance,
-        areAddressesActive,
-        exportTransactionsCsvByAddress,
-        getAddressAmountHistoryDEPRECATED,
-        getAddressAmountHistory,
-        getInfos,
-        getHeights,
-        listMempoolTransactions,
-        listTokens,
-        listTokenTransactions,
-        listTokenAddresses,
-        listTokenSupply,
-        listTokenInfo,
-        listFungibleTokenMetadata,
-        listNFTMetadata,
-        listNFTCollectionMetadata,
-        getTotalSupply,
-        getCirculatingSupply,
-        getReservedSupply,
-        getLockedSupply,
-        getTotalTransactions,
-        getAverageBlockTime,
-        getAlphHolders,
-        getTokenHolders,
-        getHashrates,
-        getAllChainsTxCount,
-        getPerChainTxCount,
-        getEventsByTxId,
-        getEventsByContractAddress,
-        getEventsByContractAndInputAddress,
-        getContractInfo,
-        getParentAddress,
-        getSubContracts,
-        getPrices,
-        getPriceChart,
-        sanityCheck,
-        changeGlobalLogLevel,
-        changeLogConfig
-      ),
+      blocks ++
+        transactions ++
+        mempool ++
+        addresses ++
+        infos ++
+        tokenSupply ++
+        tokens ++
+        events ++
+        holders ++
+        contracts ++
+        hashrate ++
+        txHistory ++
+        market ++
+        utils,
       "Alephium Explorer API",
       "1.0"
     )
