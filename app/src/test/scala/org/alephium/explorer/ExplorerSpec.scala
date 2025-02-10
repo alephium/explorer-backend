@@ -567,9 +567,8 @@ object ExplorerSpec {
       with Server
       with IntegrationPatience {
 
-    implicit val groupConfig: GroupConfig = groupSetting.groupConfig
-    val blocks                            = blockflow.flatten
-    val blocksWithUncles                  = blockflow.flatten ++ uncles
+    val blocks           = blockflow.flatten
+    val blocksWithUncles = blockflow.flatten ++ uncles
 
     val cliqueId = CliqueId.generate
 

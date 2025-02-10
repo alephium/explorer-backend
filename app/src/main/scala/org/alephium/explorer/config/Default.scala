@@ -14,24 +14,26 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.api
+package org.alephium.explorer.config
 
-import org.alephium.api.ApiModelCodec
-import org.alephium.explorer.config.Default
-import org.alephium.json.Json._
-import org.alephium.protocol.model.GroupIndex
+import scala.util.{Failure, Random, Success}
+
+import org.alephium.explorer.GroupSetting
 import org.alephium.protocol.config.GroupConfig
-import org.alephium.util.U256
+import org.alephium.util.Env
 
-@SuppressWarnings(Array("org.wartremover.warts.Throw"))
-object Json extends ApiModelCodec {
+object Default {
 
-  implicit val groupConfig: GroupConfig = Default.groupConfig
-
-  implicit val u256ReadWriter: ReadWriter[U256] = ReadWriter.join(u256Reader, u256Writer)
-  implicit val groupIndexReadWriter: ReadWriter[GroupIndex] =
-    readwriter[Int].bimap(
-      _.value,
-      group => new GroupIndex(group)
-    )
+  implicit val groupConfig: GroupConfig =
+    Env.resolve() match {
+      case Env.Prod =>
+        val typesafeConfig = ExplorerConfig.loadConfig(Platform.getRootPath()) match {
+          case Success(config) => config
+          case Failure(error)  => throw error
+        }
+        val config: ExplorerConfig = ExplorerConfig.load(typesafeConfig)
+        GroupSetting(config.groupNum).groupConfig
+      case _ =>
+        GroupSetting(Random.between(2, 5)).groupConfig
+    }
 }

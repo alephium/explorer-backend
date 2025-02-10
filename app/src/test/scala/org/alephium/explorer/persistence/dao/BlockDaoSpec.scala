@@ -23,6 +23,7 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.protocol.config.GroupConfig
 import org.alephium.api.{model, ApiModelCodec}
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.ConfigDefaults._
@@ -31,6 +32,7 @@ import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
+import org.alephium.explorer.config.Default
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
@@ -39,6 +41,7 @@ import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.json.Json._
+import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
 import org.alephium.util.{Duration, TimeStamp}
 
@@ -262,7 +265,8 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
   }
 
   trait Fixture extends ApiModelCodec {
-    implicit val blockCache: BlockCache = TestBlockCache()
+    implicit val groupConfig: GroupConfig = Default.groupConfig
+    implicit val blockCache: BlockCache   = TestBlockCache()
 
     val blockflow: Seq[Seq[model.BlockEntry]] =
       blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get

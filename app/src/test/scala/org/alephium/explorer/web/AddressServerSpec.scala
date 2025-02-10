@@ -35,6 +35,7 @@ import org.alephium.api.ApiError
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer._
 import org.alephium.explorer.ConfigDefaults._
+import org.alephium.explorer.ConfigDefaults.groupConfig
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.HttpFixture._
@@ -454,7 +455,7 @@ class AddressServerSpec()
 
       val expected = s"""attachment;filename="$address-$from-$to.csv""""
       AddressServer.exportFileNameHeader(
-        Address.fromBase58(address).get,
+        Address.fromBase58(address)(groupConfig).get,
         TimeInterval(TimeStamp.unsafe(from), TimeStamp.unsafe(to))
       ) is expected
     }

@@ -195,7 +195,7 @@ class ApiModelSpec() extends AlephiumSpec {
     }
   }
 
-  "AsetOutput" in {
+  "AssetOutput" in {
     forAll(assetOutputGen) { output =>
       val expected =
         s"""
@@ -440,5 +440,22 @@ class ApiModelSpec() extends AlephiumSpec {
       check(SubContracts(addresses), expected)
       check(SubContracts(ArraySeq.empty), """{"subContracts":[]}""")
     }
+  }
+
+  "groupless addresses" in {
+    val address   = "3cUqj91Y4SxeoV5szxWc6dekfDt6Pq1ZUC2kdeTW26rYXt3bY98YX"
+    val groupless = Address.fromBase58(address).get
+
+    groupless.groupIndex.value is 3
+    groupless.toBase58 is address
+
+    val grouped = Address.fromBase58(address ++ "@0").get
+
+    grouped.groupIndex.value is 0
+
+    grouped.toBase58 is address
+    grouped.toBase58 is groupless.toBase58
+
+    grouped isnot groupless
   }
 }

@@ -27,6 +27,8 @@ import sttp.tapir.generic.auto._
 import sttp.tapir.server.vertx.streams.VertxStreams
 
 import org.alephium.api._
+import org.alephium.explorer.config.Default
+import org.alephium.protocol.config.GroupConfig
 import org.alephium.json.Json.ReadWriter
 
 trait BaseEndpoint extends ErrorExamples with TapirCodecs with TapirSchemasLike with StrictLogging {
@@ -35,6 +37,8 @@ trait BaseEndpoint extends ErrorExamples with TapirCodecs with TapirSchemasLike 
 
   implicit val customConfiguration: Configuration =
     Schemas.configuration
+
+  implicit val groupConfig: GroupConfig = Default.groupConfig
 
   type BaseEndpoint[I, O] = Endpoint[Unit, I, ApiError[_ <: StatusCode], O, VertxStreams]
 

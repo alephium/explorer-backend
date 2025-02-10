@@ -26,6 +26,7 @@ import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
+import org.alephium.explorer.config.Default._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._

@@ -22,11 +22,16 @@ import sttp.tapir.{Codec, CodecFormat, DecodeResult}
 import sttp.tapir.Codec.PlainCodec
 
 import org.alephium.api.TapirCodecs
+import org.alephium.explorer.config.Default
 import org.alephium.explorer.api.model._
 import org.alephium.json.Json._
 import org.alephium.protocol.model.Address
+import org.alephium.protocol.config.GroupConfig
 
 object Codecs extends TapirCodecs {
+
+  implicit val groupConfig: GroupConfig = Default.groupConfig
+
   implicit val explorerAddressTapirCodec: PlainCodec[Address] =
     fromJson[Address]
 
