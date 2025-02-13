@@ -165,7 +165,7 @@ class DBBenchmark {
 
     val _ =
       state.db.runNow(
-        TransactionQueries.getBalanceAction(state.address, TimeStamp.zero),
+        TransactionQueries.getBalanceAction(state.address, None, TimeStamp.zero),
         requestTimeout
       )
   }
@@ -174,7 +174,7 @@ class DBBenchmark {
   def getTxHashesByAddressQuery(state: Address_ReadState): Unit = {
     val _ =
       state.db.runNow(
-        TransactionQueries.getTxHashesByAddressQuery(state.address, state.pagination),
+        TransactionQueries.getTxHashesByAddressQuery(state.address, None, state.pagination),
         requestTimeout
       )
   }
@@ -192,7 +192,7 @@ class DBBenchmark {
 
     val _ = Await.result(
       for {
-        _ <- TransactionDao.getBalance(state.address, TimeStamp.zero)
+        _ <- TransactionDao.getBalance(state.address, None, TimeStamp.zero)
         _ <- TransactionDao.getNumberByAddress(state.address)
       } yield (),
       requestTimeout
@@ -223,7 +223,7 @@ class DBBenchmark {
 
     val _ =
       state.db.runNow(
-        TransactionQueries.getTransactionsByAddress(state.address, state.pagination),
+        TransactionQueries.getTransactionsByAddress(state.address, None, state.pagination),
         requestTimeout
       )
   }

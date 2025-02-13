@@ -20,6 +20,7 @@ import scala.collection.immutable.ArraySeq
 
 import org.openjdk.jmh.annotations.{Scope, State}
 
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.state.ListBlocksReadStateSettings._
