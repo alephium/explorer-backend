@@ -33,12 +33,15 @@ import org.alephium.explorer.util.AddressUtil
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
+import org.alephium.protocol.config.GroupConfig
+import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputQueries {
 
-  def insertOutputs(outputs: Iterable[OutputEntity]): DBActionRWT[Unit] =
+  def insertOutputs(
+      outputs: Iterable[OutputEntity]
+  )(implicit groupConfig: GroupConfig): DBActionRWT[Unit] =
     DBIOAction
       .seq(
         insertBasicOutputs(outputs),
@@ -434,11 +437,13 @@ object OutputQueries {
 
   def getBalanceUntilLockTime(
       address: Address,
+      groupIndex: Option[GroupIndex],
       lockTime: TimeStamp,
       latestFinalizedTimestamp: TimeStamp
   )(implicit
       ec: ExecutionContext
-  ): DBActionR[(Option[U256], Option[U256])] =
+  ): DBActionR[(Option[U256], Option[U256])] = {
+
     sql"""
       SELECT sum(outputs.amount),
              sum(CASE
@@ -454,6 +459,12 @@ object OutputQueries {
       WHERE outputs.spent_finalized IS NULL
         AND outputs.address = $address
         AND outputs.main_chain = true
-        AND inputs.block_hash IS NULL;
-    """.asAS[(Option[U256], Option[U256])].exactlyOne
+        AND inputs.block_hash IS NULL
+      """
+      .concatOption(
+        groupIndex.map(group => sql"AND outputs.group_address = $group")
+      )
+      .asAS[(Option[U256], Option[U256])]
+      .exactlyOne
+  }
 }
