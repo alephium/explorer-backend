@@ -25,13 +25,25 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.InputEntityLike
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, TransactionId}
+import org.alephium.protocol.model.{Address, GroupIndex, TransactionId}
 import org.alephium.util.U256
 
 object InputsFromTxQR {
 
   val selectFields: String =
-    "tx_hash, input_order, hint, output_ref_key, unlock_script, output_ref_tx_hash, output_ref_address, output_ref_amount, output_ref_tokens, contract_input"
+    """
+      tx_hash,
+      input_order,
+      hint,
+      output_ref_key,
+      unlock_script,
+      output_ref_tx_hash,
+      output_ref_address,
+      output_ref_group_address,
+      output_ref_amount,
+      output_ref_tokens,
+      contract_input
+    """
 
   implicit val inputsFromTxQRGetResult: GetResult[InputsFromTxQR] =
     (result: PositionedResult) =>
@@ -43,6 +55,7 @@ object InputsFromTxQR {
         unlockScript = result.<<?,
         outputRefTxHash = result.<<?,
         outputRefAddress = result.<<?,
+        outputRefGroup = result.<<?,
         outputRefAmount = result.<<?,
         outputRefTokens = result.<<?,
         contractInput = result.<<
@@ -58,6 +71,7 @@ final case class InputsFromTxQR(
     unlockScript: Option[ByteString],
     outputRefTxHash: Option[TransactionId],
     outputRefAddress: Option[Address],
+    outputRefGroup: Option[GroupIndex],
     outputRefAmount: Option[U256],
     outputRefTokens: Option[ArraySeq[Token]],
     contractInput: Boolean

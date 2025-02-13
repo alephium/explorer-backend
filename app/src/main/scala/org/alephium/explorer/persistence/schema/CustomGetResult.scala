@@ -74,6 +74,10 @@ object CustomGetResult {
   implicit val groupIndexGetResult: GetResult[GroupIndex] =
     (result: PositionedResult) => new GroupIndex(result.nextInt())
 
+  implicit val groupIndexOptionGetResult: GetResult[Option[GroupIndex]] = {
+    (result: PositionedResult) => result.nextIntOption().map(new GroupIndex(_))
+  }
+
   implicit val heightGetResult: GetResult[Height] =
     (result: PositionedResult) => Height.unsafe(result.nextInt())
 
@@ -175,6 +179,7 @@ object CustomGetResult {
         key = result.<<,
         amount = result.<<,
         address = result.<<,
+        group = result.<<?,
         tokens = result.<<?,
         mainChain = result.<<,
         lockTime = result.<<?,
@@ -201,6 +206,7 @@ object CustomGetResult {
         txOrder = result.<<,
         outputRefTxHash = result.<<?,
         outputRefAddress = result.<<?,
+        outputRefGroup = result.<<?,
         outputRefAmount = result.<<?,
         outputRefTokens = result.<<?,
         contractInput = result.<<

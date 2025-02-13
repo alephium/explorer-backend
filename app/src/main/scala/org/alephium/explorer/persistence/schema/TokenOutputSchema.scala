@@ -24,7 +24,7 @@ import org.alephium.explorer.persistence.DBActionW
 import org.alephium.explorer.persistence.model.{OutputEntity, TokenOutputEntity}
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outputs") {
@@ -40,6 +40,7 @@ object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outpu
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
     def address: Rep[Address]            = column[Address]("address")
+    def group: Rep[Option[GroupIndex]]   = column[Option[GroupIndex]]("group_address")
     def mainChain: Rep[Boolean]          = column[Boolean]("main_chain")
     def lockTime: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("lock_time")
     def message: Rep[Option[ByteString]] = column[Option[ByteString]]("message")
@@ -70,6 +71,7 @@ object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outpu
         token,
         amount,
         address,
+        group,
         mainChain,
         lockTime,
         message,
