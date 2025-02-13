@@ -100,6 +100,7 @@ object Migrations extends StrictLogging {
       _ <- addGroupAddressColumn("token_outputs")
       _ <- addGroupAddressColumn("token_tx_per_addresses")
       _ <- addGroupAddressColumn("transaction_per_addresses")
+      _ <- sqlu"""ALTER TABLE inputs ADD COLUMN output_ref_group_address INTEGER"""
     } yield ()
 
   private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
