@@ -30,7 +30,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.service.TransactionService
-import org.alephium.protocol.model.{Address, TransactionId}
+import org.alephium.protocol.model.{Address, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 trait EmptyTransactionService extends TransactionService {
@@ -45,7 +45,11 @@ trait EmptyTransactionService extends TransactionService {
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int] =
     Future.successful(0)
 
-  override def getTransactionsByAddress(address: Address, pagination: Pagination)(implicit
+  override def getTransactionsByAddress(
+      address: Address,
+      groupIndex: Option[GroupIndex],
+      pagination: Pagination
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]] =
@@ -88,6 +92,7 @@ trait EmptyTransactionService extends TransactionService {
 
   override def getBalance(
       address: Address,
+      groupIndex: Option[GroupIndex],
       from: TimeStamp
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
     Future.successful((U256.Zero, U256.Zero))

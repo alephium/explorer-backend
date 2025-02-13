@@ -24,7 +24,7 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
 
 import org.alephium.api.model.{Val, ValAddress, ValByteVec}
-import org.alephium.explorer.ConfigDefaults.groupSetting
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenCoreProtocol._
@@ -32,6 +32,7 @@ import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model.Height
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.service.BlockFlowClient
+import org.alephium.explorer.util.AddressUtil._
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{Address, BlockHash, ChainIndex, GroupIndex, TransactionId}
 import org.alephium.util.{AVector, TimeStamp}
@@ -62,26 +63,29 @@ object GenDBModel {
       txOrder     <- arbitrary[Int]
       coinbase    <- arbitrary[Boolean]
       fixedOutput <- arbitrary[Boolean]
-    } yield OutputEntity(
-      blockHash = blockHash,
-      txHash = txHash,
-      timestamp = timestamp,
-      outputType = outputType,
-      hint = hint,
-      key = key,
-      amount = amount,
-      address = address,
-      tokens = tokens,
-      mainChain = mainChain,
-      lockTime = if (outputType == OutputEntity.Asset) lockTime else None,
-      message = if (outputType == OutputEntity.Asset) message else None,
-      outputOrder = outputOrder,
-      txOrder = txOrder,
-      spentFinalized = None,
-      spentTimestamp = None,
-      coinbase = coinbase,
-      fixedOutput = fixedOutput
-    )
+    } yield {
+      OutputEntity(
+        blockHash = blockHash,
+        txHash = txHash,
+        timestamp = timestamp,
+        outputType = outputType,
+        hint = hint,
+        key = key,
+        amount = amount,
+        group = p2pkGroupAddress(address),
+        address = address,
+        tokens = tokens,
+        mainChain = mainChain,
+        lockTime = if (outputType == OutputEntity.Asset) lockTime else None,
+        message = if (outputType == OutputEntity.Asset) message else None,
+        outputOrder = outputOrder,
+        txOrder = txOrder,
+        spentFinalized = None,
+        spentTimestamp = None,
+        coinbase = coinbase,
+        fixedOutput = fixedOutput
+      )
+    }
 
   val finalizedOutputEntityGen: Gen[OutputEntity] =
     for {
@@ -140,6 +144,7 @@ object GenDBModel {
         None,
         None,
         None,
+        None,
         contractInput
       )
     }
@@ -191,6 +196,7 @@ object GenDBModel {
       coinbase  <- Arbitrary.arbitrary[Boolean]
     } yield TransactionPerAddressEntity(
       address = address,
+      group = p2pkGroupAddress(address),
       hash = hash,
       blockHash = blockHash,
       timestamp = timestamp,
@@ -231,6 +237,7 @@ object GenDBModel {
       token     <- tokenIdGen
     } yield TokenTxPerAddressEntity(
       address = address,
+      group = p2pkGroupAddress(address),
       hash = hash,
       blockHash = blockHash,
       timestamp = timestamp,
@@ -294,6 +301,7 @@ object GenDBModel {
       token,
       amount,
       address,
+      p2pkGroupAddress(address),
       mainChain,
       lockTime,
       message,

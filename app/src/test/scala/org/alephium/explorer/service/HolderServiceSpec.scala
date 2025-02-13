@@ -87,7 +87,7 @@ class HolderServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureForEac
       val addresses = blocks.flatMap(_.transactions.flatMap(_.unsigned.fixedOutputs.map(_.address)))
 
       addresses.distinct.foreach { address =>
-        val (balance, _)  = TransactionDao.getBalance(address, TimeStamp.zero).futureValue
+        val (balance, _)  = TransactionDao.getBalance(address, None, TimeStamp.zero).futureValue
         val holderBalance = holders.find(_._1 == address).map(_._2).getOrElse(U256.Zero)
 
         balance is holderBalance

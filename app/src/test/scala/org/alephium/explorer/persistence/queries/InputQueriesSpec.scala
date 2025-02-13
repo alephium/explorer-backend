@@ -108,6 +108,7 @@ class InputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
                 unlockScript = entity.unlockScript,
                 outputRefTxHash = entity.outputRefTxHash,
                 outputRefAddress = entity.outputRefAddress,
+                outputRefGroup = entity.outputRefGroup,
                 outputRefAmount = entity.outputRefAmount,
                 outputRefTokens = entity.outputRefTokens,
                 contractInput = entity.contractInput
@@ -155,6 +156,7 @@ class InputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
               unlockScript = input.unlockScript,
               outputRefTxHash = input.outputRefTxHash,
               outputRefAddress = input.outputRefAddress,
+              outputRefGroup = input.outputRefGroup,
               outputRefAmount = input.outputRefAmount,
               outputRefTokens = input.outputRefTokens,
               contractInput = input.contractInput

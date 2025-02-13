@@ -23,6 +23,7 @@ import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumFutureSpec, TestQueries}
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
@@ -35,6 +36,7 @@ import org.alephium.explorer.persistence.queries.result._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.service.FinalizerService
+import org.alephium.explorer.util.AddressUtil._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.protocol.{ALPH, Hash}
 import org.alephium.protocol.model.{Address, GroupIndex, TransactionId}
@@ -43,7 +45,8 @@ import org.alephium.util.{Duration, TimeStamp, U256}
 class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
   "compute locked balance when empty" in new Fixture {
-    val balance = run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
+    val balance =
+      run(TransactionQueries.getBalanceAction(address, None, lastFinalizedTime)).futureValue
     balance is ((U256.Zero, U256.Zero))
   }
 
@@ -58,7 +61,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     run(OutputSchema.table ++= ArraySeq(output1, output2, output3, output4)).futureValue
 
     val (total, locked) =
-      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
+      run(TransactionQueries.getBalanceAction(address, None, lastFinalizedTime)).futureValue
 
     total is ALPH.alph(10)
     locked is ALPH.alph(7)
@@ -75,7 +78,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     run(InputSchema.table += input1).futureValue
 
     val (total, _) =
-      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
+      run(TransactionQueries.getBalanceAction(address, None, lastFinalizedTime)).futureValue
 
     total is ALPH.alph(1)
 
@@ -84,7 +87,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from)).futureValue
 
     val (totalFinalized, _) =
-      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
+      run(TransactionQueries.getBalanceAction(address, None, lastFinalizedTime)).futureValue
 
     totalFinalized is ALPH.alph(1)
   }
@@ -99,7 +102,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     run(InputSchema.table += input1).futureValue
 
     val (total, _) =
-      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
+      run(TransactionQueries.getBalanceAction(address, None, lastFinalizedTime)).futureValue
 
     total is ALPH.alph(1)
   }
@@ -166,7 +169,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     val hashes =
       run(
-        TransactionQueries.getTxHashesByAddressQuery(address, Pagination.unsafe(1, 10))
+        TransactionQueries.getTxHashesByAddressQuery(address, None, Pagination.unsafe(1, 10))
       ).futureValue
 
     val expected = ArraySeq(
@@ -218,7 +221,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     val txs =
       run(
-        TransactionQueries.getTransactionsByAddress(address, Pagination.unsafe(1, 10))
+        TransactionQueries.getTransactionsByAddress(address, None, Pagination.unsafe(1, 10))
       ).futureValue
 
     val expected = ArraySeq(
@@ -296,7 +299,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
   // https://github.com/alephium/explorer-backend/issues/174
   "return an empty list when not transactions are found - Isssue 174" in new Fixture {
     run(
-      TransactionQueries.getTransactionsByAddress(address, Pagination.unsafe(1, 10))
+      TransactionQueries.getTransactionsByAddress(address, None, Pagination.unsafe(1, 10))
     ).futureValue is ArraySeq.empty
   }
 
@@ -655,6 +658,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         hashGen.sample.get,
         amount,
         address,
+        p2pkGroupAddress(address),
         Gen.option(tokensGen).sample.get,
         true,
         lockTime,
@@ -678,6 +682,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         true,
         0,
         0,
+        None,
         None,
         None,
         None,

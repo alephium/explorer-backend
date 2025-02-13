@@ -58,7 +58,6 @@ import org.alephium.explorer.service.{BlockFlowClient, MarketServiceSpec}
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.explorer.web._
 import org.alephium.json.Json._
-import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.{Address, BlockHash, CliqueId, GroupIndex, NetworkId}
 import org.alephium.util.{AVector, Duration, Hex, TimeStamp, U256}
 
