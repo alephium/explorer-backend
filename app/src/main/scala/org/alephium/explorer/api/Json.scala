@@ -19,8 +19,8 @@ package org.alephium.explorer.api
 import org.alephium.api.ApiModelCodec
 import org.alephium.explorer.config.Default
 import org.alephium.json.Json._
-import org.alephium.protocol.model.GroupIndex
 import org.alephium.protocol.config.GroupConfig
+import org.alephium.protocol.model.GroupIndex
 import org.alephium.util.U256
 
 @SuppressWarnings(Array("org.wartremover.warts.Throw"))

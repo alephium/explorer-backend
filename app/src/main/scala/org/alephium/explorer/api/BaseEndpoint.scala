@@ -28,8 +28,8 @@ import sttp.tapir.server.vertx.streams.VertxStreams
 
 import org.alephium.api._
 import org.alephium.explorer.config.Default
-import org.alephium.protocol.config.GroupConfig
 import org.alephium.json.Json.ReadWriter
+import org.alephium.protocol.config.GroupConfig
 
 trait BaseEndpoint extends ErrorExamples with TapirCodecs with TapirSchemasLike with StrictLogging {
   import Endpoints._

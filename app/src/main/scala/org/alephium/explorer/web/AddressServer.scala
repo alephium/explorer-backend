@@ -61,9 +61,10 @@ class AddressServer(
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
-      route(getTransactionsByAddress.serverLogicSuccess[Future] { case (address, pagination) =>
-        transactionService
-          .getTransactionsByAddress(address, pagination)
+      route(getTransactionsByAddress.serverLogicSuccess[Future] {
+        case (address, groupIndex, pagination) =>
+          transactionService
+            .getTransactionsByAddress(address, groupIndex, pagination)
       }),
       route(getTransactionsByAddresses.serverLogicSuccess[Future] {
         case (addresses, fromTsOpt, toTsOpt, pagination) =>
@@ -71,7 +72,7 @@ class AddressServer(
             .getTransactionsByAddresses(addresses, fromTsOpt, toTsOpt, pagination)
       }),
       route(getTransactionsByAddressTimeRanged.serverLogicSuccess[Future] {
-        case (address, timeInterval, pagination) =>
+        case (address, _, timeInterval, pagination) =>
           transactionService
             .getTransactionsByAddressTimeRanged(
               address,
@@ -80,51 +81,51 @@ class AddressServer(
               pagination
             )
       }),
-      route(addressMempoolTransactions.serverLogicSuccess[Future] { address =>
+      route(addressMempoolTransactions.serverLogicSuccess[Future] { case (address, _) =>
         transactionService
           .listMempoolTransactionsByAddress(address)
       }),
-      route(getAddressInfo.serverLogicSuccess[Future] { address =>
+      route(getAddressInfo.serverLogicSuccess[Future] { case (address, groupIndex) =>
         for {
           (balance, locked) <- transactionService
-            .getBalance(address, blockCache.getLastFinalizedTimestamp())
+            .getBalance(address, groupIndex, blockCache.getLastFinalizedTimestamp())
           txNumber <- transactionService.getTransactionsNumberByAddress(address)
         } yield AddressInfo(balance, locked, txNumber)
       }),
-      route(getTotalTransactionsByAddress.serverLogic[Future] { address =>
+      route(getTotalTransactionsByAddress.serverLogic[Future] { case (address, _) =>
         transactionService.getTransactionsNumberByAddress(address).map(Right(_))
       }),
-      route(getLatestTransactionInfo.serverLogic[Future] { address =>
+      route(getLatestTransactionInfo.serverLogic[Future] { case (address, _) =>
         transactionService.getLatestTransactionInfoByAddress(address).map {
           case None         => Left(ApiError.NotFound(s"No transaction found for address $address"))
           case Some(txInfo) => Right(txInfo)
         }
       }),
-      route(getAddressBalance.serverLogicSuccess[Future] { address =>
+      route(getAddressBalance.serverLogicSuccess[Future] { case (address, groupIndex) =>
         for {
           (balance, locked) <- transactionService
-            .getBalance(address, blockCache.getLastFinalizedTimestamp())
+            .getBalance(address, groupIndex, blockCache.getLastFinalizedTimestamp())
         } yield AddressBalance(balance, locked)
       }),
-      route(getAddressTokenBalance.serverLogicSuccess[Future] { case (address, token) =>
+      route(getAddressTokenBalance.serverLogicSuccess[Future] { case (address, _, token) =>
         for {
           (balance, locked) <- tokenService.getTokenBalance(address, token)
         } yield AddressTokenBalance(token, balance, locked)
       }),
-      route(listAddressTokensBalance.serverLogicSuccess[Future] { case (address, pagination) =>
+      route(listAddressTokensBalance.serverLogicSuccess[Future] { case (address, _, pagination) =>
         tokenService
           .listAddressTokensWithBalance(address, pagination)
           .map(_.map { case (tokenId, balance, locked) =>
             AddressTokenBalance(tokenId, balance, locked)
           })
       }),
-      route(listAddressTokens.serverLogicSuccess[Future] { case (address, pagination) =>
+      route(listAddressTokens.serverLogicSuccess[Future] { case (address, _, pagination) =>
         for {
           tokens <- tokenService.listAddressTokens(address, pagination)
         } yield tokens
       }),
       route(listAddressTokenTransactions.serverLogicSuccess[Future] {
-        case (address, token, pagination) =>
+        case (address, _, token, pagination) =>
           for {
             tokens <- tokenService.listAddressTokenTransactions(address, token, pagination)
           } yield tokens
@@ -132,13 +133,13 @@ class AddressServer(
       route(areAddressesActive.serverLogicSuccess[Future] { addresses =>
         transactionService.areAddressesActive(addresses)
       }),
-      route(exportTransactionsCsvByAddress.serverLogic[Future] { case (address, timeInterval) =>
+      route(exportTransactionsCsvByAddress.serverLogic[Future] { case (address, _, timeInterval) =>
         exportTransactions(address, timeInterval).map(_.map { stream =>
           (AddressServer.exportFileNameHeader(address, timeInterval), stream)
         })
       }),
       route(getAddressAmountHistoryDEPRECATED.serverLogic[Future] {
-        case (address, timeInterval, intervalType) =>
+        case (address, _, timeInterval, intervalType) =>
           validateTimeInterval(timeInterval, intervalType) {
             val flowable =
               transactionService.getAmountHistoryDEPRECATED(
@@ -157,7 +158,7 @@ class AddressServer(
           }
       }),
       route(getAddressAmountHistory.serverLogic[Future] {
-        case (address, timeInterval, intervalType) =>
+        case (address, _, timeInterval, intervalType) =>
           validateTimeInterval(timeInterval, intervalType) {
             transactionService
               .getAmountHistory(
@@ -173,7 +174,7 @@ class AddressServer(
               }
           }
       }),
-      route(getPublicKey.serverLogic[Future] { address =>
+      route(getPublicKey.serverLogic[Future] { case (address, _) =>
         address match {
           case Address.Asset(LockupScript.P2PKH(_)) =>
             transactionService.getUnlockScript(address).map {

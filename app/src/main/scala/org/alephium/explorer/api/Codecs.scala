@@ -18,22 +18,46 @@ package org.alephium.explorer.api
 
 import scala.util.{Failure, Success, Try}
 
-import sttp.tapir.{Codec, CodecFormat, DecodeResult}
+import sttp.tapir.{Codec, CodecFormat, DecodeResult, Schema}
 import sttp.tapir.Codec.PlainCodec
+import upickle.core.Abort
 
 import org.alephium.api.TapirCodecs
-import org.alephium.explorer.config.Default
+import org.alephium.api.TapirSchemas
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.config.Default
 import org.alephium.json.Json._
-import org.alephium.protocol.model.Address
 import org.alephium.protocol.config.GroupConfig
+import org.alephium.protocol.model.{Address, GroupIndex}
 
 object Codecs extends TapirCodecs {
 
   implicit val groupConfig: GroupConfig = Default.groupConfig
 
-  implicit val explorerAddressTapirCodec: PlainCodec[Address] =
-    fromJson[Address]
+  implicit val addressGroupRW: ReadWriter[(Address, Option[GroupIndex])] = readwriter[String].bimap(
+    {
+      case (address, Some(groupIndex)) =>
+        address.toBase58 + "@" + groupIndex.value
+      case (address, None) =>
+        address.toBase58
+    },
+    input => {
+      val address =
+        Address.fromBase58(input).getOrElse(throw Abort(s"Cannot parse address: $input"))
+      val groupIndex = if (input.length > 2 && input(input.length - 2) == '@') {
+        input.takeRight(1).toIntOption.flatMap(GroupIndex.from)
+      } else {
+        None
+      }
+      (address, groupIndex)
+    }
+  )
+
+  implicit val addressGroupSchema: Schema[(Address, Option[GroupIndex])] =
+    TapirSchemas.addressSchema.as[(Address, Option[GroupIndex])]
+
+  implicit val explorerAddressTapirCodec: PlainCodec[(Address, Option[GroupIndex])] =
+    fromJson[(Address, Option[GroupIndex])]
 
   @SuppressWarnings(
     Array(

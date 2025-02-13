@@ -49,7 +49,7 @@ import org.alephium.explorer.service.{
   TransactionService
 }
 import org.alephium.protocol.PublicKey
-import org.alephium.protocol.model.{Address, TokenId}
+import org.alephium.protocol.model.{Address, GroupIndex, TokenId}
 import org.alephium.protocol.vm.{LockupScript, UnlockScript}
 import org.alephium.serde._
 import org.alephium.util.{Duration, TimeStamp, U256}
@@ -111,7 +111,11 @@ class AddressServerSpec()
       Future.successful(ArraySeq(mempoolTx))
     }
 
-    override def getTransactionsByAddress(address: Address, pagination: Pagination)(implicit
+    override def getTransactionsByAddress(
+        address: Address,
+        groupIndex: Option[GroupIndex],
+        pagination: Pagination
+    )(implicit
         ec: ExecutionContext,
         dc: DatabaseConfig[PostgresProfile]
     ): Future[ArraySeq[Transaction]] = {
