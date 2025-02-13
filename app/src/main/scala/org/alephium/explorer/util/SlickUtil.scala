@@ -86,6 +86,7 @@ object SlickUtil {
       }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   implicit class RichSqlActionBuilder[A](val action: SQLActionBuilder) extends AnyVal {
     @SuppressWarnings(
       Array(
@@ -146,6 +147,10 @@ object SlickUtil {
         sql = action.sql ++ "LIMIT ? OFFSET ?",
         setParameter = parameters
       )
+    }
+
+    def concatOption(maybeNextAction: Option[SQLActionBuilder]): SQLActionBuilder = {
+      maybeNextAction.fold(action)(action.concat)
     }
   }
 
