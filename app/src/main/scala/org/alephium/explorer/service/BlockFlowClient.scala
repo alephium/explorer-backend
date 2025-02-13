@@ -44,7 +44,6 @@ import org.alephium.api.model.{
 import org.alephium.explorer.{Consensus, GroupSetting}
 import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.config.Default.groupConfig
 import org.alephium.explorer.error.ExplorerError
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.persistence.model._
@@ -62,7 +61,6 @@ import org.alephium.protocol.model.{
   TokenId,
   TransactionId
 }
-
 import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.{AVector, Hex, Service, TimeStamp, U256}
 
@@ -700,6 +698,7 @@ object BlockFlowClient extends StrictLogging {
       InputAddressUtil.addressFromProtocolInput(input),
       None,
       None,
+      None,
       contractInput = contractInput
     )
   }
@@ -724,6 +723,7 @@ object BlockFlowClient extends StrictLogging {
       mainChain,
       index,
       txOrder,
+      None,
       None,
       None,
       None,
@@ -768,7 +768,7 @@ object BlockFlowClient extends StrictLogging {
     }
   }
 
-  // scalastyle:off method.length
+  // scalastyle:off method.length parameter.number
   private def outputToEntity(
       output: api.model.Output,
       blockHash: BlockHash,
@@ -823,6 +823,7 @@ object BlockFlowClient extends StrictLogging {
       output.key,
       output.attoAlphAmount.value,
       address,
+      group,
       tokens,
       mainChain,
       lockTime,

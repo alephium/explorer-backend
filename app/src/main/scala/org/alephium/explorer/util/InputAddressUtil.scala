@@ -46,7 +46,7 @@ object InputAddressUtil extends StrictLogging {
             Some(protocol.model.Address.from(lockup))
           case protocol.vm.UnlockScript.PoLW(pk) =>
             Some(protocol.model.Address.p2pkh(pk))
-          case protocol.vm.UnlockScript.P2PK =>
+          case protocol.vm.UnlockScript.P2PK(_) =>
             None
           case protocol.vm.UnlockScript.SameAsPrevious =>
             None
