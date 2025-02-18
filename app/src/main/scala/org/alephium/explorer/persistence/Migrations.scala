@@ -25,18 +25,20 @@ import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.foldFutures
+import org.alephium.explorer.{foldFutures, Consensus}
 import org.alephium.explorer.persistence.model.AppState.MigrationVersion
 import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.{Address, BlockHash}
+import org.alephium.protocol.vm.LockupScript
+import org.alephium.util.TimeStamp
 
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(5)
+  val latestVersion: MigrationVersion = MigrationVersion(6)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     // We retrigger the download of fungible and non-fungible tokens' metadata that have sub-category
@@ -91,24 +93,88 @@ object Migrations extends StrictLogging {
    */
   def migration4: DBActionAll[Unit] = DBIOAction.successful(())
 
-  private def addGroupAddressColumn(tableName: String): DBActionAll[Int] =
-    sqlu"""ALTER TABLE #$tableName ADD COLUMN group_address INTEGER"""
+  private def addGroupAddressColumn(tableName: String, groupColumn: String): DBActionAll[Int] =
+    sqlu"""ALTER TABLE #$tableName ADD COLUMN #$groupColumn INTEGER"""
 
   def migration5(implicit ec: ExecutionContext): DBActionAll[Unit] =
     for {
-      _ <- addGroupAddressColumn("outputs")
-      _ <- addGroupAddressColumn("token_outputs")
-      _ <- addGroupAddressColumn("token_tx_per_addresses")
-      _ <- addGroupAddressColumn("transaction_per_addresses")
-      _ <- sqlu"""ALTER TABLE inputs ADD COLUMN output_ref_group_address INTEGER"""
+      _ <- addGroupAddressColumn("outputs", "group_address")
+      _ <- addGroupAddressColumn("token_outputs", "group_address")
+      _ <- addGroupAddressColumn("token_tx_per_addresses", "group_address")
+      _ <- addGroupAddressColumn("transaction_per_addresses", "group_address")
+      _ <- addGroupAddressColumn("inputs", "output_ref_group_address")
     } yield ()
+
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def updateGroupAddressColumn(
+      tableName: String,
+      addressColumn: String,
+      groupColumn: String,
+      chain: String = "chain_to"
+  )(implicit
+      ec: ExecutionContext
+  ): DBActionAll[Unit] = {
+    logger.info(s"Migrating $tableName")
+    for {
+      addresses <- sql"""
+          SELECT #$addressColumn, block_hash
+          FROM #$tableName
+          WHERE block_timestamp >= ${Consensus.danubeHardForkTimestamp}
+          AND #$groupColumn IS NULL
+        """
+        .asAS[(Address, BlockHash)]
+        .map { addresses =>
+          addresses.filter {
+            case (Address.Asset(_: LockupScript.P2PK), _) =>
+              true
+            case _ =>
+              false
+          }
+        }
+      _ <- DBIOAction.sequence(addresses.map { case (address, blockHash) =>
+        sqlu"""
+          UPDATE #$tableName
+          SET #$groupColumn = bh.#$chain
+          FROM block_headers bh
+          WHERE #$tableName.#$addressColumn = $address
+            AND #$tableName.block_hash = bh.hash
+            AND bh.hash = $blockHash;
+        """
+      })
+    } yield ()
+  }
+
+  def migration6(implicit ec: ExecutionContext): DBActionAll[Unit] =
+    if (TimeStamp.now().isBefore(Consensus.danubeHardForkTimestamp)) {
+      // No need to migrate the address group as no groupless addresses can be created before the Danube Hard Fork.
+      DBIOAction.successful(())
+    } else {
+      logger.info(
+        "Migrating group addresses, might be slow if you have a lot of groupless addresses"
+      )
+      for {
+        _ <- updateGroupAddressColumn("outputs", "address", "group_address")
+        _ <- updateGroupAddressColumn("token_outputs", "address", "group_address")
+        _ <- updateGroupAddressColumn("token_tx_per_addresses", "address", "group_address")
+        _ <- updateGroupAddressColumn("transaction_per_addresses", "address", "group_address")
+        _ <- updateGroupAddressColumn(
+          "inputs",
+          "output_ref_address",
+          "output_ref_group_address",
+          "chain_from"
+        )
+      } yield {
+        logger.info("Group addresses migration done")
+      }
+    }
 
   private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
     migration1,
     migration2,
     migration3,
     migration4,
-    migration5
+    migration5,
+    migration6
   )
 
   def backgroundCoinbaseMigration()(implicit
