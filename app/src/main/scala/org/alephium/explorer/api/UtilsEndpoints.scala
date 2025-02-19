@@ -40,23 +40,23 @@ trait UtilsEndpoints extends BaseEndpoint with QueryParams {
   val sanityCheck: BaseEndpoint[Unit, Unit] =
     utilsEndpoint.put
       .in("sanity-check")
-      .description("Perform a sanity check")
+      .summary("Perform a sanity check")
 
   val indexCheck: BaseEndpoint[Unit, ArraySeq[ExplainResult]] =
     utilsEndpoint.get
       .in("index-check")
       .out(jsonBody[ArraySeq[ExplainResult]])
-      .description("Perform index check")
+      .summary("Perform index check")
 
   val changeGlobalLogLevel: BaseEndpoint[String, Unit] =
     utilsEndpoint.put
       .in("update-global-loglevel")
       .in(plainBody[String].validate(Validator.enumeration(logLevels)))
-      .description(s"Update global log level, accepted: $logLevelsStr")
+      .summary(s"Update global log level, accepted: $logLevelsStr")
 
   val changeLogConfig: BaseEndpoint[ArraySeq[LogbackValue], Unit] =
     utilsEndpoint.put
       .in("update-log-config")
       .in(jsonBody[ArraySeq[LogbackValue]])
-      .description("Update logback values")
+      .summary("Update logback values")
 }

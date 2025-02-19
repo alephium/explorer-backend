@@ -43,13 +43,13 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .in(pagination)
       .in(tokenInterfaceIdQuery)
       .out(jsonBody[ArraySeq[TokenInfo]])
-      .description("List token information")
+      .summary("List token information")
 
   val listTokenInfo: BaseEndpoint[ArraySeq[TokenId], ArraySeq[TokenInfo]] =
     tokensEndpoint.post
       .in(arrayBody[TokenId]("token ids", maxSizeTokens))
       .out(jsonBody[ArraySeq[TokenInfo]])
-      .description("List given tokens information")
+      .summary("List given tokens information")
 
   val listTokenTransactions: BaseEndpoint[(TokenId, Pagination), ArraySeq[Transaction]] =
     tokensEndpoint.get
@@ -57,7 +57,7 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .in("transactions")
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])
-      .description("List token transactions")
+      .summary("List token transactions")
 
   val listTokenAddresses: BaseEndpoint[(TokenId, Pagination), ArraySeq[Address]] =
     tokensEndpoint.get
@@ -65,15 +65,18 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .in("addresses")
       .in(pagination)
       .out(jsonBody[ArraySeq[Address]])
-      .description("List token addresses")
+      .summary("List token addresses")
 
   val listFungibleTokenMetadata: BaseEndpoint[ArraySeq[TokenId], ArraySeq[FungibleTokenMetadata]] =
     tokensEndpoint.post
       .in("fungible-metadata")
       .in(arrayBody[TokenId]("token ids", maxSizeTokens))
       .out(jsonBody[ArraySeq[FungibleTokenMetadata]])
+      .summary(
+        "Return metadata for the given fungible tokens"
+      )
       .description(
-        "Return metadata for the given fungible tokens, if metadata doesn't exist or token isn't a fungible, it won't be in the output list"
+        "If metadata doesn't exist or token isn't a fungible, it won't be in the output list"
       )
 
   val listNFTMetadata: BaseEndpoint[ArraySeq[TokenId], ArraySeq[NFTMetadata]] =
@@ -81,17 +84,21 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .in("nft-metadata")
       .in(arrayBody[TokenId]("token ids", maxSizeTokens))
       .out(jsonBody[ArraySeq[NFTMetadata]])
-      .description(
-        "Return metadata for the given nft tokens, if metadata doesn't exist or token isn't a nft, it won't be in the output list"
+      .summary(
+        "Return metadata for the given nft tokens"
       )
+      .description("if metadata doesn't exist or token isn't a nft, it won't be in the output list")
 
   val listNFTCollectionMetadata: BaseEndpoint[ArraySeq[Address], ArraySeq[NFTCollectionMetadata]] =
     tokensEndpoint.post
       .in("nft-collection-metadata")
       .in(arrayBody[Address]("addresses", maxSizeAddressesForTokens))
       .out(jsonBody[ArraySeq[NFTCollectionMetadata]])
+      .summary(
+        "Return metadata for the given nft collection addresses"
+      )
       .description(
-        "Return metadata for the given nft collection addresses, if metadata doesn't exist or address isn't a nft collection, it won't be in the output list"
+        "if metadata doesn't exist or address isn't a nft collection, it won't be in the output list"
       )
 
   val getAlphHolders: BaseEndpoint[Pagination, ArraySeq[HolderInfo]] =
@@ -100,7 +107,8 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .in("alph")
       .in(pagination)
       .out(jsonBody[ArraySeq[HolderInfo]])
-      .description("Get a sorted list of top addresses by ALPH balance. Updates once per day.")
+      .summary("Get a sorted list of top addresses by ALPH balance")
+      .description("Updates once per day.")
 
   val getTokenHolders: BaseEndpoint[(TokenId, Pagination), ArraySeq[HolderInfo]] =
     tokensEndpoint.get
@@ -109,7 +117,8 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .in(path[TokenId]("token_id"))
       .in(pagination)
       .out(jsonBody[ArraySeq[HolderInfo]])
-      .description(
+      .summary(
         "Get a sorted list of top addresses by {token_id} balance. Updates once per day."
       )
+      .description("Updates once per day.")
 }
