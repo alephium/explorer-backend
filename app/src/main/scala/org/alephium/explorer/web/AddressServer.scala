@@ -72,7 +72,7 @@ class AddressServer(
             .getTransactionsByAddresses(addresses, fromTsOpt, toTsOpt, pagination)
       }),
       route(getTransactionsByAddressTimeRanged.serverLogicSuccess[Future] {
-        case (address, _, timeInterval, pagination) =>
+        case (address, timeInterval, pagination) =>
           transactionService
             .getTransactionsByAddressTimeRanged(
               address,
@@ -81,7 +81,7 @@ class AddressServer(
               pagination
             )
       }),
-      route(addressMempoolTransactions.serverLogicSuccess[Future] { case (address, _) =>
+      route(addressMempoolTransactions.serverLogicSuccess[Future] { address =>
         transactionService
           .listMempoolTransactionsByAddress(address)
       }),
@@ -92,10 +92,10 @@ class AddressServer(
           txNumber <- transactionService.getTransactionsNumberByAddress(address)
         } yield AddressInfo(balance, locked, txNumber)
       }),
-      route(getTotalTransactionsByAddress.serverLogic[Future] { case (address, _) =>
+      route(getTotalTransactionsByAddress.serverLogic[Future] { address =>
         transactionService.getTransactionsNumberByAddress(address).map(Right(_))
       }),
-      route(getLatestTransactionInfo.serverLogic[Future] { case (address, _) =>
+      route(getLatestTransactionInfo.serverLogic[Future] { address =>
         transactionService.getLatestTransactionInfoByAddress(address).map {
           case None         => Left(ApiError.NotFound(s"No transaction found for address $address"))
           case Some(txInfo) => Right(txInfo)
@@ -107,25 +107,25 @@ class AddressServer(
             .getBalance(address, groupIndex, blockCache.getLastFinalizedTimestamp())
         } yield AddressBalance(balance, locked)
       }),
-      route(getAddressTokenBalance.serverLogicSuccess[Future] { case (address, _, token) =>
+      route(getAddressTokenBalance.serverLogicSuccess[Future] { case (address, token) =>
         for {
           (balance, locked) <- tokenService.getTokenBalance(address, token)
         } yield AddressTokenBalance(token, balance, locked)
       }),
-      route(listAddressTokensBalance.serverLogicSuccess[Future] { case (address, _, pagination) =>
+      route(listAddressTokensBalance.serverLogicSuccess[Future] { case (address, pagination) =>
         tokenService
           .listAddressTokensWithBalance(address, pagination)
           .map(_.map { case (tokenId, balance, locked) =>
             AddressTokenBalance(tokenId, balance, locked)
           })
       }),
-      route(listAddressTokens.serverLogicSuccess[Future] { case (address, _, pagination) =>
+      route(listAddressTokens.serverLogicSuccess[Future] { case (address, pagination) =>
         for {
           tokens <- tokenService.listAddressTokens(address, pagination)
         } yield tokens
       }),
       route(listAddressTokenTransactions.serverLogicSuccess[Future] {
-        case (address, _, token, pagination) =>
+        case (address, token, pagination) =>
           for {
             tokens <- tokenService.listAddressTokenTransactions(address, token, pagination)
           } yield tokens
@@ -133,13 +133,13 @@ class AddressServer(
       route(areAddressesActive.serverLogicSuccess[Future] { addresses =>
         transactionService.areAddressesActive(addresses)
       }),
-      route(exportTransactionsCsvByAddress.serverLogic[Future] { case (address, _, timeInterval) =>
+      route(exportTransactionsCsvByAddress.serverLogic[Future] { case (address, timeInterval) =>
         exportTransactions(address, timeInterval).map(_.map { stream =>
           (AddressServer.exportFileNameHeader(address, timeInterval), stream)
         })
       }),
       route(getAddressAmountHistoryDEPRECATED.serverLogic[Future] {
-        case (address, _, timeInterval, intervalType) =>
+        case (address, timeInterval, intervalType) =>
           validateTimeInterval(timeInterval, intervalType) {
             val flowable =
               transactionService.getAmountHistoryDEPRECATED(
@@ -158,7 +158,7 @@ class AddressServer(
           }
       }),
       route(getAddressAmountHistory.serverLogic[Future] {
-        case (address, _, timeInterval, intervalType) =>
+        case (address, timeInterval, intervalType) =>
           validateTimeInterval(timeInterval, intervalType) {
             transactionService
               .getAmountHistory(
@@ -174,7 +174,7 @@ class AddressServer(
               }
           }
       }),
-      route(getPublicKey.serverLogic[Future] { case (address, _) =>
+      route(getPublicKey.serverLogic[Future] { address =>
         address match {
           case Address.Asset(LockupScript.P2PKH(_)) =>
             transactionService.getUnlockScript(address).map {
