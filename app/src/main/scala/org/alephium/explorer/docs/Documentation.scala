@@ -63,7 +63,6 @@ trait Documentation
         listAddressTokensBalance,
         areAddressesActive,
         exportTransactionsCsvByAddress,
-        getAddressAmountHistoryDEPRECATED,
         getAddressAmountHistory,
         getInfos,
         getHeights,
