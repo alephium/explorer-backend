@@ -149,12 +149,18 @@ object TransactionQueries extends StrictLogging {
       .paginate(pagination)
       .asAS[TxByAddressQR]
 
-  def countAddressTransactions(address: Address): DBActionSR[Int] = {
+  def countAddressTransactions(
+      address: Address,
+      groupIndex: Option[GroupIndex]
+  ): DBActionSR[Int] = {
     sql"""
-    SELECT COUNT(*)
-    FROM transaction_per_addresses
-    WHERE main_chain = true AND address = $address
-    """.asAS[Int]
+      SELECT COUNT(*)
+      FROM transaction_per_addresses
+      WHERE main_chain = true
+      AND address = $address
+    """
+      .addressGroup(groupIndex, "group_address")
+      .asAS[Int]
   }
 
   def getTxHashesByAddressQuery(

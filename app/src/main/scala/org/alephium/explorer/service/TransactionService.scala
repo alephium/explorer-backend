@@ -88,7 +88,8 @@ trait TransactionService {
   ): Future[ArraySeq[MempoolTransaction]]
 
   def getTransactionsNumberByAddress(
-      address: Address
+      address: Address,
+      groupIndex: Option[GroupIndex]
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int]
 
   def getBalance(
@@ -202,9 +203,10 @@ object TransactionService extends TransactionService {
   }
 
   def getTransactionsNumberByAddress(
-      address: Address
+      address: Address,
+      groupIndex: Option[GroupIndex]
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int] =
-    TransactionDao.getNumberByAddress(address)
+    TransactionDao.getNumberByAddress(address, groupIndex)
 
   def getBalance(
       address: Address,

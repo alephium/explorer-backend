@@ -123,7 +123,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     run(InputUpdateQueries.updateInputs()).futureValue
 
     val total =
-      run(TransactionQueries.countAddressTransactions(address)).futureValue.head
+      run(TransactionQueries.countAddressTransactions(address, None)).futureValue.head
 
     // tx of output1, output2 and input1
     total is 3
@@ -143,12 +143,12 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     run(TransactionQueries.insertAll(ArraySeq.empty, outputs, inputs)).futureValue
     run(InputUpdateQueries.updateInputs()).futureValue
 
-    run(TransactionQueries.countAddressTransactions(address)).futureValue.head is 2
+    run(TransactionQueries.countAddressTransactions(address, None)).futureValue.head is 2
 
     run(OutputSchema.table += output2).futureValue
     run(InputUpdateQueries.updateInputs()).futureValue
 
-    run(TransactionQueries.countAddressTransactions(address)).futureValue.head is 3
+    run(TransactionQueries.countAddressTransactions(address, None)).futureValue.head is 3
   }
 
   "get tx hashes by address" in new Fixture {

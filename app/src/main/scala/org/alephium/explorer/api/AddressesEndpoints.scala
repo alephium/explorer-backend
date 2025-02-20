@@ -110,8 +110,8 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .summary("List transactions of a given address within a time-range")
   // format: on
 
-  val getTotalTransactionsByAddress: BaseEndpoint[Address, Int] =
-    noGroupAddressesEndpoint.get
+  val getTotalTransactionsByAddress: BaseEndpoint[(Address, Option[GroupIndex]), Int] =
+    addressesEndpoint.get
       .in("total-transactions")
       .out(jsonBody[Int])
       .summary("Get total transactions of a given address")

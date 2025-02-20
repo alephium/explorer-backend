@@ -89,11 +89,11 @@ class AddressServer(
         for {
           (balance, locked) <- transactionService
             .getBalance(address, groupIndex, blockCache.getLastFinalizedTimestamp())
-          txNumber <- transactionService.getTransactionsNumberByAddress(address)
+          txNumber <- transactionService.getTransactionsNumberByAddress(address, groupIndex)
         } yield AddressInfo(balance, locked, txNumber)
       }),
-      route(getTotalTransactionsByAddress.serverLogic[Future] { address =>
-        transactionService.getTransactionsNumberByAddress(address).map(Right(_))
+      route(getTotalTransactionsByAddress.serverLogic[Future] { case (address, groupIndex) =>
+        transactionService.getTransactionsNumberByAddress(address, groupIndex).map(Right(_))
       }),
       route(getLatestTransactionInfo.serverLogic[Future] { address =>
         transactionService.getLatestTransactionInfoByAddress(address).map {

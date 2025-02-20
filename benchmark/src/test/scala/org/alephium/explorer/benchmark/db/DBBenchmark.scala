@@ -183,7 +183,7 @@ class DBBenchmark {
   def countAddressTransactions(state: Address_ReadState): Unit = {
     val _ =
       state.db
-        .runNow(TransactionQueries.countAddressTransactions(state.address), requestTimeout)
+        .runNow(TransactionQueries.countAddressTransactions(state.address, None), requestTimeout)
   }
 
   @Benchmark
@@ -193,7 +193,7 @@ class DBBenchmark {
     val _ = Await.result(
       for {
         _ <- TransactionDao.getBalance(state.address, None, TimeStamp.zero)
-        _ <- TransactionDao.getNumberByAddress(state.address)
+        _ <- TransactionDao.getNumberByAddress(state.address, None)
       } yield (),
       requestTimeout
     )

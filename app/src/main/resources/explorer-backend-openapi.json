@@ -1863,7 +1863,6 @@
           "Addresses"
         ],
         "summary": "Get total transactions of a given address",
-        "description": "Address with group notation `@group` not supported yet for this endpoint",
         "operationId": "getAddressesAddressTotal-transactions",
         "parameters": [
           {

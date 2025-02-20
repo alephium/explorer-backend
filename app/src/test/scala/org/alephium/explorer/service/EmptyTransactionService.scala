@@ -41,7 +41,8 @@ trait EmptyTransactionService extends TransactionService {
     Future.successful(None)
 
   override def getTransactionsNumberByAddress(
-      address: Address
+      address: Address,
+      groupIndex: Option[GroupIndex]
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int] =
     Future.successful(0)
 

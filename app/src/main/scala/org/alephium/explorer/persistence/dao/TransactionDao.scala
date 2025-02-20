@@ -74,9 +74,10 @@ object TransactionDao {
     }))
 
   def getNumberByAddress(
-      address: Address
+      address: Address,
+      groupIndex: Option[GroupIndex]
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int] =
-    run(countAddressTransactions(address)).map(_.headOption.getOrElse(0))
+    run(countAddressTransactions(address, groupIndex)).map(_.headOption.getOrElse(0))
 
   def getBalance(
       address: Address,
