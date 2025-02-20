@@ -61,9 +61,10 @@ class AddressServer(
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
-      route(getTransactionsByAddress.serverLogicSuccess[Future] { case (address, pagination) =>
-        transactionService
-          .getTransactionsByAddress(address, pagination)
+      route(getTransactionsByAddress.serverLogicSuccess[Future] {
+        case (address, groupIndex, pagination) =>
+          transactionService
+            .getTransactionsByAddress(address, groupIndex, pagination)
       }),
       route(getTransactionsByAddresses.serverLogicSuccess[Future] {
         case (addresses, fromTsOpt, toTsOpt, pagination) =>
@@ -84,15 +85,15 @@ class AddressServer(
         transactionService
           .listMempoolTransactionsByAddress(address)
       }),
-      route(getAddressInfo.serverLogicSuccess[Future] { address =>
+      route(getAddressInfo.serverLogicSuccess[Future] { case (address, groupIndex) =>
         for {
           (balance, locked) <- transactionService
-            .getBalance(address, blockCache.getLastFinalizedTimestamp())
-          txNumber <- transactionService.getTransactionsNumberByAddress(address)
+            .getBalance(address, groupIndex, blockCache.getLastFinalizedTimestamp())
+          txNumber <- transactionService.getTransactionsNumberByAddress(address, groupIndex)
         } yield AddressInfo(balance, locked, txNumber)
       }),
-      route(getTotalTransactionsByAddress.serverLogic[Future] { address =>
-        transactionService.getTransactionsNumberByAddress(address).map(Right(_))
+      route(getTotalTransactionsByAddress.serverLogic[Future] { case (address, groupIndex) =>
+        transactionService.getTransactionsNumberByAddress(address, groupIndex).map(Right(_))
       }),
       route(getLatestTransactionInfo.serverLogic[Future] { address =>
         transactionService.getLatestTransactionInfoByAddress(address).map {
@@ -100,10 +101,10 @@ class AddressServer(
           case Some(txInfo) => Right(txInfo)
         }
       }),
-      route(getAddressBalance.serverLogicSuccess[Future] { address =>
+      route(getAddressBalance.serverLogicSuccess[Future] { case (address, groupIndex) =>
         for {
           (balance, locked) <- transactionService
-            .getBalance(address, blockCache.getLastFinalizedTimestamp())
+            .getBalance(address, groupIndex, blockCache.getLastFinalizedTimestamp())
         } yield AddressBalance(balance, locked)
       }),
       route(getAddressTokenBalance.serverLogicSuccess[Future] { case (address, token) =>

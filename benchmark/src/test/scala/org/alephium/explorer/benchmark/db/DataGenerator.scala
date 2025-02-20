@@ -23,10 +23,12 @@ import scala.util.Random
 
 import akka.util.ByteString
 
-import org.alephium.explorer.GenApiModel
+import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.util.AddressUtil._
 import org.alephium.protocol.Hash
+import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
@@ -67,9 +69,12 @@ object DataGenerator {
       )
     }
 
-  def genOutputEntity(transactions: ArraySeq[TransactionEntity]): ArraySeq[OutputEntity] = {
+  def genOutputEntity(
+      transactions: ArraySeq[TransactionEntity]
+  )(implicit groupConfig: GroupConfig): ArraySeq[OutputEntity] = {
     val coinbaseTxHash = transactions.last.hash
     transactions.zipWithIndex map { case (transaction, order) =>
+      val address = addressGen.sample.get
       OutputEntity(
         blockHash = transaction.blockHash,
         txHash = transaction.hash,
@@ -78,7 +83,8 @@ object DataGenerator {
         hint = Random.nextInt(1000),
         key = Hash.generate,
         amount = U256.unsafe(Random.nextInt(100)),
-        address = GenApiModel.addressGen.sample.get,
+        address = address,
+        group = p2pkGroupAddress(address),
         tokens = None,
         mainChain = transaction.mainChain,
         lockTime = Some(TimeStamp.now()),
@@ -101,10 +107,11 @@ object DataGenerator {
         timestamp = output.timestamp,
         hint = Random.nextInt(1000),
         outputRefKey = output.key,
-        unlockScript = Some(GenApiModel.unlockScriptGen.sample.get),
+        unlockScript = Some(unlockScriptGen.sample.get),
         mainChain = output.mainChain,
         inputOrder = order,
         txOrder = order,
+        None,
         None,
         None,
         None,
@@ -118,7 +125,7 @@ object DataGenerator {
       blockHash: BlockHash = BlockHash.generate,
       timestamp: TimeStamp = TimeStamp.now(),
       mainChain: Boolean = Random.nextBoolean()
-  ): BlockEntity = {
+  )(implicit groupConfig: GroupConfig): BlockEntity = {
     val transactions =
       genTransactions(
         count = transactionsCount,
@@ -155,11 +162,14 @@ object DataGenerator {
   }
 
   def genAddress(): Address =
-    GenApiModel.addressGen.sample.get
+    addressGen.sample.get
 
-  def genTransactionPerAddressEntity(address: Address = genAddress()): TransactionPerAddressEntity =
+  def genTransactionPerAddressEntity(address: Address = genAddress())(implicit
+      groupConfig: GroupConfig
+  ): TransactionPerAddressEntity =
     TransactionPerAddressEntity(
       address = address,
+      group = p2pkGroupAddress(address),
       hash = TransactionId.generate,
       blockHash = BlockHash.generate,
       timestamp = TimeStamp.now(),

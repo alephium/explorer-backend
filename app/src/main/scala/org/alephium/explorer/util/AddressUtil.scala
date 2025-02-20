@@ -14,24 +14,20 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.api
+package org.alephium.explorer.util
 
-import org.alephium.api.ApiModelCodec
-import org.alephium.explorer.config.Default
-import org.alephium.json.Json._
 import org.alephium.protocol.config.GroupConfig
-import org.alephium.protocol.model.GroupIndex
-import org.alephium.util.U256
+import org.alephium.protocol.model.{Address, GroupIndex}
+import org.alephium.protocol.vm.LockupScript
 
-@SuppressWarnings(Array("org.wartremover.warts.Throw"))
-object Json extends ApiModelCodec {
+object AddressUtil {
 
-  implicit val groupConfig: GroupConfig = Default.groupConfig
-
-  implicit val u256ReadWriter: ReadWriter[U256] = ReadWriter.join(u256Reader, u256Writer)
-  implicit val groupIndexReadWriter: ReadWriter[GroupIndex] =
-    readwriter[Int].bimap(
-      _.value,
-      group => new GroupIndex(group)
-    )
+  def p2pkGroupAddress(
+      address: Address
+  )(implicit groupConfig: GroupConfig): Option[GroupIndex] = {
+    address.lockupScript match {
+      case p2pk: LockupScript.P2PK => Some(p2pk.groupIndex)
+      case _                       => None
+    }
+  }
 }

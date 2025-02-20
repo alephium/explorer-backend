@@ -19,6 +19,7 @@ package org.alephium.explorer.persistence.schema
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{AlephiumFutureSpec, GenDBModel}
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.queries.OutputQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._

@@ -62,6 +62,11 @@ object GenApiModel extends ImplicitConversions {
     lockup     <- GenCoreProtocol.lockupGen(groupIndex)
   } yield Address.from(lockup)
 
+  val grouplessAddressGen: Gen[Address] = for {
+    groupIndex <- groupIndexGen
+    lockup     <- GenCoreProtocol.p2pkLockupGen(groupIndex)
+  } yield Address.from(lockup)
+
   val outputRefGen: Gen[OutputRef] = for {
     hint <- arbitrary[Int]
     key  <- outputRefKeyGen.map(_.value)

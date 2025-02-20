@@ -35,6 +35,7 @@ import org.alephium.api.ApiError
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer._
 import org.alephium.explorer.ConfigDefaults._
+import org.alephium.explorer.ConfigDefaults.groupConfig
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.HttpFixture._
@@ -48,7 +49,7 @@ import org.alephium.explorer.service.{
   TransactionService
 }
 import org.alephium.protocol.PublicKey
-import org.alephium.protocol.model.{Address, TokenId}
+import org.alephium.protocol.model.{Address, GroupIndex, TokenId}
 import org.alephium.protocol.vm.{LockupScript, UnlockScript}
 import org.alephium.serde._
 import org.alephium.util.{Duration, TimeStamp, U256}
@@ -110,7 +111,11 @@ class AddressServerSpec()
       Future.successful(ArraySeq(mempoolTx))
     }
 
-    override def getTransactionsByAddress(address: Address, pagination: Pagination)(implicit
+    override def getTransactionsByAddress(
+        address: Address,
+        groupIndex: Option[GroupIndex],
+        pagination: Pagination
+    )(implicit
         ec: ExecutionContext,
         dc: DatabaseConfig[PostgresProfile]
     ): Future[ArraySeq[Transaction]] = {
@@ -454,7 +459,7 @@ class AddressServerSpec()
 
       val expected = s"""attachment;filename="$address-$from-$to.csv""""
       AddressServer.exportFileNameHeader(
-        Address.fromBase58(address).get,
+        Address.fromBase58(address)(groupConfig).get,
         TimeInterval(TimeStamp.unsafe(from), TimeStamp.unsafe(to))
       ) is expected
     }
