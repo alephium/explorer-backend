@@ -183,23 +183,13 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(header[String](HeaderNames.ContentDisposition))
       .out(streamTextBody(VertxStreams)(TextCsv()))
 
-      //format: off
-  val getAddressAmountHistoryDEPRECATED: BaseEndpoint[(Address, TimeInterval, IntervalType), (String, ReadStream[Buffer]) ] =
-    noGroupAddressesEndpoint.get
-      .in("amount-history-DEPRECATED")
-      .in(timeIntervalQuery)
-      .in(intervalTypeQuery)
-      .out(header[String](HeaderNames.ContentDisposition))
-      .out(streamTextBody(VertxStreams)(CodecFormat.Json()))
-      .deprecated()
-      //format: on
-
   val getAddressAmountHistory: BaseEndpoint[(Address, TimeInterval, IntervalType), AmountHistory] =
     noGroupAddressesEndpoint.get
       .in("amount-history")
       .in(timeIntervalQuery)
       .in(intervalTypeQuery)
       .out(jsonBody[AmountHistory])
+      .deprecated()
 
   val getPublicKey: BaseEndpoint[Address, PublicKey] =
     noGroupAddressesEndpoint.get
