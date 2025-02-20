@@ -3709,7 +3709,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/infos": {
