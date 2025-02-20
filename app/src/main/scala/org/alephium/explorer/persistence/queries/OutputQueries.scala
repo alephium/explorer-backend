@@ -461,9 +461,7 @@ object OutputQueries {
         AND outputs.main_chain = true
         AND inputs.block_hash IS NULL
       """
-      .concatOption(
-        groupIndex.map(group => sql"AND outputs.group_address = $group")
-      )
+      .addressGroup(groupIndex, "outputs.group_address")
       .asAS[(Option[U256], Option[U256])]
       .exactlyOne
   }

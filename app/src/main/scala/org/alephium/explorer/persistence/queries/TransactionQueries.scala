@@ -162,24 +162,14 @@ object TransactionQueries extends StrictLogging {
       groupIndex: Option[GroupIndex],
       pagination: Pagination
   ): DBActionSR[TxByAddressQR] = {
-    val baseQuery = sql"""
+    sql"""
       SELECT #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
       WHERE main_chain = true
       AND address = $address
     """
-    val groupCondition = groupIndex.map { groupIndex =>
-      sql"AND group_address = $groupIndex"
-    }
-
-    val ordering =
-      sql"""
-        ORDER BY block_timestamp DESC, tx_order
-      """
-
-    baseQuery
-      .concatOption(groupCondition)
-      .concat(ordering)
+      .addressGroup(groupIndex, "address_group")
+      .concat(sql"""ORDER BY block_timestamp DESC, tx_order """)
       .paginate(pagination)
       .asAS[TxByAddressQR]
   }

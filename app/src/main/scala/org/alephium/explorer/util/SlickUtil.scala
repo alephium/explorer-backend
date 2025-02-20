@@ -29,6 +29,8 @@ import slick.sql._
 
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DBActionR, DBActionSR}
+import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.protocol.model.GroupIndex
 
 /** Convenience functions for Slick */
 object SlickUtil {
@@ -147,6 +149,13 @@ object SlickUtil {
         sql = action.sql ++ "LIMIT ? OFFSET ?",
         setParameter = parameters
       )
+    }
+
+    def addressGroup(
+        groupIndexOpt: Option[GroupIndex],
+        groupColumn: String
+    ): SQLActionBuilder = {
+      groupIndexOpt.fold(action)(groupIndex => action.concat(sql" AND #$groupColumn = $groupIndex"))
     }
 
     def concatOption(maybeNextAction: Option[SQLActionBuilder]): SQLActionBuilder = {
