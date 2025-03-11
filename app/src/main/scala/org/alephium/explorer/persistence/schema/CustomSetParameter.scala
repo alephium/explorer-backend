@@ -34,6 +34,8 @@ import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
 
 /** [[slick.jdbc.SetParameter]] implicits for setting values in SQL queries */
+
+// scalastyle:off number.of.methods
 object CustomSetParameter {
 
   implicit object BlockEntryHashSetParameter extends SetParameter[BlockHash] {
@@ -49,6 +51,17 @@ object CustomSetParameter {
   implicit object GroupIndexSetParameter extends SetParameter[GroupIndex] {
     override def apply(input: GroupIndex, params: PositionedParameters): Unit =
       params setInt input.value
+  }
+
+  implicit object GroupIndexOptionSetParameter extends SetParameter[Option[GroupIndex]] {
+    override def apply(option: Option[GroupIndex], params: PositionedParameters): Unit =
+      option match {
+        case Some(group) =>
+          GroupIndexSetParameter(group, params)
+
+        case None =>
+          params setIntOption None
+      }
   }
 
   implicit object IntervalTypeSetParameter extends SetParameter[IntervalType] {
