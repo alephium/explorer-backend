@@ -89,7 +89,7 @@ class TransactionHistoryServiceSpec
   }
 
   "countAndInsert" should {
-    "handle per chains and all chains counting" in {
+    "handle per chains and all chains counting, coinbase only" in {
 
       val group0 = GroupIndex.Zero
       val group1 = new GroupIndex(1)
@@ -98,7 +98,13 @@ class TransactionHistoryServiceSpec
 
       def txGroup(tsStr: String, group: GroupIndex): TransactionEntity = {
         transactionEntityGen().sample.get
-          .copy(timestamp = ts(tsStr), chainFrom = group, chainTo = group, mainChain = true)
+          .copy(
+            timestamp = ts(tsStr),
+            chainFrom = group,
+            chainTo = group,
+            mainChain = true,
+            coinbase = true
+          )
       }
 
       val tx1 = txGroup("2021-11-08T14:15:00.000Z", group0)
@@ -176,24 +182,24 @@ class TransactionHistoryServiceSpec
         .futureValue
 
       perChainsDaily.map { perChainTime =>
-        PerChainTimedCount(
+        PerChainTimedTxCount(
           perChainTime.timestamp,
           perChainTime.totalCountPerChain.filter(_.count != 0)
         )
       } is
         ArraySeq(
-          PerChainTimedCount(
+          PerChainTimedTxCount(
             ts("2021-11-08T00:00:00.000Z"),
             ArraySeq(
-              PerChainCount(group0.value, group0.value, 3),
-              PerChainCount(group1.value, group1.value, 2)
+              PerChainTxCount(group0.value, group0.value, 3, Some(0)),
+              PerChainTxCount(group1.value, group1.value, 2, Some(0))
             )
           ),
-          PerChainTimedCount(
+          PerChainTimedTxCount(
             ts("2021-11-09T00:00:00.000Z"),
             ArraySeq(
-              PerChainCount(group0.value, group0.value, 4),
-              PerChainCount(group1.value, group1.value, 1)
+              PerChainTxCount(group0.value, group0.value, 4, Some(0)),
+              PerChainTxCount(group1.value, group1.value, 1, Some(0))
             )
           )
         )
@@ -212,34 +218,34 @@ class TransactionHistoryServiceSpec
 
       perChainsHourly
         .map { perChainTime =>
-          PerChainTimedCount(
+          PerChainTimedTxCount(
             perChainTime.timestamp,
             perChainTime.totalCountPerChain.filter(_.count != 0)
           )
         }
         .filter(_.totalCountPerChain.nonEmpty) is
         ArraySeq(
-          PerChainTimedCount(
+          PerChainTimedTxCount(
             ts("2021-11-08T14:00:00.000Z"),
             ArraySeq(
-              PerChainCount(group0.value, group0.value, 2),
-              PerChainCount(group1.value, group1.value, 2)
+              PerChainTxCount(group0.value, group0.value, 2, Some(0)),
+              PerChainTxCount(group1.value, group1.value, 2, Some(0))
             )
           ),
-          PerChainTimedCount(
+          PerChainTimedTxCount(
             ts("2021-11-08T15:00:00.000Z"),
-            ArraySeq(PerChainCount(group0.value, group0.value, 1))
+            ArraySeq(PerChainTxCount(group0.value, group0.value, 1, Some(0)))
           ),
-          PerChainTimedCount(
+          PerChainTimedTxCount(
             ts("2021-11-09T08:00:00.000Z"),
             ArraySeq(
-              PerChainCount(group0.value, group0.value, 2),
-              PerChainCount(group1.value, group1.value, 1)
+              PerChainTxCount(group0.value, group0.value, 2, Some(0)),
+              PerChainTxCount(group1.value, group1.value, 1, Some(0))
             )
           ),
-          PerChainTimedCount(
+          PerChainTimedTxCount(
             ts("2021-11-09T12:00:00.000Z"),
-            ArraySeq(PerChainCount(group0.value, group0.value, 2))
+            ArraySeq(PerChainTxCount(group0.value, group0.value, 2, Some(0)))
           )
         )
 
@@ -257,8 +263,8 @@ class TransactionHistoryServiceSpec
 
       allChainsDaily is
         ArraySeq(
-          (ts("2021-11-08T00:00:00.000Z"), 5L),
-          (ts("2021-11-09T00:00:00.000Z"), 5L)
+          (ts("2021-11-08T00:00:00.000Z"), 5L, Some(0L)),
+          (ts("2021-11-09T00:00:00.000Z"), 5L, Some(0L))
         )
 
       /*
@@ -275,10 +281,192 @@ class TransactionHistoryServiceSpec
 
       allChainsHourly.filter(_._2 != 0) is
         ArraySeq(
-          (ts("2021-11-08T14:00:00.000Z"), 4L),
-          (ts("2021-11-08T15:00:00.000Z"), 1L),
-          (ts("2021-11-09T08:00:00.000Z"), 3L),
-          (ts("2021-11-09T12:00:00.000Z"), 2L)
+          (ts("2021-11-08T14:00:00.000Z"), 4L, Some(0L)),
+          (ts("2021-11-08T15:00:00.000Z"), 1L, Some(0L)),
+          (ts("2021-11-09T08:00:00.000Z"), 3L, Some(0L)),
+          (ts("2021-11-09T12:00:00.000Z"), 2L, Some(0L))
+        )
+    }
+    "handle blocks with multiple transactions including non-coinbase" in {
+
+      val group0 = GroupIndex.Zero
+      val group1 = new GroupIndex(1)
+
+      def blockAndTxs(
+          tsStr: String,
+          group: GroupIndex,
+          nbOfNonCoinbaseTxs: Int
+      ): (BlockHeader, ArraySeq[TransactionEntity]) = {
+        val timestamp = ts(tsStr)
+        val block = blockHeaderGen.sample.get
+          .copy(
+            mainChain = true,
+            timestamp = timestamp,
+            chainFrom = group,
+            chainTo = group,
+            txsCount = nbOfNonCoinbaseTxs + 1
+          )
+
+        val txs = ArraySeq.range(0, nbOfNonCoinbaseTxs).map { i =>
+          transactionEntityGen().sample.get
+            .copy(
+              timestamp = timestamp,
+              chainFrom = group,
+              chainTo = group,
+              mainChain = true,
+              coinbase = if (i == 0) true else false,
+              blockHash = block.hash
+            )
+        }
+
+        (block, txs)
+      }
+
+      val blocksAndTxs = ArraySeq(
+        blockAndTxs("2021-11-08T14:15:00.000Z", group0, 1),
+        blockAndTxs("2021-11-08T14:23:00.000Z", group0, 2),
+        blockAndTxs("2021-11-08T14:32:00.000Z", group1, 3),
+        blockAndTxs("2021-11-08T14:45:00.000Z", group1, 4),
+        blockAndTxs("2021-11-08T15:56:00.000Z", group0, 5),
+        blockAndTxs("2021-11-09T08:08:00.000Z", group0, 6),
+        blockAndTxs("2021-11-09T08:23:00.000Z", group0, 7),
+        blockAndTxs("2021-11-10T01:00:00.000Z", group0, 0)
+      )
+
+      val txs    = blocksAndTxs.flatMap(_._2)
+      val blocks = blocksAndTxs.map(_._1)
+
+      val latestBlocks = blocks
+        .groupBy(block => (block.chainFrom, block.chainTo))
+        .view
+        .mapValues(_.maxBy(_.timestamp))
+        .values
+        .map { block =>
+          LatestBlock.fromEntity(
+            blockEntityGen(ChainIndex.unsafe(block.chainFrom.value, block.chainTo.value)).sample.get
+              .copy(timestamp = block.timestamp)
+          )
+        }
+
+      run(
+        for {
+          _ <- BlockHeaderSchema.table ++= blocks
+          _ <- TransactionSchema.table ++= txs
+          _ <- LatestBlockSchema.table ++= latestBlocks
+        } yield ()
+      ).futureValue
+
+      TransactionHistoryService.syncOnce().futureValue
+
+      /*
+       * Per Chain Daily
+       */
+
+      val perChainsDaily = TransactionHistoryService
+        .getPerChain(
+          ts("2021-11-07T12:34:00.000Z"),
+          ts("2021-11-09T23:00:00.000Z"),
+          IntervalType.Daily
+        )
+        .futureValue
+
+      perChainsDaily.map { perChainTime =>
+        PerChainTimedTxCount(
+          perChainTime.timestamp,
+          perChainTime.totalCountPerChain.filter(_.count != 0)
+        )
+      } is
+        ArraySeq(
+          PerChainTimedTxCount(
+            ts("2021-11-08T00:00:00.000Z"),
+            ArraySeq(
+              PerChainTxCount(group0.value, group0.value, 11, Some(8)),
+              PerChainTxCount(group1.value, group1.value, 9, Some(7))
+            )
+          ),
+          PerChainTimedTxCount(
+            ts("2021-11-09T00:00:00.000Z"),
+            ArraySeq(
+              PerChainTxCount(group0.value, group0.value, 15, Some(13))
+            )
+          )
+        )
+
+      /*
+       * Per Chain Hourly
+       */
+
+      val perChainsHourly = TransactionHistoryService
+        .getPerChain(
+          ts("2021-11-07T12:34:00.000Z"),
+          ts("2021-11-09T23:00:00.000Z"),
+          IntervalType.Hourly
+        )
+        .futureValue
+
+      perChainsHourly
+        .map { perChainTime =>
+          PerChainTimedTxCount(
+            perChainTime.timestamp,
+            perChainTime.totalCountPerChain.filter(_.count != 0)
+          )
+        }
+        .filter(_.totalCountPerChain.nonEmpty) is
+        ArraySeq(
+          PerChainTimedTxCount(
+            ts("2021-11-08T14:00:00.000Z"),
+            ArraySeq(
+              PerChainTxCount(group0.value, group0.value, 5, Some(3)),
+              PerChainTxCount(group1.value, group1.value, 9, Some(7))
+            )
+          ),
+          PerChainTimedTxCount(
+            ts("2021-11-08T15:00:00.000Z"),
+            ArraySeq(PerChainTxCount(group0.value, group0.value, 6, Some(5)))
+          ),
+          PerChainTimedTxCount(
+            ts("2021-11-09T08:00:00.000Z"),
+            ArraySeq(
+              PerChainTxCount(group0.value, group0.value, 15, Some(13))
+            )
+          )
+        )
+
+      /*
+       * All Chains Daily
+       */
+
+      val allChainsDaily = TransactionHistoryService
+        .getAllChains(
+          ts("2021-11-07T12:34:00.000Z"),
+          ts("2021-11-09T23:00:00.000Z"),
+          IntervalType.Daily
+        )
+        .futureValue
+
+      allChainsDaily is
+        ArraySeq(
+          (ts("2021-11-08T00:00:00.000Z"), 20L, Some(15L)),
+          (ts("2021-11-09T00:00:00.000Z"), 15L, Some(13L))
+        )
+
+      /*
+       * All Chains Hourly
+       */
+
+      val allChainsHourly = TransactionHistoryService
+        .getAllChains(
+          ts("2021-11-07T12:34:00.000Z"),
+          ts("2021-11-09T23:00:00.000Z"),
+          IntervalType.Hourly
+        )
+        .futureValue
+
+      allChainsHourly.filter(_._2 != 0) is
+        ArraySeq(
+          (ts("2021-11-08T14:00:00.000Z"), 14L, Some(10L)),
+          (ts("2021-11-08T15:00:00.000Z"), 6L, Some(5L)),
+          (ts("2021-11-09T08:00:00.000Z"), 15L, Some(13L))
         )
     }
   }

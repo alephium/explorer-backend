@@ -28,11 +28,12 @@ import org.alephium.util.TimeStamp
 object TransactionHistorySchema extends Schema[TransactionHistoryEntity]("transactions_history") {
 
   class TransactionsHistories(tag: Tag) extends Table[TransactionHistoryEntity](tag, name) {
-    def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
-    def chainFrom: Rep[GroupIndex]      = column[GroupIndex]("chain_from")
-    def chainTo: Rep[GroupIndex]        = column[GroupIndex]("chain_to")
-    def count: Rep[Long]                = column[Long]("value")
-    def intervalType: Rep[IntervalType] = column[IntervalType]("interval_type")
+    def timestamp: Rep[TimeStamp]           = column[TimeStamp]("timestamp")
+    def chainFrom: Rep[GroupIndex]          = column[GroupIndex]("chain_from")
+    def chainTo: Rep[GroupIndex]            = column[GroupIndex]("chain_to")
+    def count: Rep[Long]                    = column[Long]("value")
+    def nonCoinbaseCount: Rep[Option[Long]] = column[Option[Long]]("non_coinbase_value")
+    def intervalType: Rep[IntervalType]     = column[IntervalType]("interval_type")
 
     def pk: PrimaryKey =
       primaryKey("transactions_history_pk", (intervalType, timestamp, chainFrom, chainTo))
@@ -40,7 +41,7 @@ object TransactionHistorySchema extends Schema[TransactionHistoryEntity]("transa
     def timestampIdx: Index    = index("transactions_history_timestamp_idx", timestamp)
 
     def * : ProvenShape[TransactionHistoryEntity] =
-      (timestamp, chainFrom, chainTo, count, intervalType)
+      (timestamp, chainFrom, chainTo, count, nonCoinbaseCount, intervalType)
         .<>((TransactionHistoryEntity.apply _).tupled, TransactionHistoryEntity.unapply)
   }
 
