@@ -271,10 +271,11 @@ object EndpointExamples extends EndpointsExamples {
       value = BigDecimal(HashRate.a128EhPerSecond.value)
     )
 
-  private val timedCount =
-    TimedCount(
+  private val txCount =
+    TimedTxCount(
       timestamp = ts,
-      totalCountAllChains = 10000000
+      totalCountAllChains = 10000000,
+      nonCoinbaseCountAllChains = Some(800)
     )
 
   private val timedPrice =
@@ -284,14 +285,15 @@ object EndpointExamples extends EndpointsExamples {
     )
 
   private val perChainCount =
-    PerChainCount(
+    PerChainTxCount(
       chainFrom = 1,
       chainTo = 2,
-      count = 10000000
+      count = 10000000,
+      nonCoinbaseCount = Some(800)
     )
 
   private val perChainTimedCount =
-    PerChainTimedCount(
+    PerChainTimedTxCount(
       timestamp = ts,
       totalCountPerChain = ArraySeq(perChainCount, perChainCount)
     )
@@ -422,13 +424,13 @@ object EndpointExamples extends EndpointsExamples {
   implicit val hashrateExample: List[Example[ArraySeq[Hashrate]]] =
     simpleExample(ArraySeq(hashRate, hashRate))
 
-  implicit val timedCountExample: List[Example[ArraySeq[TimedCount]]] =
-    simpleExample(ArraySeq(timedCount, timedCount))
+  implicit val timedCountExample: List[Example[ArraySeq[TimedTxCount]]] =
+    simpleExample(ArraySeq(txCount, txCount))
 
   implicit val timedPriceExample: List[Example[TimedPrices]] =
     simpleExample(timedPrice)
 
-  implicit val perChainTimedCountExample: List[Example[ArraySeq[PerChainTimedCount]]] =
+  implicit val perChainTimedCountExample: List[Example[ArraySeq[PerChainTimedTxCount]]] =
     simpleExample(ArraySeq(perChainTimedCount, perChainTimedCount))
 
   implicit val explorerInfoExample: List[Example[ExplorerInfo]] =
