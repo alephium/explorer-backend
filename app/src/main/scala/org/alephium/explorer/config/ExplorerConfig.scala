@@ -246,6 +246,7 @@ object ExplorerConfig {
       mobulaUri: String,
       coingeckoUri: String,
       tokenListUri: String,
+      mobulaApiKey: Option[ApiKey],
       marketChartDays: Int
   )
 
