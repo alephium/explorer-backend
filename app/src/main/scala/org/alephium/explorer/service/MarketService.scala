@@ -27,6 +27,7 @@ import sttp.client3._
 import sttp.client3.asynchttpclient.future.AsyncHttpClientFutureBackend
 import sttp.model.{Method, StatusCode, Uri}
 
+import org.alephium.api.model.ApiKey
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache._
 import org.alephium.explorer.config.ExplorerConfig
@@ -36,7 +37,7 @@ import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{Address, ContractId}
 import org.alephium.util.{discard, Duration, Hex, Math, Service, TimeStamp}
 
-trait MarketService {
+trait MarketService extends Service {
   def getPrices(
       ids: ArraySeq[String],
       chartCurrency: String
@@ -53,16 +54,16 @@ trait MarketService {
 
 object MarketService extends StrictLogging {
 
-  object Impl {
-    def default(marketConfig: ExplorerConfig.Market)(implicit
-        ec: ExecutionContext
-    ): Impl = new Impl(marketConfig)
+  def apply(marketConfig: ExplorerConfig.Market)(implicit
+      ec: ExecutionContext
+  ): MarketService = marketConfig.mobulaApiKey match {
+    case Some(apiKey) => new MarketServiceWithApiKey(marketConfig, apiKey)
+    case None         => new MarketServiceWithoutApiKey(marketConfig)
   }
 
-  class Impl(marketConfig: ExplorerConfig.Market)(implicit
+  class MarketServiceWithApiKey(marketConfig: ExplorerConfig.Market, apiKey: ApiKey)(implicit
       val executionContext: ExecutionContext
-  ) extends MarketService
-      with Service {
+  ) extends MarketService {
 
     private val coingeckoBaseUri = marketConfig.coingeckoUri
     private val mobulaBaseUri    = marketConfig.mobulaUri
@@ -205,7 +206,8 @@ object MarketService extends StrictLogging {
           val assetsStr   = assets.map { _.toBase58 }.mkString(",")
           val blockchains = assets.map { _ => "alephium" }.mkString(",")
           request(
-            uri"$mobulaBaseUri/market/multi-data?assets=${assetsStr}&blockchains=${blockchains}"
+            uri"$mobulaBaseUri/market/multi-data?assets=${assetsStr}&blockchains=${blockchains}",
+            headers = Map(("Authorizattion", apiKey.value))
           ) { response =>
             handleMobulaPricesRateResponse(response, tokens, retried)
           }
@@ -311,13 +313,15 @@ object MarketService extends StrictLogging {
       }
     }
 
-    def request[A](uri: Uri)(
+    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+    def request[A](uri: Uri, headers: Map[String, String] = Map.empty)(
         f: Response[Either[String, String]] => Future[Either[String, A]]
     ): Future[Either[String, A]] = {
       if (backend == null || !isRunning.get()) {
         Future.successful(Left("Market service not initialized"))
       } else {
         basicRequest
+          .headers(headers)
           .method(Method.GET, uri)
           .send(backend)
           .flatMap(f)
@@ -486,6 +490,43 @@ object MarketService extends StrictLogging {
           Left(s"Invalid json object for price chart: $other")
       }
     }
+  }
+
+  class MarketServiceWithoutApiKey(marketConfig: ExplorerConfig.Market)(implicit
+      val executionContext: ExecutionContext
+  ) extends MarketService {
+
+    private val error = Left("No Mobula API key")
+
+    def getPrices(
+        ids: ArraySeq[String],
+        chartCurrency: String
+    ): Either[String, ArraySeq[Option[Double]]] = {
+      error
+    }
+
+    override def getExchangeRates(): Either[String, ArraySeq[ExchangeRate]] = {
+      error
+    }
+
+    override def getPriceChart(symbol: String, currency: String): Either[String, TimedPrices] = {
+      error
+    }
+
+    override def chartSymbolNames: ListMap[String, String] = {
+      marketConfig.chartSymbolName
+    }
+
+    override def currencies: ArraySeq[String] = {
+      marketConfig.currencies
+    }
+
+    override def startSelfOnce(): Future[Unit] = {
+      logger.error("No Mobula API key, market service disabled")
+      Future.unit
+    }
+    override def stopSelfOnce(): Future[Unit]   = Future.unit
+    override def subServices: ArraySeq[Service] = ArraySeq.empty
   }
 
   final case class TokenList(tokens: ArraySeq[TokenList.Entry])

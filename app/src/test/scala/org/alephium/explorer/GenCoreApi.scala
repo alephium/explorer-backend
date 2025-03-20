@@ -551,4 +551,8 @@ object GenCoreApi {
       eventIndex,
       AVector(address, parent.getOrElse(ValByteVec(ByteString.empty)), interfaceId)
     )
+
+  def apiKeyGen: Gen[ApiKey] = for {
+    key <- hashGen
+  } yield ApiKey.unsafe(key.toHexString)
 }
