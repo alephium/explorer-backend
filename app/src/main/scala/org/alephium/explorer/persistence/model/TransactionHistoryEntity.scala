@@ -25,5 +25,6 @@ final case class TransactionHistoryEntity(
     chainFrom: GroupIndex,
     chainTo: GroupIndex,
     count: Long,
+    nonCoinbaseCount: Option[Long],
     intervalType: IntervalType
 )

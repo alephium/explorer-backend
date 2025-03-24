@@ -27,7 +27,7 @@ import sttp.model.StatusCode
 import org.alephium.api.ApiError
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.ChartsEndpoints
-import org.alephium.explorer.api.model.{IntervalType, TimedCount}
+import org.alephium.explorer.api.model.{IntervalType, TimedTxCount}
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service.{HashrateService, TransactionHistoryService}
 
@@ -51,8 +51,8 @@ class ChartsServer(
           TransactionHistoryService
             .getAllChains(timeInterval.from, timeInterval.to, interval)
             .map { seq =>
-              seq.map { case (timestamp, count) =>
-                TimedCount(timestamp, count)
+              seq.map { case (timestamp, count, nonCoinbaseCount) =>
+                TimedTxCount(timestamp, count, nonCoinbaseCount)
               }
             }
         }

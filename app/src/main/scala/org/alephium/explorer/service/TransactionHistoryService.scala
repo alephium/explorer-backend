@@ -73,19 +73,20 @@ case object TransactionHistoryService extends StrictLogging {
   def getPerChain(from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[PerChainTimedCount]] = {
+  ): Future[ArraySeq[PerChainTimedTxCount]] = {
     run(getPerChainQuery(intervalType, from, to)).map(res =>
       ArraySeq
         .unsafeWrapArray(
           res
-            .groupBy { case (timestamp, _, _, _) =>
+            .groupBy { case (timestamp, _, _, _, _) =>
               timestamp
             }
             .map { case (timestamp, values) =>
-              val perChainCounts = values.map { case (_, chainFrom, chainTo, count) =>
-                PerChainCount(chainFrom.value, chainTo.value, count)
-              }
-              PerChainTimedCount(timestamp, perChainCounts)
+              val perChainCounts =
+                values.map { case (_, chainFrom, chainTo, count, nonCoinbaseCount) =>
+                  PerChainTxCount(chainFrom.value, chainTo.value, count, nonCoinbaseCount)
+                }
+              PerChainTimedTxCount(timestamp, perChainCounts)
             }
             .toArray
         )
@@ -95,7 +96,7 @@ case object TransactionHistoryService extends StrictLogging {
 
   def getAllChains(from: TimeStamp, to: TimeStamp, intervalType: IntervalType)(implicit
       dc: DatabaseConfig[PostgresProfile]
-  ): Future[ArraySeq[(TimeStamp, Long)]] = {
+  ): Future[ArraySeq[(TimeStamp, Long, Option[Long])]] = {
     run(
       getAllChainsQuery(intervalType, from, to)
     )
@@ -135,7 +136,7 @@ case object TransactionHistoryService extends StrictLogging {
   private def updateTxHistoryCountForInterval(
       intervalType: IntervalType,
       latestTxTs: TimeStamp,
-      fetchData: (TimeStamp, TimeStamp) => DBActionSR[(TimeStamp, Int, Int, Long)]
+      fetchData: (TimeStamp, TimeStamp) => DBActionSR[(TimeStamp, Int, Int, Long, Option[Long])]
   )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
@@ -166,30 +167,41 @@ case object TransactionHistoryService extends StrictLogging {
   }
 
   private def processDataForTimeRanges(
-      data: Seq[(TimeStamp, Int, Int, Long)],
+      data: Seq[(TimeStamp, Int, Int, Long, Option[Long])],
       ranges: Seq[(TimeStamp, TimeStamp)],
       intervalType: IntervalType
-  )(implicit gs: GroupSetting): Seq[(TimeStamp, Int, Int, Long, IntervalType)] = {
+  )(implicit gs: GroupSetting): Seq[(TimeStamp, Int, Int, Long, Long, IntervalType)] = {
     ranges.flatMap { case (from, to) =>
       val perChainCount = gs.chainIndexes.map { chainIndex =>
+        val (count, nonCoinbaseCount) = data
+          .filter { case (timestamp, chainFrom, chainTo, _, _) =>
+            timestamp >= from &&
+            timestamp <= to &&
+            chainFrom == chainIndex.from.value &&
+            chainTo == chainIndex.to.value
+          }
+          .foldLeft((0L, 0L)) {
+            case ((currentCount, currentNonCoinbaseCount), (_, _, _, count, nonCoinbaseCount)) =>
+              (currentCount + count, currentNonCoinbaseCount + nonCoinbaseCount.getOrElse(0L))
+          }
+
         (
           chainIndex.from.value,
           chainIndex.to.value,
-          data
-            .filter { case (timestamp, chainFrom, chainTo, _) =>
-              timestamp >= from &&
-              timestamp <= to &&
-              chainFrom == chainIndex.from.value &&
-              chainTo == chainIndex.to.value
-            }
-            .map { case (_, _, _, count) => count }
-            .sum
+          count,
+          nonCoinbaseCount
         )
       }
-      val allCount = (-1, -1, perChainCount.map { case (_, _, count) => count }.sum)
 
-      (perChainCount :+ allCount).map { case (chainFrom, chainTo, count) =>
-        (from, chainFrom, chainTo, count, intervalType)
+      val (count, nonCoinbaseCount) = perChainCount.foldLeft((0L, 0L)) {
+        case ((currentCount, currentNonCoinbaseCount), (_, _, count, nonCoinbaseCount)) =>
+          (currentCount + count, currentNonCoinbaseCount + nonCoinbaseCount)
+      }
+
+      val allCount = (-1, -1, count, nonCoinbaseCount)
+
+      (perChainCount :+ allCount).map { case (chainFrom, chainTo, count, nonCoinbaseCount) =>
+        (from, chainFrom, chainTo, count, nonCoinbaseCount, intervalType)
       }
     }
   }
@@ -197,36 +209,40 @@ case object TransactionHistoryService extends StrictLogging {
   private def getTxsCountFromTo(
       from: TimeStamp,
       to: TimeStamp
-  ): DBActionSR[(TimeStamp, Int, Int, Long)] = {
+  )(implicit ec: ExecutionContext): DBActionSR[(TimeStamp, Int, Int, Long, Option[Long])] = {
     sql"""
       SELECT block_timestamp, chain_from, chain_to, txs_count
       FROM block_headers
       WHERE block_timestamp >= $from
       AND block_timestamp <= $to
       AND main_chain = true
-    """.asAS[(TimeStamp, Int, Int, Long)]
+    """
+      .asAS[(TimeStamp, Int, Int, Long)]
+      .map(_.map { case (ts, from, to, value) =>
+        (ts, from, to, value, Some(value - 1))
+      })
   }
 
   private def getHourlyCountFromTo(
       from: TimeStamp,
       to: TimeStamp
-  ): DBActionSR[(TimeStamp, Int, Int, Long)] = {
+  ): DBActionSR[(TimeStamp, Int, Int, Long, Option[Long])] = {
     sql"""
-      SELECT timestamp, chain_from, chain_to, value
+      SELECT timestamp, chain_from, chain_to, value, non_coinbase_value
       FROM transactions_history
       WHERE timestamp >= $from
       AND timestamp <= $to
       AND interval_type = ${IntervalType.Hourly}
-    """.asAS[(TimeStamp, Int, Int, Long)]
+    """.asAS[(TimeStamp, Int, Int, Long, Option[Long])]
   }
 
   private def insertValues(
-      values: Iterable[(TimeStamp, Int, Int, Long, IntervalType)]
+      values: Iterable[(TimeStamp, Int, Int, Long, Long, IntervalType)]
   ): DBActionW[Int] =
-    QuerySplitter.splitUpdates(rows = values, columnsPerRow = 5) { (values, placeholder) =>
+    QuerySplitter.splitUpdates(rows = values, columnsPerRow = 6) { (values, placeholder) =>
       val query =
         s"""
-          INSERT INTO transactions_history(timestamp, chain_from, chain_to, value, interval_type)
+          INSERT INTO transactions_history(timestamp, chain_from, chain_to, value, non_coinbase_value, interval_type)
           VALUES $placeholder
           ON CONFLICT (interval_type, timestamp, chain_from, chain_to) DO UPDATE
           SET value = EXCLUDED.value
@@ -234,11 +250,12 @@ case object TransactionHistoryService extends StrictLogging {
 
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
-          values foreach { case (from, chainFrom, chainTo, count, intervalType) =>
+          values foreach { case (from, chainFrom, chainTo, count, nonCoinbaseCount, intervalType) =>
             params >> from
             params >> chainFrom
             params >> chainTo
             params >> count
+            params >> nonCoinbaseCount
             params >> intervalType
           }
 
@@ -312,10 +329,10 @@ case object TransactionHistoryService extends StrictLogging {
       intervalType: IntervalType,
       from: TimeStamp,
       to: TimeStamp
-  ): DBActionSR[(TimeStamp, GroupIndex, GroupIndex, Long)] = {
+  ): DBActionSR[(TimeStamp, GroupIndex, GroupIndex, Long, Option[Long])] = {
 
     sql"""
-        SELECT timestamp, chain_from, chain_to, value
+        SELECT timestamp, chain_from, chain_to, value, non_coinbase_value
         FROM transactions_history
         WHERE interval_type = $intervalType
         AND timestamp >= $from
@@ -323,22 +340,22 @@ case object TransactionHistoryService extends StrictLogging {
         AND chain_from <> -1
         AND chain_to <> -1
         ORDER BY timestamp
-      """.asAS[(TimeStamp, GroupIndex, GroupIndex, Long)]
+      """.asAS[(TimeStamp, GroupIndex, GroupIndex, Long, Option[Long])]
   }
 
   def getAllChainsQuery(
       intervalType: IntervalType,
       from: TimeStamp,
       to: TimeStamp
-  ): DBActionSR[(TimeStamp, Long)] = {
+  ): DBActionSR[(TimeStamp, Long, Option[Long])] = {
     sql"""
-        SELECT timestamp, value FROM transactions_history
+        SELECT timestamp, value, non_coinbase_value FROM transactions_history
         WHERE interval_type = $intervalType
         AND timestamp >= $from
         AND timestamp <= $to
         AND chain_from = -1
         AND chain_to = -1
         ORDER BY timestamp
-      """.asAS[(TimeStamp, Long)]
+      """.asAS[(TimeStamp, Long, Option[Long])]
   }
 }
