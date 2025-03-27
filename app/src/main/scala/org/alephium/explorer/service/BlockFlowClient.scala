@@ -61,6 +61,7 @@ import org.alephium.protocol.model.{
   TokenId,
   TransactionId
 }
+import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.{AVector, Hex, Service, TimeStamp, U256}
 
 trait BlockFlowClient extends Service {
@@ -133,6 +134,10 @@ object BlockFlowClient extends StrictLogging {
       with Endpoints
       with ApiModelCodec {
 
+    implicit val groupSetting: GroupSetting = GroupSetting(groupNum)
+
+    implicit val groupConfig: GroupConfig = groupSetting.groupConfig
+
     override val apiKeys: AVector[api.model.ApiKey] = AVector.empty
 
     private val endpointSender = new EndpointSender(maybeApiKey)
@@ -146,10 +151,6 @@ object BlockFlowClient extends StrictLogging {
     }
 
     override def subServices: ArraySeq[Service] = ArraySeq.empty
-
-    implicit val groupSetting: GroupSetting = GroupSetting(groupNum)
-
-    implicit val groupConfig: GroupConfig = groupSetting.groupConfig
 
     private def _send[A, B](
         endpoint: BaseEndpoint[A, B],
@@ -482,7 +483,9 @@ object BlockFlowClient extends StrictLogging {
   }
 
   // scalastyle:off null
-  def blockProtocolToOutputEntities(block: api.model.BlockEntry): ArraySeq[OutputEntity] = {
+  def blockProtocolToOutputEntities(
+      block: api.model.BlockEntry
+  )(implicit groupSetting: GroupSetting): ArraySeq[OutputEntity] = {
     val hash         = block.hash
     val mainChain    = false
     val transactions = block.transactions.toArraySeq.zipWithIndex
@@ -502,7 +505,8 @@ object BlockFlowClient extends StrictLogging {
             mainChain,
             txOrder,
             coinbase = txId == coinbaseTxId,
-            fixedOutput = true
+            fixedOutput = true,
+            block.chainTo
           )
         }
       }
@@ -519,7 +523,8 @@ object BlockFlowClient extends StrictLogging {
             mainChain,
             txOrder,
             coinbase = false,
-            fixedOutput = false
+            fixedOutput = false,
+            block.chainTo
           )
         }
       }
@@ -693,6 +698,7 @@ object BlockFlowClient extends StrictLogging {
       InputAddressUtil.addressFromProtocolInput(input),
       None,
       None,
+      None,
       contractInput = contractInput
     )
   }
@@ -717,6 +723,7 @@ object BlockFlowClient extends StrictLogging {
       mainChain,
       index,
       txOrder,
+      None,
       None,
       None,
       None,
@@ -761,7 +768,7 @@ object BlockFlowClient extends StrictLogging {
     }
   }
 
-  // scalastyle:off method.length
+  // scalastyle:off method.length parameter.number
   private def outputToEntity(
       output: api.model.Output,
       blockHash: BlockHash,
@@ -771,8 +778,9 @@ object BlockFlowClient extends StrictLogging {
       mainChain: Boolean,
       txOrder: Int,
       coinbase: Boolean,
-      fixedOutput: Boolean
-  ): OutputEntity = {
+      fixedOutput: Boolean,
+      chainTo: Int
+  )(implicit groupSetting: GroupSetting): OutputEntity = {
     val lockTime = output match {
       case asset: api.model.AssetOutput if asset.lockTime.millis > 0 => Some(asset.lockTime)
       case _                                                         => None
@@ -790,6 +798,22 @@ object BlockFlowClient extends StrictLogging {
 
     val tokens = protocolTokensToTokens(output.tokens)
 
+    val (address, group): (Address, Option[GroupIndex]) = output.address match {
+      case Address.Asset(lockup) =>
+        lockup match {
+          case LockupScript.P2PK(pk, _) =>
+            val groupIndex = lockup.groupIndex(groupSetting.groupConfig)
+            if (groupIndex.value == chainTo) {
+              (output.address, Some(groupIndex))
+            } else {
+              val group = GroupIndex.unsafe(chainTo)(groupSetting.groupConfig)
+              (Address.Asset(LockupScript.P2PK(pk, group)), Some(group))
+            }
+          case _ => (output.address, None)
+        }
+      case _ => (output.address, None)
+    }
+
     OutputEntity(
       blockHash,
       txId,
@@ -798,7 +822,8 @@ object BlockFlowClient extends StrictLogging {
       output.hint,
       output.key,
       output.attoAlphAmount.value,
-      output.address,
+      address,
+      group,
       tokens,
       mainChain,
       lockTime,

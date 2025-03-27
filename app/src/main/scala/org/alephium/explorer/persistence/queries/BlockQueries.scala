@@ -36,6 +36,7 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
+import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.{BlockHash, GroupIndex}
 import org.alephium.util.TimeStamp
 
@@ -334,7 +335,9 @@ object BlockQueries extends StrictLogging {
   @SuppressWarnings(
     Array("org.wartremover.warts.MutableDataStructures", "org.wartremover.warts.NonUnitStatements")
   )
-  def insertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int): DBActionRWT[Unit] = {
+  def insertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int)(implicit
+      groupConfig: GroupConfig
+  ): DBActionRWT[Unit] = {
     val transactions = ListBuffer.empty[TransactionEntity]
     val inputs       = ListBuffer.empty[InputEntity]
     val outputs      = ListBuffer.empty[OutputEntity]

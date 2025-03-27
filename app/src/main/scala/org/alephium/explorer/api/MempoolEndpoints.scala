@@ -37,5 +37,5 @@ trait MempoolEndpoints extends BaseEndpoint with QueryParams {
       .in("transactions")
       .in(pagination)
       .out(jsonBody[ArraySeq[MempoolTransaction]])
-      .description("list mempool transactions")
+      .summary("list mempool transactions")
 }

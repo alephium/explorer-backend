@@ -38,7 +38,7 @@ object InputQueries {
   /** Inserts inputs or ignore rows with primary key conflict */
   // scalastyle:off magic.number
   def insertInputs(inputs: Iterable[InputEntity]): DBActionW[Int] =
-    QuerySplitter.splitUpdates(rows = inputs, columnsPerRow = 13) { (inputs, placeholder) =>
+    QuerySplitter.splitUpdates(rows = inputs, columnsPerRow = 14) { (inputs, placeholder) =>
       val query =
         s"""
            INSERT INTO inputs ("block_hash",
@@ -52,6 +52,7 @@ object InputQueries {
                                "tx_order",
                                "output_ref_tx_hash",
                                "output_ref_address",
+                               "output_ref_group_address",
                                "output_ref_amount",
                                "contract_input")
            VALUES $placeholder
@@ -74,6 +75,7 @@ object InputQueries {
             params >> input.txOrder
             params >> input.outputRefTxHash
             params >> input.outputRefAddress
+            params >> input.outputRefGroup
             params >> input.outputRefAmount
             params >> input.contractInput
           }
@@ -142,6 +144,7 @@ object InputQueries {
           tx_order,
           output_ref_tx_hash,
           output_ref_address,
+          output_ref_group_address,
           output_ref_amount,
           output_ref_tokens,
           contract_input

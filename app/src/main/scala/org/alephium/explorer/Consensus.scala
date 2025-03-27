@@ -21,7 +21,8 @@ import org.alephium.util.{Duration, TimeStamp}
 object Consensus {
   // TODO Add this to config
   // scalastyle:off magic.number
-  val rhoneHardForkTimestamp: TimeStamp = TimeStamp.unsafe(1718186400000L)
+  val rhoneHardForkTimestamp: TimeStamp  = TimeStamp.unsafe(1718186400000L)
+  val danubeHardForkTimestamp: TimeStamp = TimeStamp.unsafe(9000000000000000000L)
 
   def blockTargetTime(timestamp: TimeStamp): Duration =
     if (timestamp.isBefore(rhoneHardForkTimestamp)) {

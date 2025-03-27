@@ -29,15 +29,19 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.result.{OutputsFromTxQR, OutputsQR}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.util.AddressUtil
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
+import org.alephium.protocol.config.GroupConfig
+import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputQueries {
 
-  def insertOutputs(outputs: Iterable[OutputEntity]): DBActionRWT[Unit] =
+  def insertOutputs(
+      outputs: Iterable[OutputEntity]
+  )(implicit groupConfig: GroupConfig): DBActionRWT[Unit] =
     DBIOAction
       .seq(
         insertBasicOutputs(outputs),
@@ -50,7 +54,7 @@ object OutputQueries {
   // scalastyle:off magic.number method.length
   private def insertBasicOutputs(outputs: Iterable[OutputEntity]): DBActionW[Int] =
     QuerySplitter
-      .splitUpdates(rows = outputs, columnsPerRow = 18) { (outputs, placeholder) =>
+      .splitUpdates(rows = outputs, columnsPerRow = 19) { (outputs, placeholder) =>
         val query =
           s"""
              INSERT INTO outputs ("block_hash",
@@ -61,6 +65,7 @@ object OutputQueries {
                                   "key",
                                   "amount",
                                   "address",
+                                  "group_address",
                                   "tokens",
                                   "main_chain",
                                   "lock_time",
@@ -70,7 +75,8 @@ object OutputQueries {
                                   "coinbase",
                                   "spent_finalized",
                                   "spent_timestamp",
-                                  "fixed_output")
+                                  "fixed_output"
+                                  )
              VALUES $placeholder
              ON CONFLICT
                  ON CONSTRAINT outputs_pk
@@ -88,6 +94,7 @@ object OutputQueries {
               params >> output.key
               params >> output.amount
               params >> output.address
+              params >> output.group
               params >> output.tokens
               params >> output.mainChain
               params >> output.lockTime
@@ -107,11 +114,13 @@ object OutputQueries {
       }
   // scalastyle:on magic.number
 
-  private def insertTxPerAddressFromOutputs(outputs: Iterable[OutputEntity]): DBActionW[Int] = {
-    QuerySplitter.splitUpdates(rows = outputs, columnsPerRow = 7) { (outputs, placeholder) =>
+  private def insertTxPerAddressFromOutputs(
+      outputs: Iterable[OutputEntity]
+  )(implicit groupConfig: GroupConfig): DBActionW[Int] = {
+    QuerySplitter.splitUpdates(rows = outputs, columnsPerRow = 8) { (outputs, placeholder) =>
       val query =
         s"""
-           INSERT INTO transaction_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, coinbase)
+           INSERT INTO transaction_per_addresses (address, group_address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, coinbase)
            VALUES $placeholder
            ON CONFLICT (tx_hash, block_hash, address)
            DO NOTHING
@@ -121,6 +130,7 @@ object OutputQueries {
         (_: Unit, params: PositionedParameters) =>
           outputs foreach { output =>
             params >> output.address
+            params >> AddressUtil.p2pkGroupAddress(output.address)
             params >> output.txHash
             params >> output.blockHash
             params >> output.timestamp
@@ -157,7 +167,7 @@ object OutputQueries {
 
   // scalastyle:off magic.number
   private def insertTokenOutputs(tokenOutputs: Iterable[(Token, OutputEntity)]): DBActionW[Int] = {
-    QuerySplitter.splitUpdates(rows = tokenOutputs, columnsPerRow = 16) {
+    QuerySplitter.splitUpdates(rows = tokenOutputs, columnsPerRow = 17) {
       (tokenOutputs, placeholder) =>
         val query =
           s"""
@@ -170,6 +180,7 @@ object OutputQueries {
                                   "token",
                                   "amount",
                                   "address",
+                                  "group_address",
                                   "main_chain",
                                   "lock_time",
                                   "message",
@@ -195,6 +206,7 @@ object OutputQueries {
               params >> token.id
               params >> token.amount
               params >> output.address
+              params >> output.group
               params >> output.mainChain
               params >> output.lockTime
               params >> output.message
@@ -245,11 +257,11 @@ object OutputQueries {
   private def insertTokenPerAddressFromOutputs(
       tokenOutputs: Iterable[(Token, OutputEntity)]
   ): DBActionW[Int] = {
-    QuerySplitter.splitUpdates(rows = tokenOutputs, columnsPerRow = 7) {
+    QuerySplitter.splitUpdates(rows = tokenOutputs, columnsPerRow = 8) {
       (tokenOutputs, placeholder) =>
         val query =
           s"""
-             INSERT INTO token_tx_per_addresses (address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
+             INSERT INTO token_tx_per_addresses (address, group_address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
              VALUES $placeholder
              ON CONFLICT (tx_hash, block_hash, address, token)
              DO NOTHING
@@ -259,6 +271,7 @@ object OutputQueries {
           (_: Unit, params: PositionedParameters) =>
             tokenOutputs foreach { case (token, output) =>
               params >> output.address
+              params >> output.group
               params >> output.txHash
               params >> output.blockHash
               params >> output.timestamp
@@ -360,6 +373,7 @@ object OutputQueries {
         key,
         amount,
         address,
+        group_address,
         tokens,
         main_chain,
         lock_time,
@@ -423,11 +437,13 @@ object OutputQueries {
 
   def getBalanceUntilLockTime(
       address: Address,
+      groupIndex: Option[GroupIndex],
       lockTime: TimeStamp,
       latestFinalizedTimestamp: TimeStamp
   )(implicit
       ec: ExecutionContext
-  ): DBActionR[(Option[U256], Option[U256])] =
+  ): DBActionR[(Option[U256], Option[U256])] = {
+
     sql"""
       SELECT sum(outputs.amount),
              sum(CASE
@@ -443,6 +459,10 @@ object OutputQueries {
       WHERE outputs.spent_finalized IS NULL
         AND outputs.address = $address
         AND outputs.main_chain = true
-        AND inputs.block_hash IS NULL;
-    """.asAS[(Option[U256], Option[U256])].exactlyOne
+        AND inputs.block_hash IS NULL
+      """
+      .addressGroup(groupIndex, "outputs.group_address")
+      .asAS[(Option[U256], Option[U256])]
+      .exactlyOne
+  }
 }
