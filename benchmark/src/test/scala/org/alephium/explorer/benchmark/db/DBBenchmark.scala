@@ -30,7 +30,6 @@ import org.alephium.explorer.api.model.{IntervalType, Pagination}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.state._
 import org.alephium.explorer.cache.BlockCache
-import org.alephium.explorer.config.Default._
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._

@@ -801,13 +801,13 @@ object BlockFlowClient extends StrictLogging {
     val (address, group): (Address, Option[GroupIndex]) = output.address match {
       case Address.Asset(lockup) =>
         lockup match {
-          case LockupScript.P2PK(pk, hint) =>
-            val groupIndex = hint.groupIndex(groupSetting.groupConfig)
+          case LockupScript.P2PK(pk, _) =>
+            val groupIndex = lockup.groupIndex(groupSetting.groupConfig)
             if (groupIndex.value == chainTo) {
               (output.address, Some(groupIndex))
             } else {
-              val group = Some(GroupIndex.unsafe(chainTo)(groupSetting.groupConfig))
-              (Address.Asset(LockupScript.P2PK.from(pk, group)(groupSetting.groupConfig)), group)
+              val group = GroupIndex.unsafe(chainTo)(groupSetting.groupConfig)
+              (Address.Asset(LockupScript.P2PK(pk, group)), Some(group))
             }
           case _ => (output.address, None)
         }

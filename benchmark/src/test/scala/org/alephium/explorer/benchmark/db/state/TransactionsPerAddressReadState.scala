@@ -23,7 +23,6 @@ import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.benchmark.db.{DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
-import org.alephium.explorer.config.Default._
 import org.alephium.explorer.persistence.model.TransactionPerAddressEntity
 import org.alephium.explorer.persistence.schema.TransactionPerAddressSchema
 import org.alephium.protocol.model.Address

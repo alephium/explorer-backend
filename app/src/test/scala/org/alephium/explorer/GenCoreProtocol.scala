@@ -82,8 +82,8 @@ object GenCoreProtocol {
     for {
       // TODO: currently we can't define another group than the default one, as the `toBase58` produce same result for all groups
       _         <- Gen.option(GenApiModel.groupIndexGen)
-      publicKey <- publicKeyGen(groupIndex)
-    } yield LockupScript.p2pk(PublicKeyLike.SecP256K1(publicKey), None)(groupSetting.groupConfig)
+      publicKey <- publicKeyGen(groupIndex).map(PublicKeyLike.SecP256K1(_))
+    } yield LockupScript.p2pk(publicKey, publicKey.defaultGroup(groupSetting.groupConfig))
 
   def p2mpkhLockupGen(
       groupIndex: GroupIndex

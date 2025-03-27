@@ -24,7 +24,6 @@ import sttp.tapir.EndpointIO.Example
 import org.alephium.api.EndpointsExamples
 import org.alephium.api.model.{Amount, ValBool}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.config.Default._
 import org.alephium.explorer.persistence.queries.ExplainResult
 import org.alephium.protocol.{ALPH, PublicKey}
 import org.alephium.protocol.mining.HashRate
