@@ -29,6 +29,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, InputsQR}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.util.AddressUtil
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
@@ -74,7 +75,7 @@ object InputQueries {
             params >> input.inputOrder
             params >> input.txOrder
             params >> input.outputRefTxHash
-            params >> input.outputRefAddress
+            params >> input.outputRefAddress.map(AddressUtil.toRawAddress)
             params >> input.outputRefGroup
             params >> input.outputRefAmount
             params >> input.contractInput
