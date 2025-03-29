@@ -93,7 +93,7 @@ object OutputQueries {
               params >> output.hint
               params >> output.key
               params >> output.amount
-              params >> output.address
+              params >> AddressUtil.toRawAddress(output.address)
               params >> output.group
               params >> output.tokens
               params >> output.mainChain
@@ -129,7 +129,7 @@ object OutputQueries {
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
           outputs foreach { output =>
-            params >> output.address
+            params >> AddressUtil.toRawAddress(output.address)
             params >> AddressUtil.p2pkGroupAddress(output.address)
             params >> output.txHash
             params >> output.blockHash
@@ -205,7 +205,7 @@ object OutputQueries {
               params >> output.key
               params >> token.id
               params >> token.amount
-              params >> output.address
+              params >> AddressUtil.toRawAddress(output.address)
               params >> output.group
               params >> output.mainChain
               params >> output.lockTime
@@ -270,7 +270,7 @@ object OutputQueries {
         val parameters: SetParameter[Unit] =
           (_: Unit, params: PositionedParameters) =>
             tokenOutputs foreach { case (token, output) =>
-              params >> output.address
+              params >> AddressUtil.toRawAddress(output.address)
               params >> output.group
               params >> output.txHash
               params >> output.blockHash

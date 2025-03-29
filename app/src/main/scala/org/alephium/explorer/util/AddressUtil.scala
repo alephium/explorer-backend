@@ -30,4 +30,11 @@ object AddressUtil {
       case _                       => None
     }
   }
+
+  def toRawAddress(address: Address): String = {
+    address.lockupScript match {
+      case p2pk: LockupScript.P2PK => p2pk.toBase58WithoutGroup
+      case _                       => address.toBase58
+    }
+  }
 }
