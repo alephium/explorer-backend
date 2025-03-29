@@ -30,7 +30,7 @@ import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.EndpointExamples._
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.PublicKey
-import org.alephium.protocol.model.{Address, GroupIndex, TokenId}
+import org.alephium.protocol.model.{Address, AddressLike, GroupIndex, TokenId}
 import org.alephium.util.{Duration, TimeStamp}
 
 // scalastyle:off magic.number
@@ -53,6 +53,10 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
   private val addressesEndpoint =
     baseAddressesEndpoint
       .in(path[(Address, Option[GroupIndex])]("address")(Codecs.explorerAddressTapirCodec))
+
+  private val addressesLikeEndpoint =
+    baseAddressesEndpoint
+      .in(path[AddressLike]("address")(Codecs.explorerAddressLikeTapirCodec))
 
   private val noGroupAddressesEndpoint =
     baseAddressesEndpoint
@@ -129,8 +133,8 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[MempoolTransaction]])
       .summary("List mempool transactions of a given address")
 
-  val getAddressBalance: BaseEndpoint[(Address, Option[GroupIndex]), AddressBalance] =
-    addressesEndpoint.get
+  val getAddressBalance: BaseEndpoint[AddressLike, AddressBalance] =
+    addressesLikeEndpoint.get
       .in("balance")
       .out(jsonBody[AddressBalance])
       .summary("Get address balance")

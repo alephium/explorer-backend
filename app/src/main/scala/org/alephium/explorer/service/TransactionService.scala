@@ -93,7 +93,7 @@ trait TransactionService {
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int]
 
   def getBalance(
-      address: Address,
+      address: String,
       groupIndex: Option[GroupIndex],
       latestFinalizedBlock: TimeStamp
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)]
@@ -209,7 +209,7 @@ object TransactionService extends TransactionService {
     TransactionDao.getNumberByAddress(address, groupIndex)
 
   def getBalance(
-      address: Address,
+      address: String,
       groupIndex: Option[GroupIndex],
       latestFinalizedBlock: TimeStamp
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =

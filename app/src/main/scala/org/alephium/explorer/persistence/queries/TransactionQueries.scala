@@ -575,12 +575,10 @@ object TransactionQueries extends StrictLogging {
     }
 
   def getBalanceAction(
-      address: Address,
+      address: String,
       groupIndex: Option[GroupIndex],
       latestFinalizedTimestamp: TimeStamp
-  )(implicit
-      ec: ExecutionContext
-  ): DBActionR[(U256, U256)] =
+  )(implicit ec: ExecutionContext): DBActionR[(U256, U256)] =
     getBalanceUntilLockTime(
       address = address,
       groupIndex = groupIndex,

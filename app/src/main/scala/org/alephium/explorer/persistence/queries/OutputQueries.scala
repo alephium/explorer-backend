@@ -34,7 +34,7 @@ import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.Hash
 import org.alephium.protocol.config.GroupConfig
-import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
+import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputQueries {
@@ -436,7 +436,7 @@ object OutputQueries {
     """
 
   def getBalanceUntilLockTime(
-      address: Address,
+      address: String,
       groupIndex: Option[GroupIndex],
       lockTime: TimeStamp,
       latestFinalizedTimestamp: TimeStamp

@@ -80,7 +80,7 @@ object TransactionDao {
     run(countAddressTransactions(address, groupIndex)).map(_.headOption.getOrElse(0))
 
   def getBalance(
-      address: Address,
+      address: String,
       groupIndex: Option[GroupIndex],
       latestFinalizedTimestamp: TimeStamp
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =

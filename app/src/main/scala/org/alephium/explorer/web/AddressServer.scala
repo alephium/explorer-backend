@@ -88,7 +88,7 @@ class AddressServer(
       route(getAddressInfo.serverLogicSuccess[Future] { case (address, groupIndex) =>
         for {
           (balance, locked) <- transactionService
-            .getBalance(address, groupIndex, blockCache.getLastFinalizedTimestamp())
+            .getBalance(address.toBase58, groupIndex, blockCache.getLastFinalizedTimestamp())
           txNumber <- transactionService.getTransactionsNumberByAddress(address, groupIndex)
         } yield AddressInfo(balance, locked, txNumber)
       }),
@@ -101,10 +101,15 @@ class AddressServer(
           case Some(txInfo) => Right(txInfo)
         }
       }),
-      route(getAddressBalance.serverLogicSuccess[Future] { case (address, groupIndex) =>
+      route(getAddressBalance.serverLogicSuccess[Future] { case address =>
+        val addressRaw = address.toBase58
+        val groupIndex = address.lockupScriptResult match {
+          case LockupScript.CompleteLockupScript(lockupScript) => Some(lockupScript.groupIndex)
+          case _: LockupScript.HalfDecodedP2PK                 => None
+        }
         for {
           (balance, locked) <- transactionService
-            .getBalance(address, groupIndex, blockCache.getLastFinalizedTimestamp())
+            .getBalance(addressRaw, groupIndex, blockCache.getLastFinalizedTimestamp())
         } yield AddressBalance(balance, locked)
       }),
       route(getAddressTokenBalance.serverLogicSuccess[Future] { case (address, token) =>
