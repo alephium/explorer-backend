@@ -36,6 +36,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service.{TokenService, TransactionService}
+import org.alephium.explorer.util.AddressUtil
 import org.alephium.protocol.PublicKey
 import org.alephium.protocol.model.Address
 import org.alephium.protocol.vm.{LockupScript, UnlockScript}
@@ -102,7 +103,7 @@ class AddressServer(
         }
       }),
       route(getAddressBalance.serverLogicSuccess[Future] { case address =>
-        val addressRaw = address.toBase58
+        val addressRaw = AddressUtil.toRawAddress(address.getAddress())
         val groupIndex = address.lockupScriptResult match {
           case LockupScript.CompleteLockupScript(lockupScript) => Some(lockupScript.groupIndex)
           case _: LockupScript.HalfDecodedP2PK                 => None

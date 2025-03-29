@@ -443,7 +443,6 @@ object OutputQueries {
   )(implicit
       ec: ExecutionContext
   ): DBActionR[(Option[U256], Option[U256])] = {
-
     sql"""
       SELECT sum(outputs.amount),
              sum(CASE
