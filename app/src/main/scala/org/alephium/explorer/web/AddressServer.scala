@@ -105,8 +105,13 @@ class AddressServer(
       route(getAddressBalance.serverLogicSuccess[Future] { case address =>
         val addressRaw = AddressUtil.toRawAddress(address.getAddress())
         val groupIndex = address.lockupScriptResult match {
-          case LockupScript.CompleteLockupScript(lockupScript) => Some(lockupScript.groupIndex)
-          case _: LockupScript.HalfDecodedP2PK                 => None
+          case LockupScript.CompleteLockupScript(lockupScript) =>
+            lockupScript match {
+              case p2pk: LockupScript.P2PK => Some(p2pk.groupIndex)
+              case _                       => None
+            }
+          case _: LockupScript.HalfDecodedP2PK =>
+            None
         }
         for {
           (balance, locked) <- transactionService
