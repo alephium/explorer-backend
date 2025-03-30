@@ -49,7 +49,7 @@ trait TransactionService {
   ): Future[Option[TransactionLike]]
 
   def getTransactionsByAddress(
-      address: Address,
+      address: String,
       groupIndex: Option[GroupIndex],
       pagination: Pagination
   )(implicit
@@ -158,7 +158,7 @@ object TransactionService extends TransactionService {
     }
 
   def getTransactionsByAddress(
-      address: Address,
+      address: String,
       groupIndex: Option[GroupIndex],
       pagination: Pagination
   )(implicit

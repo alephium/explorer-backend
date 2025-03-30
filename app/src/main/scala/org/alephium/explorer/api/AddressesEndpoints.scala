@@ -87,9 +87,8 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[AddressInfo])
       .summary("Get address information")
 
-  val getTransactionsByAddress
-      : BaseEndpoint[(Address, Option[GroupIndex], Pagination), ArraySeq[Transaction]] =
-    addressesEndpoint.get
+  val getTransactionsByAddress: BaseEndpoint[(AddressLike, Pagination), ArraySeq[Transaction]] =
+    addressesLikeEndpoint.get
       .in("transactions")
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])

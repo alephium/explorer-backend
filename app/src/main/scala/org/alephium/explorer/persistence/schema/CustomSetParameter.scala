@@ -111,6 +111,11 @@ object CustomSetParameter {
       params setString input.toBase58
   }
 
+  implicit object AddressLikeSetParameter extends SetParameter[AddressLike] {
+    override def apply(input: AddressLike, params: PositionedParameters): Unit =
+      params setString input.toBase58
+  }
+
   implicit object OptionAddressSetParameter extends SetParameter[Option[Address]] {
     override def apply(option: Option[Address], params: PositionedParameters): Unit =
       option match {

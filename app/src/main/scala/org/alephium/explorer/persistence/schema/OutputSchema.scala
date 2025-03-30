@@ -28,7 +28,7 @@ import org.alephium.explorer.persistence.DBActionW
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
+import org.alephium.protocol.model.{AddressLike, BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
@@ -42,7 +42,7 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
     def key: Rep[Hash]                           = column[Hash]("key", O.SqlType("BYTEA"))
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
-    def address: Rep[Address]                = column[Address]("address")
+    def address: Rep[AddressLike]            = column[AddressLike]("address")
     def group: Rep[Option[GroupIndex]]       = column[Option[GroupIndex]]("group_address")
     def tokens: Rep[Option[ArraySeq[Token]]] = column[Option[ArraySeq[Token]]]("tokens")
     def mainChain: Rep[Boolean]              = column[Boolean]("main_chain")

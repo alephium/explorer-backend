@@ -35,7 +35,6 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
@@ -48,7 +47,7 @@ object TransactionQueries extends StrictLogging {
       transactions: ArraySeq[TransactionEntity],
       outputs: ArraySeq[OutputEntity],
       inputs: ArraySeq[InputEntity]
-  )(implicit groupConfig: GroupConfig): DBActionRWT[Unit] = {
+  ): DBActionRWT[Unit] = {
     DBIOAction
       .seq(insertTransactions(transactions), insertInputs(inputs), insertOutputs(outputs))
       .transactionally
@@ -164,7 +163,7 @@ object TransactionQueries extends StrictLogging {
   }
 
   def getTxHashesByAddressQuery(
-      address: Address,
+      address: String,
       groupIndex: Option[GroupIndex],
       pagination: Pagination
   ): DBActionSR[TxByAddressQR] = {
@@ -279,7 +278,7 @@ object TransactionQueries extends StrictLogging {
   }
 
   def getTransactionsByAddress(
-      address: Address,
+      address: String,
       groupIndex: Option[GroupIndex],
       pagination: Pagination
   )(implicit

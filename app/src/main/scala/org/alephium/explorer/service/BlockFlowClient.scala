@@ -53,6 +53,7 @@ import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.mining.HashRate
 import org.alephium.protocol.model.{
   Address,
+  AddressLike,
   BlockHash,
   ChainIndex,
   ContractId,
@@ -505,8 +506,7 @@ object BlockFlowClient extends StrictLogging {
             mainChain,
             txOrder,
             coinbase = txId == coinbaseTxId,
-            fixedOutput = true,
-            block.chainTo
+            fixedOutput = true
           )
         }
       }
@@ -523,8 +523,7 @@ object BlockFlowClient extends StrictLogging {
             mainChain,
             txOrder,
             coinbase = false,
-            fixedOutput = false,
-            block.chainTo
+            fixedOutput = false
           )
         }
       }
@@ -778,8 +777,7 @@ object BlockFlowClient extends StrictLogging {
       mainChain: Boolean,
       txOrder: Int,
       coinbase: Boolean,
-      fixedOutput: Boolean,
-      chainTo: Int
+      fixedOutput: Boolean
   )(implicit groupSetting: GroupSetting): OutputEntity = {
     val lockTime = output match {
       case asset: api.model.AssetOutput if asset.lockTime.millis > 0 => Some(asset.lockTime)
@@ -798,20 +796,15 @@ object BlockFlowClient extends StrictLogging {
 
     val tokens = protocolTokensToTokens(output.tokens)
 
-    val (address, group): (Address, Option[GroupIndex]) = output.address match {
+    val (address, group): (AddressLike, Option[GroupIndex]) = output.address match {
       case Address.Asset(lockup) =>
         lockup match {
           case LockupScript.P2PK(pk, _) =>
             val groupIndex = lockup.groupIndex(groupSetting.groupConfig)
-            if (groupIndex.value == chainTo) {
-              (output.address, Some(groupIndex))
-            } else {
-              val group = GroupIndex.unsafe(chainTo)(groupSetting.groupConfig)
-              (Address.Asset(LockupScript.P2PK(pk, group)), Some(group))
-            }
-          case _ => (output.address, None)
+            (AddressLike(LockupScript.HalfDecodedP2PK(pk)), Some(groupIndex))
+          case _ => (AddressLike.from(output.address.lockupScript), None)
         }
-      case _ => (output.address, None)
+      case _ => (AddressLike.from(output.address.lockupScript), None)
     }
 
     OutputEntity(

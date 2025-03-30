@@ -62,10 +62,11 @@ class AddressServer(
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
-      route(getTransactionsByAddress.serverLogicSuccess[Future] {
-        case (address, groupIndex, pagination) =>
-          transactionService
-            .getTransactionsByAddress(address, groupIndex, pagination)
+      route(getTransactionsByAddress.serverLogicSuccess[Future] { case (address, pagination) =>
+        val addressRaw = AddressUtil.toRawAddress(address.getAddress())
+        val groupIndex = AddressUtil.getGroupIndex(address)
+        transactionService
+          .getTransactionsByAddress(addressRaw, groupIndex, pagination)
       }),
       route(getTransactionsByAddresses.serverLogicSuccess[Future] {
         case (addresses, fromTsOpt, toTsOpt, pagination) =>
@@ -104,15 +105,7 @@ class AddressServer(
       }),
       route(getAddressBalance.serverLogicSuccess[Future] { case address =>
         val addressRaw = AddressUtil.toRawAddress(address.getAddress())
-        val groupIndex = address.lockupScriptResult match {
-          case LockupScript.CompleteLockupScript(lockupScript) =>
-            lockupScript match {
-              case p2pk: LockupScript.P2PK => Some(p2pk.groupIndex)
-              case _                       => None
-            }
-          case _: LockupScript.HalfDecodedP2PK =>
-            None
-        }
+        val groupIndex = AddressUtil.getGroupIndex(address)
         for {
           (balance, locked) <- transactionService
             .getBalance(addressRaw, groupIndex, blockCache.getLastFinalizedTimestamp())

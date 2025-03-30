@@ -29,11 +29,9 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.result.{OutputsFromTxQR, OutputsQR}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.explorer.util.AddressUtil
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
@@ -41,7 +39,7 @@ object OutputQueries {
 
   def insertOutputs(
       outputs: Iterable[OutputEntity]
-  )(implicit groupConfig: GroupConfig): DBActionRWT[Unit] =
+  ): DBActionRWT[Unit] =
     DBIOAction
       .seq(
         insertBasicOutputs(outputs),
@@ -93,7 +91,7 @@ object OutputQueries {
               params >> output.hint
               params >> output.key
               params >> output.amount
-              params >> AddressUtil.toRawAddress(output.address)
+              params >> output.address
               params >> output.group
               params >> output.tokens
               params >> output.mainChain
@@ -116,7 +114,7 @@ object OutputQueries {
 
   private def insertTxPerAddressFromOutputs(
       outputs: Iterable[OutputEntity]
-  )(implicit groupConfig: GroupConfig): DBActionW[Int] = {
+  ): DBActionW[Int] = {
     QuerySplitter.splitUpdates(rows = outputs, columnsPerRow = 8) { (outputs, placeholder) =>
       val query =
         s"""
@@ -129,8 +127,8 @@ object OutputQueries {
       val parameters: SetParameter[Unit] =
         (_: Unit, params: PositionedParameters) =>
           outputs foreach { output =>
-            params >> AddressUtil.toRawAddress(output.address)
-            params >> AddressUtil.p2pkGroupAddress(output.address)
+            params >> output.address
+            params >> output.group
             params >> output.txHash
             params >> output.blockHash
             params >> output.timestamp
@@ -205,7 +203,7 @@ object OutputQueries {
               params >> output.key
               params >> token.id
               params >> token.amount
-              params >> AddressUtil.toRawAddress(output.address)
+              params >> output.address
               params >> output.group
               params >> output.mainChain
               params >> output.lockTime
@@ -270,7 +268,7 @@ object OutputQueries {
         val parameters: SetParameter[Unit] =
           (_: Unit, params: PositionedParameters) =>
             tokenOutputs foreach { case (token, output) =>
-              params >> AddressUtil.toRawAddress(output.address)
+              params >> output.address
               params >> output.group
               params >> output.txHash
               params >> output.blockHash

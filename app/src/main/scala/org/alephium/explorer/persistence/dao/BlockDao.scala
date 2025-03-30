@@ -80,7 +80,7 @@ object BlockDao {
       groupSetting: GroupSetting
   ): Future[Unit] =
     run((for {
-      _ <- insertBlockEntity(ArraySeq(block), groupSetting.groupNum)(groupSetting.groupConfig)
+      _ <- insertBlockEntity(ArraySeq(block), groupSetting.groupNum)
       _ <- insertEventsQuery(events)
       _ <- insertOrUpdateContracts(events, block.chainFrom)
     } yield ()).transactionally)
@@ -91,7 +91,7 @@ object BlockDao {
       dc: DatabaseConfig[PostgresProfile],
       groupSetting: GroupSetting
   ): Future[Unit] =
-    run(insertBlockEntity(blocks, groupSetting.groupNum)(groupSetting.groupConfig)).map(_ => ())
+    run(insertBlockEntity(blocks, groupSetting.groupNum)).map(_ => ())
 
   def listMainChain(pagination: Pagination.Reversible)(implicit
       ec: ExecutionContext,

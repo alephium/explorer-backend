@@ -36,8 +36,7 @@ object TransactionDao {
   ): Future[Option[Transaction]] =
     run(getTransactionAction(hash))
 
-  def getByAddress(address: Address, groupIndex: Option[GroupIndex], pagination: Pagination)(
-      implicit
+  def getByAddress(address: String, groupIndex: Option[GroupIndex], pagination: Pagination)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]] =

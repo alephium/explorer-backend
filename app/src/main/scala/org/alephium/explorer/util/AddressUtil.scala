@@ -19,6 +19,7 @@ package org.alephium.explorer.util
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.{Address, GroupIndex}
 import org.alephium.protocol.vm.LockupScript
+import org.alephium.protocol.model.AddressLike
 
 object AddressUtil {
 
@@ -35,6 +36,34 @@ object AddressUtil {
     address.lockupScript match {
       case p2pk: LockupScript.P2PK => p2pk.toBase58WithoutGroup
       case _                       => address.toBase58
+    }
+  }
+
+  def getGroupIndex(
+      address: AddressLike
+  )(implicit groupConfig: GroupConfig): Option[GroupIndex] = {
+    address.lockupScriptResult match {
+      case LockupScript.CompleteLockupScript(lockupScript) =>
+        lockupScript match {
+          case p2pk: LockupScript.P2PK => Some(p2pk.groupIndex)
+          case _                       => None
+        }
+      case _: LockupScript.HalfDecodedP2PK =>
+        None
+    }
+  }
+
+  def getAddress(address: AddressLike, groupIndexOption: Option[GroupIndex]): Address = {
+    address.lockupScriptResult match {
+      case LockupScript.CompleteLockupScript(lockupScript) =>
+        Address.from(lockupScript)
+      case LockupScript.HalfDecodedP2PK(publicKey) =>
+        groupIndexOption match {
+          case Some(groupIndex) =>
+            Address.Asset(LockupScript.p2pk(publicKey, groupIndex))
+          case None =>
+            throw new Exception("Group index is required for half decoded P2PK")
+        }
     }
   }
 }

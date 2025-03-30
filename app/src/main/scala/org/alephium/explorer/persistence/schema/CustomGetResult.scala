@@ -142,6 +142,9 @@ object CustomGetResult {
   implicit val addressGetResult: GetResult[Address] =
     (result: PositionedResult) => Address.fromBase58(result.nextString()).get
 
+  implicit val addressLikeGetResult: GetResult[AddressLike] =
+    (result: PositionedResult) => AddressLike.fromBase58(result.nextString()).get
+
   val addressContractGetResult: GetResult[Address.Contract] =
     (result: PositionedResult) => {
       val string = result.nextString()
