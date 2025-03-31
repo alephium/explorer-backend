@@ -74,6 +74,11 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       }
       .description("Address with group notation `@group` not supported yet for this endpoint")
 
+  private val addressesLikeTokensEndpoint =
+    baseAddressesEndpoint
+      .in(path[AddressLike]("address")(Codecs.explorerAddressLikeTapirCodec))
+      .in("tokens")
+
   private val addressesTokensEndpoint =
     noGroupAddressesEndpoint
       .in("tokens")
@@ -135,15 +140,14 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .summary("Get address balance")
 
   val listAddressTokens: BaseEndpoint[(AddressLike, Pagination), ArraySeq[TokenId]] =
-    addressesLikeEndpoint.get
-      .in("tokens")
+    addressesLikeTokensEndpoint.get
       .out(jsonBody[ArraySeq[TokenId]])
       .in(paginator(limit = 100))
       .summary("List address tokens")
       .deprecated()
 
-  val getAddressTokenBalance: BaseEndpoint[(Address, TokenId), AddressTokenBalance] =
-    addressesTokensEndpoint.get
+  val getAddressTokenBalance: BaseEndpoint[(AddressLike, TokenId), AddressTokenBalance] =
+    addressesLikeTokensEndpoint.get
       .in(path[TokenId]("token_id"))
       .in("balance")
       .out(jsonBody[AddressTokenBalance])

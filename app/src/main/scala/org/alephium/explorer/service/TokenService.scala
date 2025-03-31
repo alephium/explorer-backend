@@ -33,7 +33,7 @@ import org.alephium.protocol.model.{Address, AddressLike, TokenId}
 import org.alephium.util.U256
 
 trait TokenService {
-  def getTokenBalance(address: Address, token: TokenId)(implicit
+  def getTokenBalance(address: AddressLike, token: TokenId)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[(U256, U256)]
@@ -112,7 +112,7 @@ trait TokenService {
 
 object TokenService extends TokenService with StrictLogging {
 
-  def getTokenBalance(address: Address, token: TokenId)(implicit
+  def getTokenBalance(address: AddressLike, token: TokenId)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[(U256, U256)] =
