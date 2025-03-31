@@ -29,7 +29,7 @@ import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries.ContractQueries._
 import org.alephium.explorer.persistence.queries.TokenQueries._
-import org.alephium.protocol.model.{Address, TokenId}
+import org.alephium.protocol.model.{Address, AddressLike, TokenId}
 import org.alephium.util.U256
 
 trait TokenService {
@@ -69,7 +69,7 @@ trait TokenService {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[NFTCollectionMetadata]]
 
-  def listAddressTokens(address: Address, pagination: Pagination)(implicit
+  def listAddressTokens(address: AddressLike, pagination: Pagination)(implicit
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[TokenId]]
 
@@ -156,7 +156,7 @@ object TokenService extends TokenService with StrictLogging {
   ): Future[ArraySeq[NFTCollectionMetadata]] =
     run(listNFTCollectionMetadataQuery(addresses))
 
-  def listAddressTokens(address: Address, pagination: Pagination)(implicit
+  def listAddressTokens(address: AddressLike, pagination: Pagination)(implicit
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[TokenId]] =
     run(listAddressTokensAction(address, pagination))

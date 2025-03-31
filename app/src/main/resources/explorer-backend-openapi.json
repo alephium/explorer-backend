@@ -2468,7 +2468,6 @@
           "Addresses"
         ],
         "summary": "List address tokens",
-        "description": "Address with group notation `@group` not supported yet for this endpoint",
         "operationId": "getAddressesAddressTokens",
         "parameters": [
           {

@@ -134,8 +134,9 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[AddressBalance])
       .summary("Get address balance")
 
-  val listAddressTokens: BaseEndpoint[(Address, Pagination), ArraySeq[TokenId]] =
-    addressesTokensEndpoint.get
+  val listAddressTokens: BaseEndpoint[(AddressLike, Pagination), ArraySeq[TokenId]] =
+    addressesLikeEndpoint.get
+      .in("tokens")
       .out(jsonBody[ArraySeq[TokenId]])
       .in(paginator(limit = 100))
       .summary("List address tokens")

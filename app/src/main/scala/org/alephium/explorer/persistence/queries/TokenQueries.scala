@@ -31,7 +31,7 @@ import org.alephium.explorer.persistence.queries.result.TxByTokenQR
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.{Address, TokenId}
+import org.alephium.protocol.model.{Address, AddressLike, TokenId}
 import org.alephium.util.{TimeStamp, U256}
 
 object TokenQueries extends StrictLogging {
@@ -127,11 +127,11 @@ object TokenQueries extends StrictLogging {
       .asAS[TxByTokenQR]
   }
 
-  def listAddressTokensAction(address: Address, pagination: Pagination): DBActionSR[TokenId] =
+  def listAddressTokensAction(address: AddressLike, pagination: Pagination): DBActionSR[TokenId] =
     sql"""
       SELECT DISTINCT token
       FROM token_tx_per_addresses
-      WHERE address = $address
+      WHERE #${addressColumn(address)} = $address
       AND main_chain = true
     """
       .paginate(pagination)

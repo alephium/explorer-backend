@@ -164,7 +164,12 @@ object SlickUtil {
     }
   }
 
-  def addressColumn(address: AddressLike, full: String, half: String): String = {
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def addressColumn(
+      address: AddressLike,
+      full: String = "address",
+      half: String = "address_like"
+  ): String = {
     address.lockupScriptResult match {
       case LockupScript.HalfDecodedP2PK(_) =>
         half
