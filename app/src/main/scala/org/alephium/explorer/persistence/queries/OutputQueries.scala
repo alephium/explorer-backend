@@ -32,7 +32,8 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
+import org.alephium.protocol.model.{AddressLike, BlockHash, TransactionId}
+import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputQueries {
@@ -63,7 +64,7 @@ object OutputQueries {
                                   "key",
                                   "amount",
                                   "address",
-                                  "group_address",
+                                  "address_like",
                                   "tokens",
                                   "main_chain",
                                   "lock_time",
@@ -92,7 +93,7 @@ object OutputQueries {
               params >> output.key
               params >> output.amount
               params >> output.address
-              params >> output.group
+              params >> output.addressLike
               params >> output.tokens
               params >> output.mainChain
               params >> output.lockTime
@@ -118,7 +119,7 @@ object OutputQueries {
     QuerySplitter.splitUpdates(rows = outputs, columnsPerRow = 8) { (outputs, placeholder) =>
       val query =
         s"""
-           INSERT INTO transaction_per_addresses (address, group_address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, coinbase)
+           INSERT INTO transaction_per_addresses (address, address_like, tx_hash, block_hash, block_timestamp, tx_order, main_chain, coinbase)
            VALUES $placeholder
            ON CONFLICT (tx_hash, block_hash, address)
            DO NOTHING
@@ -128,7 +129,7 @@ object OutputQueries {
         (_: Unit, params: PositionedParameters) =>
           outputs foreach { output =>
             params >> output.address
-            params >> output.group
+            params >> output.addressLike
             params >> output.txHash
             params >> output.blockHash
             params >> output.timestamp
@@ -178,7 +179,7 @@ object OutputQueries {
                                   "token",
                                   "amount",
                                   "address",
-                                  "group_address",
+                                  "address_like",
                                   "main_chain",
                                   "lock_time",
                                   "message",
@@ -204,7 +205,7 @@ object OutputQueries {
               params >> token.id
               params >> token.amount
               params >> output.address
-              params >> output.group
+              params >> output.addressLike
               params >> output.mainChain
               params >> output.lockTime
               params >> output.message
@@ -259,7 +260,7 @@ object OutputQueries {
       (tokenOutputs, placeholder) =>
         val query =
           s"""
-             INSERT INTO token_tx_per_addresses (address, group_address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
+             INSERT INTO token_tx_per_addresses (address, address_like, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
              VALUES $placeholder
              ON CONFLICT (tx_hash, block_hash, address, token)
              DO NOTHING
@@ -269,7 +270,7 @@ object OutputQueries {
           (_: Unit, params: PositionedParameters) =>
             tokenOutputs foreach { case (token, output) =>
               params >> output.address
-              params >> output.group
+              params >> output.addressLike
               params >> output.txHash
               params >> output.blockHash
               params >> output.timestamp
@@ -371,7 +372,7 @@ object OutputQueries {
         key,
         amount,
         address,
-        group_address,
+        address_like,
         tokens,
         main_chain,
         lock_time,
@@ -434,13 +435,19 @@ object OutputQueries {
     """
 
   def getBalanceUntilLockTime(
-      address: String,
-      groupIndex: Option[GroupIndex],
+      address: AddressLike,
       lockTime: TimeStamp,
       latestFinalizedTimestamp: TimeStamp
   )(implicit
       ec: ExecutionContext
   ): DBActionR[(Option[U256], Option[U256])] = {
+    val (ouptupAddressColumn, inputAddressColumn) = address.lockupScriptResult match {
+      case LockupScript.HalfDecodedP2PK(_) =>
+        ("address_like", "output_ref_address_like")
+      case _ =>
+        ("address", "output_ref_address")
+    }
+
     sql"""
       SELECT sum(outputs.amount),
              sum(CASE
@@ -451,14 +458,13 @@ object OutputQueries {
                LEFT JOIN inputs
                          ON outputs.key = inputs.output_ref_key
                              AND inputs.main_chain = true
-                             AND inputs.output_ref_address = $address
+                             AND inputs.#$inputAddressColumn = $address
                              AND inputs.block_timestamp > ${latestFinalizedTimestamp.millis}
       WHERE outputs.spent_finalized IS NULL
-        AND outputs.address = $address
+        AND outputs.#$ouptupAddressColumn = $address
         AND outputs.main_chain = true
         AND inputs.block_hash IS NULL
       """
-      .addressGroup(groupIndex, "outputs.group_address")
       .asAS[(Option[U256], Option[U256])]
       .exactlyOne
   }

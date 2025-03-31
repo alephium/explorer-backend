@@ -35,7 +35,7 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object TransactionQueries extends StrictLogging {
@@ -149,31 +149,27 @@ object TransactionQueries extends StrictLogging {
       .asAS[TxByAddressQR]
 
   def countAddressTransactions(
-      address: Address,
-      groupIndex: Option[GroupIndex]
+      address: AddressLike
   ): DBActionSR[Int] = {
     sql"""
       SELECT COUNT(*)
       FROM transaction_per_addresses
       WHERE main_chain = true
-      AND address = $address
+      AND #${addressColumn(address, "address", "address_like")} = $address
     """
-      .addressGroup(groupIndex, "group_address")
       .asAS[Int]
   }
 
   def getTxHashesByAddressQuery(
-      address: String,
-      groupIndex: Option[GroupIndex],
+      address: AddressLike,
       pagination: Pagination
   ): DBActionSR[TxByAddressQR] = {
     sql"""
       SELECT #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
       WHERE main_chain = true
-      AND address = $address
+      AND #${addressColumn(address, "address", "address_like")} = $address
     """
-      .addressGroup(groupIndex, "address_group")
       .concat(sql"""ORDER BY block_timestamp DESC, tx_order """)
       .paginate(pagination)
       .asAS[TxByAddressQR]
@@ -278,14 +274,13 @@ object TransactionQueries extends StrictLogging {
   }
 
   def getTransactionsByAddress(
-      address: String,
-      groupIndex: Option[GroupIndex],
+      address: AddressLike,
       pagination: Pagination
   )(implicit
       ec: ExecutionContext
   ): DBActionR[ArraySeq[Transaction]] = {
     for {
-      txHashesTs <- getTxHashesByAddressQuery(address, groupIndex, pagination)
+      txHashesTs <- getTxHashesByAddressQuery(address, pagination)
       txs        <- getTransactions(txHashesTs)
     } yield txs
   }
@@ -574,13 +569,11 @@ object TransactionQueries extends StrictLogging {
     }
 
   def getBalanceAction(
-      address: String,
-      groupIndex: Option[GroupIndex],
+      address: AddressLike,
       latestFinalizedTimestamp: TimeStamp
   )(implicit ec: ExecutionContext): DBActionR[(U256, U256)] =
     getBalanceUntilLockTime(
       address = address,
-      groupIndex = groupIndex,
       lockTime = TimeStamp.now(),
       latestFinalizedTimestamp = latestFinalizedTimestamp
     ) map { case (total, locked) =>

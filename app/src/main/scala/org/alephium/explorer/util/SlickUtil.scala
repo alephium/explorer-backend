@@ -30,7 +30,8 @@ import slick.sql._
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DBActionR, DBActionSR}
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.protocol.model.GroupIndex
+import org.alephium.protocol.model.{AddressLike, GroupIndex}
+import org.alephium.protocol.vm.LockupScript
 
 /** Convenience functions for Slick */
 object SlickUtil {
@@ -160,6 +161,15 @@ object SlickUtil {
 
     def concatOption(maybeNextAction: Option[SQLActionBuilder]): SQLActionBuilder = {
       maybeNextAction.fold(action)(action.concat)
+    }
+  }
+
+  def addressColumn(address: AddressLike, full: String, half: String): String = {
+    address.lockupScriptResult match {
+      case LockupScript.HalfDecodedP2PK(_) =>
+        half
+      case _ =>
+        full
     }
   }
 

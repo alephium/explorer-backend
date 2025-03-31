@@ -29,7 +29,6 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, InputsQR}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.explorer.util.AddressUtil
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
@@ -53,7 +52,7 @@ object InputQueries {
                                "tx_order",
                                "output_ref_tx_hash",
                                "output_ref_address",
-                               "output_ref_group_address",
+                               "output_ref_address_like",
                                "output_ref_amount",
                                "contract_input")
            VALUES $placeholder
@@ -75,8 +74,8 @@ object InputQueries {
             params >> input.inputOrder
             params >> input.txOrder
             params >> input.outputRefTxHash
-            params >> input.outputRefAddress.map(AddressUtil.toRawAddress)
-            params >> input.outputRefGroup
+            params >> input.outputRefAddress
+            params >> input.outputRefAddressLike
             params >> input.outputRefAmount
             params >> input.contractInput
           }
@@ -145,7 +144,7 @@ object InputQueries {
           tx_order,
           output_ref_tx_hash,
           output_ref_address,
-          output_ref_group_address,
+          output_ref_address_like,
           output_ref_amount,
           output_ref_tokens,
           contract_input

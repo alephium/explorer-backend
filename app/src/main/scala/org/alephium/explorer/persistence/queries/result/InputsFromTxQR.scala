@@ -25,7 +25,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.InputEntityLike
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, GroupIndex, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, TransactionId}
 import org.alephium.util.U256
 
 object InputsFromTxQR {
@@ -39,7 +39,7 @@ object InputsFromTxQR {
       unlock_script,
       output_ref_tx_hash,
       output_ref_address,
-      output_ref_group_address,
+      output_ref_address_like,
       output_ref_amount,
       output_ref_tokens,
       contract_input
@@ -55,7 +55,7 @@ object InputsFromTxQR {
         unlockScript = result.<<?,
         outputRefTxHash = result.<<?,
         outputRefAddress = result.<<?,
-        outputRefGroup = result.<<?,
+        outputRefAddressLike = result.<<?,
         outputRefAmount = result.<<?,
         outputRefTokens = result.<<?,
         contractInput = result.<<
@@ -71,7 +71,7 @@ final case class InputsFromTxQR(
     unlockScript: Option[ByteString],
     outputRefTxHash: Option[TransactionId],
     outputRefAddress: Option[Address],
-    outputRefGroup: Option[GroupIndex],
+    outputRefAddressLike: Option[AddressLike],
     outputRefAmount: Option[U256],
     outputRefTokens: Option[ArraySeq[Token]],
     contractInput: Boolean

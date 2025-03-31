@@ -17,17 +17,16 @@
 package org.alephium.explorer.util
 
 import org.alephium.protocol.config.GroupConfig
-import org.alephium.protocol.model.{Address, GroupIndex}
+import org.alephium.protocol.model.{Address, AddressLike, GroupIndex}
 import org.alephium.protocol.vm.LockupScript
-import org.alephium.protocol.model.AddressLike
 
 object AddressUtil {
 
   def p2pkGroupAddress(
       address: Address
-  )(implicit groupConfig: GroupConfig): Option[GroupIndex] = {
+  ): Option[AddressLike] = {
     address.lockupScript match {
-      case p2pk: LockupScript.P2PK => Some(p2pk.groupIndex)
+      case p2pk: LockupScript.P2PK => Some(AddressLike.from(p2pk))
       case _                       => None
     }
   }

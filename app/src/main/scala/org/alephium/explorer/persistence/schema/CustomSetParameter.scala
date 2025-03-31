@@ -127,6 +127,17 @@ object CustomSetParameter {
       }
   }
 
+  implicit object OptionAddressLikeSetParameter extends SetParameter[Option[AddressLike]] {
+    override def apply(option: Option[AddressLike], params: PositionedParameters): Unit =
+      option match {
+        case Some(address) =>
+          AddressLikeSetParameter(address, params)
+
+        case None =>
+          params setStringOption None
+      }
+  }
+
   implicit object ArrayByteStringSetParameter extends SetParameter[Array[Byte]] {
     override def apply(input: Array[Byte], params: PositionedParameters): Unit =
       params setBytes input

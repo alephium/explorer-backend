@@ -50,10 +50,6 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .tag("Addresses")
       .in("addresses")
 
-  private val addressesEndpoint =
-    baseAddressesEndpoint
-      .in(path[(Address, Option[GroupIndex])]("address")(Codecs.explorerAddressTapirCodec))
-
   private val addressesLikeEndpoint =
     baseAddressesEndpoint
       .in(path[AddressLike]("address")(Codecs.explorerAddressLikeTapirCodec))
@@ -82,8 +78,8 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
     noGroupAddressesEndpoint
       .in("tokens")
 
-  val getAddressInfo: BaseEndpoint[(Address, Option[GroupIndex]), AddressInfo] =
-    addressesEndpoint.get
+  val getAddressInfo: BaseEndpoint[AddressLike, AddressInfo] =
+    addressesLikeEndpoint.get
       .out(jsonBody[AddressInfo])
       .summary("Get address information")
 
@@ -113,8 +109,8 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .summary("List transactions of a given address within a time-range")
   // format: on
 
-  val getTotalTransactionsByAddress: BaseEndpoint[(Address, Option[GroupIndex]), Int] =
-    addressesEndpoint.get
+  val getTotalTransactionsByAddress: BaseEndpoint[AddressLike, Int] =
+    addressesLikeEndpoint.get
       .in("total-transactions")
       .out(jsonBody[Int])
       .summary("Get total transactions of a given address")

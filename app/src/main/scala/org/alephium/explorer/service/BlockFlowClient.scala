@@ -486,7 +486,7 @@ object BlockFlowClient extends StrictLogging {
   // scalastyle:off null
   def blockProtocolToOutputEntities(
       block: api.model.BlockEntry
-  )(implicit groupSetting: GroupSetting): ArraySeq[OutputEntity] = {
+  ): ArraySeq[OutputEntity] = {
     val hash         = block.hash
     val mainChain    = false
     val transactions = block.transactions.toArraySeq.zipWithIndex
@@ -778,7 +778,7 @@ object BlockFlowClient extends StrictLogging {
       txOrder: Int,
       coinbase: Boolean,
       fixedOutput: Boolean
-  )(implicit groupSetting: GroupSetting): OutputEntity = {
+  ): OutputEntity = {
     val lockTime = output match {
       case asset: api.model.AssetOutput if asset.lockTime.millis > 0 => Some(asset.lockTime)
       case _                                                         => None
@@ -796,15 +796,14 @@ object BlockFlowClient extends StrictLogging {
 
     val tokens = protocolTokensToTokens(output.tokens)
 
-    val (address, group): (AddressLike, Option[GroupIndex]) = output.address match {
+    val (address, group): (Address, Option[AddressLike]) = output.address match {
       case Address.Asset(lockup) =>
         lockup match {
           case LockupScript.P2PK(pk, _) =>
-            val groupIndex = lockup.groupIndex(groupSetting.groupConfig)
-            (AddressLike(LockupScript.HalfDecodedP2PK(pk)), Some(groupIndex))
-          case _ => (AddressLike.from(output.address.lockupScript), None)
+            (output.address, Some(AddressLike(LockupScript.HalfDecodedP2PK(pk))))
+          case _ => (output.address, None)
         }
-      case _ => (AddressLike.from(output.address.lockupScript), None)
+      case _ => (output.address, None)
     }
 
     OutputEntity(

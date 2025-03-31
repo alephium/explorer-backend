@@ -21,21 +21,21 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.persistence.model.TokenTxPerAddressEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TokenId, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TokenId, TransactionId}
 import org.alephium.util.TimeStamp
 
 object TokenPerAddressSchema
     extends SchemaMainChain[TokenTxPerAddressEntity]("token_tx_per_addresses") {
 
   class TokenPerAddresses(tag: Tag) extends Table[TokenTxPerAddressEntity](tag, name) {
-    def address: Rep[Address]          = column[Address]("address")
-    def group: Rep[Option[GroupIndex]] = column[Option[GroupIndex]]("group_address")
-    def txHash: Rep[TransactionId]     = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
-    def blockHash: Rep[BlockHash]      = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
-    def timestamp: Rep[TimeStamp]      = column[TimeStamp]("block_timestamp")
-    def txOrder: Rep[Int]              = column[Int]("tx_order")
-    def mainChain: Rep[Boolean]        = column[Boolean]("main_chain")
-    def token: Rep[TokenId]            = column[TokenId]("token")
+    def address: Rep[Address]                 = column[Address]("address")
+    def addressLike: Rep[Option[AddressLike]] = column[Option[AddressLike]]("address_like")
+    def txHash: Rep[TransactionId]            = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
+    def blockHash: Rep[BlockHash]             = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
+    def timestamp: Rep[TimeStamp]             = column[TimeStamp]("block_timestamp")
+    def txOrder: Rep[Int]                     = column[Int]("tx_order")
+    def mainChain: Rep[Boolean]               = column[Boolean]("main_chain")
+    def token: Rep[TokenId]                   = column[TokenId]("token")
 
     def pk: PrimaryKey = primaryKey("token_tx_per_address_pk", (txHash, blockHash, address, token))
 
@@ -46,7 +46,7 @@ object TokenPerAddressSchema
     def tokenAddressIdx: Index = index("token_tx_per_address_token_address_idx", (token, address))
 
     def * : ProvenShape[TokenTxPerAddressEntity] =
-      (address, group, txHash, blockHash, timestamp, txOrder, mainChain, token)
+      (address, addressLike, txHash, blockHash, timestamp, txOrder, mainChain, token)
         .<>((TokenTxPerAddressEntity.apply _).tupled, TokenTxPerAddressEntity.unapply)
   }
 

@@ -36,7 +36,6 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service.{TokenService, TransactionService}
-import org.alephium.explorer.util.AddressUtil
 import org.alephium.protocol.PublicKey
 import org.alephium.protocol.model.Address
 import org.alephium.protocol.vm.{LockupScript, UnlockScript}
@@ -63,10 +62,8 @@ class AddressServer(
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
       route(getTransactionsByAddress.serverLogicSuccess[Future] { case (address, pagination) =>
-        val addressRaw = AddressUtil.toRawAddress(address.getAddress())
-        val groupIndex = AddressUtil.getGroupIndex(address)
         transactionService
-          .getTransactionsByAddress(addressRaw, groupIndex, pagination)
+          .getTransactionsByAddress(address, pagination)
       }),
       route(getTransactionsByAddresses.serverLogicSuccess[Future] {
         case (addresses, fromTsOpt, toTsOpt, pagination) =>
@@ -87,15 +84,15 @@ class AddressServer(
         transactionService
           .listMempoolTransactionsByAddress(address)
       }),
-      route(getAddressInfo.serverLogicSuccess[Future] { case (address, groupIndex) =>
+      route(getAddressInfo.serverLogicSuccess[Future] { address =>
         for {
           (balance, locked) <- transactionService
-            .getBalance(address.toBase58, groupIndex, blockCache.getLastFinalizedTimestamp())
-          txNumber <- transactionService.getTransactionsNumberByAddress(address, groupIndex)
+            .getBalance(address, blockCache.getLastFinalizedTimestamp())
+          txNumber <- transactionService.getTransactionsNumberByAddress(address)
         } yield AddressInfo(balance, locked, txNumber)
       }),
-      route(getTotalTransactionsByAddress.serverLogic[Future] { case (address, groupIndex) =>
-        transactionService.getTransactionsNumberByAddress(address, groupIndex).map(Right(_))
+      route(getTotalTransactionsByAddress.serverLogic[Future] { address =>
+        transactionService.getTransactionsNumberByAddress(address).map(Right(_))
       }),
       route(getLatestTransactionInfo.serverLogic[Future] { address =>
         transactionService.getLatestTransactionInfoByAddress(address).map {
@@ -104,11 +101,9 @@ class AddressServer(
         }
       }),
       route(getAddressBalance.serverLogicSuccess[Future] { case address =>
-        val addressRaw = AddressUtil.toRawAddress(address.getAddress())
-        val groupIndex = AddressUtil.getGroupIndex(address)
         for {
           (balance, locked) <- transactionService
-            .getBalance(addressRaw, groupIndex, blockCache.getLastFinalizedTimestamp())
+            .getBalance(address, blockCache.getLastFinalizedTimestamp())
         } yield AddressBalance(balance, locked)
       }),
       route(getAddressTokenBalance.serverLogicSuccess[Future] { case (address, token) =>

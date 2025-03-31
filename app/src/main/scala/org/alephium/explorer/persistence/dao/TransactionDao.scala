@@ -25,7 +25,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries.TransactionQueries._
-import org.alephium.protocol.model.{Address, GroupIndex, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object TransactionDao {
@@ -36,11 +36,11 @@ object TransactionDao {
   ): Future[Option[Transaction]] =
     run(getTransactionAction(hash))
 
-  def getByAddress(address: String, groupIndex: Option[GroupIndex], pagination: Pagination)(implicit
+  def getByAddress(address: AddressLike, pagination: Pagination)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]] =
-    run(getTransactionsByAddress(address, groupIndex, pagination))
+    run(getTransactionsByAddress(address, pagination))
 
   def getByAddresses(
       addresses: ArraySeq[Address],
@@ -73,17 +73,15 @@ object TransactionDao {
     }))
 
   def getNumberByAddress(
-      address: Address,
-      groupIndex: Option[GroupIndex]
+      address: AddressLike
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int] =
-    run(countAddressTransactions(address, groupIndex)).map(_.headOption.getOrElse(0))
+    run(countAddressTransactions(address)).map(_.headOption.getOrElse(0))
 
   def getBalance(
-      address: String,
-      groupIndex: Option[GroupIndex],
+      address: AddressLike,
       latestFinalizedTimestamp: TimeStamp
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
-    run(getBalanceAction(address, groupIndex, latestFinalizedTimestamp))
+    run(getBalanceAction(address, latestFinalizedTimestamp))
 
   def areAddressesActive(
       addresses: ArraySeq[Address]

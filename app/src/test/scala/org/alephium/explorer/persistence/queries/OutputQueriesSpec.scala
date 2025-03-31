@@ -100,7 +100,7 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
                 key = entity.key,
                 amount = entity.amount,
                 address = entity.address,
-                group = entity.group,
+                addressLike = entity.addressLike,
                 tokens = entity.tokens,
                 lockTime = entity.lockTime,
                 message = entity.message,
@@ -150,7 +150,7 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
               key = output.key,
               amount = output.amount,
               address = output.address,
-              group = output.group,
+              addressLike = output.group,
               tokens = output.tokens,
               lockTime = output.lockTime,
               message = output.message,
@@ -195,7 +195,7 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
       "address does not exist" in {
         val address = addressGen.sample getOrElse fail("Failed to sample address")
         run(
-          getBalanceUntilLockTime(address, None, TimeStamp.now(), TimeStamp.now())
+          getBalanceUntilLockTime(address, TimeStamp.now(), TimeStamp.now())
         ).futureValue is ((
           None,
           None

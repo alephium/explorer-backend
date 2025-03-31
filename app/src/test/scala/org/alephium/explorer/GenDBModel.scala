@@ -72,7 +72,7 @@ object GenDBModel {
         hint = hint,
         key = key,
         amount = amount,
-        group = p2pkGroupAddress(address),
+        addressLike = p2pkGroupAddress(address),
         address = address,
         tokens = tokens,
         mainChain = mainChain,
@@ -196,7 +196,7 @@ object GenDBModel {
       coinbase  <- Arbitrary.arbitrary[Boolean]
     } yield TransactionPerAddressEntity(
       address = address,
-      group = p2pkGroupAddress(address),
+      addressLike = p2pkGroupAddress(address),
       hash = hash,
       blockHash = blockHash,
       timestamp = timestamp,
@@ -237,7 +237,7 @@ object GenDBModel {
       token     <- tokenIdGen
     } yield TokenTxPerAddressEntity(
       address = address,
-      group = p2pkGroupAddress(address),
+      addressLike = p2pkGroupAddress(address),
       hash = hash,
       blockHash = blockHash,
       timestamp = timestamp,

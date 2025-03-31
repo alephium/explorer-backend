@@ -22,7 +22,7 @@ import akka.util.ByteString
 
 import org.alephium.explorer.api.model.{Input, OutputRef, Token}
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 trait InputEntityLike {
@@ -31,7 +31,7 @@ trait InputEntityLike {
   def unlockScript: Option[ByteString]
   def outputRefTxHash: Option[TransactionId]
   def outputRefAddress: Option[Address]
-  def outputRefGroup: Option[GroupIndex]
+  def outputRefAddressLike: Option[AddressLike]
   def outputRefAmount: Option[U256]
   def outputRefTokens: Option[ArraySeq[Token]]
   def contractInput: Boolean
@@ -60,7 +60,7 @@ final case class InputEntity(
     txOrder: Int,
     outputRefTxHash: Option[TransactionId],
     outputRefAddress: Option[Address],
-    outputRefGroup: Option[GroupIndex],
+    outputRefAddressLike: Option[AddressLike],
     outputRefAmount: Option[U256],
     outputRefTokens: Option[ArraySeq[Token]], // None if empty list
     contractInput: Boolean

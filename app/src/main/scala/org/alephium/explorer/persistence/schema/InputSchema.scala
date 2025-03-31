@@ -27,7 +27,7 @@ import org.alephium.explorer.persistence.DBActionW
 import org.alephium.explorer.persistence.model.InputEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
@@ -45,8 +45,8 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
     def outputRefTxHash: Rep[Option[TransactionId]] =
       column[Option[TransactionId]]("output_ref_tx_hash")
     def outputRefAddress: Rep[Option[Address]] = column[Option[Address]]("output_ref_address")
-    def outputRefGroup: Rep[Option[GroupIndex]] =
-      column[Option[GroupIndex]]("output_ref_group_address")
+    def outputRefAddressLike: Rep[Option[AddressLike]] =
+      column[Option[AddressLike]]("output_ref_address_like")
     def outputRefAmount: Rep[Option[U256]] =
       column[Option[U256]](
         "output_ref_amount",
@@ -77,7 +77,7 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
         txOrder,
         outputRefTxHash,
         outputRefAddress,
-        outputRefGroup,
+        outputRefAddressLike,
         outputRefAmount,
         outputRefTokens,
         contractInput

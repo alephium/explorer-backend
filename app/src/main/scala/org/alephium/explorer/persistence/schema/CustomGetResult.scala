@@ -161,6 +161,10 @@ object CustomGetResult {
     (result: PositionedResult) =>
       result.nextStringOption().map(string => Address.fromBase58(string).get)
 
+  implicit val optionAddressLikeGetResult: GetResult[Option[AddressLike]] =
+    (result: PositionedResult) =>
+      result.nextStringOption().map(string => AddressLike.fromBase58(string).get)
+
   implicit val u256GetResult: GetResult[U256] =
     (result: PositionedResult) => {
       U256.unsafe(result.nextBigDecimal().toBigInt.bigInteger)
@@ -182,7 +186,7 @@ object CustomGetResult {
         key = result.<<,
         amount = result.<<,
         address = result.<<,
-        group = result.<<?,
+        addressLike = result.<<?,
         tokens = result.<<?,
         mainChain = result.<<,
         lockTime = result.<<?,
@@ -209,7 +213,7 @@ object CustomGetResult {
         txOrder = result.<<,
         outputRefTxHash = result.<<?,
         outputRefAddress = result.<<?,
-        outputRefGroup = result.<<?,
+        outputRefAddressLike = result.<<?,
         outputRefAmount = result.<<?,
         outputRefTokens = result.<<?,
         contractInput = result.<<

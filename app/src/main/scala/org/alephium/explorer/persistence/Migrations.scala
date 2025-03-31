@@ -94,15 +94,15 @@ object Migrations extends StrictLogging {
   def migration4: DBActionAll[Unit] = DBIOAction.successful(())
 
   private def addGroupAddressColumn(tableName: String, groupColumn: String): DBActionAll[Int] =
-    sqlu"""ALTER TABLE #$tableName ADD COLUMN #$groupColumn INTEGER"""
+    sqlu"""ALTER TABLE #$tableName ADD COLUMN #$groupColumn CHARACTER VARYING"""
 
   def migration5(implicit ec: ExecutionContext): DBActionAll[Unit] =
     for {
-      _ <- addGroupAddressColumn("outputs", "group_address")
-      _ <- addGroupAddressColumn("token_outputs", "group_address")
-      _ <- addGroupAddressColumn("token_tx_per_addresses", "group_address")
-      _ <- addGroupAddressColumn("transaction_per_addresses", "group_address")
-      _ <- addGroupAddressColumn("inputs", "output_ref_group_address")
+      _ <- addGroupAddressColumn("outputs", "address_like")
+      _ <- addGroupAddressColumn("token_outputs", "address_like")
+      _ <- addGroupAddressColumn("token_tx_per_addresses", "address_like")
+      _ <- addGroupAddressColumn("transaction_per_addresses", "address_like")
+      _ <- addGroupAddressColumn("inputs", "output_ref_address_like")
     } yield ()
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -153,14 +153,14 @@ object Migrations extends StrictLogging {
         "Migrating group addresses, might be slow if you have a lot of groupless addresses"
       )
       for {
-        _ <- updateGroupAddressColumn("outputs", "address", "group_address")
-        _ <- updateGroupAddressColumn("token_outputs", "address", "group_address")
-        _ <- updateGroupAddressColumn("token_tx_per_addresses", "address", "group_address")
-        _ <- updateGroupAddressColumn("transaction_per_addresses", "address", "group_address")
+        _ <- updateGroupAddressColumn("outputs", "address", "address_like")
+        _ <- updateGroupAddressColumn("token_outputs", "address", "address_like")
+        _ <- updateGroupAddressColumn("token_tx_per_addresses", "address", "address_like")
+        _ <- updateGroupAddressColumn("transaction_per_addresses", "address", "address_like")
         _ <- updateGroupAddressColumn(
           "inputs",
           "output_ref_address",
-          "output_ref_group_address",
+          "output_ref_address_like",
           "chain_from"
         )
       } yield {

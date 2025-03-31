@@ -22,17 +22,16 @@ import akka.util.ByteString
 
 import org.alephium.explorer.api.model.{AssetOutput, ContractOutput, Output, Token}
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{AddressLike, BlockHash, GroupIndex, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
-import org.alephium.explorer.util.AddressUtil
 trait OutputEntityLike {
 
   def outputType: OutputEntity.OutputType
   def hint: Int
   def key: Hash
   def amount: U256
-  def address: AddressLike
-  def group: Option[GroupIndex]
+  def address: Address
+  def addressLike: Option[AddressLike]
   def tokens: Option[ArraySeq[Token]]
   def lockTime: Option[TimeStamp]
   def message: Option[ByteString]
@@ -46,7 +45,7 @@ trait OutputEntityLike {
           hint = hint,
           key = key,
           attoAlphAmount = amount,
-          address = AddressUtil.getAddress(address, group),
+          address = address,
           tokens = tokens,
           lockTime = lockTime,
           message = message,
@@ -59,7 +58,7 @@ trait OutputEntityLike {
           hint = hint,
           key = key,
           attoAlphAmount = amount,
-          address = AddressUtil.getAddress(address, group),
+          address = address,
           tokens = tokens,
           spent = spentFinalized,
           fixedOutput = fixedOutput
@@ -75,8 +74,8 @@ final case class OutputEntity(
     hint: Int,
     key: Hash,
     amount: U256,
-    address: AddressLike,
-    group: Option[GroupIndex],
+    address: Address,
+    addressLike: Option[AddressLike],
     tokens: Option[ArraySeq[Token]], // None if empty list
     mainChain: Boolean,
     lockTime: Option[TimeStamp],

@@ -27,7 +27,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
 import org.alephium.util._
 
 object InputUpdateQueries {
@@ -35,7 +35,7 @@ object InputUpdateQueries {
   private type UpdateReturn =
     (
         Address,
-        Option[GroupIndex],
+        Option[AddressLike],
         Option[ArraySeq[Token]],
         TransactionId,
         BlockHash,
@@ -50,7 +50,7 @@ object InputUpdateQueries {
       SET
         output_ref_tx_hash = outputs.tx_hash,
         output_ref_address = outputs.address,
-        output_ref_group_address = outputs.group_address,
+        output_ref_address_like = outputs.address_like,
         output_ref_amount = outputs.amount,
         output_ref_tokens = outputs.tokens
       FROM outputs
@@ -58,7 +58,7 @@ object InputUpdateQueries {
       AND inputs.output_ref_amount IS NULL
       RETURNING
         outputs.address,
-        outputs.group_address,
+        outputs.address_like,
         outputs.tokens,
         inputs.tx_hash,
         inputs.block_hash,
@@ -92,7 +92,7 @@ object InputUpdateQueries {
     QuerySplitter.splitUpdates(rows = data, columnsPerRow = 8) { (data, placeholder) =>
       val query =
         s"""
-            INSERT INTO transaction_per_addresses (address, group_address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, coinbase)
+            INSERT INTO transaction_per_addresses (address, address_like, tx_hash, block_hash, block_timestamp, tx_order, main_chain, coinbase)
             VALUES $placeholder
             ON CONFLICT ON CONSTRAINT txs_per_address_pk DO NOTHING
            """.stripMargin
@@ -138,7 +138,7 @@ object InputUpdateQueries {
       (tokenTxPerAddresses, placeholder) =>
         val query =
           s"""
-              INSERT INTO token_tx_per_addresses (address, group_address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
+              INSERT INTO token_tx_per_addresses (address, address_like, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
               VALUES $placeholder
               ON CONFLICT ON CONSTRAINT token_tx_per_address_pk DO NOTHING
              """

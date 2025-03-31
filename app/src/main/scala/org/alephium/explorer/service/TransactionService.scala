@@ -38,7 +38,7 @@ import org.alephium.explorer.persistence.queries.InputQueries
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.util.TimeUtil
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{Address, GroupIndex, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, TransactionId}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 trait TransactionService {
@@ -49,8 +49,7 @@ trait TransactionService {
   ): Future[Option[TransactionLike]]
 
   def getTransactionsByAddress(
-      address: String,
-      groupIndex: Option[GroupIndex],
+      address: AddressLike,
       pagination: Pagination
   )(implicit
       ec: ExecutionContext,
@@ -88,13 +87,11 @@ trait TransactionService {
   ): Future[ArraySeq[MempoolTransaction]]
 
   def getTransactionsNumberByAddress(
-      address: Address,
-      groupIndex: Option[GroupIndex]
+      address: AddressLike
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int]
 
   def getBalance(
-      address: String,
-      groupIndex: Option[GroupIndex],
+      address: AddressLike,
       latestFinalizedBlock: TimeStamp
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)]
 
@@ -158,14 +155,13 @@ object TransactionService extends TransactionService {
     }
 
   def getTransactionsByAddress(
-      address: String,
-      groupIndex: Option[GroupIndex],
+      address: AddressLike,
       pagination: Pagination
   )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]] =
-    TransactionDao.getByAddress(address, groupIndex, pagination)
+    TransactionDao.getByAddress(address, pagination)
 
   def getTransactionsByAddressTimeRanged(
       address: Address,
@@ -203,17 +199,15 @@ object TransactionService extends TransactionService {
   }
 
   def getTransactionsNumberByAddress(
-      address: Address,
-      groupIndex: Option[GroupIndex]
+      address: AddressLike
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int] =
-    TransactionDao.getNumberByAddress(address, groupIndex)
+    TransactionDao.getNumberByAddress(address)
 
   def getBalance(
-      address: String,
-      groupIndex: Option[GroupIndex],
+      address: AddressLike,
       latestFinalizedBlock: TimeStamp
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
-    TransactionDao.getBalance(address, groupIndex, latestFinalizedBlock)
+    TransactionDao.getBalance(address, latestFinalizedBlock)
 
   def listMempoolTransactions(pagination: Pagination)(implicit
       ec: ExecutionContext,
