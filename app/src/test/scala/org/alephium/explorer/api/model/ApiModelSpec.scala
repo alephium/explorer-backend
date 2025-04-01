@@ -29,7 +29,7 @@ import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
 import org.alephium.protocol.{ALPH, Hash}
-import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
 import org.alephium.util.{Hex, TimeStamp}
 
 class ApiModelSpec() extends AlephiumSpec {
@@ -73,11 +73,13 @@ class ApiModelSpec() extends AlephiumSpec {
         val expected =
           s"${tx.hash.toHexString},${tx.blockHash.toHexString},${tx.timestamp.millis},${Instant
               .ofEpochMilli(tx.timestamp.millis)},,${tx.outputs.map(_.address).mkString("-")},0,0\n"
-        tx.toCsv(addressGen.sample.get)
+        tx.toCsv(addressLikeGen.sample.get)
         expected
       }
 
-      val address = Address.fromBase58("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n").get
+      val address     = Address.fromBase58("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n").get
+      val addressLike = AddressLike.fromBase58("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n").get
+
       val transaction = Transaction(
         TransactionId
           .from(Hex.unsafe("798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"))
@@ -145,7 +147,7 @@ class ApiModelSpec() extends AlephiumSpec {
       val expected =
         s"798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef,bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5,1636379973000,2021-11-08T13:59:33Z,1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n,14PqtYSSbwpUi2RJKUvv9yUwGafd6yHbEcke7ionuiE7w-22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM,-2000000000000000000,-2\n"
 
-      transaction.toCsv(address) is expected
+      transaction.toCsv(addressLike) is expected
     }
   }
 
@@ -443,16 +445,15 @@ class ApiModelSpec() extends AlephiumSpec {
   }
 
   "Groupless Address" in {
-    val address   = "3cUqj91Y4SxeoV5szxWc6dekfDt6Pq1ZUC2kdeTW26rYXt3bY98YX"
-    val groupless = Address.fromBase58(address).get
+    val address     = "3cUqj91Y4SxeoV5szxWc6dekfDt6Pq1ZUC2kdeTW26rYXt3bY98YX"
+    val addressLike = AddressLike.fromBase58(address).get
 
-    // by default print group 0
-    groupless.toBase58 is address + ":0"
+    addressLike.toBase58 is address
 
     (0 to groupConfig.groups - 1).foreach { i =>
-      val grouped = Address.fromBase58(address ++ s":$i").get
+      val grouped = AddressLike.fromBase58(address ++ s":$i").get
 
-      grouped.groupIndex.value is i
+      grouped.getAddress().groupIndex.value is i
 
       grouped.toBase58 is address + s":$i"
     }

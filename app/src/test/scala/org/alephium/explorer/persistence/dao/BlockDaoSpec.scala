@@ -38,7 +38,6 @@ import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.service.BlockFlowClient
-import org.alephium.explorer.util.AddressUtil._
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.json.Json._
 import org.alephium.protocol.config.GroupConfig
@@ -284,7 +283,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
       TransactionPerAddressEntity(
         hash = output.txHash,
         address = output.address,
-        addressLike = p2pkGroupAddress(output.address),
+        addressLike = Some(output.address),
         blockHash = output.blockHash,
         timestamp = output.timestamp,
         txOrder = input.txOrder,

@@ -39,7 +39,6 @@ import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.{BlockDao, MempoolDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
-import org.alephium.explorer.util.AddressUtil._
 import org.alephium.json.Json._
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
@@ -79,7 +78,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       .futureValue
 
     TransactionService
-      .getTransactionsByAddress(address, None, Pagination.unsafe(1, txLimit))
+      .getTransactionsByAddress(address, Pagination.unsafe(1, txLimit))
       .futureValue
       .size is txLimit
   }
@@ -151,7 +150,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
         hashGen.sample.get,
         U256.One,
         address0,
-        p2pkGroupAddress(address0),
+        Some(address0),
         None,
         true,
         None,
@@ -219,7 +218,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       hashGen.sample.get,
       U256.One,
       address1,
-      p2pkGroupAddress(address1),
+      Some(address1),
       None,
       true,
       None,
@@ -309,7 +308,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
     val res2 =
       TransactionService
-        .getTransactionsByAddress(address0, None, Pagination.unsafe(1, 5))
+        .getTransactionsByAddress(address0, Pagination.unsafe(1, 5))
         .futureValue
 
     res2 is ArraySeq(t1, t0)
@@ -351,7 +350,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
           hashGen.sample.get,
           U256.One,
           address0,
-          p2pkGroupAddress(address0),
+          Some(address0),
           None,
           true,
           None,
@@ -391,7 +390,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
 
       TransactionService
-        .getTransactionsByAddress(address0, None, Pagination.unsafe(1, 5))
+        .getTransactionsByAddress(address0, Pagination.unsafe(1, 5))
         .futureValue
         .size is 1 // was 2 in fb7127f
 
@@ -468,7 +467,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     }
 
     TransactionService
-      .getTransactionsByAddress(address, None, Pagination.unsafe(1, Int.MaxValue))
+      .getTransactionsByAddress(address, Pagination.unsafe(1, Int.MaxValue))
       .futureValue
       .map { transaction =>
         transaction.outputs.map(_.key) is outputs

@@ -238,7 +238,7 @@ object TransactionQueries extends StrictLogging {
     *   Maximum rows
     */
   def getTxHashesByAddressQueryTimeRanged(
-      address: Address,
+      address: AddressLike,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       pagination: Pagination
@@ -247,7 +247,7 @@ object TransactionQueries extends StrictLogging {
       SELECT #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
       WHERE main_chain = true
-        AND address = $address
+        AND #${addressColumn(address)} = $address
         AND block_timestamp BETWEEN $fromTime AND $toTime
       ORDER BY block_timestamp DESC, tx_order
     """
@@ -300,12 +300,12 @@ object TransactionQueries extends StrictLogging {
   }
 
   def getLatestTransactionInfoByAddressAction(
-      address: Address
+      address: AddressLike
   )(implicit ec: ExecutionContext): DBActionR[Option[TxByAddressQR]] = {
     sql"""
       SELECT #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
-      WHERE main_chain = true AND address = $address
+      WHERE main_chain = true AND #${addressColumn(address)} = $address
       ORDER BY block_timestamp DESC, tx_order
       LIMIT 1
     """
@@ -314,7 +314,7 @@ object TransactionQueries extends StrictLogging {
   }
 
   def getTransactionsByAddressTimeRanged(
-      address: Address,
+      address: AddressLike,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       pagination: Pagination
@@ -325,13 +325,18 @@ object TransactionQueries extends StrictLogging {
     } yield txs
   }
 
-  def hasAddressMoreTxsThanQuery(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
-      implicit ec: ExecutionContext
+  def hasAddressMoreTxsThanQuery(
+      address: AddressLike,
+      from: TimeStamp,
+      to: TimeStamp,
+      threshold: Int
+  )(implicit
+      ec: ExecutionContext
   ): DBActionR[Boolean] = {
     sql"""
       select 1
       FROM transaction_per_addresses
-      WHERE address = $address
+      WHERE #${addressColumn(address)} = $address
       AND main_chain = true
       AND block_timestamp >= $from
       AND block_timestamp < $to
@@ -340,7 +345,7 @@ object TransactionQueries extends StrictLogging {
   }
 
   def streamTxByAddressQR(
-      address: Address,
+      address: AddressLike,
       from: TimeStamp,
       to: TimeStamp
   ): StreamAction[TxByAddressQR] = {
@@ -377,7 +382,7 @@ object TransactionQueries extends StrictLogging {
    * LEAST and GREATEST are here to restrict to the `from` and `to` timestamp
    */
   def sumAddressOutputs(
-      address: Address,
+      address: AddressLike,
       from: TimeStamp,
       to: TimeStamp,
       intervalType: IntervalType
@@ -388,7 +393,7 @@ object TransactionQueries extends StrictLogging {
         LEAST($to, GREATEST($from, #${QueryUtil.extractEpoch(dateGroup)} - 1)) as ts,
         SUM(amount)
       FROM outputs
-      WHERE address = $address
+      WHERE #${addressColumn(address)} = $address
       AND main_chain = true
       AND block_timestamp >= ${ALPH.GenesisTimestamp}
       AND block_timestamp <= $to
@@ -396,26 +401,26 @@ object TransactionQueries extends StrictLogging {
       """.asAS[(TimeStamp, Option[U256])]
   }
 
-  def sumAddressOutputsDEPRECATED(address: Address, from: TimeStamp, to: TimeStamp)(implicit
+  def sumAddressOutputsDEPRECATED(address: AddressLike, from: TimeStamp, to: TimeStamp)(implicit
       ec: ExecutionContext
   ): DBActionR[U256] = {
     sql"""
       SELECT SUM(amount)
       FROM outputs
-      WHERE address = $address
+      WHERE #${addressColumn(address)} = $address
       AND main_chain = true
       AND block_timestamp >= $from
       AND block_timestamp <= $to
     """.asAS[Option[U256]].exactlyOne.map(_.getOrElse(U256.Zero))
   }
 
-  def sumAddressInputsDEPRECATED(address: Address, from: TimeStamp, to: TimeStamp)(implicit
+  def sumAddressInputsDEPRECATED(address: AddressLike, from: TimeStamp, to: TimeStamp)(implicit
       ec: ExecutionContext
   ): DBActionR[U256] = {
     sql"""
       SELECT SUM(output_ref_amount)
       FROM inputs
-      WHERE output_ref_address = $address
+      WHERE #${addressColumn(address, "output_ref_address", "output_ref_address_like")}  = $address
       AND main_chain = true
       AND block_timestamp >= $from
       AND block_timestamp <= $to
@@ -427,7 +432,7 @@ object TransactionQueries extends StrictLogging {
    * LEAST and GREATEST are here to restrict to the `from` and `to` timestamp
    */
   def sumAddressInputs(
-      address: Address,
+      address: AddressLike,
       from: TimeStamp,
       to: TimeStamp,
       intervalType: IntervalType
@@ -439,7 +444,7 @@ object TransactionQueries extends StrictLogging {
         LEAST($to, GREATEST($from, #${QueryUtil.extractEpoch(dateGroup)} - 1)) as ts,
         SUM(output_ref_amount)
       FROM inputs
-      WHERE output_ref_address = $address
+      WHERE #${addressColumn(address, "output_ref_address", "output_ref_address_like")}= $address
       AND main_chain = true
       AND block_timestamp >= ${ALPH.GenesisTimestamp}
       AND block_timestamp <= $to

@@ -57,7 +57,7 @@ trait TransactionService {
   ): Future[ArraySeq[Transaction]]
 
   def getTransactionsByAddressTimeRanged(
-      address: Address,
+      address: AddressLike,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       pagination: Pagination
@@ -66,7 +66,7 @@ trait TransactionService {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]]
 
-  def getLatestTransactionInfoByAddress(address: Address)(implicit
+  def getLatestTransactionInfoByAddress(address: AddressLike)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Option[TransactionInfo]]
@@ -81,7 +81,7 @@ trait TransactionService {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]]
 
-  def listMempoolTransactionsByAddress(address: Address)(implicit
+  def listMempoolTransactionsByAddress(address: AddressLike)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[MempoolTransaction]]
@@ -106,18 +106,18 @@ trait TransactionService {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[MempoolTransaction]]
 
-  def hasAddressMoreTxsThan(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
+  def hasAddressMoreTxsThan(address: AddressLike, from: TimeStamp, to: TimeStamp, threshold: Int)(
       implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Boolean]
 
   def getUnlockScript(
-      address: Address
+      address: AddressLike
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Option[ByteString]]
 
   def exportTransactionsByAddress(
-      address: Address,
+      address: AddressLike,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       batchSize: Int,
@@ -125,7 +125,7 @@ trait TransactionService {
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer]
 
   def getAmountHistoryDEPRECATED(
-      address: Address,
+      address: AddressLike,
       from: TimeStamp,
       to: TimeStamp,
       intervalType: IntervalType,
@@ -133,7 +133,7 @@ trait TransactionService {
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer]
 
   def getAmountHistory(
-      address: Address,
+      address: AddressLike,
       from: TimeStamp,
       to: TimeStamp,
       intervalType: IntervalType
@@ -164,7 +164,7 @@ object TransactionService extends TransactionService {
     TransactionDao.getByAddress(address, pagination)
 
   def getTransactionsByAddressTimeRanged(
-      address: Address,
+      address: AddressLike,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       pagination: Pagination
@@ -174,7 +174,7 @@ object TransactionService extends TransactionService {
   ): Future[ArraySeq[Transaction]] =
     TransactionDao.getByAddressTimeRanged(address, fromTime, toTime, pagination)
 
-  def getLatestTransactionInfoByAddress(address: Address)(implicit
+  def getLatestTransactionInfoByAddress(address: AddressLike)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Option[TransactionInfo]] =
@@ -191,7 +191,7 @@ object TransactionService extends TransactionService {
   ): Future[ArraySeq[Transaction]] =
     TransactionDao.getByAddresses(addresses, fromTime, toTime, pagination)
 
-  def listMempoolTransactionsByAddress(address: Address)(implicit
+  def listMempoolTransactionsByAddress(address: AddressLike)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[MempoolTransaction]] = {
@@ -224,7 +224,7 @@ object TransactionService extends TransactionService {
   def getTotalNumber()(implicit cache: TransactionCache): Int =
     cache.getMainChainTxnCount()
 
-  def hasAddressMoreTxsThan(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
+  def hasAddressMoreTxsThan(address: AddressLike, from: TimeStamp, to: TimeStamp, threshold: Int)(
       implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
@@ -232,7 +232,7 @@ object TransactionService extends TransactionService {
     run(hasAddressMoreTxsThanQuery(address, from, to, threshold))
   }
   def exportTransactionsByAddress(
-      address: Address,
+      address: AddressLike,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       batchSize: Int,
@@ -246,7 +246,8 @@ object TransactionService extends TransactionService {
 
   }
 
-  private def getInOutAmountDEPRECATED(address: Address, from: TimeStamp, to: TimeStamp)(implicit
+  private def getInOutAmountDEPRECATED(address: AddressLike, from: TimeStamp, to: TimeStamp)(
+      implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[(U256, U256, TimeStamp)] = {
@@ -260,7 +261,7 @@ object TransactionService extends TransactionService {
     )
   }
 
-  def getUnlockScript(address: Address)(implicit
+  def getUnlockScript(address: AddressLike)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Option[ByteString]] = {
@@ -269,7 +270,7 @@ object TransactionService extends TransactionService {
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   def getAmountHistoryDEPRECATED(
-      address: Address,
+      address: AddressLike,
       from: TimeStamp,
       to: TimeStamp,
       intervalType: IntervalType,
@@ -307,7 +308,7 @@ object TransactionService extends TransactionService {
   }
 
   def getAmountHistory(
-      address: Address,
+      address: AddressLike,
       from: TimeStamp,
       to: TimeStamp,
       intervalType: IntervalType
@@ -389,7 +390,7 @@ object TransactionService extends TransactionService {
   }
 
   private def transactionSource(
-      address: Address,
+      address: AddressLike,
       from: TimeStamp,
       to: TimeStamp,
       batchSize: Int,
@@ -418,7 +419,7 @@ object TransactionService extends TransactionService {
   }
 
   def transactionsFlowable(
-      address: Address,
+      address: AddressLike,
       source: Flowable[ArraySeq[Transaction]]
   ): Flowable[Buffer] = {
     bufferFlowable {

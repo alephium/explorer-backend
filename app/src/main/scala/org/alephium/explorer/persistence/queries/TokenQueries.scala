@@ -137,7 +137,7 @@ object TokenQueries extends StrictLogging {
       .paginate(pagination)
       .asAS[TokenId]
 
-  def getTokenTransactionsByAddress(address: Address, token: TokenId, pagination: Pagination)(
+  def getTokenTransactionsByAddress(address: AddressLike, token: TokenId, pagination: Pagination)(
       implicit ec: ExecutionContext
   ): DBActionR[ArraySeq[Transaction]] = {
     for {
@@ -147,7 +147,7 @@ object TokenQueries extends StrictLogging {
   }
 
   def getTokenTxHashesByAddressQuery(
-      address: Address,
+      address: AddressLike,
       token: TokenId,
       pagination: Pagination
   ): DBActionSR[TxByTokenQR] = {
@@ -155,7 +155,7 @@ object TokenQueries extends StrictLogging {
       SELECT #${TxByTokenQR.selectFields}
       FROM token_tx_per_addresses
       WHERE main_chain = true
-      AND address = $address
+      AND #${addressColumn(address)} = $address
       AND token = $token
       ORDER BY block_timestamp DESC, tx_order
     """
@@ -163,7 +163,7 @@ object TokenQueries extends StrictLogging {
       .asAS[TxByTokenQR]
   }
 
-  def listAddressTokensWithBalanceAction(address: Address, pagination: Pagination)(implicit
+  def listAddressTokensWithBalanceAction(address: AddressLike, pagination: Pagination)(implicit
       ec: ExecutionContext
   ): DBActionSR[(TokenId, U256, U256)] =
     listAddressTokensWithBalanceUntilLockTime(address, TimeStamp.now(), pagination).map(_.map {
@@ -172,7 +172,7 @@ object TokenQueries extends StrictLogging {
     })
 
   def listAddressTokensWithBalanceUntilLockTime(
-      address: Address,
+      address: AddressLike,
       lockTime: TimeStamp,
       pagination: Pagination
   ): DBActionSR[(TokenId, Option[U256], Option[U256])] =
@@ -189,7 +189,7 @@ object TokenQueries extends StrictLogging {
                          ON token_outputs.key = inputs.output_ref_key
                              AND inputs.main_chain = true
       WHERE token_outputs.spent_finalized IS NULL
-        AND token_outputs.address = $address
+        AND token_outputs.#${addressColumn(address)} = $address
         AND token_outputs.main_chain = true
         AND inputs.block_hash IS NULL
       GROUP BY token_outputs.token

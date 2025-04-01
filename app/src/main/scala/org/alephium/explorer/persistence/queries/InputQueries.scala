@@ -31,7 +31,7 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
+import org.alephium.protocol.model.{AddressLike, BlockHash, TransactionId}
 
 object InputQueries {
 
@@ -153,13 +153,13 @@ object InputQueries {
         ORDER BY block_timestamp #${if (ascendingOrder) "" else "DESC"}
     """.asASE[InputEntity](inputGetResult)
 
-  def getUnlockScript(address: Address)(implicit
+  def getUnlockScript(address: AddressLike)(implicit
       ec: ExecutionContext
   ): DBActionR[Option[ByteString]] = {
     sql"""
       select unlock_script
       FROM inputs
-      WHERE output_ref_address = $address
+      WHERE #${addressColumn(address, "output_ref_address", "output_ref_address_like")}  = $address
       LIMIT 1
     """.asAS[ByteString].headOrNone
   }

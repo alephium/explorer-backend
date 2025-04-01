@@ -22,7 +22,6 @@ import org.openjdk.jmh.annotations.{Scope, State}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._

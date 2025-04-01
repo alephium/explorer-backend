@@ -25,12 +25,12 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model.{IntervalType, Pagination}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.state._
 import org.alephium.explorer.cache.BlockCache
-import org.alephium.explorer.config.Default._
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
@@ -165,7 +165,7 @@ class DBBenchmark {
 
     val _ =
       state.db.runNow(
-        TransactionQueries.getBalanceAction(state.address, None, TimeStamp.zero),
+        TransactionQueries.getBalanceAction(state.address, TimeStamp.zero),
         requestTimeout
       )
   }
@@ -174,7 +174,7 @@ class DBBenchmark {
   def getTxHashesByAddressQuery(state: Address_ReadState): Unit = {
     val _ =
       state.db.runNow(
-        TransactionQueries.getTxHashesByAddressQuery(state.address, None, state.pagination),
+        TransactionQueries.getTxHashesByAddressQuery(state.address, state.pagination),
         requestTimeout
       )
   }
@@ -183,7 +183,7 @@ class DBBenchmark {
   def countAddressTransactions(state: Address_ReadState): Unit = {
     val _ =
       state.db
-        .runNow(TransactionQueries.countAddressTransactions(state.address, None), requestTimeout)
+        .runNow(TransactionQueries.countAddressTransactions(state.address), requestTimeout)
   }
 
   @Benchmark
@@ -192,8 +192,8 @@ class DBBenchmark {
 
     val _ = Await.result(
       for {
-        _ <- TransactionDao.getBalance(state.address, None, TimeStamp.zero)
-        _ <- TransactionDao.getNumberByAddress(state.address, None)
+        _ <- TransactionDao.getBalance(state.address, TimeStamp.zero)
+        _ <- TransactionDao.getNumberByAddress(state.address)
       } yield (),
       requestTimeout
     )
@@ -223,7 +223,7 @@ class DBBenchmark {
 
     val _ =
       state.db.runNow(
-        TransactionQueries.getTransactionsByAddress(state.address, None, state.pagination),
+        TransactionQueries.getTransactionsByAddress(state.address, state.pagination),
         requestTimeout
       )
   }

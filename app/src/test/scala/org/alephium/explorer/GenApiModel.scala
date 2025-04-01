@@ -19,6 +19,7 @@ package org.alephium.explorer
 import java.math.BigInteger
 
 import scala.collection.immutable.ArraySeq
+import scala.language.implicitConversions
 
 import akka.util.ByteString
 import org.scalacheck.Arbitrary.arbitrary
@@ -29,10 +30,22 @@ import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model._
-import org.alephium.protocol.model.{Address, ChainIndex, GroupIndex, TokenId, TxOutputRef}
+import org.alephium.protocol.model.{
+  Address,
+  AddressLike,
+  ChainIndex,
+  GroupIndex,
+  TokenId,
+  TxOutputRef
+}
 
 /** Generators for types supplied by `org.alephium.explorer.api.model` package */
 object GenApiModel extends ImplicitConversions {
+
+  @SuppressWarnings(Array("org.wartremover.warts.ImplicitConversion"))
+  implicit def addressToLike(address: Address): AddressLike = {
+    AddressLike.fromBase58(address.toBase58).get
+  }
 
   def tokenIdGen(implicit gs: GroupSetting): Gen[TokenId] = for {
     contractId <- contractIdGen(gs)
@@ -56,6 +69,11 @@ object GenApiModel extends ImplicitConversions {
 
   val intervalTypeGen: Gen[IntervalType] =
     Gen.oneOf(ArraySeq[IntervalType](IntervalType.Hourly, IntervalType.Daily))
+
+  val addressLikeGen: Gen[AddressLike] = for {
+    groupIndex <- groupIndexGen
+    lockup     <- GenCoreProtocol.lockupGen(groupIndex)
+  } yield AddressLike.from(lockup)
 
   val addressGen: Gen[Address] = for {
     groupIndex <- groupIndexGen

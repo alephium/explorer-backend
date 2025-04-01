@@ -28,7 +28,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.crypto.Blake2b
-import org.alephium.explorer.ConfigDefaults._
+import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
@@ -38,7 +38,6 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.FinalizerService
-import org.alephium.explorer.util.AddressUtil._
 import org.alephium.protocol.{ALPH, Hash}
 import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{Duration, TimeStamp, U256}
@@ -146,7 +145,7 @@ class AddressReadState(val db: DBExecutor)
       key = Hash.generate,
       amount = ALPH.alph(1),
       address = address0,
-      group = p2pkGroupAddress(address0),
+      addressLike = Some(address0),
       tokens = None,
       mainChain = true,
       lockTime = None,

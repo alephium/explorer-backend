@@ -20,7 +20,6 @@ import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AlephiumFutureSpec
-import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
@@ -150,7 +149,7 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
               key = output.key,
               amount = output.amount,
               address = output.address,
-              addressLike = output.group,
+              addressLike = output.addressLike,
               tokens = output.tokens,
               lockTime = output.lockTime,
               message = output.message,

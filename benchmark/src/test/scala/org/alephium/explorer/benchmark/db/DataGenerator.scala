@@ -26,9 +26,7 @@ import akka.util.ByteString
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.util.AddressUtil._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
@@ -71,7 +69,7 @@ object DataGenerator {
 
   def genOutputEntity(
       transactions: ArraySeq[TransactionEntity]
-  )(implicit groupConfig: GroupConfig): ArraySeq[OutputEntity] = {
+  ): ArraySeq[OutputEntity] = {
     val coinbaseTxHash = transactions.last.hash
     transactions.zipWithIndex map { case (transaction, order) =>
       val address = addressGen.sample.get
@@ -84,7 +82,7 @@ object DataGenerator {
         key = Hash.generate,
         amount = U256.unsafe(Random.nextInt(100)),
         address = address,
-        group = p2pkGroupAddress(address),
+        addressLike = Some(address),
         tokens = None,
         mainChain = transaction.mainChain,
         lockTime = Some(TimeStamp.now()),
@@ -125,7 +123,7 @@ object DataGenerator {
       blockHash: BlockHash = BlockHash.generate,
       timestamp: TimeStamp = TimeStamp.now(),
       mainChain: Boolean = Random.nextBoolean()
-  )(implicit groupConfig: GroupConfig): BlockEntity = {
+  ): BlockEntity = {
     val transactions =
       genTransactions(
         count = transactionsCount,
@@ -164,12 +162,10 @@ object DataGenerator {
   def genAddress(): Address =
     addressGen.sample.get
 
-  def genTransactionPerAddressEntity(address: Address = genAddress())(implicit
-      groupConfig: GroupConfig
-  ): TransactionPerAddressEntity =
+  def genTransactionPerAddressEntity(address: Address = genAddress()): TransactionPerAddressEntity =
     TransactionPerAddressEntity(
       address = address,
-      group = p2pkGroupAddress(address),
+      addressLike = Some(address),
       hash = TransactionId.generate,
       blockHash = BlockHash.generate,
       timestamp = TimeStamp.now(),

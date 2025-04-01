@@ -37,8 +37,8 @@ import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service.{TokenService, TransactionService}
 import org.alephium.protocol.PublicKey
-import org.alephium.protocol.model.Address
-import org.alephium.protocol.vm.{LockupScript, UnlockScript}
+import org.alephium.protocol.model.AddressLike
+import org.alephium.protocol.vm.{LockupScript, PublicKeyLike, UnlockScript}
 import org.alephium.serde._
 import org.alephium.util.Duration
 
@@ -174,22 +174,26 @@ class AddressServer(
           }
       }),
       route(getPublicKey.serverLogic[Future] { address =>
-        address match {
-          case Address.Asset(LockupScript.P2PKH(_)) =>
+        address.lockupScriptResult match {
+          case LockupScript.CompleteLockupScript(LockupScript.P2PKH(_)) =>
             transactionService.getUnlockScript(address).map {
               case None =>
                 Left(ApiError.NotFound(s"No input found for address $address"))
               case Some(unlockScript) =>
                 AddressServer.bytesToPublicKey(unlockScript)
             }
+          case LockupScript.CompleteLockupScript(
+                LockupScript.P2PK(PublicKeyLike.SecP256K1(publicKey), _)
+              ) =>
+            Future.successful(Right(publicKey))
           case _ =>
-            Future.successful(Left(ApiError.BadRequest(s"Only P2PKH addresses supported")))
+            Future.successful(Left(ApiError.BadRequest(s"Only P2PKH and P2PK addresses supported")))
         }
       })
     )
 
   private def exportTransactions(
-      address: Address,
+      address: AddressLike,
       timeInterval: TimeInterval
   ): Future[Either[ApiError[_ <: StatusCode], ReadStream[Buffer]]] = {
     transactionService
@@ -227,11 +231,11 @@ class AddressServer(
 }
 
 object AddressServer {
-  def exportFileNameHeader(address: Address, timeInterval: TimeInterval): String = {
+  def exportFileNameHeader(address: AddressLike, timeInterval: TimeInterval): String = {
     s"""attachment;filename="$address-${timeInterval.from.millis}-${timeInterval.to.millis}.csv""""
   }
 
-  def amountHistoryFileNameHeader(address: Address, timeInterval: TimeInterval): String = {
+  def amountHistoryFileNameHeader(address: AddressLike, timeInterval: TimeInterval): String = {
     s"""attachment;filename="$address-amount-history-${timeInterval.from.millis}-${timeInterval.to.millis}.json""""
   }
 

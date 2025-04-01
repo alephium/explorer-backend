@@ -54,7 +54,7 @@ object TransactionDao {
     run(getTransactionsByAddresses(addresses, fromTime, toTime, pagination))
 
   def getByAddressTimeRanged(
-      address: Address,
+      address: AddressLike,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       pagination: Pagination
@@ -64,7 +64,7 @@ object TransactionDao {
   ): Future[ArraySeq[Transaction]] =
     run(getTransactionsByAddressTimeRanged(address, fromTime, toTime, pagination))
 
-  def getLatestTransactionInfoByAddress(address: Address)(implicit
+  def getLatestTransactionInfoByAddress(address: AddressLike)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Option[TransactionInfo]] =

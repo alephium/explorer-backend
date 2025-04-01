@@ -1543,7 +1543,6 @@
           "Addresses"
         ],
         "summary": "List transactions of a given address within a time-range",
-        "description": "Address with group notation `@group` not supported yet for this endpoint",
         "operationId": "getAddressesAddressTimeranged-transactions",
         "parameters": [
           {
@@ -1976,7 +1975,6 @@
           "Addresses"
         ],
         "summary": "Get latest transaction information of a given address",
-        "description": "Address with group notation `@group` not supported yet for this endpoint",
         "operationId": "getAddressesAddressLatest-transaction",
         "parameters": [
           {
@@ -2094,7 +2092,6 @@
           "Addresses"
         ],
         "summary": "List mempool transactions of a given address",
-        "description": "Address with group notation `@group` not supported yet for this endpoint",
         "operationId": "getAddressesAddressMempoolTransactions",
         "parameters": [
           {
@@ -2610,7 +2607,6 @@
           "Addresses"
         ],
         "summary": "List address tokens",
-        "description": "Address with group notation `@group` not supported yet for this endpoint",
         "operationId": "getAddressesAddressTokensToken_idTransactions",
         "parameters": [
           {
@@ -2919,7 +2915,6 @@
           "Addresses"
         ],
         "summary": "Get address balance of given token",
-        "description": "Address with group notation `@group` not supported yet for this endpoint",
         "operationId": "getAddressesAddressTokensToken_idBalance",
         "parameters": [
           {
@@ -3045,7 +3040,6 @@
           "Addresses"
         ],
         "summary": "Get public key of p2pkh addresses, the address needs to have at least one input.",
-        "description": "Address with group notation `@group` not supported yet for this endpoint",
         "operationId": "getAddressesAddressPublic-key",
         "parameters": [
           {
@@ -3159,7 +3153,6 @@
           "Addresses"
         ],
         "summary": "Get address tokens with balance",
-        "description": "Address with group notation `@group` not supported yet for this endpoint",
         "operationId": "getAddressesAddressTokens-balance",
         "parameters": [
           {
@@ -3430,7 +3423,6 @@
         "tags": [
           "Addresses"
         ],
-        "description": "Address with group notation `@group` not supported yet for this endpoint",
         "operationId": "getAddressesAddressExport-transactionsCsv",
         "parameters": [
           {
@@ -3569,7 +3561,6 @@
         "tags": [
           "Addresses"
         ],
-        "description": "Address with group notation `@group` not supported yet for this endpoint",
         "operationId": "getAddressesAddressAmount-history-deprecated",
         "parameters": [
           {
@@ -3717,7 +3708,6 @@
         "tags": [
           "Addresses"
         ],
-        "description": "Address with group notation `@group` not supported yet for this endpoint",
         "operationId": "getAddressesAddressAmount-history",
         "parameters": [
           {

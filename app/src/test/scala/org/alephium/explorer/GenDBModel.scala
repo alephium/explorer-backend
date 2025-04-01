@@ -32,7 +32,6 @@ import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model.Height
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.service.BlockFlowClient
-import org.alephium.explorer.util.AddressUtil._
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{Address, BlockHash, ChainIndex, GroupIndex, TransactionId}
 import org.alephium.util.{AVector, TimeStamp}
@@ -72,7 +71,7 @@ object GenDBModel {
         hint = hint,
         key = key,
         amount = amount,
-        addressLike = p2pkGroupAddress(address),
+        addressLike = Some(address),
         address = address,
         tokens = tokens,
         mainChain = mainChain,
@@ -196,7 +195,7 @@ object GenDBModel {
       coinbase  <- Arbitrary.arbitrary[Boolean]
     } yield TransactionPerAddressEntity(
       address = address,
-      addressLike = p2pkGroupAddress(address),
+      addressLike = Some(address),
       hash = hash,
       blockHash = blockHash,
       timestamp = timestamp,
@@ -237,7 +236,7 @@ object GenDBModel {
       token     <- tokenIdGen
     } yield TokenTxPerAddressEntity(
       address = address,
-      addressLike = p2pkGroupAddress(address),
+      addressLike = Some(address),
       hash = hash,
       blockHash = blockHash,
       timestamp = timestamp,
@@ -301,7 +300,7 @@ object GenDBModel {
       token,
       amount,
       address,
-      p2pkGroupAddress(address),
+      Some(address),
       mainChain,
       lockTime,
       message,

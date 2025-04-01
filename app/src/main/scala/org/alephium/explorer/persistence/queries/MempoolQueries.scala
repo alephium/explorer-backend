@@ -28,7 +28,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.{Address, TransactionId}
+import org.alephium.protocol.model.{AddressLike, TransactionId}
 
 object MempoolQueries {
 
@@ -56,15 +56,15 @@ object MempoolQueries {
       .asASE[MempoolTransactionEntity](mempoolTransactionGetResult)
   }
 
-  def listUTXHashesByAddress(address: Address): DBActionSR[TransactionId] = {
+  def listUTXHashesByAddress(address: AddressLike): DBActionSR[TransactionId] = {
     sql"""
       SELECT tx_hash
       FROM uinputs
-      WHERE address = $address
+      WHERE #${addressColumn(address)} = $address
       UNION
       SELECT tx_hash
       FROM uoutputs
-      WHERE address = $address
+      WHERE #${addressColumn(address)} = $address
     """.asAS[TransactionId]
   }
 

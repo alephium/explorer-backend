@@ -73,13 +73,13 @@ trait TokenService {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[TokenId]]
 
-  def listAddressTokenTransactions(address: Address, token: TokenId, pagination: Pagination)(
+  def listAddressTokenTransactions(address: AddressLike, token: TokenId, pagination: Pagination)(
       implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]]
 
-  def listAddressTokensWithBalance(address: Address, pagination: Pagination)(implicit
+  def listAddressTokensWithBalance(address: AddressLike, pagination: Pagination)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[(TokenId, U256, U256)]]
@@ -161,14 +161,14 @@ object TokenService extends TokenService with StrictLogging {
   ): Future[ArraySeq[TokenId]] =
     run(listAddressTokensAction(address, pagination))
 
-  def listAddressTokenTransactions(address: Address, token: TokenId, pagination: Pagination)(
+  def listAddressTokenTransactions(address: AddressLike, token: TokenId, pagination: Pagination)(
       implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]] =
     run(getTokenTransactionsByAddress(address, token, pagination))
 
-  def listAddressTokensWithBalance(address: Address, pagination: Pagination)(implicit
+  def listAddressTokensWithBalance(address: AddressLike, pagination: Pagination)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[(TokenId, U256, U256)]] =
