@@ -143,6 +143,7 @@ trait ExplorerSpec
       ("alephium.explorer.market.coingecko-uri", coingeckoUri),
       ("alephium.explorer.market.mobula-uri", mobulaUri),
       ("alephium.explorer.market.token-list-uri", tokenListUri),
+      ("alephium.explorer.market.mobula-api-key", apiKeyGen.sample.get.value),
       ("alephium.blockflow.port", blockFlowPort),
       ("alephium.blockflow.network-id", networkId.id),
       ("alephium.blockflow.group-num", groupSetting.groupNum)

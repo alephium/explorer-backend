@@ -32,6 +32,7 @@ import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
 import org.alephium.explorer.AlephiumFutureSpec
+import org.alephium.explorer.GenCoreApi.apiKeyGen
 import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.web.Server
@@ -126,6 +127,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     val coingeckoPort          = SocketUtil.temporaryLocalPort(SocketUtil.Both)
     val mobulaPort             = SocketUtil.temporaryLocalPort(SocketUtil.Both)
     val tokenListPort          = SocketUtil.temporaryLocalPort(SocketUtil.Both)
+    val apiKey                 = apiKeyGen.sample.get
 
     val alph = "ALPH"
     val usdt = "USDT"
@@ -138,6 +140,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
       s"http://${localhost.getHostAddress()}:$mobulaPort",
       s"http://${localhost.getHostAddress()}:$coingeckoPort",
       s"http://${localhost.getHostAddress()}:$tokenListPort",
+      Some(apiKey),
       marketChartDays = 366
     )
 
@@ -147,8 +150,8 @@ class MarketServiceSpec extends AlephiumFutureSpec {
       new MarketServiceSpec.MobulaMock(localhost, mobulaPort)
     val tokenList: MarketServiceSpec.TokenListMock =
       new MarketServiceSpec.TokenListMock(localhost, tokenListPort)
-    val marketService: MarketService.Impl =
-      new MarketService.Impl(marketConfig)
+    val marketService: MarketService.MarketServiceWithApiKey =
+      new MarketService.MarketServiceWithApiKey(marketConfig, apiKey)
   }
 }
 
