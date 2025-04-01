@@ -30,7 +30,7 @@ import org.alephium.explorer.util.UtxoUtil
 import org.alephium.json.Json._
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{BlockHash, TransactionId}
-import org.alephium.protocol.model.Address
+import org.alephium.protocol.model.AddressLike
 import org.alephium.util.{TimeStamp, U256}
 import org.alephium.util.AVector
 
@@ -50,7 +50,7 @@ final case class Transaction(
     scriptSignatures: ArraySeq[ByteString],
     coinbase: Boolean
 ) {
-  def toCsv(address: Address): String = {
+  def toCsv(address: AddressLike): String = {
     val dateTime         = Instant.ofEpochMilli(timestamp.millis)
     val fromAddresses    = UtxoUtil.fromAddresses(inputs)
     val fromAddressesStr = fromAddresses.mkString("-")

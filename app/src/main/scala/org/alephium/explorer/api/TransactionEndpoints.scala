@@ -35,5 +35,5 @@ trait TransactionEndpoints extends BaseEndpoint {
     transactionsEndpoint.get
       .in(path[TransactionId]("transaction_hash"))
       .out(jsonBody[TransactionLike])
-      .description("Get a transaction with hash")
+      .summary("Get a transaction with hash")
 }

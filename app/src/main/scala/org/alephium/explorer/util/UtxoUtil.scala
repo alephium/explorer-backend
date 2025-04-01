@@ -21,27 +21,39 @@ import java.math.BigInteger
 import scala.collection.immutable.ArraySeq
 
 import org.alephium.explorer.api.model.{Input, Output}
-import org.alephium.protocol.model.Address
+import org.alephium.protocol.model.{Address, AddressLike}
+import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.U256
 
 object UtxoUtil {
-  def amountForAddressInInputs(address: Address, inputs: ArraySeq[Input]): Option[U256] = {
+  def amountForAddressInInputs(address: AddressLike, inputs: ArraySeq[Input]): Option[U256] = {
     inputs
-      .filter(_.address == Some(address))
+      .filter(input =>
+        input.address.map(addressRef => addressEqual(addressRef, address)).getOrElse(false)
+      )
       .map(_.attoAlphAmount)
       .collect { case Some(amount) => amount }
       .foldLeft(Option(U256.Zero)) { case (acc, amount) => acc.flatMap(_.add(amount)) }
   }
 
-  def amountForAddressInOutputs(address: Address, outputs: ArraySeq[Output]): Option[U256] = {
+  def addressEqual(address: Address, addressLike: AddressLike): Boolean = {
+    addressLike.lockupScriptResult match {
+      case LockupScript.CompleteLockupScript(_) =>
+        addressLike.toBase58 == address.toBase58
+      case LockupScript.HalfDecodedP2PK(_) =>
+        addressLike.toBase58 == address.toBase58.takeWhile(_ != ':')
+    }
+  }
+
+  def amountForAddressInOutputs(address: AddressLike, outputs: ArraySeq[Output]): Option[U256] = {
     outputs
-      .filter(_.address == address)
+      .filter(output => addressEqual(output.address, address))
       .map(_.attoAlphAmount)
       .foldLeft(Option(U256.Zero)) { case (acc, amount) => acc.flatMap(_.add(amount)) }
   }
 
   def deltaAmountForAddress(
-      address: Address,
+      address: AddressLike,
       inputs: ArraySeq[Input],
       outputs: ArraySeq[Output]
   ): Option[BigInteger] = {

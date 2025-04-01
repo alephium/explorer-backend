@@ -34,6 +34,8 @@ import org.alephium.serde._
 import org.alephium.util.{TimeStamp, U256}
 
 /** [[slick.jdbc.SetParameter]] implicits for setting values in SQL queries */
+
+// scalastyle:off number.of.methods
 object CustomSetParameter {
 
   implicit object BlockEntryHashSetParameter extends SetParameter[BlockHash] {
@@ -49,6 +51,17 @@ object CustomSetParameter {
   implicit object GroupIndexSetParameter extends SetParameter[GroupIndex] {
     override def apply(input: GroupIndex, params: PositionedParameters): Unit =
       params setInt input.value
+  }
+
+  implicit object GroupIndexOptionSetParameter extends SetParameter[Option[GroupIndex]] {
+    override def apply(option: Option[GroupIndex], params: PositionedParameters): Unit =
+      option match {
+        case Some(group) =>
+          GroupIndexSetParameter(group, params)
+
+        case None =>
+          params setIntOption None
+      }
   }
 
   implicit object IntervalTypeSetParameter extends SetParameter[IntervalType] {
@@ -98,11 +111,27 @@ object CustomSetParameter {
       params setString input.toBase58
   }
 
+  implicit object AddressLikeSetParameter extends SetParameter[AddressLike] {
+    override def apply(input: AddressLike, params: PositionedParameters): Unit =
+      params setString input.toBase58
+  }
+
   implicit object OptionAddressSetParameter extends SetParameter[Option[Address]] {
     override def apply(option: Option[Address], params: PositionedParameters): Unit =
       option match {
         case Some(address) =>
           AddressSetParameter(address, params)
+
+        case None =>
+          params setStringOption None
+      }
+  }
+
+  implicit object OptionAddressLikeSetParameter extends SetParameter[Option[AddressLike]] {
+    override def apply(option: Option[AddressLike], params: PositionedParameters): Unit =
+      option match {
+        case Some(address) =>
+          AddressLikeSetParameter(address, params)
 
         case None =>
           params setStringOption None

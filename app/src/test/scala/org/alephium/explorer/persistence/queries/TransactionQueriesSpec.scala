@@ -43,7 +43,8 @@ import org.alephium.util.{Duration, TimeStamp, U256}
 class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
   "compute locked balance when empty" in new Fixture {
-    val balance = run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
+    val balance =
+      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
     balance is ((U256.Zero, U256.Zero))
   }
 
@@ -655,6 +656,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         hashGen.sample.get,
         amount,
         address,
+        Some(address),
         Gen.option(tokensGen).sample.get,
         true,
         lockTime,
@@ -678,6 +680,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         true,
         0,
         0,
+        None,
         None,
         None,
         None,
