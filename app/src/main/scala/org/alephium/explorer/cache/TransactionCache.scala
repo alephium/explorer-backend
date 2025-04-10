@@ -20,11 +20,12 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
-import slick.jdbc.PostgresProfile.api._
-
 import org.alephium.explorer.persistence.Database
 import org.alephium.explorer.persistence.DBRunner._
-import org.alephium.explorer.persistence.queries.TransactionQueries
+import org.alephium.explorer.persistence.model.AppState._
+import org.alephium.explorer.persistence.queries.{AppStateQueries, TransactionQueries}
+import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.protocol.ALPH
 import org.alephium.util.Service
 
 object TransactionCache {
@@ -47,7 +48,17 @@ class TransactionCache(database: Database, reloadAfter: FiniteDuration)(implicit
 
   private val mainChainTxnCount: AsyncReloadingCache[Int] = {
     AsyncReloadingCache(0, reloadAfter) { _ =>
-      run(TransactionQueries.mainTransactions.length.result)(database.databaseConfig)
+      run(
+        for {
+          finalizedTime    <- AppStateQueries.get(LastFinalizedInputTime).map(_.map(_.time))
+          finalizedTxCount <- AppStateQueries.get(FinalizedTxCount).map(_.map(_.count).getOrElse(0))
+          nonFinalizedTxCount <- TransactionQueries.countTxsAfter(
+            finalizedTime.getOrElse(ALPH.GenesisTimestamp)
+          )
+        } yield {
+          finalizedTxCount + nonFinalizedTxCount
+        }
+      )(database.databaseConfig)
     }
   }
 
