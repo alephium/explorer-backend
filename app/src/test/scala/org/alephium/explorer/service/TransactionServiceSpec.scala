@@ -34,11 +34,14 @@ import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
+import org.alephium.explorer.cache._
+import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence.DatabaseFixtureForEach
 import org.alephium.explorer.persistence.dao.{BlockDao, MempoolDao}
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries.InputUpdateQueries
+import org.alephium.explorer.persistence.model.AppState._
+import org.alephium.explorer.persistence.queries._
+import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.json.Json._
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
@@ -67,15 +70,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
     val txLimit = 5
 
-    BlockDao.insertAll(blocks).futureValue
-    Future
-      .sequence(blocks.map { block =>
-        for {
-          _ <- databaseConfig.db.run(InputUpdateQueries.updateInputs())
-          _ <- BlockDao.updateMainChainStatus(block.hash, true)
-        } yield (())
-      })
-      .futureValue
+    insertMainChainBlocks(blocks)
 
     TransactionService
       .getTransactionsByAddress(address, Pagination.unsafe(1, txLimit))
@@ -426,6 +421,39 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     }
   }
 
+  "get total number of transactions using finalized tx count cached value" in new Fixture {
+
+    val startTime = FinalizerService.finalizationTime.minusUnsafe(Duration.ofDaysUnsafe(1))
+
+    val finalizedBlocks =
+      chainGen(3, startTime, chainIndex).sample.get.map(BlockFlowClient.blockProtocolToEntity)
+
+    val nonFinalizedBlocks =
+      chainGen(3, TimeStamp.now(), ChainIndex(GroupIndex.unsafe(1), groupIndex)).sample.get
+        .map(BlockFlowClient.blockProtocolToEntity)
+
+    val blocks = finalizedBlocks ++ nonFinalizedBlocks
+
+    insertMainChainBlocks(blocks)
+
+    FinalizerService.finalizeOutputs().futureValue
+
+    val expectedTxsCount = blocks.map(_.transactions.size).sum
+
+    eventually {
+
+      TransactionService.getTotalNumber() is expectedTxsCount
+
+      val finalizedTxCount = databaseConfig.db
+        .run(AppStateQueries.get(FinalizedTxCount).map(_.map(_.count).getOrElse(0)))
+        .futureValue
+
+      // we check that the transaction cache used both the `FinaliazedTxCount` and the manual counting of non-finalized txs.
+      finalizedTxCount > 0 is true
+      finalizedTxCount < expectedTxsCount is true
+    }
+  }
+
   "preserve outputs order" in new Fixture {
 
     val address = addressGen.sample.get
@@ -440,10 +468,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
     val outputs = blocks.flatMap(_.outputs)
 
-    Future.sequence(blocks.map(BlockDao.insert)).futureValue
-    Future
-      .sequence(blocks.map(block => BlockDao.updateMainChainStatus(block.hash, true)))
-      .futureValue
+    insertMainChainBlocks(blocks)
 
     blocks.foreach { block =>
       block.transactions.map { tx =>
@@ -612,7 +637,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
   }
 
   trait Fixture {
-    implicit val blockCache: BlockCache = TestBlockCache()
+    implicit val blockCache: BlockCache             = TestBlockCache()
+    implicit val transactionCache: TransactionCache = TestTransactionCache()
 
     val groupIndex      = GroupIndex.Zero
     val chainIndex      = ChainIndex(groupIndex, groupIndex)
@@ -641,6 +667,28 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
         ghostUncles = ArraySeq.empty
       )
 
+    def insertMainChainBlocks(blocks: ArraySeq[BlockEntity]) = {
+
+      val latestBlocks = blocks.groupBy(b => (b.chainFrom, b.chainTo)).map { case (_, blocks) =>
+        blocks.maxBy(_.timestamp)
+      }
+
+      BlockDao.insertAll(blocks).futureValue
+
+      foldFutures(latestBlocks)(BlockDao.updateLatestBlock).futureValue
+
+      eventually {
+        // Check that the block cache is updated
+        blockCache.getAllLatestBlocks().futureValue.head._2.timestamp > TimeStamp.zero is true
+      }
+      foldFutures(blocks) { block =>
+        for {
+          _ <- databaseConfig.db.run(InputUpdateQueries.updateInputs())
+          _ <- BlockDao.updateMainChainStatus(block.hash, true)
+        } yield (())
+      }.futureValue
+
+    }
   }
 
   trait TxsByAddressFixture extends Fixture {
@@ -666,15 +714,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       .sample
       .get
 
-    BlockDao.insertAll(blocks).futureValue
-    Future
-      .sequence(blocks.map { block =>
-        for {
-          _ <- databaseConfig.db.run(InputUpdateQueries.updateInputs())
-          _ <- BlockDao.updateMainChainStatus(block.hash, true)
-        } yield (())
-      })
-      .futureValue
+    insertMainChainBlocks(blocks)
 
     val transactions = blocks.flatMap(_.transactions).sortBy(_.timestamp)
     val timestamps   = transactions.map(_.timestamp).distinct
