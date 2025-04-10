@@ -248,7 +248,9 @@ case object FinalizerService extends StrictLogging {
         val end = if (_end.isBefore(ft)) _end else ft
         getLastFinalizedInputTime().flatMap {
           case Some(lastFinalizedInputTime) =>
-            DBIOAction.successful(Some((lastFinalizedInputTime, end)))
+            // Inputs at finalization time are already finalized, so adding 1 millis
+            // Re-finalizing isn't an issue, but it is a waste of resources
+            DBIOAction.successful(Some((lastFinalizedInputTime + Duration.ofMillisUnsafe(1), end)))
           case None =>
             getMinInputsTs.map {
               // No input in db
@@ -274,13 +276,14 @@ case object FinalizerService extends StrictLogging {
       FROM latest_blocks
     """.asAS[TimeStamp].headOrNone
 
-  private def countTxsUpTo(time: TimeStamp): DBActionR[Int] =
+  private def countTxsUpTo(time: TimeStamp): DBActionR[Int] = {
     sql"""
         SELECT COUNT(*)
         FROM transactions
         WHERE block_timestamp < $time
         AND main_chain = true
         """.as[Int].head
+  }
 
   private def getLastFinalizedInputTime()(implicit
       executionContext: ExecutionContext
