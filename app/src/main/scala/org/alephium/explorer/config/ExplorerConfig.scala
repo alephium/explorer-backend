@@ -55,8 +55,9 @@ object ExplorerConfig {
   def loadConfig(rootPath: Path): Try[Config] = {
     for {
       userConfig <- parseConfigFile(getUserConfig(rootPath))
+      networkId  <- parseNetworkId(userConfig)
     } yield {
-      val defaultConfig = ConfigFactory.parseResources("application.conf")
+      val defaultConfig = ConfigFactory.parseResources(s"application-${networkId.networkType}.conf")
       ConfigFactory.load(userConfig.withFallback(defaultConfig))
     }
   }
@@ -72,6 +73,15 @@ object ExplorerConfig {
       case e: ConfigException =>
         Failure(ConfigParsingError(file, e))
     }
+
+  def parseNetworkId(config: Config): Try[NetworkId] = {
+    val keyPath = "alephium.blockflow.network-id"
+    if (config.hasPath(keyPath)) {
+      Try(config.as[NetworkId](keyPath))
+    } else {
+      Success(NetworkId.AlephiumMainNet)
+    }
+  }
 
   def validateGroupNum(groupNum: Int): Try[Int] =
     if (groupNum < 0) {

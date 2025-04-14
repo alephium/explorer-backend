@@ -36,8 +36,13 @@ class ExplorerConfigSpec extends AlephiumSpec with ScalaCheckDrivenPropertyCheck
 
   "ficus" should {
     "load config" in {
-      val typesafeConfig = ConfigFactory.load()
-      Try(typesafeConfig.as[ExplorerConfig]("alephium")) is a[Success[ExplorerConfig]]
+      // We make sure every config file is valid
+      Seq(NetworkId.AlephiumMainNet, NetworkId.AlephiumTestNet, NetworkId.AlephiumDevNet).foreach {
+        networkId =>
+          val typesafeConfig =
+            ConfigFactory.parseResources(s"application-${networkId.networkType}.conf").resolve()
+          Try(typesafeConfig.as[ExplorerConfig]("alephium")) is a[Success[ExplorerConfig]]
+      }
     }
   }
 
