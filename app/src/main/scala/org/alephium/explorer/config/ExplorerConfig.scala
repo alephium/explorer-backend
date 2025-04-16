@@ -62,6 +62,11 @@ object ExplorerConfig {
     }
   }
 
+  def loadNetwork(networkId: NetworkId): ExplorerConfig =
+    ExplorerConfig.load(
+      ConfigFactory.load(ConfigFactory.parseResources(s"application-${networkId.networkType}.conf"))
+    )
+
   def parseConfigFile(file: File): Try[Config] =
     try {
       if (file.exists()) {

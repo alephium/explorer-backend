@@ -50,7 +50,7 @@ import org.alephium.explorer.Generators._
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.config.{BootMode, ExplorerConfig}
+import org.alephium.explorer.config.{BootMode, ExplorerConfig, TestExplorerConfig}
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.persistence.model.BlockEntity
@@ -156,11 +156,7 @@ trait ExplorerSpec
           configValues.view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava
         )
         .withFallback(DatabaseFixture.config(dbName))
-        .withFallback(
-          ConfigFactory.load(
-            ConfigFactory.parseResources(s"application-${networkId.networkType}.conf")
-          )
-        )
+        .withFallback(TestExplorerConfig.typesafeConfig())
     )
 
     bootMode match {
