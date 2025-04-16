@@ -156,6 +156,11 @@ trait ExplorerSpec
           configValues.view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava
         )
         .withFallback(DatabaseFixture.config(dbName))
+        .withFallback(
+          ConfigFactory.load(
+            ConfigFactory.parseResources(s"application-${networkId.networkType}.conf")
+          )
+        )
     )
 
     bootMode match {

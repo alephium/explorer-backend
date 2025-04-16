@@ -16,7 +16,7 @@
 
 package org.alephium.tools
 
-import com.typesafe.config.ConfigFactory
+import scala.util._
 
 import org.alephium.api.OpenAPIWriters.openApiJson
 import org.alephium.explorer.config._
@@ -28,7 +28,10 @@ object OpenApiUpdate {
     discard {
       new Documentation {
 
-        private val typesafeConfig         = ConfigFactory.load()
+        private val typesafeConfig = ExplorerConfig.loadConfig(Platform.getRootPath()) match {
+          case Success(config) => config
+          case Failure(error)  => throw error
+        }
         private val config: ExplorerConfig = ExplorerConfig.load(typesafeConfig)
 
         val groupNum                           = config.groupNum
