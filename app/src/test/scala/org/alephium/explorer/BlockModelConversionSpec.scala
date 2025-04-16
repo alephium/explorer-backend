@@ -19,7 +19,7 @@ package org.alephium.explorer
 import scala.collection.immutable.ArraySeq
 
 import org.alephium.explorer.AlephiumSpec
-import org.alephium.explorer.ConfigDefaults.groupSetting
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
