@@ -41,9 +41,10 @@ import org.alephium.api.model.{
   MultipleCallContractResult,
   SelfClique
 }
-import org.alephium.explorer.{Consensus, GroupSetting}
+import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.api.model._
+import org.alephium.explorer.config.ExplorerConfig.Consensus
 import org.alephium.explorer.error.ExplorerError
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.persistence.model._
@@ -61,7 +62,7 @@ import org.alephium.protocol.model.{
   TokenId,
   TransactionId
 }
-import org.alephium.util.{AVector, Hex, Service, TimeStamp, U256}
+import org.alephium.util._
 
 trait BlockFlowClient extends Service {
   def fetchBlock(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntity]
@@ -116,11 +117,12 @@ object BlockFlowClient extends StrictLogging {
       uri: Uri,
       groupNum: Int,
       maybeApiKey: Option[api.model.ApiKey],
-      directCliqueAccess: Boolean
+      directCliqueAccess: Boolean,
+      consensus: Consensus
   )(implicit
       executionContext: ExecutionContext
   ): BlockFlowClient =
-    new Impl(uri, groupNum, maybeApiKey, directCliqueAccess)
+    new Impl(uri, groupNum, maybeApiKey, directCliqueAccess)(executionContext, consensus)
 
   private class Impl(
       uri: Uri,
@@ -128,7 +130,8 @@ object BlockFlowClient extends StrictLogging {
       val maybeApiKey: Option[api.model.ApiKey],
       directCliqueAccess: Boolean
   )(implicit
-      val executionContext: ExecutionContext
+      val executionContext: ExecutionContext,
+      consensus: Consensus
   ) extends BlockFlowClient
       with Endpoints
       with ApiModelCodec {
@@ -529,7 +532,7 @@ object BlockFlowClient extends StrictLogging {
 
   def blockAndEventsToEntities(
       blockAndEvents: api.model.BlockAndEvents
-  )(implicit groupSetting: GroupSetting): BlockEntityWithEvents = {
+  )(implicit groupSetting: GroupSetting, consensus: Consensus): BlockEntityWithEvents = {
     BlockEntityWithEvents(
       blockProtocolToEntity(blockAndEvents.block),
       blockProtocolToEventEntities(blockAndEvents)
@@ -539,7 +542,7 @@ object BlockFlowClient extends StrictLogging {
   // scalastyle:off null
   def blockProtocolToEntity(
       block: api.model.BlockEntry
-  )(implicit groupSetting: GroupSetting): BlockEntity = {
+  )(implicit groupSetting: GroupSetting, consensus: Consensus): BlockEntity = {
     val hash         = block.hash
     val mainChain    = false
     val transactions = block.transactions.toArraySeq.zipWithIndex
@@ -812,10 +815,20 @@ object BlockFlowClient extends StrictLogging {
     )
   }
 
+  private def blockTargetTime(timestamp: TimeStamp)(implicit consensus: Consensus): Duration =
+    if (timestamp.isBefore(consensus.rhone.forkTimestamp)) {
+      consensus.mainnet.blockTargetTime
+    } else if (timestamp.isBefore(consensus.danube.forkTimestamp)) {
+      consensus.rhone.blockTargetTime
+    } else {
+      consensus.danube.blockTargetTime
+    }
+
   def computeHashRate(targetBytes: ByteString, timestamp: TimeStamp)(implicit
-      groupSetting: GroupSetting
+      groupSetting: GroupSetting,
+      consensus: Consensus
   ): BigInteger = {
     val target = Target.unsafe(targetBytes)
-    HashRate.from(target, Consensus.blockTargetTime(timestamp))(groupSetting.groupConfig).value
+    HashRate.from(target, blockTargetTime(timestamp))(groupSetting.groupConfig).value
   }
 }

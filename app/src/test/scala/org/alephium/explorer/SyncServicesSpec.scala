@@ -20,7 +20,6 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.Future
 import scala.util._
 
-import com.typesafe.config.ConfigFactory
 import org.scalacheck.Gen
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.TryValues._
@@ -29,7 +28,7 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenCoreProtocol._
-import org.alephium.explorer.config.ExplorerConfig
+import org.alephium.explorer.config._
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.service.BlockFlowClient
 
@@ -41,8 +40,7 @@ class SyncServicesSpec
     with MockFactory {
 
   "getBlockFlowPeers" should {
-    val explorerConfig: ExplorerConfig =
-      ExplorerConfig.load(ConfigFactory.load())
+    val explorerConfig: ExplorerConfig = TestExplorerConfig()
 
     "return peer URIs" when {
       "directCliqueAccess = true" in {

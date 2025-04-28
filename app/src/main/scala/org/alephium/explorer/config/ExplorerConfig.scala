@@ -55,11 +55,17 @@ object ExplorerConfig {
   def loadConfig(rootPath: Path): Try[Config] = {
     for {
       userConfig <- parseConfigFile(getUserConfig(rootPath))
+      networkId  <- parseNetworkId(userConfig)
     } yield {
-      val defaultConfig = ConfigFactory.parseResources("application.conf")
+      val defaultConfig = ConfigFactory.parseResources(s"application-${networkId.networkType}.conf")
       ConfigFactory.load(userConfig.withFallback(defaultConfig))
     }
   }
+
+  def loadNetwork(networkId: NetworkId): ExplorerConfig =
+    ExplorerConfig.load(
+      ConfigFactory.load(ConfigFactory.parseResources(s"application-${networkId.networkType}.conf"))
+    )
 
   def parseConfigFile(file: File): Try[Config] =
     try {
@@ -72,6 +78,15 @@ object ExplorerConfig {
       case e: ConfigException =>
         Failure(ConfigParsingError(file, e))
     }
+
+  def parseNetworkId(config: Config): Try[NetworkId] = {
+    val keyPath = "alephium.blockflow.network-id"
+    if (config.hasPath(keyPath)) {
+      Try(config.as[NetworkId](keyPath))
+    } else {
+      Success(NetworkId.AlephiumMainNet)
+    }
+  }
 
   def validateGroupNum(groupNum: Int): Try[Int] =
     if (groupNum < 0) {
@@ -163,6 +178,14 @@ object ExplorerConfig {
       BootMode.validate(input).get
     }
 
+  implicit val timeStampReader: ValueReader[util.TimeStamp] = ValueReader[Long].map { ts =>
+    util.TimeStamp
+      .from(ts)
+      .getOrElse(
+        throw new ConfigException.BadValue("", s"Invalid timestamp: $ts")
+      )
+  }
+
   implicit def listMapValueReader[A](implicit
       entryReader: ValueReader[A]
   ): ValueReader[ListMap[String, A]] =
@@ -192,6 +215,7 @@ object ExplorerConfig {
           blockflow.directCliqueAccess,
           blockflowUri,
           blockflow.networkId,
+          blockflow.consensus,
           blockflow.apiKey,
           host,
           port,
@@ -224,8 +248,19 @@ object ExplorerConfig {
       host: String,
       port: Int,
       networkId: NetworkId,
+      consensus: Consensus,
       apiKey: Option[ApiKey]
   )
+
+  final case class Consensus(
+      mainnet: Consensus.Setting,
+      rhone: Consensus.Setting,
+      danube: Consensus.Setting
+  )
+
+  object Consensus {
+    final case class Setting(forkTimestamp: util.TimeStamp, blockTargetTime: util.Duration)
+  }
 
   final case class MaxTimeInterval(
       hourly: util.Duration,
@@ -282,6 +317,7 @@ final case class ExplorerConfig private (
     directCliqueAccess: Boolean,
     blockFlowUri: Uri,
     networkId: NetworkId,
+    consensus: ExplorerConfig.Consensus,
     maybeBlockFlowApiKey: Option[ApiKey],
     host: String,
     port: Int,

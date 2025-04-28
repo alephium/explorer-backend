@@ -58,7 +58,8 @@ sealed trait ExplorerState extends Service with StrictLogging {
       uri = config.blockFlowUri,
       groupNum = config.groupNum,
       maybeApiKey = config.maybeBlockFlowApiKey,
-      directCliqueAccess = config.directCliqueAccess
+      directCliqueAccess = config.directCliqueAccess,
+      consensus = config.consensus
     )
 
   override def startSelfOnce(): Future[Unit] = {
