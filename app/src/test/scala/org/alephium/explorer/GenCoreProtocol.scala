@@ -191,6 +191,7 @@ object GenCoreProtocol {
         usePreapprovedAssets = false,
         useContractAssets,
         usePayToContractOnly = false,
+        useRoutePattern = false,
         argsLength = 0,
         localsLength = 0,
         returnLength = 0,
