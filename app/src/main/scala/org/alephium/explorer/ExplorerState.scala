@@ -25,6 +25,7 @@ import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.cache.{BlockCache, MetricCache, TransactionCache}
 import org.alephium.explorer.config.{BootMode, ExplorerConfig}
+import org.alephium.explorer.config.ExplorerConfig.Consensus
 import org.alephium.explorer.persistence.Database
 import org.alephium.explorer.service._
 import org.alephium.explorer.util.Scheduler
@@ -45,6 +46,8 @@ sealed trait ExplorerState extends Service with StrictLogging {
 
   lazy val database: Database =
     new Database(config.bootMode)(executionContext, databaseConfig)
+
+  implicit lazy val consensus: Consensus = config.consensus
 
   implicit lazy val blockCache: BlockCache =
     BlockCache(
