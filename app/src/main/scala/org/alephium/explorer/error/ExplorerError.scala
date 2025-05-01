@@ -88,6 +88,12 @@ object ExplorerError {
       extends Exception(s"Cannot parse config file: $file", exception)
       with ConfigError
 
+  final case class WebSocketError(cause: Throwable)
+      extends Exception(s"WebSocket error. $cause")
+      with ExplorerError
+
+  /** ****** Group: [[ConfigError]] *******
+    */
   final case class InvalidGroupNumber(groupNum: Int)
       extends Exception(s"Invalid groupNum: $groupNum. It should be > 0")
       with ConfigError

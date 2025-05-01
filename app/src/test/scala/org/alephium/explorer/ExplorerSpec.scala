@@ -575,7 +575,7 @@ object ExplorerSpec {
 
     val cliqueId = CliqueId.generate
 
-    private val peer = model.PeerAddress(address, port, 0, 0)
+    private val peer = model.PeerAddress(address, port, 0)
 
     def fetchHashesAtHeight(
         from: GroupIndex,
