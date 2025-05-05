@@ -25,7 +25,8 @@ import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{foldFutures, Consensus}
+import org.alephium.explorer.config.ExplorerConfig
+import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence.model.AppState.MigrationVersion
 import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
@@ -112,6 +113,7 @@ object Migrations extends StrictLogging {
       groupColumn: String,
       chain: String = "chain_to"
   )(implicit
+      explorerConfig: ExplorerConfig,
       ec: ExecutionContext
   ): DBActionAll[Unit] = {
     logger.info(s"Migrating $tableName")
@@ -119,7 +121,7 @@ object Migrations extends StrictLogging {
       addresses <- sql"""
           SELECT #$addressColumn, block_hash
           FROM #$tableName
-          WHERE block_timestamp >= ${Consensus.danubeHardForkTimestamp}
+          WHERE block_timestamp >= ${explorerConfig.consensus.danube.forkTimestamp}
           AND #$groupColumn IS NULL
         """
         .asAS[(Address, BlockHash)]
@@ -144,8 +146,8 @@ object Migrations extends StrictLogging {
     } yield ()
   }
 
-  def migration6(implicit ec: ExecutionContext): DBActionAll[Unit] =
-    if (TimeStamp.now().isBefore(Consensus.danubeHardForkTimestamp)) {
+  def migration6(implicit explorerConfig: ExplorerConfig, ec: ExecutionContext): DBActionAll[Unit] =
+    if (TimeStamp.now().isBefore(explorerConfig.consensus.danube.forkTimestamp)) {
       // No need to migrate the address group as no groupless addresses can be created before the Danube Hard Fork.
       DBIOAction.successful(())
     } else {
@@ -168,7 +170,10 @@ object Migrations extends StrictLogging {
       }
     }
 
-  private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
+  private def migrations(implicit
+      explorerConfig: ExplorerConfig,
+      ec: ExecutionContext
+  ): Seq[DBActionAll[Unit]] = Seq(
     migration1,
     migration2,
     migration3,
@@ -234,7 +239,7 @@ object Migrations extends StrictLogging {
 
   def migrationsQuery(
       versionOpt: Option[MigrationVersion]
-  )(implicit ec: ExecutionContext): DBActionAll[Unit] = {
+  )(implicit explorerConfig: ExplorerConfig, ec: ExecutionContext): DBActionAll[Unit] = {
     logger.info(s"Current migration version: $versionOpt")
     versionOpt match {
       // noop
@@ -285,7 +290,7 @@ object Migrations extends StrictLogging {
 
   def migrate(
       databaseConfig: DatabaseConfig[PostgresProfile]
-  )(implicit ec: ExecutionContext): Future[Unit] = {
+  )(implicit explorerConfig: ExplorerConfig, ec: ExecutionContext): Future[Unit] = {
     logger.info("Migrating")
     for {
       currentVersion <- DBRunner
