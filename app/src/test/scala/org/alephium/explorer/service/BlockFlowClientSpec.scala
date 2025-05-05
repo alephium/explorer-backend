@@ -60,7 +60,13 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
 
     "fail if `directCliqueAccess = true` but other clique nodes aren't reachable" in {
       val blockFlowClient =
-        BlockFlowClient(Uri(localhost.getHostAddress, port), groupSetting.groupNum, None, true)
+        BlockFlowClient(
+          Uri(localhost.getHostAddress, port),
+          groupSetting.groupNum,
+          None,
+          true,
+          consensus
+        )
 
       blockFlowClient
         .fetchBlock(group, blockHashGen.sample.get)
@@ -70,7 +76,13 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
 
     "succeed if `directCliqueAccess = false`" in {
       val blockFlowClient =
-        BlockFlowClient(Uri(localhost.getHostAddress, port), groupSetting.groupNum, None, false)
+        BlockFlowClient(
+          Uri(localhost.getHostAddress, port),
+          groupSetting.groupNum,
+          None,
+          false,
+          consensus
+        )
 
       blockFlowClient.fetchBlock(group, blockHashGen.sample.get).futureValue is a[BlockEntity]
     }

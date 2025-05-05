@@ -14,21 +14,21 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer
+package org.alephium.explorer.config
 
-import org.alephium.util.{Duration, TimeStamp}
+import com.typesafe.config.{Config, ConfigFactory}
 
-object Consensus {
-  // TODO Add this to config
-  // scalastyle:off magic.number
-  val rhoneHardForkTimestamp: TimeStamp  = TimeStamp.unsafe(1718186400000L)
-  val danubeHardForkTimestamp: TimeStamp = TimeStamp.unsafe(9000000000000000000L)
+object TestExplorerConfig {
 
-  def blockTargetTime(timestamp: TimeStamp): Duration =
-    if (timestamp.isBefore(rhoneHardForkTimestamp)) {
-      Duration.ofSecondsUnsafe(64)
-    } else {
-      Duration.ofSecondsUnsafe(16)
-    }
-  // scalastyle:on magic.number
+  def apply(): ExplorerConfig = {
+    ExplorerConfig.load(
+      typesafeConfig()
+    )
+  }
+
+  def typesafeConfig(): Config = {
+    ConfigFactory.load(
+      ConfigFactory.parseResources(s"application-devnet.conf")
+    )
+  }
 }

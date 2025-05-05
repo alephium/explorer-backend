@@ -17,7 +17,6 @@
 package org.alephium.explorer.config
 
 import scala.concurrent.duration._
-import scala.util.{Success, Try}
 
 import com.typesafe.config.ConfigFactory
 import net.ceedubs.ficus.Ficus._
@@ -31,13 +30,46 @@ import org.alephium.explorer.GenCommon._
 import org.alephium.explorer.config.ExplorerConfig._
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.protocol.model.NetworkId
+import org.alephium.util.{Duration, TimeStamp}
 
 class ExplorerConfigSpec extends AlephiumSpec with ScalaCheckDrivenPropertyChecks {
 
   "ficus" should {
     "load config" in {
-      val typesafeConfig = ConfigFactory.load()
-      Try(typesafeConfig.as[ExplorerConfig]("alephium")) is a[Success[ExplorerConfig]]
+      // We make sure every config file is valid
+      val mainnetForkTimestamps = Seq(
+        TimeStamp.unsafe(1718186400000L),      // rhone
+        TimeStamp.unsafe(9000000000000000000L) // Danube
+      )
+      val testnetForkTimestamps = Seq(
+        TimeStamp.unsafe(1715428800000L),      // rhone
+        TimeStamp.unsafe(9000000000000000000L) // Danube
+      )
+      val devnetForkTimestamps = Seq(
+        TimeStamp.unsafe(1695571200000L), // rhone
+        TimeStamp.unsafe(1732666200000L)  // Danube
+      )
+
+      Map(
+        NetworkId.AlephiumMainNet -> mainnetForkTimestamps,
+        NetworkId.AlephiumTestNet -> testnetForkTimestamps,
+        NetworkId.AlephiumDevNet  -> devnetForkTimestamps
+      )
+        .foreachEntry { case (networkId, forkTimestamps) =>
+          val typesafeConfig =
+            ConfigFactory.parseResources(s"application-${networkId.networkType}.conf").resolve()
+
+          val consensus = typesafeConfig.as[ExplorerConfig]("alephium").consensus
+
+          consensus.mainnet.forkTimestamp is TimeStamp.zero
+          consensus.mainnet.blockTargetTime is Duration.ofSecondsUnsafe(64)
+
+          consensus.rhone.forkTimestamp is forkTimestamps.head
+          consensus.rhone.blockTargetTime is Duration.ofSecondsUnsafe(16)
+
+          consensus.danube.forkTimestamp is forkTimestamps.last
+          consensus.danube.blockTargetTime is Duration.ofSecondsUnsafe(8)
+        }
     }
   }
 

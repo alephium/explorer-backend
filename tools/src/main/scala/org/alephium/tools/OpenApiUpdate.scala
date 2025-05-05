@@ -16,11 +16,10 @@
 
 package org.alephium.tools
 
-import com.typesafe.config.ConfigFactory
-
 import org.alephium.api.OpenAPIWriters.openApiJson
 import org.alephium.explorer.config._
 import org.alephium.explorer.docs.Documentation
+import org.alephium.protocol.model.NetworkId
 import org.alephium.util.{discard, Duration}
 
 object OpenApiUpdate {
@@ -28,8 +27,7 @@ object OpenApiUpdate {
     discard {
       new Documentation {
 
-        private val typesafeConfig         = ConfigFactory.load()
-        private val config: ExplorerConfig = ExplorerConfig.load(typesafeConfig)
+        private val config: ExplorerConfig = ExplorerConfig.loadNetwork(NetworkId.AlephiumMainNet)
 
         val groupNum                           = config.groupNum
         val maxTimeIntervalExportTxs: Duration = config.maxTimeInterval.exportTxs
