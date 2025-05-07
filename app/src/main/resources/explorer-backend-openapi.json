@@ -6689,17 +6689,19 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/TimedCount"
+                    "$ref": "#/components/schemas/TimedTxCount"
                   }
                 },
                 "example": [
                   {
                     "timestamp": 1611041396892,
-                    "totalCountAllChains": 10000000
+                    "totalCountAllChains": 10000000,
+                    "nonCoinbaseCountAllChains": 800
                   },
                   {
                     "timestamp": 1611041396892,
-                    "totalCountAllChains": 10000000
+                    "totalCountAllChains": 10000000,
+                    "nonCoinbaseCountAllChains": 800
                   }
                 ]
               }
@@ -6833,7 +6835,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/PerChainTimedCount"
+                    "$ref": "#/components/schemas/PerChainTimedTxCount"
                   }
                 },
                 "example": [
@@ -6843,12 +6845,14 @@
                       {
                         "chainFrom": 1,
                         "chainTo": 2,
-                        "count": 10000000
+                        "count": 10000000,
+                        "nonCoinbaseCount": 800
                       },
                       {
                         "chainFrom": 1,
                         "chainTo": 2,
-                        "count": 10000000
+                        "count": 10000000,
+                        "nonCoinbaseCount": 800
                       }
                     ]
                   },
@@ -6858,12 +6862,14 @@
                       {
                         "chainFrom": 1,
                         "chainTo": 2,
-                        "count": 10000000
+                        "count": 10000000,
+                        "nonCoinbaseCount": 800
                       },
                       {
                         "chainFrom": 1,
                         "chainTo": 2,
-                        "count": 10000000
+                        "count": 10000000,
+                        "nonCoinbaseCount": 800
                       }
                     ]
                   }
@@ -9407,29 +9413,6 @@
           }
         }
       },
-      "PerChainCount": {
-        "title": "PerChainCount",
-        "type": "object",
-        "required": [
-          "chainFrom",
-          "chainTo",
-          "count"
-        ],
-        "properties": {
-          "chainFrom": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "chainTo": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "count": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
       "PerChainDuration": {
         "title": "PerChainDuration",
         "type": "object",
@@ -9486,8 +9469,8 @@
           }
         }
       },
-      "PerChainTimedCount": {
-        "title": "PerChainTimedCount",
+      "PerChainTimedTxCount": {
+        "title": "PerChainTimedTxCount",
         "type": "object",
         "required": [
           "timestamp"
@@ -9500,8 +9483,35 @@
           "totalCountPerChain": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PerChainCount"
+              "$ref": "#/components/schemas/PerChainTxCount"
             }
+          }
+        }
+      },
+      "PerChainTxCount": {
+        "title": "PerChainTxCount",
+        "type": "object",
+        "required": [
+          "chainFrom",
+          "chainTo",
+          "count"
+        ],
+        "properties": {
+          "chainFrom": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "chainTo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nonCoinbaseCount": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -9564,24 +9574,6 @@
           }
         }
       },
-      "TimedCount": {
-        "title": "TimedCount",
-        "type": "object",
-        "required": [
-          "timestamp",
-          "totalCountAllChains"
-        ],
-        "properties": {
-          "timestamp": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "totalCountAllChains": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
       "TimedPrices": {
         "title": "TimedPrices",
         "type": "object",
@@ -9599,6 +9591,28 @@
               "type": "number",
               "format": "double"
             }
+          }
+        }
+      },
+      "TimedTxCount": {
+        "title": "TimedTxCount",
+        "type": "object",
+        "required": [
+          "timestamp",
+          "totalCountAllChains"
+        ],
+        "properties": {
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalCountAllChains": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nonCoinbaseCountAllChains": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
