@@ -51,13 +51,11 @@ final case class Transaction(
     coinbase: Boolean
 ) {
   def toCsv(address: Address, metadata: Map[TokenId, FungibleTokenMetadata]): String = {
-    val dateTime         = Instant.ofEpochMilli(timestamp.millis)
-    val fromAddresses    = UtxoUtil.fromAddresses(inputs)
-    val fromAddressesStr = fromAddresses.mkString("-")
+    val dateTime      = Instant.ofEpochMilli(timestamp.millis)
+    val fromAddresses = UtxoUtil.fromAddresses(inputs)
     val toAddresses =
-      UtxoUtil.toAddressesWithoutChangeAddresses(outputs, fromAddresses).mkString("-")
+      UtxoUtil.toAddressesWithoutChangeAddresses(outputs, fromAddresses)
     val deltaAmount = UtxoUtil.deltaAmountForAddress(address, inputs, outputs)
-    val amount      = deltaAmount.map(_.toString).getOrElse("")
     val amountHint = deltaAmount
       .map(delta =>
         new java.math.BigDecimal(delta).divide(new java.math.BigDecimal(ALPH.oneAlph.v))
@@ -68,33 +66,32 @@ final case class Transaction(
     val tokenEntries = UtxoUtil
       .deltaTokenAmountForAddress(address, inputs, outputs)
       .map { case (token, delta) =>
-        val metadataOpt         = metadata.get(token)
-        val asset               = metadataOpt.map(_.symbol).getOrElse(token.toHexString)
-        val tokenFromAddress    = UtxoUtil.fromTokenAddresses(token, inputs)
-        val tokenFromAddressStr = tokenFromAddress.mkString("-")
+        val metadataOpt      = metadata.get(token)
+        val asset            = metadataOpt.map(_.symbol).getOrElse(token.toHexString)
+        val tokenFromAddress = UtxoUtil.fromTokenAddresses(token, inputs)
         val tokenToAddress =
           UtxoUtil.toTokenAddressesWithoutChangeAddresses(token, outputs, tokenFromAddress)
-        val tokenToAddressStr = tokenToAddress.mkString("-")
         val deltaHint = metadataOpt
           .map { metadata =>
             new java.math.BigDecimal(delta)
               .divide(new java.math.BigDecimal(10).pow(metadata.decimals.toIntUnsafe))
           }
           .map(_.toString)
-          .getOrElse("")
+          .getOrElse(delta.toString)
         // scalastyle:off
-        s"${hash.toHexString},${blockHash.toHexString},${timestamp.millis},$dateTime,$asset,$tokenFromAddressStr,$tokenToAddressStr,$delta,$deltaHint\n"
+        Transaction.csvValue(dateTime, deltaHint, asset, hash, tokenFromAddress, tokenToAddress)
       // scalastyle:on
       }
       .mkString
 
-    s"${hash.toHexString},${blockHash.toHexString},${timestamp.millis},$dateTime,ALPH,$fromAddressesStr,$toAddresses,$amount,$amountHint\n" ++ tokenEntries
+    Transaction.csvValue(dateTime, amountHint, "ALPH", hash, fromAddresses, toAddresses) ++
+      tokenEntries
   }
 
   def toProtocol(): org.alephium.api.model.Transaction = {
     val (inputContracts, inputAssets)    = inputs.partition(_.contractInput)
     val (fixedOutputs, generatedOutputs) = outputs.partition(_.fixedOutput)
-    val unsigned: org.alephium.api.model.UnsignedTx = org.alephium.api.model.UnsignedTx(
+    def unsigned: org.alephium.api.model.UnsignedTx = org.alephium.api.model.UnsignedTx(
       txId = hash,
       version = version,
       networkId = networkId,
@@ -119,7 +116,18 @@ object Transaction {
   implicit val txRW: ReadWriter[Transaction] = macroRW
 
   val csvHeader: String =
-    "hash,blockHash,unixTimestamp,dateTimeUTC,asset,fromAddresses,toAddresses,amount,hintAmount\n"
+    "Date,Amount,Currency,TxHash,FromAddresses,ToAddresses\n"
+
+  def csvValue(
+      dateTime: Instant,
+      amount: String,
+      currency: String,
+      hash: TransactionId,
+      fromAddresses: ArraySeq[Address],
+      toAddresses: ArraySeq[Address]
+  ): String = {
+    s"$dateTime,$amount,$currency,${hash.toHexString},${fromAddresses.mkString("-")},${toAddresses.mkString("-")}\n"
+  }
 
   implicit val schema: Schema[Transaction] = Schema.derived[Transaction]
 }
