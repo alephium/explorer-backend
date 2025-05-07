@@ -22,6 +22,7 @@ import scala.util.Random
 import org.scalacheck.Gen
 
 import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.ConfigDefaults.groupSetting
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.api.model.{AssetOutput, ContractOutput, Output, Token}
 import org.alephium.util.U256
@@ -211,12 +212,18 @@ class UtxoUtilSpec extends AlephiumSpec {
       (address, inputs.map(_.copy(address = Some(address))))
     }
 
-    "return address with tokens are defined" in {
+    "return address when tokens are defined" in {
       forAll(inputWithAddressGen) { case (address, inputs) =>
         val tokens = inputs.flatMap(_.tokens).flatten
         tokens.foreach { token =>
           UtxoUtil.fromTokenAddresses(token.id, inputs) is ArraySeq(address)
         }
+      }
+    }
+
+    "return empty when token is not defined" in {
+      forAll(inputWithAddressGen, tokenIdGen) { case ((_, inputs), tokenId) =>
+        UtxoUtil.fromTokenAddresses(tokenId, inputs) is ArraySeq.empty
       }
     }
   }
@@ -291,6 +298,19 @@ class UtxoUtilSpec extends AlephiumSpec {
             outputs,
             ArraySeq.empty
           ) is ArraySeq(address)
+        }
+      }
+    }
+
+    "return outputs with tokens defined and change addresses removed" in {
+      forAll(outputWithAddressGen) { case (address, outputs) =>
+        val tokens = outputs.flatMap(_.tokens).flatten
+        tokens.foreach { token =>
+          UtxoUtil.toTokenAddressesWithoutChangeAddresses(
+            token.id,
+            outputs,
+            ArraySeq(address)
+          ) is ArraySeq.empty
         }
       }
     }
