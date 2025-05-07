@@ -107,10 +107,9 @@ object UtxoUtil {
       if (delta == BigInteger.ZERO) {
         acc
       } else {
-        acc + (token -> o.v.subtract(i.v))
+        acc + (token -> delta)
       }
     }
-
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
