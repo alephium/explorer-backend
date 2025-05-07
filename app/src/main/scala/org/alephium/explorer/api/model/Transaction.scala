@@ -29,7 +29,7 @@ import org.alephium.explorer.api.Json._
 import org.alephium.explorer.util.UtxoUtil
 import org.alephium.json.Json._
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{BlockHash, TransactionId}
+import org.alephium.protocol.model.{BlockHash, TokenId, TransactionId}
 import org.alephium.protocol.model.Address
 import org.alephium.util.{TimeStamp, U256}
 import org.alephium.util.AVector
@@ -50,7 +50,7 @@ final case class Transaction(
     scriptSignatures: ArraySeq[ByteString],
     coinbase: Boolean
 ) {
-  def toCsv(address: Address): String = {
+  def toCsv(address: Address, metadata: Map[TokenId, FungibleTokenMetadata]): String = {
     val dateTime         = Instant.ofEpochMilli(timestamp.millis)
     val fromAddresses    = UtxoUtil.fromAddresses(inputs)
     val fromAddressesStr = fromAddresses.mkString("-")
@@ -68,14 +68,22 @@ final case class Transaction(
     val tokenEntries = UtxoUtil
       .deltaTokenAmountForAddress(address, inputs, outputs)
       .map { case (token, delta) =>
+        val metadataOpt         = metadata.get(token)
+        val asset               = metadataOpt.map(_.symbol).getOrElse(token.toHexString)
         val tokenFromAddress    = UtxoUtil.fromTokenAddresses(token, inputs)
         val tokenFromAddressStr = tokenFromAddress.mkString("-")
         val tokenToAddress =
           UtxoUtil.toTokenAddressesWithoutChangeAddresses(token, outputs, tokenFromAddress)
         val tokenToAddressStr = tokenToAddress.mkString("-")
-        val deltaHint         = ""
+        val deltaHint = metadataOpt
+          .map { metadata =>
+            new java.math.BigDecimal(delta)
+              .divide(new java.math.BigDecimal(10).pow(metadata.decimals.toIntUnsafe))
+          }
+          .map(_.toString)
+          .getOrElse("")
         // scalastyle:off
-        s"${hash.toHexString},${blockHash.toHexString},${timestamp.millis},$dateTime,${token.toHexString},$tokenFromAddressStr,$tokenToAddressStr,$delta,$deltaHint\n"
+        s"${hash.toHexString},${blockHash.toHexString},${timestamp.millis},$dateTime,$asset,$tokenFromAddressStr,$tokenToAddressStr,$delta,$deltaHint\n"
       // scalastyle:on
       }
       .mkString

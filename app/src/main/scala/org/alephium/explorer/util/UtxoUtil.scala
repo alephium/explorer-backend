@@ -21,7 +21,7 @@ import java.math.BigInteger
 import scala.collection.immutable.ArraySeq
 
 import org.alephium.explorer.api.model.{Input, Output}
-import org.alephium.protocol.model.Address
+import org.alephium.protocol.model.{Address, TokenId}
 import org.alephium.util.U256
 
 object UtxoUtil {
@@ -103,7 +103,12 @@ object UtxoUtil {
       val i = in.get(token).flatten.getOrElse(U256.Zero)
       val o = out.get(token).flatten.getOrElse(U256.Zero)
 
-      acc + (token -> o.v.subtract(i.v))
+      val delta = o.v.subtract(i.v)
+      if (delta == BigInteger.ZERO) {
+        acc
+      } else {
+        acc + (token -> o.v.subtract(i.v))
+      }
     }
 
   }
