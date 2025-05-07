@@ -20,63 +20,48 @@ import java.math.BigInteger
 
 import scala.collection.immutable.ArraySeq
 
-import org.alephium.explorer.api.model.{Input, Output}
+import org.alephium.explorer.api.model.{Input, Output, Token}
 import org.alephium.protocol.model.{Address, TokenId}
 import org.alephium.util.U256
 
 object UtxoUtil {
-  def amountForAddressInInputs(address: Address, inputs: ArraySeq[Input]): Option[U256] = {
-    inputs
-      .filter(_.address == Some(address))
-      .map(_.attoAlphAmount)
-      .collect { case Some(amount) => amount }
-      .foldLeft(Option(U256.Zero)) { case (acc, amount) => acc.flatMap(_.add(amount)) }
-  }
 
-  def amountForAddressInOutputs(address: Address, outputs: ArraySeq[Output]): Option[U256] = {
-    outputs
-      .filter(_.address == address)
-      .map(_.attoAlphAmount)
-      .foldLeft(Option(U256.Zero)) { case (acc, amount) => acc.flatMap(_.add(amount)) }
-  }
+  def amountForAddressInInputs(address: Address, inputs: ArraySeq[Input]): Option[U256] =
+    sumAmounts(
+      inputs
+        .filter(_.address.contains(address))
+        .map(_.attoAlphAmount)
+        .collect { case Some(amount) => amount }
+    )
+
+  def amountForAddressInOutputs(address: Address, outputs: ArraySeq[Output]): Option[U256] =
+    sumAmounts(
+      outputs
+        .filter(_.address == address)
+        .map(_.attoAlphAmount)
+    )
 
   def tokenAmountForAddressInInputs(
       address: Address,
       inputs: ArraySeq[Input]
-  ): Map[TokenId, Option[U256]] = {
-    inputs
-      .filter(_.address == Some(address))
-      .flatMap(_.tokens)
-      .flatten
-      .groupBy(_.id)
-      .map { case (id, tokens) =>
-        (
-          id,
-          tokens.foldLeft(Option(U256.Zero)) { case (acc, token) =>
-            acc.flatMap(_.add(token.amount))
-          }
-        )
-      }
-  }
+  ): Map[TokenId, Option[U256]] =
+    sumTokensById(
+      inputs
+        .filter(_.address.contains(address))
+        .flatMap(_.tokens)
+        .flatten
+    )
 
   def tokenAmountForAddressInOutputs(
       address: Address,
       outputs: ArraySeq[Output]
-  ): Map[TokenId, Option[U256]] = {
-    outputs
-      .filter(_.address == address)
-      .flatMap(_.tokens)
-      .flatten
-      .groupBy(_.id)
-      .map { case (id, tokens) =>
-        (
-          id,
-          tokens.foldLeft(Option(U256.Zero)) { case (acc, token) =>
-            acc.flatMap(_.add(token.amount))
-          }
-        )
-      }
-  }
+  ): Map[TokenId, Option[U256]] =
+    sumTokensById(
+      outputs
+        .filter(_.address == address)
+        .flatMap(_.tokens)
+        .flatten
+    )
 
   def deltaAmountForAddress(
       address: Address,
@@ -111,6 +96,19 @@ object UtxoUtil {
       }
     }
   }
+
+  def sumAmounts(amounts: Iterable[U256]): Option[U256] =
+    amounts.foldLeft(Option(U256.Zero)) { case (acc, amount) => acc.flatMap(_.add(amount)) }
+
+  def sumTokensById(tokens: Iterable[Token]): Map[TokenId, Option[U256]] =
+    tokens
+      .groupBy(_.id)
+      .map { case (id, grouped) =>
+        (
+          id,
+          sumAmounts(grouped.map(_.amount))
+        )
+      }
 
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   def fromAddresses(inputs: ArraySeq[Input]): ArraySeq[Address] = {
