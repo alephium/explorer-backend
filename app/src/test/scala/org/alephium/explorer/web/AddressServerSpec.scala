@@ -141,7 +141,7 @@ class AddressServerSpec()
         Flowable
           .fromIterable(transactions.asJava)
           .buffer(batchSize)
-          .map(l => ArraySeq.from(l.asScala))
+          .map(l => (ArraySeq.from(l.asScala), Map.empty))
       )
     }
 
@@ -299,7 +299,7 @@ class AddressServerSpec()
       Get(s"/addresses/${address}/export-transactions/csv?fromTs=$fromTs&toTs=$toTs") check {
         response =>
           response.body is Right(
-            Transaction.csvHeader ++ transactions.map(_.toCsv(address)).mkString
+            Transaction.csvHeader ++ transactions.map(_.toCsv(address, Map.empty)).mkString
           )
 
           val header =

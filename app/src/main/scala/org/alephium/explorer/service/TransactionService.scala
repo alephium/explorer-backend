@@ -34,11 +34,11 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.{MempoolDao, TransactionDao}
-import org.alephium.explorer.persistence.queries.InputQueries
+import org.alephium.explorer.persistence.queries.{InputQueries, TokenQueries}
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.util.TimeUtil
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{Address, AddressLike, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, TokenId, TransactionId}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 trait TransactionService {
@@ -398,14 +398,19 @@ object TransactionService extends TransactionService {
   )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
-  ): Flowable[ArraySeq[Transaction]] = {
+  ): Flowable[(ArraySeq[Transaction], Map[TokenId, FungibleTokenMetadata])] = {
     Flowable
       .fromPublisher(stream(streamTxByAddressQR(address, from, to)))
       .buffer(batchSize)
       .concatMapEager(
         { hashes =>
           Flowable.fromCompletionStage(
-            run(getTransactions(ArraySeq.from(hashes.asScala))).asJava
+            (for {
+              txs      <- run(getTransactions(ArraySeq.from(hashes.asScala)))
+              metadata <- getTokenMetadata(txs)
+            } yield {
+              (txs, metadata)
+            }).asJava
           )
         },
         paralellism,
@@ -418,13 +423,27 @@ object TransactionService extends TransactionService {
       .map(Buffer.buffer)
   }
 
+  def getTokenMetadata(transactions: ArraySeq[Transaction])(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Map[TokenId, FungibleTokenMetadata]] = {
+    val tokens: ArraySeq[TokenId] =
+      transactions.flatMap(_.outputs).flatMap(_.tokens.map(_.map(_.id))).flatten.distinct
+
+    run(TokenQueries.listFungibleTokenMetadataQuery(tokens)).map(_.map { metadata =>
+      metadata.id -> metadata
+    }.toMap)
+  }
+
   def transactionsFlowable(
       address: AddressLike,
-      source: Flowable[ArraySeq[Transaction]]
+      source: Flowable[(ArraySeq[Transaction], Map[TokenId, FungibleTokenMetadata])]
   ): Flowable[Buffer] = {
     bufferFlowable {
       val headerSource = Flowable.just(Transaction.csvHeader)
-      val csvSource    = source.map(_.map(_.toCsv(address)).mkString)
+      val csvSource = source.map { case (txs, metadatas) =>
+        txs.map(_.toCsv(address, metadatas)).mkString
+      }
       headerSource.mergeWith(csvSource)
     }
   }

@@ -20,21 +20,12 @@ import java.math.BigInteger
 
 import scala.collection.immutable.ArraySeq
 
-import org.alephium.explorer.api.model.{Input, Output}
-import org.alephium.protocol.model.{Address, AddressLike}
+import org.alephium.explorer.api.model.{Input, Output, Token}
+import org.alephium.protocol.model.{Address, AddressLike, TokenId}
 import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.U256
 
 object UtxoUtil {
-  def amountForAddressInInputs(address: AddressLike, inputs: ArraySeq[Input]): Option[U256] = {
-    inputs
-      .filter(input =>
-        input.address.map(addressRef => addressEqual(addressRef, address)).getOrElse(false)
-      )
-      .map(_.attoAlphAmount)
-      .collect { case Some(amount) => amount }
-      .foldLeft(Option(U256.Zero)) { case (acc, amount) => acc.flatMap(_.add(amount)) }
-  }
 
   def addressEqual(address: Address, addressLike: AddressLike): Boolean = {
     addressLike.lockupScriptResult match {
@@ -45,12 +36,42 @@ object UtxoUtil {
     }
   }
 
-  def amountForAddressInOutputs(address: AddressLike, outputs: ArraySeq[Output]): Option[U256] = {
-    outputs
-      .filter(output => addressEqual(output.address, address))
-      .map(_.attoAlphAmount)
-      .foldLeft(Option(U256.Zero)) { case (acc, amount) => acc.flatMap(_.add(amount)) }
-  }
+  def amountForAddressInInputs(address: AddressLike, inputs: ArraySeq[Input]): Option[U256] =
+    sumAmounts(
+      inputs
+        .filter(_.address.exists(a => addressEqual(a, address)))
+        .map(_.attoAlphAmount)
+        .collect { case Some(amount) => amount }
+    )
+
+  def amountForAddressInOutputs(address: AddressLike, outputs: ArraySeq[Output]): Option[U256] =
+    sumAmounts(
+      outputs
+        .filter(o => addressEqual(o.address, address))
+        .map(_.attoAlphAmount)
+    )
+
+  def tokenAmountForAddressInInputs(
+      address: AddressLike,
+      inputs: ArraySeq[Input]
+  ): Map[TokenId, Option[U256]] =
+    sumTokensById(
+      inputs
+        .filter(_.address.exists(a => addressEqual(a, address)))
+        .flatMap(_.tokens)
+        .flatten
+    )
+
+  def tokenAmountForAddressInOutputs(
+      address: AddressLike,
+      outputs: ArraySeq[Output]
+  ): Map[TokenId, Option[U256]] =
+    sumTokensById(
+      outputs
+        .filter(o => addressEqual(o.address, address))
+        .flatMap(_.tokens)
+        .flatten
+    )
 
   def deltaAmountForAddress(
       address: AddressLike,
@@ -65,9 +86,51 @@ object UtxoUtil {
     }
   }
 
+  def deltaTokenAmountForAddress(
+      address: AddressLike,
+      inputs: ArraySeq[Input],
+      outputs: ArraySeq[Output]
+  ): Map[TokenId, BigInteger] = {
+    val in  = tokenAmountForAddressInInputs(address, inputs)
+    val out = tokenAmountForAddressInOutputs(address, outputs)
+
+    (in.keySet ++ out.keySet).foldLeft(Map.empty[TokenId, BigInteger]) { case (acc, token) =>
+      val i = in.get(token).flatten.getOrElse(U256.Zero)
+      val o = out.get(token).flatten.getOrElse(U256.Zero)
+
+      val delta = o.v.subtract(i.v)
+      if (delta == BigInteger.ZERO) {
+        acc
+      } else {
+        acc + (token -> delta)
+      }
+    }
+  }
+
+  def sumAmounts(amounts: Iterable[U256]): Option[U256] =
+    amounts.foldLeft(Option(U256.Zero)) { case (acc, amount) => acc.flatMap(_.add(amount)) }
+
+  def sumTokensById(tokens: Iterable[Token]): Map[TokenId, Option[U256]] =
+    tokens
+      .groupBy(_.id)
+      .map { case (id, grouped) =>
+        (
+          id,
+          sumAmounts(grouped.map(_.amount))
+        )
+      }
+
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   def fromAddresses(inputs: ArraySeq[Input]): ArraySeq[Address] = {
     inputs.collect { case input if input.address.isDefined => input.address.get }.distinct
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  def fromTokenAddresses(token: TokenId, inputs: ArraySeq[Input]): ArraySeq[Address] = {
+    inputs.collect {
+      case input if input.address.isDefined && input.tokens.exists(_.exists(_.id == token)) =>
+        input.address.get
+    }.distinct
   }
 
   def toAddressesWithoutChangeAddresses(
@@ -76,6 +139,19 @@ object UtxoUtil {
   ): ArraySeq[Address] = {
     outputs.collect {
       case output if !changeAddresses.contains(output.address) => output.address
+    }.distinct
+  }
+
+  def toTokenAddressesWithoutChangeAddresses(
+      token: TokenId,
+      outputs: ArraySeq[Output],
+      changeAddresses: ArraySeq[Address]
+  ): ArraySeq[Address] = {
+    outputs.collect {
+      case output
+          if !changeAddresses
+            .contains(output.address) && output.tokens.exists(_.exists(_.id == token)) =>
+        output.address
     }.distinct
   }
 }

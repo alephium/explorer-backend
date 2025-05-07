@@ -109,6 +109,11 @@ object GenApiModel extends ImplicitConversions {
 
   val tokensGen: Gen[Seq[Token]] = Gen.listOf(tokenGen)
 
+  val inputWithTokensGen: Gen[Input] = for {
+    input  <- inputGen
+    tokens <- Gen.listOfN(2, tokenGen)
+  } yield input.copy(tokens = Some(tokens))
+
   val assetOutputGen: Gen[AssetOutput] =
     for {
       amount   <- amountGen
