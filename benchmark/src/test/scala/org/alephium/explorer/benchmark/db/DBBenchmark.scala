@@ -25,6 +25,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model.{IntervalType, Pagination}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._

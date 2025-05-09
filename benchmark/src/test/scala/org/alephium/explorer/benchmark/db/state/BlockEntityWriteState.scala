@@ -26,6 +26,7 @@ import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
+import org.alephium.explorer.config._
 import org.alephium.explorer.persistence.DBInitializer
 import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.util.Duration
@@ -54,6 +55,7 @@ class BlockEntityWriteState(val db: DBExecutor) extends WriteBenchmarkState[Bloc
   def beforeAll(): Unit = {
     implicit val ec: ExecutionContextExecutor        = ExecutionContext.global
     implicit val dc: DatabaseConfig[PostgresProfile] = config
+    implicit val explorerConfig: ExplorerConfig      = TestExplorerConfig()
 
     Await.result(DBInitializer.dropTables(), Duration.ofSecondsUnsafe(10).asScala)
     Await.result(DBInitializer.initialize(), Duration.ofSecondsUnsafe(10).asScala)

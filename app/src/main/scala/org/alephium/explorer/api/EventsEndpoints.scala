@@ -39,7 +39,7 @@ trait EventsEndpoints extends BaseEndpoint with QueryParams {
       .in("transaction-id")
       .in(path[TransactionId]("transaction_id"))
       .out(jsonBody[ArraySeq[Event]])
-      .description("Get contract events by transaction id")
+      .summary("Get contract events by transaction id")
 
   val getEventsByContractAddress
       : BaseEndpoint[(Address, Option[Int], Pagination), ArraySeq[Event]] =
@@ -49,7 +49,7 @@ trait EventsEndpoints extends BaseEndpoint with QueryParams {
       .in(query[Option[Int]]("event_index"))
       .in(pagination)
       .out(jsonBody[ArraySeq[Event]])
-      .description("Get contract events by contract address")
+      .summary("Get contract events by contract address")
 
   val getEventsByContractAndInputAddress
       : BaseEndpoint[(Address, Address, Option[Int], Pagination), ArraySeq[Event]] =
@@ -61,5 +61,5 @@ trait EventsEndpoints extends BaseEndpoint with QueryParams {
       .in(query[Option[Int]]("event_index"))
       .in(pagination)
       .out(jsonBody[ArraySeq[Event]])
-      .description("Get contract events by contract and input addresses")
+      .summary("Get contract events by contract and input addresses")
 }

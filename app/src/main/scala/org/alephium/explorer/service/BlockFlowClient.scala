@@ -54,6 +54,7 @@ import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.mining.HashRate
 import org.alephium.protocol.model.{
   Address,
+  AddressLike,
   BlockHash,
   ChainIndex,
   ContractId,
@@ -62,6 +63,7 @@ import org.alephium.protocol.model.{
   TokenId,
   TransactionId
 }
+import org.alephium.protocol.vm.LockupScript
 import org.alephium.util._
 
 trait BlockFlowClient extends Service {
@@ -136,6 +138,10 @@ object BlockFlowClient extends StrictLogging {
       with Endpoints
       with ApiModelCodec {
 
+    implicit val groupSetting: GroupSetting = GroupSetting(groupNum)
+
+    implicit val groupConfig: GroupConfig = groupSetting.groupConfig
+
     override val apiKeys: AVector[api.model.ApiKey] = AVector.empty
 
     private val endpointSender = new EndpointSender(maybeApiKey)
@@ -149,10 +155,6 @@ object BlockFlowClient extends StrictLogging {
     }
 
     override def subServices: ArraySeq[Service] = ArraySeq.empty
-
-    implicit val groupSetting: GroupSetting = GroupSetting(groupNum)
-
-    implicit val groupConfig: GroupConfig = groupSetting.groupConfig
 
     private def _send[A, B](
         endpoint: BaseEndpoint[A, B],
@@ -485,7 +487,9 @@ object BlockFlowClient extends StrictLogging {
   }
 
   // scalastyle:off null
-  def blockProtocolToOutputEntities(block: api.model.BlockEntry): ArraySeq[OutputEntity] = {
+  def blockProtocolToOutputEntities(
+      block: api.model.BlockEntry
+  ): ArraySeq[OutputEntity] = {
     val hash         = block.hash
     val mainChain    = false
     val transactions = block.transactions.toArraySeq.zipWithIndex
@@ -696,6 +700,7 @@ object BlockFlowClient extends StrictLogging {
       InputAddressUtil.addressFromProtocolInput(input),
       None,
       None,
+      None,
       contractInput = contractInput
     )
   }
@@ -720,6 +725,7 @@ object BlockFlowClient extends StrictLogging {
       mainChain,
       index,
       txOrder,
+      None,
       None,
       None,
       None,
@@ -764,7 +770,7 @@ object BlockFlowClient extends StrictLogging {
     }
   }
 
-  // scalastyle:off method.length
+  // scalastyle:off method.length parameter.number
   private def outputToEntity(
       output: api.model.Output,
       blockHash: BlockHash,
@@ -793,6 +799,16 @@ object BlockFlowClient extends StrictLogging {
 
     val tokens = protocolTokensToTokens(output.tokens)
 
+    val (address, group): (Address, Option[AddressLike]) = output.address match {
+      case Address.Asset(lockup) =>
+        lockup match {
+          case LockupScript.P2PK(pk, _) =>
+            (output.address, Some(AddressLike(LockupScript.HalfDecodedP2PK(pk))))
+          case _ => (output.address, None)
+        }
+      case _ => (output.address, None)
+    }
+
     OutputEntity(
       blockHash,
       txId,
@@ -801,7 +817,8 @@ object BlockFlowClient extends StrictLogging {
       output.hint,
       output.key,
       output.attoAlphAmount.value,
-      output.address,
+      address,
+      group,
       tokens,
       mainChain,
       lockTime,

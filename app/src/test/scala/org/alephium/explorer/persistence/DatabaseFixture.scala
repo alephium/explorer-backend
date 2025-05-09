@@ -24,6 +24,7 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AlephiumFutures
+import org.alephium.explorer.config._
 import org.alephium.explorer.util.TestUtils._
 
 /** Implements functions for managing test database connections.
@@ -42,6 +43,8 @@ object DatabaseFixture extends AlephiumFutures {
         ).view.mapValues(ConfigValueFactory.fromAnyRef).toMap.asJava
       )
       .withFallback(ConfigFactory.load())
+
+  implicit val explorerConfig: ExplorerConfig = TestExplorerConfig()
 
   def createDatabaseConfig(dbName: String): DatabaseConfig[PostgresProfile] =
     DatabaseConfig.forConfig[PostgresProfile]("db", config(dbName))

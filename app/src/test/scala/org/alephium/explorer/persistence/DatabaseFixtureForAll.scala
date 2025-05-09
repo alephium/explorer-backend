@@ -22,6 +22,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.AlephiumFutures
+import org.alephium.explorer.config._
 
 /** Creates and drops a new database connection for all test-cases in a test class.
   */
@@ -33,6 +34,8 @@ trait DatabaseFixtureForAll extends BeforeAndAfterAll with AlephiumFutures with 
 
   implicit val databaseConfig: DatabaseConfig[PostgresProfile] =
     DatabaseFixture.createDatabaseConfig(dbName)
+
+  implicit val explorerConfig: ExplorerConfig = TestExplorerConfig()
 
   override def beforeAll(): Unit = {
     super.beforeAll()

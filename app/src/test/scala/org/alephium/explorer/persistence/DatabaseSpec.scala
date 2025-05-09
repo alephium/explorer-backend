@@ -28,14 +28,14 @@ class DatabaseSpec extends AlephiumFutureSpec with DatabaseFixtureForEach {
     "successfully connect" when {
       "readOnly mode" in {
         val database: Database =
-          new Database(BootMode.ReadOnly)(executionContext, databaseConfig)
+          new Database(BootMode.ReadOnly)
 
         Try(database.startSelfOnce().futureValue) is Success(())
       }
 
       "readWrite mode" in {
         val database: Database =
-          new Database(BootMode.ReadWrite)(executionContext, databaseConfig)
+          new Database(BootMode.ReadWrite)
 
         Try(database.startSelfOnce().futureValue) is Success(())
       }

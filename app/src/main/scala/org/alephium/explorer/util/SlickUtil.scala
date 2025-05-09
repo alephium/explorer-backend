@@ -29,6 +29,9 @@ import slick.sql._
 
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DBActionR, DBActionSR}
+import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.protocol.model.{Address, AddressLike, GroupIndex}
+import org.alephium.protocol.vm.LockupScript
 
 /** Convenience functions for Slick */
 object SlickUtil {
@@ -86,6 +89,7 @@ object SlickUtil {
       }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   implicit class RichSqlActionBuilder[A](val action: SQLActionBuilder) extends AnyVal {
     @SuppressWarnings(
       Array(
@@ -147,6 +151,54 @@ object SlickUtil {
         setParameter = parameters
       )
     }
+
+    def addressGroup(
+        groupIndexOpt: Option[GroupIndex],
+        groupColumn: String
+    ): SQLActionBuilder = {
+      groupIndexOpt.fold(action)(groupIndex => action.concat(sql" AND #$groupColumn = $groupIndex"))
+    }
+
+    def concatOption(maybeNextAction: Option[SQLActionBuilder]): SQLActionBuilder = {
+      maybeNextAction.fold(action)(action.concat)
+    }
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def addressColumn(
+      address: AddressLike,
+      full: String = "address",
+      half: String = "address_like"
+  ): String = {
+    address.lockupScriptResult match {
+      case LockupScript.HalfDecodedP2PK(_) =>
+        half
+      case _ =>
+        full
+    }
+  }
+
+  def splitAddresses(addresses: List[AddressLike]): (ArraySeq[Address], ArraySeq[AddressLike]) = {
+    addresses.foldLeft((ArraySeq.empty[Address], ArraySeq.empty[AddressLike])) {
+      case ((fulls, halfs), address) =>
+        address.lockupScriptResult match {
+          case LockupScript.HalfDecodedP2PK(_) =>
+            (fulls, halfs :+ address)
+          case LockupScript.CompleteLockupScript(lockupScript) =>
+            (fulls :+ Address.from(lockupScript), halfs)
+        }
+    }
+  }
+
+  def generateAddressQueryCondition(
+      addressesPlaceholder: String,
+      addressesLikePlaceholder: String,
+      address: AddressLike
+  ): String = {
+    val addressColumnName     = addressColumn(address)
+    val addressLikeColumnName = if (addressColumnName == "address") "address_like" else "address"
+
+    s"AND (($addressColumnName IN $addressesPlaceholder) OR ($addressLikeColumnName IN $addressesLikePlaceholder))"
   }
 
   def paramPlaceholderTuple2(rows: Int, columns: Int): String =
