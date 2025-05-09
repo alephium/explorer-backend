@@ -43,7 +43,7 @@ object TransactionDao {
     run(getTransactionsByAddress(address, pagination))
 
   def getByAddresses(
-      addresses: ArraySeq[Address],
+      addresses: ArraySeq[AddressLike],
       fromTime: Option[TimeStamp],
       toTime: Option[TimeStamp],
       pagination: Pagination

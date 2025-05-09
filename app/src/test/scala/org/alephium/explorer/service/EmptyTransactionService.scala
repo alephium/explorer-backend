@@ -55,7 +55,7 @@ trait EmptyTransactionService extends TransactionService {
     Future.successful(ArraySeq.empty)
 
   override def getTransactionsByAddresses(
-      addresses: ArraySeq[Address],
+      addresses: ArraySeq[AddressLike],
       fromTs: Option[TimeStamp],
       toTs: Option[TimeStamp],
       pagination: Pagination

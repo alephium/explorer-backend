@@ -72,7 +72,7 @@ trait TransactionService {
   ): Future[Option[TransactionInfo]]
 
   def getTransactionsByAddresses(
-      addresses: ArraySeq[Address],
+      addresses: ArraySeq[AddressLike],
       fromTime: Option[TimeStamp],
       toTime: Option[TimeStamp],
       pagination: Pagination
@@ -181,7 +181,7 @@ object TransactionService extends TransactionService {
     TransactionDao.getLatestTransactionInfoByAddress(address)
 
   def getTransactionsByAddresses(
-      addresses: ArraySeq[Address],
+      addresses: ArraySeq[AddressLike],
       fromTime: Option[TimeStamp],
       toTime: Option[TimeStamp],
       pagination: Pagination

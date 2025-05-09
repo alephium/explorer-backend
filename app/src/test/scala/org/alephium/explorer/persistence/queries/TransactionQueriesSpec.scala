@@ -37,7 +37,7 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.protocol.{ALPH, Hash}
-import org.alephium.protocol.model.{Address, GroupIndex, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, GroupIndex, TransactionId}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
@@ -508,7 +508,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
   "getTxHashesByAddressesQuery" should {
     "return empty" when {
       "database is empty" in {
-        forAll(Gen.listOf(addressGen), Gen.posNum[Int], Gen.posNum[Int]) {
+        forAll(Gen.listOf(addressLikeGen), Gen.posNum[Int], Gen.posNum[Int]) {
           (addresses, page, limit) =>
             val query =
               TransactionQueries.getTxHashesByAddressesQuery(
@@ -525,7 +525,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     "return valid transactions_per_addresses" when {
       "the input contains valid and invalid addresses" in {
-        forAll(Gen.listOf(genTransactionPerAddressEntity()), Gen.listOf(addressGen)) {
+        forAll(Gen.listOf(genTransactionPerAddressEntity()), Gen.listOf(addressLikeGen)) {
           case (entitiesToPersist, addressesNotPersisted) =>
             // clear table and insert entities
             run(TransactionPerAddressSchema.table.delete).futureValue
@@ -533,7 +533,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
             // merge all addresses
             val allAddresses =
-              entitiesToPersist.map(_.address) ++ addressesNotPersisted
+              entitiesToPersist.flatMap(entity =>
+                AddressLike.fromBase58(entity.address.toBase58)
+              ) ++ addressesNotPersisted
 
             // shuffle all merged addresses
             val shuffledAddresses =
@@ -584,7 +586,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         def query(fromTs: Option[TimeStamp], toTs: Option[TimeStamp]) = {
           run(
             TransactionQueries.getTxHashesByAddressesQuery(
-              Seq(address),
+              Seq(addressLike),
               fromTs,
               toTs,
               Pagination.unsafe(1, Int.MaxValue)
@@ -638,8 +640,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
   trait Fixture {
 
-    val address   = addressGen.sample.get
-    def timestamp = timestampGen.sample.get
+    val address     = addressGen.sample.get
+    val addressLike = AddressLike.fromBase58(address.toBase58).get
+    def timestamp   = timestampGen.sample.get
 
     val chainFrom = GroupIndex.Zero
     val chainTo   = GroupIndex.Zero

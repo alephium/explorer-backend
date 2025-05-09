@@ -191,7 +191,7 @@ object TransactionQueries extends StrictLogging {
     *   Paginated transactions
     */
   def getTxHashesByAddressesQuery(
-      addresses: ArraySeq[Address],
+      addresses: ArraySeq[AddressLike],
       fromTs: Option[TimeStamp],
       toTs: Option[TimeStamp],
       pagination: Pagination
@@ -199,29 +199,49 @@ object TransactionQueries extends StrictLogging {
     if (addresses.isEmpty) {
       DBIOAction.successful(ArraySeq.empty)
     } else {
-      val placeholder = paramPlaceholder(1, addresses.size)
+      val (fulls, halfs) = splitAddresses(addresses.toList)
 
-      val query =
-        s"""
+      val fullsPlaceholder = paramPlaceholder(1, fulls.size)
+      val halfsPlaceholder = paramPlaceholder(1, halfs.size)
+
+      val fullsCondition = Option.when(fulls.nonEmpty)(s"address IN $fullsPlaceholder")
+      val halfsCondition = Option.when(halfs.nonEmpty)(s"address_like IN $halfsPlaceholder")
+
+      ((fullsCondition, halfsCondition) match {
+        case (Some(fulls), Some(halfs)) =>
+          Some(s"($fulls OR $halfs)")
+        case (Some(fulls), None) =>
+          Some(s"$fulls")
+        case (None, Some(halfs)) =>
+          Some(s"$halfs")
+        case (None, None) =>
+          None
+      }).map { addressesCondition =>
+        val query =
+          s"""
            SELECT ${TxByAddressQR.selectFields}
            FROM transaction_per_addresses
            WHERE main_chain = true
-             AND address IN $placeholder
+             AND $addressesCondition
              ${fromTs.map(ts => s"AND block_timestamp >= ${ts.millis}").getOrElse("")}
              ${toTs.map(ts => s"AND block_timestamp < ${ts.millis}").getOrElse("")}
            ORDER BY block_timestamp DESC, tx_order
            """
 
-      val parameters: SetParameter[Unit] =
-        (_: Unit, params: PositionedParameters) => {
-          addresses foreach (params >> _)
-        }
+        val parameters: SetParameter[Unit] =
+          (_: Unit, params: PositionedParameters) => {
+            fulls foreach (params >> _)
+            halfs foreach (params >> _)
+          }
 
-      SQLActionBuilder(
-        sql = query,
-        setParameter = parameters
-      ).paginate(pagination)
-        .asAS[TxByAddressQR]
+        SQLActionBuilder(
+          sql = query,
+          setParameter = parameters
+        ).paginate(pagination)
+          .asAS[TxByAddressQR]
+      }.getOrElse {
+        DBIOAction.successful(ArraySeq.empty)
+      }
     }
 
   /** Get transactions by address for a given time-range
@@ -286,7 +306,7 @@ object TransactionQueries extends StrictLogging {
   }
 
   def getTransactionsByAddresses(
-      addresses: ArraySeq[Address],
+      addresses: ArraySeq[AddressLike],
       fromTime: Option[TimeStamp],
       toTime: Option[TimeStamp],
       pagination: Pagination

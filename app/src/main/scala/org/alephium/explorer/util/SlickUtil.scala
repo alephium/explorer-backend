@@ -30,7 +30,7 @@ import slick.sql._
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DBActionR, DBActionSR}
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.protocol.model.{AddressLike, GroupIndex}
+import org.alephium.protocol.model.{Address, AddressLike, GroupIndex}
 import org.alephium.protocol.vm.LockupScript
 
 /** Convenience functions for Slick */
@@ -176,6 +176,29 @@ object SlickUtil {
       case _ =>
         full
     }
+  }
+
+  def splitAddresses(addresses: List[AddressLike]): (ArraySeq[Address], ArraySeq[AddressLike]) = {
+    addresses.foldLeft((ArraySeq.empty[Address], ArraySeq.empty[AddressLike])) {
+      case ((fulls, halfs), address) =>
+        address.lockupScriptResult match {
+          case LockupScript.HalfDecodedP2PK(_) =>
+            (fulls, halfs :+ address)
+          case LockupScript.CompleteLockupScript(lockupScript) =>
+            (fulls :+ Address.from(lockupScript), halfs)
+        }
+    }
+  }
+
+  def generateAddressQueryCondition(
+      addressesPlaceholder: String,
+      addressesLikePlaceholder: String,
+      address: AddressLike
+  ): String = {
+    val addressColumnName     = addressColumn(address)
+    val addressLikeColumnName = if (addressColumnName == "address") "address_like" else "address"
+
+    s"AND (($addressColumnName IN $addressesPlaceholder) OR ($addressLikeColumnName IN $addressesLikePlaceholder))"
   }
 
   def paramPlaceholderTuple2(rows: Int, columns: Int): String =

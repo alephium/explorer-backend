@@ -72,9 +72,9 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .summary("List transactions of a given address")
 
   // format: off
-  lazy val getTransactionsByAddresses: BaseEndpoint[(ArraySeq[Address], Option[TimeStamp], Option[TimeStamp], Pagination), ArraySeq[Transaction]] =
+  lazy val getTransactionsByAddresses: BaseEndpoint[(ArraySeq[AddressLike], Option[TimeStamp], Option[TimeStamp], Pagination), ArraySeq[Transaction]] =
     baseAddressesEndpoint.post
-      .in(arrayBody[Address]("addresses", maxSizeAddresses))
+      .in(arrayBody[AddressLike]("addresses", maxSizeAddresses))
       .in("transactions")
       .in(optionalTimeIntervalQuery)
       .in(pagination)
