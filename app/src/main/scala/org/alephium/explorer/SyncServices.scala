@@ -32,6 +32,7 @@ import org.alephium.api.model.{ChainParams, PeerAddress}
 import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.config.{BootMode, ExplorerConfig}
+import org.alephium.explorer.config.ExplorerConfig.Consensus
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.service._
 import org.alephium.explorer.util.Scheduler
@@ -46,6 +47,7 @@ object SyncServices extends StrictLogging {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
+      consensus: Consensus,
       blockCache: BlockCache,
       groupSetting: GroupSetting
   ): Future[Unit] =
@@ -88,6 +90,7 @@ object SyncServices extends StrictLogging {
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       blockCache: BlockCache,
+      consensus: Consensus,
       groupSetting: GroupSetting
   ): Future[Unit] =
     Future.fromTry {
