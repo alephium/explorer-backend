@@ -156,7 +156,7 @@ object TransactionQueries extends StrictLogging {
       SELECT COUNT(*)
       FROM transaction_per_addresses
       WHERE main_chain = true
-      AND #${addressColumn(address, "address", "address_like")} = $address
+      AND #${addressColumn(address)} = $address
     """
       .asAS[Int]
   }
@@ -169,7 +169,7 @@ object TransactionQueries extends StrictLogging {
       SELECT #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
       WHERE main_chain = true
-      AND #${addressColumn(address, "address", "address_like")} = $address
+      AND #${addressColumn(address)} = $address
     """
       .concat(sql"""ORDER BY block_timestamp DESC, tx_order """)
       .paginate(pagination)
@@ -373,7 +373,7 @@ object TransactionQueries extends StrictLogging {
     sql"""
       SELECT #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
-      WHERE address = $address
+      WHERE #${addressColumn(address)} = $address
       AND main_chain = true
       AND block_timestamp >= $from
       AND block_timestamp < $to
@@ -576,28 +576,18 @@ object TransactionQueries extends StrictLogging {
     if (addresses.isEmpty) {
       DBIO.successful(ArraySeq.empty)
     } else {
-      val (fulls, halfs) = splitAddresses(addresses.toList)
-
       val query =
-        (List
-          .fill(fulls.size) {
-            "(SELECT address FROM transaction_per_addresses WHERE address = ? LIMIT 1)"
-          } ++ List
-          .fill(halfs.size) {
-            "(SELECT address FROM transaction_per_addresses WHERE address_like = ? LIMIT 1)"
-          })
+        addresses.toSeq
+          .map { address =>
+            s"(SELECT address FROM transaction_per_addresses WHERE ${addressColumn(address)} = ? LIMIT 1)"
+          }
           .mkString("\nUNION\n")
 
       val parameters: SetParameter[Unit] =
-        (_: Unit, params: PositionedParameters) => {
-          fulls foreach { address =>
+        (_: Unit, params: PositionedParameters) =>
+          addresses foreach { address =>
             params >> address
           }
-
-          halfs foreach { address =>
-            params >> address
-          }
-        }
 
       SQLActionBuilder(
         sql = query,
