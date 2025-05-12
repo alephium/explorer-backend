@@ -190,17 +190,6 @@ object SlickUtil {
     }
   }
 
-  def generateAddressQueryCondition(
-      addressesPlaceholder: String,
-      addressesLikePlaceholder: String,
-      address: AddressLike
-  ): String = {
-    val addressColumnName     = addressColumn(address)
-    val addressLikeColumnName = if (addressColumnName == "address") "address_like" else "address"
-
-    s"AND (($addressColumnName IN $addressesPlaceholder) OR ($addressLikeColumnName IN $addressesLikePlaceholder))"
-  }
-
   def paramPlaceholderTuple2(rows: Int, columns: Int): String =
     paramPlaceholder(rows, columns, "(?, ?)")
 
