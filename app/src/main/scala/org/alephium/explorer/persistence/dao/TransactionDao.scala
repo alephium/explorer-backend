@@ -25,7 +25,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries.TransactionQueries._
-import org.alephium.protocol.model.{Address, AddressLike, TransactionId}
+import org.alephium.protocol.model.{AddressLike, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object TransactionDao {
@@ -84,7 +84,7 @@ object TransactionDao {
     run(getBalanceAction(address, latestFinalizedTimestamp))
 
   def areAddressesActive(
-      addresses: ArraySeq[Address]
+      addresses: ArraySeq[AddressLike]
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]] =
     run(areAddressesActiveAction(addresses))
 }

@@ -30,7 +30,7 @@ import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.EndpointExamples._
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.PublicKey
-import org.alephium.protocol.model.{Address, AddressLike, TokenId}
+import org.alephium.protocol.model.{AddressLike, TokenId}
 import org.alephium.util.{Duration, TimeStamp}
 
 // scalastyle:off magic.number
@@ -146,12 +146,12 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[Transaction]])
       .summary("List address tokens")
 
-  lazy val areAddressesActive: BaseEndpoint[ArraySeq[Address], ArraySeq[Boolean]] =
+  lazy val areAddressesActive: BaseEndpoint[ArraySeq[AddressLike], ArraySeq[Boolean]] =
     baseAddressesEndpoint
       .tag("Addresses")
       .in("used")
       .post
-      .in(arrayBody[Address]("addresses", maxSizeAddresses))
+      .in(arrayBody[AddressLike]("addresses", maxSizeAddresses))
       .out(jsonBody[ArraySeq[Boolean]])
       .summary("Are the addresses used (at least 1 transaction)")
 

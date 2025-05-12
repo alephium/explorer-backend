@@ -38,7 +38,7 @@ import org.alephium.explorer.persistence.queries.{InputQueries, TokenQueries}
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.util.TimeUtil
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{Address, AddressLike, TokenId, TransactionId}
+import org.alephium.protocol.model.{AddressLike, TokenId, TransactionId}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 trait TransactionService {
@@ -98,7 +98,7 @@ trait TransactionService {
   def getTotalNumber()(implicit cache: TransactionCache): Int
 
   def areAddressesActive(
-      addresses: ArraySeq[Address]
+      addresses: ArraySeq[AddressLike]
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]]
 
   def listMempoolTransactions(pagination: Pagination)(implicit
@@ -217,7 +217,7 @@ object TransactionService extends TransactionService {
   }
 
   def areAddressesActive(
-      addresses: ArraySeq[Address]
+      addresses: ArraySeq[AddressLike]
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]] =
     TransactionDao.areAddressesActive(addresses)
 

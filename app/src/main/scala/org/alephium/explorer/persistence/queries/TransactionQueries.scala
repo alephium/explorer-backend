@@ -34,6 +34,7 @@ import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
+import org.alephium.explorer.util.UtxoUtil
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
@@ -563,29 +564,40 @@ object TransactionQueries extends StrictLogging {
     }
 
   def areAddressesActiveAction(
-      addresses: ArraySeq[Address]
-  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[Boolean]] =
+      addresses: ArraySeq[AddressLike]
+  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[Boolean]] = {
     filterExistingAddresses(addresses.toSet) map { existing =>
-      addresses map existing.contains
+      addresses.map(address => existing.exists(a => UtxoUtil.addressEqual(a, address)))
     }
+  }
 
   /** Filters input addresses that exist in DB */
-  def filterExistingAddresses(addresses: Set[Address]): DBActionR[ArraySeq[Address]] =
+  def filterExistingAddresses(addresses: Set[AddressLike]): DBActionR[ArraySeq[Address]] =
     if (addresses.isEmpty) {
       DBIO.successful(ArraySeq.empty)
     } else {
+      val (fulls, halfs) = splitAddresses(addresses.toList)
+
       val query =
-        List
-          .fill(addresses.size) {
-            "SELECT address FROM transaction_per_addresses WHERE address = ?"
-          }
+        (List
+          .fill(fulls.size) {
+            "(SELECT address FROM transaction_per_addresses WHERE address = ? LIMIT 1)"
+          } ++ List
+          .fill(halfs.size) {
+            "(SELECT address FROM transaction_per_addresses WHERE address_like = ? LIMIT 1)"
+          })
           .mkString("\nUNION\n")
 
       val parameters: SetParameter[Unit] =
-        (_: Unit, params: PositionedParameters) =>
-          addresses foreach { address =>
+        (_: Unit, params: PositionedParameters) => {
+          fulls foreach { address =>
             params >> address
           }
+
+          halfs foreach { address =>
+            params >> address
+          }
+        }
 
       SQLActionBuilder(
         sql = query,

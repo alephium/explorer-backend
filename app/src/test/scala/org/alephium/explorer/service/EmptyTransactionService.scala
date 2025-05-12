@@ -30,7 +30,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.service.TransactionService
-import org.alephium.protocol.model.{Address, AddressLike, TransactionId}
+import org.alephium.protocol.model.{AddressLike, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 trait EmptyTransactionService extends TransactionService {
@@ -102,7 +102,7 @@ trait EmptyTransactionService extends TransactionService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[MempoolTransaction]] = ???
-  def areAddressesActive(addresses: ArraySeq[Address])(implicit
+  def areAddressesActive(addresses: ArraySeq[AddressLike])(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Boolean]] = {

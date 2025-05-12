@@ -36,6 +36,7 @@ import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.explorer.util.SlickExplainUtil._
+import org.alephium.explorer.util.UtxoUtil
 import org.alephium.protocol.{ALPH, Hash}
 import org.alephium.protocol.model.{Address, AddressLike, GroupIndex, TransactionId}
 import org.alephium.util.{Duration, TimeStamp, U256}
@@ -351,7 +352,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
         // join existing and nonExisting entities and shuffle
         val allEntities  = Random.shuffle(existing ++ nonExisting)
-        val allAddresses = allEntities.map(_.address)
+        val allAddresses = allEntities.map(entity => AddressLike.from(entity.address.lockupScript))
 
         // get persisted entities to assert against actual query results
         val existingAddresses = existing.map(_.address)
@@ -368,7 +369,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
           run(TransactionQueries.areAddressesActiveAction(allAddresses)).futureValue
 
         // boolean query should output results in the same order as the input addresses
-        (allAddresses.map(actualExisting.contains): ArraySeq[Boolean]) is booleanExistingResult
+        (allAddresses.map(address =>
+          actualExisting.exists(a => UtxoUtil.addressEqual(a, address))
+        ): ArraySeq[Boolean]) is booleanExistingResult
 
         // check the boolean query with the existing concurrent query
         run(
