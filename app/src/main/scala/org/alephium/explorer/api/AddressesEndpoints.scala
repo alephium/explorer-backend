@@ -171,6 +171,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .in(timeIntervalQuery)
       .in(intervalTypeQuery)
       .out(jsonBody[AmountHistory])
+      .deprecated()
 
   val getPublicKey: BaseEndpoint[AddressLike, PublicKey] =
     addressesLikeEndpoint.get
