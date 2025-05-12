@@ -3699,7 +3699,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/infos": {
