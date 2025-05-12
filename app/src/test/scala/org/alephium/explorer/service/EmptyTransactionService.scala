@@ -129,14 +129,6 @@ trait EmptyTransactionService extends TransactionService {
       paralellism: Int
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = ???
 
-  def getAmountHistoryDEPRECATED(
-      address: AddressLike,
-      from: TimeStamp,
-      to: TimeStamp,
-      intervalType: IntervalType,
-      paralellism: Int
-  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = ???
-
   def getAmountHistory(
       address: AddressLike,
       from: TimeStamp,
