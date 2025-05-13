@@ -22,8 +22,9 @@ import scala.util.Random
 import org.scalacheck.Gen
 
 import org.alephium.explorer.AlephiumSpec
+import org.alephium.explorer.ConfigDefaults.groupSetting
 import org.alephium.explorer.GenApiModel._
-import org.alephium.explorer.api.model.{AssetOutput, ContractOutput, Output}
+import org.alephium.explorer.api.model.{AssetOutput, ContractOutput, Output, Token}
 import org.alephium.util.U256
 
 class UtxoUtilSpec extends AlephiumSpec {
@@ -134,6 +135,39 @@ class UtxoUtilSpec extends AlephiumSpec {
     }
   }
 
+  "UtxoUtil.deltaTokenAmountForAddress" should {
+    "return correct delta" in {
+      forAll(addressGen, tokenGen, inputGen, outputGen, outputGen) {
+        case (address, token, input, output, output2) =>
+          val tokenHalf = token.amount.div(U256.Two).get
+          val in        = input.copy(address = Some(address), tokens = Option(ArraySeq(token)))
+          val out = output match {
+            case asset: AssetOutput =>
+              asset.copy(
+                address = address,
+                tokens = Option(ArraySeq(Token(token.id, tokenHalf)))
+              ): Output
+            case contract: ContractOutput =>
+              contract.copy(
+                address = address,
+                tokens = Option(ArraySeq(Token(token.id, tokenHalf)))
+              ): Output
+          }
+
+          val out2 = output2 match {
+            case asset: AssetOutput =>
+              asset.copy(tokens = Option(ArraySeq(Token(token.id, tokenHalf)))): Output
+            case contract: ContractOutput =>
+              contract.copy(tokens = Option(ArraySeq(Token(token.id, tokenHalf)))): Output
+          }
+
+          UtxoUtil.deltaTokenAmountForAddress(address, ArraySeq(in), ArraySeq(out, out2)) is Map(
+            token.id -> tokenHalf.v.negate
+          )
+      }
+    }
+  }
+
   "UtxoUtil.fromAddresses" should {
 
     val inputWithAddressGen = for {
@@ -166,6 +200,31 @@ class UtxoUtilSpec extends AlephiumSpec {
 
     "return zero address if inputs are empty" in {
       UtxoUtil.fromAddresses(ArraySeq.empty) is ArraySeq.empty
+    }
+  }
+
+  "UtxoUtil.fromTokenAddresses" should {
+
+    val inputWithAddressGen = for {
+      address <- addressGen
+      inputs  <- Gen.nonEmptyListOf(inputWithTokensGen)
+    } yield {
+      (address, inputs.map(_.copy(address = Some(address))))
+    }
+
+    "return address when tokens are defined" in {
+      forAll(inputWithAddressGen) { case (address, inputs) =>
+        val tokens = inputs.flatMap(_.tokens).flatten
+        tokens.foreach { token =>
+          UtxoUtil.fromTokenAddresses(token.id, inputs) is ArraySeq(address)
+        }
+      }
+    }
+
+    "return empty when token is not defined" in {
+      forAll(inputWithAddressGen, tokenIdGen) { case ((_, inputs), tokenId) =>
+        UtxoUtil.fromTokenAddresses(tokenId, inputs) is ArraySeq.empty
+      }
     }
   }
 
@@ -221,4 +280,41 @@ class UtxoUtilSpec extends AlephiumSpec {
       }
     }
   }
+
+  "UtxoUtil.toTokenAddressesWithoutChangeAddresses" should {
+    val outputWithAddressGen = for {
+      address <- addressGen
+      output  <- Gen.nonEmptyListOf(assetOutputGen)
+    } yield {
+      (address, output.map(_.copy(address = address)))
+    }
+
+    "return outputs with tokens defined" in {
+      forAll(outputWithAddressGen) { case (address, outputs) =>
+        val tokens = outputs.flatMap(_.tokens).flatten
+        tokens.foreach { token =>
+          UtxoUtil.toTokenAddressesWithoutChangeAddresses(
+            token.id,
+            outputs,
+            ArraySeq.empty
+          ) is ArraySeq(address)
+        }
+      }
+    }
+
+    "return outputs with tokens defined and change addresses removed" in {
+      forAll(outputWithAddressGen) { case (address, outputs) =>
+        val tokens = outputs.flatMap(_.tokens).flatten
+        tokens.foreach { token =>
+          UtxoUtil.toTokenAddressesWithoutChangeAddresses(
+            token.id,
+            outputs,
+            ArraySeq(address)
+          ) is ArraySeq.empty
+        }
+      }
+    }
+
+  }
+
 }
