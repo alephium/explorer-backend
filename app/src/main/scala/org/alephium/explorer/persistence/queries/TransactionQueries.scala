@@ -39,6 +39,7 @@ import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
+// scalastyle:off number.of.methods
 object TransactionQueries extends StrictLogging {
 
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
@@ -175,6 +176,14 @@ object TransactionQueries extends StrictLogging {
       .paginate(pagination)
       .asAS[TxByAddressQR]
   }
+
+  def countTxsAfter(time: TimeStamp): DBActionR[Int] =
+    sql"""
+        SELECT COUNT(*)
+        FROM transactions
+        WHERE block_timestamp > $time
+        AND main_chain = true
+        """.as[Int].head
 
   /** Get transactions for a list of addresses
     *
