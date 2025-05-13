@@ -187,7 +187,9 @@ class AddressServer(
               ) =>
             Future.successful(Right(publicKey))
           case _ =>
-            Future.successful(Left(ApiError.BadRequest(s"Only P2PKH and P2PK addresses supported")))
+            Future.successful(
+              Left(ApiError.BadRequest(s"Only P2PKH and P2PK (SecP256K1) addresses supported"))
+            )
         }
       })
     )

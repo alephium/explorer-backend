@@ -44,7 +44,7 @@ object Codecs extends TapirCodecs {
     input => {
       val address =
         Address.fromBase58(input).getOrElse(throw Abort(s"Cannot parse address: $input"))
-      val groupIndex = if (input.length > 2 && input(input.length - 2) == '@') {
+      val groupIndex = if (input.length > 2 && input(input.length - 2) == ':') {
         input.takeRight(1).toIntOption.flatMap(GroupIndex.from)
       } else {
         None
