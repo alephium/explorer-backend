@@ -29,7 +29,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.DBRunner._
-import org.alephium.explorer.persistence.model.AppState.LastFinalizedInputTime
+import org.alephium.explorer.persistence.model.AppState._
 import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
@@ -44,6 +44,8 @@ import org.alephium.util.{Duration, TimeStamp}
  */
 
 case object FinalizerService extends StrictLogging {
+
+  final private case class UpdateResult(nbOfOutputs: Int, nbOfTransactions: Int)
 
   // scalastyle:off magic.number
   val finalizationDuration: Duration = Duration.ofSecondsUnsafe(6500)
@@ -85,7 +87,22 @@ case object FinalizerService extends StrictLogging {
       executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]
   ): Future[Unit] = {
+    run(getFinalizedTxCountOrCount(start)).flatMap { txsCount =>
+      finalizeOutputsFromToWithCount(start, end, step, txsCount)
+    }
+  }
+
+  def finalizeOutputsFromToWithCount(
+      start: TimeStamp,
+      end: TimeStamp,
+      step: Duration,
+      txsCount: Int
+  )(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = {
     var updateCounter = 0
+    var txsCounter    = txsCount
     logger.debug(s"Updating outputs")
     val timeRanges =
       TimeUtil.buildTimestampRange(start, end, step)
@@ -94,12 +111,14 @@ case object FinalizerService extends StrictLogging {
       run(
         (
           for {
-            nb <- updateOutputs(from, to)
-            _  <- updateLastFinalizedInputTime(to)
-          } yield nb
+            updateResult <- updateOutputs(from, to)
+            _            <- updateLastFinalizedInputTime(to)
+            _            <- updateFinalizedTxCount(txsCounter + updateResult.nbOfTransactions)
+          } yield updateResult
         ).transactionally
-      ).map { nb =>
-        updateCounter = updateCounter + nb
+      ).map { updateResult =>
+        txsCounter = txsCounter + updateResult.nbOfTransactions
+        updateCounter = updateCounter + updateResult.nbOfOutputs
         logger.debug(s"$updateCounter outputs updated")
       }
     }.map(_ => logger.debug(s"Outputs updated"))
@@ -110,12 +129,14 @@ case object FinalizerService extends StrictLogging {
    */
   private def updateOutputs(from: TimeStamp, to: TimeStamp)(implicit
       ec: ExecutionContext
-  ): DBActionR[Int] =
+  ): DBActionR[UpdateResult] =
     for {
       txs    <- findTransactions(from, to)
       inputs <- findInputs(txs)
       nb     <- updateOutputsWithInputs(inputs)
-    } yield nb
+    } yield {
+      UpdateResult(nb, txs.length)
+    }
 
   /*
    * Search for transactions within the specified time range.
@@ -208,6 +229,14 @@ case object FinalizerService extends StrictLogging {
       AND main_chain = true
     """
 
+  def getFinalizedTxCountOrCount(upTo: TimeStamp)(implicit
+      executionContext: ExecutionContext
+  ): DBActionR[Int] =
+    AppStateQueries.get(FinalizedTxCount).flatMap {
+      case Some(FinalizedTxCount(count)) => DBIOAction.successful(count)
+      case None                          => countTxsUpTo(upTo)
+    }
+
   def getStartEndTime()(implicit
       executionContext: ExecutionContext
   ): DBActionR[Option[(TimeStamp, TimeStamp)]] = {
@@ -219,7 +248,9 @@ case object FinalizerService extends StrictLogging {
         val end = if (_end.isBefore(ft)) _end else ft
         getLastFinalizedInputTime().flatMap {
           case Some(lastFinalizedInputTime) =>
-            DBIOAction.successful(Some((lastFinalizedInputTime, end)))
+            // Inputs at finalization time are already finalized, so adding 1 millis
+            // Re-finalizing isn't an issue, but it is a waste of resources
+            DBIOAction.successful(Some((lastFinalizedInputTime + Duration.ofMillisUnsafe(1), end)))
           case None =>
             getMinInputsTs.map {
               // No input in db
@@ -245,6 +276,15 @@ case object FinalizerService extends StrictLogging {
       FROM latest_blocks
     """.asAS[TimeStamp].headOrNone
 
+  private def countTxsUpTo(time: TimeStamp): DBActionR[Int] = {
+    sql"""
+        SELECT COUNT(*)
+        FROM transactions
+        WHERE block_timestamp < $time
+        AND main_chain = true
+        """.as[Int].head
+  }
+
   private def getLastFinalizedInputTime()(implicit
       executionContext: ExecutionContext
   ): DBActionR[Option[TimeStamp]] =
@@ -252,4 +292,7 @@ case object FinalizerService extends StrictLogging {
 
   private def updateLastFinalizedInputTime(time: TimeStamp) =
     AppStateQueries.insertOrUpdate(LastFinalizedInputTime(time))
+
+  private def updateFinalizedTxCount(txCount: Int) =
+    AppStateQueries.insertOrUpdate(FinalizedTxCount(txCount))
 }

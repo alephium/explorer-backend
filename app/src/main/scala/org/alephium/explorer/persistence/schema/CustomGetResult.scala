@@ -432,4 +432,11 @@ object CustomGetResult {
         case Left(error)  => throw error
         case Right(value) => value
       }
+
+  implicit val finalizedTxCountGetResult: GetResult[AppState.FinalizedTxCount] =
+    (result: PositionedResult) =>
+      AppState.FinalizedTxCount(ByteString.fromArrayUnsafe(result.nextBytes())) match {
+        case Left(error)  => throw error
+        case Right(value) => value
+      }
 }

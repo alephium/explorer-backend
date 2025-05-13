@@ -86,7 +86,7 @@ class FinalizerServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEac
 
     val Some((start3, _)) = run(FinalizerService.getStartEndTime()).futureValue
 
-    start3 is blockHeader2.timestamp
+    start3 is blockHeader2.timestamp.plusMillisUnsafe(1)
   }
 
   trait Fixture {
