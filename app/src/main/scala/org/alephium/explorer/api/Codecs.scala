@@ -18,54 +18,25 @@ package org.alephium.explorer.api
 
 import scala.util.{Failure, Success, Try}
 
-import sttp.tapir.{Codec, CodecFormat, DecodeResult, Schema}
+import sttp.tapir.{Codec, CodecFormat, DecodeResult}
 import sttp.tapir.Codec.PlainCodec
 import upickle.core.Abort
 
 import org.alephium.api.TapirCodecs
-import org.alephium.api.TapirSchemas
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.config.Default
 import org.alephium.json.Json._
 import org.alephium.protocol.config.GroupConfig
-import org.alephium.protocol.model.{Address, AddressLike, GroupIndex}
+import org.alephium.protocol.model.AddressLike
 
 object Codecs extends TapirCodecs {
 
   implicit val groupConfig: GroupConfig = Default.groupConfig
 
-  implicit val addressGroupRW: ReadWriter[(Address, Option[GroupIndex])] = readwriter[String].bimap(
-    {
-      case (address, Some(groupIndex)) =>
-        address.toBase58 + ":" + groupIndex.value
-      case (address, None) =>
-        address.toBase58
-    },
-    input => {
-      val address =
-        Address.fromBase58(input).getOrElse(throw Abort(s"Cannot parse address: $input"))
-      val groupIndex = if (input.length > 2 && input(input.length - 2) == ':') {
-        input.takeRight(1).toIntOption.flatMap(GroupIndex.from)
-      } else {
-        None
-      }
-      (address, groupIndex)
-    }
-  )
-
-  implicit val addressGroupLikeRW: ReadWriter[AddressLike] = readwriter[String].bimap(
+  implicit val addressLikeRW: ReadWriter[AddressLike] = readwriter[String].bimap(
     _.toBase58,
     input => AddressLike.fromBase58(input).getOrElse(throw Abort(s"Cannot parse address: $input"))
   )
-
-  implicit val addressGroupSchema: Schema[(Address, Option[GroupIndex])] =
-    TapirSchemas.addressSchema.as[(Address, Option[GroupIndex])]
-
-  implicit val addressLikeGroupSchema: Schema[AddressLike] =
-    TapirSchemas.addressLikeSchema.as[AddressLike]
-
-  implicit val explorerAddressTapirCodec: PlainCodec[(Address, Option[GroupIndex])] =
-    fromJson[(Address, Option[GroupIndex])]
 
   implicit val explorerAddressLikeTapirCodec: PlainCodec[AddressLike] = fromJson[AddressLike]
 
