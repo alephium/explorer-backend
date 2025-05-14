@@ -87,7 +87,7 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .summary(
         "Return metadata for the given nft tokens"
       )
-      .description("if metadata doesn't exist or token isn't a nft, it won't be in the output list")
+      .description("If metadata doesn't exist or token isn't a nft, it won't be in the output list")
 
   val listNFTCollectionMetadata: BaseEndpoint[ArraySeq[Address], ArraySeq[NFTCollectionMetadata]] =
     tokensEndpoint.post
@@ -98,7 +98,7 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
         "Return metadata for the given nft collection addresses"
       )
       .description(
-        "if metadata doesn't exist or address isn't a nft collection, it won't be in the output list"
+        "If metadata doesn't exist or address isn't a nft collection, it won't be in the output list"
       )
 
   val getAlphHolders: BaseEndpoint[Pagination, ArraySeq[HolderInfo]] =
