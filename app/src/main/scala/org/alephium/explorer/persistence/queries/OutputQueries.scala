@@ -64,7 +64,7 @@ object OutputQueries {
                                   "key",
                                   "amount",
                                   "address",
-                                  "address_like",
+                                  "groupless_address",
                                   "tokens",
                                   "main_chain",
                                   "lock_time",
@@ -93,7 +93,7 @@ object OutputQueries {
               params >> output.key
               params >> output.amount
               params >> output.address
-              params >> output.addressLike
+              params >> output.grouplessAddress
               params >> output.tokens
               params >> output.mainChain
               params >> output.lockTime
@@ -119,7 +119,7 @@ object OutputQueries {
     QuerySplitter.splitUpdates(rows = outputs, columnsPerRow = 8) { (outputs, placeholder) =>
       val query =
         s"""
-           INSERT INTO transaction_per_addresses (address, address_like, tx_hash, block_hash, block_timestamp, tx_order, main_chain, coinbase)
+           INSERT INTO transaction_per_addresses (address, groupless_address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, coinbase)
            VALUES $placeholder
            ON CONFLICT (tx_hash, block_hash, address)
            DO NOTHING
@@ -129,7 +129,7 @@ object OutputQueries {
         (_: Unit, params: PositionedParameters) =>
           outputs foreach { output =>
             params >> output.address
-            params >> output.addressLike
+            params >> output.grouplessAddress
             params >> output.txHash
             params >> output.blockHash
             params >> output.timestamp
@@ -179,7 +179,7 @@ object OutputQueries {
                                   "token",
                                   "amount",
                                   "address",
-                                  "address_like",
+                                  "groupless_address",
                                   "main_chain",
                                   "lock_time",
                                   "message",
@@ -205,7 +205,7 @@ object OutputQueries {
               params >> token.id
               params >> token.amount
               params >> output.address
-              params >> output.addressLike
+              params >> output.grouplessAddress
               params >> output.mainChain
               params >> output.lockTime
               params >> output.message
@@ -260,7 +260,7 @@ object OutputQueries {
       (tokenOutputs, placeholder) =>
         val query =
           s"""
-             INSERT INTO token_tx_per_addresses (address, address_like, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
+             INSERT INTO token_tx_per_addresses (address, groupless_address, tx_hash, block_hash, block_timestamp, tx_order, main_chain, token)
              VALUES $placeholder
              ON CONFLICT (tx_hash, block_hash, address, token)
              DO NOTHING
@@ -270,7 +270,7 @@ object OutputQueries {
           (_: Unit, params: PositionedParameters) =>
             tokenOutputs foreach { case (token, output) =>
               params >> output.address
-              params >> output.addressLike
+              params >> output.grouplessAddress
               params >> output.txHash
               params >> output.blockHash
               params >> output.timestamp
@@ -372,7 +372,7 @@ object OutputQueries {
         key,
         amount,
         address,
-        address_like,
+        groupless_address,
         tokens,
         main_chain,
         lock_time,
@@ -443,7 +443,7 @@ object OutputQueries {
   ): DBActionR[(Option[U256], Option[U256])] = {
     val (ouptupAddressColumn, inputAddressColumn) = address.lockupScriptResult match {
       case LockupScript.HalfDecodedP2PK(_) =>
-        ("address_like", "output_ref_address_like")
+        ("groupless_address", "output_ref_groupless_address")
       case _ =>
         ("address", "output_ref_address")
     }

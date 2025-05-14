@@ -589,7 +589,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         def query(fromTs: Option[TimeStamp], toTs: Option[TimeStamp]) = {
           run(
             TransactionQueries.getTxHashesByAddressesQuery(
-              Seq(addressLike),
+              Seq(grouplessAddress),
               fromTs,
               toTs,
               Pagination.unsafe(1, Int.MaxValue)
@@ -643,9 +643,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
   trait Fixture {
 
-    val address     = addressGen.sample.get
-    val addressLike = AddressLike.fromBase58(address.toBase58).get
-    def timestamp   = timestampGen.sample.get
+    val address          = addressGen.sample.get
+    val grouplessAddress = AddressLike.fromBase58(address.toBase58).get
+    def timestamp        = timestampGen.sample.get
 
     val chainFrom = GroupIndex.Zero
     val chainTo   = GroupIndex.Zero

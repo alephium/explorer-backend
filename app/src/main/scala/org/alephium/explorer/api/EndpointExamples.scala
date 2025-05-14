@@ -68,7 +68,7 @@ object EndpointExamples extends EndpointsExamples {
   private val address2: Address =
     Address.fromBase58("22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM").get
 
-  private val addressLike: AddressLike = AddressLike.fromBase58(address1Str).get
+  private val grouplessAddress: AddressLike = AddressLike.fromBase58(address1Str).get
 
   private val contract =
     ContractId
@@ -366,8 +366,8 @@ object EndpointExamples extends EndpointsExamples {
 
   /** Examples
     */
-  implicit val addressLikeArray: List[Example[ArraySeq[AddressLike]]] =
-    simpleExample(ArraySeq(addressLike))
+  implicit val grouplessAddressArray: List[Example[ArraySeq[AddressLike]]] =
+    simpleExample(ArraySeq(grouplessAddress))
 
   implicit val blockEntryLiteExample: List[Example[BlockEntryLite]] =
     simpleExample(blockEntryLite)

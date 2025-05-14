@@ -168,7 +168,7 @@ object SlickUtil {
   def addressColumn(
       address: AddressLike,
       full: String = "address",
-      half: String = "address_like"
+      half: String = "groupless_address"
   ): String = {
     address.lockupScriptResult match {
       case LockupScript.HalfDecodedP2PK(_) =>

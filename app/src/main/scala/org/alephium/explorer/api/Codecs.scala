@@ -33,7 +33,7 @@ object Codecs extends TapirCodecs {
 
   implicit val groupConfig: GroupConfig = Default.groupConfig
 
-  implicit val addressLikeRW: ReadWriter[AddressLike] = readwriter[String].bimap(
+  implicit val grouplessAddressRW: ReadWriter[AddressLike] = readwriter[String].bimap(
     _.toBase58,
     input => AddressLike.fromBase58(input).getOrElse(throw Abort(s"Cannot parse address: $input"))
   )

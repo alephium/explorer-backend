@@ -32,7 +32,7 @@ final case class TokenOutputEntity(
     token: TokenId,
     amount: U256,
     address: Address,
-    addressLike: Option[AddressLike],
+    grouplessAddress: Option[AddressLike],
     mainChain: Boolean,
     lockTime: Option[TimeStamp],
     message: Option[ByteString],

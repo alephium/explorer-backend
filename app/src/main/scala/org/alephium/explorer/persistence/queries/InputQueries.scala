@@ -52,7 +52,7 @@ object InputQueries {
                                "tx_order",
                                "output_ref_tx_hash",
                                "output_ref_address",
-                               "output_ref_address_like",
+                               "output_ref_groupless_address",
                                "output_ref_amount",
                                "contract_input")
            VALUES $placeholder
@@ -144,7 +144,7 @@ object InputQueries {
           tx_order,
           output_ref_tx_hash,
           output_ref_address,
-          output_ref_address_like,
+          output_ref_groupless_address,
           output_ref_amount,
           output_ref_tokens,
           contract_input
@@ -159,7 +159,11 @@ object InputQueries {
     sql"""
       select unlock_script
       FROM inputs
-      WHERE #${addressColumn(address, "output_ref_address", "output_ref_address_like")}  = $address
+      WHERE #${addressColumn(
+        address,
+        "output_ref_address",
+        "output_ref_groupless_address"
+      )}  = $address
       LIMIT 1
     """.asAS[ByteString].headOrNone
   }

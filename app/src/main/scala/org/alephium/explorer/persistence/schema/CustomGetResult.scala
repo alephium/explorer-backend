@@ -142,7 +142,7 @@ object CustomGetResult {
   implicit val addressGetResult: GetResult[Address] =
     (result: PositionedResult) => Address.fromBase58(result.nextString()).get
 
-  implicit val addressLikeGetResult: GetResult[AddressLike] =
+  implicit val grouplessAddressGetResult: GetResult[AddressLike] =
     (result: PositionedResult) => AddressLike.fromBase58(result.nextString()).get
 
   val addressContractGetResult: GetResult[Address.Contract] =
@@ -186,7 +186,7 @@ object CustomGetResult {
         key = result.<<,
         amount = result.<<,
         address = result.<<,
-        addressLike = result.<<?,
+        grouplessAddress = result.<<?,
         tokens = result.<<?,
         mainChain = result.<<,
         lockTime = result.<<?,

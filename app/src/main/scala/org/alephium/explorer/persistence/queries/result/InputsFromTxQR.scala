@@ -39,7 +39,7 @@ object InputsFromTxQR {
       unlock_script,
       output_ref_tx_hash,
       output_ref_address,
-      output_ref_address_like,
+      output_ref_groupless_address,
       output_ref_amount,
       output_ref_tokens,
       contract_input

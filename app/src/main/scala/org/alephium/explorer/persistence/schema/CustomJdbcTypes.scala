@@ -86,10 +86,11 @@ object CustomJdbcTypes {
     string => Address.fromBase58(string).get
   )
 
-  implicit val addressLikeType: JdbcType[AddressLike] = MappedJdbcType.base[AddressLike, String](
-    _.toBase58,
-    string => AddressLike.fromBase58(string).get
-  )
+  implicit val grouplessAddressType: JdbcType[AddressLike] =
+    MappedJdbcType.base[AddressLike, String](
+      _.toBase58,
+      string => AddressLike.fromBase58(string).get
+    )
 
   implicit val addressContractType: JdbcType[Address.Contract] =
     MappedJdbcType.base[Address.Contract, String](

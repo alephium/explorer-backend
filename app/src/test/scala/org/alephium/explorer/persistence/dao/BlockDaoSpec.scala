@@ -283,7 +283,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
       TransactionPerAddressEntity(
         hash = output.txHash,
         address = output.address,
-        addressLike = Some(output.address),
+        grouplessAddress = Some(output.address),
         blockHash = output.blockHash,
         timestamp = output.timestamp,
         txOrder = input.txOrder,

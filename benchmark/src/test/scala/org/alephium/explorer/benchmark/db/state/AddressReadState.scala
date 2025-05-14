@@ -145,7 +145,7 @@ class AddressReadState(val db: DBExecutor)
       key = Hash.generate,
       amount = ALPH.alph(1),
       address = address0,
-      addressLike = Some(address0),
+      grouplessAddress = Some(address0),
       tokens = None,
       mainChain = true,
       lockTime = None,

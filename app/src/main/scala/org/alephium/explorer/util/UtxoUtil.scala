@@ -27,12 +27,12 @@ import org.alephium.util.U256
 
 object UtxoUtil {
 
-  def addressEqual(address: Address, addressLike: AddressLike): Boolean = {
-    addressLike.lockupScriptResult match {
+  def addressEqual(address: Address, grouplessAddress: AddressLike): Boolean = {
+    grouplessAddress.lockupScriptResult match {
       case LockupScript.CompleteLockupScript(_) =>
-        addressLike.toBase58 == address.toBase58
+        grouplessAddress.toBase58 == address.toBase58
       case LockupScript.HalfDecodedP2PK(_) =>
-        addressLike.toBase58 == address.toBase58.takeWhile(_ != ':')
+        grouplessAddress.toBase58 == address.toBase58.takeWhile(_ != ':')
     }
   }
 

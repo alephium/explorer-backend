@@ -82,7 +82,7 @@ object DataGenerator {
         key = Hash.generate,
         amount = U256.unsafe(Random.nextInt(100)),
         address = address,
-        addressLike = Some(address),
+        grouplessAddress = Some(address),
         tokens = None,
         mainChain = transaction.mainChain,
         lockTime = Some(TimeStamp.now()),
@@ -165,7 +165,7 @@ object DataGenerator {
   def genTransactionPerAddressEntity(address: Address = genAddress()): TransactionPerAddressEntity =
     TransactionPerAddressEntity(
       address = address,
-      addressLike = Some(address),
+      grouplessAddress = Some(address),
       hash = TransactionId.generate,
       blockHash = BlockHash.generate,
       timestamp = TimeStamp.now(),

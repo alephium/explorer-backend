@@ -31,7 +31,7 @@ import org.alephium.util.{TimeStamp, U256}
 object OutputsQR {
 
   val selectFields: String =
-    "output_type, hint, key, amount, address, address_like, tokens, lock_time, message, spent_finalized, fixed_output"
+    "output_type, hint, key, amount, address, groupless_address, tokens, lock_time, message, spent_finalized, fixed_output"
 
   implicit val outputsQRGetResult: GetResult[OutputsQR] =
     (result: PositionedResult) =>
@@ -41,7 +41,7 @@ object OutputsQR {
         key = result.<<,
         amount = result.<<,
         address = result.<<,
-        addressLike = result.<<?,
+        grouplessAddress = result.<<?,
         tokens = result.<<?,
         lockTime = result.<<?,
         message = result.<<?,
@@ -57,7 +57,7 @@ final case class OutputsQR(
     key: Hash,
     amount: U256,
     address: Address,
-    addressLike: Option[AddressLike],
+    grouplessAddress: Option[AddressLike],
     tokens: Option[ArraySeq[Token]],
     lockTime: Option[TimeStamp],
     message: Option[ByteString],

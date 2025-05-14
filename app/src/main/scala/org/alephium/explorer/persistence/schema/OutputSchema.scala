@@ -42,15 +42,16 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
     def key: Rep[Hash]                           = column[Hash]("key", O.SqlType("BYTEA"))
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
-    def address: Rep[Address]                 = column[Address]("address")
-    def addressLike: Rep[Option[AddressLike]] = column[Option[AddressLike]]("address_like")
-    def tokens: Rep[Option[ArraySeq[Token]]]  = column[Option[ArraySeq[Token]]]("tokens")
-    def mainChain: Rep[Boolean]               = column[Boolean]("main_chain")
-    def lockTime: Rep[Option[TimeStamp]]      = column[Option[TimeStamp]]("lock_time")
-    def message: Rep[Option[ByteString]]      = column[Option[ByteString]]("message")
-    def outputOrder: Rep[Int]                 = column[Int]("output_order")
-    def txOrder: Rep[Int]                     = column[Int]("tx_order")
-    def coinbase: Rep[Boolean]                = column[Boolean]("coinbase")
+    def address: Rep[Address] = column[Address]("address")
+    def grouplessAddress: Rep[Option[AddressLike]] =
+      column[Option[AddressLike]]("groupless_address")
+    def tokens: Rep[Option[ArraySeq[Token]]] = column[Option[ArraySeq[Token]]]("tokens")
+    def mainChain: Rep[Boolean]              = column[Boolean]("main_chain")
+    def lockTime: Rep[Option[TimeStamp]]     = column[Option[TimeStamp]]("lock_time")
+    def message: Rep[Option[ByteString]]     = column[Option[ByteString]]("message")
+    def outputOrder: Rep[Int]                = column[Int]("output_order")
+    def txOrder: Rep[Int]                    = column[Int]("tx_order")
+    def coinbase: Rep[Boolean]               = column[Boolean]("coinbase")
     def spentFinalized: Rep[Option[TransactionId]] =
       column[Option[TransactionId]]("spent_finalized", O.Default(None))
     def spentTimestamp: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("spent_timestamp")
@@ -75,7 +76,7 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
         key,
         amount,
         address,
-        addressLike,
+        grouplessAddress,
         tokens,
         mainChain,
         lockTime,
@@ -110,9 +111,9 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
   def createNonSpentOutputGroupCoveringIndex(): DBActionW[Int] =
     sqlu"""
       CREATE INDEX CONCURRENTLY IF NOT EXISTS non_spent_output_group_covering_include_idx
-      ON outputs (address, address_like, main_chain, spent_finalized, key)
+      ON outputs (address, groupless_address, main_chain, spent_finalized, key)
       INCLUDE (amount, lock_time)
-      WHERE spent_finalized IS NULL AND address_like IS NOT NULL AND main_chain = true;
+      WHERE spent_finalized IS NULL AND groupless_address IS NOT NULL AND main_chain = true;
     """
   val table: TableQuery[Outputs] = TableQuery[Outputs]
 }

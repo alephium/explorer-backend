@@ -94,23 +94,26 @@ object Migrations extends StrictLogging {
    */
   def migration4: DBActionAll[Unit] = DBIOAction.successful(())
 
-  private def addAddressLikeColumn(tableName: String, addressLikeColumn: String): DBActionAll[Int] =
-    sqlu"""ALTER TABLE #$tableName ADD COLUMN #$addressLikeColumn CHARACTER VARYING"""
+  private def addAddressLikeColumn(
+      tableName: String,
+      grouplessAddressColumn: String
+  ): DBActionAll[Int] =
+    sqlu"""ALTER TABLE #$tableName ADD COLUMN #$grouplessAddressColumn CHARACTER VARYING"""
 
   def migration5(implicit ec: ExecutionContext): DBActionAll[Unit] =
     for {
-      _ <- addAddressLikeColumn("outputs", "address_like")
-      _ <- addAddressLikeColumn("token_outputs", "address_like")
-      _ <- addAddressLikeColumn("token_tx_per_addresses", "address_like")
-      _ <- addAddressLikeColumn("transaction_per_addresses", "address_like")
-      _ <- addAddressLikeColumn("inputs", "output_ref_address_like")
+      _ <- addAddressLikeColumn("outputs", "groupless_address")
+      _ <- addAddressLikeColumn("token_outputs", "groupless_address")
+      _ <- addAddressLikeColumn("token_tx_per_addresses", "groupless_address")
+      _ <- addAddressLikeColumn("transaction_per_addresses", "groupless_address")
+      _ <- addAddressLikeColumn("inputs", "output_ref_groupless_address")
     } yield ()
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def updateAddressLikeColumn(
       tableName: String,
       addressColumn: String,
-      addressLikeColumn: String,
+      grouplessAddressColumn: String,
       chain: String = "chain_to"
   )(implicit
       explorerConfig: ExplorerConfig,
@@ -122,7 +125,7 @@ object Migrations extends StrictLogging {
           SELECT #$addressColumn, block_hash
           FROM #$tableName
           WHERE block_timestamp >= ${explorerConfig.consensus.danube.forkTimestamp}
-          AND #$addressLikeColumn IS NULL
+          AND #$grouplessAddressColumn IS NULL
         """
         .asAS[(Address, BlockHash)]
         .map { addresses =>
@@ -136,7 +139,7 @@ object Migrations extends StrictLogging {
       _ <- DBIOAction.sequence(addresses.map { case (address, blockHash) =>
         sqlu"""
           UPDATE #$tableName
-          SET #$addressLikeColumn = bh.#$chain
+          SET #$grouplessAddressColumn = bh.#$chain
           FROM block_headers bh
           WHERE #$tableName.#$addressColumn = $address
             AND #$tableName.block_hash = bh.hash
@@ -148,21 +151,21 @@ object Migrations extends StrictLogging {
 
   def migration6(implicit explorerConfig: ExplorerConfig, ec: ExecutionContext): DBActionAll[Unit] =
     if (TimeStamp.now().isBefore(explorerConfig.consensus.danube.forkTimestamp)) {
-      // No need to migrate the address_like as no groupless addresses can be created before the Danube Hard Fork.
+      // No need to migrate the groupless_address as no groupless addresses can be created before the Danube Hard Fork.
       DBIOAction.successful(())
     } else {
       logger.info(
         "Migrating `addresse_like`, might be slow if you have a lot of groupless addresses"
       )
       for {
-        _ <- updateAddressLikeColumn("outputs", "address", "address_like")
-        _ <- updateAddressLikeColumn("token_outputs", "address", "address_like")
-        _ <- updateAddressLikeColumn("token_tx_per_addresses", "address", "address_like")
-        _ <- updateAddressLikeColumn("transaction_per_addresses", "address", "address_like")
+        _ <- updateAddressLikeColumn("outputs", "address", "groupless_address")
+        _ <- updateAddressLikeColumn("token_outputs", "address", "groupless_address")
+        _ <- updateAddressLikeColumn("token_tx_per_addresses", "address", "groupless_address")
+        _ <- updateAddressLikeColumn("transaction_per_addresses", "address", "groupless_address")
         _ <- updateAddressLikeColumn(
           "inputs",
           "output_ref_address",
-          "output_ref_address_like",
+          "output_ref_groupless_address",
           "chain_from"
         )
       } yield {

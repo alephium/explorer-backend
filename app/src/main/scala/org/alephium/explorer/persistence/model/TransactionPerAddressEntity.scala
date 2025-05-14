@@ -21,7 +21,7 @@ import org.alephium.util.TimeStamp
 
 final case class TransactionPerAddressEntity(
     address: Address,
-    addressLike: Option[AddressLike],
+    grouplessAddress: Option[AddressLike],
     hash: TransactionId,
     blockHash: BlockHash,
     timestamp: TimeStamp,

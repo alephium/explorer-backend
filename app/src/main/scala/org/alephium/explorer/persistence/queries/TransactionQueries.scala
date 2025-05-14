@@ -215,7 +215,7 @@ object TransactionQueries extends StrictLogging {
       val halfsPlaceholder = paramPlaceholder(1, halfs.size)
 
       val fullsCondition = Option.when(fulls.nonEmpty)(s"address IN $fullsPlaceholder")
-      val halfsCondition = Option.when(halfs.nonEmpty)(s"address_like IN $halfsPlaceholder")
+      val halfsCondition = Option.when(halfs.nonEmpty)(s"groupless_address IN $halfsPlaceholder")
 
       ((fullsCondition, halfsCondition) match {
         case (Some(fulls), Some(halfs)) =>
@@ -450,7 +450,11 @@ object TransactionQueries extends StrictLogging {
     sql"""
       SELECT SUM(output_ref_amount)
       FROM inputs
-      WHERE #${addressColumn(address, "output_ref_address", "output_ref_address_like")}  = $address
+      WHERE #${addressColumn(
+        address,
+        "output_ref_address",
+        "output_ref_groupless_address"
+      )}  = $address
       AND main_chain = true
       AND block_timestamp >= $from
       AND block_timestamp <= $to
@@ -474,7 +478,11 @@ object TransactionQueries extends StrictLogging {
         LEAST($to, GREATEST($from, #${QueryUtil.extractEpoch(dateGroup)} - 1)) as ts,
         SUM(output_ref_amount)
       FROM inputs
-      WHERE #${addressColumn(address, "output_ref_address", "output_ref_address_like")}= $address
+      WHERE #${addressColumn(
+        address,
+        "output_ref_address",
+        "output_ref_groupless_address"
+      )}= $address
       AND main_chain = true
       AND block_timestamp >= ${ALPH.GenesisTimestamp}
       AND block_timestamp <= $to
