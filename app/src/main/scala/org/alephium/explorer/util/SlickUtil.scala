@@ -29,8 +29,7 @@ import slick.sql._
 
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DBActionR, DBActionSR}
-import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.protocol.model.{Address, AddressLike, GroupIndex}
+import org.alephium.protocol.model.{Address, AddressLike}
 import org.alephium.protocol.vm.LockupScript
 
 /** Convenience functions for Slick */
@@ -151,17 +150,6 @@ object SlickUtil {
         setParameter = parameters
       )
     }
-
-    def addressGroup(
-        groupIndexOpt: Option[GroupIndex],
-        groupColumn: String
-    ): SQLActionBuilder = {
-      groupIndexOpt.fold(action)(groupIndex => action.concat(sql" AND #$groupColumn = $groupIndex"))
-    }
-
-    def concatOption(maybeNextAction: Option[SQLActionBuilder]): SQLActionBuilder = {
-      maybeNextAction.fold(action)(action.concat)
-    }
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
@@ -178,15 +166,16 @@ object SlickUtil {
     }
   }
 
-  def splitAddresses(addresses: List[AddressLike]): (ArraySeq[Address], ArraySeq[AddressLike]) = {
-    addresses.foldLeft((ArraySeq.empty[Address], ArraySeq.empty[AddressLike])) {
-      case ((fulls, halfs), address) =>
-        address.lockupScriptResult match {
-          case LockupScript.HalfDecodedP2PK(_) =>
-            (fulls, halfs :+ address)
-          case LockupScript.CompleteLockupScript(lockupScript) =>
-            (fulls :+ Address.from(lockupScript), halfs)
-        }
+  def splitAddresses(
+      addresses: ArraySeq[AddressLike]
+  ): (ArraySeq[Address], ArraySeq[AddressLike]) = {
+    addresses.partitionMap { address =>
+      address.lockupScriptResult match {
+        case LockupScript.HalfDecodedP2PK(_) =>
+          Right(address)
+        case LockupScript.CompleteLockupScript(lockupScript) =>
+          Left(Address.from(lockupScript))
+      }
     }
   }
 

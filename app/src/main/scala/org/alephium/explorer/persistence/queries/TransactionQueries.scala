@@ -209,7 +209,7 @@ object TransactionQueries extends StrictLogging {
     if (addresses.isEmpty) {
       DBIOAction.successful(ArraySeq.empty)
     } else {
-      val (fulls, halfs) = splitAddresses(addresses.toList)
+      val (fulls, halfs) = splitAddresses(addresses)
 
       val fullsPlaceholder = paramPlaceholder(1, fulls.size)
       val halfsPlaceholder = paramPlaceholder(1, halfs.size)
