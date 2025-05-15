@@ -187,9 +187,8 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
     addressesLikeEndpoint.get
       .in("public-key")
       .out(jsonBody[PublicKey])
-      .summary(
-        "Get public key of p2pkh addresses, the address needs to have at least one input."
-      )
+      .summary("Use `/addresses/{address}/typed-public-key` instead")
+      .deprecated()
 
   val getTypedPublicKey: BaseEndpoint[AddressLike, AddressPublicKey] =
     addressesLikeEndpoint.get

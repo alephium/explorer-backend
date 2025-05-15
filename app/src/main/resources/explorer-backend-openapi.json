@@ -3039,7 +3039,7 @@
         "tags": [
           "Addresses"
         ],
-        "summary": "Get public key of p2pkh addresses, the address needs to have at least one input.",
+        "summary": "Use `/addresses/{address}/typed-public-key` instead",
         "operationId": "getAddressesAddressPublic-key",
         "parameters": [
           {
@@ -3144,7 +3144,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/addresses/{address}/typed-public-key": {
