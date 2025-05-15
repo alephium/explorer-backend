@@ -3147,6 +3147,121 @@
         }
       }
     },
+    "/addresses/{address}/typed-public-key": {
+      "get": {
+        "tags": [
+          "Addresses"
+        ],
+        "summary": "Get typed public key of p2pkh and p2pk addresses, p2pkh address needs to have at least one input.",
+        "operationId": "getAddressesAddressTyped-public-key",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "address"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressPublicKey"
+                },
+                "example": {
+                  "publicKey": "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28",
+                  "publicKeyType": "default"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "GatewayTimeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayTimeout"
+                },
+                "example": {
+                  "detail": "The network is slow"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/addresses/{address}/tokens-balance": {
       "get": {
         "tags": [
@@ -8538,6 +8653,24 @@
           "txNumber": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "AddressPublicKey": {
+        "title": "AddressPublicKey",
+        "type": "object",
+        "required": [
+          "publicKey",
+          "publicKeyType"
+        ],
+        "properties": {
+          "publicKey": {
+            "type": "string",
+            "format": "hex-string"
+          },
+          "publicKeyType": {
+            "type": "string",
+            "format": "hex-string"
           }
         }
       },

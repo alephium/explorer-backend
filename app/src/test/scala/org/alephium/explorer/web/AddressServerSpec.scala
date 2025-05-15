@@ -32,7 +32,7 @@ import slick.jdbc.PostgresProfile
 import sttp.model.{Header, StatusCode}
 
 import org.alephium.api.ApiError
-import org.alephium.api.model.TimeInterval
+import org.alephium.api.model.{BuildTxCommon, TimeInterval}
 import org.alephium.explorer._
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
@@ -101,6 +101,14 @@ class AddressServerSpec()
   val publicKeyAddresses = Gen.listOfN(10, publicKeyGen).sample.get.map { publicKey =>
     (Address.p2pkh(publicKey), publicKey)
   }
+
+  val publicKeyAddressesGen =
+    for {
+      groupIndex <- groupIndexGen
+      lockup     <- lockupGen(groupIndex)
+    } yield {
+      (Address.from(lockup), lockup)
+    }
 
   val transactionService = new EmptyTransactionService {
     override def listMempoolTransactionsByAddress(address: AddressLike)(implicit
@@ -445,6 +453,32 @@ class AddressServerSpec()
       publicKeyAddresses.foreach { case (address, publicKey) =>
         Get(s"/addresses/$address/public-key") check { response =>
           response.as[PublicKey] is publicKey
+        }
+      }
+    }
+
+    "return typed public key" in {
+      publicKeyAddresses.foreach { case (address, publicKey) =>
+        Get(s"/addresses/$address/typed-public-key") check { response =>
+          response.as[AddressPublicKey] is AddressPublicKey(publicKey.bytes, BuildTxCommon.Default)
+        }
+      }
+
+      forAll(addressLikeGen) { address =>
+        Get(s"/addresses/$address/typed-public-key") check { response =>
+          address.lockupScriptResult match {
+            case LockupScript.CompleteLockupScript(lockupScript) =>
+              lockupScript match {
+                case LockupScript.P2PKH(_) => response.code is StatusCode.NotFound
+                case LockupScript.P2PK(publicKeyLike, _) =>
+                  response.code is StatusCode.Ok
+                  response.as[AddressPublicKey].publicKey is publicKeyLike.publicKey.bytes
+                case _ => response.code is StatusCode.BadRequest
+              }
+            case LockupScript.HalfDecodedP2PK(publicKeyLike) =>
+              response.code is StatusCode.Ok
+              response.as[AddressPublicKey].publicKey is publicKeyLike.publicKey.bytes
+          }
         }
       }
     }

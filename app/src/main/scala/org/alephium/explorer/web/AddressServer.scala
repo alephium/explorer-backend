@@ -29,7 +29,7 @@ import slick.jdbc.PostgresProfile
 import sttp.model.StatusCode
 
 import org.alephium.api.ApiError
-import org.alephium.api.model.TimeInterval
+import org.alephium.api.model.{BuildTxCommon, TimeInterval}
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model._
@@ -100,7 +100,7 @@ class AddressServer(
           case Some(txInfo) => Right(txInfo)
         }
       }),
-      route(getAddressBalance.serverLogicSuccess[Future] { case address =>
+      route(getAddressBalance.serverLogicSuccess[Future] { address =>
         for {
           (balance, locked) <- transactionService
             .getBalance(address, blockCache.getLastFinalizedTimestamp())
@@ -189,6 +189,27 @@ class AddressServer(
           case _ =>
             Future.successful(
               Left(ApiError.BadRequest(s"Only P2PKH and P2PK (SecP256K1) addresses supported"))
+            )
+        }
+      }),
+      route(getTypedPublicKey.serverLogic[Future] { address =>
+        address.lockupScriptResult match {
+          case LockupScript.CompleteLockupScript(LockupScript.P2PKH(_)) =>
+            transactionService.getUnlockScript(address).map {
+              case None =>
+                Left(ApiError.NotFound(s"No input found for address $address"))
+              case Some(unlockScript) =>
+                AddressServer.bytesToPublicKey(unlockScript).map { publicKey =>
+                  AddressPublicKey(publicKey.bytes, BuildTxCommon.Default)
+                }
+            }
+          case LockupScript.CompleteLockupScript(LockupScript.P2PK(publicKeyLike, _)) =>
+            Future.successful(Right(AddressPublicKey.from(publicKeyLike)))
+          case LockupScript.HalfDecodedP2PK(publicKeyLike) =>
+            Future.successful(Right(AddressPublicKey.from(publicKeyLike)))
+          case _ =>
+            Future.successful(
+              Left(ApiError.BadRequest(s"Only P2PKH and P2PK addresses supported"))
             )
         }
       })
