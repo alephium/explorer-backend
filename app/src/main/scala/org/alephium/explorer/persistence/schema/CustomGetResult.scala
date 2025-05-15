@@ -74,6 +74,10 @@ object CustomGetResult {
   implicit val groupIndexGetResult: GetResult[GroupIndex] =
     (result: PositionedResult) => new GroupIndex(result.nextInt())
 
+  implicit val groupIndexOptionGetResult: GetResult[Option[GroupIndex]] = {
+    (result: PositionedResult) => result.nextIntOption().map(new GroupIndex(_))
+  }
+
   implicit val heightGetResult: GetResult[Height] =
     (result: PositionedResult) => Height.unsafe(result.nextInt())
 
@@ -138,6 +142,9 @@ object CustomGetResult {
   implicit val addressGetResult: GetResult[Address] =
     (result: PositionedResult) => Address.fromBase58(result.nextString()).get
 
+  implicit val grouplessAddressGetResult: GetResult[AddressLike] =
+    (result: PositionedResult) => AddressLike.fromBase58(result.nextString()).get
+
   val addressContractGetResult: GetResult[Address.Contract] =
     (result: PositionedResult) => {
       val string = result.nextString()
@@ -153,6 +160,10 @@ object CustomGetResult {
   implicit val optionAddressGetResult: GetResult[Option[Address]] =
     (result: PositionedResult) =>
       result.nextStringOption().map(string => Address.fromBase58(string).get)
+
+  implicit val optionAddressLikeGetResult: GetResult[Option[AddressLike]] =
+    (result: PositionedResult) =>
+      result.nextStringOption().map(string => AddressLike.fromBase58(string).get)
 
   implicit val u256GetResult: GetResult[U256] =
     (result: PositionedResult) => {
@@ -175,6 +186,7 @@ object CustomGetResult {
         key = result.<<,
         amount = result.<<,
         address = result.<<,
+        grouplessAddress = result.<<?,
         tokens = result.<<?,
         mainChain = result.<<,
         lockTime = result.<<?,
@@ -201,6 +213,7 @@ object CustomGetResult {
         txOrder = result.<<,
         outputRefTxHash = result.<<?,
         outputRefAddress = result.<<?,
+        outputRefAddressLike = result.<<?,
         outputRefAmount = result.<<?,
         outputRefTokens = result.<<?,
         contractInput = result.<<

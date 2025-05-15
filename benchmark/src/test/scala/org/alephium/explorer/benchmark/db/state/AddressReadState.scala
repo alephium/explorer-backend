@@ -28,6 +28,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.crypto.Blake2b
+import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
@@ -100,6 +101,7 @@ class AddressReadState(val db: DBExecutor)
       None,
       None,
       None,
+      None,
       contractInput = false
     )
   }
@@ -132,6 +134,7 @@ class AddressReadState(val db: DBExecutor)
     val txHash    = TransactionId.generate
     val timestamp =
       TimeStamp.now().plusMillisUnsafe(Duration.ofHoursUnsafe(12 * currentCacheSize.toLong).millis)
+    val address0 = if (currentCacheSize % 2 == 0) address else DataGenerator.genAddress()
 
     OutputEntity(
       blockHash = blockHash,
@@ -141,7 +144,8 @@ class AddressReadState(val db: DBExecutor)
       hint = Random.nextInt(),
       key = Hash.generate,
       amount = ALPH.alph(1),
-      address = if (currentCacheSize % 2 == 0) address else DataGenerator.genAddress(),
+      address = address0,
+      grouplessAddress = Some(address0),
       tokens = None,
       mainChain = true,
       lockTime = None,

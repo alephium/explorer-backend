@@ -25,13 +25,12 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model.{OutputEntity, OutputEntityLike}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
-
 object OutputsFromTxQR {
 
   val selectFields: String =
-    "tx_hash, output_order, output_type, hint, key, amount, address, tokens, lock_time, message, spent_finalized, fixed_output"
+    "tx_hash, output_order, output_type, hint, key, amount, address, groupless_address, tokens, lock_time, message, spent_finalized, fixed_output"
 
   implicit val outputsFromTxQRGetResult: GetResult[OutputsFromTxQR] =
     (result: PositionedResult) =>
@@ -43,6 +42,7 @@ object OutputsFromTxQR {
         key = result.<<,
         amount = result.<<,
         address = result.<<,
+        grouplessAddress = result.<<?,
         tokens = result.<<?,
         lockTime = result.<<?,
         message = result.<<?,
@@ -60,6 +60,7 @@ final case class OutputsFromTxQR(
     key: Hash,
     amount: U256,
     address: Address,
+    grouplessAddress: Option[AddressLike],
     tokens: Option[ArraySeq[Token]],
     lockTime: Option[TimeStamp],
     message: Option[ByteString],

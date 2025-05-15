@@ -30,7 +30,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.service.TransactionService
-import org.alephium.protocol.model.{Address, TransactionId}
+import org.alephium.protocol.model.{AddressLike, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 trait EmptyTransactionService extends TransactionService {
@@ -41,18 +41,21 @@ trait EmptyTransactionService extends TransactionService {
     Future.successful(None)
 
   override def getTransactionsNumberByAddress(
-      address: Address
+      address: AddressLike
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int] =
     Future.successful(0)
 
-  override def getTransactionsByAddress(address: Address, pagination: Pagination)(implicit
+  override def getTransactionsByAddress(
+      address: AddressLike,
+      pagination: Pagination
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]] =
     Future.successful(ArraySeq.empty)
 
   override def getTransactionsByAddresses(
-      addresses: ArraySeq[Address],
+      addresses: ArraySeq[AddressLike],
       fromTs: Option[TimeStamp],
       toTs: Option[TimeStamp],
       pagination: Pagination
@@ -63,7 +66,7 @@ trait EmptyTransactionService extends TransactionService {
     Future.successful(ArraySeq.empty)
 
   override def getTransactionsByAddressTimeRanged(
-      address: Address,
+      address: AddressLike,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       pagination: Pagination
@@ -73,13 +76,13 @@ trait EmptyTransactionService extends TransactionService {
   ): Future[ArraySeq[Transaction]] =
     Future.successful(ArraySeq.empty)
 
-  override def getLatestTransactionInfoByAddress(address: Address)(implicit
+  override def getLatestTransactionInfoByAddress(address: AddressLike)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Option[TransactionInfo]] =
     Future.successful(None)
 
-  override def listMempoolTransactionsByAddress(address: Address)(implicit
+  override def listMempoolTransactionsByAddress(address: AddressLike)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[MempoolTransaction]] = {
@@ -87,7 +90,7 @@ trait EmptyTransactionService extends TransactionService {
   }
 
   override def getBalance(
-      address: Address,
+      address: AddressLike,
       from: TimeStamp
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
     Future.successful((U256.Zero, U256.Zero))
@@ -99,27 +102,27 @@ trait EmptyTransactionService extends TransactionService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[MempoolTransaction]] = ???
-  def areAddressesActive(addresses: ArraySeq[Address])(implicit
+  def areAddressesActive(addresses: ArraySeq[AddressLike])(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Boolean]] = {
     Future.successful(ArraySeq(true))
   }
-  def hasAddressMoreTxsThan(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
+  def hasAddressMoreTxsThan(address: AddressLike, from: TimeStamp, to: TimeStamp, threshold: Int)(
       implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Boolean] = ???
 
   def getUnlockScript(
-      address: Address
+      address: AddressLike
   )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Option[ByteString]] = Future.successful(None)
 
   def exportTransactionsByAddress(
-      address: Address,
+      address: AddressLike,
       from: TimeStamp,
       to: TimeStamp,
       batchSize: Int,
@@ -127,7 +130,7 @@ trait EmptyTransactionService extends TransactionService {
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = ???
 
   def getAmountHistoryDEPRECATED(
-      address: Address,
+      address: AddressLike,
       from: TimeStamp,
       to: TimeStamp,
       intervalType: IntervalType,
@@ -135,7 +138,7 @@ trait EmptyTransactionService extends TransactionService {
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = ???
 
   def getAmountHistory(
-      address: Address,
+      address: AddressLike,
       from: TimeStamp,
       to: TimeStamp,
       intervalType: IntervalType

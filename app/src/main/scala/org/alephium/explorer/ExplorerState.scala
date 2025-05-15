@@ -44,7 +44,7 @@ sealed trait ExplorerState extends Service with StrictLogging {
     GroupSetting(config.groupNum)
 
   lazy val database: Database =
-    new Database(config.bootMode)(executionContext, databaseConfig)
+    new Database(config.bootMode)(executionContext, databaseConfig, config)
 
   implicit lazy val blockCache: BlockCache =
     BlockCache(

@@ -29,6 +29,8 @@ import slick.sql._
 
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DBActionR, DBActionSR}
+import org.alephium.protocol.model.{Address, AddressLike}
+import org.alephium.protocol.vm.LockupScript
 
 /** Convenience functions for Slick */
 object SlickUtil {
@@ -86,6 +88,7 @@ object SlickUtil {
       }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   implicit class RichSqlActionBuilder[A](val action: SQLActionBuilder) extends AnyVal {
     @SuppressWarnings(
       Array(
@@ -146,6 +149,33 @@ object SlickUtil {
         sql = action.sql ++ "LIMIT ? OFFSET ?",
         setParameter = parameters
       )
+    }
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def addressColumn(
+      address: AddressLike,
+      full: String = "address",
+      half: String = "groupless_address"
+  ): String = {
+    address.lockupScriptResult match {
+      case LockupScript.HalfDecodedP2PK(_) =>
+        half
+      case _ =>
+        full
+    }
+  }
+
+  def splitAddresses(
+      addresses: ArraySeq[AddressLike]
+  ): (ArraySeq[Address], ArraySeq[AddressLike]) = {
+    addresses.partitionMap { address =>
+      address.lockupScriptResult match {
+        case LockupScript.HalfDecodedP2PK(_) =>
+          Right(address)
+        case LockupScript.CompleteLockupScript(lockupScript) =>
+          Left(Address.from(lockupScript))
+      }
     }
   }
 

@@ -17,6 +17,7 @@
 package org.alephium.explorer.persistence.schema
 
 import scala.collection.immutable.ArraySeq
+import scala.concurrent.ExecutionContext
 
 import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
@@ -27,7 +28,7 @@ import org.alephium.explorer.persistence.DBActionW
 import org.alephium.explorer.persistence.model.OutputEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
@@ -41,7 +42,9 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
     def key: Rep[Hash]                           = column[Hash]("key", O.SqlType("BYTEA"))
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
-    def address: Rep[Address]                = column[Address]("address")
+    def address: Rep[Address] = column[Address]("address")
+    def grouplessAddress: Rep[Option[AddressLike]] =
+      column[Option[AddressLike]]("groupless_address")
     def tokens: Rep[Option[ArraySeq[Token]]] = column[Option[ArraySeq[Token]]]("tokens")
     def mainChain: Rep[Boolean]              = column[Boolean]("main_chain")
     def lockTime: Rep[Option[TimeStamp]]     = column[Option[TimeStamp]]("lock_time")
@@ -73,6 +76,7 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
         key,
         amount,
         address,
+        grouplessAddress,
         tokens,
         mainChain,
         lockTime,
@@ -90,12 +94,26 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
   def createNonSpentIndex(): DBActionW[Int] =
     sqlu"create unique index if not exists non_spent_output_idx on #${name} (address, main_chain, key, block_hash) where spent_finalized IS NULL;"
 
-  def createNonSpentOutputCoveringIndex(): DBActionW[Int] =
+  def createNonSpentOutputCoveringIndex()(implicit ec: ExecutionContext): DBActionW[Unit] =
+    for {
+      _ <- createBaseNonSpentOutputCoveringIndex()
+      _ <- createNonSpentOutputGroupCoveringIndex()
+    } yield ()
+
+  def createBaseNonSpentOutputCoveringIndex(): DBActionW[Int] =
     sqlu"""
       CREATE INDEX CONCURRENTLY IF NOT EXISTS non_spent_output_covering_include_idx
       ON #${name} (address, main_chain, spent_finalized, key)
       INCLUDE (amount, lock_time)
       WHERE spent_finalized IS NULL AND main_chain = true;
+    """
+
+  def createNonSpentOutputGroupCoveringIndex(): DBActionW[Int] =
+    sqlu"""
+      CREATE INDEX CONCURRENTLY IF NOT EXISTS non_spent_output_group_covering_include_idx
+      ON outputs (address, groupless_address, main_chain, spent_finalized, key)
+      INCLUDE (amount, lock_time)
+      WHERE spent_finalized IS NULL AND groupless_address IS NOT NULL AND main_chain = true;
     """
   val table: TableQuery[Outputs] = TableQuery[Outputs]
 }

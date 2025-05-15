@@ -16,11 +16,12 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TokenId, TransactionId}
 import org.alephium.util.TimeStamp
 
 final case class TokenTxPerAddressEntity(
     address: Address,
+    grouplessAddress: Option[AddressLike],
     hash: TransactionId,
     blockHash: BlockHash,
     timestamp: TimeStamp,

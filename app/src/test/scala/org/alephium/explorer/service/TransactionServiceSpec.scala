@@ -145,6 +145,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
         hashGen.sample.get,
         U256.One,
         address0,
+        Some(address0),
         None,
         true,
         None,
@@ -200,6 +201,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       None,
       None,
       None,
+      None,
       contractInput = false
     )
     val output1 = OutputEntity(
@@ -211,6 +213,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       hashGen.sample.get,
       U256.One,
       address1,
+      Some(address1),
       None,
       true,
       None,
@@ -299,7 +302,9 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     )
 
     val res2 =
-      TransactionService.getTransactionsByAddress(address0, Pagination.unsafe(1, 5)).futureValue
+      TransactionService
+        .getTransactionsByAddress(address0, Pagination.unsafe(1, 5))
+        .futureValue
 
     res2 is ArraySeq(t1, t0)
   }
@@ -340,6 +345,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
           hashGen.sample.get,
           U256.One,
           address0,
+          Some(address0),
           None,
           true,
           None,

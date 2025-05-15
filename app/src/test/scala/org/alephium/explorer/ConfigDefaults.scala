@@ -16,13 +16,16 @@
 
 package org.alephium.explorer
 
+import org.alephium.explorer.config.Default
 import org.alephium.explorer.config.ExplorerConfig._
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.util.{Duration, TimeStamp}
 
 object ConfigDefaults {
-  implicit val groupSetting: GroupSetting = Generators.groupSettingGen.sample.get
-  implicit val groupConfig: GroupConfig   = groupSetting.groupConfig
+  implicit val groupSetting: GroupSetting = GroupSetting(
+    Default.groupConfig.groups
+  )
+  implicit val groupConfig: GroupConfig = Default.groupConfig
 
   implicit val consensus: Consensus = Consensus(
     mainnet = Consensus.Setting(TimeStamp.zero, Duration.ofSecondsUnsafe(64)),

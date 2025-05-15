@@ -27,6 +27,7 @@ import slick.jdbc.PostgresProfile.api._
 import slick.jdbc.meta.MTable
 
 import org.alephium.explorer.AnyOps
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.util.discard
@@ -71,6 +72,7 @@ object DBInitializer extends StrictLogging {
 
   def initialize()(implicit
       executionContext: ExecutionContext,
+      explorerConfig: ExplorerConfig,
       databaseConfig: DatabaseConfig[PostgresProfile]
   ): Future[Unit] = {
     for {

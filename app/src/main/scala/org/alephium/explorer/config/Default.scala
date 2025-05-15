@@ -14,30 +14,26 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.model
+package org.alephium.explorer.config
 
-import akka.util.ByteString
+import scala.util.{Failure, Random, Success}
 
-import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TokenId, TransactionId}
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.explorer.GroupSetting
+import org.alephium.protocol.config.GroupConfig
+import org.alephium.util.Env
 
-final case class TokenOutputEntity(
-    blockHash: BlockHash,
-    txHash: TransactionId,
-    timestamp: TimeStamp,
-    outputType: OutputEntity.OutputType,
-    hint: Int,
-    key: Hash,
-    token: TokenId,
-    amount: U256,
-    address: Address,
-    grouplessAddress: Option[AddressLike],
-    mainChain: Boolean,
-    lockTime: Option[TimeStamp],
-    message: Option[ByteString],
-    outputOrder: Int,
-    txOrder: Int,
-    spentFinalized: Option[TransactionId],
-    spentTimestamp: Option[TimeStamp]
-)
+object Default {
+
+  implicit val groupConfig: GroupConfig =
+    Env.resolve() match {
+      case Env.Prod =>
+        val typesafeConfig = ExplorerConfig.loadConfig(Platform.getRootPath()) match {
+          case Success(config) => config
+          case Failure(error)  => throw error
+        }
+        val config: ExplorerConfig = ExplorerConfig.load(typesafeConfig)
+        GroupSetting(config.groupNum).groupConfig
+      case _ =>
+        GroupSetting(Random.between(2, 5)).groupConfig
+    }
+}

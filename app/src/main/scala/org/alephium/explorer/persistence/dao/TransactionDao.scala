@@ -25,7 +25,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries.TransactionQueries._
-import org.alephium.protocol.model.{Address, TransactionId}
+import org.alephium.protocol.model.{AddressLike, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object TransactionDao {
@@ -36,14 +36,14 @@ object TransactionDao {
   ): Future[Option[Transaction]] =
     run(getTransactionAction(hash))
 
-  def getByAddress(address: Address, pagination: Pagination)(implicit
+  def getByAddress(address: AddressLike, pagination: Pagination)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]] =
     run(getTransactionsByAddress(address, pagination))
 
   def getByAddresses(
-      addresses: ArraySeq[Address],
+      addresses: ArraySeq[AddressLike],
       fromTime: Option[TimeStamp],
       toTime: Option[TimeStamp],
       pagination: Pagination
@@ -54,7 +54,7 @@ object TransactionDao {
     run(getTransactionsByAddresses(addresses, fromTime, toTime, pagination))
 
   def getByAddressTimeRanged(
-      address: Address,
+      address: AddressLike,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       pagination: Pagination
@@ -64,7 +64,7 @@ object TransactionDao {
   ): Future[ArraySeq[Transaction]] =
     run(getTransactionsByAddressTimeRanged(address, fromTime, toTime, pagination))
 
-  def getLatestTransactionInfoByAddress(address: Address)(implicit
+  def getLatestTransactionInfoByAddress(address: AddressLike)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Option[TransactionInfo]] =
@@ -73,18 +73,18 @@ object TransactionDao {
     }))
 
   def getNumberByAddress(
-      address: Address
+      address: AddressLike
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int] =
     run(countAddressTransactions(address)).map(_.headOption.getOrElse(0))
 
   def getBalance(
-      address: Address,
+      address: AddressLike,
       latestFinalizedTimestamp: TimeStamp
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
     run(getBalanceAction(address, latestFinalizedTimestamp))
 
   def areAddressesActive(
-      addresses: ArraySeq[Address]
+      addresses: ArraySeq[AddressLike]
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]] =
     run(areAddressesActiveAction(addresses))
 }

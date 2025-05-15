@@ -25,18 +25,21 @@ import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence.model.AppState.MigrationVersion
 import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.BlockHash
+import org.alephium.protocol.model.{Address, BlockHash}
+import org.alephium.protocol.vm.LockupScript
+import org.alephium.util.TimeStamp
 
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(4)
+  val latestVersion: MigrationVersion = MigrationVersion(6)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     // We retrigger the download of fungible and non-fungible tokens' metadata that have sub-category
@@ -91,11 +94,95 @@ object Migrations extends StrictLogging {
    */
   def migration4: DBActionAll[Unit] = DBIOAction.successful(())
 
-  private def migrations(implicit ec: ExecutionContext): Seq[DBActionAll[Unit]] = Seq(
+  private def addAddressLikeColumn(
+      tableName: String,
+      grouplessAddressColumn: String
+  ): DBActionAll[Int] =
+    sqlu"""ALTER TABLE #$tableName ADD COLUMN #$grouplessAddressColumn CHARACTER VARYING"""
+
+  def migration5(implicit ec: ExecutionContext): DBActionAll[Unit] =
+    for {
+      _ <- addAddressLikeColumn("outputs", "groupless_address")
+      _ <- addAddressLikeColumn("token_outputs", "groupless_address")
+      _ <- addAddressLikeColumn("token_tx_per_addresses", "groupless_address")
+      _ <- addAddressLikeColumn("transaction_per_addresses", "groupless_address")
+      _ <- addAddressLikeColumn("inputs", "output_ref_groupless_address")
+    } yield ()
+
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def updateAddressLikeColumn(
+      tableName: String,
+      addressColumn: String,
+      grouplessAddressColumn: String,
+      chain: String = "chain_to"
+  )(implicit
+      explorerConfig: ExplorerConfig,
+      ec: ExecutionContext
+  ): DBActionAll[Unit] = {
+    logger.info(s"Migrating $tableName")
+    for {
+      addresses <- sql"""
+          SELECT #$addressColumn, block_hash
+          FROM #$tableName
+          WHERE block_timestamp >= ${explorerConfig.consensus.danube.forkTimestamp}
+          AND #$grouplessAddressColumn IS NULL
+        """
+        .asAS[(Address, BlockHash)]
+        .map { addresses =>
+          addresses.filter {
+            case (Address.Asset(_: LockupScript.P2PK), _) =>
+              true
+            case _ =>
+              false
+          }
+        }
+      _ <- DBIOAction.sequence(addresses.map { case (address, blockHash) =>
+        sqlu"""
+          UPDATE #$tableName
+          SET #$grouplessAddressColumn = bh.#$chain
+          FROM block_headers bh
+          WHERE #$tableName.#$addressColumn = $address
+            AND #$tableName.block_hash = bh.hash
+            AND bh.hash = $blockHash;
+        """
+      })
+    } yield ()
+  }
+
+  def migration6(implicit explorerConfig: ExplorerConfig, ec: ExecutionContext): DBActionAll[Unit] =
+    if (TimeStamp.now().isBefore(explorerConfig.consensus.danube.forkTimestamp)) {
+      // No need to migrate the groupless_address as no groupless addresses can be created before the Danube Hard Fork.
+      DBIOAction.successful(())
+    } else {
+      logger.info(
+        "Migrating `addresse_like`, might be slow if you have a lot of groupless addresses"
+      )
+      for {
+        _ <- updateAddressLikeColumn("outputs", "address", "groupless_address")
+        _ <- updateAddressLikeColumn("token_outputs", "address", "groupless_address")
+        _ <- updateAddressLikeColumn("token_tx_per_addresses", "address", "groupless_address")
+        _ <- updateAddressLikeColumn("transaction_per_addresses", "address", "groupless_address")
+        _ <- updateAddressLikeColumn(
+          "inputs",
+          "output_ref_address",
+          "output_ref_groupless_address",
+          "chain_from"
+        )
+      } yield {
+        logger.info("`addresse_like` migration done")
+      }
+    }
+
+  private def migrations(implicit
+      explorerConfig: ExplorerConfig,
+      ec: ExecutionContext
+  ): Seq[DBActionAll[Unit]] = Seq(
     migration1,
     migration2,
     migration3,
-    migration4
+    migration4,
+    migration5,
+    migration6
   )
 
   def backgroundCoinbaseMigration()(implicit
@@ -155,7 +242,7 @@ object Migrations extends StrictLogging {
 
   def migrationsQuery(
       versionOpt: Option[MigrationVersion]
-  )(implicit ec: ExecutionContext): DBActionAll[Unit] = {
+  )(implicit explorerConfig: ExplorerConfig, ec: ExecutionContext): DBActionAll[Unit] = {
     logger.info(s"Current migration version: $versionOpt")
     versionOpt match {
       // noop
@@ -206,7 +293,7 @@ object Migrations extends StrictLogging {
 
   def migrate(
       databaseConfig: DatabaseConfig[PostgresProfile]
-  )(implicit ec: ExecutionContext): Future[Unit] = {
+  )(implicit explorerConfig: ExplorerConfig, ec: ExecutionContext): Future[Unit] = {
     logger.info("Migrating")
     for {
       currentVersion <- DBRunner

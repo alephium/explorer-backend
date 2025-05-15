@@ -48,7 +48,7 @@ import org.alephium.explorer.service.{
   TransactionService
 }
 import org.alephium.protocol.PublicKey
-import org.alephium.protocol.model.{Address, TokenId}
+import org.alephium.protocol.model.{Address, AddressLike, TokenId}
 import org.alephium.protocol.vm.{LockupScript, UnlockScript}
 import org.alephium.serde._
 import org.alephium.util.{Duration, TimeStamp, U256}
@@ -103,14 +103,17 @@ class AddressServerSpec()
   }
 
   val transactionService = new EmptyTransactionService {
-    override def listMempoolTransactionsByAddress(address: Address)(implicit
+    override def listMempoolTransactionsByAddress(address: AddressLike)(implicit
         ec: ExecutionContext,
         dc: DatabaseConfig[PostgresProfile]
     ): Future[ArraySeq[MempoolTransaction]] = {
       Future.successful(ArraySeq(mempoolTx))
     }
 
-    override def getTransactionsByAddress(address: Address, pagination: Pagination)(implicit
+    override def getTransactionsByAddress(
+        address: AddressLike,
+        pagination: Pagination
+    )(implicit
         ec: ExecutionContext,
         dc: DatabaseConfig[PostgresProfile]
     ): Future[ArraySeq[Transaction]] = {
@@ -119,7 +122,7 @@ class AddressServerSpec()
     }
 
     override def hasAddressMoreTxsThan(
-        address: Address,
+        address: AddressLike,
         from: TimeStamp,
         to: TimeStamp,
         threshold: Int
@@ -127,7 +130,7 @@ class AddressServerSpec()
       Future.successful(addressHasMoreTxs)
 
     override def exportTransactionsByAddress(
-        address: Address,
+        address: AddressLike,
         from: TimeStamp,
         to: TimeStamp,
         batchSize: Int,
@@ -142,14 +145,14 @@ class AddressServerSpec()
       )
     }
 
-    override def getLatestTransactionInfoByAddress(address: Address)(implicit
+    override def getLatestTransactionInfoByAddress(address: AddressLike)(implicit
         ec: ExecutionContext,
         dc: DatabaseConfig[PostgresProfile]
     ): Future[Option[TransactionInfo]] =
       Future.successful(transactionInfo)
 
     override def getAmountHistoryDEPRECATED(
-        address: Address,
+        address: AddressLike,
         from: TimeStamp,
         to: TimeStamp,
         intervalType: IntervalType,
@@ -158,7 +161,7 @@ class AddressServerSpec()
       TransactionService.amountHistoryToJsonFlowable(Flowable.fromIterable(amountHistory.asJava))
 
     override def getAmountHistory(
-        address: Address,
+        address: AddressLike,
         from: TimeStamp,
         to: TimeStamp,
         intervalType: IntervalType
@@ -169,13 +172,13 @@ class AddressServerSpec()
       Future.successful(amountHistory.map { case (ts, bi) => (bi, ts) })
 
     override def getUnlockScript(
-        address: Address
+        address: AddressLike
     )(implicit
         ec: ExecutionContext,
         dc: DatabaseConfig[PostgresProfile]
     ): Future[Option[ByteString]] = {
       Future.successful {
-        publicKeyAddresses.find(_._1 == address).map { case (_, publicKey) =>
+        publicKeyAddresses.find(_._1.toBase58 == address.toBase58).map { case (_, publicKey) =>
           val unlockScript: UnlockScript = UnlockScript.P2PKH(publicKey)
           serialize(unlockScript)
         }
@@ -184,7 +187,7 @@ class AddressServerSpec()
   }
 
   val tokenService = new EmptyTokenService {
-    override def listAddressTokensWithBalance(address: Address, pagination: Pagination)(implicit
+    override def listAddressTokensWithBalance(address: AddressLike, pagination: Pagination)(implicit
         ec: ExecutionContext,
         dc: DatabaseConfig[PostgresProfile]
     ): Future[ArraySeq[(TokenId, U256, U256)]] =
@@ -430,8 +433,9 @@ class AddressServerSpec()
       forAll(addressGen) { address =>
         Get(s"/addresses/$address/public-key") check { response =>
           address match {
-            case Address.Asset(LockupScript.P2PKH(_)) => response.code is StatusCode.NotFound
-            case _                                    => response.code is StatusCode.BadRequest
+            case Address.Asset(LockupScript.P2PKH(_))   => response.code is StatusCode.NotFound
+            case Address.Asset(LockupScript.P2PK(_, _)) => response.code is StatusCode.Ok
+            case _                                      => response.code is StatusCode.BadRequest
           }
         }
       }

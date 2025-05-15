@@ -22,7 +22,7 @@ import scala.concurrent.duration._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.config.BootMode
+import org.alephium.explorer.config._
 import org.alephium.explorer.persistence.Database
 
 object TestTransactionCache {
@@ -35,6 +35,9 @@ object TestTransactionCache {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): TransactionCache =
-    TransactionCache(new Database(BootMode.ReadWrite), reloadAfter = 1.seconds)
+    TransactionCache(
+      new Database(BootMode.ReadWrite)(ec, dc, TestExplorerConfig()),
+      reloadAfter = 1.seconds
+    )
 
 }

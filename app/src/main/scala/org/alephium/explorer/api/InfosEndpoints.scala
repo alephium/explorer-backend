@@ -42,53 +42,53 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
   val getInfos: BaseEndpoint[Unit, ExplorerInfo] =
     infosEndpoint.get
       .out(jsonBody[ExplorerInfo])
-      .description("Get explorer informations")
+      .summary("Get explorer informations")
 
   val listTokenSupply: BaseEndpoint[Pagination, ArraySeq[TokenSupply]] =
     supplyEndpoint.get
       .in(pagination)
       .out(jsonBody[ArraySeq[TokenSupply]])
-      .description("Get token supply list")
+      .summary("Get token supply list")
 
   val getCirculatingSupply: BaseEndpoint[Unit, BigDecimal] =
     supplyEndpoint.get
       .in("circulating-alph")
       .out(plainBody[BigDecimal])
-      .description("Get the ALPH circulating supply")
+      .summary("Get the ALPH circulating supply")
 
   val getTotalSupply: BaseEndpoint[Unit, BigDecimal] =
     supplyEndpoint.get
       .in("total-alph")
       .out(plainBody[BigDecimal])
-      .description("Get the ALPH total supply")
+      .summary("Get the ALPH total supply")
 
   val getReservedSupply: BaseEndpoint[Unit, BigDecimal] =
     supplyEndpoint.get
       .in("reserved-alph")
       .out(plainBody[BigDecimal])
-      .description("Get the ALPH reserved supply")
+      .summary("Get the ALPH reserved supply")
 
   val getLockedSupply: BaseEndpoint[Unit, BigDecimal] =
     supplyEndpoint.get
       .in("locked-alph")
       .out(plainBody[BigDecimal])
-      .description("Get the ALPH locked supply")
+      .summary("Get the ALPH locked supply")
 
   val getHeights: BaseEndpoint[Unit, ArraySeq[PerChainHeight]] =
     infosEndpoint.get
       .in("heights")
       .out(jsonBody[ArraySeq[PerChainHeight]])
-      .description("List latest height for each chain")
+      .summary("List latest height for each chain")
 
   val getTotalTransactions: BaseEndpoint[Unit, Int] =
     infosEndpoint.get
       .in("total-transactions")
       .out(plainBody[Int])
-      .description("Get the total number of transactions")
+      .summary("Get the total number of transactions")
 
   val getAverageBlockTime: BaseEndpoint[Unit, ArraySeq[PerChainDuration]] =
     infosEndpoint.get
       .in("average-block-times")
       .out(jsonBody[ArraySeq[PerChainDuration]])
-      .description("Get the average block time for each chain")
+      .summary("Get the average block time for each chain")
 }
