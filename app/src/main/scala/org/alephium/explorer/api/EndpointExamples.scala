@@ -22,7 +22,7 @@ import akka.util.ByteString
 import sttp.tapir.EndpointIO.Example
 
 import org.alephium.api.EndpointsExamples
-import org.alephium.api.model.{Amount, BuildTxCommon, ValBool}
+import org.alephium.api.model.{Amount, ValBool}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.queries.ExplainResult
 import org.alephium.protocol.{ALPH, PublicKey}
@@ -519,7 +519,4 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val publicKeyExample: List[Example[PublicKey]] =
     simpleExample(PublicKey.unsafe(Hex.unsafe(publicKey)))
-
-  implicit val addressPublicKeyExample: List[Example[AddressPublicKey]] =
-    simpleExample(AddressPublicKey(Hex.unsafe(publicKey), BuildTxCommon.Default))
 }

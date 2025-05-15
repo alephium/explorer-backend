@@ -190,14 +190,6 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .summary("Use `/addresses/{address}/typed-public-key` instead")
       .deprecated()
 
-  val getTypedPublicKey: BaseEndpoint[AddressLike, AddressPublicKey] =
-    addressesLikeEndpoint.get
-      .in("typed-public-key")
-      .out(jsonBody[AddressPublicKey])
-      .summary(
-        "Get typed public key of p2pkh and p2pk addresses, p2pkh address needs to have at least one input."
-      )
-
   private case class TextCsv() extends CodecFormat {
     override val mediaType: MediaType = MediaType.TextCsv
   }

@@ -60,7 +60,6 @@ trait Documentation
         listAddressTokenTransactions,
         getAddressTokenBalance,
         getPublicKey,
-        getTypedPublicKey,
         listAddressTokensBalance,
         areAddressesActive,
         exportTransactionsCsvByAddress,
