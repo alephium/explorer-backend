@@ -100,7 +100,7 @@ class AddressServer(
           case Some(txInfo) => Right(txInfo)
         }
       }),
-      route(getAddressBalance.serverLogicSuccess[Future] { case address =>
+      route(getAddressBalance.serverLogicSuccess[Future] { address =>
         for {
           (balance, locked) <- transactionService
             .getBalance(address, blockCache.getLastFinalizedTimestamp())
