@@ -31,14 +31,14 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
+import org.alephium.protocol.model.{AddressLike, BlockHash, TransactionId}
 
 object InputQueries {
 
   /** Inserts inputs or ignore rows with primary key conflict */
   // scalastyle:off magic.number
   def insertInputs(inputs: Iterable[InputEntity]): DBActionW[Int] =
-    QuerySplitter.splitUpdates(rows = inputs, columnsPerRow = 13) { (inputs, placeholder) =>
+    QuerySplitter.splitUpdates(rows = inputs, columnsPerRow = 14) { (inputs, placeholder) =>
       val query =
         s"""
            INSERT INTO inputs ("block_hash",
@@ -52,6 +52,7 @@ object InputQueries {
                                "tx_order",
                                "output_ref_tx_hash",
                                "output_ref_address",
+                               "output_ref_groupless_address",
                                "output_ref_amount",
                                "contract_input")
            VALUES $placeholder
@@ -74,6 +75,7 @@ object InputQueries {
             params >> input.txOrder
             params >> input.outputRefTxHash
             params >> input.outputRefAddress
+            params >> input.outputRefAddressLike
             params >> input.outputRefAmount
             params >> input.contractInput
           }
@@ -142,6 +144,7 @@ object InputQueries {
           tx_order,
           output_ref_tx_hash,
           output_ref_address,
+          output_ref_groupless_address,
           output_ref_amount,
           output_ref_tokens,
           contract_input
@@ -150,13 +153,17 @@ object InputQueries {
         ORDER BY block_timestamp #${if (ascendingOrder) "" else "DESC"}
     """.asASE[InputEntity](inputGetResult)
 
-  def getUnlockScript(address: Address)(implicit
+  def getUnlockScript(address: AddressLike)(implicit
       ec: ExecutionContext
   ): DBActionR[Option[ByteString]] = {
     sql"""
       select unlock_script
       FROM inputs
-      WHERE output_ref_address = $address
+      WHERE #${addressColumn(
+        address,
+        "output_ref_address",
+        "output_ref_groupless_address"
+      )}  = $address
       LIMIT 1
     """.asAS[ByteString].headOrNone
   }

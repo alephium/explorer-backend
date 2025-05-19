@@ -22,9 +22,8 @@ import akka.util.ByteString
 
 import org.alephium.explorer.api.model.{AssetOutput, ContractOutput, Output, Token}
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
-
 trait OutputEntityLike {
 
   def outputType: OutputEntity.OutputType
@@ -32,6 +31,7 @@ trait OutputEntityLike {
   def key: Hash
   def amount: U256
   def address: Address
+  def grouplessAddress: Option[AddressLike]
   def tokens: Option[ArraySeq[Token]]
   def lockTime: Option[TimeStamp]
   def message: Option[ByteString]
@@ -75,6 +75,7 @@ final case class OutputEntity(
     key: Hash,
     amount: U256,
     address: Address,
+    grouplessAddress: Option[AddressLike],
     tokens: Option[ArraySeq[Token]], // None if empty list
     mainChain: Boolean,
     lockTime: Option[TimeStamp],

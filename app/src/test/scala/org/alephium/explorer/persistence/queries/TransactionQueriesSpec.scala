@@ -36,14 +36,16 @@ import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.explorer.util.SlickExplainUtil._
+import org.alephium.explorer.util.UtxoUtil
 import org.alephium.protocol.{ALPH, Hash}
-import org.alephium.protocol.model.{Address, GroupIndex, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, GroupIndex, TransactionId}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
 
   "compute locked balance when empty" in new Fixture {
-    val balance = run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
+    val balance =
+      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
     balance is ((U256.Zero, U256.Zero))
   }
 
@@ -350,7 +352,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
         // join existing and nonExisting entities and shuffle
         val allEntities  = Random.shuffle(existing ++ nonExisting)
-        val allAddresses = allEntities.map(_.address)
+        val allAddresses = allEntities.map(entity => AddressLike.from(entity.address.lockupScript))
 
         // get persisted entities to assert against actual query results
         val existingAddresses = existing.map(_.address)
@@ -367,7 +369,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
           run(TransactionQueries.areAddressesActiveAction(allAddresses)).futureValue
 
         // boolean query should output results in the same order as the input addresses
-        (allAddresses.map(actualExisting.contains): ArraySeq[Boolean]) is booleanExistingResult
+        (allAddresses.map(address =>
+          actualExisting.exists(a => UtxoUtil.addressEqual(a, address))
+        ): ArraySeq[Boolean]) is booleanExistingResult
 
         // check the boolean query with the existing concurrent query
         run(
@@ -507,7 +511,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
   "getTxHashesByAddressesQuery" should {
     "return empty" when {
       "database is empty" in {
-        forAll(Gen.listOf(addressGen), Gen.posNum[Int], Gen.posNum[Int]) {
+        forAll(Gen.listOf(addressLikeGen), Gen.posNum[Int], Gen.posNum[Int]) {
           (addresses, page, limit) =>
             val query =
               TransactionQueries.getTxHashesByAddressesQuery(
@@ -524,7 +528,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     "return valid transactions_per_addresses" when {
       "the input contains valid and invalid addresses" in {
-        forAll(Gen.listOf(genTransactionPerAddressEntity()), Gen.listOf(addressGen)) {
+        forAll(Gen.listOf(genTransactionPerAddressEntity()), Gen.listOf(addressLikeGen)) {
           case (entitiesToPersist, addressesNotPersisted) =>
             // clear table and insert entities
             run(TransactionPerAddressSchema.table.delete).futureValue
@@ -532,7 +536,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
             // merge all addresses
             val allAddresses =
-              entitiesToPersist.map(_.address) ++ addressesNotPersisted
+              entitiesToPersist.flatMap(entity =>
+                AddressLike.fromBase58(entity.address.toBase58)
+              ) ++ addressesNotPersisted
 
             // shuffle all merged addresses
             val shuffledAddresses =
@@ -583,7 +589,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         def query(fromTs: Option[TimeStamp], toTs: Option[TimeStamp]) = {
           run(
             TransactionQueries.getTxHashesByAddressesQuery(
-              Seq(address),
+              Seq(grouplessAddress),
               fromTs,
               toTs,
               Pagination.unsafe(1, Int.MaxValue)
@@ -637,8 +643,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
   trait Fixture {
 
-    val address   = addressGen.sample.get
-    def timestamp = timestampGen.sample.get
+    val address          = addressGen.sample.get
+    val grouplessAddress = AddressLike.fromBase58(address.toBase58).get
+    def timestamp        = timestampGen.sample.get
 
     val chainFrom = GroupIndex.Zero
     val chainTo   = GroupIndex.Zero
@@ -655,6 +662,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         hashGen.sample.get,
         amount,
         address,
+        Some(address),
         Gen.option(tokensGen).sample.get,
         true,
         lockTime,
@@ -678,6 +686,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         true,
         0,
         0,
+        None,
         None,
         None,
         None,

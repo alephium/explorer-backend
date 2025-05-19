@@ -29,7 +29,7 @@ import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
 import org.alephium.protocol.{ALPH, Hash}
-import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
 import org.alephium.util.{Hex, TimeStamp}
 
 class ApiModelSpec() extends AlephiumSpec {
@@ -72,11 +72,14 @@ class ApiModelSpec() extends AlephiumSpec {
         // No inputs or outputs so no addresses nor amounts
         val expected =
           s"${Instant.ofEpochMilli(tx.timestamp.millis)},0,ALPH,${tx.hash.toHexString},,${tx.outputs.map(_.address).mkString("-")}\n"
-        tx.toCsv(addressGen.sample.get, Map.empty)
+        tx.toCsv(grouplessAddressGen.sample.get, Map.empty)
         expected
       }
 
       val address = Address.fromBase58("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n").get
+      val grouplessAddress =
+        AddressLike.fromBase58("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n").get
+
       val transaction = Transaction(
         TransactionId
           .from(Hex.unsafe("798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef"))
@@ -144,7 +147,7 @@ class ApiModelSpec() extends AlephiumSpec {
       val expected =
         s"2021-11-08T13:59:33Z,-2,ALPH,798e9e137aec7c2d59d9655b4ffa640f301f628bf7c365083bb255f6aa5f89ef,1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n,14PqtYSSbwpUi2RJKUvv9yUwGafd6yHbEcke7ionuiE7w-22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM\n"
 
-      transaction.toCsv(address, Map.empty) is expected
+      transaction.toCsv(grouplessAddress, Map.empty) is expected
     }
   }
 
@@ -194,7 +197,7 @@ class ApiModelSpec() extends AlephiumSpec {
     }
   }
 
-  "AsetOutput" in {
+  "AssetOutput" in {
     forAll(assetOutputGen) { output =>
       val expected =
         s"""
@@ -438,6 +441,21 @@ class ApiModelSpec() extends AlephiumSpec {
                         |}""".stripMargin
       check(SubContracts(addresses), expected)
       check(SubContracts(ArraySeq.empty), """{"subContracts":[]}""")
+    }
+  }
+
+  "Groupless Address" in {
+    val address          = "3cUqj91Y4SxeoV5szxWc6dekfDt6Pq1ZUC2kdeTW26rYXt3bY98YX"
+    val grouplessAddress = AddressLike.fromBase58(address).get
+
+    grouplessAddress.toBase58 is address
+
+    (0 to groupConfig.groups - 1).foreach { i =>
+      val grouped = AddressLike.fromBase58(address ++ s":$i").get
+
+      grouped.getAddress().groupIndex.value is i
+
+      grouped.toBase58 is address + s":$i"
     }
   }
 }

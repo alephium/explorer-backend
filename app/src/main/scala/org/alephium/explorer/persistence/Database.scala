@@ -23,14 +23,15 @@ import scala.util._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.config.BootMode
+import org.alephium.explorer.config.{BootMode, ExplorerConfig}
 import org.alephium.explorer.persistence.dao.HealthCheckDao
 import org.alephium.explorer.util.FutureUtil._
 import org.alephium.util.Service
 
 class Database(bootMode: BootMode)(implicit
     val executionContext: ExecutionContext,
-    val databaseConfig: DatabaseConfig[PostgresProfile]
+    val databaseConfig: DatabaseConfig[PostgresProfile],
+    explorerConfig: ExplorerConfig
 ) extends Service {
 
   override def startSelfOnce(): Future[Unit] =

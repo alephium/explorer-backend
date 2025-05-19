@@ -34,8 +34,9 @@ import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
+import org.alephium.explorer.util.UtxoUtil
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 // scalastyle:off number.of.methods
@@ -149,24 +150,29 @@ object TransactionQueries extends StrictLogging {
       .paginate(pagination)
       .asAS[TxByAddressQR]
 
-  def countAddressTransactions(address: Address): DBActionSR[Int] = {
+  def countAddressTransactions(
+      address: AddressLike
+  ): DBActionSR[Int] = {
     sql"""
-    SELECT COUNT(*)
-    FROM transaction_per_addresses
-    WHERE main_chain = true AND address = $address
-    """.asAS[Int]
+      SELECT COUNT(*)
+      FROM transaction_per_addresses
+      WHERE main_chain = true
+      AND #${addressColumn(address)} = $address
+    """
+      .asAS[Int]
   }
 
   def getTxHashesByAddressQuery(
-      address: Address,
+      address: AddressLike,
       pagination: Pagination
   ): DBActionSR[TxByAddressQR] = {
     sql"""
       SELECT #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
-      WHERE main_chain = true AND address = $address
-      ORDER BY block_timestamp DESC, tx_order
+      WHERE main_chain = true
+      AND #${addressColumn(address)} = $address
     """
+      .concat(sql"""ORDER BY block_timestamp DESC, tx_order """)
       .paginate(pagination)
       .asAS[TxByAddressQR]
   }
@@ -195,7 +201,7 @@ object TransactionQueries extends StrictLogging {
     *   Paginated transactions
     */
   def getTxHashesByAddressesQuery(
-      addresses: ArraySeq[Address],
+      addresses: ArraySeq[AddressLike],
       fromTs: Option[TimeStamp],
       toTs: Option[TimeStamp],
       pagination: Pagination
@@ -203,29 +209,49 @@ object TransactionQueries extends StrictLogging {
     if (addresses.isEmpty) {
       DBIOAction.successful(ArraySeq.empty)
     } else {
-      val placeholder = paramPlaceholder(1, addresses.size)
+      val (fulls, halfs) = splitAddresses(addresses)
 
-      val query =
-        s"""
+      val fullsPlaceholder = paramPlaceholder(1, fulls.size)
+      val halfsPlaceholder = paramPlaceholder(1, halfs.size)
+
+      val fullsCondition = Option.when(fulls.nonEmpty)(s"address IN $fullsPlaceholder")
+      val halfsCondition = Option.when(halfs.nonEmpty)(s"groupless_address IN $halfsPlaceholder")
+
+      ((fullsCondition, halfsCondition) match {
+        case (Some(fulls), Some(halfs)) =>
+          Some(s"($fulls OR $halfs)")
+        case (Some(fulls), None) =>
+          Some(s"$fulls")
+        case (None, Some(halfs)) =>
+          Some(s"$halfs")
+        case (None, None) =>
+          None
+      }).map { addressesCondition =>
+        val query =
+          s"""
            SELECT ${TxByAddressQR.selectFields}
            FROM transaction_per_addresses
            WHERE main_chain = true
-             AND address IN $placeholder
+             AND $addressesCondition
              ${fromTs.map(ts => s"AND block_timestamp >= ${ts.millis}").getOrElse("")}
              ${toTs.map(ts => s"AND block_timestamp < ${ts.millis}").getOrElse("")}
            ORDER BY block_timestamp DESC, tx_order
            """
 
-      val parameters: SetParameter[Unit] =
-        (_: Unit, params: PositionedParameters) => {
-          addresses foreach (params >> _)
-        }
+        val parameters: SetParameter[Unit] =
+          (_: Unit, params: PositionedParameters) => {
+            fulls foreach (params >> _)
+            halfs foreach (params >> _)
+          }
 
-      SQLActionBuilder(
-        sql = query,
-        setParameter = parameters
-      ).paginate(pagination)
-        .asAS[TxByAddressQR]
+        SQLActionBuilder(
+          sql = query,
+          setParameter = parameters
+        ).paginate(pagination)
+          .asAS[TxByAddressQR]
+      }.getOrElse {
+        DBIOAction.successful(ArraySeq.empty)
+      }
     }
 
   /** Get transactions by address for a given time-range
@@ -242,7 +268,7 @@ object TransactionQueries extends StrictLogging {
     *   Maximum rows
     */
   def getTxHashesByAddressQueryTimeRanged(
-      address: Address,
+      address: AddressLike,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       pagination: Pagination
@@ -251,7 +277,7 @@ object TransactionQueries extends StrictLogging {
       SELECT #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
       WHERE main_chain = true
-        AND address = $address
+        AND #${addressColumn(address)} = $address
         AND block_timestamp BETWEEN $fromTime AND $toTime
       ORDER BY block_timestamp DESC, tx_order
     """
@@ -277,7 +303,10 @@ object TransactionQueries extends StrictLogging {
     } yield txs
   }
 
-  def getTransactionsByAddress(address: Address, pagination: Pagination)(implicit
+  def getTransactionsByAddress(
+      address: AddressLike,
+      pagination: Pagination
+  )(implicit
       ec: ExecutionContext
   ): DBActionR[ArraySeq[Transaction]] = {
     for {
@@ -287,7 +316,7 @@ object TransactionQueries extends StrictLogging {
   }
 
   def getTransactionsByAddresses(
-      addresses: ArraySeq[Address],
+      addresses: ArraySeq[AddressLike],
       fromTime: Option[TimeStamp],
       toTime: Option[TimeStamp],
       pagination: Pagination
@@ -301,12 +330,12 @@ object TransactionQueries extends StrictLogging {
   }
 
   def getLatestTransactionInfoByAddressAction(
-      address: Address
+      address: AddressLike
   )(implicit ec: ExecutionContext): DBActionR[Option[TxByAddressQR]] = {
     sql"""
       SELECT #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
-      WHERE main_chain = true AND address = $address
+      WHERE main_chain = true AND #${addressColumn(address)} = $address
       ORDER BY block_timestamp DESC, tx_order
       LIMIT 1
     """
@@ -315,7 +344,7 @@ object TransactionQueries extends StrictLogging {
   }
 
   def getTransactionsByAddressTimeRanged(
-      address: Address,
+      address: AddressLike,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       pagination: Pagination
@@ -326,13 +355,18 @@ object TransactionQueries extends StrictLogging {
     } yield txs
   }
 
-  def hasAddressMoreTxsThanQuery(address: Address, from: TimeStamp, to: TimeStamp, threshold: Int)(
-      implicit ec: ExecutionContext
+  def hasAddressMoreTxsThanQuery(
+      address: AddressLike,
+      from: TimeStamp,
+      to: TimeStamp,
+      threshold: Int
+  )(implicit
+      ec: ExecutionContext
   ): DBActionR[Boolean] = {
     sql"""
       select 1
       FROM transaction_per_addresses
-      WHERE address = $address
+      WHERE #${addressColumn(address)} = $address
       AND main_chain = true
       AND block_timestamp >= $from
       AND block_timestamp < $to
@@ -341,14 +375,14 @@ object TransactionQueries extends StrictLogging {
   }
 
   def streamTxByAddressQR(
-      address: Address,
+      address: AddressLike,
       from: TimeStamp,
       to: TimeStamp
   ): StreamAction[TxByAddressQR] = {
     sql"""
       SELECT #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
-      WHERE address = $address
+      WHERE #${addressColumn(address)} = $address
       AND main_chain = true
       AND block_timestamp >= $from
       AND block_timestamp < $to
@@ -378,7 +412,7 @@ object TransactionQueries extends StrictLogging {
    * LEAST and GREATEST are here to restrict to the `from` and `to` timestamp
    */
   def sumAddressOutputs(
-      address: Address,
+      address: AddressLike,
       from: TimeStamp,
       to: TimeStamp,
       intervalType: IntervalType
@@ -389,7 +423,7 @@ object TransactionQueries extends StrictLogging {
         LEAST($to, GREATEST($from, #${QueryUtil.extractEpoch(dateGroup)} - 1)) as ts,
         SUM(amount)
       FROM outputs
-      WHERE address = $address
+      WHERE #${addressColumn(address)} = $address
       AND main_chain = true
       AND block_timestamp >= ${ALPH.GenesisTimestamp}
       AND block_timestamp <= $to
@@ -397,26 +431,30 @@ object TransactionQueries extends StrictLogging {
       """.asAS[(TimeStamp, Option[U256])]
   }
 
-  def sumAddressOutputsDEPRECATED(address: Address, from: TimeStamp, to: TimeStamp)(implicit
+  def sumAddressOutputsDEPRECATED(address: AddressLike, from: TimeStamp, to: TimeStamp)(implicit
       ec: ExecutionContext
   ): DBActionR[U256] = {
     sql"""
       SELECT SUM(amount)
       FROM outputs
-      WHERE address = $address
+      WHERE #${addressColumn(address)} = $address
       AND main_chain = true
       AND block_timestamp >= $from
       AND block_timestamp <= $to
     """.asAS[Option[U256]].exactlyOne.map(_.getOrElse(U256.Zero))
   }
 
-  def sumAddressInputsDEPRECATED(address: Address, from: TimeStamp, to: TimeStamp)(implicit
+  def sumAddressInputsDEPRECATED(address: AddressLike, from: TimeStamp, to: TimeStamp)(implicit
       ec: ExecutionContext
   ): DBActionR[U256] = {
     sql"""
       SELECT SUM(output_ref_amount)
       FROM inputs
-      WHERE output_ref_address = $address
+      WHERE #${addressColumn(
+        address,
+        "output_ref_address",
+        "output_ref_groupless_address"
+      )}  = $address
       AND main_chain = true
       AND block_timestamp >= $from
       AND block_timestamp <= $to
@@ -428,7 +466,7 @@ object TransactionQueries extends StrictLogging {
    * LEAST and GREATEST are here to restrict to the `from` and `to` timestamp
    */
   def sumAddressInputs(
-      address: Address,
+      address: AddressLike,
       from: TimeStamp,
       to: TimeStamp,
       intervalType: IntervalType
@@ -440,7 +478,11 @@ object TransactionQueries extends StrictLogging {
         LEAST($to, GREATEST($from, #${QueryUtil.extractEpoch(dateGroup)} - 1)) as ts,
         SUM(output_ref_amount)
       FROM inputs
-      WHERE output_ref_address = $address
+      WHERE #${addressColumn(
+        address,
+        "output_ref_address",
+        "output_ref_groupless_address"
+      )}= $address
       AND main_chain = true
       AND block_timestamp >= ${ALPH.GenesisTimestamp}
       AND block_timestamp <= $to
@@ -539,21 +581,22 @@ object TransactionQueries extends StrictLogging {
     }
 
   def areAddressesActiveAction(
-      addresses: ArraySeq[Address]
-  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[Boolean]] =
+      addresses: ArraySeq[AddressLike]
+  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[Boolean]] = {
     filterExistingAddresses(addresses.toSet) map { existing =>
-      addresses map existing.contains
+      addresses.map(address => existing.exists(a => UtxoUtil.addressEqual(a, address)))
     }
+  }
 
   /** Filters input addresses that exist in DB */
-  def filterExistingAddresses(addresses: Set[Address]): DBActionR[ArraySeq[Address]] =
+  def filterExistingAddresses(addresses: Set[AddressLike]): DBActionR[ArraySeq[Address]] =
     if (addresses.isEmpty) {
       DBIO.successful(ArraySeq.empty)
     } else {
       val query =
-        List
-          .fill(addresses.size) {
-            "SELECT address FROM transaction_per_addresses WHERE address = ?"
+        addresses.toSeq
+          .map { address =>
+            s"(SELECT address FROM transaction_per_addresses WHERE ${addressColumn(address)} = ? LIMIT 1)"
           }
           .mkString("\nUNION\n")
 
@@ -569,9 +612,10 @@ object TransactionQueries extends StrictLogging {
       ).asAS[Address]
     }
 
-  def getBalanceAction(address: Address, latestFinalizedTimestamp: TimeStamp)(implicit
-      ec: ExecutionContext
-  ): DBActionR[(U256, U256)] =
+  def getBalanceAction(
+      address: AddressLike,
+      latestFinalizedTimestamp: TimeStamp
+  )(implicit ec: ExecutionContext): DBActionR[(U256, U256)] =
     getBalanceUntilLockTime(
       address = address,
       lockTime = TimeStamp.now(),

@@ -26,6 +26,7 @@ import org.alephium.protocol.vm.{
   Instr,
   LockupScript,
   Method,
+  PublicKeyLike,
   StatefulContract,
   StatelessContext,
   StatelessScript,
@@ -74,6 +75,15 @@ object GenCoreProtocol {
     for {
       publicKey <- publicKeyGen(groupIndex)
     } yield LockupScript.p2pkh(publicKey)
+
+  def p2pkLockupGen(
+      groupIndex: GroupIndex
+  )(implicit groupSetting: GroupSetting): Gen[LockupScript.P2PK] =
+    for {
+      // TODO: currently we can't define another group than the default one, as the `toBase58` produce same result for all groups
+      _         <- Gen.option(GenApiModel.groupIndexGen)
+      publicKey <- publicKeyGen(groupIndex).map(PublicKeyLike.SecP256K1(_))
+    } yield LockupScript.p2pk(publicKey, publicKey.defaultGroup(groupSetting.groupConfig))
 
   def p2mpkhLockupGen(
       groupIndex: GroupIndex
@@ -129,6 +139,7 @@ object GenCoreProtocol {
   def lockupGen(groupIndex: GroupIndex)(implicit groupSetting: GroupSetting): Gen[LockupScript] = {
     Gen.oneOf(
       p2pkhLockupGen(groupIndex),
+      p2pkLockupGen(groupIndex),
       p2mpkhLockupGen(groupIndex),
       p2shLockupGen(groupIndex),
       p2cLockupGen(groupIndex)
@@ -180,6 +191,7 @@ object GenCoreProtocol {
         usePreapprovedAssets = false,
         useContractAssets,
         usePayToContractOnly = false,
+        useRoutePattern = false,
         argsLength = 0,
         localsLength = 0,
         returnLength = 0,

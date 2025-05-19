@@ -27,7 +27,14 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.queries.ExplainResult
 import org.alephium.protocol.{ALPH, PublicKey}
 import org.alephium.protocol.mining.HashRate
-import org.alephium.protocol.model.{Address, BlockHash, ContractId, GroupIndex, TokenId}
+import org.alephium.protocol.model.{
+  Address,
+  AddressLike,
+  BlockHash,
+  ContractId,
+  GroupIndex,
+  TokenId
+}
 import org.alephium.util.{Hex, U256}
 
 /** Contains OpenAPI Examples.
@@ -54,11 +61,14 @@ object EndpointExamples extends EndpointsExamples {
   private val unlockScript: ByteString =
     Hex.unsafe(publicKey)
 
+  private val address1Str: String = "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n"
   private val address1: Address =
-    Address.fromBase58("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n").get
+    Address.fromBase58(address1Str).get
 
   private val address2: Address =
     Address.fromBase58("22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM").get
+
+  private val grouplessAddress: AddressLike = AddressLike.fromBase58(address1Str).get
 
   private val contract =
     ContractId
@@ -356,6 +366,9 @@ object EndpointExamples extends EndpointsExamples {
 
   /** Examples
     */
+  implicit val grouplessAddressArray: List[Example[ArraySeq[AddressLike]]] =
+    simpleExample(ArraySeq(grouplessAddress))
+
   implicit val blockEntryLiteExample: List[Example[BlockEntryLite]] =
     simpleExample(blockEntryLite)
 

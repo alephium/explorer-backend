@@ -31,12 +31,12 @@ import org.alephium.explorer.persistence.queries.result.TxByTokenQR
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.{Address, TokenId}
+import org.alephium.protocol.model.{Address, AddressLike, TokenId}
 import org.alephium.util.{TimeStamp, U256}
 
 object TokenQueries extends StrictLogging {
 
-  def getTokenBalanceAction(address: Address, token: TokenId)(implicit
+  def getTokenBalanceAction(address: AddressLike, token: TokenId)(implicit
       ec: ExecutionContext
   ): DBActionR[(U256, U256)] =
     getTokenBalanceUntilLockTime(
@@ -47,8 +47,8 @@ object TokenQueries extends StrictLogging {
       (total.getOrElse(U256.Zero), locked.getOrElse(U256.Zero))
     }
 
-  def getTokenBalanceUntilLockTime(address: Address, token: TokenId, lockTime: TimeStamp)(implicit
-      ec: ExecutionContext
+  def getTokenBalanceUntilLockTime(address: AddressLike, token: TokenId, lockTime: TimeStamp)(
+      implicit ec: ExecutionContext
   ): DBActionR[(Option[U256], Option[U256])] =
     sql"""
       SELECT sum(token_outputs.amount),
@@ -61,7 +61,7 @@ object TokenQueries extends StrictLogging {
                          ON token_outputs.key = inputs.output_ref_key
                              AND inputs.main_chain = true
       WHERE token_outputs.spent_finalized IS NULL
-        AND token_outputs.address = $address
+        AND token_outputs.#${addressColumn(address)} = $address
         AND token_outputs.token = $token
         AND token_outputs.main_chain = true
         AND inputs.block_hash IS NULL;
@@ -127,17 +127,17 @@ object TokenQueries extends StrictLogging {
       .asAS[TxByTokenQR]
   }
 
-  def listAddressTokensAction(address: Address, pagination: Pagination): DBActionSR[TokenId] =
+  def listAddressTokensAction(address: AddressLike, pagination: Pagination): DBActionSR[TokenId] =
     sql"""
       SELECT DISTINCT token
       FROM token_tx_per_addresses
-      WHERE address = $address
+      WHERE #${addressColumn(address)} = $address
       AND main_chain = true
     """
       .paginate(pagination)
       .asAS[TokenId]
 
-  def getTokenTransactionsByAddress(address: Address, token: TokenId, pagination: Pagination)(
+  def getTokenTransactionsByAddress(address: AddressLike, token: TokenId, pagination: Pagination)(
       implicit ec: ExecutionContext
   ): DBActionR[ArraySeq[Transaction]] = {
     for {
@@ -147,7 +147,7 @@ object TokenQueries extends StrictLogging {
   }
 
   def getTokenTxHashesByAddressQuery(
-      address: Address,
+      address: AddressLike,
       token: TokenId,
       pagination: Pagination
   ): DBActionSR[TxByTokenQR] = {
@@ -155,7 +155,7 @@ object TokenQueries extends StrictLogging {
       SELECT #${TxByTokenQR.selectFields}
       FROM token_tx_per_addresses
       WHERE main_chain = true
-      AND address = $address
+      AND #${addressColumn(address)} = $address
       AND token = $token
       ORDER BY block_timestamp DESC, tx_order
     """
@@ -163,7 +163,7 @@ object TokenQueries extends StrictLogging {
       .asAS[TxByTokenQR]
   }
 
-  def listAddressTokensWithBalanceAction(address: Address, pagination: Pagination)(implicit
+  def listAddressTokensWithBalanceAction(address: AddressLike, pagination: Pagination)(implicit
       ec: ExecutionContext
   ): DBActionSR[(TokenId, U256, U256)] =
     listAddressTokensWithBalanceUntilLockTime(address, TimeStamp.now(), pagination).map(_.map {
@@ -172,7 +172,7 @@ object TokenQueries extends StrictLogging {
     })
 
   def listAddressTokensWithBalanceUntilLockTime(
-      address: Address,
+      address: AddressLike,
       lockTime: TimeStamp,
       pagination: Pagination
   ): DBActionSR[(TokenId, Option[U256], Option[U256])] =
@@ -189,7 +189,7 @@ object TokenQueries extends StrictLogging {
                          ON token_outputs.key = inputs.output_ref_key
                              AND inputs.main_chain = true
       WHERE token_outputs.spent_finalized IS NULL
-        AND token_outputs.address = $address
+        AND token_outputs.#${addressColumn(address)} = $address
         AND token_outputs.main_chain = true
         AND inputs.block_hash IS NULL
       GROUP BY token_outputs.token

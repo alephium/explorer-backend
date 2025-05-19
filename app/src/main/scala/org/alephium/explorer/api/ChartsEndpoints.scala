@@ -42,8 +42,8 @@ trait ChartsEndpoints extends BaseEndpoint with QueryParams {
       .in(timeIntervalQuery)
       .in(intervalTypeQuery)
       .out(jsonBody[ArraySeq[Hashrate]])
-      .description(s"`interval-type` query param: $intervalTypes")
       .summary("Get hashrate chart in H/s")
+      .description(s"`interval-type` query param: $intervalTypes")
 
   val getAllChainsTxCount: BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[TimedCount]] =
     chartsEndpoint.get
@@ -51,8 +51,8 @@ trait ChartsEndpoints extends BaseEndpoint with QueryParams {
       .in(timeIntervalQuery)
       .in(intervalTypeQuery)
       .out(jsonBody[ArraySeq[TimedCount]])
-      .description(s"`interval-type` query param: ${intervalTypes}")
       .summary("Get transaction count history")
+      .description(s"`interval-type` query param: ${intervalTypes}")
 
   val getPerChainTxCount: BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[PerChainTimedCount]] =
     chartsEndpoint.get
@@ -60,6 +60,6 @@ trait ChartsEndpoints extends BaseEndpoint with QueryParams {
       .in(timeIntervalQuery)
       .in(intervalTypeQuery)
       .out(jsonBody[ArraySeq[PerChainTimedCount]])
-      .description(s"`interval-type` query param: ${intervalTypes}")
       .summary("Get transaction count history per chain")
+      .description(s"`interval-type` query param: ${intervalTypes}")
 }

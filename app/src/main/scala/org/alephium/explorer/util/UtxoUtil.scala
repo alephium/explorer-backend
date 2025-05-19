@@ -21,50 +21,60 @@ import java.math.BigInteger
 import scala.collection.immutable.ArraySeq
 
 import org.alephium.explorer.api.model.{Input, Output, Token}
-import org.alephium.protocol.model.{Address, TokenId}
+import org.alephium.protocol.model.{Address, AddressLike, TokenId}
+import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.U256
 
 object UtxoUtil {
 
-  def amountForAddressInInputs(address: Address, inputs: ArraySeq[Input]): Option[U256] =
+  def addressEqual(address: Address, addressLike: AddressLike): Boolean = {
+    addressLike.lockupScriptResult match {
+      case LockupScript.CompleteLockupScript(_) =>
+        addressLike.toBase58 == address.toBase58
+      case LockupScript.HalfDecodedP2PK(_) =>
+        addressLike.toBase58 == address.toBase58.takeWhile(_ != ':')
+    }
+  }
+
+  def amountForAddressInInputs(address: AddressLike, inputs: ArraySeq[Input]): Option[U256] =
     sumAmounts(
       inputs
-        .filter(_.address.contains(address))
+        .filter(_.address.exists(a => addressEqual(a, address)))
         .map(_.attoAlphAmount)
         .collect { case Some(amount) => amount }
     )
 
-  def amountForAddressInOutputs(address: Address, outputs: ArraySeq[Output]): Option[U256] =
+  def amountForAddressInOutputs(address: AddressLike, outputs: ArraySeq[Output]): Option[U256] =
     sumAmounts(
       outputs
-        .filter(_.address == address)
+        .filter(o => addressEqual(o.address, address))
         .map(_.attoAlphAmount)
     )
 
   def tokenAmountForAddressInInputs(
-      address: Address,
+      address: AddressLike,
       inputs: ArraySeq[Input]
   ): Map[TokenId, Option[U256]] =
     sumTokensById(
       inputs
-        .filter(_.address.contains(address))
+        .filter(_.address.exists(a => addressEqual(a, address)))
         .flatMap(_.tokens)
         .flatten
     )
 
   def tokenAmountForAddressInOutputs(
-      address: Address,
+      address: AddressLike,
       outputs: ArraySeq[Output]
   ): Map[TokenId, Option[U256]] =
     sumTokensById(
       outputs
-        .filter(_.address == address)
+        .filter(o => addressEqual(o.address, address))
         .flatMap(_.tokens)
         .flatten
     )
 
   def deltaAmountForAddress(
-      address: Address,
+      address: AddressLike,
       inputs: ArraySeq[Input],
       outputs: ArraySeq[Output]
   ): Option[BigInteger] = {
@@ -77,7 +87,7 @@ object UtxoUtil {
   }
 
   def deltaTokenAmountForAddress(
-      address: Address,
+      address: AddressLike,
       inputs: ArraySeq[Input],
       outputs: ArraySeq[Output]
   ): Map[TokenId, BigInteger] = {

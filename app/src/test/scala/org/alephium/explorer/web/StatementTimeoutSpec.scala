@@ -30,7 +30,7 @@ import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.persistence.{DatabaseFixtureForAll, DBRunner}
 import org.alephium.explorer.service.{EmptyTokenService, EmptyTransactionService}
-import org.alephium.protocol.model.Address
+import org.alephium.protocol.model.AddressLike
 import org.alephium.util.{TimeStamp, U256}
 
 class StatementTimeoutSpec()
@@ -65,7 +65,7 @@ class StatementTimeoutSpec()
 object StatementTimeoutSpec {
   def transactionService() = new EmptyTransactionService {
     override def getBalance(
-        address: Address,
+        address: AddressLike,
         latestFinalizedBlock: TimeStamp
     )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
       DBRunner

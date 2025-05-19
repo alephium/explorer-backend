@@ -62,26 +62,29 @@ object GenDBModel {
       txOrder     <- arbitrary[Int]
       coinbase    <- arbitrary[Boolean]
       fixedOutput <- arbitrary[Boolean]
-    } yield OutputEntity(
-      blockHash = blockHash,
-      txHash = txHash,
-      timestamp = timestamp,
-      outputType = outputType,
-      hint = hint,
-      key = key,
-      amount = amount,
-      address = address,
-      tokens = tokens,
-      mainChain = mainChain,
-      lockTime = if (outputType == OutputEntity.Asset) lockTime else None,
-      message = if (outputType == OutputEntity.Asset) message else None,
-      outputOrder = outputOrder,
-      txOrder = txOrder,
-      spentFinalized = None,
-      spentTimestamp = None,
-      coinbase = coinbase,
-      fixedOutput = fixedOutput
-    )
+    } yield {
+      OutputEntity(
+        blockHash = blockHash,
+        txHash = txHash,
+        timestamp = timestamp,
+        outputType = outputType,
+        hint = hint,
+        key = key,
+        amount = amount,
+        grouplessAddress = Some(address),
+        address = address,
+        tokens = tokens,
+        mainChain = mainChain,
+        lockTime = if (outputType == OutputEntity.Asset) lockTime else None,
+        message = if (outputType == OutputEntity.Asset) message else None,
+        outputOrder = outputOrder,
+        txOrder = txOrder,
+        spentFinalized = None,
+        spentTimestamp = None,
+        coinbase = coinbase,
+        fixedOutput = fixedOutput
+      )
+    }
 
   val finalizedOutputEntityGen: Gen[OutputEntity] =
     for {
@@ -140,6 +143,7 @@ object GenDBModel {
         None,
         None,
         None,
+        None,
         contractInput
       )
     }
@@ -191,6 +195,7 @@ object GenDBModel {
       coinbase  <- Arbitrary.arbitrary[Boolean]
     } yield TransactionPerAddressEntity(
       address = address,
+      grouplessAddress = Some(address),
       hash = hash,
       blockHash = blockHash,
       timestamp = timestamp,
@@ -231,6 +236,7 @@ object GenDBModel {
       token     <- tokenIdGen
     } yield TokenTxPerAddressEntity(
       address = address,
+      grouplessAddress = Some(address),
       hash = hash,
       blockHash = blockHash,
       timestamp = timestamp,
@@ -294,6 +300,7 @@ object GenDBModel {
       token,
       amount,
       address,
+      Some(address),
       mainChain,
       lockTime,
       message,

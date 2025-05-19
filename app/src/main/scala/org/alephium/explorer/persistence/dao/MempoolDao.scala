@@ -31,7 +31,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.MempoolQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.protocol.model.{Address, TransactionId}
+import org.alephium.protocol.model.{AddressLike, TransactionId}
 
 trait MempoolDao {
 
@@ -45,7 +45,7 @@ trait MempoolDao {
       databaseConfig: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[MempoolTransaction]]
 
-  def listByAddress(address: Address)(implicit
+  def listByAddress(address: AddressLike)(implicit
       executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[MempoolTransaction]]
@@ -124,7 +124,7 @@ object MempoolDao extends MempoolDao {
       }
     })
   }
-  def listByAddress(address: Address)(implicit
+  def listByAddress(address: AddressLike)(implicit
       executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[MempoolTransaction]] = {

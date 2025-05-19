@@ -21,14 +21,16 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.persistence.model.TransactionPerAddressEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
 import org.alephium.util.TimeStamp
 
 object TransactionPerAddressSchema
     extends SchemaMainChain[TransactionPerAddressEntity]("transaction_per_addresses") {
 
   class TransactionPerAddresses(tag: Tag) extends Table[TransactionPerAddressEntity](tag, name) {
-    def address: Rep[Address]      = column[Address]("address")
+    def address: Rep[Address] = column[Address]("address")
+    def grouplessAddress: Rep[Option[AddressLike]] =
+      column[Option[AddressLike]]("groupless_address")
     def txHash: Rep[TransactionId] = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
     def blockHash: Rep[BlockHash]  = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
     def timestamp: Rep[TimeStamp]  = column[TimeStamp]("block_timestamp")
@@ -45,7 +47,7 @@ object TransactionPerAddressSchema
       index("txs_per_address_address_timestamp_idx", (address, timestamp))
 
     def * : ProvenShape[TransactionPerAddressEntity] =
-      (address, txHash, blockHash, timestamp, txOrder, mainChain, coinbase)
+      (address, grouplessAddress, txHash, blockHash, timestamp, txOrder, mainChain, coinbase)
         .<>((TransactionPerAddressEntity.apply _).tupled, TransactionPerAddressEntity.unapply)
   }
 

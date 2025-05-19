@@ -25,6 +25,7 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model.{IntervalType, Pagination}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
@@ -36,7 +37,7 @@ import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.explorer.service.TransactionService
-import org.alephium.protocol.model.Address
+import org.alephium.protocol.model.{Address, AddressLike}
 import org.alephium.util.{Duration, TimeStamp}
 
 /** Implements all JMH functions executing benchmarks on Postgres.
@@ -254,7 +255,12 @@ class DBBenchmark {
     implicit val ec: ExecutionContext = state.config.db.ioExecutionContext
 
     val _ =
-      state.db.runNow(TransactionQueries.areAddressesActiveAction(state.next), requestTimeout)
+      state.db.runNow(
+        TransactionQueries.areAddressesActiveAction(
+          state.next.map(address => AddressLike.from(address.lockupScript))
+        ),
+        requestTimeout
+      )
   }
 
   @Benchmark
@@ -262,7 +268,12 @@ class DBBenchmark {
     implicit val ec: ExecutionContext = state.config.db.ioExecutionContext
 
     val _ =
-      state.db.runNow(TransactionQueries.areAddressesActiveAction(state.next), requestTimeout)
+      state.db.runNow(
+        TransactionQueries.areAddressesActiveAction(
+          state.next.map(address => AddressLike.from(address.lockupScript))
+        ),
+        requestTimeout
+      )
   }
 
   @Benchmark
