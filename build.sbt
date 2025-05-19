@@ -166,6 +166,7 @@ lazy val app = mainProject("app")
       alephiumUtil,
       alephiumProtocol,
       alephiumApi,
+      alephiumWs,
       alephiumCrypto,
       alephiumJson,
       rxJava,

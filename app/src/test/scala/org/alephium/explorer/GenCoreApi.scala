@@ -65,12 +65,10 @@ object GenCoreApi {
     for {
       address      <- genInetAddress
       restPort     <- genPortNum
-      wsPort       <- genPortNum
       minerApiPort <- genPortNum
     } yield PeerAddress(
       address = address,
       restPort = restPort,
-      wsPort = wsPort,
       minerApiPort = minerApiPort
     )
 

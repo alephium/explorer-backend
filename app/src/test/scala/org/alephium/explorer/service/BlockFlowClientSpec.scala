@@ -170,7 +170,7 @@ object BlockFlowClientSpec extends ScalaFutures with IntegrationPatience {
     val cliqueId = CliqueId.generate
 
     private val peer =
-      model.PeerAddress(localhost, SocketUtil.temporaryLocalPort(SocketUtil.Both), 0, 0)
+      model.PeerAddress(localhost, SocketUtil.temporaryLocalPort(SocketUtil.Both), 0)
 
     private val vertx  = Vertx.vertx()
     private val router = Router.router(vertx)
