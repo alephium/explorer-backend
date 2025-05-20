@@ -135,8 +135,11 @@ object DBInitializer extends StrictLogging {
   ): Future[Unit] = {
     logger.info("Create Background Indexes")
     run(for {
-      _ <- OutputSchema.createNonSpentOutputCoveringIndex()
-      _ <- InputSchema.createOutupRefAddressMainChainTimestampIndex()
+      _ <- OutputSchema.createConcurrentIndexes()
+      _ <- InputSchema.createConcurrentIndexes()
+      _ <- TokenOutputSchema.createConcurrentIndexes()
+      _ <- TransactionPerAddressSchema.createConcurrentIndexes()
+      _ <- TokenPerAddressSchema.createConcurrentIndexes()
     } yield {
       logger.info("Background Indexes created")
     })

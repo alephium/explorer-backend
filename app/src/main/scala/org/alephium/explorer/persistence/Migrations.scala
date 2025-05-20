@@ -39,7 +39,7 @@ import org.alephium.util.TimeStamp
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(6)
+  val latestVersion: MigrationVersion = MigrationVersion(7)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     // We retrigger the download of fungible and non-fungible tokens' metadata that have sub-category
@@ -173,6 +173,14 @@ object Migrations extends StrictLogging {
       }
     }
 
+  /*
+   * Those indexes will be re-created concurrently while including the `groupless_address` column
+   */
+  def migration7(implicit ec: ExecutionContext): DBActionAll[Unit] = {
+    // Renamed and modified to `non_spent_output_groupless_covering_include_idx`
+    sqlu"DROP INDEX IF EXISTS non_spent_output_group_covering_include_idx".map(_ => ())
+  }
+
   private def migrations(implicit
       explorerConfig: ExplorerConfig,
       ec: ExecutionContext
@@ -182,7 +190,8 @@ object Migrations extends StrictLogging {
     migration3,
     migration4,
     migration5,
-    migration6
+    migration6,
+    migration7
   )
 
   def backgroundCoinbaseMigration()(implicit
