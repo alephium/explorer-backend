@@ -177,8 +177,15 @@ object Migrations extends StrictLogging {
    * Those indexes will be re-created concurrently while including the `groupless_address` column
    */
   def migration7(implicit ec: ExecutionContext): DBActionAll[Unit] = {
-    // Renamed and modified to `non_spent_output_groupless_covering_include_idx`
-    sqlu"DROP INDEX IF EXISTS non_spent_output_group_covering_include_idx".map(_ => ())
+    for {
+      // Renamed and modified to `non_spent_output_groupless_covering_include_idx`
+      _ <- sqlu"DROP INDEX IF EXISTS non_spent_output_group_covering_include_idx"
+      _ <- addAddressLikeColumn("uoutputs", "groupless_address")
+      _ <- addAddressLikeColumn("uinputs", "groupless_address")
+    } yield {
+      ()
+    }
+
   }
 
   private def migrations(implicit

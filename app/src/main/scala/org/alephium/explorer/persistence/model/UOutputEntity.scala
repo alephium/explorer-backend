@@ -22,7 +22,7 @@ import akka.util.ByteString
 
 import org.alephium.explorer.api.model.{AssetOutput, Token}
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 final case class UOutputEntity(
@@ -31,6 +31,7 @@ final case class UOutputEntity(
     key: Hash,
     amount: U256,
     address: Address,
+    grouplessAddress: Option[AddressLike],
     tokens: Option[ArraySeq[Token]],
     lockTime: Option[TimeStamp],
     message: Option[ByteString],

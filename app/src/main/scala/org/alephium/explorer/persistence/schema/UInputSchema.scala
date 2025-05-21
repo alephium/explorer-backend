@@ -23,7 +23,7 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 import org.alephium.explorer.persistence.model.UInputEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, TransactionId}
+import org.alephium.protocol.model.{Address, AddressLike, TransactionId}
 
 object UInputSchema extends Schema[UInputEntity]("uinputs") {
 
@@ -33,7 +33,9 @@ object UInputSchema extends Schema[UInputEntity]("uinputs") {
     def outputRefKey: Rep[Hash]               = column[Hash]("output_ref_key", O.SqlType("BYTEA"))
     def unlockScript: Rep[Option[ByteString]] = column[Option[ByteString]]("unlock_script")
     def address: Rep[Option[Address]]         = column[Option[Address]]("address")
-    def uinputOrder: Rep[Int]                 = column[Int]("uinput_order")
+    def grouplessAddress: Rep[Option[AddressLike]] =
+      column[Option[AddressLike]]("groupless_address")
+    def uinputOrder: Rep[Int] = column[Int]("uinput_order")
 
     def pk: PrimaryKey = primaryKey("uinputs_pk", (outputRefKey, txHash))
 
@@ -41,7 +43,7 @@ object UInputSchema extends Schema[UInputEntity]("uinputs") {
     def uinputsP2pkhAddressIdx: Index = index("uinputs_address_idx", address)
 
     def * : ProvenShape[UInputEntity] =
-      (txHash, hint, outputRefKey, unlockScript, address, uinputOrder)
+      (txHash, hint, outputRefKey, unlockScript, address, grouplessAddress, uinputOrder)
         .<>((UInputEntity.apply _).tupled, UInputEntity.unapply)
   }
 

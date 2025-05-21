@@ -313,6 +313,7 @@ object CustomGetResult {
         outputRefKey = result.<<,
         unlockScript = result.<<?,
         address = result.<<?,
+        grouplessAddress = result.<<?,
         uinputOrder = result.<<
       )
 
@@ -324,6 +325,7 @@ object CustomGetResult {
         key = result.<<,
         amount = result.<<,
         address = result.<<,
+        grouplessAddress = result.<<?,
         tokens = result.<<?,
         lockTime = result.<<?,
         message = result.<<?,
