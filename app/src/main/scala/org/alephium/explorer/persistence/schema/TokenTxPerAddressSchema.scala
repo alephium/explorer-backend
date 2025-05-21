@@ -62,10 +62,10 @@ object TokenPerAddressSchema
 
   def createConcurrentIndexes()(implicit ec: ExecutionContext): DBActionW[Unit] =
     for {
-      _ <- createGrouplessAddressTimestampIndex()
+      _ <- createTokenGrouplessAddressIndex()
     } yield ()
 
-  def createGrouplessAddressTimestampIndex(): DBActionW[Int] =
+  def createTokenGrouplessAddressIndex(): DBActionW[Int] =
     sqlu"""
       CREATE INDEX token_tx_per_address_token_groupless_address_idx
       ON token_tx_per_addresses (token, groupless_address)
