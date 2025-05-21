@@ -68,7 +68,7 @@ object TransactionPerAddressSchema
 
   def createGrouplessAddressTimestampIndex(): DBActionW[Int] =
     sqlu"""
-      CREATE INDEX txs_per_address_groupless_address_timestamp_idx
+      CREATE INDEX CONCURRENTLY IF NOT EXISTS txs_per_address_groupless_address_timestamp_idx
       ON transaction_per_addresses (groupless_address, block_timestamp)
       WHERE groupless_address IS NOT NULL;
     """

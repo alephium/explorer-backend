@@ -101,9 +101,9 @@ object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outpu
 
   def createNonSpentGrouplessIndex(): DBActionW[Int] =
     sqlu"""
-      CREATE UNIQUE INDEX IF NOT EXISTS token_non_spent_output_groupless_idx
+      CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS token_non_spent_output_groupless_idx
       ON #${name} (token, groupless_address, main_chain, key, block_hash)
-      WHERE spent_finalized IS NULL;
+      WHERE spent_finalized IS NULL
       AND groupless_address IS NOT NULL;
     """
 
