@@ -94,13 +94,22 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
   def createNonSpentIndex(): DBActionW[Int] =
     sqlu"create unique index if not exists non_spent_output_idx on #${name} (address, main_chain, key, block_hash) where spent_finalized IS NULL;"
 
-  def createNonSpentOutputCoveringIndex()(implicit ec: ExecutionContext): DBActionW[Unit] =
+  def createConcurrentIndexes()(implicit ec: ExecutionContext): DBActionW[Unit] =
     for {
-      _ <- createBaseNonSpentOutputCoveringIndex()
-      _ <- createNonSpentOutputGroupCoveringIndex()
+      _ <- createNonSpentGrouplessIndex()
+      _ <- createSpentOutputCoveringIndex()
+      _ <- createNonSpentOutputGrouplessCoveringIndex()
     } yield ()
 
-  def createBaseNonSpentOutputCoveringIndex(): DBActionW[Int] =
+  def createNonSpentGrouplessIndex(): DBActionW[Int] =
+    sqlu"""
+      CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS non_spent_output_groupless_idx
+      ON #${name} (groupless_address, main_chain, key, block_hash)
+      WHERE spent_finalized IS NULL
+      AND groupless_address IS NOT NULL;
+    """
+
+  def createSpentOutputCoveringIndex(): DBActionW[Int] =
     sqlu"""
       CREATE INDEX CONCURRENTLY IF NOT EXISTS non_spent_output_covering_include_idx
       ON #${name} (address, main_chain, spent_finalized, key)
@@ -108,12 +117,13 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
       WHERE spent_finalized IS NULL AND main_chain = true;
     """
 
-  def createNonSpentOutputGroupCoveringIndex(): DBActionW[Int] =
+  def createNonSpentOutputGrouplessCoveringIndex(): DBActionW[Int] =
     sqlu"""
-      CREATE INDEX CONCURRENTLY IF NOT EXISTS non_spent_output_group_covering_include_idx
-      ON outputs (address, groupless_address, main_chain, spent_finalized, key)
+      CREATE INDEX CONCURRENTLY IF NOT EXISTS non_spent_output_groupless_covering_include_idx
+      ON outputs (groupless_address, main_chain, spent_finalized, key)
       INCLUDE (amount, lock_time)
       WHERE spent_finalized IS NULL AND groupless_address IS NOT NULL AND main_chain = true;
     """
+
   val table: TableQuery[Outputs] = TableQuery[Outputs]
 }

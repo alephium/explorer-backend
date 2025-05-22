@@ -16,6 +16,8 @@
 
 package org.alephium.explorer.persistence.schema
 
+import scala.concurrent.ExecutionContext
+
 import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
@@ -84,8 +86,26 @@ object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outpu
         .<>((TokenOutputEntity.apply _).tupled, TokenOutputEntity.unapply)
   }
 
-  val createNonSpentIndex: DBActionW[Int] =
-    sqlu"create unique index if not exists non_spent_output_idx on #${name} (address, main_chain, key, block_hash) where spent_finalized IS NULL;"
+  def createConcurrentIndexes()(implicit ec: ExecutionContext): DBActionW[Unit] =
+    for {
+      _ <- createNonSpentIndex()
+      _ <- createNonSpentGrouplessIndex()
+    } yield ()
+
+  def createNonSpentIndex(): DBActionW[Int] =
+    sqlu"""
+      CREATE UNIQUE INDEX IF NOT EXISTS token_non_spent_output_idx
+      ON #${name} (token, address, main_chain, key, block_hash)
+      WHERE spent_finalized IS NULL;
+    """
+
+  def createNonSpentGrouplessIndex(): DBActionW[Int] =
+    sqlu"""
+      CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS token_non_spent_output_groupless_idx
+      ON #${name} (token, groupless_address, main_chain, key, block_hash)
+      WHERE spent_finalized IS NULL
+      AND groupless_address IS NOT NULL;
+    """
 
   val table: TableQuery[TokenOutputs] = TableQuery[TokenOutputs]
 }

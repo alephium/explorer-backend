@@ -48,13 +48,12 @@ import org.alephium.explorer.config.ExplorerConfig.Consensus
 import org.alephium.explorer.error.ExplorerError
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.util.InputAddressUtil
+import org.alephium.explorer.util.{AddressUtil, InputAddressUtil}
 import org.alephium.http.EndpointSender
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.mining.HashRate
 import org.alephium.protocol.model.{
   Address,
-  AddressLike,
   BlockHash,
   ChainIndex,
   ContractId,
@@ -63,7 +62,6 @@ import org.alephium.protocol.model.{
   TokenId,
   TransactionId
 }
-import org.alephium.protocol.vm.LockupScript
 import org.alephium.util._
 
 trait BlockFlowClient extends Service {
@@ -799,15 +797,7 @@ object BlockFlowClient extends StrictLogging {
 
     val tokens = protocolTokensToTokens(output.tokens)
 
-    val (address, group): (Address, Option[AddressLike]) = output.address match {
-      case Address.Asset(lockup) =>
-        lockup match {
-          case LockupScript.P2PK(pk, _) =>
-            (output.address, Some(AddressLike(LockupScript.HalfDecodedP2PK(pk))))
-          case _ => (output.address, None)
-        }
-      case _ => (output.address, None)
-    }
+    val grouplessAddress = AddressUtil.convertToGrouplessAddress(output.address)
 
     OutputEntity(
       blockHash,
@@ -817,8 +807,8 @@ object BlockFlowClient extends StrictLogging {
       output.hint,
       output.key,
       output.attoAlphAmount.value,
-      address,
-      group,
+      output.address,
+      grouplessAddress,
       tokens,
       mainChain,
       lockTime,

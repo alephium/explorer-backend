@@ -224,8 +224,12 @@ class AddressReadState(val db: DBExecutor)
         .andThen(InputSchema.createMainChainIndex())
         .andThen(OutputSchema.createMainChainIndex())
         .andThen(TransactionPerAddressSchema.createMainChainIndex())
-        .andThen(OutputSchema.createNonSpentIndex())
-        .andThen(OutputSchema.createNonSpentOutputCoveringIndex())
+        .andThen(OutputSchema.createConcurrentIndexes())
+        .andThen(InputSchema.createConcurrentIndexes())
+        .andThen(TokenOutputSchema.createConcurrentIndexes())
+        .andThen(InputSchema.createConcurrentIndexes())
+        .andThen(TransactionPerAddressSchema.createConcurrentIndexes())
+        .andThen(TokenPerAddressSchema.createConcurrentIndexes())
 
     val _ = db.runNow(
       action = createTable,

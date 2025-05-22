@@ -171,8 +171,8 @@ object TransactionQueries extends StrictLogging {
       FROM transaction_per_addresses
       WHERE main_chain = true
       AND #${addressColumn(address)} = $address
+      ORDER BY block_timestamp DESC, tx_order
     """
-      .concat(sql"""ORDER BY block_timestamp DESC, tx_order """)
       .paginate(pagination)
       .asAS[TxByAddressQR]
   }

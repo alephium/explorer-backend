@@ -17,6 +17,7 @@
 package org.alephium.explorer.persistence.schema
 
 import scala.collection.immutable.ArraySeq
+import scala.concurrent.ExecutionContext
 
 import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
@@ -90,9 +91,23 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
       ON #${name} (output_ref_tx_hash, output_ref_address, output_ref_amount, output_ref_tokens)
       WHERE output_ref_amount IS NULL"""
 
+  def createConcurrentIndexes()(implicit ec: ExecutionContext): DBActionW[Unit] =
+    for {
+      _ <- createOutupRefAddressMainChainTimestampIndex()
+      _ <- createOutupRefGrouplessAddressMainChainTimestampIndex()
+    } yield ()
+
   def createOutupRefAddressMainChainTimestampIndex(): DBActionW[Int] =
     sqlu"""
-    CREATE INDEX CONCURRENTLY IF NOT EXISTS inputs_ref_address_main_chain_timestamp_idx ON inputs (output_ref_address, main_chain, block_timestamp);
+      CREATE INDEX CONCURRENTLY IF NOT EXISTS inputs_ref_address_main_chain_timestamp_idx
+      ON inputs (output_ref_address, main_chain, block_timestamp);
+    """
+
+  def createOutupRefGrouplessAddressMainChainTimestampIndex(): DBActionW[Int] =
+    sqlu"""
+      CREATE INDEX CONCURRENTLY IF NOT EXISTS inputs_ref_groupless_address_main_chain_timestamp_idx
+      ON inputs (output_ref_groupless_address, main_chain, block_timestamp)
+      WHERE output_ref_groupless_address IS NOT NULL;
     """
 
   val table: TableQuery[Inputs] = TableQuery[Inputs]

@@ -111,6 +111,7 @@ object MempoolQueries {
                   key,
                   amount,
                   address,
+                  groupless_address,
                   tokens,
                   lock_time,
                   message,
@@ -145,6 +146,7 @@ object MempoolQueries {
                   output_ref_key,
                   unlock_script,
                   address,
+                  groupless_address,
                   uinput_order
            FROM uinputs
            WHERE tx_hash IN $params
@@ -185,6 +187,7 @@ object MempoolQueries {
                 key,
                 amount,
                 address,
+                groupless_address,
                 tokens,
                 lock_time,
                 message,
@@ -202,6 +205,7 @@ object MempoolQueries {
                 output_ref_key,
                 unlock_script,
                 address,
+                groupless_address,
                 uinput_order
          FROM uinputs
          WHERE tx_hash = $hash

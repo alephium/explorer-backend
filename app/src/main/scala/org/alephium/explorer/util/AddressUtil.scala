@@ -14,31 +14,21 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.persistence.model
+package org.alephium.explorer.util
 
-import akka.util.ByteString
-
-import org.alephium.explorer.api.model.{Input, OutputRef}
-import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{Address, AddressLike}
-import org.alephium.protocol.model.TransactionId
+import org.alephium.protocol.vm.LockupScript
 
-final case class UInputEntity(
-    txHash: TransactionId,
-    hint: Int,
-    outputRefKey: Hash,
-    unlockScript: Option[ByteString],
-    address: Option[Address],
-    grouplessAddress: Option[AddressLike],
-    uinputOrder: Int
-) {
-  val toApi: Input = Input(
-    OutputRef(hint, outputRefKey),
-    unlockScript,
-    None,
-    address,
-    None,
-    None,
-    contractInput = false
-  )
+object AddressUtil {
+
+  def convertToGrouplessAddress(address: Address): Option[AddressLike] =
+    address match {
+      case Address.Asset(lockup) =>
+        lockup match {
+          case LockupScript.P2PK(pk, _) =>
+            Some(AddressLike(LockupScript.HalfDecodedP2PK(pk)))
+          case _ => None
+        }
+      case _ => None
+    }
 }

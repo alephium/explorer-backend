@@ -16,9 +16,12 @@
 
 package org.alephium.explorer.persistence.schema
 
+import scala.concurrent.ExecutionContext
+
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
+import org.alephium.explorer.persistence.DBActionW
 import org.alephium.explorer.persistence.model.TransactionPerAddressEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
@@ -57,6 +60,18 @@ object TransactionPerAddressSchema
       CommonIndex.blockTimestampTxOrderIndex(this),
       CommonIndex.timestampIndex(this)
     )
+
+  def createConcurrentIndexes()(implicit ec: ExecutionContext): DBActionW[Unit] =
+    for {
+      _ <- createGrouplessAddressTimestampIndex()
+    } yield ()
+
+  def createGrouplessAddressTimestampIndex(): DBActionW[Int] =
+    sqlu"""
+      CREATE INDEX CONCURRENTLY IF NOT EXISTS txs_per_address_groupless_address_timestamp_idx
+      ON transaction_per_addresses (groupless_address, block_timestamp)
+      WHERE groupless_address IS NOT NULL;
+    """
 
   val table: TableQuery[TransactionPerAddresses] = TableQuery[TransactionPerAddresses]
 }

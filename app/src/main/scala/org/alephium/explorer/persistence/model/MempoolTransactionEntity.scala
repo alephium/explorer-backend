@@ -19,6 +19,7 @@ package org.alephium.explorer.persistence.model
 import scala.collection.immutable.ArraySeq
 
 import org.alephium.explorer.api.model.{AssetOutput, ContractOutput, MempoolTransaction}
+import org.alephium.explorer.util.AddressUtil
 import org.alephium.protocol.model.{GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
@@ -51,6 +52,7 @@ object MempoolTransactionEntity {
           input.outputRef.key,
           input.unlockScript,
           input.address,
+          input.address.flatMap(AddressUtil.convertToGrouplessAddress),
           order
         )
       },
@@ -69,6 +71,7 @@ object MempoolTransactionEntity {
           output.key,
           output.attoAlphAmount,
           output.address,
+          AddressUtil.convertToGrouplessAddress(output.address),
           output.tokens,
           lockTime,
           message,

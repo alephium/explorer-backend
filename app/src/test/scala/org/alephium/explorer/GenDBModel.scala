@@ -32,6 +32,7 @@ import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model.Height
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.service.BlockFlowClient
+import org.alephium.explorer.util.AddressUtil
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{Address, BlockHash, ChainIndex, GroupIndex, TransactionId}
 import org.alephium.util.{AVector, TimeStamp}
@@ -71,7 +72,7 @@ object GenDBModel {
         hint = hint,
         key = key,
         amount = amount,
-        grouplessAddress = Some(address),
+        grouplessAddress = AddressUtil.convertToGrouplessAddress(address),
         address = address,
         tokens = tokens,
         mainChain = mainChain,
@@ -115,6 +116,7 @@ object GenDBModel {
       key = key,
       amount = amount,
       address = address,
+      grouplessAddress = AddressUtil.convertToGrouplessAddress(address),
       tokens = tokens,
       lockTime = if (outputType == OutputEntity.Asset) lockTime else None,
       message = if (outputType == OutputEntity.Asset) message else None,
@@ -166,6 +168,7 @@ object GenDBModel {
       outputRefKey,
       unlockScript,
       address,
+      grouplessAddress = address.flatMap(AddressUtil.convertToGrouplessAddress),
       uinputOrder
     )
 
@@ -195,7 +198,7 @@ object GenDBModel {
       coinbase  <- Arbitrary.arbitrary[Boolean]
     } yield TransactionPerAddressEntity(
       address = address,
-      grouplessAddress = Some(address),
+      grouplessAddress = AddressUtil.convertToGrouplessAddress(address),
       hash = hash,
       blockHash = blockHash,
       timestamp = timestamp,
@@ -236,7 +239,7 @@ object GenDBModel {
       token     <- tokenIdGen
     } yield TokenTxPerAddressEntity(
       address = address,
-      grouplessAddress = Some(address),
+      grouplessAddress = AddressUtil.convertToGrouplessAddress(address),
       hash = hash,
       blockHash = blockHash,
       timestamp = timestamp,
