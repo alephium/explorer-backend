@@ -18,8 +18,8 @@ package org.alephium.explorer.api.model
 
 import sttp.tapir._
 
+import org.alephium.api.TapirSchemas.tokenIdSchema
 import org.alephium.explorer.api.Json._
-import org.alephium.explorer.api.Schemas.tokenIdSchema
 import org.alephium.json.Json._
 import org.alephium.protocol.model.TokenId
 

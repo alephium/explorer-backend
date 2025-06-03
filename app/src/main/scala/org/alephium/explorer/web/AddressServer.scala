@@ -29,15 +29,16 @@ import slick.jdbc.PostgresProfile
 import sttp.model.StatusCode
 
 import org.alephium.api.ApiError
-import org.alephium.api.model.TimeInterval
+import org.alephium.api.model.{Address => ApiAddress, TimeInterval}
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.config.Default.groupConfig
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service.{TokenService, TransactionService}
 import org.alephium.protocol.PublicKey
-import org.alephium.protocol.model.AddressLike
+import org.alephium.protocol.model.Address
 import org.alephium.protocol.vm.{LockupScript, PublicKeyLike, UnlockScript}
 import org.alephium.serde._
 import org.alephium.util.Duration
@@ -155,15 +156,15 @@ class AddressServer(
           }
       }),
       route(getPublicKey.serverLogic[Future] { address =>
-        address.lockupScriptResult match {
-          case LockupScript.CompleteLockupScript(LockupScript.P2PKH(_)) =>
+        address.lockupScript match {
+          case ApiAddress.CompleteLockupScript(LockupScript.P2PKH(_)) =>
             transactionService.getUnlockScript(address).map {
               case None =>
                 Left(ApiError.NotFound(s"No input found for address $address"))
               case Some(unlockScript) =>
                 AddressServer.bytesToPublicKey(unlockScript)
             }
-          case LockupScript.CompleteLockupScript(
+          case ApiAddress.CompleteLockupScript(
                 LockupScript.P2PK(PublicKeyLike.SecP256K1(publicKey), _)
               ) =>
             Future.successful(Right(publicKey))
@@ -176,7 +177,7 @@ class AddressServer(
     )
 
   private def exportTransactions(
-      address: AddressLike,
+      address: ApiAddress,
       timeInterval: TimeInterval
   ): Future[Either[ApiError[_ <: StatusCode], ReadStream[Buffer]]] = {
     transactionService
@@ -214,12 +215,12 @@ class AddressServer(
 }
 
 object AddressServer {
-  def exportFileNameHeader(address: AddressLike, timeInterval: TimeInterval): String = {
-    s"""attachment;filename="$address-${timeInterval.from.millis}-${timeInterval.to.millis}.csv""""
+  def exportFileNameHeader(address: ApiAddress, timeInterval: TimeInterval): String = {
+    s"""attachment;filename="${address.toBase58}-${timeInterval.from.millis}-${timeInterval.to.millis}.csv""""
   }
 
-  def amountHistoryFileNameHeader(address: AddressLike, timeInterval: TimeInterval): String = {
-    s"""attachment;filename="$address-amount-history-${timeInterval.from.millis}-${timeInterval.to.millis}.json""""
+  def amountHistoryFileNameHeader(address: Address, timeInterval: TimeInterval): String = {
+    s"""attachment;filename="${address.toBase58}-amount-history-${timeInterval.from.millis}-${timeInterval.to.millis}.json""""
   }
 
   def bytesToPublicKey(

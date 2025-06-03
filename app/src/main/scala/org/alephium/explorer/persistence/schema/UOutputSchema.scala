@@ -23,10 +23,10 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.api.model.Token
-import org.alephium.explorer.persistence.model.UOutputEntity
+import org.alephium.explorer.persistence.model.{GrouplessAddress, UOutputEntity}
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, AddressLike, TransactionId}
+import org.alephium.protocol.model.{Address, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object UOutputSchema extends Schema[UOutputEntity]("uoutputs") {
@@ -38,8 +38,8 @@ object UOutputSchema extends Schema[UOutputEntity]("uoutputs") {
     def amount: Rep[U256] =
       column[U256]("amount", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
     def address: Rep[Address] = column[Address]("address")
-    def grouplessAddress: Rep[Option[AddressLike]] =
-      column[Option[AddressLike]]("groupless_address")
+    def grouplessAddress: Rep[Option[GrouplessAddress]] =
+      column[Option[GrouplessAddress]]("groupless_address")
     def tokens: Rep[Option[ArraySeq[Token]]] = column[Option[ArraySeq[Token]]]("tokens")
     def lockTime: Rep[Option[TimeStamp]]     = column[Option[TimeStamp]]("lock_time")
     def message: Rep[Option[ByteString]]     = column[Option[ByteString]]("message")

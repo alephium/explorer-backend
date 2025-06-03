@@ -20,7 +20,7 @@ import akka.util.ByteString
 
 import org.alephium.explorer.api.model.{Input, OutputRef}
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, AddressLike}
+import org.alephium.protocol.model.Address
 import org.alephium.protocol.model.TransactionId
 
 final case class UInputEntity(
@@ -29,7 +29,7 @@ final case class UInputEntity(
     outputRefKey: Hash,
     unlockScript: Option[ByteString],
     address: Option[Address],
-    grouplessAddress: Option[AddressLike],
+    grouplessAddress: Option[GrouplessAddress],
     uinputOrder: Int
 ) {
   val toApi: Input = Input(

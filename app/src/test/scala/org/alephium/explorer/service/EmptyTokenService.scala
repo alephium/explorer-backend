@@ -22,12 +22,13 @@ import scala.concurrent.{ExecutionContext, Future}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.model._
-import org.alephium.protocol.model.{Address, AddressLike, TokenId}
+import org.alephium.protocol.model.{Address, TokenId}
 import org.alephium.util.U256
 
 trait EmptyTokenService extends TokenService {
-  def getTokenBalance(address: AddressLike, token: TokenId)(implicit
+  def getTokenBalance(address: ApiAddress, token: TokenId)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[(U256, U256)] = ???
@@ -63,17 +64,20 @@ trait EmptyTokenService extends TokenService {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[NFTCollectionMetadata]] = ???
 
-  def listAddressTokens(address: AddressLike, pagination: Pagination)(implicit
+  def listAddressTokens(address: ApiAddress, pagination: Pagination)(implicit
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[TokenId]] = ???
 
-  def listAddressTokenTransactions(address: AddressLike, token: TokenId, pagination: Pagination)(
-      implicit
+  def listAddressTokenTransactions(
+      address: ApiAddress,
+      token: TokenId,
+      pagination: Pagination
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]] = ???
 
-  def listAddressTokensWithBalance(address: AddressLike, pagination: Pagination)(implicit
+  def listAddressTokensWithBalance(address: ApiAddress, pagination: Pagination)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[(TokenId, U256, U256)]] = ???

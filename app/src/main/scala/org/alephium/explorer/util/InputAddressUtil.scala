@@ -48,6 +48,8 @@ object InputAddressUtil extends StrictLogging {
             Some(protocol.model.Address.p2pkh(pk))
           case protocol.vm.UnlockScript.P2PK =>
             None
+          case protocol.vm.UnlockScript.P2HMPK(_, _) =>
+            None
           case protocol.vm.UnlockScript.SameAsPrevious =>
             None
           case protocol.vm.UnlockScript.P2MPKH(_) =>

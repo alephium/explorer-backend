@@ -19,7 +19,7 @@ package org.alephium.explorer.persistence.model
 import akka.util.ByteString
 
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TokenId, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 final case class TokenOutputEntity(
@@ -32,7 +32,7 @@ final case class TokenOutputEntity(
     token: TokenId,
     amount: U256,
     address: Address,
-    grouplessAddress: Option[AddressLike],
+    grouplessAddress: Option[GrouplessAddress],
     mainChain: Boolean,
     lockTime: Option[TimeStamp],
     message: Option[ByteString],

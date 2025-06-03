@@ -23,6 +23,7 @@ import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
@@ -32,8 +33,7 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{AddressLike, BlockHash, TransactionId}
-import org.alephium.protocol.vm.LockupScript
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object OutputQueries {
@@ -435,14 +435,14 @@ object OutputQueries {
     """
 
   def getBalanceUntilLockTime(
-      address: AddressLike,
+      address: ApiAddress,
       lockTime: TimeStamp,
       latestFinalizedTimestamp: TimeStamp
   )(implicit
       ec: ExecutionContext
   ): DBActionR[(Option[U256], Option[U256])] = {
-    val (ouptupAddressColumn, inputAddressColumn) = address.lockupScriptResult match {
-      case LockupScript.HalfDecodedP2PK(_) =>
+    val (ouptupAddressColumn, inputAddressColumn) = address.lockupScript match {
+      case _: ApiAddress.HalfDecodedLockupScript =>
         ("groupless_address", "output_ref_groupless_address")
       case _ =>
         ("address", "output_ref_address")

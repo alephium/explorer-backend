@@ -26,6 +26,7 @@ import akka.util.ByteString
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
+import org.alephium.explorer.util.AddressUtil
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
@@ -82,7 +83,7 @@ object DataGenerator {
         key = Hash.generate,
         amount = U256.unsafe(Random.nextInt(100)),
         address = address,
-        grouplessAddress = Some(address),
+        grouplessAddress = AddressUtil.convertToGrouplessAddress(address),
         tokens = None,
         mainChain = transaction.mainChain,
         lockTime = Some(TimeStamp.now()),
@@ -165,7 +166,7 @@ object DataGenerator {
   def genTransactionPerAddressEntity(address: Address = genAddress()): TransactionPerAddressEntity =
     TransactionPerAddressEntity(
       address = address,
-      grouplessAddress = Some(address),
+      grouplessAddress = AddressUtil.convertToGrouplessAddress(address),
       hash = TransactionId.generate,
       blockHash = BlockHash.generate,
       timestamp = TimeStamp.now(),

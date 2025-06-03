@@ -23,13 +23,14 @@ import scala.collection.immutable.ArraySeq
 import org.scalacheck.Gen
 
 import org.alephium.api.UtilJson._
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
 import org.alephium.protocol.{ALPH, Hash}
-import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.{Hex, TimeStamp}
 
 class ApiModelSpec() extends AlephiumSpec {
@@ -72,13 +73,13 @@ class ApiModelSpec() extends AlephiumSpec {
         // No inputs or outputs so no addresses nor amounts
         val expected =
           s"${Instant.ofEpochMilli(tx.timestamp.millis)},0,ALPH,${tx.hash.toHexString},,${tx.outputs.map(_.address).mkString("-")}\n"
-        tx.toCsv(grouplessAddressGen.sample.get, Map.empty)
+        tx.toCsv(apiAddressGen.sample.get, Map.empty)
         expected
       }
 
-      val address = Address.fromBase58("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n").get
+      val address = Address.fromBase58("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n").rightValue
       val grouplessAddress =
-        AddressLike.fromBase58("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n").get
+        Address.fromBase58("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n").rightValue
 
       val transaction = Transaction(
         TransactionId
@@ -103,7 +104,8 @@ class ApiModelSpec() extends AlephiumSpec {
             hint = 0,
             key = Hash.generate,
             attoAlphAmount = ALPH.alph(8),
-            address = Address.fromBase58("14PqtYSSbwpUi2RJKUvv9yUwGafd6yHbEcke7ionuiE7w").get,
+            address =
+              Address.fromBase58("14PqtYSSbwpUi2RJKUvv9yUwGafd6yHbEcke7ionuiE7w").rightValue,
             tokens = None,
             lockTime = None,
             message = None,
@@ -114,7 +116,8 @@ class ApiModelSpec() extends AlephiumSpec {
             hint = 0,
             key = Hash.generate,
             attoAlphAmount = ALPH.alph(8),
-            address = Address.fromBase58("22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM").get,
+            address =
+              Address.fromBase58("22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM").rightValue,
             tokens = None,
             lockTime = None,
             message = None,
@@ -446,14 +449,17 @@ class ApiModelSpec() extends AlephiumSpec {
 
   "Groupless Address" in {
     val address          = "3cUqj91Y4SxeoV5szxWc6dekfDt6Pq1ZUC2kdeTW26rYXt3bY98YX"
-    val grouplessAddress = AddressLike.fromBase58(address).get
+    val grouplessAddress = ApiAddress.fromBase58(address).rightValue
 
     grouplessAddress.toBase58 is address
 
     (0 to groupConfig.groups - 1).foreach { i =>
-      val grouped = AddressLike.fromBase58(address ++ s":$i").get
+      val grouped         = ApiAddress.fromBase58(address ++ s":$i").rightValue
+      val protocolAddress = Address.fromBase58(address ++ s":$i").rightValue
 
-      grouped.getAddress().groupIndex.value is i
+      grouped.toProtocol() is protocolAddress
+
+      grouped.toProtocol().groupIndex.value is i
 
       grouped.toBase58 is address + s":$i"
     }

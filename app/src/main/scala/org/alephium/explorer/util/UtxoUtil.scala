@@ -20,23 +20,28 @@ import java.math.BigInteger
 
 import scala.collection.immutable.ArraySeq
 
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.model.{Input, Output, Token}
-import org.alephium.protocol.model.{Address, AddressLike, TokenId}
-import org.alephium.protocol.vm.LockupScript
+import org.alephium.protocol.config.GroupConfig
+import org.alephium.protocol.model.{Address, TokenId}
 import org.alephium.util.U256
 
 object UtxoUtil {
 
-  def addressEqual(address: Address, addressLike: AddressLike): Boolean = {
-    addressLike.lockupScriptResult match {
-      case LockupScript.CompleteLockupScript(_) =>
-        addressLike.toBase58 == address.toBase58
-      case LockupScript.HalfDecodedP2PK(_) =>
-        addressLike.toBase58 == address.toBase58.takeWhile(_ != ':')
+  def addressEqual(address: Address, apiAddress: ApiAddress)(implicit
+      groupConfig: GroupConfig
+  ): Boolean = {
+    apiAddress.lockupScript match {
+      case ApiAddress.CompleteLockupScript(_) =>
+        address.toBase58 == apiAddress.toBase58
+      case _: ApiAddress.HalfDecodedLockupScript =>
+        address.toBase58.dropRight(ApiAddress.GrouplessSuffixSize) == apiAddress.toBase58
     }
   }
 
-  def amountForAddressInInputs(address: AddressLike, inputs: ArraySeq[Input]): Option[U256] =
+  def amountForAddressInInputs(address: ApiAddress, inputs: ArraySeq[Input])(implicit
+      groupConfig: GroupConfig
+  ): Option[U256] =
     sumAmounts(
       inputs
         .filter(_.address.exists(a => addressEqual(a, address)))
@@ -44,7 +49,9 @@ object UtxoUtil {
         .collect { case Some(amount) => amount }
     )
 
-  def amountForAddressInOutputs(address: AddressLike, outputs: ArraySeq[Output]): Option[U256] =
+  def amountForAddressInOutputs(address: ApiAddress, outputs: ArraySeq[Output])(implicit
+      groupConfig: GroupConfig
+  ): Option[U256] =
     sumAmounts(
       outputs
         .filter(o => addressEqual(o.address, address))
@@ -52,9 +59,9 @@ object UtxoUtil {
     )
 
   def tokenAmountForAddressInInputs(
-      address: AddressLike,
+      address: ApiAddress,
       inputs: ArraySeq[Input]
-  ): Map[TokenId, Option[U256]] =
+  )(implicit groupConfig: GroupConfig): Map[TokenId, Option[U256]] =
     sumTokensById(
       inputs
         .filter(_.address.exists(a => addressEqual(a, address)))
@@ -63,9 +70,9 @@ object UtxoUtil {
     )
 
   def tokenAmountForAddressInOutputs(
-      address: AddressLike,
+      address: ApiAddress,
       outputs: ArraySeq[Output]
-  ): Map[TokenId, Option[U256]] =
+  )(implicit groupConfig: GroupConfig): Map[TokenId, Option[U256]] =
     sumTokensById(
       outputs
         .filter(o => addressEqual(o.address, address))
@@ -74,10 +81,10 @@ object UtxoUtil {
     )
 
   def deltaAmountForAddress(
-      address: AddressLike,
+      address: ApiAddress,
       inputs: ArraySeq[Input],
       outputs: ArraySeq[Output]
-  ): Option[BigInteger] = {
+  )(implicit groupConfig: GroupConfig): Option[BigInteger] = {
     for {
       in  <- amountForAddressInInputs(address, inputs)
       out <- amountForAddressInOutputs(address, outputs)
@@ -87,10 +94,10 @@ object UtxoUtil {
   }
 
   def deltaTokenAmountForAddress(
-      address: AddressLike,
+      address: ApiAddress,
       inputs: ArraySeq[Input],
       outputs: ArraySeq[Output]
-  ): Map[TokenId, BigInteger] = {
+  )(implicit groupConfig: GroupConfig): Map[TokenId, BigInteger] = {
     val in  = tokenAmountForAddressInInputs(address, inputs)
     val out = tokenAmountForAddressInOutputs(address, outputs)
 

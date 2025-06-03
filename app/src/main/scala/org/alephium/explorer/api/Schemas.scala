@@ -26,5 +26,4 @@ object Schemas {
   implicit val configuration: Configuration = Configuration.default.withDiscriminator("type")
 
   implicit val contractIdSchema: Schema[ContractId] = TapirSchemas.hashSchema.as[ContractId]
-  implicit val tokenIdSchema: Schema[TokenId]       = TapirSchemas.hashSchema.as[TokenId]
 }

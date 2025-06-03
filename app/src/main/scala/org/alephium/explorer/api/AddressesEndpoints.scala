@@ -26,11 +26,11 @@ import sttp.tapir.generic.auto._
 import sttp.tapir.server.vertx.streams.VertxStreams
 
 import org.alephium.api.Endpoints.jsonBody
-import org.alephium.api.model.TimeInterval
+import org.alephium.api.model.{Address => ApiAddress, TimeInterval}
 import org.alephium.explorer.api.EndpointExamples._
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.PublicKey
-import org.alephium.protocol.model.{AddressLike, TokenId}
+import org.alephium.protocol.model.TokenId
 import org.alephium.util.{Duration, TimeStamp}
 
 // scalastyle:off magic.number
@@ -52,19 +52,19 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
 
   private val addressesLikeEndpoint =
     baseAddressesEndpoint
-      .in(path[AddressLike]("address")(Codecs.explorerAddressLikeTapirCodec))
+      .in(path[ApiAddress]("address")(Codecs.explorerAddressTapirCodec))
 
   private val addressesLikeTokensEndpoint =
     baseAddressesEndpoint
-      .in(path[AddressLike]("address")(Codecs.explorerAddressLikeTapirCodec))
+      .in(path[ApiAddress]("address")(Codecs.explorerAddressTapirCodec))
       .in("tokens")
 
-  val getAddressInfo: BaseEndpoint[AddressLike, AddressInfo] =
+  val getAddressInfo: BaseEndpoint[ApiAddress, AddressInfo] =
     addressesLikeEndpoint.get
       .out(jsonBody[AddressInfo])
       .summary("Get address information")
 
-  val getTransactionsByAddress: BaseEndpoint[(AddressLike, Pagination), ArraySeq[Transaction]] =
+  val getTransactionsByAddress: BaseEndpoint[(ApiAddress, Pagination), ArraySeq[Transaction]] =
     addressesLikeEndpoint.get
       .in("transactions")
       .in(pagination)
@@ -72,16 +72,16 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .summary("List transactions of a given address")
 
   // format: off
-  lazy val getTransactionsByAddresses: BaseEndpoint[(ArraySeq[AddressLike], Option[TimeStamp], Option[TimeStamp], Pagination), ArraySeq[Transaction]] =
+  lazy val getTransactionsByAddresses: BaseEndpoint[(ArraySeq[ApiAddress], Option[TimeStamp], Option[TimeStamp], Pagination), ArraySeq[Transaction]] =
     baseAddressesEndpoint.post
-      .in(arrayBody[AddressLike]("addresses", maxSizeAddresses))
+      .in(arrayBody[ApiAddress]("addresses", maxSizeAddresses))
       .in("transactions")
       .in(optionalTimeIntervalQuery)
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])
       .summary("List transactions for given addresses")
 
-  val getTransactionsByAddressTimeRanged: BaseEndpoint[(AddressLike, TimeInterval, Pagination), ArraySeq[Transaction]] =
+  val getTransactionsByAddressTimeRanged: BaseEndpoint[(ApiAddress, TimeInterval, Pagination), ArraySeq[Transaction]] =
     addressesLikeEndpoint.get
       .in("timeranged-transactions")
       .in(timeIntervalQuery)
@@ -90,39 +90,39 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .summary("List transactions of a given address within a time-range")
   // format: on
 
-  val getTotalTransactionsByAddress: BaseEndpoint[AddressLike, Int] =
+  val getTotalTransactionsByAddress: BaseEndpoint[ApiAddress, Int] =
     addressesLikeEndpoint.get
       .in("total-transactions")
       .out(jsonBody[Int])
       .summary("Get total transactions of a given address")
 
-  val getLatestTransactionInfo: BaseEndpoint[AddressLike, TransactionInfo] =
+  val getLatestTransactionInfo: BaseEndpoint[ApiAddress, TransactionInfo] =
     addressesLikeEndpoint.get
       .in("latest-transaction")
       .out(jsonBody[TransactionInfo])
       .summary("Get latest transaction information of a given address")
 
-  val addressMempoolTransactions: BaseEndpoint[AddressLike, ArraySeq[MempoolTransaction]] =
+  val addressMempoolTransactions: BaseEndpoint[ApiAddress, ArraySeq[MempoolTransaction]] =
     addressesLikeEndpoint.get
       .in("mempool")
       .in("transactions")
       .out(jsonBody[ArraySeq[MempoolTransaction]])
       .summary("List mempool transactions of a given address")
 
-  val getAddressBalance: BaseEndpoint[AddressLike, AddressBalance] =
+  val getAddressBalance: BaseEndpoint[ApiAddress, AddressBalance] =
     addressesLikeEndpoint.get
       .in("balance")
       .out(jsonBody[AddressBalance])
       .summary("Get address balance")
 
-  val listAddressTokens: BaseEndpoint[(AddressLike, Pagination), ArraySeq[TokenId]] =
+  val listAddressTokens: BaseEndpoint[(ApiAddress, Pagination), ArraySeq[TokenId]] =
     addressesLikeTokensEndpoint.get
       .out(jsonBody[ArraySeq[TokenId]])
       .in(paginator(limit = 100))
       .summary("List address tokens")
       .deprecated()
 
-  val getAddressTokenBalance: BaseEndpoint[(AddressLike, TokenId), AddressTokenBalance] =
+  val getAddressTokenBalance: BaseEndpoint[(ApiAddress, TokenId), AddressTokenBalance] =
     addressesLikeTokensEndpoint.get
       .in(path[TokenId]("token_id"))
       .in("balance")
@@ -130,7 +130,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .summary("Get address balance of given token")
 
   val listAddressTokensBalance
-      : BaseEndpoint[(AddressLike, Pagination), ArraySeq[AddressTokenBalance]] =
+      : BaseEndpoint[(ApiAddress, Pagination), ArraySeq[AddressTokenBalance]] =
     addressesLikeEndpoint.get
       .in("tokens-balance")
       .in(pagination)
@@ -138,7 +138,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .summary("Get address tokens with balance")
 
   val listAddressTokenTransactions
-      : BaseEndpoint[(AddressLike, TokenId, Pagination), ArraySeq[Transaction]] =
+      : BaseEndpoint[(ApiAddress, TokenId, Pagination), ArraySeq[Transaction]] =
     addressesLikeTokensEndpoint.get
       .in(path[TokenId]("token_id"))
       .in("transactions")
@@ -146,17 +146,17 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[Transaction]])
       .summary("List address tokens")
 
-  lazy val areAddressesActive: BaseEndpoint[ArraySeq[AddressLike], ArraySeq[Boolean]] =
+  lazy val areAddressesActive: BaseEndpoint[ArraySeq[ApiAddress], ArraySeq[Boolean]] =
     baseAddressesEndpoint
       .tag("Addresses")
       .in("used")
       .post
-      .in(arrayBody[AddressLike]("addresses", maxSizeAddresses))
+      .in(arrayBody[ApiAddress]("addresses", maxSizeAddresses))
       .out(jsonBody[ArraySeq[Boolean]])
       .summary("Are the addresses used (at least 1 transaction)")
 
   lazy val exportTransactionsCsvByAddress
-      : BaseEndpoint[(AddressLike, TimeInterval), (String, ReadStream[Buffer])] =
+      : BaseEndpoint[(ApiAddress, TimeInterval), (String, ReadStream[Buffer])] =
     addressesLikeEndpoint.get
       .in("export-transactions")
       .in("csv")
@@ -165,7 +165,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(streamTextBody(VertxStreams)(TextCsv()))
 
   val getAddressAmountHistory
-      : BaseEndpoint[(AddressLike, TimeInterval, IntervalType), AmountHistory] =
+      : BaseEndpoint[(ApiAddress, TimeInterval, IntervalType), AmountHistory] =
     addressesLikeEndpoint.get
       .in("amount-history")
       .in(timeIntervalQuery)
@@ -173,7 +173,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[AmountHistory])
       .deprecated()
 
-  val getPublicKey: BaseEndpoint[AddressLike, PublicKey] =
+  val getPublicKey: BaseEndpoint[ApiAddress, PublicKey] =
     addressesLikeEndpoint.get
       .in("public-key")
       .out(jsonBody[PublicKey])

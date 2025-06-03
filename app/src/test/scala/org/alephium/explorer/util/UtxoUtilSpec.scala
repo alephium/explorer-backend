@@ -25,6 +25,7 @@ import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.ConfigDefaults.groupSetting
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.api.model.{AssetOutput, ContractOutput, Output, Token}
+import org.alephium.explorer.config.Default.groupConfig
 import org.alephium.util.U256
 
 class UtxoUtilSpec extends AlephiumSpec {

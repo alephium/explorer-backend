@@ -25,11 +25,12 @@ import sttp.tapir.Schema
 
 import org.alephium.api.TapirSchemas._
 import org.alephium.api.UtilJson._
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.util.UtxoUtil
 import org.alephium.json.Json._
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TokenId, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 import org.alephium.util.AVector
 
@@ -49,7 +50,7 @@ final case class Transaction(
     scriptSignatures: ArraySeq[ByteString],
     coinbase: Boolean
 ) {
-  def toCsv(address: AddressLike, metadata: Map[TokenId, FungibleTokenMetadata]): String = {
+  def toCsv(address: ApiAddress, metadata: Map[TokenId, FungibleTokenMetadata]): String = {
     val dateTime      = Instant.ofEpochMilli(timestamp.millis)
     val fromAddresses = UtxoUtil.fromAddresses(inputs)
     val toAddresses =

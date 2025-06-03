@@ -32,7 +32,7 @@ import slick.jdbc.PostgresProfile
 import sttp.model.{Header, StatusCode}
 
 import org.alephium.api.ApiError
-import org.alephium.api.model.TimeInterval
+import org.alephium.api.model.{Address => ApiAddress, TimeInterval}
 import org.alephium.explorer._
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
@@ -41,6 +41,7 @@ import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
+import org.alephium.explorer.config.Default.groupConfig
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.service.{
   EmptyTokenService,
@@ -48,7 +49,7 @@ import org.alephium.explorer.service.{
   TransactionService
 }
 import org.alephium.protocol.PublicKey
-import org.alephium.protocol.model.{Address, AddressLike, TokenId}
+import org.alephium.protocol.model.{Address, TokenId}
 import org.alephium.protocol.vm.{LockupScript, UnlockScript}
 import org.alephium.serde._
 import org.alephium.util.{Duration, TimeStamp, U256}
@@ -103,7 +104,7 @@ class AddressServerSpec()
   }
 
   val transactionService = new EmptyTransactionService {
-    override def listMempoolTransactionsByAddress(address: AddressLike)(implicit
+    override def listMempoolTransactionsByAddress(address: ApiAddress)(implicit
         ec: ExecutionContext,
         dc: DatabaseConfig[PostgresProfile]
     ): Future[ArraySeq[MempoolTransaction]] = {
@@ -111,7 +112,7 @@ class AddressServerSpec()
     }
 
     override def getTransactionsByAddress(
-        address: AddressLike,
+        address: ApiAddress,
         pagination: Pagination
     )(implicit
         ec: ExecutionContext,
@@ -122,7 +123,7 @@ class AddressServerSpec()
     }
 
     override def hasAddressMoreTxsThan(
-        address: AddressLike,
+        address: ApiAddress,
         from: TimeStamp,
         to: TimeStamp,
         threshold: Int
@@ -130,7 +131,7 @@ class AddressServerSpec()
       Future.successful(addressHasMoreTxs)
 
     override def exportTransactionsByAddress(
-        address: AddressLike,
+        address: ApiAddress,
         from: TimeStamp,
         to: TimeStamp,
         batchSize: Int,
@@ -145,14 +146,14 @@ class AddressServerSpec()
       )
     }
 
-    override def getLatestTransactionInfoByAddress(address: AddressLike)(implicit
+    override def getLatestTransactionInfoByAddress(address: ApiAddress)(implicit
         ec: ExecutionContext,
         dc: DatabaseConfig[PostgresProfile]
     ): Future[Option[TransactionInfo]] =
       Future.successful(transactionInfo)
 
     override def getAmountHistory(
-        address: AddressLike,
+        address: ApiAddress,
         from: TimeStamp,
         to: TimeStamp,
         intervalType: IntervalType
@@ -163,7 +164,7 @@ class AddressServerSpec()
       Future.successful(amountHistory.map { case (ts, bi) => (bi, ts) })
 
     override def getUnlockScript(
-        address: AddressLike
+        address: ApiAddress
     )(implicit
         ec: ExecutionContext,
         dc: DatabaseConfig[PostgresProfile]
@@ -178,7 +179,7 @@ class AddressServerSpec()
   }
 
   val tokenService = new EmptyTokenService {
-    override def listAddressTokensWithBalance(address: AddressLike, pagination: Pagination)(implicit
+    override def listAddressTokensWithBalance(address: ApiAddress, pagination: Pagination)(implicit
         ec: ExecutionContext,
         dc: DatabaseConfig[PostgresProfile]
     ): Future[ArraySeq[(TokenId, U256, U256)]] =
@@ -426,7 +427,7 @@ class AddressServerSpec()
 
       val expected = s"""attachment;filename="$address-$from-$to.csv""""
       AddressServer.exportFileNameHeader(
-        Address.fromBase58(address).get,
+        ApiAddress.fromBase58(address).rightValue,
         TimeInterval(TimeStamp.unsafe(from), TimeStamp.unsafe(to))
       ) is expected
     }

@@ -16,16 +16,12 @@
 
 package org.alephium.explorer.persistence.model
 
-import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}
-import org.alephium.util.TimeStamp
+import org.alephium.api.model.{Address => ApiAddress}
+import org.alephium.protocol.config.GroupConfig
 
-final case class TokenTxPerAddressEntity(
-    address: Address,
-    grouplessAddress: Option[GrouplessAddress],
-    hash: TransactionId,
-    blockHash: BlockHash,
-    timestamp: TimeStamp,
-    txOrder: Int,
-    mainChain: Boolean,
-    token: TokenId
-)
+final case class GrouplessAddress(
+    lockupScript: ApiAddress.HalfDecodedLockupScript
+) {
+
+  def toBase58(implicit config: GroupConfig): String = ApiAddress(lockupScript).toBase58
+}

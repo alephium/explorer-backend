@@ -23,7 +23,7 @@ import akka.util.ByteString
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Arbitrary.arbitrary
 
-import org.alephium.api.model.{Val, ValAddress, ValByteVec}
+import org.alephium.api.model.{Address => ApiAddress, Val, ValAddress, ValByteVec}
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreApi._
@@ -41,6 +41,19 @@ import org.alephium.util.{AVector, TimeStamp}
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 // scalastyle:off number.of.methods
 object GenDBModel {
+
+  val grouplessAddressP2PKGen: Gen[GrouplessAddress] = for {
+    groupIndex <- groupIndexGen
+    lockup     <- GenCoreProtocol.p2pkLockupGen(groupIndex)
+  } yield GrouplessAddress(ApiAddress.HalfDecodedP2PK(lockup.publicKey))
+
+  val grouplessAddressP2HMPKGen: Gen[GrouplessAddress] = for {
+    groupIndex <- groupIndexGen
+    lockup     <- GenCoreProtocol.p2hmpkLockupGen(groupIndex)
+  } yield GrouplessAddress(ApiAddress.HalfDecodedP2HMPK(lockup.p2hmpkHash))
+
+  val grouplessAddressGen: Gen[GrouplessAddress] =
+    Gen.oneOf(grouplessAddressP2PKGen, grouplessAddressP2HMPKGen)
 
   val outputTypeGen: Gen[OutputEntity.OutputType] =
     Gen.oneOf(0, 1).map(OutputEntity.OutputType.unsafe)
@@ -72,8 +85,8 @@ object GenDBModel {
         hint = hint,
         key = key,
         amount = amount,
-        grouplessAddress = AddressUtil.convertToGrouplessAddress(address),
         address = address,
+        grouplessAddress = AddressUtil.convertToGrouplessAddress(address),
         tokens = tokens,
         mainChain = mainChain,
         lockTime = if (outputType == OutputEntity.Asset) lockTime else None,
@@ -303,7 +316,7 @@ object GenDBModel {
       token,
       amount,
       address,
-      Some(address),
+      AddressUtil.convertToGrouplessAddress(address),
       mainChain,
       lockTime,
       message,

@@ -22,10 +22,10 @@ import akka.util.ByteString
 import slick.jdbc.{GetResult, PositionedResult}
 
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.model.{OutputEntity, OutputEntityLike}
+import org.alephium.explorer.persistence.model.{GrouplessAddress, OutputEntity, OutputEntityLike}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, AddressLike, TransactionId}
+import org.alephium.protocol.model.{Address, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 object OutputsFromTxQR {
 
@@ -60,7 +60,7 @@ final case class OutputsFromTxQR(
     key: Hash,
     amount: U256,
     address: Address,
-    grouplessAddress: Option[AddressLike],
+    grouplessAddress: Option[GrouplessAddress],
     tokens: Option[ArraySeq[Token]],
     lockTime: Option[TimeStamp],
     message: Option[ByteString],

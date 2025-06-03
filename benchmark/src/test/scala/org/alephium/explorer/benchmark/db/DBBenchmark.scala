@@ -25,19 +25,20 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model.{IntervalType, Pagination}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
 import org.alephium.explorer.benchmark.db.state._
 import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.config.Default.groupConfig
 import org.alephium.explorer.persistence.dao.{BlockDao, TransactionDao}
 import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.OutputQueries._
 import org.alephium.explorer.persistence.queries.TransactionQueries
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.explorer.service.TransactionService
-import org.alephium.protocol.model.{Address, AddressLike}
 import org.alephium.util.{Duration, TimeStamp}
 
 /** Implements all JMH functions executing benchmarks on Postgres.
@@ -257,7 +258,7 @@ class DBBenchmark {
     val _ =
       state.db.runNow(
         TransactionQueries.areAddressesActiveAction(
-          state.next.map(address => AddressLike.from(address.lockupScript))
+          state.next.map(address => ApiAddress.from(address.lockupScript))
         ),
         requestTimeout
       )
@@ -270,7 +271,7 @@ class DBBenchmark {
     val _ =
       state.db.runNow(
         TransactionQueries.areAddressesActiveAction(
-          state.next.map(address => AddressLike.from(address.lockupScript))
+          state.next.map(address => ApiAddress.from(address.lockupScript))
         ),
         requestTimeout
       )
@@ -280,7 +281,7 @@ class DBBenchmark {
   def transactions_per_address_read_state(state: TransactionsPerAddressReadState): Unit = {
     val query =
       TransactionQueries.getTxHashesByAddressQueryTimeRanged(
-        address = Address.fromBase58(state.next).get,
+        address = ApiAddress.fromBase58(state.next).toOption.get,
         fromTime = TimeStamp.zero,
         toTime = TimeStamp.unsafe(Long.MaxValue),
         pagination = Pagination.unsafe(1, Int.MaxValue)

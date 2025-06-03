@@ -41,6 +41,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.model.AppState._
 import org.alephium.explorer.persistence.queries._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.explorer.util.AddressUtil
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
 import org.alephium.util.{Duration, TimeStamp, U256}
@@ -143,7 +144,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
         hashGen.sample.get,
         U256.One,
         address0,
-        Some(address0),
+        AddressUtil.convertToGrouplessAddress(address0),
         None,
         true,
         None,
@@ -211,7 +212,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       hashGen.sample.get,
       U256.One,
       address1,
-      Some(address1),
+      AddressUtil.convertToGrouplessAddress(address1),
       None,
       true,
       None,
@@ -343,7 +344,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
           hashGen.sample.get,
           U256.One,
           address0,
-          Some(address0),
+          AddressUtil.convertToGrouplessAddress(address0),
           None,
           true,
           None,

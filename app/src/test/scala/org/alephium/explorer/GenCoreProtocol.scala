@@ -19,6 +19,7 @@ package org.alephium.explorer
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 
+import org.alephium.crypto.{ED25519PublicKey, SecP256K1PublicKey, SecP256R1PublicKey}
 import org.alephium.explorer.GenCommon._
 import org.alephium.protocol.{ALPH, Hash, PrivateKey, PublicKey, SignatureSchema}
 import org.alephium.protocol.model._
@@ -34,6 +35,13 @@ import org.alephium.protocol.vm.{
 }
 import org.alephium.util.AVector
 
+@SuppressWarnings(
+  Array(
+    "org.wartremover.warts.JavaSerializable",
+    "org.wartremover.warts.Product",
+    "org.wartremover.warts.Serializable"
+  )
+)
 /** Generators for types supplied by Core `org.alephium.protocol` package */
 object GenCoreProtocol {
 
@@ -69,6 +77,16 @@ object GenCoreProtocol {
   def publicKeyGen(groupIndex: GroupIndex)(implicit groupSetting: GroupSetting): Gen[PublicKey] =
     keyPairGen(groupIndex)._2
 
+  def publicKeyLikeGen(): Gen[PublicKeyLike] = {
+    Gen
+      .oneOf(
+        Gen.const(()).map(_ => PublicKeyLike.SecP256K1(SecP256K1PublicKey.generate)),
+        Gen.const(()).map(_ => PublicKeyLike.SecP256R1(SecP256R1PublicKey.generate)),
+        Gen.const(()).map(_ => PublicKeyLike.ED25519(ED25519PublicKey.generate)),
+        Gen.const(()).map(_ => PublicKeyLike.WebAuthn(SecP256R1PublicKey.generate))
+      )
+  }
+
   def p2pkhLockupGen(
       groupIndex: GroupIndex
   )(implicit groupSetting: GroupSetting): Gen[LockupScript.P2PKH] =
@@ -85,9 +103,18 @@ object GenCoreProtocol {
       publicKey <- publicKeyGen(groupIndex).map(PublicKeyLike.SecP256K1(_))
     } yield LockupScript.p2pk(publicKey, publicKey.defaultGroup(groupSetting.groupConfig))
 
+  def p2hmpkLockupGen(
+      groupIndex: GroupIndex
+  ): Gen[LockupScript.P2HMPK] =
+    for {
+      numKeys   <- Gen.chooseNum(1, ALPH.MaxKeysInP2MPK)
+      keys      <- Gen.listOfN(numKeys, publicKeyLikeGen()).map(AVector.from)
+      threshold <- Gen.choose(1, keys.length)
+    } yield LockupScript.P2HMPK(keys, threshold, groupIndex).toOption.get
+
   def p2mpkhLockupGen(
       groupIndex: GroupIndex
-  )(implicit groupSetting: GroupSetting): Gen[LockupScript.Asset] =
+  )(implicit groupSetting: GroupSetting): Gen[LockupScript.P2MPKH] =
     for {
       numKeys   <- Gen.chooseNum(1, ALPH.MaxKeysInP2MPK)
       keys      <- Gen.listOfN(numKeys, publicKeyGen(groupIndex)).map(AVector.from)
@@ -96,7 +123,7 @@ object GenCoreProtocol {
 
   def p2mpkhLockupGen(n: Int, m: Int, groupIndex: GroupIndex)(implicit
       groupSetting: GroupSetting
-  ): Gen[LockupScript.Asset] = {
+  ): Gen[LockupScript.P2MPKH] = {
     assume(m <= n)
     for {
       publicKey0 <- publicKeyGen(groupIndex)
@@ -106,7 +133,7 @@ object GenCoreProtocol {
 
   def p2shLockupGen(
       groupIndex: GroupIndex
-  )(implicit groupSetting: GroupSetting): Gen[LockupScript.Asset] = {
+  )(implicit groupSetting: GroupSetting): Gen[LockupScript.P2SH] = {
     hashGen
       .retryUntil { hash =>
         ScriptHint.fromHash(hash).groupIndex(groupSetting.groupConfig).equals(groupIndex)
@@ -120,6 +147,7 @@ object GenCoreProtocol {
     Gen.oneOf(
       p2pkhLockupGen(groupIndex),
       p2mpkhLockupGen(groupIndex),
+      p2hmpkLockupGen(groupIndex),
       p2shLockupGen(groupIndex)
     )
   }
@@ -141,6 +169,7 @@ object GenCoreProtocol {
       p2pkhLockupGen(groupIndex),
       p2pkLockupGen(groupIndex),
       p2mpkhLockupGen(groupIndex),
+      p2hmpkLockupGen(groupIndex),
       p2shLockupGen(groupIndex),
       p2cLockupGen(groupIndex)
     )

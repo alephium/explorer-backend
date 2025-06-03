@@ -22,10 +22,10 @@ import akka.util.ByteString
 import slick.jdbc.{GetResult, PositionedResult}
 
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.model.InputEntityLike
+import org.alephium.explorer.persistence.model.{GrouplessAddress, InputEntityLike}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, AddressLike, TransactionId}
+import org.alephium.protocol.model.{Address, TransactionId}
 import org.alephium.util.U256
 
 object InputsQR {
@@ -51,7 +51,7 @@ object InputsQR {
         unlockScript = result.<<?,
         outputRefTxHash = result.<<?,
         outputRefAddress = result.<<?,
-        outputRefAddressLike = result.<<?,
+        outputRefGrouplessAddress = result.<<?,
         outputRefAmount = result.<<?,
         outputRefTokens = result.<<?,
         contractInput = result.<<
@@ -65,7 +65,7 @@ final case class InputsQR(
     unlockScript: Option[ByteString],
     outputRefTxHash: Option[TransactionId],
     outputRefAddress: Option[Address],
-    outputRefAddressLike: Option[AddressLike],
+    outputRefGrouplessAddress: Option[GrouplessAddress],
     outputRefAmount: Option[U256],
     outputRefTokens: Option[ArraySeq[Token]],
     contractInput: Boolean

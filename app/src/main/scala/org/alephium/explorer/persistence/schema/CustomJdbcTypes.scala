@@ -26,6 +26,7 @@ import slick.jdbc._
 import slick.jdbc.PostgresProfile._
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.api.model.Val
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
@@ -83,13 +84,25 @@ object CustomJdbcTypes {
 
   implicit val addressType: JdbcType[Address] = MappedJdbcType.base[Address, String](
     _.toBase58,
-    string => Address.fromBase58(string).get
+    string =>
+      Address.fromBase58(string) match {
+        case Right(address) => address
+        case Left(error) =>
+          throw new Exception(s"Unable to decode address from $string: $error")
+      }
   )
 
-  implicit val grouplessAddressType: JdbcType[AddressLike] =
-    MappedJdbcType.base[AddressLike, String](
+  implicit val grouplessAddressType: JdbcType[GrouplessAddress] =
+    MappedJdbcType.base[GrouplessAddress, String](
       _.toBase58,
-      string => AddressLike.fromBase58(string).get
+      string =>
+        ApiAddress.fromBase58(string) match {
+          case Right(ApiAddress(lockupScript: ApiAddress.HalfDecodedLockupScript)) =>
+            GrouplessAddress(lockupScript)
+          case Right(_) =>
+            throw new Exception(s"Expecting a groupless address, but got something else: ${string}")
+          case Left(error) => throw new Exception(s"Unable to decode address: ${error}")
+        }
     )
 
   implicit val addressContractType: JdbcType[Address.Contract] =
@@ -97,11 +110,11 @@ object CustomJdbcTypes {
       _.toBase58,
       string =>
         Address.fromBase58(string) match {
-          case Some(address: Address.Contract) => address
-          case Some(_: Address.Asset) =>
+          case Right(address: Address.Contract) => address
+          case Right(_: Address.Asset) =>
             throw new Exception(s"Expect contract address, but was asset address: $string")
-          case None =>
-            throw new Exception(s"Unable to decode address from $string")
+          case Left(error) =>
+            throw new Exception(s"Unable to decode address from $string: $error")
         }
     )
 

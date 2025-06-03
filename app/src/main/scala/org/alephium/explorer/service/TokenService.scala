@@ -24,16 +24,17 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.queries.ContractQueries._
 import org.alephium.explorer.persistence.queries.TokenQueries._
-import org.alephium.protocol.model.{Address, AddressLike, TokenId}
+import org.alephium.protocol.model.{Address, TokenId}
 import org.alephium.util.U256
 
 trait TokenService {
-  def getTokenBalance(address: AddressLike, token: TokenId)(implicit
+  def getTokenBalance(address: ApiAddress, token: TokenId)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[(U256, U256)]
@@ -69,17 +70,20 @@ trait TokenService {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[NFTCollectionMetadata]]
 
-  def listAddressTokens(address: AddressLike, pagination: Pagination)(implicit
+  def listAddressTokens(address: ApiAddress, pagination: Pagination)(implicit
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[TokenId]]
 
-  def listAddressTokenTransactions(address: AddressLike, token: TokenId, pagination: Pagination)(
-      implicit
+  def listAddressTokenTransactions(
+      address: ApiAddress,
+      token: TokenId,
+      pagination: Pagination
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]]
 
-  def listAddressTokensWithBalance(address: AddressLike, pagination: Pagination)(implicit
+  def listAddressTokensWithBalance(address: ApiAddress, pagination: Pagination)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[(TokenId, U256, U256)]]
@@ -112,7 +116,7 @@ trait TokenService {
 
 object TokenService extends TokenService with StrictLogging {
 
-  def getTokenBalance(address: AddressLike, token: TokenId)(implicit
+  def getTokenBalance(address: ApiAddress, token: TokenId)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[(U256, U256)] =
@@ -156,19 +160,22 @@ object TokenService extends TokenService with StrictLogging {
   ): Future[ArraySeq[NFTCollectionMetadata]] =
     run(listNFTCollectionMetadataQuery(addresses))
 
-  def listAddressTokens(address: AddressLike, pagination: Pagination)(implicit
+  def listAddressTokens(address: ApiAddress, pagination: Pagination)(implicit
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[TokenId]] =
     run(listAddressTokensAction(address, pagination))
 
-  def listAddressTokenTransactions(address: AddressLike, token: TokenId, pagination: Pagination)(
-      implicit
+  def listAddressTokenTransactions(
+      address: ApiAddress,
+      token: TokenId,
+      pagination: Pagination
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]] =
     run(getTokenTransactionsByAddress(address, token, pagination))
 
-  def listAddressTokensWithBalance(address: AddressLike, pagination: Pagination)(implicit
+  def listAddressTokensWithBalance(address: ApiAddress, pagination: Pagination)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[(TokenId, U256, U256)]] =

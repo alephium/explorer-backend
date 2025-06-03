@@ -22,9 +22,9 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.persistence.DBActionW
-import org.alephium.explorer.persistence.model.TransactionPerAddressEntity
+import org.alephium.explorer.persistence.model.{GrouplessAddress, TransactionPerAddressEntity}
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.TimeStamp
 
 object TransactionPerAddressSchema
@@ -32,8 +32,8 @@ object TransactionPerAddressSchema
 
   class TransactionPerAddresses(tag: Tag) extends Table[TransactionPerAddressEntity](tag, name) {
     def address: Rep[Address] = column[Address]("address")
-    def grouplessAddress: Rep[Option[AddressLike]] =
-      column[Option[AddressLike]]("groupless_address")
+    def grouplessAddress: Rep[Option[GrouplessAddress]] =
+      column[Option[GrouplessAddress]]("groupless_address")
     def txHash: Rep[TransactionId] = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
     def blockHash: Rep[BlockHash]  = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
     def timestamp: Rep[TimeStamp]  = column[TimeStamp]("block_timestamp")

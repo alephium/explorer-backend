@@ -22,19 +22,12 @@ import akka.util.ByteString
 import sttp.tapir.EndpointIO.Example
 
 import org.alephium.api.EndpointsExamples
-import org.alephium.api.model.{Amount, ValBool}
+import org.alephium.api.model.{Address => ApiAddress, Amount, ValBool}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.queries.ExplainResult
 import org.alephium.protocol.{ALPH, PublicKey}
 import org.alephium.protocol.mining.HashRate
-import org.alephium.protocol.model.{
-  Address,
-  AddressLike,
-  BlockHash,
-  ContractId,
-  GroupIndex,
-  TokenId
-}
+import org.alephium.protocol.model.{Address, BlockHash, ContractId, GroupIndex, TokenId}
 import org.alephium.util.{Hex, U256}
 
 /** Contains OpenAPI Examples.
@@ -63,12 +56,12 @@ object EndpointExamples extends EndpointsExamples {
 
   private val address1Str: String = "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n"
   private val address1: Address =
-    Address.fromBase58(address1Str).get
+    Address.fromBase58(address1Str).toOption.get
 
   private val address2: Address =
-    Address.fromBase58("22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM").get
+    Address.fromBase58("22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM").toOption.get
 
-  private val grouplessAddress: AddressLike = AddressLike.fromBase58(address1Str).get
+  private val grouplessAddress: ApiAddress = ApiAddress.fromBase58(address1Str).toOption.get
 
   private val contract =
     ContractId
@@ -79,7 +72,8 @@ object EndpointExamples extends EndpointsExamples {
     contract
   )
 
-  private val addressAsset: Address.Asset = Address.asset(address1.toBase58).get
+  private val addressAsset: Address.Asset =
+    Address.asset(address1.toBase58).toOption.get
 
   private val groupIndex1: GroupIndex = new GroupIndex(1)
   private val groupIndex2: GroupIndex = new GroupIndex(2)
@@ -366,7 +360,8 @@ object EndpointExamples extends EndpointsExamples {
 
   /** Examples
     */
-  implicit val grouplessAddressArray: List[Example[ArraySeq[AddressLike]]] =
+
+  implicit val grouplessAddressArray2: List[Example[ArraySeq[ApiAddress]]] =
     simpleExample(ArraySeq(grouplessAddress))
 
   implicit val blockEntryLiteExample: List[Example[BlockEntryLite]] =

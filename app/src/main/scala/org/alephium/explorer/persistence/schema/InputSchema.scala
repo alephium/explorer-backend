@@ -25,10 +25,10 @@ import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
 import org.alephium.explorer.api.model.{Token}
 import org.alephium.explorer.persistence.DBActionW
-import org.alephium.explorer.persistence.model.InputEntity
+import org.alephium.explorer.persistence.model.{GrouplessAddress, InputEntity}
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
@@ -46,8 +46,8 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
     def outputRefTxHash: Rep[Option[TransactionId]] =
       column[Option[TransactionId]]("output_ref_tx_hash")
     def outputRefAddress: Rep[Option[Address]] = column[Option[Address]]("output_ref_address")
-    def outputRefAddressLike: Rep[Option[AddressLike]] =
-      column[Option[AddressLike]]("output_ref_groupless_address")
+    def outputRefGrouplessAddress: Rep[Option[GrouplessAddress]] =
+      column[Option[GrouplessAddress]]("output_ref_groupless_address")
     def outputRefAmount: Rep[Option[U256]] =
       column[Option[U256]](
         "output_ref_amount",
@@ -78,7 +78,7 @@ object InputSchema extends SchemaMainChain[InputEntity]("inputs") {
         txOrder,
         outputRefTxHash,
         outputRefAddress,
-        outputRefAddressLike,
+        outputRefGrouplessAddress,
         outputRefAmount,
         outputRefTokens,
         contractInput
