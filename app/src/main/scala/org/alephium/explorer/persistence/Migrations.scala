@@ -94,7 +94,7 @@ object Migrations extends StrictLogging {
    */
   def migration4: DBActionAll[Unit] = DBIOAction.successful(())
 
-  private def addAddressLikeColumn(
+  private def addGrouplessAddressColumn(
       tableName: String,
       grouplessAddressColumn: String
   ): DBActionAll[Int] =
@@ -102,15 +102,15 @@ object Migrations extends StrictLogging {
 
   def migration5(implicit ec: ExecutionContext): DBActionAll[Unit] =
     for {
-      _ <- addAddressLikeColumn("outputs", "groupless_address")
-      _ <- addAddressLikeColumn("token_outputs", "groupless_address")
-      _ <- addAddressLikeColumn("token_tx_per_addresses", "groupless_address")
-      _ <- addAddressLikeColumn("transaction_per_addresses", "groupless_address")
-      _ <- addAddressLikeColumn("inputs", "output_ref_groupless_address")
+      _ <- addGrouplessAddressColumn("outputs", "groupless_address")
+      _ <- addGrouplessAddressColumn("token_outputs", "groupless_address")
+      _ <- addGrouplessAddressColumn("token_tx_per_addresses", "groupless_address")
+      _ <- addGrouplessAddressColumn("transaction_per_addresses", "groupless_address")
+      _ <- addGrouplessAddressColumn("inputs", "output_ref_groupless_address")
     } yield ()
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  def updateAddressLikeColumn(
+  def updateGrouplessAddressColumn(
       tableName: String,
       addressColumn: String,
       grouplessAddressColumn: String,
@@ -131,6 +131,8 @@ object Migrations extends StrictLogging {
         .map { addresses =>
           addresses.filter {
             case (Address.Asset(_: LockupScript.P2PK), _) =>
+              true
+            case (Address.Asset(_: LockupScript.P2HMPK), _) =>
               true
             case _ =>
               false
@@ -158,11 +160,15 @@ object Migrations extends StrictLogging {
         "Migrating `addresse_like`, might be slow if you have a lot of groupless addresses"
       )
       for {
-        _ <- updateAddressLikeColumn("outputs", "address", "groupless_address")
-        _ <- updateAddressLikeColumn("token_outputs", "address", "groupless_address")
-        _ <- updateAddressLikeColumn("token_tx_per_addresses", "address", "groupless_address")
-        _ <- updateAddressLikeColumn("transaction_per_addresses", "address", "groupless_address")
-        _ <- updateAddressLikeColumn(
+        _ <- updateGrouplessAddressColumn("outputs", "address", "groupless_address")
+        _ <- updateGrouplessAddressColumn("token_outputs", "address", "groupless_address")
+        _ <- updateGrouplessAddressColumn("token_tx_per_addresses", "address", "groupless_address")
+        _ <- updateGrouplessAddressColumn(
+          "transaction_per_addresses",
+          "address",
+          "groupless_address"
+        )
+        _ <- updateGrouplessAddressColumn(
           "inputs",
           "output_ref_address",
           "output_ref_groupless_address",
@@ -180,8 +186,8 @@ object Migrations extends StrictLogging {
     for {
       // Renamed and modified to `non_spent_output_groupless_covering_include_idx`
       _ <- sqlu"DROP INDEX IF EXISTS non_spent_output_group_covering_include_idx"
-      _ <- addAddressLikeColumn("uoutputs", "groupless_address")
-      _ <- addAddressLikeColumn("uinputs", "groupless_address")
+      _ <- addGrouplessAddressColumn("uoutputs", "groupless_address")
+      _ <- addGrouplessAddressColumn("uinputs", "groupless_address")
     } yield {
       ()
     }

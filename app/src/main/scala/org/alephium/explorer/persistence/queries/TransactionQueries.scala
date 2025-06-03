@@ -24,6 +24,7 @@ import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
@@ -36,7 +37,8 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.explorer.util.UtxoUtil
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
+import org.alephium.protocol.config.GroupConfig
+import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 // scalastyle:off number.of.methods
@@ -151,7 +153,7 @@ object TransactionQueries extends StrictLogging {
       .asAS[TxByAddressQR]
 
   def countAddressTransactions(
-      address: AddressLike
+      address: ApiAddress
   ): DBActionSR[Int] = {
     sql"""
       SELECT COUNT(*)
@@ -163,7 +165,7 @@ object TransactionQueries extends StrictLogging {
   }
 
   def getTxHashesByAddressQuery(
-      address: AddressLike,
+      address: ApiAddress,
       pagination: Pagination
   ): DBActionSR[TxByAddressQR] = {
     sql"""
@@ -201,7 +203,7 @@ object TransactionQueries extends StrictLogging {
     *   Paginated transactions
     */
   def getTxHashesByAddressesQuery(
-      addresses: ArraySeq[AddressLike],
+      addresses: ArraySeq[ApiAddress],
       fromTs: Option[TimeStamp],
       toTs: Option[TimeStamp],
       pagination: Pagination
@@ -268,7 +270,7 @@ object TransactionQueries extends StrictLogging {
     *   Maximum rows
     */
   def getTxHashesByAddressQueryTimeRanged(
-      address: AddressLike,
+      address: ApiAddress,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       pagination: Pagination
@@ -304,7 +306,7 @@ object TransactionQueries extends StrictLogging {
   }
 
   def getTransactionsByAddress(
-      address: AddressLike,
+      address: ApiAddress,
       pagination: Pagination
   )(implicit
       ec: ExecutionContext
@@ -316,7 +318,7 @@ object TransactionQueries extends StrictLogging {
   }
 
   def getTransactionsByAddresses(
-      addresses: ArraySeq[AddressLike],
+      addresses: ArraySeq[ApiAddress],
       fromTime: Option[TimeStamp],
       toTime: Option[TimeStamp],
       pagination: Pagination
@@ -330,7 +332,7 @@ object TransactionQueries extends StrictLogging {
   }
 
   def getLatestTransactionInfoByAddressAction(
-      address: AddressLike
+      address: ApiAddress
   )(implicit ec: ExecutionContext): DBActionR[Option[TxByAddressQR]] = {
     sql"""
       SELECT #${TxByAddressQR.selectFields}
@@ -344,7 +346,7 @@ object TransactionQueries extends StrictLogging {
   }
 
   def getTransactionsByAddressTimeRanged(
-      address: AddressLike,
+      address: ApiAddress,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       pagination: Pagination
@@ -356,7 +358,7 @@ object TransactionQueries extends StrictLogging {
   }
 
   def hasAddressMoreTxsThanQuery(
-      address: AddressLike,
+      address: ApiAddress,
       from: TimeStamp,
       to: TimeStamp,
       threshold: Int
@@ -375,7 +377,7 @@ object TransactionQueries extends StrictLogging {
   }
 
   def streamTxByAddressQR(
-      address: AddressLike,
+      address: ApiAddress,
       from: TimeStamp,
       to: TimeStamp
   ): StreamAction[TxByAddressQR] = {
@@ -412,7 +414,7 @@ object TransactionQueries extends StrictLogging {
    * LEAST and GREATEST are here to restrict to the `from` and `to` timestamp
    */
   def sumAddressOutputs(
-      address: AddressLike,
+      address: ApiAddress,
       from: TimeStamp,
       to: TimeStamp,
       intervalType: IntervalType
@@ -436,7 +438,7 @@ object TransactionQueries extends StrictLogging {
    * LEAST and GREATEST are here to restrict to the `from` and `to` timestamp
    */
   def sumAddressInputs(
-      address: AddressLike,
+      address: ApiAddress,
       from: TimeStamp,
       to: TimeStamp,
       intervalType: IntervalType
@@ -551,15 +553,15 @@ object TransactionQueries extends StrictLogging {
     }
 
   def areAddressesActiveAction(
-      addresses: ArraySeq[AddressLike]
-  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[Boolean]] = {
+      addresses: ArraySeq[ApiAddress]
+  )(implicit ec: ExecutionContext, groupConfig: GroupConfig): DBActionR[ArraySeq[Boolean]] = {
     filterExistingAddresses(addresses.toSet) map { existing =>
       addresses.map(address => existing.exists(a => UtxoUtil.addressEqual(a, address)))
     }
   }
 
   /** Filters input addresses that exist in DB */
-  def filterExistingAddresses(addresses: Set[AddressLike]): DBActionR[ArraySeq[Address]] =
+  def filterExistingAddresses(addresses: Set[ApiAddress]): DBActionR[ArraySeq[Address]] =
     if (addresses.isEmpty) {
       DBIO.successful(ArraySeq.empty)
     } else {
@@ -583,7 +585,7 @@ object TransactionQueries extends StrictLogging {
     }
 
   def getBalanceAction(
-      address: AddressLike,
+      address: ApiAddress,
       latestFinalizedTimestamp: TimeStamp
   )(implicit ec: ExecutionContext): DBActionR[(U256, U256)] =
     getBalanceUntilLockTime(

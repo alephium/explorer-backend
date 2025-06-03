@@ -24,6 +24,7 @@ import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.DBRunner._
@@ -31,7 +32,7 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.MempoolQueries._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
-import org.alephium.protocol.model.{AddressLike, TransactionId}
+import org.alephium.protocol.model.TransactionId
 
 trait MempoolDao {
 
@@ -45,7 +46,7 @@ trait MempoolDao {
       databaseConfig: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[MempoolTransaction]]
 
-  def listByAddress(address: AddressLike)(implicit
+  def listByAddress(address: ApiAddress)(implicit
       executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[MempoolTransaction]]
@@ -124,7 +125,7 @@ object MempoolDao extends MempoolDao {
       }
     })
   }
-  def listByAddress(address: AddressLike)(implicit
+  def listByAddress(address: ApiAddress)(implicit
       executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[MempoolTransaction]] = {

@@ -23,7 +23,6 @@ import sttp.tapir.generic.auto._
 
 import org.alephium.api.Endpoints.jsonBody
 import org.alephium.explorer.api.EndpointExamples._
-import org.alephium.explorer.api.Schemas.tokenIdSchema
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.{Address, TokenId}
 

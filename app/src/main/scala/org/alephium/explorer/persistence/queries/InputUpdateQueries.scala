@@ -25,9 +25,10 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
+import org.alephium.explorer.persistence.model.GrouplessAddress
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.protocol.model.{Address, AddressLike, BlockHash, TransactionId}
+import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util._
 
 object InputUpdateQueries {
@@ -35,7 +36,7 @@ object InputUpdateQueries {
   private type UpdateReturn =
     (
         Address,
-        Option[AddressLike],
+        Option[GrouplessAddress],
         Option[ArraySeq[Token]],
         TransactionId,
         BlockHash,

@@ -23,10 +23,11 @@ import scala.collection.immutable.ArraySeq
 import akka.util.ByteString
 import slick.jdbc.{PositionedParameters, SetParameter}
 
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.api.model.Val
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.model.{InterfaceIdEntity, OutputEntity}
+import org.alephium.explorer.persistence.model.{GrouplessAddress, InterfaceIdEntity, OutputEntity}
 import org.alephium.json.Json._
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model._
@@ -111,8 +112,13 @@ object CustomSetParameter {
       params setString input.toBase58
   }
 
-  implicit object AddressLikeSetParameter extends SetParameter[AddressLike] {
-    override def apply(input: AddressLike, params: PositionedParameters): Unit =
+  implicit object ApiAddressSetParameter extends SetParameter[ApiAddress] {
+    override def apply(input: ApiAddress, params: PositionedParameters): Unit =
+      params setString input.toBase58
+  }
+
+  implicit object GrouplessAddressSetParameter extends SetParameter[GrouplessAddress] {
+    override def apply(input: GrouplessAddress, params: PositionedParameters): Unit =
       params setString input.toBase58
   }
 
@@ -127,11 +133,23 @@ object CustomSetParameter {
       }
   }
 
-  implicit object OptionAddressLikeSetParameter extends SetParameter[Option[AddressLike]] {
-    override def apply(option: Option[AddressLike], params: PositionedParameters): Unit =
+  implicit object OptionApiAddressSetParameter extends SetParameter[Option[ApiAddress]] {
+    override def apply(option: Option[ApiAddress], params: PositionedParameters): Unit =
       option match {
         case Some(address) =>
-          AddressLikeSetParameter(address, params)
+          ApiAddressSetParameter(address, params)
+
+        case None =>
+          params setStringOption None
+      }
+  }
+
+  implicit object OptionGrouplessAddressSetParameter
+      extends SetParameter[Option[GrouplessAddress]] {
+    override def apply(option: Option[GrouplessAddress], params: PositionedParameters): Unit =
+      option match {
+        case Some(address) =>
+          GrouplessAddressSetParameter(address, params)
 
         case None =>
           params setStringOption None

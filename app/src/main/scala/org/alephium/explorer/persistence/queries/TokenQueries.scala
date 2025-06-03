@@ -24,6 +24,7 @@ import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model.TokenInfoEntity
@@ -31,12 +32,12 @@ import org.alephium.explorer.persistence.queries.result.TxByTokenQR
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.{Address, AddressLike, TokenId}
+import org.alephium.protocol.model.{Address, TokenId}
 import org.alephium.util.{TimeStamp, U256}
 
 object TokenQueries extends StrictLogging {
 
-  def getTokenBalanceAction(address: AddressLike, token: TokenId)(implicit
+  def getTokenBalanceAction(address: ApiAddress, token: TokenId)(implicit
       ec: ExecutionContext
   ): DBActionR[(U256, U256)] =
     getTokenBalanceUntilLockTime(
@@ -47,7 +48,7 @@ object TokenQueries extends StrictLogging {
       (total.getOrElse(U256.Zero), locked.getOrElse(U256.Zero))
     }
 
-  def getTokenBalanceUntilLockTime(address: AddressLike, token: TokenId, lockTime: TimeStamp)(
+  def getTokenBalanceUntilLockTime(address: ApiAddress, token: TokenId, lockTime: TimeStamp)(
       implicit ec: ExecutionContext
   ): DBActionR[(Option[U256], Option[U256])] =
     sql"""
@@ -127,7 +128,10 @@ object TokenQueries extends StrictLogging {
       .asAS[TxByTokenQR]
   }
 
-  def listAddressTokensAction(address: AddressLike, pagination: Pagination): DBActionSR[TokenId] =
+  def listAddressTokensAction(
+      address: ApiAddress,
+      pagination: Pagination
+  ): DBActionSR[TokenId] =
     sql"""
       SELECT DISTINCT token
       FROM token_tx_per_addresses
@@ -137,8 +141,12 @@ object TokenQueries extends StrictLogging {
       .paginate(pagination)
       .asAS[TokenId]
 
-  def getTokenTransactionsByAddress(address: AddressLike, token: TokenId, pagination: Pagination)(
-      implicit ec: ExecutionContext
+  def getTokenTransactionsByAddress(
+      address: ApiAddress,
+      token: TokenId,
+      pagination: Pagination
+  )(implicit
+      ec: ExecutionContext
   ): DBActionR[ArraySeq[Transaction]] = {
     for {
       txHashesTs <- getTokenTxHashesByAddressQuery(address, token, pagination)
@@ -147,7 +155,7 @@ object TokenQueries extends StrictLogging {
   }
 
   def getTokenTxHashesByAddressQuery(
-      address: AddressLike,
+      address: ApiAddress,
       token: TokenId,
       pagination: Pagination
   ): DBActionSR[TxByTokenQR] = {
@@ -163,7 +171,7 @@ object TokenQueries extends StrictLogging {
       .asAS[TxByTokenQR]
   }
 
-  def listAddressTokensWithBalanceAction(address: AddressLike, pagination: Pagination)(implicit
+  def listAddressTokensWithBalanceAction(address: ApiAddress, pagination: Pagination)(implicit
       ec: ExecutionContext
   ): DBActionSR[(TokenId, U256, U256)] =
     listAddressTokensWithBalanceUntilLockTime(address, TimeStamp.now(), pagination).map(_.map {
@@ -172,7 +180,7 @@ object TokenQueries extends StrictLogging {
     })
 
   def listAddressTokensWithBalanceUntilLockTime(
-      address: AddressLike,
+      address: ApiAddress,
       lockTime: TimeStamp,
       pagination: Pagination
   ): DBActionSR[(TokenId, Option[U256], Option[U256])] =

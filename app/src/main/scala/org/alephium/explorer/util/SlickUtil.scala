@@ -27,10 +27,9 @@ import slick.jdbc._
 import slick.jdbc.PostgresProfile.api._
 import slick.sql._
 
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DBActionR, DBActionSR}
-import org.alephium.protocol.model.{Address, AddressLike}
-import org.alephium.protocol.vm.LockupScript
 
 /** Convenience functions for Slick */
 object SlickUtil {
@@ -154,12 +153,12 @@ object SlickUtil {
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def addressColumn(
-      address: AddressLike,
+      address: ApiAddress,
       full: String = "address",
       half: String = "groupless_address"
   ): String = {
-    address.lockupScriptResult match {
-      case LockupScript.HalfDecodedP2PK(_) =>
+    address.lockupScript match {
+      case _: ApiAddress.HalfDecodedLockupScript =>
         half
       case _ =>
         full
@@ -167,14 +166,14 @@ object SlickUtil {
   }
 
   def splitAddresses(
-      addresses: ArraySeq[AddressLike]
-  ): (ArraySeq[Address], ArraySeq[AddressLike]) = {
+      addresses: ArraySeq[ApiAddress]
+  ): (ArraySeq[ApiAddress], ArraySeq[ApiAddress]) = {
     addresses.partitionMap { address =>
-      address.lockupScriptResult match {
-        case LockupScript.HalfDecodedP2PK(_) =>
-          Right(address)
-        case LockupScript.CompleteLockupScript(lockupScript) =>
-          Left(Address.from(lockupScript))
+      address.lockupScript match {
+        case lockupScript: ApiAddress.HalfDecodedLockupScript =>
+          Right(ApiAddress(lockupScript))
+        case ApiAddress.CompleteLockupScript(lockupScript) =>
+          Left(ApiAddress.from(lockupScript))
       }
     }
   }

@@ -23,6 +23,7 @@ import scala.collection.immutable.ArraySeq
 import akka.util.ByteString
 import slick.jdbc.{GetResult, PositionedResult}
 
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.api.model.Val
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
@@ -139,31 +140,50 @@ object CustomGetResult {
   implicit val hashGetResult: GetResult[Hash] =
     (result: PositionedResult) => Hash.unsafe(ByteString.fromArrayUnsafe(result.nextBytes()))
 
-  implicit val addressGetResult: GetResult[Address] =
-    (result: PositionedResult) => Address.fromBase58(result.nextString()).get
+  private def getAddressFromString(string: String): Address =
+    Address.fromBase58(string) match {
+      case Right(address) => address
+      case Left(error)    => throw new Exception(s"Unable to decode address: ${error}")
+    }
 
-  implicit val grouplessAddressGetResult: GetResult[AddressLike] =
-    (result: PositionedResult) => AddressLike.fromBase58(result.nextString()).get
+  private def getGrouplessAddressFromString(string: String): GrouplessAddress =
+    ApiAddress.fromBase58(string) match {
+      case Right(ApiAddress(lockupScript: ApiAddress.HalfDecodedLockupScript)) =>
+        GrouplessAddress(lockupScript)
+      case Right(_) =>
+        throw new Exception(s"Expecting a groupless address, but got something else: ${string}")
+      case Left(error) => throw new Exception(s"Unable to decode address: ${error}")
+    }
+
+  implicit val addressGetResult: GetResult[Address] =
+    (result: PositionedResult) => getAddressFromString(result.nextString())
+
+  implicit val grouplessAddressGetResult: GetResult[GrouplessAddress] =
+    (result: PositionedResult) => getGrouplessAddressFromString(result.nextString())
 
   val addressContractGetResult: GetResult[Address.Contract] =
     (result: PositionedResult) => {
       val string = result.nextString()
       Address.fromBase58(string) match {
-        case Some(address: Address.Contract) => address
-        case Some(_: Address.Asset) =>
+        case Right(address: Address.Contract) => address
+        case Right(_: Address.Asset) =>
           throw new Exception(s"Expect contract address, but was asset address: $string")
-        case None =>
-          throw new Exception(s"Unable to decode address from $string")
+        case Left(error) =>
+          throw new Exception(s"Unable to decode address from $string: $error")
       }
     }
 
   implicit val optionAddressGetResult: GetResult[Option[Address]] =
     (result: PositionedResult) =>
-      result.nextStringOption().map(string => Address.fromBase58(string).get)
+      result
+        .nextStringOption()
+        .map(getAddressFromString)
 
-  implicit val optionAddressLikeGetResult: GetResult[Option[AddressLike]] =
+  implicit val optionGrouplessAddressGetResult: GetResult[Option[GrouplessAddress]] =
     (result: PositionedResult) =>
-      result.nextStringOption().map(string => AddressLike.fromBase58(string).get)
+      result
+        .nextStringOption()
+        .map(getGrouplessAddressFromString)
 
   implicit val u256GetResult: GetResult[U256] =
     (result: PositionedResult) => {
@@ -213,7 +233,7 @@ object CustomGetResult {
         txOrder = result.<<,
         outputRefTxHash = result.<<?,
         outputRefAddress = result.<<?,
-        outputRefAddressLike = result.<<?,
+        outputRefGrouplessAddress = result.<<?,
         outputRefAmount = result.<<?,
         outputRefTokens = result.<<?,
         contractInput = result.<<

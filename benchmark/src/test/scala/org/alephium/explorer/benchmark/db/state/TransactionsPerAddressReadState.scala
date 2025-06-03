@@ -63,7 +63,7 @@ class TransactionsPerAddressReadState(
     (0 to transactionsPerAddress) flatMap { timeStamp =>
       val transactionsPerDayGen =
         genTransactionPerAddressEntity(
-          addressGen = Gen.const(Address.fromBase58(address).get),
+          addressGen = Gen.const(Address.fromBase58(address).toOption.get),
           timestampGen = Gen.const(TimeStamp.unsafe(timeStamp.toLong))
         )
 

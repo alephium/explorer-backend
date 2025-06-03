@@ -24,6 +24,7 @@ import slick.dbio.DBIOAction
 import slick.jdbc._
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, InputsQR}
@@ -31,7 +32,7 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.{AddressLike, BlockHash, TransactionId}
+import org.alephium.protocol.model.{BlockHash, TransactionId}
 
 object InputQueries {
 
@@ -75,7 +76,7 @@ object InputQueries {
             params >> input.txOrder
             params >> input.outputRefTxHash
             params >> input.outputRefAddress
-            params >> input.outputRefAddressLike
+            params >> input.outputRefGrouplessAddress
             params >> input.outputRefAmount
             params >> input.contractInput
           }
@@ -153,7 +154,7 @@ object InputQueries {
         ORDER BY block_timestamp #${if (ascendingOrder) "" else "DESC"}
     """.asASE[InputEntity](inputGetResult)
 
-  def getUnlockScript(address: AddressLike)(implicit
+  def getUnlockScript(address: ApiAddress)(implicit
       ec: ExecutionContext
   ): DBActionR[Option[ByteString]] = {
     sql"""

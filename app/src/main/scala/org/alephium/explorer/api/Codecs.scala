@@ -23,22 +23,22 @@ import sttp.tapir.Codec.PlainCodec
 import upickle.core.Abort
 
 import org.alephium.api.TapirCodecs
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.config.Default
 import org.alephium.json.Json._
 import org.alephium.protocol.config.GroupConfig
-import org.alephium.protocol.model.AddressLike
 
 object Codecs extends TapirCodecs {
 
   implicit val groupConfig: GroupConfig = Default.groupConfig
 
-  implicit val grouplessAddressRW: ReadWriter[AddressLike] = readwriter[String].bimap(
+  implicit val grouplessAddressRW: ReadWriter[ApiAddress] = readwriter[String].bimap(
     _.toBase58,
-    input => AddressLike.fromBase58(input).getOrElse(throw Abort(s"Cannot parse address: $input"))
+    input => ApiAddress.fromBase58(input).getOrElse(throw Abort(s"Cannot parse Address: $input"))
   )
 
-  implicit val explorerAddressLikeTapirCodec: PlainCodec[AddressLike] = fromJson[AddressLike]
+  implicit val explorerAddressTapirCodec: PlainCodec[ApiAddress] = fromJson[ApiAddress]
 
   @SuppressWarnings(
     Array(

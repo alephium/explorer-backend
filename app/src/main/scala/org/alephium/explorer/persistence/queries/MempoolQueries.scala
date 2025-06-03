@@ -22,13 +22,14 @@ import slick.dbio.DBIOAction
 import slick.jdbc.{PositionedParameters, SetParameter, SQLActionBuilder}
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.{AddressLike, TransactionId}
+import org.alephium.protocol.model.TransactionId
 
 object MempoolQueries {
 
@@ -56,7 +57,7 @@ object MempoolQueries {
       .asASE[MempoolTransactionEntity](mempoolTransactionGetResult)
   }
 
-  def listUTXHashesByAddress(address: AddressLike): DBActionSR[TransactionId] = {
+  def listUTXHashesByAddress(address: ApiAddress): DBActionSR[TransactionId] = {
     sql"""
       SELECT tx_hash
       FROM uinputs

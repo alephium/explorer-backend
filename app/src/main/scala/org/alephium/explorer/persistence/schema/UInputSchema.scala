@@ -20,10 +20,10 @@ import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
-import org.alephium.explorer.persistence.model.UInputEntity
+import org.alephium.explorer.persistence.model.{GrouplessAddress, UInputEntity}
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, AddressLike, TransactionId}
+import org.alephium.protocol.model.{Address, TransactionId}
 
 object UInputSchema extends Schema[UInputEntity]("uinputs") {
 
@@ -33,8 +33,8 @@ object UInputSchema extends Schema[UInputEntity]("uinputs") {
     def outputRefKey: Rep[Hash]               = column[Hash]("output_ref_key", O.SqlType("BYTEA"))
     def unlockScript: Rep[Option[ByteString]] = column[Option[ByteString]]("unlock_script")
     def address: Rep[Option[Address]]         = column[Option[Address]]("address")
-    def grouplessAddress: Rep[Option[AddressLike]] =
-      column[Option[AddressLike]]("groupless_address")
+    def grouplessAddress: Rep[Option[GrouplessAddress]] =
+      column[Option[GrouplessAddress]]("groupless_address")
     def uinputOrder: Rep[Int] = column[Int]("uinput_order")
 
     def pk: PrimaryKey = primaryKey("uinputs_pk", (outputRefKey, txHash))

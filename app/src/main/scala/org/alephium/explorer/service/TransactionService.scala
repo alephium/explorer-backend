@@ -29,13 +29,15 @@ import io.vertx.core.buffer.Buffer
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.{MempoolDao, TransactionDao}
 import org.alephium.explorer.persistence.queries.{InputQueries, TokenQueries}
 import org.alephium.explorer.persistence.queries.TransactionQueries._
-import org.alephium.protocol.model.{AddressLike, TokenId, TransactionId}
+import org.alephium.protocol.config.GroupConfig
+import org.alephium.protocol.model.{TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 trait TransactionService {
@@ -46,7 +48,7 @@ trait TransactionService {
   ): Future[Option[TransactionLike]]
 
   def getTransactionsByAddress(
-      address: AddressLike,
+      address: ApiAddress,
       pagination: Pagination
   )(implicit
       ec: ExecutionContext,
@@ -54,7 +56,7 @@ trait TransactionService {
   ): Future[ArraySeq[Transaction]]
 
   def getTransactionsByAddressTimeRanged(
-      address: AddressLike,
+      address: ApiAddress,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       pagination: Pagination
@@ -63,13 +65,13 @@ trait TransactionService {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]]
 
-  def getLatestTransactionInfoByAddress(address: AddressLike)(implicit
+  def getLatestTransactionInfoByAddress(address: ApiAddress)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Option[TransactionInfo]]
 
   def getTransactionsByAddresses(
-      addresses: ArraySeq[AddressLike],
+      addresses: ArraySeq[ApiAddress],
       fromTime: Option[TimeStamp],
       toTime: Option[TimeStamp],
       pagination: Pagination
@@ -78,43 +80,51 @@ trait TransactionService {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Transaction]]
 
-  def listMempoolTransactionsByAddress(address: AddressLike)(implicit
+  def listMempoolTransactionsByAddress(address: ApiAddress)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[MempoolTransaction]]
 
   def getTransactionsNumberByAddress(
-      address: AddressLike
+      address: ApiAddress
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int]
 
   def getBalance(
-      address: AddressLike,
+      address: ApiAddress,
       latestFinalizedBlock: TimeStamp
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)]
 
   def getTotalNumber()(implicit cache: TransactionCache): Int
 
   def areAddressesActive(
-      addresses: ArraySeq[AddressLike]
-  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]]
+      addresses: ArraySeq[ApiAddress]
+  )(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      groupConfig: GroupConfig
+  ): Future[ArraySeq[Boolean]]
 
   def listMempoolTransactions(pagination: Pagination)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[MempoolTransaction]]
 
-  def hasAddressMoreTxsThan(address: AddressLike, from: TimeStamp, to: TimeStamp, threshold: Int)(
-      implicit
+  def hasAddressMoreTxsThan(
+      address: ApiAddress,
+      from: TimeStamp,
+      to: TimeStamp,
+      threshold: Int
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Boolean]
 
   def getUnlockScript(
-      address: AddressLike
+      address: ApiAddress
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Option[ByteString]]
 
   def exportTransactionsByAddress(
-      address: AddressLike,
+      address: ApiAddress,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       batchSize: Int,
@@ -122,7 +132,7 @@ trait TransactionService {
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer]
 
   def getAmountHistory(
-      address: AddressLike,
+      address: ApiAddress,
       from: TimeStamp,
       to: TimeStamp,
       intervalType: IntervalType
@@ -144,7 +154,7 @@ object TransactionService extends TransactionService {
     }
 
   def getTransactionsByAddress(
-      address: AddressLike,
+      address: ApiAddress,
       pagination: Pagination
   )(implicit
       ec: ExecutionContext,
@@ -153,7 +163,7 @@ object TransactionService extends TransactionService {
     TransactionDao.getByAddress(address, pagination)
 
   def getTransactionsByAddressTimeRanged(
-      address: AddressLike,
+      address: ApiAddress,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       pagination: Pagination
@@ -163,14 +173,14 @@ object TransactionService extends TransactionService {
   ): Future[ArraySeq[Transaction]] =
     TransactionDao.getByAddressTimeRanged(address, fromTime, toTime, pagination)
 
-  def getLatestTransactionInfoByAddress(address: AddressLike)(implicit
+  def getLatestTransactionInfoByAddress(address: ApiAddress)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Option[TransactionInfo]] =
     TransactionDao.getLatestTransactionInfoByAddress(address)
 
   def getTransactionsByAddresses(
-      addresses: ArraySeq[AddressLike],
+      addresses: ArraySeq[ApiAddress],
       fromTime: Option[TimeStamp],
       toTime: Option[TimeStamp],
       pagination: Pagination
@@ -180,7 +190,7 @@ object TransactionService extends TransactionService {
   ): Future[ArraySeq[Transaction]] =
     TransactionDao.getByAddresses(addresses, fromTime, toTime, pagination)
 
-  def listMempoolTransactionsByAddress(address: AddressLike)(implicit
+  def listMempoolTransactionsByAddress(address: ApiAddress)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[MempoolTransaction]] = {
@@ -188,12 +198,12 @@ object TransactionService extends TransactionService {
   }
 
   def getTransactionsNumberByAddress(
-      address: AddressLike
+      address: ApiAddress
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int] =
     TransactionDao.getNumberByAddress(address)
 
   def getBalance(
-      address: AddressLike,
+      address: ApiAddress,
       latestFinalizedBlock: TimeStamp
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[(U256, U256)] =
     TransactionDao.getBalance(address, latestFinalizedBlock)
@@ -206,22 +216,30 @@ object TransactionService extends TransactionService {
   }
 
   def areAddressesActive(
-      addresses: ArraySeq[AddressLike]
-  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[ArraySeq[Boolean]] =
+      addresses: ArraySeq[ApiAddress]
+  )(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      groupConfig: GroupConfig
+  ): Future[ArraySeq[Boolean]] =
     TransactionDao.areAddressesActive(addresses)
 
   def getTotalNumber()(implicit cache: TransactionCache): Int =
     cache.getMainChainTxnCount()
 
-  def hasAddressMoreTxsThan(address: AddressLike, from: TimeStamp, to: TimeStamp, threshold: Int)(
-      implicit
+  def hasAddressMoreTxsThan(
+      address: ApiAddress,
+      from: TimeStamp,
+      to: TimeStamp,
+      threshold: Int
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Boolean] = {
     run(hasAddressMoreTxsThanQuery(address, from, to, threshold))
   }
   def exportTransactionsByAddress(
-      address: AddressLike,
+      address: ApiAddress,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       batchSize: Int,
@@ -235,7 +253,7 @@ object TransactionService extends TransactionService {
 
   }
 
-  def getUnlockScript(address: AddressLike)(implicit
+  def getUnlockScript(address: ApiAddress)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Option[ByteString]] = {
@@ -243,7 +261,7 @@ object TransactionService extends TransactionService {
   }
 
   def getAmountHistory(
-      address: AddressLike,
+      address: ApiAddress,
       from: TimeStamp,
       to: TimeStamp,
       intervalType: IntervalType
@@ -301,7 +319,7 @@ object TransactionService extends TransactionService {
   }
 
   private def transactionSource(
-      address: AddressLike,
+      address: ApiAddress,
       from: TimeStamp,
       to: TimeStamp,
       batchSize: Int,
@@ -347,7 +365,7 @@ object TransactionService extends TransactionService {
   }
 
   def transactionsFlowable(
-      address: AddressLike,
+      address: ApiAddress,
       source: Flowable[(ArraySeq[Transaction], Map[TokenId, FungibleTokenMetadata])]
   ): Flowable[Buffer] = {
     bufferFlowable {

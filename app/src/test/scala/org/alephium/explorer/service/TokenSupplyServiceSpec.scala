@@ -158,7 +158,8 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     implicit val blockCache: BlockCache = TestBlockCache()(gs, executionContext, databaseConfig)
 
-    val genesisAddress = Address.fromBase58("122uvHwwcaWoXR1ryub9VK1yh2CZvYCqXxzsYDHRb2jYB").get
+    val genesisAddress =
+      Address.fromBase58("122uvHwwcaWoXR1ryub9VK1yh2CZvYCqXxzsYDHRb2jYB").rightValue
 
     lazy val genesisBlock = {
       val lockTime =
@@ -228,7 +229,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
           .fromBase58(
             "X4TqZeAizjDV8yt7XzxDVLywdzmJvLALtdAnjAERtCY3TPkyPXt4A5fxvXAX7UucXPpSYF7amNysNiniqb98vQ5rs9gh12MDXhsAf5kWmbmjXDygxV9AboSj8QR7QK8duaKAkZ"
           )
-          .get
+          .rightValue
       block.copy(
         timestamp = timestamp,
         transactions = block.transactions.map(_.copy(timestamp = timestamp)),
