@@ -34,7 +34,7 @@ import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.config.Default
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries.InputUpdateQueries
+import org.alephium.explorer.persistence.queries.InputQueries
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.explorer.service.BlockFlowClient
@@ -110,8 +110,8 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
   "Recreate issue #162 - not throw exception when inserting a big block" in new Fixture {
     using(Source.fromResource("big_block.json")(Codec.UTF8)) { source =>
       val rawBlock   = source.getLines().mkString
-      val blockEntry = read[model.BlockEntry](rawBlock)
-      val block      = BlockFlowClient.blockProtocolToEntity(blockEntry)
+      val blockEntry = read[model.RichBlockAndEvents](rawBlock)
+      val block      = BlockFlowClient.blockProtocolToEntity(blockEntry.block)
       BlockDao.insert(block).futureValue is ()
     }
   }
@@ -234,7 +234,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
       "there are no persisted outputs" in new Fixture {
         forAll(Gen.listOf(inputEntityGen())) { _ =>
           // No persisted outputs so expect inputs to persist nothing
-          run(InputUpdateQueries.updateInputs()).futureValue is ()
+          // run(InputUpdateQueries.updateInputs()).futureValue is ()
           run(TransactionPerAddressSchema.table.result).futureValue is Seq.empty
         }
       }
@@ -251,8 +251,8 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
           // insert outputs
           run(OutputSchema.table ++= outputs).futureValue should contain(outputs.size)
           // insert inputs
-          run(InputSchema.table ++= inputs).futureValue
-          run(InputUpdateQueries.updateInputs()).futureValue is ()
+          run(InputQueries.insertInputs(inputs)).futureValue
+          // run(InputUpdateQueries.updateInputs()).futureValue is ()
 
           // expected rows in table TransactionPerAddressSchema
           val expected     = toTransactionPerAddressEntities(inputOutputs)
@@ -268,7 +268,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
     implicit val groupConfig: GroupConfig = Default.groupConfig
     implicit val blockCache: BlockCache   = TestBlockCache()
 
-    val blockflow: Seq[Seq[model.BlockEntry]] =
+    val blockflow: Seq[Seq[model.RichBlockEntry]] =
       blockFlowGen(maxChainSize = 5, startTimestamp = TimeStamp.now()).sample.get
     val blockEntitiesPerChain: Seq[Seq[BlockEntity]] =
       blockflow.map(_.map(BlockFlowClient.blockProtocolToEntity))

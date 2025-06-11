@@ -76,7 +76,7 @@ trait ExplorerSpec
 
   val txLimit = Pagination.defaultLimit
 
-  val blockflow: ArraySeq[ArraySeq[model.BlockEntry]] =
+  val blockflow: ArraySeq[ArraySeq[model.RichBlockEntry]] =
     blockFlowGen(
       maxChainSize = 5,
       startTimestamp = TimeStamp.now().minusUnsafe(Duration.ofDaysUnsafe(1))
@@ -85,7 +85,7 @@ trait ExplorerSpec
   val uncles = blockflow
     .map(_.flatMap { block =>
       block.ghostUncles.map { uncle =>
-        blockEntryProtocolGen.sample.get.copy(
+        richBlockEntryProtocolGen.sample.get.copy(
           hash = uncle.blockHash,
           timestamp = block.timestamp,
           chainFrom = block.chainFrom,
@@ -96,7 +96,7 @@ trait ExplorerSpec
     })
     .flatten
 
-  val blocksProtocol: ArraySeq[model.BlockEntry] = blockflow.flatten
+  val blocksProtocol: ArraySeq[model.RichBlockEntry] = blockflow.flatten
   val blockEntities: ArraySeq[BlockEntity] =
     blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
 
@@ -557,8 +557,8 @@ object ExplorerSpec {
   class BlockFlowServerMock(
       address: InetAddress,
       port: Int,
-      blockflow: ArraySeq[ArraySeq[model.BlockEntry]],
-      uncles: ArraySeq[model.BlockEntry],
+      blockflow: ArraySeq[ArraySeq[model.RichBlockEntry]],
+      uncles: ArraySeq[model.RichBlockEntry],
       networkId: NetworkId
   )(implicit groupSetting: GroupSetting)
       extends ApiModelCodec
@@ -612,38 +612,27 @@ object ExplorerSpec {
         route(
           baseEndpoint.get
             .in("blockflow")
-            .in("blocks")
+            .in("rich-blocks")
             .in(path[BlockHash])
-            .out(jsonBody[model.BlockEntry])
+            .out(jsonBody[model.RichBlockAndEvents])
             .serverLogicSuccess[Future] { hash =>
-              Future.successful(blocksWithUncles.find(_.hash === hash).get)
-            }
-        ),
-        route(
-          baseEndpoint.get
-            .in("blockflow")
-            .in("blocks-with-events")
-            .in(path[BlockHash])
-            .out(jsonBody[model.BlockAndEvents])
-            .serverLogicSuccess[Future] { hash =>
-              Future
-                .successful(
-                  model.BlockAndEvents(
-                    blocksWithUncles.find(_.hash === hash).get,
-                    AVector.from(Gen.listOfN(3, contractEventByBlockHash).sample.get)
-                  )
+              Future.successful(
+                model.RichBlockAndEvents(
+                  blocksWithUncles.find(_.hash === hash).get,
+                  AVector.from(Gen.listOfN(3, contractEventByBlockHash).sample.get)
                 )
+              )
             }
         ),
         route(
           baseEndpoint.get
             .in("blockflow")
-            .in("blocks")
+            .in("rich-blocks")
             .in(timeIntervalQuery)
-            .out(jsonBody[model.BlocksPerTimeStampRange])
+            .out(jsonBody[model.RichBlocksAndEventsPerTimeStampRange])
             .serverLogicSuccess[Future] { timeInterval =>
               Future.successful(
-                model.BlocksPerTimeStampRange(
+                model.RichBlocksAndEventsPerTimeStampRange(
                   AVector.from(
                     blockflow
                       .map(
@@ -651,6 +640,12 @@ object ExplorerSpec {
                           b.timestamp >= timeInterval.from && b.timestamp <= timeInterval.to
                         )
                       )
+                      .map(_.map { block =>
+                        model.RichBlockAndEvents(
+                          block,
+                          AVector.from(Gen.listOfN(3, contractEventByBlockHash).sample.get)
+                        )
+                      })
                       .map(AVector.from(_))
                   )
                 )
@@ -662,29 +657,30 @@ object ExplorerSpec {
             .in("blockflow")
             .in("blocks-with-events")
             .in(timeIntervalQuery)
-            .out(jsonBody[model.BlocksAndEventsPerTimeStampRange])
+            .out(jsonBody[model.RichBlocksAndEventsPerTimeStampRange])
             .serverLogicSuccess[Future] { timeInterval =>
               Future.successful(
-                model.BlocksAndEventsPerTimeStampRange(
-                  AVector.from(
-                    blockflow
-                      .map(
-                        _.filter(b =>
-                          b.timestamp >= timeInterval.from && b.timestamp <= timeInterval.to
+                model.RichBlocksAndEventsPerTimeStampRange(
+                  AVector
+                    .from(
+                      blockflow
+                        .map(
+                          _.filter(b =>
+                            b.timestamp >= timeInterval.from && b.timestamp <= timeInterval.to
+                          )
                         )
-                      )
-                      .map(blocks =>
-                        AVector
-                          .from(
-                            blocks.map(block =>
-                              model.BlockAndEvents(
-                                block,
-                                AVector.from(Gen.listOfN(3, contractEventByBlockHash).sample.get)
-                              )
+                    )
+                    .map(blocks =>
+                      AVector
+                        .from(
+                          blocks.map(block =>
+                            model.RichBlockAndEvents(
+                              block,
+                              AVector.from(Gen.listOfN(3, contractEventByBlockHash).sample.get)
                             )
                           )
-                      )
-                  )
+                        )
+                    )
                 )
               )
             }

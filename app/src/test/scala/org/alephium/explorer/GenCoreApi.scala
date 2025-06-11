@@ -42,12 +42,14 @@ import org.alephium.protocol.model.{
   GroupIndex,
   Hint,
   NetworkId,
-  Target
+  Target,
+  TransactionId
 }
 import org.alephium.serde._
 import org.alephium.util.{AVector, Duration, Hex, I256, TimeStamp, U256}
 
 /** Generators for types supplied by Core `org.alephium.api` package */
+// scalastyle:off number.of.methods
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 object GenCoreApi {
   // From `alephium` repo
@@ -158,10 +160,43 @@ object GenCoreApi {
       AVector.from(scriptSignatures)
     )
 
+  def richTransactionProtocolGen(implicit groupSetting: GroupSetting): Gen[RichTransaction] =
+    for {
+      unsigned             <- richUnsignedTxGen
+      scriptExecutionOk    <- arbitrary[Boolean]
+      contractInputsSize   <- Gen.choose(0, 1)
+      contractInputs       <- Gen.listOfN(contractInputsSize, richContractInputProtocolGen)
+      generatedOutputsSize <- Gen.choose(0, 1)
+      generatedOutputs     <- Gen.listOfN(generatedOutputsSize, outputProtocolGen)
+      inputSignatures      <- Gen.listOfN(1, bytesGen)
+      scriptSignatures     <- Gen.listOfN(1, bytesGen)
+    } yield RichTransaction(
+      unsigned,
+      scriptExecutionOk,
+      AVector.from(contractInputs),
+      AVector.from(generatedOutputs),
+      AVector.from(inputSignatures),
+      AVector.from(scriptSignatures)
+    )
+
   def coinbaseTransactionProtocolGen(implicit groupSetting: GroupSetting): Gen[Transaction] =
     for {
       unsignedTx <- unsignedTxGen
     } yield Transaction(
+      unsignedTx.copy(inputs = AVector.empty),
+      scriptExecutionOk = true,
+      AVector.empty,
+      AVector.empty,
+      AVector.empty,
+      AVector.empty
+    )
+
+  def coinbaseRichTransactionProtocolGen(implicit
+      groupSetting: GroupSetting
+  ): Gen[RichTransaction] =
+    for {
+      unsignedTx <- richUnsignedTxGen
+    } yield RichTransaction(
       unsignedTx.copy(inputs = AVector.empty),
       scriptExecutionOk = true,
       AVector.empty,
@@ -204,6 +239,40 @@ object GenCoreApi {
       )
     }
 
+  def richBlockEntryProtocolGen(implicit groupSetting: GroupSetting): Gen[RichBlockEntry] =
+    for {
+      hash            <- blockHashGen
+      timestamp       <- timestampGen
+      chainFrom       <- GenApiModel.groupIndexGen
+      chainTo         <- GenApiModel.groupIndexGen
+      height          <- GenApiModel.heightGen
+      deps            <- Gen.listOfN(2 * groupSetting.groupNum - 1, blockHashGen)
+      transactionSize <- Gen.choose(1, 1)
+      transactions    <- Gen.listOfN(transactionSize, richTransactionProtocolGen)
+      nonce           <- bytesGen
+      version         <- Gen.posNum[Byte]
+      depStateHash    <- hashGen
+      txsHash         <- hashGen
+      ghostUnclesSize <- Gen.choose(0, 1)
+      ghostUncles     <- Gen.listOfN(ghostUnclesSize, ghostUncleBlockEntry)
+    } yield {
+      RichBlockEntry(
+        hash,
+        timestamp,
+        chainFrom.value,
+        chainTo.value,
+        height.value,
+        AVector.from(deps),
+        AVector.from(transactions),
+        nonce,
+        version,
+        depStateHash,
+        txsHash,
+        target.bits,
+        AVector.from(ghostUncles)
+      )
+    }
+
   def genesisBlockEntryProtocolGen(
       timestamp: TimeStamp,
       chainFrom: GroupIndex,
@@ -217,6 +286,35 @@ object GenCoreApi {
       txsHash     <- hashGen
     } yield {
       BlockEntry(
+        hash,
+        timestamp,
+        chainFrom.value,
+        chainTo.value,
+        Height.genesis.value,
+        AVector.empty,
+        AVector(transaction),
+        nonce,
+        version,
+        Hash.zero,
+        txsHash,
+        target.bits,
+        AVector.empty
+      )
+    }
+
+  def genesisRichBlockEntryProtocolGen(
+      timestamp: TimeStamp,
+      chainFrom: GroupIndex,
+      chainTo: GroupIndex
+  )(implicit groupSetting: GroupSetting): Gen[RichBlockEntry] =
+    for {
+      hash        <- blockHashGen
+      transaction <- coinbaseRichTransactionProtocolGen
+      nonce       <- bytesGen
+      version     <- Gen.posNum[Byte]
+      txsHash     <- hashGen
+    } yield {
+      RichBlockEntry(
         hash,
         timestamp,
         chainFrom.value,
@@ -281,6 +379,54 @@ object GenCoreApi {
     }
   }
 
+  /* This function generates a block entry with transactions that spend some outputs from the previous blocks
+   * In order to create a coherent blockchain
+   */
+  def richBlockEntryGen(
+      previousBlocks: ArraySeq[RichBlockEntry]
+  )(implicit groupSetting: GroupSetting): Gen[RichBlockEntry] = {
+    val outputRefs =
+      previousBlocks.flatMap(_.transactions.flatMap(_.unsigned.inputs.map(_.key)))
+    var availableOutputs = previousBlocks
+      .flatMap(_.transactions.flatMap(_.unsigned.fixedOutputs))
+      .filterNot(output => outputRefs.contains(output.key))
+
+    for {
+      blockEntry     <- richBlockEntryProtocolGen
+      nbOfTxs        <- Gen.choose(1, availableOutputs.size)
+      maxInputsPerTx <- Gen.choose(1, availableOutputs.size / nbOfTxs)
+      coinbaseTx     <- coinbaseRichTransactionProtocolGen
+      txs <- Gen.sequence[Vector[RichTransaction], RichTransaction](
+        Vector.fill(nbOfTxs)(
+          for {
+            transaction <- richTransactionProtocolGen
+            nbOfInputs  <- Gen.choose(1, maxInputsPerTx)
+            inputs      <- Gen.pick(nbOfInputs, availableOutputs)
+            unsignedTx  <- richUnsignedTxGen(AVector.from(inputs))
+          } yield {
+            availableOutputs = availableOutputs.diff(inputs)
+            transaction.copy(unsigned = unsignedTx)
+          }
+        )
+      )
+      blockTime <- Gen.choose(100L, 10000L)
+    } yield {
+      val timestamp = previousBlocks.last.timestamp + Duration.unsafe(blockTime)
+      val height    = previousBlocks.last.height + 1
+      blockEntry.copy(
+        timestamp = timestamp,
+        height = height,
+        chainFrom = previousBlocks.last.chainFrom,
+        chainTo = previousBlocks.last.chainTo,
+        transactions = AVector.from(txs :+ coinbaseTx),
+        deps = blockEntry.deps.replace(
+          parentIndex(new GroupIndex(previousBlocks.last.chainTo)),
+          previousBlocks.last.hash
+        )
+      )
+    }
+  }
+
   def unsignedTxGen(implicit groupSetting: GroupSetting): Gen[UnsignedTx] =
     for {
       hash       <- transactionHashGen
@@ -294,6 +440,29 @@ object GenCoreApi {
       gasAmount  <- gasAmountGen
       gasPrice   <- gasPriceGen
     } yield UnsignedTx(
+      hash,
+      version,
+      networkId,
+      scriptOpt,
+      gasAmount,
+      gasPrice,
+      AVector.from(inputs),
+      AVector.from(outputs)
+    )
+
+  def richUnsignedTxGen(implicit groupSetting: GroupSetting): Gen[RichUnsignedTx] =
+    for {
+      hash       <- transactionHashGen
+      version    <- Gen.posNum[Byte]
+      networkId  <- Gen.posNum[Byte]
+      scriptOpt  <- Gen.option(scriptGen)
+      inputSize  <- Gen.choose(0, 10)
+      inputs     <- Gen.listOfN(inputSize, richAssetInputProtocolGen)
+      outputSize <- Gen.choose(2, 10)
+      outputs    <- Gen.listOfN(outputSize, fixedOutputAssetProtocolGen())
+      gasAmount  <- gasAmountGen
+      gasPrice   <- gasPriceGen
+    } yield RichUnsignedTx(
       hash,
       version,
       networkId,
@@ -338,6 +507,48 @@ object GenCoreApi {
     )
   }
 
+  /* This geneator creates an UnsignedTx that spend the given outputs
+   */
+  def richUnsignedTxGen(
+      outputRefs: AVector[FixedAssetOutput]
+  )(implicit groupSetting: GroupSetting): Gen[RichUnsignedTx] = {
+    val totalAmount = outputRefs.map(_.attoAlphAmount.value).fold(U256.Zero)(_ addUnsafe _)
+    val addresses   = outputRefs.map(_.address).toSeq.distinct
+    for {
+      unsigned <- richUnsignedTxGen
+      outputSize = unsigned.fixedOutputs.length
+      remainder  = totalAmount.modUnsafe(U256.unsafe(outputSize))
+      gas        = unsigned.gasPrice.mulUnsafe(U256.unsafe(unsigned.gasAmount)).addUnsafe(remainder)
+      amount     = totalAmount.subUnsafe(gas)
+      amountPerOutput = amount.divUnsafe(U256.unsafe(outputSize))
+      newAddress <- addressAssetProtocolGen()
+      address    <- Gen.oneOf(addresses :+ newAddress)
+      outputs <- Gen.listOfN(
+        outputSize,
+        fixedOutputAssetProtocolGen(
+          amount = Some(amountPerOutput),
+          address = Some(address)
+        )
+      )
+      unlockScript <- unlockScriptProtocolGen
+    } yield unsigned.copy(
+      inputs = AVector.from(
+        outputRefs.map(output =>
+          RichAssetInput(
+            hint = output.hint,
+            key = output.key,
+            unlockScript = serialize(unlockScript),
+            attoAlphAmount = output.attoAlphAmount,
+            address = output.address,
+            tokens = output.tokens,
+            outputRefTxId = TransactionId.zero // TODO FIXME add the correct txId
+          )
+        )
+      ),
+      fixedOutputs = AVector.from(outputs)
+    )
+  }
+
   def transactionTemplateProtocolGen(implicit
       groupSetting: GroupSetting
   ): Gen[TransactionTemplate] =
@@ -362,6 +573,35 @@ object GenCoreApi {
     outputRef    <- outputRefProtocolGen
     unlockScript <- unlockScriptProtocolGen
   } yield AssetInput(outputRef, serialize(unlockScript))
+
+  def richAssetInputProtocolGen(implicit groupSetting: GroupSetting): Gen[RichAssetInput] = for {
+    assetOutput   <- outputAssetProtocolGen
+    outputRef     <- outputRefProtocolGen
+    unlockScript  <- unlockScriptProtocolGen
+    outputRefTxId <- transactionHashGen
+  } yield RichAssetInput(
+    hint = outputRef.hint,
+    key = outputRef.key,
+    unlockScript = serialize(unlockScript),
+    attoAlphAmount = assetOutput.attoAlphAmount,
+    address = assetOutput.address,
+    tokens = assetOutput.tokens,
+    outputRefTxId = outputRefTxId
+  )
+
+  def richContractInputProtocolGen(implicit groupSetting: GroupSetting): Gen[RichContractInput] =
+    for {
+      contractOutput <- outputContractProtocolGen
+      outputRef      <- outputRefProtocolGen
+      outputRefTxId  <- transactionHashGen
+    } yield RichContractInput(
+      hint = outputRef.hint,
+      key = outputRef.key,
+      attoAlphAmount = contractOutput.attoAlphAmount,
+      address = contractOutput.address,
+      tokens = contractOutput.tokens,
+      outputRefTxId = outputRefTxId
+    )
 
   def fixedOutputAssetProtocolGen(
       amount: Option[U256] = None,
@@ -414,12 +654,12 @@ object GenCoreApi {
    */
   def chainGen(size: Int, startTimestamp: TimeStamp, chainIndex: ChainIndex)(implicit
       groupSetting: GroupSetting
-  ): Gen[ArraySeq[BlockEntry]] = {
-    genesisBlockEntryProtocolGen(startTimestamp, chainIndex.from, chainIndex.to).map {
+  ): Gen[ArraySeq[RichBlockEntry]] = {
+    genesisRichBlockEntryProtocolGen(startTimestamp, chainIndex.from, chainIndex.to).map {
       genesisBlock =>
         Iterator
           .iterate(ArraySeq(genesisBlock)) { blocks =>
-            val newBlock = blockEntryGen(blocks).sample.get
+            val newBlock = richBlockEntryGen(blocks).sample.get
             blocks :+ newBlock
           }
           .drop(size - 1)
@@ -429,7 +669,7 @@ object GenCoreApi {
 
   def blockFlowGen(maxChainSize: Int, startTimestamp: TimeStamp)(implicit
       groupSetting: GroupSetting
-  ): Gen[ArraySeq[ArraySeq[BlockEntry]]] = {
+  ): Gen[ArraySeq[ArraySeq[RichBlockEntry]]] = {
     val indexes = groupSetting.chainIndexes
     Gen
       .listOfN(indexes.size, Gen.choose(1, maxChainSize))

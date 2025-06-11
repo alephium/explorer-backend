@@ -70,6 +70,26 @@ final case class BlockEntry(
     )
   }
 
+  def toRichProtocol(
+      transactions: ArraySeq[Transaction]
+  ): org.alephium.api.model.RichBlockEntry = {
+    org.alephium.api.model.RichBlockEntry(
+      hash,
+      timestamp,
+      chainFrom.value,
+      chainTo.value,
+      height.value,
+      AVector.from(deps),
+      AVector.from(transactions.map(_.toRichProtocol())),
+      nonce,
+      version,
+      depStateHash,
+      txsHash,
+      target,
+      AVector.from(ghostUncles.map(_.toProtocol()))
+    )
+  }
+
 }
 
 object BlockEntry {

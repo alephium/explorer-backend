@@ -27,7 +27,10 @@ import org.alephium.explorer.persistence.queries.InputQueries._
 import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, InputsQR}
 import org.alephium.explorer.persistence.schema.InputSchema
 
-class InputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
+class InputQueriesSpec
+    extends AlephiumFutureSpec
+    with DatabaseFixtureForEach
+    with DBRunner {
 
   "insertInputs" should {
     "insert and ignore inputs" in {

@@ -32,7 +32,8 @@ trait EmptyBlockFlowClient extends BlockFlowClient {
   override def startSelfOnce(): Future[Unit]      = Future.unit
   override def stopSelfOnce(): Future[Unit]       = Future.unit
   override def subServices: ArraySeq[Service]     = ArraySeq.empty
-  override def fetchBlock(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntity] = ???
+  override def fetchBlock(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntityWithEvents] =
+    ???
 
   override def fetchChainInfo(chainIndex: ChainIndex): Future[ChainInfo] = ???
 

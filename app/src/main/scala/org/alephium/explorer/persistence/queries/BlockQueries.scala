@@ -334,7 +334,9 @@ object BlockQueries extends StrictLogging {
   @SuppressWarnings(
     Array("org.wartremover.warts.MutableDataStructures", "org.wartremover.warts.NonUnitStatements")
   )
-  def insertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int): DBActionRWT[Unit] = {
+  def insertBlockEntity(blocks: Iterable[BlockEntity], groupNum: Int)(implicit
+      ec: ExecutionContext
+  ): DBActionRWT[Unit] = {
     val transactions = ListBuffer.empty[TransactionEntity]
     val inputs       = ListBuffer.empty[InputEntity]
     val outputs      = ListBuffer.empty[OutputEntity]

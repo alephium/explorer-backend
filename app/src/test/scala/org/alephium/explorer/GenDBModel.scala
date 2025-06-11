@@ -68,7 +68,7 @@ object GenDBModel {
       key         <- hashGen
       amount      <- u256Gen
       address     <- addressGen
-      tokens      <- Gen.option(Gen.listOf(tokenGen))
+      tokens      <- Gen.option(Gen.listOfN(5, tokenGen))
       lockTime    <- Gen.option(timestampGen)
       message     <- Gen.option(bytesGen)
       mainChain   <- arbitrary[Boolean]
@@ -119,7 +119,7 @@ object GenDBModel {
       key          <- hashGen
       amount       <- u256Gen
       address      <- address
-      tokens       <- Gen.option(Gen.listOf(tokenGen))
+      tokens       <- Gen.option(Gen.listOfN(5, tokenGen))
       lockTime     <- Gen.option(timestampGen)
       message      <- Gen.option(bytesGen)
       uoutputOrder <- arbitrary[Int]
@@ -154,11 +154,11 @@ object GenDBModel {
         mainChain = outputEntity.mainChain,
         inputOrder = outputEntity.outputOrder,
         txOrder = txOrder,
-        None,
-        None,
-        None,
-        None,
-        None,
+        outputRefTxHash = Some(outputEntity.txHash),
+        outputRefAddress = Some(outputEntity.address),
+        outputRefGrouplessAddress = outputEntity.grouplessAddress,
+        outputRefAmount = Some(outputEntity.amount),
+        outputRefTokens = outputEntity.tokens,
         contractInput
       )
     }
@@ -329,7 +329,7 @@ object GenDBModel {
   def blockEntityGen(
       chainIndex: ChainIndex
   )(implicit groupSetting: GroupSetting): Gen[BlockEntity] =
-    blockEntryProtocolGen.map { block =>
+    richBlockEntryProtocolGen.map { block =>
       BlockFlowClient.blockProtocolToEntity(
         block
           .copy(chainFrom = chainIndex.from.value, chainTo = chainIndex.to.value)
@@ -339,7 +339,7 @@ object GenDBModel {
   def blockEntityWithParentGen(chainIndex: ChainIndex, parent: Option[BlockEntity])(implicit
       groupSetting: GroupSetting
   ): Gen[BlockEntity] =
-    blockEntryProtocolGen.map { entry =>
+    richBlockEntryProtocolGen.map { entry =>
       val deps = parent
         .map(p => entry.deps.replace(Generators.parentIndex(chainIndex.to), p.hash))
         .getOrElse(AVector.empty)

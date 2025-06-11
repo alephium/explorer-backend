@@ -110,6 +110,29 @@ final case class Transaction(
       scriptSignatures = AVector.from(scriptSignatures)
     )
   }
+
+  def toRichProtocol(): org.alephium.api.model.RichTransaction = {
+    val (inputContracts, inputAssets)    = inputs.partition(_.contractInput)
+    val (fixedOutputs, generatedOutputs) = outputs.partition(_.fixedOutput)
+    def unsigned: org.alephium.api.model.RichUnsignedTx = org.alephium.api.model.RichUnsignedTx(
+      txId = hash,
+      version = version,
+      networkId = networkId,
+      scriptOpt = scriptOpt.map(org.alephium.api.model.Script.apply),
+      gasAmount = gasAmount,
+      gasPrice = gasPrice,
+      inputs = AVector.from(inputAssets.flatMap(_.toRichProtocol())),
+      fixedOutputs = AVector.from(fixedOutputs.flatMap(Output.toFixedAssetOutput))
+    )
+    org.alephium.api.model.RichTransaction(
+      unsigned = unsigned,
+      scriptExecutionOk = scriptExecutionOk,
+      contractInputs = AVector.from(inputContracts.flatMap(_.toRichContractProtocol())),
+      generatedOutputs = AVector.from(generatedOutputs.flatMap(Output.toProtocol)),
+      inputSignatures = AVector.from(inputSignatures),
+      scriptSignatures = AVector.from(scriptSignatures)
+    )
+  }
 }
 
 object Transaction {

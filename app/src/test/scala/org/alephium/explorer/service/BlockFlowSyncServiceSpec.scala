@@ -109,9 +109,14 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
 
       override def fetchBlocksAtHeight(chainIndex: ChainIndex, height: Height)(implicit
           executionContext: ExecutionContext
-      ): Future[ArraySeq[BlockEntity]] =
+      ): Future[ArraySeq[BlockEntityWithEvents]] =
         Future.successful(
-          ArraySeq(blockEntityGen(chainIndex).sample.get.copy(timestamp = TimeStamp.unsafe(0)))
+          ArraySeq(
+            BlockEntityWithEvents(
+              blockEntityGen(chainIndex).sample.get.copy(timestamp = TimeStamp.unsafe(0)),
+              ArraySeq.empty
+            )
+          )
         )
     }
 
@@ -224,8 +229,10 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     def blocks: ArraySeq[BlockEntryTest] = blockFlow.flatten
 
     implicit val blockFlowClient: BlockFlowClient = new EmptyBlockFlowClient {
-      override def fetchBlock(from: GroupIndex, hash: BlockHash): Future[BlockEntity] =
-        Future.successful(blocksAndUncles.find(_.hash === hash).get)
+      override def fetchBlock(from: GroupIndex, hash: BlockHash): Future[BlockEntityWithEvents] =
+        Future.successful(
+          BlockEntityWithEvents(blocksAndUncles.find(_.hash === hash).get, ArraySeq.empty)
+        )
 
       override def fetchBlockAndEvents(
           fromGroup: GroupIndex,

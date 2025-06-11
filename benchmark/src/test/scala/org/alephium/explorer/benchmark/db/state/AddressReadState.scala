@@ -252,10 +252,10 @@ class AddressReadState(val db: DBExecutor)
         batchWriteTimeout
       )
 
-    val _ = db.runNow(
-      action = InputUpdateQueries.updateInputs(),
-      timeout = batchWriteTimeout
-    )
+    // val _ = db.runNow(
+    //   action = InputUpdateQueries.updateInputs(),
+    //   timeout = batchWriteTimeout
+    // )
 
     logger.info("Persisting data complete")
   }

@@ -17,7 +17,9 @@
 package org.alephium.explorer.util
 
 import scala.collection.immutable.ArraySeq
+import scala.reflect.ClassTag
 
+import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 
 import org.alephium.api
@@ -26,6 +28,7 @@ import org.alephium.protocol
 import org.alephium.protocol.model.Address
 import org.alephium.serde._
 
+@SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object InputAddressUtil extends StrictLogging {
   private val sameAsPrevious = serialize(
     protocol.vm.UnlockScript.SameAsPrevious: protocol.vm.UnlockScript
@@ -35,6 +38,31 @@ object InputAddressUtil extends StrictLogging {
    * Addresses can only be extracted from P2PKH and P2SH.
    * We can't find back the address from a P2MPKH
    */
+  def addressFromProtocolInput(input: api.model.RichAssetInput): Option[Address] =
+    deserialize[protocol.vm.UnlockScript](input.unlockScript) match {
+      case Right(unlockScript) =>
+        unlockScript match {
+          case protocol.vm.UnlockScript.P2PKH(pk) =>
+            Some(protocol.model.Address.p2pkh(pk))
+          case protocol.vm.UnlockScript.P2SH(script, _) =>
+            val lockup = protocol.vm.LockupScript.p2sh(protocol.Hash.hash(script))
+            Some(protocol.model.Address.from(lockup))
+          case protocol.vm.UnlockScript.PoLW(pk) =>
+            Some(protocol.model.Address.p2pkh(pk))
+          case protocol.vm.UnlockScript.SameAsPrevious =>
+            None
+          case protocol.vm.UnlockScript.P2MPKH(_) =>
+            None
+          case protocol.vm.UnlockScript.P2HMPK(_, _) =>
+            None
+          case protocol.vm.UnlockScript.P2PK =>
+            None
+        }
+      case Left(error) =>
+        logger.error(s"Cannot decode protocol input: $error")
+        None
+    }
+
   def addressFromProtocolInput(input: api.model.AssetInput): Option[Address] =
     input.toProtocol() match {
       case Right(value) =>
@@ -90,23 +118,67 @@ object InputAddressUtil extends StrictLogging {
     }
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.SeqApply"))
+  def addressFromProtocolRichInputs(inputs: ArraySeq[api.model.RichAssetInput]): Option[Address] = {
+    if (inputs.isEmpty) {
+      None
+    } else {
+      val addressOpt = inputs.headOption.flatMap(InputAddressUtil.addressFromProtocolInput)
+      addressOpt match {
+        case None => None
+        case Some(_) =>
+          if (
+            inputs
+              .drop(1)
+              .forall(input =>
+                input.unlockScript === sameAsPrevious || InputAddressUtil
+                  .addressFromProtocolInput(input) === addressOpt
+              )
+          ) {
+            addressOpt
+          } else {
+            None
+          }
+      }
+    }
+  }
+
+  def convertRichSameAsPrevious(
+      inputs: ArraySeq[api.model.RichAssetInput]
+  ): ArraySeq[api.model.RichAssetInput] =
+    convertSameAsPreviousT[api.model.RichAssetInput](
+      inputs,
+      _.unlockScript,
+      (input, unlockScript) => input.copy(unlockScript = unlockScript)
+    )
+
   def convertSameAsPrevious(
       inputs: ArraySeq[api.model.AssetInput]
-  ): ArraySeq[api.model.AssetInput] = {
+  ): ArraySeq[api.model.AssetInput] =
+    convertSameAsPreviousT[api.model.AssetInput](
+      inputs,
+      _.unlockScript,
+      (input, unlockScript) => input.copy(unlockScript = unlockScript)
+    )
+
+  @SuppressWarnings(Array("org.wartremover.warts.SeqApply"))
+  private def convertSameAsPreviousT[T: ClassTag](
+      inputs: ArraySeq[T],
+      getUnlockScript: T => ByteString,
+      copyUnlockScript: (T, ByteString) => T
+  ): ArraySeq[T] = {
     if (inputs.sizeIs <= 1) {
       inputs
     } else {
       var lastUncompressedScript: Int = -1
       val converted = inputs.view.zipWithIndex.map { case (input, index) =>
-        if (input.unlockScript === sameAsPrevious) {
-          input.copy(unlockScript = inputs(lastUncompressedScript).unlockScript)
+        if (getUnlockScript(input) === sameAsPrevious) {
+          copyUnlockScript(input, getUnlockScript(inputs(lastUncompressedScript)))
         } else {
           lastUncompressedScript = index
           input
         }
       }
-      ArraySeq.from(converted)
+      ArraySeq.from[T](converted)
     }
   }
 }

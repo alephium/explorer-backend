@@ -140,9 +140,10 @@ object SanityChecker extends StrictLogging {
     // scalastyle:on
     logger.info(s"Downloading missing block $missing")
     blockFlowClient.fetchBlock(chainFrom, missing).flatMap { block =>
+      // TODO insert event?
       for {
-        _ <- BlockDao.insert(block)
-        b <- BlockDao.get(block.hash).map(_.get)
+        _ <- BlockDao.insert(block.block)
+        b <- BlockDao.get(block.block.hash).map(_.get)
         _ <- checkBlock(b, blockNum, totalNbOfBlocks)
       } yield ()
     }

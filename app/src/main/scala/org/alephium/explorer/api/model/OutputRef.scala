@@ -27,6 +27,9 @@ final case class OutputRef(hint: Int, key: Hash) {
 
   def toProtocol(): org.alephium.api.model.OutputRef =
     org.alephium.api.model.OutputRef(hint, key)
+
+  def toRichProtocol(): org.alephium.api.model.OutputRef =
+    org.alephium.api.model.OutputRef(hint, key)
 }
 
 object OutputRef {

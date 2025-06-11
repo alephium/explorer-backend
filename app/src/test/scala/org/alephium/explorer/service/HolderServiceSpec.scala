@@ -81,7 +81,7 @@ class HolderServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureForEac
         .futureValue
     }
 
-    def checkBalances(blocks: ArraySeq[model.BlockEntry]) = {
+    def checkBalances(blocks: ArraySeq[model.RichBlockEntry]) = {
       val holders = databaseConfig.db.run(getAll).futureValue
 
       val addresses = blocks.flatMap(_.transactions.flatMap(_.unsigned.fixedOutputs.map(_.address)))

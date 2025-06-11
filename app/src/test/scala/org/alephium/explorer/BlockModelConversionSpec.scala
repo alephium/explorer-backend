@@ -29,7 +29,7 @@ class BlockModelConversionSpec() extends AlephiumSpec {
 
   "BlockEntry" should {
     "be converted to and from core api BlockEntry" in new Fixture {
-      forAll(blockEntryProtocolGen) { protocolBlockEntry =>
+      forAll(richBlockEntryProtocolGen) { protocolBlockEntry =>
         val blockEntity = BlockFlowClient.blockProtocolToEntity(protocolBlockEntry)
 
         blockEntityToProtocol(blockEntity) is protocolBlockEntry
@@ -39,11 +39,11 @@ class BlockModelConversionSpec() extends AlephiumSpec {
 
   trait Fixture {
 
-    def blockEntityToProtocol(blockEntity: BlockEntity): org.alephium.api.model.BlockEntry = {
+    def blockEntityToProtocol(blockEntity: BlockEntity): org.alephium.api.model.RichBlockEntry = {
 
       val transactions = transactionsApiFromBlockEntity(blockEntity)
 
-      blockEntity.toBlockHeader(groupSetting.groupNum).toApi().toProtocol(transactions)
+      blockEntity.toBlockHeader(groupSetting.groupNum).toApi().toRichProtocol(transactions)
     }
 
     def transactionsApiFromBlockEntity(

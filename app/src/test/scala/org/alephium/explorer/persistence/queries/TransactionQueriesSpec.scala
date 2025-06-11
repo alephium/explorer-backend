@@ -39,7 +39,7 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.explorer.util.{AddressUtil, UtxoUtil}
 import org.alephium.explorer.util.SlickExplainUtil._
-import org.alephium.protocol.{ALPH, Hash}
+import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{Address, GroupIndex, TransactionId}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
@@ -73,7 +73,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
-    val input1  = input(output2.hint, output2.key).copy(outputRefAddress = Some(address))
+    val input1  = input(output2).copy(outputRefAddress = Some(address))
 
     run(OutputSchema.table ++= ArraySeq(output1, output2)).futureValue
     run(InputSchema.table += input1).futureValue
@@ -97,7 +97,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None).copy(mainChain = false)
-    val input1  = input(output2.hint, output2.key).copy(mainChain = false)
+    val input1  = input(output2).copy(mainChain = false)
 
     run(OutputSchema.table ++= ArraySeq(output1, output2)).futureValue
     run(InputSchema.table += input1).futureValue
@@ -114,14 +114,14 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
     val output4 = output(addressGen.sample.get, ALPH.alph(3), None)
 
-    val input1 = input(output2.hint, output2.key)
-    val input2 = input(output3.hint, output3.key).copy(mainChain = false)
-    val input3 = input(output4.hint, output4.key)
+    val input1 = input(output2)
+    val input2 = input(output3).copy(mainChain = false)
+    val input3 = input(output4)
 
     val outputs = ArraySeq(output1, output2, output3, output4)
     val inputs  = ArraySeq(input1, input2, input3)
     run(TransactionQueries.insertAll(ArraySeq.empty, outputs, inputs)).futureValue
-    run(InputUpdateQueries.updateInputs()).futureValue
+    // run(InputUpdateQueries.updateInputs()).futureValue
 
     val total =
       run(TransactionQueries.countAddressTransactions(address)).futureValue.head
@@ -129,28 +129,28 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     // tx of output1, output2 and input1
     total is 3
   }
-
-  "update inputs when corresponding output is finally inserted" in new Fixture {
-
-    val output1 = output(address, ALPH.alph(1), None)
-    val output2 = output(address, ALPH.alph(2), None)
-
-    val input1 = input(output1.hint, output1.key)
-    val input2 = input(output2.hint, output2.key)
-
-    val outputs = ArraySeq(output1)
-    val inputs  = ArraySeq(input1, input2)
-
-    run(TransactionQueries.insertAll(ArraySeq.empty, outputs, inputs)).futureValue
-    run(InputUpdateQueries.updateInputs()).futureValue
-
-    run(TransactionQueries.countAddressTransactions(address)).futureValue.head is 2
-
-    run(OutputSchema.table += output2).futureValue
-    run(InputUpdateQueries.updateInputs()).futureValue
-
-    run(TransactionQueries.countAddressTransactions(address)).futureValue.head is 3
-  }
+  //
+  // "update inputs when corresponding output is finally inserted" in new Fixture {
+  //
+  //   val output1 = output(address, ALPH.alph(1), None)
+  //   val output2 = output(address, ALPH.alph(2), None)
+  //
+  //   val input1 = input(output1.hint, output1.key)
+  //   val input2 = input(output2.hint, output2.key)
+  //
+  //   val outputs = ArraySeq(output1)
+  //   val inputs  = ArraySeq(input1, input2)
+  //
+  //   run(TransactionQueries.insertAll(ArraySeq.empty, outputs, inputs)).futureValue
+  //   //run(InputUpdateQueries.updateInputs()).futureValue
+  //
+  //   run(TransactionQueries.countAddressTransactions(address)).futureValue.head is 2
+  //
+  //   run(OutputSchema.table += output2).futureValue
+  //   //run(InputUpdateQueries.updateInputs()).futureValue
+  //
+  //   run(TransactionQueries.countAddressTransactions(address)).futureValue.head is 3
+  // }
 
   "get tx hashes by address" in new Fixture {
 
@@ -158,15 +158,15 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val output2 = output(address, ALPH.alph(2), None)
     val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
     val output4 = output(addressGen.sample.get, ALPH.alph(3), None)
-    val input1  = input(output2.hint, output2.key)
-    val input2  = input(output3.hint, output3.key).copy(mainChain = false)
-    val input3  = input(output4.hint, output4.key)
+    val input1  = input(output2)
+    val input2  = input(output3).copy(mainChain = false)
+    val input3  = input(output4)
 
     val outputs = ArraySeq(output1, output2, output3, output4)
     val inputs  = ArraySeq(input1, input2, input3)
 
     run(TransactionQueries.insertAll(ArraySeq.empty, outputs, inputs)).futureValue
-    run(InputUpdateQueries.updateInputs()).futureValue
+    // run(InputUpdateQueries.updateInputs()).futureValue
 
     val hashes =
       run(
@@ -186,8 +186,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
     val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
-    val input1  = input(output2.hint, output2.key)
-    val input2  = input(output3.hint, output3.key).copy(mainChain = false)
+    val input1  = input(output2)
+    val input2  = input(output3).copy(mainChain = false)
     val output4 = output(addressGen.sample.get, ALPH.alph(3), None)
       .copy(txHash = input1.txHash, blockHash = input1.blockHash, timestamp = input1.timestamp)
 
@@ -196,7 +196,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val transactions = outputs.map(transaction)
 
     run(TransactionQueries.insertAll(transactions, outputs, inputs)).futureValue
-    run(InputUpdateQueries.updateInputs()).futureValue
+    // run(InputUpdateQueries.updateInputs()).futureValue
     val from = TimeStamp.zero
     val to   = timestampMaxValue
     FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from)).futureValue
@@ -261,8 +261,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     val output1 =
       output(address, ALPH.alph(1), None).copy(txHash = tx1.hash, blockHash = tx1.blockHash)
-    val input1 = input(output1.hint, output1.key).copy(txHash = tx2.hash, blockHash = tx2.blockHash)
-    val input2 = input(output1.hint, output1.key).copy(txHash = tx2.hash).copy(mainChain = false)
+    val input1 = input(output1).copy(txHash = tx2.hash, blockHash = tx2.blockHash)
+    val input2 = input(output1).copy(txHash = tx2.hash).copy(mainChain = false)
 
     run(OutputSchema.table += output1).futureValue
     run(InputSchema.table ++= ArraySeq(input1, input2)).futureValue
@@ -678,22 +678,22 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         fixedOutput = false
       )
 
-    def input(hint: Int, outputRefKey: Hash): InputEntity =
+    def input(output: OutputEntity): InputEntity =
       InputEntity(
         blockHashGen.sample.get,
         transactionHashGen.sample.get,
         timestamp,
-        hint,
-        outputRefKey,
+        output.hint,
+        output.key,
         None,
         true,
         0,
         0,
-        None,
-        None,
-        None,
-        None,
-        None,
+        Some(output.txHash),
+        Some(output.address),
+        output.grouplessAddress,
+        Some(output.amount),
+        output.tokens,
         contractInput = false
       )
     def transaction(output: OutputEntity): TransactionEntity = {

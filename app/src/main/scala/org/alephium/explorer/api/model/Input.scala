@@ -27,7 +27,7 @@ import org.alephium.api.UtilJson._
 import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
 import org.alephium.protocol.model.{Address, TransactionId}
-import org.alephium.util.U256
+import org.alephium.util.{AVector, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 final case class Input(
@@ -44,6 +44,43 @@ final case class Input(
       outputRef = outputRef.toProtocol(),
       unlockScript = unlockScript.getOrElse(ByteString.empty)
     )
+
+  def toRichProtocol(): Option[protocol.RichAssetInput] = {
+    for {
+      _              <- Option.when(!contractInput)(())
+      address        <- address.collect { case asset: Address.Asset => asset }
+      txHashRef      <- txHashRef
+      unlockScript   <- unlockScript
+      attoAlphAmount <- attoAlphAmount
+    } yield {
+      protocol.RichAssetInput(
+        hint = outputRef.hint,
+        key = outputRef.key,
+        unlockScript = unlockScript,
+        attoAlphAmount = org.alephium.api.model.Amount(attoAlphAmount),
+        address = address,
+        tokens = AVector.from(tokens.map(_.map(_.toProtocol())).getOrElse(ArraySeq.empty)),
+        outputRefTxId = txHashRef
+      )
+    }
+  }
+
+  def toRichContractProtocol(): Option[protocol.RichContractInput] =
+    for {
+      _              <- Option.when(contractInput)(())
+      address        <- address.collect { case asset: Address.Contract => asset }
+      txHashRef      <- txHashRef
+      attoAlphAmount <- attoAlphAmount
+    } yield {
+      protocol.RichContractInput(
+        hint = outputRef.hint,
+        key = outputRef.key,
+        attoAlphAmount = org.alephium.api.model.Amount(attoAlphAmount),
+        address = address,
+        tokens = AVector.from(tokens.map(_.map(_.toProtocol())).getOrElse(ArraySeq.empty)),
+        outputRefTxId = txHashRef
+      )
+    }
 }
 
 object Input {

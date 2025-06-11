@@ -25,7 +25,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
-import org.alephium.explorer.persistence.model.GrouplessAddress
+import org.alephium.explorer.persistence.model.{GrouplessAddress, InputEntity}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
@@ -56,7 +56,7 @@ object InputUpdateQueries {
         output_ref_tokens = outputs.tokens
       FROM outputs
       WHERE inputs.output_ref_key = outputs.key
-      AND inputs.output_ref_amount IS NULL
+      AND inputs.output_ref_tx_hash IS NULL
       RETURNING
         outputs.address,
         outputs.groupless_address,
@@ -72,8 +72,30 @@ object InputUpdateQueries {
       .transactionally
   }
 
+  def updateTxsPerInputs(
+      inputs: Iterable[InputEntity]
+  ): DBActionWT[Unit] = {
+    val data = inputs.flatMap { input =>
+      for {
+        address <- input.outputRefAddress
+      } yield {
+        (
+          address,
+          input.outputRefGrouplessAddress,
+          input.outputRefTokens,
+          input.txHash,
+          input.blockHash,
+          input.timestamp,
+          input.txOrder,
+          input.mainChain
+        )
+      }
+    }.toVector
+
+    internalUpdates(data)
+  }
   // format: off
-  private def internalUpdates(
+private  def internalUpdates(
       data: Vector[UpdateReturn])
     : DBActionWT[Unit] = {
   // format: on

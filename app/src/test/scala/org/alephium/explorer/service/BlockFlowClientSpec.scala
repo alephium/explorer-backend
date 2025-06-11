@@ -84,7 +84,9 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
           consensus
         )
 
-      blockFlowClient.fetchBlock(group, blockHashGen.sample.get).futureValue is a[BlockEntity]
+      blockFlowClient
+        .fetchBlock(group, blockHashGen.sample.get)
+        .futureValue is a[BlockEntityWithEvents]
     }
   }
   "BlockFlowClient companion" should {
@@ -194,8 +196,10 @@ object BlockFlowClientSpec extends ScalaFutures with IntegrationPatience {
             )
           )
         })),
-        route(getBlock.serverLogicSuccess(_ => { _ =>
-          Future.successful(blockEntryProtocolGen.sample.get)
+        route(getRichBlockAndEvents.serverLogicSuccess(_ => { _ =>
+          Future.successful(
+            model.RichBlockAndEvents(richBlockEntryProtocolGen.sample.get, AVector.empty)
+          )
         }))
       )
 

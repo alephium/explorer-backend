@@ -51,7 +51,7 @@ object TransactionQueries extends StrictLogging {
       transactions: ArraySeq[TransactionEntity],
       outputs: ArraySeq[OutputEntity],
       inputs: ArraySeq[InputEntity]
-  ): DBActionRWT[Unit] = {
+  )(implicit ec: ExecutionContext): DBActionRWT[Unit] = {
     DBIOAction
       .seq(insertTransactions(transactions), insertInputs(inputs), insertOutputs(outputs))
       .transactionally

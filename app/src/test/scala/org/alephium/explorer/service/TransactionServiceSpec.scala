@@ -94,7 +94,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
     BlockDao.insert(block).futureValue
     BlockDao.updateMainChainStatus(block.hash, true).futureValue
-    databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
+    // databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
 
     val fetchedAmout =
       BlockDao
@@ -196,11 +196,11 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       true,
       0,
       0,
-      None,
-      None,
-      None,
-      None,
-      None,
+      Some(output0.txHash),
+      Some(output0.address),
+      output0.grouplessAddress,
+      Some(output0.amount),
+      output0.tokens,
       contractInput = false
     )
     val output1 = OutputEntity(
@@ -239,7 +239,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
 
     Future.sequence(blocks.map(BlockDao.insert)).futureValue
     BlockDao.updateLatestBlock(block1).futureValue
-    databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
+    // databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
     FinalizerService.finalizeOutputs().futureValue
 
     val t0 = Transaction(
@@ -381,7 +381,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       val blocks = ArraySeq(block0, block1)
 
       Future.sequence(blocks.map(BlockDao.insert)).futureValue
-      databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
+      // databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
 
       TransactionService
         .getTransactionsByAddress(address0, Pagination.unsafe(1, 5))
@@ -561,7 +561,8 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       val csvFile = result.map(_.toString()).mkString.split('\n')
 
       val tokenTxNumber =
-        blocks.flatMap(_.outputs).flatMap(_.tokens.map(_.map(_.id))).flatten.distinct.size
+        (blocks.flatMap(_.inputs).flatMap(_.outputRefTokens.map(_.map(_.id))) ++
+          blocks.flatMap(_.outputs).flatMap(_.tokens.map(_.map(_.id)))).flatten.distinct.size
 
       csvFile.length is (transactions.length + tokenTxNumber + 1)
     }
@@ -682,7 +683,7 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       }
       foldFutures(blocks) { block =>
         for {
-          _ <- databaseConfig.db.run(InputUpdateQueries.updateInputs())
+          // _ <- databaseConfig.db.run(InputUpdateQueries.updateInputs())
           _ <- BlockDao.updateMainChainStatus(block.hash, true)
         } yield (())
       }.futureValue
