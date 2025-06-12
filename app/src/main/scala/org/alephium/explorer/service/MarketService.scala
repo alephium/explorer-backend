@@ -123,13 +123,13 @@ object MarketService extends StrictLogging {
      */
     private val mobulaPricesCache: AsyncReloadingCache[Either[String, ArraySeq[Price]]] =
       AsyncReloadingCache[Either[String, ArraySeq[Price]]](
-        Left("Price data not fetched"),
+        Left("Price data not fetched for Mobula"),
         pricesExpirationTime.asScala
       )(_ => getMobulaPricesRemote(0))
 
     private val coingeckoPricesCache: AsyncReloadingCache[Either[String, ArraySeq[Price]]] =
       AsyncReloadingCache[Either[String, ArraySeq[Price]]](
-        Left("Price data not fetched"),
+        Left("Price data not fetched for Coingecko"),
         pricesExpirationTime.asScala
       )(_ => getCoingeckoPricesRemote(0))
 
