@@ -275,6 +275,7 @@ object ExplorerConfig {
   )
 
   final case class Market(
+      symbolName: ListMap[String, String],
       chartSymbolName: ListMap[String, String],
       currencies: ArraySeq[String],
       liquidityMinimum: Double,
