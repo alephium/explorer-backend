@@ -151,8 +151,8 @@ class MarketServiceSpec extends AlephiumFutureSpec {
       new MarketServiceSpec.MobulaMock(localhost, mobulaPort)
     val tokenList: MarketServiceSpec.TokenListMock =
       new MarketServiceSpec.TokenListMock(localhost, tokenListPort)
-    val marketService: MarketService.MarketServiceWithApiKey =
-      new MarketService.MarketServiceWithApiKey(marketConfig, apiKey)
+    val marketService: MarketService.MarketServiceImpl =
+      new MarketService.MarketServiceImpl(marketConfig, Some(apiKey))
   }
 }
 
