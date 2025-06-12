@@ -57,12 +57,9 @@ object MarketService extends StrictLogging {
 
   def apply(marketConfig: ExplorerConfig.Market)(implicit
       ec: ExecutionContext
-  ): MarketService = marketConfig.mobulaApiKey match {
-    case Some(apiKey) => new MarketServiceWithApiKey(marketConfig, apiKey)
-    case None         => new MarketServiceWithoutApiKey(marketConfig)
-  }
+  ): MarketService = new MarketServiceImpl(marketConfig, marketConfig.mobulaApiKey)
 
-  class MarketServiceWithApiKey(marketConfig: ExplorerConfig.Market, apiKey: ApiKey)(implicit
+  class MarketServiceImpl(marketConfig: ExplorerConfig.Market, apiKeyOpt: Option[ApiKey])(implicit
       val executionContext: ExecutionContext
   ) extends MarketService {
 
@@ -237,20 +234,26 @@ object MarketService extends StrictLogging {
     }
 
     private def getMobulaPricesRemote(retried: Int): Future[Either[String, ArraySeq[Price]]] = {
-      tokenListCache.get() match {
-        case Right(tokens) =>
-          logger.debug(s"Query mobula `/market/multi-data`, nb of attempts $retried")
-          val assets      = tokenListToAddresses(tokens)
-          val assetsStr   = assets.map { _.toBase58 }.mkString(",")
-          val blockchains = assets.map { _ => "alephium" }.mkString(",")
-          request(
-            uri"$mobulaBaseUri/market/multi-data?assets=${assetsStr}&blockchains=${blockchains}",
-            headers = Map(("Authorizattion", apiKey.value))
-          ) { response =>
-            handleMobulaPricesRateResponse(response, tokens, retried)
+      apiKeyOpt match {
+        case Some(apiKey) =>
+          tokenListCache.get() match {
+            case Right(tokens) =>
+              logger.debug(s"Query mobula `/market/multi-data`, nb of attempts $retried")
+              val assets      = tokenListToAddresses(tokens)
+              val assetsStr   = assets.map { _.toBase58 }.mkString(",")
+              val blockchains = assets.map { _ => "alephium" }.mkString(",")
+              request(
+                uri"$mobulaBaseUri/market/multi-data?assets=${assetsStr}&blockchains=${blockchains}",
+                headers = Map(("Authorizattion", apiKey.value))
+              ) { response =>
+                handleMobulaPricesRateResponse(response, tokens, retried)
+              }
+            case Left(error) =>
+              Future.successful(Left(s"Token list not fetched at $tokenListUri: $error"))
           }
-        case Left(error) =>
-          Future.successful(Left(s"Token list not fetched at $tokenListUri: $error"))
+
+        case None =>
+          Future.successful(Left("No Mobula API key"))
       }
     }
 
@@ -572,43 +575,6 @@ object MarketService extends StrictLogging {
           Left(s"Invalid json object for price chart: $other")
       }
     }
-  }
-
-  class MarketServiceWithoutApiKey(marketConfig: ExplorerConfig.Market)(implicit
-      val executionContext: ExecutionContext
-  ) extends MarketService {
-
-    private val error = Left("No Mobula API key")
-
-    def getPrices(
-        ids: ArraySeq[String],
-        chartCurrency: String
-    ): Either[String, ArraySeq[Option[Double]]] = {
-      error
-    }
-
-    override def getExchangeRates(): Either[String, ArraySeq[ExchangeRate]] = {
-      error
-    }
-
-    override def getPriceChart(symbol: String, currency: String): Either[String, TimedPrices] = {
-      error
-    }
-
-    override def chartSymbolNames: ListMap[String, String] = {
-      marketConfig.chartSymbolName
-    }
-
-    override def currencies: ArraySeq[String] = {
-      marketConfig.currencies
-    }
-
-    override def startSelfOnce(): Future[Unit] = {
-      logger.error("No Mobula API key, market service disabled")
-      Future.unit
-    }
-    override def stopSelfOnce(): Future[Unit]   = Future.unit
-    override def subServices: ArraySeq[Service] = ArraySeq.empty
   }
 
   final case class TokenList(tokens: ArraySeq[TokenList.Entry])
