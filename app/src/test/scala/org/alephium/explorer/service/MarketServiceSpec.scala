@@ -135,6 +135,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
     val marketConfig = ExplorerConfig.Market(
       MarketServiceSpec.symbolNames,
+      MarketServiceSpec.symbolNames,
       MarketServiceSpec.currencies,
       liquidityMinimum = 100,
       s"http://${localhost.getHostAddress()}:$mobulaPort",
@@ -207,6 +208,17 @@ object MarketServiceSpec {
             .serverLogicSuccess[Future] { _ =>
               Future.successful(ujson.read(priceChart))
             }
+        ),
+        route(
+          baseEndpoint.get
+            .in("simple")
+            .in("price")
+            .in(query[List[String]]("ids"))
+            .in(query[String]("vs_currencies"))
+            .out(jsonBody[ujson.Value])
+            .serverLogicSuccess[Future] { case (_, _) =>
+              Future.successful(ujson.read(coingeckoPrices))
+            }
         )
       )
 
@@ -237,7 +249,7 @@ object MarketServiceSpec {
             .in(query[List[String]]("blockchains"))
             .out(jsonBody[ujson.Value])
             .serverLogicSuccess[Future] { case (_, _) =>
-              Future.successful(ujson.read(prices))
+              Future.successful(ujson.read(mobulaPrices))
             }
         )
       )
@@ -277,11 +289,15 @@ object MarketServiceSpec {
     server.listen(port, uri.getHostAddress).asScala.futureValue
   }
 
-  val prices: String = s"""{"data": {
-      "tgx7VNFoP9DJiFMFgXXtafQZkUvyEdDHT9ryamHJYrjq": {
-        "price": $alphPrice,
-        "liquidity": 1000
-      },
+  /** Alephium price is only configured from coingecko, to validate the merge of the two providers.
+    */
+  val coingeckoPrices: String = s"""{
+      "alephium": {
+        "usd": $alphPrice
+      }
+    }"""
+
+  val mobulaPrices: String = s"""{"data": {
       "vT49PY8ksoUL6NcXiZ1t2wAmC7tTPRfFfER8n3UCLvXy": {
         "price": 4.213296507259207,
         "liquidity": 1000
