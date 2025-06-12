@@ -70,10 +70,10 @@ object MarketService extends StrictLogging {
     private val mobulaBaseUri    = marketConfig.mobulaUri
     private val tokenListUri     = marketConfig.tokenListUri
 
-    private val chartIds: ListMap[String, String]    = marketConfig.chartSymbolName
+    private val chartIds: ListMap[String, String] = marketConfig.chartSymbolName
 
     private def symbolNames: ListMap[String, String] = marketConfig.symbolName
-    private val symbolNamesR         = symbolNames.map(_.swap)
+    private val symbolNamesR                         = symbolNames.map(_.swap)
 
     private val baseCurrency: String = "usd"
 
@@ -185,11 +185,9 @@ object MarketService extends StrictLogging {
     override def chartSymbolNames: ListMap[String, String] = chartIds
     override def currencies: ArraySeq[String]              = marketConfig.currencies
 
-    /**
-     * Get prices from the two caches and merge them.
-     * We favor mobula prices over coingecko prices, as they are more accurate.
-     * If the price is not available, it will return None.
-     */
+    /** Get prices from the two caches and merge them. We favor mobula prices over coingecko prices,
+      * as they are more accurate. If the price is not available, it will return None.
+      */
     private def getPriceCache(): Either[String, ArraySeq[Price]] = {
       (mobulaPricesCache.get(), coingeckoPricesCache.get()) match {
         case (Right(mobula), Right(coingecko)) =>
