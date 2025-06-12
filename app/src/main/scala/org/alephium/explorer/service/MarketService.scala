@@ -52,6 +52,7 @@ trait MarketService extends Service {
   def currencies: ArraySeq[String]
 }
 
+// scalastyle:off number.of.methods
 object MarketService extends StrictLogging {
 
   def apply(marketConfig: ExplorerConfig.Market)(implicit
@@ -71,8 +72,13 @@ object MarketService extends StrictLogging {
 
     private val chartIds: ListMap[String, String] = marketConfig.chartSymbolName
 
+    private def symbolNames: ListMap[String, String] = marketConfig.symbolName
+    private val symbolNamesR                         = symbolNames.map(_.swap)
+
+    private val baseCurrency: String = "usd"
+
     // scalastyle:off magic.number
-    val pricesExpirationTime: Duration      = Duration.ofSecondsUnsafe(30)
+    val pricesExpirationTime: Duration      = Duration.ofMinutesUnsafe(1)
     val ratesExpirationTime: Duration       = Duration.ofMinutesUnsafe(5)
     val priceChartsExpirationTime: Duration = Duration.ofMinutesUnsafe(30)
     val tokenListExpirationTime: Duration   = Duration.ofHoursUnsafe(12)
@@ -115,11 +121,17 @@ object MarketService extends StrictLogging {
      * We use an `Either` value because we cannot control what's returned by
      * coingecko and it might be that their endoints return something else.
      */
-    private val pricesCache: AsyncReloadingCache[Either[String, ArraySeq[Price]]] =
+    private val mobulaPricesCache: AsyncReloadingCache[Either[String, ArraySeq[Price]]] =
       AsyncReloadingCache[Either[String, ArraySeq[Price]]](
-        Left("Price data not fetched"),
+        Left("Price data not fetched for Mobula"),
         pricesExpirationTime.asScala
-      )(_ => getPricesRemote(0))
+      )(_ => getMobulaPricesRemote(0))
+
+    private val coingeckoPricesCache: AsyncReloadingCache[Either[String, ArraySeq[Price]]] =
+      AsyncReloadingCache[Either[String, ArraySeq[Price]]](
+        Left("Price data not fetched for Coingecko"),
+        pricesExpirationTime.asScala
+      )(_ => getCoingeckoPricesRemote(0))
 
     private val ratesCache: AsyncReloadingCache[Either[String, ArraySeq[ExchangeRate]]] =
       AsyncReloadingCache[Either[String, ArraySeq[ExchangeRate]]](
@@ -157,7 +169,8 @@ object MarketService extends StrictLogging {
       // We cant' fetch price without token list, so we make sure to have it before reloading other caches
       discard(
         tokenListCache.expireAndReloadFuture().map { _ =>
-          pricesCache.expireAndReload()
+          mobulaPricesCache.expireAndReload()
+          coingeckoPricesCache.expireAndReload()
         }
       )
       ratesCache.expireAndReload()
@@ -172,6 +185,31 @@ object MarketService extends StrictLogging {
     override def chartSymbolNames: ListMap[String, String] = chartIds
     override def currencies: ArraySeq[String]              = marketConfig.currencies
 
+    /** Get prices from the two caches and merge them. We favor mobula prices over coingecko prices,
+      * as they are more accurate. If the price is not available, it will return None.
+      */
+    private def getPriceCache(): Either[String, ArraySeq[Price]] = {
+      (mobulaPricesCache.get(), coingeckoPricesCache.get()) match {
+        case (Right(mobula), Right(coingecko)) =>
+          Right(
+            (mobula ++ coingecko)
+              .groupBy(_.symbol)
+              .view
+              .mapValues(
+                _.headOption
+              ) // We favor mobula prices over coingecko, as they are more accurate
+              .values
+              .flatten
+              .to(ArraySeq)
+          )
+
+        case (Right(mobula), Left(_))    => Right(mobula)
+        case (Left(_), Right(coingecko)) => Right(coingecko)
+        case (Left(mobulaError), Left(coingeckoError)) =>
+          Left(s"Failed to fetch prices: $mobulaError, $coingeckoError")
+      }
+    }
+
     def getPrices(
         ids: ArraySeq[String],
         currency: String
@@ -184,7 +222,7 @@ object MarketService extends StrictLogging {
         rate <- rates
           .find(_.currency == currency)
           .toRight(s"Cannot find price for currency $currency")
-        prices <- pricesCache.get()
+        prices <- getPriceCache()
       } yield {
         // Rates from coingecko are based on BTC, but mobula prices are in dollars, so we need to convert them
         ids
@@ -198,7 +236,7 @@ object MarketService extends StrictLogging {
       }
     }
 
-    private def getPricesRemote(retried: Int): Future[Either[String, ArraySeq[Price]]] = {
+    private def getMobulaPricesRemote(retried: Int): Future[Either[String, ArraySeq[Price]]] = {
       tokenListCache.get() match {
         case Right(tokens) =>
           logger.debug(s"Query mobula `/market/multi-data`, nb of attempts $retried")
@@ -216,6 +254,15 @@ object MarketService extends StrictLogging {
       }
     }
 
+    private def getCoingeckoPricesRemote(retried: Int): Future[Either[String, ArraySeq[Price]]] = {
+      logger.debug(s"Query coingecko `/price`, nb of attempts $retried")
+      request(
+        uri"$coingeckoBaseUri/simple/price?ids=${symbolNames.values.mkString(",")}&vs_currencies=$baseCurrency"
+      ) { response =>
+        handleCoingeckoPricesRateResponse(response, retried)
+      }
+    }
+
     private def handleMobulaPricesRateResponse(
         response: Response[Either[String, String]],
         assets: ArraySeq[TokenList.Entry],
@@ -227,7 +274,22 @@ object MarketService extends StrictLogging {
         _.code != StatusCode.Ok,
         retried,
         convertJsonToMobulaPrices(assets),
-        getPricesRemote,
+        getMobulaPricesRemote,
+        "Cannot fetch prices"
+      )
+    }
+
+    private def handleCoingeckoPricesRateResponse(
+        response: Response[Either[String, String]],
+        retried: Int
+    ): Future[Either[String, ArraySeq[Price]]] = {
+      handleResponseAndRetryWithCondition(
+        "coingecko/price",
+        response,
+        _.code != StatusCode.Ok,
+        retried,
+        convertJsonToCoingeckoPrices,
+        getMobulaPricesRemote,
         "Cannot fetch prices"
       )
     }
@@ -400,10 +462,12 @@ object MarketService extends StrictLogging {
         liquidity: Double
     ): Option[Price] = {
       // If the liquidity is below the minimum, the price is unavailable
-      if (liquidity < marketConfig.liquidityMinimum) {
+      // Or if the price is 0, we also consider it unavailable, this might happen if
+      // the api has an issue.
+      if (liquidity < marketConfig.liquidityMinimum || price == 0.0) {
         None
       } else {
-        Some(Price(asset.symbol, price, liquidity))
+        Some(Price(asset.symbol, price, Some(liquidity)))
       }
     }
 
@@ -433,6 +497,24 @@ object MarketService extends StrictLogging {
               }
             case _ =>
               Left(s"JSON isn't an object: $obj")
+          }
+        case other =>
+          Left(s"JSON isn't an object: $other")
+      }
+    }
+
+    @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
+    def convertJsonToCoingeckoPrices(json: ujson.Value): Either[String, ArraySeq[Price]] = {
+      json match {
+        case obj: ujson.Obj =>
+          Try {
+            ArraySeq.from(obj.value.flatMap { case (name, value) =>
+              symbolNamesR.get(name).map { id =>
+                Price(id, value(baseCurrency).num, None)
+              }
+            })
+          }.toEither.left.map { error =>
+            error.getMessage
           }
         case other =>
           Left(s"JSON isn't an object: $other")
