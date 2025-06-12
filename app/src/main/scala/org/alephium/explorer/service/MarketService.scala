@@ -67,7 +67,12 @@ object MarketService extends StrictLogging {
     private val mobulaBaseUri    = marketConfig.mobulaUri
     private val tokenListUri     = marketConfig.tokenListUri
 
-    private val chartIds: ListMap[String, String] = marketConfig.chartSymbolName
+    private val chartIds: ListMap[String, String]    = marketConfig.chartSymbolName
+
+    private def symbolNames: ListMap[String, String] = marketConfig.symbolName
+    private val symbolNamesR         = symbolNames.map(_.swap)
+
+    private val baseCurrency: String = "usd"
 
     private def symbolNames: ListMap[String, String] = marketConfig.symbolName
     private val symbolNamesR                         = symbolNames.map(_.swap)
@@ -182,9 +187,11 @@ object MarketService extends StrictLogging {
     override def chartSymbolNames: ListMap[String, String] = chartIds
     override def currencies: ArraySeq[String]              = marketConfig.currencies
 
-    /** Get prices from the two caches and merge them. We favor mobula prices over coingecko prices,
-      * as they are more accurate. If the price is not available, it will return None.
-      */
+    /**
+     * Get prices from the two caches and merge them.
+     * We favor mobula prices over coingecko prices, as they are more accurate.
+     * If the price is not available, it will return None.
+     */
     private def getPriceCache(): Either[String, ArraySeq[Price]] = {
       (mobulaPricesCache.get(), coingeckoPricesCache.get()) match {
         case (Right(mobula), Right(coingecko)) =>
@@ -234,26 +241,30 @@ object MarketService extends StrictLogging {
     }
 
     private def getMobulaPricesRemote(retried: Int): Future[Either[String, ArraySeq[Price]]] = {
-      apiKeyOpt match {
-        case Some(apiKey) =>
-          tokenListCache.get() match {
-            case Right(tokens) =>
-              logger.debug(s"Query mobula `/market/multi-data`, nb of attempts $retried")
-              val assets      = tokenListToAddresses(tokens)
-              val assetsStr   = assets.map { _.toBase58 }.mkString(",")
-              val blockchains = assets.map { _ => "alephium" }.mkString(",")
-              request(
-                uri"$mobulaBaseUri/market/multi-data?assets=${assetsStr}&blockchains=${blockchains}",
-                headers = Map(("Authorizattion", apiKey.value))
-              ) { response =>
-                handleMobulaPricesRateResponse(response, tokens, retried)
-              }
-            case Left(error) =>
-              Future.successful(Left(s"Token list not fetched at $tokenListUri: $error"))
+      tokenListCache.get() match {
+        case Right(tokens) =>
+          logger.debug(s"Query mobula `/market/multi-data`, nb of attempts $retried")
+          val assets      = tokenListToAddresses(tokens)
+          val assetsStr   = assets.map { _.toBase58 }.mkString(",")
+          val blockchains = assets.map { _ => "alephium" }.mkString(",")
+          request(
+            uri"$mobulaBaseUri/market/multi-data?assets=${assetsStr}&blockchains=${blockchains}",
+            headers = Map(("Authorizattion", apiKey.value))
+          ) { response =>
+            handleMobulaPricesRateResponse(response, tokens, retried)
           }
 
         case None =>
           Future.successful(Left("No Mobula API key"))
+      }
+    }
+
+    private def getCoingeckoPricesRemote(retried: Int): Future[Either[String, ArraySeq[Price]]] = {
+      logger.debug(s"Query coingecko `/price`, nb of attempts $retried")
+      request(
+        uri"$coingeckoBaseUri/simple/price?ids=${symbolNames.values.mkString(",")}&vs_currencies=$baseCurrency"
+      ) { response =>
+        handleCoingeckoPricesRateResponse(response, retried)
       }
     }
 
