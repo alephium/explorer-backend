@@ -54,7 +54,8 @@ import org.alephium.explorer.config.{BootMode, ExplorerConfig}
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.persistence.model.BlockEntity
-import org.alephium.explorer.service.{BlockFlowClient, MarketServiceSpec}
+import org.alephium.explorer.service.BlockFlowClient
+import org.alephium.explorer.service.market.MarketServiceSpec
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.explorer.web._
 import org.alephium.json.Json._

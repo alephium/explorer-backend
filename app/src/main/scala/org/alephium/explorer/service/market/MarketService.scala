@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.service
+package org.alephium.explorer.service.market
 
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -69,12 +69,7 @@ object MarketService extends StrictLogging {
     private val mobulaBaseUri    = marketConfig.mobulaUri
     private val tokenListUri     = marketConfig.tokenListUri
 
-    private val chartIds: ListMap[String, String]    = marketConfig.chartSymbolName
-
-    private def symbolNames: ListMap[String, String] = marketConfig.symbolName
-    private val symbolNamesR         = symbolNames.map(_.swap)
-
-    private val baseCurrency: String = "usd"
+    private val chartIds: ListMap[String, String] = marketConfig.chartSymbolName
 
     private def symbolNames: ListMap[String, String] = marketConfig.symbolName
     private val symbolNamesR                         = symbolNames.map(_.swap)
@@ -125,7 +120,8 @@ object MarketService extends StrictLogging {
      * We use an `Either` value because we cannot control what's returned by
      * coingecko and it might be that their endoints return something else.
      */
-    private val mobulaPricesCache: AsyncReloadingCache[Either[String, ArraySeq[MobulaPrice]]] =
+    private[market] val mobulaPricesCache
+        : AsyncReloadingCache[Either[String, ArraySeq[MobulaPrice]]] =
       AsyncReloadingCache[Either[String, ArraySeq[MobulaPrice]]](
         Left("Price data not fetched for Mobula"),
         pricesExpirationTime
@@ -156,7 +152,7 @@ object MarketService extends StrictLogging {
         )
       }
 
-    private val tokenListCache: AsyncReloadingCache[Either[String, TokenList]] =
+    private[service] val tokenListCache: AsyncReloadingCache[Either[String, TokenList]] =
       AsyncReloadingCache[Either[String, TokenList]](
         Left("Token list not fetched"),
         tokenListExpirationTime
@@ -190,11 +186,9 @@ object MarketService extends StrictLogging {
     override def chartSymbolNames: ListMap[String, String] = chartIds
     override def currencies: ArraySeq[String]              = marketConfig.currencies
 
-    /**
-     * Get prices from the two caches and merge them.
-     * We favor mobula prices over coingecko prices, as they are more accurate.
-     * If the price is not available, it will return None.
-     */
+    /** Get prices from the two caches and merge them. We favor mobula prices over coingecko prices,
+      * as they are more accurate. If the price is not available, it will return None.
+      */
     private def getPriceCache(): Either[String, ArraySeq[Price]] = {
       (mobulaPricesCache.get(), coingeckoPricesCache.get()) match {
         case (Right(mobula), Right(coingecko)) =>
@@ -244,22 +238,52 @@ object MarketService extends StrictLogging {
       }
     }
 
+    // This is used to validate the token list freshness. Only used in `getTokenList`
+    private var lastValidatedTokenPriceTime = TimeStamp.zero
+
+    /** Get the token list from the cache, if it's not fresh, we return the tokens that have valid
+      * prices.
+      *
+      * The idea is to avoid fetching prices for all tokens, while most of them don't have a price
+      * or enough liquidity. So every time we fetch the token list, we re-check if the prices are
+      * now valid, otherwise we recompute the prices for the current tokens with valid prices.
+      */
+    private def getTokenList(): Either[String, ArraySeq[TokenList.Entry]] = {
+      (tokenListCache.get(), mobulaPricesCache.get()) match {
+        case (Right(tokenList), Right(prices)) =>
+          if (tokenList.fetchedAt.exists(at => lastValidatedTokenPriceTime.isBefore(at))) {
+            // Token list is fresh, we need to validate prices for all tokens
+            lastValidatedTokenPriceTime = TimeStamp.now()
+            Right(tokenList.tokens)
+          } else {
+            // Token list is not fresh, we recompute price of current validated tokens
+            Right(prices.map(_.asset))
+          }
+        case (Right(tokenList), Left(_)) =>
+          // Prices aren't fetched yet, we return the token list as is
+          lastValidatedTokenPriceTime = TimeStamp.now()
+          Right(tokenList.tokens)
+        case (Left(error), _) =>
+          Left(error)
+      }
+    }
+
     private def getMobulaPricesRemote(
         retried: Int
     ): Future[Either[String, ArraySeq[MobulaPrice]]] = {
       apiKeyOpt match {
         case Some(apiKey) =>
-          tokenListCache.get() match {
-            case Right(tokenList) =>
+          getTokenList() match {
+            case Right(tokens) =>
               logger.debug(s"Query mobula `/market/multi-data`, nb of attempts $retried")
-              val assets      = tokenListToAddresses(tokenList.tokens)
+              val assets      = tokenListToAddresses(tokens)
               val assetsStr   = assets.map { _.toBase58 }.mkString(",")
               val blockchains = assets.map { _ => "alephium" }.mkString(",")
               request(
                 uri"$mobulaBaseUri/market/multi-data?assets=${assetsStr}&blockchains=${blockchains}",
                 headers = Map(("Authorization", apiKey.value))
               ) { response =>
-                handleMobulaPricesRateResponse(response, tokenList.tokens, retried)
+                handleMobulaPricesRateResponse(response, tokens, retried)
               }
             case Left(error) =>
               Future.successful(Left(s"Token list not fetched at $tokenListUri: $error"))
@@ -273,15 +297,6 @@ object MarketService extends StrictLogging {
     private def getCoingeckoPricesRemote(
         retried: Int
     ): Future[Either[String, ArraySeq[CoingeckoPrice]]] = {
-      logger.debug(s"Query coingecko `/price`, nb of attempts $retried")
-      request(
-        uri"$coingeckoBaseUri/simple/price?ids=${symbolNames.values.mkString(",")}&vs_currencies=$baseCurrency"
-      ) { response =>
-        handleCoingeckoPricesRateResponse(response, retried)
-      }
-    }
-
-    private def getCoingeckoPricesRemote(retried: Int): Future[Either[String, ArraySeq[Price]]] = {
       logger.debug(s"Query coingecko `/price`, nb of attempts $retried")
       request(
         uri"$coingeckoBaseUri/simple/price?ids=${symbolNames.values.mkString(",")}&vs_currencies=$baseCurrency"
@@ -607,7 +622,10 @@ object MarketService extends StrictLogging {
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
-  final case class TokenList(tokens: ArraySeq[TokenList.Entry], fetchedAt: Option[TimeStamp] = None)
+  final private[market] case class TokenList(
+      tokens: ArraySeq[TokenList.Entry],
+      fetchedAt: Option[TimeStamp] = None
+  )
 
   object TokenList {
     implicit val readWriter: ReadWriter[TokenList] = macroRW
@@ -620,13 +638,16 @@ object MarketService extends StrictLogging {
     }
   }
 
-  sealed private trait Price {
+  sealed private[market] trait Price {
     def symbol: String
     def price: Double
   }
 
-  final private case class MobulaPrice(asset: TokenList.Entry, price: Double, liquidity: Double)
-      extends Price {
+  final private[market] case class MobulaPrice(
+      asset: TokenList.Entry,
+      price: Double,
+      liquidity: Double
+  ) extends Price {
     val symbol: String = asset.symbol
   }
 

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the library. If not, see <http://www.gnu.org/licenses/>.
 
-package org.alephium.explorer.service
+package org.alephium.explorer.service.market
 
 import java.net.InetAddress
 
@@ -123,6 +123,34 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     }
   }
 
+  "wait for token-list refresh to validate tokens" in new Fixture {
+
+    usdtPrice = 0.0 // make usdt invalid
+
+    marketService.start().futureValue
+
+    eventually {
+      marketService.getPrices(ArraySeq("USDT"), "usd").rightValue is ArraySeq(None)
+    }
+
+    usdtPrice = 1.0 // make usdt valid again
+
+    // Refreshing prices should not change the result
+    // As the token-list is not refreshed yet
+    marketService.mobulaPricesCache.expireAndReloadFuture().futureValue
+    eventually {
+      marketService.getPrices(ArraySeq("USDT"), "usd").rightValue is ArraySeq(None)
+    }
+
+    // Refreshing token-list should change the result on next price reload
+    marketService.tokenListCache.expireAndReloadFuture().futureValue
+    marketService.mobulaPricesCache.expireAndReloadFuture().futureValue
+
+    eventually {
+      marketService.getPrices(ArraySeq("USDT"), "usd").rightValue is ArraySeq(Some(1.0))
+    }
+  }
+
   trait Fixture {
     val localhost: InetAddress = InetAddress.getByName("127.0.0.1")
     val coingeckoPort          = SocketUtil.temporaryLocalPort(SocketUtil.Both)
@@ -168,7 +196,7 @@ object MarketServiceSpec {
     Codec.string.map(value => ujson.read(value))(_.toString)
 
   val alphPrice = 1.223123123
-  val usdtPrice = 1.0012412
+  var usdtPrice = 1.0012412
 
   val symbolNames = ListMap(
     "ALPH" -> "alephium",
@@ -302,7 +330,7 @@ object MarketServiceSpec {
       }
     }"""
 
-  val mobulaPrices: String = s"""{"data": {
+  def mobulaPrices: String = s"""{"data": {
       "vT49PY8ksoUL6NcXiZ1t2wAmC7tTPRfFfER8n3UCLvXy": {
         "price": 4.213296507259207,
         "liquidity": 1000
