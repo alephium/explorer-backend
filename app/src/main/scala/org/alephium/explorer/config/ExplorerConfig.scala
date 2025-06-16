@@ -283,7 +283,11 @@ object ExplorerConfig {
       coingeckoUri: String,
       tokenListUri: String,
       mobulaApiKey: Option[ApiKey],
-      marketChartDays: Int
+      marketChartDays: Int,
+      pricesExpirationTime: FiniteDuration,
+      ratesExpirationTime: FiniteDuration,
+      priceChartsExpirationTime: FiniteDuration,
+      tokenListExpirationTime: FiniteDuration
   )
 
   final private case class Explorer(

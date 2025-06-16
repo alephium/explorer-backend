@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.collection.immutable.{ArraySeq, ListMap}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 import com.typesafe.scalalogging.StrictLogging
@@ -75,10 +76,10 @@ object MarketService extends StrictLogging {
     private val baseCurrency: String = "usd"
 
     // scalastyle:off magic.number
-    val pricesExpirationTime: Duration      = Duration.ofMinutesUnsafe(1)
-    val ratesExpirationTime: Duration       = Duration.ofMinutesUnsafe(5)
-    val priceChartsExpirationTime: Duration = Duration.ofMinutesUnsafe(30)
-    val tokenListExpirationTime: Duration   = Duration.ofHoursUnsafe(12)
+    val pricesExpirationTime: FiniteDuration      = marketConfig.pricesExpirationTime
+    val ratesExpirationTime: FiniteDuration       = marketConfig.ratesExpirationTime
+    val priceChartsExpirationTime: FiniteDuration = marketConfig.priceChartsExpirationTime
+    val tokenListExpirationTime: FiniteDuration   = marketConfig.tokenListExpirationTime
 
     /*
      * Coingecko rate limit is 15 queries per minutes
@@ -121,19 +122,19 @@ object MarketService extends StrictLogging {
     private val mobulaPricesCache: AsyncReloadingCache[Either[String, ArraySeq[Price]]] =
       AsyncReloadingCache[Either[String, ArraySeq[Price]]](
         Left("Price data not fetched for Mobula"),
-        pricesExpirationTime.asScala
+        pricesExpirationTime
       )(_ => getMobulaPricesRemote(0))
 
     private val coingeckoPricesCache: AsyncReloadingCache[Either[String, ArraySeq[Price]]] =
       AsyncReloadingCache[Either[String, ArraySeq[Price]]](
         Left("Price data not fetched for Coingecko"),
-        pricesExpirationTime.asScala
+        pricesExpirationTime
       )(_ => getCoingeckoPricesRemote(0))
 
     private val ratesCache: AsyncReloadingCache[Either[String, ArraySeq[ExchangeRate]]] =
       AsyncReloadingCache[Either[String, ArraySeq[ExchangeRate]]](
         Left("Exchange rate data not fetched"),
-        ratesExpirationTime.asScala
+        ratesExpirationTime
       )(_ => getExchangeRatesRemote(0))
 
     private val priceChartsCache
@@ -143,7 +144,7 @@ object MarketService extends StrictLogging {
           id,
           AsyncReloadingCache[Either[String, ArraySeq[(TimeStamp, Double)]]](
             Left(s"Price chart not fetched for $id"),
-            priceChartsExpirationTime.asScala
+            priceChartsExpirationTime
           )(_ => getPriceChartRemote(name, 0))
         )
       }
@@ -151,7 +152,7 @@ object MarketService extends StrictLogging {
     private val tokenListCache: AsyncReloadingCache[Either[String, ArraySeq[TokenList.Entry]]] =
       AsyncReloadingCache[Either[String, ArraySeq[TokenList.Entry]]](
         Left("Token list not fetched"),
-        tokenListExpirationTime.asScala
+        tokenListExpirationTime
       )(_ => getTokenListRemote(0))
 
     /*
