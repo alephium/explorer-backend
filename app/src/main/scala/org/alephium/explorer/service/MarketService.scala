@@ -244,7 +244,7 @@ object MarketService extends StrictLogging {
               val blockchains = assets.map { _ => "alephium" }.mkString(",")
               request(
                 uri"$mobulaBaseUri/market/multi-data?assets=${assetsStr}&blockchains=${blockchains}",
-                headers = Map(("Authorizattion", apiKey.value))
+                headers = Map(("Authorization", apiKey.value))
               ) { response =>
                 handleMobulaPricesRateResponse(response, tokens, retried)
               }
