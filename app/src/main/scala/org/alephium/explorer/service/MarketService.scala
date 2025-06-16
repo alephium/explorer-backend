@@ -151,8 +151,8 @@ object MarketService extends StrictLogging {
         )
       }
 
-    private val tokenListCache: AsyncReloadingCache[Either[String, ArraySeq[TokenList.Entry]]] =
-      AsyncReloadingCache[Either[String, ArraySeq[TokenList.Entry]]](
+    private val tokenListCache: AsyncReloadingCache[Either[String, TokenList]] =
+      AsyncReloadingCache[Either[String, TokenList]](
         Left("Token list not fetched"),
         tokenListExpirationTime
       )(_ => getTokenListRemote(0))
@@ -243,16 +243,16 @@ object MarketService extends StrictLogging {
       apiKeyOpt match {
         case Some(apiKey) =>
           tokenListCache.get() match {
-            case Right(tokens) =>
+            case Right(tokenList) =>
               logger.debug(s"Query mobula `/market/multi-data`, nb of attempts $retried")
-              val assets      = tokenListToAddresses(tokens)
+              val assets      = tokenListToAddresses(tokenList.tokens)
               val assetsStr   = assets.map { _.toBase58 }.mkString(",")
               val blockchains = assets.map { _ => "alephium" }.mkString(",")
               request(
                 uri"$mobulaBaseUri/market/multi-data?assets=${assetsStr}&blockchains=${blockchains}",
                 headers = Map(("Authorization", apiKey.value))
               ) { response =>
-                handleMobulaPricesRateResponse(response, tokens, retried)
+                handleMobulaPricesRateResponse(response, tokenList.tokens, retried)
               }
             case Left(error) =>
               Future.successful(Left(s"Token list not fetched at $tokenListUri: $error"))
@@ -334,15 +334,18 @@ object MarketService extends StrictLogging {
     private def handleTokenListResponse(
         response: Response[Either[String, String]],
         retried: Int
-    ): Future[Either[String, ArraySeq[TokenList.Entry]]] = {
+    ): Future[Either[String, TokenList]] = {
       handleResponseAndRetryWithCondition(
         tokenListUri,
         response,
         _.code != StatusCode.Ok,
         retried,
         ujson =>
-          Try(read[TokenList](ujson).tokens).toEither.left.map { error =>
-            s"Cannode decode token list ${error.getMessage}"
+          Try(read[TokenList](ujson)) match {
+            case Success(tokenList) =>
+              Right(tokenList.copy(fetchedAt = Some(TimeStamp.now())))
+            case Failure(error) =>
+              Left(s"Cannode decode token list ${error.getMessage}")
           },
         getTokenListRemote(_),
         "Cannot fetch token list"
@@ -351,7 +354,7 @@ object MarketService extends StrictLogging {
 
     def getTokenListRemote(
         retried: Int
-    ): Future[Either[String, ArraySeq[TokenList.Entry]]] = {
+    ): Future[Either[String, TokenList]] = {
       request(
         uri"$tokenListUri"
       ) { response =>
@@ -587,7 +590,8 @@ object MarketService extends StrictLogging {
     }
   }
 
-  final case class TokenList(tokens: ArraySeq[TokenList.Entry])
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  final case class TokenList(tokens: ArraySeq[TokenList.Entry], fetchedAt: Option[TimeStamp] = None)
 
   object TokenList {
     implicit val readWriter: ReadWriter[TokenList] = macroRW
