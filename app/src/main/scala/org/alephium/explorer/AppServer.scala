@@ -32,7 +32,7 @@ import org.alephium.explorer.web._
 object AppServer {
 
   def routes(
-      marketService: MarketService,
+      marketService: market.MarketService,
       exportTxsNumberThreshold: Int,
       streamParallelism: Int,
       maxTimeIntervals: ExplorerConfig.MaxTimeIntervals,

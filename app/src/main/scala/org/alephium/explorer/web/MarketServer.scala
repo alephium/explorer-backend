@@ -23,7 +23,7 @@ import io.vertx.ext.web._
 
 import org.alephium.api.ApiError
 import org.alephium.explorer.api.MarketEndpoints
-import org.alephium.explorer.service.MarketService
+import org.alephium.explorer.service.market.MarketService
 
 class MarketServer(
     marketService: MarketService
