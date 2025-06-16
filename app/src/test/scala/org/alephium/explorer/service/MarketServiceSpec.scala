@@ -20,6 +20,7 @@ import java.net.InetAddress
 
 import scala.collection.immutable.{ArraySeq, ListMap}
 import scala.concurrent._
+import scala.concurrent.duration._
 import scala.util._
 
 import akka.testkit.SocketUtil
@@ -142,7 +143,11 @@ class MarketServiceSpec extends AlephiumFutureSpec {
       s"http://${localhost.getHostAddress()}:$coingeckoPort",
       s"http://${localhost.getHostAddress()}:$tokenListPort",
       Some(apiKey),
-      marketChartDays = 366
+      marketChartDays = 366,
+      pricesExpirationTime = FiniteDuration(1, "minutes"),
+      ratesExpirationTime = FiniteDuration(1, "minutes"),
+      priceChartsExpirationTime = FiniteDuration(1, "minutes"),
+      tokenListExpirationTime = FiniteDuration(1, "minutes")
     )
 
     val coingecko: MarketServiceSpec.CoingeckoMock =
