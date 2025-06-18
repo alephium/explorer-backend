@@ -50,12 +50,12 @@ import org.alephium.util.{Duration, TimeStamp}
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.IterableOps"))
 case object BlockFlowSyncService extends StrictLogging {
   // scalastyle:off magic.number
-  private val defaultStep     = Duration.ofMinutesUnsafe(30L)
   private val defaultBackStep = Duration.ofSecondsUnsafe(10L)
   private val initialBackStep = Duration.ofMinutesUnsafe(30L)
   // scalastyle:on magic.number
 
-  def start(nodeUris: ArraySeq[Uri], interval: FiniteDuration)(implicit
+  def start(nodeUris: ArraySeq[Uri], interval: FiniteDuration, blockFlowFetchMaxAge: Duration)(
+      implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
@@ -68,9 +68,13 @@ case object BlockFlowSyncService extends StrictLogging {
       firstInterval = ScalaDuration.Zero,
       loopInterval = interval,
       state = new AtomicBoolean()
-    )(init())(state => syncOnce(nodeUris, state))
+    )(init())(state => syncOnce(nodeUris, state, blockFlowFetchMaxAge))
 
-  def syncOnce(nodeUris: ArraySeq[Uri], initialBackStepDone: AtomicBoolean)(implicit
+  def syncOnce(
+      nodeUris: ArraySeq[Uri],
+      initialBackStepDone: AtomicBoolean,
+      blockFlowFetchMaxAge: Duration
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
@@ -78,16 +82,20 @@ case object BlockFlowSyncService extends StrictLogging {
       groupSetting: GroupSetting
   ): Future[Unit] = {
     if (initialBackStepDone.get()) {
-      syncOnceWith(nodeUris, defaultStep, defaultBackStep)
+      syncOnceWith(nodeUris, blockFlowFetchMaxAge, defaultBackStep)
     } else {
-      syncOnceWith(nodeUris, defaultStep, initialBackStep).map { _ =>
+      syncOnceWith(nodeUris, blockFlowFetchMaxAge, initialBackStep).map { _ =>
         initialBackStepDone.set(true)
       }
     }
   }
 
   // scalastyle:off magic.number
-  private def syncOnceWith(nodeUris: ArraySeq[Uri], step: Duration, backStep: Duration)(implicit
+  private def syncOnceWith(
+      nodeUris: ArraySeq[Uri],
+      step: Duration,
+      backStep: Duration
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
@@ -108,7 +116,10 @@ case object BlockFlowSyncService extends StrictLogging {
           }
         }
       }
-      .map(_ => ())
+      .map { nbs =>
+        logger.debug(s"Synced ${nbs.flatten.sum} blocks")
+      }
+
   }
   // scalastyle:on magic.number
 
@@ -196,7 +207,7 @@ case object BlockFlowSyncService extends StrictLogging {
   ): Future[ArraySeq[(TimeStamp, TimeStamp)]] =
     for {
       localTs  <- getLocalMaxTimestamp()
-      remoteTs <- getRemoteMaxTimestamp(localTs)
+      remoteTs <- getRemoteMaxTimestamp(localTs, step)
       result <- TimeUtil.buildTimeStampRangeOrEmpty(step, backStep, localTs, remoteTs) match {
         case Failure(exception) =>
           Future.failed(exception)
@@ -215,39 +226,42 @@ case object BlockFlowSyncService extends StrictLogging {
     }
   }
 
-  private def getRemoteMaxTimestamp(localTsOpt: Option[TimeStamp])(implicit
+  /** Returns the maximum timestamp we can use to fetch blocks from the remote node.
+    */
+  private def getRemoteMaxTimestamp(localTsOpt: Option[TimeStamp], step: Duration)(implicit
       ec: ExecutionContext,
       blockFlowClient: BlockFlowClient,
       groupSetting: GroupSetting
   ): Future[Option[TimeStamp]] = {
-    val now = TimeStamp.now()
-    /*
-     * If the local timestamp is closed to now, it means the node is up to date
-     * and we can directly fetch blocks up to now.
-     * Otherwise it's safer to ask the node what are the latest blocks
-     */
-    if (
-      localTsOpt.map(localTs => now.minusUnsafe(defaultBackStep).isBefore(localTs)).getOrElse(false)
-    ) {
-      Future.successful(Some(now))
-    } else {
-      Future
-        .sequence(groupSetting.chainIndexes.map { chainIndex =>
-          blockFlowClient
-            .fetchChainInfo(chainIndex)
-            .flatMap { chainInfo =>
+    localTsOpt match {
+      case Some(locatTs) =>
+        val now = TimeStamp.now()
+        if (locatTs.plusUnsafe(step) >= now) {
+          // We know that we can fetch blocks from the remote node in one time range
+          Future.successful(Some(now))
+        } else {
+          // We can't fetch all blocks in one go, so we need to ask the remote node what is it's latest timestamp
+          // Otherwise we might try to fetch lots of empty timestamps if the remote node is not synced
+          Future
+            .sequence(groupSetting.chainIndexes.map { chainIndex =>
               blockFlowClient
-                .fetchBlocksAtHeight(chainIndex, Height.unsafe(chainInfo.currentHeight))
-                .map { blocks =>
-                  blocks.map(_.timestamp).maxOption.map(ts => (ts, chainInfo.currentHeight))
+                .fetchChainInfo(chainIndex)
+                .flatMap { chainInfo =>
+                  blockFlowClient
+                    .fetchBlocksAtHeight(chainIndex, Height.unsafe(chainInfo.currentHeight))
+                    .map { blocks =>
+                      blocks.map(_.timestamp).maxOption.map(ts => (ts, chainInfo.currentHeight))
+                    }
                 }
+
+            })
+            .map { res =>
+              val tsHeights = res.flatten
+              tsHeights.map { case (ts, _) => ts }.maxOption
             }
 
-        })
-        .map { res =>
-          val tsHeights = res.flatten
-          tsHeights.map { case (ts, _) => ts }.maxOption
         }
+      case None => Future.successful(None)
     }
   }
 
