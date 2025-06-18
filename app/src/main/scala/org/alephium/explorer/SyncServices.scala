@@ -36,6 +36,7 @@ import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.service._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.protocol.model.NetworkId
+import org.alephium.util
 
 /** Implements function for Sync Services boot-up sequence */
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
@@ -67,7 +68,8 @@ object SyncServices extends StrictLogging {
             tokenSupplyServiceScheduleTime = config.tokenSupplyServiceScheduleTime,
             hashRateServiceSyncPeriod = config.hashRateServiceSyncPeriod,
             finalizerServiceSyncPeriod = config.finalizerServiceSyncPeriod,
-            transactionHistoryServiceSyncPeriod = config.transactionHistoryServiceSyncPeriod
+            transactionHistoryServiceSyncPeriod = config.transactionHistoryServiceSyncPeriod,
+            blockFlowFetchMaxAge = config.blockFlowFetchMaxAge
           )
         }
     }
@@ -81,7 +83,8 @@ object SyncServices extends StrictLogging {
       tokenSupplyServiceScheduleTime: LocalTime,
       hashRateServiceSyncPeriod: FiniteDuration,
       finalizerServiceSyncPeriod: FiniteDuration,
-      transactionHistoryServiceSyncPeriod: FiniteDuration
+      transactionHistoryServiceSyncPeriod: FiniteDuration,
+      blockFlowFetchMaxAge: FiniteDuration
   )(implicit
       scheduler: Scheduler,
       ec: ExecutionContext,
@@ -95,7 +98,8 @@ object SyncServices extends StrictLogging {
         Future
           .sequence(
             ArraySeq(
-              BlockFlowSyncService.start(peers, syncPeriod),
+              BlockFlowSyncService
+                .start(peers, syncPeriod, util.Duration.unsafe(blockFlowFetchMaxAge.toMillis)),
               MempoolSyncService.start(peers, syncPeriod),
               TokenSupplyService.start(tokenSupplyServiceScheduleTime),
               HashrateService.start(hashRateServiceSyncPeriod),
