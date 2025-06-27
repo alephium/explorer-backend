@@ -54,7 +54,7 @@ object TokenPerAddressSchema
 
   def createTokenGrouplessAddressIndex(): DBActionW[Int] =
     sqlu"""
-      CREATE INDEX token_tx_per_address_token_groupless_address_idx
+      CREATE INDEX IF NOT EXISTS token_tx_per_address_token_groupless_address_idx
       ON token_tx_per_addresses (token, groupless_address)
       WHERE groupless_address IS NOT NULL;
     """
