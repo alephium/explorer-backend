@@ -66,8 +66,9 @@ object DBInitializer extends StrictLogging {
       _ <- createTables()
       _ <- Migrations.migrate(databaseConfig)
       _ <- createIndexes()
+      _ <- runBackgroundIndexes
     } yield {
-      discard(createIndexesInBackground())
+      ()
     }
   }
 
@@ -113,6 +114,17 @@ object DBInitializer extends StrictLogging {
     })
   }
 
+  private def runBackgroundIndexes(implicit
+      explorerConfig: ExplorerConfig,
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = {
+    if (explorerConfig.forceSynchronousMigrations) {
+      createIndexesInBackground()
+    } else {
+      Future.successful(discard(createIndexesInBackground()))
+    }
+  }
   /*
    * Create some new indexes in the background to avoid downtime of the API
    */
