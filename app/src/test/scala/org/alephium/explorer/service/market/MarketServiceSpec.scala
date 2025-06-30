@@ -39,6 +39,10 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
   "don't throw error when stopped while requesting" in new Fixture {
 
+    // Set a delay for the token list to simulate a slow response
+    // So we can stop the service while waiting for the response
+    override val tokenListDelay: FiniteDuration = 500.seconds
+
     val promise = Promise[Any]()
 
     marketService.start().futureValue
@@ -145,6 +149,8 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     val tokenListPort          = SocketUtil.temporaryLocalPort(SocketUtil.Both)
     val apiKey                 = apiKeyGen.sample.get
 
+    val tokenListDelay: FiniteDuration = 0.second
+
     val alph = "ALPH"
     val usdt = "USDT"
     val weth = "WETH"
@@ -170,7 +176,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     val mobula: MarketServiceSpec.MobulaMock =
       new MarketServiceSpec.MobulaMock(localhost, mobulaPort)
     val tokenList: MarketServiceSpec.TokenListMock =
-      new MarketServiceSpec.TokenListMock(localhost, tokenListPort)
+      new MarketServiceSpec.TokenListMock(localhost, tokenListPort, tokenListDelay)
     val marketService: MarketService.MarketServiceImpl =
       new MarketService.MarketServiceImpl(marketConfig, Some(apiKey))
   }
@@ -281,9 +287,11 @@ object MarketServiceSpec {
     server.listen(port, uri.getHostAddress).asScala.futureValue
   }
 
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   class TokenListMock(
       uri: InetAddress,
-      port: Int
+      port: Int,
+      delay: FiniteDuration = 0.seconds
   ) extends ScalaFutures
       with BaseEndpoint
       with Server {
@@ -291,13 +299,26 @@ object MarketServiceSpec {
     private val vertx  = Vertx.vertx()
     private val router = Router.router(vertx)
 
+      def delayedFuture[T](vertx: Vertx, delay: FiniteDuration)(value: => T): Future[T] = {
+        val p = Promise[T]()
+        if(delay.toMillis > 0) {
+          vertx.setTimer(delay.toMillis, { _ => p.success(value) })
+        } else {
+          p.success(value)
+        }
+        p.future
+      }
+
     val routes: ArraySeq[Router => Route] =
       ArraySeq(
         route(
           baseEndpoint.get
             .out(jsonBody[ujson.Value])
             .serverLogicSuccess[Future] { _ =>
-              Future.successful(ujson.read(tokenList))
+              // Simulate a delay for the token list
+              delayedFuture(vertx, delay)(
+              ujson.read(tokenList)
+            )
             }
         )
       )
