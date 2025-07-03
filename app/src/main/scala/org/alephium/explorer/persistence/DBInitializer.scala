@@ -120,9 +120,17 @@ object DBInitializer extends StrictLogging {
       databaseConfig: DatabaseConfig[PostgresProfile]
   ): Future[Unit] = {
     if (explorerConfig.forceSynchronousMigrations) {
+      // Future will need to complete before the application starts
       createIndexesInBackground()
     } else {
-      Future.successful(discard(createIndexesInBackground()))
+      // Fire and forget the background index creation
+      discard(
+        createIndexesInBackground().recover { case e =>
+          logger.error(s"Background index creation failed: ${e.getMessage}", e)
+        }
+      )
+      // Return a completed future to avoid blocking the application startup
+      Future.successful(())
     }
   }
   /*

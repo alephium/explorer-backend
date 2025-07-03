@@ -309,9 +309,17 @@ object Migrations extends StrictLogging {
       databaseConfig: DatabaseConfig[PostgresProfile]
   ): Future[Unit] = {
     if (explorerConfig.forceSynchronousMigrations) {
+      // Future will need to complete before the application starts
       migrateInBackground(currentVersion)
     } else {
-      Future.successful(discard(migrateInBackground(currentVersion)))
+      // Fire and forget the background index creation
+      discard(
+        migrateInBackground(currentVersion).recover { case e =>
+          logger.error(s"Background migrations failed: ${e.getMessage}", e)
+        }
+      )
+      // Return a completed future to avoid blocking the application startup
+      Future.successful(())
     }
   }
 
