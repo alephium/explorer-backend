@@ -28,6 +28,7 @@ import org.alephium.explorer.util.{AddressUtil, UtxoUtil}
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.protocol.{ALPH, Hash}
 import org.alephium.protocol.model.{Address, GroupIndex, TransactionId}
+import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
@@ -341,8 +342,20 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
         // join existing and nonExisting entities and shuffle
         val allEntities = Random.shuffle(existing ++ nonExisting)
-        val allAddresses =
-          allEntities.map(entity => ApiAddress.from(entity.address.lockupScript))
+        val allAddresses: List[ApiAddress] =
+          allEntities.map { entity =>
+            entity.address.lockupScript match {
+              case LockupScript.P2PK(pubKey, _) =>
+                if (Random.nextBoolean()) {
+                  ApiAddress.fromProtocol(entity.address)
+                } else {
+                  // if P2PK, we can also return the half-decoded version
+                  ApiAddress(ApiAddress.HalfDecodedP2PK(pubKey))
+                }
+              case _ =>
+                ApiAddress.fromProtocol(entity.address)
+            }
+          }
 
         // get persisted entities to assert against actual query results
         val existingAddresses = existing.map(_.address)
