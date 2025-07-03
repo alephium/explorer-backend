@@ -36,7 +36,7 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
   "start/sync/stop" in new Fixture {
     using(Scheduler("")) { implicit scheduler =>
       checkBlocks(ArraySeq.empty)
-      BlockFlowSyncService.start(ArraySeq(Uri("")), 1.second)
+      BlockFlowSyncService.start(ArraySeq(Uri("")), 1.second, fetchMaxAge)
 
       chainOToO = ArraySeq(block0, block1, block2)
       eventually(checkMainChain(ArraySeq(block0.hash, block1.hash, block2.hash)))
@@ -105,7 +105,7 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     BlockDao.insertAll(blockEntities).futureValue
 
     BlockFlowSyncService
-      .syncOnce(ArraySeq(Uri("")), new AtomicBoolean(true))
+      .syncOnce(ArraySeq(Uri("")), new AtomicBoolean(true), fetchMaxAge)
       .failed
       .futureValue is a[ExplorerError.RemoteTimeStampIsBeforeLocal]
   }
@@ -209,6 +209,8 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     def blocksAndUncles = blockEntities ++ unclesEntities
 
     def blocks: ArraySeq[BlockEntryTest] = blockFlow.flatten
+
+    val fetchMaxAge: Duration = Duration.ofMinutesUnsafe(30)
 
     implicit val blockFlowClient: BlockFlowClient = new EmptyBlockFlowClient {
       override def fetchBlock(from: GroupIndex, hash: BlockHash): Future[BlockEntity] =
