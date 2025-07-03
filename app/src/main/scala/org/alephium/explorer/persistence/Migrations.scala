@@ -85,7 +85,7 @@ object Migrations extends StrictLogging {
       tableName: String,
       grouplessAddressColumn: String
   ): DBActionAll[Int] =
-    sqlu"""ALTER TABLE #$tableName ADD COLUMN #$grouplessAddressColumn CHARACTER VARYING"""
+    sqlu"""ALTER TABLE #$tableName ADD COLUMN IF NOT EXISTS #$grouplessAddressColumn CHARACTER VARYING"""
 
   def migration5(implicit ec: ExecutionContext): DBActionAll[Unit] =
     for {
