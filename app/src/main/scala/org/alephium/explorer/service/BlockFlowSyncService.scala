@@ -234,9 +234,9 @@ case object BlockFlowSyncService extends StrictLogging {
       groupSetting: GroupSetting
   ): Future[Option[TimeStamp]] = {
     localTsOpt match {
-      case Some(locatTs) =>
+      case Some(localTs) =>
         val now = TimeStamp.now()
-        if (locatTs.plusUnsafe(step) >= now) {
+        if (localTs.plusUnsafe(step) >= now) {
           // We know that we can fetch blocks from the remote node in one time range
           Future.successful(Some(now))
         } else {
