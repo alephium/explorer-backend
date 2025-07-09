@@ -143,7 +143,7 @@ object TransactionQueries extends StrictLogging {
       address: ApiAddress
   ): DBActionSR[Int] = {
     sql"""
-      SELECT COUNT(*)
+      SELECT COUNT(#${distinct(address)} tx_hash)
       FROM transaction_per_addresses
       WHERE main_chain = true
       AND #${addressColumn(address)} = $address
@@ -156,7 +156,7 @@ object TransactionQueries extends StrictLogging {
       pagination: Pagination
   ): DBActionSR[TxByAddressQR] = {
     sql"""
-      SELECT #${TxByAddressQR.selectFields}
+      SELECT #${distinct(address)} #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
       WHERE main_chain = true
       AND #${addressColumn(address)} = $address
@@ -263,7 +263,7 @@ object TransactionQueries extends StrictLogging {
       pagination: Pagination
   ): DBActionSR[TxByAddressQR] = {
     sql"""
-      SELECT #${TxByAddressQR.selectFields}
+      SELECT #${distinct(address)} #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
       WHERE main_chain = true
         AND #${addressColumn(address)} = $address
@@ -369,7 +369,7 @@ object TransactionQueries extends StrictLogging {
       to: TimeStamp
   ): StreamAction[TxByAddressQR] = {
     sql"""
-      SELECT #${TxByAddressQR.selectFields}
+      SELECT #${distinct(address)} #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
       WHERE #${addressColumn(address)} = $address
       AND main_chain = true

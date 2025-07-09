@@ -147,7 +147,7 @@ object TokenQueries extends StrictLogging {
       pagination: Pagination
   ): DBActionSR[TxByTokenQR] = {
     sql"""
-      SELECT #${TxByTokenQR.selectFields}
+      SELECT #${distinct(address)} #${TxByTokenQR.selectFields}
       FROM token_tx_per_addresses
       WHERE main_chain = true
       AND #${addressColumn(address)} = $address
