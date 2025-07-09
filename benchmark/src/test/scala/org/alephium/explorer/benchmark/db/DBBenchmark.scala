@@ -13,7 +13,6 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.api.model.{Address => ApiAddress}
-import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model.{IntervalType, Pagination}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
@@ -245,7 +244,7 @@ class DBBenchmark {
     val _ =
       state.db.runNow(
         TransactionQueries.areAddressesActiveAction(
-          state.next.map(address => ApiAddress.from(address.lockupScript))
+          state.next
         ),
         requestTimeout
       )
@@ -258,7 +257,7 @@ class DBBenchmark {
     val _ =
       state.db.runNow(
         TransactionQueries.areAddressesActiveAction(
-          state.next.map(address => ApiAddress.from(address.lockupScript))
+          state.next
         ),
         requestTimeout
       )

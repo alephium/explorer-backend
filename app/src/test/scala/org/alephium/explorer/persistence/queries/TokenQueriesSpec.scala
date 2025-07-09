@@ -18,6 +18,7 @@ import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
 import org.alephium.explorer.persistence.queries.TokenQueries
 import org.alephium.explorer.persistence.queries.result.TxByTokenQR
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.util.AddressUtil
 import org.alephium.util.{TimeStamp, U256}
 
 class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
@@ -53,7 +54,11 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
           run(TokenPerAddressSchema.table.delete).futureValue
           run(
             TokenPerAddressSchema.table ++= txPerAddressTokens.map(
-              _.copy(address = address, token = token)
+              _.copy(
+                address = address,
+                grouplessAddress = AddressUtil.convertToGrouplessAddress(address),
+                token = token
+              )
             )
           ).futureValue
 
