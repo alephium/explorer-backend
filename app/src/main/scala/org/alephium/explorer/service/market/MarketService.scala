@@ -59,7 +59,8 @@ object MarketService extends StrictLogging {
     private val chartIds: ListMap[String, String] = marketConfig.chartSymbolName
 
     private def symbolNames: ListMap[String, String] = marketConfig.symbolName
-    private val symbolNamesR                         = symbolNames.map(_.swap)
+    private val symbolNamesR: Map[String, Iterable[String]] =
+      symbolNames.groupMap { case (_, v) => v } { case (k, _) => k }
 
     private val baseCurrency: String = "usd"
 
@@ -542,11 +543,15 @@ object MarketService extends StrictLogging {
       json match {
         case obj: ujson.Obj =>
           Try {
-            ArraySeq.from(obj.value.flatMap { case (name, value) =>
-              symbolNamesR.get(name).map { id =>
-                CoingeckoPrice(id, value(baseCurrency).num)
-              }
-            })
+            ArraySeq
+              .from(obj.value.flatMap { case (name, value) =>
+                symbolNamesR.get(name).map { ids =>
+                  ids.map { id =>
+                    CoingeckoPrice(id, value(baseCurrency).num)
+                  }
+                }
+              })
+              .flatten
           }.toEither.left.map { error =>
             error.getMessage
           }

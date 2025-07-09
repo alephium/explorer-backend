@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   alephium:
-    image: alephium/alephium:v3.14.2
+    image: alephium/alephium:v4.0.0
     restart: unless-stopped
     ports:
       - 19973:19973/tcp
