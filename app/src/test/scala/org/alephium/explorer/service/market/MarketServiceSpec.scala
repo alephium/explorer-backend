@@ -138,6 +138,16 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     }
   }
 
+  "support multiple symbol with same token" in new Fixture {
+
+    marketService.start().futureValue
+
+    eventually {
+      marketService.getPrices(ArraySeq("USDC"), "usd").rightValue is ArraySeq(Some(usdcPrice))
+      marketService.getPrices(ArraySeq("USDCeth"), "usd").rightValue is ArraySeq(Some(usdcPrice))
+    }
+  }
+
   trait Fixture {
     val localhost: InetAddress = InetAddress.getByName("127.0.0.1")
     val coingeckoPort          = SocketUtil.temporaryLocalPort(SocketUtil.Both)
@@ -183,16 +193,18 @@ object MarketServiceSpec {
     Codec.string.map(value => ujson.read(value))(_.toString)
 
   val alphPrice = 1.223123123
+  val usdcPrice = 1.0012412
   var usdtPrice = 1.0012412
 
   val symbolNames = ListMap(
-    "ALPH" -> "alephium",
-    "USDC" -> "usd-coin",
-    "USDT" -> "tether",
-    "WBTC" -> "wrapped-bitcoin",
-    "WETH" -> "weth",
-    "DAI"  -> "dai",
-    "AYIN" -> "ayin"
+    "ALPH"    -> "alephium",
+    "USDC"    -> "usd-coin",
+    "USDCeth" -> "usd-coin",
+    "USDT"    -> "tether",
+    "WBTC"    -> "wrapped-bitcoin",
+    "WETH"    -> "weth",
+    "DAI"     -> "dai",
+    "AYIN"    -> "ayin"
   )
   val currencies =
     ArraySeq("btc", "usd", "eur", "chf", "gbp", "idr", "vnd", "rub", "try", "cad", "aud")
@@ -314,6 +326,9 @@ object MarketServiceSpec {
   val coingeckoPrices: String = s"""{
       "alephium": {
         "usd": $alphPrice
+      },
+      "usd-coin": {
+        "usd": $usdcPrice
       }
     }"""
 
