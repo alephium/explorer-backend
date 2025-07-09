@@ -460,7 +460,14 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val blocks = Gen
       .listOfN(20, blockEntityGen(chainIndex))
       .map(_.map { block =>
-        block.copy(outputs = block.outputs.map(_.copy(address = address)))
+        block.copy(outputs =
+          block.outputs.map(
+            _.copy(
+              address = address,
+              grouplessAddress = AddressUtil.convertToGrouplessAddress(address)
+            )
+          )
+        )
       })
       .sample
       .get
@@ -509,7 +516,14 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val block =
       blockEntityGen(chainIndex)
         .map { block =>
-          block.copy(outputs = block.outputs.map(_.copy(address = address)))
+          block.copy(outputs =
+            block.outputs.map(
+              _.copy(
+                address = address,
+                grouplessAddress = AddressUtil.convertToGrouplessAddress(address)
+              )
+            )
+          )
         }
         .sample
         .get
