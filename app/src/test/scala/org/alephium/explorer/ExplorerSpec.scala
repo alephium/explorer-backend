@@ -29,6 +29,7 @@ import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 
 import org.alephium.api.{model, ApiError, ApiModelCodec}
 import org.alephium.api.{alphJsonBody => jsonBody}
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreApi._
@@ -44,6 +45,7 @@ import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.service.market.MarketServiceSpec
 import org.alephium.explorer.util.TestUtils._
+import org.alephium.explorer.util.UtxoUtil._
 import org.alephium.explorer.web._
 import org.alephium.json.Json._
 import org.alephium.protocol.model.{Address, BlockHash, CliqueId, GroupIndex, NetworkId}
@@ -94,9 +96,10 @@ trait ExplorerSpec
 
   val transactions: ArraySeq[Transaction] = blocks.flatMap(_.transactions)
 
-  val addresses: ArraySeq[Address] = blocks
+  val addresses: ArraySeq[ApiAddress] = blocks
     .flatMap(_.transactions.flatMap(_.outputs.map(_.address)))
     .distinct
+    .map(protocolAddressToApi)
 
   val localhost: InetAddress = InetAddress.getByName("127.0.0.1")
 
@@ -294,21 +297,23 @@ trait ExplorerSpec
   }
 
   "get address' info" in {
-    addresses.foreach { address =>
-      Get(s"/addresses/${address}?limit=100") check { response =>
+    forAll(Gen.oneOf(addresses)) { address =>
+      Get(s"/addresses/${address.toBase58}?limit=100") check { response =>
         val expectedTransactions =
           transactions
             .filter(tx =>
-              tx.outputs.exists(_.address == address) || tx.inputs
-                .exists(_.address == Some(address))
+              tx.outputs.exists(out => addressEqual(out.address, address)) || tx.inputs
+                .exists(
+                  _.address.map(inAddress => addressEqual(inAddress, address)).getOrElse(false)
+                )
             )
-            .sorted(Ordering.by((_: Transaction).timestamp))
+            .distinctBy(_.hash)
 
         val outs =
           expectedTransactions
             .map(
               _.outputs
-                .filter(_.address == address)
+                .filter(in => addressEqual(in.address, address))
                 .map(_.attoAlphAmount)
                 .fold(U256.Zero)(_ addUnsafe _)
             )
@@ -317,7 +322,9 @@ trait ExplorerSpec
           expectedTransactions
             .map(
               _.inputs
-                .filter(in => in.address == Some(address))
+                .filter(
+                  _.address.map(inAddress => addressEqual(inAddress, address)).getOrElse(false)
+                )
                 .map(_.attoAlphAmount.getOrElse(U256.Zero))
                 .fold(U256.Zero)(_ addUnsafe _)
             )
@@ -335,13 +342,14 @@ trait ExplorerSpec
 
   "get all address' transactions" in {
     forAll(Gen.oneOf(addresses)) { address =>
-      Get(s"/addresses/${address}/transactions") check { response =>
+      Get(s"/addresses/${address.toBase58}/transactions") check { response =>
         val expectedTransactions =
           transactions
             .filter(tx =>
-              tx.outputs.exists(_.address == address) || tx.inputs.exists(
-                _.address == Some(address)
-              )
+              tx.outputs.exists(out => addressEqual(out.address, address)) || tx.inputs
+                .exists(
+                  _.address.map(inAddress => addressEqual(inAddress, address)).getOrElse(false)
+                )
             )
             .distinct
 
@@ -357,11 +365,15 @@ trait ExplorerSpec
 
   "get address tokens with balance" in {
     forAll(Gen.oneOf(addresses)) { address =>
-      Get(s"/addresses/${address}/tokens-balance") check { response =>
+      Get(s"/addresses/${address.toBase58}/tokens-balance") check { response =>
         val res = response.as[ArraySeq[AddressTokenBalance]]
 
         val tokens = blocks
-          .flatMap(_.transactions.flatMap(_.outputs.filter(_.address == address).flatMap(_.tokens)))
+          .flatMap(
+            _.transactions.flatMap(
+              _.outputs.filter(out => addressEqual(out.address, address)).flatMap(_.tokens)
+            )
+          )
           .flatten
           .distinct
 
@@ -376,14 +388,16 @@ trait ExplorerSpec
     forAll(Gen.someOf(addresses)) { someAddresses =>
       val selectedAddresses = someAddresses.take(maxSizeAddresses)
       val addressesBody =
-        selectedAddresses.map(address => s""""$address"""").mkString("[", ",", "]")
+        selectedAddresses.map(address => s""""${address.toBase58}"""").mkString("[", ",", "]")
 
       Post("/addresses/transactions", addressesBody) check { response =>
         val expectedTransactions =
           selectedAddresses.flatMap { address =>
             transactions.filter { tx =>
-              tx.outputs.exists(_.address == address) || tx.inputs
-                .exists(_.address == Some(address))
+              tx.outputs.exists(out => addressEqual(out.address, address)) || tx.inputs
+                .exists(
+                  _.address.map(inAddress => addressEqual(inAddress, address)).getOrElse(false)
+                )
             }
           }
 

@@ -61,7 +61,10 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
-    val input1  = input(output2.hint, output2.key).copy(outputRefAddress = Some(address))
+    val input1 = input(output2.hint, output2.key).copy(
+      outputRefAddress = Some(address),
+      outputRefGrouplessAddress = AddressUtil.convertToGrouplessAddress(address)
+    )
 
     run(OutputSchema.table ++= ArraySeq(output1, output2)).futureValue
     run(InputSchema.table += input1).futureValue

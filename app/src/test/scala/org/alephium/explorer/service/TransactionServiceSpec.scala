@@ -49,7 +49,14 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val blocks = Gen
       .listOfN(20, blockEntityGen(chainIndex))
       .map(_.map { block =>
-        block.copy(outputs = block.outputs.map(_.copy(address = address)))
+        block.copy(outputs =
+          block.outputs.map(
+            _.copy(
+              address = address,
+              grouplessAddress = AddressUtil.convertToGrouplessAddress(address)
+            )
+          )
+        )
       })
       .sample
       .get
@@ -453,7 +460,14 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val blocks = Gen
       .listOfN(20, blockEntityGen(chainIndex))
       .map(_.map { block =>
-        block.copy(outputs = block.outputs.map(_.copy(address = address)))
+        block.copy(outputs =
+          block.outputs.map(
+            _.copy(
+              address = address,
+              grouplessAddress = AddressUtil.convertToGrouplessAddress(address)
+            )
+          )
+        )
       })
       .sample
       .get
@@ -502,7 +516,14 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
     val block =
       blockEntityGen(chainIndex)
         .map { block =>
-          block.copy(outputs = block.outputs.map(_.copy(address = address)))
+          block.copy(outputs =
+            block.outputs.map(
+              _.copy(
+                address = address,
+                grouplessAddress = AddressUtil.convertToGrouplessAddress(address)
+              )
+            )
+          )
         }
         .sample
         .get
@@ -689,9 +710,20 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
         val timestamp = now + (halfDay.timesUnsafe(index.toLong))
         block.copy(
           timestamp = timestamp,
-          outputs = block.outputs.map(_.copy(address = address, timestamp = timestamp)),
-          inputs =
-            block.inputs.map(_.copy(outputRefAddress = Some(address), timestamp = timestamp)),
+          outputs = block.outputs.map(
+            _.copy(
+              address = address,
+              grouplessAddress = AddressUtil.convertToGrouplessAddress(address),
+              timestamp = timestamp
+            )
+          ),
+          inputs = block.inputs.map(
+            _.copy(
+              outputRefAddress = Some(address),
+              outputRefGrouplessAddress = AddressUtil.convertToGrouplessAddress(address),
+              timestamp = timestamp
+            )
+          ),
           transactions = block.transactions.map { tx =>
             tx.copy(timestamp = timestamp)
           }
