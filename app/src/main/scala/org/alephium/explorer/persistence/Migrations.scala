@@ -26,7 +26,7 @@ import org.alephium.util.TimeStamp
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(7)
+  val latestVersion: MigrationVersion = MigrationVersion(8)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     // We retrigger the download of fungible and non-fungible tokens' metadata that have sub-category
@@ -191,7 +191,8 @@ object Migrations extends StrictLogging {
     migration4,
     migration5,
     migration6,
-    migration7
+    migration7,
+    migration8
   )
 
   def backgroundCoinbaseMigration()(implicit
@@ -247,6 +248,30 @@ object Migrations extends StrictLogging {
 
       COMMIT;
       """
+  }
+
+  def migration8(implicit
+      explorerConfig: ExplorerConfig,
+      ec: ExecutionContext
+  ): DBActionAll[Unit] = {
+    logger.info("Fix block hashrate")
+    for {
+      // Fix hashrate for blocks after the Danube Hard Fork
+      // We were still using the rohne block timestamp of 16 seconds, while it's now 8 seconds
+      _ <- sqlu"""
+          UPDATE block_headers
+          SET hashrate = hashrate * 2
+          WHERE block_timestamp >= ${explorerConfig.consensus.danube.forkTimestamp}
+        """
+      // Reset average hashrates computed after the Danube Hard Fork
+      // Hashrate service will automatically recompute the values
+      _ <- sqlu"""
+          DELETE FROM hashrates
+          WHERE block_timestamp >= ${explorerConfig.consensus.danube.forkTimestamp}
+        """
+    } yield {
+      logger.info("Block hashrate fixed")
+    }
   }
 
   def migrationsQuery(
