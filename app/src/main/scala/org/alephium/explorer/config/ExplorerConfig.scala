@@ -66,12 +66,23 @@ object ExplorerConfig {
         Failure(ConfigParsingError(file, e))
     }
 
+  /*
+   * Try to parse the network ID from the configuration in `EXPLORER_HOME/user.conf`.
+   * Otherwise try to use the env variable `BLOCKFLOW_NETWORK_ID`.
+   * Otherwise, default to AlephiumMainNet.
+   */
   def parseNetworkId(config: Config): Try[NetworkId] = {
     val keyPath = "alephium.blockflow.network-id"
     if (config.hasPath(keyPath)) {
       Try(config.as[NetworkId](keyPath))
     } else {
-      Success(NetworkId.AlephiumMainNet)
+      sys.env.get("BLOCKFLOW_NETWORK_ID").flatMap(_.toIntOption).flatMap { id =>
+        NetworkId.from(id)
+      } match {
+        case Some(id) => Success(id)
+        case None     => Success(NetworkId.AlephiumMainNet)
+      }
+
     }
   }
 
