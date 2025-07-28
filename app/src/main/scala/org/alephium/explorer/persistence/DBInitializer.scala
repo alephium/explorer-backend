@@ -66,8 +66,9 @@ object DBInitializer extends StrictLogging {
       _ <- createTables()
       _ <- Migrations.migrate(databaseConfig)
       _ <- createIndexes()
+      _ <- runBackgroundIndexes
     } yield {
-      discard(createIndexesInBackground())
+      ()
     }
   }
 
@@ -113,6 +114,25 @@ object DBInitializer extends StrictLogging {
     })
   }
 
+  private def runBackgroundIndexes(implicit
+      explorerConfig: ExplorerConfig,
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = {
+    if (explorerConfig.forceSynchronousMigrations) {
+      // Future will need to complete before the application starts
+      createIndexesInBackground()
+    } else {
+      // Fire and forget the background index creation
+      discard(
+        createIndexesInBackground().recover { case e =>
+          logger.error(s"Background index creation failed: ${e.getMessage}", e)
+        }
+      )
+      // Return a completed future to avoid blocking the application startup
+      Future.successful(())
+    }
+  }
   /*
    * Create some new indexes in the background to avoid downtime of the API
    */
