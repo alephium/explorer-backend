@@ -1534,7 +1534,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/addresses/{address}/timeranged-transactions": {

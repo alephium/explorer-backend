@@ -14,7 +14,9 @@ import org.openjdk.jmh.annotations.{Scope, State}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.crypto.Blake2b
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
@@ -26,7 +28,7 @@ import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.explorer.util.AddressUtil
 import org.alephium.protocol.{ALPH, Hash}
-import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
+import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 class Queries(val config: DatabaseConfig[PostgresProfile])(implicit
@@ -50,7 +52,7 @@ class AddressReadState(val db: DBExecutor)
 
   import config.profile.api._
 
-  val address: Address = DataGenerator.genAddress()
+  val address: ApiAddress = DataGenerator.genAddress()
 
   var blocks: ArraySeq[BlockEntity] = _
 
@@ -131,8 +133,8 @@ class AddressReadState(val db: DBExecutor)
       hint = Random.nextInt(),
       key = Hash.generate,
       amount = ALPH.alph(1),
-      address = address0,
-      grouplessAddress = AddressUtil.convertToGrouplessAddress(address0),
+      address = address0.toProtocol(),
+      grouplessAddress = AddressUtil.convertToGrouplessAddress(address0.toProtocol()),
       tokens = None,
       mainChain = true,
       lockTime = None,
@@ -196,6 +198,7 @@ class AddressReadState(val db: DBExecutor)
     val _ = db.dropTableIfExists(OutputSchema.table)
     val _ = db.dropTableIfExists(TokenOutputSchema.table)
     val _ = db.dropTableIfExists(TransactionPerAddressSchema.table)
+    val _ = db.dropTableIfExists(TokenPerAddressSchema.table)
     val _ = db.dropTableIfExists(AppStateSchema.table)
 
     val createTable =
@@ -205,6 +208,7 @@ class AddressReadState(val db: DBExecutor)
         .andThen(OutputSchema.table.schema.create)
         .andThen(TokenOutputSchema.table.schema.create)
         .andThen(TransactionPerAddressSchema.table.schema.create)
+        .andThen(TokenPerAddressSchema.table.schema.create)
         .andThen(AppStateSchema.table.schema.create)
         .andThen(BlockHeaderSchema.createBlockHeadersIndexes())
         .andThen(TransactionSchema.createMainChainIndex())

@@ -67,6 +67,7 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .in(pagination)
       .out(jsonBody[ArraySeq[Transaction]])
       .summary("List transactions for given addresses")
+      .deprecated()
 
   val getTransactionsByAddressTimeRanged: BaseEndpoint[(ApiAddress, TimeInterval, Pagination), ArraySeq[Transaction]] =
     addressesLikeEndpoint.get

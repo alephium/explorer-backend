@@ -152,6 +152,16 @@ object SlickUtil {
     }
   }
 
+  def distinct(
+      address: ApiAddress
+  ): String = {
+    address.lockupScript match {
+      case _: ApiAddress.HalfDecodedLockupScript =>
+        s"DISTINCT"
+      case _ =>
+        ""
+    }
+  }
   def splitAddresses(
       addresses: ArraySeq[ApiAddress]
   ): (ArraySeq[ApiAddress], ArraySeq[ApiAddress]) = {

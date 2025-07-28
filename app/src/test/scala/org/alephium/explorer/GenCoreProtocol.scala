@@ -151,6 +151,15 @@ object GenCoreProtocol {
       }
   }
 
+  def halfDecodedLockupGen(
+      groupIndex: GroupIndex
+  )(implicit groupSetting: GroupSetting): Gen[LockupScript] = {
+    Gen.oneOf(
+      p2pkhLockupGen(groupIndex),
+      p2pkLockupGen(groupIndex)
+    )
+  }
+
   def lockupGen(groupIndex: GroupIndex)(implicit groupSetting: GroupSetting): Gen[LockupScript] = {
     Gen.oneOf(
       p2pkhLockupGen(groupIndex),
@@ -164,12 +173,9 @@ object GenCoreProtocol {
 
   def addressAssetProtocolGen()(implicit groupSetting: GroupSetting): Gen[Address.Asset] =
     for {
-      group <- Gen.choose(0, groupSetting.groupNum - 1)
-    } yield {
-      val groupIndex     = GroupIndex.unsafe(group)(groupSetting.groupConfig)
-      val (_, publicKey) = groupIndex.generateKey(groupSetting.groupConfig)
-      Address.p2pkh(publicKey)
-    }
+      group   <- Gen.choose(0, groupSetting.groupNum - 1)
+      address <- assetLockupGen(new GroupIndex(group)).map(Address.Asset(_))
+    } yield address
 
   def addressContractProtocolGen(implicit groupSetting: GroupSetting): Gen[Address.Contract] =
     for {

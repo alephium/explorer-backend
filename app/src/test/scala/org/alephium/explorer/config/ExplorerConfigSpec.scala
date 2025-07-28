@@ -25,12 +25,12 @@ class ExplorerConfigSpec extends AlephiumSpec with ScalaCheckDrivenPropertyCheck
     "load config" in {
       // We make sure every config file is valid
       val mainnetForkTimestamps = Seq(
-        TimeStamp.unsafe(1718186400000L),      // rhone
-        TimeStamp.unsafe(9000000000000000000L) // Danube
+        TimeStamp.unsafe(1718186400000L), // rhone
+        TimeStamp.unsafe(1752573600000L)  // Danube
       )
       val testnetForkTimestamps = Seq(
-        TimeStamp.unsafe(1715428800000L),      // rhone
-        TimeStamp.unsafe(9000000000000000000L) // Danube
+        TimeStamp.unsafe(1715428800000L), // rhone
+        TimeStamp.unsafe(1746446400000L)  // Danube
       )
       val devnetForkTimestamps = Seq(
         TimeStamp.unsafe(1695571200000L), // rhone

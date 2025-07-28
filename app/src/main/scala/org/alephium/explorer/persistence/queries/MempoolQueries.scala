@@ -44,13 +44,15 @@ object MempoolQueries {
       .asASE[MempoolTransactionEntity](mempoolTransactionGetResult)
   }
 
-  def listUTXHashesByAddress(address: ApiAddress): DBActionSR[TransactionId] = {
+  def listUTXHashesByAddress(
+      address: ApiAddress
+  ): DBActionSR[TransactionId] = {
     sql"""
-      SELECT tx_hash
+      SELECT #${distinct(address)} tx_hash
       FROM uinputs
       WHERE #${addressColumn(address)} = $address
       UNION
-      SELECT tx_hash
+      SELECT #${distinct(address)} tx_hash
       FROM uoutputs
       WHERE #${addressColumn(address)} = $address
     """.asAS[TransactionId]

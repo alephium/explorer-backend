@@ -7,6 +7,7 @@ import java.math.BigInteger
 
 import scala.collection.immutable.ArraySeq
 import scala.language.implicitConversions
+import scala.util.Random
 
 import akka.util.ByteString
 import org.scalacheck.Arbitrary.arbitrary
@@ -19,13 +20,36 @@ import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.{Address, ChainIndex, GroupIndex, TokenId, TxOutputRef}
+import org.alephium.protocol.vm.LockupScript
 
 /** Generators for types supplied by `org.alephium.explorer.api.model` package */
 object GenApiModel extends ImplicitConversions {
 
   @SuppressWarnings(Array("org.wartremover.warts.ImplicitConversion"))
-  implicit def addressToLike(address: Address): ApiAddress = {
-    ApiAddress.fromProtocol(address)
+  implicit def protocolAddressToApi(address: Address): ApiAddress = {
+    address.lockupScript match {
+      case LockupScript.P2PK(publicKey, _) =>
+        // Randomly choose half decoded p2pk address
+        if (Random.nextBoolean()) {
+          ApiAddress.from(publicKey)
+        } else {
+          ApiAddress.fromProtocol(address)
+        }
+      case LockupScript.P2HMPK(hash, _) =>
+        // Randomly choose half decoded p2hmpk address
+        if (Random.nextBoolean()) {
+          ApiAddress.from(hash)
+        } else {
+          ApiAddress.fromProtocol(address)
+        }
+      case _ => ApiAddress.fromProtocol(address)
+    }
+
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.ImplicitConversion"))
+  implicit def apiAddressToString(address: ApiAddress): String = {
+    address.toBase58
   }
 
   def tokenIdGen(implicit gs: GroupSetting): Gen[TokenId] = for {
@@ -50,6 +74,21 @@ object GenApiModel extends ImplicitConversions {
 
   val intervalTypeGen: Gen[IntervalType] =
     Gen.oneOf(ArraySeq[IntervalType](IntervalType.Hourly, IntervalType.Daily))
+
+  val p2pkHalfDecodedApiAddressGen: Gen[ApiAddress] = for {
+    groupIndex <- groupIndexGen
+    lockup     <- GenCoreProtocol.p2pkLockupGen(groupIndex)
+  } yield ApiAddress.from(lockup.publicKey)
+
+  val p2hmpkHalfDecodedApiAddressGen: Gen[ApiAddress] = for {
+    groupIndex <- groupIndexGen
+    lockup     <- GenCoreProtocol.p2hmpkLockupGen(groupIndex)
+  } yield ApiAddress.from(lockup.p2hmpkHash)
+
+  val halfDecodedApiAddressGen: Gen[ApiAddress] = Gen.oneOf(
+    p2pkHalfDecodedApiAddressGen,
+    p2hmpkHalfDecodedApiAddressGen
+  )
 
   val apiAddressGen: Gen[ApiAddress] = for {
     groupIndex <- groupIndexGen

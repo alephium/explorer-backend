@@ -10,12 +10,14 @@ import scala.util.Random
 
 import akka.util.ByteString
 
+import org.alephium.api.model.{Address => ApiAddress}
+import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.util.AddressUtil
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{Address, BlockHash, GroupIndex, TransactionId}
+import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
 /** Data generators for JMH benchmarks.
@@ -147,13 +149,15 @@ object DataGenerator {
     )
   }
 
-  def genAddress(): Address =
+  def genAddress(): ApiAddress =
     addressGen.sample.get
 
-  def genTransactionPerAddressEntity(address: Address = genAddress()): TransactionPerAddressEntity =
+  def genTransactionPerAddressEntity(
+      address: ApiAddress = genAddress()
+  ): TransactionPerAddressEntity =
     TransactionPerAddressEntity(
-      address = address,
-      grouplessAddress = AddressUtil.convertToGrouplessAddress(address),
+      address = address.toProtocol(),
+      grouplessAddress = AddressUtil.convertToGrouplessAddress(address.toProtocol()),
       hash = TransactionId.generate,
       blockHash = BlockHash.generate,
       timestamp = TimeStamp.now(),
