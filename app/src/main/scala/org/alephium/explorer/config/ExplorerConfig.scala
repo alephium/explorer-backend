@@ -67,22 +67,29 @@ object ExplorerConfig {
     }
 
   /*
-   * Try to parse the network ID from the configuration in `EXPLORER_HOME/user.conf`.
-   * Otherwise try to use the env variable `BLOCKFLOW_NETWORK_ID`.
+   * Try to parse the network ID from the env variable `BLOCKFLOW_NETWORK_ID`.
+   * Otherwise try to use the configuration in `EXPLORER_HOME/user.conf`.
    * Otherwise, default to AlephiumMainNet.
    */
   def parseNetworkId(config: Config): Try[NetworkId] = {
-    val keyPath = "alephium.blockflow.network-id"
-    if (config.hasPath(keyPath)) {
-      Try(config.as[NetworkId](keyPath))
-    } else {
-      sys.env.get("BLOCKFLOW_NETWORK_ID").flatMap(_.toIntOption).flatMap { id =>
-        NetworkId.from(id)
-      } match {
-        case Some(id) => Success(id)
-        case None     => Success(NetworkId.AlephiumMainNet)
-      }
-
+    sys.env.get("BLOCKFLOW_NETWORK_ID") match {
+      case Some(rawId) =>
+        rawId.toIntOption match {
+          case Some(id) =>
+            NetworkId.from(id) match {
+              case Some(networkId) => Success(networkId)
+              case None            => Failure(InvalidNetworkId(id))
+            }
+          case None =>
+            Failure(InvalidNetworkIdFormat(rawId))
+        }
+      case None =>
+        val keyPath = "alephium.blockflow.network-id"
+        if (config.hasPath(keyPath)) {
+          Try(config.as[NetworkId](keyPath))
+        } else {
+          Success(NetworkId.AlephiumMainNet)
+        }
     }
   }
 

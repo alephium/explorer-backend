@@ -99,6 +99,10 @@ object ExplorerError {
       extends Exception(s"Invalid networkId: $networkId")
       with ConfigError
 
+  final case class InvalidNetworkIdFormat(networkId: String)
+      extends Exception(s"Invalid networkId format, expecting Integer, got: $networkId")
+      with ConfigError
+
   final case class InvalidApiKey(message: String)
       extends Exception(s"Invalid apiKey: $message")
       with ConfigError
