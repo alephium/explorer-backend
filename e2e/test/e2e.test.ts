@@ -4,6 +4,9 @@ import { getSigner, testPrivateKeyWallet } from '@alephium/web3-test'
 import  configuration  from './config'
 import  { eventually }  from './utils'
 
+// Update the timeout for the tests, as we need to wait for blocks to be mined and explorer to sync
+jest.setTimeout(20000);
+
 describe('e2e', function () {
 
   let wallet: PrivateKeyWallet
