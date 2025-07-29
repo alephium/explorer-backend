@@ -51,16 +51,10 @@ import org.alephium.json.Json._
 import org.alephium.protocol.model.{Address, BlockHash, CliqueId, GroupIndex, NetworkId}
 import org.alephium.util.{AVector, Duration, Hex, TimeStamp, U256}
 
-trait ExplorerSpec
-    extends AlephiumActorSpecLike
-    with AlephiumFutureSpec
-    with DatabaseFixtureForAll
-    with HttpRouteFixture {
+trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with HttpRouteFixture {
 
   implicit override val patienceConfig: PatienceConfig =
     PatienceConfig(timeout = Span(120, Seconds))
-
-  override val name: String = "ExploreSpec"
 
   val networkId: NetworkId = NetworkId.AlephiumDevNet
 
