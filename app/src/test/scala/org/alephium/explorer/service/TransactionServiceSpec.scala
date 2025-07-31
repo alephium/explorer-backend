@@ -1,6 +1,7 @@
 // Copyright (c) Alephium
 // SPDX-License-Identifier: LGPL-3.0-only
 
+//scalastyle:off file.size.limit
 package org.alephium.explorer.service
 
 import java.math.BigInteger
@@ -11,6 +12,7 @@ import scala.jdk.CollectionConverters._
 
 import io.vertx.core.buffer.Buffer
 import org.scalacheck.Gen
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AlephiumActorSpecLike
 import org.alephium.explorer.ConfigDefaults._
@@ -19,6 +21,7 @@ import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
 import org.alephium.explorer.GenDBModel._
+import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache._
 import org.alephium.explorer.foldFutures
@@ -27,8 +30,10 @@ import org.alephium.explorer.persistence.dao.{BlockDao, MempoolDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.model.AppState._
 import org.alephium.explorer.persistence.queries._
+import org.alephium.explorer.persistence.schema.AddressTotalTransactionSchema
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.util.AddressUtil
+import org.alephium.explorer.util.UtxoUtil._
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
 import org.alephium.util.{Duration, TimeStamp, U256}
@@ -451,6 +456,61 @@ class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureF
       finalizedTxCount > 0 is true
       finalizedTxCount < expectedTxsCount is true
     }
+  }
+
+  "get address total number of transactions" in new Fixture {
+
+    val startTime = FinalizerService.finalizationTime.minusUnsafe(Duration.ofDaysUnsafe(1))
+
+    val finalizedBlocks =
+      chainGen(3, startTime, chainIndex).sample.get.map(BlockFlowClient.blockProtocolToEntity)
+
+    val nonFinalizedBlocks =
+      chainGen(3, TimeStamp.now(), ChainIndex(GroupIndex.unsafe(1), groupIndex)).sample.get
+        .map(BlockFlowClient.blockProtocolToEntity)
+
+    val blocks = finalizedBlocks ++ nonFinalizedBlocks
+    val transactions =
+      blockEntitiesToBlockEntries(ArraySeq(blocks)).flatMap(_.flatMap(_.transactions))
+
+    val addresses = blocks.flatMap(_.outputs.map(_.address)).distinct
+
+    insertMainChainBlocks(blocks)
+
+    FinalizerService.finalizeOutputs().futureValue
+
+    def testAddresses() = {
+      addresses.foreach { address =>
+        val apiAddress = protocolAddressToApi(address)
+
+        val expectedTxsCount =
+          transactions
+            .filter(tx =>
+              tx.outputs.exists(out => addressEqual(out.address, apiAddress)) || tx.inputs
+                .exists(
+                  _.address.map(inAddress => addressEqual(inAddress, apiAddress)).getOrElse(false)
+                )
+            )
+            .distinctBy(_.hash)
+            .size
+
+        TransactionService
+          .getTransactionsNumberByAddress(apiAddress)
+          .futureValue is expectedTxsCount
+
+      }
+    }
+
+    // Make sure the AddressTotalTransactionSchema is first empty
+    databaseConfig.db.run(AddressTotalTransactionSchema.table.result).futureValue.isEmpty is true
+
+    testAddresses()
+
+    // Make sure the AddressTotalTransactionSchema is now populated
+    databaseConfig.db.run(AddressTotalTransactionSchema.table.result).futureValue.isEmpty is false
+
+    // With a pupulated AddressTotalTransactionSchema, the result should be the same
+    testAddresses()
   }
 
   "preserve outputs order" in new Fixture {
