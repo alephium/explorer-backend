@@ -35,7 +35,7 @@ case object FinalizerService extends StrictLogging {
   final private case class UpdateResult(nbOfOutputs: Int, nbOfTransactions: Int)
 
   // scalastyle:off magic.number
-  val finalizationDuration: Duration = Duration.ofSecondsUnsafe(6500)
+  val finalizationDuration: Duration = Duration.ofSecondsUnsafe(4000)
   def finalizationTime: TimeStamp    = TimeStamp.now().minusUnsafe(finalizationDuration)
   def rangeStep: Duration            = Duration.ofHoursUnsafe(24)
   // scalastyle:on magic.number

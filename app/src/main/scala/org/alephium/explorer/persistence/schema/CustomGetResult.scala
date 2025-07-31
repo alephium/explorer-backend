@@ -148,6 +148,13 @@ object CustomGetResult {
   implicit val grouplessAddressGetResult: GetResult[GrouplessAddress] =
     (result: PositionedResult) => getGrouplessAddressFromString(result.nextString())
 
+  implicit val apiAddressGetResult: GetResult[ApiAddress] =
+    (result: PositionedResult) =>
+      ApiAddress.fromBase58(result.nextString()) match {
+        case Right(address) => address
+        case Left(error)    => throw new Exception(s"Unable to decode address: ${error}")
+      }
+
   val addressContractGetResult: GetResult[Address.Contract] =
     (result: PositionedResult) => {
       val string = result.nextString()
@@ -224,6 +231,14 @@ object CustomGetResult {
         outputRefAmount = result.<<?,
         outputRefTokens = result.<<?,
         contractInput = result.<<
+      )
+
+  implicit val addressTotalTransactionGetResult: GetResult[AddressTotalTransactionEntity] =
+    (result: PositionedResult) =>
+      AddressTotalTransactionEntity(
+        address = result.<<,
+        total = result.<<,
+        lastUpdate = result.<<
       )
 
   implicit val outputTypeGetResult: GetResult[OutputEntity.OutputType] =

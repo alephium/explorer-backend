@@ -74,7 +74,11 @@ trait TransactionService {
 
   def getTransactionsNumberByAddress(
       address: ApiAddress
-  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int]
+  )(implicit
+      groupConfig: GroupConfig,
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Int]
 
   def getBalance(
       address: ApiAddress,
@@ -186,7 +190,11 @@ object TransactionService extends TransactionService {
 
   def getTransactionsNumberByAddress(
       address: ApiAddress
-  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[Int] =
+  )(implicit
+      groupConfig: GroupConfig,
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Int] =
     TransactionDao.getNumberByAddress(address)
 
   def getBalance(
