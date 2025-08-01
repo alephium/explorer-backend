@@ -50,7 +50,7 @@ object TokenPerAddressSchema
   def createConcurrentIndexes()(implicit ec: ExecutionContext): DBActionW[Unit] =
     for {
       _ <- createTokenGrouplessAddressIndex()
-      _ <- createUniqueGrouplessIndex()
+      _ <- createGrouplessIndex()
     } yield ()
 
   def createTokenGrouplessAddressIndex(): DBActionW[Int] =
@@ -60,9 +60,9 @@ object TokenPerAddressSchema
       WHERE groupless_address IS NOT NULL;
     """
 
-  def createUniqueGrouplessIndex(): DBActionW[Int] =
+  def createGrouplessIndex(): DBActionW[Int] =
     sqlu"""
-        CREATE UNIQUE INDEX IF NOT EXISTS token_tx_per_address_groupless_unique_idx
+        CREATE INDEX CONCURRENTLY IF NOT EXISTS token_tx_per_address_groupless_idx
         ON token_tx_per_addresses (
           token, address, groupless_address, block_timestamp, tx_order, tx_hash, block_hash
         )
