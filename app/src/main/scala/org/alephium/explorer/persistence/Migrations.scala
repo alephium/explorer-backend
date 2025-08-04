@@ -22,6 +22,7 @@ import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.model.{Address, BlockHash}
 import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.TimeStamp
+import org.alephium.util.discard
 
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
@@ -337,6 +338,28 @@ object Migrations extends StrictLogging {
     }).flatMap(_ => DBRunner.run(updateVersion(Some(latestVersion))))
   }
 
+  private def runMigrateInBackground(
+      currentVersion: Option[MigrationVersion]
+  )(implicit
+      explorerConfig: ExplorerConfig,
+      ec: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] = {
+    if (explorerConfig.forceSynchronousMigrations) {
+      // Future will need to complete before the application starts
+      migrateInBackground(currentVersion)
+    } else {
+      // Fire and forget the background index creation
+      discard(
+        migrateInBackground(currentVersion).recover { case e =>
+          logger.error(s"Background migrations failed: ${e.getMessage}", e)
+        }
+      )
+      // Return a completed future to avoid blocking the application startup
+      Future.successful(())
+    }
+  }
+
   def migrate(
       databaseConfig: DatabaseConfig[PostgresProfile]
   )(implicit explorerConfig: ExplorerConfig, ec: ExecutionContext): Future[Unit] = {
@@ -347,12 +370,8 @@ object Migrations extends StrictLogging {
           version <- getVersion()
           _       <- migrationsQuery(version)
         } yield version)
-    } yield {
-      migrateInBackground(currentVersion)(ec, databaseConfig).onComplete {
-        case scala.util.Success(_) => logger.info("Background migration completed successfully")
-        case scala.util.Failure(exception) => logger.error("Background migration failed", exception)
-      }
-    }
+      _ <- runMigrateInBackground(currentVersion)(explorerConfig, ec, databaseConfig)
+    } yield ()
   }
 
   def getVersion()(implicit ec: ExecutionContext): DBActionAll[Option[MigrationVersion]] = {
