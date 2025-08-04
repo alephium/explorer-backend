@@ -11,4 +11,3 @@ final case class AddressTotalTransactionEntity(
     total: Int,
     lastUpdate: TimeStamp
 )
-
