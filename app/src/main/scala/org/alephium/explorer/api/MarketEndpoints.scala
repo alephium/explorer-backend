@@ -15,21 +15,21 @@ import org.alephium.explorer.api.model._
 // scalastyle:off magic.number
 trait MarketEndpoints extends BaseEndpoint with QueryParams {
 
-  private val basePricesEndpoint =
+  private def basePricesEndpoint =
     baseEndpoint
       .in("market")
       .tag("Market")
 
-  implicit val valueSchema: Schema[ujson.Value] = Schema.string
+  implicit def valueSchema: Schema[ujson.Value] = Schema.string
 
-  val getPrices: BaseEndpoint[(String, ArraySeq[String]), ArraySeq[Option[Double]]] =
+  def getPrices: BaseEndpoint[(String, ArraySeq[String]), ArraySeq[Option[Double]]] =
     basePricesEndpoint.post
       .in("prices")
       .in(query[String]("currency"))
       .in(jsonBody[ArraySeq[String]])
       .out(jsonBody[ArraySeq[Option[Double]]])
 
-  val getPriceChart: BaseEndpoint[(String, String), TimedPrices] =
+  def getPriceChart: BaseEndpoint[(String, String), TimedPrices] =
     basePricesEndpoint.get
       .in("prices")
       .in(path[String]("symbol"))

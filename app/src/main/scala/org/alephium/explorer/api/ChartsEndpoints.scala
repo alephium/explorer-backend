@@ -16,14 +16,14 @@ import org.alephium.explorer.api.model.{Hashrate, IntervalType, PerChainTimedCou
 // scalastyle:off magic.number
 trait ChartsEndpoints extends BaseEndpoint with QueryParams {
 
-  val intervalTypes: String = IntervalType.all.dropRight(1).map(_.string).mkString(", ")
+  def intervalTypes: String = IntervalType.all.dropRight(1).map(_.string).mkString(", ")
 
-  private val chartsEndpoint =
+  private def chartsEndpoint =
     baseEndpoint
       .tag("Charts")
       .in("charts")
 
-  val getHashrates: BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[Hashrate]] =
+  def getHashrates: BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[Hashrate]] =
     chartsEndpoint.get
       .in("hashrates")
       .in(timeIntervalQuery)
@@ -32,7 +32,7 @@ trait ChartsEndpoints extends BaseEndpoint with QueryParams {
       .summary("Get hashrate chart in H/s")
       .description(s"`interval-type` query param: $intervalTypes")
 
-  val getAllChainsTxCount: BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[TimedCount]] =
+  def getAllChainsTxCount: BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[TimedCount]] =
     chartsEndpoint.get
       .in("transactions-count")
       .in(timeIntervalQuery)
@@ -41,7 +41,7 @@ trait ChartsEndpoints extends BaseEndpoint with QueryParams {
       .summary("Get transaction count history")
       .description(s"`interval-type` query param: ${intervalTypes}")
 
-  val getPerChainTxCount: BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[PerChainTimedCount]] =
+  def getPerChainTxCount: BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[PerChainTimedCount]] =
     chartsEndpoint.get
       .in("transactions-count-per-chain")
       .in(timeIntervalQuery)

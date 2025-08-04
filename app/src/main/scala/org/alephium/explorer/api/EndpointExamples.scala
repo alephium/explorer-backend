@@ -19,61 +19,61 @@ import org.alephium.util.{Hex, U256}
 
 /** Contains OpenAPI Examples.
   */
-// scalastyle:off magic.number
+// scalastyle:off magic.number number.of.methods
 @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
 object EndpointExamples extends EndpointsExamples {
 
   private def alph(value: Int): Amount =
     Amount(ALPH.oneAlph.mulUnsafe(U256.unsafe(value)))
 
-  private val blockHash: BlockHash =
+  private def blockHash: BlockHash =
     BlockHash
       .from(Hex.unsafe("bdaf9dc514ce7d34b6474b8ca10a3dfb93ba997cb9d5ff1ea724ebe2af48abe5"))
       .get
 
-  val version: Byte   = 1
-  val networkId: Byte = 0
+  def version: Byte   = 1
+  def networkId: Byte = 0
 
-  private val outputRef: OutputRef =
+  private def outputRef: OutputRef =
     OutputRef(hint = 23412, key = hash)
 
-  private val publicKey = "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28"
-  private val unlockScript: ByteString =
+  private def publicKey = "d1b70d2226308b46da297486adb6b4f1a8c1842cb159ac5ec04f384fe2d6f5da28"
+  private def unlockScript: ByteString =
     Hex.unsafe(publicKey)
 
-  private val address1Str: String = "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n"
-  private val address1: Address =
+  private def address1Str: String = "1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n"
+  private def address1: Address =
     Address.fromBase58(address1Str).toOption.get
 
-  private val address2: Address =
+  private def address2: Address =
     Address.fromBase58("22fnZLkZJUSyhXgboirmJktWkEBRk1pV8L6gfpc53hvVM").toOption.get
 
-  private val grouplessAddress: ApiAddress = ApiAddress.fromBase58(address1Str).toOption.get
+  private def grouplessAddress: ApiAddress = ApiAddress.fromBase58(address1Str).toOption.get
 
-  private val contract =
+  private def contract =
     ContractId
       .from(Hex.from("ac92820d7b37ab2b14eca20839a9c1ad5379e671c687b37a416a2754ea9fc412").get)
       .get
 
-  private val addressContract: Address.Contract = Address.contract(
+  private def addressContract: Address.Contract = Address.contract(
     contract
   )
 
-  private val addressAsset: Address.Asset =
+  private def addressAsset: Address.Asset =
     Address.asset(address1.toBase58).toOption.get
 
-  private val groupIndex1: GroupIndex = new GroupIndex(1)
-  private val groupIndex2: GroupIndex = new GroupIndex(2)
+  private def groupIndex1: GroupIndex = new GroupIndex(1)
+  private def groupIndex2: GroupIndex = new GroupIndex(2)
 
-  private val token = TokenId.hash("token")
+  private def token = TokenId.hash("token")
 
-  private val tokens: ArraySeq[Token] =
+  private def tokens: ArraySeq[Token] =
     ArraySeq(
       Token(TokenId.hash("token1"), alph(42).value),
       Token(TokenId.hash("token2"), alph(1000).value)
     )
 
-  private val input: Input =
+  private def input: Input =
     Input(
       outputRef = outputRef,
       unlockScript = Some(unlockScript),
@@ -84,7 +84,7 @@ object EndpointExamples extends EndpointsExamples {
       contractInput = false
     )
 
-  private val outputAsset: AssetOutput =
+  private def outputAsset: AssetOutput =
     AssetOutput(
       hint = 1,
       key = hash,
@@ -96,7 +96,7 @@ object EndpointExamples extends EndpointsExamples {
       fixedOutput = true
     )
 
-  private val outputContract: Output =
+  private def outputContract: Output =
     ContractOutput(
       hint = 1,
       key = hash,
@@ -108,7 +108,7 @@ object EndpointExamples extends EndpointsExamples {
 
   /** Main API objects
     */
-  private val blockEntryLite: BlockEntryLite =
+  private def blockEntryLite: BlockEntryLite =
     BlockEntryLite(
       hash = blockHash,
       timestamp = ts,
@@ -120,7 +120,7 @@ object EndpointExamples extends EndpointsExamples {
       hashRate = HashRate.a128EhPerSecond.value
     )
 
-  private val blockEntry: BlockEntry =
+  private def blockEntry: BlockEntry =
     BlockEntry(
       hash = blockHash,
       timestamp = ts,
@@ -140,7 +140,7 @@ object EndpointExamples extends EndpointsExamples {
       ghostUncles = ArraySeq(GhostUncle(blockHash, addressAsset))
     )
 
-  private val transaction: Transaction =
+  private def transaction: Transaction =
     Transaction(
       hash = txId,
       blockHash = blockHash,
@@ -158,7 +158,7 @@ object EndpointExamples extends EndpointsExamples {
       coinbase = false
     )
 
-  private val acceptedTransaction: AcceptedTransaction =
+  private def acceptedTransaction: AcceptedTransaction =
     AcceptedTransaction(
       hash = txId,
       blockHash = blockHash,
@@ -176,7 +176,7 @@ object EndpointExamples extends EndpointsExamples {
       coinbase = false
     )
 
-  private val pendingTransaction: PendingTransaction =
+  private def pendingTransaction: PendingTransaction =
     PendingTransaction(
       hash = txId,
       chainFrom = groupIndex1,
@@ -188,7 +188,7 @@ object EndpointExamples extends EndpointsExamples {
       lastSeen = ts
     )
 
-  private val mempoolTransaction: MempoolTransaction =
+  private def mempoolTransaction: MempoolTransaction =
     MempoolTransaction(
       hash = txId,
       chainFrom = groupIndex1,
@@ -200,33 +200,33 @@ object EndpointExamples extends EndpointsExamples {
       lastSeen = ts
     )
 
-  private val addressInfo =
+  private def addressInfo =
     AddressInfo(
       balance = U256.Ten,
       lockedBalance = U256.Two,
       txNumber = 1
     )
 
-  private val addressBalance =
+  private def addressBalance =
     AddressBalance(
       balance = U256.Ten,
       lockedBalance = U256.Two
     )
 
-  private val addressTokenBalance =
+  private def addressTokenBalance =
     AddressTokenBalance(
       tokenId = token,
       balance = U256.Ten,
       lockedBalance = U256.Two
     )
 
-  private val alphHolder =
+  private def alphHolder =
     HolderInfo(
       address = address,
       balance = U256.Ten
     )
 
-  private val contractInfo =
+  private def contractInfo =
     ContractLiveness(
       Some(addressContract),
       ContractLiveness.Location(
@@ -238,13 +238,13 @@ object EndpointExamples extends EndpointsExamples {
       None
     )
 
-  private val contractParent =
+  private def contractParent =
     ContractParent(Some(address1))
 
-  private val subContracts =
+  private def subContracts =
     SubContracts(ArraySeq(address1, address2))
 
-  private val event =
+  private def event =
     Event(
       blockHash,
       ts,
@@ -255,39 +255,39 @@ object EndpointExamples extends EndpointsExamples {
       ArraySeq(ValBool(true))
     )
 
-  private val hashRate =
+  private def hashRate =
     Hashrate(
       timestamp = ts,
       hashrate = BigDecimal(HashRate.a128EhPerSecond.value),
       value = BigDecimal(HashRate.a128EhPerSecond.value)
     )
 
-  private val timedCount =
+  private def timedCount =
     TimedCount(
       timestamp = ts,
       totalCountAllChains = 10000000
     )
 
-  private val timedPrice =
+  private def timedPrice =
     TimedPrices(
       timestamps = ArraySeq(ts, ts),
       prices = ArraySeq(0.123, 0.123)
     )
 
-  private val perChainCount =
+  private def perChainCount =
     PerChainCount(
       chainFrom = 1,
       chainTo = 2,
       count = 10000000
     )
 
-  private val perChainTimedCount =
+  private def perChainTimedCount =
     PerChainTimedCount(
       timestamp = ts,
       totalCountPerChain = ArraySeq(perChainCount, perChainCount)
     )
 
-  private val explorerInfo =
+  private def explorerInfo =
     ExplorerInfo(
       releaseVersion = "1.11.2+17-00593e8e-SNAPSHOT",
       commit = "00593e8e8c718d6bd27fe218e7aa438ef56611cc",
@@ -296,7 +296,7 @@ object EndpointExamples extends EndpointsExamples {
       lastHoldersUpdate = ts
     )
 
-  private val tokenSupply =
+  private def tokenSupply =
     TokenSupply(
       timestamp = ts,
       total = ALPH.MaxALPHValue.divUnsafe(U256.Billion),
@@ -306,7 +306,7 @@ object EndpointExamples extends EndpointsExamples {
       maximum = ALPH.MaxALPHValue
     )
 
-  private val perChainHeight =
+  private def perChainHeight =
     PerChainHeight(
       chainFrom = 1,
       chainTo = 2,
@@ -314,7 +314,7 @@ object EndpointExamples extends EndpointsExamples {
       value = 1000
     )
 
-  private val perChainDuration =
+  private def perChainDuration =
     PerChainDuration(
       chainFrom = 1,
       chainTo = 2,
@@ -322,7 +322,7 @@ object EndpointExamples extends EndpointsExamples {
       value = 60
     )
 
-  private val explainResult =
+  private def explainResult =
     ExplainResult(
       queryName = "queryName",
       queryInput = "Pagination(0,20,false)",
@@ -339,7 +339,7 @@ object EndpointExamples extends EndpointsExamples {
       passed = true
     )
 
-  private val logbackValue =
+  private def logbackValue =
     LogbackValue(
       name = "org.test",
       level = LogbackValue.Level.Debug
@@ -348,118 +348,118 @@ object EndpointExamples extends EndpointsExamples {
   /** Examples
     */
 
-  implicit val grouplessAddressArray2: List[Example[ArraySeq[ApiAddress]]] =
+  implicit def grouplessAddressArray2: List[Example[ArraySeq[ApiAddress]]] =
     simpleExample(ArraySeq(grouplessAddress))
 
-  implicit val blockEntryLiteExample: List[Example[BlockEntryLite]] =
+  implicit def blockEntryLiteExample: List[Example[BlockEntryLite]] =
     simpleExample(blockEntryLite)
 
-  implicit val blockEntryExample: List[Example[BlockEntry]] =
+  implicit def blockEntryExample: List[Example[BlockEntry]] =
     simpleExample(blockEntry)
 
-  implicit val transactionsExample: List[Example[ArraySeq[Transaction]]] =
+  implicit def transactionsExample: List[Example[ArraySeq[Transaction]]] =
     simpleExample(ArraySeq(transaction, transaction))
 
-  implicit val listOfBlocksExample: List[Example[ListBlocks]] =
+  implicit def listOfBlocksExample: List[Example[ListBlocks]] =
     simpleExample(ListBlocks(2, ArraySeq(blockEntryLite, blockEntryLite)))
 
-  implicit val listTokensExample: List[Example[ArraySeq[TokenId]]] =
+  implicit def listTokensExample: List[Example[ArraySeq[TokenId]]] =
     simpleExample(ArraySeq(token))
 
-  implicit val symbolExample: List[Example[ArraySeq[String]]] =
+  implicit def symbolExample: List[Example[ArraySeq[String]]] =
     simpleExample(ArraySeq("ALPH", "USDCeth", "WBTC", "WETH", "DAI", "AYIN"))
 
-  implicit val listAddressesExample: List[Example[ArraySeq[Address]]] =
+  implicit def listAddressesExample: List[Example[ArraySeq[Address]]] =
     simpleExample(ArraySeq(address1))
 
-  implicit val transactionLikeExample: List[Example[TransactionLike]] =
+  implicit def transactionLikeExample: List[Example[TransactionLike]] =
     simpleExample(acceptedTransaction)
 
-  implicit val transactionsLikeExample: List[Example[ArraySeq[TransactionLike]]] =
+  implicit def transactionsLikeExample: List[Example[ArraySeq[TransactionLike]]] =
     simpleExample(ArraySeq[TransactionLike](acceptedTransaction, pendingTransaction))
 
-  implicit val mempoolTransactionsExamle: List[Example[ArraySeq[MempoolTransaction]]] =
+  implicit def mempoolTransactionsExamle: List[Example[ArraySeq[MempoolTransaction]]] =
     simpleExample(ArraySeq(mempoolTransaction, mempoolTransaction))
 
-  implicit val transactionExample: List[Example[Transaction]] =
+  implicit def transactionExample: List[Example[Transaction]] =
     simpleExample(transaction)
 
-  implicit val addressInfoExample: List[Example[AddressInfo]] =
+  implicit def addressInfoExample: List[Example[AddressInfo]] =
     simpleExample(addressInfo)
 
-  implicit val addressBalanceExample: List[Example[AddressBalance]] =
+  implicit def addressBalanceExample: List[Example[AddressBalance]] =
     simpleExample(addressBalance)
 
-  implicit val addressTokenBalanceExample: List[Example[AddressTokenBalance]] =
+  implicit def addressTokenBalanceExample: List[Example[AddressTokenBalance]] =
     simpleExample(addressTokenBalance)
 
-  implicit val addressTokensBalanceExample: List[Example[ArraySeq[AddressTokenBalance]]] =
+  implicit def addressTokensBalanceExample: List[Example[ArraySeq[AddressTokenBalance]]] =
     simpleExample(ArraySeq(addressTokenBalance))
 
-  implicit val alphHoldersExample: List[Example[ArraySeq[HolderInfo]]] =
+  implicit def alphHoldersExample: List[Example[ArraySeq[HolderInfo]]] =
     simpleExample(ArraySeq(alphHolder))
 
-  implicit val contractParentExample: List[Example[ContractParent]] =
+  implicit def contractParentExample: List[Example[ContractParent]] =
     simpleExample(contractParent)
 
-  implicit val contractInfoExample: List[Example[ContractLiveness]] =
+  implicit def contractInfoExample: List[Example[ContractLiveness]] =
     simpleExample(contractInfo)
 
-  implicit val subContractsExample: List[Example[SubContracts]] =
+  implicit def subContractsExample: List[Example[SubContracts]] =
     simpleExample(subContracts)
 
-  implicit val eventsExample: List[Example[ArraySeq[Event]]] =
+  implicit def eventsExample: List[Example[ArraySeq[Event]]] =
     simpleExample(ArraySeq(event, event))
 
-  implicit val booleansExample: List[Example[ArraySeq[Boolean]]] =
+  implicit def booleansExample: List[Example[ArraySeq[Boolean]]] =
     simpleExample(ArraySeq(true, false))
 
-  implicit val hashrateExample: List[Example[ArraySeq[Hashrate]]] =
+  implicit def hashrateExample: List[Example[ArraySeq[Hashrate]]] =
     simpleExample(ArraySeq(hashRate, hashRate))
 
-  implicit val timedCountExample: List[Example[ArraySeq[TimedCount]]] =
+  implicit def timedCountExample: List[Example[ArraySeq[TimedCount]]] =
     simpleExample(ArraySeq(timedCount, timedCount))
 
-  implicit val timedPriceExample: List[Example[TimedPrices]] =
+  implicit def timedPriceExample: List[Example[TimedPrices]] =
     simpleExample(timedPrice)
 
-  implicit val perChainTimedCountExample: List[Example[ArraySeq[PerChainTimedCount]]] =
+  implicit def perChainTimedCountExample: List[Example[ArraySeq[PerChainTimedCount]]] =
     simpleExample(ArraySeq(perChainTimedCount, perChainTimedCount))
 
-  implicit val explorerInfoExample: List[Example[ExplorerInfo]] =
+  implicit def explorerInfoExample: List[Example[ExplorerInfo]] =
     simpleExample(explorerInfo)
 
-  implicit val tokenSupplyExample: List[Example[ArraySeq[TokenSupply]]] =
+  implicit def tokenSupplyExample: List[Example[ArraySeq[TokenSupply]]] =
     simpleExample(ArraySeq(tokenSupply, tokenSupply))
 
-  implicit val perChainHeightExample: List[Example[ArraySeq[PerChainHeight]]] =
+  implicit def perChainHeightExample: List[Example[ArraySeq[PerChainHeight]]] =
     simpleExample(ArraySeq(perChainHeight, perChainHeight))
 
-  implicit val perChainDurationExample: List[Example[ArraySeq[PerChainDuration]]] =
+  implicit def perChainDurationExample: List[Example[ArraySeq[PerChainDuration]]] =
     simpleExample(ArraySeq(perChainDuration, perChainDuration))
 
-  implicit val explainResultExample: List[Example[ArraySeq[ExplainResult]]] =
+  implicit def explainResultExample: List[Example[ArraySeq[ExplainResult]]] =
     simpleExample(ArraySeq(explainResult))
 
-  implicit val logbackValueExample: List[Example[ArraySeq[LogbackValue]]] =
+  implicit def logbackValueExample: List[Example[ArraySeq[LogbackValue]]] =
     simpleExample(ArraySeq(logbackValue))
 
-  implicit val stdInterfaceIdExample: List[Example[TokenStdInterfaceId]] =
+  implicit def stdInterfaceIdExample: List[Example[TokenStdInterfaceId]] =
     simpleExample(StdInterfaceId.FungibleToken.default)
 
-  implicit val fungibleTokenMetadataExample: List[Example[FungibleTokenMetadata]] =
+  implicit def fungibleTokenMetadataExample: List[Example[FungibleTokenMetadata]] =
     simpleExample(FungibleTokenMetadata(token, "TK", "Token", U256.One))
 
-  implicit val fungibleTokensMetadataExample: List[Example[ArraySeq[FungibleTokenMetadata]]] =
+  implicit def fungibleTokensMetadataExample: List[Example[ArraySeq[FungibleTokenMetadata]]] =
     simpleExample(ArraySeq(FungibleTokenMetadata(token, "TK", "Token", U256.One)))
 
-  implicit val nftsMetadataExample: List[Example[ArraySeq[NFTMetadata]]] =
+  implicit def nftsMetadataExample: List[Example[ArraySeq[NFTMetadata]]] =
     simpleExample(ArraySeq(NFTMetadata(token, "token://uri", contract, U256.One)))
 
-  implicit val nftCollectionsMetadataExample: List[Example[ArraySeq[NFTCollectionMetadata]]] =
+  implicit def nftCollectionsMetadataExample: List[Example[ArraySeq[NFTCollectionMetadata]]] =
     simpleExample(ArraySeq(NFTCollectionMetadata(addressContract, "collection://uri")))
 
-  implicit val tokenInfosExample: List[Example[ArraySeq[TokenInfo]]] =
+  implicit def tokenInfosExample: List[Example[ArraySeq[TokenInfo]]] =
     simpleExample(
       ArraySeq(
         TokenInfo(
@@ -471,7 +471,7 @@ object EndpointExamples extends EndpointsExamples {
       )
     )
 
-  implicit val transactionInfoExample: List[Example[TransactionInfo]] =
+  implicit def transactionInfoExample: List[Example[TransactionInfo]] =
     simpleExample(
       TransactionInfo(
         hash = txId,
@@ -481,21 +481,21 @@ object EndpointExamples extends EndpointsExamples {
       )
     )
 
-  implicit val amountHistory: List[Example[AmountHistory]] =
+  implicit def amountHistory: List[Example[AmountHistory]] =
     simpleExample(AmountHistory(ArraySeq(TimedAmount(ts, U256.One.v))))
 
-  implicit val nftMetadataExample: List[Example[NFTMetadata]] =
+  implicit def nftMetadataExample: List[Example[NFTMetadata]] =
     simpleExample(NFTMetadata(token, "token://uri", contract, U256.One))
 
-  implicit val exchangeRatesExample: List[Example[ArraySeq[ExchangeRate]]] =
+  implicit def exchangeRatesExample: List[Example[ArraySeq[ExchangeRate]]] =
     simpleExample(ArraySeq(ExchangeRate("chf", "Swiss Franc", "Fr.", 0.01)))
 
-  implicit val priceChartExample: List[Example[ArraySeq[(Long, Double)]]] =
+  implicit def priceChartExample: List[Example[ArraySeq[(Long, Double)]]] =
     simpleExample(ArraySeq((1234545L, 0.01)))
 
-  implicit val priceExample: List[Example[ArraySeq[Option[Double]]]] =
+  implicit def priceExample: List[Example[ArraySeq[Option[Double]]]] =
     simpleExample(ArraySeq(Option(0.01)))
 
-  implicit val publicKeyExample: List[Example[PublicKey]] =
+  implicit def publicKeyExample: List[Example[PublicKey]] =
     simpleExample(PublicKey.unsafe(Hex.unsafe(publicKey)))
 }

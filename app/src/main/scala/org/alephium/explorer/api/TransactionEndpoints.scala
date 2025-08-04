@@ -13,12 +13,12 @@ import org.alephium.protocol.model.TransactionId
 
 trait TransactionEndpoints extends BaseEndpoint {
 
-  private val transactionsEndpoint =
+  private def transactionsEndpoint =
     baseEndpoint
       .tag("Transactions")
       .in("transactions")
 
-  val getTransactionById: BaseEndpoint[TransactionId, TransactionLike] =
+  def getTransactionById: BaseEndpoint[TransactionId, TransactionLike] =
     transactionsEndpoint.get
       .in(path[TransactionId]("transaction_hash"))
       .out(jsonBody[TransactionLike])

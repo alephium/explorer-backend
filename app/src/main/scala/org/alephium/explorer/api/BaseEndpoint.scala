@@ -22,14 +22,14 @@ trait BaseEndpoint extends ErrorExamples with TapirCodecs with TapirSchemasLike 
   import Endpoints._
   import ApiError._
 
-  implicit val customConfiguration: Configuration =
+  implicit def customConfiguration: Configuration =
     Schemas.configuration
 
   implicit val groupConfig: GroupConfig = Default.groupConfig
 
   type BaseEndpoint[I, O] = Endpoint[Unit, I, ApiError[_ <: StatusCode], O, VertxStreams]
 
-  val baseEndpoint: BaseEndpoint[Unit, Unit] =
+  def baseEndpoint: BaseEndpoint[Unit, Unit] =
     endpoint
       .out(emptyOutput.description("Ok"))
       .errorOut(

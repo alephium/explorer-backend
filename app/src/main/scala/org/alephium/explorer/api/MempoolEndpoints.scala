@@ -14,12 +14,12 @@ import org.alephium.explorer.api.model.{MempoolTransaction, Pagination}
 
 trait MempoolEndpoints extends BaseEndpoint with QueryParams {
 
-  private val mempoolEndpoint =
+  private def mempoolEndpoint =
     baseEndpoint
       .tag("Mempool")
       .in("mempool")
 
-  val listMempoolTransactions: BaseEndpoint[Pagination, ArraySeq[MempoolTransaction]] =
+  def listMempoolTransactions: BaseEndpoint[Pagination, ArraySeq[MempoolTransaction]] =
     mempoolEndpoint.get
       .in("transactions")
       .in(pagination)

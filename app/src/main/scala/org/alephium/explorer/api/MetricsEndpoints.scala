@@ -9,7 +9,7 @@ import org.alephium.api.alphPlainTextBody
 
 trait MetricsEndpoints extends BaseEndpoint with QueryParams {
 
-  val metrics: BaseEndpoint[Unit, String] =
+  def metrics: BaseEndpoint[Unit, String] =
     baseEndpoint
       .in("metrics")
       .out(alphPlainTextBody)

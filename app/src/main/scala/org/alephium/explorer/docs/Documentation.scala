@@ -28,7 +28,8 @@ trait Documentation
 
   def currencies: ArraySeq[String]
 
-  lazy val docs: OpenAPI = addComponents(
+  // scalastyle:off method.length
+  def docs: OpenAPI = addComponents(
     toOpenAPI(
       List(
         listBlocks,
