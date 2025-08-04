@@ -27,7 +27,7 @@ import org.alephium.util.discard
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(8)
+  val latestVersion: MigrationVersion = MigrationVersion(9)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     // We retrigger the download of fungible and non-fungible tokens' metadata that have sub-category
@@ -182,6 +182,17 @@ object Migrations extends StrictLogging {
 
   }
 
+  def migration9(implicit ec: ExecutionContext): DBActionAll[Unit] = {
+    for {
+      // Drop index that was failing due to the `UNIQUE` constraint
+      _ <- sqlu"DROP INDEX IF EXISTS txs_per_address_uniq_groupless_idx"
+      _ <- sqlu"DROP INDEX IF EXISTS token_tx_per_address_groupless_unique_idx"
+    } yield {
+      ()
+    }
+
+  }
+
   private def migrations(implicit
       explorerConfig: ExplorerConfig,
       ec: ExecutionContext
@@ -193,7 +204,8 @@ object Migrations extends StrictLogging {
     migration5,
     migration6,
     migration7,
-    migration8
+    migration8,
+    migration9
   )
 
   def backgroundCoinbaseMigration()(implicit

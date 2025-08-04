@@ -51,7 +51,7 @@ object TransactionPerAddressSchema
   def createConcurrentIndexes()(implicit ec: ExecutionContext): DBActionW[Unit] =
     for {
       _ <- createGrouplessAddressTimestampIndex()
-      _ <- createUniqueGrouplessIndex()
+      _ <- createGrouplessIndex()
       _ <- createCountingGrouplessIndex()
     } yield ()
 
@@ -63,9 +63,9 @@ object TransactionPerAddressSchema
       WHERE groupless_address IS NOT NULL;
     """
 
-  def createUniqueGrouplessIndex(): DBActionW[Int] =
+  def createGrouplessIndex(): DBActionW[Int] =
     sqlu"""
-        CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS txs_per_address_uniq_groupless_idx
+        CREATE INDEX CONCURRENTLY IF NOT EXISTS txs_per_address_groupless_idx
         ON transaction_per_addresses (
           groupless_address, block_timestamp DESC, tx_order, tx_hash, block_hash, coinbase
         )
