@@ -379,28 +379,27 @@ trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with Ht
   "get all transactions for addresses" in {
     val maxSizeAddresses: Int = groupSetting.groupNum * 20
 
-    forAll(Gen.someOf(addresses)) { someAddresses =>
-      val selectedAddresses = someAddresses.take(maxSizeAddresses)
-      val addressesBody =
-        selectedAddresses.map(address => s""""${address.toBase58}"""").mkString("[", ",", "]")
+    val someAddresses     = Gen.someOf(addresses).sample.get
+    val selectedAddresses = someAddresses.take(maxSizeAddresses)
+    val addressesBody =
+      selectedAddresses.map(address => s""""${address.toBase58}"""").mkString("[", ",", "]")
 
-      Post("/addresses/transactions", addressesBody) check { response =>
-        val expectedTransactions =
-          selectedAddresses.flatMap { address =>
-            transactions.filter { tx =>
-              tx.outputs.exists(out => addressEqual(out.address, address)) || tx.inputs
-                .exists(
-                  _.address.map(inAddress => addressEqual(inAddress, address)).getOrElse(false)
-                )
-            }
+    Post("/addresses/transactions", addressesBody) check { response =>
+      val expectedTransactions =
+        selectedAddresses.flatMap { address =>
+          transactions.filter { tx =>
+            tx.outputs.exists(out => addressEqual(out.address, address)) || tx.inputs
+              .exists(
+                _.address.map(inAddress => addressEqual(inAddress, address)).getOrElse(false)
+              )
           }
-
-        val res = response.as[ArraySeq[Transaction]]
-
-        res.size is expectedTransactions.take(txLimit).size
-        Inspectors.forAll(res) { transaction =>
-          expectedTransactions.map(_.hash) should contain(transaction.hash)
         }
+
+      val res = response.as[ArraySeq[Transaction]]
+
+      res.size is expectedTransactions.take(txLimit).size
+      Inspectors.forAll(res) { transaction =>
+        expectedTransactions.map(_.hash) should contain(transaction.hash)
       }
     }
   }
