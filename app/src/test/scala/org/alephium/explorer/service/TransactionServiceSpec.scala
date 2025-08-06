@@ -12,7 +12,7 @@ import scala.jdk.CollectionConverters._
 import io.vertx.core.buffer.Buffer
 import org.scalacheck.Gen
 
-import org.alephium.explorer.AlephiumActorSpecLike
+import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreApi._
@@ -40,7 +40,7 @@ import org.alephium.util.{Duration, TimeStamp, U256}
     "org.wartremover.warts.AsInstanceOf"
   )
 )
-class TransactionServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureForEach {
+class TransactionServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach {
 
   "limit the number of transactions in address details" in new Fixture {
 

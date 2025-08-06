@@ -12,7 +12,7 @@ import org.alephium.util.{Duration, TimeStamp}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var"))
 class ChartsServerSpec()
-    extends AlephiumActorSpecLike
+    extends AlephiumFutureSpec
     with DatabaseFixtureForAll
     with HttpServerFixture {
 

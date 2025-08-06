@@ -49,7 +49,7 @@ import org.alephium.util.{Duration, TimeStamp, U256}
   )
 )
 class AddressServerSpec()
-    extends AlephiumActorSpecLike
+    extends AlephiumFutureSpec
     with DatabaseFixtureForAll
     with HttpServerFixture {
 
