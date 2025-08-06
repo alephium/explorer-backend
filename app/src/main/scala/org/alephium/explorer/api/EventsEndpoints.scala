@@ -16,19 +16,19 @@ import org.alephium.protocol.model.{Address, TransactionId}
 
 trait EventsEndpoints extends BaseEndpoint with QueryParams {
 
-  private def eventsEndpoint =
+  private val eventsEndpoint =
     baseEndpoint
       .tag("Contract events")
       .in("contract-events")
 
-  def getEventsByTxId: BaseEndpoint[TransactionId, ArraySeq[Event]] =
+  val getEventsByTxId: BaseEndpoint[TransactionId, ArraySeq[Event]] =
     eventsEndpoint.get
       .in("transaction-id")
       .in(path[TransactionId]("transaction_id"))
       .out(jsonBody[ArraySeq[Event]])
       .summary("Get contract events by transaction id")
 
-  def getEventsByContractAddress
+  val getEventsByContractAddress
       : BaseEndpoint[(Address, Option[Int], Pagination), ArraySeq[Event]] =
     eventsEndpoint.get
       .in("contract-address")
@@ -38,7 +38,7 @@ trait EventsEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[Event]])
       .summary("Get contract events by contract address")
 
-  def getEventsByContractAndInputAddress
+  val getEventsByContractAndInputAddress
       : BaseEndpoint[(Address, Address, Option[Int], Pagination), ArraySeq[Event]] =
     eventsEndpoint.get
       .in("contract-address")

@@ -16,28 +16,28 @@ import org.alephium.protocol.model.{Address, TokenId}
 // scalastyle:off magic.number
 trait TokensEndpoints extends BaseEndpoint with QueryParams {
 
-  def maxSizeTokens: Int             = 80
-  def maxSizeAddressesForTokens: Int = maxSizeTokens
+  lazy val maxSizeTokens: Int             = 80
+  lazy val maxSizeAddressesForTokens: Int = maxSizeTokens
 
-  private def tokensEndpoint =
+  private val tokensEndpoint =
     baseEndpoint
       .tag("Tokens")
       .in("tokens")
 
-  def listTokens: BaseEndpoint[(Pagination, Option[TokenStdInterfaceId]), ArraySeq[TokenInfo]] =
+  val listTokens: BaseEndpoint[(Pagination, Option[TokenStdInterfaceId]), ArraySeq[TokenInfo]] =
     tokensEndpoint.get
       .in(pagination)
       .in(tokenInterfaceIdQuery)
       .out(jsonBody[ArraySeq[TokenInfo]])
       .summary("List token information")
 
-  def listTokenInfo: BaseEndpoint[ArraySeq[TokenId], ArraySeq[TokenInfo]] =
+  val listTokenInfo: BaseEndpoint[ArraySeq[TokenId], ArraySeq[TokenInfo]] =
     tokensEndpoint.post
       .in(arrayBody[TokenId]("token ids", maxSizeTokens))
       .out(jsonBody[ArraySeq[TokenInfo]])
       .summary("List given tokens information")
 
-  def listTokenTransactions: BaseEndpoint[(TokenId, Pagination), ArraySeq[Transaction]] =
+  val listTokenTransactions: BaseEndpoint[(TokenId, Pagination), ArraySeq[Transaction]] =
     tokensEndpoint.get
       .in(path[TokenId]("token_id"))
       .in("transactions")
@@ -45,7 +45,7 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[Transaction]])
       .summary("List token transactions")
 
-  def listTokenAddresses: BaseEndpoint[(TokenId, Pagination), ArraySeq[Address]] =
+  val listTokenAddresses: BaseEndpoint[(TokenId, Pagination), ArraySeq[Address]] =
     tokensEndpoint.get
       .in(path[TokenId]("token_id"))
       .in("addresses")
@@ -53,7 +53,7 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[Address]])
       .summary("List token addresses")
 
-  def listFungibleTokenMetadata: BaseEndpoint[ArraySeq[TokenId], ArraySeq[FungibleTokenMetadata]] =
+  val listFungibleTokenMetadata: BaseEndpoint[ArraySeq[TokenId], ArraySeq[FungibleTokenMetadata]] =
     tokensEndpoint.post
       .in("fungible-metadata")
       .in(arrayBody[TokenId]("token ids", maxSizeTokens))
@@ -65,7 +65,7 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
         "If metadata doesn't exist or token isn't a fungible, it won't be in the output list"
       )
 
-  def listNFTMetadata: BaseEndpoint[ArraySeq[TokenId], ArraySeq[NFTMetadata]] =
+  val listNFTMetadata: BaseEndpoint[ArraySeq[TokenId], ArraySeq[NFTMetadata]] =
     tokensEndpoint.post
       .in("nft-metadata")
       .in(arrayBody[TokenId]("token ids", maxSizeTokens))
@@ -75,7 +75,7 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       )
       .description("If metadata doesn't exist or token isn't a nft, it won't be in the output list")
 
-  def listNFTCollectionMetadata: BaseEndpoint[ArraySeq[Address], ArraySeq[NFTCollectionMetadata]] =
+  val listNFTCollectionMetadata: BaseEndpoint[ArraySeq[Address], ArraySeq[NFTCollectionMetadata]] =
     tokensEndpoint.post
       .in("nft-collection-metadata")
       .in(arrayBody[Address]("addresses", maxSizeAddressesForTokens))
@@ -87,7 +87,7 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
         "If metadata doesn't exist or address isn't a nft collection, it won't be in the output list"
       )
 
-  def getAlphHolders: BaseEndpoint[Pagination, ArraySeq[HolderInfo]] =
+  val getAlphHolders: BaseEndpoint[Pagination, ArraySeq[HolderInfo]] =
     tokensEndpoint.get
       .in("holders")
       .in("alph")
@@ -96,7 +96,7 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .summary("Get a sorted list of top addresses by ALPH balance")
       .description("Updates once per day.")
 
-  def getTokenHolders: BaseEndpoint[(TokenId, Pagination), ArraySeq[HolderInfo]] =
+  val getTokenHolders: BaseEndpoint[(TokenId, Pagination), ArraySeq[HolderInfo]] =
     tokensEndpoint.get
       .in("holders")
       .in("token")

@@ -15,18 +15,18 @@ import org.alephium.protocol.model.BlockHash
 
 trait BlockEndpoints extends BaseEndpoint with QueryParams {
 
-  private def blocksEndpoint =
+  private val blocksEndpoint =
     baseEndpoint
       .tag("Blocks")
       .in("blocks")
 
-  def getBlockByHash: BaseEndpoint[BlockHash, BlockEntry] =
+  val getBlockByHash: BaseEndpoint[BlockHash, BlockEntry] =
     blocksEndpoint.get
       .in(path[BlockHash]("block_hash"))
       .out(jsonBody[BlockEntry])
       .summary("Get a block with hash")
 
-  def getBlockTransactions: BaseEndpoint[(BlockHash, Pagination), ArraySeq[Transaction]] =
+  val getBlockTransactions: BaseEndpoint[(BlockHash, Pagination), ArraySeq[Transaction]] =
     blocksEndpoint.get
       .in(path[BlockHash]("block_hash"))
       .in("transactions")
@@ -34,7 +34,7 @@ trait BlockEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[Transaction]])
       .summary("Get block's transactions")
 
-  def listBlocks: BaseEndpoint[Pagination.Reversible, ListBlocks] =
+  val listBlocks: BaseEndpoint[Pagination.Reversible, ListBlocks] =
     blocksEndpoint.get
       .in(paginationReversible)
       .out(jsonBody[ListBlocks])

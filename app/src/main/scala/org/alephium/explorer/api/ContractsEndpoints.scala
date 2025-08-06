@@ -14,26 +14,26 @@ import org.alephium.protocol.model.Address
 
 trait ContractsEndpoints extends BaseEndpoint with QueryParams {
 
-  private def contractsEndpoint =
+  private val contractsEndpoint =
     baseEndpoint
       .tag("Contracts")
       .in("contracts")
 
-  def getContractInfo: BaseEndpoint[Address.Contract, ContractLiveness] =
+  val getContractInfo: BaseEndpoint[Address.Contract, ContractLiveness] =
     contractsEndpoint.get
       .in(path[Address.Contract]("contract_address"))
       .in("current-liveness")
       .out(jsonBody[ContractLiveness])
       .summary("Get contract liveness")
 
-  def getParentAddress: BaseEndpoint[Address.Contract, ContractParent] =
+  val getParentAddress: BaseEndpoint[Address.Contract, ContractParent] =
     contractsEndpoint.get
       .in(path[Address.Contract]("contract_address"))
       .in("parent")
       .out(jsonBody[ContractParent])
       .summary("Get contract parent address if exist")
 
-  def getSubContracts: BaseEndpoint[(Address.Contract, Pagination), SubContracts] =
+  val getSubContracts: BaseEndpoint[(Address.Contract, Pagination), SubContracts] =
     contractsEndpoint.get
       .in(path[Address.Contract]("contract_address"))
       .in("sub-contracts")
