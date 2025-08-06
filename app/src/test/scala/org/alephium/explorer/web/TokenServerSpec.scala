@@ -21,7 +21,7 @@ import org.alephium.protocol.model.TokenId
 
 @SuppressWarnings(Array("org.wartremover.warts.Var"))
 class TokenServerSpec()
-    extends AlephiumActorSpecLike
+    extends AlephiumFutureSpec
     with HttpServerFixture
     with DatabaseFixtureForAll {
 

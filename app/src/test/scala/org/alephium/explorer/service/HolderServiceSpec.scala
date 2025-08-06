@@ -10,7 +10,7 @@ import scala.collection.immutable.ArraySeq
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.api.model
-import org.alephium.explorer.AlephiumActorSpecLike
+import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreApi._
@@ -25,7 +25,7 @@ import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.model.{Address, ChainIndex, GroupIndex}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
-class HolderServiceSpec extends AlephiumActorSpecLike with DatabaseFixtureForEach {
+class HolderServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach {
 
   "insert initial table" in new Fixture {
     val blocks = chainGen(4, TimeStamp.now(), ChainIndex.unsafe(0, 0)).sample.get

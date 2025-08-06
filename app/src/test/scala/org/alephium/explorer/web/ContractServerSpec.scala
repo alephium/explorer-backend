@@ -26,7 +26,7 @@ import org.alephium.explorer.persistence.queries.ContractQueries
   )
 )
 class ContractServerSpec()
-    extends AlephiumActorSpecLike
+    extends AlephiumFutureSpec
     with DatabaseFixtureForAll
     with DBRunner
     with HttpServerFixture {
