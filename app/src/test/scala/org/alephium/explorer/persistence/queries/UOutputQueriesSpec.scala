@@ -9,17 +9,17 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.{AlephiumFutureSpec, GenCommon}
 import org.alephium.explorer.GenCoreProtocol.transactionHashGen
 import org.alephium.explorer.GenDBModel._
-import org.alephium.explorer.persistence.{DatabaseFixtureForAll, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForAll, TestDBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 
-class UOutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with DBRunner {
+class UOutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with TestDBRunner {
 
   /** Clear [[UOutputSchema]] table and persist new test data.
     */
   def createTestData(uoutput: Iterable[UOutputEntity]): Unit = {
-    run(UOutputSchema.table.delete).futureValue
-    val persistCount = run(UOutputSchema.table ++= uoutput).futureValue
+    exec(UOutputSchema.table.delete)
+    val persistCount = exec(UOutputSchema.table ++= uoutput)
     persistCount should contain(uoutput.size)
     ()
   }
@@ -39,7 +39,7 @@ class UOutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
           val expected = uoutput.filter(uoutput => txIds.contains(uoutput.txHash))
 
           val actual =
-            run(MempoolQueries.uoutputsFromTxs(txIds)).futureValue
+            exec(MempoolQueries.uoutputsFromTxs(txIds))
 
           actual should contain theSameElementsAs expected
         }
@@ -66,7 +66,7 @@ class UOutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
               .sortBy(_.uoutputOrder)
 
           val actual =
-            run(MempoolQueries.uoutputsFromTx(txId)).futureValue
+            exec(MempoolQueries.uoutputsFromTx(txId))
 
           // the result should be in expected order.
           actual should contain theSameElementsInOrderAs expected

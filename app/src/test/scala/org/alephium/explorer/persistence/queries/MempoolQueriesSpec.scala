@@ -11,13 +11,13 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
-import org.alephium.explorer.persistence.{DatabaseFixtureForAll, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForAll, TestDBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.protocol.model.{Address, TransactionId}
 import org.alephium.util.TimeStamp
 
-class MempoolQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with DBRunner {
+class MempoolQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with TestDBRunner {
 
   /** Setup tests data for table [[MempoolTransactionSchema]]
     *
@@ -25,17 +25,17 @@ class MempoolQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
     *   transaction to create a table for
     */
   def createTestData(mempoolTxs: Iterable[MempoolTransactionEntity]): Unit = {
-    run(MempoolTransactionSchema.table.delete).futureValue
-    val persistCount = run(MempoolTransactionSchema.table ++= mempoolTxs).futureValue
+    exec(MempoolTransactionSchema.table.delete)
+    val persistCount = exec(MempoolTransactionSchema.table ++= mempoolTxs)
     persistCount should contain(mempoolTxs.size)
     ()
   }
 
   def createTestData(uinputs: Iterable[UInputEntity], uoutput: Iterable[UOutputEntity]): Unit = {
-    run(UInputSchema.table.delete).futureValue
-    run(UOutputSchema.table.delete).futureValue
-    val inPersistCount  = run(UInputSchema.table ++= uinputs).futureValue
-    val outPersistCount = run(UOutputSchema.table ++= uoutput).futureValue
+    exec(UInputSchema.table.delete)
+    exec(UOutputSchema.table.delete)
+    val inPersistCount  = exec(UInputSchema.table ++= uinputs)
+    val outPersistCount = exec(UOutputSchema.table ++= uoutput)
     inPersistCount should contain(uinputs.size)
     outPersistCount should contain(uoutput.size)
     ()
@@ -49,7 +49,7 @@ class MempoolQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
 
         // fetch expected and actual data
         val expectedHashes = mempoolTxs.map(_.hash)
-        val actualHashes   = run(MempoolQueries.listHashesQuery).futureValue
+        val actualHashes   = exec(MempoolQueries.listHashesQuery)
 
         actualHashes should contain theSameElementsAs expectedHashes
       }
@@ -68,7 +68,7 @@ class MempoolQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
               .slice(pagination.offset, pagination.offset + pagination.limit) // pagination
 
           val actual =
-            run(MempoolQueries.listPaginatedMempoolTransactionsQuery(pagination)).futureValue
+            exec(MempoolQueries.listPaginatedMempoolTransactionsQuery(pagination))
 
           actual should contain theSameElementsInOrderAs expected
       }
@@ -91,7 +91,7 @@ class MempoolQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
             Random.shuffle(expected.map(_.hash))
 
           val actual =
-            run(MempoolQueries.utxsFromTxs(transactionIdsToQuery)).futureValue
+            exec(MempoolQueries.utxsFromTxs(transactionIdsToQuery))
 
           actual should contain theSameElementsInOrderAs expected
       }
@@ -105,7 +105,7 @@ class MempoolQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
 
         mempoolTxs foreach { expected =>
           val actual =
-            run(MempoolQueries.utxFromTxHash(expected.hash)).futureValue
+            exec(MempoolQueries.utxFromTxHash(expected.hash))
 
           actual should contain only expected
         }
@@ -136,7 +136,7 @@ class MempoolQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForAll w
 
         addressAndExpectedTx foreachEntry { case (address, expectedTx) =>
           val actual =
-            run(MempoolQueries.listUTXHashesByAddress(address)).futureValue
+            exec(MempoolQueries.listUTXHashesByAddress(address))
 
           // expect distinct transaction hashes
           val expected = expectedTx.distinct

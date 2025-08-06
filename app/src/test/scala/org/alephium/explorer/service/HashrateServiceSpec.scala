@@ -13,12 +13,12 @@ import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.ConfigDefaults.groupSetting
 import org.alephium.explorer.GenDBModel.blockHeaderWithHashrate
 import org.alephium.explorer.api.model.{Hashrate, IntervalType}
-import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, TestDBRunner}
 import org.alephium.explorer.persistence.queries.HashrateQueries._
 import org.alephium.explorer.persistence.schema.BlockHeaderSchema
 import org.alephium.util._
 
-class HashrateServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
+class HashrateServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with TestDBRunner {
 
   "hourly hashrates" in new Fixture {
 
@@ -33,11 +33,11 @@ class HashrateServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
       b("2022-01-09T00:00:00.000Z", 100)
     )
 
-    run(BlockHeaderSchema.table ++= blocks).futureValue
+    exec(BlockHeaderSchema.table ++= blocks)
 
-    run(
+    exec(
       computeHourlyHashrate(from)
-    ).futureValue.sortBy(_._1) is ArraySeq(
+    ).sortBy(_._1) is ArraySeq(
       v("2022-01-08T00:00:00.000Z", 3),
       v("2022-01-08T01:00:00.000Z", 30),
       v("2022-01-09T00:00:00.000Z", 100)
@@ -56,19 +56,19 @@ class HashrateServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
       b("2022-01-09T12:00:00.000Z", 100)
     )
 
-    run(BlockHeaderSchema.table ++= blocks).futureValue
+    exec(BlockHeaderSchema.table ++= blocks)
 
-    run(
+    exec(
       computeDailyHashrate(from)
-    ).futureValue.sortBy(_._1) is
+    ).sortBy(_._1) is
       ArraySeq(
         v("2022-01-08T00:00:00.000Z", 3),
         v("2022-01-09T00:00:00.000Z", 20),
         v("2022-01-10T00:00:00.000Z", 100)
       )
-    run(
+    exec(
       computeDailyHashrate(ts("2022-01-09T10:00:00.000Z"))
-    ).futureValue.sortBy(_._1) is
+    ).sortBy(_._1) is
       ArraySeq(
         v("2022-01-10T00:00:00.000Z", 100)
       )
@@ -84,7 +84,7 @@ class HashrateServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
       b("2022-01-08T00:03:10.123Z", 100)
     )
 
-    run(BlockHeaderSchema.table ++= blocks).futureValue
+    exec(BlockHeaderSchema.table ++= blocks)
 
     HashrateService.get(from, to, IntervalType.Hourly).futureValue is ArraySeq.empty
 
@@ -108,7 +108,7 @@ class HashrateServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
       b("2022-01-08T20:38:00.000Z", 4)
     )
 
-    run(BlockHeaderSchema.table ++= newBlocks).futureValue
+    exec(BlockHeaderSchema.table ++= newBlocks)
 
     HashrateService.syncOnce().futureValue
 

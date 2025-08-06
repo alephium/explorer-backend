@@ -23,8 +23,7 @@ import org.alephium.util.{TimeStamp, U256}
 class StatementTimeoutSpec()
     extends AlephiumFutureSpec
     with DatabaseFixtureForAll
-    with HttpServerFixture
-    with DBRunner {
+    with HttpServerFixture {
 
   implicit val blockCache: BlockCache = TestBlockCache()
 

@@ -11,7 +11,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenApiModel.{assetOutputGen, mempooltransactionGen}
 import org.alephium.explorer.GenCoreUtil.timestampGen
-import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, TestDBRunner}
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.model.TransactionId
@@ -19,7 +19,7 @@ import org.alephium.protocol.model.TransactionId
 class MempoolTransactionDaoSpec
     extends AlephiumFutureSpec
     with DatabaseFixtureForEach
-    with DBRunner {
+    with TestDBRunner {
 
   "insertMany" in {
     forAll(Gen.listOfN(5, mempooltransactionGen)) { txs =>
@@ -27,7 +27,7 @@ class MempoolTransactionDaoSpec
 
       txs.foreach { tx =>
         val dbTx =
-          run(MempoolTransactionSchema.table.filter(_.hash === tx.hash).result).futureValue
+          exec(MempoolTransactionSchema.table.filter(_.hash === tx.hash).result)
         dbTx.size is 1
         dbTx.head.hash is tx.hash
         dbTx.head.chainFrom is tx.chainFrom
@@ -35,12 +35,12 @@ class MempoolTransactionDaoSpec
         dbTx.head.gasAmount is tx.gasAmount
         dbTx.head.gasPrice is tx.gasPrice
 
-        val inputs = run(UInputSchema.table.filter(_.txHash === tx.hash).result).futureValue
+        val inputs = exec(UInputSchema.table.filter(_.txHash === tx.hash).result)
         inputs.size is tx.inputs.size
         inputs.foreach(input => tx.inputs.contains(input.toApi))
 
         val outputs =
-          run(UOutputSchema.table.filter(_.txHash === tx.hash).result).futureValue
+          exec(UOutputSchema.table.filter(_.txHash === tx.hash).result)
         outputs.size is tx.outputs.size
         outputs.foreach(output => tx.outputs.contains(output.toApi))
       }

@@ -14,34 +14,34 @@ import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model.Pagination
-import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, TestDBRunner}
 import org.alephium.explorer.persistence.queries.TokenQueries
 import org.alephium.explorer.persistence.queries.result.TxByTokenQR
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.util.AddressUtil
 import org.alephium.util.{TimeStamp, U256}
 
-class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
+class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with TestDBRunner {
 
   "Token Queries" should {
     "list token transactions" in {
       forAll(Gen.listOfN(30, transactionPerTokenEntityGen()), tokenIdGen) {
         case (txPerTokens, token) =>
-          run(TransactionPerTokenSchema.table.delete).futureValue
-          run(
+          exec(TransactionPerTokenSchema.table.delete)
+          exec(
             TransactionPerTokenSchema.table ++= txPerTokens.map(_.copy(token = token))
-          ).futureValue
+          )
 
           val expected = txPerTokens
             .filter(_.mainChain)
             .map(tx => TxByTokenQR(tx.hash, tx.blockHash, tx.timestamp, tx.txOrder))
           val result =
-            run(
+            exec(
               TokenQueries.listTokenTransactionsAction(
                 token,
                 Pagination.unsafe(1, txPerTokens.size)
               )
-            ).futureValue
+            )
 
           result.size is expected.size
           result should contain allElementsOf expected
@@ -51,8 +51,8 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
     "get token tx hashes by address query" in {
       forAll(Gen.listOfN(30, tokenTxPerAddressEntityGen()), addressGen, tokenIdGen) {
         case (txPerAddressTokens, address, token) =>
-          run(TokenPerAddressSchema.table.delete).futureValue
-          run(
+          exec(TokenPerAddressSchema.table.delete)
+          exec(
             TokenPerAddressSchema.table ++= txPerAddressTokens.map(
               _.copy(
                 address = address,
@@ -60,19 +60,19 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
                 token = token
               )
             )
-          ).futureValue
+          )
 
           val expected = txPerAddressTokens
             .filter(_.mainChain)
             .map(tx => TxByTokenQR(tx.hash, tx.blockHash, tx.timestamp, tx.txOrder))
           val result =
-            run(
+            exec(
               TokenQueries.getTokenTxHashesByAddressQuery(
                 address,
                 token,
                 Pagination.unsafe(1, txPerAddressTokens.size)
               )
-            ).futureValue
+            )
 
           result.size is expected.size
           result should contain allElementsOf expected
@@ -88,14 +88,16 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
       val pagination   = Pagination.unsafe(1, 100)
       val now          = TimeStamp.now()
 
-      run(InputSchema.table.delete).futureValue
-      run(InputSchema.table ++= inputs).futureValue
-      run(TokenOutputSchema.table.delete).futureValue
-      run(TokenOutputSchema.table ++= tokenOutputs).futureValue
+      exec(for {
+        _ <- InputSchema.table.delete
+        _ <- InputSchema.table ++= inputs
+        _ <- TokenOutputSchema.table.delete
+        _ <- TokenOutputSchema.table ++= tokenOutputs
+      } yield ())
 
       addresses.foreach { address =>
         val result =
-          run(TokenQueries.listAddressTokensWithBalanceAction(address, pagination)).futureValue
+          exec(TokenQueries.listAddressTokensWithBalanceAction(address, pagination))
 
         val expected = tokenOutputs
           .filter(t =>
@@ -114,11 +116,11 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
     "insert and list fungible token metadata" in {
       val tokens = Gen.nonEmptyListOf(fungibleTokenMetadataGen).sample.get
 
-      run(
+      exec(
         DBIOAction.sequence(tokens.map(token => TokenQueries.insertFungibleTokenMetadata(token)))
-      ).futureValue
+      )
 
-      val result = run(TokenQueries.listFungibleTokenMetadataQuery(tokens.map(_.id))).futureValue
+      val result = exec(TokenQueries.listFungibleTokenMetadataQuery(tokens.map(_.id)))
 
       result is tokens
     }
@@ -126,22 +128,22 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
     "insert and list nft metadata" in {
       val tokens = Gen.nonEmptyListOf(nftMetadataGen).sample.get
 
-      run(
+      exec(
         DBIOAction.sequence(tokens.map(token => TokenQueries.insertNFTMetadata(token)))
-      ).futureValue
+      )
 
-      val result = run(TokenQueries.listNFTMetadataQuery(tokens.map(_.id))).futureValue
+      val result = exec(TokenQueries.listNFTMetadataQuery(tokens.map(_.id)))
 
       result is tokens
     }
 
     "ignore conflict when inserting fungible token metadata" in {
       forAll(fungibleTokenMetadataGen, Gen.alphaNumStr) { case (metadata, symbol) =>
-        run(TokenQueries.insertFungibleTokenMetadata(metadata)).futureValue
-        run(TokenQueries.insertFungibleTokenMetadata(metadata.copy(symbol = symbol))).futureValue
+        exec(TokenQueries.insertFungibleTokenMetadata(metadata))
+        exec(TokenQueries.insertFungibleTokenMetadata(metadata.copy(symbol = symbol)))
 
         val result =
-          run(TokenQueries.listFungibleTokenMetadataQuery(ArraySeq(metadata.id))).futureValue
+          exec(TokenQueries.listFungibleTokenMetadataQuery(ArraySeq(metadata.id)))
 
         result is ArraySeq(metadata)
 
@@ -150,10 +152,10 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
     "ignore conflict when inserting nft metadata" in {
       forAll(nftMetadataGen, Gen.alphaNumStr) { case (metadata, tokenUri) =>
-        run(TokenQueries.insertNFTMetadata(metadata)).futureValue
-        run(TokenQueries.insertNFTMetadata(metadata.copy(tokenUri = tokenUri))).futureValue
+        exec(TokenQueries.insertNFTMetadata(metadata))
+        exec(TokenQueries.insertNFTMetadata(metadata.copy(tokenUri = tokenUri)))
 
-        val result = run(TokenQueries.listNFTMetadataQuery(ArraySeq(metadata.id))).futureValue
+        val result = exec(TokenQueries.listNFTMetadataQuery(ArraySeq(metadata.id)))
 
         result is ArraySeq(metadata)
 

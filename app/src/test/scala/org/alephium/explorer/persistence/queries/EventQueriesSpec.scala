@@ -15,7 +15,7 @@ import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreProtocol.transactionHashGen
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model.Pagination
-import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, TestDBRunner}
 import org.alephium.explorer.persistence.model.EventEntity
 import org.alephium.explorer.persistence.queries.EventQueries
 import org.alephium.explorer.persistence.schema.EventSchema
@@ -23,7 +23,7 @@ import org.alephium.explorer.persistence.schema.EventSchema
 class EventQueriesSpec
     extends AlephiumFutureSpec
     with DatabaseFixtureForEach
-    with DBRunner
+    with TestDBRunner
     with ScalaFutures {
 
   val pagination = Pagination.unsafe(1, Pagination.defaultLimit)
@@ -34,7 +34,7 @@ class EventQueriesSpec
         insert(events)
 
         events.map { event =>
-          val result = run(EventQueries.getEventsByTxIdQuery(event.txHash)).futureValue
+          val result = exec(EventQueries.getEventsByTxIdQuery(event.txHash))
           result.size is 1
           result.head.toApi is event.toApi
         }
@@ -50,7 +50,7 @@ class EventQueriesSpec
 
         insert(uniqueTxHashEvents)
 
-        val result = run(EventQueries.getEventsByTxIdQuery(txHash)).futureValue
+        val result = exec(EventQueries.getEventsByTxIdQuery(txHash))
 
         result.size is uniqueTxHashEvents.size
         result.zip(uniqueTxHashEvents.sortBy(_.eventOrder)).map { case (res, event) =>
@@ -65,9 +65,9 @@ class EventQueriesSpec
 
         events.map { event =>
           val result =
-            run(
+            exec(
               EventQueries.getEventsByContractAddressQuery(event.contractAddress, None, pagination)
-            ).futureValue
+            )
           result.size is 1
           result.head.toApi is event.toApi
         }
@@ -86,9 +86,9 @@ class EventQueriesSpec
         val fullPagination = Pagination.unsafe(1, uniqueContractAddressEvents.size)
 
         val result =
-          run(
+          exec(
             EventQueries.getEventsByContractAddressQuery(contractAddress, None, fullPagination)
-          ).futureValue
+          )
 
         result.size is uniqueContractAddressEvents.size
         result.zip(uniqueContractAddressEvents.sortBy(_.timestamp).reverse).map {
@@ -97,9 +97,9 @@ class EventQueriesSpec
         }
 
         val paginatedResult =
-          run(
+          exec(
             EventQueries.getEventsByContractAddressQuery(contractAddress, None, pagination)
-          ).futureValue
+          )
 
         if (uniqueContractAddressEvents.sizeIs > pagination.limit) {
           paginatedResult.size is pagination.limit
@@ -119,20 +119,20 @@ class EventQueriesSpec
 
         events.map { event =>
           val withoutFilter =
-            run(
+            exec(
               EventQueries.getEventsByContractAddressQuery(event.contractAddress, None, pagination)
-            ).futureValue
+            )
 
           withoutFilter.size is 2
 
           val result =
-            run(
+            exec(
               EventQueries.getEventsByContractAddressQuery(
                 event.contractAddress,
                 Some(event.eventIndex),
                 pagination
               )
-            ).futureValue
+            )
 
           result.size is 1
           result.head.toApi is event.toApi
@@ -148,26 +148,26 @@ class EventQueriesSpec
           event.inputAddress match {
             case Some(inputAddress) =>
               val result =
-                run(
+                exec(
                   EventQueries.getEventsByContractAndInputAddressQuery(
                     event.contractAddress,
                     inputAddress,
                     None,
                     pagination
                   )
-                ).futureValue
+                )
 
               result.size is 1
               result.head.toApi is event.toApi
             case None =>
-              run(
+              exec(
                 EventQueries.getEventsByContractAndInputAddressQuery(
                   event.contractAddress,
                   addressGen.sample.get,
                   None,
                   pagination
                 )
-              ).futureValue is ArraySeq.empty
+              ) is ArraySeq.empty
 
           }
         }
@@ -187,14 +187,14 @@ class EventQueriesSpec
         val fullPagination = Pagination.unsafe(1, uniqueContractAddressEvents.size)
 
         val result =
-          run(
+          exec(
             EventQueries.getEventsByContractAndInputAddressQuery(
               contractAddress,
               inputAddress,
               None,
               fullPagination
             )
-          ).futureValue
+          )
 
         result.size is uniqueContractAddressEvents.size
         result.zip(uniqueContractAddressEvents.sortBy(_.timestamp).reverse).map {
@@ -203,14 +203,14 @@ class EventQueriesSpec
         }
 
         val paginatedResult =
-          run(
+          exec(
             EventQueries.getEventsByContractAndInputAddressQuery(
               contractAddress,
               inputAddress,
               None,
               pagination
             )
-          ).futureValue
+          )
 
         if (uniqueContractAddressEvents.sizeIs > pagination.limit) {
           paginatedResult.size is pagination.limit
@@ -233,44 +233,44 @@ class EventQueriesSpec
         event.inputAddress match {
           case Some(inputAddress) =>
             val withoutFilter =
-              run(
+              exec(
                 EventQueries.getEventsByContractAndInputAddressQuery(
                   event.contractAddress,
                   inputAddress,
                   None,
                   pagination
                 )
-              ).futureValue
+              )
 
             withoutFilter.size is 2
 
             val result =
-              run(
+              exec(
                 EventQueries.getEventsByContractAndInputAddressQuery(
                   event.contractAddress,
                   inputAddress,
                   Some(event.eventIndex),
                   pagination
                 )
-              ).futureValue
+              )
 
             result.size is 1
 
           case None =>
-            run(
+            exec(
               EventQueries.getEventsByContractAndInputAddressQuery(
                 event.contractAddress,
                 addressGen.sample.get,
                 Some(event.eventIndex),
                 pagination
               )
-            ).futureValue is ArraySeq.empty
+            ) is ArraySeq.empty
         }
       }
     }
   }
   def insert(events: ArraySeq[EventEntity]) = {
-    run(EventSchema.table.delete).futureValue
-    run(EventSchema.table ++= events).futureValue
+    exec(EventSchema.table.delete)
+    exec(EventSchema.table ++= events)
   }
 }

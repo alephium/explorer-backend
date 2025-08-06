@@ -18,7 +18,7 @@ import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.config.Default.groupConfig
-import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, TestDBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.result._
 import org.alephium.explorer.persistence.schema._
@@ -31,11 +31,14 @@ import org.alephium.protocol.model.{Address, GroupIndex, TransactionId}
 import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.{Duration, TimeStamp, U256}
 
-class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
+class TransactionQueriesSpec
+    extends AlephiumFutureSpec
+    with DatabaseFixtureForEach
+    with TestDBRunner {
 
   "compute locked balance when empty" in new Fixture {
     val balance =
-      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
+      exec(TransactionQueries.getBalanceAction(address, lastFinalizedTime))
     balance is ((U256.Zero, U256.Zero))
   }
 
@@ -47,10 +50,10 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val output3 = output(address, ALPH.alph(3), Some(TimeStamp.now().plusMinutesUnsafe(10)))
     val output4 = output(address, ALPH.alph(4), Some(TimeStamp.now().plusMinutesUnsafe(10)))
 
-    run(OutputSchema.table ++= ArraySeq(output1, output2, output3, output4)).futureValue
+    exec(OutputSchema.table ++= ArraySeq(output1, output2, output3, output4))
 
     val (total, locked) =
-      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
+      exec(TransactionQueries.getBalanceAction(address, lastFinalizedTime))
 
     total is ALPH.alph(10)
     locked is ALPH.alph(7)
@@ -66,11 +69,11 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
       outputRefGrouplessAddress = AddressUtil.convertToGrouplessAddress(address)
     )
 
-    run(OutputSchema.table ++= ArraySeq(output1, output2)).futureValue
-    run(InputSchema.table += input1).futureValue
+    exec(OutputSchema.table ++= ArraySeq(output1, output2))
+    exec(InputSchema.table += input1)
 
     val (total, _) =
-      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
+      exec(TransactionQueries.getBalanceAction(address, lastFinalizedTime))
 
     total is ALPH.alph(1)
 
@@ -79,7 +82,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from)).futureValue
 
     val (totalFinalized, _) =
-      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
+      exec(TransactionQueries.getBalanceAction(address, lastFinalizedTime))
 
     totalFinalized is ALPH.alph(1)
   }
@@ -90,11 +93,11 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val output2 = output(address, ALPH.alph(2), None).copy(mainChain = false)
     val input1  = input(output2.hint, output2.key).copy(mainChain = false)
 
-    run(OutputSchema.table ++= ArraySeq(output1, output2)).futureValue
-    run(InputSchema.table += input1).futureValue
+    exec(OutputSchema.table ++= ArraySeq(output1, output2))
+    exec(InputSchema.table += input1)
 
     val (total, _) =
-      run(TransactionQueries.getBalanceAction(address, lastFinalizedTime)).futureValue
+      exec(TransactionQueries.getBalanceAction(address, lastFinalizedTime))
 
     total is ALPH.alph(1)
   }
@@ -111,11 +114,11 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     val outputs = ArraySeq(output1, output2, output3, output4)
     val inputs  = ArraySeq(input1, input2, input3)
-    run(TransactionQueries.insertAll(ArraySeq.empty, outputs, inputs)).futureValue
-    run(InputUpdateQueries.updateInputs()).futureValue
+    exec(TransactionQueries.insertAll(ArraySeq.empty, outputs, inputs))
+    exec(InputUpdateQueries.updateInputs())
 
     val total =
-      run(TransactionQueries.countAddressTransactions(address)).futureValue.head
+      exec(TransactionQueries.countAddressTransactions(address)).head
 
     // tx of output1, output2 and input1
     total is 3
@@ -132,15 +135,15 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val outputs = ArraySeq(output1)
     val inputs  = ArraySeq(input1, input2)
 
-    run(TransactionQueries.insertAll(ArraySeq.empty, outputs, inputs)).futureValue
-    run(InputUpdateQueries.updateInputs()).futureValue
+    exec(TransactionQueries.insertAll(ArraySeq.empty, outputs, inputs))
+    exec(InputUpdateQueries.updateInputs())
 
-    run(TransactionQueries.countAddressTransactions(address)).futureValue.head is 2
+    exec(TransactionQueries.countAddressTransactions(address)).head is 2
 
-    run(OutputSchema.table += output2).futureValue
-    run(InputUpdateQueries.updateInputs()).futureValue
+    exec(OutputSchema.table += output2)
+    exec(InputUpdateQueries.updateInputs())
 
-    run(TransactionQueries.countAddressTransactions(address)).futureValue.head is 3
+    exec(TransactionQueries.countAddressTransactions(address)).head is 3
   }
 
   "get tx hashes by address" in new Fixture {
@@ -156,13 +159,13 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val outputs = ArraySeq(output1, output2, output3, output4)
     val inputs  = ArraySeq(input1, input2, input3)
 
-    run(TransactionQueries.insertAll(ArraySeq.empty, outputs, inputs)).futureValue
-    run(InputUpdateQueries.updateInputs()).futureValue
+    exec(TransactionQueries.insertAll(ArraySeq.empty, outputs, inputs))
+    exec(InputUpdateQueries.updateInputs())
 
     val hashes =
-      run(
+      exec(
         TransactionQueries.getTxHashesByAddressQuery(address, Pagination.unsafe(1, 10))
-      ).futureValue
+      )
 
     val expected = ArraySeq(
       TxByAddressQR(output1.txHash, output1.blockHash, output1.timestamp, 0, false),
@@ -186,8 +189,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val inputs       = ArraySeq(input1, input2)
     val transactions = outputs.map(transaction)
 
-    run(TransactionQueries.insertAll(transactions, outputs, inputs)).futureValue
-    run(InputUpdateQueries.updateInputs()).futureValue
+    exec(TransactionQueries.insertAll(transactions, outputs, inputs))
+    exec(InputUpdateQueries.updateInputs())
     val from = TimeStamp.zero
     val to   = timestampMaxValue
     FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from)).futureValue
@@ -212,9 +215,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     }
 
     val txs =
-      run(
+      exec(
         TransactionQueries.getTransactionsByAddress(address, Pagination.unsafe(1, 10))
-      ).futureValue
+      )
 
     val expected = ArraySeq(
       tx(output1, None, ArraySeq.empty),
@@ -255,11 +258,11 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val input1 = input(output1.hint, output1.key).copy(txHash = tx2.hash, blockHash = tx2.blockHash)
     val input2 = input(output1.hint, output1.key).copy(txHash = tx2.hash).copy(mainChain = false)
 
-    run(OutputSchema.table += output1).futureValue
-    run(InputSchema.table ++= ArraySeq(input1, input2)).futureValue
-    run(TransactionSchema.table ++= ArraySeq(txEntity1)).futureValue
+    exec(OutputSchema.table += output1)
+    exec(InputSchema.table ++= ArraySeq(input1, input2))
+    exec(TransactionSchema.table ++= ArraySeq(txEntity1))
 
-    val tx = run(TransactionQueries.getTransactionAction(tx1.hash)).futureValue.get
+    val tx = exec(TransactionQueries.getTransactionAction(tx1.hash)).get
 
     tx.outputs.size is 1 // was 2 in v1.4.1
   }
@@ -267,32 +270,32 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
   "insert and ignore transactions" in new Fixture {
 
     forAll(Gen.listOf(updatedTransactionEntityGen())) { transactions =>
-      run(TransactionSchema.table.delete).futureValue
+      exec(TransactionSchema.table.delete)
 
       val existingTransactions = transactions.map(_._1)
       val updatedTransactions  = transactions.map(_._2)
 
       // insert
-      run(
+      exec(
         TransactionQueries.insertTransactions(existingTransactions)
-      ).futureValue is existingTransactions.size
-      run(
+      ) is existingTransactions.size
+      exec(
         TransactionSchema.table.result
-      ).futureValue should contain allElementsOf existingTransactions
+      ) should contain allElementsOf existingTransactions
 
       // ignore
-      run(TransactionQueries.insertTransactions(updatedTransactions)).futureValue is 0
-      run(
+      exec(TransactionQueries.insertTransactions(updatedTransactions)) is 0
+      exec(
         TransactionSchema.table.result
-      ).futureValue should contain allElementsOf existingTransactions
+      ) should contain allElementsOf existingTransactions
     }
   }
 
   // https://github.com/alephium/explorer-backend/issues/174
   "return an empty list when not transactions are found - Isssue 174" in new Fixture {
-    run(
+    exec(
       TransactionQueries.getTransactionsByAddress(address, Pagination.unsafe(1, 10))
-    ).futureValue is ArraySeq.empty
+    ) is ArraySeq.empty
   }
 
   "get total number of main transactions" in new Fixture {
@@ -301,9 +304,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     val tx2 = transactionEntityGen().sample.get.copy(mainChain = true)
     val tx3 = transactionEntityGen().sample.get.copy(mainChain = false)
 
-    run(TransactionSchema.table ++= ArraySeq(tx1, tx2, tx3)).futureValue
+    exec(TransactionSchema.table ++= ArraySeq(tx1, tx2, tx3))
 
-    val total = run(TransactionQueries.mainTransactions.length.result).futureValue
+    val total = exec(TransactionQueries.mainTransactions.length.result)
     total is 2
   }
 
@@ -311,8 +314,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
     "get used" when {
       "accessing column hash" ignore {
         forAll(Gen.listOf(transactionEntityGen())) { transactions =>
-          run(TransactionSchema.table.delete).futureValue
-          run(TransactionSchema.table ++= transactions).futureValue
+          exec(TransactionSchema.table.delete)
+          exec(TransactionSchema.table ++= transactions)
 
           transactions foreach { transaction =>
             val query =
@@ -322,7 +325,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
                    where hash = ${transaction.hash}
                    """
 
-            val explain = run(query.explain()).futureValue.mkString("\n")
+            val explain = exec(query.explain()).mkString("\n")
 
             explain should include("Index Scan on txs_pk")
           }
@@ -339,9 +342,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         Gen.listOf(genTransactionPerAddressEntity())
       ) { case (existing, nonExisting) =>
         // clear the table
-        run(TransactionPerAddressSchema.table.delete).futureValue
+        exec(TransactionPerAddressSchema.table.delete)
         // persist existing entities
-        run(TransactionPerAddressSchema.table ++= existing).futureValue
+        exec(TransactionPerAddressSchema.table ++= existing)
 
         // join existing and nonExisting entities and shuffle
         val allEntities = Random.shuffle(existing ++ nonExisting)
@@ -365,14 +368,14 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
         // fetch actual persisted addresses that exists
         val actualExisting =
-          run(TransactionQueries.filterExistingAddresses(allAddresses.toSet)).futureValue
+          exec(TransactionQueries.filterExistingAddresses(allAddresses.toSet))
 
         // actual address should contain all of existingAddresses
         actualExisting should contain theSameElementsAs existingAddresses
 
-        // run the boolean query
+        // exec boolean query
         val booleanExistingResult =
-          run(TransactionQueries.areAddressesActiveAction(allAddresses)).futureValue
+          exec(TransactionQueries.areAddressesActiveAction(allAddresses))
 
         // boolean query should output results in the same order as the input addresses
         (allAddresses.map(address =>
@@ -380,9 +383,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         ): ArraySeq[Boolean]) is booleanExistingResult
 
         // check the boolean query with the existing concurrent query
-        run(
+        exec(
           TransactionQueries.areAddressesActiveAction(allAddresses)
-        ).futureValue is booleanExistingResult
+        ) is booleanExistingResult
       }
     }
   }
@@ -400,7 +403,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
                 Pagination.unsafe(page, limit)
               )
 
-            run(query).futureValue.size is 0
+            exec(query).size is 0
         }
       }
     }
@@ -410,10 +413,10 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         forAll(Gen.listOf(genTransactionPerAddressEntity(mainChain = Gen.const(true)))) {
           entities =>
             // clear table and insert entities
-            run(TestQueries.clearAndInsert(entities)).futureValue
+            exec(TestQueries.clearAndInsert(entities))
 
             entities foreach { entity =>
-              // run the query for each entity and expect that same entity to be returned
+              // exec query for each entity and expect that same entity to be returned
               val query =
                 TransactionQueries
                   .getTxHashesByAddressQueryTimeRanged(
@@ -423,7 +426,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
                     pagination = Pagination.unsafe(1, Int.MaxValue)
                   )
 
-              val actualResult = run(query).futureValue
+              val actualResult = exec(query)
 
               val expectedResult =
                 TxByAddressQR(
@@ -458,9 +461,9 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
         forAll(genTransactionsPerAddress) { entities =>
           // clear table and insert entities
-          run(TestQueries.clearAndInsert(entities)).futureValue
+          exec(TestQueries.clearAndInsert(entities))
 
-          // for each address run the query for randomly selected time-range and expect entities
+          // for each address exec query for randomly selected time-range and expect entities
           // only for that time-range to be returned
           entities.groupBy(_.address) foreachEntry { case (address, entities) =>
             val minTime = entities.map(_.timestamp).min.millis // minimum time
@@ -475,7 +478,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
             // Run test on multiple randomly generated time-ranges on the same test data persisted
             forAll(timeRangeGen) { case (fromTime, toTime) =>
-              // run the query for the generated time-range
+              // exec query for the generated time-range
               val query =
                 TransactionQueries
                   .getTxHashesByAddressQueryTimeRanged(
@@ -485,7 +488,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
                     pagination = Pagination.unsafe(1, Int.MaxValue)
                   )
 
-              val actualResult = run(query).futureValue
+              val actualResult = exec(query)
 
               // expect only main_chain entities within the queried time-range
               val expectedEntities =
@@ -527,7 +530,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
                 Pagination.unsafe(page, limit)
               )
 
-            run(query).futureValue.size is 0
+            exec(query).size is 0
         }
       }
     }
@@ -537,8 +540,8 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         forAll(Gen.listOf(genTransactionPerAddressEntity()), Gen.listOf(apiAddressGen)) {
           case (entitiesToPersist, addressesNotPersisted) =>
             // clear table and insert entities
-            run(TransactionPerAddressSchema.table.delete).futureValue
-            run(TransactionPerAddressSchema.table ++= entitiesToPersist).futureValue
+            exec(TransactionPerAddressSchema.table.delete)
+            exec(TransactionPerAddressSchema.table ++= entitiesToPersist)
 
             // merge all addresses
             val allAddresses =
@@ -571,7 +574,7 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
                 )
               }
 
-            run(query).futureValue should contain theSameElementsAs expectedResult
+            exec(query) should contain theSameElementsAs expectedResult
         }
       }
     }
@@ -585,22 +588,22 @@ class TransactionQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForE
           )
         )
       ) { entities =>
-        run(TransactionPerAddressSchema.table.delete).futureValue
-        run(TransactionPerAddressSchema.table ++= entities).futureValue
+        exec(TransactionPerAddressSchema.table.delete)
+        exec(TransactionPerAddressSchema.table ++= entities)
 
         val timestamps = entities.map(_.timestamp).distinct
         val max        = timestamps.max
         val min        = timestamps.min
 
         def query(fromTs: Option[TimeStamp], toTs: Option[TimeStamp]) = {
-          run(
+          exec(
             TransactionQueries.getTxHashesByAddressesQuery(
               Seq(grouplessAddress),
               fromTs,
               toTs,
               Pagination.unsafe(1, Int.MaxValue)
             )
-          ).futureValue
+          )
         }
 
         def expected(entities: Seq[TransactionPerAddressEntity]) = {

@@ -7,7 +7,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenDBModel._
-import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, TestDBRunner}
 import org.alephium.explorer.persistence.model.{BlockHeader, InputEntity, LatestBlock}
 import org.alephium.explorer.persistence.model.AppState.LastFinalizedInputTime
 import org.alephium.explorer.persistence.queries.{AppStateQueries, BlockQueries, InputQueries}
@@ -15,18 +15,21 @@ import org.alephium.explorer.persistence.schema.LatestBlockSchema
 import org.alephium.protocol.model.GroupIndex
 import org.alephium.util.{Duration, TimeStamp}
 
-class FinalizerServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
+class FinalizerServiceSpec
+    extends AlephiumFutureSpec
+    with DatabaseFixtureForEach
+    with TestDBRunner {
 
   "getStartEndTime - return nothing if there's no input" in new Fixture {
-    run(FinalizerService.getStartEndTime()).futureValue is None
+    exec(FinalizerService.getStartEndTime()) is None
   }
 
   "getStartEndTime - return nothing if there's only 1 input" in new Fixture {
 
     val input1 = input(TimeStamp.now())
-    run(InputQueries.insertInputs(Seq(input1))).futureValue
+    exec(InputQueries.insertInputs(Seq(input1)))
 
-    run(FinalizerService.getStartEndTime()).futureValue is None
+    exec(FinalizerService.getStartEndTime()) is None
   }
 
   "getStartEndTime - return nothing if all inputs are after finalization time" in new Fixture {
@@ -38,8 +41,8 @@ class FinalizerServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEac
       firstFinalizationTime.plusHoursUnsafe(2)
     )
 
-    run(InputQueries.insertInputs(Seq(input1, input2))).futureValue
-    run(FinalizerService.getStartEndTime()).futureValue is None
+    exec(InputQueries.insertInputs(Seq(input1, input2)))
+    exec(FinalizerService.getStartEndTime()) is None
   }
 
   "getStartEndTime - return correct finalization time" in new Fixture {
@@ -49,29 +52,29 @@ class FinalizerServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEac
     )
     val blockHeader2 = block(firstFinalizationTime.minusUnsafe(Duration.ofHoursUnsafe(1)))
 
-    run(BlockQueries.insertBlockHeaders(Seq(blockHeader2))).futureValue
-    run(InputQueries.insertInputs(Seq(input1))).futureValue
-    run(LatestBlockSchema.table += latestBlock(blockHeader2)).futureValue
+    exec(BlockQueries.insertBlockHeaders(Seq(blockHeader2)))
+    exec(InputQueries.insertInputs(Seq(input1)))
+    exec(LatestBlockSchema.table += latestBlock(blockHeader2))
 
-    val Some((start1, end1)) = run(FinalizerService.getStartEndTime()).futureValue
+    val Some((start1, end1)) = exec(FinalizerService.getStartEndTime())
 
     start1 is input1.timestamp
     end1 is blockHeader2.timestamp
 
     val input3 = input(TimeStamp.now())
 
-    run(InputQueries.insertInputs(Seq(input3))).futureValue
+    exec(InputQueries.insertInputs(Seq(input3)))
 
-    val Some((start2, end2)) = run(FinalizerService.getStartEndTime()).futureValue
+    val Some((start2, end2)) = exec(FinalizerService.getStartEndTime())
 
     start2 is input1.timestamp
 
     firstFinalizationTime.isBefore(end2)
     end2.isBefore(FinalizerService.finalizationTime)
 
-    run(AppStateQueries.insertOrUpdate(LastFinalizedInputTime(blockHeader2.timestamp))).futureValue
+    exec(AppStateQueries.insertOrUpdate(LastFinalizedInputTime(blockHeader2.timestamp)))
 
-    val Some((start3, _)) = run(FinalizerService.getStartEndTime()).futureValue
+    val Some((start3, _)) = exec(FinalizerService.getStartEndTime())
 
     start3 is blockHeader2.timestamp.plusMillisUnsafe(1)
   }

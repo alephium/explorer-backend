@@ -25,7 +25,7 @@ import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache._
 import org.alephium.explorer.foldFutures
-import org.alephium.explorer.persistence.DatabaseFixtureForEach
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, TestDBRunner}
 import org.alephium.explorer.persistence.dao.{BlockDao, MempoolDao}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.model.AppState._
@@ -45,7 +45,10 @@ import org.alephium.util.{Duration, TimeStamp, U256}
     "org.wartremover.warts.AsInstanceOf"
   )
 )
-class TransactionServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach {
+class TransactionServiceSpec
+    extends AlephiumFutureSpec
+    with DatabaseFixtureForEach
+    with TestDBRunner {
 
   "limit the number of transactions in address details" in new Fixture {
 
@@ -93,7 +96,7 @@ class TransactionServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
     BlockDao.insert(block).futureValue
     BlockDao.updateMainChainStatus(block.hash, true).futureValue
-    databaseConfig.db.run(InputUpdateQueries.updateInputs()).futureValue
+    exec(InputUpdateQueries.updateInputs())
 
     val fetchedAmout =
       BlockDao

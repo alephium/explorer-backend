@@ -14,7 +14,7 @@ import org.alephium.explorer.GenCoreUtil.timestampGen
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.{DatabaseFixtureForAll, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForAll, TestDBRunner}
 import org.alephium.explorer.persistence.queries.BlockQueries
 import org.alephium.explorer.persistence.queries.ContractQueries
 
@@ -28,7 +28,7 @@ import org.alephium.explorer.persistence.queries.ContractQueries
 class ContractServerSpec()
     extends AlephiumFutureSpec
     with DatabaseFixtureForAll
-    with DBRunner
+    with TestDBRunner
     with HttpServerFixture {
 
   val server = new ContractServer()
@@ -38,7 +38,7 @@ class ContractServerSpec()
   "get contract liveness" should {
     "return the liveness when only 1 entry is in DB" in {
       val (groupIndex, events) = createEventsGen().sample.get
-      run(ContractQueries.insertContractCreation(events, groupIndex)).futureValue
+      exec(ContractQueries.insertContractCreation(events, groupIndex))
 
       events.foreach { event =>
         val address = event.fields.head.asInstanceOf[ValAddress].value
@@ -59,13 +59,13 @@ class ContractServerSpec()
         blockHeaderGen.sample.get.copy(hash = event.blockHash, mainChain = true)
       )
 
-      run(ContractQueries.insertContractCreation(events, groupIndex)).futureValue
-      run(BlockQueries.insertBlockHeaders(blockHeaders)).futureValue
+      exec(ContractQueries.insertContractCreation(events, groupIndex))
+      exec(BlockQueries.insertBlockHeaders(blockHeaders))
 
       events.foreach { event =>
         val address = event.fields.head.asInstanceOf[ValAddress].value
         Get(s"/contracts/${address}/current-liveness") check { response =>
-          val infos = run(ContractQueries.getContractEntity(address)).futureValue
+          val infos = exec(ContractQueries.getContractEntity(address))
 
           infos.size is 2
           infos.maxBy(_.creationTimestamp).toApi is response.as[ContractLiveness]
@@ -82,8 +82,8 @@ class ContractServerSpec()
         blockHeaderGen.sample.get.copy(hash = event.blockHash, mainChain = false)
       )
 
-      run(ContractQueries.insertContractCreation(events, groupIndex)).futureValue
-      run(BlockQueries.insertBlockHeaders(blockHeaders)).futureValue
+      exec(ContractQueries.insertContractCreation(events, groupIndex))
+      exec(BlockQueries.insertBlockHeaders(blockHeaders))
 
       events.foreach { event =>
         val address = event.fields.head.asInstanceOf[ValAddress].value

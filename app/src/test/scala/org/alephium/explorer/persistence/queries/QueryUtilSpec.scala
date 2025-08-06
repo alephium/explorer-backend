@@ -6,17 +6,17 @@ package org.alephium.explorer.persistence.queries
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.AlephiumFutureSpec
-import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, TestDBRunner}
 import org.alephium.explorer.persistence.queries.QueryUtil._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.TimeStampTableFixture._
 import org.alephium.util._
 
-class QueryUtilSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
+class QueryUtilSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with TestDBRunner {
 
   "date group" in {
-    run(sqlu"DROP TABLE IF EXISTS timestamps").futureValue
-    run(timestampTable.schema.create).futureValue
+    exec(sqlu"DROP TABLE IF EXISTS timestamps")
+    exec(timestampTable.schema.create)
 
     val t1 = "2020-12-31T23:59:59.999Z"
     val t2 = "2021-01-01T01:01:01.000Z"
@@ -29,17 +29,17 @@ class QueryUtilSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with 
 
     val timestamps = Seq(t1, t2, t3, t4, t5, t6, t7, t8).map(ts)
 
-    run(timestampTable ++= timestamps).futureValue
+    exec(timestampTable ++= timestamps)
 
-    val hourly = run(sql"""SELECT #${extractEpoch(
+    val hourly = exec(sql"""SELECT #${extractEpoch(
         hourlyQuery
-      )} as ts FROM timestamps GROUP BY ts ORDER BY ts""".as[TimeStamp]).futureValue
-    val daily = run(sql"""SELECT #${extractEpoch(
+      )} as ts FROM timestamps GROUP BY ts ORDER BY ts""".as[TimeStamp])
+    val daily = exec(sql"""SELECT #${extractEpoch(
         dailyQuery
-      )} as ts FROM timestamps GROUP BY ts ORDER BY ts""".as[TimeStamp]).futureValue
-    val weekly = run(sql"""SELECT #${extractEpoch(
+      )} as ts FROM timestamps GROUP BY ts ORDER BY ts""".as[TimeStamp])
+    val weekly = exec(sql"""SELECT #${extractEpoch(
         weeklyQuery
-      )} as ts FROM timestamps GROUP BY ts ORDER BY ts""".as[TimeStamp]).futureValue
+      )} as ts FROM timestamps GROUP BY ts ORDER BY ts""".as[TimeStamp])
 
     hourly is Vector(
       "2021-01-01T00:00:00.000Z",

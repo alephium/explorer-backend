@@ -16,13 +16,13 @@ import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model.Height
-import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, TestDBRunner}
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.model.{ChainIndex, GroupIndex}
 
-class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
+class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with TestDBRunner {
 
   /** Finds a block with maximum height. If two blocks have the same height, returns the one with
     * maximum timestamp.
@@ -83,7 +83,7 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
     forAll(Gen.listOf(updatedBlockHeaderGen())) { existingAndUpdates =>
       // fresh table
-      run(BlockHeaderSchema.table.delete).futureValue
+      exec(BlockHeaderSchema.table.delete)
 
       val existing = existingAndUpdates.map(_._1) // existing blocks
       val ignored  = existingAndUpdates.map(_._2) // ignored blocks
@@ -91,12 +91,12 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
       val query = BlockQueries.insertBlockHeaders(existing)
 
       // insert existing
-      run(query).futureValue is existing.size
-      run(BlockHeaderSchema.table.result).futureValue should contain allElementsOf existing
+      exec(query) is existing.size
+      exec(BlockHeaderSchema.table.result) should contain allElementsOf existing
 
       // insert should ignore existing inputs
-      run(BlockQueries.insertBlockHeaders(ignored)).futureValue is 0
-      run(BlockHeaderSchema.table.result).futureValue should contain allElementsOf existing
+      exec(BlockQueries.insertBlockHeaders(ignored)) is 0
+      exec(BlockHeaderSchema.table.result) should contain allElementsOf existing
     }
   }
 
@@ -104,31 +104,31 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
     forAll(Gen.listOf(genBlockEntityWithOptionalParent().map(_._1))) { entities =>
       // clear all tables
-      run(BlockHeaderSchema.table.delete).futureValue
-      run(TransactionSchema.table.delete).futureValue
-      run(InputSchema.table.delete).futureValue
-      run(OutputSchema.table.delete).futureValue
+      exec(BlockHeaderSchema.table.delete)
+      exec(TransactionSchema.table.delete)
+      exec(InputSchema.table.delete)
+      exec(OutputSchema.table.delete)
 
       // execute insert on blocks and expect all tables get inserted
-      run(BlockQueries.insertBlockEntity(entities, groupSetting.groupNum)).futureValue is ()
+      exec(BlockQueries.insertBlockEntity(entities, groupSetting.groupNum)) is ()
 
       // check block_headers table
-      val actualBlockHeaders = run(BlockHeaderSchema.table.result).futureValue
+      val actualBlockHeaders = exec(BlockHeaderSchema.table.result)
       val expectBlockHeaders = entities.map(_.toBlockHeader(groupSetting.groupNum))
       actualBlockHeaders should contain allElementsOf expectBlockHeaders
 
       // check transactions table
-      val actualTransactions   = run(TransactionSchema.table.result).futureValue
+      val actualTransactions   = exec(TransactionSchema.table.result)
       val expectedTransactions = entities.flatMap(_.transactions)
       actualTransactions should contain allElementsOf expectedTransactions
 
       // check inputs table
-      val actualInputs   = run(InputSchema.table.result).futureValue
+      val actualInputs   = exec(InputSchema.table.result)
       val expectedInputs = entities.flatMap(_.inputs)
       actualInputs should contain allElementsOf expectedInputs
 
       //// check outputs table
-      // val actualOutputs   = run(outputsTable.result).futureValue
+      // val actualOutputs   = exec(outputsTable.result)
       // val expectedOutputs = entities.flatMap(_.outputs)
       // actualOutputs should contain allElementsOf expectedOutputs
 
@@ -142,11 +142,11 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
       "hash exists" in {
         forAll(blockHeaderGen) { expectedHeader =>
           // clear table
-          run(BlockHeaderSchema.table.delete).futureValue
+          exec(BlockHeaderSchema.table.delete)
           // insert a block_header
-          run(BlockHeaderSchema.table += expectedHeader).futureValue is 1
+          exec(BlockHeaderSchema.table += expectedHeader) is 1
           // read the inserted block_header
-          val actualHeader = run(BlockQueries.getBlockHeaderAction(expectedHeader.hash)).futureValue
+          val actualHeader = exec(BlockQueries.getBlockHeaderAction(expectedHeader.hash))
           // read block_header should be the same as the inserted block_header
           actualHeader should contain(expectedHeader)
         }
@@ -154,13 +154,13 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
       "hash does not exist" in {
         // clear table
-        run(BlockHeaderSchema.table.delete).futureValue
+        exec(BlockHeaderSchema.table.delete)
 
         forAll(blockHashGen) { hash =>
           // table is empty
-          run(BlockHeaderSchema.table.length.result).futureValue is 0
+          exec(BlockHeaderSchema.table.length.result) is 0
           // expect None
-          run(BlockQueries.getBlockHeaderAction(hash)).futureValue is None
+          exec(BlockQueries.getBlockHeaderAction(hash)) is None
         }
       }
     }
@@ -177,7 +177,7 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
             hashToIgnore = blockHashGen.sample.get
           )
 
-        run(query).futureValue.size is 0
+        exec(query).size is 0
       }
     }
 
@@ -195,8 +195,8 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
         )
 
       forAll(Gen.nonEmptyListOf(blockGen)) { blocks =>
-        run(BlockHeaderSchema.table.delete).futureValue     // clear table
-        run(BlockHeaderSchema.table ++= blocks).futureValue // persist test data
+        exec(BlockHeaderSchema.table.delete)     // clear table
+        exec(BlockHeaderSchema.table ++= blocks) // persist test data
 
         // randomly select a block to ignore
         val hashToIgnore = Random.shuffle(blocks).head
@@ -209,7 +209,7 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
             hashToIgnore = hashToIgnore.hash
           )
 
-        val actualResult   = run(query).futureValue                       // actual result
+        val actualResult   = exec(query)                                  // actual result
         val expectedResult = blocks.filter(_ != hashToIgnore).map(_.hash) // expected result
 
         actualResult should not contain hashToIgnore // ignored hash is not included
@@ -222,7 +222,7 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
     "return none" when {
       "database is empty" in {
         val blockHash = blockHashGen.sample.get
-        run(BlockQueries.getBlockChainInfo(blockHash)).futureValue is None
+        exec(BlockQueries.getBlockChainInfo(blockHash)) is None
       }
     }
 
@@ -232,15 +232,15 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
         val blocksToInsert = blockHeaders.filter(_ != blockToRemove) // blocks to insert
 
         // insert blocks
-        run(BlockQueries.insertBlockHeaders(blocksToInsert)).futureValue is blocksToInsert.size
+        exec(BlockQueries.insertBlockHeaders(blocksToInsert)) is blocksToInsert.size
 
         // returns None for non-existing block
-        run(BlockQueries.getBlockChainInfo(blockToRemove.hash)).futureValue is None
+        exec(BlockQueries.getBlockChainInfo(blockToRemove.hash)) is None
 
         // inserted blocks should return expected chainFrom, chainTo and mainChain information
         blocksToInsert foreach { block =>
           val (chainFrom, chainTo, mainChain) =
-            run(BlockQueries.getBlockChainInfo(block.hash)).futureValue.get
+            exec(BlockQueries.getBlockChainInfo(block.hash)).get
           block.chainFrom is chainFrom
           block.chainTo is chainTo
           block.mainChain is mainChain
@@ -252,9 +252,9 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
   "updateMainChainStatusesQuery" should {
     "not throw Exception" when {
       "query input is empty" in {
-        run(
+        exec(
           BlockQueries.updateMainChainStatuses(ArraySeq.empty, Random.nextBoolean())
-        ).futureValue is 0
+        ) is 0
       }
     }
 
@@ -270,31 +270,31 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
           val tokenOutputs       = testData.map(_._4)
 
           // Insert BlockEntity test data
-          run(BlockQueries.insertBlockEntity(entities, groupSetting.groupNum)).futureValue is ()
+          exec(BlockQueries.insertBlockEntity(entities, groupSetting.groupNum)) is ()
           // Insert other BlockEntity's dependant test data
-          run(TransactionPerTokenSchema.table ++= txsPerToken).futureValue is
+          exec(TransactionPerTokenSchema.table ++= txsPerToken) is
             Some(txsPerToken.size)
-          run(TokenPerAddressSchema.table ++= tokenTxsPerAddress).futureValue is
+          exec(TokenPerAddressSchema.table ++= tokenTxsPerAddress) is
             Some(tokenTxsPerAddress.size)
-          run(TokenOutputSchema.table ++= tokenOutputs).futureValue is
+          exec(TokenOutputSchema.table ++= tokenOutputs) is
             Some(tokenOutputs.size)
 
           // block hashes to update
           val hashes = entities.map(_.hash)
 
           // Run the update query being tested
-          run(BlockQueries.updateMainChainStatuses(hashes, updatedMainChainValue)).futureValue is 0
+          exec(BlockQueries.updateMainChainStatuses(hashes, updatedMainChainValue)) is 0
 
           // Check that query result is non-empty and has it's mainChain value updated
           def check(query: Query[Rep[Boolean], Boolean, Seq]) = {
-            val result = run(query.result).futureValue
+            val result = exec(query.result)
             result should not be empty
             result should contain only updatedMainChainValue
           }
 
           // Check the query returns empty
           def checkEmpty(query: Query[Rep[Boolean], Boolean, Seq]) =
-            run(query.result).futureValue.isEmpty is true
+            exec(query.result).isEmpty is true
 
           // Run check on all tables that are expected to have their mainChain value updated
           check(TransactionSchema.table.filter(_.blockHash inSet hashes).map(_.mainChain))
