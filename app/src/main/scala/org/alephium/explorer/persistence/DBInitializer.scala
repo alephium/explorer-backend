@@ -52,6 +52,7 @@ object DBInitializer extends StrictLogging {
       TokenHolderSchema.table,
       ContractSchema.table,
       AppStateSchema.table,
+      AddressTotalTransactionSchema.table,
       FungibleTokenMetadataSchema.table,
       NFTMetadataSchema.table,
       NFTCollectionMetadataSchema.table

@@ -92,6 +92,16 @@ object CustomJdbcTypes {
         }
     )
 
+  implicit val apiAddressType: JdbcType[ApiAddress] =
+    MappedJdbcType.base[ApiAddress, String](
+      _.toBase58,
+      string =>
+        ApiAddress.fromBase58(string) match {
+          case Right(address) => address
+          case Left(error)    => throw new Exception(s"Unable to decode api address: ${error}")
+        }
+    )
+
   implicit val addressContractType: JdbcType[Address.Contract] =
     MappedJdbcType.base[Address.Contract, String](
       _.toBase58,

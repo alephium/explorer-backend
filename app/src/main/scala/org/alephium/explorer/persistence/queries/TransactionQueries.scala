@@ -151,6 +151,36 @@ object TransactionQueries extends StrictLogging {
       .asAS[Int]
   }
 
+  def countAddressTransactionsTimeRanged(
+      address: ApiAddress,
+      from: TimeStamp,
+      to: Option[TimeStamp]
+  )(implicit ec: ExecutionContext): DBActionR[Int] = {
+    sql"""
+      SELECT COUNT(#${distinct(address)} tx_hash)
+      FROM transaction_per_addresses
+      WHERE main_chain = true
+      AND #${addressColumn(address)} = $address
+      AND block_timestamp > $from
+      #${to.map(ts => s"AND block_timestamp <= ${ts.millis}").getOrElse("")}
+    """
+      .asAS[Int]
+      .headOption
+      .map(_.getOrElse(0))
+  }
+
+  def getAddressTotalTransaction(
+      address: ApiAddress
+  )(implicit ec: ExecutionContext): DBActionR[Option[AddressTotalTransactionsEntity]] = {
+    sql"""
+      SELECT address, total, last_update
+      FROM address_total_transaction
+      WHERE address = $address
+    """
+      .asAS[AddressTotalTransactionsEntity]
+      .headOrNone
+  }
+
   def getTxHashesByAddressQuery(
       address: ApiAddress,
       pagination: Pagination
