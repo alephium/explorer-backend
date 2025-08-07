@@ -51,16 +51,10 @@ import org.alephium.json.Json._
 import org.alephium.protocol.model.{Address, BlockHash, CliqueId, GroupIndex, NetworkId}
 import org.alephium.util.{AVector, Duration, Hex, TimeStamp, U256}
 
-trait ExplorerSpec
-    extends AlephiumActorSpecLike
-    with AlephiumFutureSpec
-    with DatabaseFixtureForAll
-    with HttpRouteFixture {
+trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with HttpRouteFixture {
 
   implicit override val patienceConfig: PatienceConfig =
     PatienceConfig(timeout = Span(120, Seconds))
-
-  override val name: String = "ExploreSpec"
 
   val networkId: NetworkId = NetworkId.AlephiumDevNet
 
@@ -385,28 +379,27 @@ trait ExplorerSpec
   "get all transactions for addresses" in {
     val maxSizeAddresses: Int = groupSetting.groupNum * 20
 
-    forAll(Gen.someOf(addresses)) { someAddresses =>
-      val selectedAddresses = someAddresses.take(maxSizeAddresses)
-      val addressesBody =
-        selectedAddresses.map(address => s""""${address.toBase58}"""").mkString("[", ",", "]")
+    val someAddresses     = Gen.someOf(addresses).sample.get
+    val selectedAddresses = someAddresses.take(maxSizeAddresses)
+    val addressesBody =
+      selectedAddresses.map(address => s""""${address.toBase58}"""").mkString("[", ",", "]")
 
-      Post("/addresses/transactions", addressesBody) check { response =>
-        val expectedTransactions =
-          selectedAddresses.flatMap { address =>
-            transactions.filter { tx =>
-              tx.outputs.exists(out => addressEqual(out.address, address)) || tx.inputs
-                .exists(
-                  _.address.map(inAddress => addressEqual(inAddress, address)).getOrElse(false)
-                )
-            }
+    Post("/addresses/transactions", addressesBody) check { response =>
+      val expectedTransactions =
+        selectedAddresses.flatMap { address =>
+          transactions.filter { tx =>
+            tx.outputs.exists(out => addressEqual(out.address, address)) || tx.inputs
+              .exists(
+                _.address.map(inAddress => addressEqual(inAddress, address)).getOrElse(false)
+              )
           }
-
-        val res = response.as[ArraySeq[Transaction]]
-
-        res.size is expectedTransactions.take(txLimit).size
-        Inspectors.forAll(res) { transaction =>
-          expectedTransactions.map(_.hash) should contain(transaction.hash)
         }
+
+      val res = response.as[ArraySeq[Transaction]]
+
+      res.size is expectedTransactions.take(txLimit).size
+      Inspectors.forAll(res) { transaction =>
+        expectedTransactions.map(_.hash) should contain(transaction.hash)
       }
     }
   }

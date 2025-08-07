@@ -21,7 +21,7 @@ import org.alephium.explorer.service.{EmptyTokenService, EmptyTransactionService
 import org.alephium.util.{TimeStamp, U256}
 
 class StatementTimeoutSpec()
-    extends AlephiumActorSpecLike
+    extends AlephiumFutureSpec
     with DatabaseFixtureForAll
     with HttpServerFixture
     with DBRunner {
