@@ -7,22 +7,22 @@ import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
 import org.alephium.api.model.{Address => ApiAddress}
-import org.alephium.explorer.persistence.model.AddressTotalTransactionEntity
+import org.alephium.explorer.persistence.model.AddressTotalTransactionsEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.util.TimeStamp
 
 object AddressTotalTransactionSchema
-    extends SchemaMainChain[AddressTotalTransactionEntity]("address_total_transaction") {
+    extends SchemaMainChain[AddressTotalTransactionsEntity]("address_total_transaction") {
 
-  class CountTransactions(tag: Tag) extends Table[AddressTotalTransactionEntity](tag, name) {
+  class CountTransactions(tag: Tag) extends Table[AddressTotalTransactionsEntity](tag, name) {
     def address: Rep[ApiAddress]   = column[ApiAddress]("address", O.PrimaryKey)
     def total: Rep[Int]            = column[Int]("total")
     def lastUpdate: Rep[TimeStamp] = column[TimeStamp]("last_update")
 
-    def * : ProvenShape[AddressTotalTransactionEntity] =
+    def * : ProvenShape[AddressTotalTransactionsEntity] =
       (address, total, lastUpdate).<>(
-        (AddressTotalTransactionEntity.apply _).tupled,
-        AddressTotalTransactionEntity.unapply
+        (AddressTotalTransactionsEntity.apply _).tupled,
+        AddressTotalTransactionsEntity.unapply
       )
   }
 

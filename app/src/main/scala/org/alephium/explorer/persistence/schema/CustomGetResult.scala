@@ -233,9 +233,9 @@ object CustomGetResult {
         contractInput = result.<<
       )
 
-  implicit val addressTotalTransactionGetResult: GetResult[AddressTotalTransactionEntity] =
+  implicit val addressTotalTransactionGetResult: GetResult[AddressTotalTransactionsEntity] =
     (result: PositionedResult) =>
-      AddressTotalTransactionEntity(
+      AddressTotalTransactionsEntity(
         address = result.<<,
         total = result.<<,
         lastUpdate = result.<<

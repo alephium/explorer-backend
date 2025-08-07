@@ -15,7 +15,7 @@ import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.DBRunner._
-import org.alephium.explorer.persistence.model.{AddressTotalTransactionEntity, AppState}
+import org.alephium.explorer.persistence.model.{AddressTotalTransactionsEntity, AppState}
 import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.persistence.schema.AddressTotalTransactionSchema
@@ -114,7 +114,7 @@ object TransactionDao {
    */
   private def updateAddressTotalTransaction(
       address: ApiAddress,
-      cacheValue: Option[AddressTotalTransactionEntity],
+      cacheValue: Option[AddressTotalTransactionsEntity],
       newFinalizedCount: Int,
       lastFinalizedTime: TimeStamp
   ): DBActionW[Int] = {
@@ -125,7 +125,7 @@ object TransactionDao {
           // If the last update in the cache is older than the last finalized time
           // This prevents unnecessary updates
           val total = value.total + newFinalizedCount
-          val addressTotal = AddressTotalTransactionEntity(
+          val addressTotal = AddressTotalTransactionsEntity(
             address,
             total,
             lastFinalizedTime
@@ -141,7 +141,7 @@ object TransactionDao {
         // unless total is 0, then we don't want to create an entry
         // so avoid flooding the cache with unexisting addresses
         if (newFinalizedCount != 0) {
-          val addressTotal = AddressTotalTransactionEntity(
+          val addressTotal = AddressTotalTransactionsEntity(
             address,
             newFinalizedCount,
             lastFinalizedTime

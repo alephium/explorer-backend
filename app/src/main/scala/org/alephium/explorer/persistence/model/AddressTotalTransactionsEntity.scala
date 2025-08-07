@@ -6,7 +6,7 @@ package org.alephium.explorer.persistence.model
 import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.util.TimeStamp
 
-final case class AddressTotalTransactionEntity(
+final case class AddressTotalTransactionsEntity(
     address: ApiAddress,
     total: Int,
     lastUpdate: TimeStamp

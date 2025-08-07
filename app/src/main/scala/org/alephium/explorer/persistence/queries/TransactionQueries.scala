@@ -171,13 +171,13 @@ object TransactionQueries extends StrictLogging {
 
   def getAddressTotalTransaction(
       address: ApiAddress
-  )(implicit ec: ExecutionContext): DBActionR[Option[AddressTotalTransactionEntity]] = {
+  )(implicit ec: ExecutionContext): DBActionR[Option[AddressTotalTransactionsEntity]] = {
     sql"""
       SELECT address, total, last_update
       FROM address_total_transaction
       WHERE address = $address
     """
-      .asAS[AddressTotalTransactionEntity]
+      .asAS[AddressTotalTransactionsEntity]
       .headOrNone
   }
 
