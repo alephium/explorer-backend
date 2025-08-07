@@ -27,7 +27,7 @@ import org.alephium.util.discard
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(9)
+  val latestVersion: MigrationVersion = MigrationVersion(10)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     // We retrigger the download of fungible and non-fungible tokens' metadata that have sub-category
@@ -193,6 +193,19 @@ object Migrations extends StrictLogging {
 
   }
 
+  def migration10(implicit ec: ExecutionContext): DBActionAll[Unit] = {
+    for {
+      // Fix the nft_index column type to be numeric(80,0) instead of numeric(21,2)
+      // nft index should be realtively small, but we want to avoid any overflow issues
+      // as from the metadata, the index is a U256.
+      _ <- sqlu"""
+             ALTER TABLE public.nft_metadata
+             ALTER COLUMN nft_index TYPE numeric(80,0) USING ROUND(nft_index);"""
+    } yield {
+      ()
+    }
+
+  }
   private def migrations(implicit
       explorerConfig: ExplorerConfig,
       ec: ExecutionContext
@@ -205,7 +218,8 @@ object Migrations extends StrictLogging {
     migration6,
     migration7,
     migration8,
-    migration9
+    migration9,
+    migration10
   )
 
   def backgroundCoinbaseMigration()(implicit
