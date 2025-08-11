@@ -34,6 +34,7 @@ import org.alephium.protocol.model.{
 import org.alephium.serde._
 import org.alephium.util.{AVector, Duration, Hex, I256, TimeStamp, U256}
 
+// scalastyle:off number.of.methods
 /** Generators for types supplied by Core `org.alephium.api` package */
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 object GenCoreApi {
@@ -145,11 +146,13 @@ object GenCoreApi {
       AVector.from(scriptSignatures)
     )
 
-  def coinbaseTransactionProtocolGen(implicit groupSetting: GroupSetting): Gen[Transaction] =
+  def coinbaseTransactionProtocolGen(
+      addresses: Address.Asset*
+  )(implicit groupSetting: GroupSetting): Gen[Transaction] =
     for {
-      unsignedTx <- unsignedTxGen
+      unsignedTx <- coinbaseUnsignedTxGen(addresses: _*)
     } yield Transaction(
-      unsignedTx.copy(inputs = AVector.empty),
+      unsignedTx,
       scriptExecutionOk = true,
       AVector.empty,
       AVector.empty,
@@ -194,11 +197,12 @@ object GenCoreApi {
   def genesisBlockEntryProtocolGen(
       timestamp: TimeStamp,
       chainFrom: GroupIndex,
-      chainTo: GroupIndex
-  )(implicit groupSetting: GroupSetting): Gen[BlockEntry] =
+      chainTo: GroupIndex,
+      addresses: Address.Asset*
+  )(implicit groupSetting: GroupSetting): Gen[BlockEntry] = {
     for {
       hash        <- blockHashGen
-      transaction <- coinbaseTransactionProtocolGen
+      transaction <- coinbaseTransactionProtocolGen(addresses: _*)
       nonce       <- bytesGen
       version     <- Gen.posNum[Byte]
       txsHash     <- hashGen
@@ -219,11 +223,12 @@ object GenCoreApi {
         AVector.empty
       )
     }
+  }
 
   /* This function generates a block entry with transactions that spend some outputs from the previous blocks
    * In order to create a coherent blockchain
    */
-  def blockEntryGen(
+  def blockEntryProtocolGen(
       previousBlocks: ArraySeq[BlockEntry]
   )(implicit groupSetting: GroupSetting): Gen[BlockEntry] = {
     val outputRefs =
@@ -236,7 +241,7 @@ object GenCoreApi {
       blockEntry     <- blockEntryProtocolGen
       nbOfTxs        <- Gen.choose(1, availableOutputs.size)
       maxInputsPerTx <- Gen.choose(1, availableOutputs.size / nbOfTxs)
-      coinbaseTx     <- coinbaseTransactionProtocolGen
+      coinbaseTx     <- coinbaseTransactionProtocolGen()
       txs <- Gen.sequence[Vector[Transaction], Transaction](
         Vector.fill(nbOfTxs)(
           for {
@@ -268,27 +273,56 @@ object GenCoreApi {
     }
   }
 
+  /** This function generates an unsigned transaction that can be used as a coinbase transaction It
+    * can be used to create a genesis block or a block with no inputs (mining block)
+    *
+    * @param addresses
+    *   the addresses to which the outputs will be sent, if empty, it will generate a random number
+    *   of outputs
+    */
+  def coinbaseUnsignedTxGen(
+      addresses: Address.Asset*
+  )(implicit groupSetting: GroupSetting): Gen[UnsignedTx] = {
+    // If addresses are provided, we will use them to create the outputs
+    // If not, we will generate a random number of outputs
+    val outputsGen = if (addresses.isEmpty) {
+      for {
+        outputSize <- Gen.choose(2, 10)
+        outputs    <- Gen.listOfN(outputSize, fixedOutputAssetProtocolGen())
+      } yield outputs
+    } else {
+      Gen.const(
+        addresses.map(address => fixedOutputAssetProtocolGen(address = Some(address)).sample.get)
+      )
+    }
+
+    for {
+      hash      <- transactionHashGen
+      version   <- Gen.posNum[Byte]
+      networkId <- Gen.posNum[Byte]
+      scriptOpt <- Gen.option(scriptGen)
+      outputs   <- outputsGen
+      gasAmount <- gasAmountGen
+      gasPrice  <- gasPriceGen
+    } yield UnsignedTx(
+      txId = hash,
+      version = version,
+      networkId = networkId,
+      scriptOpt = scriptOpt,
+      gasAmount = gasAmount,
+      gasPrice = gasPrice,
+      inputs = AVector.empty,
+      fixedOutputs = AVector.from(outputs)
+    )
+  }
+
   def unsignedTxGen(implicit groupSetting: GroupSetting): Gen[UnsignedTx] =
     for {
-      hash       <- transactionHashGen
-      version    <- Gen.posNum[Byte]
-      networkId  <- Gen.posNum[Byte]
-      scriptOpt  <- Gen.option(scriptGen)
-      inputSize  <- Gen.choose(0, 10)
-      inputs     <- Gen.listOfN(inputSize, inputProtocolGen)
-      outputSize <- Gen.choose(2, 10)
-      outputs    <- Gen.listOfN(outputSize, fixedOutputAssetProtocolGen())
-      gasAmount  <- gasAmountGen
-      gasPrice   <- gasPriceGen
-    } yield UnsignedTx(
-      hash,
-      version,
-      networkId,
-      scriptOpt,
-      gasAmount,
-      gasPrice,
-      AVector.from(inputs),
-      AVector.from(outputs)
+      unsigned  <- coinbaseUnsignedTxGen()
+      inputSize <- Gen.choose(0, 10)
+      inputs    <- Gen.listOfN(inputSize, inputProtocolGen)
+    } yield unsigned.copy(
+      inputs = AVector.from(inputs)
     )
 
   /* This geneator creates an UnsignedTx that spend the given outputs
@@ -406,7 +440,7 @@ object GenCoreApi {
       genesisBlock =>
         Iterator
           .iterate(ArraySeq(genesisBlock)) { blocks =>
-            val newBlock = blockEntryGen(blocks).sample.get
+            val newBlock = blockEntryProtocolGen(blocks).sample.get
             blocks :+ newBlock
           }
           .drop(size - 1)
