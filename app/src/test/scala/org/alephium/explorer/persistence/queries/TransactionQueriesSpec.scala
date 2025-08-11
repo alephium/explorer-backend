@@ -26,7 +26,7 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.service.FinalizerService
 import org.alephium.explorer.util.{AddressUtil, UtxoUtil}
 import org.alephium.explorer.util.SlickExplainUtil._
-import org.alephium.protocol.{ALPH, Hash}
+import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.{Address, GroupIndex, TransactionId}
 import org.alephium.protocol.vm.LockupScript
 import org.alephium.util.{Duration, TimeStamp, U256}
@@ -64,7 +64,7 @@ class TransactionQueriesSpec
 
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
-    val input1 = input(output2.hint, output2.key).copy(
+    val input1 = input(output2).copy(
       outputRefAddress = Some(address),
       outputRefGrouplessAddress = AddressUtil.convertToGrouplessAddress(address)
     )
@@ -91,7 +91,7 @@ class TransactionQueriesSpec
 
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None).copy(mainChain = false)
-    val input1  = input(output2.hint, output2.key).copy(mainChain = false)
+    val input1  = input(output2).copy(mainChain = false)
 
     exec(OutputSchema.table ++= ArraySeq(output1, output2))
     exec(InputSchema.table += input1)
@@ -108,9 +108,9 @@ class TransactionQueriesSpec
     val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
     val output4 = output(addressGen.sample.get, ALPH.alph(3), None)
 
-    val input1 = input(output2.hint, output2.key)
-    val input2 = input(output3.hint, output3.key).copy(mainChain = false)
-    val input3 = input(output4.hint, output4.key)
+    val input1 = input(output2)
+    val input2 = input(output3).copy(mainChain = false)
+    val input3 = input(output4)
 
     val outputs = ArraySeq(output1, output2, output3, output4)
     val inputs  = ArraySeq(input1, input2, input3)
@@ -129,8 +129,8 @@ class TransactionQueriesSpec
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
 
-    val input1 = input(output1.hint, output1.key)
-    val input2 = input(output2.hint, output2.key)
+    val input1 = input(output1)
+    val input2 = input(output2)
 
     val outputs = ArraySeq(output1)
     val inputs  = ArraySeq(input1, input2)
@@ -152,9 +152,9 @@ class TransactionQueriesSpec
     val output2 = output(address, ALPH.alph(2), None)
     val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
     val output4 = output(addressGen.sample.get, ALPH.alph(3), None)
-    val input1  = input(output2.hint, output2.key)
-    val input2  = input(output3.hint, output3.key).copy(mainChain = false)
-    val input3  = input(output4.hint, output4.key)
+    val input1  = input(output2)
+    val input2  = input(output3).copy(mainChain = false)
+    val input3  = input(output4)
 
     val outputs = ArraySeq(output1, output2, output3, output4)
     val inputs  = ArraySeq(input1, input2, input3)
@@ -180,8 +180,8 @@ class TransactionQueriesSpec
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)
     val output3 = output(address, ALPH.alph(3), None).copy(mainChain = false)
-    val input1  = input(output2.hint, output2.key)
-    val input2  = input(output3.hint, output3.key).copy(mainChain = false)
+    val input1  = input(output2)
+    val input2  = input(output3).copy(mainChain = false)
     val output4 = output(addressGen.sample.get, ALPH.alph(3), None)
       .copy(txHash = input1.txHash, blockHash = input1.blockHash, timestamp = input1.timestamp)
 
@@ -195,35 +195,16 @@ class TransactionQueriesSpec
     val to   = timestampMaxValue
     FinalizerService.finalizeOutputsWith(from, to, to.deltaUnsafe(from)).futureValue
 
-    def tx(output: OutputEntity, spent: Option[TransactionId], inputs: ArraySeq[Input]) = {
-      Transaction(
-        output.txHash,
-        output.blockHash,
-        output.timestamp,
-        inputs,
-        ArraySeq(outputEntityToApi(output, spent)),
-        version = 1,
-        networkId = 1,
-        scriptOpt = None,
-        1,
-        ALPH.alph(1),
-        scriptExecutionOk = true,
-        inputSignatures = ArraySeq.empty,
-        scriptSignatures = ArraySeq.empty,
-        coinbase = false
-      )
-    }
-
     val txs =
       exec(
         TransactionQueries.getTransactionsByAddress(address, Pagination.unsafe(1, 10))
       )
 
     val expected = ArraySeq(
-      tx(output1, None, ArraySeq.empty),
-      tx(output2, Some(input1.txHash), ArraySeq.empty),
-      tx(output4, None, ArraySeq(inputEntityToApi(input1, Some(output2))))
-    ).sortBy(_.timestamp).reverse
+      transaction(transactions(0), output1, None, ArraySeq.empty),
+      transaction(transactions(1), output2, Some(input1.txHash), ArraySeq.empty),
+      transaction(transactions(3), output4, None, ArraySeq(inputEntityToApi(input1, Some(output2))))
+    ).sortBy(_.timestamp)
 
     txs.size is 3
     txs should contain allElementsOf expected
@@ -231,36 +212,17 @@ class TransactionQueriesSpec
 
   "output's spent info should only take the input from the main chain " in new Fixture {
 
-    val tx1 = transactionGen.sample.get
-    val tx2 = transactionGen.sample.get
-
-    val txEntity1 = TransactionEntity(
-      tx1.hash,
-      tx1.blockHash,
-      tx1.timestamp,
-      chainFrom,
-      chainTo,
-      tx1.version,
-      tx1.networkId,
-      tx1.scriptOpt,
-      tx1.gasAmount,
-      tx1.gasPrice,
-      0,
-      true,
-      true,
-      None,
-      None,
-      coinbase = false
-    )
+    val tx1 = transactionEntityGen().sample.get.copy(mainChain = true)
+    val tx2 = transactionEntityGen().sample.get
 
     val output1 =
       output(address, ALPH.alph(1), None).copy(txHash = tx1.hash, blockHash = tx1.blockHash)
-    val input1 = input(output1.hint, output1.key).copy(txHash = tx2.hash, blockHash = tx2.blockHash)
-    val input2 = input(output1.hint, output1.key).copy(txHash = tx2.hash).copy(mainChain = false)
+    val input1 = input(output1).copy(txHash = tx2.hash, blockHash = tx2.blockHash)
+    val input2 = input(output1).copy(txHash = tx2.hash).copy(mainChain = false)
 
     exec(OutputSchema.table += output1)
     exec(InputSchema.table ++= ArraySeq(input1, input2))
-    exec(TransactionSchema.table ++= ArraySeq(txEntity1))
+    exec(TransactionSchema.table ++= ArraySeq(tx1))
 
     val tx = exec(TransactionQueries.getTransactionAction(tx1.hash)).get
 
@@ -662,64 +624,55 @@ class TransactionQueriesSpec
     val lastFinalizedTime = TimeStamp.zero
 
     def output(address: Address, amount: U256, lockTime: Option[TimeStamp]): OutputEntity =
-      OutputEntity(
-        blockHashGen.sample.get,
-        transactionHashGen.sample.get,
-        timestamp,
-        outputTypeGen.sample.get,
-        0,
-        hashGen.sample.get,
-        amount,
-        address,
-        AddressUtil.convertToGrouplessAddress(address),
-        Gen.option(tokensGen).sample.get,
-        true,
-        lockTime,
-        Gen.option(bytesGen).sample.get,
-        0,
-        0,
-        false,
-        None,
-        None,
-        fixedOutput = false
+      outputEntityGen.sample.get.copy(
+        timestamp = timestamp,
+        hint = 0,
+        key = hashGen.sample.get,
+        amount = amount,
+        address = address,
+        grouplessAddress = AddressUtil.convertToGrouplessAddress(address),
+        mainChain = true,
+        lockTime = lockTime,
+        txOrder = 0,
+        coinbase = false
       )
 
-    def input(hint: Int, outputRefKey: Hash): InputEntity =
-      InputEntity(
-        blockHashGen.sample.get,
-        transactionHashGen.sample.get,
-        timestamp,
-        hint,
-        outputRefKey,
-        None,
-        true,
-        0,
-        0,
-        None,
-        None,
-        None,
-        None,
-        None,
-        contractInput = false
+    def input(output: OutputEntity): InputEntity =
+      inputEntityGen().sample.get.copy(
+        hint = output.hint,
+        outputRefKey = output.key,
+        mainChain = true,
+        txOrder = 0
       )
+
     def transaction(output: OutputEntity): TransactionEntity = {
-      TransactionEntity(
-        output.txHash,
-        output.blockHash,
-        output.timestamp,
-        GroupIndex.Zero,
-        new GroupIndex(1),
+      transactionEntityGen().sample.get.copy(
+        hash = output.txHash,
+        blockHash = output.blockHash,
+        timestamp = output.timestamp,
+        mainChain = true,
+        order = 0,
+        chainFrom = GroupIndex.Zero,
+        chainTo = new GroupIndex(1),
         version = 1,
         networkId = 1,
         scriptOpt = None,
-        1,
-        ALPH.alph(1),
-        0,
-        true,
-        true,
-        None,
-        None,
+        gasAmount = 1,
+        gasPrice = ALPH.alph(1),
+        scriptExecutionOk = true,
         coinbase = false
+      )
+    }
+
+    def transaction(
+        transactionEntity: TransactionEntity,
+        output: OutputEntity,
+        spent: Option[TransactionId],
+        inputs: ArraySeq[Input]
+    ) = {
+      transactionEntity.toApi(
+        inputs = inputs,
+        outputs = ArraySeq(outputEntityToApi(output, spent))
       )
     }
   }
