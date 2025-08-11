@@ -36,6 +36,7 @@ import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.service.market.MarketServiceSpec
 import org.alephium.explorer.util.TestUtils._
+import org.alephium.explorer.util.TestUtxoUtil
 import org.alephium.explorer.util.UtxoUtil._
 import org.alephium.json.Json._
 import org.alephium.protocol.model.{BlockHash, NetworkId}
@@ -284,35 +285,20 @@ trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with Ht
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address.toBase58}?limit=100") check { response =>
         val expectedTransactions =
-          transactions
-            .filter(tx =>
-              tx.outputs.exists(out => addressEqual(out.address, address)) || tx.inputs
-                .exists(
-                  _.address.map(inAddress => addressEqual(inAddress, address)).getOrElse(false)
-                )
-            )
+          TestUtxoUtil
+            .transactionsByAddress(transactions, address)
             .distinctBy(_.hash)
 
-        val outs =
-          expectedTransactions
-            .map(
-              _.outputs
-                .filter(in => addressEqual(in.address, address))
-                .map(_.attoAlphAmount)
-                .fold(U256.Zero)(_ addUnsafe _)
-            )
-            .fold(U256.Zero)(_ addUnsafe _)
+        val outs = amountForAddressInOutputs(
+          address,
+          expectedTransactions.flatMap(_.outputs)
+        ).getOrElse(U256.Zero)
+
         val ins =
-          expectedTransactions
-            .map(
-              _.inputs
-                .filter(
-                  _.address.map(inAddress => addressEqual(inAddress, address)).getOrElse(false)
-                )
-                .map(_.attoAlphAmount.getOrElse(U256.Zero))
-                .fold(U256.Zero)(_ addUnsafe _)
-            )
-            .fold(U256.Zero)(_ addUnsafe _)
+          amountForAddressInInputs(
+            address,
+            expectedTransactions.flatMap(_.inputs)
+          ).getOrElse(U256.Zero)
 
         val expectedBalance = outs.subUnsafe(ins)
 
@@ -328,14 +314,9 @@ trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with Ht
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address.toBase58}/transactions") check { response =>
         val expectedTransactions =
-          transactions
-            .filter(tx =>
-              tx.outputs.exists(out => addressEqual(out.address, address)) || tx.inputs
-                .exists(
-                  _.address.map(inAddress => addressEqual(inAddress, address)).getOrElse(false)
-                )
-            )
-            .distinct
+          TestUtxoUtil
+            .transactionsByAddress(transactions, address)
+            .distinctBy(_.hash)
 
         val res = response.as[ArraySeq[Transaction]]
 
@@ -352,14 +333,15 @@ trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with Ht
       Get(s"/addresses/${address.toBase58}/tokens-balance") check { response =>
         val res = response.as[ArraySeq[AddressTokenBalance]]
 
-        val tokens = blocks
-          .flatMap(
-            _.transactions.flatMap(
-              _.outputs.filter(out => addressEqual(out.address, address)).flatMap(_.tokens)
+        val tokens =
+          TestUtxoUtil
+            .outputsByAddress(
+              blocks.flatMap(_.transactions),
+              address
             )
-          )
-          .flatten
-          .distinct
+            .flatMap(_.tokens)
+            .flatten
+            .distinct
 
         res.size is tokens.size
       }
@@ -377,12 +359,12 @@ trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with Ht
     Post("/addresses/transactions", addressesBody) check { response =>
       val expectedTransactions =
         selectedAddresses.flatMap { address =>
-          transactions.filter { tx =>
-            tx.outputs.exists(out => addressEqual(out.address, address)) || tx.inputs
-              .exists(
-                _.address.map(inAddress => addressEqual(inAddress, address)).getOrElse(false)
-              )
-          }
+          TestUtxoUtil
+            .transactionsByAddress(
+              transactions,
+              address
+            )
+            .distinctBy(_.hash)
         }
 
       val res = response.as[ArraySeq[Transaction]]
