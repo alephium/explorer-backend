@@ -11,31 +11,31 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenCoreProtocol.hashGen
 import org.alephium.explorer.GenCoreUtil._
-import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, TestDBRunner}
 import org.alephium.explorer.persistence.model.{AppState, AppStateKey}
 import org.alephium.explorer.persistence.schema.AppStateSchema
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.serde._
 
-class AppStateQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
+class AppStateQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with TestDBRunner {
 
   "insert" should {
     "write LastFinalizedInputTime key-value" in {
       forAll(timestampGen) { timestamp =>
-        run(AppStateSchema.table.delete).futureValue
+        exec(AppStateSchema.table.delete)
         val insertValue = AppState.LastFinalizedInputTime(timestamp)
-        run(AppStateQueries.insert(insertValue)).futureValue is 1
-        run(AppStateQueries.get(AppState.LastFinalizedInputTime)).futureValue is Some(insertValue)
+        exec(AppStateQueries.insert(insertValue)) is 1
+        exec(AppStateQueries.get(AppState.LastFinalizedInputTime)) is Some(insertValue)
       }
     }
 
     "write MigrationVersion key-value" in {
       forAll { (int: Int) =>
-        run(AppStateSchema.table.delete).futureValue
+        exec(AppStateSchema.table.delete)
         val insertValue = AppState.MigrationVersion(int)
-        run(AppStateQueries.insert(insertValue)).futureValue is 1
-        run(AppStateQueries.get(AppState.MigrationVersion)).futureValue is Some(insertValue)
+        exec(AppStateQueries.insert(insertValue)) is 1
+        exec(AppStateQueries.get(AppState.MigrationVersion)) is Some(insertValue)
       }
     }
   }
@@ -44,8 +44,8 @@ class AppStateQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
     "overwrite key-values" in {
       forAll { (int: Int) =>
         val insertValue = AppState.MigrationVersion(int)
-        run(AppStateQueries.insertOrUpdate(insertValue)).futureValue is 1
-        run(AppStateQueries.get(AppState.MigrationVersion)).futureValue is Some(insertValue)
+        exec(AppStateQueries.insertOrUpdate(insertValue)) is 1
+        exec(AppStateQueries.get(AppState.MigrationVersion)) is Some(insertValue)
       }
     }
   }
@@ -53,9 +53,9 @@ class AppStateQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
   "get" should {
     def checkFailure[V <: AppState: ClassTag: GetResult](key: AppStateKey[V]) = {
       forAll(hashGen) { hash =>
-        run(AppStateSchema.table.delete).futureValue
-        run(sqlu"INSERT INTO app_state VALUES (${key.key}, ${serialize(hash)})").futureValue
-        run(AppStateQueries.get(key)).failed.futureValue should (be(
+        exec(AppStateSchema.table.delete)
+        exec(sqlu"INSERT INTO app_state VALUES (${key.key}, ${serialize(hash)})")
+        execFailed(AppStateQueries.get(key)) should (be(
           a[SerdeError.WrongFormat]
         ) or be(a[org.postgresql.util.PSQLException]))
       }

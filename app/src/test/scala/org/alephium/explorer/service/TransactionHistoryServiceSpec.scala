@@ -13,7 +13,7 @@ import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, TestDBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema._
 import org.alephium.protocol.model.{ChainIndex, GroupIndex}
@@ -22,7 +22,7 @@ import org.alephium.util._
 class TransactionHistoryServiceSpec
     extends AlephiumFutureSpec
     with DatabaseFixtureForEach
-    with DBRunner {
+    with TestDBRunner {
 
   def ts(str: String): TimeStamp = {
     TimeStamp.unsafe(Instant.parse(str).toEpochMilli)
@@ -140,13 +140,13 @@ class TransactionHistoryServiceSpec
           )
         }
 
-      run(
+      exec(
         for {
           _ <- BlockHeaderSchema.table ++= blocks
           _ <- TransactionSchema.table ++= txs
           _ <- LatestBlockSchema.table ++= latestBlocks
         } yield ()
-      ).futureValue
+      )
 
       TransactionHistoryService.syncOnce().futureValue
 

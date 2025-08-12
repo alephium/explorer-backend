@@ -323,6 +323,29 @@ object GenDBModel {
       )
     }
 
+  def blockEntityUpdatedGen(
+      chainIndex: ChainIndex
+  )(blockUpdate: BlockEntity => BlockEntity)(implicit
+      groupSetting: GroupSetting
+  ): Gen[BlockEntity] =
+    blockEntityGen(chainIndex).map(blockUpdate)
+
+  def blockEntityWithAddressGen(
+      chainIndex: ChainIndex,
+      address: Address
+  )(implicit groupSetting: GroupSetting): Gen[BlockEntity] =
+    blockEntityUpdatedGen(chainIndex) { block =>
+      block.copy(outputs =
+        block.outputs.map(
+          _.copy(
+            address = address,
+            grouplessAddress = AddressUtil.convertToGrouplessAddress(address)
+          )
+        )
+      )
+
+    }
+
   def blockEntityWithParentGen(chainIndex: ChainIndex, parent: Option[BlockEntity])(implicit
       groupSetting: GroupSetting
   ): Gen[BlockEntity] =

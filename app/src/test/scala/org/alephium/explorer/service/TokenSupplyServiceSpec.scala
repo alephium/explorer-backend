@@ -23,7 +23,10 @@ import org.alephium.protocol.model.{Address, ChainIndex, GroupIndex}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.DefaultArguments"))
-class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
+class TokenSupplyServiceSpec
+    extends AlephiumFutureSpec
+    with DatabaseFixtureForEach
+    with TestDBRunner {
 
   implicit val gs: GroupSetting = GroupSetting(1)
 
@@ -248,7 +251,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
         .values
         .map(block => LatestBlock.fromEntity(block))
 
-      run(LatestBlockSchema.table ++= latestBlocks).futureValue
+      exec(LatestBlockSchema.table ++= latestBlocks)
 
       val timestamps = blocks.map(_.timestamp)
       val minTs      = timestamps.min
@@ -261,7 +264,7 @@ class TokenSupplyServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForE
 
       eventually {
         val tokenSupply =
-          run(TokenSupplySchema.table.sortBy(_.timestamp).result).futureValue.reverse
+          exec(TokenSupplySchema.table.sortBy(_.timestamp).result).reverse
 
         tokenSupply.map(_.circulating) is amounts
 

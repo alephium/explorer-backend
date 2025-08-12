@@ -7,28 +7,20 @@ package org.alephium.explorer
 import java.net.InetAddress
 
 import scala.collection.immutable.ArraySeq
-import scala.concurrent.Future
 import scala.io.{Codec, Source}
 import scala.jdk.CollectionConverters._
 
 import akka.testkit.SocketUtil
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
-import io.vertx.core.Vertx
-import io.vertx.ext.web._
 import org.scalacheck.Gen
 import org.scalatest.Assertion
 import org.scalatest.Inspectors
-import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.time.{Seconds, Span}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.StatusCode
-import sttp.tapir._
-import sttp.tapir.generic.auto._
-import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 
-import org.alephium.api.{model, ApiError, ApiModelCodec}
-import org.alephium.api.{alphJsonBody => jsonBody}
+import org.alephium.api.{model, ApiError}
 import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
@@ -36,7 +28,6 @@ import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.Generators._
 import org.alephium.explorer.HttpFixture._
-import org.alephium.explorer.api._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.config.{BootMode, ExplorerConfig, TestExplorerConfig}
 import org.alephium.explorer.persistence.DatabaseFixture
@@ -45,11 +36,11 @@ import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.service.market.MarketServiceSpec
 import org.alephium.explorer.util.TestUtils._
+import org.alephium.explorer.util.TestUtxoUtil
 import org.alephium.explorer.util.UtxoUtil._
-import org.alephium.explorer.web._
 import org.alephium.json.Json._
-import org.alephium.protocol.model.{Address, BlockHash, CliqueId, GroupIndex, NetworkId}
-import org.alephium.util.{AVector, Duration, Hex, TimeStamp, U256}
+import org.alephium.protocol.model.{BlockHash, NetworkId}
+import org.alephium.util.{Duration, TimeStamp, U256}
 
 trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with HttpRouteFixture {
 
@@ -99,7 +90,7 @@ trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with Ht
 
   val blockFlowPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
   val blockFlowMock =
-    new ExplorerSpec.BlockFlowServerMock(localhost, blockFlowPort, blockflow, uncles, networkId)
+    new TestBlockFlowServer(localhost, blockFlowPort, blockflow, uncles, networkId)
 
   val coingeckoPort = SocketUtil.temporaryLocalPort(SocketUtil.Both)
   val coingeckoUri  = s"http://${localhost.getHostAddress()}:$coingeckoPort"
@@ -294,35 +285,20 @@ trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with Ht
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address.toBase58}?limit=100") check { response =>
         val expectedTransactions =
-          transactions
-            .filter(tx =>
-              tx.outputs.exists(out => addressEqual(out.address, address)) || tx.inputs
-                .exists(
-                  _.address.map(inAddress => addressEqual(inAddress, address)).getOrElse(false)
-                )
-            )
+          TestUtxoUtil
+            .transactionsByAddress(transactions, address)
             .distinctBy(_.hash)
 
-        val outs =
-          expectedTransactions
-            .map(
-              _.outputs
-                .filter(in => addressEqual(in.address, address))
-                .map(_.attoAlphAmount)
-                .fold(U256.Zero)(_ addUnsafe _)
-            )
-            .fold(U256.Zero)(_ addUnsafe _)
+        val outs = amountForAddressInOutputs(
+          address,
+          expectedTransactions.flatMap(_.outputs)
+        ).getOrElse(U256.Zero)
+
         val ins =
-          expectedTransactions
-            .map(
-              _.inputs
-                .filter(
-                  _.address.map(inAddress => addressEqual(inAddress, address)).getOrElse(false)
-                )
-                .map(_.attoAlphAmount.getOrElse(U256.Zero))
-                .fold(U256.Zero)(_ addUnsafe _)
-            )
-            .fold(U256.Zero)(_ addUnsafe _)
+          amountForAddressInInputs(
+            address,
+            expectedTransactions.flatMap(_.inputs)
+          ).getOrElse(U256.Zero)
 
         val expectedBalance = outs.subUnsafe(ins)
 
@@ -338,14 +314,9 @@ trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with Ht
     forAll(Gen.oneOf(addresses)) { address =>
       Get(s"/addresses/${address.toBase58}/transactions") check { response =>
         val expectedTransactions =
-          transactions
-            .filter(tx =>
-              tx.outputs.exists(out => addressEqual(out.address, address)) || tx.inputs
-                .exists(
-                  _.address.map(inAddress => addressEqual(inAddress, address)).getOrElse(false)
-                )
-            )
-            .distinct
+          TestUtxoUtil
+            .transactionsByAddress(transactions, address)
+            .distinctBy(_.hash)
 
         val res = response.as[ArraySeq[Transaction]]
 
@@ -362,14 +333,15 @@ trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with Ht
       Get(s"/addresses/${address.toBase58}/tokens-balance") check { response =>
         val res = response.as[ArraySeq[AddressTokenBalance]]
 
-        val tokens = blocks
-          .flatMap(
-            _.transactions.flatMap(
-              _.outputs.filter(out => addressEqual(out.address, address)).flatMap(_.tokens)
+        val tokens =
+          TestUtxoUtil
+            .outputsByAddress(
+              blocks.flatMap(_.transactions),
+              address
             )
-          )
-          .flatten
-          .distinct
+            .flatMap(_.tokens)
+            .flatten
+            .distinct
 
         res.size is tokens.size
       }
@@ -387,12 +359,12 @@ trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with Ht
     Post("/addresses/transactions", addressesBody) check { response =>
       val expectedTransactions =
         selectedAddresses.flatMap { address =>
-          transactions.filter { tx =>
-            tx.outputs.exists(out => addressEqual(out.address, address)) || tx.inputs
-              .exists(
-                _.address.map(inAddress => addressEqual(inAddress, address)).getOrElse(false)
-              )
-          }
+          TestUtxoUtil
+            .transactionsByAddress(
+              transactions,
+              address
+            )
+            .distinctBy(_.hash)
         }
 
       val res = response.as[ArraySeq[Transaction]]
@@ -548,272 +520,6 @@ trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with Ht
 }
 
 object ExplorerSpec {
-
-  class BlockFlowServerMock(
-      address: InetAddress,
-      port: Int,
-      blockflow: ArraySeq[ArraySeq[model.BlockEntry]],
-      uncles: ArraySeq[model.BlockEntry],
-      networkId: NetworkId
-  )(implicit groupSetting: GroupSetting)
-      extends ApiModelCodec
-      with BaseEndpoint
-      with ScalaFutures
-      with QueryParams
-      with Server
-      with IntegrationPatience {
-
-    val blocks           = blockflow.flatten
-    val blocksWithUncles = blockflow.flatten ++ uncles
-
-    val cliqueId = CliqueId.generate
-
-    private val peer = model.PeerAddress(address, port, 0, 0)
-
-    def fetchHashesAtHeight(
-        from: GroupIndex,
-        to: GroupIndex,
-        height: Height
-    ): model.HashesAtHeight =
-      model.HashesAtHeight(AVector.from(blocks.collect {
-        case block
-            if block.chainFrom === from.value && block.chainTo === to.value && block.height === height.value =>
-          block.hash
-      }))
-
-    def getChainInfo(from: GroupIndex, to: GroupIndex): model.ChainInfo = {
-      model.ChainInfo(
-        blocks
-          .collect {
-            case block if block.chainFrom == from.value && block.chainTo === to.value =>
-              block.height
-          }
-          .maxOption
-          .getOrElse(Height.genesis.value)
-      )
-    }
-
-    private val vertx  = Vertx.vertx()
-    private val router = Router.router(vertx)
-
-    vertx
-      .fileSystem()
-      .existsBlocking(
-        "META-INF/resources/webjars/swagger-ui/"
-      ) // Fix swagger ui being not found on the first call
-
-    val routes: ArraySeq[Router => Route] =
-      ArraySeq(
-        route(
-          baseEndpoint.get
-            .in("blockflow")
-            .in("blocks")
-            .in(path[BlockHash])
-            .out(jsonBody[model.BlockEntry])
-            .serverLogicSuccess[Future] { hash =>
-              Future.successful(blocksWithUncles.find(_.hash === hash).get)
-            }
-        ),
-        route(
-          baseEndpoint.get
-            .in("blockflow")
-            .in("blocks-with-events")
-            .in(path[BlockHash])
-            .out(jsonBody[model.BlockAndEvents])
-            .serverLogicSuccess[Future] { hash =>
-              Future
-                .successful(
-                  model.BlockAndEvents(
-                    blocksWithUncles.find(_.hash === hash).get,
-                    AVector.from(Gen.listOfN(3, contractEventByBlockHash).sample.get)
-                  )
-                )
-            }
-        ),
-        route(
-          baseEndpoint.get
-            .in("blockflow")
-            .in("blocks")
-            .in(timeIntervalQuery)
-            .out(jsonBody[model.BlocksPerTimeStampRange])
-            .serverLogicSuccess[Future] { timeInterval =>
-              Future.successful(
-                model.BlocksPerTimeStampRange(
-                  AVector.from(
-                    blockflow
-                      .map(
-                        _.filter(b =>
-                          b.timestamp >= timeInterval.from && b.timestamp <= timeInterval.to
-                        )
-                      )
-                      .map(AVector.from(_))
-                  )
-                )
-              )
-            }
-        ),
-        route(
-          baseEndpoint.get
-            .in("blockflow")
-            .in("blocks-with-events")
-            .in(timeIntervalQuery)
-            .out(jsonBody[model.BlocksAndEventsPerTimeStampRange])
-            .serverLogicSuccess[Future] { timeInterval =>
-              Future.successful(
-                model.BlocksAndEventsPerTimeStampRange(
-                  AVector.from(
-                    blockflow
-                      .map(
-                        _.filter(b =>
-                          b.timestamp >= timeInterval.from && b.timestamp <= timeInterval.to
-                        )
-                      )
-                      .map(blocks =>
-                        AVector
-                          .from(
-                            blocks.map(block =>
-                              model.BlockAndEvents(
-                                block,
-                                AVector.from(Gen.listOfN(3, contractEventByBlockHash).sample.get)
-                              )
-                            )
-                          )
-                      )
-                  )
-                )
-              )
-            }
-        ),
-        route(
-          baseEndpoint.get
-            .in("blockflow")
-            .in("hashes")
-            .in(query[Int]("fromGroup"))
-            .in(query[Int]("toGroup"))
-            .in(query[Int]("height"))
-            .out(jsonBody[model.HashesAtHeight])
-            .serverLogicSuccess[Future] { case (from, to, height) =>
-              Future.successful(
-                fetchHashesAtHeight(
-                  GroupIndex.unsafe(from),
-                  GroupIndex.unsafe(to),
-                  Height.unsafe(height)
-                )
-              )
-            }
-        ),
-        route(
-          baseEndpoint.get
-            .in("blockflow")
-            .in("chain-info")
-            .in(query[Int]("fromGroup"))
-            .in(query[Int]("toGroup"))
-            .out(jsonBody[model.ChainInfo])
-            .serverLogicSuccess[Future] { case (from, to) =>
-              Future.successful(
-                getChainInfo(GroupIndex.unsafe(from), GroupIndex.unsafe(to))
-              )
-            }
-        ),
-        route(
-          baseEndpoint.get
-            .in("mempool")
-            .in("transactions")
-            .out(jsonBody[ArraySeq[model.MempoolTransactions]])
-            .serverLogicSuccess[Future] { _ =>
-              val txs  = Gen.listOfN(5, transactionTemplateProtocolGen).sample.get
-              val from = groupIndexGen.sample.get.value
-              val to   = groupIndexGen.sample.get.value
-              Future.successful(
-                ArraySeq(model.MempoolTransactions(from, to, AVector.from(txs)))
-              )
-            }
-        ),
-        route(
-          baseEndpoint.get
-            .in("infos")
-            .in("self-clique")
-            .out(jsonBody[model.SelfClique])
-            .serverLogicSuccess[Future] { _ =>
-              Future.successful(
-                model.SelfClique(cliqueId, AVector(peer), true, true)
-              )
-            }
-        ),
-        route(
-          baseEndpoint.get
-            .in("infos")
-            .in("chain-params")
-            .out(jsonBody[model.ChainParams])
-            .serverLogicSuccess[Future] { _ =>
-              Future.successful(
-                model.ChainParams(networkId, 18, groupSetting.groupNum, groupSetting.groupNum)
-              )
-            }
-        ),
-        route(
-          baseEndpoint.get
-            .in("contracts")
-            .in(path[Address.Contract]("address"))
-            .in("state")
-            .in(query[GroupIndex]("group"))
-            .out(jsonBody[model.ContractState])
-            .serverLogicSuccess[Future] { case (address, _) =>
-              val interfaceId = Gen.option(stdInterfaceIdGen).sample.get
-              val idBytes: Option[model.Val] = interfaceId.map(id =>
-                model.ValByteVec(Hex.from(s"${BlockFlowClient.interfaceIdPrefix}${id.id}").get)
-              )
-              val immFields = idBytes.map(AVector(_)).getOrElse(AVector.empty)
-              Future.successful(
-                model.ContractState(
-                  address,
-                  statefulContractGen.sample.get,
-                  hashGen.sample.get,
-                  None,
-                  immFields,
-                  AVector.empty,
-                  assetStateGen.sample.get
-                )
-              )
-            }
-        ),
-        route(
-          baseEndpoint.get
-            .in("contracts")
-            .in("multicall-contract")
-            .in(jsonBody[model.MultipleCallContract])
-            .out(jsonBody[model.MultipleCallContractResult])
-            .serverLogicSuccess[Future] { _ =>
-              val symbol                                      = valByteVecGen.sample.get
-              val name                                        = valByteVecGen.sample.get
-              val decimals                                    = valU256Gen.sample.get
-              val totalSupply                                 = valU256Gen.sample.get
-              val symbolResult: model.CallContractResult      = contractResult(symbol)
-              val nameResult: model.CallContractResult        = contractResult(name)
-              val decimalsResult: model.CallContractResult    = contractResult(decimals)
-              val totalSupplyResult: model.CallContractResult = contractResult(totalSupply)
-
-              val results: AVector[model.CallContractResult] =
-                AVector(symbolResult, nameResult, decimalsResult, totalSupplyResult)
-              Future.successful(
-                model.MultipleCallContractResult(results)
-              )
-            }
-        )
-      )
-
-    val server = vertx.createHttpServer().requestHandler(router)
-
-    routes.foreach(route => route(router))
-
-    logger.info(s"Full node listening on ${address.getHostAddress}:$port")
-    server.listen(port, address.getHostAddress).asScala.futureValue
-  }
-
-  def contractResult(value: model.Val): model.CallContractResult = {
-    val result = callContractSucceededGen.sample.get
-    result.copy(returns = value +: result.returns)
-  }
 
   def removeField(name: String, json: ujson.Value): ujson.Value = {
     mapJson(json) { obj =>

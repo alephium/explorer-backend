@@ -19,7 +19,7 @@ import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
 import org.alephium.explorer.config.Default
-import org.alephium.explorer.persistence.{DatabaseFixtureForEach, DBRunner}
+import org.alephium.explorer.persistence.{DatabaseFixtureForEach, TestDBRunner}
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
 import org.alephium.explorer.persistence.schema._
@@ -39,7 +39,7 @@ import org.alephium.util.{Duration, TimeStamp}
     "org.wartremover.warts.Serializable"
   )
 ) // Wartremover is complaining, don't now why :/
-class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with DBRunner {
+class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with TestDBRunner {
 
   "updateMainChainStatus correctly" in new Fixture {
     forAll(Gen.oneOf(blockEntities), arbitrary[Boolean]) { case (block, mainChainInput) =>
@@ -55,8 +55,8 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
       val outputQuery =
         OutputSchema.table.filter(_.blockHash === block.hash).map(_.mainChain).result
 
-      val inputs: Seq[Boolean]  = run(inputQuery).futureValue
-      val outputs: Seq[Boolean] = run(outputQuery).futureValue
+      val inputs: Seq[Boolean]  = exec(inputQuery)
+      val outputs: Seq[Boolean] = exec(outputQuery)
 
       inputs.size is block.inputs.size
       outputs.size is block.outputs.size
@@ -71,7 +71,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
 
       val blockheadersQuery =
         BlockHeaderSchema.table.filter(_.hash === block.hash).map(_.hash).result
-      val headerHash: Seq[BlockHash] = run(blockheadersQuery).futureValue
+      val headerHash: Seq[BlockHash] = exec(blockheadersQuery)
       headerHash.size is 1
       headerHash.foreach(_.is(block.hash))
       block.transactions.nonEmpty is true
@@ -90,7 +90,7 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
 
       dbInputs
         .zip(queries)
-        .foreach { case (dbInput, query) => checkDuplicates(dbInput, run(query).futureValue) }
+        .foreach { case (dbInput, query) => checkDuplicates(dbInput, exec(query)) }
     }
   }
 
@@ -133,14 +133,14 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
       timestamp = now.plusMinutesUnsafe(6)
     )
 
-    run(
+    exec(
       LatestBlockSchema.table ++=
         chainIndexes.map { chainIndex =>
           LatestBlock.fromEntity(blockEntityGen(chainIndex).sample.get).copy(timestamp = now)
         }
-    ).futureValue
+    )
 
-    run(BlockHeaderSchema.table ++= Seq(block1, block2, block3, block4)).futureValue
+    exec(BlockHeaderSchema.table ++= Seq(block1, block2, block3, block4))
 
     BlockDao.getAverageBlockTime().futureValue.head is ((chainIndex, Duration.ofMinutesUnsafe(2)))
   }
@@ -221,29 +221,29 @@ class BlockDaoSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with D
       "there are no persisted outputs" in new Fixture {
         forAll(Gen.listOf(inputEntityGen())) { _ =>
           // No persisted outputs so expect inputs to persist nothing
-          run(InputUpdateQueries.updateInputs()).futureValue is ()
-          run(TransactionPerAddressSchema.table.result).futureValue is Seq.empty
+          exec(InputUpdateQueries.updateInputs()) is ()
+          exec(TransactionPerAddressSchema.table.result) is Seq.empty
         }
       }
 
       "there are existing outputs" in new Fixture {
         forAll(Gen.listOf(genInputOutput())) { inputOutputs =>
           // clear tables
-          run(OutputSchema.table.delete).futureValue
-          run(TransactionPerAddressSchema.table.delete).futureValue
+          exec(OutputSchema.table.delete)
+          exec(TransactionPerAddressSchema.table.delete)
 
           val outputs = inputOutputs.map(_._2)
           val inputs  = inputOutputs.map(_._1)
 
           // insert outputs
-          run(OutputSchema.table ++= outputs).futureValue should contain(outputs.size)
+          exec(OutputSchema.table ++= outputs) should contain(outputs.size)
           // insert inputs
-          run(InputSchema.table ++= inputs).futureValue
-          run(InputUpdateQueries.updateInputs()).futureValue is ()
+          exec(InputSchema.table ++= inputs)
+          exec(InputUpdateQueries.updateInputs()) is ()
 
           // expected rows in table TransactionPerAddressSchema
           val expected     = toTransactionPerAddressEntities(inputOutputs)
-          val transactions = run(TransactionPerAddressSchema.table.result).futureValue
+          val transactions = exec(TransactionPerAddressSchema.table.result)
           // check rows are as expected
           transactions should contain theSameElementsAs expected
         }

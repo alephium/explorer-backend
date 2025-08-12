@@ -17,7 +17,7 @@ object NFTMetadataSchema extends SchemaMainChain[NFTMetadata]("nft_metadata") {
     def token: Rep[TokenId]           = column[TokenId]("token", O.PrimaryKey)
     def tokenUri: Rep[String]         = column[String]("token_uri")
     def collectionId: Rep[ContractId] = column[ContractId]("collection_id")
-    def nftIndex: Rep[U256]           = column[U256]("nft_index")
+    def nftIndex: Rep[U256]           = column[U256]("nft_index", O.SqlType("DECIMAL(80,0)"))
 
     def * : ProvenShape[NFTMetadata] =
       (token, tokenUri, collectionId, nftIndex)
