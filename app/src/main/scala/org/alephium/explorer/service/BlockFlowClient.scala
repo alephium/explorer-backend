@@ -568,7 +568,8 @@ object BlockFlowClient extends StrictLogging {
       block.txsHash,
       block.target,
       computeHashRate(block.target, block.timestamp),
-      ghostUncles
+      ghostUncles,
+      block.conflictedTxs.map(_.toArraySeq)
     )
   }
   // scalastyle:on null
@@ -643,6 +644,7 @@ object BlockFlowClient extends StrictLogging {
       tx.unsigned.gasPrice,
       index,
       mainChain,
+      conflicted = None,
       tx.scriptExecutionOk,
       if (tx.inputSignatures.isEmpty) None else Some(tx.inputSignatures.toArraySeq),
       if (tx.scriptSignatures.isEmpty) None else Some(tx.scriptSignatures.toArraySeq),
@@ -679,6 +681,7 @@ object BlockFlowClient extends StrictLogging {
       input.outputRef.key,
       Some(input.unlockScript),
       mainChain,
+      conflicted = None,
       index,
       txOrder,
       None,
@@ -708,6 +711,7 @@ object BlockFlowClient extends StrictLogging {
       outputRef.key,
       None,
       mainChain,
+      conflicted = None,
       index,
       txOrder,
       None,
@@ -798,6 +802,7 @@ object BlockFlowClient extends StrictLogging {
       grouplessAddress,
       tokens,
       mainChain,
+      conflicted = None,
       lockTime,
       message,
       index,

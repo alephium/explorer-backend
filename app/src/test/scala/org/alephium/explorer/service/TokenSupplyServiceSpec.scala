@@ -194,6 +194,7 @@ class TokenSupplyServiceSpec
             out.key,
             None,
             false,
+            conflicted = None,
             index,
             0,
             None,

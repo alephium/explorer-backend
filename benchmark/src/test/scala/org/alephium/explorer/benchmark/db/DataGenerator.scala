@@ -50,6 +50,7 @@ object DataGenerator {
         gasPrice = U256.unsafe(0),
         order = Random.nextInt(1000),
         mainChain = mainChain,
+        conflicted = None,
         scriptExecutionOk = Random.nextBoolean(),
         inputSignatures = None,
         scriptSignatures = None,
@@ -75,6 +76,7 @@ object DataGenerator {
         grouplessAddress = AddressUtil.convertToGrouplessAddress(address),
         tokens = None,
         mainChain = transaction.mainChain,
+        conflicted = None,
         lockTime = Some(TimeStamp.now()),
         message = None,
         outputOrder = order,
@@ -97,6 +99,7 @@ object DataGenerator {
         outputRefKey = output.key,
         unlockScript = Some(unlockScriptGen.sample.get),
         mainChain = output.mainChain,
+        conflicted = None,
         inputOrder = order,
         txOrder = order,
         None,
@@ -145,7 +148,8 @@ object DataGenerator {
       txsHash = Hash.generate,
       target = ByteString.fromString(Random.alphanumeric.take(10).mkString),
       hashrate = BigInteger.valueOf(Random.nextLong(Long.MaxValue)),
-      ghostUncles = ArraySeq.empty
+      ghostUncles = ArraySeq.empty,
+      conflictedTxs = None
     )
   }
 
@@ -163,6 +167,7 @@ object DataGenerator {
       timestamp = TimeStamp.now(),
       txOrder = Random.nextInt(100),
       mainChain = Random.nextBoolean(),
+      conflicted = None,
       coinbase = false
     )
 }

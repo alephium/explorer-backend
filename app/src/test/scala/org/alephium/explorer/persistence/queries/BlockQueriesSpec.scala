@@ -319,4 +319,20 @@ class BlockQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
       }
     }
   }
+
+  "block header with conflicted txs" should {
+    "be insertable and readable" in {
+      forAll(blockHeaderGen) { block =>
+        val blockWithConflictedTxs = block.copy(
+          conflictedTxs = Some(ArraySeq.from(Gen.listOfN(5, transactionHashGen).sample.get))
+        )
+
+        exec(BlockQueries.insertBlockHeaders(ArraySeq(blockWithConflictedTxs)))
+
+        exec(BlockQueries.getBlockHeaderAction(blockWithConflictedTxs.hash)) is Some(
+          blockWithConflictedTxs
+        )
+      }
+    }
+  }
 }

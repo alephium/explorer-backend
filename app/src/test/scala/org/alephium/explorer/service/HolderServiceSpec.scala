@@ -107,7 +107,8 @@ class HolderServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach {
         txsHash = hashGen.sample.get,
         target = bytesGen.sample.get,
         hashrate = BigInteger.ZERO,
-        ghostUncles = ArraySeq.empty
+        ghostUncles = ArraySeq.empty,
+        conflictedTxs = None
       )
 
     def getAll: DBActionSR[(Address, U256)] =

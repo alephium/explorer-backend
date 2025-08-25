@@ -281,7 +281,8 @@ object GenApiModel extends ImplicitConversions {
         hashrate,
         parent,
         mainChain,
-        ghostUncles
+        ghostUncles,
+        conflictedTxs = None
       )
     }
 

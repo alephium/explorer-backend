@@ -21,6 +21,7 @@ final case class TokenOutputEntity(
     address: Address,
     grouplessAddress: Option[GrouplessAddress],
     mainChain: Boolean,
+    conflicted: Option[Boolean],
     lockTime: Option[TimeStamp],
     message: Option[ByteString],
     outputOrder: Int,

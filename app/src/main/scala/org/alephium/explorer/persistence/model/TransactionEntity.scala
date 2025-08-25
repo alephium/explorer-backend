@@ -24,6 +24,7 @@ final case class TransactionEntity(
     gasPrice: U256,
     order: Int,
     mainChain: Boolean,
+    conflicted: Option[Boolean],
     scriptExecutionOk: Boolean,
     inputSignatures: Option[ArraySeq[ByteString]],
     scriptSignatures: Option[ArraySeq[ByteString]],

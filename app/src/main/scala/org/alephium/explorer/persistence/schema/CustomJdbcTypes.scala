@@ -206,4 +206,10 @@ object CustomJdbcTypes {
       uncles => writeBinary(uncles),
       bytes => readBinary[ArraySeq[GhostUncle]](bytes)
     )
+
+  implicit val optionTransactionIdsTpye: JdbcType[ArraySeq[TransactionId]] =
+    MappedJdbcType.base[ArraySeq[TransactionId], Array[Byte]](
+      txs => writeBinary(txs),
+      bytes => readBinary[ArraySeq[TransactionId]](bytes)
+    )
 }

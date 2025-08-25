@@ -15,9 +15,10 @@ import org.alephium.explorer.api.Json.groupIndexReadWriter
 import org.alephium.explorer.service.FlowEntity
 import org.alephium.json.Json._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{BlockHash, GroupIndex}
+import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.{AVector, TimeStamp}
 
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 final case class BlockEntry(
     hash: BlockHash,
     timestamp: TimeStamp,
@@ -34,7 +35,8 @@ final case class BlockEntry(
     hashRate: BigInteger,
     parent: Option[BlockHash],
     mainChain: Boolean,
-    ghostUncles: ArraySeq[GhostUncle]
+    ghostUncles: ArraySeq[GhostUncle],
+    conflictedTxs: Option[ArraySeq[TransactionId]] = None
 ) extends FlowEntity {
 
   def toProtocol(
@@ -53,7 +55,8 @@ final case class BlockEntry(
       depStateHash,
       txsHash,
       target,
-      AVector.from(ghostUncles.map(_.toProtocol()))
+      AVector.from(ghostUncles.map(_.toProtocol())),
+      conflictedTxs = conflictedTxs.map(AVector.from(_))
     )
   }
 

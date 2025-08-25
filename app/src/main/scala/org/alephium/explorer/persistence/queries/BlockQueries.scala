@@ -263,9 +263,9 @@ object BlockQueries extends StrictLogging {
   }
 
   /** Inserts block_headers or ignore them if there is a primary key conflict */
-  // scalastyle:off magic.number
+  // scalastyle:off magic.number method.length
   def insertBlockHeaders(blocks: Iterable[BlockHeader]): DBActionW[Int] =
-    QuerySplitter.splitUpdates(rows = blocks, columnsPerRow = 16) { (blocks, placeholder) =>
+    QuerySplitter.splitUpdates(rows = blocks, columnsPerRow = 17) { (blocks, placeholder) =>
       val query =
         s"""
            INSERT INTO $block_headers ("hash",
@@ -283,7 +283,8 @@ object BlockQueries extends StrictLogging {
                                        "hashrate",
                                        "parent",
                                        "deps",
-                                       "ghost_uncles")
+                                       "ghost_uncles",
+                                       "conflicted_txs")
            VALUES $placeholder
            ON CONFLICT ON CONSTRAINT block_headers_pkey
                DO NOTHING
@@ -308,6 +309,7 @@ object BlockQueries extends StrictLogging {
             params >> block.parent
             params >> block.deps
             params >> block.ghostUncles
+            params >> block.conflictedTxs
           }
 
       SQLActionBuilder(

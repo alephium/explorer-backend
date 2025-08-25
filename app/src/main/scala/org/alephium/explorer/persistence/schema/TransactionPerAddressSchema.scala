@@ -21,12 +21,13 @@ object TransactionPerAddressSchema
     def address: Rep[Address] = column[Address]("address")
     def grouplessAddress: Rep[Option[GrouplessAddress]] =
       column[Option[GrouplessAddress]]("groupless_address")
-    def txHash: Rep[TransactionId] = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
-    def blockHash: Rep[BlockHash]  = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
-    def timestamp: Rep[TimeStamp]  = column[TimeStamp]("block_timestamp")
-    def txOrder: Rep[Int]          = column[Int]("tx_order")
-    def mainChain: Rep[Boolean]    = column[Boolean]("main_chain")
-    def coinbase: Rep[Boolean]     = column[Boolean]("coinbase")
+    def txHash: Rep[TransactionId]       = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
+    def blockHash: Rep[BlockHash]        = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
+    def timestamp: Rep[TimeStamp]        = column[TimeStamp]("block_timestamp")
+    def txOrder: Rep[Int]                = column[Int]("tx_order")
+    def mainChain: Rep[Boolean]          = column[Boolean]("main_chain")
+    def conflicted: Rep[Option[Boolean]] = column[Option[Boolean]]("conflicted")
+    def coinbase: Rep[Boolean]           = column[Boolean]("coinbase")
 
     def pk: PrimaryKey = primaryKey("txs_per_address_pk", (txHash, blockHash, address))
 
@@ -37,7 +38,17 @@ object TransactionPerAddressSchema
       index("txs_per_address_address_timestamp_idx", (address, timestamp))
 
     def * : ProvenShape[TransactionPerAddressEntity] =
-      (address, grouplessAddress, txHash, blockHash, timestamp, txOrder, mainChain, coinbase)
+      (
+        address,
+        grouplessAddress,
+        txHash,
+        blockHash,
+        timestamp,
+        txOrder,
+        mainChain,
+        conflicted,
+        coinbase
+      )
         .<>((TransactionPerAddressEntity.apply _).tupled, TransactionPerAddressEntity.unapply)
   }
 

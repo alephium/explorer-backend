@@ -11,7 +11,7 @@ import akka.util.ByteString
 
 import org.alephium.explorer.api.model.{BlockEntry, BlockEntryLite, GhostUncle, Height}
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{BlockHash, GroupIndex}
+import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.TimeStamp
 
 final case class BlockHeader(
@@ -30,7 +30,8 @@ final case class BlockHeader(
     hashrate: BigInteger,
     parent: Option[BlockHash],
     deps: ArraySeq[BlockHash],
-    ghostUncles: Option[ArraySeq[GhostUncle]]
+    ghostUncles: Option[ArraySeq[GhostUncle]],
+    conflictedTxs: Option[ArraySeq[TransactionId]]
 ) {
 
   def toApi(): BlockEntry =
@@ -50,7 +51,8 @@ final case class BlockHeader(
       hashrate,
       parent,
       mainChain,
-      ghostUncles.getOrElse(ArraySeq.empty)
+      ghostUncles.getOrElse(ArraySeq.empty),
+      conflictedTxs
     )
 
   val toLiteApi: BlockEntryLite =
@@ -85,7 +87,8 @@ object BlockHeader {
       blockEntity.hashrate,
       blockEntity.parent(groupNum),
       blockEntity.deps,
-      ghostUncles
+      ghostUncles,
+      blockEntity.conflictedTxs
     )
   }
 }

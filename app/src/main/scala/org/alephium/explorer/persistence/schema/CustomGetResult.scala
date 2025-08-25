@@ -203,6 +203,7 @@ object CustomGetResult {
         grouplessAddress = result.<<?,
         tokens = result.<<?,
         mainChain = result.<<,
+        conflicted = result.<<?,
         lockTime = result.<<?,
         message = result.<<?,
         outputOrder = result.<<,
@@ -223,6 +224,7 @@ object CustomGetResult {
         outputRefKey = result.<<,
         unlockScript = result.<<?,
         mainChain = result.<<,
+        conflicted = result.<<?,
         inputOrder = result.<<,
         txOrder = result.<<,
         outputRefTxHash = result.<<?,
@@ -253,6 +255,15 @@ object CustomGetResult {
   implicit val optionGhostUnclesGetResult: GetResult[Option[ArraySeq[GhostUncle]]] =
     (result: PositionedResult) =>
       result.nextBytesOption().map(bytes => readBinary[ArraySeq[GhostUncle]](bytes))
+
+  implicit val optionTransactionIdsGetResult: GetResult[Option[ArraySeq[TransactionId]]] =
+    (result: PositionedResult) =>
+      result.nextBytesOption().map { bytes =>
+        deserialize[ArraySeq[TransactionId]](ByteString.fromArrayUnsafe(bytes)) match {
+          case Left(error)  => throw error
+          case Right(value) => value
+        }
+      }
 
   /** GetResult type for BlockEntryLite
     *
@@ -292,7 +303,8 @@ object CustomGetResult {
         hashrate = result.<<,
         parent = result.<<?,
         deps = result.<<,
-        ghostUncles = result.<<?
+        ghostUncles = result.<<?,
+        conflictedTxs = result.<<?
       )
 
   val transactionEntityGetResult: GetResult[TransactionEntity] =
@@ -310,6 +322,7 @@ object CustomGetResult {
         gasPrice = result.<<,
         order = result.<<,
         mainChain = result.<<,
+        conflicted = result.<<?,
         scriptExecutionOk = result.<<,
         inputSignatures = result.<<?,
         scriptSignatures = result.<<?,

@@ -34,6 +34,7 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
       column[Option[GrouplessAddress]]("groupless_address")
     def tokens: Rep[Option[ArraySeq[Token]]] = column[Option[ArraySeq[Token]]]("tokens")
     def mainChain: Rep[Boolean]              = column[Boolean]("main_chain")
+    def conflicted: Rep[Option[Boolean]]     = column[Option[Boolean]]("conflicted")
     def lockTime: Rep[Option[TimeStamp]]     = column[Option[TimeStamp]]("lock_time")
     def message: Rep[Option[ByteString]]     = column[Option[ByteString]]("message")
     def outputOrder: Rep[Int]                = column[Int]("output_order")
@@ -66,6 +67,7 @@ object OutputSchema extends SchemaMainChain[OutputEntity]("outputs") {
         grouplessAddress,
         tokens,
         mainChain,
+        conflicted,
         lockTime,
         message,
         outputOrder,

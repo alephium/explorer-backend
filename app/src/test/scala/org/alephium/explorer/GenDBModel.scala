@@ -76,6 +76,7 @@ object GenDBModel {
         grouplessAddress = AddressUtil.convertToGrouplessAddress(address),
         tokens = tokens,
         mainChain = mainChain,
+        conflicted = None,
         lockTime = if (outputType == OutputEntity.Asset) lockTime else None,
         message = if (outputType == OutputEntity.Asset) message else None,
         outputOrder = outputOrder,
@@ -139,6 +140,7 @@ object GenDBModel {
         outputRefKey = outputEntity.key,
         unlockScript = unlockScript,
         mainChain = outputEntity.mainChain,
+        conflicted = None,
         inputOrder = outputEntity.outputOrder,
         txOrder = txOrder,
         None,
@@ -204,6 +206,7 @@ object GenDBModel {
       timestamp = timestamp,
       txOrder = txOrder,
       mainChain = mainChain,
+      conflicted = None,
       coinbase = coinbase
     )
 
@@ -223,7 +226,8 @@ object GenDBModel {
       token = token,
       timestamp = timestamp,
       txOrder = txOrder,
-      mainChain = mainChain
+      mainChain = mainChain,
+      conflicted = None
     )
 
   def tokenTxPerAddressEntityGen(
@@ -245,6 +249,7 @@ object GenDBModel {
       timestamp = timestamp,
       txOrder = txOrder,
       mainChain = mainChain,
+      conflicted = None,
       token = token
     )
 
@@ -305,6 +310,7 @@ object GenDBModel {
       address,
       AddressUtil.convertToGrouplessAddress(address),
       mainChain,
+      conflicted = None,
       lockTime,
       message,
       outputOrder,
@@ -412,6 +418,7 @@ object GenDBModel {
       gasPrice = gasPrice,
       order = order,
       mainChain = mainChain,
+      conflicted = None,
       scriptExecutionOk = scriptExecutionOk,
       inputSignatures = None,
       scriptSignatures = None,
@@ -476,7 +483,8 @@ object GenDBModel {
       hashrate = hashrate,
       parent = parent,
       deps = deps,
-      ghostUncles = None
+      ghostUncles = None,
+      conflictedTxs = None
     )
 
   val blockHeaderTransactionEntityGen: Gen[(BlockHeader, List[TransactionEntity])] =
@@ -520,7 +528,8 @@ object GenDBModel {
         BigDecimal(hashrate).toBigInt.bigInteger,
         parent,
         deps,
-        ghostUncles
+        ghostUncles,
+        conflictedTxs = None
       )
     }
   }

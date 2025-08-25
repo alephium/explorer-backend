@@ -137,7 +137,8 @@ object EndpointExamples extends EndpointsExamples {
       hashRate = HashRate.a128EhPerSecond.value,
       parent = Some(blockHash),
       mainChain = true,
-      ghostUncles = ArraySeq(GhostUncle(blockHash, addressAsset))
+      ghostUncles = ArraySeq(GhostUncle(blockHash, addressAsset)),
+      conflictedTxs = None
     )
 
   private val transaction: Transaction =

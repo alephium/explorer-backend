@@ -12,7 +12,7 @@ import akka.util.ByteString
 import org.alephium.explorer.api.model.{GhostUncle, Height}
 import org.alephium.explorer.service.FlowEntity
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{BlockHash, GroupIndex}
+import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.TimeStamp
 
 final case class BlockEntity(
@@ -32,10 +32,12 @@ final case class BlockEntity(
     txsHash: Hash,
     target: ByteString,
     hashrate: BigInteger,
-    ghostUncles: ArraySeq[GhostUncle]
+    ghostUncles: ArraySeq[GhostUncle],
+    conflictedTxs: Option[ArraySeq[TransactionId]]
 ) extends FlowEntity {
 
   @inline def toBlockHeader(groupNum: Int): BlockHeader =
     BlockHeader.fromEntity(this, groupNum)
 
+  def isIntraGroup(): Boolean = chainFrom == chainTo
 }
