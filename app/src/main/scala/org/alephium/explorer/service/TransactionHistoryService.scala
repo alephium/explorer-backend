@@ -23,7 +23,7 @@ import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.explorer.util.TimeUtil._
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.GroupIndex
+import org.alephium.protocol.model.{GroupIndex, TransactionId}
 import org.alephium.util.{Duration, TimeStamp}
 
 case object TransactionHistoryService extends StrictLogging {
@@ -31,6 +31,8 @@ case object TransactionHistoryService extends StrictLogging {
   val hourlyStepBack: Duration = Duration.ofHoursUnsafe(2)
   val dailyStepBack: Duration  = Duration.ofDaysUnsafe(1)
   val weeklyStepBack: Duration = Duration.ofDaysUnsafe(7)
+
+  private type FetchedData = (TimeStamp, Int, Int, Long)
 
   def start(interval: FiniteDuration)(implicit
       executionContext: ExecutionContext,
@@ -122,7 +124,7 @@ case object TransactionHistoryService extends StrictLogging {
   private def updateTxHistoryCountForInterval(
       intervalType: IntervalType,
       latestTxTs: TimeStamp,
-      fetchData: (TimeStamp, TimeStamp) => DBActionSR[(TimeStamp, Int, Int, Long)]
+      fetchData: (TimeStamp, TimeStamp) => DBActionSR[FetchedData]
   )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
@@ -153,7 +155,7 @@ case object TransactionHistoryService extends StrictLogging {
   }
 
   private def processDataForTimeRanges(
-      data: Seq[(TimeStamp, Int, Int, Long)],
+      data: Seq[FetchedData],
       ranges: Seq[(TimeStamp, TimeStamp)],
       intervalType: IntervalType
   )(implicit gs: GroupSetting): Seq[(TimeStamp, Int, Int, Long, IntervalType)] = {
@@ -181,30 +183,35 @@ case object TransactionHistoryService extends StrictLogging {
     }
   }
 
+  // WE need to get to substract the number of conflicted transactions
   private def getTxsCountFromTo(
       from: TimeStamp,
       to: TimeStamp
-  ): DBActionSR[(TimeStamp, Int, Int, Long)] = {
+  )(implicit ec: ExecutionContext): DBActionSR[FetchedData] = {
     sql"""
-      SELECT block_timestamp, chain_from, chain_to, txs_count
+      SELECT block_timestamp, chain_from, chain_to, txs_count, conflicted_txs
       FROM block_headers
       WHERE block_timestamp >= $from
       AND block_timestamp <= $to
       AND main_chain = true
-    """.asAS[(TimeStamp, Int, Int, Long)]
+    """
+      .asAS[(TimeStamp, Int, Int, Long, Option[ArraySeq[TransactionId]])]
+      .map(_.map { case (timestamp, chainFrom, chainTo, txsCount, conflictedTxs) =>
+        (timestamp, chainFrom, chainTo, txsCount - conflictedTxs.map(_.size.toLong).getOrElse(0L))
+      })
   }
 
   private def getHourlyCountFromTo(
       from: TimeStamp,
       to: TimeStamp
-  ): DBActionSR[(TimeStamp, Int, Int, Long)] = {
+  ): DBActionSR[FetchedData] = {
     sql"""
       SELECT timestamp, chain_from, chain_to, value
       FROM transactions_history
       WHERE timestamp >= $from
       AND timestamp <= $to
       AND interval_type = ${IntervalType.Hourly}
-    """.asAS[(TimeStamp, Int, Int, Long)]
+    """.asAS[FetchedData]
   }
 
   private def insertValues(
