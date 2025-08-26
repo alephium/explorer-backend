@@ -152,6 +152,7 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
       AND (spent_timestamp > $at OR spent_timestamp IS NULL)
       AND (lock_time is NULL OR lock_time <= $at) /* Only count unlock tokens */
       AND main_chain = true
+      AND #${notConflicted()}
       AND address NOT IN (#$reservedAddresses) /* We exclude the reserved wallets */
         """.asAS[Option[U256]].exactlyOne
 
@@ -165,6 +166,7 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
         SELECT sum(outputs.amount)
         FROM outputs
         WHERE outputs.main_chain = true
+        AND #${notConflicted("outputs")}
         AND outputs.block_timestamp <=$at
         AND (spent_timestamp > $at OR spent_timestamp IS NULL)
       """.asAS[Option[U256]].exactlyOne
@@ -181,6 +183,7 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
        WHERE outputs.block_timestamp <= $at
        AND (spent_timestamp > $at OR spent_timestamp IS NULL)
        AND outputs.main_chain = true
+       AND #${notConflicted("outputs")}
        AND outputs.address IN (#$reservedAddresses) /* We only take the reserved wallets */
         """.asAS[Option[U256]].exactlyOne
 
@@ -196,6 +199,7 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
        WHERE outputs.block_timestamp <= $at
        AND outputs.lock_time > $at /* count only locked tokens */
        AND outputs.main_chain = true
+       AND #${notConflicted("outputs")}
        AND outputs.address NOT IN (#$reservedAddresses) /* We exclude the reserved wallets */
         """.asAS[Option[U256]].exactlyOne
 

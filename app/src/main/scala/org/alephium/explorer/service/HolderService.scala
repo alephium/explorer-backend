@@ -22,6 +22,7 @@ import org.alephium.explorer.persistence.queries.InfoQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.Scheduler
+import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.model.TokenId
 import org.alephium.util.TimeStamp
 
@@ -139,6 +140,7 @@ case object HolderService extends HolderService with StrictLogging {
         outputs.block_timestamp <= $time
         AND (outputs.spent_finalized IS NULL OR outputs.spent_timestamp > $time)
         AND outputs.main_chain = true
+        AND #${notConflicted("outputs")}
     GROUP BY outputs.address
   """
 
@@ -152,6 +154,7 @@ case object HolderService extends HolderService with StrictLogging {
         WHERE outputs.block_timestamp > $from
           AND outputs.block_timestamp <= $to
           AND outputs.main_chain = true
+          AND #${notConflicted("outputs")}
         GROUP BY outputs.address
     ),
     outflow AS (
@@ -161,9 +164,11 @@ case object HolderService extends HolderService with StrictLogging {
         INNER JOIN inputs
                 ON outputs.key = inputs.output_ref_key
                 AND inputs.main_chain = true
+                AND #${notConflicted("inputs")}
         WHERE inputs.block_timestamp > $from
           AND inputs.block_timestamp <= $to
           AND outputs.main_chain = true
+          AND #${notConflicted("outputs")}
         GROUP BY outputs.address
     ),
     balance_diff AS (
@@ -193,6 +198,7 @@ case object HolderService extends HolderService with StrictLogging {
         token_outputs.block_timestamp <= $time
         AND (token_outputs.spent_finalized IS NULL OR token_outputs.spent_timestamp > $time)
         AND token_outputs.main_chain = true
+        AND #${notConflicted("token_outputs")}
     GROUP BY token_outputs.address, token_outputs.token
   """
 
@@ -207,6 +213,7 @@ case object HolderService extends HolderService with StrictLogging {
         WHERE token_outputs.block_timestamp > $from
           AND token_outputs.block_timestamp <= $to
           AND token_outputs.main_chain = true
+          AND #${notConflicted("token_outputs")}
         GROUP BY token_outputs.address, token_outputs.token
     ),
     outflow AS (
@@ -217,9 +224,11 @@ case object HolderService extends HolderService with StrictLogging {
         INNER JOIN inputs
                 ON token_outputs.key = inputs.output_ref_key
                 AND inputs.main_chain = true
+                AND #${notConflicted("inputs")}
         WHERE inputs.block_timestamp > $from
           AND inputs.block_timestamp <= $to
           AND token_outputs.main_chain = true
+          AND #${notConflicted("token_outputs")}
         GROUP BY token_outputs.address, token_outputs.token
     ),
     balance_diff AS (
