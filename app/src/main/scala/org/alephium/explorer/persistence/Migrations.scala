@@ -27,7 +27,8 @@ import org.alephium.util.discard
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(10)
+  // scalastyle:off magic.number
+  val latestVersion: MigrationVersion = MigrationVersion(11)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     // We retrigger the download of fungible and non-fungible tokens' metadata that have sub-category
@@ -204,8 +205,22 @@ object Migrations extends StrictLogging {
     } yield {
       ()
     }
-
   }
+
+  def migration11(implicit ec: ExecutionContext): DBActionAll[Unit] = {
+    sqlu"""
+      ALTER TABLE transactions ADD COLUMN IF NOT EXISTS conflicted BOOLEAN NULL;
+      ALTER TABLE outputs ADD COLUMN IF NOT EXISTS conflicted BOOLEAN NULL;
+      ALTER TABLE inputs ADD COLUMN IF NOT EXISTS conflicted BOOLEAN NULL;
+      ALTER TABLE transaction_per_addresses ADD COLUMN IF NOT EXISTS conflicted BOOLEAN NULL;
+      ALTER TABLE transaction_per_token ADD COLUMN IF NOT EXISTS conflicted BOOLEAN NULL;
+      ALTER TABLE token_tx_per_addresses ADD COLUMN IF NOT EXISTS conflicted BOOLEAN NULL;
+      ALTER TABLE token_outputs ADD COLUMN IF NOT EXISTS conflicted BOOLEAN NULL;
+
+      ALTER TABLE block_headers ADD COLUMN IF NOT EXISTS conflicted_txs BYTEA NULL;
+    """.map(_ => ())
+  }
+
   private def migrations(implicit
       explorerConfig: ExplorerConfig,
       ec: ExecutionContext
@@ -219,7 +234,8 @@ object Migrations extends StrictLogging {
     migration7,
     migration8,
     migration9,
-    migration10
+    migration10,
+    migration11
   )
 
   def backgroundCoinbaseMigration()(implicit
