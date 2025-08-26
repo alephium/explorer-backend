@@ -41,6 +41,7 @@ case object FinalizerService extends StrictLogging {
   // scalastyle:on magic.number
 
   def start(interval: FiniteDuration)(implicit
+      blockFlowClient: BlockFlowClient,
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       scheduler: Scheduler
@@ -52,6 +53,7 @@ case object FinalizerService extends StrictLogging {
     )(syncOnce())
 
   def syncOnce()(implicit
+      blockFlowClient: BlockFlowClient,
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Unit] = {
@@ -60,12 +62,16 @@ case object FinalizerService extends StrictLogging {
   }
 
   def finalizeOutputs()(implicit
+      blockFlowClient: BlockFlowClient,
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Unit] =
     run(getStartEndTime()).flatMap {
       case Some((start, end)) =>
-        finalizeOutputsWith(start, end, rangeStep)
+        for {
+          _ <- finalizeOutputsWith(start, end, rangeStep)
+          _ <- finalizeConflictedTxs(start, end)
+        } yield ()
       case None =>
         Future.successful(())
     }

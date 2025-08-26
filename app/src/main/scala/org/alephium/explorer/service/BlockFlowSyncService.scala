@@ -141,6 +141,7 @@ case object BlockFlowSyncService extends StrictLogging {
           .map(_.sum)
         _ <- dc.db.run(InputUpdateQueries.updateInputs())
         _ <- updateMetadatas(blockFlowClient)
+        _ <- ConflictedTxsService.handleConflictedTxs(multiChain.flatMap(_.map(_.block)))
       } yield res
     }
   }

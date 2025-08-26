@@ -23,7 +23,7 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.{BlockHash, GroupIndex}
+import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.TimeStamp
 
 object BlockQueries extends StrictLogging {
@@ -251,6 +251,17 @@ object BlockQueries extends StrictLogging {
         setParameter = parameters
       ).asUpdate
     }
+
+  def updateConflictedTxs(
+      blockHash: BlockHash,
+      conflictedTxs: Option[ArraySeq[TransactionId]]
+  ): DBActionRWT[Int] = {
+    sqlu"""
+         UPDATE block_headers
+         SET conflicted_txs = $conflictedTxs
+         WHERE hash = $blockHash
+         """
+  }
 
   def getLatestBlock(chainFrom: GroupIndex, chainTo: GroupIndex): DBActionSR[LatestBlock] = {
     sql"""
