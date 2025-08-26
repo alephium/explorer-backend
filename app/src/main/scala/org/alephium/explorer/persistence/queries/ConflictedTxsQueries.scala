@@ -82,6 +82,20 @@ case object ConflictedTxsQueries extends StrictLogging {
         )
       """.asAS[(TransactionId, BlockHash, Option[Boolean])]
 
+  def findTxsUsingConflictedTxs(
+      timestamp: TimeStamp
+  ): DBActionSR[(TransactionId, BlockHash, Option[Boolean])] =
+    sql"""
+      SELECT DISTINCT ON (i.tx_hash) i.tx_hash, i.block_hash, i.conflicted
+      FROM inputs i
+      JOIN inputs ref ON i.output_ref_tx_hash = ref.tx_hash
+      WHERE i.block_timestamp > $timestamp
+        AND i.main_chain = true
+        AND ref.block_timestamp > $timestamp
+        AND ref.main_chain = true
+        AND ref.conflicted = true
+      """.asAS[(TransactionId, BlockHash, Option[Boolean])]
+
   // Find inputs that were conflicted, but due to a reorg aren't anymore.
   def findReorgedConflictedTxs(
       timestamp: TimeStamp

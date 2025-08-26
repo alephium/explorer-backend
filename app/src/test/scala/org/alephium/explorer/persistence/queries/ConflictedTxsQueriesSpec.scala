@@ -157,6 +157,39 @@ class ConflictedTxsQueriesSpec
 
       updates should contain theSameElementsAs expected
     }
+
+    "1 input comes from a conflicted transaction" in new Fixture {
+      val input1 = mainChainInput().copy(conflicted = Some(true))
+      val input2 = mainChainInput().copy(outputRefTxHash = Some(input1.txHash))
+
+      insertInputs(input1, input2)
+
+      val updates = exec(
+        ConflictedTxsQueries
+          .findTxsUsingConflictedTxs(TimeStamp.zero)
+      )
+
+      val expected = findConflictedTxsExpected(input2)
+
+      updates should contain theSameElementsAs expected
+    }
+
+    "2 inputs comes from a conflicted transaction" in new Fixture {
+      val input1 = mainChainInput().copy(conflicted = Some(true))
+      val input2 = mainChainInput().copy(outputRefTxHash = Some(input1.txHash))
+      val input3 = mainChainInput().copy(outputRefTxHash = Some(input1.txHash))
+
+      insertInputs(input1, input2, input3)
+
+      val updates = exec(
+        ConflictedTxsQueries
+          .findTxsUsingConflictedTxs(TimeStamp.zero)
+      )
+
+      val expected = findConflictedTxsExpected(input2, input3)
+
+      updates should contain theSameElementsAs expected
+    }
   }
 
   "Not find conflicted inputs" when {
@@ -180,7 +213,7 @@ class ConflictedTxsQueriesSpec
       val input2 =
         mainChainInput(input1.outputRefKey).copy(mainChain = false, conflicted = None)
 
-      insertInputs (input1, input2)
+      insertInputs(input1, input2)
 
       val updates = exec(
         ConflictedTxsQueries

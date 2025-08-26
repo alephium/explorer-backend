@@ -122,6 +122,42 @@ class ConflictedTxsServiceSpec
         )
       }
 
+      "1 main chain input comes from a conflicted txs" in new Fixture {
+        val (blocks, inputs) = setupMainChainBlocks(1)
+
+        val blockHash = blockHashGen.sample.get
+        val input =
+          mainChainInput().copy(blockHash = blockHash, outputRefKey = inputs(0).outputRefKey)
+        val block =
+          blockEntityGen(chainIndex).sample.get.copy(hash = blockHash, inputs = ArraySeq(input))
+
+        insertMainChainBlocks(ArraySeq(block))
+
+        implicit val blockFlowClient: BlockFlowClient =
+          new EmptyBlockFlowClient {
+            override def fetchBlock(fromGroup: GroupIndex, hash: BlockHash): Future[BlockEntity] = {
+              if (hash == blocks(0).hash) {
+                Future.successful(blocks(0).copy(conflictedTxs = Some(ArraySeq(inputs(0).txHash))))
+              } else if (hash == block.hash) {
+                Future.successful(block.copy(conflictedTxs = Some(ArraySeq(input.txHash))))
+              } else {
+                Future.failed(new Exception(s"Block not found: $hash"))
+              }
+            }
+          }
+
+        ConflictedTxsService
+          .handleConflictedTxs(ArraySeq(intraBlock))
+          .futureValue
+
+        assertConflictStates(
+          Seq(
+            (blocks(0).hash, true, Some(ArraySeq(inputs(0).txHash))),
+            (block.hash, true, Some(ArraySeq(input.txHash)))
+          )
+        )
+      }
+
       "a reorg happen, with one block getting out of main_chain" in new Fixture {
         val (blocks, inputs) = setupMainChainBlocks(2)
 

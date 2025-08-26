@@ -373,7 +373,7 @@ object Migrations extends StrictLogging {
             consensus = explorerConfig.consensus
           )
         ConflictedTxsService
-          .updateConflictedTxs(explorerConfig.consensus.danube.forkTimestamp)
+          .updateConflictedTxsFrom(explorerConfig.consensus.danube.forkTimestamp)
           .flatMap { _ =>
             logger.info("Conflicted transactions migration done")
             Future.unit

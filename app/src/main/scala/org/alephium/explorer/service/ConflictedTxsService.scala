@@ -13,6 +13,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.foldFutures
+import org.alephium.explorer.persistence.DBActionSR
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.BlockQueries
 import org.alephium.explorer.persistence.queries.ConflictedTxsQueries._
@@ -31,7 +32,7 @@ case object ConflictedTxsService extends StrictLogging {
   ): Future[Unit] = {
     if (blocksWithEvents.exists(_.isIntraGroup())) {
       for {
-        _ <- updateConflictedTxs(cache.getLastFinalizedTimestamp())
+        _ <- updateConflictedTxsFrom(cache.getLastFinalizedTimestamp())
         // TODO do we want to check reorged conflicted txs at every new intra group?
         _ <- checkAndUpdateReorgedConflictedTxs(cache.getLastFinalizedTimestamp())
       } yield ()
@@ -40,31 +41,59 @@ case object ConflictedTxsService extends StrictLogging {
     }
   }
 
-  def updateConflictedTxs(from: TimeStamp)(implicit
+  /*
+   * Finds all transactions that are potentially conflicted since the given timestamp.
+   * A conflict can occurs when:
+   *  - Two transactions are using the same output_ref as input (double spend)
+   *  - A transaction is using an output_ref coming from a conflicted trasaction.
+   */
+  def updateConflictedTxsFrom(from: TimeStamp)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient
   ): Future[Unit] = {
-    logger.debug("Checking conflicted txs")
-    dc.db.run(findConflictedTxs(from)).flatMap { conflictedTxs =>
+    logger.trace("Checking conflicted txs")
+    for {
+      _ <- updateConflictedTxsWith(findConflictedTxs(from))
+      _ <- updateConflictedTxsWith(findTxsUsingConflictedTxs(from))
+    } yield ()
+  }
+
+  def updateConflictedTxsWith(query: DBActionSR[(TransactionId, BlockHash, Option[Boolean])])(
+      implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient
+  ): Future[Unit] = {
+    dc.db.run(query).flatMap { conflictedTxs =>
       if (conflictedTxs.isEmpty) {
-        logger.debug("No conflicted txs found")
         Future.unit
       } else {
-        logger.debug("Conflicted txs found")
-        foldFutures(conflictedTxs) { case (txHash, blockHash, conflicted) =>
-          conflicted match {
-            case Some(true) =>
-              // Already flagged as conflicted, no need to update
-              logger.debug(s"Tx $txHash already flagged as conflicted in block $blockHash")
-              Future.unit
-            case _ =>
-              logger.debug(s"Checking tx $txHash in block $blockHash for conflicts")
-              fetchBlockAndUpdateConflict(blockHash, txHash)
-          }
-        }.map(_ => ())
+        updateConflictedTxs(conflictedTxs)
       }
+    }
+  }
 
+  def updateConflictedTxs(conflictedTxs: ArraySeq[(TransactionId, BlockHash, Option[Boolean])])(
+      implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient
+  ): Future[Unit] = {
+    if (conflictedTxs.isEmpty) {
+      Future.unit
+    } else {
+      foldFutures(conflictedTxs) { case (txHash, blockHash, conflicted) =>
+        conflicted match {
+          case Some(true) =>
+            // Already flagged as conflicted, no need to update
+            logger.trace(s"Tx $txHash already flagged as conflicted in block $blockHash")
+            Future.unit
+          case _ =>
+            logger.trace(s"Checking tx $txHash in block $blockHash for conflicts")
+            fetchBlockAndUpdateConflict(blockHash, txHash)
+        }
+      }.map(_ => ())
     }
   }
 
@@ -99,7 +128,7 @@ case object ConflictedTxsService extends StrictLogging {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Unit] = {
     logger.debug(
-      s"Updating conflict status for tx $txHash in block $blockHash to $conflicted"
+      s"Updating conflict status for tx ${txHash.toHexString} in block ${blockHash.toHexString} to $conflicted"
     )
     dc.db.run(
       (for {
@@ -116,13 +145,10 @@ case object ConflictedTxsService extends StrictLogging {
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient
   ): Future[Unit] = {
-    logger.debug("Checking and updating reorged conflicted txs")
     dc.db.run(findReorgedConflictedTxs(timestamp)).flatMap { txs =>
       if (txs.isEmpty) {
-        logger.debug("No reorged conflicted txs found")
         Future.unit
       } else {
-        logger.debug("Updated reorged conflicted txs found")
         foldFutures(txs) { case (txHash, blockHash) =>
           fetchBlockAndUpdateConflict(blockHash, txHash)
         }.map(_ => ())
