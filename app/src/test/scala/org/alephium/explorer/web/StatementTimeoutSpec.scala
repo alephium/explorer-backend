@@ -15,7 +15,7 @@ import org.alephium.explorer._
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.HttpFixture._
-import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
+import org.alephium.explorer.cache._
 import org.alephium.explorer.persistence.{DatabaseFixtureForAll, DBRunner}
 import org.alephium.explorer.service.{EmptyTokenService, EmptyTransactionService}
 import org.alephium.util.{TimeStamp, U256}
@@ -26,6 +26,8 @@ class StatementTimeoutSpec()
     with HttpServerFixture {
 
   implicit val blockCache: BlockCache = TestBlockCache()
+  implicit val addressTxCountCache: AddressTxCountCache =
+    TestAddressTxCountCache()
 
   val server =
     new AddressServer(

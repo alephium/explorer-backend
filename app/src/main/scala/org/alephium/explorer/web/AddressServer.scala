@@ -20,7 +20,7 @@ import org.alephium.api.model.{Address => ApiAddress, TimeInterval}
 import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.AddressesEndpoints
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.cache.BlockCache
+import org.alephium.explorer.cache._
 import org.alephium.explorer.config.Default.groupConfig
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service.{TokenService, TransactionService}
@@ -40,6 +40,7 @@ class AddressServer(
 )(implicit
     val executionContext: ExecutionContext,
     groupSetting: GroupSetting,
+    addressTxCountCache: AddressTxCountCache,
     blockCache: BlockCache,
     dc: DatabaseConfig[PostgresProfile]
 ) extends Server

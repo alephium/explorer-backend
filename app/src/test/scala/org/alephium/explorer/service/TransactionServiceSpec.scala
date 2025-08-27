@@ -431,6 +431,8 @@ class TransactionServiceSpec
   trait Fixture {
     implicit val blockCache: BlockCache             = TestBlockCache()
     implicit val transactionCache: TransactionCache = TestTransactionCache()
+    implicit val addressTxCountCache: AddressTxCountCache =
+      TestAddressTxCountCache()
 
     val groupIndex = GroupIndex.Zero
     val chainIndex = ChainIndex(groupIndex, groupIndex)

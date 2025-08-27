@@ -180,7 +180,7 @@ class DBBenchmark {
     val _ = Await.result(
       for {
         _ <- TransactionDao.getBalance(state.address, TimeStamp.zero)
-        _ <- TransactionDao.getNumberByAddress(state.address)
+        _ <- TransactionDao.getNumberByAddress(state.address, state.addressTxCountCache)
       } yield (),
       requestTimeout
     )
