@@ -11,6 +11,7 @@ import io.vertx.core.buffer.Buffer
 import org.scalacheck.Gen
 import slick.jdbc.PostgresProfile.api._
 
+import org.alephium.api.model.UnsignedTx
 import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
@@ -31,8 +32,9 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.util.AddressUtil
 import org.alephium.explorer.util.UtxoUtil._
 import org.alephium.protocol.ALPH
-import org.alephium.protocol.model.{ChainIndex, GroupIndex}
-import org.alephium.util.{Duration, TimeStamp}
+import org.alephium.protocol.model.{ChainIndex, GroupIndex, UnsignedTransaction}
+import org.alephium.serde._
+import org.alephium.util.{Duration, Hex, TimeStamp}
 
 @SuppressWarnings(
   Array(
@@ -79,6 +81,19 @@ class TransactionServiceSpec
         .flatMap(_.outputs.map(_.attoAlphAmount))
         .head
     fetchedAmout is amount
+  }
+
+  "convert unsigned tx bytes into a transaction" in new Fixture {
+    val raw =
+      "00040080004e20c1174876e8000137a44447cfff0c6c3951889e73ae1a3b0b1b2bb284cfb01e77cd910bf17cda8f3dcee82b000381818e63bd9e35a5489b52a430accefc608fd60aa2c7c0d1b393b5239aedf6b003c41bc16d674ec8000000622990ad7be0a3d163562c10fd7985ef40a3e41857e7a1583406a785efc9273a00000000000000000000c429a2241af62c00000000dd2354976f12629cfbc141e16f3592927f06c78bdc27d3f7a429602cc27d1200000000000000000000c6d3b40169eefd092ce00000bee85f379545a2ed9f6cceb331288842f378cf0f04012ad4ac8824aae7d6f80a00000000000000000000"
+
+    val hex = Hex.unsafe(raw)
+
+    val protocolUnsignedTx = deserialize[UnsignedTransaction](hex)
+    val unsignedTx         = UnsignedTx.from(protocolUnsignedTx)
+
+    println(s"${Console.RED}${Console.BOLD}*** unsignedTx ***${Console.RESET}${unsignedTx}")
+
   }
 
   "get all transactions for an address even when outputs don't contain that address" in new Fixture {

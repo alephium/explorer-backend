@@ -18,12 +18,13 @@ import org.alephium.util.{TimeStamp, U256}
 object OutputsQR {
 
   val selectFields: String =
-    "output_type, hint, key, amount, address, groupless_address, tokens, lock_time, message, spent_finalized, fixed_output"
+    "output_type, tx_hash, hint, key, amount, address, groupless_address, tokens, lock_time, message, spent_finalized, fixed_output"
 
   implicit val outputsQRGetResult: GetResult[OutputsQR] =
     (result: PositionedResult) =>
       OutputsQR(
         outputType = result.<<,
+        txHash = result.<<,
         hint = result.<<,
         key = result.<<,
         amount = result.<<,
@@ -40,6 +41,7 @@ object OutputsQR {
 /** Query result for [[org.alephium.explorer.persistence.queries.OutputQueries.getOutputsQuery]] */
 final case class OutputsQR(
     outputType: OutputEntity.OutputType,
+    txHash: TransactionId,
     hint: Int,
     key: Hash,
     amount: U256,

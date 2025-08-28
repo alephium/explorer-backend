@@ -337,6 +337,18 @@ object OutputQueries {
       DBIOAction.successful(ArraySeq.empty)
     }
 
+  def getOutputFromKey(hash: Hash)(implicit
+      ec: ExecutionContext
+  ): DBActionR[Option[OutputsQR]] =
+    sql"""
+        SELECT #${OutputsQR.selectFields}
+        FROM outputs
+        WHERE key = $hash
+        AND main_chain = true
+        ORDER BY output_order
+      """.asAS[OutputsQR]
+      .headOrNone
+
   def getOutputsQuery(txHash: TransactionId, blockHash: BlockHash): DBActionSR[OutputsQR] =
     sql"""
         SELECT #${OutputsQR.selectFields}

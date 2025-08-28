@@ -158,6 +158,18 @@ object EndpointExamples extends EndpointsExamples {
       coinbase = false
     )
 
+  private val unsignedTx: UnsignedTx =
+    UnsignedTx(
+      hash = txId,
+      version = version,
+      networkId = networkId,
+      scriptOpt = None,
+      gasAmount = org.alephium.protocol.model.minimalGas.value,
+      gasPrice = org.alephium.protocol.model.nonCoinbaseMinGasPrice.value,
+      inputs = ArraySeq(input),
+      outputs = ArraySeq(outputAsset)
+    )
+
   private val acceptedTransaction: AcceptedTransaction =
     AcceptedTransaction(
       hash = txId,
@@ -359,6 +371,9 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val transactionsExample: List[Example[ArraySeq[Transaction]]] =
     simpleExample(ArraySeq(transaction, transaction))
+
+  implicit val unsignedTxExample: List[Example[UnsignedTx]] =
+    simpleExample(unsignedTx)
 
   implicit val listOfBlocksExample: List[Example[ListBlocks]] =
     simpleExample(ListBlocks(2, ArraySeq(blockEntryLite, blockEntryLite)))

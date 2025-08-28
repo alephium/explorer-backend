@@ -21,12 +21,14 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.TransactionCache
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.{MempoolDao, TransactionDao}
-import org.alephium.explorer.persistence.queries.{InputQueries, TokenQueries}
+import org.alephium.explorer.persistence.queries.{InputQueries, OutputQueries, TokenQueries}
 import org.alephium.explorer.persistence.queries.TransactionQueries._
+import org.alephium.protocol.Hash
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.{TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
+import org.alephium.explorer.persistence.queries.result.{OutputsFromTxQR, OutputsQR}
 trait TransactionService {
 
   def getTransaction(transactionHash: TransactionId)(implicit
@@ -131,6 +133,15 @@ trait TransactionService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[(TimeStamp, BigInteger)]]
+
+  def getInputFromOutputRef(outputRef: Hash)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[OutputsQR]] =
+    run(
+      OutputQueries
+        .getOutputFromKey(outputRef)
+    )
 }
 
 object TransactionService extends TransactionService {

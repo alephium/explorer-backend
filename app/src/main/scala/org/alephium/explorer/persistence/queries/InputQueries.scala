@@ -19,6 +19,7 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
+import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{BlockHash, TransactionId}
 
 object InputQueries {
@@ -117,6 +118,16 @@ object InputQueries {
           AND block_hash = $blockHash
         ORDER BY input_order
     """.asAS[InputsQR]
+
+  def getInputFromOutputRefQuery(hash: Hash)(implicit
+      ec: ExecutionContext
+  ): DBActionR[Option[InputsQR]] =
+    sql"""
+        SELECT #${InputsQR.selectFields}
+        FROM inputs
+        WHERE tx_hash = $hash
+        AND main_chain = true
+    """.asAS[InputsQR].headOrNone
 
   def getMainChainInputs(ascendingOrder: Boolean): DBActionSR[InputEntity] =
     sql"""
