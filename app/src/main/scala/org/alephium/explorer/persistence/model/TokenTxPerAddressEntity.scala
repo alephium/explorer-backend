@@ -14,5 +14,6 @@ final case class TokenTxPerAddressEntity(
     timestamp: TimeStamp,
     txOrder: Int,
     mainChain: Boolean,
+    conflicted: Option[Boolean],
     token: TokenId
 )

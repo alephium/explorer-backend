@@ -15,12 +15,13 @@ object TransactionPerTokenSchema
     extends SchemaMainChain[TransactionPerTokenEntity]("transaction_per_token") {
 
   class TransactionPerTokens(tag: Tag) extends Table[TransactionPerTokenEntity](tag, name) {
-    def hash: Rep[TransactionId]  = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
-    def blockHash: Rep[BlockHash] = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
-    def token: Rep[TokenId]       = column[TokenId]("token")
-    def timestamp: Rep[TimeStamp] = column[TimeStamp]("block_timestamp")
-    def txOrder: Rep[Int]         = column[Int]("tx_order")
-    def mainChain: Rep[Boolean]   = column[Boolean]("main_chain")
+    def hash: Rep[TransactionId]         = column[TransactionId]("tx_hash", O.SqlType("BYTEA"))
+    def blockHash: Rep[BlockHash]        = column[BlockHash]("block_hash", O.SqlType("BYTEA"))
+    def token: Rep[TokenId]              = column[TokenId]("token")
+    def timestamp: Rep[TimeStamp]        = column[TimeStamp]("block_timestamp")
+    def txOrder: Rep[Int]                = column[Int]("tx_order")
+    def mainChain: Rep[Boolean]          = column[Boolean]("main_chain")
+    def conflicted: Rep[Option[Boolean]] = column[Option[Boolean]]("conflicted")
 
     def pk: PrimaryKey = primaryKey("transaction_per_token_pk", (hash, blockHash, token))
 
@@ -29,7 +30,7 @@ object TransactionPerTokenSchema
     def tokenIdx: Index     = index("transaction_per_token_token_idx", token)
 
     def * : ProvenShape[TransactionPerTokenEntity] =
-      (hash, blockHash, token, timestamp, txOrder, mainChain)
+      (hash, blockHash, token, timestamp, txOrder, mainChain, conflicted)
         .<>((TransactionPerTokenEntity.apply _).tupled, TransactionPerTokenEntity.unapply)
   }
 

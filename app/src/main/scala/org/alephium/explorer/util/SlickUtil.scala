@@ -162,6 +162,16 @@ object SlickUtil {
         ""
     }
   }
+
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
+  def notConflicted(table: String = ""): String = {
+    if (table.isEmpty) {
+      "(conflicted IS NULL OR conflicted = false)"
+    } else {
+      s"($table.conflicted IS NULL OR $table.conflicted = false)"
+    }
+  }
+
   def splitAddresses(
       addresses: ArraySeq[ApiAddress]
   ): (ArraySeq[ApiAddress], ArraySeq[ApiAddress]) = {

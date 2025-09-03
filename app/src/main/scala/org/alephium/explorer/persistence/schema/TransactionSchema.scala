@@ -28,9 +28,10 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
     def gasAmount: Rep[Int]            = column[Int]("gas_amount")
     def gasPrice: Rep[U256] =
       column[U256]("gas_price", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
-    def txOrder: Rep[Int]               = column[Int]("tx_order")
-    def mainChain: Rep[Boolean]         = column[Boolean]("main_chain")
-    def scriptExecutionOk: Rep[Boolean] = column[Boolean]("script_execution_ok")
+    def txOrder: Rep[Int]                = column[Int]("tx_order")
+    def mainChain: Rep[Boolean]          = column[Boolean]("main_chain")
+    def conflicted: Rep[Option[Boolean]] = column[Option[Boolean]]("conflicted")
+    def scriptExecutionOk: Rep[Boolean]  = column[Boolean]("script_execution_ok")
     def inputSignatures: Rep[Option[ArraySeq[ByteString]]] =
       column[Option[ArraySeq[ByteString]]]("input_signatures")
     def scriptSignatures: Rep[Option[ArraySeq[ByteString]]] =
@@ -58,6 +59,7 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
         gasPrice,
         txOrder,
         mainChain,
+        conflicted,
         scriptExecutionOk,
         inputSignatures,
         scriptSignatures,

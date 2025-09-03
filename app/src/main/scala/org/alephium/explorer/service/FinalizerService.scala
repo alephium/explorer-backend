@@ -41,6 +41,7 @@ case object FinalizerService extends StrictLogging {
   // scalastyle:on magic.number
 
   def start(interval: FiniteDuration)(implicit
+      blockFlowClient: BlockFlowClient,
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       scheduler: Scheduler
@@ -52,6 +53,7 @@ case object FinalizerService extends StrictLogging {
     )(syncOnce())
 
   def syncOnce()(implicit
+      blockFlowClient: BlockFlowClient,
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Unit] = {
@@ -60,12 +62,16 @@ case object FinalizerService extends StrictLogging {
   }
 
   def finalizeOutputs()(implicit
+      blockFlowClient: BlockFlowClient,
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Unit] =
     run(getStartEndTime()).flatMap {
       case Some((start, end)) =>
-        finalizeOutputsWith(start, end, rangeStep)
+        for {
+          _ <- finalizeOutputsWith(start, end, rangeStep)
+          _ <- finalizeConflictedTxs(start, end)
+        } yield ()
       case None =>
         Future.successful(())
     }
@@ -136,6 +142,7 @@ case object FinalizerService extends StrictLogging {
       SELECT hash, block_hash, block_timestamp
       FROM transactions
       WHERE main_chain = true
+      AND #${notConflicted()}
       AND block_timestamp >= $from
       AND block_timestamp <= $to;
       """.asAS[(TransactionId, BlockHash, TimeStamp)]
@@ -198,6 +205,7 @@ case object FinalizerService extends StrictLogging {
     SET spent_finalized = $txHash, spent_timestamp = $blockTimestamp
     WHERE key = $outputRefKey
     AND main_chain = true
+    AND #${notConflicted()}
   """
 
   /*
@@ -214,6 +222,7 @@ case object FinalizerService extends StrictLogging {
       SET spent_finalized = $txHash, spent_timestamp = $blockTimestamp
       WHERE key = $outputRefKey
       AND main_chain = true
+      AND #${notConflicted()}
     """
 
   def getFinalizedTxCountOrCount(upTo: TimeStamp)(implicit
@@ -252,9 +261,42 @@ case object FinalizerService extends StrictLogging {
     })
   }
 
+  /*
+   * We want to make sure our conflicted transactions are correct after finalization.
+   * For this we re-fetch the blocks of flagged conflicted transactions
+   * and update the conflict status in the database.
+   */
+  private def finalizeConflictedTxs(
+      from: TimeStamp,
+      to: TimeStamp
+  )(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient
+  ): Future[Unit] = {
+    dc.db
+      .run(sql"""
+      SELECT block_hash, hash FROM transactions
+      WHERE block_timestamp >= $from
+      AND block_timestamp <= $to
+      AND conflicted IS NOT NULL
+      AND main_chain = true
+      """.as[(BlockHash, TransactionId)])
+      .flatMap { txs =>
+        foldFutures(ArraySeq.from(txs)) { case (blockHash, txHash) =>
+          ConflictedTxsService
+            .fetchBlockAndUpdateConflict(blockHash, txHash)
+        }.map(_ => ())
+
+      }
+  }
+
   private def getMinInputsTs(implicit ec: ExecutionContext): DBActionR[Option[TimeStamp]] =
     sql"""
-      SELECT MIN(block_timestamp) FROM inputs WHERE main_chain = true
+      SELECT MIN(block_timestamp)
+      FROM inputs
+      WHERE main_chain = true
+      AND #${notConflicted()}
     """.asAS[TimeStamp].headOrNone
 
   private def getMaxInputsTs(implicit ec: ExecutionContext): DBActionR[Option[TimeStamp]] =
@@ -269,6 +311,7 @@ case object FinalizerService extends StrictLogging {
         FROM transactions
         WHERE block_timestamp < $time
         AND main_chain = true
+        AND #${notConflicted()}
         """.as[Int].head
   }
 

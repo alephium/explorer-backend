@@ -146,6 +146,7 @@ object TransactionQueries extends StrictLogging {
       SELECT COUNT(#${distinct(address)} tx_hash)
       FROM transaction_per_addresses
       WHERE main_chain = true
+      AND #${notConflicted()}
       AND #${addressColumn(address)} = $address
     """
       .asAS[Int]
@@ -160,6 +161,7 @@ object TransactionQueries extends StrictLogging {
       SELECT COUNT(#${distinct(address)} tx_hash)
       FROM transaction_per_addresses
       WHERE main_chain = true
+      AND #${notConflicted()}
       AND #${addressColumn(address)} = $address
       AND block_timestamp > $from
       #${to.map(ts => s"AND block_timestamp <= ${ts.millis}").getOrElse("")}
@@ -189,6 +191,7 @@ object TransactionQueries extends StrictLogging {
       SELECT #${distinct(address)} #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
       WHERE main_chain = true
+      AND #${notConflicted()}
       AND #${addressColumn(address)} = $address
       ORDER BY block_timestamp DESC, tx_order
     """
@@ -202,6 +205,7 @@ object TransactionQueries extends StrictLogging {
         FROM transactions
         WHERE block_timestamp > $time
         AND main_chain = true
+        AND #${notConflicted()}
         """.as[Int].head
 
   /** Get transactions for a list of addresses
@@ -251,6 +255,7 @@ object TransactionQueries extends StrictLogging {
            SELECT ${TxByAddressQR.selectFields}
            FROM transaction_per_addresses
            WHERE main_chain = true
+           AND ${notConflicted()}
              AND $addressesCondition
              ${fromTs.map(ts => s"AND block_timestamp >= ${ts.millis}").getOrElse("")}
              ${toTs.map(ts => s"AND block_timestamp < ${ts.millis}").getOrElse("")}
@@ -296,6 +301,7 @@ object TransactionQueries extends StrictLogging {
       SELECT #${distinct(address)} #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
       WHERE main_chain = true
+        AND #${notConflicted()}
         AND #${addressColumn(address)} = $address
         AND block_timestamp BETWEEN $fromTime AND $toTime
       ORDER BY block_timestamp DESC, tx_order
@@ -355,6 +361,7 @@ object TransactionQueries extends StrictLogging {
       SELECT #${TxByAddressQR.selectFields}
       FROM transaction_per_addresses
       WHERE main_chain = true AND #${addressColumn(address)} = $address
+      AND #${notConflicted()}
       ORDER BY block_timestamp DESC, tx_order
       LIMIT 1
     """
@@ -387,6 +394,7 @@ object TransactionQueries extends StrictLogging {
       FROM transaction_per_addresses
       WHERE #${addressColumn(address)} = $address
       AND main_chain = true
+      AND #${notConflicted()}
       AND block_timestamp >= $from
       AND block_timestamp < $to
       ORDER BY 1 OFFSET ($threshold) ROWS FETCH NEXT (1) ROWS ONLY;
@@ -403,6 +411,7 @@ object TransactionQueries extends StrictLogging {
       FROM transaction_per_addresses
       WHERE #${addressColumn(address)} = $address
       AND main_chain = true
+      AND #${notConflicted()}
       AND block_timestamp >= $from
       AND block_timestamp < $to
       ORDER BY block_timestamp DESC
@@ -444,6 +453,7 @@ object TransactionQueries extends StrictLogging {
       FROM outputs
       WHERE #${addressColumn(address)} = $address
       AND main_chain = true
+      AND #${notConflicted()}
       AND block_timestamp >= ${ALPH.GenesisTimestamp}
       AND block_timestamp <= $to
       GROUP BY ts
@@ -473,6 +483,7 @@ object TransactionQueries extends StrictLogging {
         "output_ref_groupless_address"
       )}= $address
       AND main_chain = true
+      AND #${notConflicted()}
       AND block_timestamp >= ${ALPH.GenesisTimestamp}
       AND block_timestamp <= $to
       GROUP BY ts

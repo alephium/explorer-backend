@@ -431,6 +431,7 @@ class TransactionServiceSpec
   trait Fixture {
     implicit val blockCache: BlockCache             = TestBlockCache()
     implicit val transactionCache: TransactionCache = TestTransactionCache()
+    implicit val blockflowClient: BlockFlowClient   = new EmptyBlockFlowClient {}
     implicit val addressTxCountCache: AddressTxCountCache =
       TestAddressTxCountCache()
 

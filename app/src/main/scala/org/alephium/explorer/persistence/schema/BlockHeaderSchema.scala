@@ -16,7 +16,7 @@ import org.alephium.explorer.api.model.{GhostUncle, Height}
 import org.alephium.explorer.persistence.model.BlockHeader
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.Hash
-import org.alephium.protocol.model.{BlockHash, GroupIndex}
+import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.TimeStamp
 
 object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
@@ -44,6 +44,8 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
     def deps: Rep[ArraySeq[BlockHash]] = column[ArraySeq[BlockHash]]("deps")
     def ghostUncles: Rep[Option[ArraySeq[GhostUncle]]] =
       column[Option[ArraySeq[GhostUncle]]]("ghost_uncles")
+    def conflictedTxs: Rep[Option[ArraySeq[TransactionId]]] =
+      column[Option[ArraySeq[TransactionId]]]("conflicted_txs")
 
     def timestampIdx: Index = index("blocks_timestamp_idx", timestamp)
     def heightIdx: Index    = index("blocks_height_idx", height)
@@ -65,7 +67,8 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
         hashrate,
         parent,
         deps,
-        ghostUncles
+        ghostUncles,
+        conflictedTxs
       )
         .<>((BlockHeader.apply _).tupled, BlockHeader.unapply)
   }

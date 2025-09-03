@@ -362,6 +362,7 @@ object OutputQueries {
         groupless_address,
         tokens,
         main_chain,
+        conflicted,
         lock_time,
         message,
         output_order,
@@ -372,6 +373,7 @@ object OutputQueries {
         fixed_output
       FROM outputs
       WHERE main_chain = true
+      AND #${notConflicted()}
       ORDER BY block_timestamp #${if (ascendingOrder) "" else "DESC"}
       """.asASE[OutputEntity](outputGetResult)
   }
@@ -418,6 +420,7 @@ object OutputQueries {
       SELECT tx_hash
       FROM outputs
       WHERE main_chain = true
+        AND #${notConflicted()}
         AND key = $key
     """
 
@@ -445,11 +448,13 @@ object OutputQueries {
                LEFT JOIN inputs
                          ON outputs.key = inputs.output_ref_key
                              AND inputs.main_chain = true
+                             AND #${notConflicted("inputs")}
                              AND inputs.#$inputAddressColumn = $address
                              AND inputs.block_timestamp > ${latestFinalizedTimestamp.millis}
       WHERE outputs.spent_finalized IS NULL
         AND outputs.#$ouptupAddressColumn = $address
         AND outputs.main_chain = true
+        AND #${notConflicted("outputs")}
         AND inputs.block_hash IS NULL
       """
       .asAS[(Option[U256], Option[U256])]

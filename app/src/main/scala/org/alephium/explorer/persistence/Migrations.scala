@@ -18,6 +18,7 @@ import org.alephium.explorer.persistence.model.AppState.MigrationVersion
 import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
+import org.alephium.explorer.service._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.model.{Address, BlockHash}
 import org.alephium.protocol.vm.LockupScript
@@ -27,7 +28,8 @@ import org.alephium.util.discard
 @SuppressWarnings(Array("org.wartremover.warts.AnyVal"))
 object Migrations extends StrictLogging {
 
-  val latestVersion: MigrationVersion = MigrationVersion(10)
+  // scalastyle:off magic.number
+  val latestVersion: MigrationVersion = MigrationVersion(11)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     // We retrigger the download of fungible and non-fungible tokens' metadata that have sub-category
@@ -204,8 +206,22 @@ object Migrations extends StrictLogging {
     } yield {
       ()
     }
-
   }
+
+  def migration11(implicit ec: ExecutionContext): DBActionAll[Unit] = {
+    sqlu"""
+      ALTER TABLE transactions ADD COLUMN IF NOT EXISTS conflicted BOOLEAN NULL;
+      ALTER TABLE outputs ADD COLUMN IF NOT EXISTS conflicted BOOLEAN NULL;
+      ALTER TABLE inputs ADD COLUMN IF NOT EXISTS conflicted BOOLEAN NULL;
+      ALTER TABLE transaction_per_addresses ADD COLUMN IF NOT EXISTS conflicted BOOLEAN NULL;
+      ALTER TABLE transaction_per_token ADD COLUMN IF NOT EXISTS conflicted BOOLEAN NULL;
+      ALTER TABLE token_tx_per_addresses ADD COLUMN IF NOT EXISTS conflicted BOOLEAN NULL;
+      ALTER TABLE token_outputs ADD COLUMN IF NOT EXISTS conflicted BOOLEAN NULL;
+
+      ALTER TABLE block_headers ADD COLUMN IF NOT EXISTS conflicted_txs BYTEA NULL;
+    """.map(_ => ())
+  }
+
   private def migrations(implicit
       explorerConfig: ExplorerConfig,
       ec: ExecutionContext
@@ -219,7 +235,8 @@ object Migrations extends StrictLogging {
     migration7,
     migration8,
     migration9,
-    migration10
+    migration10,
+    migration11
   )
 
   def backgroundCoinbaseMigration()(implicit
@@ -326,6 +343,7 @@ object Migrations extends StrictLogging {
       versionOpt: Option[MigrationVersion]
   )(implicit
       ec: ExecutionContext,
+      explorerConfig: ExplorerConfig,
       databaseConfig: DatabaseConfig[PostgresProfile]
   ): Future[Unit] = {
     (versionOpt match {
@@ -335,20 +353,31 @@ object Migrations extends StrictLogging {
         Future.unit
       case Some(MigrationVersion(current)) if current > latestVersion.version =>
         throw new Exception("Incompatible migration versions, please reset your database")
-      case Some(MigrationVersion(current)) =>
-        if (current <= 5) {
-          logger.info(s"Background migrations needed, but will be done in a future release")
-          /*
-           * The coinbase migration is heavy and we had some performance issues due to the increase of users.
-           * First, we need to optimize some queries in the syncing process, and then we can re-enable this migration.
-           * For now, we will just update the version and perform the migration in the next release.
-           * We can't just remove it and revert to the previous version because some users might have already completed the migration.
-           */
-          // backgroundCoinbaseMigration()
-          Future.unit
-        } else {
-          Future.unit
-        }
+      case Some(MigrationVersion(_)) =>
+        /*
+         * The coinbase migration is heavy and we had some performance issues due to the increase of users.
+         * First, we need to optimize some queries in the syncing process, and then we can re-enable this migration.
+         * For now, we will just update the version and perform the migration in the next release.
+         * We can't just remove it and revert to the previous version because some users might have already completed the migration.
+         */
+        // logger.info(s"Background migrations needed, but will be done in a future release")
+        // backgroundCoinbaseMigration()
+
+        logger.info("Updating conflicted transactions")
+        implicit lazy val blockFlowClient: BlockFlowClient =
+          BlockFlowClient(
+            uri = explorerConfig.blockFlowUri,
+            groupNum = explorerConfig.groupNum,
+            maybeApiKey = explorerConfig.maybeBlockFlowApiKey,
+            directCliqueAccess = explorerConfig.directCliqueAccess,
+            consensus = explorerConfig.consensus
+          )
+        ConflictedTxsService
+          .updateConflictedTxsFrom(explorerConfig.consensus.danube.forkTimestamp)
+          .flatMap { _ =>
+            logger.info("Conflicted transactions migration done")
+            Future.unit
+          }
     }).flatMap(_ => DBRunner.run(updateVersion(Some(latestVersion))))
   }
 

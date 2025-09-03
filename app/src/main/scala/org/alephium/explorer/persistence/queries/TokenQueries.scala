@@ -48,10 +48,12 @@ object TokenQueries extends StrictLogging {
                LEFT JOIN inputs
                          ON token_outputs.key = inputs.output_ref_key
                              AND inputs.main_chain = true
+                             AND #${notConflicted("inputs")}
       WHERE token_outputs.spent_finalized IS NULL
         AND token_outputs.#${addressColumn(address)} = $address
         AND token_outputs.token = $token
         AND token_outputs.main_chain = true
+        AND #${notConflicted("token_outputs")}
         AND inputs.block_hash IS NULL;
     """.asAS[(Option[U256], Option[U256])].exactlyOne
 
@@ -108,6 +110,7 @@ object TokenQueries extends StrictLogging {
       SELECT #${TxByTokenQR.selectFields}
       FROM transaction_per_token
       WHERE main_chain = true
+      AND #${notConflicted()}
       AND token = $token
       ORDER BY block_timestamp DESC, tx_order
     """
@@ -124,6 +127,7 @@ object TokenQueries extends StrictLogging {
       FROM token_tx_per_addresses
       WHERE #${addressColumn(address)} = $address
       AND main_chain = true
+      AND #${notConflicted()}
     """
       .paginate(pagination)
       .asAS[TokenId]
@@ -150,6 +154,7 @@ object TokenQueries extends StrictLogging {
       SELECT #${distinct(address)} #${TxByTokenQR.selectFields}
       FROM token_tx_per_addresses
       WHERE main_chain = true
+      AND #${notConflicted()}
       AND #${addressColumn(address)} = $address
       AND token = $token
       ORDER BY block_timestamp DESC, tx_order
@@ -183,9 +188,11 @@ object TokenQueries extends StrictLogging {
                LEFT JOIN inputs
                          ON token_outputs.key = inputs.output_ref_key
                              AND inputs.main_chain = true
+                             AND #${notConflicted("inputs")}
       WHERE token_outputs.spent_finalized IS NULL
         AND token_outputs.#${addressColumn(address)} = $address
         AND token_outputs.main_chain = true
+        AND #${notConflicted("token_outputs")}
         AND inputs.block_hash IS NULL
       GROUP BY token_outputs.token
     """

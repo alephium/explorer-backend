@@ -70,7 +70,8 @@ class ListBlocksReadState(
       hashrate = BigInteger.ONE,
       parent = Some(BlockHash.generate),
       deps = ArraySeq.from(0 to 4).map(_ => BlockHash.generate),
-      ghostUncles = None
+      ghostUncles = None,
+      conflictedTxs = None
     )
 
   private def generateTransactions(header: BlockHeader): Seq[TransactionEntity] =
@@ -88,6 +89,7 @@ class ListBlocksReadState(
         gasPrice = U256.unsafe(0),
         order = 0,
         mainChain = header.mainChain,
+        conflicted = None,
         scriptExecutionOk = Random.nextBoolean(),
         inputSignatures = None,
         scriptSignatures = None,

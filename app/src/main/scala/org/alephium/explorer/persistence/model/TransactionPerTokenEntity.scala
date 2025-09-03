@@ -12,5 +12,6 @@ final case class TransactionPerTokenEntity(
     token: TokenId,
     timestamp: TimeStamp,
     txOrder: Int,
-    mainChain: Boolean
+    mainChain: Boolean,
+    conflicted: Option[Boolean]
 )

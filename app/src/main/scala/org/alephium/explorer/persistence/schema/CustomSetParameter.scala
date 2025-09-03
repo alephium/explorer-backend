@@ -312,4 +312,21 @@ object CustomSetParameter {
         // scalastyle:on null
       }
   }
+
+  implicit object OptionTransactionIdsSetParameter
+      extends SetParameter[Option[ArraySeq[TransactionId]]] {
+    override def apply(
+        option: Option[ArraySeq[TransactionId]],
+        params: PositionedParameters
+    ): Unit =
+      option match {
+        case Some(transactionIds) =>
+          params setBytes serialize(transactionIds).toArray
+
+        case None =>
+          // scalastyle:off null
+          params setBytes null
+        // scalastyle:on null
+      }
+  }
 }

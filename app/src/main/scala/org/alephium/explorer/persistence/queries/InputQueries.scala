@@ -128,6 +128,7 @@ object InputQueries {
           output_ref_key,
           unlock_script,
           main_chain,
+          conflicted,
           input_order,
           tx_order,
           output_ref_tx_hash,
@@ -138,6 +139,7 @@ object InputQueries {
           contract_input
         FROM inputs
         WHERE main_chain = true
+        AND #${notConflicted()}
         ORDER BY block_timestamp #${if (ascendingOrder) "" else "DESC"}
     """.asASE[InputEntity](inputGetResult)
 

@@ -32,6 +32,7 @@ object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outpu
     def grouplessAddress: Rep[Option[GrouplessAddress]] =
       column[Option[GrouplessAddress]]("groupless_address")
     def mainChain: Rep[Boolean]          = column[Boolean]("main_chain")
+    def conflicted: Rep[Option[Boolean]] = column[Option[Boolean]]("conflicted")
     def lockTime: Rep[Option[TimeStamp]] = column[Option[TimeStamp]]("lock_time")
     def message: Rep[Option[ByteString]] = column[Option[ByteString]]("message")
     def outputOrder: Rep[Int]            = column[Int]("output_order")
@@ -63,6 +64,7 @@ object TokenOutputSchema extends SchemaMainChain[TokenOutputEntity]("token_outpu
         address,
         grouplessAddress,
         mainChain,
+        conflicted,
         lockTime,
         message,
         outputOrder,

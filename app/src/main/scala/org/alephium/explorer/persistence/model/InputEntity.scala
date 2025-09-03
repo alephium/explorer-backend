@@ -43,6 +43,7 @@ final case class InputEntity(
     outputRefKey: Hash,
     unlockScript: Option[ByteString],
     mainChain: Boolean,
+    conflicted: Option[Boolean],
     inputOrder: Int,
     txOrder: Int,
     outputRefTxHash: Option[TransactionId],

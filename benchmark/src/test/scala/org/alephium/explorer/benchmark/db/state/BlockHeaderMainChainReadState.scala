@@ -49,7 +49,8 @@ class BlockHeaderMainChainReadState(
       hashrate = BigInteger.ONE,
       parent = Some(BlockHash.generate),
       deps = ArraySeq.from(0 to 4).map(_ => BlockHash.generate),
-      ghostUncles = None
+      ghostUncles = None,
+      conflictedTxs = None
     )
 
   def persist(data: Array[BlockHeader]): Unit = {

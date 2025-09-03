@@ -14,5 +14,6 @@ final case class TransactionPerAddressEntity(
     timestamp: TimeStamp,
     txOrder: Int,
     mainChain: Boolean,
+    conflicted: Option[Boolean],
     coinbase: Boolean
 )

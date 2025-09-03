@@ -23,7 +23,7 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
-import org.alephium.protocol.model.{BlockHash, GroupIndex}
+import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
 import org.alephium.util.TimeStamp
 
 object BlockQueries extends StrictLogging {
@@ -252,6 +252,17 @@ object BlockQueries extends StrictLogging {
       ).asUpdate
     }
 
+  def updateConflictedTxs(
+      blockHash: BlockHash,
+      conflictedTxs: Option[ArraySeq[TransactionId]]
+  ): DBActionRWT[Int] = {
+    sqlu"""
+         UPDATE block_headers
+         SET conflicted_txs = $conflictedTxs
+         WHERE hash = $blockHash
+         """
+  }
+
   def getLatestBlock(chainFrom: GroupIndex, chainTo: GroupIndex): DBActionSR[LatestBlock] = {
     sql"""
          SELECT *
@@ -263,9 +274,9 @@ object BlockQueries extends StrictLogging {
   }
 
   /** Inserts block_headers or ignore them if there is a primary key conflict */
-  // scalastyle:off magic.number
+  // scalastyle:off magic.number method.length
   def insertBlockHeaders(blocks: Iterable[BlockHeader]): DBActionW[Int] =
-    QuerySplitter.splitUpdates(rows = blocks, columnsPerRow = 16) { (blocks, placeholder) =>
+    QuerySplitter.splitUpdates(rows = blocks, columnsPerRow = 17) { (blocks, placeholder) =>
       val query =
         s"""
            INSERT INTO $block_headers ("hash",
@@ -283,7 +294,8 @@ object BlockQueries extends StrictLogging {
                                        "hashrate",
                                        "parent",
                                        "deps",
-                                       "ghost_uncles")
+                                       "ghost_uncles",
+                                       "conflicted_txs")
            VALUES $placeholder
            ON CONFLICT ON CONSTRAINT block_headers_pkey
                DO NOTHING
@@ -308,6 +320,7 @@ object BlockQueries extends StrictLogging {
             params >> block.parent
             params >> block.deps
             params >> block.ghostUncles
+            params >> block.conflictedTxs
           }
 
       SQLActionBuilder(

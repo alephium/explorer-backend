@@ -65,6 +65,7 @@ final case class OutputEntity(
     grouplessAddress: Option[GrouplessAddress],
     tokens: Option[ArraySeq[Token]], // None if empty list
     mainChain: Boolean,
+    conflicted: Option[Boolean],
     lockTime: Option[TimeStamp],
     message: Option[ByteString],
     outputOrder: Int,

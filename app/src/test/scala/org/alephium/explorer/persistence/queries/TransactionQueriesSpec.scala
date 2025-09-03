@@ -60,7 +60,7 @@ class TransactionQueriesSpec
 
   }
 
-  "get balance should only return unpent outputs" in new Fixture {
+  "get balance should only return unspent outputs" in new Fixture {
 
     val output1 = output(address, ALPH.alph(1), None)
     val output2 = output(address, ALPH.alph(2), None)

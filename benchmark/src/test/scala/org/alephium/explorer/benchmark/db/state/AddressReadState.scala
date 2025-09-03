@@ -88,6 +88,7 @@ class AddressReadState(val db: DBExecutor)
       outputRefKey = key,
       unlockScript = None,
       mainChain = true,
+      conflicted = None,
       inputOrder = 0,
       txOrder = 0,
       None,
@@ -116,6 +117,7 @@ class AddressReadState(val db: DBExecutor)
       gasPrice = U256.unsafe(0),
       order = 0,
       mainChain = true,
+      conflicted = None,
       scriptExecutionOk = Random.nextBoolean(),
       inputSignatures = None,
       scriptSignatures = None,
@@ -141,6 +143,7 @@ class AddressReadState(val db: DBExecutor)
       grouplessAddress = AddressUtil.convertToGrouplessAddress(address0.toProtocol()),
       tokens = None,
       mainChain = true,
+      conflicted = None,
       lockTime = None,
       message = None,
       outputOrder = 0,
@@ -191,7 +194,8 @@ class AddressReadState(val db: DBExecutor)
         txsHash = Blake2b.generate,
         target = ByteString.emptyByteString,
         hashrate = BigInteger.ONE,
-        ghostUncles = ArraySeq.empty
+        ghostUncles = ArraySeq.empty,
+        conflictedTxs = None
       )
     })
 
