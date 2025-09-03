@@ -309,6 +309,18 @@ object OutputQueries {
     }
   }
 
+  def getOutputFromKey(
+      key: Hash
+  ): DBActionR[Option[OutputsFromTxQR]] = {
+    sql"""
+     SELECT #${OutputsFromTxQR.selectFields}
+     FROM outputs
+     WHERE main_chain = true
+     AND #${notConflicted()}
+     AND key = $key
+     """.as[OutputsFromTxQR].headOption
+  }
+
   def outputsFromTxs(
       hashes: ArraySeq[(TransactionId, BlockHash)]
   ): DBActionR[ArraySeq[OutputsFromTxQR]] =
