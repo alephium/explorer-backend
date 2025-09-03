@@ -432,6 +432,8 @@ class TransactionServiceSpec
     implicit val blockCache: BlockCache             = TestBlockCache()
     implicit val transactionCache: TransactionCache = TestTransactionCache()
     implicit val blockflowClient: BlockFlowClient   = new EmptyBlockFlowClient {}
+    implicit val addressTxCountCache: AddressTxCountCache =
+      TestAddressTxCountCache()
 
     val groupIndex = GroupIndex.Zero
     val chainIndex = ChainIndex(groupIndex, groupIndex)

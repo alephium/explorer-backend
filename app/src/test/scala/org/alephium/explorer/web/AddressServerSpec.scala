@@ -27,7 +27,7 @@ import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.cache.{BlockCache, TestBlockCache}
+import org.alephium.explorer.cache._
 import org.alephium.explorer.config.Default.groupConfig
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.service.{
@@ -176,6 +176,8 @@ class AddressServerSpec()
   }
 
   implicit val blockCache: BlockCache = TestBlockCache()
+  implicit val addressTxCountCache: AddressTxCountCache =
+    TestAddressTxCountCache()
 
   val server =
     new AddressServer(

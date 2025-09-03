@@ -7,18 +7,15 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import slick.basic.DatabaseConfig
-import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile
-import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence._
+import org.alephium.explorer.cache.AddressTxCountCache
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.model.{AddressTotalTransactionsEntity, AppState}
 import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.persistence.queries.TransactionQueries._
-import org.alephium.explorer.persistence.schema.AddressTotalTransactionSchema
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.protocol.ALPH
 import org.alephium.protocol.config.GroupConfig
@@ -70,39 +67,45 @@ object TransactionDao {
     }))
 
   def getNumberByAddress(
-      address: ApiAddress
+      address: ApiAddress,
+      cache: AddressTxCountCache
   )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Int] = {
-    run(
-      for {
-        lastFinalizedTime <- AppStateQueries
+    for {
+      lastFinalizedTime <- run(
+        AppStateQueries
           .get(AppState.LastFinalizedInputTime)
           .map(_.map(_.time).getOrElse(TimeStamp.zero))
-        cacheValue <- getAddressTotalTransaction(address)
-        lastCacheUpdate = cacheValue.map(_.lastUpdate).getOrElse(ALPH.GenesisTimestamp)
-        newFinalizedCount <- countAddressTransactionsTimeRanged(
+      )
+      cacheValue <- cache.getAddressTotalTransaction(address)
+      lastCacheUpdate = cacheValue.map(_.lastUpdate).getOrElse(ALPH.GenesisTimestamp)
+      newFinalizedCount <- run(
+        countAddressTransactionsTimeRanged(
           address,
           lastCacheUpdate,
           Some(lastFinalizedTime)
         )
-        _ <- updateAddressTotalTransaction(
-          address,
-          cacheValue,
-          newFinalizedCount,
-          lastFinalizedTime
-        )
-        nonFinalizedCount <- countAddressTransactionsTimeRanged(
+      )
+      _ <- updateAddressTotalTransaction(
+        address,
+        cacheValue,
+        newFinalizedCount,
+        lastFinalizedTime,
+        cache
+      )
+      nonFinalizedCount <- run(
+        countAddressTransactionsTimeRanged(
           address,
           lastFinalizedTime,
           None
         )
-      } yield {
-        val cacheCount = cacheValue.map(_.total).getOrElse(0)
-        cacheCount + newFinalizedCount + nonFinalizedCount
-      }
-    )
+      )
+    } yield {
+      val cacheCount = cacheValue.map(_.total).getOrElse(0)
+      cacheCount + newFinalizedCount + nonFinalizedCount
+    }
   }
 
   /*
@@ -116,8 +119,9 @@ object TransactionDao {
       address: ApiAddress,
       cacheValue: Option[AddressTotalTransactionsEntity],
       newFinalizedCount: Int,
-      lastFinalizedTime: TimeStamp
-  ): DBActionW[Int] = {
+      lastFinalizedTime: TimeStamp,
+      cache: AddressTxCountCache
+  ): Future[Unit] = {
     cacheValue match {
       case Some(value) =>
         if (newFinalizedCount > 0 || value.lastUpdate < lastFinalizedTime) {
@@ -130,11 +134,10 @@ object TransactionDao {
             total,
             lastFinalizedTime
           )
-          AddressTotalTransactionSchema.table
-            .insertOrUpdate(addressTotal)
+          cache.updateAddressTotalTransaction(addressTotal)
         } else {
           // No need to update, the cache is already up to date
-          DBIOAction.successful(0)
+          Future.successful(())
         }
       case None =>
         // No cache value, first time we call that address, we need to create a new entry
@@ -146,10 +149,9 @@ object TransactionDao {
             newFinalizedCount,
             lastFinalizedTime
           )
-          AddressTotalTransactionSchema.table
-            .insertOrUpdate(addressTotal)
+          cache.updateAddressTotalTransaction(addressTotal)
         } else {
-          DBIOAction.successful(0)
+          Future.successful(())
         }
     }
   }

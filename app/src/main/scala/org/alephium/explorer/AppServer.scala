@@ -10,7 +10,7 @@ import io.vertx.ext.web._
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.cache.{BlockCache, MetricCache, TransactionCache}
+import org.alephium.explorer.cache._
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.service._
 import org.alephium.explorer.web._
@@ -31,6 +31,7 @@ object AppServer {
       blockCache: BlockCache,
       metricCache: MetricCache,
       transactionCache: TransactionCache,
+      addressTxCountCache: AddressTxCountCache,
       groupSetting: GroupSetting
   ): ArraySeq[Router => Route] = {
 
