@@ -21,6 +21,7 @@ import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.benchmark.db.{DataGenerator, DBConnectionPool, DBExecutor}
 import org.alephium.explorer.benchmark.db.BenchmarkSettings._
+import org.alephium.explorer.cache._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.InputUpdateQueries
@@ -51,6 +52,9 @@ class AddressReadState(val db: DBExecutor)
   implicit val databaseConfig: DatabaseConfig[PostgresProfile] = db.config
 
   import config.profile.api._
+
+  val addressTxCountCache: AddressTxCountCache =
+    TestAddressTxCountCache()
 
   val address: ApiAddress = DataGenerator.genAddress()
 

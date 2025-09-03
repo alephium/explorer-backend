@@ -18,7 +18,7 @@ import slick.jdbc.PostgresProfile
 
 import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.cache.TransactionCache
+import org.alephium.explorer.cache._
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.{MempoolDao, TransactionDao}
 import org.alephium.explorer.persistence.queries.{InputQueries, TokenQueries}
@@ -75,6 +75,7 @@ trait TransactionService {
   def getTransactionsNumberByAddress(
       address: ApiAddress
   )(implicit
+      cache: AddressTxCountCache,
       groupConfig: GroupConfig,
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
@@ -191,11 +192,12 @@ object TransactionService extends TransactionService {
   def getTransactionsNumberByAddress(
       address: ApiAddress
   )(implicit
+      cache: AddressTxCountCache,
       groupConfig: GroupConfig,
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Int] =
-    TransactionDao.getNumberByAddress(address)
+    TransactionDao.getNumberByAddress(address, cache)
 
   def getBalance(
       address: ApiAddress,

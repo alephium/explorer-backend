@@ -10,7 +10,7 @@ import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
-import org.alephium.explorer.cache.{BlockCache, MetricCache, TransactionCache}
+import org.alephium.explorer.cache._
 import org.alephium.explorer.config.{BootMode, ExplorerConfig}
 import org.alephium.explorer.persistence.Database
 import org.alephium.explorer.service._
@@ -39,6 +39,8 @@ sealed trait ExplorerState extends Service with StrictLogging {
       config.cacheBlockTimesReloadPeriod,
       config.cacheLatestBlocksReloadPeriod
     )(groupSettings, executionContext, database.databaseConfig)
+
+  val addressTxCountCache: AddressTxCountCache
 
   implicit lazy val blockFlowClient: BlockFlowClient =
     BlockFlowClient(
@@ -87,6 +89,7 @@ sealed trait ExplorerStateRead extends ExplorerState {
         blockCache,
         metricCache,
         transactionCache,
+        addressTxCountCache,
         groupSettings
       )
   lazy val httpServer: ExplorerHttpServer =
@@ -99,6 +102,9 @@ sealed trait ExplorerStateRead extends ExplorerState {
 }
 
 sealed trait ExplorerStateWrite extends ExplorerState {
+
+  val addressTxCountCache: AddressTxCountCache =
+    DBAddressTxCountCache(database)
 
   // See issue #356
   implicit private val scheduler: Scheduler = Scheduler("SYNC_SERVICES")
@@ -128,12 +134,16 @@ object ExplorerState {
       val executionContext: ExecutionContext
   ) extends ExplorerStateRead {
 
+    val addressTxCountCache: AddressTxCountCache =
+      InMemoryAddressTxCountCache(database)
+
     override def subServices: ArraySeq[Service] =
       ArraySeq(
         httpServer,
         marketService,
         metricCache,
         transactionCache,
+        addressTxCountCache,
         database
       )
   }
@@ -152,6 +162,7 @@ object ExplorerState {
         marketService,
         metricCache,
         transactionCache,
+        addressTxCountCache,
         database,
         blockFlowClient
       )
