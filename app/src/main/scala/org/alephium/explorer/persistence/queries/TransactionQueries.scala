@@ -424,14 +424,75 @@ object TransactionQueries extends StrictLogging {
     if (txHashesTs.nonEmpty) {
       val hashes = txHashesTs.map(_.hashes())
       for {
-        inputs  <- inputsFromTxs(hashes)
-        outputs <- outputsFromTxs(hashes)
-        gases   <- infoFromTxs(hashes)
+        inputs          <- inputsFromTxs(hashes)
+        validatedInputs <- validateInputsFromTxs(inputs)
+        outputs         <- outputsFromTxs(hashes)
+        gases           <- infoFromTxs(hashes)
       } yield {
-        buildTransaction(txHashesTs, inputs, outputs, gases)
+        buildTransaction(txHashesTs, validatedInputs, outputs, gases)
       }
     } else {
       DBIOAction.successful(ArraySeq.empty)
+    }
+  }
+
+  def validateInputsFromTxs(
+      inputs: ArraySeq[InputsFromTxQR]
+  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[InputsFromTxQR]] = {
+    DBIOAction
+      .sequence(inputs.map(validateInputFromTx))
+  }
+
+  /*
+   * This function check that inputs are complete, i.e. for each input we have the referenced output amount and address
+   * If not, we get back outputs for the missing inputs
+   */
+  def validateInputFromTx(
+      input: InputsFromTxQR
+  )(implicit ec: ExecutionContext): DBActionR[InputsFromTxQR] = {
+    if (input.outputRefAmount.isDefined && input.outputRefAddress.isDefined) {
+      DBIOAction.successful(input)
+    } else {
+      getOutputFromKey(input.outputRefKey).map {
+        case Some(output) =>
+          input.copy(
+            outputRefTxHash = Some(output.txHash),
+            outputRefAddress = Some(output.address),
+            outputRefGrouplessAddress = output.grouplessAddress,
+            outputRefAmount = Some(output.amount),
+            outputRefTokens = output.tokens
+          )
+        case None => input
+      }
+    }
+  }
+
+  def validateInputs(
+      inputs: ArraySeq[InputsQR]
+  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[InputsQR]] = {
+    DBIOAction
+      .sequence(inputs.map(validateInput))
+  }
+
+  /*
+   * This function check that inputs are complete, i.e. for each input we have the referenced output amount and address
+   * If not, we get back outputs for the missing inputs
+   */
+  def validateInput(input: InputsQR)(implicit ec: ExecutionContext): DBActionR[InputsQR] = {
+    if (input.outputRefAmount.isDefined && input.outputRefAddress.isDefined) {
+      DBIOAction.successful(input)
+    } else {
+      getOutputFromKey(input.outputRefKey).map {
+        case Some(output) =>
+          input.copy(
+            outputRefTxHash = Some(output.txHash),
+            outputRefAddress = Some(output.address),
+            outputRefGrouplessAddress = output.grouplessAddress,
+            outputRefAmount = Some(output.amount),
+            outputRefTokens = output.tokens
+          )
+        case None => input
+      }
     }
   }
 
@@ -559,14 +620,15 @@ object TransactionQueries extends StrictLogging {
       tx: TransactionEntity
   )(implicit ec: ExecutionContext): DBActionR[Transaction] =
     for {
-      ins  <- getInputsQuery(tx.hash, tx.blockHash)
-      outs <- getOutputsQuery(tx.hash, tx.blockHash)
+      ins          <- getInputsQuery(tx.hash, tx.blockHash)
+      validatedIns <- validateInputs(ins)
+      outs         <- getOutputsQuery(tx.hash, tx.blockHash)
     } yield {
       Transaction(
         tx.hash,
         tx.blockHash,
         tx.timestamp,
-        ins.map(_.toApi()),
+        validatedIns.map(_.toApi()),
         outs.map(_.toApi()),
         tx.version,
         tx.networkId,

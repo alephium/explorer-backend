@@ -612,6 +612,33 @@ class TransactionQueriesSpec
     }
   }
 
+  "find back output ref info if empty in input" in new Fixture {
+    val txHash    = transactionHashGen.sample.get
+    val blockHash = blockHashGen.sample.get
+    val output1   = output(address, ALPH.alph(1), None)
+    val input1 = input(output1).copy(
+      txHash = txHash,
+      blockHash = blockHash,
+      outputRefAddress = None,
+      outputRefGrouplessAddress = None
+    )
+    val tx =
+      transactionEntityGen().sample.get.copy(hash = txHash, blockHash = blockHash, mainChain = true)
+
+    exec(OutputSchema.table += output1)
+    exec(InputSchema.table += input1)
+    exec(TransactionSchema.table += tx)
+
+    // the input's output ref info should be backfilled
+    exec(TransactionQueries.getTransactionAction(tx.hash)).get.inputs.head.address is Some(address)
+
+    val txQR = TxByAddressQR(tx.hash, tx.blockHash, tx.timestamp, tx.order, tx.coinbase)
+    exec(TransactionQueries.getTransactions(ArraySeq(txQR))).head.inputs.head.address is Some(
+      address
+    )
+
+  }
+
   trait Fixture {
 
     val address          = addressGen.sample.get
