@@ -437,8 +437,8 @@ object TransactionQueries extends StrictLogging {
   }
 
   def validateInputsFromTxs(
-      inputs: ArraySeq[InputsFromTxQR]
-  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[InputsFromTxQR]] = {
+      inputs: ArraySeq[InputFromTxQR]
+  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[InputFromTxQR]] = {
     DBIOAction
       .sequence(inputs.map(validateInputFromTx))
   }
@@ -448,8 +448,8 @@ object TransactionQueries extends StrictLogging {
    * If not, we get back outputs for the missing inputs
    */
   def validateInputFromTx(
-      input: InputsFromTxQR
-  )(implicit ec: ExecutionContext): DBActionR[InputsFromTxQR] = {
+      input: InputFromTxQR
+  )(implicit ec: ExecutionContext): DBActionR[InputFromTxQR] = {
     if (input.outputRefAmount.isDefined && input.outputRefAddress.isDefined) {
       DBIOAction.successful(input)
     } else {
@@ -468,8 +468,8 @@ object TransactionQueries extends StrictLogging {
   }
 
   def validateInputs(
-      inputs: ArraySeq[InputsQR]
-  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[InputsQR]] = {
+      inputs: ArraySeq[InputQR]
+  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[InputQR]] = {
     DBIOAction
       .sequence(inputs.map(validateInput))
   }
@@ -478,7 +478,7 @@ object TransactionQueries extends StrictLogging {
    * This function check that inputs are complete, i.e. for each input we have the referenced output amount and address
    * If not, we get back outputs for the missing inputs
    */
-  def validateInput(input: InputsQR)(implicit ec: ExecutionContext): DBActionR[InputsQR] = {
+  def validateInput(input: InputQR)(implicit ec: ExecutionContext): DBActionR[InputQR] = {
     if (input.outputRefAmount.isDefined && input.outputRefAddress.isDefined) {
       DBIOAction.successful(input)
     } else {
@@ -553,9 +553,9 @@ object TransactionQueries extends StrictLogging {
 
   private def buildTransaction(
       txHashesTs: ArraySeq[TxByAddressQR],
-      inputs: ArraySeq[InputsFromTxQR],
-      outputs: ArraySeq[OutputsFromTxQR],
-      gases: ArraySeq[InfoFromTxsQR]
+      inputs: ArraySeq[InputFromTxQR],
+      outputs: ArraySeq[OutputFromTxQR],
+      gases: ArraySeq[InfoFromTxQR]
   ) = {
     val insByTx = inputs.groupBy(_.txHash).view.mapValues { values =>
       values
@@ -572,7 +572,7 @@ object TransactionQueries extends StrictLogging {
       val ins  = insByTx.getOrElse(txn.txHash, ArraySeq.empty)
       val ous  = ousByTx.getOrElse(txn.txHash, ArraySeq.empty)
       val gas  = gasByTx.getOrElse(txn.txHash, ArraySeq.empty)
-      val info = gas.headOption.getOrElse(InfoFromTxsQR.empty())
+      val info = gas.headOption.getOrElse(InfoFromTxQR.empty())
       Transaction(
         txn.txHash,
         txn.blockHash,
@@ -592,11 +592,11 @@ object TransactionQueries extends StrictLogging {
     }
   }
 
-  def infoFromTxs(hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionSR[InfoFromTxsQR] = {
+  def infoFromTxs(hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionSR[InfoFromTxQR] = {
     if (hashes.nonEmpty) {
       val params = paramPlaceholderTuple2(1, hashes.size)
       val query = s"""
-        SELECT ${InfoFromTxsQR.selectFields}
+        SELECT ${InfoFromTxQR.selectFields}
         FROM transactions
         WHERE (hash, block_hash) IN $params
       """
@@ -610,7 +610,7 @@ object TransactionQueries extends StrictLogging {
       SQLActionBuilder(
         sql = query,
         setParameter = parameters
-      ).asAS[InfoFromTxsQR]
+      ).asAS[InfoFromTxQR]
     } else {
       DBIOAction.successful(ArraySeq.empty)
     }

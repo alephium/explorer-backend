@@ -14,7 +14,7 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, InputsQR}
+import org.alephium.explorer.persistence.queries.result.{InputFromTxQR, InputQR}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
@@ -76,9 +76,9 @@ object InputQueries {
 
   def inputsFromTxs(
       hashes: ArraySeq[(TransactionId, BlockHash)]
-  ): DBActionR[ArraySeq[InputsFromTxQR]] =
+  ): DBActionR[ArraySeq[InputFromTxQR]] =
     if (hashes.nonEmpty) {
-      inputsFromTxsBuilder(hashes).asAS[InputsFromTxQR]
+      inputsFromTxsBuilder(hashes).asAS[InputFromTxQR]
     } else {
       DBIOAction.successful(ArraySeq.empty)
     }
@@ -90,7 +90,7 @@ object InputQueries {
 
     val query =
       s"""
-         SELECT ${InputsFromTxQR.selectFields}
+         SELECT ${InputFromTxQR.selectFields}
          FROM inputs
          WHERE (tx_hash, block_hash) IN $params
 
@@ -109,14 +109,14 @@ object InputQueries {
     )
   }
 
-  def getInputsQuery(txHash: TransactionId, blockHash: BlockHash): DBActionSR[InputsQR] =
+  def getInputsQuery(txHash: TransactionId, blockHash: BlockHash): DBActionSR[InputQR] =
     sql"""
-        SELECT #${InputsQR.selectFields}
+        SELECT #${InputQR.selectFields}
         FROM inputs
         WHERE tx_hash = $txHash
           AND block_hash = $blockHash
         ORDER BY input_order
-    """.asAS[InputsQR]
+    """.asAS[InputQR]
 
   def getMainChainInputs(ascendingOrder: Boolean): DBActionSR[InputEntity] =
     sql"""
