@@ -34,6 +34,27 @@ object TransactionQueries extends StrictLogging {
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
   val mainTransactions = TransactionSchema.table.filter(_.mainChain)
 
+  private val transactionFields: String =
+    """
+      hash,
+      block_hash,
+      block_timestamp,
+      chain_from,
+      chain_to,
+      version,
+      network_id,
+      script_opt,
+      gas_amount,
+      gas_price,
+      tx_order,
+      main_chain,
+      conflicted,
+      script_execution_ok,
+      input_signatures,
+      script_signatures,
+      coinbase
+    """
+
   def insertAll(
       transactions: ArraySeq[TransactionEntity],
       outputs: ArraySeq[OutputEntity],
@@ -47,26 +68,11 @@ object TransactionQueries extends StrictLogging {
   /** Inserts transactions or ignore rows with primary key conflict */
   // scalastyle:off magic.number method.length
   def insertTransactions(transactions: Iterable[TransactionEntity]): DBActionW[Int] =
-    QuerySplitter.splitUpdates(rows = transactions, columnsPerRow = 16) {
+    QuerySplitter.splitUpdates(rows = transactions, columnsPerRow = 17) {
       (transactions, placeholder) =>
         val query =
           s"""
-             insert into transactions (hash,
-                                       block_hash,
-                                       block_timestamp,
-                                       chain_from,
-                                       chain_to,
-                                       version,
-                                       network_id,
-                                       script_opt,
-                                       gas_amount,
-                                       gas_price,
-                                       tx_order,
-                                       main_chain,
-                                       script_execution_ok,
-                                       input_signatures,
-                                       script_signatures,
-                                       coinbase)
+             insert into transactions ($transactionFields)
              values $placeholder
              ON CONFLICT ON CONSTRAINT txs_pk
                  DO NOTHING
@@ -87,6 +93,7 @@ object TransactionQueries extends StrictLogging {
               params >> transaction.gasPrice
               params >> transaction.order
               params >> transaction.mainChain
+              params >> transaction.conflicted
               params >> transaction.scriptExecutionOk
               params >> transaction.inputSignatures
               params >> transaction.scriptSignatures
@@ -101,7 +108,7 @@ object TransactionQueries extends StrictLogging {
 
   private def getTransactionQuery(txHash: TransactionId) =
     sql"""
-      SELECT *
+      SELECT #$transactionFields
       FROM transactions
       WHERE hash = $txHash
       AND main_chain = true
@@ -112,8 +119,9 @@ object TransactionQueries extends StrictLogging {
       txHash: TransactionId
   )(implicit ec: ExecutionContext): DBActionR[Option[Transaction]] =
     getTransactionQuery(txHash).flatMap {
-      case Some(tx) => getKnownTransactionAction(tx).map(Some.apply)
-      case None     => DBIOAction.successful(None)
+      case Some(tx) =>
+        getKnownTransactionAction(tx).map(Some.apply)
+      case None => DBIOAction.successful(None)
     }
 
   private def getTxHashesByBlockHashQuery(
