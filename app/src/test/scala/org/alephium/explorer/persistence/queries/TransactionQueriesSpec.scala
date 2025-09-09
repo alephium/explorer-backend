@@ -210,7 +210,7 @@ class TransactionQueriesSpec
     txs should contain allElementsOf expected
   }
 
-  "output's spent info should only take the input from the main chain " in new Fixture {
+  "output's spent info should only take the input from the main chain" in new Fixture {
 
     val tx1 = transactionEntityGen().sample.get.copy(mainChain = true)
     val tx2 = transactionEntityGen().sample.get

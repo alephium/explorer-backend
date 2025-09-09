@@ -391,20 +391,24 @@ object GenDBModel {
   @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def transactionEntityGen(blockHash: Gen[BlockHash] = blockHashGen): Gen[TransactionEntity] =
     for {
-      hash              <- transactionHashGen
-      blockHash         <- blockHash
-      timestamp         <- timestampGen
-      chainFrom         <- groupIndexGen
-      chainTo           <- groupIndexGen
-      version           <- arbitrary[Byte]
-      networkId         <- arbitrary[Byte]
-      scriptOpt         <- Gen.option(hashGen.map(_.toHexString))
-      gasAmount         <- gasAmountGen
-      gasPrice          <- u256Gen
-      order             <- Gen.posNum[Int]
-      mainChain         <- Arbitrary.arbitrary[Boolean]
-      scriptExecutionOk <- Arbitrary.arbitrary[Boolean]
-      coinbase          <- Arbitrary.arbitrary[Boolean]
+      hash                 <- transactionHashGen
+      blockHash            <- blockHash
+      timestamp            <- timestampGen
+      chainFrom            <- groupIndexGen
+      chainTo              <- groupIndexGen
+      version              <- arbitrary[Byte]
+      networkId            <- arbitrary[Byte]
+      scriptOpt            <- Gen.option(hashGen.map(_.toHexString))
+      gasAmount            <- gasAmountGen
+      gasPrice             <- u256Gen
+      order                <- Gen.posNum[Int]
+      mainChain            <- Arbitrary.arbitrary[Boolean]
+      signaturesSize       <- Gen.choose(0, 3)
+      inputSignatures      <- Gen.option(Gen.listOfN(signaturesSize, hashGen.map(_.bytes)))
+      scriptSignaturesSize <- Gen.choose(0, 3)
+      scriptSignatures     <- Gen.option(Gen.listOfN(scriptSignaturesSize, hashGen.map(_.bytes)))
+      scriptExecutionOk    <- Arbitrary.arbitrary[Boolean]
+      coinbase             <- Arbitrary.arbitrary[Boolean]
     } yield TransactionEntity(
       hash = hash,
       blockHash = blockHash,
@@ -420,8 +424,8 @@ object GenDBModel {
       mainChain = mainChain,
       conflicted = None,
       scriptExecutionOk = scriptExecutionOk,
-      inputSignatures = None,
-      scriptSignatures = None,
+      inputSignatures = inputSignatures.map(ArraySeq.from),
+      scriptSignatures = scriptSignatures.map(ArraySeq.from),
       coinbase = coinbase
     )
 
