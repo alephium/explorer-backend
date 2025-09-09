@@ -24,6 +24,27 @@ import org.alephium.util.{TimeStamp, U256}
 
 object TokenQueries extends StrictLogging {
 
+  val nftCollectionMetadataFields: String =
+    """
+      contract,
+      collection_uri
+    """
+  private val nftMetadataFields: String =
+    """
+      token,
+      token_uri,
+      collection_id,
+      nft_index
+    """
+
+  private val fungibleTokenMetadataFields: String =
+    """
+      token,
+      symbol,
+      name,
+      decimals
+    """
+
   def getTokenBalanceAction(address: ApiAddress, token: TokenId)(implicit
       ec: ExecutionContext
   ): DBActionR[(U256, U256)] =
@@ -204,10 +225,7 @@ object TokenQueries extends StrictLogging {
   ): DBActionW[Int] = {
     sqlu"""
       INSERT INTO fungible_token_metadata (
-        "token",
-        "symbol",
-        "name",
-        "decimals"
+        #$fungibleTokenMetadataFields
         )
       VALUES (${metadata.id},${metadata.symbol},${metadata.name},${metadata.decimals})
       ON CONFLICT
@@ -223,7 +241,7 @@ object TokenQueries extends StrictLogging {
 
       val query =
         s"""
-          SELECT *
+          SELECT $fungibleTokenMetadataFields
           FROM fungible_token_metadata
           WHERE token IN $params
         """
@@ -279,7 +297,7 @@ object TokenQueries extends StrictLogging {
 
       val query =
         s"""
-          SELECT *
+          SELECT $nftMetadataFields
           FROM nft_metadata
           WHERE token IN $params
         """
@@ -307,7 +325,7 @@ object TokenQueries extends StrictLogging {
 
       val query =
         s"""
-          SELECT *
+          SELECT $nftCollectionMetadataFields
           FROM nft_collection_metadata
           WHERE contract IN $params
         """
@@ -332,10 +350,7 @@ object TokenQueries extends StrictLogging {
   ): DBActionW[Int] = {
     sqlu"""
       INSERT INTO nft_metadata (
-        "token",
-        "token_uri",
-        "collection_id",
-        "nft_index"
+        #$nftMetadataFields
         )
       VALUES (${metadata.id},${metadata.tokenUri},${metadata.collectionId},${metadata.nftIndex})
       ON CONFLICT

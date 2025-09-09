@@ -28,6 +28,38 @@ import org.alephium.util.TimeStamp
 
 object BlockQueries extends StrictLogging {
 
+  private val blockHeaderFields: String =
+    """
+      hash,
+      block_timestamp,
+      chain_from,
+      chain_to,
+      height,
+      main_chain,
+      nonce,
+      block_version,
+      dep_state_hash,
+      txs_hash,
+      txs_count,
+      target,
+      hashrate,
+      parent,
+      deps,
+      ghost_uncles,
+      conflicted_txs
+    """
+
+  private val latestBlockFields: String =
+    """
+      hash,
+      block_timestamp,
+      chain_from,
+      chain_to,
+      height,
+      target,
+      hashrate
+    """
+
   @SuppressWarnings(Array("org.wartremover.warts.PublicInference"))
   val block_headers = BlockHeaderSchema.table.baseTableRow.tableName // block_headers table name
 
@@ -80,9 +112,22 @@ object BlockQueries extends StrictLogging {
   )(implicit ec: ExecutionContext): DBActionR[Option[BlockEntry]] =
     getBlockHeaderAction(hash).map(_.map(_.toApi()))
 
+  def listIncludingForksAction(
+      from: TimeStamp,
+      to: TimeStamp
+  ): DBActionSR[BlockHeader] =
+    sql"""
+      SELECT #$blockHeaderFields
+      FROM block_headers
+      WHERE block_timestamp >= $from
+      AND block_timestamp <= $to
+      ORDER BY block_timestamp DESC, hash
+
+      """.asASE[BlockHeader](blockHeaderGetResult)
+
   def getBlockHeaderAction(hash: BlockHash): DBActionR[Option[BlockHeader]] =
     sql"""
-         SELECT *
+         SELECT #$blockHeaderFields
          FROM #$block_headers
          WHERE hash = $hash
          LIMIT 1
@@ -96,7 +141,7 @@ object BlockQueries extends StrictLogging {
       height: Height
   ): DBActionSR[BlockHeader] =
     sql"""
-         SELECT *
+         SELECT #$blockHeaderFields
          FROM #$block_headers
          WHERE chain_from = $fromGroup
          AND chain_to = $toGroup
@@ -265,7 +310,7 @@ object BlockQueries extends StrictLogging {
 
   def getLatestBlock(chainFrom: GroupIndex, chainTo: GroupIndex): DBActionSR[LatestBlock] = {
     sql"""
-         SELECT *
+         SELECT #$latestBlockFields
          FROM latest_blocks
          WHERE chain_from = $chainFrom
          AND chain_to = $chainTo
@@ -279,23 +324,7 @@ object BlockQueries extends StrictLogging {
     QuerySplitter.splitUpdates(rows = blocks, columnsPerRow = 17) { (blocks, placeholder) =>
       val query =
         s"""
-           INSERT INTO $block_headers ("hash",
-                                       "block_timestamp",
-                                       "chain_from",
-                                       "chain_to",
-                                       "height",
-                                       "main_chain",
-                                       "nonce",
-                                       "block_version",
-                                       "dep_state_hash",
-                                       "txs_hash",
-                                       "txs_count",
-                                       "target",
-                                       "hashrate",
-                                       "parent",
-                                       "deps",
-                                       "ghost_uncles",
-                                       "conflicted_txs")
+           INSERT INTO $block_headers ($blockHeaderFields)
            VALUES $placeholder
            ON CONFLICT ON CONSTRAINT block_headers_pkey
                DO NOTHING

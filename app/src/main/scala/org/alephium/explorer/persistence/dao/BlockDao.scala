@@ -22,9 +22,6 @@ import org.alephium.explorer.persistence.queries.ContractQueries._
 import org.alephium.explorer.persistence.queries.EventQueries._
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.persistence.schema._
-import org.alephium.explorer.persistence.schema.CustomGetResult._
-import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
 import org.alephium.util.{Duration, TimeStamp}
 
@@ -94,14 +91,7 @@ object BlockDao {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[BlockEntryLite]] = {
-    run(sql"""
-      SELECT *
-      FROM block_headers
-      WHERE block_timestamp >= $from
-      AND block_timestamp <= $to
-      ORDER BY block_timestamp DESC, hash
-
-      """.asASE[BlockHeader](blockHeaderGetResult)).map(_.map(_.toLiteApi))
+    run(listIncludingForksAction(from, to)).map(_.map(_.toLiteApi))
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))

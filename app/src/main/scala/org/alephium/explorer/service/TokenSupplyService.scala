@@ -66,6 +66,15 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
   private val reservedAddresses =
     Source.fromResource("reserved_addresses")(Codec.UTF8).getLines().mkString
 
+  private val tokenSupplyFields: String =
+    """
+      block_timestamp,
+      total,
+      circulating,
+      reserved,
+      locked
+    """
+
   private val launchDay =
     Instant.ofEpochMilli(ALPH.LaunchTimestamp.millis).truncatedTo(ChronoUnit.DAYS)
 
@@ -102,7 +111,7 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
   ): Future[ArraySeq[TokenSupply]] = {
     run(
       sql"""
-        SELECT *
+        SELECT #$tokenSupplyFields
         FROM token_supply
         ORDER BY block_timestamp DESC
       """
@@ -126,7 +135,7 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
   ): Future[Option[TokenSupply]] =
     run(
       sql"""
-        SELECT *
+        SELECT #$tokenSupplyFields
         FROM token_supply
         ORDER BY block_timestamp DESC
         LIMIT 1

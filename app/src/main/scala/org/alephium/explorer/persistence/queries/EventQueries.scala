@@ -18,11 +18,23 @@ import org.alephium.protocol.model.{Address, TransactionId}
 
 object EventQueries {
 
+  private val eventFields: String =
+    """
+      block_hash,
+      tx_hash,
+      contract_address,
+      input_address,
+      block_timestamp,
+      event_index,
+      fields,
+      event_order_in_block
+    """
+
   def insertEventsQuery(events: Iterable[EventEntity]): DBActionW[Int] = {
     QuerySplitter.splitUpdates(rows = events, columnsPerRow = 8) { (events, placeholder) =>
       val query =
         s"""
-           INSERT INTO events ("block_hash", "tx_hash", "contract_address", "input_address","block_timestamp", "event_index", "fields", "event_order_in_block")
+           INSERT INTO events ($eventFields)
            VALUES $placeholder
            ON CONFLICT
             ON CONSTRAINT events_pk
@@ -52,7 +64,7 @@ object EventQueries {
 
   def getEventsByTxIdQuery(txId: TransactionId): DBActionSR[EventEntity] =
     sql"""
-      SELECT *
+      SELECT #$eventFields
       FROM events
       WHERE tx_hash = $txId
       ORDER BY event_order_in_block
@@ -68,7 +80,7 @@ object EventQueries {
     eventIndex
       .map { i =>
         sql"""
-          SELECT *
+          SELECT #$eventFields
           FROM events
           WHERE contract_address = $address
           AND event_index = $i
@@ -77,7 +89,7 @@ object EventQueries {
       }
       .getOrElse {
         sql"""
-          SELECT *
+          SELECT #$eventFields
           FROM events
           WHERE contract_address = $address
           ORDER BY block_timestamp DESC, event_order_in_block
@@ -96,7 +108,7 @@ object EventQueries {
     eventIndex
       .map { i =>
         sql"""
-          SELECT *
+          SELECT #$eventFields
           FROM events
           WHERE contract_address = $contract
           AND input_address = $input
@@ -106,7 +118,7 @@ object EventQueries {
       }
       .getOrElse {
         sql"""
-          SELECT *
+          SELECT #$eventFields
           FROM events
           WHERE contract_address = $contract
           AND input_address = $input

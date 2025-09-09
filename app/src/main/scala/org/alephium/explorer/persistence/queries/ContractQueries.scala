@@ -18,6 +18,24 @@ import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.model.{Address, GroupIndex}
 
 object ContractQueries {
+
+  private def contractFields: String =
+    """
+      contract,
+      parent,
+      std_interface_id_guessed,
+      creation_block_hash,
+      creation_tx_hash,
+      creation_timestamp,
+      creation_event_order,
+      destruction_block_hash,
+      destruction_tx_hash,
+      destruction_timestamp,
+      destruction_event_order,
+      category,
+      interface_id
+    """
+
   def insertOrUpdateContracts(
       events: Iterable[EventEntity],
       from: GroupIndex
@@ -108,7 +126,7 @@ object ContractQueries {
       contract: Address
   ): DBActionSR[ContractEntity] = {
     sql"""
-      SELECT *
+      SELECT #$contractFields
       FROM contracts
       WHERE contract = $contract
       """.asASE[ContractEntity](contractEntityGetResult)
@@ -146,8 +164,7 @@ object ContractQueries {
   ): DBActionW[Int] = {
     sqlu"""
       INSERT INTO nft_collection_metadata (
-        "contract",
-        "collection_uri"
+        #${TokenQueries.nftCollectionMetadataFields}
         )
       VALUES (${contract},${metadata.collectionUri})
       ON CONFLICT
