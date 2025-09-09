@@ -11,7 +11,7 @@ import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, TestDBRunner}
 import org.alephium.explorer.persistence.queries.OutputQueries._
-import org.alephium.explorer.persistence.queries.result.{OutputsFromTxQR, OutputsQR}
+import org.alephium.explorer.persistence.queries.result.{OutputFromTxQR, OutputQR}
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.persistence.schema.OutputSchema
 import org.alephium.explorer.util.SlickExplainUtil._
@@ -78,7 +78,7 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
           // expected query result
           val expected =
             outputs.map { entity =>
-              OutputsFromTxQR(
+              OutputFromTxQR(
                 txHash = entity.txHash,
                 outputOrder = entity.outputOrder,
                 outputType = entity.outputType,
@@ -129,8 +129,8 @@ class OutputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach w
             exec(OutputQueries.getOutputsQuery(output.txHash, output.blockHash))
 
           // expected query result
-          val expected: OutputsQR =
-            OutputsQR(
+          val expected: OutputQR =
+            OutputQR(
               outputType = output.outputType,
               hint = output.hint,
               key = output.key,

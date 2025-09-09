@@ -15,10 +15,12 @@ import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{Address, TransactionId}
 import org.alephium.util.U256
 
-object InputsQR {
+object InputFromTxQR {
 
   val selectFields: String =
     """
+      tx_hash,
+      input_order,
       hint,
       output_ref_key,
       unlock_script,
@@ -30,9 +32,11 @@ object InputsQR {
       contract_input
     """
 
-  implicit val inputsQRGetResult: GetResult[InputsQR] =
+  implicit val inputsFromTxQRGetResult: GetResult[InputFromTxQR] =
     (result: PositionedResult) =>
-      InputsQR(
+      InputFromTxQR(
+        txHash = result.<<,
+        inputOrder = result.<<,
         hint = result.<<,
         outputRefKey = result.<<,
         unlockScript = result.<<?,
@@ -45,8 +49,10 @@ object InputsQR {
       )
 }
 
-/** Query result for [[org.alephium.explorer.persistence.queries.InputQueries.getInputsQuery]] */
-final case class InputsQR(
+/** Query result for [[org.alephium.explorer.persistence.queries.InputQueries.inputsFromTxs]] */
+final case class InputFromTxQR(
+    txHash: TransactionId,
+    inputOrder: Int,
     hint: Int,
     outputRefKey: Hash,
     unlockScript: Option[ByteString],

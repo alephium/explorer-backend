@@ -424,14 +424,75 @@ object TransactionQueries extends StrictLogging {
     if (txHashesTs.nonEmpty) {
       val hashes = txHashesTs.map(_.hashes())
       for {
-        inputs  <- inputsFromTxs(hashes)
-        outputs <- outputsFromTxs(hashes)
-        gases   <- infoFromTxs(hashes)
+        inputs          <- inputsFromTxs(hashes)
+        validatedInputs <- validateInputsFromTxs(inputs)
+        outputs         <- outputsFromTxs(hashes)
+        gases           <- infoFromTxs(hashes)
       } yield {
-        buildTransaction(txHashesTs, inputs, outputs, gases)
+        buildTransaction(txHashesTs, validatedInputs, outputs, gases)
       }
     } else {
       DBIOAction.successful(ArraySeq.empty)
+    }
+  }
+
+  def validateInputsFromTxs(
+      inputs: ArraySeq[InputFromTxQR]
+  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[InputFromTxQR]] = {
+    DBIOAction
+      .sequence(inputs.map(validateInputFromTx))
+  }
+
+  /*
+   * This function check that inputs are complete, i.e. for each input we have the referenced output amount and address
+   * If not, we get back outputs for the missing inputs
+   */
+  def validateInputFromTx(
+      input: InputFromTxQR
+  )(implicit ec: ExecutionContext): DBActionR[InputFromTxQR] = {
+    if (input.outputRefAmount.isDefined && input.outputRefAddress.isDefined) {
+      DBIOAction.successful(input)
+    } else {
+      getOutputFromKey(input.outputRefKey).map {
+        case Some(output) =>
+          input.copy(
+            outputRefTxHash = Some(output.txHash),
+            outputRefAddress = Some(output.address),
+            outputRefGrouplessAddress = output.grouplessAddress,
+            outputRefAmount = Some(output.amount),
+            outputRefTokens = output.tokens
+          )
+        case None => input
+      }
+    }
+  }
+
+  def validateInputs(
+      inputs: ArraySeq[InputQR]
+  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[InputQR]] = {
+    DBIOAction
+      .sequence(inputs.map(validateInput))
+  }
+
+  /*
+   * This function check that inputs are complete, i.e. for each input we have the referenced output amount and address
+   * If not, we get back outputs for the missing inputs
+   */
+  def validateInput(input: InputQR)(implicit ec: ExecutionContext): DBActionR[InputQR] = {
+    if (input.outputRefAmount.isDefined && input.outputRefAddress.isDefined) {
+      DBIOAction.successful(input)
+    } else {
+      getOutputFromKey(input.outputRefKey).map {
+        case Some(output) =>
+          input.copy(
+            outputRefTxHash = Some(output.txHash),
+            outputRefAddress = Some(output.address),
+            outputRefGrouplessAddress = output.grouplessAddress,
+            outputRefAmount = Some(output.amount),
+            outputRefTokens = output.tokens
+          )
+        case None => input
+      }
     }
   }
 
@@ -492,9 +553,9 @@ object TransactionQueries extends StrictLogging {
 
   private def buildTransaction(
       txHashesTs: ArraySeq[TxByAddressQR],
-      inputs: ArraySeq[InputsFromTxQR],
-      outputs: ArraySeq[OutputsFromTxQR],
-      gases: ArraySeq[InfoFromTxsQR]
+      inputs: ArraySeq[InputFromTxQR],
+      outputs: ArraySeq[OutputFromTxQR],
+      gases: ArraySeq[InfoFromTxQR]
   ) = {
     val insByTx = inputs.groupBy(_.txHash).view.mapValues { values =>
       values
@@ -511,7 +572,7 @@ object TransactionQueries extends StrictLogging {
       val ins  = insByTx.getOrElse(txn.txHash, ArraySeq.empty)
       val ous  = ousByTx.getOrElse(txn.txHash, ArraySeq.empty)
       val gas  = gasByTx.getOrElse(txn.txHash, ArraySeq.empty)
-      val info = gas.headOption.getOrElse(InfoFromTxsQR.empty())
+      val info = gas.headOption.getOrElse(InfoFromTxQR.empty())
       Transaction(
         txn.txHash,
         txn.blockHash,
@@ -531,11 +592,11 @@ object TransactionQueries extends StrictLogging {
     }
   }
 
-  def infoFromTxs(hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionSR[InfoFromTxsQR] = {
+  def infoFromTxs(hashes: ArraySeq[(TransactionId, BlockHash)]): DBActionSR[InfoFromTxQR] = {
     if (hashes.nonEmpty) {
       val params = paramPlaceholderTuple2(1, hashes.size)
       val query = s"""
-        SELECT ${InfoFromTxsQR.selectFields}
+        SELECT ${InfoFromTxQR.selectFields}
         FROM transactions
         WHERE (hash, block_hash) IN $params
       """
@@ -549,7 +610,7 @@ object TransactionQueries extends StrictLogging {
       SQLActionBuilder(
         sql = query,
         setParameter = parameters
-      ).asAS[InfoFromTxsQR]
+      ).asAS[InfoFromTxQR]
     } else {
       DBIOAction.successful(ArraySeq.empty)
     }
@@ -559,14 +620,15 @@ object TransactionQueries extends StrictLogging {
       tx: TransactionEntity
   )(implicit ec: ExecutionContext): DBActionR[Transaction] =
     for {
-      ins  <- getInputsQuery(tx.hash, tx.blockHash)
-      outs <- getOutputsQuery(tx.hash, tx.blockHash)
+      ins          <- getInputsQuery(tx.hash, tx.blockHash)
+      validatedIns <- validateInputs(ins)
+      outs         <- getOutputsQuery(tx.hash, tx.blockHash)
     } yield {
       Transaction(
         tx.hash,
         tx.blockHash,
         tx.timestamp,
-        ins.map(_.toApi()),
+        validatedIns.map(_.toApi()),
         outs.map(_.toApi()),
         tx.version,
         tx.networkId,

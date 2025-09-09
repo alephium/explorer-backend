@@ -12,14 +12,14 @@ import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.protocol.model.TransactionId
 import org.alephium.util.U256
 
-object InfoFromTxsQR {
+object InfoFromTxQR {
 
   val selectFields: String =
     "hash, version, network_id, script_opt, gas_amount, gas_price, script_execution_ok, input_signatures, script_signatures"
 
-  implicit val infoFromTxsQRGetResult: GetResult[InfoFromTxsQR] =
+  implicit val infoFromTxsQRGetResult: GetResult[InfoFromTxQR] =
     (result: PositionedResult) =>
-      InfoFromTxsQR(
+      InfoFromTxQR(
         txHash = result.<<,
         version = result.<<,
         networkId = result.<<,
@@ -31,8 +31,8 @@ object InfoFromTxsQR {
         scriptSignatures = result.<<?
       )
 
-  def empty(): InfoFromTxsQR =
-    InfoFromTxsQR(
+  def empty(): InfoFromTxQR =
+    InfoFromTxQR(
       TransactionId.zero,
       0,
       0,
@@ -46,7 +46,7 @@ object InfoFromTxsQR {
 }
 
 /** Query result for [[org.alephium.explorer.persistence.queries.TransactionQueries]] */
-final case class InfoFromTxsQR(
+final case class InfoFromTxQR(
     txHash: TransactionId,
     version: Byte,
     networkId: Byte,

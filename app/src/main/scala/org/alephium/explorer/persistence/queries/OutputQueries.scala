@@ -14,7 +14,7 @@ import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.model._
-import org.alephium.explorer.persistence.queries.result.{OutputsFromTxQR, OutputsQR}
+import org.alephium.explorer.persistence.queries.result.{OutputFromTxQR, OutputQR}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickExplainUtil._
@@ -309,15 +309,27 @@ object OutputQueries {
     }
   }
 
+  def getOutputFromKey(
+      key: Hash
+  ): DBActionR[Option[OutputFromTxQR]] = {
+    sql"""
+     SELECT #${OutputFromTxQR.selectFields}
+     FROM outputs
+     WHERE main_chain = true
+     AND #${notConflicted()}
+     AND key = $key
+     """.as[OutputFromTxQR].headOption
+  }
+
   def outputsFromTxs(
       hashes: ArraySeq[(TransactionId, BlockHash)]
-  ): DBActionR[ArraySeq[OutputsFromTxQR]] =
+  ): DBActionR[ArraySeq[OutputFromTxQR]] =
     if (hashes.nonEmpty) {
       val params = paramPlaceholderTuple2(1, hashes.size)
 
       val query =
         s"""
-           SELECT ${OutputsFromTxQR.selectFields}
+           SELECT ${OutputFromTxQR.selectFields}
            FROM outputs
            WHERE (outputs.tx_hash, outputs.block_hash) IN $params
            """
@@ -332,19 +344,19 @@ object OutputQueries {
       SQLActionBuilder(
         sql = query,
         setParameter = parameters
-      ).asAS[OutputsFromTxQR]
+      ).asAS[OutputFromTxQR]
     } else {
       DBIOAction.successful(ArraySeq.empty)
     }
 
-  def getOutputsQuery(txHash: TransactionId, blockHash: BlockHash): DBActionSR[OutputsQR] =
+  def getOutputsQuery(txHash: TransactionId, blockHash: BlockHash): DBActionSR[OutputQR] =
     sql"""
-        SELECT #${OutputsQR.selectFields}
+        SELECT #${OutputQR.selectFields}
         FROM outputs
         WHERE tx_hash = $txHash
           AND block_hash = $blockHash
         ORDER BY output_order
-      """.asAS[OutputsQR]
+      """.asAS[OutputQR]
 
   /** Get main chain [[org.alephium.explorer.persistence.model.OutputEntity]]s ordered by timestamp
     */

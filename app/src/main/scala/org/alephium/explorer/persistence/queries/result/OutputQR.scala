@@ -15,14 +15,14 @@ import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{Address, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 
-object OutputsQR {
+object OutputQR {
 
   val selectFields: String =
     "output_type, hint, key, amount, address, groupless_address, tokens, lock_time, message, spent_finalized, fixed_output"
 
-  implicit val outputsQRGetResult: GetResult[OutputsQR] =
+  implicit val outputsQRGetResult: GetResult[OutputQR] =
     (result: PositionedResult) =>
-      OutputsQR(
+      OutputQR(
         outputType = result.<<,
         hint = result.<<,
         key = result.<<,
@@ -38,7 +38,7 @@ object OutputsQR {
 }
 
 /** Query result for [[org.alephium.explorer.persistence.queries.OutputQueries.getOutputsQuery]] */
-final case class OutputsQR(
+final case class OutputQR(
     outputType: OutputEntity.OutputType,
     hint: Int,
     key: Hash,

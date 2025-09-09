@@ -11,7 +11,7 @@ import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, TestDBRunner}
 import org.alephium.explorer.persistence.model.InputEntity
 import org.alephium.explorer.persistence.queries.InputQueries._
-import org.alephium.explorer.persistence.queries.result.{InputsFromTxQR, InputsQR}
+import org.alephium.explorer.persistence.queries.result.{InputFromTxQR, InputQR}
 import org.alephium.explorer.persistence.schema.InputSchema
 
 class InputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with TestDBRunner {
@@ -87,7 +87,7 @@ class InputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
           // expected query result
           val expected =
             inputs.map { entity =>
-              InputsFromTxQR(
+              InputFromTxQR(
                 txHash = entity.txHash,
                 inputOrder = entity.inputOrder,
                 hint = entity.hint,
@@ -136,8 +136,8 @@ class InputQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
             exec(InputQueries.getInputsQuery(input.txHash, input.blockHash))
 
           // expected query result
-          val expected: InputsQR =
-            InputsQR(
+          val expected: InputQR =
+            InputQR(
               hint = input.hint,
               outputRefKey = input.outputRefKey,
               unlockScript = input.unlockScript,
