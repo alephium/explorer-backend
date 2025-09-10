@@ -21,6 +21,7 @@ import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}
 import org.alephium.util.{TimeStamp, U256}
 import org.alephium.util.AVector
 
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 final case class Transaction(
     hash: TransactionId,
     blockHash: BlockHash,
@@ -35,7 +36,8 @@ final case class Transaction(
     scriptExecutionOk: Boolean,
     inputSignatures: ArraySeq[ByteString],
     scriptSignatures: ArraySeq[ByteString],
-    coinbase: Boolean
+    coinbase: Boolean,
+    conflicted: Option[Boolean] = None
 ) {
   def toCsv(address: ApiAddress, metadata: Map[TokenId, FungibleTokenMetadata]): String = {
     val dateTime      = Instant.ofEpochMilli(timestamp.millis)

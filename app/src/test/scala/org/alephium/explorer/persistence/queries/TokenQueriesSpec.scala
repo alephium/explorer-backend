@@ -34,7 +34,7 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
           val expected = txPerTokens
             .filter(_.mainChain)
-            .map(tx => TxByTokenQR(tx.hash, tx.blockHash, tx.timestamp, tx.txOrder))
+            .map(tx => TxByTokenQR(tx.hash, tx.blockHash, tx.timestamp, tx.txOrder, tx.conflicted))
           val result =
             exec(
               TokenQueries.listTokenTransactionsAction(
@@ -64,7 +64,7 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
 
           val expected = txPerAddressTokens
             .filter(_.mainChain)
-            .map(tx => TxByTokenQR(tx.hash, tx.blockHash, tx.timestamp, tx.txOrder))
+            .map(tx => TxByTokenQR(tx.hash, tx.blockHash, tx.timestamp, tx.txOrder, tx.conflicted))
           val result =
             exec(
               TokenQueries.getTokenTxHashesByAddressQuery(

@@ -184,7 +184,8 @@ object GenApiModel extends ImplicitConversions {
       scriptExecutionOk,
       inputSignatures,
       scriptSignatures,
-      coinbase
+      coinbase,
+      conflicted = None
     )
 
   val mempooltransactionGen: Gen[MempoolTransaction] =

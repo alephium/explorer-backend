@@ -39,7 +39,8 @@ final case class AcceptedTransaction(
     scriptExecutionOk: Boolean,
     inputSignatures: ArraySeq[ByteString],
     scriptSignatures: ArraySeq[ByteString],
-    coinbase: Boolean
+    coinbase: Boolean,
+    conflicted: Option[Boolean]
 ) extends TransactionLike
 
 object AcceptedTransaction {
@@ -58,7 +59,8 @@ object AcceptedTransaction {
     tx.scriptExecutionOk,
     tx.inputSignatures,
     tx.scriptSignatures,
-    tx.coinbase
+    tx.coinbase,
+    tx.conflicted
   )
 }
 

@@ -8351,6 +8351,9 @@
           "coinbase": {
             "type": "boolean"
           },
+          "conflicted": {
+            "type": "boolean"
+          },
           "type": {
             "type": "string"
           }
@@ -9634,6 +9637,9 @@
             }
           },
           "coinbase": {
+            "type": "boolean"
+          },
+          "conflicted": {
             "type": "boolean"
           }
         }

@@ -45,6 +45,7 @@ final case class TransactionEntity(
       scriptExecutionOk,
       inputSignatures.getOrElse(ArraySeq.empty),
       scriptSignatures.getOrElse(ArraySeq.empty),
-      coinbase
+      coinbase,
+      conflicted
     )
 }

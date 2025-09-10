@@ -128,7 +128,7 @@ object TransactionQueries extends StrictLogging {
       blockHash: BlockHash
   ): DBActionSR[TxByAddressQR] =
     sql"""
-      SELECT hash, block_hash, block_timestamp, tx_order, coinbase
+      SELECT hash, block_hash, block_timestamp, tx_order, coinbase, conflicted
       FROM transactions
       WHERE block_hash = $blockHash
       ORDER BY tx_order
@@ -139,7 +139,7 @@ object TransactionQueries extends StrictLogging {
       pagination: Pagination
   ) =
     sql"""
-      SELECT hash, block_hash, block_timestamp, tx_order, coinbase
+      SELECT hash, block_hash, block_timestamp, tx_order, coinbase, conflicted
       FROM transactions
       WHERE block_hash = $blockHash
       ORDER BY tx_order
@@ -595,7 +595,8 @@ object TransactionQueries extends StrictLogging {
         info.scriptExecutionOk,
         info.inputSignatures.getOrElse(ArraySeq.empty),
         info.scriptSignatures.getOrElse(ArraySeq.empty),
-        txn.coinbase
+        txn.coinbase,
+        txn.conflicted
       )
     }
   }
@@ -646,7 +647,8 @@ object TransactionQueries extends StrictLogging {
         tx.scriptExecutionOk,
         tx.inputSignatures.getOrElse(ArraySeq.empty),
         tx.scriptSignatures.getOrElse(ArraySeq.empty),
-        tx.coinbase
+        tx.coinbase,
+        tx.conflicted
       )
     }
 

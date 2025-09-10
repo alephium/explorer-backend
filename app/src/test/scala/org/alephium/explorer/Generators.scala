@@ -40,7 +40,8 @@ object Generators {
         tx.scriptExecutionOk,
         tx.inputSignatures.getOrElse(ArraySeq.empty),
         tx.scriptSignatures.getOrElse(ArraySeq.empty),
-        coinbase = coinbaseTxId == tx.hash
+        coinbase = coinbaseTxId == tx.hash,
+        conflicted = tx.conflicted
       )
     }
   }

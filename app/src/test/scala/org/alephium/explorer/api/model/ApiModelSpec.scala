@@ -131,7 +131,8 @@ class ApiModelSpec() extends AlephiumSpec {
         false,
         ArraySeq.empty,
         ArraySeq.empty,
-        true
+        true,
+        conflicted = None
       )
 
       val expected =
