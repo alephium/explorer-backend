@@ -168,9 +168,9 @@ class TransactionQueriesSpec
       )
 
     val expected = ArraySeq(
-      TxByAddressQR(output1.txHash, output1.blockHash, output1.timestamp, 0, false),
-      TxByAddressQR(output2.txHash, output2.blockHash, output2.timestamp, 0, false),
-      TxByAddressQR(input1.txHash, input1.blockHash, input1.timestamp, 0, false)
+      TxByAddressQR(output1.txHash, output1.blockHash, output1.timestamp, 0, false, None),
+      TxByAddressQR(output2.txHash, output2.blockHash, output2.timestamp, 0, false, None),
+      TxByAddressQR(input1.txHash, input1.blockHash, input1.timestamp, 0, false, None)
     ).sortBy(_.blockTimestamp).reverse
 
     hashes is expected
@@ -396,7 +396,8 @@ class TransactionQueriesSpec
                   entity.blockHash,
                   entity.timestamp,
                   entity.txOrder,
-                  entity.coinbase
+                  entity.coinbase,
+                  entity.conflicted
                 )
 
               actualResult should contain only expectedResult
@@ -466,7 +467,8 @@ class TransactionQueriesSpec
                     entity.blockHash,
                     entity.timestamp,
                     entity.txOrder,
-                    entity.coinbase
+                    entity.coinbase,
+                    entity.conflicted
                   )
                 }
 
@@ -532,7 +534,8 @@ class TransactionQueriesSpec
                   entity.blockHash,
                   entity.timestamp,
                   entity.txOrder,
-                  entity.coinbase
+                  entity.coinbase,
+                  entity.conflicted
                 )
               }
 
@@ -575,7 +578,8 @@ class TransactionQueriesSpec
               entity.blockHash,
               entity.timestamp,
               entity.txOrder,
-              entity.coinbase
+              entity.coinbase,
+              entity.conflicted
             )
           }
         }
@@ -632,7 +636,8 @@ class TransactionQueriesSpec
     // the input's output ref info should be backfilled
     exec(TransactionQueries.getTransactionAction(tx.hash)).get.inputs.head.address is Some(address)
 
-    val txQR = TxByAddressQR(tx.hash, tx.blockHash, tx.timestamp, tx.order, tx.coinbase)
+    val txQR =
+      TxByAddressQR(tx.hash, tx.blockHash, tx.timestamp, tx.order, tx.coinbase, tx.conflicted)
     exec(TransactionQueries.getTransactions(ArraySeq(txQR))).head.inputs.head.address is Some(
       address
     )

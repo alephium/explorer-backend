@@ -14,9 +14,9 @@ import org.alephium.util.TimeStamp
 object TxByTokenQR {
 
   val selectFields: String =
-    "tx_hash, block_hash, block_timestamp, tx_order"
+    "tx_hash, block_hash, block_timestamp, tx_order, conflicted"
 
-  private type Tuple = (TransactionId, BlockHash, TimeStamp, Int, Boolean)
+  private type Tuple = (TransactionId, BlockHash, TimeStamp, Int, Boolean, Option[Boolean])
 
   implicit val transactionByAddressQRGetResult: GetResult[TxByTokenQR] =
     (result: PositionedResult) =>
@@ -24,7 +24,8 @@ object TxByTokenQR {
         txHash = result.<<,
         blockHash = result.<<,
         blockTimestamp = result.<<,
-        txOrder = result.<<
+        txOrder = result.<<,
+        conflicted = result.<<
       )
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
@@ -33,7 +34,8 @@ object TxByTokenQR {
       txHash = tuple._1,
       blockHash = tuple._2,
       blockTimestamp = tuple._3,
-      txOrder = tuple._4
+      txOrder = tuple._4,
+      conflicted = tuple._6
     )
 
   @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
@@ -49,7 +51,8 @@ final case class TxByTokenQR(
     txHash: TransactionId,
     blockHash: BlockHash,
     blockTimestamp: TimeStamp,
-    txOrder: Int
+    txOrder: Int,
+    conflicted: Option[Boolean]
 ) {
 
   def hashes(): (TransactionId, BlockHash) =
@@ -60,7 +63,8 @@ final case class TxByTokenQR(
     blockHash,
     blockTimestamp,
     txOrder,
-    coinbase = false
+    coinbase = false,
+    conflicted
   )
 
 }

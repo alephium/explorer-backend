@@ -156,7 +156,8 @@ object EndpointExamples extends EndpointsExamples {
       scriptExecutionOk = true,
       inputSignatures = ArraySeq(hash.bytes),
       scriptSignatures = ArraySeq(hash.bytes),
-      coinbase = false
+      coinbase = false,
+      conflicted = None
     )
 
   private val acceptedTransaction: AcceptedTransaction =
@@ -174,7 +175,8 @@ object EndpointExamples extends EndpointsExamples {
       scriptExecutionOk = true,
       inputSignatures = ArraySeq(hash.bytes),
       scriptSignatures = ArraySeq(hash.bytes),
-      coinbase = false
+      coinbase = false,
+      conflicted = None
     )
 
   private val pendingTransaction: PendingTransaction =

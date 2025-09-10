@@ -24,6 +24,7 @@ object TransactionLike {
     ReadWriter.merge(AcceptedTransaction.txRW, PendingTransaction.utxRW)
 }
 
+@SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 @upickle.implicits.key("Accepted")
 final case class AcceptedTransaction(
     hash: TransactionId,
@@ -39,7 +40,8 @@ final case class AcceptedTransaction(
     scriptExecutionOk: Boolean,
     inputSignatures: ArraySeq[ByteString],
     scriptSignatures: ArraySeq[ByteString],
-    coinbase: Boolean
+    coinbase: Boolean,
+    conflicted: Option[Boolean] = None
 ) extends TransactionLike
 
 object AcceptedTransaction {
@@ -58,7 +60,8 @@ object AcceptedTransaction {
     tx.scriptExecutionOk,
     tx.inputSignatures,
     tx.scriptSignatures,
-    tx.coinbase
+    tx.coinbase,
+    tx.conflicted
   )
 }
 
