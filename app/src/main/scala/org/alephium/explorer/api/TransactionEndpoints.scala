@@ -7,6 +7,7 @@ import sttp.tapir._
 import sttp.tapir.generic.auto._
 
 import org.alephium.api.Endpoints.jsonBody
+import org.alephium.api.model.DecodeUnsignedTx
 import org.alephium.explorer.api.EndpointExamples._
 import org.alephium.explorer.api.model._
 import org.alephium.protocol.model.TransactionId
@@ -23,4 +24,11 @@ trait TransactionEndpoints extends BaseEndpoint {
       .in(path[TransactionId]("transaction_hash"))
       .out(jsonBody[TransactionLike])
       .summary("Get a transaction with hash")
+
+  val decodeUnsignedTx: BaseEndpoint[DecodeUnsignedTx, DecodeUnsignedTxResult] =
+    transactionsEndpoint.post
+      .in("decode-unsigned-tx")
+      .in(jsonBody[DecodeUnsignedTx])
+      .out(jsonBody[DecodeUnsignedTxResult])
+      .summary("Decode an unsigned transaction")
 }
