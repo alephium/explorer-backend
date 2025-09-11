@@ -17,15 +17,21 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
 import org.alephium.api.model.{Address => ApiAddress}
+import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache._
+import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.{MempoolDao, TransactionDao}
-import org.alephium.explorer.persistence.queries.{InputQueries, TokenQueries}
+import org.alephium.explorer.persistence.queries.{InputQueries, OutputQueries, TokenQueries}
 import org.alephium.explorer.persistence.queries.TransactionQueries._
+import org.alephium.explorer.persistence.queries.result.OutputFromTxQR
+import org.alephium.protocol
+import org.alephium.protocol.Hash
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.{TokenId, TransactionId}
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.serde._
+import org.alephium.util.{Hex, TimeStamp, U256}
 
 trait TransactionService {
 
@@ -132,6 +138,10 @@ trait TransactionService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[(TimeStamp, BigInteger)]]
+
+  def convertProtocolUnsignedTx(
+      unsignedTx: protocol.model.UnsignedTransaction
+  )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Future[UnsignedTransaction]
 }
 
 object TransactionService extends TransactionService {
@@ -249,6 +259,85 @@ object TransactionService extends TransactionService {
     )
 
   }
+
+  def convertProtocolUnsignedTx(
+      utx: protocol.model.UnsignedTransaction
+  )(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[UnsignedTransaction] = {
+    findProtocolInputsDetails(utx.inputs.toArraySeq).map { inputs =>
+      UnsignedTransaction(
+        hash = utx.id,
+        version = utx.version,
+        networkId = utx.networkId.id,
+        scriptOpt = utx.scriptOpt.map(script => Hex.toHexString(serialize(script))),
+        gasAmount = utx.gasAmount.value,
+        gasPrice = utx.gasPrice.value,
+        inputs = inputs,
+        outputs = convertProtocolOutputs(utx)
+      )
+    }
+  }
+
+  private def convertProtocolOutputs(
+      utx: protocol.model.UnsignedTransaction
+  ): ArraySeq[AssetOutput] =
+    utx.fixedOutputs.toArraySeq.zipWithIndex.map { case (o, index) =>
+      AssetOutput(
+        hint = o.hint.value,
+        key = protocol.model.TxOutputRef.key(utx.id, index).value,
+        attoAlphAmount = o.amount,
+        address = protocol.model.Address.Asset(o.lockupScript),
+        tokens = Some(o.tokens.toArraySeq.map { case (id, amount) =>
+          Token(id, amount)
+        }),
+        lockTime = Some(o.lockTime),
+        message = Some(o.additionalData),
+        spent = None,
+        fixedOutput = true
+      )
+    }
+
+  private def findProtocolInputsDetails(inputs: ArraySeq[protocol.model.TxInput])(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[Input]] =
+    foldFutures(inputs) { input =>
+      val key = input.outputRef.key.value
+      TransactionService
+        .getInputFromOutputRef(key)
+        .map {
+          case Some(output) =>
+            Input(
+              OutputRef(input.outputRef.hint.value, key),
+              Some(serialize(input.unlockScript)),
+              txHashRef = Some(output.txHash),
+              address = Some(output.address),
+              attoAlphAmount = Some(output.amount),
+              tokens = output.tokens,
+              contractInput = false
+            )
+          case None =>
+            Input(
+              OutputRef(input.outputRef.hint.value, key),
+              Some(serialize(input.unlockScript)),
+              txHashRef = None,
+              address = None,
+              attoAlphAmount = None,
+              tokens = None,
+              contractInput = false
+            )
+        }
+    }
+
+  private def getInputFromOutputRef(outputRef: Hash)(implicit
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[Option[OutputFromTxQR]] =
+    run(
+      OutputQueries
+        .getOutputFromKey(outputRef)
+    )
 
   def getUnlockScript(address: ApiAddress)(implicit
       ec: ExecutionContext,
