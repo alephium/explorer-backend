@@ -4,11 +4,13 @@
 package org.alephium.explorer.persistence.schema
 
 import scala.collection.immutable.ArraySeq
+import scala.concurrent.ExecutionContext
 
 import akka.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 
+import org.alephium.explorer.persistence.DBActionW
 import org.alephium.explorer.persistence.model.TransactionEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}
@@ -69,4 +71,16 @@ object TransactionSchema extends SchemaMainChain[TransactionEntity]("transaction
   }
 
   val table: TableQuery[Transactions] = TableQuery[Transactions]
+
+  def createConcurrentIndexes()(implicit ec: ExecutionContext): DBActionW[Unit] =
+    for {
+      _ <- createConflictedNotNullIndex()
+    } yield ()
+
+  def createConflictedNotNullIndex(): DBActionW[Int] =
+    sqlu"""
+      CREATE INDEX IF NOT EXISTS transactions_conflicted_not_null_idx
+      ON #$name(conflicted)
+      WHERE conflicted IS NOT NULL;
+    """
 }

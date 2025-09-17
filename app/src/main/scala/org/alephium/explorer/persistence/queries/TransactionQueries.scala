@@ -115,6 +115,17 @@ object TransactionQueries extends StrictLogging {
       LIMIT 1
     """.asASE[TransactionEntity](transactionEntityGetResult).headOption
 
+  private def listTransactionEntity(pagination: Pagination, conflicted: Option[Boolean]) =
+    sql"""
+      SELECT hash, block_hash, block_timestamp, tx_order, coinbase, conflicted
+      FROM transactions
+      WHERE main_chain = true
+      #${conflicted.map(c => s"AND conflicted = $c").getOrElse(s"AND ${notConflicted()}")}
+      ORDER BY block_timestamp DESC, tx_order
+    """
+      .paginate(pagination)
+      .asAS[TxByAddressQR]
+
   def getTransactionAction(
       txHash: TransactionId
   )(implicit ec: ExecutionContext): DBActionR[Option[Transaction]] =
@@ -316,6 +327,16 @@ object TransactionQueries extends StrictLogging {
     """
       .paginate(pagination)
       .asAS[TxByAddressQR]
+  }
+
+  def listTransactionsAction(
+      pagination: Pagination,
+      conflicted: Option[Boolean]
+  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[Transaction]] = {
+    for {
+      txHashesTs <- listTransactionEntity(pagination, conflicted)
+      txs        <- getTransactions(txHashesTs)
+    } yield txs
   }
 
   def getTransactionsByBlockHash(

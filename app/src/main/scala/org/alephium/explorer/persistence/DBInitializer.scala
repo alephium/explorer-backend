@@ -145,6 +145,7 @@ object DBInitializer extends StrictLogging {
     run(for {
       _ <- OutputSchema.createConcurrentIndexes()
       _ <- InputSchema.createConcurrentIndexes()
+      _ <- TransactionSchema.createConcurrentIndexes()
       _ <- TokenOutputSchema.createConcurrentIndexes()
       _ <- TransactionPerAddressSchema.createConcurrentIndexes()
       _ <- TokenPerAddressSchema.createConcurrentIndexes()

@@ -46,6 +46,11 @@ class TransactionServer(implicit
           }
         case Left(err) => Future.successful(Left(err))
       }
+    }),
+    route(listTransactions.serverLogic[Future] { case (status, pagination) =>
+      TransactionService
+        .list(pagination, status)
+        .map(Right(_))
     })
   )
 
