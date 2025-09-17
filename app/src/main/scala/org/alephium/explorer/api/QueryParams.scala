@@ -97,6 +97,9 @@ trait QueryParams extends TapirCodecs {
   val intervalTypeQuery: EndpointInput[IntervalType] =
     query[IntervalType]("interval-type")
 
+  val optionalTxStatusTypeQuery: EndpointInput[Option[TxStatusType]] =
+    query[Option[TxStatusType]]("status")
+
   val tokenInterfaceIdQuery: EndpointInput[Option[TokenStdInterfaceId]] =
     query[Option[TokenStdInterfaceId]]("interface-id")
       .description(

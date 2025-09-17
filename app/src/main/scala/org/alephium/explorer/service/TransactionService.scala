@@ -35,6 +35,11 @@ import org.alephium.util.{Hex, TimeStamp, U256}
 
 trait TransactionService {
 
+  def list(pagination: Pagination, status: Option[TxStatusType])(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[Transaction]]
+
   def getTransaction(transactionHash: TransactionId)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
@@ -145,6 +150,17 @@ trait TransactionService {
 }
 
 object TransactionService extends TransactionService {
+
+  def list(pagination: Pagination, status: Option[TxStatusType])(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[Transaction]] = {
+    val conflicted = status match {
+      case Some(TxStatusType.Conflicted) => Some(true)
+      case None                          => None
+    }
+    run(listTransactionsAction(pagination, conflicted))
+  }
 
   def getTransaction(transactionHash: TransactionId)(implicit
       ec: ExecutionContext,

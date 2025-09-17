@@ -417,6 +417,18 @@ trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with Ht
     }
   }
 
+  "list transactions" in {
+    Get(s"/transactions") check { response =>
+      val txs = response.as[ArraySeq[Transaction]]
+      txs.size is transactions.sortBy(-_.timestamp.millis).take(txLimit).size
+    }
+
+    Get(s"/transactions?status=conflicted") check { response =>
+      val txs = response.as[ArraySeq[Transaction]]
+      txs.size is 0
+    }
+  }
+
   "insert uncle blocks" in {
     uncles.foreach { uncle =>
       Get(s"/blocks/${uncle.hash.toHexString}") check { response =>

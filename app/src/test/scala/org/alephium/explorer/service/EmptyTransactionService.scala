@@ -24,6 +24,12 @@ import org.alephium.protocol.model.TransactionId
 import org.alephium.util.{TimeStamp, U256}
 
 trait EmptyTransactionService extends TransactionService {
+
+  def list(pagination: Pagination, status: Option[TxStatusType])(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[Transaction]] = Future.successful(ArraySeq.empty)
+
   override def getTransaction(transactionHash: TransactionId)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
