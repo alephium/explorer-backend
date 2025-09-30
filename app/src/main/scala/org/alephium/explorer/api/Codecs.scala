@@ -40,6 +40,19 @@ object Codecs extends TapirCodecs {
       _.string
     )
 
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
+    )
+  ) // Wartremover is complaining, maybe beacause of tapir macros
+  implicit val txStatusTypeCodec: PlainCodec[TxStatusType] =
+    Codec.derivedEnumeration[String, TxStatusType](
+      TxStatusType.validate,
+      _.string
+    )
+
   implicit val tokenStdInterfaceIdCodec: Codec[String, TokenStdInterfaceId, CodecFormat.TextPlain] =
     fromJson[TokenStdInterfaceId](
       StdInterfaceId.tokenReadWriter,

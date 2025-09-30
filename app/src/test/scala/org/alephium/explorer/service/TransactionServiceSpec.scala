@@ -202,6 +202,50 @@ class TransactionServiceSpec
     TransactionService.getTransaction(utx.hash).futureValue is Some(PendingTransaction.from(utx))
   }
 
+  "list conflicted transactions" in new Fixture {
+
+    val blocks        = chainGen(3, TimeStamp.zero, chainIndex).sample.get
+    val blockEntities = blocks.map(BlockFlowClient.blockProtocolToEntity)
+
+    val conflictedBlocks = chainGen(3, TimeStamp.zero, chainIndex).sample.get
+    val conflictedBlockEntities =
+      conflictedBlocks.map(BlockFlowClient.blockProtocolToEntity).map { block =>
+        block.copy(transactions = block.transactions.map(_.copy(conflicted = Some(true))))
+      }
+
+    val allBlockEntities = blockEntities ++ conflictedBlockEntities
+
+    BlockDao.insertAll(allBlockEntities).futureValue
+
+    allBlockEntities.foreach { block =>
+      BlockDao.updateMainChainStatus(block.hash, true).futureValue
+    }
+
+    val paginationSize = 20
+    val pagination     = Pagination.unsafe(1, paginationSize)
+
+    val expectedTxs =
+      blocks
+        .sortBy(-_.timestamp.millis)
+        .flatMap(_.transactions)
+        .take(paginationSize)
+        .map(_.unsigned.txId)
+
+    val expectedConflictedTxs =
+      conflictedBlocks
+        .sortBy(-_.timestamp.millis)
+        .flatMap(_.transactions)
+        .take(paginationSize)
+        .map(_.unsigned.txId)
+
+    TransactionService.list(pagination, None).futureValue.map(_.hash) is expectedTxs
+
+    TransactionService
+      .list(pagination, Some(TxStatusType.Conflicted))
+      .futureValue
+      .map(_.hash) is expectedConflictedTxs
+  }
+
   "return mempool txs of an address" in new Fixture {
     forAll(addressGen, Gen.listOf(mempooltransactionGen)) { case (address, utxs) =>
       val updatedUtxs = utxs.map { utx =>

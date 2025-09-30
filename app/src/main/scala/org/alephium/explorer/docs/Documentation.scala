@@ -34,6 +34,7 @@ trait Documentation
         listBlocks,
         getBlockByHash,
         getBlockTransactions,
+        listTransactions,
         getTransactionById,
         decodeUnsignedTx,
         getAddressInfo,
