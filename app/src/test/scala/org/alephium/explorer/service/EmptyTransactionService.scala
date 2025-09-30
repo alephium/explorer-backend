@@ -18,6 +18,7 @@ import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache._
 import org.alephium.explorer.service.TransactionService
+import org.alephium.protocol
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.TransactionId
 import org.alephium.util.{TimeStamp, U256}
@@ -137,4 +138,11 @@ trait EmptyTransactionService extends TransactionService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[(TimeStamp, BigInteger)]] = ???
+
+  def convertProtocolUnsignedTx(
+      unsignedTx: protocol.model.UnsignedTransaction
+  )(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[UnsignedTransaction] = ???
 }
