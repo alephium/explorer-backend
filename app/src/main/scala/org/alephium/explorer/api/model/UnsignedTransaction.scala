@@ -22,10 +22,7 @@ final case class UnsignedTransaction(
     gasPrice: U256,
     inputs: ArraySeq[Input],
     outputs: ArraySeq[Output]
-) {
-  def chainFrom: Option[Int] =
-    inputs.headOption.map(_.toProtocol().outputRef.toTxOutputRef().hint.scriptHint.groupIndex.value)
-}
+)
 
 object UnsignedTransaction {
   implicit val unsignedTxRW: ReadWriter[UnsignedTransaction] = macroRW
