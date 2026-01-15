@@ -291,6 +291,7 @@ object ExplorerConfig {
       coingeckoUri: String,
       tokenListUri: String,
       mobulaApiKey: Option[ApiKey],
+      mobulaMaxTokensPerRequest: Int,
       marketChartDays: Int,
       pricesExpirationTime: FiniteDuration,
       ratesExpirationTime: FiniteDuration,
