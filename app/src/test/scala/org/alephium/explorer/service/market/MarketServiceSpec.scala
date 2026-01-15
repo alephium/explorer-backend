@@ -168,6 +168,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
       s"http://${localhost.getHostAddress()}:$coingeckoPort",
       s"http://${localhost.getHostAddress()}:$tokenListPort",
       Some(apiKey),
+      mobulaMaxTokensPerRequest = 50,
       marketChartDays = 366,
       pricesExpirationTime = FiniteDuration(1, "minutes"),
       ratesExpirationTime = FiniteDuration(1, "minutes"),

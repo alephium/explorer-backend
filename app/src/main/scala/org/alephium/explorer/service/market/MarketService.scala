@@ -20,6 +20,7 @@ import org.alephium.api.model.ApiKey
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache._
 import org.alephium.explorer.config.ExplorerConfig
+import org.alephium.explorer.foldFutures
 import org.alephium.explorer.util.Scheduler
 import org.alephium.json.Json._
 import org.alephium.protocol.Hash
@@ -256,6 +257,13 @@ object MarketService extends StrictLogging {
       }
     }
 
+    private def batchTokens(
+        tokens: ArraySeq[TokenList.Entry],
+        batchSize: Int
+    ): ArraySeq[ArraySeq[TokenList.Entry]] = {
+      ArraySeq.from(tokens.grouped(batchSize).toSeq.map(ArraySeq.from))
+    }
+
     private def getMobulaPricesRemote(
         retried: Int
     ): Future[Either[String, ArraySeq[MobulaPrice]]] = {
@@ -264,17 +272,24 @@ object MarketService extends StrictLogging {
           getTokenList() match {
             case Right(tokens) =>
               logger.debug(s"Query mobula `/market/multi-data`, nb of attempts $retried")
-              val assets      = tokenListToAddresses(tokens)
-              val assetsStr   = assets.map { _.toBase58 }.mkString(",")
-              val blockchains = assets.map { _ => "alephium" }.mkString(",")
-              request(
-                uri"$mobulaBaseUri/market/multi-data?assets=${assetsStr}&blockchains=${blockchains}",
-                headers = Map(("Authorization", apiKey.value))
-              ) { response =>
-                handleMobulaPricesRateResponse(response, tokens, retried)
+
+              val batches = batchTokens(tokens, marketConfig.mobulaMaxTokensPerRequest)
+
+              val batchFutures = foldFutures(batches) { batch =>
+                val assets      = tokenListToAddresses(batch)
+                val assetsStr   = assets.map(_.toBase58).mkString(",")
+                val blockchains = assets.map(_ => "alephium").mkString(",")
+                requestBatch(
+                  uri"$mobulaBaseUri/market/multi-data?assets=${assetsStr}&blockchains=${blockchains}",
+                  headers = Map(("Authorization", apiKey.value)),
+                  batch
+                )(response => handleMobulaPricesRateResponse(response, batch, retried))
               }
+
+              combineBatchResults(batchFutures)
+
             case Left(error) =>
-              Future.successful(Left(s"Token list not fetched at $tokenListUri: $error"))
+              Future.successful(Left(s"Token list not fetched at $mobulaBaseUri: $error"))
           }
 
         case None =>
@@ -282,6 +297,32 @@ object MarketService extends StrictLogging {
       }
     }
 
+    private def requestBatch[A](
+        uri: Uri,
+        headers: Map[String, String],
+        batch: ArraySeq[TokenList.Entry]
+    )(
+        f: Response[Either[String, String]] => Future[Either[String, A]]
+    ): Future[Either[String, A]] = {
+      logger.debug(s"Fetching Mobula data for batch: ${batch.map(_.symbol).mkString(", ")}")
+      request(uri, headers)(f)
+    }
+
+    private def combineBatchResults(
+        batchFutures: Future[Seq[Either[String, ArraySeq[MobulaPrice]]]]
+    ): Future[Either[String, ArraySeq[MobulaPrice]]] = {
+      batchFutures.map { batchResults =>
+        val successes = batchResults.collect { case Right(prices) => prices }
+        val errors    = batchResults.collect { case Left(error) => error }
+
+        if (errors.isEmpty) {
+          Right(successes.flatten.to(ArraySeq))
+        } else {
+          logger.error(s"Errors occurred while fetching Mobula prices: ${errors.mkString("; ")}")
+          Left(errors.mkString("; "))
+        }
+      }
+    }
     private def getCoingeckoPricesRemote(
         retried: Int
     ): Future[Either[String, ArraySeq[CoingeckoPrice]]] = {
