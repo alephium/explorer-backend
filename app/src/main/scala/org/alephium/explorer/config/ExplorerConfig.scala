@@ -293,7 +293,8 @@ object ExplorerConfig {
       mobulaApiKey: Option[ApiKey],
       mobulaMaxTokensPerRequest: Int,
       marketChartDays: Int,
-      pricesExpirationTime: FiniteDuration,
+      mobulaPricesExpirationTime: FiniteDuration,
+      coingeckoPricesExpirationTime: FiniteDuration,
       ratesExpirationTime: FiniteDuration,
       priceChartsExpirationTime: FiniteDuration,
       tokenListExpirationTime: FiniteDuration
