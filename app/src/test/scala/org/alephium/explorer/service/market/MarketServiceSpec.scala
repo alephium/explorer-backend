@@ -16,6 +16,7 @@ import io.vertx.ext.web._
 import org.scalatest.concurrent.ScalaFutures
 import sttp.tapir._
 import sttp.tapir.CodecFormat.TextPlain
+import sttp.tapir.generic.auto._
 import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
@@ -23,6 +24,7 @@ import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenCoreApi.apiKeyGen
 import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.config.ExplorerConfig
+import org.alephium.explorer.service.market.MarketService.MobulaPriceRequest
 import org.alephium.explorer.web.Server
 import org.alephium.json.Json._
 
@@ -275,13 +277,12 @@ object MarketServiceSpec {
     val routes: ArraySeq[Router => Route] =
       ArraySeq(
         route(
-          baseEndpoint.get
-            .in("market")
-            .in("multi-data")
-            .in(query[List[String]]("assets"))
-            .in(query[List[String]]("blockchains"))
+          baseEndpoint.post
+            .in("token")
+            .in("price")
+            .in(jsonBody[MobulaPriceRequest])
             .out(jsonBody[ujson.Value])
-            .serverLogicSuccess[Future] { case (_, _) =>
+            .serverLogicSuccess[Future] { _ =>
               Future.successful(ujson.read(mobulaPrices))
             }
         )
@@ -333,32 +334,36 @@ object MarketServiceSpec {
       }
     }"""
 
-  def mobulaPrices: String = s"""{"data": {
-      "vT49PY8ksoUL6NcXiZ1t2wAmC7tTPRfFfER8n3UCLvXy": {
-        "price": 4.213296507259207,
-        "liquidity": 1000
+  def mobulaPrices: String = s"""{"payload": [
+      {
+        "priceUSD": $alphPrice,
+        "liquidityUSD": 1000
       },
-      "xoDuoek5V2T1dL2HWwvbHT1JEHjMjtJfJoUS2xKsjFg3": {
-        "price": 1.0001333774731636,
-        "liquidity": 1000
+      {
+        "priceUSD": $usdcPrice,
+        "liquidityUSD": 99
       },
-      "zSRgc7goAYUgYsEBYdAzogyyeKv3ne3uvWb3VDtxnaEK": {
-        "price": $usdtPrice,
-        "liquidity": 1000
+      {
+        "priceUSD": 1.0001333774731636,
+        "liquidityUSD": 1000
       },
-      "22Nb9JajRpAh9A2fWNgoKt867PA6zNyi541rtoraDfKXV": {
-        "price": 0.999953840448559,
-        "liquidity": 99
+      {
+        "priceUSD": null,
+        "liquidityUSD": null
       },
-      "vP6XSUyjmgWCB2B9tD5Rqun56WJqDdExWnfwZVEqzhQb": {
-        "price": 2609.03101054154,
-        "liquidity": 10
+      {
+        "priceUSD": $usdtPrice,
+        "liquidityUSD": 1000
       },
-      "xUTp3RXGJ1fJpCGqsAY6GgyfRQ3WQ1MdcYR1SiwndAbR": {
-        "price": 67214.51967683395,
-        "liquidity": 1000
+      {
+        "priceUSD": 2609.03101054154,
+        "liquidityUSD": 10
+      },
+      {
+        "priceUSD": 67214.51967683395,
+        "liquidityUSD": 1000
       }
-    }
+    ]
   }"""
 
   val exchangeRates: String = """

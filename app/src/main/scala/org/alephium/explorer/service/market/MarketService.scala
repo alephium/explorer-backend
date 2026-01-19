@@ -221,10 +221,8 @@ object MarketService extends StrictLogging {
       }
     }
 
-    private def tokenListToAddresses(tokens: ArraySeq[TokenList.Entry]): ArraySeq[Address] = {
-      tokens.map { token =>
-        Address.contract(ContractId.unsafe(Hash.unsafe(Hex.unsafe(token.id))))
-      }
+    private def tokenToAddress(token: TokenList.Entry): Address = {
+      Address.contract(ContractId.unsafe(Hash.unsafe(Hex.unsafe(token.id))))
     }
 
     // This is used to validate the token list freshness. Only used in `getTokenList`
@@ -276,13 +274,18 @@ object MarketService extends StrictLogging {
               val batches = batchTokens(tokens, marketConfig.mobulaMaxTokensPerRequest)
 
               val batchFutures = foldFutures(batches) { batch =>
-                val assets      = tokenListToAddresses(batch)
-                val assetsStr   = assets.map(_.toBase58).mkString(",")
-                val blockchains = assets.map(_ => "alephium").mkString(",")
-                requestBatch(
-                  uri"$mobulaBaseUri/market/multi-data?assets=${assetsStr}&blockchains=${blockchains}",
-                  headers = Map(("Authorization", apiKey.value)),
-                  batch
+                val mobulaPriceRequest = MobulaPriceRequest(
+                  items = ArraySeq.from(
+                    batch.map { token =>
+                      MobulaPriceRequestAsset(tokenToAddress(token).toBase58, "Alephium")
+                    }
+                  )
+                )
+
+                requestPost(
+                  uri"$mobulaBaseUri/token/price",
+                  writeJs(mobulaPriceRequest),
+                  headers = Map(("Authorization", apiKey.value))
                 )(response => handleMobulaPricesRateResponse(response, batch, retried))
               }
 
@@ -295,17 +298,6 @@ object MarketService extends StrictLogging {
         case None =>
           Future.successful(Left("No Mobula API key"))
       }
-    }
-
-    private def requestBatch[A](
-        uri: Uri,
-        headers: Map[String, String],
-        batch: ArraySeq[TokenList.Entry]
-    )(
-        f: Response[Either[String, String]] => Future[Either[String, A]]
-    ): Future[Either[String, A]] = {
-      logger.debug(s"Fetching Mobula data for batch: ${batch.map(_.symbol).mkString(", ")}")
-      request(uri, headers)(f)
     }
 
     private def combineBatchResults(
@@ -342,7 +334,7 @@ object MarketService extends StrictLogging {
       handleResponseAndRetryWithCondition(
         "mobula/price",
         response,
-        _.code != StatusCode.Ok,
+        !_.code.isSuccess,
         retried,
         convertJsonToMobulaPrices(assets),
         getMobulaPricesRemote,
@@ -357,7 +349,7 @@ object MarketService extends StrictLogging {
       handleResponseAndRetryWithCondition(
         "coingecko/price",
         response,
-        _.code != StatusCode.Ok,
+        !_.code.isSuccess,
         retried,
         convertJsonToCoingeckoPrices,
         getCoingeckoPricesRemote,
@@ -398,7 +390,7 @@ object MarketService extends StrictLogging {
       handleResponseAndRetryWithCondition(
         tokenListUri,
         response,
-        _.code != StatusCode.Ok,
+        !_.code.isSuccess,
         retried,
         ujson =>
           Try(read[TokenList](ujson)) match {
@@ -470,6 +462,30 @@ object MarketService extends StrictLogging {
             }
           }
       }
+    }
+
+    def requestPost[A](
+        uri: Uri,
+        payload: ujson.Value,
+        headers: Map[String, String]
+    )(
+        f: Response[Either[String, String]] => Future[Either[String, A]]
+    ): Future[Either[String, A]] = {
+      basicRequest
+        .post(uri)
+        .headers(headers)
+        .body(write(payload))
+        .contentType("application/json")
+        .send(backend)
+        .flatMap(f)
+        .recover { case e: Throwable =>
+          // If the service is stopped, we don't want to throw an exception
+          if (isRunning.get()) {
+            throw e
+          } else {
+            Left(e.getMessage)
+          }
+        }
     }
 
     def handleChartResponse(
@@ -551,26 +567,29 @@ object MarketService extends StrictLogging {
     )(json: ujson.Value): Either[String, ArraySeq[MobulaPrice]] = {
       json match {
         case obj: ujson.Obj =>
-          obj.value.get("data") match {
-            case Some(data: ujson.Obj) =>
-              Try {
-                ArraySeq.from(assets.flatMap { asset =>
-                  val address = tokenListToAddresses(ArraySeq(asset)).head
-                  data.value.get(address.toBase58).flatMap { value =>
+          obj.value.get("payload") match {
+            case Some(payload: ujson.Arr) =>
+              if (payload.arr.length != assets.length) {
+                Left(
+                  s"Mobula response length ${payload.arr.length} doesn't match request length ${assets.length}"
+                )
+              } else {
+                Try {
+                  assets.zip(payload.arr).flatMap { case (asset, value) =>
                     for {
-                      price     <- value("price").numOpt
-                      liquidity <- value("liquidity").numOpt
+                      price     <- value("priceUSD").numOpt
+                      liquidity <- value("liquidityUSD").numOpt
                       result    <- validateMobulaData(asset, price, liquidity)
                     } yield {
                       result
                     }
                   }
-                })
-              }.toEither.left.map { error =>
-                error.getMessage
+                }.toEither.left.map { error =>
+                  error.getMessage
+                }
               }
             case _ =>
-              Left(s"JSON isn't an object: $obj")
+              Left(s"JSON isn't an array: $obj")
           }
         case other =>
           Left(s"JSON isn't an object: $other")
@@ -682,6 +701,23 @@ object MarketService extends StrictLogging {
       liquidity: Double
   ) extends Price {
     val symbol: String = asset.symbol
+  }
+
+  final private[market] case class MobulaPriceRequestAsset(
+      address: String,
+      blockchain: String
+  )
+
+  object MobulaPriceRequestAsset {
+    implicit val readWriter: ReadWriter[MobulaPriceRequestAsset] = macroRW
+  }
+
+  final private[market] case class MobulaPriceRequest(
+      items: ArraySeq[MobulaPriceRequestAsset]
+  )
+
+  object MobulaPriceRequest {
+    implicit val readWriter: ReadWriter[MobulaPriceRequest] = macroRW
   }
 
   final private case class CoingeckoPrice(symbol: String, price: Double) extends Price
