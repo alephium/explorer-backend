@@ -170,7 +170,8 @@ class MarketServiceSpec extends AlephiumFutureSpec {
       Some(apiKey),
       mobulaMaxTokensPerRequest = 50,
       marketChartDays = 366,
-      pricesExpirationTime = FiniteDuration(1, "minutes"),
+      mobulaPricesExpirationTime = FiniteDuration(1, "minutes"),
+      coingeckoPricesExpirationTime = FiniteDuration(1, "minutes"),
       ratesExpirationTime = FiniteDuration(1, "minutes"),
       priceChartsExpirationTime = FiniteDuration(1, "minutes"),
       tokenListExpirationTime = FiniteDuration(1, "minutes")
