@@ -242,13 +242,6 @@ case object TransactionHistoryService extends StrictLogging {
       ).asUpdate
     }
 
-  private def truncate(timestamp: TimeStamp, intervalType: IntervalType): TimeStamp =
-    intervalType match {
-      case IntervalType.Hourly => truncatedToHour(timestamp)
-      case IntervalType.Daily  => truncatedToDay(timestamp)
-      case IntervalType.Weekly => truncatedToWeek(timestamp)
-    }
-
   @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
   def getTimeRanges(
       histTs: TimeStamp,
@@ -257,8 +250,8 @@ case object TransactionHistoryService extends StrictLogging {
   ): ArraySeq[(TimeStamp, TimeStamp)] = {
 
     val oneMillis = Duration.ofMillisUnsafe(1)
-    val start     = truncate(histTs, intervalType)
-    val end       = truncate(latestTxTs, intervalType).minusUnsafe(oneMillis)
+    val start     = truncateTime(histTs, intervalType)
+    val end       = truncateTime(latestTxTs, intervalType).minusUnsafe(oneMillis)
 
     if (start == end || end.isBefore(start)) {
       ArraySeq.empty
@@ -282,6 +275,7 @@ case object TransactionHistoryService extends StrictLogging {
       case IntervalType.Hourly => timestamp.minusUnsafe(hourlyStepBack)
       case IntervalType.Daily  => timestamp.minusUnsafe(dailyStepBack)
       case IntervalType.Weekly => timestamp.minusUnsafe(weeklyStepBack)
+      case IntervalType.Monthly => timestamp.minusUnsafe(monthlyStepBack)
     }
 
   private def findLatestTransationTimestamp()(implicit

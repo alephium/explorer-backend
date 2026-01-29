@@ -10,10 +10,16 @@ import scala.annotation.tailrec
 import scala.collection.immutable.ArraySeq
 import scala.util.{Failure, Success, Try}
 
+import org.alephium.explorer.api.model.IntervalType
 import org.alephium.explorer.error.ExplorerError.RemoteTimeStampIsBeforeLocal
 import org.alephium.util.{Duration, TimeStamp}
 
 object TimeUtil {
+
+  val hourlyStepBack: Duration = Duration.ofHoursUnsafe(2)
+  val dailyStepBack: Duration  = Duration.ofDaysUnsafe(1)
+  val weeklyStepBack: Duration = Duration.ofDaysUnsafe(7)
+  val monthlyStepBack: Duration = Duration.ofDaysUnsafe(31)
 
   /** Convert's [[java.time.OffsetTime]] to [[java.time.ZonedDateTime]] in the same zone */
   @inline def toZonedDateTime(time: OffsetTime): ZonedDateTime =
@@ -21,6 +27,14 @@ object TimeUtil {
 
   @inline def toInstant(timestamp: TimeStamp): Instant =
     Instant.ofEpochMilli(timestamp.millis)
+
+  def truncateTime(timestamp: TimeStamp, intervalType: IntervalType): TimeStamp =
+    intervalType match {
+      case IntervalType.Hourly => truncatedToHour(timestamp)
+      case IntervalType.Daily  => truncatedToDay(timestamp)
+      case IntervalType.Weekly => truncatedToWeek(timestamp)
+      case IntervalType.Monthly => truncatedToMonth(timestamp)
+    }
 
   def truncatedToDay(timestamp: TimeStamp): TimeStamp =
     mapInstant(timestamp)(_.truncatedTo(ChronoUnit.DAYS))
@@ -30,6 +44,9 @@ object TimeUtil {
 
   def truncatedToWeek(timestamp: TimeStamp): TimeStamp =
     mapInstant(timestamp)(_.truncatedTo(ChronoUnit.WEEKS))
+
+  def truncatedToMonth(timestamp: TimeStamp): TimeStamp =
+    mapInstant(timestamp)(_.truncatedTo(ChronoUnit.MONTHS))
 
   private def mapInstant(timestamp: TimeStamp)(f: Instant => Instant): TimeStamp = {
     val instant = toInstant(timestamp)
@@ -113,4 +130,40 @@ object TimeUtil {
       Success(range)
     }
   }
+
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  def getTimeRanges(
+      histTs: TimeStamp,
+      latestTxTs: TimeStamp,
+      intervalType: IntervalType
+  ): ArraySeq[(TimeStamp, TimeStamp)] = {
+
+    val oneMillis = Duration.ofMillisUnsafe(1)
+    val start     = truncateTime(histTs, intervalType)
+    val end       = truncateTime(latestTxTs, intervalType).minusUnsafe(oneMillis)
+
+    if (start == end || end.isBefore(start)) {
+      ArraySeq.empty
+    } else {
+      val step = (intervalType match {
+        case IntervalType.Hourly => Duration.ofHoursUnsafe(1)
+        case IntervalType.Daily  => Duration.ofDaysUnsafe(1)
+        case IntervalType.Weekly => Duration.ofDaysUnsafe(7)
+      }).-(oneMillis).get
+
+      buildTimestampRange(start, end, step)
+    }
+  }
+
+  /*
+   * Step back a bit in time to recompute some latest values,
+   * to be sure we didn't miss some unsynced blocks
+   */
+  def stepBack(timestamp: TimeStamp, intervalType: IntervalType): TimeStamp =
+    intervalType match {
+      case IntervalType.Hourly => timestamp.minusUnsafe(hourlyStepBack)
+      case IntervalType.Daily  => timestamp.minusUnsafe(dailyStepBack)
+      case IntervalType.Weekly => timestamp.minusUnsafe(weeklyStepBack)
+    }
+
 }

@@ -48,8 +48,16 @@ object IntervalType {
     override def toString()    = string
   }
 
+  case object Monthly extends IntervalType {
+    val value: Int             = 3
+    val string: String         = "monthly"
+    val chronoUnit: ChronoUnit = ChronoUnit.WEEKS
+    val duration: Duration     = Duration.ofDaysUnsafe(31)
+    override def toString()    = string
+  }
+
   val all: ArraySeq[IntervalType] =
-    ArraySeq(Hourly: IntervalType, Daily: IntervalType, Weekly: IntervalType)
+    ArraySeq(Hourly: IntervalType, Daily: IntervalType, Weekly: IntervalType, Monthly: IntervalType)
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   implicit val reader: Reader[IntervalType] =
@@ -68,6 +76,7 @@ object IntervalType {
       case Hourly.string => Some(Hourly)
       case Daily.string  => Some(Daily)
       case Weekly.string => Some(Weekly)
+      case Monthly.string => Some(Monthly)
       case _             => None
     }
 
@@ -79,15 +88,18 @@ object IntervalType {
       case IntervalType.Hourly.value => IntervalType.Hourly
       case IntervalType.Daily.value  => IntervalType.Daily
       case IntervalType.Weekly.value => IntervalType.Weekly
+      case IntervalType.Monthly.value => IntervalType.Monthly
     }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def validateTimeInterval[A](
       timeInterval: TimeInterval,
       intervalType: IntervalType,
       maxHourlyTimeSpan: Duration,
       maxDailyTimeSpan: Duration,
-      maxWeeklyTimeSpan: Duration
+      maxWeeklyTimeSpan: Duration,
+      maxMonthlyTimeSpan: Duration = Duration.ofDaysUnsafe(365)
   )(
       contd: => Future[A]
   )(implicit executionContext: ExecutionContext): Future[Either[ApiError[_ <: StatusCode], A]] = {
@@ -96,6 +108,7 @@ object IntervalType {
         case IntervalType.Hourly => maxHourlyTimeSpan
         case IntervalType.Daily  => maxDailyTimeSpan
         case IntervalType.Weekly => maxWeeklyTimeSpan
+        case IntervalType.Monthly => maxMonthlyTimeSpan
       }
     timeInterval.validateTimeSpan(timeSpan) match {
       case Left(error) => Future.successful(Left(error))

@@ -92,7 +92,8 @@ object SyncServices extends StrictLogging {
               HashrateService.start(hashRateServiceSyncPeriod),
               FinalizerService.start(finalizerServiceSyncPeriod),
               HolderService.start(holderServiceScheduleTime),
-              TransactionHistoryService.start(transactionHistoryServiceSyncPeriod)
+              TransactionHistoryService.start(transactionHistoryServiceSyncPeriod),
+              ActiveAddressHistoryService.start()
             )
           )
           .onComplete {
