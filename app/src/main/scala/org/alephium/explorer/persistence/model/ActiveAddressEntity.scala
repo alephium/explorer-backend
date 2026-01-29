@@ -4,7 +4,6 @@
 package org.alephium.explorer.persistence.model
 
 import org.alephium.explorer.api.model.IntervalType
-import org.alephium.protocol.model.GroupIndex
 import org.alephium.util.TimeStamp
 
 final case class ActiveAddressHistoryEntity(
@@ -12,4 +11,3 @@ final case class ActiveAddressHistoryEntity(
     count: Long,
     intervalType: IntervalType
 )
-

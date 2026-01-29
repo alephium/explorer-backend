@@ -73,11 +73,11 @@ object IntervalType {
 
   def validate(str: String): Option[IntervalType] =
     str match {
-      case Hourly.string => Some(Hourly)
-      case Daily.string  => Some(Daily)
-      case Weekly.string => Some(Weekly)
+      case Hourly.string  => Some(Hourly)
+      case Daily.string   => Some(Daily)
+      case Weekly.string  => Some(Weekly)
       case Monthly.string => Some(Monthly)
-      case _             => None
+      case _              => None
     }
 
   implicit val writer: Writer[IntervalType] =
@@ -85,9 +85,9 @@ object IntervalType {
 
   def unsafe(int: Int): IntervalType = {
     int match {
-      case IntervalType.Hourly.value => IntervalType.Hourly
-      case IntervalType.Daily.value  => IntervalType.Daily
-      case IntervalType.Weekly.value => IntervalType.Weekly
+      case IntervalType.Hourly.value  => IntervalType.Hourly
+      case IntervalType.Daily.value   => IntervalType.Daily
+      case IntervalType.Weekly.value  => IntervalType.Weekly
       case IntervalType.Monthly.value => IntervalType.Monthly
     }
   }
@@ -105,9 +105,9 @@ object IntervalType {
   )(implicit executionContext: ExecutionContext): Future[Either[ApiError[_ <: StatusCode], A]] = {
     val timeSpan =
       intervalType match {
-        case IntervalType.Hourly => maxHourlyTimeSpan
-        case IntervalType.Daily  => maxDailyTimeSpan
-        case IntervalType.Weekly => maxWeeklyTimeSpan
+        case IntervalType.Hourly  => maxHourlyTimeSpan
+        case IntervalType.Daily   => maxDailyTimeSpan
+        case IntervalType.Weekly  => maxWeeklyTimeSpan
         case IntervalType.Monthly => maxMonthlyTimeSpan
       }
     timeInterval.validateTimeSpan(timeSpan) match {

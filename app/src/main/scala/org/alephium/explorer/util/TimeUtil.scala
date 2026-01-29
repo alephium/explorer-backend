@@ -3,8 +3,9 @@
 
 package org.alephium.explorer.util
 
+import java.time.{Instant, LocalTime, ZonedDateTime, ZoneOffset}
 import java.time.{Instant, LocalDate, OffsetTime, ZonedDateTime}
-import java.time.temporal.ChronoUnit
+import java.time.temporal.{ChronoUnit, TemporalAdjusters}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.ArraySeq
@@ -16,9 +17,9 @@ import org.alephium.util.{Duration, TimeStamp}
 
 object TimeUtil {
 
-  val hourlyStepBack: Duration = Duration.ofHoursUnsafe(2)
-  val dailyStepBack: Duration  = Duration.ofDaysUnsafe(1)
-  val weeklyStepBack: Duration = Duration.ofDaysUnsafe(7)
+  val hourlyStepBack: Duration  = Duration.ofHoursUnsafe(2)
+  val dailyStepBack: Duration   = Duration.ofDaysUnsafe(1)
+  val weeklyStepBack: Duration  = Duration.ofDaysUnsafe(7)
   val monthlyStepBack: Duration = Duration.ofDaysUnsafe(31)
 
   /** Convert's [[java.time.OffsetTime]] to [[java.time.ZonedDateTime]] in the same zone */
@@ -30,9 +31,9 @@ object TimeUtil {
 
   def truncateTime(timestamp: TimeStamp, intervalType: IntervalType): TimeStamp =
     intervalType match {
-      case IntervalType.Hourly => truncatedToHour(timestamp)
-      case IntervalType.Daily  => truncatedToDay(timestamp)
-      case IntervalType.Weekly => truncatedToWeek(timestamp)
+      case IntervalType.Hourly  => truncatedToHour(timestamp)
+      case IntervalType.Daily   => truncatedToDay(timestamp)
+      case IntervalType.Weekly  => truncatedToWeek(timestamp)
       case IntervalType.Monthly => truncatedToMonth(timestamp)
     }
 
@@ -45,15 +46,30 @@ object TimeUtil {
   def truncatedToWeek(timestamp: TimeStamp): TimeStamp =
     mapInstant(timestamp)(_.truncatedTo(ChronoUnit.WEEKS))
 
-  def truncatedToMonth(timestamp: TimeStamp): TimeStamp =
-    mapInstant(timestamp)(_.truncatedTo(ChronoUnit.MONTHS))
+  def truncatedToMonth(timestamp: TimeStamp): TimeStamp = {
+    val result = mapInstant(timestamp)(
+      _.atZone(ZoneOffset.UTC)
+        .withDayOfMonth(1)
+        .truncatedTo(ChronoUnit.DAYS)
+        .toInstant()
+    )
+    result
+
+  }
 
   private def mapInstant(timestamp: TimeStamp)(f: Instant => Instant): TimeStamp = {
     val instant = toInstant(timestamp)
-    TimeStamp
+    val prout = instant
+      .atZone(ZoneOffset.UTC)
+      .withDayOfMonth(1)
+      .truncatedTo(ChronoUnit.DAYS)
+      .toInstant();
+
+    val tiuns = TimeStamp
       .unsafe(
         f(instant).toEpochMilli
       )
+    tiuns
   }
 
   def buildTimestampRange(
@@ -146,9 +162,10 @@ object TimeUtil {
       ArraySeq.empty
     } else {
       val step = (intervalType match {
-        case IntervalType.Hourly => Duration.ofHoursUnsafe(1)
-        case IntervalType.Daily  => Duration.ofDaysUnsafe(1)
-        case IntervalType.Weekly => Duration.ofDaysUnsafe(7)
+        case IntervalType.Hourly  => Duration.ofHoursUnsafe(1)
+        case IntervalType.Daily   => Duration.ofDaysUnsafe(1)
+        case IntervalType.Weekly  => Duration.ofDaysUnsafe(7)
+        case IntervalType.Monthly => Duration.ofDaysUnsafe(31)
       }).-(oneMillis).get
 
       buildTimestampRange(start, end, step)

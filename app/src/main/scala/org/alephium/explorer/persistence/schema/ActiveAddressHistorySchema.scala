@@ -11,7 +11,8 @@ import org.alephium.explorer.persistence.model.ActiveAddressHistoryEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.util.TimeStamp
 
-object ActiveAddressHistorySchema extends Schema[ActiveAddressHistoryEntity]("active_address_history") {
+object ActiveAddressHistorySchema
+    extends Schema[ActiveAddressHistoryEntity]("active_address_history") {
 
   class ActiveAddressHistories(tag: Tag) extends Table[ActiveAddressHistoryEntity](tag, name) {
     def timestamp: Rep[TimeStamp]       = column[TimeStamp]("timestamp")
@@ -30,4 +31,3 @@ object ActiveAddressHistorySchema extends Schema[ActiveAddressHistoryEntity]("ac
 
   val table: TableQuery[ActiveAddressHistories] = TableQuery[ActiveAddressHistories]
 }
-

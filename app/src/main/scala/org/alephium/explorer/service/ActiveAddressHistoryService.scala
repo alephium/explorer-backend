@@ -3,9 +3,8 @@
 
 package org.alephium.explorer.service
 
-import scala.collection.immutable.ArraySeq
+import java.time.{Instant, LocalTime, ZonedDateTime, ZoneOffset}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration._
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
 import org.alephium.explorer.persistence._
@@ -24,22 +23,30 @@ import org.alephium.explorer.util.SlickUtil._
 
 case object ActiveAddressHistoryService extends StrictLogging {
 
-  def start()(implicit
+  def start(scheduleTime: LocalTime)(implicit
       executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile],
       scheduler: Scheduler
   ): Future[Unit] = {
     syncOnce()
+    // Future.successful{
+    //   scheduler.scheduleDailyAt(
+    //     taskId = TokenSupplyService.productPrefix,
+    //     at = ZonedDateTime
+    //       .ofInstant(Instant.EPOCH, ZoneOffset.UTC)
+    //       .plusSeconds(scheduleTime.toSecondOfDay().toLong)
+    //   )(syncOnce())
+    // }
   }
 
   def syncOnce()(implicit
       ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile],
+      dc: DatabaseConfig[PostgresProfile]
   ): Future[Unit] = {
-    println(s"${Console.RED}${Console.BOLD}*** syncOnce ***${Console.RESET}")
     logger.debug("Updating transactions count")
     val startedAt = TimeStamp.now()
     update().map { _ =>
+      println(s"${Console.RED}${Console.BOLD}*** update ***${Console.RESET}")
       val duration = TimeStamp.now().deltaUnsafe(startedAt)
       logger.debug(s"Active Address history updated in ${duration.millis} ms")
     }
@@ -50,19 +57,21 @@ case object ActiveAddressHistoryService extends StrictLogging {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Unit] = {
     run(
-    findLatestTransationTimestamp().flatMap {
-      case None => DBIO.successful(())
-      case Some(latestTxTs) =>
-        println(s"${Console.RED}${Console.BOLD}*** latestTxTs ***${Console.RESET}${latestTxTs}")
-        for {
-          _ <- updateDAA(latestTxTs)
-        } yield ()
-    }
+      findLatestTransationTimestamp().flatMap {
+        case None => DBIO.successful(())
+        case Some(latestTxTs) =>
+          for {
+             //_ <- updateDAA(latestTxTs)
+            _ <- updateMAA(latestTxTs)
+          } yield ()
+      }
     )
 
   }
 
-  private def updateDAA(latestTxTs:TimeStamp)(implicit ec:ExecutionContext, dc: DatabaseConfig[PostgresProfile]):DBActionRW[Unit] = {
+  private def updateDAA(
+      latestTxTs: TimeStamp
+  )(implicit ec: ExecutionContext): DBActionRW[Unit] = {
     findLatestHistoryTimestamp(IntervalType.Daily).flatMap { histTsOpt =>
       val start = histTsOpt
         .map { histTs =>
@@ -76,93 +85,119 @@ case object ActiveAddressHistoryService extends StrictLogging {
         head <- rangesTmp.headOption
         last <- rangesTmp.lastOption
       } yield {
-        println(s"${Console.RED}${Console.BOLD}*** head ***${Console.RESET}${head}")
-        println(s"${Console.RED}${Console.BOLD}*** last ***${Console.RESET}${last}")
         Seq((head._1, last._2))
       }).getOrElse(Seq.empty)
 
-
-      DBIO.sequence(
-        ranges.map { range =>
-          println(s"${Console.RED}${Console.BOLD}*** range ***${Console.RESET}${range}")
-          range match {case (from, to) =>
-          computeDAA(from, to)
+      DBIO
+        .sequence(
+          ranges.map { range =>
+            range match {
+              case (from, to) =>
+                computeDAA(from, to)
+            }
           }
-        }
-      ).map(_ => ())
+        )
+        .map(_ => ())
     }
   }
 
+  private def updateMAA(
+      latestTxTs: TimeStamp
+  )(implicit ec: ExecutionContext): DBActionRW[Unit] = {
+    println(s"${Console.RED}${Console.BOLD}*** updateMAA ***${Console.RESET}")
+    findLatestHistoryTimestamp(IntervalType.Monthly).flatMap { histTsOpt =>
+      val start = histTsOpt
+        .map { histTs =>
+          stepBack(histTs, IntervalType.Monthly)
+        }
+        .getOrElse(ALPH.LaunchTimestamp)
+
+      FIXME
+      //TODO HERE timesange dosen't work as monthly aren't always the same lenght,
+      //but as we only need firt and last, we could truncate and play with instant.
+      val rangesTmp = getTimeRanges(start, latestTxTs, IntervalType.Monthly)
+
+      rangesTmp.foreach { r =>
+        println(s"ts ${r._1.millis};ts ${r._2.millis}")
+      }
+      val ranges = (for {
+        head <- rangesTmp.headOption
+        last <- rangesTmp.lastOption
+      } yield {
+        Seq((head._1, last._2))
+      }).getOrElse(Seq.empty)
+
+      DBIO
+        .sequence(
+          ranges.map { range =>
+            range match {
+              case (from, to) =>
+                computeMAA(from, to)
+            }
+          }
+        )
+        .map(_ => ())
+    }
+  }
 
   private def computeDAA(
-    from:TimeStamp,
-  to: TimeStamp
+      from: TimeStamp,
+      to: TimeStamp
   )(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
+      ec: ExecutionContext
   ): DBActionRW[Int] = {
-    println(s"${Console.RED}${Console.BOLD}*** computeDAA ***${Console.RESET}")
-    println(s"${Console.RED}${Console.BOLD}*** from ***${Console.RESET}${from}")
-  println(s"${Console.RED}${Console.BOLD}*** to ***${Console.RESET}${to}")
     logger.debug("Starting computation of Daily Active Addresses (DAA)")
-    getDailyActiveAddressesQuery(from,to).flatMap { results =>
+    getDailyActiveAddressesQuery(from, to).flatMap { results =>
       logger.debug(s"Computed ${results.size} daily active addresses")
       insertDAA(results) // Insert results into the database
     }
   }
 
   private def computeMAA(
-    from:TimeStamp,
-  to: TimeStamp
-    )(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[Int] = {
+      from: TimeStamp,
+      to: TimeStamp
+  )(implicit
+      ec: ExecutionContext
+  ): DBActionRW[Int] = {
     logger.debug("Starting computation of Monthly Active Addresses (MAA)")
-    run(getMonthlyActiveAddressesQuery(from,to)).flatMap { results =>
+    getMonthlyActiveAddressesQuery(from, to).flatMap { results =>
       logger.debug(s"Computed ${results.size} monthly active addresses")
-      run(insertMAA(results)) // Insert results into the database
+      insertMAA(results) // Insert results into the database
     }
   }
 
   private def getDailyActiveAddressesQuery(
       from: TimeStamp,
       to: TimeStamp
-    )
-    (implicit
-      ec: ExecutionContext,
   ): DBActionSR[(TimeStamp, Long)] = {
     sql"""
+      WITH daily_active_addresses AS (
+          SELECT
+              (EXTRACT(EPOCH FROM DATE_TRUNC('day', to_timestamp(block_timestamp / 1000) AT TIME ZONE 'UTC')) * 1000)::BIGINT AS transaction_date_unix,
+              address,
+              COUNT(DISTINCT tx_hash) AS tx_count
+          FROM
+              transaction_per_addresses
+          WHERE
+              main_chain = true -- Only consider transactions in the main chain
+          AND
+            block_timestamp >= $from
+          AND
+            block_timestamp < $to
+          GROUP BY
+              transaction_date_unix, address
+      )
+      SELECT
+          transaction_date_unix AS transaction_date,
+          COUNT(DISTINCT address) AS daily_count
+      FROM
+          daily_active_addresses
+      GROUP BY
+          transaction_date_unix
+      ORDER BY
+          transaction_date_unix;
 
-
-
-WITH daily_active_addresses AS (
-    SELECT
-        (EXTRACT(EPOCH FROM DATE_TRUNC('day', to_timestamp(block_timestamp / 1000) AT TIME ZONE 'UTC')) * 1000)::BIGINT AS transaction_date_unix,
-        address,
-        COUNT(DISTINCT tx_hash) AS tx_count
-    FROM
-        transaction_per_addresses
-    WHERE
-        main_chain = true -- Only consider transactions in the main chain
-    AND
-      block_timestamp >= $from
-    AND
-      block_timestamp < $to
-    GROUP BY
-        transaction_date_unix, address
-)
-SELECT
-    transaction_date_unix AS transaction_date,
-    COUNT(DISTINCT address) AS daily_count
-FROM
-    daily_active_addresses
-GROUP BY
-    transaction_date_unix
-ORDER BY
-    transaction_date_unix;
-
-      """.asAS[(TimeStamp,Long)]
+      """.asAS[(TimeStamp, Long)]
   }
 
   private def getMonthlyActiveAddressesQuery(
@@ -171,33 +206,37 @@ ORDER BY
   ): DBActionSR[(TimeStamp, Long)] = {
     sql"""
       WITH monthly_active_addresses AS (
-        SELECT
-          date_trunc('month', to_timestamp(block_timestamp / 1000))::date AS transaction_month,
-          address
-        FROM
-          transaction_per_addresses
-        WHERE
-          main_chain = true
-        AND
-          block_timestamp >= $from
-        AND
-          block_timestamp < $to
-        GROUP BY
-          transaction_month, address
+          SELECT
+              (EXTRACT(EPOCH FROM DATE_TRUNC('month', to_timestamp(block_timestamp / 1000) AT TIME ZONE 'UTC')) * 1000)::BIGINT AS transaction_date_unix,
+              address,
+              COUNT(DISTINCT tx_hash) AS tx_count
+          FROM
+              transaction_per_addresses
+          WHERE
+              main_chain = true -- Only consider transactions in the main chain
+          AND
+              block_timestamp >= $from
+          AND
+              block_timestamp < $to
+          GROUP BY
+              transaction_date_unix, address
       )
       SELECT
-        transaction_month,
-        COUNT(DISTINCT address) AS monthly_count
+          transaction_date_unix AS transaction_date,
+          COUNT(DISTINCT address) AS monthly_count
       FROM
-        monthly_active_addresses
+          monthly_active_addresses
       GROUP BY
-        transaction_month
+          transaction_date_unix
       ORDER BY
-        transaction_month
+          transaction_date_unix;
     """.asAS[(TimeStamp, Long)]
   }
 
-  private def insertDAA(values: Seq[(TimeStamp, Long)]): DBActionW[Int] = {
+  private def insertData(
+      values: Seq[(TimeStamp, Long)],
+      intervalType: IntervalType
+  ): DBActionW[Int] = {
     QuerySplitter.splitUpdates(rows = values, columnsPerRow = 3) { (rows, placeholders) =>
       val query =
         s"""
@@ -208,51 +247,22 @@ ORDER BY
         """
 
       val parameters: SetParameter[Unit] = (_, ps: PositionedParameters) =>
-        rows.foreach { case (transactionDate, dailyCount) =>
-          ps >> transactionDate
-          ps >> dailyCount
-          ps >> IntervalType.Daily
+        rows.foreach { case (timestamp, count) =>
+          ps >> timestamp
+          ps >> count
+          ps >> intervalType
         }
 
       SQLActionBuilder(query, parameters).asUpdate
     }
+  }
+
+  private def insertDAA(values: Seq[(TimeStamp, Long)]): DBActionW[Int] = {
+    insertData(values, IntervalType.Daily)
   }
 
   private def insertMAA(values: Seq[(TimeStamp, Long)]): DBActionW[Int] = {
-    QuerySplitter.splitUpdates(rows = values, columnsPerRow = 2) { (rows, placeholders) =>
-      val query =
-        s"""
-          INSERT INTO monthly_active_addresses(transaction_month, monthly_count)
-          VALUES $placeholders
-          ON CONFLICT (transaction_month) DO UPDATE SET monthly_count = EXCLUDED.monthly_count
-        """
-
-      val parameters: SetParameter[Unit] = (_, ps: PositionedParameters) =>
-        rows.foreach { case (transactionMonth, monthlyCount) =>
-          ps >> transactionMonth
-          ps >> monthlyCount
-        }
-
-      SQLActionBuilder(query, parameters).asUpdate
-    }
-  }
-
-  // Calculate the delay until the given hour (e.g., 1 AM)
-  private def computeDelay(hour: Int): FiniteDuration = {
-    import java.time.{Duration, LocalDateTime}
-    val now = LocalDateTime.now()
-    val nextRun =
-      if (now.getHour < hour) now.withHour(hour).withMinute(0).withSecond(0).withNano(0)
-      else now.plusDays(1).withHour(hour).withMinute(0).withSecond(0).withNano(0)
-    Duration.between(now, nextRun).toMillis.millis
-  }
-
-  // Calculate the delay until the first day of next month at the given hour (e.g., 1 AM)
-  private def computeFirstDayDelay(hour: Int): FiniteDuration = {
-    import java.time.{Duration, LocalDateTime}
-    val now = LocalDateTime.now()
-    val nextRun = now.plusMonths(1).withDayOfMonth(1).withHour(hour).withMinute(0).withSecond(0).withNano(0)
-    Duration.between(now, nextRun).toMillis.millis
+    insertData(values, IntervalType.Monthly)
   }
 
   private def findLatestHistoryTimestamp(
@@ -265,8 +275,7 @@ ORDER BY
   }
 
   private def findLatestTransationTimestamp()(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile]
+      ec: ExecutionContext
   ): DBActionR[Option[TimeStamp]] = {
     sql"""
     SELECT MAX(block_timestamp) FROM latest_blocks
