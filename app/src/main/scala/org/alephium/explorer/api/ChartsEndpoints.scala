@@ -12,7 +12,14 @@ import org.alephium.api.Endpoints.jsonBody
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.Codecs._
 import org.alephium.explorer.api.EndpointExamples._
-import org.alephium.explorer.api.model.{Hashrate, IntervalType, PerChainTimedCount, TimedCount}
+import org.alephium.explorer.api.model.{
+  ActiveAddressesCount,
+  ExportType,
+  Hashrate,
+  IntervalType,
+  PerChainTimedCount,
+  TimedCount
+}
 
 trait ChartsEndpoints extends BaseEndpoint with QueryParams {
 
@@ -47,4 +54,20 @@ trait ChartsEndpoints extends BaseEndpoint with QueryParams {
       .in(intervalTypeSubsetQuery(hourlyDaily))
       .out(jsonBody[ArraySeq[PerChainTimedCount]])
       .summary("Get transaction count history per chain")
+
+  val getActiveAddresses
+      : BaseEndpoint[(TimeInterval, IntervalType, Option[ExportType]), ActiveAddressesCount] =
+    chartsEndpoint.get
+      .in("active-addresses")
+      .in(timeIntervalQuery)
+      .in(intervalTypeSubsetQuery(dailyMonthly))
+      .in(optionalExportTypeQuery)
+      .out(
+        oneOf[ActiveAddressesCount](
+          oneOfVariant[ActiveAddressesCount.Csv](csvBody[ActiveAddressesCount.Csv]),
+          oneOfVariant(jsonBody[Seq[TimedCount]].map(ActiveAddressesCount.Json(_))(_.data))
+        )
+      )
+      .summary("Get active addresses history")
+
 }

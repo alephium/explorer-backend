@@ -14,9 +14,14 @@ import sttp.model.StatusCode
 import org.alephium.api.ApiError
 import org.alephium.api.model.TimeInterval
 import org.alephium.explorer.api.ChartsEndpoints
-import org.alephium.explorer.api.model.{IntervalType, TimedCount}
+import org.alephium.explorer.api.model.{ActiveAddressesCount, ExportType, IntervalType, TimedCount}
 import org.alephium.explorer.config.ExplorerConfig
-import org.alephium.explorer.service.{HashrateService, TransactionHistoryService}
+import org.alephium.explorer.service.{
+  ActiveAddressHistoryService,
+  HashrateService,
+  TransactionHistoryService
+}
+import org.alephium.util.TimeStamp
 
 class ChartsServer(
     maxTimeInterval: ExplorerConfig.MaxTimeInterval
@@ -49,8 +54,30 @@ class ChartsServer(
           TransactionHistoryService
             .getPerChain(timeInterval.from, timeInterval.to, interval)
         }
+      }),
+      route(getActiveAddresses.serverLogic[Future] { case (timeInterval, interval, exportType) =>
+        validateTimeInterval(timeInterval, interval) {
+          ActiveAddressHistoryService
+            .getActiveAddresses(timeInterval.from, timeInterval.to, interval)
+            .map { data =>
+              exportType match {
+                case None | Some(ExportType.JSON) =>
+                  ActiveAddressesCount.Json(data.map { case (timestamp, count) =>
+                    TimedCount(timestamp, count)
+                  })
+                case Some(ExportType.CSV) =>
+                  ActiveAddressesCount.Csv(toCsv(data))
+              }
+            }
+        }
       })
     )
+
+  def toCsv(data: ArraySeq[(TimeStamp, Long)]): String = {
+    val header = "timestamp,count"
+    val rows   = data.map { case (timestamp, count) => s"${timestamp.millis},${count}" }
+    (header +: rows).mkString("\n")
+  }
 
   private def validateTimeInterval[A](timeInterval: TimeInterval, intervalType: IntervalType)(
       contd: => Future[A]

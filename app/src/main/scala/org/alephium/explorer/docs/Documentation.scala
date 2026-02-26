@@ -75,6 +75,7 @@ trait Documentation
         getHashrates,
         getAllChainsTxCount,
         getPerChainTxCount,
+        getActiveAddresses,
         getEventsByTxId,
         getEventsByContractAddress,
         getEventsByContractAndInputAddress,
