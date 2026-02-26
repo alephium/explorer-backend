@@ -60,6 +60,8 @@ class ChartsServer(
       intervalType,
       maxTimeInterval.hourly,
       maxTimeInterval.daily,
-      maxTimeInterval.weekly
+      maxTimeInterval.weekly,
+      maxTimeInterval.monthly
     )(contd)
+
 }

@@ -37,5 +37,7 @@ object QueryUtil {
       case IntervalType.Hourly => hourlyQuery
       case IntervalType.Daily  => dailyQuery
       case IntervalType.Weekly => weeklyQuery
+      case IntervalType.Monthly =>
+        throw new IllegalArgumentException("Monthly interval type is not supported")
     }
 }
