@@ -67,9 +67,9 @@ trait QueryParams extends TapirCodecs {
 
   val timeIntervalQuery: EndpointInput[TimeInterval] =
     query[TimeStamp]("fromTs")
-      .and(query[TimeStamp]("toTs"))
+      .and(query[Option[TimeStamp]]("toTs"))
       .map { case (from, to) => TimeInterval(from, to) }(timeInterval =>
-        (timeInterval.from, timeInterval.to)
+        (timeInterval.from, timeInterval.toOpt)
       )
       .validate(TimeInterval.validator)
 
@@ -97,6 +97,12 @@ trait QueryParams extends TapirCodecs {
   val intervalTypeQuery: EndpointInput[IntervalType] =
     query[IntervalType]("interval-type")
 
+  val exportTypeQuery: EndpointInput[ExportType] =
+    query[ExportType]("export-type")
+
+  val optionalExportTypeQuery: EndpointInput[Option[ExportType]] =
+    query[Option[ExportType]]("export-type")
+
   val optionalTxStatusTypeQuery: EndpointInput[Option[TxStatusType]] =
     query[Option[TxStatusType]]("status")
 
@@ -106,4 +112,12 @@ trait QueryParams extends TapirCodecs {
         s"${StdInterfaceId.tokenStdInterfaceIds.map(_.value).mkString(", ")} or any interface id in hex-string format, e.g: 0001"
       )
       .schema(StdInterfaceId.tokenWithHexStringSchema.format("string").asOption)
+
+  def intervalTypeSubsetQuery(subset: Set[IntervalType]): EndpointInput[IntervalType] = {
+    queryAnyFormat[IntervalType, CodecFormat.TextPlain](
+      "interval-type",
+      Codec.listHead(intervalTypeSubsetCodec(subset))
+    )
+      .schema(IntervalType.subsetSchema(subset))
+  }
 }

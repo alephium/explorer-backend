@@ -28,53 +28,6 @@ class TransactionHistoryServiceSpec
     TimeStamp.unsafe(Instant.parse(str).toEpochMilli)
   }
 
-  "getTimeRanges" should {
-    "build daily time ranges" in {
-      TransactionHistoryService.getTimeRanges(
-        ts("2022-01-08T09:54:32.101Z"),
-        ts("2022-01-10T12:34:56.789Z"),
-        IntervalType.Daily
-      ) is
-        ArraySeq(
-          (ts("2022-01-08T00:00:00.000Z"), ts("2022-01-08T23:59:59.999Z")),
-          (ts("2022-01-09T00:00:00.000Z"), ts("2022-01-09T23:59:59.999Z"))
-          // 2022-01-10 isn't done, so we don't count it
-        )
-    }
-
-    "build hourly time ranges" in {
-      TransactionHistoryService.getTimeRanges(
-        ts("2022-01-08T09:54:32.101Z"),
-        ts("2022-01-08T12:34:56.789Z"),
-        IntervalType.Hourly
-      ) is
-        ArraySeq(
-          (ts("2022-01-08T09:00:00.000Z"), ts("2022-01-08T09:59:59.999Z")),
-          (ts("2022-01-08T10:00:00.000Z"), ts("2022-01-08T10:59:59.999Z")),
-          (ts("2022-01-08T11:00:00.000Z"), ts("2022-01-08T11:59:59.999Z"))
-          // 12:34:56 isn't done, so we don't count it
-        )
-    }
-
-    "return empty range when start is after end" in {
-
-      TransactionHistoryService.getTimeRanges(
-        ts("2022-01-08T00:00:00.000Z"),
-        ts("2022-01-07T00:00:00.000Z"),
-        IntervalType.Hourly
-      ) is ArraySeq.empty
-    }
-
-    "return empty range when end == start" in {
-
-      TransactionHistoryService.getTimeRanges(
-        ts("2022-01-08T00:00:00.000Z"),
-        ts("2022-01-08T00:00:00.000Z"),
-        IntervalType.Hourly
-      ) is ArraySeq.empty
-    }
-  }
-
   "countAndInsert" should {
     "handle per chains and all chains counting" in {
 

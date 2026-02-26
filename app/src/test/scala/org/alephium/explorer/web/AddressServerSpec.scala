@@ -324,9 +324,10 @@ class AddressServerSpec()
     val intervalTypes = ArraySeq[IntervalType](IntervalType.Hourly, IntervalType.Daily)
     val fromTs        = timestamps.head
     def maxTimeSpan(intervalType: IntervalType) = intervalType match {
-      case IntervalType.Hourly => Duration.ofDaysUnsafe(7)
-      case IntervalType.Daily  => Duration.ofDaysUnsafe(366)
-      case IntervalType.Weekly => Duration.ofDaysUnsafe(366)
+      case IntervalType.Hourly  => Duration.ofDaysUnsafe(7)
+      case IntervalType.Daily   => Duration.ofDaysUnsafe(366)
+      case IntervalType.Weekly  => Duration.ofDaysUnsafe(366)
+      case IntervalType.Monthly => Duration.ofDaysUnsafe(366)
     }
     def getToTs(intervalType: IntervalType) =
       fromTs + maxTimeSpan(intervalType).millis

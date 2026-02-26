@@ -5,6 +5,7 @@ package org.alephium.explorer.api
 
 import scala.util.{Failure, Success, Try}
 
+import sttp.model.MediaType
 import sttp.tapir.{Codec, CodecFormat, DecodeResult}
 import sttp.tapir.Codec.PlainCodec
 import upickle.core.Abort
@@ -17,6 +18,10 @@ import org.alephium.json.Json._
 import org.alephium.protocol.config.GroupConfig
 
 object Codecs extends TapirCodecs {
+
+  final case class TextCsv() extends CodecFormat {
+    override val mediaType: MediaType = MediaType.TextCsv
+  }
 
   implicit val groupConfig: GroupConfig = Default.groupConfig
 
@@ -34,10 +39,47 @@ object Codecs extends TapirCodecs {
       "org.wartremover.warts.Serializable"
     )
   ) // Wartremover is complaining, maybe beacause of tapir macros
-  implicit val timeIntervalCodec: PlainCodec[IntervalType] =
+  implicit val intervalTypeCodec: PlainCodec[IntervalType] =
     Codec.derivedEnumeration[String, IntervalType](
       IntervalType.validate,
       _.string
+    )
+
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
+    )
+  ) // Wartremover is complaining, maybe beacause of tapir macros
+  def intervalTypeSubsetCodec(subset: Set[IntervalType]): PlainCodec[IntervalType] =
+    Codec.string.mapDecode[IntervalType] { raw =>
+      IntervalType.validate(raw) match {
+        case Some(intervalType) if subset.contains(intervalType) => DecodeResult.Value(intervalType)
+        case _ =>
+          DecodeResult.Error(
+            raw,
+            new IllegalArgumentException(
+              s"allowed values: ${subset.map(_.string).mkString(", ")}, but got"
+            )
+          )
+      }
+    }(_.string)
+
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
+    )
+  )
+  implicit val exportTypeCodec: PlainCodec[ExportType] =
+    Codec.derivedEnumeration[String, ExportType](
+      ExportType.validate(_).toOption,
+      {
+        case ExportType.CSV  => "csv"
+        case ExportType.JSON => "json"
+      }
     )
 
   @SuppressWarnings(
@@ -72,4 +114,10 @@ object Codecs extends TapirCodecs {
         case other          => write(other)
       }
     }
+
+  implicit val activeAddressesOutputCsvCodec: Codec[String, ActiveAddressesCount.Csv, TextCsv] =
+    Codec
+      .id(TextCsv(), ActiveAddressesCount.Csv.schema)
+      .map(ActiveAddressesCount.Csv(_))(_.data)
+
 }

@@ -13,11 +13,97 @@ import org.scalatest.matchers.should.Matchers
 
 import org.alephium.explorer.AlephiumSpec
 import org.alephium.explorer.GenCoreUtil._
+import org.alephium.explorer.api.model.IntervalType
 import org.alephium.explorer.error.ExplorerError.RemoteTimeStampIsBeforeLocal
 import org.alephium.explorer.util.TimeUtil._
 import org.alephium.util.{Duration, TimeStamp}
 
 class TimeUtilSpec extends AlephiumSpec with Matchers {
+
+  "getTimeRanges" should {
+    "build daily time ranges" in {
+      getTimeRanges(
+        ts("2022-01-08T09:54:32.101Z"),
+        ts("2022-01-10T12:34:56.789Z"),
+        IntervalType.Daily
+      ) is
+        ArraySeq(
+          (ts("2022-01-08T00:00:00.000Z"), ts("2022-01-08T23:59:59.999Z")),
+          (ts("2022-01-09T00:00:00.000Z"), ts("2022-01-09T23:59:59.999Z"))
+          // 2022-01-10 isn't done, so we don't count it
+        )
+    }
+
+    "build hourly time ranges" in {
+      getTimeRanges(
+        ts("2022-01-08T09:54:32.101Z"),
+        ts("2022-01-08T12:34:56.789Z"),
+        IntervalType.Hourly
+      ) is
+        ArraySeq(
+          (ts("2022-01-08T09:00:00.000Z"), ts("2022-01-08T09:59:59.999Z")),
+          (ts("2022-01-08T10:00:00.000Z"), ts("2022-01-08T10:59:59.999Z")),
+          (ts("2022-01-08T11:00:00.000Z"), ts("2022-01-08T11:59:59.999Z"))
+          // 12:34:56 isn't done, so we don't count it
+        )
+    }
+
+    "build weekly time ranges" in {
+      getTimeRanges(
+        ts("2025-12-31T09:54:32.101Z"),
+        ts("2026-01-13T09:54:32.101Z"),
+        IntervalType.Weekly
+      ) is
+        ArraySeq(
+          (ts("2025-12-29T00:00:00.000Z"), ts("2026-01-04T23:59:59.999Z")),
+          (ts("2026-01-05T00:00:00.000Z"), ts("2026-01-11T23:59:59.999Z"))
+        )
+    }
+
+    "build monthly time ranges" in {
+      getTimeRanges(
+        ts("2022-01-08T09:54:32.101Z"),
+        ts("2022-05-10T12:34:56.789Z"),
+        IntervalType.Monthly
+      ) is
+        ArraySeq(
+          (ts("2022-01-01T00:00:00.000Z"), ts("2022-01-31T23:59:59.999Z")),
+          (ts("2022-02-01T00:00:00.000Z"), ts("2022-02-28T23:59:59.999Z")),
+          (ts("2022-03-01T00:00:00.000Z"), ts("2022-03-31T23:59:59.999Z")),
+          (ts("2022-04-01T00:00:00.000Z"), ts("2022-04-30T23:59:59.999Z"))
+        )
+    }
+
+    "build monthly time ranges over a year" in {
+      getTimeRanges(
+        ts("2022-12-08T09:54:32.101Z"),
+        ts("2023-02-10T12:34:56.789Z"),
+        IntervalType.Monthly
+      ) is
+        ArraySeq(
+          (ts("2022-12-01T00:00:00.000Z"), ts("2022-12-31T23:59:59.999Z")),
+          (ts("2023-01-01T00:00:00.000Z"), ts("2023-01-31T23:59:59.999Z"))
+        )
+    }
+
+    "return empty range when start is after end" in {
+
+      getTimeRanges(
+        ts("2022-01-08T00:00:00.000Z"),
+        ts("2022-01-07T00:00:00.000Z"),
+        IntervalType.Hourly
+      ) is ArraySeq.empty
+    }
+
+    "return empty range when end == start" in {
+
+      getTimeRanges(
+        ts("2022-01-08T00:00:00.000Z"),
+        ts("2022-01-08T00:00:00.000Z"),
+        IntervalType.Hourly
+      ) is ArraySeq.empty
+    }
+  }
 
   "toZonedDateTime" should {
     "convert OffsetTime to ZonedDateTime with today's date" in {

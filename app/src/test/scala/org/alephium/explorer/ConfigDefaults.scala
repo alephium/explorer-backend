@@ -25,12 +25,14 @@ object ConfigDefaults {
       amountHistory = MaxTimeInterval(
         hourly = Duration.ofDaysUnsafe(7),
         daily = Duration.ofDaysUnsafe(366),
-        weekly = Duration.ofDaysUnsafe(366)
+        weekly = Duration.ofDaysUnsafe(366),
+        monthly = Duration.ofDaysUnsafe(1830)
       ),
       charts = MaxTimeInterval(
         hourly = Duration.ofDaysUnsafe(30),
         daily = Duration.ofDaysUnsafe(366),
-        weekly = Duration.ofDaysUnsafe(366)
+        weekly = Duration.ofDaysUnsafe(366),
+        monthly = Duration.ofDaysUnsafe(1830)
       ),
       exportTxs = Duration.ofDaysUnsafe(366)
     )

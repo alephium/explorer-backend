@@ -52,4 +52,10 @@ trait BaseEndpoint extends ErrorExamples with TapirCodecs with TapirSchemasLike 
       .jsonBody[ArraySeq[T]]
       .validate(Validator.maxSize(maxSize))
       .description(s"List of $tpe, max items: $maxSize")
+
+  type CsvCodec[T] = Codec[String, T, Codecs.TextCsv]
+
+  def csvBody[T: CsvCodec]: EndpointIO.Body[String, T] =
+    stringBodyUtf8AnyFormat(implicitly[Codec[String, T, Codecs.TextCsv]])
+
 }
