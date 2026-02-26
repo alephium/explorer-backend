@@ -5,6 +5,7 @@ package org.alephium.explorer.api
 
 import scala.util.{Failure, Success, Try}
 
+import sttp.model.MediaType
 import sttp.tapir.{Codec, CodecFormat, DecodeResult}
 import sttp.tapir.Codec.PlainCodec
 import upickle.core.Abort
@@ -17,6 +18,10 @@ import org.alephium.json.Json._
 import org.alephium.protocol.config.GroupConfig
 
 object Codecs extends TapirCodecs {
+
+  final case class TextCsv() extends CodecFormat {
+    override val mediaType: MediaType = MediaType.TextCsv
+  }
 
   implicit val groupConfig: GroupConfig = Default.groupConfig
 
