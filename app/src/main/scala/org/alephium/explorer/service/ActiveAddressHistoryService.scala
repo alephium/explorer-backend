@@ -32,7 +32,7 @@ case object ActiveAddressHistoryService extends StrictLogging {
       databaseConfig: DatabaseConfig[PostgresProfile],
       scheduler: Scheduler
   ): Future[Unit] = {
-    Future.successful{
+    Future.successful {
       scheduler.scheduleDailyAt(
         taskId = TokenSupplyService.productPrefix,
         at = ZonedDateTime

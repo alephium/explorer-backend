@@ -8,7 +8,7 @@ import sttp.tapir.Schema
 sealed trait ActiveAddressesCount
 object ActiveAddressesCount {
   final case class Json(data: Seq[TimedCount]) extends ActiveAddressesCount
-  final case class Csv(data: String)                extends ActiveAddressesCount
+  final case class Csv(data: String)           extends ActiveAddressesCount
 
   object Csv {
     val schema: Schema[String] =
@@ -17,4 +17,3 @@ object ActiveAddressesCount {
         .description("CSV with timestamp (unix ms) and count columns")
   }
 }
-
