@@ -114,4 +114,10 @@ object Codecs extends TapirCodecs {
         case other          => write(other)
       }
     }
+
+  implicit val activeAddressesOutputCsvCodec: Codec[String, ActiveAddressesCount.Csv, TextCsv] =
+    Codec
+      .id(TextCsv(), ActiveAddressesCount.Csv.schema)
+      .map(ActiveAddressesCount.Csv(_))(_.data)
+
 }
