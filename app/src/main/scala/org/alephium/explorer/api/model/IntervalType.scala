@@ -9,6 +9,7 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import sttp.model.StatusCode
+import sttp.tapir._
 import upickle.core.Abort
 
 import org.alephium.api.ApiError
@@ -125,4 +126,16 @@ object IntervalType {
       case Right(_)    => contd.map(Right(_))
     }
   }
+
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
+    )
+  ) // Wartremover is complaining, maybe beacause of tapir macros
+  def subsetSchema(subset: Set[IntervalType]): Schema[IntervalType] =
+    Schema.string.validate(
+      Validator.enumeration(subset.toList, (it: IntervalType) => Some(it.string))
+    )
 }

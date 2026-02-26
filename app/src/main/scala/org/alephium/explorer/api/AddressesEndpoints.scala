@@ -157,7 +157,9 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
     addressesLikeEndpoint.get
       .in("amount-history")
       .in(timeIntervalQuery)
-      .in(intervalTypeQuery)
+      .in(
+        intervalTypeSubsetQuery(Set(IntervalType.Hourly, IntervalType.Daily, IntervalType.Weekly))
+      )
       .out(jsonBody[AmountHistory])
       .deprecated()
 

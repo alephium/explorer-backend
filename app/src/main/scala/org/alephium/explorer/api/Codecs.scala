@@ -34,11 +34,32 @@ object Codecs extends TapirCodecs {
       "org.wartremover.warts.Serializable"
     )
   ) // Wartremover is complaining, maybe beacause of tapir macros
-  implicit val timeIntervalCodec: PlainCodec[IntervalType] =
+  implicit val intervalTypeCodec: PlainCodec[IntervalType] =
     Codec.derivedEnumeration[String, IntervalType](
       IntervalType.validate,
       _.string
     )
+
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
+    )
+  ) // Wartremover is complaining, maybe beacause of tapir macros
+  def intervalTypeSubsetCodec(subset: Set[IntervalType]): PlainCodec[IntervalType] =
+    Codec.string.mapDecode[IntervalType] { raw =>
+      IntervalType.validate(raw) match {
+        case Some(intervalType) if subset.contains(intervalType) => DecodeResult.Value(intervalType)
+        case _ =>
+          DecodeResult.Error(
+            raw,
+            new IllegalArgumentException(
+              s"allowed values: ${subset.map(_.string).mkString(", ")}, but got"
+            )
+          )
+      }
+    }(_.string)
 
   @SuppressWarnings(
     Array(
