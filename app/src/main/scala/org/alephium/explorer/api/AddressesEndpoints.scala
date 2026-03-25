@@ -7,6 +7,7 @@ import scala.collection.immutable.ArraySeq
 
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.streams.ReadStream
+import io.vertx.ext.web.RoutingContext
 import sttp.model.{HeaderNames, MediaType}
 import sttp.tapir._
 import sttp.tapir.generic.auto._
@@ -143,12 +144,14 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[Boolean]])
       .summary("Are the addresses used (at least 1 transaction)")
 
+  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
   lazy val exportTransactionsCsvByAddress
-      : BaseEndpoint[(ApiAddress, TimeInterval), (String, ReadStream[Buffer])] =
+      : BaseEndpoint[(ApiAddress, TimeInterval, RoutingContext), (String, ReadStream[Buffer])] =
     addressesLikeEndpoint.get
       .in("export-transactions")
       .in("csv")
       .in(timeIntervalWithMaxQuery(maxTimeIntervalExportTxs))
+      .in(extractFromRequest(request => request.underlying.asInstanceOf[RoutingContext]))
       .out(header[String](HeaderNames.ContentDisposition))
       .out(streamTextBody(VertxStreams)(TextCsv()))
 

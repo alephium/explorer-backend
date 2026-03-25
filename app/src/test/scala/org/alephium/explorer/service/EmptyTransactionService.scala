@@ -129,10 +129,11 @@ trait EmptyTransactionService extends TransactionService {
 
   def exportTransactionsByAddress(
       address: ApiAddress,
-      from: TimeStamp,
-      to: TimeStamp,
+      fromTime: TimeStamp,
+      toTime: TimeStamp,
       batchSize: Int,
-      paralellism: Int
+      paralellism: Int,
+      cancelToken: CancelToken
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = ???
 
   def getAmountHistory(
