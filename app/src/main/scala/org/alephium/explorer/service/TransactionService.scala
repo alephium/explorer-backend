@@ -480,17 +480,24 @@ object TransactionService extends TransactionService {
       source: Flowable[(ArraySeq[Transaction], Map[TokenId, FungibleTokenMetadata])],
       cancelToken: CancelToken
   ): Flowable[Buffer] = {
-    val header = Flowable.just(Buffer.buffer(Transaction.csvHeader + "\n"))
-
     val csvSource =
       source
         .takeUntil(cancelToken.signal)
         .map { case (txs, metadatas) =>
+          println(s"${Console.RED}${Console.BOLD}*** txs ***${Console.RESET}${txs.size}")
           Buffer.buffer(
             txs.iterator.map(_.toCsv(address, metadatas)).mkString("", "\n", "\n")
           )
         }
 
-    header.concatWith(csvSource)
+    /*
+     * Nginx configured to timeout after 1 second if it doesn't receive data
+     * In order to simulate what could happen in prod (timeout longer)
+     */
+    csvSource
+      .zipWith(
+        io.reactivex.rxjava3.core.Flowable.interval(2, java.util.concurrent.TimeUnit.SECONDS),
+        (data: Buffer, _: java.lang.Long) => data // Explicitly type 'data' as Buffer
+      )
   }
 }
