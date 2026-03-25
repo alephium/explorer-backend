@@ -34,6 +34,7 @@ class AddressServer(
     transactionService: TransactionService,
     tokenService: TokenService,
     exportTxsNumberThreshold: Int,
+    streamBatchSize: Int,
     streamParallelism: Int,
     maxTimeInterval: ExplorerConfig.MaxTimeInterval,
     val maxTimeIntervalExportTxs: Duration
@@ -190,7 +191,7 @@ class AddressServer(
               address,
               timeInterval.from,
               timeInterval.to,
-              1,
+              streamBatchSize,
               streamParallelism,
               cancelToken
             )
