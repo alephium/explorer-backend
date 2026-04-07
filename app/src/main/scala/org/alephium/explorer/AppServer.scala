@@ -21,6 +21,7 @@ object AppServer {
   def routes(
       marketService: market.MarketService,
       exportTxsNumberThreshold: Int,
+      streamBatchSize: Int,
       streamParallelism: Int,
       maxTimeIntervals: ExplorerConfig.MaxTimeIntervals,
       marketConfig: ExplorerConfig.Market
@@ -41,6 +42,7 @@ object AppServer {
         TransactionService,
         TokenService,
         exportTxsNumberThreshold,
+        streamBatchSize,
         streamParallelism,
         maxTimeIntervals.amountHistory,
         maxTimeIntervals.exportTxs

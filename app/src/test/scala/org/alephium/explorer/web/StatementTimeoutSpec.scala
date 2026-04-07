@@ -34,6 +34,7 @@ class StatementTimeoutSpec()
       StatementTimeoutSpec.transactionService(),
       new EmptyTokenService {},
       exportTxsNumberThreshold = 1000,
+      streamBatchSize = 100,
       streamParallelism = 8,
       maxTimeInterval = ConfigDefaults.maxTimeIntervals.amountHistory,
       maxTimeIntervalExportTxs = ConfigDefaults.maxTimeIntervals.exportTxs

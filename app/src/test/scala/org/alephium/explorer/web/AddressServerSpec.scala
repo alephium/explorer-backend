@@ -31,6 +31,7 @@ import org.alephium.explorer.cache._
 import org.alephium.explorer.config.Default.groupConfig
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.service.{
+  CancelToken,
   EmptyTokenService,
   EmptyTransactionService,
   TransactionService
@@ -119,17 +120,19 @@ class AddressServerSpec()
 
     override def exportTransactionsByAddress(
         address: ApiAddress,
-        from: TimeStamp,
-        to: TimeStamp,
+        fromTime: TimeStamp,
+        toTime: TimeStamp,
         batchSize: Int,
-        streamParallelism: Int
+        paralellism: Int,
+        cancelToken: CancelToken
     )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = {
       TransactionService.transactionsFlowable(
         address,
         Flowable
           .fromIterable(transactions.asJava)
           .buffer(batchSize)
-          .map(l => (ArraySeq.from(l.asScala), Map.empty))
+          .map(l => (ArraySeq.from(l.asScala), Map.empty)),
+        new CancelToken
       )
     }
 
@@ -184,6 +187,7 @@ class AddressServerSpec()
       transactionService,
       tokenService,
       exportTxsNumberThreshold = 1000,
+      streamBatchSize = 100,
       streamParallelism = 8,
       maxTimeInterval = ConfigDefaults.maxTimeIntervals.amountHistory,
       maxTimeIntervalExportTxs = ConfigDefaults.maxTimeIntervals.exportTxs

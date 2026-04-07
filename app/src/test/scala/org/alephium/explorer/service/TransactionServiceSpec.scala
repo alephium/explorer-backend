@@ -421,7 +421,7 @@ class TransactionServiceSpec
   "export transactions by address" in new TxsByAddressFixture {
     forAll(Gen.choose(1, 4)) { batchSize =>
       val flowable = TransactionService
-        .exportTransactionsByAddress(address, fromTs, toTs, batchSize, 8)
+        .exportTransactionsByAddress(address, fromTs, toTs, batchSize, 8, new CancelToken)
 
       val result: Seq[Buffer] =
         flowable.toList().blockingGet().asScala

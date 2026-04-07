@@ -23,7 +23,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache._
 import org.alephium.explorer.config.Default.groupConfig
 import org.alephium.explorer.config.ExplorerConfig
-import org.alephium.explorer.service.{TokenService, TransactionService}
+import org.alephium.explorer.service.{CancelToken, TokenService, TransactionService}
 import org.alephium.protocol.PublicKey
 import org.alephium.protocol.model.Address
 import org.alephium.protocol.vm.{LockupScript, PublicKeyLike, UnlockScript}
@@ -34,6 +34,7 @@ class AddressServer(
     transactionService: TransactionService,
     tokenService: TokenService,
     exportTxsNumberThreshold: Int,
+    streamBatchSize: Int,
     streamParallelism: Int,
     maxTimeInterval: ExplorerConfig.MaxTimeInterval,
     val maxTimeIntervalExportTxs: Duration
@@ -121,8 +122,8 @@ class AddressServer(
       route(areAddressesActive.serverLogicSuccess[Future] { addresses =>
         transactionService.areAddressesActive(addresses)
       }),
-      route(exportTransactionsCsvByAddress.serverLogic[Future] { case (address, timeInterval) =>
-        exportTransactions(address, timeInterval).map(_.map { stream =>
+      route(exportTransactionsCsvByAddress.serverLogic[Future] { case (address, timeInterval, rc) =>
+        exportTransactions(address, timeInterval, rc).map(_.map { stream =>
           (AddressServer.exportFileNameHeader(address, timeInterval), stream)
         })
       }),
@@ -164,9 +165,11 @@ class AddressServer(
       })
     )
 
+  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
   private def exportTransactions(
       address: ApiAddress,
-      timeInterval: TimeInterval
+      timeInterval: TimeInterval,
+      rc: RoutingContext
   ): Future[Either[ApiError[_ <: StatusCode], ReadStream[Buffer]]] = {
     transactionService
       .hasAddressMoreTxsThan(address, timeInterval.from, timeInterval.to, exportTxsNumberThreshold)
@@ -178,13 +181,20 @@ class AddressServer(
             )
           )
         } else {
-          val flowable = transactionService.exportTransactionsByAddress(
-            address,
-            timeInterval.from,
-            timeInterval.to,
-            1,
-            streamParallelism
-          )
+          val cancelToken = new CancelToken
+
+          rc.request().connection().closeHandler(_ => cancelToken.cancel())
+          rc.response().exceptionHandler(_ => cancelToken.cancel())
+
+          val flowable = transactionService
+            .exportTransactionsByAddress(
+              address,
+              timeInterval.from,
+              timeInterval.to,
+              streamBatchSize,
+              streamParallelism,
+              cancelToken
+            )
           Right(FlowableHelper.toReadStream(flowable))
         }
       }
