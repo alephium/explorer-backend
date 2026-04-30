@@ -26,6 +26,7 @@ object Dependencies {
   lazy val alephiumJson     = "org.alephium" %% "alephium-json"     % Version.common
   lazy val alephiumHttp     = "org.alephium" %% "alephium-http"     % Version.common
   lazy val alephiumConf     = "org.alephium" %% "alephium-conf"     % Version.common
+  lazy val alephiumWs       = "org.alephium" %% "alephium-ws"       % Version.common
 
   lazy val vertx       = "io.vertx" % "vertx-core"     % Version.vertx
   lazy val vertxRxJava = "io.vertx" % "vertx-rx-java3" % Version.vertx
