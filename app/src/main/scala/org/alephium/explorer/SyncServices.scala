@@ -19,6 +19,7 @@ import org.alephium.api.model.{ChainParams, PeerAddress}
 import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.config.{BootMode, ExplorerConfig}
+import org.alephium.explorer.config.ExplorerConfig.Consensus
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.service._
 import org.alephium.explorer.util.Scheduler
@@ -34,6 +35,7 @@ object SyncServices extends StrictLogging {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
+      consensus: Consensus,
       blockCache: BlockCache,
       groupSetting: GroupSetting
   ): Future[Unit] =
@@ -51,6 +53,13 @@ object SyncServices extends StrictLogging {
           startSyncServices(
             peers = peers,
             syncPeriod = config.syncPeriod,
+            blockFlowUri = config.blockFlowUri,
+            wsFlushInterval = config.wsFlushInterval,
+            wsMaxBlockDelay = config.wsMaxBlockDelay,
+            wsMaxBufferSize = config.wsMaxBufferSize,
+            wsMaxReconnectAttempts = config.wsMaxReconnectAttempts,
+            wsReconnectBaseDelay = config.wsReconnectBaseDelay,
+            wsReconnectMaxDelay = config.wsReconnectMaxDelay,
             holderServiceScheduleTime = config.holderServiceScheduleTime,
             tokenSupplyServiceScheduleTime = config.tokenSupplyServiceScheduleTime,
             hashRateServiceSyncPeriod = config.hashRateServiceSyncPeriod,
@@ -66,6 +75,13 @@ object SyncServices extends StrictLogging {
   def startSyncServices(
       peers: ArraySeq[Uri],
       syncPeriod: FiniteDuration,
+      blockFlowUri: Uri,
+      wsFlushInterval: FiniteDuration,
+      wsMaxBlockDelay: FiniteDuration,
+      wsMaxBufferSize: Int,
+      wsMaxReconnectAttempts: Int,
+      wsReconnectBaseDelay: FiniteDuration,
+      wsReconnectMaxDelay: FiniteDuration,
       holderServiceScheduleTime: LocalTime,
       tokenSupplyServiceScheduleTime: LocalTime,
       hashRateServiceSyncPeriod: FiniteDuration,
@@ -78,6 +94,7 @@ object SyncServices extends StrictLogging {
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       blockCache: BlockCache,
+      consensus: Consensus,
       groupSetting: GroupSetting
   ): Future[Unit] =
     Future.fromTry {
@@ -86,7 +103,18 @@ object SyncServices extends StrictLogging {
           .sequence(
             ArraySeq(
               BlockFlowSyncService
-                .start(peers, syncPeriod, util.Duration.unsafe(blockFlowFetchMaxAge.toMillis)),
+                .start(
+                  peers,
+                  syncPeriod,
+                  util.Duration.unsafe(blockFlowFetchMaxAge.toMillis),
+                  blockFlowUri,
+                  util.Duration.unsafe(wsFlushInterval.toMillis),
+                  util.Duration.unsafe(wsMaxBlockDelay.toMillis),
+                  wsMaxBufferSize,
+                  wsMaxReconnectAttempts,
+                  util.Duration.unsafe(wsReconnectBaseDelay.toMillis),
+                  util.Duration.unsafe(wsReconnectMaxDelay.toMillis)
+                ),
               MempoolSyncService.start(peers, syncPeriod),
               TokenSupplyService.start(tokenSupplyServiceScheduleTime),
               HashrateService.start(hashRateServiceSyncPeriod),
