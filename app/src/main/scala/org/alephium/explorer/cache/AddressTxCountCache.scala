@@ -38,9 +38,7 @@ final case class InMemoryAddressTxCountCache(database: Database)(implicit
     val executionContext: ExecutionContext
 ) extends AddressTxCountCache {
 
-  // scalasty:off magic.number
   private val invalidationPeriodInDays = 14L // TODO make it configurable
-  // scalasty:on magic.number
 
   val cache: Cache[ApiAddress, AddressTotalTransactionsEntity] =
     Caffeine
