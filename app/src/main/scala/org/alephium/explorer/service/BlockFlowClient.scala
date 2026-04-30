@@ -830,4 +830,19 @@ object BlockFlowClient extends StrictLogging {
     val target = Target.unsafe(targetBytes)
     HashRate.from(target, blockTargetTime(timestamp))(groupSetting.groupConfig).value
   }
+
+  def txTemplateToMempoolTx(txTemplate: api.model.TransactionTemplate): MempoolTransaction = {
+    val inputs = InputAddressUtil
+      .convertSameAsPrevious(txTemplate.unsigned.inputs.toArraySeq)
+      .map(protocolInputToInput)
+    val outputs = txTemplate.unsigned.fixedOutputs.map(protocolOutputToAssetOutput).toArraySeq
+    txToUTx(
+      txTemplate,
+      new GroupIndex(0),
+      new GroupIndex(0),
+      inputs,
+      outputs,
+      TimeStamp.now()
+    )
+  }
 }
