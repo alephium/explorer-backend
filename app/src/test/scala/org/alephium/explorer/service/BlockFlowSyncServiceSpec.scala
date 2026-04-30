@@ -36,7 +36,18 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
   "start/sync/stop" in new Fixture {
     using(Scheduler("")) { implicit scheduler =>
       checkBlocks(ArraySeq.empty)
-      BlockFlowSyncService.start(ArraySeq(Uri("")), 1.second, fetchMaxAge)
+      BlockFlowSyncService.start(
+        ArraySeq(Uri("")),
+        1.second,
+        fetchMaxAge,
+        Uri("http://127.0.0.1:12973"),
+        Duration.ofSecondsUnsafe(10),
+        Duration.ofSecondsUnsafe(10),
+        1000,
+        5,
+        Duration.ofSecondsUnsafe(1),
+        Duration.ofSecondsUnsafe(30)
+      )
 
       chainOToO = ArraySeq(block0, block1, block2)
       eventually(checkMainChain(ArraySeq(block0.hash, block1.hash, block2.hash)))
@@ -105,7 +116,18 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     BlockDao.insertAll(blockEntities).futureValue
 
     BlockFlowSyncService
-      .syncOnce(ArraySeq(Uri("")), new AtomicBoolean(true), fetchMaxAge)
+      .syncOnce(
+        ArraySeq(Uri("")),
+        new AtomicBoolean(true),
+        fetchMaxAge,
+        Uri("http://127.0.0.1:12973"),
+        Duration.ofSecondsUnsafe(10),
+        Duration.ofSecondsUnsafe(10),
+        1000,
+        5,
+        Duration.ofSecondsUnsafe(1),
+        Duration.ofSecondsUnsafe(30)
+      )
       .failed
       .futureValue is a[ExplorerError.RemoteTimeStampIsBeforeLocal]
   }

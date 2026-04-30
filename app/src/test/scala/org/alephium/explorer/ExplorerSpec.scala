@@ -533,6 +533,11 @@ trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with Ht
 
 object ExplorerSpec {
 
+  def contractResult(value: model.Val): model.CallContractResult = {
+    val result = callContractSucceededGen.sample.get
+    result.copy(returns = value +: result.returns)
+  }
+
   def removeField(name: String, json: ujson.Value): ujson.Value = {
     mapJson(json) { obj =>
       obj.value.filterNot { case (key, _) => key == name }
