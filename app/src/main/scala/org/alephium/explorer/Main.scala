@@ -51,16 +51,18 @@ class BootUp extends StrictLogging {
 
     @SuppressWarnings(Array("org.wartremover.warts.GlobalExecutionContext"))
     implicit val executionContext: ExecutionContext =
-      ExecutionContextUtil.fromExecutor(ExecutionContext.global, {
-        if (explorer != null) {
-          discard(explorer.stop())
+      ExecutionContextUtil.fromExecutor(
+        ExecutionContext.global, {
+          if (explorer != null) {
+            discard(explorer.stop())
+          }
         }
-      })
+      )
 
     explorer = ExplorerState(config.bootMode)
 
     val startFuture = explorer.start()
-    
+
     startFuture.onComplete {
       case Success(_) => logger.info(WelcomeMessage.message(config, typesafeConfig))
       case Failure(error) =>
@@ -75,7 +77,7 @@ class BootUp extends StrictLogging {
         discard(Await.result(explorer.stop(), 10.seconds))
       }
     }))
-    
+
     // Wait for startup to complete or fail
     Await.result(startFuture, 30.seconds)
   }

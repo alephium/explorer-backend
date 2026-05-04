@@ -50,8 +50,8 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
 
   // Reconnection state
   @volatile private var reconnectAttempts: Int = 0
-  @volatile private var blocksReceived: Long = 0
-  @volatile private var blocksFlushed: Long = 0
+  @volatile private var blocksReceived: Long   = 0
+  @volatile private var blocksFlushed: Long    = 0
 
 // scalastyle:off parameter.number method.length
   def sync(
@@ -84,21 +84,30 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
 
       def closeHandler(client: ClientWs, deploymentId: String): WebSocket = {
         client.underlying.closeHandler { _ =>
-          logger.info(s"WebSocket connection closed (received: $blocksReceived, flushed: $blocksFlushed)")
+          logger.info(
+            s"WebSocket connection closed (received: $blocksReceived, flushed: $blocksFlushed)"
+          )
           vertx.undeploy(deploymentId)
 
           // Attempt reconnection if we haven't exceeded max attempts
           if (reconnectAttempts < maxReconnectAttempts) {
             reconnectAttempts += 1
             val backoffMs = calculateBackoff()
-            logger.warn(s"WebSocket connection lost. Reconnecting in ${backoffMs}ms (attempt $reconnectAttempts/$maxReconnectAttempts)")
+            logger.warn(
+              s"WebSocket connection lost. Reconnecting in ${backoffMs}ms (attempt $reconnectAttempts/$maxReconnectAttempts)"
+            )
 
             // Schedule reconnection
-            vertx.setTimer(backoffMs, _ => {
-              attemptConnection()
-            })
+            vertx.setTimer(
+              backoffMs,
+              _ => {
+                attemptConnection()
+              }
+            )
           } else {
-            logger.error(s"WebSocket failed after $maxReconnectAttempts attempts, falling back to HTTP syncing")
+            logger.error(
+              s"WebSocket failed after $maxReconnectAttempts attempts, falling back to HTTP syncing"
+            )
             reconnectAttempts = 0
             stopPromise.trySuccess(())
           }
@@ -226,7 +235,9 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
         // Force flush if buffer exceeds max size
         // scalastyle:off magic.number
         if (buffer.lengthIs >= maxBufferSize) {
-          logger.warn(s"Buffer size (${buffer.length}) exceeded max ($maxBufferSize), forcing flush")
+          logger.warn(
+            s"Buffer size (${buffer.length}) exceeded max ($maxBufferSize), forcing flush"
+          )
           flush()
         }
         // scalastyle:on magic.number
@@ -256,7 +267,7 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
 
     private def flush(): Unit = {
       if (buffer.nonEmpty && !pending) {
-        val batch = ArraySeq.from(buffer)
+        val batch     = ArraySeq.from(buffer)
         val batchSize = batch.size
         buffer = ArrayBuffer.empty
         pending = true
@@ -287,7 +298,7 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
           .map(_ > delayAllowed)
           .getOrElse(true)
       ) {
-        logger.error("WebSocket message is to old")
+        logger.error("WebSocket message is too old")
         discard(client.close())
       }
     }
