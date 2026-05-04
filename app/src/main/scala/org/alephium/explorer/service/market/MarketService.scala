@@ -12,7 +12,7 @@ import scala.util.{Failure, Success, Try}
 
 import com.typesafe.scalalogging.StrictLogging
 import sttp.client3._
-import sttp.client3.asynchttpclient.future.AsyncHttpClientFutureBackend
+import sttp.client3.HttpClientFutureBackend
 import sttp.model.{Method, StatusCode, Uri}
 
 import org.alephium.api.UtilJson._
@@ -90,7 +90,7 @@ object MarketService extends StrictLogging {
     private val isRunning: AtomicBoolean = new AtomicBoolean(false)
 
     override def startSelfOnce(): Future[Unit] = {
-      backend = AsyncHttpClientFutureBackend()
+      backend = HttpClientFutureBackend()
       isRunning.set(true)
       expireAndReloadCaches()
       Future.unit

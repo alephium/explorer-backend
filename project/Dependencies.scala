@@ -4,16 +4,16 @@
 import sbt._
 
 object Version {
-  lazy val common = "4.2.4"
+  lazy val common = "4.5.1+16-e3e8d5e7-SNAPSHOT"
 
   lazy val akka       = "2.6.20"
   lazy val rxJava     = "3.1.8"
-  lazy val tapir      = "1.10.7"
-  lazy val vertx      = "4.5.7"
-  lazy val slick      = "3.5.1"
-  lazy val postgresql = "42.7.3"
-  lazy val sttp       = "3.9.6"
-  lazy val apispec    = "0.10.0"
+  lazy val tapir      = "1.11.43"
+  lazy val vertx      = "4.5.20"
+  lazy val slick      = "3.6.1"
+  lazy val postgresql = "42.7.8"
+  lazy val sttp       = "3.11.0"
+  lazy val apispec    = "0.11.10"
   lazy val prometheus = "0.16.0"
   lazy val micrometer = "1.13.0"
 }

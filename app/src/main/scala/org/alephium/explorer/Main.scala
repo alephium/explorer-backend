@@ -46,28 +46,37 @@ class BootUp extends StrictLogging {
 
   def init(): Unit = {
     // scalastyle:off null
-    var explorer: ExplorerState = null
+    @volatile var explorer: ExplorerState = null
     // scalastyle:on null
 
     @SuppressWarnings(Array("org.wartremover.warts.GlobalExecutionContext"))
     implicit val executionContext: ExecutionContext =
-      ExecutionContextUtil.fromExecutor(ExecutionContext.global, discard(explorer.stop()))
+      ExecutionContextUtil.fromExecutor(ExecutionContext.global, {
+        if (explorer != null) {
+          discard(explorer.stop())
+        }
+      })
 
     explorer = ExplorerState(config.bootMode)
 
-    explorer
-      .start()
-      .onComplete {
-        case Success(_) => logger.info(WelcomeMessage.message(config, typesafeConfig))
-        case Failure(error) =>
-          logger.error("Fatal error during initialization", error)
-          explorer.stop().failed foreach { error =>
-            logger.error("Failed to stop explorer", error)
-          }
-      }
+    val startFuture = explorer.start()
+    
+    startFuture.onComplete {
+      case Success(_) => logger.info(WelcomeMessage.message(config, typesafeConfig))
+      case Failure(error) =>
+        logger.error("Fatal error during initialization", error)
+        explorer.stop().failed foreach { error =>
+          logger.error("Failed to stop explorer", error)
+        }
+    }
 
     Runtime.getRuntime.addShutdownHook(new Thread(() => {
-      discard(Await.result(explorer.stop(), 10.seconds))
+      if (explorer != null) {
+        discard(Await.result(explorer.stop(), 10.seconds))
+      }
     }))
+    
+    // Wait for startup to complete or fail
+    Await.result(startFuture, 30.seconds)
   }
 }

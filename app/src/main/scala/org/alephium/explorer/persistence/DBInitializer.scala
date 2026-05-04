@@ -79,7 +79,9 @@ object DBInitializer extends StrictLogging {
   ): Future[Unit] = {
     logger.info("Create Tables")
     // TODO Look for something like https://flywaydb.org/ to manage schemas
-    val existingTables = run(MTable.getTables)
+    // Slick 3.6.x requires explicit parameters for MTable.getTables
+    // Filter for public schema and TABLE type only
+    val existingTables = run(MTable.getTables(None, Some("public"), None, Some(Seq("TABLE"))))
     existingTables
       .flatMap { tables =>
         Future.sequence(allTables.map { table =>
@@ -89,7 +91,11 @@ object DBInitializer extends StrictLogging {
             } else {
               DBIOAction.successful(())
             }
-          run(createIfNotExist)
+          run(createIfNotExist).recover {
+            case e: org.postgresql.util.PSQLException if e.getMessage.contains("already exists") =>
+              // Table already exists, ignore
+              ()
+          }
         })
       }
       .map(_ => ())

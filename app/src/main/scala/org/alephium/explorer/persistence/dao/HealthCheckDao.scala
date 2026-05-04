@@ -17,5 +17,5 @@ object HealthCheckDao {
       executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile]
   ): Future[Unit] =
-    run(MTable.getTables).map(_ => ())
+    run(MTable.getTables(None, None, None, None)).map(_ => ())
 }

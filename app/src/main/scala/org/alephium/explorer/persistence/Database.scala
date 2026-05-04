@@ -31,7 +31,13 @@ class Database(bootMode: BootMode)(implicit
     }
 
   override def stopSelfOnce(): Future[Unit] = {
-    Future.fromTry(Try(databaseConfig.db.close()))
+    Future.fromTry(Try {
+      databaseConfig.db.close()
+    }).recover {
+      case _: java.util.concurrent.RejectedExecutionException =>
+        // Database was already closed or closing, ignore
+        ()
+    }
   }
 
   override def subServices: ArraySeq[Service] = ArraySeq.empty
