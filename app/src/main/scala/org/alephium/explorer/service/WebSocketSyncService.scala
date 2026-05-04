@@ -55,6 +55,7 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
 
 // scalastyle:off parameter.number method.length
   def sync(
+      vertx: Vertx,
       stopPromise: Promise[Unit],
       host: String,
       port: Int,
@@ -79,7 +80,6 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
     }
 
     def attemptConnection(): Unit = {
-      val vertx: Vertx = Vertx.vertx()
       val wsClient = WsClient(vertx)
 
       def closeHandler(client: ClientWs, deploymentId: String): WebSocket = {

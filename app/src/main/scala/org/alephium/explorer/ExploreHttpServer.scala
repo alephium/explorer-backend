@@ -7,13 +7,13 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent._
 
 import com.typesafe.scalalogging.StrictLogging
-import io.vertx.core.Vertx
 import io.vertx.core.http.{HttpMethod, HttpServer}
 import io.vertx.ext.web._
 import io.vertx.ext.web.handler.CorsHandler
 import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 
 import org.alephium.explorer.persistence.Database
+import org.alephium.explorer.service.VertxService
 import org.alephium.util.Service
 
 /** Stores AkkaHttp related instances created on boot-up */
@@ -22,19 +22,18 @@ class ExplorerHttpServer(
     host: String,
     port: Int,
     val routes: ArraySeq[Router => Route],
+    vertxService: VertxService,
     database: Database
 )(implicit
     val executionContext: ExecutionContext
 ) extends Service
     with StrictLogging {
 
-  private var vertx: Vertx = _
   // scalastyle:on magic.number
   private val httpBindingPromise: Promise[HttpServer] = Promise()
 
   override def startSelfOnce(): Future[Unit] = {
-    vertx = Vertx.vertx()
-
+    val vertx  = vertxService.vertx
     val router = Router.router(vertx)
 
     vertx
@@ -75,11 +74,10 @@ class ExplorerHttpServer(
     for {
       binding <- httpBindingPromise.future
       _       <- binding.close().asScala
-      _       <- vertx.close().asScala
     } yield {
       logger.info(s"http unbound")
     }
   }
 
-  override def subServices: ArraySeq[Service] = ArraySeq(database)
+  override def subServices: ArraySeq[Service] = ArraySeq(vertxService, database)
 }

@@ -9,6 +9,7 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
+import io.vertx.core.Vertx
 import sttp.model.Uri
 
 import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
@@ -37,6 +38,7 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
     using(Scheduler("")) { implicit scheduler =>
       checkBlocks(ArraySeq.empty)
       BlockFlowSyncService.start(
+        vertx,
         ArraySeq(Uri("")),
         1.second,
         fetchMaxAge,
@@ -117,6 +119,7 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
 
     BlockFlowSyncService
       .syncOnce(
+        vertx,
         ArraySeq(Uri("")),
         new AtomicBoolean(true),
         fetchMaxAge,
@@ -220,6 +223,8 @@ class BlockFlowSyncServiceSpec extends AlephiumFutureSpec with DatabaseFixtureFo
 
     def blockFlow: ArraySeq[ArraySeq[BlockEntryTest]] =
       blockEntitiesToBlockEntries(blockFlowEntity)
+
+    val vertx = Vertx.vertx()
 
     implicit val blockCache: BlockCache   = TestBlockCache()
     implicit val metricCache: MetricCache = TestMetricCache(new Database(BootMode.ReadWrite))

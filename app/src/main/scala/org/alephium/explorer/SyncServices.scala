@@ -11,6 +11,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 import com.typesafe.scalalogging.StrictLogging
+import io.vertx.core.Vertx
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.Uri
@@ -30,7 +31,7 @@ import org.alephium.util
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object SyncServices extends StrictLogging {
 
-  def startSyncServices(config: ExplorerConfig)(implicit
+  def startSyncServices(vertx: Vertx, config: ExplorerConfig)(implicit
       scheduler: Scheduler,
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
@@ -51,6 +52,7 @@ object SyncServices extends StrictLogging {
           blockFlowUri = config.blockFlowUri
         ) flatMap { peers =>
           startSyncServices(
+            vertx = vertx,
             peers = peers,
             syncPeriod = config.syncPeriod,
             blockFlowUri = config.blockFlowUri,
@@ -73,6 +75,7 @@ object SyncServices extends StrictLogging {
   /** Start sync services given the peers */
   // scalastyle:off
   def startSyncServices(
+      vertx: Vertx,
       peers: ArraySeq[Uri],
       syncPeriod: FiniteDuration,
       blockFlowUri: Uri,
@@ -104,6 +107,7 @@ object SyncServices extends StrictLogging {
             ArraySeq(
               BlockFlowSyncService
                 .start(
+                  vertx,
                   peers,
                   syncPeriod,
                   util.Duration.unsafe(blockFlowFetchMaxAge.toMillis),

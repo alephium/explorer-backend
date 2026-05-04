@@ -34,6 +34,8 @@ sealed trait ExplorerState extends Service with StrictLogging {
   lazy val database: Database =
     new Database(config.bootMode)(executionContext, databaseConfig, config)
 
+  lazy val vertxService: VertxService = new VertxService()
+
   implicit lazy val consensus: Consensus = config.consensus
 
   implicit lazy val blockCache: BlockCache =
@@ -101,6 +103,7 @@ sealed trait ExplorerStateRead extends ExplorerState {
       config.host,
       config.port,
       routes,
+      vertxService,
       database
     )
 }
@@ -114,7 +117,7 @@ sealed trait ExplorerStateWrite extends ExplorerState {
   implicit private val scheduler: Scheduler = Scheduler("SYNC_SERVICES")
 
   override def startSelfOnce(): Future[Unit] = {
-    SyncServices.startSyncServices(config)
+    SyncServices.startSyncServices(vertxService.vertx, config)
   }
 }
 
@@ -148,6 +151,7 @@ object ExplorerState {
         metricCache,
         transactionCache,
         addressTxCountCache,
+        vertxService,
         database
       )
   }
@@ -168,6 +172,7 @@ object ExplorerState {
         transactionCache,
         addressTxCountCache,
         database,
+        vertxService,
         blockFlowClient
       )
   }

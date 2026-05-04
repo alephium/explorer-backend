@@ -11,6 +11,7 @@ import scala.concurrent.duration.{Duration => ScalaDuration, FiniteDuration}
 import scala.util.{Failure, Success}
 
 import com.typesafe.scalalogging.StrictLogging
+import io.vertx.core.Vertx
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.Uri
@@ -60,6 +61,7 @@ case object BlockFlowSyncService extends StrictLogging {
 
   // scalastyle:off parameter.number
   def start(
+      vertx: Vertx,
       nodeUris: ArraySeq[Uri],
       interval: FiniteDuration,
       blockFlowFetchMaxAge: Duration,
@@ -86,6 +88,7 @@ case object BlockFlowSyncService extends StrictLogging {
       state = new AtomicBoolean()
     )(init())(state =>
       syncOnce(
+        vertx,
         nodeUris,
         state,
         blockFlowFetchMaxAge,
@@ -101,6 +104,7 @@ case object BlockFlowSyncService extends StrictLogging {
 
   // scalastyle:off method.length
   def syncOnce(
+      vertx: Vertx,
       nodeUris: ArraySeq[Uri],
       initialBackStepDone: AtomicBoolean,
       blockFlowFetchMaxAge: Duration,
@@ -134,6 +138,7 @@ case object BlockFlowSyncService extends StrictLogging {
         logger.info("Blocks are up to date, switching to web socket syncing")
         val stopPromise = Promise[Unit]()
         WebSocketSyncService.sync(
+          vertx,
           stopPromise,
           host = blockFlowUri.host.getOrElse("127.0.0.1"),
           // scalastyle:off magic.number

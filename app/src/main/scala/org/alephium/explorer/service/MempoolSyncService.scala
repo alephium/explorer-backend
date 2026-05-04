@@ -88,12 +88,16 @@ case object MempoolWebSocketSyncService extends WsNotificationParamsCodec with S
   private val batchAddress              = "blocks.batch"
 
   // scalastyle:off parameter.number
-  def sync(stopPromise: Promise[Unit], host: String, port: Int, flushInterval: Duration)(implicit
+  def sync(
+      vertx: Vertx,
+      stopPromise: Promise[Unit],
+      host: String,
+      port: Int,
+      flushInterval: Duration
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Unit = {
-
-    val vertx: Vertx = Vertx.vertx()
 
     val wsClient = WsClient(vertx)
 
