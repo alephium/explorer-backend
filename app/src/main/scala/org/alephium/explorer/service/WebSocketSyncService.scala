@@ -44,7 +44,7 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
   val maybeApiKey: Option[api.model.ApiKey] = None
 
   implicit val groupConfig: GroupConfig = Default.groupConfig
-  private val batchAddress = "blocks.batch"
+  private val BLOCK_BATCH_TOPIC = "blocks.batch"
 
   final case class ReconnectState(attempts: Int = 0)
 
@@ -127,10 +127,10 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
         Left(new RuntimeException(s"Expected block notification, got: $other"))
     }
 
-  def handleNotification(notification: Notification, vertx: Vertx): Unit = {
+  def forwardNotificationToBus(notification: Notification, vertx: Vertx): Unit = {
     notification.method match {
       case "subscription" =>
-        discard(vertx.eventBus().send(batchAddress, writeBinary(notification.params)))
+        discard(vertx.eventBus().send(BLOCK_BATCH_TOPIC, writeBinary(notification.params)))
       case _ =>
         ()
     }
@@ -139,7 +139,7 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
   def handleKeepAlive(keepAlive: KeepAlive): Unit =
     logger.debug(s"Keep alive: $keepAlive")
 
-  def inserts(blockAndEvents: ArraySeq[BlockEntityWithEvents])(implicit
+  def persistBlocks(blockAndEvents: ArraySeq[BlockEntityWithEvents])(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
@@ -181,7 +181,7 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
       ()
     }
 
-    def scheduleReconnect(): Unit = {
+    def scheduleWebSocketReconnect(): Unit = {
       nextReconnect(
         reconnectState,
         maxReconnectAttempts,
@@ -194,7 +194,7 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
             s"WebSocket connection lost. Reconnecting in ${delayMs}ms " +
               s"(attempt ${nextState.attempts}/$maxReconnectAttempts)"
           )
-          discard(vertx.setTimer(delayMs, _ => attemptConnection()))
+          discard(vertx.setTimer(delayMs, _ => connectToWebSocket()))
 
         case Left(_) =>
           fallbackToHttp(
@@ -203,17 +203,17 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
       }
     }
 
-    def attemptConnection(): Unit = {
+    def connectToWebSocket(): Unit = {
       val wsClient = WsClient(vertx)
 
       val connection =
         for {
-          client <- wsClient.connect(port, host)(notif => handleNotification(notif, vertx))(handleKeepAlive)
+          client <- wsClient.connect(port, host)(notif => forwardNotificationToBus(notif, vertx))(handleKeepAlive)
 
           blockBatching = new BlockBatchingVerticle(
-            address = batchAddress,
+            address = BLOCK_BATCH_TOPIC,
             flushInterval = flushInterval,
-            insertBlocksToDb = inserts,
+            persistBlocks = persistBlocks,
             client = client,
             maxBlockDelay = maxBlockDelay,
             maxBufferSize = maxBufferSize
@@ -226,9 +226,9 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
             discard(vertx.undeploy(deploymentId))
 
             if (blockBatching.shouldFallbackToHttp) {
-              fallbackToHttp("Falling back to HTTP syncing due to consistently old messages")
+              fallbackToHttp("Falling back to HTTP syncing due to consistently stale blocks")
             } else {
-              scheduleReconnect()
+              scheduleWebSocketReconnect()
             }
           }
 
@@ -242,11 +242,11 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
 
         case Failure(exception) =>
           logger.warn("WebSocket connection failed", exception)
-          scheduleReconnect()
+          scheduleWebSocketReconnect()
       }
     }
 
-    attemptConnection()
+    connectToWebSocket()
   }
 // scalastyle:on parameter.number
 
@@ -259,7 +259,7 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
   private[service] class BlockBatchingVerticle(
       address: String,
       flushInterval: Duration,
-      insertBlocksToDb: ArraySeq[BlockEntityWithEvents] => Future[Unit],
+      persistBlocks: ArraySeq[BlockEntityWithEvents] => Future[Unit],
       client: ClientWs,
       maxBlockDelay: Duration,
       maxBufferSize: Int
@@ -281,11 +281,11 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
     def shouldFallbackToHttp: Boolean = shouldFallbackToHttpFlag
 
     override def start(): Unit = {
-      discard(this.vertx.eventBus().consumer[Array[Byte]](address, handleBlock))
+      discard(this.vertx.eventBus().consumer[Array[Byte]](address, processIncomingBlock))
       discard(this.vertx.setPeriodic(flushInterval.millis, _ => flush()))
     }
 
-    private def handleBlock(msg: Message[Array[Byte]]): Unit = {
+    private def processIncomingBlock(msg: Message[Array[Byte]]): Unit = {
       if (!closing) {
         val parsed =
           parseBlockNotification(readBinary[ujson.Value](msg.body()))
@@ -295,7 +295,7 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
             logger.error(s"Failed to parse notification: ${msg.body().mkString}", error)
 
           case Right(blockAndEvents) =>
-            validate(blockAndEvents)
+            checkBlockAndUpdateTracker(blockAndEvents)
 
             if (!closing) {
               buffer = buffer :+ blockAndEvents
@@ -311,7 +311,7 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
       }
     }
 
-    private def validate(blockAndEvents: BlockEntityWithEvents): Unit = {
+    private def checkBlockAndUpdateTracker(blockAndEvents: BlockEntityWithEvents): Unit = {
       val previous = staleBlockTracker
 
       val (nextState, decision) =
@@ -359,7 +359,7 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
 
         logger.debug(s"Flushing ${batch.size} blocks to database")
 
-        insertBlocksToDb(batch).onComplete {
+        persistBlocks(batch).onComplete {
           case Success(_) =>
             pending = false
             logger.debug(s"Successfully flushed ${batch.size} blocks")
