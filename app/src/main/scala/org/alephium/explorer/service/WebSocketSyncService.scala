@@ -4,7 +4,6 @@
 package org.alephium.explorer.service
 
 import scala.collection.immutable.ArraySeq
-import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util._
 
@@ -12,7 +11,6 @@ import com.typesafe.scalalogging.StrictLogging
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.Vertx
 import io.vertx.core.eventbus.Message
-import io.vertx.core.http.WebSocket
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -46,13 +44,112 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
   val maybeApiKey: Option[api.model.ApiKey] = None
 
   implicit val groupConfig: GroupConfig = Default.groupConfig
-  private val batchAddress              = "blocks.batch"
+  private val batchAddress = "blocks.batch"
 
-  // Reconnection state
-  @volatile private var reconnectAttempts: Int        = 0
-  @volatile private var blocksReceived: Long          = 0
-  @volatile private var blocksFlushed: Long           = 0
-  @volatile private var shouldFallbackToHttp: Boolean = false
+  final case class ReconnectState(attempts: Int = 0)
+
+  final case class StaleBlockTracker(
+      consecutiveStaleBlocks: Int = 0,
+      firstStaleBlockAt: Option[TimeStamp] = None
+  )
+
+  sealed trait StaleBlockDecision
+  object StaleBlockDecision {
+    case object Continue extends StaleBlockDecision
+    case object CloseAndFallbackToHttp extends StaleBlockDecision
+  }
+
+  def calculateBackoff(attempt: Int, baseDelay: Duration, maxDelay: Duration): Long = {
+    val multiplier = Math.pow(2, attempt.toDouble).toLong
+    Math.min(baseDelay.millis * multiplier, maxDelay.millis)
+  }
+
+  def nextReconnect(
+      state: ReconnectState,
+      maxAttempts: Int,
+      baseDelay: Duration,
+      maxDelay: Duration
+  ): Either[Unit, (ReconnectState, Long)] = {
+    val nextState = state.copy(attempts = state.attempts + 1)
+
+    if (nextState.attempts < maxAttempts) {
+      Right(nextState -> calculateBackoff(nextState.attempts, baseDelay, maxDelay))
+    } else {
+      Left(())
+    }
+  }
+
+  def checkBlockFreshness(
+      state: StaleBlockTracker,
+      blockTimestamp: TimeStamp,
+      now: TimeStamp,
+      delayAllowed: Duration,
+      maxConsecutiveStaleBlocks: Int,
+      staleBlockWindowDuration: Duration
+  ): (StaleBlockTracker, StaleBlockDecision) = {
+
+    val isStale = (now -- blockTimestamp).map(_ > delayAllowed).getOrElse(true)
+
+    if (!isStale) {
+      StaleBlockTracker() -> StaleBlockDecision.Continue
+    } else {
+      val nextState =
+        state.copy(
+          consecutiveStaleBlocks = state.consecutiveStaleBlocks + 1,
+          firstStaleBlockAt = state.firstStaleBlockAt.orElse(Some(now))
+        )
+
+      val timeSinceFirstStale = nextState.firstStaleBlockAt.flatMap(now -- _)
+
+      val shouldClose =
+        nextState.consecutiveStaleBlocks >= maxConsecutiveStaleBlocks ||
+          timeSinceFirstStale.exists(_ >= staleBlockWindowDuration)
+
+      val decision: StaleBlockDecision =
+        if (shouldClose) {
+          StaleBlockDecision.CloseAndFallbackToHttp
+        } else {
+          StaleBlockDecision.Continue
+        }
+
+      (nextState, decision)
+    }
+  }
+
+  def parseBlockNotification(
+      notification: ujson.Value
+  )(implicit consensus: Consensus, groupSetting: GroupSetting): Either[Throwable, BlockEntityWithEvents] =
+    Try(read[WsParams.WsNotificationParams](notification)).toEither.flatMap {
+      case WsParams.WsBlockNotificationParams(_, protocolBlockAndEvents) =>
+        Right(BlockFlowClient.blockAndEventsToEntities(protocolBlockAndEvents))
+
+      case other =>
+        Left(new RuntimeException(s"Expected block notification, got: $other"))
+    }
+
+  def handleNotification(notification: Notification, vertx: Vertx): Unit = {
+    notification.method match {
+      case "subscription" =>
+        discard(vertx.eventBus().send(batchAddress, writeBinary(notification.params)))
+      case _ =>
+        ()
+    }
+  }
+
+  def handleKeepAlive(keepAlive: KeepAlive): Unit =
+    logger.debug(s"Keep alive: $keepAlive")
+
+  def inserts(blockAndEvents: ArraySeq[BlockEntityWithEvents])(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      cache: BlockCache,
+      groupSetting: GroupSetting
+  ): Future[Unit] =
+    for {
+      _ <- BlockFlowSyncService.insertBlocks(blockAndEvents)
+      _ <- dc.db.run(InputUpdateQueries.updateInputs())
+    } yield ()
 
 // scalastyle:off parameter.number method.length
   def sync(
@@ -75,123 +172,83 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
       groupSetting: GroupSetting
   ): Unit = {
 
-    def calculateBackoff(): Long = {
-      val backoffMs = reconnectBaseDelay.millis * Math.pow(2, reconnectAttempts.toDouble).toLong
-      Math.min(backoffMs, reconnectMaxDelay.millis)
+    var reconnectState = ReconnectState()
+
+    def fallbackToHttp(reason: String): Unit = {
+      logger.warn(reason)
+      reconnectState = ReconnectState()
+      stopPromise.trySuccess(())
+      ()
+    }
+
+    def scheduleReconnect(): Unit = {
+      nextReconnect(
+        reconnectState,
+        maxReconnectAttempts,
+        reconnectBaseDelay,
+        reconnectMaxDelay
+      ) match {
+        case Right((nextState, delayMs)) =>
+          reconnectState = nextState
+          logger.warn(
+            s"WebSocket connection lost. Reconnecting in ${delayMs}ms " +
+              s"(attempt ${nextState.attempts}/$maxReconnectAttempts)"
+          )
+          discard(vertx.setTimer(delayMs, _ => attemptConnection()))
+
+        case Left(_) =>
+          fallbackToHttp(
+            s"WebSocket failed after $maxReconnectAttempts attempts, falling back to HTTP syncing"
+          )
+      }
     }
 
     def attemptConnection(): Unit = {
       val wsClient = WsClient(vertx)
 
-      def closeHandler(client: ClientWs, deploymentId: String): WebSocket = {
-        client.underlying.closeHandler { _ =>
-          logger.info(
-            s"WebSocket connection closed (received: $blocksReceived, flushed: $blocksFlushed)"
+      val connection =
+        for {
+          client <- wsClient.connect(port, host)(notif => handleNotification(notif, vertx))(handleKeepAlive)
+
+          blockBatching = new BlockBatchingVerticle(
+            address = batchAddress,
+            flushInterval = flushInterval,
+            insertBlocksToDb = inserts,
+            client = client,
+            maxBlockDelay = maxBlockDelay,
+            maxBufferSize = maxBufferSize
           )
-          vertx.undeploy(deploymentId)
 
-          // Check if we should fallback to HTTP instead of reconnecting
-          if (shouldFallbackToHttp) {
-            logger.info("Falling back to HTTP syncing due to consistently old messages")
-            shouldFallbackToHttp = false
-            reconnectAttempts = 0
-            stopPromise.trySuccess(())
-          } else if (reconnectAttempts < maxReconnectAttempts) {
-            // Attempt reconnection if we haven't exceeded max attempts
-            reconnectAttempts += 1
-            val backoffMs = calculateBackoff()
-            logger.warn(
-              s"WebSocket connection lost. Reconnecting in ${backoffMs}ms (attempt $reconnectAttempts/$maxReconnectAttempts)"
-            )
+          deploymentId <- vertx.deployVerticle(blockBatching).asScala
 
-            // Schedule reconnection
-            vertx.setTimer(
-              backoffMs,
-              _ => {
-                attemptConnection()
-              }
-            )
-          } else {
-            logger.error(
-              s"WebSocket failed after $maxReconnectAttempts attempts, falling back to HTTP syncing"
-            )
-            reconnectAttempts = 0
-            stopPromise.trySuccess(())
-          }
-          ()
-        }
-      }
+          _ = client.underlying.closeHandler { _ =>
+            logger.info("WebSocket connection closed")
+            discard(vertx.undeploy(deploymentId))
 
-      // format: off
-      (for {
-        client <- wsClient.connect(port, host)(notif => handleNotification(notif, vertx))(handleKeepAlive)
-        blockBatching = new BlockBatchingVerticle(
-          batchAddress,
-          flushInterval,
-          inserts,
-          client,
-          maxBlockDelay,
-          maxBufferSize,
-          () => blocksReceived += 1,
-          () => blocksFlushed += 1
-        )
-        deploymentId <- vertx.deployVerticle(blockBatching).asScala
-        _ = closeHandler(client, deploymentId)
-        _ <- client.subscribeToBlock(0)
-      } yield ())
-        .onComplete {
-          case Success(_) =>
-            logger.info(s"WebSocket syncing started (host: $host, port: $port)")
-            reconnectAttempts = 0 // Reset on successful connection
-          case Failure(exception) =>
-            reconnectAttempts += 1
-            if (reconnectAttempts < maxReconnectAttempts) {
-              val backoffMs = calculateBackoff()
-              logger.warn(s"WebSocket connection failed. Retrying in ${backoffMs}ms (attempt $reconnectAttempts/$maxReconnectAttempts)", exception)
-              vertx.setTimer(backoffMs, _ => {
-                attemptConnection()
-              })
+            if (blockBatching.shouldFallbackToHttp) {
+              fallbackToHttp("Falling back to HTTP syncing due to consistently old messages")
             } else {
-              logger.error(s"WebSocket syncing failed after $maxReconnectAttempts attempts, falling back to HTTP", exception)
-              reconnectAttempts = 0
-              stopPromise.trySuccess(())
+              scheduleReconnect()
             }
-            ()
-        }
-      // format: on
+          }
+
+          _ <- client.subscribeToBlock(0)
+        } yield ()
+
+      connection.onComplete {
+        case Success(_) =>
+          reconnectState = ReconnectState()
+          logger.info(s"WebSocket syncing started (host: $host, port: $port)")
+
+        case Failure(exception) =>
+          logger.warn("WebSocket connection failed", exception)
+          scheduleReconnect()
+      }
     }
 
     attemptConnection()
   }
 // scalastyle:on parameter.number
-
-  def handleNotification(notification: Notification, vertx: Vertx): Unit = {
-    notification.method match {
-      case "subscription" =>
-        discard(vertx.eventBus().send(batchAddress, writeBinary(notification.params)))
-      case _ =>
-        // TODO Should we support error notification?
-        ()
-    }
-  }
-
-  def handleKeepAlive(keepAlive: KeepAlive): Unit = {
-    // TODO: do we want to do something with this?
-    //       I think ping are anyway automatcially handled by the vertx client
-    logger.debug(s"Keep alive: ${keepAlive}")
-  }
-
-  def inserts(blockAndEvents: ArraySeq[BlockEntityWithEvents])(implicit
-      ec: ExecutionContext,
-      dc: DatabaseConfig[PostgresProfile],
-      blockFlowClient: BlockFlowClient,
-      cache: BlockCache,
-      groupSetting: GroupSetting
-  ): Future[Unit] =
-    for {
-      _ <- BlockFlowSyncService.insertBlocks(blockAndEvents)
-      _ <- dc.db.run(InputUpdateQueries.updateInputs())
-    } yield (())
 
   /*
    * This verticle is used to batch the blocks received from the websocket
@@ -199,44 +256,29 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
    * Verticles are equivalent to akka actors
    */
   @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
-  private class BlockBatchingVerticle(
+  private[service] class BlockBatchingVerticle(
       address: String,
       flushInterval: Duration,
       insertBlocksToDb: ArraySeq[BlockEntityWithEvents] => Future[Unit],
       client: ClientWs,
       maxBlockDelay: Duration,
-      maxBufferSize: Int,
-      onBlockReceived: () => Unit,
-      onBlocksFlushed: () => Unit
+      maxBufferSize: Int
   )(implicit
       ec: ExecutionContext,
       consensus: Consensus,
       groupSetting: GroupSetting
   ) extends AbstractVerticle {
 
-    /*
-     * Passing this delay, the websocket syncing will stop and go back to regular sync.
-     * This is to prevent the case where the websocket become too slow for some reason.
-     */
-    private val delayAllowed = maxBlockDelay
+    private val maxConsecutiveStaleBlocks = 5
+    private val staleBlockWindowDuration  = Duration.ofSecondsUnsafe(10)
 
-    /*
-     * Vertx vertices are equivalent to akka actors
-     * So message are process in a single thread and
-     * with the security of `pending` we are safe
-     * to use mutable data structure
-     */
-    private var buffer  = ArrayBuffer.empty[BlockEntityWithEvents]
+    private var buffer = Vector.empty[BlockEntityWithEvents]
     private var pending = false
+    private var closing = false
+    private var staleBlockTracker = StaleBlockTracker()
+    @volatile private var shouldFallbackToHttpFlag: Boolean = false
 
-    // Track consecutive old messages to avoid closing on temporary lag
-    // scalastyle:off magic.number
-    private val maxConsecutiveOldMessages = 5
-    private val oldMessageWindowDuration  = Duration.ofSecondsUnsafe(10)
-    // scalastyle:on magic.number
-    private var consecutiveOldMessages                 = 0
-    private var firstOldMessageTime: Option[TimeStamp] = None
-    private var closing                                = false
+    def shouldFallbackToHttp: Boolean = shouldFallbackToHttpFlag
 
     override def start(): Unit = {
       discard(this.vertx.eventBus().consumer[Array[Byte]](address, handleBlock))
@@ -245,113 +287,88 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
 
     private def handleBlock(msg: Message[Array[Byte]]): Unit = {
       if (!closing) {
-        handleJsonMessage(readBinary[ujson.Value](msg.body())).foreach { blockAndEvents =>
-          if (!closing) {
-            buffer += blockAndEvents
-            onBlockReceived()
+        val parsed =
+          parseBlockNotification(readBinary[ujson.Value](msg.body()))
 
-            // Force flush if buffer exceeds max size
-            // scalastyle:off magic.number
-            if (buffer.lengthIs >= maxBufferSize) {
-              logger.warn(
-                s"Buffer size (${buffer.length}) exceeded max ($maxBufferSize), forcing flush"
-              )
-              flush()
+        parsed match {
+          case Left(error) =>
+            logger.error(s"Failed to parse notification: ${msg.body().mkString}", error)
+
+          case Right(blockAndEvents) =>
+            validate(blockAndEvents)
+
+            if (!closing) {
+              buffer = buffer :+ blockAndEvents
+
+              if (buffer.sizeIs >= maxBufferSize) {
+                logger.warn(
+                  s"Buffer size (${buffer.size}) exceeded max ($maxBufferSize), forcing flush"
+                )
+                flush()
+              }
             }
-            // scalastyle:on magic.number
-          }
         }
       }
     }
 
-    private def handleJsonMessage(notification: ujson.Value): Option[BlockEntityWithEvents] = {
-      Try(read[WsParams.WsNotificationParams](notification)).toEither match {
-        case Left(exception) =>
-          logger.error(s"Failed to parse notification: $notification", exception)
-          None
-        case Right(params) =>
-          params match {
-            case WsParams.WsBlockNotificationParams(_, protocolBlockAndEvents) =>
-              val blockAndEvents =
-                BlockFlowClient.blockAndEventsToEntities(protocolBlockAndEvents)
+    private def validate(blockAndEvents: BlockEntityWithEvents): Unit = {
+      val previous = staleBlockTracker
 
-              validateBlockAndEvents(blockAndEvents)
+      val (nextState, decision) =
+        checkBlockFreshness(
+          state = previous,
+          blockTimestamp = blockAndEvents.block.timestamp,
+          now = TimeStamp.now(),
+          delayAllowed = maxBlockDelay,
+          maxConsecutiveStaleBlocks = maxConsecutiveStaleBlocks,
+          staleBlockWindowDuration = staleBlockWindowDuration
+        )
 
-              Some(blockAndEvents)
-            case other =>
-              logger.error(s"Expected block notification, got: $other")
-              None
+      staleBlockTracker = nextState
+
+      decision match {
+        case StaleBlockDecision.Continue =>
+          if (previous.consecutiveStaleBlocks > 0 && nextState.consecutiveStaleBlocks == 0) {
+            logger.debug(
+              s"Received fresh block, resetting stale block counter (was: ${previous.consecutiveStaleBlocks})"
+            )
+          } else if (nextState.consecutiveStaleBlocks > 0) {
+            logger.debug(
+              s"Received stale block (${nextState.consecutiveStaleBlocks}/$maxConsecutiveStaleBlocks), monitoring..."
+            )
           }
+
+        case StaleBlockDecision.CloseAndFallbackToHttp =>
+          closing = true
+          shouldFallbackToHttpFlag = true
+
+          logger.error(
+            s"WebSocket blocks consistently stale " +
+              s"(consecutive: ${nextState.consecutiveStaleBlocks}) - falling back to HTTP sync"
+          )
+
+          discard(client.close())
       }
     }
 
     private def flush(): Unit = {
       if (buffer.nonEmpty && !pending) {
-        val batch     = ArraySeq.from(buffer)
-        val batchSize = batch.size
-        buffer = ArrayBuffer.empty
+        val batch = ArraySeq.from(buffer)
+        buffer = Vector.empty
         pending = true
 
-        logger.debug(s"Flushing ${batchSize} blocks to database")
+        logger.debug(s"Flushing ${batch.size} blocks to database")
 
-        insertBlocksToDb(batch).onComplete { result =>
-          pending = false
+        insertBlocksToDb(batch).onComplete {
+          case Success(_) =>
+            pending = false
+            logger.debug(s"Successfully flushed ${batch.size} blocks")
 
-          result match {
-            case Success(_) =>
-              onBlocksFlushed()
-              logger.debug(s"Successfully flushed ${batchSize} blocks")
-            case Failure(ex) =>
-              logger.error(s"DB insert failed: ${ex.getMessage}", ex)
-              // Resume to normal sync
-              client.close()
-          }
-        }
-      }
-    }
-
-    private def validateBlockAndEvents(
-        blockAndEvents: BlockEntityWithEvents
-    ): Unit = {
-      if (closing) {} else {
-
-        val now = TimeStamp.now()
-        val isOld = (now -- blockAndEvents.block.timestamp)
-          .map(_ > delayAllowed)
-          .getOrElse(true)
-
-        if (isOld) {
-          consecutiveOldMessages += 1
-          if (firstOldMessageTime.isEmpty) {
-            firstOldMessageTime = Some(now)
-          }
-
-          val timeSinceFirstOld = firstOldMessageTime.flatMap(now -- _)
-          val shouldClose = consecutiveOldMessages >= maxConsecutiveOldMessages ||
-            timeSinceFirstOld.exists(_ >= oldMessageWindowDuration)
-
-          if (shouldClose && !closing) {
+          case Failure(ex) =>
+            pending = false
             closing = true
-            shouldFallbackToHttp = true
-            logger.error(
-              s"WebSocket messages consistently too old (consecutive: $consecutiveOldMessages, duration: ${timeSinceFirstOld
-                  .map(_.millis)}ms) - falling back to HTTP sync"
-            )
+            logger.error(s"DB insert failed: ${ex.getMessage}", ex)
             discard(client.close())
-          } else {
-            logger.debug(
-              s"Received old message ($consecutiveOldMessages/$maxConsecutiveOldMessages), monitoring..."
-            )
-          }
-        } else {
-          // Reset counters on fresh message
-          if (consecutiveOldMessages > 0) {
-            logger.debug(
-              s"Received fresh message, resetting old message counter (was: $consecutiveOldMessages)"
-            )
-            consecutiveOldMessages = 0
-            firstOldMessageTime = None
-          }
         }
       }
     }
