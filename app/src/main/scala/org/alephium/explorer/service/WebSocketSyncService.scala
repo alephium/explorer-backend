@@ -49,9 +49,10 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
   private val batchAddress              = "blocks.batch"
 
   // Reconnection state
-  @volatile private var reconnectAttempts: Int = 0
-  @volatile private var blocksReceived: Long   = 0
-  @volatile private var blocksFlushed: Long    = 0
+  @volatile private var reconnectAttempts: Int        = 0
+  @volatile private var blocksReceived: Long          = 0
+  @volatile private var blocksFlushed: Long           = 0
+  @volatile private var shouldFallbackToHttp: Boolean = false
 
 // scalastyle:off parameter.number method.length
   def sync(
@@ -89,8 +90,14 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
           )
           vertx.undeploy(deploymentId)
 
-          // Attempt reconnection if we haven't exceeded max attempts
-          if (reconnectAttempts < maxReconnectAttempts) {
+          // Check if we should fallback to HTTP instead of reconnecting
+          if (shouldFallbackToHttp) {
+            logger.info("Falling back to HTTP syncing due to consistently old messages")
+            shouldFallbackToHttp = false
+            reconnectAttempts = 0
+            stopPromise.trySuccess(())
+          } else if (reconnectAttempts < maxReconnectAttempts) {
+            // Attempt reconnection if we haven't exceeded max attempts
             reconnectAttempts += 1
             val backoffMs = calculateBackoff()
             logger.warn(
@@ -222,25 +229,38 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
     private var buffer  = ArrayBuffer.empty[BlockEntityWithEvents]
     private var pending = false
 
+    // Track consecutive old messages to avoid closing on temporary lag
+    // scalastyle:off magic.number
+    private val maxConsecutiveOldMessages = 5
+    private val oldMessageWindowDuration  = Duration.ofSecondsUnsafe(10)
+    // scalastyle:on magic.number
+    private var consecutiveOldMessages                 = 0
+    private var firstOldMessageTime: Option[TimeStamp] = None
+    private var closing                                = false
+
     override def start(): Unit = {
       discard(this.vertx.eventBus().consumer[Array[Byte]](address, handleBlock))
       discard(this.vertx.setPeriodic(flushInterval.millis, _ => flush()))
     }
 
     private def handleBlock(msg: Message[Array[Byte]]): Unit = {
-      handleJsonMessage(readBinary[ujson.Value](msg.body())).foreach { blockAndEvents =>
-        buffer += blockAndEvents
-        onBlockReceived()
+      if (!closing) {
+        handleJsonMessage(readBinary[ujson.Value](msg.body())).foreach { blockAndEvents =>
+          if (!closing) {
+            buffer += blockAndEvents
+            onBlockReceived()
 
-        // Force flush if buffer exceeds max size
-        // scalastyle:off magic.number
-        if (buffer.lengthIs >= maxBufferSize) {
-          logger.warn(
-            s"Buffer size (${buffer.length}) exceeded max ($maxBufferSize), forcing flush"
-          )
-          flush()
+            // Force flush if buffer exceeds max size
+            // scalastyle:off magic.number
+            if (buffer.lengthIs >= maxBufferSize) {
+              logger.warn(
+                s"Buffer size (${buffer.length}) exceeded max ($maxBufferSize), forcing flush"
+              )
+              flush()
+            }
+            // scalastyle:on magic.number
+          }
         }
-        // scalastyle:on magic.number
       }
     }
 
@@ -293,13 +313,46 @@ case object WebSocketSyncService extends WsNotificationParamsCodec with StrictLo
     private def validateBlockAndEvents(
         blockAndEvents: BlockEntityWithEvents
     ): Unit = {
-      if (
-        (TimeStamp.now() -- blockAndEvents.block.timestamp)
+      if (closing) {} else {
+
+        val now = TimeStamp.now()
+        val isOld = (now -- blockAndEvents.block.timestamp)
           .map(_ > delayAllowed)
           .getOrElse(true)
-      ) {
-        logger.error("WebSocket message is too old")
-        discard(client.close())
+
+        if (isOld) {
+          consecutiveOldMessages += 1
+          if (firstOldMessageTime.isEmpty) {
+            firstOldMessageTime = Some(now)
+          }
+
+          val timeSinceFirstOld = firstOldMessageTime.flatMap(now -- _)
+          val shouldClose = consecutiveOldMessages >= maxConsecutiveOldMessages ||
+            timeSinceFirstOld.exists(_ >= oldMessageWindowDuration)
+
+          if (shouldClose && !closing) {
+            closing = true
+            shouldFallbackToHttp = true
+            logger.error(
+              s"WebSocket messages consistently too old (consecutive: $consecutiveOldMessages, duration: ${timeSinceFirstOld
+                  .map(_.millis)}ms) - falling back to HTTP sync"
+            )
+            discard(client.close())
+          } else {
+            logger.debug(
+              s"Received old message ($consecutiveOldMessages/$maxConsecutiveOldMessages), monitoring..."
+            )
+          }
+        } else {
+          // Reset counters on fresh message
+          if (consecutiveOldMessages > 0) {
+            logger.debug(
+              s"Received fresh message, resetting old message counter (was: $consecutiveOldMessages)"
+            )
+            consecutiveOldMessages = 0
+            firstOldMessageTime = None
+          }
+        }
       }
     }
   }
