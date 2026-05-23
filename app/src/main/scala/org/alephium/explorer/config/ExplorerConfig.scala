@@ -229,6 +229,7 @@ object ExplorerConfig {
           explorer.forceSynchronousMigrations,
           explorer.syncPeriod,
           explorer.holderServiceScheduleTime,
+          explorer.activeAddressHistoryServiceScheduleTime,
           explorer.tokenSupplyServiceScheduleTime,
           explorer.hashRateServiceSyncPeriod,
           explorer.finalizerServiceSyncPeriod,
@@ -274,7 +275,8 @@ object ExplorerConfig {
   final case class MaxTimeInterval(
       hourly: util.Duration,
       daily: util.Duration,
-      weekly: util.Duration
+      weekly: util.Duration,
+      monthly: util.Duration
   )
 
   final case class MaxTimeIntervals(
@@ -307,6 +309,7 @@ object ExplorerConfig {
       forceSynchronousMigrations: Boolean,
       syncPeriod: FiniteDuration,
       holderServiceScheduleTime: LocalTime,
+      activeAddressHistoryServiceScheduleTime: LocalTime,
       tokenSupplyServiceScheduleTime: LocalTime,
       hashRateServiceSyncPeriod: FiniteDuration,
       finalizerServiceSyncPeriod: FiniteDuration,
@@ -343,6 +346,7 @@ final case class ExplorerConfig private (
     forceSynchronousMigrations: Boolean,
     syncPeriod: FiniteDuration,
     holderServiceScheduleTime: LocalTime,
+    activeAddressHistoryServiceScheduleTime: LocalTime,
     tokenSupplyServiceScheduleTime: LocalTime,
     hashRateServiceSyncPeriod: FiniteDuration,
     finalizerServiceSyncPeriod: FiniteDuration,

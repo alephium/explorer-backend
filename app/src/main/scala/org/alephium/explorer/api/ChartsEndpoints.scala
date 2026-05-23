@@ -10,13 +10,21 @@ import sttp.tapir.generic.auto._
 
 import org.alephium.api.Endpoints.jsonBody
 import org.alephium.api.model.TimeInterval
+import org.alephium.explorer.api.Codecs._
 import org.alephium.explorer.api.EndpointExamples._
-import org.alephium.explorer.api.model.{Hashrate, IntervalType, PerChainTimedCount, TimedCount}
+import org.alephium.explorer.api.model.{
+  ActiveAddressesCount,
+  ExportType,
+  Hashrate,
+  IntervalType,
+  PerChainTimedCount,
+  TimedCount
+}
 
-// scalastyle:off magic.number
 trait ChartsEndpoints extends BaseEndpoint with QueryParams {
 
-  val intervalTypes: String = IntervalType.all.dropRight(1).map(_.string).mkString(", ")
+  private val hourlyDaily: Set[IntervalType]  = Set(IntervalType.Hourly, IntervalType.Daily)
+  private val dailyMonthly: Set[IntervalType] = Set(IntervalType.Daily, IntervalType.Monthly)
 
   private val chartsEndpoint =
     baseEndpoint
@@ -27,26 +35,39 @@ trait ChartsEndpoints extends BaseEndpoint with QueryParams {
     chartsEndpoint.get
       .in("hashrates")
       .in(timeIntervalQuery)
-      .in(intervalTypeQuery)
+      .in(intervalTypeSubsetQuery(hourlyDaily))
       .out(jsonBody[ArraySeq[Hashrate]])
       .summary("Get hashrate chart in H/s")
-      .description(s"`interval-type` query param: $intervalTypes")
 
   val getAllChainsTxCount: BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[TimedCount]] =
     chartsEndpoint.get
       .in("transactions-count")
       .in(timeIntervalQuery)
-      .in(intervalTypeQuery)
+      .in(intervalTypeSubsetQuery(hourlyDaily))
       .out(jsonBody[ArraySeq[TimedCount]])
       .summary("Get transaction count history")
-      .description(s"`interval-type` query param: ${intervalTypes}")
 
   val getPerChainTxCount: BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[PerChainTimedCount]] =
     chartsEndpoint.get
       .in("transactions-count-per-chain")
       .in(timeIntervalQuery)
-      .in(intervalTypeQuery)
+      .in(intervalTypeSubsetQuery(hourlyDaily))
       .out(jsonBody[ArraySeq[PerChainTimedCount]])
       .summary("Get transaction count history per chain")
-      .description(s"`interval-type` query param: ${intervalTypes}")
+
+  val getActiveAddresses
+      : BaseEndpoint[(TimeInterval, IntervalType, Option[ExportType]), ActiveAddressesCount] =
+    chartsEndpoint.get
+      .in("active-addresses")
+      .in(timeIntervalQuery)
+      .in(intervalTypeSubsetQuery(dailyMonthly))
+      .in(optionalExportTypeQuery)
+      .out(
+        oneOf[ActiveAddressesCount](
+          oneOfVariant[ActiveAddressesCount.Csv](csvBody[ActiveAddressesCount.Csv]),
+          oneOfVariant(jsonBody[Seq[TimedCount]].map(ActiveAddressesCount.Json(_))(_.data))
+        )
+      )
+      .summary("Get active addresses history")
+
 }

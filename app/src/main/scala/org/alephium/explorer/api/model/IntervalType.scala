@@ -9,6 +9,7 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
 import sttp.model.StatusCode
+import sttp.tapir._
 import upickle.core.Abort
 
 import org.alephium.api.ApiError
@@ -23,6 +24,7 @@ sealed trait IntervalType {
   def duration: Duration
 }
 
+//scalastyle:off magic.number
 object IntervalType {
   case object Hourly extends IntervalType {
     val value: Int             = 0
@@ -48,8 +50,16 @@ object IntervalType {
     override def toString()    = string
   }
 
+  case object Monthly extends IntervalType {
+    val value: Int             = 3
+    val string: String         = "monthly"
+    val chronoUnit: ChronoUnit = ChronoUnit.WEEKS
+    val duration: Duration     = Duration.ofDaysUnsafe(31)
+    override def toString()    = string
+  }
+
   val all: ArraySeq[IntervalType] =
-    ArraySeq(Hourly: IntervalType, Daily: IntervalType, Weekly: IntervalType)
+    ArraySeq(Hourly: IntervalType, Daily: IntervalType, Weekly: IntervalType, Monthly: IntervalType)
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   implicit val reader: Reader[IntervalType] =
@@ -65,10 +75,20 @@ object IntervalType {
 
   def validate(str: String): Option[IntervalType] =
     str match {
-      case Hourly.string => Some(Hourly)
-      case Daily.string  => Some(Daily)
-      case Weekly.string => Some(Weekly)
-      case _             => None
+      case Hourly.string  => Some(Hourly)
+      case Daily.string   => Some(Daily)
+      case Weekly.string  => Some(Weekly)
+      case Monthly.string => Some(Monthly)
+      case _              => None
+    }
+
+  def validateSubset(str: String)(subset: Set[IntervalType]): Option[IntervalType] =
+    str match {
+      case Hourly.string if subset.contains(Hourly)   => Some(Hourly)
+      case Daily.string if subset.contains(Daily)     => Some(Daily)
+      case Weekly.string if subset.contains(Weekly)   => Some(Weekly)
+      case Monthly.string if subset.contains(Monthly) => Some(Monthly)
+      case _                                          => None
     }
 
   implicit val writer: Writer[IntervalType] =
@@ -76,30 +96,46 @@ object IntervalType {
 
   def unsafe(int: Int): IntervalType = {
     int match {
-      case IntervalType.Hourly.value => IntervalType.Hourly
-      case IntervalType.Daily.value  => IntervalType.Daily
-      case IntervalType.Weekly.value => IntervalType.Weekly
+      case IntervalType.Hourly.value  => IntervalType.Hourly
+      case IntervalType.Daily.value   => IntervalType.Daily
+      case IntervalType.Weekly.value  => IntervalType.Weekly
+      case IntervalType.Monthly.value => IntervalType.Monthly
     }
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
   def validateTimeInterval[A](
       timeInterval: TimeInterval,
       intervalType: IntervalType,
       maxHourlyTimeSpan: Duration,
       maxDailyTimeSpan: Duration,
-      maxWeeklyTimeSpan: Duration
+      maxWeeklyTimeSpan: Duration,
+      maxMonthlyTimeSpan: Duration
   )(
       contd: => Future[A]
   )(implicit executionContext: ExecutionContext): Future[Either[ApiError[_ <: StatusCode], A]] = {
     val timeSpan =
       intervalType match {
-        case IntervalType.Hourly => maxHourlyTimeSpan
-        case IntervalType.Daily  => maxDailyTimeSpan
-        case IntervalType.Weekly => maxWeeklyTimeSpan
+        case IntervalType.Hourly  => maxHourlyTimeSpan
+        case IntervalType.Daily   => maxDailyTimeSpan
+        case IntervalType.Weekly  => maxWeeklyTimeSpan
+        case IntervalType.Monthly => maxMonthlyTimeSpan
       }
     timeInterval.validateTimeSpan(timeSpan) match {
       case Left(error) => Future.successful(Left(error))
       case Right(_)    => contd.map(Right(_))
     }
   }
+
+  @SuppressWarnings(
+    Array(
+      "org.wartremover.warts.JavaSerializable",
+      "org.wartremover.warts.Product",
+      "org.wartremover.warts.Serializable"
+    )
+  ) // Wartremover is complaining, maybe beacause of tapir macros
+  def subsetSchema(subset: Set[IntervalType]): Schema[IntervalType] =
+    Schema.string.validate(
+      Validator.enumeration(subset.toList, (it: IntervalType) => Some(it.string))
+    )
 }

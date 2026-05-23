@@ -208,7 +208,8 @@ class AddressServer(
       intervalType,
       maxTimeInterval.hourly,
       maxTimeInterval.daily,
-      maxTimeInterval.weekly
+      maxTimeInterval.weekly,
+      maxTimeInterval.monthly
     )(contd)
 }
 

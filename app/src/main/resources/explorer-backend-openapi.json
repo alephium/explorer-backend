@@ -2035,7 +2035,7 @@
           {
             "name": "toTs",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "integer",
               "format": "int64",
@@ -3916,7 +3916,7 @@
           {
             "name": "toTs",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "integer",
               "format": "int64",
@@ -4054,7 +4054,7 @@
           {
             "name": "toTs",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "integer",
               "format": "int64",
@@ -4066,7 +4066,12 @@
             "in": "query",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/IntervalType"
+              "type": "string",
+              "enum": [
+                "hourly",
+                "daily",
+                "weekly"
+              ]
             }
           }
         ],
@@ -6831,7 +6836,6 @@
           "Charts"
         ],
         "summary": "Get hashrate chart in H/s",
-        "description": "`interval-type` query param: hourly, daily",
         "operationId": "getChartsHashrates",
         "parameters": [
           {
@@ -6847,7 +6851,7 @@
           {
             "name": "toTs",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "integer",
               "format": "int64",
@@ -6859,7 +6863,11 @@
             "in": "query",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/IntervalType"
+              "type": "string",
+              "enum": [
+                "hourly",
+                "daily"
+              ]
             }
           }
         ],
@@ -6977,7 +6985,6 @@
           "Charts"
         ],
         "summary": "Get transaction count history",
-        "description": "`interval-type` query param: hourly, daily",
         "operationId": "getChartsTransactions-count",
         "parameters": [
           {
@@ -6993,7 +7000,7 @@
           {
             "name": "toTs",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "integer",
               "format": "int64",
@@ -7005,7 +7012,11 @@
             "in": "query",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/IntervalType"
+              "type": "string",
+              "enum": [
+                "hourly",
+                "daily"
+              ]
             }
           }
         ],
@@ -7121,7 +7132,6 @@
           "Charts"
         ],
         "summary": "Get transaction count history per chain",
-        "description": "`interval-type` query param: hourly, daily",
         "operationId": "getChartsTransactions-count-per-chain",
         "parameters": [
           {
@@ -7137,7 +7147,7 @@
           {
             "name": "toTs",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "integer",
               "format": "int64",
@@ -7149,7 +7159,11 @@
             "in": "query",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/IntervalType"
+              "type": "string",
+              "enum": [
+                "hourly",
+                "daily"
+              ]
             }
           }
         ],
@@ -7194,6 +7208,172 @@
                         "count": 10000000
                       }
                     ]
+                  }
+                ]
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "GatewayTimeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayTimeout"
+                },
+                "example": {
+                  "detail": "The network is slow"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/charts/active-addresses": {
+      "get": {
+        "tags": [
+          "Charts"
+        ],
+        "summary": "Get active addresses history",
+        "operationId": "getChartsActive-addresses",
+        "parameters": [
+          {
+            "name": "fromTs",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "toTs",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "interval-type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "daily",
+                "monthly"
+              ]
+            }
+          },
+          {
+            "name": "export-type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ExportType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "description": "CSV with timestamp (unix ms) and count columns",
+                  "examples": [
+                    [
+                      "1767225600000,10879"
+                    ]
+                  ],
+                  "type": "string"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TimedCount"
+                  }
+                },
+                "example": [
+                  {
+                    "timestamp": 1611041396892,
+                    "totalCountAllChains": 10000000
+                  },
+                  {
+                    "timestamp": 1611041396892,
+                    "totalCountAllChains": 10000000
                   }
                 ]
               }
@@ -9322,6 +9502,14 @@
           }
         }
       },
+      "ExportType": {
+        "title": "ExportType",
+        "type": "string",
+        "enum": [
+          "csv",
+          "json"
+        ]
+      },
       "FungibleToken": {
         "title": "FungibleToken",
         "type": "object",
@@ -9482,15 +9670,6 @@
             "type": "string"
           }
         }
-      },
-      "IntervalType": {
-        "title": "IntervalType",
-        "type": "string",
-        "enum": [
-          "daily",
-          "hourly",
-          "weekly"
-        ]
       },
       "ListBlocks": {
         "title": "ListBlocks",
@@ -10464,6 +10643,16 @@
           "hkd",
           "thb",
           "cny"
+        ]
+      },
+      "IntervalType": {
+        "title": "IntervalType",
+        "type": "string",
+        "enum": [
+          "hourly",
+          "daily",
+          "weekly",
+          "monthly"
         ]
       }
     }

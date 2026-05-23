@@ -10,7 +10,7 @@ import sttp.apispec.openapi.OpenAPI
 import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
 
 import org.alephium.explorer.api._
-import org.alephium.explorer.api.model.Pagination
+import org.alephium.explorer.api.model.{IntervalType, Pagination}
 
 trait Documentation
     extends BlockEndpoints
@@ -75,6 +75,7 @@ trait Documentation
         getHashrates,
         getAllChainsTxCount,
         getPerChainTxCount,
+        getActiveAddresses,
         getEventsByTxId,
         getEventsByContractAddress,
         getEventsByContractAndInputAddress,
@@ -159,6 +160,14 @@ trait Documentation
           Schema(
             `type` = Some(List(SchemaType.String)),
             enum = Some(currencies.map { name => ExampleSingleValue(name) }.toList)
+          )
+        )
+        .addSchema(
+          "IntervalType",
+          Schema(
+            title = Some("IntervalType"),
+            `type` = Some(List(SchemaType.String)),
+            enum = Some(IntervalType.all.map { name => ExampleSingleValue(name) }.toList)
           )
         )
     )

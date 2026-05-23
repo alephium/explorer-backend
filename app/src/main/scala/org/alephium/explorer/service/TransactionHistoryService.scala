@@ -242,46 +242,16 @@ case object TransactionHistoryService extends StrictLogging {
       ).asUpdate
     }
 
-  private def truncate(timestamp: TimeStamp, intervalType: IntervalType): TimeStamp =
-    intervalType match {
-      case IntervalType.Hourly => truncatedToHour(timestamp)
-      case IntervalType.Daily  => truncatedToDay(timestamp)
-      case IntervalType.Weekly => truncatedToWeek(timestamp)
-    }
-
-  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
-  def getTimeRanges(
-      histTs: TimeStamp,
-      latestTxTs: TimeStamp,
-      intervalType: IntervalType
-  ): ArraySeq[(TimeStamp, TimeStamp)] = {
-
-    val oneMillis = Duration.ofMillisUnsafe(1)
-    val start     = truncate(histTs, intervalType)
-    val end       = truncate(latestTxTs, intervalType).minusUnsafe(oneMillis)
-
-    if (start == end || end.isBefore(start)) {
-      ArraySeq.empty
-    } else {
-      val step = (intervalType match {
-        case IntervalType.Hourly => Duration.ofHoursUnsafe(1)
-        case IntervalType.Daily  => Duration.ofDaysUnsafe(1)
-        case IntervalType.Weekly => Duration.ofDaysUnsafe(7)
-      }).-(oneMillis).get
-
-      buildTimestampRange(start, end, step)
-    }
-  }
-
   /*
    * Step back a bit in time to recompute some latest values,
    * to be sure we didn't miss some unsynced blocks
    */
   private def stepBack(timestamp: TimeStamp, intervalType: IntervalType): TimeStamp =
     intervalType match {
-      case IntervalType.Hourly => timestamp.minusUnsafe(hourlyStepBack)
-      case IntervalType.Daily  => timestamp.minusUnsafe(dailyStepBack)
-      case IntervalType.Weekly => timestamp.minusUnsafe(weeklyStepBack)
+      case IntervalType.Hourly  => timestamp.minusUnsafe(hourlyStepBack)
+      case IntervalType.Daily   => timestamp.minusUnsafe(dailyStepBack)
+      case IntervalType.Weekly  => timestamp.minusUnsafe(weeklyStepBack)
+      case IntervalType.Monthly => timestamp.minusUnsafe(monthlyStepBack)
     }
 
   private def findLatestTransationTimestamp()(implicit
