@@ -66,10 +66,11 @@ object MarketService extends StrictLogging {
     private val baseCurrency: String = "usd"
 
     // scalastyle:off magic.number
-    val pricesExpirationTime: FiniteDuration      = marketConfig.pricesExpirationTime
-    val ratesExpirationTime: FiniteDuration       = marketConfig.ratesExpirationTime
-    val priceChartsExpirationTime: FiniteDuration = marketConfig.priceChartsExpirationTime
-    val tokenListExpirationTime: FiniteDuration   = marketConfig.tokenListExpirationTime
+    val mobulaPricesExpirationTime: FiniteDuration    = marketConfig.mobulaPricesExpirationTime
+    val coingeckoPricesExpirationTime: FiniteDuration = marketConfig.coingeckoPricesExpirationTime
+    val ratesExpirationTime: FiniteDuration           = marketConfig.ratesExpirationTime
+    val priceChartsExpirationTime: FiniteDuration     = marketConfig.priceChartsExpirationTime
+    val tokenListExpirationTime: FiniteDuration       = marketConfig.tokenListExpirationTime
 
     /*
      * Coingecko rate limit is 15 queries per minutes
@@ -113,14 +114,14 @@ object MarketService extends StrictLogging {
         : AsyncReloadingCache[Either[String, ArraySeq[MobulaPrice]]] =
       AsyncReloadingCache[Either[String, ArraySeq[MobulaPrice]]](
         Left("Price data not fetched for Mobula"),
-        pricesExpirationTime
+        mobulaPricesExpirationTime
       )(_ => getMobulaPricesRemote(0))
 
     private val coingeckoPricesCache
         : AsyncReloadingCache[Either[String, ArraySeq[CoingeckoPrice]]] =
       AsyncReloadingCache[Either[String, ArraySeq[CoingeckoPrice]]](
         Left("Price data not fetched for Coingecko"),
-        pricesExpirationTime
+        coingeckoPricesExpirationTime
       )(_ => getCoingeckoPricesRemote(0))
 
     private val ratesCache: AsyncReloadingCache[Either[String, ArraySeq[ExchangeRate]]] =
