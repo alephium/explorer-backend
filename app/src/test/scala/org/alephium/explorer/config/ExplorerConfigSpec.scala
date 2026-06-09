@@ -3,6 +3,7 @@
 
 package org.alephium.explorer.config
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
@@ -46,7 +47,8 @@ class ExplorerConfigSpec extends AlephiumSpec with ScalaCheckDrivenPropertyCheck
           val typesafeConfig =
             ConfigFactory.parseResources(s"application-${networkId.networkType}.conf").resolve()
 
-          val consensus = typesafeConfig.as[ExplorerConfig]("alephium").consensus
+          val config    = typesafeConfig.as[ExplorerConfig]("alephium")
+          val consensus = config.consensus
 
           consensus.mainnet.forkTimestamp is TimeStamp.zero
           consensus.mainnet.blockTargetTime is Duration.ofSecondsUnsafe(64)
@@ -56,6 +58,8 @@ class ExplorerConfigSpec extends AlephiumSpec with ScalaCheckDrivenPropertyCheck
 
           consensus.danube.forkTimestamp is forkTimestamps.last
           consensus.danube.blockTargetTime is Duration.ofSecondsUnsafe(8)
+
+          config.market.coingeckoPrioritySymbols is ArraySeq("ALPH")
         }
     }
   }

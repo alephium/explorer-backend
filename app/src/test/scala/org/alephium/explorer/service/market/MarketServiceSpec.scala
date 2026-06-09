@@ -64,6 +64,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
       prices(marketConfig.chartSymbolName.keys.indexOf(alph)) is Some(alphPrice)
       prices(marketConfig.chartSymbolName.keys.indexOf(usdt)) is Some(usdtPrice)
+      prices(marketConfig.chartSymbolName.keys.indexOf(wbtc)) is Some(wbtcPrice)
       // WETH liquidity is not enough
       prices(marketConfig.chartSymbolName.keys.indexOf(weth)) is None
     }
@@ -160,11 +161,13 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     val alph = "ALPH"
     val usdt = "USDT"
     val weth = "WETH"
+    val wbtc = "WBTC"
 
     val marketConfig = ExplorerConfig.Market(
       MarketServiceSpec.symbolNames,
       MarketServiceSpec.symbolNames,
       MarketServiceSpec.currencies,
+      ArraySeq(alph),
       liquidityMinimum = 100,
       s"http://${localhost.getHostAddress()}:$mobulaPort",
       s"http://${localhost.getHostAddress()}:$coingeckoPort",
@@ -195,9 +198,12 @@ object MarketServiceSpec {
   implicit val jsoncodec: Codec[String, ujson.Value, TextPlain] =
     Codec.string.map(value => ujson.read(value))(_.toString)
 
-  val alphPrice = 1.223123123
-  val usdcPrice = 1.0012412
-  var usdtPrice = 1.0012412
+  val alphPrice          = 1.223123123
+  val alphMobulaPrice    = 1.123123123
+  val usdcPrice          = 1.0012412
+  val wbtcPrice          = 67214.51967683395
+  val wbtcCoingeckoPrice = 66000.0
+  var usdtPrice          = 1.0012412
 
   val symbolNames = ListMap(
     "ALPH"    -> "alephium",
@@ -323,7 +329,8 @@ object MarketServiceSpec {
     server.listen(port, uri.getHostAddress).asScala.futureValue
   }
 
-  /** Alephium price is only configured from coingecko, to validate the merge of the two providers.
+  /** Alephium price is configured by both providers to validate CoinGecko priority for ALPH.
+    * Wrapped Bitcoin is also configured by both providers to validate the default Mobula priority.
     */
   val coingeckoPrices: String = s"""{
       "alephium": {
@@ -331,12 +338,15 @@ object MarketServiceSpec {
       },
       "usd-coin": {
         "usd": $usdcPrice
+      },
+      "wrapped-bitcoin": {
+        "usd": $wbtcCoingeckoPrice
       }
     }"""
 
   def mobulaPrices: String = s"""{"payload": [
       {
-        "priceUSD": $alphPrice,
+        "priceUSD": $alphMobulaPrice,
         "liquidityUSD": 1000
       },
       {
@@ -360,7 +370,7 @@ object MarketServiceSpec {
         "liquidityUSD": 10
       },
       {
-        "priceUSD": 67214.51967683395,
+        "priceUSD": $wbtcPrice,
         "liquidityUSD": 1000
       }
     ]

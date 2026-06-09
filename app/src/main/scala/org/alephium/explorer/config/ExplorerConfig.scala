@@ -287,6 +287,7 @@ object ExplorerConfig {
       symbolName: ListMap[String, String],
       chartSymbolName: ListMap[String, String],
       currencies: ArraySeq[String],
+      coingeckoPrioritySymbols: ArraySeq[String],
       liquidityMinimum: Double,
       mobulaUri: String,
       coingeckoUri: String,
