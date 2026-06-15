@@ -175,8 +175,23 @@ object MarketService extends StrictLogging {
     override def chartSymbolNames: ListMap[String, String] = chartIds
     override def currencies: ArraySeq[String]              = marketConfig.currencies
 
-    /** Get prices from the two caches and merge them. We favor mobula prices over coingecko prices,
-      * as they are more accurate. If the price is not available, it will return None.
+    private val coingeckoPrioritySymbols: Set[String] =
+      marketConfig.coingeckoPrioritySymbols.toSet
+
+    private def selectPrice(prices: Iterable[Price]): Option[Price] = {
+      val firstPrice = prices.headOption
+      if (firstPrice.exists(price => coingeckoPrioritySymbols.contains(price.symbol))) {
+        prices
+          .collectFirst { case price: CoingeckoPrice => price }
+          .orElse(firstPrice)
+      } else {
+        firstPrice
+      }
+    }
+
+    /** Get prices from the two caches and merge them. We favor Mobula prices over CoinGecko prices,
+      * except for symbols configured with CoinGecko priority. If the price is not available, it
+      * will return None.
       */
     private def getPriceCache(): Either[String, ArraySeq[Price]] = {
       (mobulaPricesCache.get(), coingeckoPricesCache.get()) match {
@@ -186,9 +201,7 @@ object MarketService extends StrictLogging {
               .concat[Price](coingecko)
               .groupBy(_.symbol)
               .view
-              .mapValues(
-                _.headOption
-              ) // We favor mobula prices over coingecko, as they are more accurate
+              .mapValues(selectPrice)
               .values
               .flatten
               .to(ArraySeq)
