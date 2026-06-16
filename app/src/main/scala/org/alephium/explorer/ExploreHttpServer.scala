@@ -5,6 +5,7 @@ package org.alephium.explorer
 
 import scala.collection.immutable.ArraySeq
 import scala.concurrent._
+import scala.util.Success
 
 import com.typesafe.scalalogging.StrictLogging
 import io.vertx.core.Vertx
@@ -51,7 +52,7 @@ class ExplorerHttpServer(
       .handler(
         CorsHandler
           .create()
-          .addRelativeOrigin(".*.")
+          .addOriginWithRegex(".*.")
           .allowedMethod(HttpMethod.GET)
           .allowedMethod(HttpMethod.POST)
           .allowedMethod(HttpMethod.PUT)
@@ -73,12 +74,17 @@ class ExplorerHttpServer(
   }
 
   def stopSelfOnce(): Future[Unit] = {
+    val closeBinding =
+      httpBindingPromise.future.value match {
+        case Some(Success(binding)) => binding.close().asScala
+        case _                      => Future.unit
+      }
+
     for {
-      binding <- httpBindingPromise.future
-      _       <- binding.close().asScala
-      _       <- vertx.close().asScala
+      _ <- closeBinding
+      _ <- Option(vertx).map(_.close().asScala).getOrElse(Future.unit)
     } yield {
-      logger.info(s"http unbound")
+      logger.info("http unbound")
     }
   }
 

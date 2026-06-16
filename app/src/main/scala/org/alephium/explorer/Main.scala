@@ -3,12 +3,15 @@
 
 package org.alephium.explorer
 
-import scala.concurrent.{Await, ExecutionContext}
+import java.util.concurrent.atomic.AtomicBoolean
+
+import scala.concurrent.{Await, ExecutionContext, Promise}
 import scala.concurrent.duration._
 import scala.util._
+import scala.util.control.NonFatal
 
 import com.typesafe.scalalogging.StrictLogging
-import io.prometheus.client.hotspot.DefaultExports
+import io.prometheus.metrics.instrumentation.jvm.JvmMetrics
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -32,7 +35,7 @@ class BootUp extends StrictLogging {
   logger.info("Starting Explorer")
   logger.info(s"Build info: $BuildInfo")
 
-  DefaultExports.initialize()
+  JvmMetrics.builder().register(Metrics.defaultRegistry)
 
   private val typesafeConfig = ExplorerConfig.loadConfig(Platform.getRootPath()) match {
     case Success(config) => config
@@ -55,19 +58,30 @@ class BootUp extends StrictLogging {
 
     explorer = ExplorerState(config.bootMode)
 
-    explorer
-      .start()
-      .onComplete {
-        case Success(_) => logger.info(WelcomeMessage.message(config, typesafeConfig))
-        case Failure(error) =>
-          logger.error("Fatal error during initialization", error)
-          explorer.stop().failed foreach { error =>
-            logger.error("Failed to stop explorer", error)
-          }
+    val shutdownPromise = Promise[Unit]()
+    val stopStarted     = new AtomicBoolean(false)
+
+    def stopExplorer(): Unit = {
+      if (stopStarted.compareAndSet(false, true)) {
+        discard(Await.result(explorer.stop(), 10.seconds))
       }
+      discard(shutdownPromise.trySuccess(()))
+    }
 
     Runtime.getRuntime.addShutdownHook(new Thread(() => {
-      discard(Await.result(explorer.stop(), 10.seconds))
+      stopExplorer()
     }))
+
+    try {
+      Await.result(explorer.start(), Duration.Inf)
+      logger.info(WelcomeMessage.message(config, typesafeConfig))
+      Await.result(shutdownPromise.future, Duration.Inf)
+    } catch {
+      case NonFatal(error) =>
+        logger.error("Fatal error during initialization", error)
+        Try(stopExplorer()).failed foreach { error =>
+          logger.error("Failed to stop explorer", error)
+        }
+    }
   }
 }

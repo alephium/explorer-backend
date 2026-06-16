@@ -11,8 +11,8 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 import com.typesafe.scalalogging.StrictLogging
-import sttp.client3._
-import sttp.client3.asynchttpclient.future.AsyncHttpClientFutureBackend
+import sttp.client4._
+import sttp.client4.httpclient.HttpClientFutureBackend
 import sttp.model.{Method, StatusCode, Uri}
 
 import org.alephium.api.UtilJson._
@@ -83,14 +83,13 @@ object MarketService extends StrictLogging {
     def maxRetry: Int       = 4
     // scalastyle:on magic.number
 
-    // scalastyle:off null
-    private var backend: SttpBackend[Future, Any] = null
-    private val scheduler                         = Scheduler("MARKET_SERVICE_SCHEDULER")
+    private var backend: Option[Backend[Future]] = None
+    private val scheduler                        = Scheduler("MARKET_SERVICE_SCHEDULER")
 
     private val isRunning: AtomicBoolean = new AtomicBoolean(false)
 
     override def startSelfOnce(): Future[Unit] = {
-      backend = AsyncHttpClientFutureBackend()
+      backend = Some(HttpClientFutureBackend())
       isRunning.set(true)
       expireAndReloadCaches()
       Future.unit
@@ -99,7 +98,9 @@ object MarketService extends StrictLogging {
     override def stopSelfOnce(): Future[Unit] = {
       isRunning.set(false)
       scheduler.close()
-      backend.close()
+      val closeResult = backend.map(_.close()).getOrElse(Future.unit)
+      backend = None
+      closeResult
     }
 
     override def subServices: ArraySeq[Service] = ArraySeq.empty
@@ -458,22 +459,23 @@ object MarketService extends StrictLogging {
     def request[A](uri: Uri, headers: Map[String, String] = Map.empty)(
         f: Response[Either[String, String]] => Future[Either[String, A]]
     ): Future[Either[String, A]] = {
-      if (backend == null || !isRunning.get()) {
-        Future.successful(Left("Market service not initialized"))
-      } else {
-        basicRequest
-          .headers(headers)
-          .method(Method.GET, uri)
-          .send(backend)
-          .flatMap(f)
-          .recover { case e: Throwable =>
-            // If the service is stopped, we don't want to throw an exception
-            if (isRunning.get()) {
-              throw e
-            } else {
-              Left(e.getMessage)
+      backend match {
+        case Some(backend) if isRunning.get() =>
+          basicRequest
+            .headers(headers)
+            .method(Method.GET, uri)
+            .send(backend)
+            .flatMap(f)
+            .recover { case e: Throwable =>
+              // If the service is stopped, we don't want to throw an exception
+              if (isRunning.get()) {
+                throw e
+              } else {
+                Left(e.getMessage)
+              }
             }
-          }
+        case _ =>
+          Future.successful(Left("Market service not initialized"))
       }
     }
 
@@ -484,21 +486,26 @@ object MarketService extends StrictLogging {
     )(
         f: Response[Either[String, String]] => Future[Either[String, A]]
     ): Future[Either[String, A]] = {
-      basicRequest
-        .post(uri)
-        .headers(headers)
-        .body(write(payload))
-        .contentType("application/json")
-        .send(backend)
-        .flatMap(f)
-        .recover { case e: Throwable =>
-          // If the service is stopped, we don't want to throw an exception
-          if (isRunning.get()) {
-            throw e
-          } else {
-            Left(e.getMessage)
-          }
-        }
+      backend match {
+        case Some(backend) if isRunning.get() =>
+          basicRequest
+            .post(uri)
+            .headers(headers)
+            .body(write(payload))
+            .contentType("application/json")
+            .send(backend)
+            .flatMap(f)
+            .recover { case e: Throwable =>
+              // If the service is stopped, we don't want to throw an exception
+              if (isRunning.get()) {
+                throw e
+              } else {
+                Left(e.getMessage)
+              }
+            }
+        case _ =>
+          Future.successful(Left("Market service not initialized"))
+      }
     }
 
     def handleChartResponse(

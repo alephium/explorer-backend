@@ -8822,7 +8822,8 @@
             "type": "boolean"
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "const": "AcceptedTransaction"
           }
         }
       },
@@ -8955,7 +8956,8 @@
             "type": "boolean"
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "const": "AssetOutput"
           }
         }
       },
@@ -9200,7 +9202,8 @@
             "type": "boolean"
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "const": "ContractOutput"
           }
         }
       },
@@ -9334,7 +9337,8 @@
             "type": "string"
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "const": "FungibleToken"
           }
         }
       },
@@ -9589,7 +9593,8 @@
             "type": "string"
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "const": "NFT"
           }
         }
       },
@@ -9601,7 +9606,8 @@
         ],
         "properties": {
           "type": {
-            "type": "string"
+            "type": "string",
+            "const": "NFTCollection"
           }
         }
       },
@@ -9630,7 +9636,8 @@
         ],
         "properties": {
           "type": {
-            "type": "string"
+            "type": "string",
+            "const": "NFTCollectionWithRoyalty"
           }
         }
       },
@@ -9669,7 +9676,8 @@
         ],
         "properties": {
           "type": {
-            "type": "string"
+            "type": "string",
+            "const": "NonStandard"
           }
         }
       },
@@ -9775,7 +9783,8 @@
             "format": "int64"
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "const": "PendingTransaction"
           }
         }
       },
@@ -10221,7 +10230,8 @@
             "type": "string"
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "const": "Unknown"
           }
         }
       },
@@ -10296,12 +10306,12 @@
         "discriminator": {
           "propertyName": "type",
           "mapping": {
-            "ValAddress": "#/components/schemas/ValAddress",
-            "ValArray": "#/components/schemas/ValArray",
-            "ValBool": "#/components/schemas/ValBool",
-            "ValByteVec": "#/components/schemas/ValByteVec",
-            "ValI256": "#/components/schemas/ValI256",
-            "ValU256": "#/components/schemas/ValU256"
+            "Address": "#/components/schemas/ValAddress",
+            "Array": "#/components/schemas/ValArray",
+            "Bool": "#/components/schemas/ValBool",
+            "ByteVec": "#/components/schemas/ValByteVec",
+            "I256": "#/components/schemas/ValI256",
+            "U256": "#/components/schemas/ValU256"
           }
         }
       },
@@ -10318,7 +10328,8 @@
             "format": "address"
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "const": "Address"
           }
         }
       },
@@ -10337,7 +10348,8 @@
             }
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "const": "Array"
           }
         }
       },
@@ -10353,7 +10365,8 @@
             "type": "boolean"
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "const": "Bool"
           }
         }
       },
@@ -10370,7 +10383,8 @@
             "format": "hex-string"
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "const": "ByteVec"
           }
         }
       },
@@ -10384,10 +10398,11 @@
         "properties": {
           "value": {
             "type": "string",
-            "format": "bigint"
+            "format": "int256"
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "const": "I256"
           }
         }
       },
@@ -10404,7 +10419,8 @@
             "format": "uint256"
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "const": "U256"
           }
         }
       },
