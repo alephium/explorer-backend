@@ -56,11 +56,8 @@ object ContractSchema extends SchemaMainChain[ContractEntity]("contracts") {
 
     def pk: PrimaryKey = primaryKey("contracts_pk", (contract, creationBlockHash))
 
-    def contractIdx: Index = index("contracts_contract_idx", contract)
-    def parentIdx: Index   = index("contracts_parent_idx", parent)
-    def stdInterfaceIdGuessedIdx: Index =
-      index("contracts_std_interface_id_guessed_idx", stdInterfaceIdGuessed)
-    def categoryIdx: Index    = index("contracts_category_idx", category)
+    def contractIdx: Index    = index("contracts_contract_idx", contract)
+    def parentIdx: Index      = index("contracts_parent_idx", parent)
     def interfaceIdIdx: Index = index("contracts_interface_id_idx", interfaceId)
   }
 

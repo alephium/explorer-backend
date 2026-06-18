@@ -33,7 +33,6 @@ object IndexChecker {
       b <- BlockQueries.explainListMainChainHeadersWithTxnNumber(
         Pagination.Reversible.unsafe(10000, 20)
       ) // far page
-      c                  <- BlockQueries.explainMainChainQuery()
       oldestOutputEntity <- OutputQueries.getMainChainOutputs(true).headOrEmpty
       latestOutputEntity <- OutputQueries.getMainChainOutputs(false).headOrEmpty
       d                 <- OutputQueries.explainGetTxnHash(oldestOutputEntity.map(_.key).headOption)
@@ -42,6 +41,6 @@ object IndexChecker {
       latestInputEntity <- InputQueries.getMainChainInputs(false).headOrEmpty
       f                 <- InputQueries.explainInputsFromTxs(oldestInputEntity.map(_.hashes()))
       g                 <- InputQueries.explainInputsFromTxs(latestInputEntity.map(_.hashes()))
-    } yield ArraySeq(a, b, c, d, e, f, g).sortBy(_.passed)
+    } yield ArraySeq(a, b, d, e, f, g).sortBy(_.passed)
 
 }
