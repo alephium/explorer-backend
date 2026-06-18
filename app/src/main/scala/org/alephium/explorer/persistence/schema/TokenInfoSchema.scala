@@ -24,6 +24,7 @@ object TokenInfoSchema extends SchemaMainChain[TokenInfoEntity]("token_info") {
       (token, lastUsed, category, interfaceId)
         .<>((TokenInfoEntity.apply _).tupled, TokenInfoEntity.unapply)
 
+    def categoryIdx: Index    = index("token_info_category_idx", category)
     def interfaceIdIdx: Index = index("token_info_interface_id_idx", interfaceId)
   }
 

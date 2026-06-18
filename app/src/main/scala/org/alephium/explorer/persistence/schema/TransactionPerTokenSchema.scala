@@ -25,6 +25,7 @@ object TransactionPerTokenSchema
 
     def pk: PrimaryKey = primaryKey("transaction_per_token_pk", (hash, blockHash, token))
 
+    def hashIdx: Index      = index("transaction_per_token_hash_idx", hash)
     def blockHashIdx: Index = index("transaction_per_token_block_hash_idx", blockHash)
     def tokenIdx: Index     = index("transaction_per_token_token_idx", token)
 

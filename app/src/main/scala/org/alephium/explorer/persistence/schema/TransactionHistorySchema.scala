@@ -23,7 +23,8 @@ object TransactionHistorySchema extends Schema[TransactionHistoryEntity]("transa
 
     def pk: PrimaryKey =
       primaryKey("transactions_history_pk", (intervalType, timestamp, chainFrom, chainTo))
-    def timestampIdx: Index = index("transactions_history_timestamp_idx", timestamp)
+    def intervalTypeIdx: Index = index("transactions_history_interval_type_idx", intervalType)
+    def timestampIdx: Index    = index("transactions_history_timestamp_idx", timestamp)
 
     def * : ProvenShape[TransactionHistoryEntity] =
       (timestamp, chainFrom, chainTo, count, intervalType)

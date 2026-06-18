@@ -399,11 +399,14 @@ object OutputQueries {
     key match {
       case Some(key) =>
         getTxnHashBuilder(key).explainAnalyze() map { explain =>
-          val explainString   = explain.mkString
-          val outputs_pk_used = explainString contains "outputs_pk"
+          val explainString               = explain.mkString
+          val outputs_pk_used             = explainString contains "outputs_pk"
+          val outputs_main_chain_idx_used = explainString contains "outputs_main_chain_idx"
+          val passed                      = outputs_pk_used && outputs_main_chain_idx_used
           val message =
             ArraySeq(
-              s"Used outputs_pk = $outputs_pk_used"
+              s"Used outputs_main_chain_idx = $outputs_main_chain_idx_used",
+              s"Used outputs_pk             = $outputs_pk_used"
             )
 
           ExplainResult(
@@ -411,7 +414,7 @@ object OutputQueries {
             queryInput = key.toString(),
             explain = explain,
             messages = message,
-            passed = outputs_pk_used
+            passed = passed
           )
         }
 

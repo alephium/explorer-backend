@@ -29,7 +29,7 @@ import org.alephium.util.discard
 object Migrations extends StrictLogging {
 
   // scalastyle:off magic.number
-  val latestVersion: MigrationVersion = MigrationVersion(12)
+  val latestVersion: MigrationVersion = MigrationVersion(13)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     // We retrigger the download of fungible and non-fungible tokens' metadata that have sub-category
@@ -257,6 +257,82 @@ object Migrations extends StrictLogging {
       .sequence(unusedIndexes.map(indexName => dropUnusedIndex(indexName)))
       .map(_ => ())
 
+  // scalastyle:off method.length
+  def migration13(implicit ec: ExecutionContext): DBActionAll[Unit] =
+    sqlu"""
+      CREATE INDEX IF NOT EXISTS utransactions_last_seen_idx
+      ON utransactions (last_seen);
+
+      CREATE INDEX IF NOT EXISTS token_info_category_idx
+      ON token_info (category);
+
+      CREATE INDEX IF NOT EXISTS contracts_std_interface_id_guessed_idx
+      ON contracts (std_interface_id_guessed);
+
+      CREATE INDEX IF NOT EXISTS contracts_category_idx
+      ON contracts (category);
+
+      CREATE INDEX IF NOT EXISTS transactions_history_interval_type_idx
+      ON transactions_history (interval_type);
+
+      CREATE INDEX IF NOT EXISTS token_tx_per_address_token_idx
+      ON token_tx_per_addresses (token);
+
+      CREATE INDEX IF NOT EXISTS token_outputs_token_idx
+      ON token_outputs (token);
+
+      CREATE INDEX IF NOT EXISTS token_outputs_spent_timestamp_idx
+      ON token_outputs (spent_timestamp);
+
+      CREATE INDEX IF NOT EXISTS token_tx_per_addresses_timestamp_idx
+      ON token_tx_per_addresses (block_timestamp DESC);
+
+      CREATE INDEX IF NOT EXISTS transaction_per_token_hash_idx
+      ON transaction_per_token (tx_hash);
+
+      CREATE INDEX IF NOT EXISTS token_tx_per_addresses_block_timestamp_tx_order_idx
+      ON token_tx_per_addresses (block_timestamp DESC, tx_order ASC);
+
+      CREATE INDEX IF NOT EXISTS token_tx_per_address_hash_idx
+      ON token_tx_per_addresses (tx_hash);
+
+      CREATE INDEX IF NOT EXISTS token_tx_per_address_groupless_idx
+      ON token_tx_per_addresses (
+        token, address, groupless_address, block_timestamp, tx_order, tx_hash, block_hash
+      )
+      WHERE groupless_address IS NOT NULL AND main_chain = true;
+
+      CREATE INDEX IF NOT EXISTS inputs_main_chain_idx
+      ON inputs (main_chain)
+      WHERE main_chain = true;
+
+      CREATE INDEX IF NOT EXISTS block_headers_main_chain_idx
+      ON block_headers (main_chain)
+      WHERE main_chain = true;
+
+      CREATE INDEX IF NOT EXISTS outputs_main_chain_idx
+      ON outputs (main_chain)
+      WHERE main_chain = true;
+
+      CREATE INDEX IF NOT EXISTS transaction_per_addresses_main_chain_idx
+      ON transaction_per_addresses (main_chain)
+      WHERE main_chain = true;
+
+      CREATE INDEX IF NOT EXISTS transactions_main_chain_idx
+      ON transactions (main_chain)
+      WHERE main_chain = true;
+
+      CREATE INDEX IF NOT EXISTS txs_chain_to_idx
+      ON transactions (chain_to);
+
+      CREATE INDEX IF NOT EXISTS txs_chain_from_idx
+      ON transactions (chain_from);
+
+      CREATE INDEX IF NOT EXISTS txs_per_address_tx_hash_idx
+      ON transaction_per_addresses (tx_hash);
+    """.map(_ => ())
+  // scalastyle:on method.length
+
   private def migrations(implicit
       explorerConfig: ExplorerConfig,
       ec: ExecutionContext
@@ -272,7 +348,8 @@ object Migrations extends StrictLogging {
     migration9,
     migration10,
     migration11,
-    migration12
+    migration12,
+    migration13
   )
 
   def backgroundCoinbaseMigration()(implicit
