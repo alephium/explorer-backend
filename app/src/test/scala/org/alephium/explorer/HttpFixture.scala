@@ -11,8 +11,8 @@ import io.vertx.core.Vertx
 import io.vertx.core.http.HttpServer
 import io.vertx.ext.web._
 import org.scalatest.{Assertion, BeforeAndAfterAll, Suite}
-import sttp.client3._
-import sttp.client3.asynchttpclient.future.AsyncHttpClientFutureBackend
+import sttp.client4._
+import sttp.client4.httpclient.HttpClientFutureBackend
 import sttp.model.{Method, Uri}
 import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 
@@ -40,9 +40,9 @@ object HttpFixture {
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 trait HttpFixture {
 
-  type HttpRequest = RequestT[Identity, Either[String, String], Any]
+  type HttpRequest = Request[Either[String, String]]
 
-  val backend = AsyncHttpClientFutureBackend()
+  val backend = HttpClientFutureBackend()
 
   def httpRequest[T, R](
       method: Method,

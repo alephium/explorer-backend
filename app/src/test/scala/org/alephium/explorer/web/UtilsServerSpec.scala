@@ -72,7 +72,7 @@ class UtilsServerSpec()
 
     Put(s"/utils/update-log-config", json) check { response =>
       response.as[ApiError.BadRequest] is ApiError.BadRequest(
-        s"Invalid value for: body (Cannot decode level, expected one of: ArraySeq(TRACE, DEBUG, INFO, WARN, ERROR) at index 55: decoding failure)"
+        s"Invalid value for: body (Cannot decode level, expected one of: ArraySeq(TRACE, DEBUG, INFO, WARN, ERROR): decoding failure)"
       )
     }
   }

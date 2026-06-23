@@ -411,7 +411,7 @@ trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with Ht
     forAll(Gen.alphaNumStr) { interfaceId =>
       Get(s"/tokens?limit=${limit}&interface-id=fungible-${interfaceId}") check { response =>
         response.as[ApiError.BadRequest] is ApiError.BadRequest(
-          s"""Invalid value for: query parameter interface-id (Cannot decode interface id}: fungible-${interfaceId})"""
+          s"""Invalid value for: query parameter interface-id ($$: fungible-${interfaceId})"""
         )
       }
     }

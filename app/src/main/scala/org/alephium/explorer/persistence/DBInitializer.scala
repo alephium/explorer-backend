@@ -79,7 +79,7 @@ object DBInitializer extends StrictLogging {
   ): Future[Unit] = {
     logger.info("Create Tables")
     // TODO Look for something like https://flywaydb.org/ to manage schemas
-    val existingTables = run(MTable.getTables)
+    val existingTables = run(MTable.getTables(None, None, None, Some(Seq("TABLE"))))
     existingTables
       .flatMap { tables =>
         Future.sequence(allTables.map { table =>

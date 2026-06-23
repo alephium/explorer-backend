@@ -9,8 +9,6 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Using
 
-import io.prometheus.client.CollectorRegistry
-import io.prometheus.client.exporter.common.TextFormat
 import io.prometheus.metrics.core.metrics.Gauge
 import io.vertx.ext.web._
 import sttp.tapir.server.metrics.prometheus.PrometheusMetrics.prometheusRegistryCodec
@@ -32,9 +30,7 @@ class MetricsServer(cache: MetricCache)(implicit
           // Reload metrics cache on request
           discard(reloadMetrics())
           Using(new StringWriter()) { writer =>
-            // Scrape metrics from CollectorRegistry (jvm)
-            TextFormat.write004(writer, CollectorRegistry.defaultRegistry.metricFamilySamples())
-            // Scrape  metrics from PrometheusRegistry (tapir, HikariCP, etc.)
+            // Scrape metrics from PrometheusRegistry (jvm, tapir, HikariCP, etc.)
             writer.write(prometheusRegistryCodec.encode(Metrics.defaultRegistry))
             writer.toString
           }.getOrElse("")

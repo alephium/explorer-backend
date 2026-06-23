@@ -486,11 +486,13 @@ object GenCoreApi {
   def contractEventByTxIdGen(implicit groupSetting: GroupSetting): Gen[ContractEventByTxId] =
     for {
       blockHash       <- blockHashGen
+      timestamp       <- timestampGen
       contractAddress <- addressContractProtocolGen
       eventIndex      <- Gen.posNum[Int]
       fields          <- Gen.listOfN(5, valGen())
     } yield ContractEventByTxId(
       blockHash,
+      timestamp,
       contractAddress,
       eventIndex,
       AVector.from(fields)
@@ -562,12 +564,14 @@ object GenCoreApi {
   ): Gen[ContractEventByBlockHash] =
     for {
       txId        <- transactionHashGen
+      timestamp   <- timestampGen
       eventIndex  <- Gen.posNum[Int]
       address     <- valContractAddressGen
       parent      <- Gen.option(valContractAddressGen)
       interfaceId <- stdInterfaceIdValGen
     } yield ContractEventByBlockHash(
       txId,
+      timestamp,
       ContractEntity.createContractEventAddress(address.value.groupIndex(groupSetting.groupConfig)),
       eventIndex,
       AVector(address, parent.getOrElse(ValByteVec(ByteString.empty)), interfaceId)

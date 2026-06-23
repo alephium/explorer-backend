@@ -112,7 +112,7 @@ class ContractServerSpec()
     forAll(addressAssetProtocolGen()) { address =>
       Get(s"/contracts/$address/parent") check { response =>
         response.as[BadRequest] is BadRequest(
-          s"Invalid value for: path parameter contract_address (Expected a contract address, but got an asset address: $address: $address)"
+          s"Invalid value for: path parameter contract_address ($$: $address)"
         )
       }
     }
@@ -128,7 +128,7 @@ class ContractServerSpec()
     forAll(addressAssetProtocolGen()) { address =>
       Get(s"/contracts/$address/sub-contracts") check { response =>
         response.as[BadRequest] is BadRequest(
-          s"Invalid value for: path parameter contract_address (Expected a contract address, but got an asset address: $address: $address)"
+          s"Invalid value for: path parameter contract_address ($$: $address)"
         )
       }
     }
