@@ -5,7 +5,7 @@ package org.alephium.explorer.persistence.model
 
 import scala.collection.immutable.ArraySeq
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 
 import org.alephium.explorer.api.model.{Input, Output, Transaction}
 import org.alephium.protocol.model.{BlockHash, GroupIndex, TransactionId}

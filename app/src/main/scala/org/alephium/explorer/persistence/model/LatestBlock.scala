@@ -5,7 +5,7 @@ package org.alephium.explorer.persistence.model
 
 import java.math.BigInteger
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 
 import org.alephium.explorer.api.model.Height
 import org.alephium.protocol.model.{BlockHash, GroupIndex}

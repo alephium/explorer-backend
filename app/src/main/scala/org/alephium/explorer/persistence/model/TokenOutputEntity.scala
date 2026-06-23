@@ -3,7 +3,7 @@
 
 package org.alephium.explorer.persistence.model
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{Address, BlockHash, TokenId, TransactionId}

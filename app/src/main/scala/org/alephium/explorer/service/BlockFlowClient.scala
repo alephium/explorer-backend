@@ -10,8 +10,8 @@ import java.net.InetAddress
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
+import org.apache.pekko.util.ByteString
 import sttp.model.Uri
 
 import org.alephium.api

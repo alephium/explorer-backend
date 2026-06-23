@@ -5,7 +5,7 @@ package org.alephium.explorer.persistence.schema
 
 import java.math.BigInteger
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{PrimaryKey, ProvenShape}
 

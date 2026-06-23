@@ -6,7 +6,7 @@ package org.alephium.explorer.persistence.model
 import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import slick.jdbc.GetResult
 import slick.jdbc.PostgresProfile.api._
 

@@ -8,9 +8,9 @@ import java.math.BigInteger
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
-import akka.util.ByteString
 import io.reactivex.rxjava3.core.Flowable
 import io.vertx.core.buffer.Buffer
+import org.apache.pekko.util.ByteString
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 

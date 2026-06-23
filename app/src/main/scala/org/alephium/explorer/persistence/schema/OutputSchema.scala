@@ -6,7 +6,7 @@ package org.alephium.explorer.persistence.schema
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, PrimaryKey, ProvenShape}
 

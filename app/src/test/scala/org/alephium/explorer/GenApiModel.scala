@@ -9,7 +9,7 @@ import scala.collection.immutable.ArraySeq
 import scala.language.implicitConversions
 import scala.util.Random
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 

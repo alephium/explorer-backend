@@ -8,7 +8,7 @@ import java.math.BigInteger
 import scala.collection.immutable.ArraySeq
 import scala.util.Random
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import org.openjdk.jmh.annotations.{Scope, State}
 
 import org.alephium.crypto.Blake2b

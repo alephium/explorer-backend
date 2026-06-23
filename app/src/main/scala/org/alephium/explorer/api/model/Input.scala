@@ -5,7 +5,7 @@ package org.alephium.explorer.api.model
 
 import scala.collection.immutable.ArraySeq
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import sttp.tapir.Schema
 
 import org.alephium.api.{model => protocol}

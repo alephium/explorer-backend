@@ -5,7 +5,7 @@ package org.alephium.explorer.api
 
 import scala.collection.immutable.ArraySeq
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import sttp.tapir.EndpointIO.Example
 
 import org.alephium.api.EndpointsExamples

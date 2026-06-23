@@ -8,9 +8,9 @@ import java.net.InetAddress
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.Future
 
-import akka.testkit.SocketUtil
 import io.vertx.core.Vertx
 import io.vertx.ext.web._
+import org.apache.pekko.testkit.SocketUtil
 import org.scalacheck.Gen
 import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 

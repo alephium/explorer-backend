@@ -4,9 +4,9 @@
 import sbt._
 
 object Version {
-  lazy val common = "4.5.4"
+  lazy val common = "4.5.5"
 
-  lazy val akka       = "2.6.20"
+  lazy val pekko      = "1.6.0"
   lazy val rxJava     = "3.1.12"
   lazy val tapir      = "1.13.21"
   lazy val vertx      = "5.1.2"
@@ -30,7 +30,7 @@ object Dependencies {
   lazy val vertx       = "io.vertx" % "vertx-core"     % Version.vertx
   lazy val vertxRxJava = "io.vertx" % "vertx-rx-java3" % Version.vertx
 
-  lazy val akkaTest = "com.typesafe.akka" %% "akka-testkit" % Version.akka % Test
+  lazy val pekkoTest = "org.apache.pekko" %% "pekko-testkit" % Version.pekko % Test
 
   lazy val rxJava = "io.reactivex.rxjava3" % "rxjava" % Version.rxJava
 

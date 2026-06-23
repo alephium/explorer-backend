@@ -17,7 +17,7 @@ import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 import org.alephium.explorer.persistence.Database
 import org.alephium.util.Service
 
-/** Stores AkkaHttp related instances created on boot-up */
+/** Stores http related instances created on boot-up */
 @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 class ExplorerHttpServer(
     host: String,

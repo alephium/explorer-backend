@@ -6,7 +6,7 @@ package org.alephium.explorer.persistence.queries
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import slick.dbio.DBIOAction
 import slick.jdbc._
 import slick.jdbc.PostgresProfile.api._
