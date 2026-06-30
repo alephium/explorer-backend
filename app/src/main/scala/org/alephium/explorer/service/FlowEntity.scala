@@ -5,7 +5,7 @@ package org.alephium.explorer.service
 
 import scala.collection.immutable.ArraySeq
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 
 import org.alephium.explorer.AnyOps
 import org.alephium.explorer.api.model.{GhostUncle, Height}

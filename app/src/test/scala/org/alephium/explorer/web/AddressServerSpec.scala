@@ -9,9 +9,9 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 
-import akka.util.ByteString
 import io.reactivex.rxjava3.core.Flowable
 import io.vertx.core.buffer.Buffer
+import org.apache.pekko.util.ByteString
 import org.scalacheck.Gen
 import org.scalatest.time.{Seconds, Span}
 import slick.basic.DatabaseConfig

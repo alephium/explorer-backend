@@ -7,7 +7,7 @@ import java.math.BigInteger
 
 import scala.collection.immutable.ArraySeq
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 
 import org.alephium.explorer.api.model.{BlockEntry, BlockEntryLite, GhostUncle, Height}
 import org.alephium.protocol.Hash

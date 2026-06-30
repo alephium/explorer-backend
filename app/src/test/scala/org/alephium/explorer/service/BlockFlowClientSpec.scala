@@ -7,8 +7,8 @@ import java.net.InetAddress
 
 import scala.collection.immutable.ArraySeq
 
-import akka.testkit.SocketUtil
-import akka.util.ByteString
+import org.apache.pekko.testkit.SocketUtil
+import org.apache.pekko.util.ByteString
 import sttp.model.Uri
 
 import org.alephium.api.model

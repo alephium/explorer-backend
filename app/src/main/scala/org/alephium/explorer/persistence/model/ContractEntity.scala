@@ -3,7 +3,7 @@
 
 package org.alephium.explorer.persistence.model
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 
 import org.alephium.api.model.{ValAddress, ValByteVec}
 import org.alephium.explorer.api.model.ContractLiveness

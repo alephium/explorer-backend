@@ -10,9 +10,9 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util._
 
-import akka.testkit.SocketUtil
 import io.vertx.core.Vertx
 import io.vertx.ext.web._
+import org.apache.pekko.testkit.SocketUtil
 import org.scalatest.concurrent.ScalaFutures
 import sttp.tapir._
 import sttp.tapir.CodecFormat.TextPlain

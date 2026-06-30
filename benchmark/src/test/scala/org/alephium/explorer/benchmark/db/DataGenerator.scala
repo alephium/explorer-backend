@@ -8,7 +8,7 @@ import java.math.BigInteger
 import scala.collection.immutable.ArraySeq
 import scala.util.Random
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 
 import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.ConfigDefaults._

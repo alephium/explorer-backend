@@ -185,7 +185,7 @@ lazy val app = mainProject("app")
       ficus,
       scalaLogging,
       logback,
-      akkaTest,
+      pekkoTest,
       scalatest,
       scalaMock,
       scalatestplus,

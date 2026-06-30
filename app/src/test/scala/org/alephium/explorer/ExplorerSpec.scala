@@ -10,8 +10,8 @@ import scala.collection.immutable.ArraySeq
 import scala.io.{Codec, Source}
 import scala.jdk.CollectionConverters._
 
-import akka.testkit.SocketUtil
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
+import org.apache.pekko.testkit.SocketUtil
 import org.scalacheck.Gen
 import org.scalatest.Assertion
 import org.scalatest.Inspectors

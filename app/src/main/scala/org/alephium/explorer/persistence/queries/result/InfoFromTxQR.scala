@@ -5,7 +5,7 @@ package org.alephium.explorer.persistence.queries.result
 
 import scala.collection.immutable.ArraySeq
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import slick.jdbc.{GetResult, PositionedResult}
 
 import org.alephium.explorer.persistence.schema.CustomGetResult._

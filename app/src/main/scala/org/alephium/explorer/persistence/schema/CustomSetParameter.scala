@@ -7,7 +7,7 @@ import java.math.BigInteger
 
 import scala.collection.immutable.ArraySeq
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import slick.jdbc.{PositionedParameters, SetParameter}
 
 import org.alephium.api.model.{Address => ApiAddress}

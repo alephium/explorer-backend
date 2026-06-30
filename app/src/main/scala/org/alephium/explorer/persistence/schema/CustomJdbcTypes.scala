@@ -8,7 +8,7 @@ import java.math.BigInteger
 import scala.collection.immutable.ArraySeq
 import scala.reflect.ClassTag
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import slick.jdbc._
 import slick.jdbc.PostgresProfile._
 import slick.jdbc.PostgresProfile.api._

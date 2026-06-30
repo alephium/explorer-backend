@@ -3,7 +3,7 @@
 
 package org.alephium.explorer.persistence.schema
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 

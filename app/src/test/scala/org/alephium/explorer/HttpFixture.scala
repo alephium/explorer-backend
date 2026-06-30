@@ -6,10 +6,10 @@ package org.alephium.explorer
 import scala.collection.immutable.ArraySeq
 import scala.concurrent._
 
-import akka.testkit.SocketUtil
 import io.vertx.core.Vertx
 import io.vertx.core.http.HttpServer
 import io.vertx.ext.web._
+import org.apache.pekko.testkit.SocketUtil
 import org.scalatest.{Assertion, BeforeAndAfterAll, Suite}
 import sttp.client4._
 import sttp.client4.httpclient.HttpClientFutureBackend

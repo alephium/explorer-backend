@@ -7,7 +7,7 @@ import java.math.BigInteger
 
 import scala.collection.immutable.ArraySeq
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.{Index, ProvenShape}
 import slick.sql.SqlAction

@@ -9,7 +9,7 @@ import scala.collection.immutable.ArraySeq
 import scala.concurrent.{Await, ExecutionContext}
 import scala.util.Random
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import org.openjdk.jmh.annotations.{Scope, State}
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
