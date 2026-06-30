@@ -238,6 +238,7 @@ object ExplorerConfig {
           explorer.cacheLatestBlocksReloadPeriod,
           explorer.cacheMetricsReloadPeriod,
           explorer.exportTxsNumberThreshold,
+          explorer.streamBatchSize,
           explorer.streamParallelism,
           explorer.maxTimeIntervals,
           explorer.market
@@ -286,6 +287,7 @@ object ExplorerConfig {
       symbolName: ListMap[String, String],
       chartSymbolName: ListMap[String, String],
       currencies: ArraySeq[String],
+      coingeckoPrioritySymbols: ArraySeq[String],
       liquidityMinimum: Double,
       mobulaUri: String,
       coingeckoUri: String,
@@ -316,6 +318,7 @@ object ExplorerConfig {
       cacheLatestBlocksReloadPeriod: FiniteDuration,
       cacheMetricsReloadPeriod: FiniteDuration,
       exportTxsNumberThreshold: Int,
+      streamBatchSize: Int,
       streamParallelism: Int,
       maxTimeIntervals: MaxTimeIntervals,
       market: Market
@@ -351,6 +354,7 @@ final case class ExplorerConfig private (
     cacheLatestBlocksReloadPeriod: FiniteDuration,
     cacheMetricsReloadPeriod: FiniteDuration,
     exportTxsNumberThreshold: Int,
+    streamBatchSize: Int,
     streamParallelism: Int,
     maxTimeInterval: ExplorerConfig.MaxTimeIntervals,
     market: ExplorerConfig.Market

@@ -79,6 +79,7 @@ sealed trait ExplorerStateRead extends ExplorerState {
       .routes(
         marketService,
         config.exportTxsNumberThreshold,
+        config.streamBatchSize,
         config.streamParallelism,
         config.maxTimeInterval,
         config.market

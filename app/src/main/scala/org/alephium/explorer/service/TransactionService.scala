@@ -131,7 +131,8 @@ trait TransactionService {
       fromTime: TimeStamp,
       toTime: TimeStamp,
       batchSize: Int,
-      paralellism: Int
+      paralellism: Int,
+      cancelToken: CancelToken
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer]
 
   def getAmountHistory(
@@ -261,21 +262,21 @@ object TransactionService extends TransactionService {
   ): Future[Boolean] = {
     run(hasAddressMoreTxsThanQuery(address, from, to, threshold))
   }
+
   def exportTransactionsByAddress(
       address: ApiAddress,
       fromTime: TimeStamp,
       toTime: TimeStamp,
       batchSize: Int,
-      paralellism: Int
+      paralellism: Int,
+      cancelToken: CancelToken
   )(implicit ec: ExecutionContext, dc: DatabaseConfig[PostgresProfile]): Flowable[Buffer] = {
-
     transactionsFlowable(
       address,
-      transactionSource(address, fromTime, toTime, batchSize, paralellism)
+      transactionSource(address, fromTime, toTime, batchSize, paralellism, cancelToken),
+      cancelToken
     )
-
   }
-
   def convertProtocolUnsignedTx(
       utx: protocol.model.UnsignedTransaction
   )(implicit
@@ -425,33 +426,41 @@ object TransactionService extends TransactionService {
       from: TimeStamp,
       to: TimeStamp,
       batchSize: Int,
-      paralellism: Int
+      paralellism: Int,
+      cancelToken: CancelToken
   )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Flowable[(ArraySeq[Transaction], Map[TokenId, FungibleTokenMetadata])] = {
     Flowable
       .fromPublisher(stream(streamTxByAddressQR(address, from, to)))
+      .takeUntil(cancelToken.signal)
       .buffer(batchSize)
       .concatMapEager(
         { hashes =>
-          Flowable.fromCompletionStage(
-            (for {
-              txs      <- run(getTransactions(ArraySeq.from(hashes.asScala)))
-              metadata <- getTokenMetadata(txs)
-            } yield {
-              (txs, metadata)
-            }).asJava
-          )
+          if (cancelToken.isCancelled || hashes.isEmpty) {
+            Flowable.empty()
+          } else {
+
+            Flowable.fromCompletionStage(
+              (for {
+                txs <- run(getTransactions(ArraySeq.from(hashes.asScala)))
+                metadata <-
+                  if (cancelToken.isCancelled) {
+                    Future.successful(Map.empty[TokenId, FungibleTokenMetadata])
+                  } else {
+                    getTokenMetadata(txs)
+                  }
+              } yield {
+                (txs, metadata)
+              }).asJava
+            )
+          }
         },
         paralellism,
         1
       )
-  }
-
-  private def bufferFlowable(source: Flowable[String]): Flowable[Buffer] = {
-    source
-      .map(Buffer.buffer)
+      .takeUntil(cancelToken.signal)
   }
 
   def getTokenMetadata(transactions: ArraySeq[Transaction])(implicit
@@ -468,20 +477,20 @@ object TransactionService extends TransactionService {
 
   def transactionsFlowable(
       address: ApiAddress,
-      source: Flowable[(ArraySeq[Transaction], Map[TokenId, FungibleTokenMetadata])]
+      source: Flowable[(ArraySeq[Transaction], Map[TokenId, FungibleTokenMetadata])],
+      cancelToken: CancelToken
   ): Flowable[Buffer] = {
-    bufferFlowable {
-      val headerSource = Flowable.just(Transaction.csvHeader)
-      val csvSource = source.map { case (txs, metadatas) =>
-        txs.map(_.toCsv(address, metadatas)).mkString
-      }
-      headerSource.mergeWith(csvSource)
-    }
-  }
+    val header = Flowable.just(Buffer.buffer(Transaction.csvHeader))
 
-  def outputsFlowable(source: Flowable[ArraySeq[Output]]): Flowable[Buffer] = {
-    bufferFlowable {
-      source.map(_.map(_.toString()).mkString)
-    }
+    val csvSource =
+      source
+        .takeUntil(cancelToken.signal)
+        .map { case (txs, metadatas) =>
+          Buffer.buffer(
+            txs.iterator.map(_.toCsv(address, metadatas)).mkString
+          )
+        }
+
+    header.concatWith(csvSource)
   }
 }

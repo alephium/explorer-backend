@@ -16,6 +16,7 @@ import io.vertx.ext.web._
 import org.scalatest.concurrent.ScalaFutures
 import sttp.tapir._
 import sttp.tapir.CodecFormat.TextPlain
+import sttp.tapir.generic.auto._
 import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
@@ -23,6 +24,7 @@ import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.GenCoreApi.apiKeyGen
 import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.config.ExplorerConfig
+import org.alephium.explorer.service.market.MarketService.MobulaPriceRequest
 import org.alephium.explorer.web.Server
 import org.alephium.json.Json._
 
@@ -45,9 +47,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     marketService.getTokenListRemote(0).onComplete(result => promise.complete(result))
     marketService.stop().futureValue
 
-    Try(promise.future.futureValue) is Success(
-      Left(s"Exception when sending request: GET http://${localhost.getHostAddress}:$tokenListPort")
-    )
+    Try(promise.future.futureValue).isSuccess is true
   }
 
   "get prices, exchange rates and charts" in new Fixture {
@@ -62,6 +62,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
       prices(marketConfig.chartSymbolName.keys.indexOf(alph)) is Some(alphPrice)
       prices(marketConfig.chartSymbolName.keys.indexOf(usdt)) is Some(usdtPrice)
+      prices(marketConfig.chartSymbolName.keys.indexOf(wbtc)) is Some(wbtcPrice)
       // WETH liquidity is not enough
       prices(marketConfig.chartSymbolName.keys.indexOf(weth)) is None
     }
@@ -158,11 +159,13 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     val alph = "ALPH"
     val usdt = "USDT"
     val weth = "WETH"
+    val wbtc = "WBTC"
 
     val marketConfig = ExplorerConfig.Market(
       MarketServiceSpec.symbolNames,
       MarketServiceSpec.symbolNames,
       MarketServiceSpec.currencies,
+      ArraySeq(alph),
       liquidityMinimum = 100,
       s"http://${localhost.getHostAddress()}:$mobulaPort",
       s"http://${localhost.getHostAddress()}:$coingeckoPort",
@@ -194,9 +197,12 @@ object MarketServiceSpec {
   implicit val jsoncodec: Codec[String, ujson.Value, TextPlain] =
     Codec.string.map(value => ujson.read(value))(_.toString)
 
-  val alphPrice = 1.223123123
-  val usdcPrice = 1.0012412
-  var usdtPrice = 1.0012412
+  val alphPrice          = 1.223123123
+  val alphMobulaPrice    = 1.123123123
+  val usdcPrice          = 1.0012412
+  val wbtcPrice          = 67214.51967683395
+  val wbtcCoingeckoPrice = 66000.0
+  var usdtPrice          = 1.0012412
 
   val symbolNames = ListMap(
     "ALPH"    -> "alephium",
@@ -276,13 +282,12 @@ object MarketServiceSpec {
     val routes: ArraySeq[Router => Route] =
       ArraySeq(
         route(
-          baseEndpoint.get
-            .in("market")
-            .in("multi-data")
-            .in(query[List[String]]("assets"))
-            .in(query[List[String]]("blockchains"))
+          baseEndpoint.post
+            .in("token")
+            .in("price")
+            .in(jsonBody[MobulaPriceRequest])
             .out(jsonBody[ujson.Value])
-            .serverLogicSuccess[Future] { case (_, _) =>
+            .serverLogicSuccess[Future] { _ =>
               Future.successful(ujson.read(mobulaPrices))
             }
         )
@@ -323,7 +328,8 @@ object MarketServiceSpec {
     server.listen(port, uri.getHostAddress).asScala.futureValue
   }
 
-  /** Alephium price is only configured from coingecko, to validate the merge of the two providers.
+  /** Alephium price is configured by both providers to validate CoinGecko priority for ALPH.
+    * Wrapped Bitcoin is also configured by both providers to validate the default Mobula priority.
     */
   val coingeckoPrices: String = s"""{
       "alephium": {
@@ -331,35 +337,42 @@ object MarketServiceSpec {
       },
       "usd-coin": {
         "usd": $usdcPrice
+      },
+      "wrapped-bitcoin": {
+        "usd": $wbtcCoingeckoPrice
       }
     }"""
 
-  def mobulaPrices: String = s"""{"data": {
-      "vT49PY8ksoUL6NcXiZ1t2wAmC7tTPRfFfER8n3UCLvXy": {
-        "price": 4.213296507259207,
-        "liquidity": 1000
+  def mobulaPrices: String = s"""{"payload": [
+      {
+        "priceUSD": $alphMobulaPrice,
+        "liquidityUSD": 1000
       },
-      "xoDuoek5V2T1dL2HWwvbHT1JEHjMjtJfJoUS2xKsjFg3": {
-        "price": 1.0001333774731636,
-        "liquidity": 1000
+      {
+        "priceUSD": $usdcPrice,
+        "liquidityUSD": 99
       },
-      "zSRgc7goAYUgYsEBYdAzogyyeKv3ne3uvWb3VDtxnaEK": {
-        "price": $usdtPrice,
-        "liquidity": 1000
+      {
+        "priceUSD": 1.0001333774731636,
+        "liquidityUSD": 1000
       },
-      "22Nb9JajRpAh9A2fWNgoKt867PA6zNyi541rtoraDfKXV": {
-        "price": 0.999953840448559,
-        "liquidity": 99
+      {
+        "priceUSD": null,
+        "liquidityUSD": null
       },
-      "vP6XSUyjmgWCB2B9tD5Rqun56WJqDdExWnfwZVEqzhQb": {
-        "price": 2609.03101054154,
-        "liquidity": 10
+      {
+        "priceUSD": $usdtPrice,
+        "liquidityUSD": 1000
       },
-      "xUTp3RXGJ1fJpCGqsAY6GgyfRQ3WQ1MdcYR1SiwndAbR": {
-        "price": 67214.51967683395,
-        "liquidity": 1000
+      {
+        "priceUSD": 2609.03101054154,
+        "liquidityUSD": 10
+      },
+      {
+        "priceUSD": $wbtcPrice,
+        "liquidityUSD": 1000
       }
-    }
+    ]
   }"""
 
   val exchangeRates: String = """
