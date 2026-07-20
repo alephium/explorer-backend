@@ -8,13 +8,13 @@ import slick.jdbc.GetResult
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.protocol.model.Address
 
-  final case class LatestTxInfoByAddressQR(
-      lookupAddress: String,
-      address: Address,
-      tx: TxByAddressQR
-  )
+final case class LatestTxInfoByAddressQR(
+    lookupAddress: String,
+    address: Address,
+    tx: TxByAddressQR
+)
 
-  object LatestTxInfoByAddressQR{
+object LatestTxInfoByAddressQR {
   implicit val latestTxInfoByAddressGetResult: GetResult[LatestTxInfoByAddressQR] =
     result =>
       LatestTxInfoByAddressQR(
@@ -22,4 +22,4 @@ import org.alephium.protocol.model.Address
         result.<<,
         TxByAddressQR.transactionByAddressQRGetResult(result)
       )
-  }
+}
