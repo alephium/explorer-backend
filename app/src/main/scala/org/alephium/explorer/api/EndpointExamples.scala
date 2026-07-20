@@ -499,6 +499,22 @@ object EndpointExamples extends EndpointsExamples {
       )
     )
 
+  implicit val transactionInfoPerAddressesExample
+      : List[Example[ArraySeq[TransactionInfoPerAddress]]] =
+    simpleExample(
+      ArraySeq(
+        TransactionInfoPerAddress(
+          address = address1,
+          transactionInfo = TransactionInfo(
+            hash = txId,
+            blockHash = blockHash,
+            timestamp = ts,
+            coinbase = false
+          )
+        )
+      )
+    )
+
   implicit val amountHistory: List[Example[AmountHistory]] =
     simpleExample(AmountHistory(ArraySeq(TimedAmount(ts, U256.One.v))))
 

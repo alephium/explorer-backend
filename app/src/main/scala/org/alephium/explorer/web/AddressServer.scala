@@ -90,6 +90,9 @@ class AddressServer(
           case Some(txInfo) => Right(txInfo)
         }
       }),
+      route(getLatestTransactionInfos.serverLogicSuccess[Future] { addresses =>
+        transactionService.getLatestTransactionInfoByAddresses(addresses.distinct)
+      }),
       route(getAddressBalance.serverLogicSuccess[Future] { address =>
         for {
           (balance, locked) <- transactionService

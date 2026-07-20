@@ -83,6 +83,12 @@ trait EmptyTransactionService extends TransactionService {
   ): Future[Option[TransactionInfo]] =
     Future.successful(None)
 
+  override def getLatestTransactionInfoByAddresses(addresses: ArraySeq[ApiAddress])(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[TransactionInfoPerAddress]] =
+    Future.successful(ArraySeq.empty)
+
   override def listMempoolTransactionsByAddress(address: ApiAddress)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]

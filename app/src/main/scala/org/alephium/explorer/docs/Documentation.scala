@@ -43,6 +43,7 @@ trait Documentation
         getTransactionsByAddressTimeRanged,
         getTotalTransactionsByAddress,
         getLatestTransactionInfo,
+        getLatestTransactionInfos,
         addressMempoolTransactions,
         getAddressBalance,
         listAddressTokens,

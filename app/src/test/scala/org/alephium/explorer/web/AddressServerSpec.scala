@@ -142,6 +142,16 @@ class AddressServerSpec()
     ): Future[Option[TransactionInfo]] =
       Future.successful(transactionInfo)
 
+    override def getLatestTransactionInfoByAddresses(addresses: ArraySeq[ApiAddress])(implicit
+        ec: ExecutionContext,
+        dc: DatabaseConfig[PostgresProfile]
+    ): Future[ArraySeq[TransactionInfoPerAddress]] =
+      Future.successful(
+        ArraySeq.fill(addresses.size)(
+          TransactionInfoPerAddress(publicKeyAddresses.head._1, transactionInfo.get)
+        )
+      )
+
     override def getAmountHistory(
         address: ApiAddress,
         from: TimeStamp,
@@ -233,6 +243,34 @@ class AddressServerSpec()
     forAll(addressGen) { case address =>
       Get(s"/addresses/${address}/latest-transaction") check { response =>
         response.as[TransactionInfo] is transactionInfo.get
+      }
+    }
+  }
+
+  "get latest transaction info for multiple addresses" should {
+    "return all different addresses info" in {
+      val addresses = ArraySeq.fill(3)(addressGen.sample.get)
+      val entity    = addresses.map(address => s""""$address"""").mkString("[", ",", "]")
+
+      Post("/addresses/latest-transactions", Some(entity)) check { response =>
+        // We take only distinct addresses
+        response.as[ArraySeq[TransactionInfoPerAddress]] is ArraySeq.fill(addresses.size)(
+          TransactionInfoPerAddress(publicKeyAddresses.head._1, transactionInfo.get)
+        )
+      }
+    }
+    "return only 1 info for when using multiple time the same address" in {
+
+      val address       = addressGen.sample.get
+      val sameAddresses = ArraySeq.fill(3)(address)
+      val sameAddresseEntity =
+        sameAddresses.map(address => s""""$address"""").mkString("[", ",", "]")
+
+      Post("/addresses/latest-transactions", Some(sameAddresseEntity)) check { response =>
+        // We take only distinct addresses
+        response.as[ArraySeq[TransactionInfoPerAddress]] is ArraySeq(
+          TransactionInfoPerAddress(publicKeyAddresses.head._1, transactionInfo.get)
+        )
       }
     }
   }
