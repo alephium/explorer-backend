@@ -249,7 +249,7 @@ class AddressServerSpec()
 
   "get latest transaction info for multiple addresses" should {
     "return all different addresses info" in {
-      val addresses = ArraySeq.fill(3)(addressGen.sample.get)
+      val addresses = LazyList.continually(addressGen.sample.get).distinct.take(3).to(ArraySeq)
       val entity    = addresses.map(address => s""""$address"""").mkString("[", ",", "]")
 
       Post("/addresses/latest-transactions", Some(entity)) check { response =>

@@ -2560,6 +2560,7 @@
           "Addresses"
         ],
         "summary": "Get latest transaction information for given addresses",
+        "description": "Returns the latest transaction for each address. Duplicate addresses are deduplicated. Addresses with no transactions are omitted from the result.",
         "operationId": "postAddressesLatest-transactions",
         "requestBody": {
           "description": "List of addresses, max items: 80",

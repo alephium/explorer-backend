@@ -421,7 +421,6 @@ object TransactionQueries extends StrictLogging {
         s"""
            SELECT lookup_address, address, ${TxByAddressQR.selectFields}
            FROM (${branches.map(branch => s"($branch)").mkString(" UNION ALL ")}) matches
-           ORDER BY lookup_address
          """
 
       val parameters: SetParameter[Unit] =

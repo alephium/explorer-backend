@@ -260,6 +260,39 @@ class TransactionQueriesSpec
     actual should contain theSameElementsAs expected
   }
 
+  "address with no txs is omitted from result" in new Fixture {
+    val lockup          = p2pkLockupGen(chainFrom).sample.get
+    val protocolAddress = Address.Asset(lockup)
+    val addressWithTx   = ApiAddress.fromProtocol(protocolAddress)
+
+    val emptyLockup = p2pkLockupGen(chainFrom).sample.get
+    val addressNoTx = ApiAddress.fromProtocol(Address.Asset(emptyLockup))
+
+    val txEntity = TransactionPerAddressEntity(
+      address = protocolAddress,
+      grouplessAddress = AddressUtil.convertToGrouplessAddress(protocolAddress),
+      hash = transactionHashGen.sample.get,
+      blockHash = blockHashGen.sample.get,
+      timestamp = TimeStamp.unsafe(1),
+      txOrder = 0,
+      mainChain = true,
+      conflicted = None,
+      coinbase = false
+    )
+
+    exec(TransactionPerAddressSchema.table.delete)
+    exec(TransactionPerAddressSchema.table += txEntity)
+
+    val actual = exec(
+      TransactionQueries.getLatestTransactionInfoByAddressesAction(
+        ArraySeq(addressWithTx, addressNoTx)
+      )
+    )
+
+    actual.map(_.lookupAddress) should contain only addressWithTx.toBase58
+    actual.map(_.lookupAddress) should not contain addressNoTx.toBase58
+  }
+
   "output's spent info should only take the input from the main chain" in new Fixture {
 
     val tx1 = transactionEntityGen().sample.get.copy(mainChain = true)
