@@ -11,6 +11,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.{AlephiumFutureSpec, TestQueries}
+import org.alephium.explorer.ConfigDefaults.groupSetting
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.GenCoreUtil._
@@ -208,6 +209,88 @@ class TransactionQueriesSpec
 
     txs.size is 3
     txs should contain allElementsOf expected
+  }
+
+  "get latest tx info by addresses" in new Fixture {
+    val lockup          = p2pkLockupGen(chainFrom).sample.get
+    val protocolAddress = Address.Asset(lockup)
+    val fullAddress     = ApiAddress.fromProtocol(protocolAddress)
+    val halfAddress     = ApiAddress(ApiAddress.HalfDecodedP2PK(lockup.publicKey))
+
+    val older = TransactionPerAddressEntity(
+      address = protocolAddress,
+      grouplessAddress = AddressUtil.convertToGrouplessAddress(protocolAddress),
+      hash = transactionHashGen.sample.get,
+      blockHash = blockHashGen.sample.get,
+      timestamp = TimeStamp.unsafe(1),
+      txOrder = 1,
+      mainChain = true,
+      conflicted = None,
+      coinbase = false
+    )
+    val newer = older.copy(
+      hash = transactionHashGen.sample.get,
+      blockHash = blockHashGen.sample.get,
+      timestamp = TimeStamp.unsafe(2),
+      txOrder = 0
+    )
+
+    exec(TransactionPerAddressSchema.table.delete)
+    exec(TransactionPerAddressSchema.table ++= ArraySeq(older, newer))
+
+    val actual = exec(
+      TransactionQueries.getLatestTransactionInfoByAddressesAction(
+        ArraySeq(fullAddress, halfAddress)
+      )
+    )
+
+    val expectedTx = TxByAddressQR(
+      newer.hash,
+      newer.blockHash,
+      newer.timestamp,
+      newer.txOrder,
+      newer.coinbase,
+      newer.conflicted
+    )
+    val expected = ArraySeq(
+      LatestTxInfoByAddressQR(fullAddress.toBase58, protocolAddress, expectedTx),
+      LatestTxInfoByAddressQR(halfAddress.toBase58, protocolAddress, expectedTx)
+    )
+
+    actual should contain theSameElementsAs expected
+  }
+
+  "address with no txs is omitted from result" in new Fixture {
+    val lockup          = p2pkLockupGen(chainFrom).sample.get
+    val protocolAddress = Address.Asset(lockup)
+    val addressWithTx   = ApiAddress.fromProtocol(protocolAddress)
+
+    val emptyLockup = p2pkLockupGen(chainFrom).sample.get
+    val addressNoTx = ApiAddress.fromProtocol(Address.Asset(emptyLockup))
+
+    val txEntity = TransactionPerAddressEntity(
+      address = protocolAddress,
+      grouplessAddress = AddressUtil.convertToGrouplessAddress(protocolAddress),
+      hash = transactionHashGen.sample.get,
+      blockHash = blockHashGen.sample.get,
+      timestamp = TimeStamp.unsafe(1),
+      txOrder = 0,
+      mainChain = true,
+      conflicted = None,
+      coinbase = false
+    )
+
+    exec(TransactionPerAddressSchema.table.delete)
+    exec(TransactionPerAddressSchema.table += txEntity)
+
+    val actual = exec(
+      TransactionQueries.getLatestTransactionInfoByAddressesAction(
+        ArraySeq(addressWithTx, addressNoTx)
+      )
+    )
+
+    actual.map(_.lookupAddress) should contain only addressWithTx.toBase58
+    actual.map(_.lookupAddress) should not contain addressNoTx.toBase58
   }
 
   "output's spent info should only take the input from the main chain" in new Fixture {

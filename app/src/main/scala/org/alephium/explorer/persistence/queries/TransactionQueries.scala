@@ -398,6 +398,42 @@ object TransactionQueries extends StrictLogging {
       .headOrNone
   }
 
+  def getLatestTransactionInfoByAddressesAction(
+      addresses: ArraySeq[ApiAddress]
+  ): DBActionSR[LatestTxInfoByAddressQR] =
+    if (addresses.isEmpty) {
+      DBIOAction.successful(ArraySeq.empty)
+    } else {
+      val branches =
+        addresses.map { address =>
+          s"""
+             SELECT ? AS lookup_address, address, ${TxByAddressQR.selectFields}
+             FROM transaction_per_addresses
+             WHERE main_chain = true
+             AND ${notConflicted()}
+             AND ${addressColumn(address)} = ?
+             ORDER BY block_timestamp DESC, tx_order
+             LIMIT 1
+           """
+        }
+
+      val query =
+        s"""
+           SELECT lookup_address, address, ${TxByAddressQR.selectFields}
+           FROM (${branches.map(branch => s"($branch)").mkString(" UNION ALL ")}) matches
+         """
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) => {
+          addresses.foreach { address =>
+            params >> address
+            params >> address
+          }
+        }
+
+      SQLActionBuilder(query, parameters).asAS[LatestTxInfoByAddressQR]
+    }
+
   def getTransactionsByAddressTimeRanged(
       address: ApiAddress,
       fromTime: TimeStamp,

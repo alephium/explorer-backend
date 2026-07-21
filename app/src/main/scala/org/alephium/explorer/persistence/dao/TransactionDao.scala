@@ -12,6 +12,7 @@ import slick.jdbc.PostgresProfile
 import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.AddressTxCountCache
+import org.alephium.explorer.config.Default.groupConfig
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.model.{AddressTotalTransactionsEntity, AppState}
 import org.alephium.explorer.persistence.queries.AppStateQueries
@@ -65,6 +66,27 @@ object TransactionDao {
     run(getLatestTransactionInfoByAddressAction(address).map(_.map { tx =>
       TransactionInfo(tx.txHash, tx.blockHash, tx.blockTimestamp, tx.coinbase)
     }))
+
+  def getLatestTransactionInfoByAddresses(addresses: ArraySeq[ApiAddress])(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[TransactionInfoPerAddress]] =
+    run(getLatestTransactionInfoByAddressesAction(addresses).map { rows =>
+      val infosByAddress = rows.map(row => row.lookupAddress -> row).toMap
+      addresses.flatMap { address =>
+        infosByAddress.get(address.toBase58).map { row =>
+          TransactionInfoPerAddress(
+            row.address,
+            TransactionInfo(
+              row.tx.txHash,
+              row.tx.blockHash,
+              row.tx.blockTimestamp,
+              row.tx.coinbase
+            )
+          )
+        }
+      }
+    })
 
   def getNumberByAddress(
       address: ApiAddress,

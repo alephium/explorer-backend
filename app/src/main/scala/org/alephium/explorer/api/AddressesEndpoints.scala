@@ -91,6 +91,17 @@ trait AddressesEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[TransactionInfo])
       .summary("Get latest transaction information of a given address")
 
+  lazy val getLatestTransactionInfos
+      : BaseEndpoint[ArraySeq[ApiAddress], ArraySeq[TransactionInfoPerAddress]] =
+    baseAddressesEndpoint.post
+      .in(arrayBody[ApiAddress]("addresses", maxSizeAddresses))
+      .in("latest-transactions")
+      .out(jsonBody[ArraySeq[TransactionInfoPerAddress]])
+      .summary("Get latest transaction information for given addresses")
+      .description(
+        "Returns the latest transaction for each address. Duplicate addresses are deduplicated. Addresses with no transactions are omitted from the result."
+      )
+
   val addressMempoolTransactions: BaseEndpoint[ApiAddress, ArraySeq[MempoolTransaction]] =
     addressesLikeEndpoint.get
       .in("mempool")
