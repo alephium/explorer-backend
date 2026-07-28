@@ -139,12 +139,12 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     }
   }
 
-  "support multiple symbol with same token" in new Fixture {
+  "don't fallback to coingecko for low-liquidity Mobula prices" in new Fixture {
 
     marketService.start().futureValue
 
     eventually {
-      marketService.getPrices(ArraySeq("USDC"), "usd").rightValue is ArraySeq(Some(usdcPrice))
+      marketService.getPrices(ArraySeq("USDC"), "usd").rightValue is ArraySeq(None)
       marketService.getPrices(ArraySeq("USDCeth"), "usd").rightValue is ArraySeq(Some(usdcPrice))
     }
   }

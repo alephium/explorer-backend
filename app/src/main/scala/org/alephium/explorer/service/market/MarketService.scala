@@ -191,16 +191,20 @@ object MarketService extends StrictLogging {
       }
     }
 
-    /** Get prices from the two caches and merge them. We favor Mobula prices over CoinGecko prices,
-      * except for symbols configured with CoinGecko priority. If the price is not available, it
-      * will return None.
+    /** Get prices from the two caches and merge them. Mobula prices take precedence except for
+      * symbols configured with CoinGecko priority. Low-liquidity Mobula results suppress CoinGecko
+      * fallback prices.
       */
     private def getPriceCache(): Either[String, ArraySeq[Price]] = {
       (mobulaPricesCache.get(), coingeckoPricesCache.get()) match {
         case (Right(mobula), Right(coingecko)) =>
+          val validMobula           = mobula.filter(hasEnoughLiquidity)
+          val rejectedMobulaSymbols = mobula.map(_.symbol).toSet -- validMobula.map(_.symbol)
           Right(
-            mobula
-              .concat[Price](coingecko)
+            validMobula
+              .concat[Price](
+                coingecko.filterNot(price => rejectedMobulaSymbols.contains(price.symbol))
+              )
               .groupBy(_.symbol)
               .view
               .mapValues(selectPrice)
@@ -209,7 +213,7 @@ object MarketService extends StrictLogging {
               .to(ArraySeq)
           )
 
-        case (Right(mobula), Left(_))    => Right(mobula)
+        case (Right(mobula), Left(_))    => Right(mobula.filter(hasEnoughLiquidity))
         case (Left(_), Right(coingecko)) => Right(coingecko)
         case (Left(mobulaError), Left(coingeckoError)) =>
           Left(s"Failed to fetch prices: $mobulaError, $coingeckoError")
@@ -259,7 +263,7 @@ object MarketService extends StrictLogging {
             Right(tokenList.tokens)
           } else {
             // Token list is not fresh, we recompute price of current validated tokens
-            Right(prices.map(_.asset))
+            Right(prices.filter(hasEnoughLiquidity).map(_.asset))
           }
         case (Right(tokenList), Left(_)) =>
           // Prices aren't fetched yet, we return the token list as is
@@ -567,20 +571,8 @@ object MarketService extends StrictLogging {
       }
     }
 
-    private def validateMobulaData(
-        asset: TokenList.Entry,
-        price: Double,
-        liquidity: Double
-    ): Option[MobulaPrice] = {
-      // If the liquidity is below the minimum, the price is unavailable
-      // Or if the price is 0, we also consider it unavailable, this might happen if
-      // the api has an issue.
-      if (liquidity < marketConfig.liquidityMinimum || price == 0.0) {
-        None
-      } else {
-        Some(MobulaPrice(asset, price, liquidity))
-      }
-    }
+    private def hasEnoughLiquidity(price: MobulaPrice): Boolean =
+      price.liquidity >= marketConfig.liquidityMinimum
 
     @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
     private def convertJsonToMobulaPrices(
@@ -598,11 +590,11 @@ object MarketService extends StrictLogging {
                 Try {
                   assets.zip(payload.arr).flatMap { case (asset, value) =>
                     for {
-                      price     <- value("priceUSD").numOpt
+                      price <- value("priceUSD").numOpt
+                      if price != 0.0 // A zero price indicates a Mobula API issue, so allow fallback.
                       liquidity <- value("liquidityUSD").numOpt
-                      result    <- validateMobulaData(asset, price, liquidity)
                     } yield {
-                      result
+                      MobulaPrice(asset, price, liquidity)
                     }
                   }
                 }.toEither.left.map { error =>
