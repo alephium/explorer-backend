@@ -504,7 +504,7 @@ object EndpointExamples extends EndpointsExamples {
     simpleExample(
       ArraySeq(
         TransactionInfoPerAddress(
-          address = address1,
+          address = grouplessAddress,
           transactionInfo = TransactionInfo(
             hash = txId,
             blockHash = blockHash,
