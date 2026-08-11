@@ -18,10 +18,13 @@ trait ChartsEndpoints extends BaseEndpoint with QueryParams {
 
   val intervalTypes: String = IntervalType.all.dropRight(1).map(_.string).mkString(", ")
 
+  private val chartCacheMaxAgeSeconds = 60
+
   private val chartsEndpoint =
     baseEndpoint
       .tag("Charts")
       .in("charts")
+      .out(cacheControl(chartCacheMaxAgeSeconds))
 
   val getHashrates: BaseEndpoint[(TimeInterval, IntervalType), ArraySeq[Hashrate]] =
     chartsEndpoint.get
