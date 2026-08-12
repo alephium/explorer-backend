@@ -51,7 +51,7 @@ final case class TestBlockFlowServer(
   val blocks           = blockflow.flatten
   val blocksWithUncles = blockflow.flatten ++ uncles
 
-  private val peer = model.PeerAddress(host, SocketUtil.temporaryLocalPort(SocketUtil.Both), 0, 0)
+  private val peer = model.PeerAddress(host, SocketUtil.temporaryLocalPort(SocketUtil.Both), 0)
 
   def fetchHashesAtHeight(
       from: GroupIndex,

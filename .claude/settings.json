@@ -1,0 +1,36 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/thomas/dev/explorer-backend/.claude/hooks/guardrail-bash.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/thomas/dev/explorer-backend/.claude/hooks/scalafmt-check.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/thomas/dev/explorer-backend/.claude/hooks/session-summary.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

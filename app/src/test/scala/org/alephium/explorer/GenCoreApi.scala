@@ -53,12 +53,10 @@ object GenCoreApi {
     for {
       address      <- genInetAddress
       restPort     <- genPortNum
-      wsPort       <- genPortNum
       minerApiPort <- genPortNum
     } yield PeerAddress(
       address = address,
       restPort = restPort,
-      wsPort = wsPort,
       minerApiPort = minerApiPort
     )
 
@@ -566,6 +564,7 @@ object GenCoreApi {
       txId        <- transactionHashGen
       timestamp   <- timestampGen
       eventIndex  <- Gen.posNum[Int]
+      timestamp   <- timestampGen
       address     <- valContractAddressGen
       parent      <- Gen.option(valContractAddressGen)
       interfaceId <- stdInterfaceIdValGen

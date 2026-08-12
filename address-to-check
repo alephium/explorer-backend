@@ -1,0 +1,65 @@
+1AtZ8GVfCgSett7JgbfhpLodaQagoxmu4xvrDsVGGQDpC
+
+tx: 4d3a463cf15d11142a579c0b86a518e26eef5b4b891a5792e0b382680bbd59e5
+block: 000000000001430d435c15cbc9a508afb5b02678b7a96a8428e50068e1e748fc
+
+considered orphan locally while not.
+
+
+explorer=# select main_chain, parent, height from block_headers where hash='\x0000000000007e303b2abf53f99e23d35b05579a676a933786166047f96ecaec';
+ main_chain |                               parent                               | height
+------------+--------------------------------------------------------------------+---------
+ t          | \x000000000000ceddd0d1978f4644c277a17d2784d7bc931e418d14aaecedf70c | 5905658
+(1 row)
+
+explorer=# select main_chain, parent, height from block_headers where hash='\x000000000001430d435c15cbc9a508afb5b02678b7a96a8428e50068e1e748fc';
+ main_chain |                               parent                               | height
+------------+--------------------------------------------------------------------+---------
+ f          | \x0000000000007e303b2abf53f99e23d35b05579a676a933786166047f96ecaec | 5905659
+(1 row)
+
+explorer=# select main_chain, parent, height from block_headers where height=5905660;
+ main_chain |                               parent                               | height
+------------+--------------------------------------------------------------------+---------
+ t          | \x0000000000002f13f2e19cdcaa27e05637703a398534e26cf63dc6650222d6c0 | 5905660
+ t          | \x0000000000008de38c4edf533f54a2d8e5188e3696d94833d418024bb0b5028f | 5905660
+ t          | \x0000000000000901f091a15b1f69a291ad62dbee5161fdbf863f10fa548fa701 | 5905660
+ t          | \x000000000000f777ff59194b16bcbef7dcbdc8165760b455b292f28f9dddfe02 | 5905660
+ t          | \x000000000000441dc9300c2c071f904cb829448f654250a4832b60bb9b1ec7a5 | 5905660
+ t          | \x0000000000003633401c9a8cdac4b093934f99605d063076c64e5fafca82d093 | 5905660
+ t          | \x00000000000068189381eee348d4a907269bbb2878da14e9b226623774cfe0f4 | 5905660
+ t          | \x0000000000002dd9f5331541f04be54f09557ca7bc911be592fcea625fd1f01a | 5905660
+ t          | \x0000000000007019d113e040388c596fb8ec34d07d508e7b7d3ddd08de62ac36 | 5905660
+ f          | \x00000000000020c5b9d093a4388d35cdd9f02edade136fde4cc2421d37eac867 | 5905660
+ t          | \x00000000000020c5b9d093a4388d35cdd9f02edade136fde4cc2421d37eac867 | 5905660
+ t          | \x000000000000437ffc663159a0e449aacef8c38612d58e66a5f04498a1779c98 | 5905660
+ t          | \x0000000000003e9fa4900354661a52038913a6c00eca6ce3b0422f22476b2b99 | 5905660
+ t          | \x000000000000b3c3f66d2dd769edf3bb133b18cdda27b1f587452b9ead2dcedb | 5905660
+ t          | \x000000000001430d435c15cbc9a508afb5b02678b7a96a8428e50068e1e748fc | 5905660
+(15 rows)
+
+explorer=# select main_chain, parent, height,chain_from, chain_to from block_headers where hash='\x000000000001430d435c15cbc9a508afb5b02678b7a96a8428e50068e1e748fc';
+ main_chain |                               parent                               | height  | chain_from | chain_to
+------------+--------------------------------------------------------------------+---------+------------+----------
+ f          | \x0000000000007e303b2abf53f99e23d35b05579a676a933786166047f96ecaec | 5905659 |          3 |        0
+(1 row)
+
+explorer=# select main_chain, parent, height from block_headers where height=5905660 and chain_from=3 and chain_to=0;
+ main_chain |                               parent                               | height
+------------+--------------------------------------------------------------------+---------
+ t          | \x000000000001430d435c15cbc9a508afb5b02678b7a96a8428e50068e1e748fc | 5905660
+(1 row)
+
+
+
+
+
+
+explorer=# select block_timestamp, hash, main_chain, parent, height from block_headers where height=5905659 and chain_from=3 and chain_to=0;
+ block_timestamp |                                hash                                | main_chain |                               parent                               | height
+-----------------+--------------------------------------------------------------------+------------+--------------------------------------------------------------------+---------
+   1778074381389 | \x000000000001430d435c15cbc9a508afb5b02678b7a96a8428e50068e1e748fc | f          | \x0000000000007e303b2abf53f99e23d35b05579a676a933786166047f96ecaec | 5905659
+   1778074386434 | \x0000000000013d1b8afd807aa994b7ee7e49c24ad450b83c53cb3370e87e611c | t          | \x0000000000007e303b2abf53f99e23d35b05579a676a933786166047f96ecaec | 5905659
+(2 rows)
+
+The main chain is inverted, but we see that the second one arrived after, se we concidered it as in the main chain, while it wasn't.

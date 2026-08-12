@@ -4,7 +4,7 @@
 import sbt._
 
 object Version {
-  lazy val common = "4.5.5"
+  lazy val common = "4.6.0+6-5cd982e9+20260722-1603-SNAPSHOT"
 
   lazy val pekko      = "1.6.0"
   lazy val rxJava     = "3.1.12"

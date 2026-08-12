@@ -11,6 +11,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 import com.typesafe.scalalogging.StrictLogging
+import io.vertx.core.Vertx
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 import sttp.model.Uri
@@ -19,6 +20,7 @@ import org.alephium.api.model.{ChainParams, PeerAddress}
 import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.cache.BlockCache
 import org.alephium.explorer.config.{BootMode, ExplorerConfig}
+import org.alephium.explorer.config.ExplorerConfig.Consensus
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.service._
 import org.alephium.explorer.util.Scheduler
@@ -29,11 +31,12 @@ import org.alephium.util
 @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
 object SyncServices extends StrictLogging {
 
-  def startSyncServices(config: ExplorerConfig)(implicit
+  def startSyncServices(vertx: Vertx, config: ExplorerConfig)(implicit
       scheduler: Scheduler,
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
+      consensus: Consensus,
       blockCache: BlockCache,
       groupSetting: GroupSetting
   ): Future[Unit] =
@@ -49,8 +52,16 @@ object SyncServices extends StrictLogging {
           blockFlowUri = config.blockFlowUri
         ) flatMap { peers =>
           startSyncServices(
+            vertx = vertx,
             peers = peers,
             syncPeriod = config.syncPeriod,
+            blockFlowUri = config.blockFlowUri,
+            wsFlushInterval = config.wsFlushInterval,
+            wsMaxBlockDelay = config.wsMaxBlockDelay,
+            wsMaxBufferSize = config.wsMaxBufferSize,
+            wsMaxReconnectAttempts = config.wsMaxReconnectAttempts,
+            wsReconnectBaseDelay = config.wsReconnectBaseDelay,
+            wsReconnectMaxDelay = config.wsReconnectMaxDelay,
             holderServiceScheduleTime = config.holderServiceScheduleTime,
             tokenSupplyServiceScheduleTime = config.tokenSupplyServiceScheduleTime,
             hashRateServiceSyncPeriod = config.hashRateServiceSyncPeriod,
@@ -64,8 +75,16 @@ object SyncServices extends StrictLogging {
   /** Start sync services given the peers */
   // scalastyle:off
   def startSyncServices(
+      vertx: Vertx,
       peers: ArraySeq[Uri],
       syncPeriod: FiniteDuration,
+      blockFlowUri: Uri,
+      wsFlushInterval: FiniteDuration,
+      wsMaxBlockDelay: FiniteDuration,
+      wsMaxBufferSize: Int,
+      wsMaxReconnectAttempts: Int,
+      wsReconnectBaseDelay: FiniteDuration,
+      wsReconnectMaxDelay: FiniteDuration,
       holderServiceScheduleTime: LocalTime,
       tokenSupplyServiceScheduleTime: LocalTime,
       hashRateServiceSyncPeriod: FiniteDuration,
@@ -78,6 +97,7 @@ object SyncServices extends StrictLogging {
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
       blockCache: BlockCache,
+      consensus: Consensus,
       groupSetting: GroupSetting
   ): Future[Unit] =
     Future.fromTry {
@@ -86,7 +106,19 @@ object SyncServices extends StrictLogging {
           .sequence(
             ArraySeq(
               BlockFlowSyncService
-                .start(peers, syncPeriod, util.Duration.unsafe(blockFlowFetchMaxAge.toMillis)),
+                .start(
+                  vertx,
+                  peers,
+                  syncPeriod,
+                  util.Duration.unsafe(blockFlowFetchMaxAge.toMillis),
+                  blockFlowUri,
+                  util.Duration.unsafe(wsFlushInterval.toMillis),
+                  util.Duration.unsafe(wsMaxBlockDelay.toMillis),
+                  wsMaxBufferSize,
+                  wsMaxReconnectAttempts,
+                  util.Duration.unsafe(wsReconnectBaseDelay.toMillis),
+                  util.Duration.unsafe(wsReconnectMaxDelay.toMillis)
+                ),
               MempoolSyncService.start(peers, syncPeriod),
               TokenSupplyService.start(tokenSupplyServiceScheduleTime),
               HashrateService.start(hashRateServiceSyncPeriod),

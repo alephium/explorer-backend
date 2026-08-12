@@ -12,6 +12,7 @@ import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer.cache._
 import org.alephium.explorer.config.{BootMode, ExplorerConfig}
+import org.alephium.explorer.config.ExplorerConfig.Consensus
 import org.alephium.explorer.persistence.Database
 import org.alephium.explorer.service._
 import org.alephium.explorer.util.Scheduler
@@ -32,6 +33,10 @@ sealed trait ExplorerState extends Service with StrictLogging {
 
   lazy val database: Database =
     new Database(config.bootMode)(executionContext, databaseConfig, config)
+
+  lazy val vertxService: VertxService = new VertxService()
+
+  implicit lazy val consensus: Consensus = config.consensus
 
   implicit lazy val blockCache: BlockCache =
     BlockCache(
@@ -98,6 +103,7 @@ sealed trait ExplorerStateRead extends ExplorerState {
       config.host,
       config.port,
       routes,
+      vertxService,
       database
     )
 }
@@ -111,7 +117,7 @@ sealed trait ExplorerStateWrite extends ExplorerState {
   implicit private val scheduler: Scheduler = Scheduler("SYNC_SERVICES")
 
   override def startSelfOnce(): Future[Unit] = {
-    SyncServices.startSyncServices(config)
+    SyncServices.startSyncServices(vertxService.vertx, config)
   }
 }
 
@@ -145,6 +151,7 @@ object ExplorerState {
         metricCache,
         transactionCache,
         addressTxCountCache,
+        vertxService,
         database
       )
   }
@@ -165,6 +172,7 @@ object ExplorerState {
         transactionCache,
         addressTxCountCache,
         database,
+        vertxService,
         blockFlowClient
       )
   }
