@@ -3,8 +3,6 @@
 
 package org.alephium.explorer.service
 
-import java.util.concurrent.RejectedExecutionException
-
 import scala.collection.immutable.ArraySeq
 import scala.jdk.CollectionConverters._
 
@@ -35,7 +33,7 @@ class TokenServiceSpec extends AlephiumFutureSpec with ScalaFutures {
       .withFallback(ConfigFactory.load())
 
   "updateContractsMetadata" should {
-    "overflow the DB executor when many contracts are pending" in {
+    "not overflow the DB executor when many contracts are pending" in {
       val dbName = "tokenservicespec"
 
       DatabaseFixture.createDb(dbName)
@@ -53,7 +51,12 @@ class TokenServiceSpec extends AlephiumFutureSpec with ScalaFutures {
 
         val client = new EmptyBlockFlowClient {}
 
-        TokenService.updateContractsMetadata(client).failed.futureValue is a[RejectedExecutionException]
+        TokenService.updateContractsMetadata(client).futureValue is ()
+
+        DBRunner
+          .run(ContractQueries.listContractWithoutInterfaceIdQuery())
+          .futureValue is ArraySeq.empty
+
       } finally {
         databaseConfig.db.close()
         DatabaseFixture.dropDb(dbName)
