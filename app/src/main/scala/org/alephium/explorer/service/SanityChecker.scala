@@ -51,25 +51,52 @@ object SanityChecker extends StrictLogging {
       blockFlowClient: BlockFlowClient,
       blockCache: BlockCache,
       groupSetting: GroupSetting
+  ): Future[Unit] =
+    checkInternal(stopOnProblem = false)
+
+  def checkAndStopOnProblem()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      blockCache: BlockCache,
+      groupSetting: GroupSetting
+  ): Future[Unit] = {
+    checkInternal(stopOnProblem = true)
+  }
+
+  private def checkInternal(stopOnProblem: Boolean)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      blockFlowClient: BlockFlowClient,
+      blockCache: BlockCache,
+      groupSetting: GroupSetting
   ): Future[Unit] = {
     if (!running.compareAndSet(false, true)) {
       Future.successful(logger.error("Sanity check already running"))
     } else {
       val blockNum = new AtomicInteger(0)
 
+      logger.info(s"Starting sanity check, counting blocks")
       val result =
         run(BlockHeaderSchema.table.size.result)
           .flatMap { nbOfBlocks =>
-            logger.info(s"Starting sanity check $nbOfBlocks to check")
+            logger.info(s"$nbOfBlocks to check")
             Future
               .sequence(groupSetting.chainIndexes.map { chainIndex =>
                 findLatestBlock(chainIndex).flatMap {
                   case None => Future.successful(())
                   case Some(hash) =>
                     BlockDao.get(hash).flatMap {
-                      case None => Future.successful(())
+                      case None =>
+                        if (stopOnProblem) {
+                          failProblem(
+                            s"Latest main-chain block ${hash.toHexString} is missing from the database"
+                          )
+                        } else {
+                          Future.successful(())
+                        }
                       case Some(block) =>
-                        checkBlock(block, blockNum, nbOfBlocks)
+                        checkBlockInternal(block, blockNum, nbOfBlocks, stopOnProblem)
                     }
                 }
               })
@@ -89,7 +116,12 @@ object SanityChecker extends StrictLogging {
     }
   }
 
-  private def checkBlock(block: BlockEntry, blockNum: AtomicInteger, totalNbOfBlocks: Int)(implicit
+  private def checkBlockInternal(
+      block: BlockEntry,
+      blockNum: AtomicInteger,
+      totalNbOfBlocks: Int,
+      stopOnProblem: Boolean
+  )(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       blockFlowClient: BlockFlowClient,
@@ -106,7 +138,13 @@ object SanityChecker extends StrictLogging {
     ).flatMap {
       case None => Future.successful(())
       case Some(missing) =>
-        handleMissingBlock(missing, block.chainFrom, blockNum, totalNbOfBlocks)
+        if (stopOnProblem) {
+          failProblem(
+            s"Problematic block ${describeBlock(block)} is missing parent ${missing.toHexString}"
+          )
+        } else {
+          handleMissingBlock(missing, block.chainFrom, blockNum, totalNbOfBlocks)
+        }
     }
   }
 
@@ -130,9 +168,17 @@ object SanityChecker extends StrictLogging {
       for {
         _ <- BlockDao.insert(block)
         b <- BlockDao.get(block.hash).map(_.get)
-        _ <- checkBlock(b, blockNum, totalNbOfBlocks)
+        _ <- checkBlockInternal(b, blockNum, totalNbOfBlocks, stopOnProblem = false)
       } yield ()
     }
+  }
+
+  private def describeBlock(block: BlockEntry): String =
+    s"${block.hash.toHexString} (height=${block.height.value}, chainFrom=${block.chainFrom.value}, chainTo=${block.chainTo.value})"
+
+  private def failProblem(message: String): Future[Unit] = {
+    logger.error(message)
+    Future.failed(new IllegalStateException(message))
   }
 
   @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
