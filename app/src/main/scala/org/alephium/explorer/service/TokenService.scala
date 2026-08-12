@@ -283,9 +283,9 @@ object TokenService extends TokenService with StrictLogging {
       dc: DatabaseConfig[PostgresProfile]
   ): Future[Unit] = {
     listContractWithoutInterfaceId()
-      .flatMap { tokens =>
+      .flatMap { contracts =>
         Future.sequence(
-          tokens.map(contract => fetchAndStoreContractMetadata(contract, blockFlowClient))
+          contracts.map(contract => fetchAndStoreContractMetadata(contract, blockFlowClient))
         )
       }
       .map(_ => ())
