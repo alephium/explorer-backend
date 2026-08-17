@@ -3,12 +3,12 @@
 
 package org.alephium.explorer.api.model
 
+import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.Json._
 import org.alephium.json.Json._
-import org.alephium.protocol.model.Address
 
 final case class TransactionInfoPerAddress(
-    address: Address,
+    address: ApiAddress,
     transactionInfo: TransactionInfo
 )
 

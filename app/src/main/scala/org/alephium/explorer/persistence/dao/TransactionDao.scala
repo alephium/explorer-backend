@@ -76,7 +76,7 @@ object TransactionDao {
       addresses.flatMap { address =>
         infosByAddress.get(address.toBase58).map { row =>
           TransactionInfoPerAddress(
-            row.address,
+            address,
             TransactionInfo(
               row.tx.txHash,
               row.tx.blockHash,

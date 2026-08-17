@@ -147,9 +147,7 @@ class AddressServerSpec()
         dc: DatabaseConfig[PostgresProfile]
     ): Future[ArraySeq[TransactionInfoPerAddress]] =
       Future.successful(
-        ArraySeq.fill(addresses.size)(
-          TransactionInfoPerAddress(publicKeyAddresses.head._1, transactionInfo.get)
-        )
+        addresses.map(address => TransactionInfoPerAddress(address, transactionInfo.get))
       )
 
     override def getAmountHistory(
@@ -250,18 +248,21 @@ class AddressServerSpec()
   "get latest transaction info for multiple addresses" should {
     "return all different addresses info" in {
       val addresses = LazyList.continually(addressGen.sample.get).distinct.take(3).to(ArraySeq)
-      val entity    = addresses.map(address => s""""$address"""").mkString("[", ",", "]")
+      val apiAddresses =
+        addresses.map(address => ApiAddress.fromBase58(address.toBase58).rightValue)
+      val entity = addresses.map(address => s""""$address"""").mkString("[", ",", "]")
 
       Post("/addresses/latest-transactions", Some(entity)) check { response =>
         // We take only distinct addresses
-        response.as[ArraySeq[TransactionInfoPerAddress]] is ArraySeq.fill(addresses.size)(
-          TransactionInfoPerAddress(publicKeyAddresses.head._1, transactionInfo.get)
+        response.as[ArraySeq[TransactionInfoPerAddress]] is apiAddresses.map(address =>
+          TransactionInfoPerAddress(address, transactionInfo.get)
         )
       }
     }
     "return only 1 info for when using multiple time the same address" in {
 
       val address       = addressGen.sample.get
+      val apiAddress    = ApiAddress.fromBase58(address.toBase58).rightValue
       val sameAddresses = ArraySeq.fill(3)(address)
       val sameAddresseEntity =
         sameAddresses.map(address => s""""$address"""").mkString("[", ",", "]")
@@ -269,7 +270,7 @@ class AddressServerSpec()
       Post("/addresses/latest-transactions", Some(sameAddresseEntity)) check { response =>
         // We take only distinct addresses
         response.as[ArraySeq[TransactionInfoPerAddress]] is ArraySeq(
-          TransactionInfoPerAddress(publicKeyAddresses.head._1, transactionInfo.get)
+          TransactionInfoPerAddress(apiAddress, transactionInfo.get)
         )
       }
     }
