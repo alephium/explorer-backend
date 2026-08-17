@@ -1,6 +1,7 @@
 // Copyright (c) Alephium
 // SPDX-License-Identifier: LGPL-3.0-only
 
+//scalastyle:off file.size.limit
 package org.alephium.explorer.persistence.queries
 
 import scala.collection.immutable.ArraySeq
@@ -20,6 +21,7 @@ import org.alephium.explorer.Generators._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.config.Default.groupConfig
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, TestDBRunner}
+import org.alephium.explorer.persistence.dao.TransactionDao
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.result._
 import org.alephium.explorer.persistence.schema._
@@ -258,6 +260,32 @@ class TransactionQueriesSpec
     )
 
     actual should contain theSameElementsAs expected
+  }
+
+  "latest tx info by addresses should keep groupless inputs groupless" in new Fixture {
+    val lockup          = p2pkLockupGen(chainFrom).sample.get
+    val protocolAddress = Address.Asset(lockup)
+    val lookupAddress   = ApiAddress.fromProtocol(protocolAddress)
+
+    val txEntity = TransactionPerAddressEntity(
+      address = protocolAddress,
+      grouplessAddress = AddressUtil.convertToGrouplessAddress(protocolAddress),
+      hash = transactionHashGen.sample.get,
+      blockHash = blockHashGen.sample.get,
+      timestamp = TimeStamp.unsafe(1),
+      txOrder = 0,
+      mainChain = true,
+      conflicted = None,
+      coinbase = false
+    )
+
+    exec(TransactionPerAddressSchema.table.delete)
+    exec(TransactionPerAddressSchema.table += txEntity)
+
+    val actual =
+      TransactionDao.getLatestTransactionInfoByAddresses(ArraySeq(lookupAddress)).futureValue
+
+    actual.map(_.address.toBase58) is ArraySeq(lookupAddress.toBase58)
   }
 
   "address with no txs is omitted from result" in new Fixture {
