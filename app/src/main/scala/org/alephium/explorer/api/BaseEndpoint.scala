@@ -43,6 +43,9 @@ trait BaseEndpoint extends ErrorExamples with TapirCodecs with TapirSchemasLike 
         )
       )
 
+  def cacheControl(maxAgeSeconds: Int): EndpointIO.FixedHeader[Unit] =
+    header("Cache-Control", s"public, max-age=$maxAgeSeconds")
+
   def arrayBody[T](tpe: String, maxSize: Int)(implicit
       examples: List[Example[ArraySeq[T]]],
       rw: ReadWriter[ArraySeq[T]],

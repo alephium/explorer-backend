@@ -5560,6 +5560,14 @@
         "responses": {
           "200": {
             "description": "Ok",
+            "headers": {
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -6072,6 +6080,14 @@
         "responses": {
           "200": {
             "description": "Ok",
+            "headers": {
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "text/plain": {
                 "schema": {
@@ -6172,6 +6188,14 @@
         "responses": {
           "200": {
             "description": "Ok",
+            "headers": {
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "text/plain": {
                 "schema": {
@@ -6272,6 +6296,14 @@
         "responses": {
           "200": {
             "description": "Ok",
+            "headers": {
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "text/plain": {
                 "schema": {
@@ -6372,6 +6404,14 @@
         "responses": {
           "200": {
             "description": "Ok",
+            "headers": {
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "text/plain": {
                 "schema": {
@@ -7000,6 +7040,14 @@
         "responses": {
           "200": {
             "description": "Ok",
+            "headers": {
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -7146,6 +7194,14 @@
         "responses": {
           "200": {
             "description": "Ok",
+            "headers": {
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -7290,6 +7346,14 @@
         "responses": {
           "200": {
             "description": "Ok",
+            "headers": {
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {

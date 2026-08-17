@@ -22,9 +22,12 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
       .tag("Infos")
       .in("infos")
 
+  private val infoCacheMaxAgeSeconds = 30
+
   private val supplyEndpoint =
     infosEndpoint
       .in("supply")
+      .out(cacheControl(infoCacheMaxAgeSeconds))
 
   val getInfos: BaseEndpoint[Unit, ExplorerInfo] =
     infosEndpoint.get
