@@ -69,8 +69,10 @@ class TransactionServer(implicit
   private def deserializeUnsignedTx(
       rawUtx: String
   ): Either[ApiError[_ <: StatusCode], protocol.model.UnsignedTransaction] =
-    deserialize[protocol.model.UnsignedTransaction](
-      Hex.unsafe(rawUtx)
-    ).left.map(e => ApiError.BadRequest(e.getMessage))
-
+    Try(Hex.unsafe(rawUtx)).toEither.left.map(e => ApiError.BadRequest(e.getMessage)).flatMap {
+      rawBytes =>
+        deserialize[protocol.model.UnsignedTransaction](rawBytes).left.map(e =>
+          ApiError.BadRequest(e.getMessage)
+        )
+    }
 }
