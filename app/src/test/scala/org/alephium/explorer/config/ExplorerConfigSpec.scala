@@ -3,6 +3,8 @@
 
 package org.alephium.explorer.config
 
+import java.nio.file.Files
+
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.duration._
 
@@ -80,6 +82,30 @@ class ExplorerConfigSpec extends AlephiumSpec with ScalaCheckDrivenPropertyCheck
         }
       }
     }
+
+    "load config from user file" in {
+      val rootPath = Files.createTempDirectory("explorer-config-spec")
+      val userFile = getUserConfig(rootPath)
+      val content =
+        """
+          |alephium {
+          |  blockflow {
+          |    network-id = 2
+          |  }
+          |}
+          |""".stripMargin
+      java.nio.file.Files.writeString(userFile.toPath, content)
+
+      val config = loadConfig(rootPath).success.value
+      config.getInt("alephium.blockflow.network-id") is 2
+    }
+
+    "load config with the default network when the user file is empty" in {
+      val rootPath = Files.createTempDirectory("explorer-config-spec-default")
+
+      val config = loadConfig(rootPath).success.value
+      config.getInt("alephium.blockflow.network-id") is NetworkId.AlephiumMainNet.id.toInt
+    }
   }
 
   "validatePort" should {
@@ -144,6 +170,15 @@ class ExplorerConfigSpec extends AlephiumSpec with ScalaCheckDrivenPropertyCheck
         forAll(genStringOfLength(5)) { string =>
           validateScheme(string).failure.exception is InvalidScheme(string)
         }
+      }
+    }
+  }
+
+  "validateUri" should {
+    "build a uri" in {
+      forAll(Gen.oneOf("http", "https"), genPortNum) { (scheme, port) =>
+        validateUri(scheme, "localhost", port).success.value.toString is
+          s"$scheme://localhost:$port"
       }
     }
   }
