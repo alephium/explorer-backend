@@ -17,7 +17,6 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.result.{OutputFromTxQR, OutputQR}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{BlockHash, TransactionId}
@@ -388,39 +387,6 @@ object OutputQueries {
       AND #${notConflicted()}
       ORDER BY block_timestamp #${if (ascendingOrder) "" else "DESC"}
       """.asASE[OutputEntity](outputGetResult)
-  }
-
-  /** Checks that [[getTxnHash]] uses both indexes for the given key */
-  def explainGetTxnHash(
-      key: Option[Hash]
-  )(implicit ec: ExecutionContext): DBActionR[ExplainResult] = {
-    val queryName = "getTxnHashBuilder"
-
-    key match {
-      case Some(key) =>
-        getTxnHashBuilder(key).explainAnalyze() map { explain =>
-          val explainString               = explain.mkString
-          val outputs_pk_used             = explainString contains "outputs_pk"
-          val outputs_main_chain_idx_used = explainString contains "outputs_main_chain_idx"
-          val passed                      = outputs_pk_used && outputs_main_chain_idx_used
-          val message =
-            ArraySeq(
-              s"Used outputs_main_chain_idx = $outputs_main_chain_idx_used",
-              s"Used outputs_pk             = $outputs_pk_used"
-            )
-
-          ExplainResult(
-            queryName = queryName,
-            queryInput = key.toString(),
-            explain = explain,
-            messages = message,
-            passed = passed
-          )
-        }
-
-      case None =>
-        DBIOAction.successful(ExplainResult.emptyInput(queryName))
-    }
   }
 
   def getTxnHash(key: Hash): DBActionSR[TransactionId] =

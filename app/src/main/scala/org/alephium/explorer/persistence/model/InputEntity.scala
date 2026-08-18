@@ -52,9 +52,4 @@ final case class InputEntity(
     outputRefAmount: Option[U256],
     outputRefTokens: Option[ArraySeq[Token]], // None if empty list
     contractInput: Boolean
-) extends InputEntityLike {
-
-  /** @return All hash types associated with this [[InputEntity]] */
-  def hashes(): (TransactionId, BlockHash) =
-    (txHash, blockHash)
-}
+) extends InputEntityLike

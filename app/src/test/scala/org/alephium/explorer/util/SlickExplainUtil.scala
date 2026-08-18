@@ -2,47 +2,19 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 package org.alephium.explorer.util
 
-import scala.concurrent.ExecutionContext
-
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
 import slick.jdbc.SQLActionBuilder
 import slick.sql.{FixedSqlStreamingAction, SqlStreamingAction}
-
-import org.alephium.explorer.persistence.DBActionR
 
 object SlickExplainUtil {
 
   /** For SQL queries */
   implicit class SQLActionBuilderImplicits(sql: SQLActionBuilder) {
 
-    /** Adds `EXPLAIN ANALYZE` to head query */
-    def explainAnalyze(): SqlStreamingAction[Vector[String], String, Effect.Read] =
-      alterHeadQuery(sql, "EXPLAIN ANALYZE")
-
     /** Adds `EXPLAIN` to head query */
     def explain(): SqlStreamingAction[Vector[String], String, Effect.Read] =
       alterHeadQuery(sql, "EXPLAIN")
-  }
-
-  /** For typed static queries */
-  implicit class FixedSqlStreamingActionImplicits[+R, +T, -E <: Effect](
-      sql: FixedSqlStreamingAction[R, T, E]
-  ) {
-
-    /** Adds `EXPLAIN ANALYZE` to head query */
-    def explainAnalyze(): SqlStreamingAction[Vector[String], String, Effect.Read] =
-      alterHeadQuery(sql, "EXPLAIN ANALYZE")
-
-    def explainAnalyzeFlatten()(implicit ec: ExecutionContext): DBActionR[String] =
-      explainAnalyze().map(_.mkString("\n"))
-
-    /** Adds `EXPLAIN` to head query */
-    def explain(): SqlStreamingAction[Vector[String], String, Effect.Read] =
-      alterHeadQuery(sql, "EXPLAIN")
-
-    def explainFlatten()(implicit ec: ExecutionContext): DBActionR[String] =
-      explain().map(_.mkString("\n"))
   }
 
   /** Alter's first query with the prefix. */
