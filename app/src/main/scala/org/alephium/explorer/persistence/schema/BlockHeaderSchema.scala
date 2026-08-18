@@ -88,7 +88,7 @@ object BlockHeaderSchema extends SchemaMainChain[BlockHeader]("block_headers") {
   /** Joins all indexes created via raw SQL
     */
   def createBlockHeadersIndexes(): DBIO[Unit] =
-    DBIO.seq(fullIndex(), createMainChainIndex())
+    DBIO.seq(fullIndex())
 
   val table: TableQuery[BlockHeaders] = TableQuery[BlockHeaders]
 }

@@ -68,12 +68,13 @@ object BlockQueries extends StrictLogging {
 
   def explainMainChainQuery()(implicit ec: ExecutionContext): DBActionR[ExplainResult] =
     mainChainQuery.result.explainAnalyze() map { explain =>
+      val fullIndexUsed = explain.mkString contains "block_headers_full_index"
       ExplainResult(
         queryName = "mainChainQuery",
         queryInput = "Unit",
         explain = explain,
-        messages = Iterable.empty,
-        passed = explain.mkString contains "block_headers_main_chain_idx"
+        messages = Iterable(s"Used block_headers_full_index = $fullIndexUsed"),
+        passed = fullIndexUsed
       )
     }
 

@@ -29,7 +29,7 @@ import org.alephium.util.discard
 object Migrations extends StrictLogging {
 
   // scalastyle:off magic.number
-  val latestVersion: MigrationVersion = MigrationVersion(11)
+  val latestVersion: MigrationVersion = MigrationVersion(12)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     // We retrigger the download of fungible and non-fungible tokens' metadata that have sub-category
@@ -222,6 +222,41 @@ object Migrations extends StrictLogging {
     """.map(_ => ())
   }
 
+  private val unusedIndexes: ArraySeq[String] =
+    ArraySeq(
+      "utransactions_last_seen_idx",
+      "token_info_category_idx",
+      "contracts_std_interface_id_guessed_idx",
+      "contracts_category_idx",
+      "transactions_history_interval_type_idx",
+      "token_tx_per_address_token_idx",
+      "token_outputs_token_idx",
+      "token_outputs_spent_timestamp_idx",
+      "token_tx_per_addresses_timestamp_idx",
+      "transaction_per_token_hash_idx",
+      "token_tx_per_addresses_block_timestamp_tx_order_idx",
+      "token_tx_per_address_hash_idx",
+      "token_tx_per_address_groupless_idx",
+      "inputs_main_chain_idx",
+      "block_headers_main_chain_idx",
+      "outputs_main_chain_idx",
+      "transaction_per_addresses_main_chain_idx",
+      "transactions_main_chain_idx",
+      "txs_chain_to_idx",
+      "txs_chain_from_idx",
+      "txs_per_address_tx_hash_idx"
+    )
+
+  private def dropUnusedIndex(indexName: String)(implicit
+      ec: ExecutionContext
+  ): DBActionAll[Unit] =
+    sqlu"DROP INDEX IF EXISTS public.#$indexName".map(_ => ())
+
+  def migration12(implicit ec: ExecutionContext): DBActionAll[Unit] =
+    DBIOAction
+      .sequence(unusedIndexes.map(indexName => dropUnusedIndex(indexName)))
+      .map(_ => ())
+
   private def migrations(implicit
       explorerConfig: ExplorerConfig,
       ec: ExecutionContext
@@ -236,7 +271,8 @@ object Migrations extends StrictLogging {
     migration8,
     migration9,
     migration10,
-    migration11
+    migration11,
+    migration12
   )
 
   def backgroundCoinbaseMigration()(implicit
