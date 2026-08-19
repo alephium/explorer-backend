@@ -102,9 +102,6 @@ object DBInitializer extends StrictLogging {
     logger.info("Create Indexes")
     run(for {
       _ <- BlockHeaderSchema.createBlockHeadersIndexes()
-      _ <- TransactionSchema.createMainChainIndex()
-      _ <- InputSchema.createMainChainIndex()
-      _ <- OutputSchema.createMainChainIndex()
       _ <- TransactionPerAddressSchema.createIndexes()
       _ <- OutputSchema.createNonSpentIndex()
       _ <- InputSchema.createOutputRefAddressNullIndex()
