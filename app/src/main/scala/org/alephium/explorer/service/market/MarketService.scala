@@ -1,6 +1,7 @@
 // Copyright (c) Alephium
 // SPDX-License-Identifier: LGPL-3.0-only
 
+//scalastyle:off file.size.limit
 package org.alephium.explorer.service.market
 
 import java.util.concurrent.atomic.AtomicBoolean
@@ -16,16 +17,18 @@ import sttp.client4.httpclient.HttpClientFutureBackend
 import sttp.model.{Method, StatusCode, Uri}
 
 import org.alephium.api.UtilJson._
-import org.alephium.api.model.ApiKey
+import org.alephium.api.model.{ApiKey, ContractState, Val, ValByteVec, ValU256}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache._
 import org.alephium.explorer.config.ExplorerConfig
+import org.alephium.explorer.config.ExplorerConfig.PowfiPool
 import org.alephium.explorer.foldFutures
+import org.alephium.explorer.service.BlockFlowClient
 import org.alephium.explorer.util.Scheduler
 import org.alephium.json.Json._
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model.{Address, ContractId}
-import org.alephium.util.{discard, Duration, Hex, Math, Service, TimeStamp}
+import org.alephium.util.{discard, AVector, Duration, Hex, Math, Service, TimeStamp}
 
 trait MarketService extends Service {
   def getPrices(
@@ -45,11 +48,15 @@ trait MarketService extends Service {
 // scalastyle:off number.of.methods
 object MarketService extends StrictLogging {
 
-  def apply(marketConfig: ExplorerConfig.Market)(implicit
+  def apply(marketConfig: ExplorerConfig.Market, blockFlowClient: BlockFlowClient)(implicit
       ec: ExecutionContext
-  ): MarketService = new MarketServiceImpl(marketConfig, marketConfig.mobulaApiKey)
+  ): MarketService = new MarketServiceImpl(marketConfig, marketConfig.mobulaApiKey, blockFlowClient)
 
-  class MarketServiceImpl(marketConfig: ExplorerConfig.Market, apiKeyOpt: Option[ApiKey])(implicit
+  class MarketServiceImpl(
+      marketConfig: ExplorerConfig.Market,
+      apiKeyOpt: Option[ApiKey],
+      blockFlowClient: BlockFlowClient
+  )(implicit
       val executionContext: ExecutionContext
   ) extends MarketService {
 
@@ -149,6 +156,11 @@ object MarketService extends StrictLogging {
         tokenListExpirationTime
       )(_ => getTokenListRemote(0))
 
+    private val powfiPricesCache: AsyncReloadingCache[ArraySeq[PowfiPrice]] =
+      AsyncReloadingCache[ArraySeq[PowfiPrice]](ArraySeq.empty, 5.minutes)(_ =>
+        getPowfiPricesRemote()
+      )
+
     /*
      * Load data on start
      * Price and Rates only trigger 2 requests
@@ -163,6 +175,7 @@ object MarketService extends StrictLogging {
         tokenListCache.expireAndReloadFuture().map { _ =>
           mobulaPricesCache.expireAndReload()
           coingeckoPricesCache.expireAndReload()
+          powfiPricesCache.expireAndReload()
         }
       )
       ratesCache.expireAndReload()
@@ -230,11 +243,92 @@ object MarketService extends StrictLogging {
           .toRight(s"Cannot find price for currency $currency")
         prices <- getPriceCache()
       } yield {
+        val powfiPrices = powfiPricesCache.get()
+        def usdPrice(symbol: String): Option[Double] =
+          if (marketConfig.powfiPools.contains(symbol)) {
+            for {
+              powfi <- powfiPrices.find(_.symbol == symbol)
+              quote <- prices.find(_.symbol == powfi.quoteSymbol)
+            } yield powfi.price * quote.price
+          } else {
+            prices.find(_.symbol == symbol).map(_.price)
+          }
         // Rates from coingecko are based on BTC, but mobula prices are in dollars, so we need to convert them
-        ids
-          .map(id => prices.find(_.symbol == id).map(price => price.price * rate.value / usd.value))
+        ids.map(id => usdPrice(id).map(_ * rate.value / usd.value))
       }
     }
+
+    private def getPowfiPricesRemote(): Future[ArraySeq[PowfiPrice]] = {
+      val tokens = tokenListCache.get().map(_.tokens)
+      Future
+        .sequence(ArraySeq.from(marketConfig.powfiPools).map { case (symbol, pool) =>
+          blockFlowClient
+            .fetchContractState(Address.contract(pool.pool))
+            .map(state => tokens.flatMap(powfiPrice(symbol, pool.`type`, state, _)))
+            .recover { case error => Left(error.getMessage) }
+            .map {
+              case Right(price) => Some(price)
+              case Left(error) =>
+                logger
+                  .error(s"Cannot price $symbol from PowFi pool ${pool.pool.toHexString}: $error")
+                None
+            }
+        })
+        .map(_.flatten)
+    }
+
+    private val q96: Double = math.pow(2, 96) // scalastyle:ignore magic.number
+
+    private def powfiPrice(
+        symbol: String,
+        poolType: PowfiPool.Type,
+        state: ContractState,
+        tokens: ArraySeq[TokenList.Entry]
+    ): Either[String, PowfiPrice] = {
+      val (token0Index, rawPrice) = poolType match {
+        case PowfiPool.Clmm =>
+          (6, u256Field(state.mutFields, 1).map(sqrtPriceX96 => math.pow(sqrtPriceX96 / q96, 2)))
+        case PowfiPool.Cpmm =>
+          val rawPrice = for {
+            reserve0 <- u256Field(state.mutFields, 1)
+            reserve1 <- u256Field(state.mutFields, 2)
+          } yield reserve1 / reserve0
+          (1, rawPrice)
+      }
+      for {
+        token0 <- tokenField(state.immFields, token0Index, tokens)
+        token1 <- tokenField(state.immFields, token0Index + 1, tokens)
+        raw    <- rawPrice
+        price0 = raw * math.pow(10, (token0.decimals - token1.decimals).toDouble)
+        price <-
+          if (token0.symbol == symbol) {
+            Right(PowfiPrice(symbol, token1.symbol, price0))
+          } else if (token1.symbol == symbol) {
+            Right(PowfiPrice(symbol, token0.symbol, 1 / price0))
+          } else {
+            Left(s"$symbol is not in the pool")
+          }
+        _ <- Either.cond(price.price > 0 && !price.price.isInfinite, (), s"Invalid price $price")
+      } yield price
+    }
+
+    private def u256Field(fields: AVector[Val], index: Int): Either[String, Double] =
+      fields.get(index) match {
+        case Some(ValU256(value)) => Right(value.toBigInt.doubleValue)
+        case other                => Left(s"Field $index isn't a U256: $other")
+      }
+
+    private def tokenField(
+        fields: AVector[Val],
+        index: Int,
+        tokens: ArraySeq[TokenList.Entry]
+    ): Either[String, TokenList.Entry] =
+      fields.get(index) match {
+        case Some(ValByteVec(bytes)) =>
+          val id = Hex.toHexString(bytes)
+          tokens.find(_.id == id).toRight(s"Token $id isn't in the token list")
+        case other => Left(s"Field $index isn't a token id: $other")
+      }
 
     private def tokenToAddress(token: TokenList.Entry): Address = {
       Address.contract(ContractId.unsafe(Hash.unsafe(Hex.unsafe(token.id))))
@@ -704,7 +798,8 @@ object MarketService extends StrictLogging {
     implicit val readWriter: ReadWriter[TokenList] = macroRW
     final case class Entry(
         id: String,
-        symbol: String
+        symbol: String,
+        decimals: Int
     )
     object Entry {
       implicit val readWriter: ReadWriter[Entry] = macroRW
@@ -742,4 +837,6 @@ object MarketService extends StrictLogging {
   }
 
   final private case class CoingeckoPrice(symbol: String, price: Double) extends Price
+
+  final private case class PowfiPrice(symbol: String, quoteSymbol: String, price: Double)
 }

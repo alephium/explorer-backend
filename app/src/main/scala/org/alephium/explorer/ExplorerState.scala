@@ -72,7 +72,8 @@ sealed trait ExplorerStateRead extends ExplorerState {
   lazy val transactionCache: TransactionCache =
     TransactionCache(database)(executionContext)
 
-  lazy val marketService: market.MarketService = market.MarketService(config.market)
+  lazy val marketService: market.MarketService =
+    market.MarketService(config.market, blockFlowClient)
 
   private lazy val routes =
     AppServer

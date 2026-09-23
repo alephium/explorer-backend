@@ -8,7 +8,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import sttp.model.Uri
 
-import org.alephium.api.model.{ChainInfo, ChainParams, HashesAtHeight, SelfClique}
+import org.alephium.api.model.{ChainInfo, ChainParams, ContractState, HashesAtHeight, SelfClique}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence.model._
 import org.alephium.protocol.model.{Address, BlockHash, ChainIndex, GroupIndex, TokenId}
@@ -47,6 +47,8 @@ trait EmptyBlockFlowClient extends BlockFlowClient {
 
   override def guessStdInterfaceId(address: Address.Contract): Future[Option[StdInterfaceId]] =
     Future.successful(None)
+
+  override def fetchContractState(address: Address.Contract): Future[ContractState] = ???
 
   override def guessTokenStdInterfaceId(token: TokenId): Future[Option[StdInterfaceId]] =
     Future.successful(None)

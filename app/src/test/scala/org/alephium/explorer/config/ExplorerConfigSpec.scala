@@ -5,6 +5,7 @@ package org.alephium.explorer.config
 
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.duration._
+import scala.util.Try
 
 import com.typesafe.config.ConfigFactory
 import net.ceedubs.ficus.Ficus._
@@ -60,7 +61,15 @@ class ExplorerConfigSpec extends AlephiumSpec with ScalaCheckDrivenPropertyCheck
           consensus.danube.blockTargetTime is Duration.ofSecondsUnsafe(8)
 
           config.market.coingeckoPrioritySymbols is ArraySeq("ALPH")
+          config.market.powfiPools.keySet is (
+            if (networkId == NetworkId.AlephiumMainNet) Set("ONION", "AURA") else Set.empty[String]
+          )
         }
+    }
+
+    "reject unknown PowFi pool types" in {
+      val config = ConfigFactory.parseString("type = uniswap")
+      Try(config.as[PowfiPool.Type]("type")).isFailure is true
     }
   }
 
