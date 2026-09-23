@@ -171,7 +171,26 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     }
   }
 
+  "price USD-pegged symbols at 1 USD" in new Fixture {
+    override def usdPeggedSymbols: ArraySeq[String] = ArraySeq(usdt)
+    val previousUsdtPrice                           = usdtPrice
+    usdtPrice = 2.0
+
+    marketService.start().futureValue
+
+    eventually {
+      val prices = marketService.getPrices(ArraySeq(usdt, "AURA"), "usd").rightValue
+
+      prices(0) is Some(1.0)
+      (prices(1).get - auraInUsdt).abs < 1e-12 is true
+    }
+
+    usdtPrice = previousUsdtPrice
+  }
+
   trait Fixture {
+    def usdPeggedSymbols: ArraySeq[String] = ArraySeq.empty
+
     val localhost: InetAddress = InetAddress.getByName("127.0.0.1")
     val coingeckoPort          = SocketUtil.temporaryLocalPort(SocketUtil.Both)
     val mobulaPort             = SocketUtil.temporaryLocalPort(SocketUtil.Both)
@@ -188,6 +207,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
       MarketServiceSpec.symbolNames,
       MarketServiceSpec.currencies,
       ArraySeq(alph),
+      usdPeggedSymbols,
       powfiPools = MarketServiceSpec.powfiPools,
       liquidityMinimum = 100,
       s"http://${localhost.getHostAddress()}:$mobulaPort",

@@ -61,6 +61,7 @@ class ExplorerConfigSpec extends AlephiumSpec with ScalaCheckDrivenPropertyCheck
           consensus.danube.blockTargetTime is Duration.ofSecondsUnsafe(8)
 
           config.market.coingeckoPrioritySymbols is ArraySeq("ALPH")
+          config.market.usdPeggedSymbols is ArraySeq("USDTeth")
           config.market.powfiPools.keySet is (
             if (networkId == NetworkId.AlephiumMainNet) Set("ONION", "AURA") else Set.empty[String]
           )

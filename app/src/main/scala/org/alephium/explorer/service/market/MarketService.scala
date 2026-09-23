@@ -244,14 +244,20 @@ object MarketService extends StrictLogging {
         prices <- getPriceCache()
       } yield {
         val powfiPrices = powfiPricesCache.get()
+        def marketPrice(symbol: String): Option[Double] =
+          if (marketConfig.usdPeggedSymbols.contains(symbol)) {
+            Some(1.0)
+          } else {
+            prices.find(_.symbol == symbol).map(_.price)
+          }
         def usdPrice(symbol: String): Option[Double] =
           if (marketConfig.powfiPools.contains(symbol)) {
             for {
               powfi <- powfiPrices.find(_.symbol == symbol)
-              quote <- prices.find(_.symbol == powfi.quoteSymbol)
-            } yield powfi.price * quote.price
+              quote <- marketPrice(powfi.quoteSymbol)
+            } yield powfi.price * quote
           } else {
-            prices.find(_.symbol == symbol).map(_.price)
+            marketPrice(symbol)
           }
         // Rates from coingecko are based on BTC, but mobula prices are in dollars, so we need to convert them
         ids.map(id => usdPrice(id).map(_ * rate.value / usd.value))

@@ -304,6 +304,7 @@ object ExplorerConfig {
       chartSymbolName: ListMap[String, String],
       currencies: ArraySeq[String],
       coingeckoPrioritySymbols: ArraySeq[String],
+      usdPeggedSymbols: ArraySeq[String],
       powfiPools: ListMap[String, PowfiPool],
       liquidityMinimum: Double,
       mobulaUri: String,
