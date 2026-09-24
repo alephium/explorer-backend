@@ -24,8 +24,9 @@ import org.alephium.api.model.ApiKey
 import org.alephium.conf._
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.util.FileUtil
-import org.alephium.protocol.model.NetworkId
+import org.alephium.protocol.model.{ContractId, NetworkId}
 import org.alephium.util
+import org.alephium.util.Hex
 
 @SuppressWarnings(Array("org.wartremover.warts.TryPartial"))
 object ExplorerConfig {
@@ -173,6 +174,21 @@ object ExplorerConfig {
       validateSyncPeriod(input).get
     }
 
+  implicit val contractIdReader: ValueReader[ContractId] =
+    ValueReader[String].map { input =>
+      Hex
+        .from(input)
+        .flatMap(ContractId.from)
+        .getOrElse(throw new ConfigException.BadValue("", s"Invalid contract id: $input"))
+    }
+
+  implicit val powfiPoolTypeReader: ValueReader[PowfiPool.Type] =
+    ValueReader[String].map {
+      case "clmm" => PowfiPool.Clmm
+      case "cpmm" => PowfiPool.Cpmm
+      case other  => throw new ConfigException.BadValue("", s"Invalid PowFi pool type: $other")
+    }
+
   implicit val locaTimeReader: ValueReader[LocalTime] =
     ValueReader[String](Ficus.stringValueReader).map { input =>
       LocalTime.parse(input)
@@ -288,6 +304,8 @@ object ExplorerConfig {
       chartSymbolName: ListMap[String, String],
       currencies: ArraySeq[String],
       coingeckoPrioritySymbols: ArraySeq[String],
+      usdPeggedSymbols: ArraySeq[String],
+      powfiPools: ListMap[String, PowfiPool],
       liquidityMinimum: Double,
       mobulaUri: String,
       coingeckoUri: String,
@@ -301,6 +319,14 @@ object ExplorerConfig {
       priceChartsExpirationTime: FiniteDuration,
       tokenListExpirationTime: FiniteDuration
   )
+
+  final case class PowfiPool(pool: ContractId, `type`: PowfiPool.Type)
+
+  object PowfiPool {
+    sealed trait Type
+    case object Clmm extends Type
+    case object Cpmm extends Type
+  }
 
   final private case class Explorer(
       host: String,

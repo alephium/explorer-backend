@@ -3,6 +3,7 @@
 
 package org.alephium.explorer.service.market
 
+import java.math.BigInteger
 import java.net.InetAddress
 
 import scala.collection.immutable.{ArraySeq, ListMap}
@@ -20,13 +21,20 @@ import sttp.tapir.generic.auto._
 import sttp.tapir.server.vertx.VertxFutureServerInterpreter._
 
 import org.alephium.api.{alphJsonBody => jsonBody}
+import org.alephium.api.model.{ContractState, Val, ValByteVec, ValU256}
 import org.alephium.explorer.AlephiumFutureSpec
-import org.alephium.explorer.GenCoreApi.apiKeyGen
+import org.alephium.explorer.ConfigDefaults.groupSetting
+import org.alephium.explorer.GenCoreApi.{apiKeyGen, contractStateGen}
 import org.alephium.explorer.api.BaseEndpoint
 import org.alephium.explorer.config.ExplorerConfig
+import org.alephium.explorer.config.ExplorerConfig.PowfiPool
+import org.alephium.explorer.service.{BlockFlowClient, EmptyBlockFlowClient}
 import org.alephium.explorer.service.market.MarketService.MobulaPriceRequest
 import org.alephium.explorer.web.Server
 import org.alephium.json.Json._
+import org.alephium.protocol.Hash
+import org.alephium.protocol.model.{Address, ContractId}
+import org.alephium.util.{AVector, Hex, U256}
 
 class MarketServiceSpec extends AlephiumFutureSpec {
   import MarketServiceSpec._
@@ -149,7 +157,43 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     }
   }
 
+  "price PowFi tokens from their pools only" in new Fixture {
+
+    marketService.start().futureValue
+
+    eventually {
+      val prices =
+        marketService
+          .getPrices(ArraySeq(alph, usdt, "ONION", "AURA", "AYIN", "DAI"), "usd")
+          .rightValue
+
+      (prices(2).get - onionInAlph * prices(0).get).abs < 1e-12 is true
+      (prices(3).get - auraInUsdt * prices(1).get).abs < 1e-12 is true
+      prices(4) is None
+      prices(5) is None
+    }
+  }
+
+  "price USD-pegged symbols at 1 USD" in new Fixture {
+    override def usdPeggedSymbols: ArraySeq[String] = ArraySeq(usdt)
+    val previousUsdtPrice                           = usdtPrice
+    usdtPrice = 2.0
+
+    marketService.start().futureValue
+
+    eventually {
+      val prices = marketService.getPrices(ArraySeq(usdt, "AURA"), "usd").rightValue
+
+      prices(0) is Some(1.0)
+      (prices(1).get - auraInUsdt).abs < 1e-12 is true
+    }
+
+    usdtPrice = previousUsdtPrice
+  }
+
   trait Fixture {
+    def usdPeggedSymbols: ArraySeq[String] = ArraySeq.empty
+
     val localhost: InetAddress = InetAddress.getByName("127.0.0.1")
     val coingeckoPort          = SocketUtil.temporaryLocalPort(SocketUtil.Both)
     val mobulaPort             = SocketUtil.temporaryLocalPort(SocketUtil.Both)
@@ -166,6 +210,8 @@ class MarketServiceSpec extends AlephiumFutureSpec {
       MarketServiceSpec.symbolNames,
       MarketServiceSpec.currencies,
       ArraySeq(alph),
+      usdPeggedSymbols,
+      powfiPools = MarketServiceSpec.powfiPools,
       liquidityMinimum = 100,
       s"http://${localhost.getHostAddress()}:$mobulaPort",
       s"http://${localhost.getHostAddress()}:$coingeckoPort",
@@ -180,6 +226,14 @@ class MarketServiceSpec extends AlephiumFutureSpec {
       tokenListExpirationTime = FiniteDuration(1, "minutes")
     )
 
+    val blockFlowClient: BlockFlowClient = new EmptyBlockFlowClient {
+      override def fetchContractState(address: Address.Contract): Future[ContractState] =
+        powfiPoolStates.get(address.contractId) match {
+          case Some(state) => Future.successful(state)
+          case None        => Future.failed(new Exception(s"Contract not found: $address"))
+        }
+    }
+
     val coingecko: MarketServiceSpec.CoingeckoMock =
       new MarketServiceSpec.CoingeckoMock(localhost, coingeckoPort)
     val mobula: MarketServiceSpec.MobulaMock =
@@ -187,7 +241,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     val tokenList: MarketServiceSpec.TokenListMock =
       new MarketServiceSpec.TokenListMock(localhost, tokenListPort)
     val marketService: MarketService.MarketServiceImpl =
-      new MarketService.MarketServiceImpl(marketConfig, Some(apiKey))
+      new MarketService.MarketServiceImpl(marketConfig, Some(apiKey), blockFlowClient)
   }
 }
 
@@ -203,6 +257,51 @@ object MarketServiceSpec {
   val wbtcPrice          = 67214.51967683395
   val wbtcCoingeckoPrice = 66000.0
   var usdtPrice          = 1.0012412
+  val onionMobulaPrice   = 0.0318
+  val auraMobulaPrice    = 0.00069
+
+  val onionInAlph = 0.000138157860823049
+  val auraInUsdt  = 0.00101582605111369
+
+  private def contractId(hex: String): ContractId = ContractId.unsafe(Hash.unsafe(Hex.unsafe(hex)))
+  private def byteVec(hex: String): Val           = ValByteVec(Hex.unsafe(hex))
+  private def u256(value: String): Val            = ValU256(U256.unsafe(new BigInteger(value)))
+  private val zero: Val                           = u256("0")
+
+  val alphId  = "0000000000000000000000000000000000000000000000000000000000000000"
+  val usdtId  = "556d9582463fe44fbd108aedc9f409f69086dc78d994b88ea6c9e65f8bf98e00"
+  val onionId = "a7af44d2756d69dedf4ea4cf8e6415f1188b80e99f217d0b73e270b9c0408300"
+  val auraId  = "4e0515f9d7daabd7cdae603e355a9ea015b5288380ef2206a10a531bc858d600"
+  val daiId   = "3d0a1895108782acfa875c2829b0bf76cb586d95ffa4ea9855982667cc73b700"
+
+  val onionPool = contractId("9d72c74da2b22241cdba83e98e0dd562748b7eaffb45814695a22c18d33ebc00")
+  val auraPool  = contractId("e30ba9494ef1701f8fa5cb211aa120c42af979aa12102adc8269668246887f00")
+  val emptyPool = contractId("22" * 32)
+
+  val powfiPools: ListMap[String, PowfiPool] = ListMap(
+    "ONION" -> PowfiPool(onionPool, PowfiPool.Clmm),
+    "AURA"  -> PowfiPool(auraPool, PowfiPool.Cpmm),
+    "AYIN"  -> PowfiPool(contractId("11" * 32), PowfiPool.Clmm),
+    "DAI"   -> PowfiPool(emptyPool, PowfiPool.Cpmm)
+  )
+
+  val powfiPoolStates: Map[ContractId, ContractState] = Map(
+    onionPool -> poolState(
+      AVector.fill(6)(zero) ++ AVector(byteVec(alphId), byteVec(onionId)),
+      AVector(zero, u256("6740494887821641355180417608032"))
+    ),
+    auraPool -> poolState(
+      AVector(zero, byteVec(auraId), byteVec(usdtId)),
+      AVector(zero, u256("5205392868397909311102813"), u256("5287773682"))
+    ),
+    emptyPool -> poolState(
+      AVector(zero, byteVec(usdtId), byteVec(daiId)),
+      AVector(zero, u256("1"), zero)
+    )
+  )
+
+  private def poolState(immFields: AVector[Val], mutFields: AVector[Val]): ContractState =
+    contractStateGen.sample.get.copy(immFields = immFields, mutFields = mutFields)
 
   val symbolNames = ListMap(
     "ALPH"    -> "alephium",
@@ -371,6 +470,14 @@ object MarketServiceSpec {
       {
         "priceUSD": $wbtcPrice,
         "liquidityUSD": 1000
+      },
+      {
+        "priceUSD": $onionMobulaPrice,
+        "liquidityUSD": 1000
+      },
+      {
+        "priceUSD": $auraMobulaPrice,
+        "liquidityUSD": 1000
       }
     ]
   }"""
@@ -381,36 +488,53 @@ object MarketServiceSpec {
   val priceChart: String    = """
 {"prices":[[1702080000000,1.6446899669484214e-05],[1702166400000,1.9116562906218465e-05],[1702252800000,1.907096268974158e-05],[1702339200000,1.793183990141821e-05],[1702425600000,2.007992246841523e-05],[1702476909000,1.895741967034403e-05]],"market_caps":[[1702080000000,962.8363048250048],[1702166400000,1130.2772632375334],[1702252800000,1112.6226095555962],[1702339200000,1056.405418156789],[1702425600000,1169.6932210440375],[1702476909000,1112.06422242096]],"total_volumes":[[1702080000000,37.05462537510952],[1702166400000,36.88409762749114],[1702252800000,31.872659876055597],[1702339200000,28.975784486778313],[1702425600000,50.43927040460545],[1702476909000,36.16062757872036]]}
                 """
-  val tokenList: String     = """{
+  val tokenList: String = s"""{
       "networkId": 1,
       "tokens": [
         {
-          "id": "0000000000000000000000000000000000000000000000000000000000000000",
-          "symbol": "ALPH"
+          "id": "$alphId",
+          "symbol": "ALPH",
+          "decimals": 18
         },
         {
           "id": "722954d9067c5a5ad532746a024f2a9d7a18ed9b90e27d0a3a504962160b5600",
-          "symbol": "USDC"
+          "symbol": "USDC",
+          "decimals": 6
         },
         {
           "id": "1a281053ba8601a658368594da034c2e99a0fb951b86498d05e76aedfe666800",
-          "symbol": "AYIN"
+          "symbol": "AYIN",
+          "decimals": 18
         },
         {
-          "id": "3d0a1895108782acfa875c2829b0bf76cb586d95ffa4ea9855982667cc73b700",
-          "symbol": "DAI"
+          "id": "$daiId",
+          "symbol": "DAI",
+          "decimals": 18
         },
         {
-          "id": "556d9582463fe44fbd108aedc9f409f69086dc78d994b88ea6c9e65f8bf98e00",
-          "symbol": "USDT"
+          "id": "$usdtId",
+          "symbol": "USDT",
+          "decimals": 6
         },
         {
           "id": "19246e8c2899bc258a1156e08466e3cdd3323da756d8a543c7fc911847b96f00",
-          "symbol": "WETH"
+          "symbol": "WETH",
+          "decimals": 18
         },
         {
           "id": "383bc735a4de6722af80546ec9eeb3cff508f2f68e97da19489ce69f3e703200",
-          "symbol": "WBTC"
+          "symbol": "WBTC",
+          "decimals": 8
+        },
+        {
+          "id": "$onionId",
+          "symbol": "ONION",
+          "decimals": 18
+        },
+        {
+          "id": "$auraId",
+          "symbol": "AURA",
+          "decimals": 18
         }
       ]
     }"""

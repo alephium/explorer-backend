@@ -86,6 +86,8 @@ trait BlockFlowClient extends Service {
 
   def guessStdInterfaceId(address: Address.Contract): Future[Option[StdInterfaceId]]
 
+  def fetchContractState(address: Address.Contract): Future[api.model.ContractState]
+
   def guessTokenStdInterfaceId(token: TokenId): Future[Option[StdInterfaceId]]
 
   def fetchFungibleTokenMetadata(token: TokenId): Future[Option[FungibleTokenMetadata]]
@@ -243,6 +245,9 @@ object BlockFlowClient extends StrictLogging {
       val address = Address.contract(ContractId.unsafe(token.value))
       guessStdInterfaceId(address)
     }
+
+    def fetchContractState(address: Address.Contract): Future[api.model.ContractState] =
+      _send(contractState, uri, address)
 
     def guessStdInterfaceId(address: Address.Contract): Future[Option[StdInterfaceId]] = {
       _send(contractState, uri, address)
