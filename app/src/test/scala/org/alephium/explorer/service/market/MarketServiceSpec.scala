@@ -163,11 +163,14 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
     eventually {
       val prices =
-        marketService.getPrices(ArraySeq(alph, usdt, "ONION", "AURA", "AYIN"), "usd").rightValue
+        marketService
+          .getPrices(ArraySeq(alph, usdt, "ONION", "AURA", "AYIN", "DAI"), "usd")
+          .rightValue
 
       (prices(2).get - onionInAlph * prices(0).get).abs < 1e-12 is true
       (prices(3).get - auraInUsdt * prices(1).get).abs < 1e-12 is true
       prices(4) is None
+      prices(5) is None
     }
   }
 
@@ -269,14 +272,17 @@ object MarketServiceSpec {
   val usdtId  = "556d9582463fe44fbd108aedc9f409f69086dc78d994b88ea6c9e65f8bf98e00"
   val onionId = "a7af44d2756d69dedf4ea4cf8e6415f1188b80e99f217d0b73e270b9c0408300"
   val auraId  = "4e0515f9d7daabd7cdae603e355a9ea015b5288380ef2206a10a531bc858d600"
+  val daiId   = "3d0a1895108782acfa875c2829b0bf76cb586d95ffa4ea9855982667cc73b700"
 
   val onionPool = contractId("9d72c74da2b22241cdba83e98e0dd562748b7eaffb45814695a22c18d33ebc00")
   val auraPool  = contractId("e30ba9494ef1701f8fa5cb211aa120c42af979aa12102adc8269668246887f00")
+  val emptyPool = contractId("22" * 32)
 
   val powfiPools: ListMap[String, PowfiPool] = ListMap(
     "ONION" -> PowfiPool(onionPool, PowfiPool.Clmm),
     "AURA"  -> PowfiPool(auraPool, PowfiPool.Cpmm),
-    "AYIN"  -> PowfiPool(contractId("11" * 32), PowfiPool.Clmm)
+    "AYIN"  -> PowfiPool(contractId("11" * 32), PowfiPool.Clmm),
+    "DAI"   -> PowfiPool(emptyPool, PowfiPool.Cpmm)
   )
 
   val powfiPoolStates: Map[ContractId, ContractState] = Map(
@@ -287,6 +293,10 @@ object MarketServiceSpec {
     auraPool -> poolState(
       AVector(zero, byteVec(auraId), byteVec(usdtId)),
       AVector(zero, u256("5205392868397909311102813"), u256("5287773682"))
+    ),
+    emptyPool -> poolState(
+      AVector(zero, byteVec(usdtId), byteVec(daiId)),
+      AVector(zero, u256("1"), zero)
     )
   )
 
@@ -497,7 +507,7 @@ object MarketServiceSpec {
           "decimals": 18
         },
         {
-          "id": "3d0a1895108782acfa875c2829b0bf76cb586d95ffa4ea9855982667cc73b700",
+          "id": "$daiId",
           "symbol": "DAI",
           "decimals": 18
         },
