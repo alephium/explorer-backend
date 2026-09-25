@@ -321,6 +321,33 @@ object OutputQueries {
      """.as[OutputFromTxQR].headOption
   }
 
+  def getOutputsFromKeys(
+      keys: ArraySeq[Hash]
+  ): DBActionR[ArraySeq[OutputFromTxQR]] = {
+    if (keys.isEmpty) {
+      DBIOAction.successful(ArraySeq.empty)
+    } else {
+      val params = paramPlaceholder(1, keys.size)
+
+      val query =
+        s"""
+           SELECT ${OutputFromTxQR.selectFields}
+           FROM outputs
+           WHERE main_chain = true
+           AND ${notConflicted()}
+           AND key IN $params
+           """
+
+      val parameters: SetParameter[Unit] =
+        (_: Unit, params: PositionedParameters) => keys.foreach(params >> _)
+
+      SQLActionBuilder(
+        sql = query,
+        setParameter = parameters
+      ).asAS[OutputFromTxQR]
+    }
+  }
+
   def outputsFromTxs(
       hashes: ArraySeq[(TransactionId, BlockHash)]
   ): DBActionR[ArraySeq[OutputFromTxQR]] =

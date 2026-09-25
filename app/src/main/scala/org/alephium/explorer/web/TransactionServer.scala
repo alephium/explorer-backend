@@ -17,6 +17,7 @@ import org.alephium.explorer.api.TransactionEndpoints
 import org.alephium.explorer.api.model.DecodeUnsignedTxResult
 import org.alephium.explorer.service.TransactionService
 import org.alephium.protocol
+import org.alephium.protocol.ALPH
 import org.alephium.protocol.model.GroupIndex
 import org.alephium.serde._
 import org.alephium.util.Hex
@@ -35,6 +36,7 @@ class TransactionServer(implicit
     route(decodeUnsignedTx.serverLogic[Future] { decodeUTX =>
       (for {
         utx       <- deserializeUnsignedTx(decodeUTX.unsignedTx)
+        _         <- validateInputCount(utx)
         fromGroup <- fromGroup(utx)
         toGroup   <- toGroup(utx)
       } yield {
@@ -72,5 +74,19 @@ class TransactionServer(implicit
     deserialize[protocol.model.UnsignedTransaction](
       Hex.unsafe(rawUtx)
     ).left.map(e => ApiError.BadRequest(e.getMessage))
+
+  private def validateInputCount(
+      utx: protocol.model.UnsignedTransaction
+  ): Either[ApiError[_ <: StatusCode], Unit] = {
+    if (utx.inputs.length > ALPH.MaxTxInputNum) {
+      Left(
+        ApiError.BadRequest(
+          s"Too many inputs in unsigned transaction, max ${ALPH.MaxTxInputNum}"
+        )
+      )
+    } else {
+      Right(())
+    }
+  }
 
 }
