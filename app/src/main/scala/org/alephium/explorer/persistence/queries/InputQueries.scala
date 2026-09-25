@@ -17,7 +17,6 @@ import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.queries.result.{InputFromTxQR, InputQR}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
-import org.alephium.explorer.util.SlickExplainUtil._
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.model.{BlockHash, TransactionId}
 
@@ -149,27 +148,5 @@ object InputQueries {
       )}  = $address
       LIMIT 1
     """.asAS[ByteString].headOrNone
-  }
-
-  /** Runs explain on query `inputsFromTxs` and checks the index `inputs_tx_hash_block_hash_idx` is
-    * being used
-    */
-  def explainInputsFromTxs(
-      hashes: ArraySeq[(TransactionId, BlockHash)]
-  )(implicit ec: ExecutionContext): DBActionR[ExplainResult] = {
-    val queryName = "inputsFromTxs"
-    if (hashes.isEmpty) {
-      DBIOAction.successful(ExplainResult.emptyInput(queryName))
-    } else {
-      inputsFromTxsBuilder(hashes).explainAnalyze() map { explain =>
-        ExplainResult(
-          queryName = queryName,
-          queryInput = hashes.toString(),
-          explain = explain,
-          messages = Iterable.empty,
-          passed = explain.exists(_.contains("inputs_tx_hash_block_hash_idx"))
-        )
-      }
-    }
   }
 }

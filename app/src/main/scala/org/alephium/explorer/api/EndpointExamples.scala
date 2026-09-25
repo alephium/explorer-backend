@@ -11,7 +11,6 @@ import sttp.tapir.EndpointIO.Example
 import org.alephium.api.EndpointsExamples
 import org.alephium.api.model.{Address => ApiAddress, Amount, ValBool}
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.queries.ExplainResult
 import org.alephium.protocol.{ALPH, PublicKey}
 import org.alephium.protocol.mining.HashRate
 import org.alephium.protocol.model.{Address, BlockHash, ContractId, GroupIndex, TokenId}
@@ -337,23 +336,6 @@ object EndpointExamples extends EndpointsExamples {
       value = 60
     )
 
-  private val explainResult =
-    ExplainResult(
-      queryName = "queryName",
-      queryInput = "Pagination(0,20,false)",
-      explain = Vector(
-        "Seq Scan on table_name  (cost=0.00..850.88 rows=20088 width=198) (actual time=0.007..4.358 rows=20088 loops=1)",
-        "  Filter: table_column",
-        "Planning Time: 0.694 ms",
-        "Execution Time: 5.432 ms"
-      ),
-      messages = Array(
-        "Used table_column_idx = false",
-        "Used table_pk         = true"
-      ),
-      passed = true
-    )
-
   private val logbackValue =
     LogbackValue(
       name = "org.test",
@@ -455,9 +437,6 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val perChainDurationExample: List[Example[ArraySeq[PerChainDuration]]] =
     simpleExample(ArraySeq(perChainDuration, perChainDuration))
-
-  implicit val explainResultExample: List[Example[ArraySeq[ExplainResult]]] =
-    simpleExample(ArraySeq(explainResult))
 
   implicit val logbackValueExample: List[Example[ArraySeq[LogbackValue]]] =
     simpleExample(ArraySeq(logbackValue))

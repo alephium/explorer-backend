@@ -452,4 +452,12 @@ class ApiModelSpec() extends AlephiumSpec {
       grouped.toBase58 is address + s":$i"
     }
   }
+
+  "TimedAmount" in {
+    forAll(timedAmountGen) { timedAmount =>
+      val expected = s"""[${timedAmount.timestamp.millis},"${timedAmount.amount}"]"""
+
+      check(timedAmount, expected)
+    }
+  }
 }

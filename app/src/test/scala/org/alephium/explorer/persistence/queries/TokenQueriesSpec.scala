@@ -9,21 +9,61 @@ import org.scalacheck.Gen
 import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile.api._
 
-import org.alephium.explorer.{AlephiumFutureSpec, GroupSetting}
+import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
-import org.alephium.explorer.api.model.Pagination
+import org.alephium.explorer.api.model.{Pagination, StdInterfaceId}
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, TestDBRunner}
+import org.alephium.explorer.persistence.model.{InterfaceIdEntity, TokenInfoEntity}
 import org.alephium.explorer.persistence.queries.TokenQueries
 import org.alephium.explorer.persistence.queries.result.TxByTokenQR
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.util.AddressUtil
-import org.alephium.util.{TimeStamp, U256}
+import org.alephium.util.{Duration, TimeStamp, U256}
 
 class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with TestDBRunner {
 
   "Token Queries" should {
+    "list tokens with and without interface filters" in {
+      val now           = TimeStamp.now()
+      val fungibleToken = tokenIdGen.sample.get
+      val nftToken      = tokenIdGen.sample.get
+
+      val rows = Seq(
+        TokenInfoEntity(
+          token = fungibleToken,
+          lastUsed = now.minusUnsafe(Duration.ofHoursUnsafe(1)),
+          category = Some("0001"),
+          interfaceId =
+            Some(InterfaceIdEntity.StdInterfaceIdEntity(StdInterfaceId.FungibleToken.default.id))
+        ),
+        TokenInfoEntity(
+          token = nftToken,
+          lastUsed = now,
+          category = Some("0003"),
+          interfaceId = Some(InterfaceIdEntity.StdInterfaceIdEntity(StdInterfaceId.NFT.default.id))
+        )
+      )
+
+      exec(TokenInfoSchema.table.delete)
+      exec(TokenInfoSchema.table ++= rows)
+
+      exec(
+        TokenQueries.listTokensAction(Pagination.unsafe(1, 10), Some(StdInterfaceId.NFT.default))
+      ) is ArraySeq(rows(1))
+
+      exec(TokenQueries.listTokensAction(Pagination.unsafe(1, 10), None)) is ArraySeq(
+        rows(1),
+        rows(0)
+      )
+    }
+
+    "return empty metadata lists for empty token inputs" in {
+      exec(TokenQueries.listFungibleTokenMetadataQuery(ArraySeq.empty)) is ArraySeq.empty
+      exec(TokenQueries.listNFTMetadataQuery(ArraySeq.empty)) is ArraySeq.empty
+    }
+
     "list token transactions" in {
       forAll(Gen.listOfN(30, transactionPerTokenEntityGen()), tokenIdGen) {
         case (txPerTokens, token) =>
@@ -80,7 +120,6 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
     }
 
     "list address tokens with balance" in {
-      implicit val groupSetting: GroupSetting = GroupSetting(4)
       val testData     = Gen.nonEmptyListOf(blockAndItsMainChainEntitiesGen()).sample.get
       val inputs       = testData.flatMap(_._1.inputs)
       val tokenOutputs = testData.map(_._4)

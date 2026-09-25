@@ -3,9 +3,12 @@
 
 package org.alephium.explorer.web
 
+import java.math.BigInteger
+
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
 
+import org.apache.pekko.util.ByteString
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
 
@@ -16,9 +19,12 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache, TransactionCache}
 import org.alephium.explorer.config.BootMode
 import org.alephium.explorer.persistence.{Database, DatabaseFixtureForAll, Migrations}
+import org.alephium.explorer.persistence.dao.BlockDao
+import org.alephium.explorer.persistence.model.BlockEntity
 import org.alephium.explorer.service._
-import org.alephium.protocol.ALPH
-import org.alephium.util.TimeStamp
+import org.alephium.protocol.{ALPH, Hash}
+import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
+import org.alephium.util.{Duration, TimeStamp}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var"))
 class InfosServerSpec()
@@ -57,25 +63,6 @@ class InfosServerSpec()
       )
 
   }
-
-  val chainHeight = PerChainHeight(0, 0, 60000, 60000)
-  val blockTime   = PerChainDuration(0, 0, 1, 1)
-  val blockService = new EmptyBlockService {
-
-    override def listMaxHeights()(implicit
-        cache: BlockCache,
-        groupSetting: GroupSetting,
-        ec: ExecutionContext
-    ): Future[ArraySeq[PerChainHeight]] =
-      Future.successful(ArraySeq(chainHeight))
-
-    override def getAverageBlockTime()(implicit
-        cache: BlockCache,
-        groupSetting: GroupSetting,
-        ec: ExecutionContext
-    ): Future[ArraySeq[PerChainDuration]] =
-      Future.successful(ArraySeq(blockTime))
-  }
   implicit val blockCache: BlockCache = TestBlockCache()
   implicit val transactionCache: TransactionCache = TransactionCache(
     new Database(BootMode.ReadWrite)
@@ -85,7 +72,7 @@ class InfosServerSpec()
   }
 
   val infoServer =
-    new InfosServer(tokenSupplyService, blockService, transactionService)
+    new InfosServer(tokenSupplyService, BlockService, transactionService)
 
   val routes = infoServer.routes
 
@@ -101,9 +88,28 @@ class InfosServerSpec()
     }
   }
 
-  "return chains heights" in {
+  "return chains heights" in new Fixture {
+    val chainIndex =
+      groupSetting.chainIndexes.find(ci => ci.from.value == 1 && ci.to.value == 1).get
+    insertBlock(
+      makeBlock(
+        chainIndex,
+        height = 3,
+        timestamp = TimeStamp.now().plusUnsafe(Duration.ofHoursUnsafe(3))
+      )
+    )
+
     Get(s"/infos/heights") check { response =>
-      response.as[ArraySeq[PerChainHeight]] is ArraySeq(chainHeight)
+      response
+        .as[ArraySeq[PerChainHeight]]
+        .find(ph => ph.chainFrom == chainIndex.from.value && ph.chainTo == chainIndex.to.value)
+        .get is
+        PerChainHeight(
+          chainIndex.from.value,
+          chainIndex.to.value,
+          3L,
+          3L
+        )
     }
   }
 
@@ -148,9 +154,91 @@ class InfosServerSpec()
     }
   }
 
-  "return the average block times" in {
+  "return the average block times" in new Fixture {
+    seedLatestBlocks(true)
+    val zeroChainIndex =
+      groupSetting.chainIndexes
+        .find(ci => ci.from == GroupIndex.Zero && ci.to == GroupIndex.Zero)
+        .get
+    val base = TimeStamp.now().plusUnsafe(Duration.ofHoursUnsafe(3))
+    insertBlocks(
+      makeBlock(zeroChainIndex, height = 0, timestamp = base),
+      makeBlock(
+        zeroChainIndex,
+        height = 1,
+        timestamp = base.plusUnsafe(Duration.ofMinutesUnsafe(2))
+      ),
+      makeBlock(
+        zeroChainIndex,
+        height = 2,
+        timestamp = base.plusUnsafe(Duration.ofMinutesUnsafe(4))
+      )
+    )
+
     Get(s"/infos/average-block-times") check { response =>
-      response.as[ArraySeq[PerChainDuration]] is ArraySeq(blockTime)
+      response.as[ArraySeq[PerChainDuration]].find(_.chainFrom == 0).get is PerChainDuration(
+        0,
+        0,
+        Duration.ofMinutesUnsafe(2).millis,
+        Duration.ofMinutesUnsafe(2).millis
+      )
     }
+  }
+
+  class Fixture {
+    def seedLatestBlocks(excludeChainZero: Boolean): Unit = {
+      groupSetting.chainIndexes.foreach { chainIndex =>
+        if (
+          !(excludeChainZero && chainIndex.from == GroupIndex.Zero && chainIndex.to == GroupIndex.Zero)
+        ) {
+          val block = makeBlock(
+            chainIndex,
+            height = 0,
+            timestamp = TimeStamp.now().plusUnsafe(Duration.ofHoursUnsafe(3))
+          )
+          insertBlock(block)
+        }
+      }
+    }
+
+    def insertBlock(block: BlockEntity): Unit = {
+      BlockDao.insert(block).futureValue
+      BlockDao.updateLatestBlock(block).futureValue
+    }
+
+    def insertBlocks(blocks: BlockEntity*): Unit = {
+      BlockDao.insertAll(ArraySeq.from(blocks)).futureValue
+      BlockDao.updateLatestBlock(blocks.last).futureValue
+    }
+  }
+
+  private def makeBlock(
+      chainIndex: ChainIndex,
+      height: Int,
+      timestamp: TimeStamp
+  ): BlockEntity = {
+    val hash = BlockHash.unsafe(ByteString.fromArrayUnsafe(Array.fill[Byte](32)(height.toByte)))
+
+    BlockEntity(
+      hash = hash,
+      timestamp = timestamp,
+      chainFrom = chainIndex.from,
+      chainTo = chainIndex.to,
+      height = Height.unsafe(height),
+      deps = ArraySeq.fill(groupSetting.groupNum)(hash),
+      transactions = ArraySeq.empty,
+      inputs = ArraySeq.empty,
+      outputs = ArraySeq.empty,
+      mainChain = true,
+      nonce = ByteString.fromArrayUnsafe(Array.fill[Byte](32)((height + 1).toByte)),
+      version = 1,
+      depStateHash =
+        Hash.unsafe(ByteString.fromArrayUnsafe(Array.fill[Byte](32)((height + 2).toByte))),
+      txsHash = Hash.unsafe(ByteString.fromArrayUnsafe(Array.fill[Byte](32)((height + 3).toByte))),
+      target = ByteString.fromArrayUnsafe(Array.fill[Byte](32)((height + 4).toByte)),
+      hashrate = BigInteger.valueOf(height.toLong),
+      ghostUncles = ArraySeq.empty,
+      conflictedTxs = None
+    )
   }
 }

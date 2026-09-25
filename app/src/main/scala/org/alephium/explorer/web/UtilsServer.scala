@@ -19,7 +19,7 @@ import org.alephium.explorer.GroupSetting
 import org.alephium.explorer.api.UtilsEndpoints
 import org.alephium.explorer.api.model.LogbackValue
 import org.alephium.explorer.cache.BlockCache
-import org.alephium.explorer.service.{BlockFlowClient, IndexChecker, SanityChecker}
+import org.alephium.explorer.service.{BlockFlowClient, SanityChecker}
 import org.alephium.util.discard
 
 class UtilsServer()(implicit
@@ -36,9 +36,6 @@ class UtilsServer()(implicit
       route(sanityCheck.serverLogicSuccess[Future] { _ =>
         discard(SanityChecker.check())
         Future.successful(())
-      }),
-      route(indexCheck.serverLogic[Future] { _ =>
-        IndexChecker.check().map(Right(_))
       }),
       route(changeGlobalLogLevel.serverLogic[Future] { level =>
         Future.successful(updateGlobalLevel(level))
