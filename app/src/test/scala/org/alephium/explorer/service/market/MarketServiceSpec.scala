@@ -242,7 +242,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     val tokenList: MarketServiceSpec.TokenListMock =
       new MarketServiceSpec.TokenListMock(localhost, tokenListPort)
     val marketService: MarketService.MarketServiceImpl =
-      new MarketService.MarketServiceImpl(marketConfig, Some(apiKey), blockFlowClient)
+      new MarketService.MarketServiceImpl(marketConfig, blockFlowClient)
   }
 }
 
