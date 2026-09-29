@@ -332,7 +332,7 @@ object MarketServiceSpec {
         route(
           baseEndpoint.get
             .in("exchange_rates")
-            .in(query[String]("x_cg_demo_api_key"))
+            .in(header[String]("x-cg-demo-api-key"))
             .out(jsonBody[ujson.Value])
             .serverLogicSuccess[Future] { _ =>
               Future.successful(ujson.read(exchangeRates))
@@ -345,7 +345,7 @@ object MarketServiceSpec {
             .in("market_chart")
             .in(query[String]("vs_currency"))
             .in(query[Int]("days"))
-            .in(query[String]("x_cg_demo_api_key"))
+            .in(header[String]("x-cg-demo-api-key"))
             .out(jsonBody[ujson.Value])
             .serverLogicSuccess[Future] { _ =>
               Future.successful(ujson.read(priceChart))
@@ -357,7 +357,7 @@ object MarketServiceSpec {
             .in("price")
             .in(query[List[String]]("ids"))
             .in(query[String]("vs_currencies"))
-            .in(query[String]("x_cg_demo_api_key"))
+            .in(header[String]("x-cg-demo-api-key"))
             .out(jsonBody[ujson.Value])
             .serverLogicSuccess[Future] { _ =>
               Future.successful(ujson.read(coingeckoPrices))

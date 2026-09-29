@@ -63,8 +63,10 @@ object MarketService extends StrictLogging {
     private val mobulaBaseUri    = marketConfig.mobulaUri
     private val tokenListUri     = marketConfig.tokenListUri
 
-    private def withCoingeckoApiKey(uri: Uri): Uri =
-      marketConfig.coingeckoApiKey.fold(uri)(apiKey => uri.addParam("x_cg_demo_api_key", apiKey))
+    private val coingeckoHeaders: Map[String, String] =
+      marketConfig.coingeckoApiKey.fold(Map.empty[String, String])(apiKey =>
+        Map("x-cg-demo-api-key" -> apiKey)
+      )
 
     private val chartIds: ListMap[String, String] = marketConfig.chartSymbolName
 
@@ -437,9 +439,8 @@ object MarketService extends StrictLogging {
     ): Future[Either[String, ArraySeq[CoingeckoPrice]]] = {
       logger.debug(s"Query coingecko `/price`, nb of attempts $retried")
       request(
-        withCoingeckoApiKey(
-          uri"$coingeckoBaseUri/simple/price?ids=${symbolNames.values.mkString(",")}&vs_currencies=$baseCurrency"
-        )
+        uri"$coingeckoBaseUri/simple/price?ids=${symbolNames.values.mkString(",")}&vs_currencies=$baseCurrency",
+        coingeckoHeaders
       ) { response =>
         handleCoingeckoPricesRateResponse(response, retried)
       }
@@ -484,7 +485,7 @@ object MarketService extends StrictLogging {
         retried: Int
     ): Future[Either[String, ArraySeq[ExchangeRate]]] = {
       logger.debug(s"Query coingecko `/exchange_rates`, nb of attempts $retried")
-      request(withCoingeckoApiKey(uri"$coingeckoBaseUri/exchange_rates")) { response =>
+      request(uri"$coingeckoBaseUri/exchange_rates", coingeckoHeaders) { response =>
         handleExchangeRateResponse(response, retried)
       }
     }
@@ -554,9 +555,8 @@ object MarketService extends StrictLogging {
     ): Future[Either[String, ArraySeq[(TimeStamp, Double)]]] = {
       logger.debug(s"Query coingecko `/coins/$id/market_chart`, nb of attempts $retried")
       request(
-        withCoingeckoApiKey(
-          uri"$coingeckoBaseUri/coins/$id/market_chart?vs_currency=btc&days=${marketConfig.marketChartDays}"
-        )
+        uri"$coingeckoBaseUri/coins/$id/market_chart?vs_currency=btc&days=${marketConfig.marketChartDays}",
+        coingeckoHeaders
       ) { response =>
         handleChartResponse(id, response, retried)
       }
