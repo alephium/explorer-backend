@@ -64,6 +64,9 @@ object MarketService extends StrictLogging {
     private val mobulaBaseUri    = marketConfig.mobulaUri
     private val tokenListUri     = marketConfig.tokenListUri
 
+    private def withCoingeckoApiKey(uri: Uri): Uri =
+      marketConfig.coingeckoApiKey.fold(uri)(apiKey => uri.addParam("x_cg_demo_api_key", apiKey))
+
     private val chartIds: ListMap[String, String] = marketConfig.chartSymbolName
 
     private def symbolNames: ListMap[String, String] = marketConfig.symbolName
@@ -435,7 +438,9 @@ object MarketService extends StrictLogging {
     ): Future[Either[String, ArraySeq[CoingeckoPrice]]] = {
       logger.debug(s"Query coingecko `/price`, nb of attempts $retried")
       request(
-        uri"$coingeckoBaseUri/simple/price?ids=${symbolNames.values.mkString(",")}&vs_currencies=$baseCurrency"
+        withCoingeckoApiKey(
+          uri"$coingeckoBaseUri/simple/price?ids=${symbolNames.values.mkString(",")}&vs_currencies=$baseCurrency"
+        )
       ) { response =>
         handleCoingeckoPricesRateResponse(response, retried)
       }
@@ -480,7 +485,7 @@ object MarketService extends StrictLogging {
         retried: Int
     ): Future[Either[String, ArraySeq[ExchangeRate]]] = {
       logger.debug(s"Query coingecko `/exchange_rates`, nb of attempts $retried")
-      request(uri"$coingeckoBaseUri/exchange_rates") { response =>
+      request(withCoingeckoApiKey(uri"$coingeckoBaseUri/exchange_rates")) { response =>
         handleExchangeRateResponse(response, retried)
       }
     }
@@ -550,7 +555,9 @@ object MarketService extends StrictLogging {
     ): Future[Either[String, ArraySeq[(TimeStamp, Double)]]] = {
       logger.debug(s"Query coingecko `/coins/$id/market_chart`, nb of attempts $retried")
       request(
-        uri"$coingeckoBaseUri/coins/$id/market_chart?vs_currency=btc&days=${marketConfig.marketChartDays}"
+        withCoingeckoApiKey(
+          uri"$coingeckoBaseUri/coins/$id/market_chart?vs_currency=btc&days=${marketConfig.marketChartDays}"
+        )
       ) { response =>
         handleChartResponse(id, response, retried)
       }
