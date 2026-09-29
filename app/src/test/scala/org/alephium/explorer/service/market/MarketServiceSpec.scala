@@ -217,6 +217,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
       s"http://${localhost.getHostAddress()}:$coingeckoPort",
       s"http://${localhost.getHostAddress()}:$tokenListPort",
       Some(apiKey),
+      coingeckoApiKey = Some(apiKey.value),
       mobulaMaxTokensPerRequest = 50,
       marketChartDays = 366,
       mobulaPricesExpirationTime = FiniteDuration(1, "minutes"),
@@ -241,7 +242,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     val tokenList: MarketServiceSpec.TokenListMock =
       new MarketServiceSpec.TokenListMock(localhost, tokenListPort)
     val marketService: MarketService.MarketServiceImpl =
-      new MarketService.MarketServiceImpl(marketConfig, Some(apiKey), blockFlowClient)
+      new MarketService.MarketServiceImpl(marketConfig, blockFlowClient)
   }
 }
 
@@ -331,6 +332,7 @@ object MarketServiceSpec {
         route(
           baseEndpoint.get
             .in("exchange_rates")
+            .in(header[String]("x-cg-demo-api-key"))
             .out(jsonBody[ujson.Value])
             .serverLogicSuccess[Future] { _ =>
               Future.successful(ujson.read(exchangeRates))
@@ -343,6 +345,7 @@ object MarketServiceSpec {
             .in("market_chart")
             .in(query[String]("vs_currency"))
             .in(query[Int]("days"))
+            .in(header[String]("x-cg-demo-api-key"))
             .out(jsonBody[ujson.Value])
             .serverLogicSuccess[Future] { _ =>
               Future.successful(ujson.read(priceChart))
@@ -354,8 +357,9 @@ object MarketServiceSpec {
             .in("price")
             .in(query[List[String]]("ids"))
             .in(query[String]("vs_currencies"))
+            .in(header[String]("x-cg-demo-api-key"))
             .out(jsonBody[ujson.Value])
-            .serverLogicSuccess[Future] { case (_, _) =>
+            .serverLogicSuccess[Future] { _ =>
               Future.successful(ujson.read(coingeckoPrices))
             }
         )
