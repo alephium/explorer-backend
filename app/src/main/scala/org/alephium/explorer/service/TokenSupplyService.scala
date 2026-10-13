@@ -204,6 +204,11 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
       TokenSupplyByTokenEntity(token, at, total)
     })
 
+  private[service] def insertTokenSupplySnapshot(
+      snapshot: TokenSupplyByTokenEntity
+  ): DBActionW[Int] =
+    TokenSupplyByTokenSchema.table.insertOrUpdate(snapshot)
+
   private def reservedTokensOptionQuery(at: TimeStamp)(implicit
       ec: ExecutionContext
   ): DBActionR[Option[U256]] =
