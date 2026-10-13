@@ -13,6 +13,7 @@ import sttp.tapir.generic.auto._
 import org.alephium.api.Endpoints.jsonBody
 import org.alephium.explorer.api.EndpointExamples._
 import org.alephium.explorer.api.model._
+import org.alephium.protocol.model.TokenId
 
 // scalastyle:off magic.number
 trait InfosEndpoints extends BaseEndpoint with QueryParams {
@@ -39,6 +40,14 @@ trait InfosEndpoints extends BaseEndpoint with QueryParams {
       .in(pagination)
       .out(jsonBody[ArraySeq[TokenSupply]])
       .summary("Get token supply list")
+
+  val listTokenSupplyByToken: BaseEndpoint[(TokenId, Pagination), ArraySeq[TokenSupplyByToken]] =
+    supplyEndpoint.get
+      .in("tokens")
+      .in(path[TokenId]("token_id"))
+      .in(pagination)
+      .out(jsonBody[ArraySeq[TokenSupplyByToken]])
+      .summary("Get token supply history for a token")
 
   val getCirculatingSupply: BaseEndpoint[Unit, BigDecimal] =
     supplyEndpoint.get

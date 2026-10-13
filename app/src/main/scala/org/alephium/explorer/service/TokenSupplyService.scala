@@ -17,7 +17,7 @@ import slick.jdbc.PostgresProfile
 import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.{foldFutures, GroupSetting}
-import org.alephium.explorer.api.model.{Pagination, TokenSupply}
+import org.alephium.explorer.api.model.{Pagination, TokenSupply, TokenSupplyByToken}
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.model.{TokenSupplyByTokenEntity, TokenSupplyEntity}
@@ -55,6 +55,11 @@ trait TokenSupplyService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[TokenSupply]]
+
+  def listTokenSupplyByToken(token: TokenId, pagination: Pagination)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[TokenSupplyByToken]]
 
   def getLatestTokenSupply()(implicit
       ec: ExecutionContext,
@@ -154,6 +159,21 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
         entity.locked,
         ALPH.MaxALPHValue
       )
+    })
+
+  def listTokenSupplyByToken(token: TokenId, pagination: Pagination)(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile]
+  ): Future[ArraySeq[TokenSupplyByToken]] =
+    run(
+      sql"""
+        SELECT token, block_timestamp, total
+        FROM token_supply_by_token
+        WHERE token = $token
+        ORDER BY block_timestamp DESC
+      """.paginate(pagination).asAS[(TokenId, TimeStamp, U256)]
+    ).map(_.map { case (tokenId, timestamp, total) =>
+      TokenSupplyByToken(tokenId, timestamp, total)
     })
 
   private def circulatingTokensOptionQuery(at: TimeStamp)(implicit

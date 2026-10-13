@@ -11,6 +11,7 @@ import slick.jdbc.PostgresProfile
 
 import org.alephium.explorer._
 import org.alephium.explorer.ConfigDefaults._
+import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.HttpFixture._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache, TransactionCache}
@@ -18,7 +19,7 @@ import org.alephium.explorer.config.BootMode
 import org.alephium.explorer.persistence.{Database, DatabaseFixtureForAll, Migrations}
 import org.alephium.explorer.service._
 import org.alephium.protocol.ALPH
-import org.alephium.util.TimeStamp
+import org.alephium.util.{TimeStamp, U256}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var"))
 class InfosServerSpec()
@@ -55,6 +56,13 @@ class InfosServerSpec()
           tokenSupply
         )
       )
+
+    def listTokenSupplyByToken(token: org.alephium.protocol.model.TokenId, pagination: Pagination)(
+        implicit
+        ec: ExecutionContext,
+        dc: DatabaseConfig[PostgresProfile]
+    ): Future[ArraySeq[TokenSupplyByToken]] =
+      Future.successful(ArraySeq(TokenSupplyByToken(token, TimeStamp.zero, U256.unsafe(10))))
 
   }
 
@@ -110,6 +118,14 @@ class InfosServerSpec()
   "return the token supply list" in {
     Get(s"/infos/supply") check { response =>
       response.as[ArraySeq[TokenSupply]] is ArraySeq(tokenSupply)
+    }
+  }
+
+  "return token supply history" in {
+    val token = tokenIdGen.sample.get
+    Get(s"/infos/supply/tokens/${token.toHexString}") check { response =>
+      response.as[ArraySeq[TokenSupplyByToken]] is
+        ArraySeq(TokenSupplyByToken(token, TimeStamp.zero, U256.unsafe(10)))
     }
   }
 

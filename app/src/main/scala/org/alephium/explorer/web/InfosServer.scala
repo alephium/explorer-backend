@@ -48,6 +48,9 @@ class InfosServer(
       route(listTokenSupply.serverLogicSuccess[Future] { pagination =>
         tokenSupplyService.listTokenSupply(pagination)
       }) ,
+      route(listTokenSupplyByToken.serverLogicSuccess[Future] { case (token, pagination) =>
+        tokenSupplyService.listTokenSupplyByToken(token, pagination)
+      }) ,
       route(getCirculatingSupply.serverLogicSuccess[Future] { _ =>
           getLatestTokenSupply()
           .map { supply =>

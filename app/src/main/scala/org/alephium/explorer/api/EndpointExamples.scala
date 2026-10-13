@@ -321,6 +321,9 @@ object EndpointExamples extends EndpointsExamples {
       maximum = ALPH.MaxALPHValue
     )
 
+  private val tokenSupplyByToken =
+    TokenSupplyByToken(token, ts, U256.Billion)
+
   private val perChainHeight =
     PerChainHeight(
       chainFrom = 1,
@@ -449,6 +452,9 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val tokenSupplyExample: List[Example[ArraySeq[TokenSupply]]] =
     simpleExample(ArraySeq(tokenSupply, tokenSupply))
+
+  implicit val tokenSupplyByTokenExample: List[Example[ArraySeq[TokenSupplyByToken]]] =
+    simpleExample(ArraySeq(tokenSupplyByToken, tokenSupplyByToken))
 
   implicit val perChainHeightExample: List[Example[ArraySeq[PerChainHeight]]] =
     simpleExample(ArraySeq(perChainHeight, perChainHeight))
