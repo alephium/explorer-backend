@@ -61,6 +61,7 @@ trait Documentation
         listTokenTransactions,
         listTokenAddresses,
         listTokenSupply,
+        listTokenSupplyByToken,
         listTokenInfo,
         listFungibleTokenMetadata,
         listNFTMetadata,
