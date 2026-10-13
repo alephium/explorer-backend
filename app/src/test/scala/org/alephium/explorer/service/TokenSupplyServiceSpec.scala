@@ -110,6 +110,7 @@ class TokenSupplyServiceSpec
           first.amount.addUnsafe(second.amount)
         )
       )
+    exec(TokenSupplyService.getLatestTokenSupplyByTokenTimestamp()) is None
 
     val snapshot = TokenSupplyByTokenEntity(first.token, second.timestamp, U256.unsafe(42))
     exec(TokenSupplyService.insertTokenSupplySnapshot(snapshot))
@@ -128,6 +129,7 @@ class TokenSupplyServiceSpec
           first.amount.addUnsafe(second.amount)
         )
       )
+    exec(TokenSupplyService.getLatestTokenSupplyByTokenTimestamp()) is Some(second.timestamp)
   }
 
   "Token supply - only genesis - no lock" in new Fixture {

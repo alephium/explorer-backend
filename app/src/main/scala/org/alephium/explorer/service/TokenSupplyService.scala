@@ -216,6 +216,16 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
       DBIOAction.sequence(snapshots.map(insertTokenSupplySnapshot)).map(_ => ())
     }
 
+  private[service] def getLatestTokenSupplyByTokenTimestamp()(implicit
+      ec: ExecutionContext
+  ): DBActionR[Option[TimeStamp]] =
+    sql"""
+      SELECT block_timestamp
+      FROM token_supply_by_token
+      ORDER BY block_timestamp DESC
+      LIMIT 1
+    """.asAS[TimeStamp].headOrNone
+
   private def reservedTokensOptionQuery(at: TimeStamp)(implicit
       ec: ExecutionContext
   ): DBActionR[Option[U256]] =
