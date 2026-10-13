@@ -118,6 +118,16 @@ class TokenSupplyServiceSpec
     val updatedSnapshot = snapshot.copy(total = U256.unsafe(43))
     exec(TokenSupplyService.insertTokenSupplySnapshot(updatedSnapshot))
     exec(TokenSupplyByTokenSchema.table.result) is Seq(updatedSnapshot)
+
+    exec(TokenSupplyService.updateTokenSupplySnapshots(second.timestamp))
+    exec(TokenSupplyByTokenSchema.table.result) is
+      Seq(
+        TokenSupplyByTokenEntity(
+          first.token,
+          second.timestamp,
+          first.amount.addUnsafe(second.amount)
+        )
+      )
   }
 
   "Token supply - only genesis - no lock" in new Fixture {

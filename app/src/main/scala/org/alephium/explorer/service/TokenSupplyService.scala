@@ -209,6 +209,13 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
   ): DBActionW[Int] =
     TokenSupplyByTokenSchema.table.insertOrUpdate(snapshot)
 
+  private[service] def updateTokenSupplySnapshots(at: TimeStamp)(implicit
+      ec: ExecutionContext
+  ): DBActionRW[Unit] =
+    tokenSupplySnapshotsQuery(at).flatMap { snapshots =>
+      DBIOAction.sequence(snapshots.map(insertTokenSupplySnapshot)).map(_ => ())
+    }
+
   private def reservedTokensOptionQuery(at: TimeStamp)(implicit
       ec: ExecutionContext
   ): DBActionR[Option[U256]] =
