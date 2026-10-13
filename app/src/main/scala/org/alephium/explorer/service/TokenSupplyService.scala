@@ -20,7 +20,7 @@ import org.alephium.explorer.{foldFutures, GroupSetting}
 import org.alephium.explorer.api.model.{Pagination, TokenSupply}
 import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.DBRunner._
-import org.alephium.explorer.persistence.model.TokenSupplyEntity
+import org.alephium.explorer.persistence.model.{TokenSupplyByTokenEntity, TokenSupplyEntity}
 import org.alephium.explorer.persistence.schema._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
@@ -196,6 +196,13 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
       AND (token_outputs.spent_timestamp > $at OR token_outputs.spent_timestamp IS NULL)
       GROUP BY token_outputs.token
     """.asAS[(TokenId, Option[U256])]
+
+  private[service] def tokenSupplySnapshotsQuery(
+      at: TimeStamp
+  )(implicit ec: ExecutionContext): DBActionR[ArraySeq[TokenSupplyByTokenEntity]] =
+    unspentTokenSuppliesQuery(at).map(_.collect { case (token, Some(total)) =>
+      TokenSupplyByTokenEntity(token, at, total)
+    })
 
   private def reservedTokensOptionQuery(at: TimeStamp)(implicit
       ec: ExecutionContext
