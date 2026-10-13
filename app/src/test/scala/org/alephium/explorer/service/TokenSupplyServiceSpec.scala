@@ -77,6 +77,34 @@ class TokenSupplyServiceSpec
       )
   }
 
+  "Token supply - unspent tokens by token" in {
+    val first = tokenOutputEntityGen().sample.get.copy(mainChain = true)
+    val second = tokenOutputEntityGen().sample.get.copy(
+      token = first.token,
+      mainChain = true,
+      timestamp = first.timestamp.plusUnsafe(Duration.ofHoursUnsafe(1))
+    )
+    val spent = tokenOutputEntityGen().sample.get.copy(
+      token = first.token,
+      timestamp = second.timestamp,
+      mainChain = true,
+      amount = U256.unsafe(100),
+      spentTimestamp = Some(second.timestamp)
+    )
+    val conflicted = tokenOutputEntityGen().sample.get.copy(
+      token = first.token,
+      timestamp = second.timestamp,
+      mainChain = true,
+      amount = U256.unsafe(200),
+      conflicted = Some(true)
+    )
+
+    exec(TokenOutputSchema.table ++= Seq(first, second, spent, conflicted))
+
+    exec(TokenSupplyService.unspentTokenSuppliesQuery(second.timestamp)) is
+      Seq((first.token, Some(first.amount.addUnsafe(second.amount))))
+  }
+
   "Token supply - only genesis - no lock" in new Fixture {
     override val genesisLocked = false
 

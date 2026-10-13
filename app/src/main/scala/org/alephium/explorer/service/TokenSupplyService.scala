@@ -27,6 +27,7 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.ALPH
+import org.alephium.protocol.model.TokenId
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 /*
@@ -182,6 +183,19 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
 
   def allUnspentTokensQuery(at: TimeStamp)(implicit ec: ExecutionContext): DBActionR[U256] =
     allUnspentTokensOption(at).map(_.getOrElse(U256.Zero))
+
+  private[service] def unspentTokenSuppliesQuery(
+      at: TimeStamp
+  ): DBActionSR[(TokenId, Option[U256])] =
+    sql"""
+      SELECT token_outputs.token, sum(token_outputs.amount)
+      FROM token_outputs
+      WHERE token_outputs.main_chain = true
+      AND #${notConflicted("token_outputs")}
+      AND token_outputs.block_timestamp <= $at
+      AND (token_outputs.spent_timestamp > $at OR token_outputs.spent_timestamp IS NULL)
+      GROUP BY token_outputs.token
+    """.asAS[(TokenId, Option[U256])]
 
   private def reservedTokensOptionQuery(at: TimeStamp)(implicit
       ec: ExecutionContext

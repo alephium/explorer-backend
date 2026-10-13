@@ -14,7 +14,7 @@ import org.alephium.util.{TimeStamp, U256}
 object TokenSupplyByTokenSchema extends Schema[TokenSupplyByTokenEntity]("token_supply_by_token") {
 
   class TokenSuppliesByToken(tag: Tag) extends Table[TokenSupplyByTokenEntity](tag, name) {
-    def token: Rep[TokenId] = column[TokenId]("token")
+    def token: Rep[TokenId]       = column[TokenId]("token")
     def timestamp: Rep[TimeStamp] = column[TimeStamp]("block_timestamp")
     def total: Rep[U256] =
       column[U256]("total", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
