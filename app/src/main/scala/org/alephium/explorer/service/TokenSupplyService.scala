@@ -101,9 +101,13 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
       groupSetting: GroupSetting
   ): Future[Unit] = {
     logger.debug("Computing token supply")
-    updateTokenSupply().map { _ =>
-      logger.debug("Token supply updated")
-    }
+    updateTokenSupply()
+      .flatMap { _ =>
+        updateTokenSupplyByToken()
+      }
+      .map { _ =>
+        logger.debug("Token supply updated")
+      }
   }
 
   def listTokenSupply(pagination: Pagination)(implicit
@@ -329,6 +333,25 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
               } yield (()))
             }.map(_ => ())
           }
+    }
+
+  private def updateTokenSupplyByToken()(implicit
+      ec: ExecutionContext,
+      dc: DatabaseConfig[PostgresProfile],
+      groupSetting: GroupSetting
+  ): Future[Unit] =
+    findMinimumLatestBlockTime().flatMap {
+      case None =>
+        Future.successful(())
+      case Some(minimumLatestBlockTime) =>
+        run(getLatestTokenSupplyByTokenTimestamp())
+          .map(_.getOrElse(ALPH.LaunchTimestamp))
+          .flatMap { latestTimestamp =>
+            foldFutures(buildDaysRange(latestTimestamp, minimumLatestBlockTime)) { day =>
+              run(updateTokenSupplySnapshots(day))
+            }
+          }
+          .map(_ => ())
     }
 
   private def initGenesisTokenSupply()(implicit
