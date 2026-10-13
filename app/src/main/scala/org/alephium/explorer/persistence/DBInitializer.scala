@@ -36,6 +36,7 @@ object DBInitializer extends StrictLogging {
       InputSchema.table,
       OutputSchema.table,
       TokenOutputSchema.table,
+      TokenSupplyByTokenSchema.table,
       MempoolTransactionSchema.table,
       UInputSchema.table,
       UOutputSchema.table,
