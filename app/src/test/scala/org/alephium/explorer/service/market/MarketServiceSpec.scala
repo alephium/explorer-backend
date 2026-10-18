@@ -174,6 +174,18 @@ class MarketServiceSpec extends AlephiumFutureSpec {
     }
   }
 
+  "price staked ALPH tokens from the on-chain ALPH rate" in new Fixture {
+
+    marketService.start().futureValue
+
+    eventually {
+      val prices = marketService.getPrices(ArraySeq(alph, "xALPH", "yALPH"), "usd").rightValue
+
+      (prices(1).get - xAlphInAlph * prices(0).get).abs < 1e-12 is true
+      prices(2) is None
+    }
+  }
+
   "price USD-pegged symbols at 1 USD" in new Fixture {
     override def usdPeggedSymbols: ArraySeq[String] = ArraySeq(usdt)
     val previousUsdtPrice                           = usdtPrice
@@ -212,6 +224,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
       ArraySeq(alph),
       usdPeggedSymbols,
       powfiPools = MarketServiceSpec.powfiPools,
+      stakedAlphTokens = MarketServiceSpec.stakedAlphTokens,
       liquidityMinimum = 100,
       s"http://${localhost.getHostAddress()}:$mobulaPort",
       s"http://${localhost.getHostAddress()}:$coingeckoPort",
@@ -228,7 +241,7 @@ class MarketServiceSpec extends AlephiumFutureSpec {
 
     val blockFlowClient: BlockFlowClient = new EmptyBlockFlowClient {
       override def fetchContractState(address: Address.Contract): Future[ContractState] =
-        powfiPoolStates.get(address.contractId) match {
+        (powfiPoolStates ++ stakedAlphStates).get(address.contractId) match {
           case Some(state) => Future.successful(state)
           case None        => Future.failed(new Exception(s"Contract not found: $address"))
         }
@@ -298,6 +311,21 @@ object MarketServiceSpec {
       AVector(zero, byteVec(usdtId), byteVec(daiId)),
       AVector(zero, u256("1"), zero)
     )
+  )
+
+  val xAlphToken  = contractId("6dc961b59aae53c768fe6f608e6bea30f6747041af3fd800c8c6533766e54f00")
+  val yAlphToken  = contractId("33" * 32)
+  val xAlphInAlph = 1.05
+
+  val stakedAlphTokens: ListMap[String, ContractId] =
+    ListMap("xALPH" -> xAlphToken, "yALPH" -> yAlphToken)
+
+  val stakedAlphStates: Map[ContractId, ContractState] = Map(
+    xAlphToken -> poolState(
+      AVector.empty,
+      AVector(u256("1050000000000000000000"), u256("1000000000000000000000"), zero)
+    ),
+    yAlphToken -> poolState(AVector.empty, AVector(u256("1"), zero, zero))
   )
 
   private def poolState(immFields: AVector[Val], mutFields: AVector[Val]): ContractState =

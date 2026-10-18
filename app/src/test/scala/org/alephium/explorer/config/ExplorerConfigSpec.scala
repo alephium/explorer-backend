@@ -65,6 +65,9 @@ class ExplorerConfigSpec extends AlephiumSpec with ScalaCheckDrivenPropertyCheck
           config.market.powfiPools.keySet is (
             if (networkId == NetworkId.AlephiumMainNet) Set("ONION", "AURA") else Set.empty[String]
           )
+          config.market.stakedAlphTokens.keySet is (
+            if (networkId == NetworkId.AlephiumMainNet) Set("xALPH") else Set.empty[String]
+          )
         }
     }
 

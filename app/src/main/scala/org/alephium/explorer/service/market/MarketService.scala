@@ -161,6 +161,11 @@ object MarketService extends StrictLogging {
         getPowfiPricesRemote()
       )
 
+    private val stakedAlphRatesCache: AsyncReloadingCache[Map[String, Double]] =
+      AsyncReloadingCache[Map[String, Double]](Map.empty, 5.minutes)(_ =>
+        getStakedAlphRatesRemote()
+      )
+
     /*
      * Load data on start
      * Price and Rates only trigger 2 requests
@@ -179,6 +184,7 @@ object MarketService extends StrictLogging {
         }
       )
       ratesCache.expireAndReload()
+      stakedAlphRatesCache.expireAndReload()
       priceChartsCache.grouped(2).zipWithIndex.foreach { case (caches, idx) =>
         scheduler.scheduleOnce(
           s"Expire and reload chart prices for ${caches.map(_._1).mkString(", ")}",
@@ -243,7 +249,8 @@ object MarketService extends StrictLogging {
           .toRight(s"Cannot find price for currency $currency")
         prices <- getPriceCache()
       } yield {
-        val powfiPrices = powfiPricesCache.get()
+        val powfiPrices     = powfiPricesCache.get()
+        val stakedAlphRates = stakedAlphRatesCache.get()
         def marketPrice(symbol: String): Option[Double] =
           if (marketConfig.usdPeggedSymbols.contains(symbol)) {
             Some(1.0)
@@ -256,6 +263,11 @@ object MarketService extends StrictLogging {
               powfi <- powfiPrices.find(_.symbol == symbol)
               quote <- marketPrice(powfi.quoteSymbol)
             } yield powfi.price * quote
+          } else if (marketConfig.stakedAlphTokens.contains(symbol)) {
+            for {
+              rate <- stakedAlphRates.get(symbol)
+              alph <- marketPrice("ALPH")
+            } yield rate * alph
           } else {
             marketPrice(symbol)
           }
@@ -282,6 +294,33 @@ object MarketService extends StrictLogging {
         })
         .map(_.flatten)
     }
+
+    private def getStakedAlphRatesRemote(): Future[Map[String, Double]] =
+      Future
+        .sequence(ArraySeq.from(marketConfig.stakedAlphTokens).map { case (symbol, token) =>
+          blockFlowClient
+            .fetchContractState(Address.contract(token))
+            .map(state => stakedAlphRate(state).map(rate => (symbol, rate)))
+            .recover { case error => Left(error.getMessage) }
+            .map {
+              case Right(rate) => Some(rate)
+              case Left(error) =>
+                logger.error(s"Cannot get ALPH rate of $symbol from ${token.toHexString}: $error")
+                None
+            }
+        })
+        .map(_.flatten.toMap)
+
+    /** ALPH redeemable per staked token: `totalDepositedAlph / totalXAlphSupply`, the first two
+      * mutable fields of the xALPH token contract. Both have 18 decimals.
+      */
+    private def stakedAlphRate(state: ContractState): Either[String, Double] =
+      for {
+        deposited <- u256Field(state.mutFields, 0)
+        supply    <- u256Field(state.mutFields, 1)
+        rate = deposited / supply
+        _ <- Either.cond(rate > 0 && !rate.isInfinite, (), s"Invalid rate $rate")
+      } yield rate
 
     private val q96: Double = math.pow(2, 96) // scalastyle:ignore magic.number
 
