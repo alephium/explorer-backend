@@ -63,10 +63,8 @@ class ExplorerConfigSpec extends AlephiumSpec with ScalaCheckDrivenPropertyCheck
           config.market.coingeckoPrioritySymbols is ArraySeq("ALPH")
           config.market.usdPeggedSymbols is ArraySeq("USDTeth")
           config.market.powfiPools.keySet is (
-            if (networkId == NetworkId.AlephiumMainNet) Set("ONION", "AURA") else Set.empty[String]
-          )
-          config.market.stakedAlphTokens.keySet is (
-            if (networkId == NetworkId.AlephiumMainNet) Set("xALPH") else Set.empty[String]
+            if (networkId == NetworkId.AlephiumMainNet) Set("ONION", "AURA", "xALPH")
+            else Set.empty[String]
           )
         }
     }

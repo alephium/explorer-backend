@@ -306,7 +306,6 @@ object ExplorerConfig {
       coingeckoPrioritySymbols: ArraySeq[String],
       usdPeggedSymbols: ArraySeq[String],
       powfiPools: ListMap[String, PowfiPool],
-      stakedAlphTokens: ListMap[String, ContractId],
       liquidityMinimum: Double,
       mobulaUri: String,
       coingeckoUri: String,
