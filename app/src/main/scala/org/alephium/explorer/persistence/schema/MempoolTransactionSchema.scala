@@ -4,7 +4,7 @@
 package org.alephium.explorer.persistence.schema
 
 import slick.jdbc.PostgresProfile.api._
-import slick.lifted.{Index, ProvenShape}
+import slick.lifted.ProvenShape
 
 import org.alephium.explorer.persistence.model.MempoolTransactionEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
@@ -22,8 +22,6 @@ object MempoolTransactionSchema extends Schema[MempoolTransactionEntity]("utrans
     def gasPrice: Rep[U256] =
       column[U256]("gas_price", O.SqlType("DECIMAL(80,0)")) // U256.MaxValue has 78 digits
     def lastSeen: Rep[TimeStamp] = column[TimeStamp]("last_seen")
-
-    def lastSeenIdx: Index = index("utransactions_last_seen_idx", lastSeen)
 
     def * : ProvenShape[MempoolTransactionEntity] =
       (hash, chainFrom, chainTo, gasAmount, gasPrice, lastSeen)
