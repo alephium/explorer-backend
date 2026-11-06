@@ -311,6 +311,8 @@ object ExplorerConfig {
       coingeckoUri: String,
       tokenListUri: String,
       mobulaApiKey: Option[ApiKey],
+      // Mobula ApiKey isn't 32 character and doesn't pass our ApiKey validation.
+      coingeckoApiKey: Option[String],
       mobulaMaxTokensPerRequest: Int,
       marketChartDays: Int,
       mobulaPricesExpirationTime: FiniteDuration,

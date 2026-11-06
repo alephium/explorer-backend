@@ -17,7 +17,7 @@ import sttp.client4.httpclient.HttpClientFutureBackend
 import sttp.model.{Method, StatusCode, Uri}
 
 import org.alephium.api.UtilJson._
-import org.alephium.api.model.{ApiKey, ContractState, Val, ValByteVec, ValU256}
+import org.alephium.api.model.{ContractState, Val, ValByteVec, ValU256}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache._
 import org.alephium.explorer.config.ExplorerConfig
@@ -50,11 +50,10 @@ object MarketService extends StrictLogging {
 
   def apply(marketConfig: ExplorerConfig.Market, blockFlowClient: BlockFlowClient)(implicit
       ec: ExecutionContext
-  ): MarketService = new MarketServiceImpl(marketConfig, marketConfig.mobulaApiKey, blockFlowClient)
+  ): MarketService = new MarketServiceImpl(marketConfig, blockFlowClient)
 
   class MarketServiceImpl(
       marketConfig: ExplorerConfig.Market,
-      apiKeyOpt: Option[ApiKey],
       blockFlowClient: BlockFlowClient
   )(implicit
       val executionContext: ExecutionContext
@@ -63,6 +62,11 @@ object MarketService extends StrictLogging {
     private val coingeckoBaseUri = marketConfig.coingeckoUri
     private val mobulaBaseUri    = marketConfig.mobulaUri
     private val tokenListUri     = marketConfig.tokenListUri
+
+    private val coingeckoHeaders: Map[String, String] =
+      marketConfig.coingeckoApiKey.fold(Map.empty[String, String])(apiKey =>
+        Map("x-cg-demo-api-key" -> apiKey)
+      )
 
     private val chartIds: ListMap[String, String] = marketConfig.chartSymbolName
 
@@ -380,7 +384,7 @@ object MarketService extends StrictLogging {
     private def getMobulaPricesRemote(
         retried: Int
     ): Future[Either[String, ArraySeq[MobulaPrice]]] = {
-      apiKeyOpt match {
+      marketConfig.mobulaApiKey match {
         case Some(apiKey) =>
           getTokenList() match {
             case Right(tokens) =>
@@ -435,7 +439,8 @@ object MarketService extends StrictLogging {
     ): Future[Either[String, ArraySeq[CoingeckoPrice]]] = {
       logger.debug(s"Query coingecko `/price`, nb of attempts $retried")
       request(
-        uri"$coingeckoBaseUri/simple/price?ids=${symbolNames.values.mkString(",")}&vs_currencies=$baseCurrency"
+        uri"$coingeckoBaseUri/simple/price?ids=${symbolNames.values.mkString(",")}&vs_currencies=$baseCurrency",
+        coingeckoHeaders
       ) { response =>
         handleCoingeckoPricesRateResponse(response, retried)
       }
@@ -480,7 +485,7 @@ object MarketService extends StrictLogging {
         retried: Int
     ): Future[Either[String, ArraySeq[ExchangeRate]]] = {
       logger.debug(s"Query coingecko `/exchange_rates`, nb of attempts $retried")
-      request(uri"$coingeckoBaseUri/exchange_rates") { response =>
+      request(uri"$coingeckoBaseUri/exchange_rates", coingeckoHeaders) { response =>
         handleExchangeRateResponse(response, retried)
       }
     }
@@ -550,7 +555,8 @@ object MarketService extends StrictLogging {
     ): Future[Either[String, ArraySeq[(TimeStamp, Double)]]] = {
       logger.debug(s"Query coingecko `/coins/$id/market_chart`, nb of attempts $retried")
       request(
-        uri"$coingeckoBaseUri/coins/$id/market_chart?vs_currency=btc&days=${marketConfig.marketChartDays}"
+        uri"$coingeckoBaseUri/coins/$id/market_chart?vs_currency=btc&days=${marketConfig.marketChartDays}",
+        coingeckoHeaders
       ) { response =>
         handleChartResponse(id, response, retried)
       }
