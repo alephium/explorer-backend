@@ -20,14 +20,11 @@ import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.RichAVector._
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache._
-import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.{MempoolDao, TransactionDao}
 import org.alephium.explorer.persistence.queries.{InputQueries, OutputQueries, TokenQueries}
 import org.alephium.explorer.persistence.queries.TransactionQueries._
-import org.alephium.explorer.persistence.queries.result.OutputFromTxQR
 import org.alephium.protocol
-import org.alephium.protocol.Hash
 import org.alephium.protocol.config.GroupConfig
 import org.alephium.protocol.model.{TokenId, TransactionId}
 import org.alephium.serde._
@@ -331,41 +328,22 @@ object TransactionService extends TransactionService {
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[Input]] =
-    foldFutures(inputs) { input =>
-      val key = input.outputRef.key.value
-      TransactionService
-        .getInputFromOutputRef(key)
-        .map {
-          case Some(output) =>
-            Input(
-              OutputRef(input.outputRef.hint.value, key),
-              Some(serialize(input.unlockScript)),
-              txHashRef = Some(output.txHash),
-              address = Some(output.address),
-              attoAlphAmount = Some(output.amount),
-              tokens = output.tokens,
-              contractInput = false
-            )
-          case None =>
-            Input(
-              OutputRef(input.outputRef.hint.value, key),
-              Some(serialize(input.unlockScript)),
-              txHashRef = None,
-              address = None,
-              attoAlphAmount = None,
-              tokens = None,
-              contractInput = false
-            )
-        }
+    run(OutputQueries.getOutputsFromKeys(inputs.map(_.outputRef.key.value))).map { outputs =>
+      val outputsByKey = outputs.iterator.map(output => output.key -> output).toMap
+      inputs.map { input =>
+        val key    = input.outputRef.key.value
+        val output = outputsByKey.get(key)
+        Input(
+          OutputRef(input.outputRef.hint.value, key),
+          Some(serialize(input.unlockScript)),
+          txHashRef = output.map(_.txHash),
+          address = output.map(_.address),
+          attoAlphAmount = output.map(_.amount),
+          tokens = output.flatMap(_.tokens),
+          contractInput = false
+        )
+      }
     }
-
-  private def getInputFromOutputRef(outputRef: Hash)(implicit
-      dc: DatabaseConfig[PostgresProfile]
-  ): Future[Option[OutputFromTxQR]] =
-    run(
-      OutputQueries
-        .getOutputFromKey(outputRef)
-    )
 
   def getUnlockScript(address: ApiAddress)(implicit
       ec: ExecutionContext,
