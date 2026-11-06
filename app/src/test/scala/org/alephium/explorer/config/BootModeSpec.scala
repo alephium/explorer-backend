@@ -29,4 +29,26 @@ class BootModeSpec extends AlephiumSpec with ScalaCheckDrivenPropertyChecks {
       }
     }
   }
+
+  "helpers" should {
+    "resolve modes" in {
+      BootMode("ReadOnly") is Some(BootMode.ReadOnly)
+      BootMode("ReadWrite") is Some(BootMode.ReadWrite)
+      BootMode("WriteOnly") is Some(BootMode.WriteOnly)
+      BootMode.all.foreach { mode =>
+        BootMode(mode.productPrefix) is Some(mode)
+      }
+      BootMode("Other") is None
+    }
+
+    "classify modes" in {
+      BootMode.readable(BootMode.ReadOnly) is true
+      BootMode.readable(BootMode.ReadWrite) is true
+      BootMode.readable(BootMode.WriteOnly) is false
+
+      BootMode.writable(BootMode.ReadOnly) is false
+      BootMode.writable(BootMode.ReadWrite) is true
+      BootMode.writable(BootMode.WriteOnly) is true
+    }
+  }
 }

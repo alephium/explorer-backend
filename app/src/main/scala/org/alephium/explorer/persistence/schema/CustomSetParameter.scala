@@ -14,7 +14,7 @@ import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.api.model.Val
 import org.alephium.explorer.api.Json._
 import org.alephium.explorer.api.model._
-import org.alephium.explorer.persistence.model.{GrouplessAddress, InterfaceIdEntity, OutputEntity}
+import org.alephium.explorer.persistence.model.{GrouplessAddress, OutputEntity}
 import org.alephium.json.Json._
 import org.alephium.protocol.Hash
 import org.alephium.protocol.model._
@@ -41,17 +41,6 @@ object CustomSetParameter {
       params setInt input.value
   }
 
-  implicit object GroupIndexOptionSetParameter extends SetParameter[Option[GroupIndex]] {
-    override def apply(option: Option[GroupIndex], params: PositionedParameters): Unit =
-      option match {
-        case Some(group) =>
-          GroupIndexSetParameter(group, params)
-
-        case None =>
-          params setIntOption None
-      }
-  }
-
   implicit object IntervalTypeSetParameter extends SetParameter[IntervalType] {
     override def apply(input: IntervalType, params: PositionedParameters): Unit =
       params setInt input.value
@@ -59,11 +48,6 @@ object CustomSetParameter {
 
   implicit object StdInterfaceIdSetParameter extends SetParameter[StdInterfaceId] {
     override def apply(input: StdInterfaceId, params: PositionedParameters): Unit =
-      params setString input.id
-  }
-
-  implicit object InterfaceIdSetParameter extends SetParameter[InterfaceIdEntity] {
-    override def apply(input: InterfaceIdEntity, params: PositionedParameters): Unit =
       params setString input.id
   }
 
@@ -120,17 +104,6 @@ object CustomSetParameter {
       }
   }
 
-  implicit object OptionApiAddressSetParameter extends SetParameter[Option[ApiAddress]] {
-    override def apply(option: Option[ApiAddress], params: PositionedParameters): Unit =
-      option match {
-        case Some(address) =>
-          ApiAddressSetParameter(address, params)
-
-        case None =>
-          params setStringOption None
-      }
-  }
-
   implicit object OptionGrouplessAddressSetParameter
       extends SetParameter[Option[GrouplessAddress]] {
     override def apply(option: Option[GrouplessAddress], params: PositionedParameters): Unit =
@@ -141,11 +114,6 @@ object CustomSetParameter {
         case None =>
           params setStringOption None
       }
-  }
-
-  implicit object ArrayByteStringSetParameter extends SetParameter[Array[Byte]] {
-    override def apply(input: Array[Byte], params: PositionedParameters): Unit =
-      params setBytes input
   }
 
   implicit object ByteStringSetParameter extends SetParameter[ByteString] {

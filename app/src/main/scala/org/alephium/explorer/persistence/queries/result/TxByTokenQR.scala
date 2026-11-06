@@ -55,9 +55,6 @@ final case class TxByTokenQR(
     conflicted: Option[Boolean]
 ) {
 
-  def hashes(): (TransactionId, BlockHash) =
-    (txHash, blockHash)
-
   def toTxByAddressQR: TxByAddressQR = TxByAddressQR(
     txHash,
     blockHash,

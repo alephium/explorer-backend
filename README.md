@@ -1,5 +1,7 @@
 # Alephium explorer backend
 
+[![codecov][codecov-badge]][codecov-link]
+
 Alephium's explorer backend is an indexer that provides a RESTful API to query the Alephium blockchain.
 
 It serves https://explorer.alephium.org/ as well as our wallets.
@@ -180,6 +182,8 @@ sbt test
 [postgresql]: https://www.postgresql.org/
 [sbt]: https://www.scala-sbt.org/
 [bytea]: https://www.postgresql.org/docs/9.0/datatype-binary.html
+[codecov-badge]: https://codecov.io/gh/alephium/explorer-backend/branch/master/graph/badge.svg
+[codecov-link]: https://codecov.io/gh/alephium/explorer-backend
 
 ## Scaladoc
 
