@@ -114,6 +114,8 @@ sealed trait ExplorerStateWrite extends ExplorerState {
   override def startSelfOnce(): Future[Unit] = {
     SyncServices.startSyncServices(config)
   }
+
+  override def stopSelfOnce(): Future[Unit] = Future.successful(scheduler.close())
 }
 
 object ExplorerState {

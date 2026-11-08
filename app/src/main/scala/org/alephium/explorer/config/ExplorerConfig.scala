@@ -239,6 +239,7 @@ object ExplorerConfig {
           blockflow.consensus,
           blockflow.apiKey,
           blockflow.fetchMaxAge,
+          blockflow.retryPeriod,
           host,
           port,
           explorer.bootMode,
@@ -274,7 +275,8 @@ object ExplorerConfig {
       networkId: NetworkId,
       consensus: Consensus,
       apiKey: Option[ApiKey],
-      fetchMaxAge: FiniteDuration
+      fetchMaxAge: FiniteDuration,
+      retryPeriod: Option[FiniteDuration]
   )
 
   final case class Consensus(
@@ -365,6 +367,7 @@ final case class ExplorerConfig private (
     consensus: ExplorerConfig.Consensus,
     maybeBlockFlowApiKey: Option[ApiKey],
     blockFlowFetchMaxAge: FiniteDuration,
+    blockFlowRetryPeriod: Option[FiniteDuration],
     host: String,
     port: Int,
     bootMode: BootMode,

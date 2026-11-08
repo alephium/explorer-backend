@@ -69,6 +69,25 @@ class ExplorerConfigSpec extends AlephiumSpec with ScalaCheckDrivenPropertyCheck
         }
     }
 
+    "keep node startup fail-fast unless a retry interval is configured" in {
+      TestExplorerConfig().blockFlowRetryPeriod is None
+      val config = ConfigFactory
+        .parseString("alephium.blockflow.retry-period = 5 seconds")
+        .withFallback(TestExplorerConfig.typesafeConfig())
+        .resolve()
+      ExplorerConfig.load(config).blockFlowRetryPeriod is Some(5.seconds)
+    }
+
+    "reject non-positive node retry intervals" in {
+      Seq("0 seconds", "-1 second").foreach { period =>
+        val config = ConfigFactory
+          .parseString(s"alephium.blockflow.retry-period = $period")
+          .withFallback(TestExplorerConfig.typesafeConfig())
+          .resolve()
+        Try(ExplorerConfig.load(config)).isFailure is true
+      }
+    }
+
     "reject unknown PowFi pool types" in {
       val config = ConfigFactory.parseString("type = uniswap")
       Try(config.as[PowfiPool.Type]("type")).isFailure is true
