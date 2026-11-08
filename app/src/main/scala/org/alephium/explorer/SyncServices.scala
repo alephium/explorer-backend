@@ -80,34 +80,37 @@ object SyncServices extends StrictLogging {
       blockCache: BlockCache,
       groupSetting: GroupSetting
   ): Future[Unit] =
-    Future.fromTry {
-      Try {
-        Future
-          .sequence(
-            ArraySeq(
-              BlockFlowSyncService
-                .start(peers, syncPeriod, util.Duration.unsafe(blockFlowFetchMaxAge.toMillis)),
-              MempoolSyncService.start(peers, syncPeriod),
-              TokenSupplyService.start(tokenSupplyServiceScheduleTime),
-              HashrateService.start(hashRateServiceSyncPeriod),
-              FinalizerService.start(finalizerServiceSyncPeriod),
-              HolderService.start(holderServiceScheduleTime),
-              TransactionHistoryService.start(transactionHistoryServiceSyncPeriod)
+    RichInputBackfill.run().flatMap { _ =>
+      Future.fromTry {
+        Try {
+          Future
+            .sequence(
+              ArraySeq(
+                BlockFlowSyncService
+                  .start(peers, syncPeriod, util.Duration.unsafe(blockFlowFetchMaxAge.toMillis)),
+                MempoolSyncService.start(peers, syncPeriod),
+                TokenSupplyService.start(tokenSupplyServiceScheduleTime),
+                HashrateService.start(hashRateServiceSyncPeriod),
+                FinalizerService.start(finalizerServiceSyncPeriod),
+                HolderService.start(holderServiceScheduleTime),
+                TransactionHistoryService.start(transactionHistoryServiceSyncPeriod)
+              )
             )
-          )
-          .onComplete {
-            case Failure(error) =>
-              val failure = error match {
-                case psql: org.postgresql.util.PSQLException =>
-                  DatabaseError(psql)
-                case other => other
-              }
-              logger.error(s"Fatal error while syncing: $error")
-              ec.reportFailure(failure)
+            .onComplete {
+              case Failure(error) =>
+                val failure = error match {
+                  case psql: org.postgresql.util.PSQLException =>
+                    DatabaseError(psql)
+                  case other => other
+                }
+                logger.error(s"Fatal error while syncing: $error")
+                ec.reportFailure(failure)
 
-            case Success(_) => ()
-          }
+              case Success(_) => ()
+            }
+        }
       }
+
     }
 
   /** Fetch network peers */

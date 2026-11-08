@@ -18,6 +18,7 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.protocol.model.{Address, BlockHash, TransactionId}
 import org.alephium.util._
 
+/** Legacy fixture setup only. Production ingestion uses rich inputs and InputIndexQueries. */
 object InputUpdateQueries {
 
   private type UpdateReturn =

@@ -382,6 +382,7 @@ object BlockQueries extends StrictLogging {
         insertTransactions(transactions),
         insertOutputs(outputs),
         insertInputs(inputs),
+        InputIndexQueries.insert(inputs),
         insertBlockHeaders(blockHeaders)
       )
 

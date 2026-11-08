@@ -69,6 +69,31 @@ final case class TestBlockFlowServer(
 
   val routes: ArraySeq[Router => Route] =
     ArraySeq(
+      route(getRichBlockAndEvents.serverLogicSuccess(_ => { (hash: BlockHash) =>
+        Future.successful(
+          model.RichBlockAndEvents(
+            RichBlockFixtures.from(blocksWithUncles.find(_.hash === hash).get, blocks),
+            AVector.from(Gen.listOfN(3, contractEventByBlockHash).sample.get)
+          )
+        )
+      })),
+      route(getRichBlocksAndEvents.serverLogicSuccess(_ => { (interval: TimeInterval) =>
+        Future.successful(
+          model.RichBlocksAndEventsPerTimeStampRange(
+            AVector.from(blockflow.map { chain =>
+              AVector.from(
+                chain.filter(b => b.timestamp >= interval.from && b.timestamp <= interval.to).map {
+                  block =>
+                    model.RichBlockAndEvents(
+                      RichBlockFixtures.from(block, blocks),
+                      AVector.from(Gen.listOfN(3, contractEventByBlockHash).sample.get)
+                    )
+                }
+              )
+            })
+          )
+        )
+      })),
       route(getBlock.serverLogicSuccess(_ => { (hash: BlockHash) =>
         Future.successful(blocksWithUncles.find(_.hash === hash).get)
       })),

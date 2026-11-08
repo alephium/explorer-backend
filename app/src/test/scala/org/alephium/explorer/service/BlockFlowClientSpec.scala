@@ -67,6 +67,33 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
       blockFlowClient.fetchBlock(group, block.hash).futureValue is a[BlockEntity]
     }
   }
+  "Rich block endpoints" should {
+    "provide input metadata for single blocks, event blocks and time ranges" in {
+      val port  = SocketUtil.temporaryLocalPort(SocketUtil.Both)
+      val plain = blockEntryProtocolGen.sample.get
+      val block = plain.copy(transactions =
+        plain.transactions.map(tx =>
+          tx.copy(
+            unsigned = tx.unsigned.copy(inputs = AVector(inputProtocolGen.sample.get))
+          )
+        )
+      )
+      val _      = new TestBlockFlowServer(localhost, port, blockflow = ArraySeq(ArraySeq(block)))
+      val uri    = Uri(localhost.getHostAddress, port)
+      val client = BlockFlowClient(uri, groupSetting.groupNum, None, false, consensus)
+      val single = client.fetchBlock(group, block.hash).futureValue
+      val events = client.fetchBlockAndEvents(group, block.hash).futureValue
+      val ranges =
+        client.fetchBlocks(block.timestamp, block.timestamp.plusMillisUnsafe(1), uri).futureValue
+      val ranged = ranges.flatten.head.block
+      single.inputs.nonEmpty is true
+      single.inputs.forall(i =>
+        i.outputRefAmount.isDefined && i.outputRefAddress.isDefined && i.outputRefTxHash.isDefined
+      ) is true
+      events.block.inputs is single.inputs
+      ranged.inputs is single.inputs
+    }
+  }
   "BlockFlowClient companion" should {
     def contractResult(value: model.Val*): model.CallContractResult = {
       val result = callContractSucceededGen.sample.get

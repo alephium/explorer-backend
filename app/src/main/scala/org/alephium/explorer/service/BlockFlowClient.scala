@@ -169,11 +169,15 @@ object BlockFlowClient extends StrictLogging {
             case Left(error) => Future.failed(new Throwable(error))
             case Right((nodeAddress, restPort)) =>
               val uri = Uri(nodeAddress.getHostAddress, restPort)
-              _send(getBlock, uri, hash).map(blockProtocolToEntity)
+              _send(getRichBlockAndEvents, uri, hash).map(result =>
+                RichBlockConverter.block(result.block)
+              )
           }
         }
       } else {
-        _send(getBlock, uri, hash).map(blockProtocolToEntity)
+        _send(getRichBlockAndEvents, uri, hash).map(result =>
+          RichBlockConverter.block(result.block)
+        )
       }
 
     def fetchBlockAndEvents(
@@ -186,11 +190,11 @@ object BlockFlowClient extends StrictLogging {
             case Left(error) => Future.failed(new Throwable(error))
             case Right((nodeAddress, restPort)) =>
               val uri = Uri(nodeAddress.getHostAddress, restPort)
-              _send(getBlockAndEvents, uri, hash).map(blockAndEventsToEntities)
+              _send(getRichBlockAndEvents, uri, hash).map(RichBlockConverter.withEvents)
           }
         }
       } else {
-        _send(getBlockAndEvents, uri, hash).map(blockAndEventsToEntities)
+        _send(getRichBlockAndEvents, uri, hash).map(RichBlockConverter.withEvents)
       }
     }
 
@@ -206,10 +210,10 @@ object BlockFlowClient extends StrictLogging {
         toTs: TimeStamp,
         uri: Uri
     ): Future[ArraySeq[ArraySeq[BlockEntityWithEvents]]] = {
-      _send(getBlocksAndEvents, uri, api.model.TimeInterval(fromTs, toTs))
+      _send(getRichBlocksAndEvents, uri, api.model.TimeInterval(fromTs, toTs))
         .map(
           _.blocksAndEvents
-            .map(_.map(blockAndEventsToEntities).toArraySeq)
+            .map(_.map(RichBlockConverter.withEvents).toArraySeq)
             .toArraySeq
         )
     }
