@@ -61,7 +61,12 @@ object TransactionQueries extends StrictLogging {
       inputs: ArraySeq[InputEntity]
   ): DBActionRWT[Unit] = {
     DBIOAction
-      .seq(insertTransactions(transactions), insertInputs(inputs), insertOutputs(outputs))
+      .seq(
+        insertTransactions(transactions),
+        insertInputs(inputs),
+        InputIndexQueries.insert(inputs),
+        insertOutputs(outputs)
+      )
       .transactionally
   }
 

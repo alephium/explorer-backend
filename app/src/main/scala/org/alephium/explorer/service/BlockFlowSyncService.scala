@@ -22,7 +22,7 @@ import org.alephium.explorer.error.ExplorerError.BlocksInDifferentChains
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.BlockDao
 import org.alephium.explorer.persistence.model.{BlockEntity, BlockEntityWithEvents, EventEntity}
-import org.alephium.explorer.persistence.queries.{BlockQueries, InputUpdateQueries}
+import org.alephium.explorer.persistence.queries.BlockQueries
 import org.alephium.explorer.util.{Scheduler, TimeUtil}
 import org.alephium.protocol.model.{BlockHash, ChainIndex, GroupIndex}
 import org.alephium.util.{Duration, TimeStamp}
@@ -139,7 +139,6 @@ case object BlockFlowSyncService extends StrictLogging {
         res <- Future
           .sequence(multiChain.map(insertBlocks))
           .map(_.sum)
-        _ <- dc.db.run(InputUpdateQueries.updateInputs())
         _ <- updateMetadatas(blockFlowClient)
         _ <- ConflictedTxsService.handleConflictedTxs(multiChain.flatMap(_.map(_.block)))
       } yield res

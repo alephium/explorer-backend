@@ -33,7 +33,7 @@ import org.alephium.explorer.config.{BootMode, ExplorerConfig, TestExplorerConfi
 import org.alephium.explorer.persistence.DatabaseFixture
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.persistence.model.BlockEntity
-import org.alephium.explorer.service.BlockFlowClient
+import org.alephium.explorer.service.RichBlockConverter
 import org.alephium.explorer.service.market.MarketServiceSpec
 import org.alephium.explorer.util.TestUtils._
 import org.alephium.explorer.util.TestUtxoUtil
@@ -73,7 +73,9 @@ trait ExplorerSpec extends AlephiumFutureSpec with DatabaseFixtureForAll with Ht
 
   val blocksProtocol: ArraySeq[model.BlockEntry] = blockflow.flatten
   val blockEntities: ArraySeq[BlockEntity] =
-    blocksProtocol.map(BlockFlowClient.blockProtocolToEntity)
+    blocksProtocol.map(block =>
+      RichBlockConverter.block(RichBlockFixtures.from(block, blocksProtocol))
+    )
 
   val blocks: ArraySeq[BlockEntryTest] = blockEntitiesToBlockEntries(
     ArraySeq(blockEntities)

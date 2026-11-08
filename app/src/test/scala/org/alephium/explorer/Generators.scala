@@ -74,15 +74,27 @@ object Generators {
   }
 
   def inputEntityToApi(input: InputEntity, outputRef: Option[OutputEntity]): Input =
-    Input(
-      OutputRef(input.hint, input.outputRefKey),
-      input.unlockScript,
-      outputRef.map(_.txHash),
-      outputRef.map(_.address),
-      outputRef.map(_.amount),
-      outputRef.flatMap(_.tokens),
-      input.contractInput
-    )
+    if (input.outputRefAmount.isDefined) {
+      Input(
+        OutputRef(input.hint, input.outputRefKey),
+        input.unlockScript,
+        input.outputRefTxHash,
+        input.outputRefAddress,
+        input.outputRefAmount,
+        input.outputRefTokens,
+        input.contractInput
+      )
+    } else {
+      Input(
+        OutputRef(input.hint, input.outputRefKey),
+        input.unlockScript,
+        outputRef.map(_.txHash),
+        outputRef.map(_.address),
+        outputRef.map(_.amount),
+        outputRef.flatMap(_.tokens),
+        input.contractInput
+      )
+    }
 
   def outputEntityToApi(o: OutputEntity, spent: Option[TransactionId]): Output = {
     o.outputType match {
