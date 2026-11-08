@@ -358,11 +358,18 @@ object TokenQueries extends StrictLogging {
     """
   }
 
+  // Include legacy supported classifications whose metadata was never stored.
   def listTokenWithoutInterfaceIdQuery(): DBActionW[ArraySeq[TokenId]] = {
     sql"""
       SELECT token
       FROM token_info
       WHERE interface_id IS NULL
+      OR (category = ${StdInterfaceId.FungibleToken.category} AND NOT EXISTS (
+        SELECT 1 FROM fungible_token_metadata WHERE token = token_info.token
+      ))
+      OR (category = ${StdInterfaceId.NFT.category} AND NOT EXISTS (
+        SELECT 1 FROM nft_metadata WHERE token = token_info.token
+      ))
     """.asAS[TokenId]
   }
 

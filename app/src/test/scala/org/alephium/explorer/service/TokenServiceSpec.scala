@@ -4,6 +4,7 @@
 package org.alephium.explorer.service
 
 import scala.collection.immutable.ArraySeq
+import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 
 import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
@@ -15,8 +16,10 @@ import org.alephium.explorer.AlephiumFutureSpec
 import org.alephium.explorer.ConfigDefaults._
 import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
+import org.alephium.explorer.api.model.StdInterfaceId
 import org.alephium.explorer.persistence.{DatabaseFixture, DBRunner}
 import org.alephium.explorer.persistence.queries.ContractQueries
+import org.alephium.protocol.model.Address
 
 class TokenServiceSpec extends AlephiumFutureSpec with ScalaFutures {
 
@@ -49,7 +52,12 @@ class TokenServiceSpec extends AlephiumFutureSpec with ScalaFutures {
         val events     = ArraySeq.fill(50)(createEventGen(groupIndex).sample.get)
         DBRunner.run(ContractQueries.insertContractCreation(events, groupIndex)).futureValue
 
-        val client = new EmptyBlockFlowClient {}
+        val client = new EmptyBlockFlowClient {
+          override def guessStdInterfaceId(
+              address: Address.Contract
+          ): Future[Option[StdInterfaceId]] =
+            Future.successful(Some(StdInterfaceId.NonStandard))
+        }
 
         TokenService.updateContractsMetadata(client).futureValue is ()
 
