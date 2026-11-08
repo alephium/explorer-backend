@@ -462,6 +462,13 @@ object CustomGetResult {
         hashrate = result.<<
       )
 
+  implicit val dbVersionGetResult: GetResult[AppState.DbVersion] =
+    (result: PositionedResult) =>
+      AppState.DbVersion(ByteString.fromArrayUnsafe(result.nextBytes())) match {
+        case Left(error)  => throw error
+        case Right(value) => value
+      }
+
   implicit val migrationVersionGetResult: GetResult[AppState.MigrationVersion] =
     (result: PositionedResult) =>
       AppState.MigrationVersion(ByteString.fromArrayUnsafe(result.nextBytes())) match {

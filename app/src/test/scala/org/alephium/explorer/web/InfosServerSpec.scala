@@ -8,6 +8,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import slick.basic.DatabaseConfig
 import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer._
 import org.alephium.explorer.ConfigDefaults._
@@ -16,6 +17,7 @@ import org.alephium.explorer.api.model._
 import org.alephium.explorer.cache.{BlockCache, TestBlockCache, TransactionCache}
 import org.alephium.explorer.config.BootMode
 import org.alephium.explorer.persistence.{Database, DatabaseFixtureForAll, Migrations}
+import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.service._
 import org.alephium.protocol.ALPH
 import org.alephium.util.TimeStamp
@@ -95,9 +97,22 @@ class InfosServerSpec()
         BuildInfo.releaseVersion,
         BuildInfo.commitId,
         Migrations.latestVersion.version,
+        Migrations.latestDbVersion.version,
         TimeStamp.zero,
         TimeStamp.zero
       )
+    }
+  }
+
+  "report zero for an unversioned legacy database" in {
+    databaseConfig.db.run(sqlu"DELETE FROM app_state WHERE key = 'db_version'").futureValue
+    try {
+      Get(s"/infos") check { response =>
+        response.as[ExplorerInfo].dbVersion is 0
+      }
+    } finally {
+      databaseConfig.db.run(AppStateQueries.insertOrUpdate(Migrations.latestDbVersion)).futureValue
+      ()
     }
   }
 

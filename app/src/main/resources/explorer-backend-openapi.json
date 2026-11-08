@@ -4325,6 +4325,7 @@
                   "releaseVersion": "1.11.2+17-00593e8e-SNAPSHOT",
                   "commit": "00593e8e8c718d6bd27fe218e7aa438ef56611cc",
                   "migrationsVersion": 1,
+                  "dbVersion": 1,
                   "lastFinalizedInputTime": 1611041396892,
                   "lastHoldersUpdate": 1611041396892
                 }
@@ -9499,6 +9500,7 @@
           "releaseVersion",
           "commit",
           "migrationsVersion",
+          "dbVersion",
           "lastFinalizedInputTime",
           "lastHoldersUpdate"
         ],
@@ -9510,6 +9512,10 @@
             "type": "string"
           },
           "migrationsVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dbVersion": {
             "type": "integer",
             "format": "int32"
           },

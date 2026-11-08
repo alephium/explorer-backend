@@ -24,7 +24,7 @@ class Database(bootMode: BootMode)(implicit
   override def startSelfOnce(): Future[Unit] =
     bootMode match {
       case BootMode.ReadOnly =>
-        HealthCheckDao.healthCheck().mapSyncToUnit()
+        DBInitializer.checkDbVersion().flatMap(_ => HealthCheckDao.healthCheck().mapSyncToUnit())
 
       case BootMode.ReadWrite | BootMode.WriteOnly =>
         DBInitializer.initialize().mapSyncToUnit()
