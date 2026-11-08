@@ -69,6 +69,25 @@ class ExplorerConfigSpec extends AlephiumSpec with ScalaCheckDrivenPropertyCheck
         }
     }
 
+    "keep the daily holder schedule unless an interval is configured" in {
+      TestExplorerConfig().holderServiceSyncPeriod is None
+      val config = ConfigFactory
+        .parseString("alephium.explorer.holder-service-sync-period = 2 hours")
+        .withFallback(TestExplorerConfig.typesafeConfig())
+        .resolve()
+      ExplorerConfig.load(config).holderServiceSyncPeriod is Some(2.hours)
+    }
+
+    "reject non-positive holder intervals" in {
+      Seq("0 seconds", "-1 second").foreach { period =>
+        val config = ConfigFactory
+          .parseString(s"alephium.explorer.holder-service-sync-period = $period")
+          .withFallback(TestExplorerConfig.typesafeConfig())
+          .resolve()
+        Try(ExplorerConfig.load(config)).isFailure is true
+      }
+    }
+
     "reject unknown PowFi pool types" in {
       val config = ConfigFactory.parseString("type = uniswap")
       Try(config.as[PowfiPool.Type]("type")).isFailure is true

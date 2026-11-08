@@ -4,8 +4,10 @@
 package org.alephium.explorer.service
 
 import java.math.BigInteger
+import java.time.LocalTime
 
 import scala.collection.immutable.ArraySeq
+import scala.concurrent.duration._
 
 import slick.jdbc.PostgresProfile.api._
 
@@ -21,11 +23,36 @@ import org.alephium.explorer.persistence._
 import org.alephium.explorer.persistence.dao._
 import org.alephium.explorer.persistence.model._
 import org.alephium.explorer.persistence.schema.CustomGetResult._
+import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.SlickUtil._
+import org.alephium.explorer.util.TestUtils._
 import org.alephium.protocol.model.{Address, ChainIndex, GroupIndex}
 import org.alephium.util.{Duration, TimeStamp, U256}
 
 class HolderServiceSpec extends AlephiumFutureSpec with DatabaseFixtureForEach {
+
+  "synchronize repeatedly at the configured interval" in new Fixture {
+    val blocks   = chainGen(4, TimeStamp.now(), ChainIndex.unsafe(0, 0)).sample.get
+    val entities = blocks.map(BlockFlowClient.blockProtocolToEntity)
+    insertAndFinalize(entities.take(2))
+    using(Scheduler("holder-interval-test")) { implicit scheduler =>
+      HolderService.start(LocalTime.MIDNIGHT, Some(50.millis)).futureValue
+      eventually {
+        val (finalized, updated) =
+          databaseConfig.db.run(HolderService.getLatestTimestamps()).futureValue
+        updated.isDefined is true
+        updated is finalized
+        checkBalances(blocks.take(2))
+      }
+      insertAndFinalize(entities.drop(2))
+      eventually {
+        val (finalized, updated) =
+          databaseConfig.db.run(HolderService.getLatestTimestamps()).futureValue
+        updated is finalized
+        checkBalances(blocks)
+      }
+    }
+  }
 
   "insert initial table" in new Fixture {
     val blocks = chainGen(4, TimeStamp.now(), ChainIndex.unsafe(0, 0)).sample.get

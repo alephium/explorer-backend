@@ -7,6 +7,7 @@ import java.time.{Instant, LocalTime, ZonedDateTime, ZoneOffset}
 
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.FiniteDuration
 
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
@@ -24,7 +25,7 @@ import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.Scheduler
 import org.alephium.explorer.util.SlickUtil._
 import org.alephium.protocol.model.TokenId
-import org.alephium.util.TimeStamp
+import org.alephium.util.{discard, TimeStamp}
 
 trait HolderService {
   def getAlphHolders(pagination: Pagination)(implicit
@@ -57,18 +58,23 @@ case object HolderService extends HolderService with StrictLogging {
     })
   }
 
-  def start(scheduleTime: LocalTime)(implicit
+  def start(scheduleTime: LocalTime, syncPeriod: Option[FiniteDuration])(implicit
       executionContext: ExecutionContext,
       databaseConfig: DatabaseConfig[PostgresProfile],
       scheduler: Scheduler
   ): Future[Unit] = {
     Future.successful {
-      scheduler.scheduleDailyAt(
-        taskId = HolderService.productPrefix,
-        at = ZonedDateTime
-          .ofInstant(Instant.EPOCH, ZoneOffset.UTC)
-          .plusSeconds(scheduleTime.toSecondOfDay().toLong)
-      )(syncOnce())
+      syncPeriod match {
+        case Some(period) =>
+          discard(scheduler.scheduleLoop(HolderService.productPrefix, period)(syncOnce()))
+        case None =>
+          scheduler.scheduleDailyAt(
+            taskId = HolderService.productPrefix,
+            at = ZonedDateTime
+              .ofInstant(Instant.EPOCH, ZoneOffset.UTC)
+              .plusSeconds(scheduleTime.toSecondOfDay().toLong)
+          )(syncOnce())
+      }
     }
   }
 
