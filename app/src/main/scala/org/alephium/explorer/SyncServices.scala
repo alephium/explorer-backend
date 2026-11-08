@@ -52,6 +52,7 @@ object SyncServices extends StrictLogging {
             peers = peers,
             syncPeriod = config.syncPeriod,
             holderServiceScheduleTime = config.holderServiceScheduleTime,
+            holderServiceSyncPeriod = config.holderServiceSyncPeriod,
             tokenSupplyServiceScheduleTime = config.tokenSupplyServiceScheduleTime,
             hashRateServiceSyncPeriod = config.hashRateServiceSyncPeriod,
             finalizerServiceSyncPeriod = config.finalizerServiceSyncPeriod,
@@ -67,6 +68,7 @@ object SyncServices extends StrictLogging {
       peers: ArraySeq[Uri],
       syncPeriod: FiniteDuration,
       holderServiceScheduleTime: LocalTime,
+      holderServiceSyncPeriod: Option[FiniteDuration],
       tokenSupplyServiceScheduleTime: LocalTime,
       hashRateServiceSyncPeriod: FiniteDuration,
       finalizerServiceSyncPeriod: FiniteDuration,
@@ -91,7 +93,7 @@ object SyncServices extends StrictLogging {
               TokenSupplyService.start(tokenSupplyServiceScheduleTime),
               HashrateService.start(hashRateServiceSyncPeriod),
               FinalizerService.start(finalizerServiceSyncPeriod),
-              HolderService.start(holderServiceScheduleTime),
+              HolderService.start(holderServiceScheduleTime, holderServiceSyncPeriod),
               TransactionHistoryService.start(transactionHistoryServiceSyncPeriod)
             )
           )
