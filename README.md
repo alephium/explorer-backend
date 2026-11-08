@@ -204,3 +204,7 @@ apiMappings ++=
     )
   )
 ```
+
+## Metadata retries
+
+See [metadata retry behavior and recovery](docs/metadata-retries.md) for pending lookups and historical rows.

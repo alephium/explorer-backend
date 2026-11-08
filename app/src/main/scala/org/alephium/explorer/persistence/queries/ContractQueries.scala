@@ -173,11 +173,17 @@ object ContractQueries {
     """
   }
 
+  // Include legacy supported classifications whose metadata was never stored.
   def listContractWithoutInterfaceIdQuery(): DBActionW[ArraySeq[Address.Contract]] = {
     sql"""
       SELECT contract
       FROM contracts
-      WHERE interface_id IS NULL
+      WHERE (interface_id IS NULL OR (
+        interface_id IN (${StdInterfaceId.NFTCollection.id}, ${StdInterfaceId.NFTCollectionWithRoyalty.id})
+        AND NOT EXISTS (
+          SELECT 1 FROM nft_collection_metadata WHERE contract = contracts.contract
+        )
+      ))
       AND destruction_block_hash IS NULL
     """.asASE[Address.Contract](addressContractGetResult)
   }

@@ -5,6 +5,7 @@ package org.alephium.explorer.service
 
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 import com.typesafe.scalalogging.StrictLogging
 import slick.basic.DatabaseConfig
@@ -182,8 +183,8 @@ object TokenService extends TokenService with StrictLogging {
     run(listContractWithoutInterfaceIdQuery())
   }
 
-  // Interface Id is store after the metadata is stored in case it fail in the middle of the
-  // metadata insert. As we rely on the empyt interface id to know which token to update.
+  // The NULL interface id is the durable pending-metadata checkpoint. Only mark a
+  // supported token complete after storing metadata; unavailable results retry on the next sync.
   def fetchAndStoreTokenMetadata(token: TokenId, blockflowClient: BlockFlowClient)(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile]
@@ -199,7 +200,7 @@ object TokenService extends TokenService with StrictLogging {
                 _ <- updateTokenInterfaceId(token, fungible)
               } yield ()).transactionally)
             case None =>
-              run(updateTokenInterfaceId(token, fungible)).map(_ => ())
+              Future.unit
           }
         case Some(nft: StdInterfaceId.NFT) =>
           blockflowClient.fetchNFTMetadata(token).flatMap {
@@ -209,7 +210,7 @@ object TokenService extends TokenService with StrictLogging {
                 _ <- updateTokenInterfaceId(token, nft)
               } yield ()).transactionally)
             case None =>
-              run(updateTokenInterfaceId(token, nft)).map(_ => ())
+              Future.unit
           }
         // NFT collection aren't token
         // We store them anyway to avoid fetching them again
@@ -226,7 +227,7 @@ object TokenService extends TokenService with StrictLogging {
         case Some(StdInterfaceId.NonStandard) =>
           run(updateTokenInterfaceId(token, StdInterfaceId.NonStandard)).map(_ => ())
         case None =>
-          run(updateTokenInterfaceId(token, StdInterfaceId.NonStandard)).map(_ => ())
+          Future.unit
       }
     }
   }
@@ -248,10 +249,8 @@ object TokenService extends TokenService with StrictLogging {
                 _ <- updateContractInterfaceId(contract, interfaceIdOpt.get)
               } yield ()).transactionally)
             case None =>
-              logger.error(
-                s"Contract $contract is a NFTCollection or NFTCollectionWithRoyalty but no metadata found"
-              )
-              run(updateContractInterfaceId(contract, interfaceIdOpt.get)).map(_ => ())
+              logger.debug(s"Metadata unavailable for collection $contract; retry on the next sync")
+              Future.unit
           }
         case Some(fungible: StdInterfaceId.FungibleToken) =>
           run(updateContractInterfaceId(contract, fungible)).map(_ => ())
@@ -262,7 +261,7 @@ object TokenService extends TokenService with StrictLogging {
         case Some(unknown: StdInterfaceId.Unknown) =>
           run(updateContractInterfaceId(contract, unknown)).map(_ => ())
         case None =>
-          run(updateContractInterfaceId(contract, StdInterfaceId.NonStandard)).map(_ => ())
+          Future.unit
       }
     }
   }
@@ -273,7 +272,13 @@ object TokenService extends TokenService with StrictLogging {
   ): Future[Unit] = {
     listTokenWithoutInterfaceId()
       .flatMap { tokens =>
-        foldFutures(tokens) { token => fetchAndStoreTokenMetadata(token, blockFlowClient) }
+        foldFutures(tokens) { token =>
+          Future.unit
+            .flatMap(_ => fetchAndStoreTokenMetadata(token, blockFlowClient))
+            .recover { case NonFatal(error) =>
+              logger.warn(s"Cannot update metadata for token $token; retry on the next sync", error)
+            }
+        }
       }
       .map(_ => ())
   }
@@ -285,7 +290,14 @@ object TokenService extends TokenService with StrictLogging {
     listContractWithoutInterfaceId()
       .flatMap { contracts =>
         foldFutures(contracts) { contract =>
-          fetchAndStoreContractMetadata(contract, blockFlowClient)
+          Future.unit
+            .flatMap(_ => fetchAndStoreContractMetadata(contract, blockFlowClient))
+            .recover { case NonFatal(error) =>
+              logger.warn(
+                s"Cannot update metadata for contract $contract; retry on the next sync",
+                error
+              )
+            }
         }
       }
       .map(_ => ())
