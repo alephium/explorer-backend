@@ -169,6 +169,36 @@ Execute the following `sbt` commands to run JMH benchmarks
 sbt benchmark/jmh:run
 ```
 
+## Daily token supply
+
+`GET /tokens/{token_id}/supply?page=1&limit=20` returns daily snapshots newest first:
+
+```json
+[{"timestamp":1636415999999,"total":"1000000000000000000"}]
+```
+
+`timestamp` is the UTC day-end Unix time in milliseconds. `total` is the sum of raw
+unspent token amounts, serialized as a decimal string; apply token metadata decimals
+when displaying it. All token IDs are supported, including NFTs. Locked outputs and
+reserved addresses are included. Fully spent/burned tokens have a zero total on later
+days. Unknown tokens, or tokens without a completed snapshot, return an empty array.
+No ALPH maximum or circulating-supply exclusions apply to this endpoint.
+
+The existing daily token-supply schedule also updates this history. Only complete UTC
+days reached by every chain and processed by the output finalizer are recorded. A
+writer creates the new table during startup and backfills history from launch on the
+daily schedule. Initialize or upgrade the database with a writer before serving this
+endpoint from read-only instances; read-only startup does not create missing tables.
+The first backfill can take longer on a large database.
+A separate checkpoint resumes missed days without depending on existing ALPH snapshots.
+Each day's rows and checkpoint commit together, including days with no tokens.
+
+Snapshots describe canonical, non-conflicted outputs as known when computed. Like
+existing ALPH history, they are not automatically rewritten for a reorganization
+that changes already finalized historical days. Rebuilding affected historical data
+requires resetting this derived history and its `last_token_supply_update` checkpoint
+together after the underlying output history has been corrected.
+
 ## Testing
 
 The tests are using the Postgresql database and the default `postgres` table.

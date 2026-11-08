@@ -15,7 +15,7 @@ import org.alephium.explorer.persistence.queries.ExplainResult
 import org.alephium.protocol.{ALPH, PublicKey}
 import org.alephium.protocol.mining.HashRate
 import org.alephium.protocol.model.{Address, BlockHash, ContractId, GroupIndex, TokenId}
-import org.alephium.util.{Hex, U256}
+import org.alephium.util.{Hex, TimeStamp, U256}
 
 /** Contains OpenAPI Examples.
   */
@@ -446,6 +446,13 @@ object EndpointExamples extends EndpointsExamples {
 
   implicit val explorerInfoExample: List[Example[ExplorerInfo]] =
     simpleExample(explorerInfo)
+
+  implicit val tokenSupplySnapshotExample: List[Example[ArraySeq[TokenSupplySnapshot]]] =
+    simpleExample(
+      ArraySeq(
+        TokenSupplySnapshot(TimeStamp.unsafe(1636415999999L), U256.unsafe(1000000000000000000L))
+      )
+    )
 
   implicit val tokenSupplyExample: List[Example[ArraySeq[TokenSupply]]] =
     simpleExample(ArraySeq(tokenSupply, tokenSupply))
