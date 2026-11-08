@@ -60,8 +60,7 @@ class ApiModelSpec() extends AlephiumSpec {
         // No inputs or outputs so no addresses nor amounts
         val expected =
           s"${Instant.ofEpochMilli(tx.timestamp.millis)},0,ALPH,${tx.hash.toHexString},,${tx.outputs.map(_.address).mkString("-")}\n"
-        tx.toCsv(apiAddressGen.sample.get, Map.empty)
-        expected
+        tx.toCsv(apiAddressGen.sample.get, Map.empty) is expected
       }
 
       val address = Address.fromBase58("1AujpupFP4KWeZvqA7itsHY9cLJmx4qTzojVZrg8W9y9n").rightValue
