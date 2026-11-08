@@ -42,8 +42,15 @@ final case class Transaction(
   def toCsv(address: ApiAddress, metadata: Map[TokenId, FungibleTokenMetadata]): String = {
     val dateTime      = Instant.ofEpochMilli(timestamp.millis)
     val fromAddresses = UtxoUtil.fromAddresses(inputs)
+    // An input address can also receive a net transfer (for example in a contract call).
+    // Only hide addresses returning change for this asset, not every input address.
+    val changeAddresses = fromAddresses.filter { from =>
+      UtxoUtil
+        .deltaAmountForAddress(ApiAddress.fromProtocol(from), inputs, outputs)
+        .exists(_.signum <= 0)
+    }
     val toAddresses =
-      UtxoUtil.toAddressesWithoutChangeAddresses(outputs, fromAddresses)
+      UtxoUtil.toAddressesWithoutChangeAddresses(outputs, changeAddresses)
     val deltaAmount = UtxoUtil.deltaAmountForAddress(address, inputs, outputs)
     val amountHint = deltaAmount
       .map(delta =>
@@ -58,8 +65,14 @@ final case class Transaction(
         val metadataOpt      = metadata.get(token)
         val asset            = metadataOpt.map(_.symbol).getOrElse(token.toHexString)
         val tokenFromAddress = UtxoUtil.fromTokenAddresses(token, inputs)
+        val tokenChangeAddresses = tokenFromAddress.filter { from =>
+          UtxoUtil
+            .deltaTokenAmountForAddress(ApiAddress.fromProtocol(from), inputs, outputs)
+            .get(token)
+            .forall(_.signum <= 0)
+        }
         val tokenToAddress =
-          UtxoUtil.toTokenAddressesWithoutChangeAddresses(token, outputs, tokenFromAddress)
+          UtxoUtil.toTokenAddressesWithoutChangeAddresses(token, outputs, tokenChangeAddresses)
         val deltaHint = metadataOpt
           .map { metadata =>
             new java.math.BigDecimal(delta)
