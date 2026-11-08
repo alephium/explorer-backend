@@ -11,6 +11,7 @@ final case class ExplorerInfo(
     releaseVersion: String,
     commit: String,
     migrationsVersion: Int,
+    dbVersion: Int,
     lastFinalizedInputTime: TimeStamp,
     lastHoldersUpdate: TimeStamp
 )

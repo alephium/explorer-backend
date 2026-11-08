@@ -16,7 +16,10 @@ import slick.jdbc.meta.MTable
 import org.alephium.explorer.AnyOps
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.persistence.DBRunner._
+import org.alephium.explorer.persistence.model.AppState.DbVersion
+import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.persistence.schema._
+import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.util.discard
 
 object DBInitializer extends StrictLogging {
@@ -64,6 +67,7 @@ object DBInitializer extends StrictLogging {
       databaseConfig: DatabaseConfig[PostgresProfile]
   ): Future[Unit] = {
     for {
+      _ <- checkDbVersion()
       _ <- createTables()
       _ <- Migrations.migrate(databaseConfig)
       _ <- createIndexes()
@@ -72,6 +76,19 @@ object DBInitializer extends StrictLogging {
       ()
     }
   }
+
+  /** Reject incompatible schemas before creating tables or indexes. */
+  def checkDbVersion()(implicit
+      executionContext: ExecutionContext,
+      databaseConfig: DatabaseConfig[PostgresProfile]
+  ): Future[Unit] =
+    run(MTable.getTables(None, None, None, Some(Seq("TABLE")))).flatMap { tables =>
+      if (!tables.exists(_.name.name === "app_state")) {
+        Future.unit
+      } else {
+        run(AppStateQueries.get(DbVersion).flatMap(Migrations.checkDbVersion))
+      }
+    }
 
   private def createTables()(implicit
       executionContext: ExecutionContext,

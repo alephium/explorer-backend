@@ -30,6 +30,14 @@ class AppStateQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
       }
     }
 
+    "write DbVersion independently of the migration counter" in {
+      exec(AppStateQueries.insert(AppState.DbVersion(1))) is 1
+      exec(AppStateQueries.insert(AppState.MigrationVersion(11))) is 1
+      exec(AppStateQueries.insertOrUpdate(AppState.MigrationVersion(0))) is 1
+      exec(AppStateQueries.get(AppState.DbVersion)) is Some(AppState.DbVersion(1))
+      exec(AppStateQueries.get(AppState.MigrationVersion)) is Some(AppState.MigrationVersion(0))
+    }
+
     "write MigrationVersion key-value" in {
       forAll { (int: Int) =>
         exec(AppStateSchema.table.delete)
@@ -59,6 +67,10 @@ class AppStateQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
           a[SerdeError.WrongFormat]
         ) or be(a[org.postgresql.util.PSQLException]))
       }
+    }
+
+    "fail to read corrupted DbVersion" in {
+      checkFailure(AppState.DbVersion)
     }
 
     "fail to read corrupted MigrationVersion" in {

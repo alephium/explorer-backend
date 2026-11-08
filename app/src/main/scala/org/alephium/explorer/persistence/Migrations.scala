@@ -14,7 +14,7 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.config.ExplorerConfig
 import org.alephium.explorer.foldFutures
-import org.alephium.explorer.persistence.model.AppState.MigrationVersion
+import org.alephium.explorer.persistence.model.AppState.{DbVersion, MigrationVersion}
 import org.alephium.explorer.persistence.queries.AppStateQueries
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
@@ -30,6 +30,21 @@ object Migrations extends StrictLogging {
 
   // scalastyle:off magic.number
   val latestVersion: MigrationVersion = MigrationVersion(11)
+
+  // Monotonic schema generation. Never reset this when resetting the migration counter.
+  val latestDbVersion: DbVersion = DbVersion(1)
+
+  def checkDbVersion(version: Option[DbVersion]): DBActionAll[Unit] = version match {
+    // Unversioned databases use the existing, supported migration path for initial adoption.
+    case None | Some(DbVersion(latestDbVersion.version)) => DBIOAction.successful(())
+    case Some(DbVersion(current)) =>
+      DBIOAction.failed(
+        new IllegalStateException(
+          s"Incompatible database schema version $current; expected ${latestDbVersion.version}. " +
+            "Use a compatible explorer release or rebuild the database."
+        )
+      )
+  }
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     // We retrigger the download of fungible and non-fungible tokens' metadata that have sub-category
@@ -327,7 +342,7 @@ object Migrations extends StrictLogging {
       case None | Some(MigrationVersion(latestVersion.version)) =>
         logger.info(s"No migrations needed")
         DBIOAction.successful(())
-      case Some(MigrationVersion(current)) if current > latestVersion.version =>
+      case Some(MigrationVersion(current)) if current < 0 || current > latestVersion.version =>
         throw new Exception("Incompatible migration versions, please reset your database")
       case Some(MigrationVersion(current)) =>
         logger.info(s"Applying ${latestVersion.version - current} migrations")
@@ -351,7 +366,7 @@ object Migrations extends StrictLogging {
       case None | Some(MigrationVersion(latestVersion.version)) =>
         logger.info(s"No background migrations needed")
         Future.unit
-      case Some(MigrationVersion(current)) if current > latestVersion.version =>
+      case Some(MigrationVersion(current)) if current < 0 || current > latestVersion.version =>
         throw new Exception("Incompatible migration versions, please reset your database")
       case Some(MigrationVersion(_)) =>
         /*
@@ -409,10 +424,13 @@ object Migrations extends StrictLogging {
     logger.info("Migrating")
     for {
       currentVersion <- DBRunner
-        .run(databaseConfig)(for {
-          version <- getVersion()
-          _       <- migrationsQuery(version)
-        } yield version)
+        .run(databaseConfig)((for {
+          dbVersion <- AppStateQueries.get(DbVersion)
+          _         <- checkDbVersion(dbVersion)
+          version   <- getVersion()
+          _         <- migrationsQuery(version)
+          _         <- AppStateQueries.insertOrUpdate(latestDbVersion)
+        } yield version).transactionally)
       _ <- runMigrateInBackground(currentVersion)(explorerConfig, ec, databaseConfig)
     } yield ()
   }

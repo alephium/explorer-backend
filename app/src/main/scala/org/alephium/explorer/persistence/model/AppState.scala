@@ -52,6 +52,7 @@ object AppState {
   def unapply(result: AppState): (AppStateKey[_], ByteString) =
     result match {
       case LastFinalizedInputTime(value) => (LastFinalizedInputTime, serialize(value))
+      case DbVersion(value)              => (DbVersion, serialize(value))
       case MigrationVersion(value)       => (MigrationVersion, serialize(value))
       case LastHoldersUpdate(value)      => (LastHoldersUpdate, serialize(value))
       case FinalizedTxCount(value)       => (FinalizedTxCount, serialize(value))
@@ -65,6 +66,15 @@ object AppState {
   }
 
   final case class LastFinalizedInputTime(time: TimeStamp) extends AppState
+
+  object DbVersion extends AppStateKey[DbVersion] {
+    val key = "db_version"
+
+    def apply(bytes: ByteString): Either[SerdeError, DbVersion] =
+      deserialize[Int](bytes).map(DbVersion(_))
+  }
+
+  final case class DbVersion(version: Int) extends AppState
 
   object MigrationVersion extends AppStateKey[MigrationVersion] {
     val key = "migrations_version"
@@ -95,6 +105,6 @@ object AppState {
 
   /** All the keys */
   def keys(): Array[AppStateKey[_]] =
-    Array(LastFinalizedInputTime, MigrationVersion, LastHoldersUpdate)
+    Array(LastFinalizedInputTime, MigrationVersion, DbVersion, LastHoldersUpdate)
 
 }
