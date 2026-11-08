@@ -5,6 +5,7 @@ package org.alephium.explorer
 
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.util._
 
 import org.scalacheck.Gen
@@ -18,6 +19,8 @@ import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.config._
 import org.alephium.explorer.error.ExplorerError._
 import org.alephium.explorer.service.BlockFlowClient
+import org.alephium.explorer.util.Scheduler
+import org.alephium.explorer.util.TestUtils._
 
 /** Temporary placeholder. These tests should be merged into ApplicationSpec */
 class SyncServicesSpec
@@ -25,6 +28,85 @@ class SyncServicesSpec
     with Matchers
     with ScalaCheckDrivenPropertyChecks
     with MockFactory {
+
+  "getPeersWithRetry" should {
+    val config = TestExplorerConfig()
+
+    "retry connection failures until the node becomes available" in {
+      implicit val client: BlockFlowClient = mock[BlockFlowClient]
+      val params                           = genChainParams(config.networkId).sample.get
+      inSequence {
+        (client.fetchChainParams _).expects() returning Future.failed(
+          NodeError(new java.net.ConnectException("offline"))
+        )
+        (client.fetchChainParams _).expects() returning Future.failed(
+          NodeError(new java.net.SocketTimeoutException("timeout"))
+        )
+        (client.fetchChainParams _).expects() returning Future.successful(params)
+      }
+      using(Scheduler("retry-test")) { implicit scheduler =>
+        SyncServices
+          .getPeersWithRetry(config.networkId, false, config.blockFlowUri, Some(10.millis))
+          .futureValue is ArraySeq(config.blockFlowUri)
+      }
+    }
+
+    "retry a connection failure during clique discovery" in {
+      implicit val client: BlockFlowClient = mock[BlockFlowClient]
+      val params                           = genChainParams(config.networkId).sample.get
+      val clique = genSelfClique(Gen.nonEmptyListOf(genPeerAddress)).sample.get
+      inSequence {
+        (client.fetchChainParams _).expects() returning Future.successful(params)
+        (client.fetchSelfClique _).expects() returning Future.failed(
+          NodeError(new java.net.ConnectException("offline"))
+        )
+        (client.fetchChainParams _).expects() returning Future.successful(params)
+        (client.fetchSelfClique _).expects() returning Future.successful(clique)
+      }
+      using(Scheduler("retry-test")) { implicit scheduler =>
+        SyncServices
+          .getPeersWithRetry(config.networkId, true, config.blockFlowUri, Some(10.millis))
+          .futureValue is SyncServices.urisFromPeers(clique.nodes)
+      }
+    }
+
+    "fail immediately when retries are disabled" in {
+      implicit val client: BlockFlowClient = mock[BlockFlowClient]
+      val error                            = NodeError(new java.net.ConnectException("offline"))
+      (client.fetchChainParams _).expects() returning Future.failed(error)
+      using(Scheduler("retry-test")) { implicit scheduler =>
+        SyncServices
+          .getPeersWithRetry(config.networkId, false, config.blockFlowUri, None)
+          .failed
+          .futureValue is error
+      }
+    }
+
+    "not retry an API error" in {
+      implicit val client: BlockFlowClient = mock[BlockFlowClient]
+      val error                            = NodeError(NodeApiError("invalid API key"))
+      (client.fetchChainParams _).expects() returning Future.failed(error)
+      using(Scheduler("retry-test")) { implicit scheduler =>
+        SyncServices
+          .getPeersWithRetry(config.networkId, false, config.blockFlowUri, Some(10.millis))
+          .failed
+          .futureValue is error
+      }
+    }
+
+    "not retry an incompatible network" in {
+      implicit val client: BlockFlowClient = mock[BlockFlowClient]
+      val network                          = genNetworkId(exclude = config.networkId).sample.get
+      val params                           = genChainParams(network).sample.get
+      (client.fetchChainParams _).expects() returning Future.successful(params)
+      using(Scheduler("retry-test")) { implicit scheduler =>
+        SyncServices
+          .getPeersWithRetry(config.networkId, false, config.blockFlowUri, Some(10.millis))
+          .failed
+          .futureValue is ChainIdMismatch(network, config.networkId)
+      }
+    }
+  }
 
   "getBlockFlowPeers" should {
     val explorerConfig: ExplorerConfig = TestExplorerConfig()

@@ -43,10 +43,11 @@ object SyncServices extends StrictLogging {
 
       case BootMode.ReadWrite | BootMode.WriteOnly =>
         logger.info("Starting sync services")
-        getPeers(
+        getPeersWithRetry(
           networkId = config.networkId,
           directCliqueAccess = config.directCliqueAccess,
-          blockFlowUri = config.blockFlowUri
+          blockFlowUri = config.blockFlowUri,
+          retryPeriod = config.blockFlowRetryPeriod
         ) flatMap { peers =>
           startSyncServices(
             peers = peers,
@@ -109,6 +110,42 @@ object SyncServices extends StrictLogging {
           }
       }
     }
+
+  /** Retry startup discovery only for transport failures, not invalid node responses. */
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
+  def getPeersWithRetry(
+      networkId: NetworkId,
+      directCliqueAccess: Boolean,
+      blockFlowUri: Uri,
+      retryPeriod: Option[FiniteDuration]
+  )(implicit
+      ec: ExecutionContext,
+      blockFlowClient: BlockFlowClient,
+      scheduler: Scheduler
+  ): Future[ArraySeq[Uri]] = {
+    val peers = getPeers(networkId, directCliqueAccess, blockFlowUri)
+    retryPeriod match {
+      case None => peers
+      case Some(period) =>
+        peers.recoverWith {
+          case error: NodeError if isConnectionFailure(error) =>
+            logger.warn(s"Node unavailable; retrying startup in $period", error)
+            scheduler.scheduleOnce("node-startup-retry", period) {
+              getPeersWithRetry(networkId, directCliqueAccess, blockFlowUri, retryPeriod)
+            }
+        }
+    }
+  }
+
+  @scala.annotation.tailrec
+  private def isConnectionFailure(error: Throwable): Boolean = error match {
+    case _: java.io.IOException => true
+    case _ =>
+      Option(error.getCause) match {
+        case Some(cause) => isConnectionFailure(cause)
+        case None        => false
+      }
+  }
 
   /** Fetch network peers */
   def getPeers(networkId: NetworkId, directCliqueAccess: Boolean, blockFlowUri: Uri)(implicit
