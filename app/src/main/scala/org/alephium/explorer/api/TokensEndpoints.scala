@@ -37,6 +37,18 @@ trait TokensEndpoints extends BaseEndpoint with QueryParams {
       .out(jsonBody[ArraySeq[TokenInfo]])
       .summary("List given tokens information")
 
+  val listTokenSupplySnapshots: BaseEndpoint[(TokenId, Pagination), ArraySeq[TokenSupplySnapshot]] =
+    tokensEndpoint.get
+      .in(path[TokenId]("token_id"))
+      .in("supply")
+      .in(pagination)
+      .out(jsonBody[ArraySeq[TokenSupplySnapshot]])
+      .summary("List daily token supply, newest first")
+      .description(
+        "Total unspent token amounts at each completed UTC day end, including locked outputs and reserved addresses. " +
+          "Updated daily. Unknown tokens return an empty list."
+      )
+
   val listTokenTransactions: BaseEndpoint[(TokenId, Pagination), ArraySeq[Transaction]] =
     tokensEndpoint.get
       .in(path[TokenId]("token_id"))

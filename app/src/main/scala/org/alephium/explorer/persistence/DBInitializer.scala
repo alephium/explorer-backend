@@ -42,6 +42,7 @@ object DBInitializer extends StrictLogging {
       LatestBlockSchema.table,
       HashrateSchema.table,
       TokenSupplySchema.table,
+      TokenSupplySnapshotSchema.table,
       TransactionPerAddressSchema.table,
       TransactionPerTokenSchema.table,
       TokenPerAddressSchema.table,

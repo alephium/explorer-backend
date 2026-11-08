@@ -54,6 +54,7 @@ object AppState {
       case LastFinalizedInputTime(value) => (LastFinalizedInputTime, serialize(value))
       case MigrationVersion(value)       => (MigrationVersion, serialize(value))
       case LastHoldersUpdate(value)      => (LastHoldersUpdate, serialize(value))
+      case LastTokenSupplyUpdate(value)  => (LastTokenSupplyUpdate, serialize(value))
       case FinalizedTxCount(value)       => (FinalizedTxCount, serialize(value))
     }
 
@@ -93,8 +94,15 @@ object AppState {
 
   final case class FinalizedTxCount(count: Int) extends AppState
 
+  object LastTokenSupplyUpdate extends AppStateKey[LastTokenSupplyUpdate] {
+    val key = "last_token_supply_update"
+    def apply(bytes: ByteString): Either[SerdeError, LastTokenSupplyUpdate] =
+      deserialize[TimeStamp](bytes).map(LastTokenSupplyUpdate(_))
+  }
+  final case class LastTokenSupplyUpdate(time: TimeStamp) extends AppState
+
   /** All the keys */
   def keys(): Array[AppStateKey[_]] =
-    Array(LastFinalizedInputTime, MigrationVersion, LastHoldersUpdate)
+    Array(LastFinalizedInputTime, MigrationVersion, LastHoldersUpdate, LastTokenSupplyUpdate)
 
 }

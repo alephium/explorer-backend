@@ -30,6 +30,15 @@ class AppStateQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
       }
     }
 
+    "write LastTokenSupplyUpdate key-value" in {
+      forAll(timestampGen) { timestamp =>
+        exec(AppStateSchema.table.delete)
+        val insertValue = AppState.LastTokenSupplyUpdate(timestamp)
+        exec(AppStateQueries.insertOrUpdate(insertValue)) is 1
+        exec(AppStateQueries.get(AppState.LastTokenSupplyUpdate)) is Some(insertValue)
+      }
+    }
+
     "write MigrationVersion key-value" in {
       forAll { (int: Int) =>
         exec(AppStateSchema.table.delete)
@@ -63,6 +72,10 @@ class AppStateQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach
 
     "fail to read corrupted MigrationVersion" in {
       checkFailure(AppState.MigrationVersion)
+    }
+
+    "fail to read corrupted LastTokenSupplyUpdate" in {
+      checkFailure(AppState.LastTokenSupplyUpdate)
     }
 
     "fail to read corrupted LastFinalizedInputTime" in {

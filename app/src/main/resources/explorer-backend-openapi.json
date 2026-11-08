@@ -5085,6 +5085,150 @@
         }
       }
     },
+    "/tokens/{token_id}/supply": {
+      "get": {
+        "tags": [
+          "Tokens"
+        ],
+        "summary": "List daily token supply, newest first",
+        "operationId": "getTokensToken_idSupply",
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "32-byte-hash"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TokenSupplySnapshot"
+                  }
+                },
+                "example": [
+                  {
+                    "timestamp": 1636415999999,
+                    "total": "1000000000000000000"
+                  }
+                ]
+              }
+            }
+          },
+          "400": {
+            "description": "BadRequest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequest"
+                },
+                "example": {
+                  "detail": "Something bad in the request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unauthorized"
+                },
+                "example": {
+                  "detail": "You shall not pass"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NotFound",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFound"
+                },
+                "example": {
+                  "resource": "wallet-name",
+                  "detail": "wallet-name not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "InternalServerError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerError"
+                },
+                "example": {
+                  "detail": "Ouch"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
+                },
+                "example": {
+                  "detail": "Self clique unsynced"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "GatewayTimeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayTimeout"
+                },
+                "example": {
+                  "detail": "The network is slow"
+                }
+              }
+            }
+          }
+        },
+        "description": "Total unspent token amounts at each completed UTC day end, including locked outputs and reserved addresses. Updated daily. Unknown tokens return an empty list."
+      }
+    },
     "/tokens/{token_id}/transactions": {
       "get": {
         "tags": [
@@ -10232,6 +10376,24 @@
           "non-fungible",
           "non-standard"
         ]
+      },
+      "TokenSupplySnapshot": {
+        "title": "TokenSupplySnapshot",
+        "type": "object",
+        "required": [
+          "timestamp",
+          "total"
+        ],
+        "properties": {
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "string",
+            "format": "uint256"
+          }
+        }
       },
       "TokenSupply": {
         "title": "TokenSupply",

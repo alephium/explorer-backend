@@ -100,7 +100,7 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
       groupSetting: GroupSetting
   ): Future[Unit] = {
     logger.debug("Computing token supply")
-    updateTokenSupply().map { _ =>
+    updateTokenSupply().flatMap(_ => TokenSupplySnapshotService.syncOnce()).map { _ =>
       logger.debug("Token supply updated")
     }
   }
@@ -216,7 +216,7 @@ case object TokenSupplyService extends TokenSupplyService with StrictLogging {
     lockedTokensOptionQuery(at).map(_.getOrElse(U256.Zero))
 
   @SuppressWarnings(Array("org.wartremover.warts.IterableOps"))
-  private def findMinimumLatestBlockTime()(implicit
+  private[service] def findMinimumLatestBlockTime()(implicit
       ec: ExecutionContext,
       dc: DatabaseConfig[PostgresProfile],
       groupSetting: GroupSetting

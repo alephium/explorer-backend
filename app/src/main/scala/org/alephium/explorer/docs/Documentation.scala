@@ -59,6 +59,7 @@ trait Documentation
         listMempoolTransactions,
         listTokens,
         listTokenTransactions,
+        listTokenSupplySnapshots,
         listTokenAddresses,
         listTokenSupply,
         listTokenInfo,
