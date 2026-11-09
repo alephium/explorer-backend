@@ -204,3 +204,19 @@ apiMappings ++=
     )
   )
 ```
+
+### Token metadata storage migration
+
+Database migration 12 stores fungible token symbols and names, NFT token URIs,
+and NFT collection URIs as PostgreSQL `bytea`. Startup converts existing text
+columns using UTF-8 encoding; literal backslashes remain literal data. Columns
+already stored as `bytea` are left unchanged, including on migration replay.
+The migration runs in the normal migration transaction and may lock and rewrite
+the affected tables. Schedule upgrades with their size in mind.
+
+New metadata is persisted exactly as returned by contract calls, including NUL
+bytes and malformed UTF-8. The API still returns the same string fields: UTF-8
+decoding happens when producing API models, with replacement characters for
+malformed sequences. NUL characters are retained and escaped by JSON encoding.
+The earlier metadata conversion stripped NUL characters; migration cannot recover
+bytes already removed or replaced in existing text records.

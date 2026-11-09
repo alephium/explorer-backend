@@ -3,23 +3,24 @@
 
 package org.alephium.explorer.persistence.schema
 
+import org.apache.pekko.util.ByteString
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.ProvenShape
 
-import org.alephium.explorer.api.model.NFTCollectionMetadata
+import org.alephium.explorer.persistence.model.NFTCollectionMetadataEntity
 import org.alephium.explorer.persistence.schema.CustomJdbcTypes._
 import org.alephium.protocol.model.Address
 
 object NFTCollectionMetadataSchema
-    extends SchemaMainChain[NFTCollectionMetadata]("nft_collection_metadata") {
+    extends SchemaMainChain[NFTCollectionMetadataEntity]("nft_collection_metadata") {
 
-  class TokenInfos(tag: Tag) extends Table[NFTCollectionMetadata](tag, name) {
+  class TokenInfos(tag: Tag) extends Table[NFTCollectionMetadataEntity](tag, name) {
     def contract: Rep[Address.Contract] = column[Address.Contract]("contract", O.PrimaryKey)
-    def collectionUri: Rep[String]      = column[String]("collection_uri")
+    def collectionUri: Rep[ByteString]  = column[ByteString]("collection_uri")
 
-    def * : ProvenShape[NFTCollectionMetadata] =
+    def * : ProvenShape[NFTCollectionMetadataEntity] =
       (contract, collectionUri)
-        .<>((NFTCollectionMetadata.apply _).tupled, NFTCollectionMetadata.unapply)
+        .<>((NFTCollectionMetadataEntity.apply _).tupled, NFTCollectionMetadataEntity.unapply)
   }
 
   val table: TableQuery[TokenInfos] = TableQuery[TokenInfos]

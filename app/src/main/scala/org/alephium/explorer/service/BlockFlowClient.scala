@@ -90,11 +90,13 @@ trait BlockFlowClient extends Service {
 
   def guessTokenStdInterfaceId(token: TokenId): Future[Option[StdInterfaceId]]
 
-  def fetchFungibleTokenMetadata(token: TokenId): Future[Option[FungibleTokenMetadata]]
+  def fetchFungibleTokenMetadata(token: TokenId): Future[Option[FungibleTokenMetadataEntity]]
 
-  def fetchNFTMetadata(token: TokenId): Future[Option[NFTMetadata]]
+  def fetchNFTMetadata(token: TokenId): Future[Option[NFTMetadataEntity]]
 
-  def fetchNFTCollectionMetadata(contract: Address.Contract): Future[Option[NFTCollectionMetadata]]
+  def fetchNFTCollectionMetadata(
+      contract: Address.Contract
+  ): Future[Option[NFTCollectionMetadataEntity]]
 
   def start(): Future[Unit]
 
@@ -300,22 +302,22 @@ object BlockFlowClient extends StrictLogging {
       }
     }
 
-    def fetchFungibleTokenMetadata(token: TokenId): Future[Option[FungibleTokenMetadata]] = {
-      fetchTokenMetadata[FungibleTokenMetadata](token, 3) { result =>
+    def fetchFungibleTokenMetadata(token: TokenId): Future[Option[FungibleTokenMetadataEntity]] = {
+      fetchTokenMetadata[FungibleTokenMetadataEntity](token, 3) { result =>
         extractFungibleTokenMetadata(token, result)
       }
     }
 
     def fetchNFTCollectionMetadata(
         contract: Address.Contract
-    ): Future[Option[NFTCollectionMetadata]] = {
-      fetchMetadata[NFTCollectionMetadata](contract, 1) { result =>
+    ): Future[Option[NFTCollectionMetadataEntity]] = {
+      fetchMetadata[NFTCollectionMetadataEntity](contract, 1) { result =>
         extractNFTCollectionMetadata(contract, result)
       }
     }
 
-    def fetchNFTMetadata(token: TokenId): Future[Option[NFTMetadata]] = {
-      fetchTokenMetadata[NFTMetadata](token, 2) { result =>
+    def fetchNFTMetadata(token: TokenId): Future[Option[NFTMetadataEntity]] = {
+      fetchTokenMetadata[NFTMetadataEntity](token, 2) { result =>
         extractNFTMetadata(token, result)
       }
     }
@@ -363,6 +365,11 @@ object BlockFlowClient extends StrictLogging {
       case _ => None
     }
 
+  def valToBytes(value: api.model.Val): Option[ByteString] = value match {
+    case api.model.ValByteVec(bytes) => Some(bytes)
+    case _                           => None
+  }
+
   def valToString(value: api.model.Val): Option[String] =
     value match {
       case api.model.ValByteVec(bytes) =>
@@ -391,13 +398,13 @@ object BlockFlowClient extends StrictLogging {
   def extractFungibleTokenMetadata(
       token: TokenId,
       result: MultipleCallContractResult
-  ): Option[FungibleTokenMetadata] = {
+  ): Option[FungibleTokenMetadataEntity] = {
     for {
-      symbol   <- extractVal(result.results(0)).flatMap(valToString)
-      name     <- extractVal(result.results(1)).flatMap(valToString)
+      symbol   <- extractVal(result.results(0)).flatMap(valToBytes)
+      name     <- extractVal(result.results(1)).flatMap(valToBytes)
       decimals <- extractVal(result.results(2)).flatMap(valToU256)
     } yield {
-      FungibleTokenMetadata(
+      FungibleTokenMetadataEntity(
         token,
         symbol,
         name,
@@ -409,11 +416,11 @@ object BlockFlowClient extends StrictLogging {
   def extractNFTCollectionMetadata(
       contract: Address.Contract,
       result: MultipleCallContractResult
-  ): Option[NFTCollectionMetadata] = {
+  ): Option[NFTCollectionMetadataEntity] = {
     for {
-      collectionUri <- extractVal(result.results(0)).flatMap(valToString)
+      collectionUri <- extractVal(result.results(0)).flatMap(valToBytes)
     } yield {
-      NFTCollectionMetadata(
+      NFTCollectionMetadataEntity(
         contract,
         collectionUri
       )
@@ -422,13 +429,13 @@ object BlockFlowClient extends StrictLogging {
   def extractNFTMetadata(
       token: TokenId,
       result: MultipleCallContractResult
-  ): Option[NFTMetadata] = {
+  ): Option[NFTMetadataEntity] = {
     for {
-      tokenUri     <- extractVal(result.results(0)).flatMap(valToString)
+      tokenUri     <- extractVal(result.results(0)).flatMap(valToBytes)
       collectionId <- extractVal(result.results(1)).flatMap(valToContractId)
       nftIndex     <- extractVal(result.results(1), _.tail.headOption).flatMap(valToU256)
     } yield {
-      NFTMetadata(
+      NFTMetadataEntity(
         token,
         tokenUri,
         collectionId,

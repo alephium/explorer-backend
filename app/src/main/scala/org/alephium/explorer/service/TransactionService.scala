@@ -23,7 +23,7 @@ import org.alephium.explorer.cache._
 import org.alephium.explorer.foldFutures
 import org.alephium.explorer.persistence.DBRunner._
 import org.alephium.explorer.persistence.dao.{MempoolDao, TransactionDao}
-import org.alephium.explorer.persistence.queries.{InputQueries, OutputQueries, TokenQueries}
+import org.alephium.explorer.persistence.queries.{InputQueries, OutputQueries}
 import org.alephium.explorer.persistence.queries.TransactionQueries._
 import org.alephium.explorer.persistence.queries.result.OutputFromTxQR
 import org.alephium.protocol
@@ -481,9 +481,11 @@ object TransactionService extends TransactionService {
     val tokens: ArraySeq[TokenId] =
       transactions.flatMap(_.outputs).flatMap(_.tokens.map(_.map(_.id))).flatten.distinct
 
-    run(TokenQueries.listFungibleTokenMetadataQuery(tokens)).map(_.map { metadata =>
-      metadata.id -> metadata
-    }.toMap)
+    TokenService
+      .listFungibleTokenMetadata(tokens)
+      .map(_.map { metadata =>
+        metadata.id -> metadata
+      }.toMap)
   }
 
   def transactionsFlowable(

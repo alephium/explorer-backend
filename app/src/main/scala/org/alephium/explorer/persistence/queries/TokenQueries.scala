@@ -14,7 +14,12 @@ import slick.jdbc.PostgresProfile.api._
 import org.alephium.api.model.{Address => ApiAddress}
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
-import org.alephium.explorer.persistence.model.TokenInfoEntity
+import org.alephium.explorer.persistence.model.{
+  FungibleTokenMetadataEntity,
+  NFTCollectionMetadataEntity,
+  NFTMetadataEntity,
+  TokenInfoEntity
+}
 import org.alephium.explorer.persistence.queries.result.TxByTokenQR
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
@@ -221,7 +226,7 @@ object TokenQueries extends StrictLogging {
       .asAS[(TokenId, Option[U256], Option[U256])]
 
   def insertFungibleTokenMetadata(
-      metadata: FungibleTokenMetadata
+      metadata: FungibleTokenMetadataEntity
   ): DBActionW[Int] = {
     sqlu"""
       INSERT INTO fungible_token_metadata (
@@ -235,7 +240,7 @@ object TokenQueries extends StrictLogging {
 
   def listFungibleTokenMetadataQuery(
       tokens: ArraySeq[TokenId]
-  ): DBActionW[ArraySeq[FungibleTokenMetadata]] = {
+  ): DBActionW[ArraySeq[FungibleTokenMetadataEntity]] = {
     if (tokens.nonEmpty) {
       val params = paramPlaceholder(1, tokens.size)
 
@@ -255,7 +260,7 @@ object TokenQueries extends StrictLogging {
       SQLActionBuilder(
         sql = query,
         setParameter = parameters
-      ).asASE[FungibleTokenMetadata](fungibleTokenMetadataGetResult)
+      ).asASE[FungibleTokenMetadataEntity](fungibleTokenMetadataGetResult)
     } else {
       DBIOAction.successful(ArraySeq.empty)
     }
@@ -291,7 +296,7 @@ object TokenQueries extends StrictLogging {
 
   def listNFTMetadataQuery(
       tokens: ArraySeq[TokenId]
-  ): DBActionW[ArraySeq[NFTMetadata]] = {
+  ): DBActionW[ArraySeq[NFTMetadataEntity]] = {
     if (tokens.nonEmpty) {
       val params = paramPlaceholder(1, tokens.size)
 
@@ -311,7 +316,7 @@ object TokenQueries extends StrictLogging {
       SQLActionBuilder(
         sql = query,
         setParameter = parameters
-      ).asASE[NFTMetadata](nftMetadataGetResult)
+      ).asASE[NFTMetadataEntity](nftMetadataGetResult)
     } else {
       DBIOAction.successful(ArraySeq.empty)
     }
@@ -319,7 +324,7 @@ object TokenQueries extends StrictLogging {
 
   def listNFTCollectionMetadataQuery(
       addresses: ArraySeq[Address.Contract]
-  ): DBActionW[ArraySeq[NFTCollectionMetadata]] = {
+  ): DBActionW[ArraySeq[NFTCollectionMetadataEntity]] = {
     if (addresses.nonEmpty) {
       val params = paramPlaceholder(1, addresses.size)
 
@@ -339,14 +344,14 @@ object TokenQueries extends StrictLogging {
       SQLActionBuilder(
         sql = query,
         setParameter = parameters
-      ).asASE[NFTCollectionMetadata](nftCollectionMetadataGetResult)
+      ).asASE[NFTCollectionMetadataEntity](nftCollectionMetadataGetResult)
     } else {
       DBIOAction.successful(ArraySeq.empty)
     }
   }
 
   def insertNFTMetadata(
-      metadata: NFTMetadata
+      metadata: NFTMetadataEntity
   ): DBActionW[Int] = {
     sqlu"""
       INSERT INTO nft_metadata (

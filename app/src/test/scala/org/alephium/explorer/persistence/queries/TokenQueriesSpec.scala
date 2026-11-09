@@ -5,6 +5,7 @@ package org.alephium.explorer.persistence.queries
 
 import scala.collection.immutable.ArraySeq
 
+import org.apache.pekko.util.ByteString
 import org.scalacheck.Gen
 import slick.dbio.DBIOAction
 import slick.jdbc.PostgresProfile.api._
@@ -15,6 +16,7 @@ import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenDBModel._
 import org.alephium.explorer.api.model.Pagination
 import org.alephium.explorer.persistence.{DatabaseFixtureForEach, TestDBRunner}
+import org.alephium.explorer.persistence.model.{FungibleTokenMetadataEntity, NFTMetadataEntity}
 import org.alephium.explorer.persistence.queries.TokenQueries
 import org.alephium.explorer.persistence.queries.result.TxByTokenQR
 import org.alephium.explorer.persistence.schema._
@@ -22,6 +24,23 @@ import org.alephium.explorer.util.AddressUtil
 import org.alephium.util.{TimeStamp, U256}
 
 class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach with TestDBRunner {
+
+  private val fungibleMetadataGen = fungibleTokenMetadataGen.map { metadata =>
+    FungibleTokenMetadataEntity(
+      metadata.id,
+      ByteString(metadata.symbol),
+      ByteString(metadata.name),
+      metadata.decimals
+    )
+  }
+  private val nftEntityGen = nftMetadataGen.map { metadata =>
+    NFTMetadataEntity(
+      metadata.id,
+      ByteString(metadata.tokenUri),
+      metadata.collectionId,
+      metadata.nftIndex
+    )
+  }
 
   "Token Queries" should {
     "list token transactions" in {
@@ -114,7 +133,7 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
     }
 
     "insert and list fungible token metadata" in {
-      val tokens = Gen.nonEmptyListOf(fungibleTokenMetadataGen).sample.get
+      val tokens = Gen.nonEmptyListOf(fungibleMetadataGen).sample.get
 
       exec(
         DBIOAction.sequence(tokens.map(token => TokenQueries.insertFungibleTokenMetadata(token)))
@@ -126,7 +145,7 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
     }
 
     "insert and list nft metadata" in {
-      val tokens = Gen.nonEmptyListOf(nftMetadataGen).sample.get
+      val tokens = Gen.nonEmptyListOf(nftEntityGen).sample.get
 
       exec(
         DBIOAction.sequence(tokens.map(token => TokenQueries.insertNFTMetadata(token)))
@@ -138,9 +157,9 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
     }
 
     "ignore conflict when inserting fungible token metadata" in {
-      forAll(fungibleTokenMetadataGen, Gen.alphaNumStr) { case (metadata, symbol) =>
+      forAll(fungibleMetadataGen, Gen.alphaNumStr) { case (metadata, symbol) =>
         exec(TokenQueries.insertFungibleTokenMetadata(metadata))
-        exec(TokenQueries.insertFungibleTokenMetadata(metadata.copy(symbol = symbol)))
+        exec(TokenQueries.insertFungibleTokenMetadata(metadata.copy(symbol = ByteString(symbol))))
 
         val result =
           exec(TokenQueries.listFungibleTokenMetadataQuery(ArraySeq(metadata.id)))
@@ -151,9 +170,9 @@ class TokenQueriesSpec extends AlephiumFutureSpec with DatabaseFixtureForEach wi
     }
 
     "ignore conflict when inserting nft metadata" in {
-      forAll(nftMetadataGen, Gen.alphaNumStr) { case (metadata, tokenUri) =>
+      forAll(nftEntityGen, Gen.alphaNumStr) { case (metadata, tokenUri) =>
         exec(TokenQueries.insertNFTMetadata(metadata))
-        exec(TokenQueries.insertNFTMetadata(metadata.copy(tokenUri = tokenUri)))
+        exec(TokenQueries.insertNFTMetadata(metadata.copy(tokenUri = ByteString(tokenUri))))
 
         val result = exec(TokenQueries.listNFTMetadataQuery(ArraySeq(metadata.id)))
 
