@@ -29,7 +29,7 @@ import org.alephium.util.discard
 object Migrations extends StrictLogging {
 
   // scalastyle:off magic.number
-  val latestVersion: MigrationVersion = MigrationVersion(11)
+  val latestVersion: MigrationVersion = MigrationVersion(12)
 
   def migration1(implicit ec: ExecutionContext): DBActionAll[Unit] = {
     // We retrigger the download of fungible and non-fungible tokens' metadata that have sub-category
@@ -222,6 +222,34 @@ object Migrations extends StrictLogging {
     """.map(_ => ())
   }
 
+  // Existing text is encoded as UTF-8, not interpreted as PostgreSQL bytea input syntax.
+  // The migration can be replayed after a reset migration counter and on fresh bytea schemas.
+  def migration12(implicit ec: ExecutionContext): DBActionAll[Unit] = {
+    DBIO.seq(
+      metadataColumnToBytes("fungible_token_metadata", "symbol"),
+      metadataColumnToBytes("fungible_token_metadata", "name"),
+      metadataColumnToBytes("nft_metadata", "token_uri"),
+      metadataColumnToBytes("nft_collection_metadata", "collection_uri")
+    )
+  }
+
+  private def metadataColumnToBytes(table: String, column: String)(implicit
+      ec: ExecutionContext
+  ): DBActionAll[Unit] = {
+    sql"""SELECT data_type FROM information_schema.columns
+          WHERE table_schema = current_schema() AND table_name = $table AND column_name = $column"""
+      .as[String]
+      .head
+      .flatMap {
+        case "bytea" => DBIO.successful(())
+        case "text" | "character varying" | "character" =>
+          sqlu"""ALTER TABLE #$table ALTER COLUMN #$column TYPE bytea
+                 USING convert_to(#$column, 'UTF8')""".map(_ => ())
+        case other =>
+          DBIO.failed(new IllegalStateException(s"Unexpected metadata column type: $other"))
+      }
+  }
+
   private def migrations(implicit
       explorerConfig: ExplorerConfig,
       ec: ExecutionContext
@@ -236,7 +264,8 @@ object Migrations extends StrictLogging {
     migration8,
     migration9,
     migration10,
-    migration11
+    migration11,
+    migration12
   )
 
   def backgroundCoinbaseMigration()(implicit

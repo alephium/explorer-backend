@@ -398,27 +398,27 @@ object CustomGetResult {
         eventOrder = result.<<
       )
 
-  val fungibleTokenMetadataGetResult: GetResult[FungibleTokenMetadata] =
+  val fungibleTokenMetadataGetResult: GetResult[FungibleTokenMetadataEntity] =
     (result: PositionedResult) =>
-      FungibleTokenMetadata(
+      FungibleTokenMetadataEntity(
         id = result.<<,
         symbol = result.<<,
         name = result.<<,
         decimals = result.<<
       )
 
-  val nftMetadataGetResult: GetResult[NFTMetadata] =
+  val nftMetadataGetResult: GetResult[NFTMetadataEntity] =
     (result: PositionedResult) =>
-      NFTMetadata(
+      NFTMetadataEntity(
         id = result.<<,
         tokenUri = result.<<,
         collectionId = result.<<,
         nftIndex = result.<<
       )
 
-  val nftCollectionMetadataGetResult: GetResult[NFTCollectionMetadata] =
+  val nftCollectionMetadataGetResult: GetResult[NFTCollectionMetadataEntity] =
     (result: PositionedResult) =>
-      NFTCollectionMetadata(
+      NFTCollectionMetadataEntity(
         address = result.<<(addressContractGetResult),
         collectionUri = result.<<
       )

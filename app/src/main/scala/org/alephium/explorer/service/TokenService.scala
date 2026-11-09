@@ -135,17 +135,17 @@ object TokenService extends TokenService with StrictLogging {
   def listFungibleTokenMetadata(tokens: ArraySeq[TokenId])(implicit
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[FungibleTokenMetadata]] =
-    run(listFungibleTokenMetadataQuery(tokens))
+    run(listFungibleTokenMetadataQuery(tokens)).map(_.map(_.toApi()))(ExecutionContext.parasitic)
 
   def listNFTMetadata(tokens: ArraySeq[TokenId])(implicit
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[NFTMetadata]] =
-    run(listNFTMetadataQuery(tokens))
+    run(listNFTMetadataQuery(tokens)).map(_.map(_.toApi()))(ExecutionContext.parasitic)
 
   def listNFTCollectionMetadata(addresses: ArraySeq[Address.Contract])(implicit
       dc: DatabaseConfig[PostgresProfile]
   ): Future[ArraySeq[NFTCollectionMetadata]] =
-    run(listNFTCollectionMetadataQuery(addresses))
+    run(listNFTCollectionMetadataQuery(addresses)).map(_.map(_.toApi()))(ExecutionContext.parasitic)
 
   def listAddressTokens(address: ApiAddress, pagination: Pagination)(implicit
       dc: DatabaseConfig[PostgresProfile]

@@ -8,7 +8,6 @@ import java.net.InetAddress
 import scala.collection.immutable.ArraySeq
 
 import org.apache.pekko.testkit.SocketUtil
-import org.apache.pekko.util.ByteString
 import sttp.model.Uri
 
 import org.alephium.api.model
@@ -18,7 +17,6 @@ import org.alephium.explorer.GenApiModel._
 import org.alephium.explorer.GenCoreApi._
 import org.alephium.explorer.GenCoreProtocol._
 import org.alephium.explorer.TestBlockFlowServer
-import org.alephium.explorer.api.model.{FungibleTokenMetadata, NFTCollectionMetadata, NFTMetadata}
 import org.alephium.explorer.error.ExplorerError
 import org.alephium.explorer.persistence.DatabaseFixtureForAll
 import org.alephium.explorer.persistence.model._
@@ -30,8 +28,6 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
 
   val group                  = GroupIndex.Zero
   val localhost: InetAddress = InetAddress.getByName("127.0.0.1")
-
-  def bytesToString(bytes: ByteString): String = bytes.utf8String.replaceAll("\u0000", "")
 
   "BlockFlowClient.fetchBlock" should {
     val port  = SocketUtil.temporaryLocalPort(SocketUtil.Both)
@@ -89,10 +85,10 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
         val callContract = result.copy(results = results)
 
         BlockFlowClient.extractFungibleTokenMetadata(token, callContract) is Some(
-          FungibleTokenMetadata(
+          FungibleTokenMetadataEntity(
             token,
-            bytesToString(symbol.value),
-            bytesToString(name.value),
+            symbol.value,
+            name.value,
             decimals.value
           )
         )
@@ -111,9 +107,9 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
           val callContract = result.copy(results = results)
 
           BlockFlowClient.extractNFTMetadata(token, callContract) is Some(
-            NFTMetadata(
+            NFTMetadataEntity(
               token,
-              bytesToString(uri.value),
+              uri.value,
               ContractId.from(contractId.value).get,
               nftIndex.value
             )
@@ -131,9 +127,9 @@ class BlockFlowClientSpec extends AlephiumFutureSpec with DatabaseFixtureForAll 
           val callContract = result.copy(results = results)
 
           BlockFlowClient.extractNFTCollectionMetadata(contractAddress, callContract) is Some(
-            NFTCollectionMetadata(
+            NFTCollectionMetadataEntity(
               contractAddress,
-              bytesToString(uri.value)
+              uri.value
             )
           )
       }

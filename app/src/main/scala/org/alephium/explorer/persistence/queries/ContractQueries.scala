@@ -11,7 +11,11 @@ import slick.jdbc.PostgresProfile.api._
 
 import org.alephium.explorer.api.model._
 import org.alephium.explorer.persistence._
-import org.alephium.explorer.persistence.model.{ContractEntity, EventEntity}
+import org.alephium.explorer.persistence.model.{
+  ContractEntity,
+  EventEntity,
+  NFTCollectionMetadataEntity
+}
 import org.alephium.explorer.persistence.schema.CustomGetResult._
 import org.alephium.explorer.persistence.schema.CustomSetParameter._
 import org.alephium.explorer.util.SlickUtil._
@@ -160,7 +164,7 @@ object ContractQueries {
 
   def insertNFTCollectionMetadata(
       contract: Address,
-      metadata: NFTCollectionMetadata
+      metadata: NFTCollectionMetadataEntity
   ): DBActionW[Int] = {
     sqlu"""
       INSERT INTO nft_collection_metadata (
